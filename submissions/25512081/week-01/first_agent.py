@@ -1,17 +1,24 @@
-"""Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
+"""Week 01 submission — first agent with THREE tools (OpenAI-compatible API).
 
-Two tools: calculator, read_file. Your assignment: add a third.
-Requires: pip install openai, and in the environment:
-  OPENAI_API_KEY   your key (an OpenRouter key works)
-  OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
-  AGENT_MODEL      optional; defaults to gpt-4o-mini. For OpenRouter free
-                   models use e.g. AGENT_MODEL=meta-llama/llama-3.3-70b-instruct:free
+Tools: calculator, read_file, clock. The third tool (clock) is the assignment.
+
+Reproducibility (everything but the API key):
+  SDK    : pip install openai   (tested with openai 1.109.1, Python 3.13)
+  Model  : z-ai/glm-5.2:free  via OpenRouter (set through AGENT_MODEL, below)
+  Env    :
+    export OPENAI_API_KEY="$OPENROUTER_API_KEY"          # your OpenRouter key
+    export OPENAI_BASE_URL=https://openrouter.ai/api/v1
+    export AGENT_MODEL=z-ai/glm-5.2:free
+  Run    :
+    python first_agent.py "Read notes.txt, sum the numbers, and say what time it is now."
+    # capture a log with:  python first_agent.py 2>&1 | tee logs/run-01.txt
 """
 import os
 import sys
 import ast
 import json
 import operator
+from datetime import datetime, timezone
 
 from openai import OpenAI
 
@@ -46,7 +53,13 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+# ---- tool 3: clock (current time; takes no arguments) ----
+def clock() -> str:
+    """Return the current local date and time as an ISO-8601 string."""
+    return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file, "clock": clock}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -64,6 +77,15 @@ TOOLS = [
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"}},
                         "required": ["path"]}}},
+    # tool 3 — the description below is YOUR interface to defend in TOOLS.md.
+    # Tweak the wording and watch how the model's decision to call clock shifts.
+    {"type": "function",
+     "function": {
+         "name": "clock",
+         "description": "Return the current date and time. Use this only when the "
+                        "task needs to know what time or date it is right now. It "
+                        "takes no arguments and does no arithmetic or file access.",
+         "parameters": {"type": "object", "properties": {}, "required": []}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
@@ -83,7 +105,8 @@ def run(goal: str, max_steps: int = 8):
             return msg.content or ""
 
         for call in msg.tool_calls:          # execute tool calls -> observe
-            args = json.loads(call.function.arguments)
+            # clock takes no args; some models send "" instead of "{}" -> guard it
+            args = json.loads(call.function.arguments or "{}")
             out = TOOLS_IMPL[call.function.name](**args)
             print(f"  [tool] {call.function.name}({args}) -> {out}")
             messages.append({"role": "tool", "tool_call_id": call.id,
