@@ -1,0 +1,1 @@
+The clock tool description pins the output format to ISO so the model never has to ask a follow-up question about formatting or timezone. An earlier wording, "tells the current time", made the model ask the user which timezone to use before it would call the tool at all, which cost a whole extra turn.
