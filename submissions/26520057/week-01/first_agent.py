@@ -14,6 +14,8 @@ import json
 import operator
 
 from openai import OpenAI
+from zoneinfo import ZoneInfo
+from datetime import datetime
 
 # ---- tool 1: calculator (safe, no eval) ----
 _OPS = {ast.Add: operator.add, ast.Sub: operator.sub,
@@ -45,8 +47,12 @@ def read_file(path: str) -> str:
     with open(full, encoding="utf-8") as f:
         return f.read()[:4000]
 
+# --- tool 3: time_now (current time in Asia/Seoul) ----
+def time_now() -> str:
+    """Return the current time in Asia/Seoul."""
+    return datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S %Z")
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file, "time_now": time_now}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -66,11 +72,11 @@ TOOLS = [
                         "required": ["path"]}}},
     {"type": "function",
      "function": {
-         "name": "Clock",
+         "name": "time_now",
          "description": "Get the current time in Asia/Seoul.",
          "parameters": {"type": "object",
-                        "properties": {"path": {"type": "string"}},
-                        "required": ["path"]}}},
+                        "properties": {},
+                        "required": []}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
