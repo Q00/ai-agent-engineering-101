@@ -46,7 +46,21 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+# ---- tool 3: text_stats (counts supplied text without file access) ----
+def text_stats(text: str) -> str:
+    """Return word, line, and character counts for supplied text."""
+    return json.dumps({
+        "words": len(text.split()),
+        "lines": len(text.splitlines()),
+        "characters": len(text),
+    })
+
+
+TOOLS_IMPL = {
+    "calculator": calculator,
+    "read_file": read_file,
+    "text_stats": text_stats,
+}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -64,6 +78,14 @@ TOOLS = [
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"}},
                         "required": ["path"]}}},
+    {"type": "function",
+     "function": {
+         "name": "text_stats",
+         "description": "Count words, lines, and characters in supplied text. "
+                        "Pass file contents, not a path; call read_file first.",
+         "parameters": {"type": "object",
+                        "properties": {"text": {"type": "string"}},
+                        "required": ["text"]}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
