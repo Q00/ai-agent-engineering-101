@@ -4,14 +4,23 @@ Tools: calculator, read_file, clock. The third tool (clock) is the assignment.
 
 Reproducibility (everything but the API key):
   SDK    : pip install openai   (tested with openai 1.109.1, Python 3.13)
-  Model  : z-ai/glm-5.2:free  via OpenRouter (set through AGENT_MODEL, below)
+  Model  : nvidia/nemotron-3.5-lightning:free  via OpenRouter (set via AGENT_MODEL).
+           Any tool-capable model works — just swap the slug. Model choice does
+           not change the agent's code. Honest note on why this slug and not the
+           one I first picked: the originally-chosen z-ai/glm-5.2:free, plus
+           google/gemma-4-31b-it:free, google/gemma-4-26b-a4b-it:free and
+           poolside/laguna-xs-2.1:free, were all returning upstream HTTP 429
+           (free shared-pool rate limit) at submission time (see logs/run-01,
+           run-02); openai/gpt-oss-20b:free had been delisted from the free tier
+           (404). nemotron-3.5-lightning was the free tool-capable model that
+           actually ran (logs/run-03).
   Env    :
     export OPENAI_API_KEY="$OPENROUTER_API_KEY"          # your OpenRouter key
     export OPENAI_BASE_URL=https://openrouter.ai/api/v1
-    export AGENT_MODEL=z-ai/glm-5.2:free
+    export AGENT_MODEL=nvidia/nemotron-3.5-lightning:free
   Run    :
-    python first_agent.py "Read notes.txt, sum the numbers, and say what time it is now."
-    # capture a log with:  python first_agent.py 2>&1 | tee logs/run-01.txt
+    python first_agent.py "Read notes.txt, sum the numbers in it, and tell me the total along with the current time."
+    # capture a log with:  python first_agent.py 2>&1 | tee logs/run-03.txt
 """
 import os
 import sys
