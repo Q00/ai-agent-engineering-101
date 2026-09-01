@@ -47,12 +47,13 @@ def read_file(path: str) -> str:
     with open(full, encoding="utf-8") as f:
         return f.read()[:4000]
 
-# --- tool 3: time_now (current time in Asia/Seoul) ----
-def time_now() -> str:
-    """Return the current time in Asia/Seoul."""
-    return datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S %Z")
+# --- tool 3: time_now_yday (current time in Asia/Seoul with day-of-year) ----
+def time_now_yday() -> str:
+    """Return today's date in Asia/Seoul together with its day-of-year number."""
+    now = datetime.now(ZoneInfo("Asia/Seoul"))
+    return f"{now:%Y-%m-%d %H:%M:%S %Z} (day {now.timetuple().tm_yday} of {now.year})"
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file, "time_now": time_now}
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file, "time_now_yday": time_now_yday}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -72,8 +73,8 @@ TOOLS = [
                         "required": ["path"]}}},
     {"type": "function",
      "function": {
-         "name": "time_now",
-         "description": "Get the current time in Asia/Seoul.",
+         "name": "time_now_yday",
+         "description": "Get the current time in Asia/Seoul with day-of-year.",
          "parameters": {"type": "object",
                         "properties": {},
                         "required": []}}},
