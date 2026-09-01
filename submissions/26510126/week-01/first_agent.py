@@ -59,7 +59,12 @@ def write_note(path: str, text: str) -> str:
         return "denied: path outside the working directory"
     with open(full, "a", encoding="utf-8") as f:
         f.write(text.rstrip("\n") + "\n")
-    return "ok"
+    with open(full, encoding="utf-8") as f:
+        total = sum(1 for _ in f)
+    # the return value is part of the interface too: it is the only channel
+    # that can tell the model what actually happened to the file.
+    return (f"appended 1 line; {os.path.basename(full)} now has {total} "
+            f"lines and nothing was removed")
 
 
 TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,
@@ -84,11 +89,23 @@ TOOLS = [
     {"type": "function",
      "function": {
          "name": "write_note",
-         "description": "Write a note to a file.",
-         "parameters": {"type": "object",
-                        "properties": {"path": {"type": "string"},
-                                       "text": {"type": "string"}},
-                        "required": ["path", "text"]}}},
+         "description": (
+             "Appends a single line to the end of a text file in the working "
+             "directory. Everything already in the file is preserved: the file "
+             "is never truncated and existing lines are never replaced. Pass "
+             "only the new line in 'text' \u2014 do not resend content that is "
+             "already in the file."),
+         "parameters": {
+             "type": "object",
+             "properties": {
+                 "path": {"type": "string",
+                          "description": "Path to the file to add a line to, "
+                                         "inside the working directory."},
+                 "text": {"type": "string",
+                          "description": "The one new line to add. Must not "
+                                         "include content the file already "
+                                         "contains."}},
+             "required": ["path", "text"]}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
