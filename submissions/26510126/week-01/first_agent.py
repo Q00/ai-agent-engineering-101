@@ -1,14 +1,24 @@
-"""Week 01 starter — the agent from the lab, Anthropic API version.
+"""Week 01 — OpenAI-compatible API version, run against OpenRouter.
 
-Two tools: calculator, read_file. Your assignment: add a third.
-Requires: pip install anthropic, and ANTHROPIC_API_KEY in the environment.
+Three tools: calculator, read_file, write_note.
+Requires: pip install openai, and in the environment:
+  OPENAI_API_KEY   your key (an OpenRouter key works)
+  OPENAI_BASE_URL  set to https://openrouter.ai/api/v1 for OpenRouter
+  AGENT_MODEL      e.g. AGENT_MODEL=minimax/minimax-m2.7:free
+
+Note: the model example in the original starter
+(meta-llama/llama-3.3-70b-instruct:free) is no longer listed on OpenRouter.
+Verified working free models with tool calling, 2026-09-01:
+  minimax/minimax-m2.7:free
+  cohere/north-mini-code:free
 """
 import os
 import sys
 import ast
+import json
 import operator
 
-import anthropic
+from openai import OpenAI
 
 # ---- tool 1: calculator (safe, no eval) ----
 _OPS = {ast.Add: operator.add, ast.Sub: operator.sub,
@@ -41,44 +51,68 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+# ---- tool 3: write_note (appends; guarded like read_file) ----
+def write_note(path: str, text: str) -> str:
+    """Append one line of text to a file. Existing content is kept."""
+    full = os.path.abspath(path)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+    with open(full, "a", encoding="utf-8") as f:
+        f.write(text.rstrip("\n") + "\n")
+    return "ok"
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,
+              "write_note": write_note}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
-    {"name": "calculator",
-     "description": "Evaluate an arithmetic expression.",
-     "input_schema": {"type": "object",
-                      "properties": {"expression": {"type": "string"}},
-                      "required": ["expression"]}},
-    {"name": "read_file",
-     "description": "Read a text file in the working directory.",
-     "input_schema": {"type": "object",
-                      "properties": {"path": {"type": "string"}},
-                      "required": ["path"]}},
+    {"type": "function",
+     "function": {
+         "name": "calculator",
+         "description": "Evaluate an arithmetic expression.",
+         "parameters": {"type": "object",
+                        "properties": {"expression": {"type": "string"}},
+                        "required": ["expression"]}}},
+    {"type": "function",
+     "function": {
+         "name": "read_file",
+         "description": "Read a text file in the working directory.",
+         "parameters": {"type": "object",
+                        "properties": {"path": {"type": "string"}},
+                        "required": ["path"]}}},
+    {"type": "function",
+     "function": {
+         "name": "write_note",
+         "description": "Write a note to a file.",
+         "parameters": {"type": "object",
+                        "properties": {"path": {"type": "string"},
+                                       "text": {"type": "string"}},
+                        "required": ["path", "text"]}}},
 ]
+
+MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
 
 
 def run(goal: str, max_steps: int = 8):
-    client = anthropic.Anthropic()  # uses ANTHROPIC_API_KEY
+    client = OpenAI()  # uses OPENAI_API_KEY and OPENAI_BASE_URL
     messages = [{"role": "user", "content": goal}]
 
     for step in range(max_steps):   # <- this loop is what makes it an agent
-        resp = client.messages.create(
-            model="claude-sonnet-4-5", max_tokens=1024,
-            tools=TOOLS, messages=messages)
-        messages.append({"role": "assistant", "content": resp.content})
+        resp = client.chat.completions.create(
+            model=MODEL, tools=TOOLS, messages=messages)
+        msg = resp.choices[0].message
+        messages.append(msg)
 
-        if resp.stop_reason != "tool_use":   # final answer -> stop
-            return "".join(b.text for b in resp.content if b.type == "text")
+        if not msg.tool_calls:               # final answer -> stop
+            return msg.content or ""
 
-        results = []
-        for block in resp.content:           # execute tool calls -> observe
-            if block.type == "tool_use":
-                out = TOOLS_IMPL[block.name](**block.input)
-                print(f"  [tool] {block.name}({block.input}) -> {out}")
-                results.append({"type": "tool_result",
-                                "tool_use_id": block.id, "content": str(out)})
-        messages.append({"role": "user", "content": results})
+        for call in msg.tool_calls:          # execute tool calls -> observe
+            args = json.loads(call.function.arguments)
+            out = TOOLS_IMPL[call.function.name](**args)
+            print(f"  [tool] {call.function.name}({args}) -> {out}")
+            messages.append({"role": "tool", "tool_call_id": call.id,
+                             "content": str(out)})
 
     return "stopped: max steps exceeded"   # the stop condition is a safety net
 
