@@ -60,7 +60,7 @@ TOOLS = [
     {"type": "function",
      "function": {
          "name": "calculator",
-         "description": "Evaluate an arithmetic expression.",
+         "description": "Evaluate an arithmetic expression over plain numbers, e.g. '251 - 245'. Only integers and floats are accepted; a date such as 2026-09-08 is not a valid expression.",
          "parameters": {"type": "object",
                         "properties": {"expression": {"type": "string"}},
                         "required": ["expression"]}}},
