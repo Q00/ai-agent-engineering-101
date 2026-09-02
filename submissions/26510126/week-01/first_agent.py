@@ -4,13 +4,22 @@ Three tools: calculator, read_file, write_note.
 Requires: pip install openai, and in the environment:
   OPENAI_API_KEY   your key (an OpenRouter key works)
   OPENAI_BASE_URL  set to https://openrouter.ai/api/v1 for OpenRouter
-  AGENT_MODEL      e.g. AGENT_MODEL=minimax/minimax-m2.7:free
+  AGENT_MODEL      optional; overrides the default set below
+
+Run:
+  python first_agent.py "read notes.txt, sum the numbers, and record the total back into notes.txt"
+
+write_note appends, so notes.txt gains a line on every run. Restore it with
+`git checkout notes.txt` before re-running — otherwise the input no longer
+matches the one the logs in logs/ were captured against.
 
 Note: the model example in the original starter
 (meta-llama/llama-3.3-70b-instruct:free) is no longer listed on OpenRouter.
 Verified working free models with tool calling, 2026-09-01:
-  minimax/minimax-m2.7:free
+  minimax/minimax-m2.7:free    (the default; every log in logs/ used this)
   cohere/north-mini-code:free
+
+logs/RUNS.md maps each log to the model, code state and goal string behind it.
 """
 import os
 import sys
@@ -108,7 +117,7 @@ TOOLS = [
              "required": ["path", "text"]}}},
 ]
 
-MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
+MODEL = os.environ.get("AGENT_MODEL", "minimax/minimax-m2.7:free")
 
 
 def run(goal: str, max_steps: int = 8):
