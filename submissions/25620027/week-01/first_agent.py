@@ -98,6 +98,8 @@ def run(goal: str, max_steps: int = 8):
     for step in range(max_steps):   # <- this loop is what makes it an agent
         resp = client.chat.completions.create(
             model=MODEL, tools=TOOLS, messages=messages)
+        if step == 0:
+            print(f"  [model] {resp.model}")
         msg = resp.choices[0].message
         messages.append(msg)
 
@@ -116,5 +118,6 @@ def run(goal: str, max_steps: int = 8):
 
 if __name__ == "__main__":
     goal = sys.argv[1] if len(sys.argv) > 1 else \
-        "Read notes.txt and sum the numbers in it."
+        "Read notes.txt. Use text_stats on the full contents, then use " \
+        "calculator for the requested expense arithmetic. Report both results."
     print(run(goal))
