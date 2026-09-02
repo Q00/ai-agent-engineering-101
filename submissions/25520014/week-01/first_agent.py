@@ -1,7 +1,7 @@
 """Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
 
 Two tools: calculator, read_file. Your assignment: add a third.
-Requires: pip install openai, and in the environment:
+Requires: openai + python-dotenv. Settings live in the repo-root .env (gitignored):
   OPENAI_API_KEY   your key (an OpenRouter key works)
   OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
   AGENT_MODEL      optional; defaults to gpt-4o-mini. For OpenRouter free
@@ -13,7 +13,10 @@ import ast
 import json
 import operator
 
+from dotenv import load_dotenv
 from openai import OpenAI
+
+load_dotenv()  # pulls OPENAI_* and AGENT_MODEL from the repo-root .env
 
 # ---- tool 1: calculator (safe, no eval) ----
 _OPS = {ast.Add: operator.add, ast.Sub: operator.sub,
