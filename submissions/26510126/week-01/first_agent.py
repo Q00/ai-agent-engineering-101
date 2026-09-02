@@ -7,7 +7,7 @@ Requires: pip install openai, and in the environment:
   AGENT_MODEL      optional; overrides the default set below
 
 Run:
-  python first_agent.py "read notes.txt, sum the numbers, and record the total back into notes.txt"
+  python first_agent.py "Read notes.txt, sum the numbers, and record the total back into notes.txt"
 
 write_note appends, so notes.txt gains a line on every run. Restore it with
 `git checkout notes.txt` before re-running — otherwise the input no longer
@@ -19,7 +19,7 @@ Verified working free models with tool calling, 2026-09-01:
   minimax/minimax-m2.7:free    (the default; every log in logs/ used this)
   cohere/north-mini-code:free
 
-logs/RUNS.md maps each log to the model, code state and goal string behind it.
+RUNS.md maps each log to the model, code state and goal string behind it.
 """
 import os
 import sys

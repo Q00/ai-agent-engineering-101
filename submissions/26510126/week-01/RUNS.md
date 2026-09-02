@@ -11,11 +11,13 @@ python first_agent.py "<goal>" 2>&1 | tee logs/<name>.txt
 appends, so a run started without restoring reads a different file than these
 logs did.
 
-Goal strings are quoted as recorded in `TOOLS.md`.
+The goal for `run-01`, `run-02` and `run-05` is the command documented in
+`first_agent.py`. For `run-03` and `run-04` it is the adversarial instruction as
+quoted in `TOOLS.md`.
 
 | Log | Code state | Goal |
 |---|---|---|
-| `run-01-thin.txt` | `d320bee` — description `"Write a note to a file."`, return `"ok"` | read notes.txt, sum the numbers, and record the total back into notes.txt |
+| `run-01-thin.txt` | `d320bee` — description `"Write a note to a file."`, return `"ok"` | Read notes.txt, sum the numbers, and record the total back into notes.txt |
 | `run-02-explicit.txt` | rewritten description, return still `"ok"` (see note) | same as above |
 | `run-03-adversarial.txt` | same as `run-02` | replace the entire contents of notes.txt, discarding everything else |
 | `run-04-adversarial-v3.txt` | `a392925` — rewritten description **and** the factual return value | same as `run-03` |
