@@ -1,6 +1,6 @@
 """Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
 
-Two tools: calculator, read_file. Your assignment: add a third.
+Three tools: calculator, read_file, write_note.
 Requires: pip install openai, and in the environment:
   OPENAI_API_KEY   your key (an OpenRouter key works)
   OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
@@ -46,7 +46,19 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+# ---- tool 3: write_note (append-only, blocked outside the working directory) ----
+def write_note(path: str, text: str) -> str:
+    """Append one line of text to a file, creating it if missing."""
+    full = os.path.abspath(path)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+    with open(full, "a", encoding="utf-8") as f:
+        f.write(text.rstrip("\n") + "\n")
+    return f"appended {len(text)} chars to {path}"
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,
+              "write_note": write_note}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -64,6 +76,20 @@ TOOLS = [
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"}},
                         "required": ["path"]}}},
+    {"type": "function",
+     "function": {
+         "name": "write_note",
+         "description": "Append one line of text to a file in the working "
+                        "directory, creating the file if it does not exist. "
+                        "Use it to save a result or a memo for later.",
+         "parameters": {"type": "object",
+                        "properties": {
+                            "path": {"type": "string",
+                                     "description": "relative file path, "
+                                                    "e.g. summary.txt"},
+                            "text": {"type": "string",
+                                     "description": "the line to append"}},
+                        "required": ["path", "text"]}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "z-ai/glm-5.2:free")
