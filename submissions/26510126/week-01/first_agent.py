@@ -9,6 +9,8 @@ Requires: pip install openai, and in the environment:
 Run:
   python first_agent.py "Read notes.txt, sum the numbers, and record the total back into notes.txt"
 
+That string is also the default when no argument is given.
+
 write_note appends, so notes.txt gains a line on every run. Restore it with
 `git checkout notes.txt` before re-running — otherwise the input no longer
 matches the one the logs in logs/ were captured against.
@@ -145,5 +147,5 @@ def run(goal: str, max_steps: int = 8):
 
 if __name__ == "__main__":
     goal = sys.argv[1] if len(sys.argv) > 1 else \
-        "Read notes.txt and sum the numbers in it."
+        "Read notes.txt, sum the numbers, and record the total back into notes.txt"
     print(run(goal))
