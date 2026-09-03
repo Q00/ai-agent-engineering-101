@@ -4,7 +4,7 @@ Three tools: calculator, read_file, get_exchange_rate (ECB rates via api.frankfu
 Requires: pip install openai, and in the environment:
   OPENAI_API_KEY   your key (an OpenRouter key works)
   OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
-  AGENT_MODEL      optional; defaults to z-ai/glm-5.2:free via OpenRouter. Other OpenRouter free
+  AGENT_MODEL      optional; defaults to nvidia/nemotron-3-super-120b-a12b:free via OpenRouter. Other free
                    models use e.g. AGENT_MODEL=meta-llama/llama-3.3-70b-instruct:free
 """
 import os
@@ -112,7 +112,9 @@ TOOLS = [
                         "required": ["base"]}}},
 ]
 
-MODEL = os.environ.get("AGENT_MODEL", "z-ai/glm-5.2:free")
+MODEL = os.environ.get("AGENT_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
+# first choice was z-ai/glm-5.2:free; its free endpoint returned upstream 429 on
+# every call on 2026-09-02/03 (see logs/run-00*), so the default moved here.
 
 
 def run(goal: str, max_steps: int = 8):
