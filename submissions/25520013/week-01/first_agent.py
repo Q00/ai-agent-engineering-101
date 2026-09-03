@@ -1,6 +1,6 @@
-"""Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
+"""Week 01 — multi-currency to KRW converter agent (OpenAI-compatible API, works with OpenRouter).
 
-Three tools: calculator, read_file, write_note.
+Three tools: calculator, read_file, get_exchange_rate (ECB rates via api.frankfurter.dev, no key needed).
 Requires: pip install openai, and in the environment:
   OPENAI_API_KEY   your key (an OpenRouter key works)
   OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
@@ -12,6 +12,9 @@ import sys
 import ast
 import json
 import operator
+import re
+import urllib.error
+import urllib.request
 
 from openai import OpenAI
 
@@ -46,19 +49,31 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-# ---- tool 3: write_note (append-only, blocked outside the working directory) ----
-def write_note(path: str, text: str) -> str:
-    """Append one line of text to a file, creating it if missing."""
-    full = os.path.abspath(path)
-    if not full.startswith(os.getcwd()):
-        return "denied: path outside the working directory"
-    with open(full, "a", encoding="utf-8") as f:
-        f.write(text.rstrip("\n") + "\n")
-    return f"appended {len(text)} chars to {path}"
+# ---- tool 3: get_exchange_rate (fixed host, KRW only, errors as strings) ----
+_FX_URL = "https://api.frankfurter.dev/v1/{date}?base={base}&symbols=KRW"
+
+
+def get_exchange_rate(base: str, date: str = "latest") -> str:
+    """Return the ECB reference rate from `base` currency to KRW on `date`."""
+    base = base.strip().upper()
+    if not re.fullmatch(r"[A-Z]{3}", base):
+        return "error: base must be a 3-letter currency code like USD"
+    if date != "latest" and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
+        return "error: date must be YYYY-MM-DD or 'latest'"
+    try:
+        req = urllib.request.Request(   # the default urllib agent gets a 403
+            _FX_URL.format(date=date, base=base),
+            headers={"User-Agent": "week01-agent"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        return (f"1 {base} = {data['rates']['KRW']} KRW "
+                f"(ECB reference rate, {data['date']})")
+    except (urllib.error.URLError, KeyError, ValueError) as e:
+        return f"error: rate lookup failed for {base} on {date} ({e})"
 
 
 TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,
-              "write_note": write_note}
+              "get_exchange_rate": get_exchange_rate}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -78,18 +93,23 @@ TOOLS = [
                         "required": ["path"]}}},
     {"type": "function",
      "function": {
-         "name": "write_note",
-         "description": "Append one line of text to a file in the working "
-                        "directory, creating the file if it does not exist. "
-                        "Use it to save a result or a memo for later.",
+         "name": "get_exchange_rate",
+         "description": "Look up the official daily exchange rate from a "
+                        "currency to Korean won (KRW). Give a 3-letter ISO "
+                        "currency code such as USD, EUR or JPY, and a date "
+                        "(YYYY-MM-DD) to get that day's rate, or omit the "
+                        "date for the latest published rate. Call it once "
+                        "per currency.",
          "parameters": {"type": "object",
                         "properties": {
-                            "path": {"type": "string",
-                                     "description": "relative file path, "
-                                                    "e.g. summary.txt"},
-                            "text": {"type": "string",
-                                     "description": "the line to append"}},
-                        "required": ["path", "text"]}}},
+                            "base": {"type": "string",
+                                     "description": "3-letter ISO currency "
+                                                    "code, e.g. USD"},
+                            "date": {"type": "string",
+                                     "description": "YYYY-MM-DD; omit for "
+                                                    "the latest published "
+                                                    "rate"}},
+                        "required": ["base"]}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "z-ai/glm-5.2:free")
@@ -120,5 +140,6 @@ def run(goal: str, max_steps: int = 8):
 
 if __name__ == "__main__":
     goal = sys.argv[1] if len(sys.argv) > 1 else \
-        "Read notes.txt and sum the numbers in it."
+        "Read fees.txt and report the total registration cost in KRW, " \
+        "using the exchange rates on the date written in the file."
     print(run(goal))
