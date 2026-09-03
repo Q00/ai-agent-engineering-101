@@ -117,7 +117,7 @@ MODEL = os.environ.get("AGENT_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
 # every call on 2026-09-02/03 (see logs/run-00*), so the default moved here.
 
 
-def run(goal: str, max_steps: int = 8):
+def run(goal: str, max_steps: int = 16):   # was 8: see logs/run-02, run-03
     client = OpenAI()  # uses OPENAI_API_KEY and OPENAI_BASE_URL
     messages = [{"role": "user", "content": goal}]
 
