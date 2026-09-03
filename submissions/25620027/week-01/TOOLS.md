@@ -4,16 +4,22 @@
 
 ## Reproduce
 
-- API: OpenRouter의 OpenAI 호환 API
-- 모델 ID: `openrouter/free` (도구 호출 요구를 지원하는 무료 모델로 라우팅)
+- 기준 API: OpenAI API
+- 요청 모델 ID: `gpt-5-mini`
+- 성공 로그에서 확인된 실제 모델 ID: `gpt-5-mini-2025-08-07`
 - Python 의존성: `openai`
 - 실행 위치: 이 디렉터리
+- 도구 스키마: `calculator(expression: string)`, `read_file(path: string)`, `text_stats(text: string)`이며 세 인자는 모두 필수다. 전체 JSON 스키마는 `first_agent.py`의 `TOOLS`에 있다.
 
 ```bash
-export OPENAI_BASE_URL=https://openrouter.ai/api/v1
-export OPENAI_API_KEY=<your OpenRouter API key>
-export AGENT_MODEL=openrouter/free
-uv run --isolated --with openai python first_agent.py 2>&1 | tee logs/run-01.txt
+export OPENAI_BASE_URL=https://api.openai.com/v1
+export OPENAI_API_KEY=<your OpenAI API key>
+export AGENT_MODEL=gpt-5-mini
+uv run --isolated --with openai python first_agent.py 2>&1 | tee logs/run-openai-01.txt
 ```
 
-`openrouter/free`는 실행 시점에 무료 모델을 선택하므로, 프로그램은 첫 응답의 실제 모델 ID를 `[model]` 줄로 로그에 기록한다.
+API 키는 파일이나 저장소에 넣지 않고 실행할 터미널의 환경변수로만 전달한다. 프로그램은 첫 응답의 실제 모델 ID를 `[model]` 줄로 출력하므로 모델 별칭이 어떤 버전으로 처리됐는지 로그에서 확인할 수 있다.
+
+## Observation
+
+두 성공 실행 모두 모델이 `read_file` → `text_stats` → `calculator` 순서로 세 도구를 선택했고 비용 계산 결과는 `45500`으로 같았다. 다만 OpenRouter가 선택한 `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`는 읽은 내용을 `text_stats`에 다시 전달할 때 마지막 줄바꿈을 제외해 237자로 계산했고(`logs/run-03.txt`), OpenAI의 `gpt-5-mini-2025-08-07`은 마지막 줄바꿈까지 전달해 원본과 같은 238자로 계산했다(`logs/run-openai-01.txt`). 이는 세 번째 도구를 고르는 순서는 같아도, 모델에 따라 앞 도구의 결과를 다음 도구의 인자로 보존하는 정확도가 달라질 수 있음을 보여준다.
