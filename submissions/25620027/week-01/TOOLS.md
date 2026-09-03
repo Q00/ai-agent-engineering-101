@@ -9,7 +9,7 @@
 - 성공 로그에서 확인된 실제 모델 ID: `gpt-5-mini-2025-08-07`
 - Python 의존성: `openai==3.7.0`
 - 실행 위치: 이 디렉터리
-- 도구 스키마: `calculator(expression: string)`, `read_file(path: "notes.txt")`, `text_stats(text: string)`이며 세 인자는 모두 필수다. `read_file`은 과제 입력인 `notes.txt`만 허용해 환경변수 파일 같은 다른 로컬 파일이 모델에 전달되지 않게 한다. 전체 JSON 스키마는 `first_agent.py`의 `TOOLS`에 있다.
+- 도구 스키마: `calculator(expression: string)`, `read_file(path: "notes.txt")`, `text_stats(text: string)`이며 세 인자는 모두 필수다. `calculator`는 입력 길이·수식 크기·숫자와 지수 범위를 제한하고, `read_file`은 과제 입력인 `notes.txt`만 허용해 환경변수 파일 같은 다른 로컬 파일이 모델에 전달되지 않게 한다. 전체 JSON 스키마는 `first_agent.py`의 `TOOLS`에 있다.
 
 ```bash
 export OPENAI_BASE_URL=https://api.openai.com/v1

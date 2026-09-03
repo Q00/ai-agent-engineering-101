@@ -11,6 +11,7 @@ import os
 import sys
 import ast
 import json
+import math
 import operator
 from pathlib import Path
 
@@ -21,21 +22,48 @@ _OPS = {ast.Add: operator.add, ast.Sub: operator.sub,
         ast.Mult: operator.mul, ast.Div: operator.truediv,
         ast.Pow: operator.pow, ast.USub: operator.neg}
 _READABLE_FILES = {"notes.txt"}
+_MAX_EXPRESSION_LENGTH = 100
+_MAX_AST_NODES = 50
+_MAX_ABS_VALUE = 10 ** 12
+_MAX_EXPONENT = 10
+
+
+def _checked_number(value):
+    if (type(value) not in (int, float)
+            or abs(value) > _MAX_ABS_VALUE
+            or not math.isfinite(value)):
+        raise ValueError("number outside allowed range")
+    return value
 
 
 def _ev(node):
     if isinstance(node, ast.Constant):
-        return node.value
+        return _checked_number(node.value)
     if isinstance(node, ast.BinOp):
-        return _OPS[type(node.op)](_ev(node.left), _ev(node.right))
+        op_type = type(node.op)
+        if op_type not in _OPS:
+            raise ValueError("expression not allowed")
+        left = _ev(node.left)
+        right = _ev(node.right)
+        if op_type is ast.Pow and abs(right) > _MAX_EXPONENT:
+            raise ValueError("exponent outside allowed range")
+        return _checked_number(_OPS[op_type](left, right))
     if isinstance(node, ast.UnaryOp):
-        return _OPS[type(node.op)](_ev(node.operand))
+        op_type = type(node.op)
+        if op_type not in _OPS:
+            raise ValueError("expression not allowed")
+        return _checked_number(_OPS[op_type](_ev(node.operand)))
     raise ValueError("expression not allowed")
 
 
 def calculator(expression: str) -> str:
-    """Evaluate an arithmetic expression string, e.g. '3 * (4 + 5)'."""
-    return str(_ev(ast.parse(expression, mode="eval").body))
+    """Evaluate a bounded arithmetic expression, e.g. '3 * (4 + 5)'."""
+    if len(expression) > _MAX_EXPRESSION_LENGTH:
+        raise ValueError("expression too long")
+    tree = ast.parse(expression, mode="eval")
+    if sum(1 for _ in ast.walk(tree)) > _MAX_AST_NODES:
+        raise ValueError("expression too complex")
+    return str(_ev(tree.body))
 
 
 # ---- tool 2: read_file (blocked outside the working directory) ----
@@ -72,7 +100,7 @@ TOOLS = [
     {"type": "function",
      "function": {
          "name": "calculator",
-         "description": "Evaluate an arithmetic expression.",
+         "description": "Evaluate a basic arithmetic expression within safe limits.",
          "parameters": {"type": "object",
                         "properties": {"expression": {"type": "string"}},
                         "required": ["expression"]}}},
