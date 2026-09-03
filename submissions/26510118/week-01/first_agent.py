@@ -40,7 +40,8 @@ def calculator(expression: str) -> str:
 def read_file(path: str) -> str:
     """Return the contents of a text file."""
     full = os.path.abspath(path)
-    if not full.startswith(os.getcwd()):
+    root = os.path.join(os.getcwd(), "")   # trailing sep: "C:\work" must not match "C:\workshop"
+    if not full.startswith(root):
         return "denied: path outside the working directory"
     with open(full, encoding="utf-8") as f:
         return f.read()[:4000]
@@ -49,8 +50,9 @@ def read_file(path: str) -> str:
 def write_note(path: str, content: str) -> str:
     """Append text to a file in the working directory."""
     full = os.path.abspath(path)
+    root = os.path.join(os.getcwd(), "")
 
-    if not full.startswith(os.getcwd()):
+    if not full.startswith(root):
         return "denied: path outside the working directory"
 
     with open(full, "a", encoding="utf-8") as f:
