@@ -20,6 +20,7 @@ from openai import OpenAI
 _OPS = {ast.Add: operator.add, ast.Sub: operator.sub,
         ast.Mult: operator.mul, ast.Div: operator.truediv,
         ast.Pow: operator.pow, ast.USub: operator.neg}
+_READABLE_FILES = {"notes.txt"}
 
 
 def _ev(node):
@@ -39,10 +40,12 @@ def calculator(expression: str) -> str:
 
 # ---- tool 2: read_file (blocked outside the working directory) ----
 def read_file(path: str) -> str:
-    """Return the contents of a text file."""
+    """Return the contents of an approved task input file."""
     working_directory = Path.cwd().resolve()
     full = (working_directory / path).resolve()
-    if not full.is_relative_to(working_directory):
+    if (not full.is_relative_to(working_directory)
+            or full.parent != working_directory
+            or full.name not in _READABLE_FILES):
         return "denied: path outside the working directory"
     with full.open(encoding="utf-8") as f:
         return f.read()[:4000]
@@ -76,9 +79,10 @@ TOOLS = [
     {"type": "function",
      "function": {
          "name": "read_file",
-         "description": "Read a text file in the working directory.",
+         "description": "Read notes.txt in the working directory.",
          "parameters": {"type": "object",
-                        "properties": {"path": {"type": "string"}},
+                        "properties": {"path": {"type": "string",
+                                                "enum": ["notes.txt"]}},
                         "required": ["path"]}}},
     {"type": "function",
      "function": {

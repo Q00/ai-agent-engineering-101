@@ -7,15 +7,15 @@
 - 기준 API: OpenAI API
 - 요청 모델 ID: `gpt-5-mini`
 - 성공 로그에서 확인된 실제 모델 ID: `gpt-5-mini-2025-08-07`
-- Python 의존성: `openai`
+- Python 의존성: `openai==3.7.0`
 - 실행 위치: 이 디렉터리
-- 도구 스키마: `calculator(expression: string)`, `read_file(path: string)`, `text_stats(text: string)`이며 세 인자는 모두 필수다. 전체 JSON 스키마는 `first_agent.py`의 `TOOLS`에 있다.
+- 도구 스키마: `calculator(expression: string)`, `read_file(path: "notes.txt")`, `text_stats(text: string)`이며 세 인자는 모두 필수다. `read_file`은 과제 입력인 `notes.txt`만 허용해 환경변수 파일 같은 다른 로컬 파일이 모델에 전달되지 않게 한다. 전체 JSON 스키마는 `first_agent.py`의 `TOOLS`에 있다.
 
 ```bash
 export OPENAI_BASE_URL=https://api.openai.com/v1
 export OPENAI_API_KEY=<your OpenAI API key>
 export AGENT_MODEL=gpt-5-mini
-uv run --isolated --with openai python first_agent.py 2>&1 | tee logs/run-openai-01.txt
+uv run --isolated --with openai==3.7.0 python first_agent.py 2>&1 | tee logs/run-openai-01.txt
 ```
 
 API 키는 파일이나 저장소에 넣지 않고 실행할 터미널의 환경변수로만 전달한다. 프로그램은 첫 응답의 실제 모델 ID를 `[model]` 줄로 출력하므로 모델 별칭이 어떤 버전으로 처리됐는지 로그에서 확인할 수 있다.
