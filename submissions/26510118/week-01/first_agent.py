@@ -1,11 +1,20 @@
-"""Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
+"""Week 01 — a three-tool agent, OpenAI-compatible API.
 
-Two tools: calculator, read_file. Your assignment: add a third.
+Tools: calculator, read_file, write_note.
+read_file and write_note both refuse paths outside the working directory,
+so run this from the directory holding notes.txt.
+
 Requires: pip install openai, and in the environment:
   OPENAI_API_KEY   your key (an OpenRouter key works)
   OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
-  AGENT_MODEL      optional; defaults to gpt-4o-mini. For OpenRouter free
-                   models use e.g. AGENT_MODEL=meta-llama/llama-3.3-70b-instruct:free
+  AGENT_MODEL      optional; defaults to gpt-4o-mini
+
+Run:
+  cd submissions/26510118/week-01
+  python first_agent.py "Read notes.txt, sum the numbers in it, and
+                         append the total to result.txt"
+
+The logs/ captures were produced with the default model, gpt-4o-mini.
 """
 import os
 import sys
