@@ -12,6 +12,7 @@ import sys
 import ast
 import json
 import operator
+from pathlib import Path
 
 from openai import OpenAI
 
@@ -39,10 +40,11 @@ def calculator(expression: str) -> str:
 # ---- tool 2: read_file (blocked outside the working directory) ----
 def read_file(path: str) -> str:
     """Return the contents of a text file."""
-    full = os.path.abspath(path)
-    if not full.startswith(os.getcwd()):
+    working_directory = Path.cwd().resolve()
+    full = (working_directory / path).resolve()
+    if not full.is_relative_to(working_directory):
         return "denied: path outside the working directory"
-    with open(full, encoding="utf-8") as f:
+    with full.open(encoding="utf-8") as f:
         return f.read()[:4000]
 
 
