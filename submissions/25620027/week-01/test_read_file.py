@@ -10,12 +10,12 @@ def test_read_file_allows_file_in_working_directory(
     tmp_path: Path, monkeypatch,
 ) -> None:
     # Given
-    note = tmp_path / "note.txt"
+    note = tmp_path / "notes.txt"
     note.write_text("course note", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
 
     # When
-    result = read_file("note.txt")
+    result = read_file("notes.txt")
 
     # Then
     assert result == "course note"
@@ -35,6 +35,36 @@ def test_read_file_denies_same_prefix_sibling(
 
     # When
     result = read_file(str(outside_file))
+
+    # Then
+    assert result == DENIED
+
+
+def test_read_file_denies_environment_file_inside_working_directory(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    # Given
+    environment_file = tmp_path / ".env"
+    environment_file.write_text("placeholder", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    # When
+    result = read_file(environment_file.name)
+
+    # Then
+    assert result == DENIED
+
+
+def test_read_file_denies_unapproved_text_file_inside_working_directory(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    # Given
+    private_note = tmp_path / "private.txt"
+    private_note.write_text("private", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    # When
+    result = read_file(private_note.name)
 
     # Then
     assert result == DENIED
