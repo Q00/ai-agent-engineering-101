@@ -1,0 +1,31 @@
+  [tool] read_file({'path': 'notes.txt'}) -> Deadline memo, Fall 2026
+
+- AX-Application week-02 assignment
+  due: 2026-09-08
+
+- AX-Application team midterm presentation
+  due: 2026-09-23
+
+- Final project submission
+  due: 2026-12-08
+
+Report the D-day for each deadline above, counting from today.
+
+  [tool] time_now_yday({}) -> 2026-09-02 01:09:02 KST (day 245 of 2026)
+Traceback (most recent call last):
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/submissions/26520057/week-01/first_agent.py", line 112, in <module>
+    print(run(goal))
+          ^^^^^^^^^
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/submissions/26520057/week-01/first_agent.py", line 101, in run
+    out = TOOLS_IMPL[call.function.name](**args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/submissions/26520057/week-01/first_agent.py", line 38, in calculator
+    return str(_ev(ast.parse(expression, mode="eval").body))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.7_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/ast.py", line 52, in parse
+    return compile(source, filename, mode, flags,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<unknown>", line 1
+    2026-09-08 - 2026-09-02
+         ^
+SyntaxError: leading zeros in decimal integer literals are not permitted; use an 0o prefix for octal integers
