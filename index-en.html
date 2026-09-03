@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agentic AI: 에이전트 시스템의 이론과 구축</title>
+<title>Agentic AI: Theory and Construction of Agent Systems</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -100,13 +100,13 @@ footer .o{color:var(--muted)}
 
 <header class="doc">
   <div class="col">
-    <div class="topnav"><a href="index-en.html">EN</a></div>
+    <div class="topnav"><a href="index.html">KO</a></div>
 
     <div class="masthead">
-      <h1 class="title">에이전트 시스템의<br>이론과 구축
+      <h1 class="title">Theory and Construction<br>of Agent Systems
         <span class="en">AI Agent Engineering 101</span>
       </h1>
-      <p class="lede">여기서 배우는 것은 AI 트렌드가 바뀌어도 흔들리지 않는 근간이다.</p>
+      <p class="lede">What you learn here does not move when AI trends do.</p>
     </div>
   </div>
 </header>
@@ -115,28 +115,28 @@ footer .o{color:var(--muted)}
   <div class="col">
     <div class="secmark"><span class="no">INSTRUCTOR</span><h2>Introduction</h2></div>
     <div class="bio">
-      <img class="photo" src="assets/speaker-lecture.jpeg" alt="강의 중인 이재규">
+      <img class="photo" src="assets/speaker-lecture.jpeg" alt="Jaegyu Lee lecturing">
       <div class="info">
-      <div class="name">이재규 <span style="font-weight:400;color:var(--faint)">Jaegyu Lee</span></div>
+      <div class="name">Jaegyu Lee <span style="font-weight:400;color:var(--faint)">이재규</span></div>
       <div class="role">SOFTWARE ENGINEER / OPEN SOURCE MAINTAINER</div>
-      <p>10년차 소프트웨어 엔지니어로, 지금은 ZEP에 있다. 이 수업이 열리는 서울과학기술대학교 대학원에서 석사를 마쳤고, 데이터 파이프라인과 분산 시스템을 연구해 BIGCOMP와 Frontiers in Big Data에 논문을 냈다.</p>
-      <p>ZEP에서는 400만 MAU 규모의 WebRTC 클러스터를 운영한다. LiveKit Cloud에 있던 이 클러스터를 OCI 자체 운영으로 옮기며 인프라 비용을 60% 줄였다.</p>
-      <p>오픈소스 Agent OS인 Ouroboros를 만들고 있다. 인터뷰로 요구사항을 Seed로 확정하고, 실행 결과를 deterministic gate로 검증하는 에이전트 프레임워크다. ZEP QUIZ(월 60만 건 이상의 퀴즈)에는 도구를 스스로 개선하는 에이전트가 있다. 이 구조로 ICML 2026 AI×Education 워크숍에서 발표했다.</p>
+      <p>I am a software engineer of ten years, currently at ZEP. I finished my master's at Seoul National University of Science and Technology, where this course is taught, researching data pipelines and distributed systems, with papers at BIGCOMP and in Frontiers in Big Data.</p>
+      <p>At ZEP I run a WebRTC cluster serving 4M MAU. I moved it from LiveKit Cloud to self-run OCI infrastructure and cut infrastructure cost by 60%.</p>
+      <p>I build Ouroboros, an open-source Agent OS: a framework that pins requirements down into a Seed through interviews and verifies execution results with deterministic gates. ZEP QUIZ (over 600K quizzes a month) runs an agent that improves its own tools. I presented this architecture at the ICML 2026 AI×Education workshop.</p>
       <div class="sub">LECTURES</div>
       <ul>
-        <li>서울대학교 첨단융합학부, 실리콘밸리 AI 시대의 디자인 씽킹과 Socratic reasoning <span class="y">2026</span></li>
-        <li>서울대학교 첨단융합학부, AI 교육 <span class="y">2026</span></li>
-        <li>서울대학교 실리콘밸리 투어, AI Native <span class="y">2026</span></li>
-        <li>KT AI 역량강화, Harness Engineering: 확률적 AI를 결정론적 시스템으로 제어하는 방법 <span class="y">2026</span></li>
-        <li>한화 AX 강연 <span class="y">2026</span></li>
-        <li>Oracle Digital Native Roundtable, 400만 MAU를 받아내는 RTC cluster 구축하기 <span class="y">2026</span></li>
+        <li>Seoul National University, College of Innovation: design thinking and Socratic reasoning in the Silicon Valley AI era <span class="y">2026</span></li>
+        <li>Seoul National University, College of Innovation: AI education <span class="y">2026</span></li>
+        <li>Seoul National University Silicon Valley tour: AI Native <span class="y">2026</span></li>
+        <li>KT AI capability program, Harness Engineering: controlling probabilistic AI as a deterministic system <span class="y">2026</span></li>
+        <li>Hanwha AX lecture <span class="y">2026</span></li>
+        <li>Oracle Digital Native Roundtable: building an RTC cluster for 4M MAU <span class="y">2026</span></li>
       </ul>
       <div class="sub">COMMUNITY</div>
       <ul>
-        <li>랄프톤 #1 1등, 랄프톤 #2 심사위원과 스피커</li>
-        <li>GDG 한일 해커톤 심사위원</li>
-        <li>GDG Build with AI 인천, 하네스 엔지니어링에 필요한 전공 지식 세션</li>
-        <li>Hermes Meetup RLM-FORGE 세션, Arize AI 밋업 Agent OS 세션</li>
+        <li>Ralphthon #1 winner, Ralphthon #2 judge and speaker</li>
+        <li>GDG Korea-Japan hackathon judge</li>
+        <li>GDG Build with AI Incheon, session on the CS fundamentals harness engineering needs</li>
+        <li>Hermes Meetup RLM-FORGE session, Arize AI meetup Agent OS session</li>
       </ul>
       <div class="links"><a href="https://wpti.dev">wpti.dev</a><span>/</span><a href="https://github.com/Q00">github</a><span>/</span><a href="https://www.linkedin.com/in/q00">linkedin</a><span>/</span><a href="https://www.youtube.com/@Q00_Dev">youtube</a><span>/</span><a href="https://x.com/Jqonly">x</a><span>/</span><a href="mailto:jaegyu.lee@ourolabs.ai">jaegyu.lee@ourolabs.ai</a></div>
       </div>
@@ -146,36 +146,36 @@ footer .o{color:var(--muted)}
 
 <section>
   <div class="col">
-    <div class="secmark"><span class="no">SYLLABUS</span><h2>15주 구성</h2></div>
-    <p class="small">전반부 8주는 학술 트랙이다. 정의와 계보를 세우고, 고전 MAS와 현대 프로토콜을 매주 재현 실험으로 검증한다. 후반부 7주는 프로젝트 트랙이다. 에이전트 간 거래 스택(발견→협상→실행→결제→기록)을 팀으로 구축해 데모데이에서 상호 테스트한다.</p>
+    <div class="secmark"><span class="no">SYLLABUS</span><h2>15 Weeks</h2></div>
+    <p class="small">The first eight weeks are the academic track. We establish the definitions and the genealogy, then put classical MAS and modern protocols through a reproduction experiment each week. The last seven weeks are the project track. Teams build an agent transaction stack (discovery, negotiation, execution, payment, ledger) and cross-test it on demo day.</p>
 
-    <div class="phase">PHASE 1: 정의, 계보, 프로토콜</div>
+    <div class="phase">PHASE 1: DEFINITIONS, GENEALOGY, PROTOCOLS</div>
     <ul class="weeks">
-      <li><a href="week-01.html"><span class="no">W01</span><span class="t">에이전트란 무엇인가</span><span class="sub">Wooldridge &amp; Jennings 1995</span></a></li>
-      <li><span class="row"><span class="no">W02</span><span class="t">하네스와 메타 하네스</span><span class="sub">ReAct</span></span></li>
-      <li><span class="row"><span class="no">W03</span><span class="t">고전 MAS 1: Contract Net</span><span class="sub">Smith 1980</span></span></li>
-      <li><span class="row"><span class="no">W04</span><span class="t">통신 언어: 화행에서 FIPA-ACL까지</span><span class="sub">KQML / FIPA</span></span></li>
-      <li><span class="row"><span class="no">W05</span><span class="t">현대 프로토콜 1: MCP</span><span class="sub">Model Context Protocol</span></span></li>
-      <li><span class="row"><span class="no">W06</span><span class="t">현대 프로토콜 2: A2A</span><span class="sub">Agent2Agent</span></span></li>
-      <li><span class="row"><span class="no">W07</span><span class="t">에이전트 계약과 검증</span><span class="sub">contract / verification</span></span></li>
-      <li><span class="row"><span class="no">W08</span><span class="t">ACP: Agent Client Protocol과 거래 스택</span><span class="sub">ACP</span></span></li>
+      <li><a href="week-01-en.html"><span class="no">W01</span><span class="t">What Is an Agent?</span><span class="sub">Wooldridge &amp; Jennings 1995</span></a></li>
+      <li><span class="row"><span class="no">W02</span><span class="t">Harnesses and Meta-Harnesses</span><span class="sub">ReAct</span></span></li>
+      <li><span class="row"><span class="no">W03</span><span class="t">Classical MAS 1: Contract Net</span><span class="sub">Smith 1980</span></span></li>
+      <li><span class="row"><span class="no">W04</span><span class="t">Communication Languages: From Speech Acts to FIPA-ACL</span><span class="sub">KQML / FIPA</span></span></li>
+      <li><span class="row"><span class="no">W05</span><span class="t">Modern Protocols 1: MCP</span><span class="sub">Model Context Protocol</span></span></li>
+      <li><span class="row"><span class="no">W06</span><span class="t">Modern Protocols 2: A2A</span><span class="sub">Agent2Agent</span></span></li>
+      <li><span class="row"><span class="no">W07</span><span class="t">Agent Contracts and Verification</span><span class="sub">contract / verification</span></span></li>
+      <li><span class="row"><span class="no">W08</span><span class="t">ACP: Agent Client Protocol and the Transaction Stack</span><span class="sub">ACP</span></span></li>
     </ul>
 
-    <div class="phase">PHASE 2: 에이전트 거래 스택 구축</div>
+    <div class="phase">PHASE 2: BUILDING THE AGENT TRANSACTION STACK</div>
     <ul class="weeks">
-      <li><span class="row"><span class="no">W09</span><span class="t">프로젝트 킥오프</span><span class="sub">team formation</span></span></li>
-      <li><span class="row"><span class="no">W10</span><span class="t">미니앱 에이전트 설계</span><span class="sub">design</span></span></li>
-      <li><span class="row"><span class="no">W11</span><span class="t">에이전트 간 협상</span><span class="sub">negotiation</span></span></li>
-      <li><span class="row"><span class="no">W12</span><span class="t">메모리와 선택적 공개</span><span class="sub">memory / disclosure</span></span></li>
-      <li><span class="row"><span class="no">W13</span><span class="t">결제, 정산, 기록</span><span class="sub">payment / ledger</span></span></li>
-      <li><span class="row"><span class="no">W14</span><span class="t">상호 테스트</span><span class="sub">cross testing</span></span></li>
-      <li><span class="row"><span class="no">W15</span><span class="t">데모데이</span><span class="sub">demo day</span></span></li>
+      <li><span class="row"><span class="no">W09</span><span class="t">Project Kickoff</span><span class="sub">team formation</span></span></li>
+      <li><span class="row"><span class="no">W10</span><span class="t">Mini-App Agent Design</span><span class="sub">design</span></span></li>
+      <li><span class="row"><span class="no">W11</span><span class="t">Negotiation Between Agents</span><span class="sub">negotiation</span></span></li>
+      <li><span class="row"><span class="no">W12</span><span class="t">Memory and Selective Disclosure</span><span class="sub">memory / disclosure</span></span></li>
+      <li><span class="row"><span class="no">W13</span><span class="t">Payment, Settlement, Ledger</span><span class="sub">payment / ledger</span></span></li>
+      <li><span class="row"><span class="no">W14</span><span class="t">Cross Testing</span><span class="sub">cross testing</span></span></li>
+      <li><span class="row"><span class="no">W15</span><span class="t">Demo Day</span><span class="sub">demo day</span></span></li>
     </ul>
   </div>
 </section>
 
 <footer class="sheet">
-  <span>AGENTIC AI: <span class="o">에이전트 시스템의 이론과 구축</span></span>
+  <span>AGENTIC AI: <span class="o">Theory and Construction of Agent Systems</span></span>
   <span>SEOULTECH 2026 FALL</span>
 </footer>
 
