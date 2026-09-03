@@ -5,7 +5,7 @@ Requires: pip install openai, and in the environment:
   OPENAI_API_KEY   your key (an OpenRouter key works)
   OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
   AGENT_MODEL      optional; defaults to nvidia/nemotron-3-super-120b-a12b:free via OpenRouter. Other free
-                   models use e.g. AGENT_MODEL=meta-llama/llama-3.3-70b-instruct:free
+                   models with tool calling: e.g. AGENT_MODEL=z-ai/glm-5.2:free (when not rate-limited)
 """
 import os
 import sys
