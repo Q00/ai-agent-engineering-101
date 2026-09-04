@@ -134,7 +134,7 @@ python -c "import os; print(bool(os.environ.get('OPENAI_API_KEY')))"
 ### 에이전트 전체 실행
 
 ```powershell
-python first_agent_openai.py "<goal>"
+python first_agent.py "<goal>"
 ```
 
 인자를 생략하면 기본 목표 `"Read notes.txt and sum the numbers in it."`가 사용된다.
@@ -142,11 +142,11 @@ python first_agent_openai.py "<goal>"
 툴별 예시:
 
 ```powershell
-python first_agent_openai.py "What is 17 * 23 + 5?"
-python first_agent_openai.py "Read notes.txt and sum the numbers in it."
-python first_agent_openai.py "Use fetch to retrieve https://encle.co.kr and summarize its main text."
-python first_agent_openai.py "What's the time difference between Seoul and New York right now?"
-python first_agent_openai.py "Check the time, then save it to log.md as a one-line entry."
+python first_agent.py "What is 17 * 23 + 5?"
+python first_agent.py "Read notes.txt and sum the numbers in it."
+python first_agent.py "Use fetch to retrieve https://encle.co.kr and summarize its main text."
+python first_agent.py "What's the time difference between Seoul and New York right now?"
+python first_agent.py "Check the time, then save it to log.md as a one-line entry."
 ```
 
 마지막 두 개는 툴을 두 번 이상 호출하게 되어 멀티스텝 루프를 관찰하기 좋다. 실행 중 각 호출은 다음 형태로 출력된다:
@@ -158,16 +158,16 @@ python first_agent_openai.py "Check the time, then save it to log.md as a one-li
 ### 툴 함수만 단독 실행 (API 키 불필요)
 
 ```powershell
-python -c "import first_agent_openai as a; print(a.clock())"
-python -c "import first_agent_openai as a; print(a.calculator('3 * (4 + 5)'))"
-python -c "import first_agent_openai as a; print(a.fetch('https://example.com')[:300])"
-python -c "import first_agent_openai as a; print(a.write_note('notes.md', 'hello'))"
+python -c "import first_agent as a; print(a.clock())"
+python -c "import first_agent as a; print(a.calculator('3 * (4 + 5)'))"
+python -c "import first_agent as a; print(a.fetch('https://example.com')[:300])"
+python -c "import first_agent as a; print(a.write_note('notes.md', 'hello'))"
 ```
 
 ### 등록 상태 확인
 
 ```powershell
-python -c "import first_agent_openai as a; print([t['function']['name'] for t in a.TOOLS]); print(list(a.TOOLS_IMPL))"
+python -c "import first_agent as a; print([t['function']['name'] for t in a.TOOLS]); print(list(a.TOOLS_IMPL))"
 ```
 
 기대 출력:
@@ -180,7 +180,7 @@ python -c "import first_agent_openai as a; print([t['function']['name'] for t in
 파이썬이 실제로 어느 파일을 임포트했는지 확인:
 
 ```powershell
-python -c "import first_agent_openai as a; print(a.__file__)"
+python -c "import first_agent as a; print(a.__file__)"
 ```
 
 ---
