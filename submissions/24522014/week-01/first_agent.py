@@ -1,6 +1,6 @@
 """Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
 
-Three tools: calculator, read_file, fetch.
+Four tools: calculator, read_file, fetch, clock.
 Requires: pip install openai, and in the environment:
   OPENAI_API_KEY   your key (an OpenRouter key works)
   OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
@@ -14,6 +14,8 @@ import json
 import socket
 import operator
 import ipaddress
+from datetime import datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from urllib.parse import urlparse
 from urllib import request as urlrequest
 
@@ -127,7 +129,29 @@ def fetch(url: str) -> str:
     return f"HTTP {status} {ctype}\n{text}{suffix}"
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file, "fetch": fetch}
+# ---- tool 4: clock (current time, IANA timezone) ----
+DEFAULT_TZ = os.environ.get("AGENT_TZ", "Asia/Seoul")
+
+
+def clock(timezone: str = DEFAULT_TZ) -> str:
+    """Return the current date and time in an IANA timezone."""
+    try:
+        tz = ZoneInfo(timezone)
+    except ZoneInfoNotFoundError:
+        return (f"error: unknown timezone: {timezone!r} "
+                "(use an IANA name like 'Asia/Seoul'; on Windows this needs "
+                "`pip install tzdata`)")
+    except Exception as e:
+        return f"error: {type(e).__name__}: {e}"
+
+    now = datetime.now(tz)
+    return (f"{now.strftime('%Y-%m-%d %H:%M:%S')} "
+            f"{now.tzname()} (UTC{now.strftime('%z')}), "
+            f"{now.strftime('%A')}, tz={timezone}")
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,
+              "fetch": fetch, "clock": clock}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -156,6 +180,18 @@ TOOLS = [
                             "type": "string",
                             "description": "Absolute http:// or https:// URL."}},
                         "required": ["url"]}}},
+    {"type": "function",
+     "function": {
+         "name": "clock",
+         "description": ("Get the current date, time, weekday, and UTC offset. "
+                         f"Defaults to {DEFAULT_TZ} if no timezone is given. "
+                         "Call this instead of guessing today's date."),
+         "parameters": {"type": "object",
+                        "properties": {"timezone": {
+                            "type": "string",
+                            "description": ("IANA timezone name, e.g. 'Asia/Seoul', "
+                                            "'UTC', 'America/New_York'.")}},
+                        "required": []}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
@@ -165,21 +201,21 @@ def run(goal: str, max_steps: int = 8):
     client = OpenAI()  # uses OPENAI_API_KEY and OPENAI_BASE_URL
     messages = [{"role": "user", "content": goal}]
 
-    # for step in range(max_steps):   # <- this loop is what makes it an agent
-    resp = client.chat.completions.create(
-        model=MODEL, tools=TOOLS, messages=messages)
-    msg = resp.choices[0].message
-    messages.append(msg)
+    for step in range(max_steps):   # <- this loop is what makes it an agent
+        resp = client.chat.completions.create(
+            model=MODEL, tools=TOOLS, messages=messages)
+        msg = resp.choices[0].message
+        messages.append(msg)
 
-    if not msg.tool_calls:               # final answer -> stop
-        return msg.content or ""
+        if not msg.tool_calls:               # final answer -> stop
+            return msg.content or ""
 
-    for call in msg.tool_calls:          # execute tool calls -> observe
-        args = json.loads(call.function.arguments)
-        out = TOOLS_IMPL[call.function.name](**args)
-        print(f"  [tool] {call.function.name}({args}) -> {str(out)[:200]}")
-        messages.append({"role": "tool", "tool_call_id": call.id,
-                            "content": str(out)})
+        for call in msg.tool_calls:          # execute tool calls -> observe
+            args = json.loads(call.function.arguments)
+            out = TOOLS_IMPL[call.function.name](**args)
+            print(f"  [tool] {call.function.name}({args}) -> {str(out)[:200]}")
+            messages.append({"role": "tool", "tool_call_id": call.id,
+                             "content": str(out)})
 
     return "stopped: max steps exceeded"   # the stop condition is a safety net
 
