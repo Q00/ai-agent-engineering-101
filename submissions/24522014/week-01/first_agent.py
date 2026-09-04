@@ -1,14 +1,23 @@
-"""Week 01 starter — the agent from the lab, Anthropic API version.
+"""Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
 
-Two tools: calculator, read_file. Your assignment: add a third.
-Requires: pip install anthropic, and ANTHROPIC_API_KEY in the environment.
+Three tools: calculator, read_file, fetch.
+Requires: pip install openai, and in the environment:
+  OPENAI_API_KEY   your key (an OpenRouter key works)
+  OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
+  AGENT_MODEL      optional; defaults to gpt-4o-mini. For OpenRouter free
+                   models use e.g. AGENT_MODEL=meta-llama/llama-3.3-70b-instruct:free
 """
 import os
 import sys
 import ast
+import json
+import socket
 import operator
+import ipaddress
+from urllib.parse import urlparse
+from urllib import request as urlrequest
 
-import anthropic
+from openai import OpenAI
 
 # ---- tool 1: calculator (safe, no eval) ----
 _OPS = {ast.Add: operator.add, ast.Sub: operator.sub,
@@ -41,44 +50,136 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+# ---- tool 3: fetch (http/https only, public hosts only, bounded) ----
+FETCH_TIMEOUT = 5.0          # seconds, per socket operation
+FETCH_MAX_BYTES = 200_000    # stop reading the body here
+FETCH_MAX_CHARS = 4000       # what the model actually sees
+FETCH_ALLOWED_PORTS = {80, 443, 8000, 8080}
+
+
+def _check_url(url: str):
+    """Raise ValueError unless url is an http(s) URL pointing at a public host."""
+    p = urlparse(url)
+    if p.scheme not in ("http", "https"):
+        raise ValueError(f"scheme not allowed: {p.scheme or 'missing'}")
+    if not p.hostname:
+        raise ValueError("no host in URL")
+    port = p.port or (443 if p.scheme == "https" else 80)
+    if port not in FETCH_ALLOWED_PORTS:
+        raise ValueError(f"port not allowed: {port}")
+    try:
+        infos = socket.getaddrinfo(p.hostname, port, proto=socket.IPPROTO_TCP)
+    except socket.gaierror as e:
+        raise ValueError(f"DNS lookup failed: {e}") from None
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        # is_global excludes loopback, private, link-local, reserved, unspecified
+        if not ip.is_global or ip.is_multicast:
+            raise ValueError(f"non-public address: {ip}")
+    return p
+
+
+class _GuardedRedirect(urlrequest.HTTPRedirectHandler):
+    """Re-run the same checks on every redirect target."""
+
+    max_redirections = 3
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        _check_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_OPENER = urlrequest.build_opener(_GuardedRedirect)
+
+
+def fetch(url: str) -> str:
+    """Fetch a public http(s) URL and return the beginning of its text body."""
+    try:
+        _check_url(url)
+    except ValueError as e:
+        return f"denied: {e}"
+
+    req = urlrequest.Request(url, headers={
+        "User-Agent": "week01-agent/1.0",
+        "Accept": "text/*, application/json;q=0.9, */*;q=0.1",
+    })
+    try:
+        with _OPENER.open(req, timeout=FETCH_TIMEOUT) as resp:
+            ctype = resp.headers.get_content_type()
+            charset = resp.headers.get_content_charset() or "utf-8"
+            raw = resp.read(FETCH_MAX_BYTES + 1)
+            status = resp.status
+    except ValueError as e:                 # raised by the redirect guard
+        return f"denied: {e}"
+    except Exception as e:
+        return f"error: {type(e).__name__}: {e}"
+
+    if not (ctype.startswith("text/") or ctype in
+            ("application/json", "application/xml", "application/xhtml+xml")):
+        return f"denied: content-type not allowed: {ctype}"
+
+    body_truncated = len(raw) > FETCH_MAX_BYTES
+    text = raw[:FETCH_MAX_BYTES].decode(charset, errors="replace")
+    if len(text) > FETCH_MAX_CHARS:
+        text, body_truncated = text[:FETCH_MAX_CHARS], True
+
+    suffix = "\n...[truncated]" if body_truncated else ""
+    return f"HTTP {status} {ctype}\n{text}{suffix}"
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file, "fetch": fetch}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
-    {"name": "calculator",
-     "description": "Evaluate an arithmetic expression.",
-     "input_schema": {"type": "object",
-                      "properties": {"expression": {"type": "string"}},
-                      "required": ["expression"]}},
-    {"name": "read_file",
-     "description": "Read a text file in the working directory.",
-     "input_schema": {"type": "object",
-                      "properties": {"path": {"type": "string"}},
-                      "required": ["path"]}},
+    {"type": "function",
+     "function": {
+         "name": "calculator",
+         "description": "Evaluate an arithmetic expression.",
+         "parameters": {"type": "object",
+                        "properties": {"expression": {"type": "string"}},
+                        "required": ["expression"]}}},
+    {"type": "function",
+     "function": {
+         "name": "read_file",
+         "description": "Read a text file in the working directory.",
+         "parameters": {"type": "object",
+                        "properties": {"path": {"type": "string"}},
+                        "required": ["path"]}}},
+    {"type": "function",
+     "function": {
+         "name": "fetch",
+         "description": ("Fetch a public web page or API response over http/https "
+                         "and return the first few thousand characters of its text. "
+                         "Local, private, and non-http URLs are rejected."),
+         "parameters": {"type": "object",
+                        "properties": {"url": {
+                            "type": "string",
+                            "description": "Absolute http:// or https:// URL."}},
+                        "required": ["url"]}}},
 ]
+
+MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
 
 
 def run(goal: str, max_steps: int = 8):
-    client = anthropic.Anthropic()  # uses ANTHROPIC_API_KEY
+    client = OpenAI()  # uses OPENAI_API_KEY and OPENAI_BASE_URL
     messages = [{"role": "user", "content": goal}]
 
-    for step in range(max_steps):   # <- this loop is what makes it an agent
-        resp = client.messages.create(
-            model="claude-sonnet-4-5", max_tokens=1024,
-            tools=TOOLS, messages=messages)
-        messages.append({"role": "assistant", "content": resp.content})
+    # for step in range(max_steps):   # <- this loop is what makes it an agent
+    resp = client.chat.completions.create(
+        model=MODEL, tools=TOOLS, messages=messages)
+    msg = resp.choices[0].message
+    messages.append(msg)
 
-        if resp.stop_reason != "tool_use":   # final answer -> stop
-            return "".join(b.text for b in resp.content if b.type == "text")
+    if not msg.tool_calls:               # final answer -> stop
+        return msg.content or ""
 
-        results = []
-        for block in resp.content:           # execute tool calls -> observe
-            if block.type == "tool_use":
-                out = TOOLS_IMPL[block.name](**block.input)
-                print(f"  [tool] {block.name}({block.input}) -> {out}")
-                results.append({"type": "tool_result",
-                                "tool_use_id": block.id, "content": str(out)})
-        messages.append({"role": "user", "content": results})
+    for call in msg.tool_calls:          # execute tool calls -> observe
+        args = json.loads(call.function.arguments)
+        out = TOOLS_IMPL[call.function.name](**args)
+        print(f"  [tool] {call.function.name}({args}) -> {str(out)[:200]}")
+        messages.append({"role": "tool", "tool_call_id": call.id,
+                            "content": str(out)})
 
     return "stopped: max steps exceeded"   # the stop condition is a safety net
 
