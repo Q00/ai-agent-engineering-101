@@ -1,6 +1,6 @@
 """Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
 
-Four tools: calculator, read_file, fetch, clock.
+Five tools: calculator, read_file, fetch, clock, write_note.
 Requires: pip install openai, and in the environment:
   OPENAI_API_KEY   your key (an OpenRouter key works)
   OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
@@ -150,8 +150,52 @@ def clock(timezone: str = DEFAULT_TZ) -> str:
             f"{now.strftime('%A')}, tz={timezone}")
 
 
+# ---- tool 5: write_note (short notes, working directory only) ----
+NOTE_MAX_CHARS = 4000
+NOTE_ALLOWED_SUFFIXES = {".txt", ".md", ".log", ".csv", ".json"}
+
+
+def _safe_path(path: str) -> str:
+    """Resolve path inside the working directory, or raise ValueError."""
+    base = os.path.realpath(os.getcwd())
+    full = os.path.realpath(os.path.join(base, path))
+    if full != base and os.path.commonpath([base, full]) != base:
+        raise ValueError("path outside the working directory")
+    if os.path.isdir(full):
+        raise ValueError("path is a directory")
+    if os.path.splitext(full)[1].lower() not in NOTE_ALLOWED_SUFFIXES:
+        raise ValueError("suffix not allowed; use "
+                         + ", ".join(sorted(NOTE_ALLOWED_SUFFIXES)))
+    return full
+
+
+def write_note(path: str, content: str, append: bool = True) -> str:
+    """Write a short text note to a file in the working directory."""
+    try:
+        full = _safe_path(path)
+    except ValueError as e:
+        return f"denied: {e}"
+
+    if len(content) > NOTE_MAX_CHARS:
+        return (f"denied: content is {len(content)} chars, "
+                f"limit is {NOTE_MAX_CHARS}")
+
+    mode = "a" if append else "w"
+    try:
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        with open(full, mode, encoding="utf-8", newline="\n") as f:
+            f.write(content if content.endswith("\n") else content + "\n")
+        size = os.path.getsize(full)
+    except OSError as e:
+        return f"error: {type(e).__name__}: {e}"
+
+    verb = "appended to" if append else "overwrote"
+    rel = os.path.relpath(full, os.getcwd())
+    return f"ok: {verb} {rel} ({len(content)} chars written, file now {size} bytes)"
+
+
 TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,
-              "fetch": fetch, "clock": clock}
+              "fetch": fetch, "clock": clock, "write_note": write_note}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -192,6 +236,23 @@ TOOLS = [
                             "description": ("IANA timezone name, e.g. 'Asia/Seoul', "
                                             "'UTC', 'America/New_York'.")}},
                         "required": []}}},
+    {"type": "function",
+     "function": {
+         "name": "write_note",
+         "description": ("Save a short text note to a file in the working "
+                         "directory. Appends by default; set append=false to "
+                         "replace the file's contents, which cannot be undone. "
+                         "Only .txt, .md, .log, .csv, .json filenames are "
+                         "accepted, and only inside the working directory."),
+         "parameters": {"type": "object",
+                        "properties": {
+                            "path": {"type": "string",
+                                     "description": "Relative filename, e.g. 'notes.md'."},
+                            "content": {"type": "string",
+                                        "description": "Text to write; a few thousand characters at most."},
+                            "append": {"type": "boolean",
+                                       "description": "True to add to the end (default), false to overwrite."}},
+                        "required": ["path", "content"]}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
