@@ -40,8 +40,18 @@ def read_file(path: str) -> str:
     with open(full, encoding="utf-8") as f:
         return f.read()[:4000]
 
+# ---- tool 3: write_note (blocked outside the working directory) ----
+def write_note(path: str, content: str) -> str:
+    """Write text to a file in the working directory."""
+    full = os.path.abspath(path)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+    with open(full, "w", encoding="utf-8") as f:
+        f.write(content[:4000])
+    return f"wrote {len(content[:4000])} chars to {path}"
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,  "write_note": write_note}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -55,6 +65,12 @@ TOOLS = [
      "input_schema": {"type": "object",
                       "properties": {"path": {"type": "string"}},
                       "required": ["path"]}},
+    {"name": "write_note",
+     "description": "Save text to a file in the working directory.",
+     "input_schema": {"type": "object",
+                      "properties": {"path": {"type": "string"},
+                                     "content": {"type": "string"}},
+                      "required": ["path", "content"]}},
 ]
 
 
