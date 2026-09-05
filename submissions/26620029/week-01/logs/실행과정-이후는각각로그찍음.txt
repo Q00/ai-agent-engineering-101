@@ -1,0 +1,372 @@
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+
+  [tool] calculator({'expression': '3 + 12 + 25'}) -> 40
+The file contains:
+- 사과 3개 (3 apples)
+- 바나나 12개 (12 bananas)
+- 포도 25개 (25 grapes)
+
+The sum of the numbers (3 + 12 + 25) is **40**.
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+
+  [tool] calculator({'expression': '3 + 12 + 25'}) -> 40
+The notes.txt file contains:
+- 사과 (apples) 3개
+- 바나나 (bananas) 12개
+- 포도 (grapes) 25개
+
+The sum of the numbers (3 + 12 + 25) is **40**.
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  File "C:\Users\NETANA\ai-agent-engineering-101\submissions\26620029\week-01\first_agent.py", line 66
+    resp = client.messages.create(
+IndentationError: unexpected indent
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  File "C:\Users\NETANA\ai-agent-engineering-101\submissions\26620029\week-01\first_agent.py", line 66
+    resp = client.messages.create(
+TabError: inconsistent use of tabs and spaces in indentation
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  File "C:\Users\NETANA\ai-agent-engineering-101\submissions\26620029\week-01\first_agent.py", line 67
+    resp = client.messages.create(
+TabError: inconsistent use of tabs and spaces in indentation
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ ^C
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  File "C:\Users\NETANA\ai-agent-engineering-101\submissions\26620029\week-01\first_agent.py", line 67
+    resp = client.messages.create(
+TabError: inconsistent use of tabs and spaces in indentation
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+
+
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+
+
+
+
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+
+
+
+
+
+
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+
+
+
+
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+
+
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ cat -A first_agent.py | sed -n '60,70p'
+^M$
+def run(goal: str, max_steps: int = 8):^M$
+    client = anthropic.Anthropic()  # uses ANTHROPIC_API_KEY^M$
+    messages = [{"role": "user", "content": goal}]^M$
+^M$
+#    for step in range(max_steps):   # <- this loop is what makes it an agent^M$
+^M$
+^Iresp = client.messages.create(^M$
+^I^Imodel="claude-sonnet-4-5", max_tokens=1024,^M$
+^I^Itools=TOOLS, messages=messages)^M$
+^Imessages.append({"role": "assistant", "content": resp.content})^M$
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ ^C
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+
+None
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+
+
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ dir
+first_agent.py  notes.txt
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ ls
+first_agent.py  notes.txt
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+
+
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+
+
+
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py 2>&1 | tee logs/run-$(date +%m%d-%H%M).txt
+tee: logs/run-0905-1014.txt: No such file or directory
+  [tool] read_file({'path': 'notes.txt'}) -> ▒▒▒ 3▒▒
+▒ٳ▒▒▒ 12▒▒
+▒ 25
+
+None
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ mkdir logs
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py 2>&1 | tee logs/run-$(date +%m%d-%H%M).txt
+  [tool] read_file({'path': 'notes.txt'}) -> ▒▒ 3▒▒
+▒ٳ▒▒▒ 12▒▒
+▒ 25
+
+None
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+
+None
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  File "C:\Users\NETANA\ai-agent-engineering-101\submissions\26620029\week-01\first_agent.py", line 65
+    for step in range(max_steps):   # <- this loop is what makes it an agent
+                                                                            ^
+IndentationError: unindent does not match any outer indentation level
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ [A
+bash: [A: command not found
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  File "C:\Users\NETANA\ai-agent-engineering-101\submissions\26620029\week-01\first_agent.py", line 65
+    for step in range(max_steps):   # <- this loop is what makes it an agent
+                                                                            ^
+IndentationError: unindent does not match any outer indentation level
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+
+  [tool] calculator({'expression': '3 + 12 + 25'}) -> 40
+The numbers in notes.txt are:
+- 3 (apples)
+- 12 (bananas)
+- 25 (grapes)
+
+**The sum is 40**.
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python -c "from first_agent import run; print(run('notes.txt를 읽고 각 숫자를 각각 계산기로 하나씩 더해가면서 전체 합을 알려줘. 반드시 도구를 여러 번 나눠서 사용해.', max_steps=1))" 2>&1 | tee logs/test-max-steps.txt
+  [tool] read_file({'path': 'notes.txt'}) -> ▒▒▒ 3▒▒
+▒ٳ▒▒▒ 12▒▒
+▒ 25
+
+stopped: max steps exceeded
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+
+
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+
+
+
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ ls
+__pycache__/  first_agent.py  logs/  notes.txt
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ type notes.txt
+bash: type: notes.txt: not found
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+딸기 50알
+  [tool] calculator({'expression': '3 + 12 + 25 + 50'}) -> 90
+The numbers in notes.txt are: 3, 12, 25, and 50.
+
+The sum of these numbers is **90**.
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+딸기 50알
+  [tool] calculator({'expression': '3 + 12 + 25 + 50'}) -> 90
+The numbers in notes.txt are:
+- 3 (apples)
+- 12 (bananas)
+- 25 (grapes)
+- 50 (strawberries)
+
+**The sum is 90.**
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+Traceback (most recent call last):
+  File "C:\Users\NETANA\ai-agent-engineering-101\submissions\26620029\week-01\first_agent.py", line 89, in <module>
+    print(run(goal))
+          ^^^^^^^^^
+  File "C:\Users\NETANA\ai-agent-engineering-101\submissions\26620029\week-01\first_agent.py", line 66, in run
+    resp = client.messages.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NETANA\ai-agent-engineering-101\venv\Lib\site-packages\anthropic\_utils\_utils.py", line 294, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NETANA\ai-agent-engineering-101\venv\Lib\site-packages\anthropic\resources\messages\messages.py", line 980, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "C:\Users\NETANA\ai-agent-engineering-101\venv\Lib\site-packages\anthropic\_base_client.py", line 1507, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NETANA\ai-agent-engineering-101\venv\Lib\site-packages\anthropic\_base_client.py", line 1191, in request
+    raise self._make_status_error_from_response(response) from None
+anthropic.AuthenticationError: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'API key is invalid.'}, 'request_id': None}
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+딸기 50알
+  [tool] calculator({'expression': '3 + 12 + 25 + 50'}) -> 90
+The file contains information about fruits with their quantities:
+- 사과 (Apples): 3
+- 바나나 (Bananas): 12
+- 포도 (Grapes): 25
+- 딸기 (Strawberries): 50
+
+The sum of all the numbers is **90**.
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+딸기 50알
+  [tool] calculator({'expression': '3 + 12 + 25 + 50'}) -> 90
+The numbers in notes.txt are:
+- 3 (apples)
+- 12 (bananas)
+- 25 (grapes)
+- 50 (strawberries)
+
+**The sum is: 90**
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+딸기 50알
+stopped: max steps exceeded
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+딸기 50알
+  [tool] calculator({'expression': '3 + 12 + 25 + 50'}) -> 90
+stopped: max steps exceeded
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+딸기 50알
+  [tool] calculator({'expression': '3 + 12 + 25 + 50'}) -> 90
+stopped: max steps exceeded
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+딸기 50알
+  [tool] calculator({'expression': '3 + 12 + 25 + 50'}) -> 90
+The numbers in notes.txt are:
+- 3 (apples)
+- 12 (bananas)
+- 25 (grapes)
+- 50 (strawberries)
+
+**The sum of these numbers is 90.**
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ # 최소 max_steps 가 4이어야 stopped 되지 않고 진행함
+
+
+
+(venv)
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)

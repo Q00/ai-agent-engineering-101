@@ -1,0 +1,21 @@
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py  notes.txt를 읽고, 숫자를 다 더한 다음 그 결과를 메모로 저장해줘" 2>&1 | tee logs/run-$(date +%m%d-%H%M).txt
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+딸기 50알
+  [tool] calculator({'expression': '3 + 12 + 25 + 50'}) -> 90
+  [tool] write_note({'content': 'notes.txt 파일의 숫자 합계\n\n파일 내용:\n- 사과 3개\n- 바나나 12개\n- 포도 25개\n- 딸기 50알\n\n계산: 3 + 12 + 25 + 50 = 90\n\n총합: 90'}) -> saved to 20260905_105549.txt
+완료했습니다! notes.txt 파일에서 찾은 숫자들(3, 12, 25, 50)을 모두 더한 결과는 **90**입니다. 이 결과를 `20260905_105549.txt` 파일에 메모로 저장했습니다.
+(venv)
+
+
+NETANA@Barracuda MINGW64 ~/ai-agent-engineering-101/submissions/26620029/week-01 (week-01)
+$ python first_agent.py "notes.txt를 읽고, 과일의 단위가 알 인 과일명을 찾아서 수량과 함께 메모에 저장해줘" 2>&1 | tee logs/run-$(date +%m%d-%H%M).txt
+  [tool] read_file({'path': 'notes.txt'}) -> 사과 3개
+바나나 12개
+포도 25개
+딸기 50알
+  [tool] write_note({'content': '단위가 "알"인 과일:\n딸기 50알'}) -> saved to 20260905_105737.txt
+완료했습니다! notes.txt 파일에서 단위가 "알"인 과일은 **딸기 50알**이었으며, 이 정보를 메모 파일(20260905_105737.txt)에 저장했습니다.
+(venv)
