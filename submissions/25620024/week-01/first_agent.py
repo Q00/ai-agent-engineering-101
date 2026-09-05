@@ -37,6 +37,10 @@ def read_file(path: str) -> str:
     full = os.path.abspath(path)
     if not full.startswith(os.getcwd()):
         return "denied: path outside the working directory"
+    if not os.path.isfile(full):
+        # Hand the failure back as an observation. Raising here would kill the
+        # loop before the model ever gets to see that the file is missing.
+        return f"denied: no such file - {path}"
     with open(full, encoding="utf-8") as f:
         return f.read()[:4000]
 
