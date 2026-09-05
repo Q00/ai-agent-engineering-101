@@ -41,12 +41,17 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-# ---- tool 3: write_note (first cut) ----
+# ---- tool 3: write_note (same sandbox as read_file; append only) ----
 def write_note(path: str, text: str) -> str:
-    """Write a note to a file."""
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(text + "\n")
-    return "ok"
+    """Append one line to a note file and report the file's new state."""
+    full = os.path.abspath(path)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+    with open(full, "a", encoding="utf-8") as f:
+        f.write(text.rstrip("\n") + "\n")
+    with open(full, encoding="utf-8") as f:
+        lines = f.read().splitlines()
+    return f"appended to {os.path.relpath(full)}; the file now has {len(lines)} line(s)"
 
 
 TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,
@@ -65,7 +70,12 @@ TOOLS = [
                       "properties": {"path": {"type": "string"}},
                       "required": ["path"]}},
     {"name": "write_note",
-     "description": "Write a note to a file.",
+     "description": ("Append one line of text to a note file in the working "
+                     "directory. Appends only \u2014 it never overwrites or "
+                     "deletes existing content, and it creates the file if it "
+                     "does not exist. Use it when the user asks for a result "
+                     "to be recorded or saved; do not use it to think out "
+                     "loud. Returns the file's new line count."),
      "input_schema": {"type": "object",
                       "properties": {"path": {"type": "string"},
                                      "text": {"type": "string"}},
