@@ -13,6 +13,8 @@ import ast
 import json
 import operator
 
+sys.stdout.reconfigure(encoding="utf-8")
+
 from openai import OpenAI
 
 # ---- tool 1: calculator (safe, no eval) ----
