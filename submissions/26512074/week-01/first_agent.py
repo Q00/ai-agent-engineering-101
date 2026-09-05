@@ -46,7 +46,23 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+def write_note(path: str, content: str) -> str:
+    """Write content to a text file in the working directory."""
+    full = os.path.abspath(path)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+
+    with open(full, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    return f"wrote note to {path}"
+
+
+TOOLS_IMPL = {
+    "calculator": calculator,
+    "read_file": read_file,
+    "write_note": write_note,
+}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -64,6 +80,16 @@ TOOLS = [
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"}},
                         "required": ["path"]}}},
+    {"type": "function",
+     "function": {
+         "name": "write_note",
+         "description": "Write content to a text file in the working directory.",
+         "parameters": {"type": "object",
+                        "properties": {
+                        "path": {"type": "string"},
+                        "content": {"type": "string"}
+                        },
+                        "required": ["path", "content"]}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
