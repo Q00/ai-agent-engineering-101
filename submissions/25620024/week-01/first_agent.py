@@ -109,6 +109,7 @@ def run(goal: str, max_steps: int = 8):
 
 
 if __name__ == "__main__":
-    goal = sys.argv[1] if len(sys.argv) > 1 else \
-        "Read notes.txt and sum the numbers in it."
+    goal = sys.argv[1] if len(sys.argv) > 1 else (
+        "Read notes.txt, add up every number in it, "
+        "and record the total in result.md as one line.")
     print(run(goal))
