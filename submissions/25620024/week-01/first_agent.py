@@ -41,7 +41,16 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+# ---- tool 3: write_note (first cut) ----
+def write_note(path: str, text: str) -> str:
+    """Write a note to a file."""
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(text + "\n")
+    return "ok"
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,
+              "write_note": write_note}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -55,6 +64,12 @@ TOOLS = [
      "input_schema": {"type": "object",
                       "properties": {"path": {"type": "string"}},
                       "required": ["path"]}},
+    {"name": "write_note",
+     "description": "Write a note to a file.",
+     "input_schema": {"type": "object",
+                      "properties": {"path": {"type": "string"},
+                                     "text": {"type": "string"}},
+                      "required": ["path", "text"]}},
 ]
 
 
