@@ -13,14 +13,14 @@ Reproducibility (everything but the API key):
            (free shared-pool rate limit) at submission time (see logs/run-01,
            run-02); openai/gpt-oss-20b:free had been delisted from the free tier
            (404). nemotron-3.5-lightning was the free tool-capable model that
-           actually ran (logs/run-03).
+           actually ran (logs/run-04-3tools.txt).
   Env    :
     export OPENAI_API_KEY="$OPENROUTER_API_KEY"          # your OpenRouter key
     export OPENAI_BASE_URL=https://openrouter.ai/api/v1
     export AGENT_MODEL=nvidia/nemotron-3.5-lightning:free
   Run    :
     python first_agent.py "Read notes.txt, sum the numbers in it, and tell me the total along with the current time."
-    # capture a log with:  python first_agent.py 2>&1 | tee logs/run-03.txt
+    # capture a log with:  python first_agent.py 2>&1 | tee logs/run-04-3tools.txt
 """
 import os
 import sys
