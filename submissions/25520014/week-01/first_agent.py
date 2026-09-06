@@ -50,7 +50,21 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+# ---- tool 3: write_file (same working-directory guard as read_file) ----
+def write_file(path: str, content: str) -> str:
+    """Replace the contents of an existing text file in the working directory."""
+    full = os.path.abspath(path)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+    if not os.path.isfile(full):
+        return "denied: no such file; this tool only edits files that already exist"
+    with open(full, "w", encoding="utf-8") as f:
+        f.write(content)
+    return f"wrote {len(content)} chars to {path}"
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,
+              "write_file": write_file}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -68,6 +82,14 @@ TOOLS = [
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"}},
                         "required": ["path"]}}},
+    {"type": "function",
+     "function": {
+         "name": "write_file",
+         "description": "Write a text file in the working directory with the given content.",
+         "parameters": {"type": "object",
+                        "properties": {"path": {"type": "string"},
+                                       "content": {"type": "string"}},
+                        "required": ["path", "content"]}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "minimax/minimax-m3:free")
@@ -97,6 +119,8 @@ def run(goal: str, max_steps: int = 8):
 
 
 if __name__ == "__main__":
-    goal = sys.argv[1] if len(sys.argv) > 1 else \
-        "Read notes.txt and sum the numbers in it."
+    goal = sys.argv[1] if len(sys.argv) > 1 else (
+        "We went for a second round and spent 68000 more on beer and snacks. "
+        "Record it in notes.txt and tell me how much each person owes."
+    )
     print(run(goal))
