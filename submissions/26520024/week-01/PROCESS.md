@@ -38,3 +38,19 @@
 - Kept the starter's default model alias claude-sonnet-4-5 and made it
   configurable. Installed and pinned anthropic 1.4.0 in a temporary environment;
   inspected its actual API signature. Model availability is not yet verified.
+
+## 3. Local verification
+
+- All 13 offline tests passed. They exercise real arithmetic and filesystem
+  tools, including append behavior, traversal and symlink rejection, oversized
+  inputs, dispatch restrictions, error feedback, and maximum-step termination.
+- Loop tests use explicitly scripted responses containing SDK content blocks.
+  They are software tests, not empirical evidence of the model choosing tools.
+- Saved the original test output in logs/offline-tests-01.log and the course
+  structural check in logs/structural-check-01.log. The structural check passed.
+- Python syntax and the CLI help were checked successfully.
+- Live API execution was skipped because no API key was configured. There is
+  no real model run, no model-generated saved report, and no observed tool-choice
+  comparison. README.md and OBSERVATIONS.md identify these remaining steps.
+- The course structure check accepts offline log files. Its green result must
+  not be interpreted as satisfying the requirement for real agent execution.
