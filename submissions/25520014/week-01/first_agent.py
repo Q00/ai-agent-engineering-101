@@ -1,10 +1,12 @@
-"""Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
+"""Week 01 — a three-tool agent: calculator, read_file, write_file.
 
-Two tools: calculator, read_file. Your assignment: add a third.
-Requires: openai + python-dotenv. Settings live in the repo-root .env (gitignored):
-  OPENAI_API_KEY   your key (an OpenRouter key works)
-  OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
-  AGENT_MODEL      optional; defaults to minimax/minimax-m3:free (OpenRouter).
+Run (from this directory):
+  uv run --with openai --with python-dotenv first_agent.py
+
+Settings live in the repo-root .env (gitignored):
+  OPENAI_API_KEY   an OpenRouter key
+  OPENAI_BASE_URL  https://openrouter.ai/api/v1
+  AGENT_MODEL      defaults to minimax/minimax-m3:free.
                    z-ai/glm-5.2:free was tried first but its shared free pool
                    kept returning 429 mid-loop -- see logs/run-01..03.
 """
