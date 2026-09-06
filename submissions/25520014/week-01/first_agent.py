@@ -121,6 +121,7 @@ def run(goal: str, max_steps: int = 8):
 if __name__ == "__main__":
     goal = sys.argv[1] if len(sys.argv) > 1 else (
         "We went for a second round and spent 68000 more on beer and snacks. "
-        "Record it in notes.txt and tell me how much each person owes."
+        "Record it in notes.txt and tell me how much each person owes. "
+        "Use the calculator tool for the arithmetic."
     )
     print(run(goal))
