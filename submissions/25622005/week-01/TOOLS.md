@@ -1,16 +1,3 @@
 # TOOLS.md
 
-The third tool is `clock`, which returns the current time as an ISO 8601 UTC
-timestamp plus a unix epoch in seconds, and takes no arguments. I wrote the
-description to tell the model *why* it would want to call this tool, not just
-*what* it does: "call it once before and once after a task to compute how
-many seconds the task took, by subtracting the two unix epoch values." A bare
-description like "return the current time" would let the model call `clock`
-correctly, but wouldn't tell it that calling it twice — at the start and end
-of the run — is the intended pattern for self-timing, which is the actual
-task in this assignment (sum notes.txt and report elapsed seconds). Returning
-both an ISO string and a unix epoch is deliberate too: the epoch is what
-`calculator` can subtract to get a duration, while the ISO string is what a
-human reads in the log to sanity-check the epoch is right. Since the
-description is the only interface the model sees, both the ordering
-instruction and the dual format had to live in that one string.
+세 번째 도구는 `clock`이다. 인자를 받지 않고, 현재 시각을 ISO 8601 UTC 타임스탬프와 유닉스 에폭(초)으로 함께 돌려준다. 설명(description)을 쓸 때 모델에게 이 도구가 *무엇을 하는지*뿐 아니라 *왜* 불러야 하는지까지 알려주려 했다: "작업 시작 전과 후에 한 번씩 호출해서, 두 유닉스 에폭 값을 빼면 작업에 걸린 초를 계산할 수 있다"고 적었다. 만약 "현재 시각을 반환한다"처럼 밋밋하게만 썼다면 모델이 `clock`을 올바르게 호출하긴 하겠지만, 실행 시작과 끝에 두 번 불러 스스로 시간을 재는 것이 의도된 사용 패턴이라는 점은 전달되지 않았을 것이다. 그리고 그 자기-시간측정이 바로 이번 과제의 실제 태스크다(notes.txt의 숫자를 합산하고, 걸린 초를 함께 보고하는 것). ISO 문자열과 유닉스 에폭을 둘 다 반환하도록 한 것도 의도적인 선택이다. 에폭 값은 `calculator`가 뺄셈으로 소요 시간을 구할 수 있는 형식이고, ISO 문자열은 로그를 읽는 사람이 그 에폭 값이 맞는지 눈으로 바로 확인할 수 있는 형식이다. 모델이 보는 인터페이스는 이 설명 문자열 하나뿐이므로, 호출 순서에 대한 지침과 이중 포맷 모두 그 한 문장 안에 담아야 했다.
