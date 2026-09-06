@@ -82,3 +82,15 @@
   Python does not prescribe their order or provide the reference answer.
 - Removed the Python SDK dependency. Preserved the earlier code in its commits
   and all prior test logs. New live outcomes will be recorded separately.
+
+## 6. Real two-tool run
+
+- Ran first_agent.py --tools 2 through the authenticated Codex CLI. The process
+  exited successfully. Full output is in logs/codex-model-2-01.log.
+- The model requested read_file(notes.txt), then calculator with the expression
+  1.25 + 2.50 + 0.75, and then returned a final answer after 3 decisions.
+- The sum was 4.5 hours. The final answer explicitly said that the file could
+  not be saved because a writing tool was unavailable. No output file existed
+  after this run.
+- No Codex internal tool actions occurred. Nonfatal Codex state-database
+  warnings remain unchanged in the captured stderr.
