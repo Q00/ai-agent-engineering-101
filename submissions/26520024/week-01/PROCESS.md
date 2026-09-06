@@ -109,3 +109,16 @@
 - This is one run per mode, demonstrating an added file-writing capability on
   this input. It is not an estimate of general reliability or a description-only
   ablation study.
+
+## 8. Comparison verification and submission documentation
+
+- Parsed the real JSON events and Python tool logs to check that both modes
+  used identical shared settings and the same first two tool schemas.
+- Verified 3 completed model decisions for the baseline and 4 for the extended
+  run, with no internal Codex actions or Python tool errors in either run.
+- Compared the saved report with the actual write_note content argument;
+  they match exactly. Output: logs/live-comparison-check-01.log.
+- The updated course structural check passed; its original output is in
+  logs/structural-codex-check-01.log. All 16 updated offline tests also passed.
+- Rewrote README.md, TOOLS.md, and OBSERVATIONS.md around the completed Codex
+  runs. Prepared PR_BODY.md using the course template for [week-01] 26520024.
