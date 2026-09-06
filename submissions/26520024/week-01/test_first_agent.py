@@ -2,29 +2,22 @@
 import copy
 from contextlib import redirect_stdout
 import io
-import os
+import json
 from pathlib import Path
 import tempfile
-from types import SimpleNamespace
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-from anthropic.types import TextBlock, ToolUseBlock
-
+import codex_backend
 import first_agent as agent
 
 
-def tool(name, inputs, call_id="call_1"):
-    return ToolUseBlock(type="tool_use", id=call_id, name=name, input=inputs)
-
-
-def response(*blocks, stop="tool_use"):
-    return SimpleNamespace(content=list(blocks), stop_reason=stop,
-                           model="scripted-offline-response")
+def tool(name, inputs):
+    return {"action": "tool", "tool": name, "arguments": inputs, "answer": ""}
 
 
 def final(text="Done."):
-    return response(TextBlock(type="text", text=text), stop="end_turn")
+    return {"action": "final", "tool": "none", "arguments": {}, "answer": text}
 
 
 class AgentTests(unittest.TestCase):
@@ -35,9 +28,6 @@ class AgentTests(unittest.TestCase):
         self.workspace = self.parent / "submission"
         self.workspace.mkdir()
         self.enterContext(patch.object(agent, "WORKSPACE", self.workspace))
-        self.enterContext(patch.dict(os.environ, {
-            "ANTHROPIC_API_KEY": "offline-test-placeholder",
-        }))
         (self.workspace / "notes.txt").write_text(
             "baseline: 1.25\nadapter: 2.50\nevaluation: 0.75\n", encoding="utf-8"
         )
@@ -45,17 +35,17 @@ class AgentTests(unittest.TestCase):
     def run_scripted(self, responses, **kwargs):
         pending = iter(responses)
         self.requests = []
-        client = MagicMock()
-
-        def create(**request):
-            self.requests.append(copy.deepcopy(request))
+        def choose(goal, tools, history, model):
+            self.requests.append(copy.deepcopy({
+                "goal": goal, "tools": tools, "history": history, "model": model,
+            }))
             return next(pending)
 
-        client.messages.create.side_effect = create
-        with patch.object(agent.anthropic, "Anthropic") as factory:
-            factory.return_value.__enter__.return_value = client
-            with redirect_stdout(io.StringIO()):
-                return agent.run(agent.DEFAULT_GOAL, **kwargs)
+        with patch.object(agent, "choose_action", side_effect=choose):
+            with patch.object(agent, "backend_info", return_value={
+                    "cli_version": "scripted", "authentication": "offline-test"}):
+                with redirect_stdout(io.StringIO()):
+                    return agent.run(agent.DEFAULT_GOAL, **kwargs)
 
     def test_calculator_runtime_total_and_arithmetic(self):
         self.assertEqual(agent.calculator("1.25 + 2.50 + 0.75"), "4.5")
@@ -116,10 +106,10 @@ class AgentTests(unittest.TestCase):
 
     def test_scripted_three_tool_feedback_and_saved_result(self):
         answer = self.run_scripted([
-            response(tool("read_file", {"path": "notes.txt"}, "read")),
-            response(tool("calculator", {"expression": "1.25 + 2.50 + 0.75"}, "sum")),
-            response(tool("write_note", {"path": "outputs/summary.txt",
-                                        "content": "Total GPU hours: 4.5"}, "save")),
+            tool("read_file", {"path": "notes.txt"}),
+            tool("calculator", {"expression": "1.25 + 2.50 + 0.75"}),
+            tool("write_note", {"path": "outputs/summary.txt",
+                                "content": "Total GPU hours: 4.5"}),
             final("Saved 4.5 GPU hours."),
         ])
         self.assertEqual(answer, "Saved 4.5 GPU hours.")
@@ -127,55 +117,93 @@ class AgentTests(unittest.TestCase):
                          "Total GPU hours: 4.5\n")
         self.assertEqual(len(self.requests), 4)
         self.assertIn("baseline: 1.25",
-                      self.requests[1]["messages"][-1]["content"][0]["content"])
-        result = self.requests[2]["messages"][-1]["content"][0]
-        self.assertEqual(result["tool_use_id"], "sum")
-        self.assertEqual(result["content"], "4.5")
+                      self.requests[1]["history"][-1]["content"]["output"])
+        result = self.requests[2]["history"][-1]["content"]
+        self.assertEqual(result["name"], "calculator")
+        self.assertEqual(result["output"], "4.5")
         self.assertFalse(result["is_error"])
 
     def test_two_tool_mode_cannot_dispatch_write_note(self):
         self.run_scripted([
-            response(tool("write_note", {"path": "outputs/not-written.txt",
-                                        "content": "must be denied"})),
+            tool("write_note", {"path": "outputs/not-written.txt",
+                                "content": "must be denied"}),
             final("No write tool is available."),
         ], tool_count=2)
         names = [entry["name"] for entry in self.requests[0]["tools"]]
         self.assertEqual(names, ["calculator", "read_file"])
-        self.assertTrue(self.requests[1]["messages"][-1]["content"][0]["is_error"])
+        self.assertTrue(self.requests[1]["history"][-1]["content"]["is_error"])
         self.assertFalse((self.workspace / "outputs").exists())
 
     def test_tool_errors_are_returned_and_recovery_is_possible(self):
         self.run_scripted([
-            response(tool("read_file", {"path": "missing.txt"}, "missing"),
-                     tool("calculator", {"expression": "1 / 0"}, "zero")),
-            response(tool("calculator", {"expression": "1 + 2"}, "retry")),
+            tool("read_file", {"path": "missing.txt"}),
+            tool("calculator", {"expression": "1 / 0"}),
+            tool("calculator", {"expression": "1 + 2"}),
             final("3"),
         ])
-        failures = self.requests[1]["messages"][-1]["content"]
-        self.assertEqual([item["tool_use_id"] for item in failures], ["missing", "zero"])
+        failures = [request["history"][-1]["content"]
+                    for request in self.requests[1:3]]
+        self.assertEqual([item["name"] for item in failures], ["read_file", "calculator"])
         self.assertTrue(all(item["is_error"] for item in failures))
-        self.assertFalse(self.requests[2]["messages"][-1]["content"][0]["is_error"])
+        self.assertFalse(self.requests[3]["history"][-1]["content"]["is_error"])
 
     def test_step_limit_stops_before_another_model_request(self):
         with self.assertRaisesRegex(RuntimeError, "max steps exceeded"):
             self.run_scripted([
-                response(tool("read_file", {"path": "notes.txt"})),
+                tool("read_file", {"path": "notes.txt"}),
             ], max_steps=1)
         self.assertEqual(len(self.requests), 1)
 
     def test_incomplete_or_empty_responses_are_failures(self):
-        for reply in (response(stop="max_tokens"), response(stop="pause_turn"),
-                      response(), final("")):
-            with self.subTest(stop=reply.stop_reason):
+        for reply in ({"action": "invalid"}, final("")):
+            with self.subTest(reply=reply):
                 with self.assertRaises(RuntimeError):
                     self.run_scripted([reply])
 
-    def test_missing_key_never_constructs_a_client(self):
-        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": ""}):
-            with patch.object(agent.anthropic, "Anthropic") as factory:
-                with self.assertRaisesRegex(ValueError, "no model call was made"):
-                    agent.run(agent.DEFAULT_GOAL)
-                factory.assert_not_called()
+    def test_missing_codex_has_an_actionable_error(self):
+        with patch.object(codex_backend.shutil, "which", return_value=None):
+            with self.assertRaisesRegex(RuntimeError, "Codex CLI not found"):
+                codex_backend.executable()
+
+    def test_decision_parser_accepts_structured_tool_arguments(self):
+        raw = json.dumps({"action": "tool", "tool": "read_file",
+                          "arguments_json": '{"path":"notes.txt"}', "answer": ""})
+        self.assertEqual(codex_backend.parse_decision(raw, agent.TOOLS),
+                         tool("read_file", {"path": "notes.txt"}))
+
+    def test_decision_parser_rejects_malformed_or_unavailable_actions(self):
+        valid = {"action": "tool", "tool": "read_file",
+                 "arguments_json": '{"path":"notes.txt"}', "answer": ""}
+        invalid = [
+            {}, {**valid, "arguments_json": "[]"}, {**valid, "tool": "write_note"},
+            {**valid, "action": "unknown"}, {**valid, "answer": "premature answer"},
+            {"action": "final", "tool": "none", "arguments_json": "{}", "answer": ""},
+        ]
+        for item in invalid:
+            with self.subTest(item=item):
+                with self.assertRaises(ValueError):
+                    codex_backend.parse_decision(json.dumps(item), agent.TOOLS[:2])
+
+    def test_backend_disables_shell_and_rejects_internal_actions(self):
+        from types import SimpleNamespace
+
+        captured = []
+        def run(command, **kwargs):
+            captured.append(command)
+            event = {"type": "item.completed",
+                     "item": {"type": "command_execution", "command": "forbidden"}}
+            return SimpleNamespace(returncode=0, stdout=json.dumps(event), stderr="")
+
+        with patch.object(codex_backend, "executable", return_value="/fake/codex"):
+            with patch.object(codex_backend.subprocess, "run", side_effect=run):
+                with redirect_stdout(io.StringIO()):
+                    with self.assertRaisesRegex(RuntimeError, "internal action"):
+                        codex_backend.choose_action("test", agent.TOOLS, [], "test")
+        command = captured[0]
+        self.assertEqual(command[command.index("--sandbox") + 1], "read-only")
+        self.assertIn("shell_tool", command)
+        self.assertIn("--ignore-user-config", command)
+        self.assertIn('web_search="disabled"', command)
 
 
 if __name__ == "__main__":

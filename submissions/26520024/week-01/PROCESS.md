@@ -64,3 +64,21 @@
   and terminal prompts were disabled. No remote branch was created by this push.
 - Implementation and verification remain in local commits. No assignment PR
   was opened. Live model logs, observations, and an authenticated push remain.
+
+## 5. Switch to the user's authenticated Codex
+
+- The student explicitly requested using Codex instead of Anthropic.
+- Confirmed Codex CLI 0.153.0 is logged in through ChatGPT. Its configured
+  model is gpt-6-astra. No credential values were read into the submission.
+- Replaced the Anthropic SDK transport with codex exec and a constrained JSON
+  decision schema. Python still selects the offered tool set, dispatches each
+  requested tool, returns observations, and applies the maximum-step limit.
+- Codex runs each decision in an empty temporary directory with a read-only
+  sandbox. User configuration is not loaded; shell, external tools, plugins,
+  hooks, and delegation features are disabled for this experiment. The existing
+  login is reused. The output event stream is checked for internal tool actions.
+- Both modes use gpt-6-astra at low reasoning effort and the same instructions.
+  The model must request read_file to obtain input and calculator for arithmetic;
+  Python does not prescribe their order or provide the reference answer.
+- Removed the Python SDK dependency. Preserved the earlier code in its commits
+  and all prior test logs. New live outcomes will be recorded separately.

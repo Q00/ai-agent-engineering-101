@@ -1,6 +1,6 @@
 """Read sample GPU runtimes, calculate their total, and save a summary.
 
-Based on the course Anthropic starter. Use --tools 2 for the comparison run.
+Uses the authenticated Codex CLI. Use --tools 2 for the comparison run.
 """
 import argparse
 import ast
@@ -9,13 +9,17 @@ import math
 import operator
 import os
 from pathlib import Path
+import subprocess
 import sys
 
-import anthropic
+from codex_backend import (
+    DISABLED_FEATURES, MODEL_INSTRUCTIONS, REASONING_EFFORT,
+    backend_info, choose_action,
+)
 
 WORKSPACE = Path(__file__).resolve().parent
 MAX_TEXT = 4000
-DEFAULT_MODEL = "claude-sonnet-4-5"
+DEFAULT_MODEL = "gpt-6-astra"
 DEFAULT_GOAL = (
     "Read notes.txt and calculate the total GPU runtime in hours. "
     "Save the input values and the total to outputs/gpu-summary.txt. "
@@ -139,61 +143,44 @@ def run(goal: str, max_steps: int = 8, *, tool_count: int = 3,
         model: str = DEFAULT_MODEL):
     if tool_count not in (2, 3) or not 1 <= max_steps <= 32:
         raise ValueError("tools must be 2 or 3; max_steps must be between 1 and 32")
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        raise ValueError("ANTHROPIC_API_KEY is not set; no model call was made")
     tools = TOOLS[:tool_count]
     available = {tool["name"] for tool in tools}
-    messages = [{"role": "user", "content": goal}]
+    history = []
     print("[config] " + json.dumps({
-        "model": model, "sdk": anthropic.__version__, "tools": tools,
-        "max_steps": max_steps, "max_tokens": 1024,
-        "timeout_seconds": 60, "max_retries": 0,
+        "backend": "codex-cli", **backend_info(), "model": model,
+        "reasoning_effort": REASONING_EFFORT, "tools": tools,
+        "max_steps": max_steps, "timeout_seconds_per_decision": 120,
+        "model_instructions": MODEL_INSTRUCTIONS,
+        "disabled_codex_features": DISABLED_FEATURES,
+        "sandbox": "read-only", "web_search": "disabled",
     }), flush=True)
     print(f"[goal] {goal}", flush=True)
 
-    with anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"],
-                             timeout=60.0, max_retries=0) as client:
-        for step in range(max_steps):
-            resp = client.messages.create(
-                model=model, max_tokens=1024, tools=tools, messages=messages)
-            messages.append({"role": "assistant", "content": resp.content})
-            print(f"[response {step + 1}] model={resp.model} "
-                  f"stop_reason={resp.stop_reason}", flush=True)
-            for block in resp.content:
-                if block.type == "text":
-                    print(f"[assistant] {block.text}", flush=True)
+    for step in range(max_steps):
+        print(f"[step {step + 1}] requesting a Codex decision", flush=True)
+        decision = choose_action(goal, tools, history, model)
+        print("[decision] " + json.dumps(decision), flush=True)
+        history.append({"role": "assistant", "content": decision})
+        if decision["action"] == "final":
+            if not decision["answer"].strip():
+                raise RuntimeError("model ended the turn without an answer")
+            return decision["answer"]
+        if decision["action"] != "tool":
+            raise RuntimeError("model returned an unknown action")
 
-            if resp.stop_reason == "end_turn":
-                answer = "".join(b.text for b in resp.content if b.type == "text")
-                if not answer.strip():
-                    raise RuntimeError("model ended the turn without an answer")
-                return answer
-            if resp.stop_reason != "tool_use":
-                raise RuntimeError(f"incomplete response: {resp.stop_reason}")
-
-            results = []
-            for block in resp.content:
-                if block.type != "tool_use":
-                    continue
-                is_error = False
-                try:
-                    if block.name not in available:
-                        raise ValueError("tool is not available in this run")
-                    out = TOOLS_IMPL[block.name](**block.input)
-                except (OSError, ValueError, TypeError, ArithmeticError,
-                        SyntaxError) as exc:
-                    is_error = True
-                    out = f"{type(exc).__name__}: {exc}"
-                print("[tool] " + json.dumps({
-                    "name": block.name, "input": block.input,
-                    "output": out, "is_error": is_error,
-                }), flush=True)
-                results.append({"type": "tool_result",
-                                "tool_use_id": block.id,
-                                "content": str(out), "is_error": is_error})
-            if not results:
-                raise RuntimeError("tool_use response contained no tool calls")
-            messages.append({"role": "user", "content": results})
+        name, arguments = decision["tool"], decision["arguments"]
+        is_error = False
+        try:
+            if name not in available:
+                raise ValueError("tool is not available in this run")
+            out = TOOLS_IMPL[name](**arguments)
+        except (OSError, ValueError, TypeError, ArithmeticError, SyntaxError) as exc:
+            is_error = True
+            out = f"{type(exc).__name__}: {exc}"
+        observation = {"name": name, "input": arguments,
+                       "output": out, "is_error": is_error}
+        print("[tool] " + json.dumps(observation), flush=True)
+        history.append({"role": "tool", "content": observation})
 
     raise RuntimeError("stopped: max steps exceeded")
 
@@ -207,11 +194,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         answer = run(args.goal, args.max_steps, tool_count=args.tools, model=args.model)
-    except anthropic.APIError as exc:
-        print(f"[api_error] {type(exc).__name__}; "
-              f"status={getattr(exc, 'status_code', None)}", file=sys.stderr)
-        return 1
-    except (ValueError, RuntimeError) as exc:
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         print(f"[error] {exc}", file=sys.stderr)
         return 1
     print(f"[final] {answer}", flush=True)
