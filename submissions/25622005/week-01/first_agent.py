@@ -1,6 +1,6 @@
-"""Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
+"""Week 01 submission — OpenAI-compatible API version (works with OpenRouter).
 
-Two tools: calculator, read_file. Your assignment: add a third.
+Three tools: calculator, read_file, clock. Third tool added for the assignment.
 Requires: pip install openai, and in the environment:
   OPENAI_API_KEY   your key (an OpenRouter key works)
   OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
@@ -11,7 +11,9 @@ import os
 import sys
 import ast
 import json
+import time
 import operator
+from datetime import datetime, timezone
 
 from openai import OpenAI
 
@@ -46,7 +48,14 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+# ---- tool 3: clock (current time, for self-timing) ----
+def clock() -> str:
+    """Return the current time as an ISO 8601 UTC timestamp plus a unix epoch."""
+    now = datetime.now(timezone.utc)
+    return f"{now.isoformat()} (unix={time.time():.3f})"
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file, "clock": clock}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -64,6 +73,14 @@ TOOLS = [
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"}},
                         "required": ["path"]}}},
+    {"type": "function",
+     "function": {
+         "name": "clock",
+         "description": ("Return the current time as an ISO 8601 UTC timestamp and a "
+                          "unix epoch in seconds. Call it once before and once after a "
+                          "task to compute how many seconds the task took, by "
+                          "subtracting the two unix epoch values."),
+         "parameters": {"type": "object", "properties": {}, "required": []}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
@@ -93,6 +110,9 @@ def run(goal: str, max_steps: int = 8):
 
 
 if __name__ == "__main__":
-    goal = sys.argv[1] if len(sys.argv) > 1 else \
-        "Read notes.txt and sum the numbers in it."
+    goal = sys.argv[1] if len(sys.argv) > 1 else (
+        "Call clock, then read notes.txt and sum the numbers in it, then call "
+        "clock again. Report the total and how many seconds elapsed between "
+        "your two clock calls."
+    )
     print(run(goal))
