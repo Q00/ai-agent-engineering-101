@@ -1,6 +1,6 @@
 """Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
 
-Two tools: calculator, read_file. Your assignment: add a third.
+Three tools: calculator, read_file, write_note.
 Requires: pip install openai, and in the environment:
   OPENAI_API_KEY   your key (an OpenRouter key works)
   OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
@@ -13,7 +13,7 @@ import ast
 import json
 import operator
 
-from openai import OpenAI
+from pathlib import Path
 
 # ---- tool 1: calculator (safe, no eval) ----
 _OPS = {ast.Add: operator.add, ast.Sub: operator.sub,
@@ -46,7 +46,18 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+def write_note(content: str) -> str:
+    """Append a result to expense_summary.txt without replacing earlier notes."""
+    output = Path("expense_summary.txt")
+    if output.is_symlink():
+        raise ValueError("expense_summary.txt must not be a symbolic link")
+    with output.open("a", encoding="utf-8") as f:
+        f.write(content.rstrip() + "\n")
+    return "Saved to expense_summary.txt"
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,
+              "write_note": write_note}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -64,12 +75,26 @@ TOOLS = [
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"}},
                         "required": ["path"]}}},
+    {"type": "function",
+     "function": {
+         "name": "write_note",
+         "description": "Append a completed expense summary to expense_summary.txt "
+                        "in the working directory. Use after reading the input and "
+                        "calculating the requested totals, when the user asks to save "
+                        "the result. Existing notes are preserved; do not repeat a "
+                        "successful save.",
+         "parameters": {"type": "object",
+                        "properties": {"content": {"type": "string",
+                                                   "description": "The summary text to save."}},
+                        "required": ["content"]}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
 
 
 def run(goal: str, max_steps: int = 8):
+    from openai import OpenAI
+
     client = OpenAI()  # uses OPENAI_API_KEY and OPENAI_BASE_URL
     messages = [{"role": "user", "content": goal}]
 
@@ -94,5 +119,6 @@ def run(goal: str, max_steps: int = 8):
 
 if __name__ == "__main__":
     goal = sys.argv[1] if len(sys.argv) > 1 else \
-        "Read notes.txt and sum the numbers in it."
+        "Read notes.txt, calculate total expenses and the remaining amount after " \
+        "reimbursement using calculator, then save a Korean summary with write_note."
     print(run(goal))
