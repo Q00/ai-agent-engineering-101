@@ -54,3 +54,13 @@
   comparison. README.md and OBSERVATIONS.md identify these remaining steps.
 - The course structure check accepts offline log files. Its green result must
   not be interpreted as satisfying the requirement for real agent execution.
+
+## 4. Delivery attempt
+
+- The ownership check passed for the changed student files; its original output
+  is saved in logs/ownership-check-01.log.
+- Attempted to push week-01-26520024 to the student's origin. Git could not read
+  a GitHub username because this execution environment has no usable credentials
+  and terminal prompts were disabled. No remote branch was created by this push.
+- Implementation and verification remain in local commits. No assignment PR
+  was opened. Live model logs, observations, and an authenticated push remain.
