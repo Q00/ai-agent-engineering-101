@@ -94,3 +94,18 @@
   after this run.
 - No Codex internal tool actions occurred. Nonfatal Codex state-database
   warnings remain unchanged in the captured stderr.
+
+## 7. Real three-tool run
+
+- Ran first_agent.py --tools 3 with the same model, goal, input, instructions,
+  reasoning effort, and step limit. The process exited successfully. Full
+  output is in logs/codex-model-3-01.log.
+- The model requested read_file(notes.txt), calculator(1.25 + 2.50 + 0.75),
+  and write_note(outputs/gpu-summary.txt), then answered after 4 decisions.
+- Verified the actual saved file: it contains the three input values and the
+  total of 4.5 hours, with the demonstration-data label.
+- All requested Python tools succeeded. No Codex internal tool actions occurred.
+  The same nonfatal state-database warnings were preserved in stderr.
+- This is one run per mode, demonstrating an added file-writing capability on
+  this input. It is not an estimate of general reliability or a description-only
+  ablation study.
