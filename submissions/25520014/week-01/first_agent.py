@@ -85,10 +85,7 @@ TOOLS = [
     {"type": "function",
      "function": {
          "name": "write_file",
-         "description": (
-            "Write a text file in the working directory with the given content. "
-            "The content is the final result, not the calculation process."
-         ),
+         "description": "Write a text file in the working directory with the given content.",
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"},
                                        "content": {"type": "string"}},
