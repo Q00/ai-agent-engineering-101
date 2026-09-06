@@ -4,8 +4,9 @@ Two tools: calculator, read_file. Your assignment: add a third.
 Requires: openai + python-dotenv. Settings live in the repo-root .env (gitignored):
   OPENAI_API_KEY   your key (an OpenRouter key works)
   OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
-  AGENT_MODEL      optional; defaults to gpt-4o-mini. For OpenRouter free
-                   models use e.g. AGENT_MODEL=meta-llama/llama-3.3-70b-instruct:free
+  AGENT_MODEL      optional; defaults to minimax/minimax-m3:free (OpenRouter).
+                   z-ai/glm-5.2:free was tried first but its shared free pool
+                   kept returning 429 mid-loop -- see logs/run-01..03.
 """
 import os
 import sys
@@ -69,7 +70,7 @@ TOOLS = [
                         "required": ["path"]}}},
 ]
 
-MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
+MODEL = os.environ.get("AGENT_MODEL", "minimax/minimax-m3:free")
 
 
 def run(goal: str, max_steps: int = 8):
