@@ -2,7 +2,7 @@
 
 ## 상태
 
-코드와 설명 초안을 Codex와 함께 준비했다. 실제 모델 실행과 도구 선택 관찰은 아직 진행하지 않았다. 따라서 현재 상태는 제출 완료가 아니다.
+코드와 설명을 Codex와 함께 준비하고 OpenRouter에서 실제 실행했다. logs/run-01.txt에 전체 실행 기록이 있으며 총지출 57500원, 미정산액 45500원을 계산하고 파일에 저장했다. 제출 전 학생 본인이 코드와 관찰 내용을 검토해야 하며 GitHub PR은 아직 제출하지 않았다.
 
 ## 실행
 
@@ -14,11 +14,13 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+OpenRouter 실행은 run_openrouter.py를 사용한다. 이 파일은 제출 폴더 또는 저장소 루트의 .env에서 키를 읽는다. 키 한 줄 형식과 OPENROUTER_API_KEY 또는 OPENAI_API_KEY 설정 형식을 지원한다. 환경변수를 직접 설정해도 된다. 실행 기본 모델은 nvidia/nemotron-3.5-lightning:free이며 OpenRouter 모델 목록에서 무료 요금과 도구 호출 지원을 확인했다. 아래의 기본 모델 설명은 first_agent.py를 직접 실행하는 경우에 해당한다.
+
 API 키는 로컬 환경변수 OPENAI_API_KEY로 설정한다. 키를 문서나 로그에 적지 않는다. 기본 모델은 gpt-4o-mini이며 AGENT_MODEL로 변경할 수 있다. OpenRouter를 사용한다면 OPENAI_BASE_URL을 https://openrouter.ai/api/v1로 설정하고 AGENT_MODEL에 사용할 모델 ID를 지정한다. 무료 모델의 도구 호출 지원은 직접 확인해야 한다.
 
 ```bash
 mkdir -p logs
-python3 -u first_agent.py 2>&1 | tee logs/run-01.txt
+python3 -u run_openrouter.py 2>&1 | tee logs/run-03.txt
 ```
 
 기본 요청은 notes.txt를 읽고 calculator로 총지출과 미정산액을 계산한 뒤 write_note로 한국어 요약을 저장하는 것이다. 예상 숫자는 총지출 57500원, 미정산액 45500원이다. 모델이 작성하는 문구와 호출 순서는 달라질 수 있다. 도구 정의는 first_agent.py의 TOOLS에 있고, 루프 제한은 8회다. write_note는 실행할 때마다 기존 파일에 추가하므로 이전 실행 결과가 남을 수 있다.
