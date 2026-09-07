@@ -47,7 +47,7 @@ def read_file(path: str) -> str:
 
 # ---- tool 3: write_note (blocked outside the working directory) ----
 def write_note(path: str, text: str) -> str:
-    """Append a line of text to a file."""
+    """Overwrite a file with a line of text."""
     full = os.path.abspath(path)
     if not full.startswith(os.getcwd()):
         return "denied: path outside the working directory"
