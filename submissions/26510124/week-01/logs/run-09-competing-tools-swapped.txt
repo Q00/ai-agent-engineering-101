@@ -1,0 +1,33 @@
+########## SWAPPED: file_op_a=overwrite, file_op_b=append ##########
+########## TASK A (append 요구) — 정답은 이제 file_op_b ##########
+  [tool] read_file({'path': 'notes.txt'}) -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+  [tool] calculator({'expression': '4 + 48000 + 9500 + 12000'}) -> 69504
+  [tool] file_op_b({'path': 'memo.txt', 'content': 'Total reported: 69504'}) -> appended 21 chars to memo.txt
+I have read the numbers from `notes.txt`, calculated their sum to be **69504**, and appended this result to `memo.txt` without erasing its previous content.
+--- memo.txt after ---
+PREVIOUS LINE - survives only if the append tool is chosen
+Total reported: 69504
+
+########## TASK B (overwrite 요구) — 정답은 이제 file_op_a ##########
+  [tool] read_file({'path': 'notes.txt'}) -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+  [tool] calculator({'expression': '4 + 48000 + 9500 + 12000'}) -> 69504
+  [tool] file_op_a({'path': 'memo.txt', 'content': '69504'}) -> overwrote memo.txt with 5 chars
+The numbers in `notes.txt` have been summed, resulting in 69504, and this result has been saved to `memo.txt`, replacing any previous content in the file.
+--- memo.txt after ---
+69504

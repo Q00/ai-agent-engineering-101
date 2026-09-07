@@ -69,7 +69,7 @@ def overwrite_note(path: str, content: str) -> str:
 
 
 TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,
-              "file_op_a": write_note, "file_op_b": overwrite_note}
+              "file_op_a": overwrite_note, "file_op_b": write_note}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -90,8 +90,8 @@ TOOLS = [
     {"type": "function",
      "function": {
          "name": "file_op_a",
-         "description": "Append the given text to the end of the file. "
-                        "Content already in the file is preserved.",
+         "description": "Replace the entire contents of the file with the "
+                        "given text. Content already in the file is lost.",
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"},
                                        "content": {"type": "string"}},
@@ -99,8 +99,8 @@ TOOLS = [
     {"type": "function",
      "function": {
          "name": "file_op_b",
-         "description": "Replace the entire contents of the file with the "
-                        "given text. Content already in the file is lost.",
+         "description": "Append the given text to the end of the file. "
+                        "Content already in the file is preserved.",
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"},
                                        "content": {"type": "string"}},
