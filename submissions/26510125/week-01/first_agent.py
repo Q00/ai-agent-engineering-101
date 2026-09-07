@@ -12,6 +12,7 @@ import sys
 import ast
 import json
 import operator
+from datetime import datetime
 
 from openai import OpenAI
 
@@ -46,7 +47,13 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+# ---- tool 3: clock ----
+def clock() -> str:
+    """Return the current date and time as a string, e.g. '2026-09-07 09:15:32'."""
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file, "clock": clock}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -64,6 +71,11 @@ TOOLS = [
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"}},
                         "required": ["path"]}}},
+    {"type": "function",
+     "function": {
+         "name": "clock",
+         "description": "Return the current date and time.",
+         "parameters": {"type": "object", "properties": {}, "required": []}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
