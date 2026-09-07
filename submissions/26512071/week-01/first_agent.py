@@ -1,17 +1,29 @@
-"""Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
+"""Week 01 - first agent with three tools: calculator, read_file, clock.
 
-Two tools: calculator, read_file. Your assignment: add a third.
-Requires: pip install openai, and in the environment:
-  OPENAI_API_KEY   your key (an OpenRouter key works)
-  OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
-  AGENT_MODEL      optional; defaults to gpt-4o-mini. For OpenRouter free
-                   models use e.g. AGENT_MODEL=meta-llama/llama-3.3-70b-instruct:free
+Based on the course starter `first_agent_openai.py` (OpenAI-compatible API,
+so it also speaks to OpenRouter).
+
+REPRODUCE
+---------
+    pip install openai tzdata
+    export OPENAI_BASE_URL=https://openrouter.ai/api/v1
+    export OPENAI_API_KEY=<your openrouter key>     # not committed
+    export AGENT_MODEL=meta-llama/llama-3.3-70b-instruct:free
+    python first_agent.py 2>&1 | tee logs/run-01.txt
+
+Defaults if the environment variables are unset:
+    AGENT_MODEL      gpt-4o-mini
+    OPENAI_BASE_URL  the OpenAI default (https://api.openai.com/v1)
+    goal (argv[1])   see DEFAULT_GOAL below
+The loop runs at most `max_steps` model turns (default 8).
 """
-import os
-import sys
 import ast
 import json
 import operator
+import os
+import sys
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 from openai import OpenAI
 
@@ -46,7 +58,43 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+# ---- tool 3: clock (the tool I added) ----
+DEFAULT_TZ = "Asia/Seoul"
+
+
+def clock(timezone: str = DEFAULT_TZ, date_str: str = "") -> str:
+    """Current wall-clock time, or the day_number of a given ISO date.
+
+    Returns JSON so the fields are unambiguous to the model. `day_number` is
+    the proleptic Gregorian ordinal: subtracting two day_numbers with the
+    `calculator` tool yields the number of days between the two dates.
+    """
+    try:
+        tz = ZoneInfo(timezone)
+    except Exception:
+        return (f"error: no timezone data for {timezone!r}. Use an IANA name "
+                "such as 'Asia/Seoul' or 'UTC'. (On Windows this also happens "
+                "when the tzdata package is missing: pip install tzdata)")
+
+    if date_str:
+        try:
+            d = date.fromisoformat(date_str.strip())
+        except ValueError:
+            return (f"error: {date_str!r} is not an ISO date. "
+                    "Use YYYY-MM-DD, e.g. '2026-09-01'.")
+        return json.dumps({"date": d.isoformat(),
+                           "weekday": d.strftime("%A"),
+                           "day_number": d.toordinal()}, ensure_ascii=False)
+
+    now = datetime.now(tz)
+    return json.dumps({"datetime": now.isoformat(timespec="seconds"),
+                       "date": now.date().isoformat(),
+                       "timezone": timezone,
+                       "weekday": now.strftime("%A"),
+                       "day_number": now.date().toordinal()}, ensure_ascii=False)
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file, "clock": clock}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -64,9 +112,21 @@ TOOLS = [
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"}},
                         "required": ["path"]}}},
+    {"type": "function",
+     "function": {
+         "name": "clock",
+         "description": "Return the current date and time.",
+         "parameters": {"type": "object",
+                        "properties": {
+                            "timezone": {"type": "string"},
+                            "date_str": {"type": "string"}},
+                        "required": []}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
+
+DEFAULT_GOAL = ("Read notes.txt, work out how much is still unpaid, and tell "
+                "me how many days have passed between the memo date and today.")
 
 
 def run(goal: str, max_steps: int = 8):
@@ -80,12 +140,23 @@ def run(goal: str, max_steps: int = 8):
         messages.append(msg)
 
         if not msg.tool_calls:               # final answer -> stop
+            print(f"[step {step}] final answer")
             return msg.content or ""
 
         for call in msg.tool_calls:          # execute tool calls -> observe
-            args = json.loads(call.function.arguments)
-            out = TOOLS_IMPL[call.function.name](**args)
-            print(f"  [tool] {call.function.name}({args}) -> {out}")
+            name = call.function.name
+            raw = call.function.arguments or "{}"
+            try:
+                args = json.loads(raw)
+                if name not in TOOLS_IMPL:
+                    out = f"error: no tool named {name!r}"
+                else:
+                    out = TOOLS_IMPL[name](**args)
+            except Exception as e:
+                # Hand the failure back to the model instead of crashing:
+                # a bad tool call is a recoverable observation, not a bug.
+                out = f"error: {type(e).__name__}: {e}"
+            print(f"[step {step}] [tool] {name}({raw}) -> {out}")
             messages.append({"role": "tool", "tool_call_id": call.id,
                              "content": str(out)})
 
@@ -93,6 +164,7 @@ def run(goal: str, max_steps: int = 8):
 
 
 if __name__ == "__main__":
-    goal = sys.argv[1] if len(sys.argv) > 1 else \
-        "Read notes.txt and sum the numbers in it."
+    goal = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_GOAL
+    print(f"model: {MODEL}")
+    print(f"goal:  {goal}\n")
     print(run(goal))
