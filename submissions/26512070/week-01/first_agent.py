@@ -134,6 +134,9 @@ def run(goal: str, max_steps: int = 8):
 
 
 if __name__ == "__main__":
-    goal = sys.argv[1] if len(sys.argv) > 1 else \
-        "Read notes.txt and sum the numbers in it."
+    goal = sys.argv[1] if len(sys.argv) > 1 else (
+        "Use seconds_recorder to record the current second and the second five "
+        "seconds later into seconds.txt. Then use read_file to read the two "
+        "values back. Then use calculator to add the two values, and report "
+        "the sum.")
     print(run(goal))
