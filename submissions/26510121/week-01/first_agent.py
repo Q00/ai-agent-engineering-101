@@ -84,7 +84,14 @@ TOOLS = [
     {"type": "function",
      "function": {
          "name": "write_note",
-         "description": "Append a note to settlement.txt.",
+         "description": (
+             "Use only when the user requests saving or recording results. "
+             "Append the supplied text to settlement.txt in the agent directory "
+             "as UTF-8, preserving existing content. For expense settlements, "
+             "include the expense breakdown, explicit arithmetic expressions "
+             "with their results, and the per-person share in content. "
+             "This tool does not calculate or verify numbers. "
+             "It returns a saved confirmation or an error."),
          "parameters": {"type": "object",
                         "properties": {"content": {"type": "string"}},
                         "required": ["content"]}}},

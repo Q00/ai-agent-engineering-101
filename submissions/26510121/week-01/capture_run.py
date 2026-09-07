@@ -23,8 +23,8 @@ def main():
     if not os.environ.get('OPENAI_API_KEY', '').strip():
         raise SystemExit('OPENAI_API_KEY is missing in this terminal.')
     label = sys.argv[1] if len(sys.argv) > 1 else 'run'
-    if label not in ('baseline', 'three-tools', 'run'):
-        raise SystemExit('Label must be baseline, three-tools, or run.')
+    if label not in ('baseline', 'three-tools', 'description-b', 'run'):
+        raise SystemExit('Label must be baseline, three-tools, description-b, or run.')
     Path('logs').mkdir(exist_ok=True)
     stamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')
     target = Path('logs') / f'{label}-{stamp}.txt'
