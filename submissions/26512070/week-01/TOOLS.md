@@ -74,13 +74,27 @@ Then the hard part: how does the agent *act at* second 18? I first considered
 pure polling — call the tool, read it back, check, retry. It does not work here,
 and the reason traces straight back to my own design choice:
 
-- Because the tool returns only a confirmation and not the numbers, **one probe
-  costs three requests** (`seconds_recorder`, `read_file`, `calculator`).
-- Each API round trip is roughly five seconds, so the wall clock advances ~15
-  seconds per probe. The probes therefore sample seconds about 15 apart —
-  5, 20, 35, 50, 5, … — and can miss 18 indefinitely.
-- One such run would also consume most of OpenRouter's 50-requests-per-day free
-  allowance.
+- Because the tool returns only a confirmation and not the numbers, a probe
+  needs `seconds_recorder` **and then** `read_file` before the agent knows what
+  it recorded - and those are strictly sequential, so they cannot be batched
+  into one turn. That is **two requests minimum**, three if the model also asks
+  `calculator` to check the sum rather than adding two small numbers itself.
+  Had the tool returned the values, a probe would have been **one** request; the
+  extra cost is a direct consequence of my own choice to withhold them.
+- I measured the round trip on this endpoint at **2.1 s and 4.5 s** across two
+  calls, so a probe burns roughly 4-14 seconds of wall clock. With
+  `max_steps = 20` that allows on the order of 6-10 probes, each landing on
+  about one second out of sixty: a hit probability near
+  **1 - (59/60)^7 ~= 11%**.
+- So a polling run would spend ~20 requests - 40% of OpenRouter's 50-per-day
+  free allowance - for roughly a one-in-ten chance of finishing.
+
+An earlier draft of this file claimed the probes would sample seconds at a fixed
+~15-second stride and could therefore miss 18 *indefinitely*. That was wrong, and
+measuring is what corrected it: the latency varies by more than a factor of two,
+so the sampled seconds drift rather than locking into a lattice, and a long
+enough run would eventually cover every second. The real objection to polling is
+not impossibility, it is a bad price for a coin flip.
 
 So rather than making the agent *guess* when to act, I gave it a way to *say*
 when: an optional `at_second`. Its description is
@@ -194,6 +208,10 @@ export OPENAI_API_KEY=<your OpenRouter key>     # never committed
 export AGENT_MODEL=minimax/minimax-m3:free
 python first_agent.py                            # the goal is the script's default
 ```
+
+Cost per run, counted from the logs (the loop issues one request per turn, and
+every turn here carried exactly one tool call): `run-03` 4 requests, `run-07` 5,
+`run-06` 7 - the whole search task is cheaper than one polling attempt would be.
 
 Model: `minimax/minimax-m3:free` via OpenRouter (OpenAI-compatible endpoint),
 `max_steps = 20`. An OpenRouter account with zero-data-retention **off** is
