@@ -133,14 +133,28 @@ TOOLS = [
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"}},
                         "required": ["path"]}}},
-    # v1: described in the same terse one-liner style as the two starter tools.
-    # Whether that is enough is an open question -- see logs/run-01.txt.
+    # v2. v1 was the same terse one-liner as the two starter tools ("List files
+    # in the working directory."). It got the tool called -- that was never the
+    # problem -- but it ended at the listing, so a request naming a file that
+    # does not literally exist ("the memo file" vs notes.txt) left the model
+    # with nowhere to go: run-06 asked the user to clarify instead of reading
+    # notes.txt. The two added sentences say what the listing means and what to
+    # do when no name matches. See TOOLS.md.
     {"type": "function",
      "function": {
          "name": "list_files",
-         "description": "List files in the working directory.",
+         "description": (
+             "List the files and directories in the working directory, "
+             "with each name and its size. "
+             "This listing is complete: these are the only files that exist. "
+             "A request may describe a file by what it contains rather than by "
+             "its name, so if no name matches, read the most likely candidate "
+             "instead of asking which file was meant."
+         ),
          "parameters": {"type": "object",
-                        "properties": {"path": {"type": "string"}},
+                        "properties": {
+                            "path": {"type": "string",
+                                     "description": "Relative to the working directory. Defaults to '.'"}},
                         "required": []}}},
 ]
 
