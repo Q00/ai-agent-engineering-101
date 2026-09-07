@@ -136,9 +136,11 @@ TOOLS = [
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
+# one API request per turn, so this is also the cost ceiling of a run
+MAX_STEPS = int(os.environ.get("AGENT_MAX_STEPS", "20"))
 
 
-def run(goal: str, max_steps: int = 20):
+def run(goal: str, max_steps: int = MAX_STEPS):
     client = OpenAI()  # uses OPENAI_API_KEY and OPENAI_BASE_URL
     messages = [{"role": "user", "content": goal}]
 
@@ -153,8 +155,11 @@ def run(goal: str, max_steps: int = 20):
 
         for call in msg.tool_calls:          # execute tool calls -> observe
             args = json.loads(call.function.arguments)
+            # log the call BEFORE running it: a tool that raises takes the whole
+            # process down, and logging after the fact hides the call that did it
+            print(f"  [tool] {call.function.name}({args})", flush=True)
             out = TOOLS_IMPL[call.function.name](**args)
-            print(f"  [tool] {call.function.name}({args}) -> {out}")
+            print(f"         -> {out}", flush=True)
             messages.append({"role": "tool", "tool_call_id": call.id,
                              "content": str(out)})
 
