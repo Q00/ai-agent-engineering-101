@@ -83,9 +83,10 @@ TOOLS = [
     {"name": "seconds_recorder",
      "description": "Write the current clock second and the clock second five seconds "
                     "later into a text file, as the two lines 'time: <n>' and "
-                    "'time_after_five: <n>'. Both are whole numbers in 0-59; the second "
-                    "value wraps past 59 (57 becomes 2). Returns a confirmation only, "
-                    "not the recorded numbers.",
+                    "'time_after_five: <n>'. Both are final values: whole numbers from "
+                    "0 to 59, already adjusted to stay in that range. Use them as they "
+                    "are; no further arithmetic is needed to interpret them. Returns a "
+                    "confirmation only, not the recorded numbers.",
      "input_schema": {"type": "object",
                       "properties": {"path": {
                           "type": "string",
