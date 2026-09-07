@@ -8,6 +8,8 @@ Requires: pip install openai, and in the environment:
   OPENAI_BASE_URL  https://openrouter.ai/api/v1
   AGENT_MODEL      optional; defaults to minimax/minimax-m3:free
 
+Sampling is pinned in code: temperature=0.0. See TOOLS.md.
+
 Run:
     python first_agent.py
     python first_agent.py "your own goal here"
@@ -22,6 +24,10 @@ from openai import OpenAI
 
 MODEL = os.environ.get("AGENT_MODEL", "minimax/minimax-m3:free")
 MAX_STEPS = 8
+# Pinned, not left to the client default: run-01 and run-02 were the same code
+# and the same goal but took different tool paths. A sampling parameter left
+# implicit cannot be reproduced by someone reading this file.
+TEMPERATURE = 0.0
 
 # ---- tool 1: calculator (safe, no eval) ----
 _OPS = {ast.Add: operator.add, ast.Sub: operator.sub,
@@ -131,13 +137,14 @@ TOOLS = [
 def run(goal: str, max_steps: int = MAX_STEPS):
     client = OpenAI()  # uses OPENAI_API_KEY and OPENAI_BASE_URL
     messages = [{"role": "user", "content": goal}]
-    print(f"model={MODEL}  max_steps={max_steps}")
+    print(f"model={MODEL}  temperature={TEMPERATURE}  max_steps={max_steps}")
     print(f"goal: {goal}\n")
 
     for step in range(max_steps):   # <- this loop is what makes it an agent
         print(f"[step {step + 1}/{max_steps}]")
         resp = client.chat.completions.create(
-            model=MODEL, tools=TOOLS, messages=messages)
+            model=MODEL, tools=TOOLS, messages=messages,
+            temperature=TEMPERATURE)
         msg = resp.choices[0].message
         messages.append(msg)
 
