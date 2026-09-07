@@ -45,8 +45,14 @@ def read_file(path: str) -> str:
     with open(full, encoding="utf-8") as f:
         return f.read()[:4000]
 
+# ---- tool 3: word_count ----
+def word_count(text: str) -> str:
+    """Count whitespace-separated words in text."""
+    words = text.split()
+    return str(len(words))
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file, "word_count": word_count}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -64,6 +70,14 @@ TOOLS = [
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"}},
                         "required": ["path"]}}},
+
+        {"type": "function",
+         "function": {
+             "name": "word_count",
+             "description": "Count whitespace-separated words in text when an exact word count is required.",
+             "parameters": {"type": "object",
+                            "properties": {"text": {"type": "string"}},
+                            "required": ["text"]}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
