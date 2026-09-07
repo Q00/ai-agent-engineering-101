@@ -1,23 +1,18 @@
 # TOOLS.md
 
-`clock` is my third tool: a zero-argument function that returns the current
-date and time as a string. I gave it the simplest description I could —
-`"Return the current date and time."`, with an empty parameter schema — on
-purpose, as a small experiment in how little a description can say and still
-work.
-
-It didn't always work. Asking plainly, `"지금 몇 시야?"`, the model never called
-`clock` — it just made up a date, and got it wrong (`logs/run-01.txt`). The
-description says *what* the tool does but never *when* to reach for it, so the
-model filled that gap by guessing instead of asking. Asked more directly,
-`"clock 도구를 써서 지금 시각을 알려줘"`, it called the tool correctly
-(`logs/run-02.txt`). And given a task that needed all three tools at once, it
-chained `read_file` → `clock` → `calculator` on its own without any hand-holding
-(`logs/run-03.txt`).
-
-That contrast is the actual finding: the description alone didn't guarantee the
-right tool got picked — how explicit the prompt was mattered just as much. A
-longer description ("use this whenever the user asks about the time, date, or
-'now'") would probably have fixed run-01, at the cost of being longer and more
-rigid. I left it short on purpose, because the failure was more informative
-than a quiet success would have been.
+세 번째 도구로 추가한 `clock`은 인자 없이 현재 날짜와 시각을 문자열로 돌려주는
+함수이고, description은 일부러 가장 짧게 `"Return the current date and time."`
+한 문장에 파라미터 스키마도 비워서(`properties: {}`) 썼다 — 설명을 얼마나 줄여도
+모델이 도구를 제대로 골라 쓰는지 보고 싶었기 때문이다. 결과는 항상 성공은
+아니었다: `"지금 몇 시야?"`라고 평범하게 물었을 때는 모델이 `clock`을 아예
+호출하지 않고 틀린 날짜를 지어내서 답했는데(`logs/run-01.txt`), description에
+이 도구가 *무엇을* 하는지만 있고 *언제* 써야 하는지는 없어서 모델이 그 빈틈을
+추측으로 채운 것으로 보인다. 반대로 `"clock 도구를 써서 지금 시각을 알려줘"`처럼
+더 직접적으로 물었을 때는 제대로 호출했고(`logs/run-02.txt`), 세 도구가 다
+필요한 복합 과제에서는 `read_file → clock → calculator` 순서로 알아서 다 이어
+호출했다(`logs/run-03.txt`). 즉 description 문구 하나만으로는 도구 선택이
+보장되지 않았고 사용자가 얼마나 명시적으로 물었는지가 그만큼 중요했는데,
+description을 더 길게(예: "사용자가 시간, 날짜, '지금'을 물으면 이 도구를 써라")
+썼다면 run-01도 성공했겠지만 그만큼 문구는 길고 경직됐을 것이다 — 짧게 남겨둔
+건, 조용히 성공하는 것보다 어디서 실패하는지 보이는 쪽이 더 많은 정보를 준다고
+봤기 때문에 내린 의도적인 선택이다.
