@@ -12,6 +12,7 @@ import sys
 import ast
 import json
 import operator
+import time
 from datetime import datetime
 
 from openai import OpenAI
@@ -55,13 +56,31 @@ def _inside_cwd(full: str) -> bool:
         return False
 
 
-def seconds_recorder(path: str) -> str:
-    """Write the current second and the second five seconds later to a text file."""
+def seconds_recorder(path: str, at_second=None) -> str:
+    """Record a clock second, optionally waiting for a specific one, into a file."""
     full = os.path.abspath(path)
     if not _inside_cwd(full):
         return "denied: path outside the working directory"
-    now = datetime.now().second     # already a whole number in 0..59
-    after = (now + 5) % 60          # wraps past 59: 57 -> 2
+
+    if at_second is None:
+        now = datetime.now().second     # already a whole number in 0..59
+    else:
+        try:
+            target = int(at_second)
+        except (TypeError, ValueError):
+            return f"denied: at_second must be a whole number 0-59, got {at_second!r}"
+        if not 0 <= target <= 59:
+            return f"denied: at_second must be a whole number 0-59, got {target}"
+        deadline = time.monotonic() + 61
+        while True:                     # block until the clock shows that second
+            now = datetime.now().second
+            if now == target:
+                break
+            if time.monotonic() > deadline:
+                return f"failed: second {target} never came around within 61s"
+            time.sleep(0.01)
+
+    after = (now + 5) % 60              # wraps past 59: 57 -> 2
     try:
         with open(full, "w", encoding="utf-8") as f:
             f.write(f"time: {now}\ntime_after_five: {after}\n")
@@ -92,25 +111,34 @@ TOOLS = [
     {"type": "function",
      "function": {
          "name": "seconds_recorder",
-         "description": "Write the current clock second and the clock second five "
-                        "seconds later into a text file, as the two lines "
-                        "'time: <n>' and 'time_after_five: <n>'. Both are final "
-                        "values: whole numbers from 0 to 59, already adjusted to "
-                        "stay in that range. Use them as they are; no further "
-                        "arithmetic is needed to interpret them. Returns a "
-                        "confirmation only, not the recorded numbers.",
+         "description": "Record two clock seconds into a text file, as the two "
+                        "lines 'time: <n>' and 'time_after_five: <n>': the second "
+                        "the recording happens at, and the second five seconds "
+                        "after that. Both are final values: whole numbers from 0 "
+                        "to 59, already adjusted to stay in that range. Use them "
+                        "as they are; no further arithmetic is needed to interpret "
+                        "them. Pass at_second to make the tool wait until the "
+                        "clock reaches that second before recording; omit it to "
+                        "record immediately. Returns a confirmation only, not the "
+                        "recorded numbers.",
          "parameters": {"type": "object",
-                        "properties": {"path": {
-                            "type": "string",
-                            "description": "Destination file inside the working "
-                                           "directory, e.g. 'seconds.txt'."}},
+                        "properties": {
+                            "path": {
+                                "type": "string",
+                                "description": "Destination file inside the working "
+                                               "directory, e.g. 'seconds.txt'."},
+                            "at_second": {
+                                "type": "integer", "minimum": 0, "maximum": 59,
+                                "description": "Optional. Wait until the clock shows "
+                                               "this second, then record. Waiting "
+                                               "takes up to one minute."}},
                         "required": ["path"]}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
 
 
-def run(goal: str, max_steps: int = 8):
+def run(goal: str, max_steps: int = 20):
     client = OpenAI()  # uses OPENAI_API_KEY and OPENAI_BASE_URL
     messages = [{"role": "user", "content": goal}]
 
@@ -134,9 +162,14 @@ def run(goal: str, max_steps: int = 8):
 
 
 if __name__ == "__main__":
+    # the model answers in UTF-8; a Windows console defaults to cp949 and
+    # dies on characters like an em dash, after all the work is done
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     goal = sys.argv[1] if len(sys.argv) > 1 else (
-        "Use seconds_recorder to record the current second and the second five "
-        "seconds later into seconds.txt. Then use read_file to read the two "
-        "values back. Then use calculator to add the two values, and report "
-        "the sum.")
+        "seconds_recorder records two numbers: the second it runs at, and the "
+        "second five seconds after that. Find the second it must run at for "
+        "those two numbers to add up to exactly 41. Test candidate seconds with "
+        "calculator until you find it. Then run seconds_recorder at that second "
+        "with path 'notes.txt'. Finally read notes.txt with read_file and add "
+        "its two values with calculator to confirm the sum is 41.")
     print(run(goal))
