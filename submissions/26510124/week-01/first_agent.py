@@ -79,7 +79,11 @@ TOOLS = [
     {"type": "function",
      "function": {
          "name": "write_note",
-         "description": "Write a note.",
+         "description": "Append one line of text to a file in the working "
+                        "directory, creating the file if it does not exist. "
+                        "Existing content is preserved; this tool never "
+                        "overwrites. Paths outside the working directory "
+                        "are rejected.",
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"},
                                        "content": {"type": "string"}},
