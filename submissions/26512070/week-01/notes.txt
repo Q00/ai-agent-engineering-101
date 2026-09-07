@@ -1,8 +1,22 @@
-Meeting memo, 2026-09-01
+Week-01 task input notes — 26512070
 
-Attendees: 4
-Pizza budget: 48000
-Drinks: 9500
-Reimbursed so far: 12000
+This task generates its own input instead of reading a fixed data file.
 
-Sum the numbers above to get the total the agent should report.
+The agent's goal (the default in first_agent.py) is:
+
+    Use seconds_recorder to record the current second and the second five
+    seconds later into seconds.txt. Then use read_file to read the two
+    values back. Then use calculator to add the two values, and report
+    the sum.
+
+So the file read_file opens is seconds.txt, which seconds_recorder writes
+at the start of every run. It is not committed because its contents change
+on every run; a captured example is in logs/run-03-minimax-m3.txt, where
+the run produced:
+
+    time: 43
+    time_after_five: 48
+
+The starter's meeting-memo notes.txt was replaced: its numbers belonged to
+the starter's "sum the numbers in this file" task, and leaving them here
+would have given read_file a second, irrelevant file to pick from.
