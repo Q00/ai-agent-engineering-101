@@ -1,11 +1,22 @@
-"""Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
+"""Week 01 — first agent, three tools: calculator, read_file, write_note.
 
-Two tools: calculator, read_file. Your assignment: add a third.
-Requires: pip install openai, and in the environment:
-  OPENAI_API_KEY   your key (an OpenRouter key works)
-  OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
-  AGENT_MODEL      optional; defaults to gpt-4o-mini. For OpenRouter free
-                   models use e.g. AGENT_MODEL=meta-llama/llama-3.3-70b-instruct:free
+Task solved: read notes.txt, sum the numbers in it, and record the result in
+memo.txt. The model chains all three tools on its own; nothing is hardcoded.
+
+Reproducing a run
+    pip install openai
+    export OPENAI_API_KEY=<your key>          # never committed to this repo
+    cd submissions/26510124/week-01
+    python first_agent.py                     # uses the default goal below
+    python first_agent.py "<any other goal>"  # or pass your own
+
+Settings
+    model      gpt-4o-mini            (override with AGENT_MODEL)
+    base url   OpenAI default         (set OPENAI_BASE_URL for OpenRouter etc.)
+    loop       max_steps=8; stops as soon as the model returns no tool_calls
+
+Adapted from weeks/week-01/starter/first_agent_openai.py. Why write_note is
+described the way it is — and the runs that settled it — is in TOOLS.md.
 """
 import os
 import sys
