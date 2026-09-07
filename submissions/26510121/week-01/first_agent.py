@@ -97,6 +97,13 @@ TOOLS = [
                         "required": ["content"]}}},
 ]
 
+# Comparison switch: only the model-visible description changes.
+DESCRIPTION_VARIANT = os.environ.get("WRITE_NOTE_DESCRIPTION", "B")
+if DESCRIPTION_VARIANT not in ("A", "B"):
+    raise ValueError("WRITE_NOTE_DESCRIPTION must be A or B")
+if DESCRIPTION_VARIANT == "A":
+    TOOLS[2]["function"]["description"] = "Append a note to settlement.txt."
+
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
 
 

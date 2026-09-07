@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import os
+import json
 
 root = pathlib.Path(__file__).resolve().parent
 source = (root / 'first_agent.py').read_text(encoding='utf-8')
@@ -29,4 +30,17 @@ with tempfile.TemporaryDirectory(dir=root, prefix='offline-check-') as directory
                        env=env, stdout=output, check=True)
     assert captured.read_text(encoding='utf-8').strip() == sample
 print('PASS: syntax, empty-input rejection, append preservation, Korean/U+202F UTF-8 file and capture round trip.')
+schemas = []
+for variant in ('A', 'B'):
+    env = dict(os.environ, WRITE_NOTE_DESCRIPTION=variant, PYTHONIOENCODING='utf-8')
+    raw = subprocess.check_output(
+        [sys.executable, '-c', 'import json, first_agent; print(json.dumps(first_agent.TOOLS))'],
+        cwd=root, env=env)
+    schemas.append(json.loads(raw.decode('utf-8')))
+a_description = schemas[0][2]['function'].pop('description')
+b_description = schemas[1][2]['function'].pop('description')
+assert a_description == 'Append a note to settlement.txt.'
+assert 'Use only when' in b_description
+assert schemas[0] == schemas[1]
+print('PASS: A/B switches only the write_note description; other tool schemas match.')
 print('Offline checks only. Model tool selection and actual model-driven saving remain untested.')
