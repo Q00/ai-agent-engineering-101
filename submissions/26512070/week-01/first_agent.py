@@ -7,6 +7,7 @@ import os
 import sys
 import ast
 import operator
+from datetime import datetime
 
 import anthropic
 
@@ -41,7 +42,31 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+# ---- tool 3: seconds_recorder (write the current second and the one 5s later) ----
+def _inside_cwd(full: str) -> bool:
+    try:
+        return os.path.commonpath([full, os.getcwd()]) == os.getcwd()
+    except ValueError:          # different drive on Windows
+        return False
+
+
+def seconds_recorder(path: str) -> str:
+    """Write the current second and the second five seconds later to a text file."""
+    full = os.path.abspath(path)
+    if not _inside_cwd(full):
+        return "denied: path outside the working directory"
+    now = datetime.now().second     # already a whole number in 0..59
+    after = (now + 5) % 60          # wraps past 59: 57 -> 2
+    try:
+        with open(full, "w", encoding="utf-8") as f:
+            f.write(f"time: {now}\ntime_after_five: {after}\n")
+    except OSError as e:
+        return f"failed to write: {e}"
+    return f"wrote 2 lines to {os.path.basename(full)}"
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,
+              "seconds_recorder": seconds_recorder}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -54,6 +79,18 @@ TOOLS = [
      "description": "Read a text file in the working directory.",
      "input_schema": {"type": "object",
                       "properties": {"path": {"type": "string"}},
+                      "required": ["path"]}},
+    {"name": "seconds_recorder",
+     "description": "Write the current clock second and the clock second five seconds "
+                    "later into a text file, as the two lines 'time: <n>' and "
+                    "'time_after_five: <n>'. Both are whole numbers in 0-59; the second "
+                    "value wraps past 59 (57 becomes 2). Returns a confirmation only, "
+                    "not the recorded numbers.",
+     "input_schema": {"type": "object",
+                      "properties": {"path": {
+                          "type": "string",
+                          "description": "Destination file inside the working "
+                                         "directory, e.g. 'seconds.txt'."}},
                       "required": ["path"]}},
 ]
 
