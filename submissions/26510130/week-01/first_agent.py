@@ -50,6 +50,15 @@ def calculator(expression: str) -> str:
     return str(_ev(ast.parse(expression, mode="eval").body))
 
 
+# The agent writes its transcript into logs/, which sits inside the directory it
+# can observe. run-03 caught it listing logs/ and seeing the very file the
+# current run was writing (0 bytes). That is a feedback loop, and it also means
+# the environment grew by one file every run -- so run-01..run-04 were not four
+# runs of the same setup. The agent's own output is not part of the task
+# environment, so it is not observable.
+HIDDEN = {"logs", "__pycache__"}
+
+
 # ---- shared sandbox check, used by read_file and list_files ----
 def _safe_path(path: str) -> str | None:
     """Resolve path under the working directory; None if it escapes.
@@ -62,6 +71,8 @@ def _safe_path(path: str) -> str | None:
     full = os.path.realpath(os.path.join(root, path))
     if full != root and not full.startswith(root + os.sep):
         return None
+    if HIDDEN & set(os.path.relpath(full, root).split(os.sep)):
+        return None
     return full
 
 
@@ -70,7 +81,7 @@ def read_file(path: str) -> str:
     """Return the contents of a text file."""
     full = _safe_path(path)
     if full is None:
-        return "denied: path outside the working directory"
+        return "denied: path is outside the working directory or not part of the task environment"
     if not os.path.isfile(full):
         return f"error: no such file ({path})"
     with open(full, encoding="utf-8") as f:
@@ -82,13 +93,13 @@ def list_files(path: str = ".") -> str:
     """List files and directories in the working directory."""
     full = _safe_path(path)
     if full is None:
-        return "denied: path outside the working directory"
+        return "denied: path is outside the working directory or not part of the task environment"
     if not os.path.isdir(full):
         return f"error: not a directory ({path})"
 
     lines = []
     for name in sorted(os.listdir(full)):
-        if name.startswith(".") or name == "__pycache__":
+        if name.startswith(".") or name in HIDDEN:
             continue
         child = os.path.join(full, name)
         if os.path.isdir(child):
