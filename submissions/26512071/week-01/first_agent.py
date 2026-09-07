@@ -121,11 +121,30 @@ TOOLS = [
     {"type": "function",
      "function": {
          "name": "clock",
-         "description": "Return the current date and time.",
+         "description": (
+             "Look up a real calendar date. With no arguments it returns the "
+             "current date and time from the system clock. With date_str it "
+             "returns the same fields for that past or future date instead of "
+             "reading the clock. "
+             "Returns JSON with datetime, date, timezone, weekday and "
+             "day_number. day_number is an absolute integer day count: to get "
+             "the number of days between two dates, call clock twice - once "
+             "per date - and subtract the two day_numbers with the calculator "
+             "tool. Never subtract the day-of-month numbers instead; that is "
+             "only correct when both dates fall in the same month. "
+             "This tool does no arithmetic itself."),
          "parameters": {"type": "object",
                         "properties": {
-                            "timezone": {"type": "string"},
-                            "date_str": {"type": "string"}},
+                            "timezone": {
+                                "type": "string",
+                                "description": ("IANA timezone name, e.g. "
+                                                "'Asia/Seoul' (the default) "
+                                                "or 'UTC'.")},
+                            "date_str": {
+                                "type": "string",
+                                "description": ("An ISO date, 'YYYY-MM-DD'. "
+                                                "Omit it to read the current "
+                                                "clock.")}},
                         "required": []}}},
 ]
 
@@ -197,6 +216,13 @@ def run(goal: str, max_steps: int = 8):
 
 
 if __name__ == "__main__":
+    # The model writes real Unicode (e.g. U+2212 MINUS SIGN). A Windows
+    # console defaults to cp949 here and raised UnicodeEncodeError on the
+    # final answer, losing it from the log, so force utf-8 on both streams.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
     goal = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_GOAL
     print(f"model: {MODEL}")
     print(f"base:  {BASE_URL}")
