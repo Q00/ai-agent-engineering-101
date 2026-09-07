@@ -1,6 +1,6 @@
 """Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
 
-Two tools: calculator, read_file. Your assignment: add a third.
+Three tools: calculator, read_file, write_note.
 Requires: pip install openai, and in the environment:
   OPENAI_API_KEY   your key (an OpenRouter key works)
   OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
@@ -12,6 +12,7 @@ import sys
 import ast
 import json
 import operator
+from pathlib import Path
 
 from openai import OpenAI
 
@@ -46,7 +47,23 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+def write_note(content: str) -> str:
+    """Append text to the fixed settlement file, without overwriting it."""
+    target = Path(__file__).resolve().parent / "settlement.txt"
+    if target.is_symlink():
+        return "error: settlement.txt must not be a symbolic link"
+    if not content.strip():
+        return "error: content must not be empty"
+    try:
+        with target.open("a", encoding="utf-8") as output:
+            output.write(content + "\n")
+    except OSError as error:
+        return f"error: could not append settlement.txt ({type(error).__name__})"
+    return "saved: content appended to settlement.txt"
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file,
+              "write_note": write_note}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
@@ -64,6 +81,13 @@ TOOLS = [
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"}},
                         "required": ["path"]}}},
+    {"type": "function",
+     "function": {
+         "name": "write_note",
+         "description": "Append a note to settlement.txt.",
+         "parameters": {"type": "object",
+                        "properties": {"content": {"type": "string"}},
+                        "required": ["content"]}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
