@@ -6,15 +6,20 @@ so it also speaks to OpenRouter).
 REPRODUCE
 ---------
     pip install openai tzdata
-    export OPENAI_BASE_URL=https://openrouter.ai/api/v1
-    export OPENAI_API_KEY=<your openrouter key>     # not committed
-    export AGENT_MODEL=meta-llama/llama-3.3-70b-instruct:free
+
+Windows cmd (no quotes, no spaces around '='):
+    set OPENROUTER_API_KEY=<your openrouter key>    # never committed
+    python first_agent.py > logs\run-01.txt 2>&1
+
+bash:
+    export OPENROUTER_API_KEY=<your openrouter key>
     python first_agent.py 2>&1 | tee logs/run-01.txt
 
 Defaults if the environment variables are unset:
-    AGENT_MODEL      gpt-4o-mini
-    OPENAI_BASE_URL  the OpenAI default (https://api.openai.com/v1)
+    AGENT_MODEL      minimax/minimax-m3:free
+    OPENAI_BASE_URL  https://openrouter.ai/api/v1
     goal (argv[1])   see DEFAULT_GOAL below
+The key is read from OPENROUTER_API_KEY, falling back to OPENAI_API_KEY.
 The loop runs at most `max_steps` model turns (default 8).
 """
 import ast
@@ -22,10 +27,11 @@ import json
 import operator
 import os
 import sys
+import time
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
 
 # ---- tool 1: calculator (safe, no eval) ----
 _OPS = {ast.Add: operator.add, ast.Sub: operator.sub,
@@ -123,19 +129,46 @@ TOOLS = [
                         "required": []}}},
 ]
 
-MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
+# ---- provider configuration (everything except the key itself) ----
+BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://openrouter.ai/api/v1")
+MODEL = os.environ.get("AGENT_MODEL", "minimax/minimax-m3:free")
+API_KEY = (os.environ.get("OPENROUTER_API_KEY")
+           or os.environ.get("OPENAI_API_KEY"))
 
 DEFAULT_GOAL = ("Read notes.txt, work out how much is still unpaid, and tell "
                 "me how many days have passed between the memo date and today.")
 
 
+# Free-tier endpoints share an upstream pool, so 429 is routine rather than
+# exceptional. Waits grow so a busy pool is not hammered.
+RETRY_WAITS = (5, 15, 45)
+
+
+def _chat(client, messages):
+    """One model turn, retrying the free tier's shared-pool 429s."""
+    for attempt, wait in enumerate((*RETRY_WAITS, None), start=1):
+        try:
+            return client.chat.completions.create(
+                model=MODEL, tools=TOOLS, messages=messages)
+        except RateLimitError:
+            if wait is None:
+                raise
+            print(f"  [429] upstream free pool is saturated; waiting {wait}s "
+                  f"(retry {attempt}/{len(RETRY_WAITS)})", flush=True)
+            time.sleep(wait)
+
+
 def run(goal: str, max_steps: int = 8):
-    client = OpenAI()  # uses OPENAI_API_KEY and OPENAI_BASE_URL
+    if not API_KEY:
+        sys.exit("set OPENROUTER_API_KEY (or OPENAI_API_KEY) first; see the "
+                 "REPRODUCE block at the top of this file")
+    # max_retries=0: this file does its own visible backoff instead, so the
+    # log records every 429 rather than hiding retries inside the SDK.
+    client = OpenAI(api_key=API_KEY, base_url=BASE_URL, max_retries=0)
     messages = [{"role": "user", "content": goal}]
 
     for step in range(max_steps):   # <- this loop is what makes it an agent
-        resp = client.chat.completions.create(
-            model=MODEL, tools=TOOLS, messages=messages)
+        resp = _chat(client, messages)
         msg = resp.choices[0].message
         messages.append(msg)
 
@@ -166,5 +199,6 @@ def run(goal: str, max_steps: int = 8):
 if __name__ == "__main__":
     goal = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_GOAL
     print(f"model: {MODEL}")
+    print(f"base:  {BASE_URL}")
     print(f"goal:  {goal}\n")
     print(run(goal))
