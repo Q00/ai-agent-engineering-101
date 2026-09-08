@@ -38,7 +38,7 @@ def specs():
                             "GEMINI_API_KEY", "https://generativelanguage.googleapis.com/v1beta/openai/",
                             "low", 8192, 60.0),
         "solar": ModelSpec("upstage", os.getenv("META_SOLAR_MODEL", "solar-pro4"),
-                           "UPSTAGE_API_KEY", "https://api.upstage.ai/v1", "medium", 8192, 90.0),
+                           "UPSTAGE_API_KEY", "https://api.upstage.ai/v1", "none", 8192, 90.0),
     }
 
 

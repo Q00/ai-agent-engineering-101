@@ -37,7 +37,13 @@ Gemini 연결은 [공식 OpenAI 호환 API](https://ai.google.dev/gemini-api/doc
 Solar는 [Upstage 공식 cookbook](https://github.com/UpstageAI/Solar-Pro4-Cookbook)의
 OpenAI 호환 Chat Completions 연결 방식을 따른다. 기본적인 텍스트·도구 호출 인터페이스를
 사용하며, 세 제공자의 모든 옵션이 같은 의미로 동작한다고 가정하지 않는다.
-클라이언트마다 키와 엔드포인트를 명시하고 GPT의 `reasoning_effort=none`을 다른 제공자에 전달하지 않는다.
+클라이언트마다 키와 엔드포인트를 명시한다. GPT는 `reasoning_effort=none`, Gemini는 `low`,
+Solar는 `none`을 사용한다. Solar는 처음 `medium`에서 8192토큰을 모두 추론에 사용하고
+본문을 반환하지 못했다. 이 작은 정책 수정 작업에서는
+[공식 매개변수 가이드](https://github.com/UpstageAI/Solar-Pro4-Cookbook/tree/main/capabilities/parameters)의
+`none` 설정으로 변경했다. GPT·Gemini의 제안/비평에는 API JSON 스키마를
+지정하고, Solar를 포함한 모든 출력은 로컬에서도 필드와 범위를 검사한다. 출력이 잘리거나
+형식 검증에 실패하면 후보를 실행하지 않는다.
 
 ## 개선할 수 있는 것과 고정한 것
 
@@ -96,8 +102,11 @@ OpenAI 호환 Chat Completions 연결 방식을 따른다. 기본적인 텍스�
 `.env.example`에 있다. `.env`는 Git에서 제외된다. `--check`는 키 설정 여부만 확인하며,
 Gemini와 Solar의 실제 모델 접근 권한은 아직 검증하지 않았다.
 
-기본값은 제안 2라운드, 사례별 3회 반복, 전체 API 요청 최대 200회이다. 한 요청의 출력 상한은
-2048토큰, 타임아웃은 45초이며 SDK 자동 재시도는 끈다. API 오류도 호출 예산에 포함된다.
+기본값은 제안 2라운드, 사례별 3회 반복, 전체 API 요청 최대 200회이다. 한 요청의 출력 상한과
+타임아웃은 GPT 2048토큰/45초, Gemini 8192토큰/60초, Solar 8192토큰/90초이다.
+제공자별 출력 상한에는 추론 토큰이 영향을 줄 수 있다. SDK 자동 재시도는 끄고,
+API 오류도 호출 예산에 포함한다. 모든 후보 생성이 형식/API 오류로 실패하면
+`search_failed`와 종료 코드 1을 반환하며, 정상 평가에서 탈락한 `baseline_retained`와 구분한다.
 호출 예산은 금액 한도가 아니다. 예산 소진 시 진행 중 증거를 보존하고 해당 탐색을 중단한다.
 서비스 오류는 가짜 모델 답변으로 대체하지 않는다.
 
@@ -107,8 +116,8 @@ Gemini와 Solar의 실제 모델 접근 권한은 아직 검증하지 않았다.
 
 - 실제 실행: `logs/meta-harness-live/<실행 ID>/`
 - 오프라인 데모: `logs/meta-harness-demo/<실행 ID>/`
-- `manifest.json`: 실행 모드, 역할별 모델·공개 설정, 사례 해시.
-- `events.jsonl`: 요청·응답, 후보, 실패, 실행 trace와 채택 판단.
+- `manifest.json`: 실행 모드, 역할별 모델·공개 설정, 사례 해시, 실행 코드 파일별 해시.
+- `events.jsonl`: 요청·응답, 종료 사유와 제공자 원본 사용량, 후보, 실패, 실행 trace와 채택 판단.
 - `result.json`: 선택 정책과 검증 결과, 전체 요청 시도 수, 개선 과정과 실행기의 사용량을 나눈 집계.
 
 **`mode=demo` 기록은 실제 GPT·Gemini·Solar 성능 자료가 아니다.** 데모는 손으로 정의한 응답과
