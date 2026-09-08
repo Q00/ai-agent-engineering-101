@@ -53,6 +53,8 @@ def main():
     budget = Budget(args.max_calls)
     manifest = {"mode": mode_name, "arguments": vars(args), "roles": assignments,
                 "models": {k: asdict(v) for k, v in models.items()},
+                "source_sha256": {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                                  for p in sorted(Path(__file__).parent.glob("*.py"))},
                 "fixtures": {split: {c.name: hashlib.sha256(c.text.encode()).hexdigest() for c in cases}
                              for split, cases in (("training", training), ("heldout", heldout))},
                 "measurement": "synthetic_demo_counters" if args.demo else "provider_reported_usage"}
@@ -86,7 +88,7 @@ def main():
             print(f"[{mode_name}] {result['status']}; call attempts={budget.calls}")
             if args.demo:
                 print("OFFLINE DEMO ONLY: scripted outputs and synthetic counters; no quality claim.")
-            return 0
+            return 1 if result["status"] == "search_failed" else 0
         except Exception as exc:
             result = {"mode": mode_name, "status": "aborted", "error_type": type(exc).__name__,
                       "total_model_call_attempts": budget.calls, "ledger": ledger}

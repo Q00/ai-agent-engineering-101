@@ -7,10 +7,10 @@ import unittest
 from unittest.mock import patch
 
 from meta_harness import __main__ as cli
-from meta_harness.clients import Budget, BudgetExceeded, specs
+from meta_harness.clients import Budget, BudgetExceeded, Completion, specs
 from meta_harness.demo import DemoClient
 from meta_harness.evaluation import suite
-from meta_harness.search import optimize
+from meta_harness.search import ask, optimize
 
 
 def demo_clients(budget, emit):
@@ -20,6 +20,19 @@ def demo_clients(budget, emit):
 
 
 class SearchTests(unittest.TestCase):
+    def test_truncated_valid_json_is_still_rejected_and_failed_search_is_explicit(self):
+        from unittest.mock import Mock
+        reviewer = Mock()
+        reviewer.complete.return_value = Completion(
+            {"content": '{"issues": [], "recommendation": "Keep all history."}'}, 10, 20, 0.0, "length")
+        with self.assertRaisesRegex(ValueError, "Incomplete reviewer response"):
+            ask(reviewer, "reviewer", {}, "Review")
+        clients = demo_clients(Budget(), lambda *a, **k: None)
+        clients["reviewer"] = reviewer
+        result = optimize(clients, *suite(), 1, 1, lambda *a, **k: None)
+        self.assertEqual(result["status"], "search_failed")
+        self.assertFalse(result["history"][0]["accepted"])
+
     def test_end_to_end_demo_and_heldout_is_never_search_feedback(self):
         events = []
         emit = lambda kind, **data: events.append({"event": kind, **data})

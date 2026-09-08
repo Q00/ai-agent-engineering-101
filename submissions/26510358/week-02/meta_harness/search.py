@@ -3,7 +3,7 @@ from dataclasses import asdict
 import json
 
 from .clients import BudgetExceeded
-from .contracts import Policy, gate, json_object
+from .contracts import Policy, gate, json_object, response_schema
 from .evaluation import evaluate
 
 CONTRACT = (
@@ -27,8 +27,19 @@ CONTRACT = (
 def ask(client, role, payload, instruction):
     reply = client.complete([
         {"role": "system", "content": CONTRACT + " " + instruction},
-        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}], role=role)
-    return json_object(reply.message.get("content") or "")
+        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
+        role=role, response_schema=response_schema(role))
+    if reply.finish_reason not in (None, "stop"):
+        raise ValueError(f"Incomplete {role} response: {reply.finish_reason}")
+    value = json_object(reply.message.get("content") or "")
+    # Validate locally too: not every provider supports API-enforced schemas.
+    expected = {"issues", "recommendation"} if role == "reviewer" else {"policy", "rationale"}
+    if set(value) != expected:
+        raise ValueError(f"Invalid {role} response fields")
+    explanation = "recommendation" if role == "reviewer" else "rationale"
+    if not isinstance(value[explanation], str) or not value[explanation].strip():
+        raise ValueError(f"Missing {role} explanation")
+    return value
 
 
 def optimize(clients, training, heldout, rounds, repeats, emit):
@@ -81,7 +92,8 @@ def optimize(clients, training, heldout, rounds, repeats, emit):
     # Stop proposing before seeing heldout outcomes. An unchanged baseline needs
     # no claimed improvement; otherwise both policies see identical heldout cases.
     if current == baseline:
-        return {"status": "baseline_retained", "selected_policy": asdict(baseline),
+        failed = all(t["reason"].startswith("invalid_or_failed_candidate:") for t in history)
+        return {"status": "search_failed" if failed else "baseline_retained", "selected_policy": asdict(baseline),
                 "reason": "No candidate passed the training gate", "history": history}
     emit("heldout_start", candidate=asdict(current))
     old = evaluate(baseline, heldout, repeats, clients["executor"], emit)

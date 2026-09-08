@@ -34,6 +34,21 @@ def json_object(text):
     return value
 
 
+def response_schema(role):
+    if role == "reviewer":
+        properties = {"issues": {"type": "array", "items": {"type": "string"}},
+                      "recommendation": {"type": "string"}}
+    else:
+        properties = {"policy": {"type": "object", "additionalProperties": False,
+            "properties": {"max_steps": {"type": "integer", "minimum": 2, "maximum": 12},
+                           "history_turns": {"type": "integer", "minimum": 0, "maximum": 8},
+                           "observation_chars": {"type": "integer", "minimum": 256, "maximum": 4000},
+                           "error_recovery": {"type": "string", "enum": ["feedback", "stop"]}},
+            "required": list(asdict(Policy()))}, "rationale": {"type": "string"}}
+    return {"type": "object", "additionalProperties": False,
+            "properties": properties, "required": list(properties)}
+
+
 def gate(baseline, candidate, min_saving=0.10):
     """No case may lose successes. Equal accuracy needs measured token savings."""
     def identities(rows):

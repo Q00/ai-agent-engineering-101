@@ -10,7 +10,7 @@ class DemoClient:
     def __init__(self, spec, budget, emit):
         self.spec, self.budget, self.emit = spec, budget, emit
 
-    def complete(self, messages, *, tools=None, role="executor"):
+    def complete(self, messages, *, tools=None, role="executor", response_schema=None):
         self.budget.claim()
         if not tools:
             if role == "reviewer":

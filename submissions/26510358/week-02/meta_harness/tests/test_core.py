@@ -3,7 +3,7 @@ import unittest
 from dataclasses import asdict
 from unittest.mock import Mock, patch
 
-from meta_harness.clients import APIClient, Budget, BudgetExceeded, Completion, ModelSpec
+from meta_harness.clients import APIClient, Budget, BudgetExceeded, Completion, ModelSpec, specs
 from meta_harness.contracts import Policy, gate
 from meta_harness.evaluation import run_case, suite, tool_output
 
@@ -107,6 +107,26 @@ class CoreTests(unittest.TestCase):
         serialized = json.dumps(events)
         self.assertNotIn("test-first", serialized)
         self.assertNotIn("test-second", serialized)
+
+    def test_google_structured_response_records_finish_reason_and_full_usage(self):
+        events = []
+        response = Mock()
+        response.choices = [Mock(finish_reason="length")]
+        response.choices[0].message.model_dump.return_value = {"role": "assistant", "content": '{"issues": ['}
+        response.usage.prompt_tokens = 20
+        response.usage.completion_tokens = 80
+        response.usage.model_dump.return_value = {"prompt_tokens": 20, "completion_tokens": 80,
+                                                 "completion_tokens_details": {"reasoning_tokens": 70}}
+        with patch.dict("os.environ", {"GEMINI_API_KEY": "test-google"}), patch("openai.OpenAI") as constructor:
+            constructor.return_value.chat.completions.create.return_value = response
+            client = APIClient(specs()["gemini"], Budget(), lambda kind, **data: events.append(data))
+            reply = client.complete([], role="reviewer", response_schema={"type": "object"})
+            kwargs = constructor.return_value.chat.completions.create.call_args.kwargs
+        self.assertEqual(kwargs["reasoning_effort"], "low")
+        self.assertEqual(kwargs["max_tokens"], 8192)
+        self.assertEqual(kwargs["response_format"]["type"], "json_schema")
+        self.assertEqual(reply.finish_reason, "length")
+        self.assertEqual(events[-1]["usage"]["completion_tokens_details"]["reasoning_tokens"], 70)
 
 
 if __name__ == "__main__":

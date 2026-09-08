@@ -26,6 +26,8 @@ class ModelSpec:
     key_env: str
     base_url: str
     reasoning_effort: str | None = None
+    output_limit: int = 2048
+    timeout_seconds: float = 45.0
 
 
 def specs():
@@ -33,9 +35,10 @@ def specs():
         "gpt": ModelSpec("openai", os.getenv("META_GPT_MODEL", "gpt-5.6-luna"),
                          "OPENAI_API_KEY", "https://api.openai.com/v1", "none"),
         "gemini": ModelSpec("google", os.getenv("META_GEMINI_MODEL", "gemini-3.8-flash"),
-                            "GEMINI_API_KEY", "https://generativelanguage.googleapis.com/v1beta/openai/"),
+                            "GEMINI_API_KEY", "https://generativelanguage.googleapis.com/v1beta/openai/",
+                            "low", 8192, 60.0),
         "solar": ModelSpec("upstage", os.getenv("META_SOLAR_MODEL", "solar-pro4"),
-                           "UPSTAGE_API_KEY", "https://api.upstage.ai/v1"),
+                           "UPSTAGE_API_KEY", "https://api.upstage.ai/v1", "medium", 8192, 90.0),
     }
 
 
@@ -45,6 +48,7 @@ class Completion:
     input_tokens: int | None
     output_tokens: int | None
     elapsed_seconds: float
+    finish_reason: str | None = None
 
     @property
     def tokens(self):
@@ -60,24 +64,28 @@ class APIClient:
         key = os.environ.get(spec.key_env, "").strip()
         if not key:
             raise ValueError(f"Missing local configuration: {spec.key_env}")
-        self.client = OpenAI(api_key=key, base_url=spec.base_url, timeout=45.0,
+        self.client = OpenAI(api_key=key, base_url=spec.base_url, timeout=spec.timeout_seconds,
                              max_retries=0)
 
-    def complete(self, messages, *, tools=None, role="executor"):
+    def complete(self, messages, *, tools=None, role="executor", response_schema=None):
         self.budget.claim()
         kwargs = {"model": self.spec.model, "messages": messages}
         # Keep provider-specific options out of other vendors' requests.
         if self.spec.provider == "openai":
-            kwargs["max_completion_tokens"] = 2048
+            kwargs["max_completion_tokens"] = self.spec.output_limit
         else:
-            kwargs["max_tokens"] = 2048
+            kwargs["max_tokens"] = self.spec.output_limit
         if self.spec.reasoning_effort is not None:
             kwargs["reasoning_effort"] = self.spec.reasoning_effort
         if tools:
             kwargs["tools"] = tools
+        if response_schema and self.spec.provider in ("openai", "google"):
+            kwargs["response_format"] = {"type": "json_schema", "json_schema": {
+                "name": role, "strict": True, "schema": response_schema}}
         start = time.monotonic()
         self.emit("request", role=role, config=asdict(self.spec), messages=messages,
-                  tools=tools, output_limit=2048)
+                  tools=tools, output_limit=self.spec.output_limit,
+                  response_format=kwargs.get("response_format"))
         try:
             response = self.client.chat.completions.create(**kwargs)
         except Exception as exc:
@@ -88,10 +96,13 @@ class APIClient:
         message = response.choices[0].message.model_dump(exclude_none=True)
         usage = response.usage
         result = Completion(message, getattr(usage, "prompt_tokens", None),
-                            getattr(usage, "completion_tokens", None), time.monotonic() - start)
+                            getattr(usage, "completion_tokens", None), time.monotonic() - start,
+                            response.choices[0].finish_reason)
         self.emit("response", role=role, config=asdict(self.spec),
                   message=message, input_tokens=result.input_tokens,
-                  output_tokens=result.output_tokens, elapsed_seconds=result.elapsed_seconds)
+                  output_tokens=result.output_tokens, elapsed_seconds=result.elapsed_seconds,
+                  finish_reason=result.finish_reason,
+                  usage=usage.model_dump(exclude_none=True) if usage is not None else None)
         return result
 
     def close(self):
