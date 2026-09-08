@@ -16,19 +16,19 @@ from dataclasses import dataclass, field
 
 
 def read_file(path: str) -> str:
-    """Return the contents of a text file in the working directory."""
+    """Return the public starter app.log used by this experiment."""
     full = os.path.abspath(path)
-    if not full.startswith(os.getcwd()):
-        return "denied: path outside the working directory"
+    if os.path.normcase(os.path.realpath(full)) != os.path.normcase(os.path.realpath("app.log")):
+        return "denied: this experiment only permits app.log"
     with open(full, encoding="utf-8") as f:
         return f.read()[:4000]          # context guard, same as week 01
 
 
 def count_pattern(path: str, pattern: str) -> str:
-    """Count lines in a text file that match a regular expression."""
+    """Count lines in the public starter app.log matching a regular expression."""
     full = os.path.abspath(path)
-    if not full.startswith(os.getcwd()):
-        return "denied: path outside the working directory"
+    if os.path.normcase(os.path.realpath(full)) != os.path.normcase(os.path.realpath("app.log")):
+        return "denied: this experiment only permits app.log"
     rx = re.compile(pattern)
     with open(full, encoding="utf-8") as f:
         return str(sum(1 for line in f if rx.search(line)))
@@ -39,14 +39,14 @@ TOOLS_IMPL = {"read_file": read_file, "count_pattern": count_pattern}
 # provider-neutral schemas; Chat converts them per provider
 TOOL_SPECS = [
     {"name": "read_file",
-     "description": "Read a text file in the working directory (first 4000 characters).",
+     "description": "Read the public starter app.log (first 4000 characters). No other files are accessible.",
      "parameters": {"type": "object",
-                    "properties": {"path": {"type": "string"}},
+                    "properties": {"path": {"type": "string", "enum": ["app.log"]}},
                     "required": ["path"]}},
     {"name": "count_pattern",
-     "description": "Count the lines of a text file that match a regular expression.",
+     "description": "Count lines in the public starter app.log that match a regular expression.",
      "parameters": {"type": "object",
-                    "properties": {"path": {"type": "string"},
+                    "properties": {"path": {"type": "string", "enum": ["app.log"]},
                                    "pattern": {"type": "string"}},
                     "required": ["path", "pattern"]}},
 ]

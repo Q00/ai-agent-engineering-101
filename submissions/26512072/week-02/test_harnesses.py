@@ -147,6 +147,13 @@ class HarnessTests(unittest.TestCase):
         self.assertFalse(Path("results.csv").exists())
         self.assertFalse(any(Path("logs").iterdir()))
 
+    def test_tools_only_read_the_public_experiment_input(self):
+        for path in ("TASK.md", "../app.log", str(ROOT / "tools_shared.py")):
+            with self.subTest(path=path):
+                self.assertTrue(shared.read_file(path).startswith("denied:"))
+                self.assertTrue(shared.count_pattern(path, "ERROR").startswith("denied:"))
+        self.assertEqual(shared.count_pattern("app.log", r"14:\d+:\d+ ERROR"), "6")
+
     def test_summary_includes_failures_and_rejects_mixed_conditions(self):
         config = {key: "offline-fixture" for key in summarize_results.CONTROLS}
         with Path("results.csv").open("w", encoding="utf-8", newline="") as stream:
