@@ -16,7 +16,7 @@ import harness_react
 import run_ab
 import summarize_results
 import tools_shared as shared
-from harness_plan_execute import run_plan_execute
+from harness_plan_execute import SYSTEM_PLAN_V2, parse_plan, run_plan_execute
 from harness_react import run_react
 
 ROOT = Path(__file__).resolve().parent
@@ -173,6 +173,95 @@ class HarnessTests(unittest.TestCase):
         Path("logs/react-03.txt").write_text("[conditions] " + json.dumps(config) + "\n", encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "conditions differ"):
             summarize_results.summarize(Path.cwd())
+
+    def test_strict_parser_rejects_what_tolerant_salvages(self):
+        # Asides that are not valid JSON are skipped, so the real plan wins.
+        skips_junk = ('Here is my thinking. I could match [0-9][0-9] first, and '
+                      'maybe ["step1", "step2", ...] is the shape. '
+                      'I will answer ["read the log", "count errors per hour"].')
+        self.assertIsNone(parse_plan(skips_junk))
+        self.assertEqual(parse_plan(skips_junk, tolerant=True),
+                         ["read the log", "count errors per hour"])
+
+        # The hazard of tolerance: an aside that IS valid JSON is taken even
+        # when the plan the model settled on comes later. This is what the
+        # recorded run 2 and run 4 failures contain.
+        placeholder_first = ('Planners often expect ["step1", "step2", "step3"]. '
+                             'I will answer ["read the log", "count errors per hour"].')
+        self.assertEqual(parse_plan(placeholder_first, tolerant=True),
+                         ["step1", "step2", "step3"])
+
+        for text_value in ("[]", "no array here", '["   "]'):
+            with self.subTest(text=text_value):
+                self.assertIsNone(parse_plan(text_value, tolerant=True))
+        self.assertEqual(parse_plan('```json\n["a"]\n```', tolerant=True), ["a"])
+
+    def test_plan_prompt_variant_is_used_and_recorded(self):
+        self.api([text('["Read the log"]'), text("Read complete"), text("Answer: 14:00")])
+        answer, _, _ = run_plan_execute("Inspect app.log", log=self.events.append,
+                                        system_plan=SYSTEM_PLAN_V2)
+        self.assertEqual(answer, "Answer: 14:00")
+        self.assertEqual(self.requests[0]["messages"][0]["content"], SYSTEM_PLAN_V2)
+        self.assertNotEqual(self.requests[1]["messages"][0]["content"], SYSTEM_PLAN_V2)
+        with contextlib.chdir(ROOT):              # conditions() hashes the sources
+            config = run_ab.conditions("Inspect app.log", "14:00", 16,
+                                       plan_prompt="v2", plan_parser="tolerant")
+        self.assertEqual(config["prompts"]["plan"], SYSTEM_PLAN_V2)
+        self.assertEqual((config["plan_prompt"], config["plan_parser"]), ("v2", "tolerant"))
+        self.assertEqual(config["run_order"], "alternating react, plan_exec")
+
+    def test_bad_parser_name_is_rejected_before_any_call(self):
+        with self.assertRaisesRegex(ValueError, "plan_parser"):
+            run_plan_execute("Inspect app.log", plan_parser="lenient", log=self.events.append)
+        self.assertEqual(self.requests, [])
+
+    def test_note_carries_the_condition_of_each_plan_row(self):
+        self.api([text('["Read the log"]'), text("Read complete"), text("Answer: 14:00")])
+        config = {"max_steps": 16, "plan_prompt": "v2", "plan_parser": "tolerant"}
+        with contextlib.redirect_stdout(io.StringIO()):
+            row = run_ab.run_one(7, "plan_exec", run_plan_execute,
+                                 "Inspect app.log", "14:00", config)
+        self.assertEqual(row[-1], "plan_prompt=v2 plan_parser=tolerant replans=0")
+        self.assertEqual(row[2], "O")
+
+    def test_summary_reports_each_condition_separately(self):
+        base = {key: "offline-fixture" for key in summarize_results.CONTROLS}
+        with Path("results.csv").open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(run_ab.HEADER)
+            for run_no, parser_name in ((1, "strict"), (2, "strict"), (3, "tolerant")):
+                writer.writerow([run_no, "plan_exec", "O" if parser_name == "tolerant" else "X",
+                                 100 * run_no, 2, 0, f"plan_parser={parser_name}"])
+                config = dict(base, plan_parser=parser_name, plan_prompt="v1")
+                Path(f"logs/plan_exec-{run_no:02d}.txt").write_text(
+                    "[conditions] " + json.dumps(config) + "\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "--by-condition"):
+            summarize_results.summarize(Path.cwd())
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            summarize_results.summarize(Path.cwd(), by_condition=True)
+        report = output.getvalue()
+        self.assertIn("plan_parser=strict  (runs 1, 2)", report)
+        self.assertIn("plan_parser=tolerant  (runs 3)", report)
+        self.assertIn("2 condition(s)", report)
+        self.assertIn("0/2 (0.0%)", report)      # the strict section
+        self.assertIn("1/1 (100.0%)", report)    # the tolerant section
+
+    def test_logs_without_condition_keys_count_as_v1_strict(self):
+        """Runs 1-6 predate the flags; they must not become a phantom condition."""
+        base = {key: "offline-fixture" for key in summarize_results.CONTROLS}
+        old = {key: value for key, value in base.items()
+               if key not in summarize_results.CONTROL_DEFAULTS}
+        new = dict(base, plan_prompt="v1", plan_parser="strict")
+        with Path("results.csv").open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(run_ab.HEADER)
+            for run_no, config in ((1, old), (2, new)):
+                writer.writerow([run_no, "plan_exec", "X", 10, 1, 0, ""])
+                Path(f"logs/plan_exec-{run_no:02d}.txt").write_text(
+                    "[conditions] " + json.dumps(config) + "\n", encoding="utf-8")
+        fingerprints = {fingerprint for _, fingerprint, _ in summarize_results.load(Path.cwd())}
+        self.assertEqual(len(fingerprints), 1)
 
 
 if __name__ == "__main__":

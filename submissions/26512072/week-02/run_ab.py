@@ -2,6 +2,14 @@
 
 python run_ab.py --check       readiness check without making an API call
 python run_ab.py --runs 3      three runs per harness, failures included
+
+The plan prompt and the plan parser are experiment conditions, recorded in
+every log and in the note column. Runs from different conditions live in the
+same results.csv but are never averaged together; summarize_results.py
+refuses to pool them unless asked for a per-condition breakdown.
+
+python run_ab.py --runs 3 --only plan_exec --plan-parser tolerant
+python run_ab.py --runs 3 --only plan_exec --plan-prompt v2
 """
 import argparse
 import csv
@@ -14,10 +22,11 @@ import re
 import subprocess
 import time
 from datetime import datetime, timezone
+from functools import partial
 from importlib.metadata import version
 from pathlib import Path
 
-from harness_plan_execute import SYSTEM_EXEC, SYSTEM_PLAN, run_plan_execute
+from harness_plan_execute import PLAN_PROMPTS, SYSTEM_EXEC, run_plan_execute
 from harness_react import SYSTEM, run_react
 from tools_shared import BASE_URL, MAX_TOKENS, MODEL, TEMPERATURE, TIMEOUT, TOOL_SPECS, Meter
 
@@ -62,20 +71,23 @@ def preflight():
     return problems
 
 
-def conditions(task, expected, max_steps):
+def conditions(task, expected, max_steps, plan_prompt="v1", plan_parser="strict",
+               run_order="alternating react, plan_exec"):
     sources = ["TASK.md", "app.log", "tools_shared.py", "harness_react.py",
                "harness_plan_execute.py", "run_ab.py", "requirements.txt"]
     return {
         "provider": "OpenRouter", "base_url": BASE_URL, "model": MODEL,
         "task": task, "expected": expected, "tools": TOOL_SPECS,
-        "prompts": {"react": SYSTEM, "plan": SYSTEM_PLAN, "execute": SYSTEM_EXEC},
+        "prompts": {"react": SYSTEM, "plan": PLAN_PROMPTS[plan_prompt],
+                    "execute": SYSTEM_EXEC},
+        "plan_prompt": plan_prompt, "plan_parser": plan_parser,
         "max_steps": max_steps, "max_replan": 1, "max_tool_rounds": 3,
         "max_tokens": MAX_TOKENS, "temperature": TEMPERATURE,
         "timeout_seconds": TIMEOUT, "sdk_retries": 0,
         "iters_definition": "attempted model calls, including plan and final answer",
         "tokens_definition": "sum of input and output usage reported by the API",
         "interventions_definition": "human approvals plus human denials; replans excluded",
-        "run_order": "alternating react, plan_exec", "seed": None,
+        "run_order": run_order, "seed": None,
         "python": platform.python_version(), "openai": version("openai"),
         "git_commit": git("rev-parse", "HEAD"),
         "git_status": git("status", "--short", "--", "."),
@@ -118,7 +130,11 @@ def run_one(run_no, name, fn, task, expected, config):
             out = fn(task, max_steps=config["max_steps"], log=log, meter=meter)
             answer = out[0]
             if name == "plan_exec":
-                note = f"replans={out[2]}"
+                # The condition travels with the row so no reader has to open
+                # the log to know which plan variant produced it.
+                note = (f"plan_prompt={config.get('plan_prompt', 'v1')} "
+                        f"plan_parser={config.get('plan_parser', 'strict')} "
+                        f"replans={out[2]}")
         except (Exception, KeyboardInterrupt) as error:
             crashed = True
             answer = ""
@@ -138,13 +154,20 @@ def main(argv=None):
     parser.add_argument("--runs", type=int, default=3, help="runs per harness")
     parser.add_argument("--max-steps", type=int, default=16, help="model calls per run, both harnesses")
     parser.add_argument("--check", action="store_true", help="readiness only; no API call or result rows")
+    parser.add_argument("--plan-prompt", choices=sorted(PLAN_PROMPTS), default="v1",
+                        help="planner system prompt variant; v1 is the condition of runs 1-6")
+    parser.add_argument("--plan-parser", choices=("strict", "tolerant"), default="strict",
+                        help="strict needs the whole reply to be the JSON plan; tolerant accepts one embedded array")
+    parser.add_argument("--only", choices=("both", "react", "plan_exec"), default="both",
+                        help="run one harness only; react is unaffected by the plan conditions")
     args = parser.parse_args(argv)
     if args.runs < 1 or args.max_steps < 1:
         parser.error("--runs and --max-steps must be positive")
     os.chdir(ROOT)
     task, expected = read_task()
     problems = preflight()
-    print(f"provider=OpenRouter model={MODEL} max_steps={args.max_steps}")
+    print(f"provider=OpenRouter model={MODEL} max_steps={args.max_steps} "
+          f"plan_prompt={args.plan_prompt} plan_parser={args.plan_parser} only={args.only}")
     if problems:
         for problem in problems:
             print("NOT READY: " + problem)
@@ -152,7 +175,16 @@ def main(argv=None):
     if args.check:
         print("READY: no API call made")
         return 0
-    config = conditions(task, expected, args.max_steps)
+    harnesses = [("react", run_react),
+                 ("plan_exec", partial(run_plan_execute,
+                                       system_plan=PLAN_PROMPTS[args.plan_prompt],
+                                       plan_parser=args.plan_parser))]
+    if args.only != "both":
+        harnesses = [pair for pair in harnesses if pair[0] == args.only]
+    order = ("alternating react, plan_exec" if args.only == "both"
+             else f"{args.only} only")
+    config = conditions(task, expected, args.max_steps, args.plan_prompt,
+                        args.plan_parser, order)
     run_no = next_run_number()
     Path("logs").mkdir(exist_ok=True)
     new_file = not Path("results.csv").exists() or not Path("results.csv").stat().st_size
@@ -162,7 +194,7 @@ def main(argv=None):
             writer.writerow(HEADER)
             stream.flush()
         for _ in range(args.runs):
-            for name, fn in (("react", run_react), ("plan_exec", run_plan_execute)):
+            for name, fn in harnesses:
                 row = run_one(run_no, name, fn, task, expected, config)
                 writer.writerow(row)
                 stream.flush()
