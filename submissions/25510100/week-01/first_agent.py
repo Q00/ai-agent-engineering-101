@@ -95,6 +95,8 @@ def run(goal: str, max_steps: int = 8):
     for step in range(max_steps):   # <- this loop is what makes it an agent
         resp = client.chat.completions.create(
             model=MODEL, tools=TOOLS, messages=messages)
+        if not resp.choices:   # OpenRouter can return HTTP 200 with an error body
+            return f"provider returned no choices: {resp}"
         msg = resp.choices[0].message
         messages.append(msg)
 
