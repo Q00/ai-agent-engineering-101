@@ -16,6 +16,7 @@ from pathlib import Path
 
 from harness_plan_execute import run_plan_execute
 from harness_react import run_react
+from tools_shared import MODEL, PROVIDER
 
 HEADER = ["run", "harness", "success", "tokens", "iters", "interventions", "note"]
 
@@ -74,14 +75,17 @@ def main():
                     _lines.append(str(msg))
 
                 t0 = time.time()
-                note = ""
+                # Which model produced the row belongs in the row. Mixing two
+                # providers in one results.csv is otherwise unreadable later.
+                note = f"{PROVIDER}:{MODEL}"
                 try:
                     out = fn(task, log=log)
                     answer, meter = out[0], out[1]
                     if name == "plan_exec":
-                        note = f"replans={out[2]}"
+                        note += f" replans={out[2]}"
                 except Exception as e:            # a crash is a failed run, not a lost run
-                    answer, meter, note = "", None, f"crash: {type(e).__name__}: {e}"
+                    answer, meter = "", None
+                    note += f" crash: {type(e).__name__}: {e}"
                     log(note)
                 success = judge(answer, expected)
                 log(f"[final] {answer.strip()[:300]}")
