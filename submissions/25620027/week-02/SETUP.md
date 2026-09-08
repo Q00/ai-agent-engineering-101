@@ -30,10 +30,10 @@
 
 ## 시작하기
 
-터미널에서 이 폴더로 이동한다.
+저장소 루트에서 제출 폴더로 이동한다.
 
 ```bash
-cd '/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/ai-agent-engineering-101/submissions/25620027/week-02'
+cd submissions/25620027/week-02
 ./run_lab.sh check
 ```
 
