@@ -16,6 +16,7 @@ from pathlib import Path
 
 from harness_plan_execute import run_plan_execute
 from harness_react import run_react
+from tools_shared import MODEL
 
 HEADER = ["run", "harness", "success", "tokens", "iters", "interventions", "note"]
 
@@ -78,6 +79,7 @@ def main():
 
                 Path("logs", f"{name}-{run_no:02d}.txt").write_text(
                     "\n".join(lines) + "\n", encoding="utf-8")
+                note = f"model={MODEL}" + (f";{note}" if note else "")
                 w.writerow([run_no, name, "O" if success else "X",
                             meter.tokens if meter else "",
                             meter.iters if meter else "",
