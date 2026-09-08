@@ -16,6 +16,7 @@ SYSTEM_PLAN = (
 )
 SYSTEM_EXEC = (
     "You execute one step of a plan at a time with the tools you are given. "
+    "Before each tool call, write a short 'Thought:' line about the next action. "
     "If the step cannot be done as planned, reply with a line that starts with "
     "'OFF_PLAN:' and explain why. When asked for the final answer, reply with a "
     "line that starts with 'Answer:'."
@@ -29,14 +30,17 @@ def parse_plan(text: str):
         plan = json.loads(text)
     except json.JSONDecodeError:
         return None
-    if isinstance(plan, list) and all(isinstance(s, str) for s in plan):
+    if isinstance(plan, list) and plan and all(isinstance(s, str) and s.strip() for s in plan):
         return plan
     return None
 
 
 def run_plan_execute(task: str, max_replan: int = 1,
-                     max_tool_rounds: int = 3, log=print):
-    meter = Meter()
+                     max_tool_rounds: int = 3, log=print, max_steps: int = 16,
+                     meter=None):
+    if max_replan not in (0, 1):
+        raise ValueError("max_replan must be 0 or 1")
+    meter = meter if meter is not None else Meter(max_steps=max_steps, log=log)
 
     # 1) PLAN: the whole plan in one call, no tools
     planner = Chat(SYSTEM_PLAN, meter, tools=False)
@@ -45,7 +49,7 @@ def run_plan_execute(task: str, max_replan: int = 1,
     raw = planner.send().text
     plan = parse_plan(raw)
     if plan is None:                              # a parse failure is one failure mode
-        log(f"[plan] not valid JSON: {raw.strip()[:300]!r}")
+        log(f"[plan] not valid JSON: {raw!r}")
         return "plan parse failed", meter, 0
     log(f"[plan] {plan}")
 
@@ -66,17 +70,20 @@ def run_plan_execute(task: str, max_replan: int = 1,
                 executor.run_tools(reply, log)    # answer every call so the transcript stays valid
                 reply = Reply("OFF_PLAN: step exceeded the tool-call budget", [])
                 break
-        log(f"[step {i + 1}] {reply.text.strip()[:300]}")
+        log(f"[step {i + 1}] {reply.text}")
+
+        if reply.text.strip().startswith("OFF_PLAN") and replans >= max_replan:
+            return "OFF_PLAN: replan budget exhausted; incomplete", meter, replans
 
         if reply.text.strip().startswith("OFF_PLAN") and replans < max_replan:
             replans += 1                          # flexibility cap
-            planner.add_user(f"Step {i + 1} ({plan[i]}) failed: {reply.text.strip()[:300]}\n"
+            planner.add_user(f"Step {i + 1} ({plan[i]}) failed: {reply.text}\n"
                              f"Reply with a JSON list of the remaining steps.")
             raw = planner.send().text
             new_steps = parse_plan(raw)
             if new_steps is None:
-                log(f"[replan] not valid JSON: {raw.strip()[:300]!r}")
-                break
+                log(f"[replan] not valid JSON: {raw!r}")
+                return "replan parse failed", meter, replans
             plan = plan[:i] + new_steps
             log(f"[replan] {plan}")
             continue
@@ -87,6 +94,8 @@ def run_plan_execute(task: str, max_replan: int = 1,
     if final.tool_calls:                          # the model tried to keep going
         executor.run_tools(final, log)
         final = executor.send()
+    if final.tool_calls:
+        return "final answer still requested tools: incomplete", meter, replans
     return final.text, meter, replans
 
 

@@ -54,17 +54,27 @@ TOOL_SPECS = [
 # ---------------------------------------------------------------- meter
 
 
+class StepLimitReached(RuntimeError):
+    """The shared budget includes planning, execution and summarization."""
+
+
 class Meter:
     """The four metrics of the lab, counted in one place."""
 
-    def __init__(self):
+    def __init__(self, max_steps=16, log=print):
         self.tokens = 0
-        self.iters = 0            # one iteration = one model call
+        self.iters = 0            # one iteration = one attempted model call
         self.interventions = 0    # times a human approved or denied a call
+        self.max_steps = max_steps
+        self.log = log
+
+    def begin_call(self):
+        if self.iters >= self.max_steps:
+            raise StepLimitReached("MAX_STEPS reached: incomplete")
+        self.iters += 1
 
     def add(self, input_tokens: int, output_tokens: int):
         self.tokens += int(input_tokens or 0) + int(output_tokens or 0)
-        self.iters += 1
 
 
 # ---------------------------------------------------------------- model
@@ -141,9 +151,20 @@ class Chat:
 
     # ---- one model call
     def send(self) -> Reply:
+        self.meter.begin_call()
+        self.meter.log("[request] " + json.dumps({
+            "call": self.meter.iters, "model": MODEL,
+            "system": self.system, "messages": self.messages,
+            "tools": TOOL_SPECS if self.tools else [],
+            "max_tokens": MAX_TOKENS, "temperature": TEMPERATURE,
+        }, ensure_ascii=False, default=lambda value: value.model_dump(exclude_none=True)))
         if PROVIDER == "anthropic":
-            return self._send_anthropic()
-        return self._send_openai()
+            reply = self._send_anthropic()
+        else:
+            reply = self._send_openai()
+        self.meter.log("[response]\n" + reply.text)
+        self.meter.log(f"[meter] tokens={self.meter.tokens} iters={self.meter.iters}")
+        return reply
 
     def _send_anthropic(self) -> Reply:
         kwargs = dict(model=MODEL, max_tokens=1024, system=self.system,
@@ -169,6 +190,7 @@ class Chat:
                                              "parameters": t["parameters"]}}
                                for t in TOOL_SPECS]
         resp = _get_client().chat.completions.create(**kwargs)
+        self.meter.log(f"[provider-response] id={resp.id} model={resp.model}")
         usage = resp.usage
         self.meter.add(getattr(usage, "prompt_tokens", 0),
                        getattr(usage, "completion_tokens", 0))
@@ -194,5 +216,7 @@ class Chat:
                     out = str(fn(**call.args))
                 except Exception as e:           # error recovery: the error is an Observation
                     out = f"error: {e}"
-            log(f"  [tool] {call.name}({call.args}) -> {out[:200].replace(chr(10), ' | ')}")
+            log("[Action] " + json.dumps({"id": call.id, "name": call.name,
+                                         "args": call.args}, ensure_ascii=False))
+            log("[Observation]\n" + out)
             self.add_tool_result(call, out)
