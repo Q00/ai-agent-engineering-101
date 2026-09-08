@@ -10,6 +10,46 @@
 - **Error recovery:** ReAct는 tool error를 다음 Observation으로 돌려준다. Plan-then-Execute는 `OFF_PLAN`을 감지해 한 번만 남은 plan을 재생성한다.
 - **Human intervention:** 두 harness 모두 읽기 전용 도구만 허용하므로 `interventions=0`이다.
 
+### ReAct 구조
+
+```mermaid
+flowchart TD
+    A[Task 입력] --> B[Chat: 전체 대화 이력 유지]
+    B --> C{모델 응답}
+    C -->|tool call| D{읽기 전용 도구인가?}
+    D -->|예| E[count_errors_by_hour 또는 read_file]
+    D -->|아니오| F[사람 승인 요청]
+    F -->|승인| E
+    F -->|거부| G[denied 결과를 Observation으로 추가]
+    E --> H[Observation을 대화에 추가]
+    G --> C
+    H --> C
+    C -->|Answer 또는 tool 없음| I[최종 답변]
+    C -->|8회 초과| J[MAX_STEPS 실패]
+```
+
+### Plan-then-Execute 구조
+
+```mermaid
+flowchart TD
+    A[Task 입력] --> B[Planner Chat]
+    B --> C[JSON step list]
+    C -->|파싱 실패| D[plan parse failed]
+    C -->|파싱 성공| E[Executor Chat에 Task와 Plan 전달]
+    E --> F[현재 step 실행]
+    F --> G{tool call 여부}
+    G -->|예| H[공유 도구 실행]
+    H --> I[Observation 추가 후 같은 step 재실행]
+    I --> G
+    G -->|아니오| J{OFF_PLAN인가?}
+    J -->|예, replan 남음| K[Planner가 남은 step 재생성]
+    K --> F
+    J -->|아니오| L{남은 step 여부}
+    L -->|예| F
+    L -->|아니오| M[최종 답변 요청]
+    M --> N[Answer]
+```
+
 재현 명령은 다음과 같다. API key 자체는 저장하지 않았다.
 
 ```bash
