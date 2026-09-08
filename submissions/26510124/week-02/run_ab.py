@@ -40,6 +40,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--tag", default="", help="variant label written into the note column, e.g. v2")
+    ap.add_argument("--only", choices=["react", "plan_exec"], default=None, help="run just one harness")
     args = ap.parse_args()
 
     task, expected = read_task()
@@ -55,6 +56,8 @@ def main():
         if new_file:
             w.writerow(HEADER)
         for name, fn in (("react", run_react), ("plan_exec", run_plan_execute)):
+            if args.only and name != args.only:
+                continue
             for _ in range(args.runs):
                 run_no += 1
                 lines = []

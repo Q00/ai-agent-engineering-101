@@ -11,6 +11,11 @@ answered without a tool call. v2 changes ONE axis:
     tool calls          -> the model withdrew its Answer; keep looping
   max_verify=1 caps the extra cost, and the cap is explicit.
 
+v2.1 (after run 25): a rejected verification made the model resume, re-check
+with tools, and then reply with the bare word 'VERIFIED'. v2 treated that reply
+as the final Answer, so a correct '14:00' was lost. v2.1 remembers the last
+'Answer:' line and returns it when a post-budget reply is just 'VERIFIED'.
+
 System prompt, tools, context handling, error recovery, intervention hook and
 max_steps are identical to v1.
 """
@@ -50,15 +55,20 @@ def run_react(task: str, max_steps: int = 8, max_verify: int = 1, log=print):
     meter = Meter()
     chat = Chat(SYSTEM, meter)                    # [axis 1] context: full history, every call
     chat.add_user(task)
-    verifies, outcome = 0, "not-reached"
+    verifies, outcome, last_answer = 0, "not-reached", ""
 
     for step in range(max_steps):                 # [axis 3] termination: iteration cap
         reply = chat.send()
         if reply.text.strip():
             log(f"[step {step + 1}] {reply.text.strip()}")
+        if "Answer:" in reply.text:
+            last_answer = reply.text                # v2.1: remember the last real Answer
 
         if not reply.tool_calls:                  # the model says it is done
             if verifies >= max_verify:            # [axis 3] verification budget spent: accept
+                if reply.text.strip().upper().startswith("VERIFIED") and last_answer:
+                    log("[verify] re-confirmed after resuming; returning the last Answer")   # v2.1
+                    return last_answer, meter, f"verify={outcome}-then-reconfirmed"
                 return reply.text, meter, f"verify={outcome}-then-accepted"
             verifies += 1
             chat.add_user(VERIFY)                 # [axis 3] v2: one verification turn
