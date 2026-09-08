@@ -6,6 +6,30 @@
 
 OpenAI `gpt-5-mini`로 기준 `app.log`의 ERROR 최빈 시간대를 찾았다. 모델·입력·공통 도구를 고정하고 하네스만 바꿨다. 입력은 원본 그대로이며, 최종 답에 `14:00`이 포함되면 성공이라는 기준을 [TASK.md](TASK.md)에 적어 실행 전에 커밋했다(`04c6562`).
 
+```mermaid
+flowchart LR
+    subgraph R["ReAct"]
+        direction TB
+        R1["모델: 다음 행동 판단"]
+        R1 -- "도구 호출" --> R2["도구 실행 · 관찰 누적"]
+        R2 -- "결과를 보고 다시 판단" --> R1
+        R1 -- "도구 호출 없음" --> R3["답변 반환"]
+    end
+    subgraph P["Plan-then-Execute"]
+        direction TB
+        P0["계획자: 전체 계획 작성"] --> P1["실행자: 현재 단계 처리<br/>모델·도구 호출 · 관찰 누적"]
+        P1 -- "다음 단계 지시" --> P1
+        P1 -- "계획 소진" --> P2["최종 답변 요청"]
+    end
+    R ~~~ P
+    classDef model fill:#eaf2fb,stroke:#355f8a,color:#142e49;
+    classDef action fill:#edf5f0,stroke:#4c7560,color:#203e2d;
+    class R1,P0,P1 model;
+    class R2 action;
+```
+
+*그림 1. 정상 실행 흐름. ReAct는 관찰 후 다음 행동을 정하고, 계획형은 계획의 각 단계를 실행한다. 한도·복구는 아래 표 참조.*
+
 | 설계 축 | ReAct | Plan-then-Execute |
 |---|---|---|
 | 컨텍스트 관리 | 한 대화에 관찰을 누적하며 다음 행동 판단 | 계획자·실행자 문맥 분리, 실행자는 계획·관찰 누적 |
@@ -14,11 +38,11 @@ OpenAI `gpt-5-mini`로 기준 `app.log`의 ERROR 최빈 시간대를 찾았다. 
 | 오류 복구 | 도구 오류를 관찰로 돌려주고 다음 행동 판단 | 공통 오류 관찰, `OFF_PLAN`이면 최대 1회 재계획 |
 | 사람 개입 | 승인 훅은 있으나 승인 대상은 공집합 | 승인 절차 없음; 이번 읽기 전용 실험은 둘 다 0회 |
 
-공유 스키마는 `read_file(path: string)`, `count_pattern(path: string, pattern: string)`이며 각 인수는 필수다. 세부 정의는 [tools_shared.py](tools_shared.py)에 있다. Python 3.12.11·openai 3.8.0·anthropic 1.4.0에서 `./run_lab.sh run --runs 3`으로 ReAct 3회 후 계획형 3회를 실행했다. 계획형의 단계 내 도구 라운드 설정은 3이며, 온도·시드·추론 강도는 별도 지정하지 않았다. 연결·재현 절차는 [SETUP.md](SETUP.md), 실행 조건·해시는 [RUN_INFO.md](RUN_INFO.md)에 보존했다.
+공통 도구: `read_file(path: string)`, `count_pattern(path: string, pattern: string)`; 인수 모두 필수([스키마](tools_shared.py)). Python 3.12.11·openai 3.8.0·anthropic 1.4.0에서 `./run_lab.sh run --runs 3`으로 ReAct 3회 후 계획형 3회를 실행했다. 계획형 단계 내 도구 라운드는 3, 온도·시드·추론 강도는 미지정이다. [세팅](SETUP.md)·[실행 조건과 해시](RUN_INFO.md)를 함께 보존했다.
 
 ## 2. 측정표
 
-[results.csv](results.csv)의 전체 6회 기록이다. `tokens`는 입력+출력 토큰 누적, `iters`는 모델 호출 수, `interventions`는 사람 개입 횟수다. 빈 note는 `-`로 표시했다.
+[results.csv](results.csv) 전체 6회. `tokens`는 입력+출력 토큰, `iters`는 모델 호출, `interventions`는 사람 개입 횟수다. 빈 note는 `-`로 표시했다.
 
 | run | harness | success | tokens | iters | interventions | note |
 |---:|---|:---:|---:|---:|---:|---|
@@ -33,4 +57,4 @@ ReAct와 계획형의 평균 토큰은 각각 **4,194.0 / 68,406.7**, 토큰 표
 
 ## 3. 해석
 
-이번 태스크에서는 성공률과 개입 횟수는 같았고, ReAct의 평균 토큰과 모델 호출이 적었다. [ReAct 실행 1](logs/react-01.txt)은 도구 25회를 모델 3회 호출로 처리했지만, [계획형 실행 6](logs/plan_exec-06.txt)은 같은 도구 25회를 26단계 계획으로 나눠 모델 53회·161,116토큰을 썼다. 계획 단계마다 재호출하며 누적 문맥을 다시 전달하는 컨텍스트 관리와, 계획 길이를 제한하지 않는 종료 설계가 비용 증가를 설명한다. 두 하네스의 도구 스키마는 같으므로 도구 자체의 단위 차이로 볼 수는 없다. 또한 실행 6의 `04:.*ERROR`는 `14:04:06 ERROR`도 잡아 일부 시간대의 중간 집계를 틀렸지만, 최댓값은 여전히 14시여서 최종 판정은 O였다. 이는 정답 문자열만 보는 성공 기준이 과정 오류를 놓칠 수 있음을 보여준다. 재계획과 사람 개입은 발생하지 않아 해당 축의 효과는 비교하기 어렵다. 하나의 짧은 태스크를 각 3회 실행한 결과이며, 모든 태스크에서의 우열로 일반화할 수 없다.
+이번 태스크에서 성공률·개입 횟수는 같았고 ReAct의 토큰·모델 호출이 적었다. [ReAct 실행 1](logs/react-01.txt)은 도구 25회를 모델 3회 호출로 처리했고, [계획형 실행 6](logs/plan_exec-06.txt)은 같은 도구 25회를 26단계로 나눠 모델 53회·161,116토큰을 썼다. 단계마다 누적 문맥을 재전달하는 구조와 계획 길이 상한이 없는 종료 설계가 토큰 증가를 설명한다. 실행 6이 계획형 평균을 크게 올렸다. 도구 스키마는 같으므로 도구 자체의 단위 차이는 아니다. 또한 실행 6의 `04:.*ERROR`는 `14:04:06 ERROR`도 잡아 중간 집계를 틀렸지만 최빈 시간대는 여전히 14시였다. 정답 문자열만 보는 판정이 과정 오류를 놓친 사례다. 재계획·개입은 없어 그 효과를 평가할 수 없다. 단일 태스크·각 3회이며 여러 축을 함께 바꿨으므로 일반적 우열이나 축별 독립 효과를 입증한 결과는 아니다.
