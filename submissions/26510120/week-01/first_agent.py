@@ -69,7 +69,7 @@ TOOLS = [
                       "properties": {"path": {"type": "string"}},
                       "required": ["path"]}},
     {"name": "write_note",
-     "description": "TODO",
+     "description": "Save a result or note you want to keep, appended to a file.",
      "input_schema": {"type": "object",
                       "properties": {"path": {"type": "string"},
                                      "text": {"type": "string"}},
