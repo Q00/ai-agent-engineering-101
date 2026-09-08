@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Week 02: 하네스와 메타 하네스</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;
+  --ink:#1C1917;
+  --body:#44403C;
+  --muted:#78716C;
+  --faint:#A8A29E;
+  --line:#E7E5E4;
+  --wash:#FAFAF9;
+  --link:#2563EB;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --sans:'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  --serif:Fraunces, 'Noto Serif KR', Georgia, serif;
+  --maxw:680px;
+  --r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--body);
+  font-family:var(--sans);
+  font-weight:400;
+  line-height:1.8;
+  font-size:15.5px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--ink);color:var(--paper)}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- layout ---------- */
+.sheet{max-width:1040px;margin:0 auto;padding:0 24px}
+.col{max-width:var(--maxw);margin:0 auto;position:relative}
+
+/* ---------- header ---------- */
+header.doc{padding:40px 0 0}
+.topnav{font-family:var(--mono);font-size:11px;letter-spacing:.04em;margin-bottom:56px;display:flex;justify-content:space-between;gap:16px}
+
+.masthead{padding-bottom:64px;border-bottom:1px solid var(--line)}
+.masthead .wk{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:16px;
+}
+h1.title{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(30px,4.6vw,44px);line-height:1.2;
+  letter-spacing:-0.01em;color:var(--ink);text-wrap:balance;
+}
+h1.title .en{display:block;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:.06em;margin-top:14px}
+.lede{
+  margin-top:26px;max-width:560px;font-size:16px;line-height:1.85;color:var(--muted);
+}
+.lede .q{font-weight:600;color:var(--ink)}
+
+/* ---------- section scaffolding ---------- */
+section{padding:56px 0 8px}
+.secmark{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:32px;
+  border-top:1px solid var(--line);padding-top:20px;
+}
+.secmark .no{
+  font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--faint);
+  letter-spacing:.12em;white-space:nowrap;text-transform:uppercase;
+}
+.secmark h2{font-family:var(--serif);font-weight:500;font-size:clamp(21px,2.8vw,26px);line-height:1.3;letter-spacing:-0.005em;color:var(--ink);text-wrap:balance}
+h3{font-family:var(--serif);font-weight:500;font-size:18px;margin:44px 0 14px;color:var(--ink)}
+h3 .tag{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.12em;display:block;margin-bottom:6px;font-weight:500}
+p{margin-bottom:20px}
+strong{font-weight:600;color:var(--ink)}
+em{font-style:normal;font-weight:600;color:var(--ink);box-shadow:inset 0 -0.35em 0 rgba(28,25,23,.07)}
+.small{font-size:13.5px;color:var(--muted)}
+.nb{white-space:nowrap}
+
+/* part banner */
+.part{
+  margin:72px 0 8px;border-top:2px solid var(--ink);
+  padding:24px 0 6px;
+}
+.part .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase}
+.part h2{font-family:var(--serif);font-weight:500;font-size:clamp(20px,2.6vw,25px);line-height:1.35;color:var(--ink)}
+.part .meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:10px;letter-spacing:.03em}
+
+/* marginalia */
+.note{
+  font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--faint);
+  border-left:2px solid var(--line);padding-left:12px;margin:26px 0;
+}
+@media(min-width:1120px){
+  .note{position:absolute;width:190px;left:calc(50% + var(--maxw)/2 + 36px);margin:0;transform:translateY(-100%)}
+}
+.note b{color:var(--muted);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.08em}
+
+/* pull quote */
+.pull{
+  margin:40px 0;padding:2px 0 2px 24px;border-left:2px solid var(--ink);
+  font-family:var(--serif);font-size:19px;line-height:1.65;font-weight:500;color:var(--ink);
+}
+.pull .src{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-top:10px;letter-spacing:.03em}
+
+/* definition */
+.define{margin:48px 0;background:var(--wash);border:1px solid var(--line);border-radius:var(--r);padding:32px 32px 26px;position:relative}
+.define::before{
+  content:"DEFINITION";position:absolute;top:14px;left:32px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);font-weight:500;
+}
+.define p{margin:16px 0 0;font-family:var(--serif);font-size:clamp(16px,2.1vw,19px);line-height:1.7;font-weight:500;color:var(--ink)}
+.define .sub{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted);margin-top:14px}
+.define ul{margin:14px 0 0 22px;padding:0}
+.define li{font-family:var(--serif);font-size:clamp(15px,2vw,17px);line-height:1.9;font-weight:500;color:var(--ink)}
+@media(max-width:640px){.define{padding:28px 20px 22px}.define::before{left:20px}}
+
+/* instructor */
+.bio{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 28px 20px}
+.bio{display:flex;gap:28px;align-items:flex-start}
+.bio .photo{flex:0 0 210px;width:210px;height:262px;object-fit:cover;object-position:38% 12%;border-radius:6px;display:block}
+.bio .info{flex:1 1 auto;min-width:0}
+.bio .name{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:2px}
+.bio .role{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase}
+.bio p{font-size:14px;line-height:1.85;color:var(--body);margin-bottom:12px}
+.bio .links{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+.bio .links a{white-space:nowrap}
+.bio .links span{color:var(--faint);margin:0 8px}
+@media(max-width:640px){.bio{flex-direction:column}.bio .photo{width:100%;height:200px;flex:none}.bio{padding:22px 18px 16px}}
+
+/* table */
+.tbl-wrap{margin:28px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.7}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-align:left;text-transform:uppercase;
+  border-bottom:1px solid var(--ink);
+  padding:10px 14px;font-weight:500;color:var(--muted);
+}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.stage{font-weight:600;color:var(--ink);white-space:nowrap;font-size:13px}
+td .m{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+/* figure */
+.fig{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 14px}
+.fig .cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+  margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.fig .cap b{color:var(--muted);font-weight:500}
+.fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block}
+svg text{font-family:var(--mono)}
+
+/* code */
+.code{
+  margin:28px 0;background:var(--wash);color:var(--ink);
+  font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  padding:20px 22px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+}
+.code .file{
+  display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:14px;font-weight:500;text-transform:uppercase;
+}
+.code pre{font-family:inherit;white-space:pre;margin:0}
+.code .cm{color:var(--faint)}
+.code .kw{color:#1D4ED8}
+.code .st{color:#15803D}
+code.inline{
+  font-family:var(--mono);font-size:.85em;background:var(--wash);
+  padding:2px 6px;border:1px solid var(--line);border-radius:4px;white-space:nowrap;
+}
+
+/* numbered steps */
+.pre{counter-reset:pre;margin:24px 0}
+.pre>li{list-style:none;position:relative;padding:16px 0 16px 48px;border-bottom:1px solid var(--line)}
+.pre>li:first-child{border-top:1px solid var(--line)}
+.pre>li::before{
+  counter-increment:pre;content:counter(pre);
+  position:absolute;left:4px;top:18px;width:24px;height:24px;
+  border:1px solid var(--faint);border-radius:50%;color:var(--muted);
+  font-family:var(--mono);font-weight:500;font-size:11.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.pre b.lead{font-weight:600;color:var(--ink)}
+
+/* discussion */
+.open{border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;margin:40px 0;background:var(--wash)}
+.open .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.open ol{margin-left:20px}
+.open li{margin-bottom:12px;line-height:1.8}
+@media(max-width:640px){.open{padding:20px 18px}}
+
+/* checkpoint */
+.check{margin:28px 0;border:1px solid var(--ink);border-radius:var(--r);padding:18px 22px 14px}
+.check .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--paper);background:var(--ink);border-radius:4px;display:inline-block;padding:3px 9px;font-weight:500;margin-bottom:12px}
+.check ul{margin-left:20px}
+.check li{margin-bottom:8px;line-height:1.75}
+
+/* recorder metrics */
+.recorder{margin:32px 0;border-top:1px solid var(--ink)}
+.recorder>div{display:flex;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+.recorder .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);font-weight:500;flex:0 0 120px;padding-top:3px;text-transform:uppercase}
+.recorder .v{font-size:13.5px;line-height:1.7;color:var(--body)}
+@media(max-width:640px){.recorder>div{flex-direction:column;gap:4px}}
+
+/* notice */
+.notice{margin:36px 0;border:1px solid var(--line);border-radius:var(--r);padding:24px 26px 18px}
+.notice .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.notice p{margin-bottom:13px;font-size:14px}
+.notice ul{margin:0 0 13px 22px}
+.notice li{margin-bottom:8px;font-size:13.5px;line-height:1.75}
+@media(max-width:640px){.notice{padding:20px 18px 14px}}
+
+/* homework */
+.hw{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.hw .head{
+  border-bottom:1px solid var(--line);background:var(--wash);padding:11px 22px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;font-weight:500;color:var(--muted);text-transform:uppercase;
+}
+.hw .body{padding:22px 24px 8px}
+.hw .due{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.05em;margin-bottom:13px;font-weight:500}
+
+/* readings */
+.readings{margin:24px 0}
+.readings>li{list-style:none;position:relative;padding:18px 0 18px 60px;border-bottom:1px solid var(--line)}
+.readings>li:first-child{border-top:1px solid var(--line)}
+.readings .badge{
+  position:absolute;left:0;top:20px;
+  font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.06em;
+  padding:3px 8px;border-radius:4px;
+}
+.readings .badge.req{background:var(--ink);color:var(--paper)}
+.readings .badge.opt{border:1px solid var(--faint);color:var(--faint)}
+.readings b.lead{font-weight:600;color:var(--ink)}
+.readings .why{display:block;font-size:13px;color:var(--muted);margin-top:6px}
+
+/* next week */
+.next{margin:64px 0 0;border-top:2px solid var(--ink);padding-top:22px}
+.next .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:12px;text-transform:uppercase}
+.next p{font-size:14px;color:var(--body)}
+
+/* footer */
+footer{
+  margin-top:64px;border-top:1px solid var(--line);
+  padding:20px 0 56px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.03em;
+}
+footer .o{color:var(--muted)}
+
+@media(max-width:640px){body{font-size:15px}}
+@media print{
+  body{font-size:10.5pt}
+  .topnav{display:none}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="doc">
+  <div class="col">
+    <div class="topnav"><a href="index.html">← COURSE HOME</a><a href="week-02-en.html">EN</a></div>
+    <div class="masthead">
+      <div class="wk">WEEK 02</div>
+      <h1 class="title">하네스와 메타 하네스
+        <span class="en">Harness and Meta-Harness</span>
+      </h1>
+      <p class="lede"><span class="q">같은 모델인데 왜 결과가 다른가?</span> 오늘은 모델을 감싸는 코드, 하네스가 무엇을 정하는지 확인하고, 하네스를 스스로 고쳐 쓰는 메타 하네스까지 본다.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 구성 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">01</span><h2>오늘의 구성</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>구분</th><th>내용</th></tr>
+        <tr><td class="stage">A1</td><td>ReAct</td></tr>
+        <tr><td class="stage">A2</td><td>하네스 설계의 다섯 축</td></tr>
+        <tr><td class="stage">A3</td><td>메타 하네스와 Ouroboros</td></tr>
+        <tr><td class="stage">토론</td><td>하네스 개선과 모델 개선의 경계</td></tr>
+        <tr><td class="stage">LAB</td><td>ReAct vs Plan-then-Execute A/B 실험</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PART A ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART A: LECTURE</div>
+    <h2>같은 모델, 다른 결과: 하네스가 정하는 것</h2>
+    <div class="meta">A1 ReAct, A2 하네스 설계의 다섯 축, A3 메타 하네스와 Ouroboros, 토론</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A1</span><h2>ReAct: 추론과 행동을 번갈아 하는 루프</h2></div>
+    <p>1주차 실습에서 while 루프 하나에 도구 두 개를 붙여 첫 에이전트를 만들었다. 그 루프에 무엇을 넣어 주고, 언제 멈추고, 에러가 나면 어떻게 넘기는지를 조금씩 바꾸면 같은 모델이라도 성공률이 달라진다. 모델을 감싸는 이 코드 전부를 <span class="nb">하네스(harness)</span>라 부른다.</p>
+
+    <p>Shunyu Yao 등이 2022년에 발표한 <strong>ReAct</strong>는 <span class="nb">추론(reasoning)</span>과 <span class="nb">행동(acting)</span>을 한 루프 안에서 번갈아 수행하게 한다. 그전까지 두 계열은 따로 있었다. 한쪽은 Chain-of-Thought로 대표되는 순수 추론이다. 모델은 단계를 밟아 결론에 도달한다. 앞 단계의 사실이 틀리면 그 위에 쌓은 추론 전체가 틀린다. Yao 등은 이것을 CoT의 환각과 오류 전파 문제로 짚었다. 다른 한쪽은 도구를 부르는 행동 계열이다. 검색하고 계산하지만 왜 지금 그 도구를 부르는지가 텍스트로 남지 않는다.</p>
+
+    <p>ReAct는 매 스텝을 세 조각으로 나눈다. 모델은 먼저 <em>Thought</em>를 쓴다. 지금 상황이 어떻고 다음에 무엇을 해야 하는지를 자연어로 적는다. 그다음 <em>Action</em>을 낸다. 어떤 도구를 어떤 인자로 부를지 정한다. 도구가 실행되면 환경이 <em>Observation</em>을 내놓는다. 검색 결과, 계산 값, 에러 메시지 같은 것이다. 이 Observation이 다음 스텝의 Thought로 들어가고, 모델은 이 Observation을 근거로 다시 생각한다.</p>
+
+    <div class="fig" id="fig1">
+      <svg viewBox="0 0 680 330" role="img" aria-label="The ReAct loop: Thought to Action to Observation and back to Thought, exiting to Answer when the answer is sufficient">
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <rect x="250" y="20" width="180" height="54"/>
+          <rect x="470" y="130" width="180" height="54"/>
+          <rect x="30" y="130" width="180" height="54"/>
+          <rect x="270" y="200" width="140" height="44" stroke="#A8A29E" stroke-dasharray="4 4"/>
+          <path d="M430 47 Q560 47 560 130"/>
+          <path d="M553 118 L560 130 L567 118"/>
+          <path d="M560 184 L560 280 L120 280 L120 184"/>
+          <path d="M113 196 L120 184 L127 196"/>
+          <path d="M120 130 Q120 47 250 47"/>
+          <path d="M238 41 L250 47 L238 53"/>
+          <path d="M340 74 L340 200" stroke="#A8A29E" stroke-dasharray="4 4"/>
+          <path d="M334 188 L340 200 L346 188" stroke="#A8A29E"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="13" font-weight="600">
+          <text x="340" y="44">Thought</text>
+          <text x="560" y="154">Action</text>
+          <text x="120" y="154">Observation</text>
+          <text x="340" y="227" fill="#78716C" font-weight="500">Answer</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="10">
+          <text x="340" y="62">decide the next action</text>
+          <text x="560" y="172">tool call</text>
+          <text x="120" y="172">environment response</text>
+          <text x="508" y="76">action directive</text>
+          <text x="340" y="298">execution result</text>
+          <text x="172" y="76">next reasoning</text>
+          <text x="348" y="112" text-anchor="start">exit when the answer is sufficient</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 01</b> The ReAct loop</span><span>Thought → Action → Observation → Thought</span></div>
+    </div>
+
+    <p>순수 추론은 이 그림에서 Observation 상자가 없는 경우다. 모델은 자기가 아는 것만 가지고 끝까지 간다. ReAct에서는 매 스텝 실제 실행 결과가 들어온다. 모델이 &ldquo;이 API의 응답은 이런 형식일 것이다&rdquo;라고 잘못 가정하면 다음 Observation이 실제 응답을 보여 주고, 모델은 그 자리에서 가정을 고친다. Yao 등은 HotpotQA와 Fever에서 ReAct가 위키피디아 API 하나로 CoT의 환각과 오류 전파를 줄였다고 보고했다. Thought가 텍스트로 남으므로 에이전트가 왜 그 행동을 했는지 사람이 나중에 읽을 수 있다. 매주 <code class="inline">logs/</code>에 커밋하는 실행 로그가 이 텍스트다.</p>
+
+    <div class="pull">추론 흔적은 모델이 행동 계획을 세우고, 추적하고, 갱신하고, 예외를 처리하게 돕는다. 행동은 모델이 지식 베이스나 환경 같은 외부 소스와 접촉해 정보를 더 얻게 한다.<span class="src">&ldquo;reasoning traces help the model induce, track, and update action plans as well as handle exceptions, while actions allow it to interface with and gather additional information from external sources such as knowledge bases or environments.&rdquo; S. Yao et al., &ldquo;ReAct&rdquo; (2022)</span></div>
+
+    <p>ReAct는 패턴이다. Thought를 쓰게 한다고 그 Thought가 옳아지지는 않는다. 모델은 그럴듯한 추론을 적어 놓고 엉뚱한 Action을 낼 수 있다. ReAct가 보장하는 것은 그 어긋남이 다음 Observation에서 드러난다는 점까지다. 어긋남을 잡아 되돌리는 일은 종료 조건, 에러 복구, 반복 상한 같은 나머지 하네스 설계가 맡는다.</p>
+
+    <div class="note"><b>REACT VS CoT</b>Yao 등의 수치는 2022년의 모델과 벤치마크에서 나온 것이다. 이 수업은 그 수치보다 Thought가 텍스트로 남는다는 성질을 쓴다. 실습의 A/B 판정도 이 텍스트를 읽어서 한다.</div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A2</span><h2>하네스 설계의 다섯 축</h2></div>
+    <p>harness는 원래 말에 씌워 힘을 한 방향으로 쓰게 하는 장치를 가리킨다. 2026년 Yoonho Lee 등이 Meta-Harness 논문에서 쓴 정의는 이렇다.</p>
+
+    <div class="define">
+      <p>하네스는 무엇을 저장하고 꺼내 와서 모델에게 보여 줄지를 정하는 코드다.</p>
+      <p class="sub">Y. Lee et al., &ldquo;Meta-Harness: End-to-End Optimization of Model Harnesses&rdquo; (2026). 원문은 &ldquo;the code that determines what information to store, retrieve, and present to the model&rdquo;. 프롬프트 조립, 도구 정의, 종료 조건, 에러 처리가 모두 여기 들어간다.</p>
+    </div>
+
+    <p>하네스가 정하는 것을 다섯 축으로 나눈다. 첫째는 <strong>컨텍스트 관리</strong>다. 컨텍스트 창은 유한하고, 무엇을 그 안에 넣느냐가 성능을 좌우한다. 지난 스무 스텝의 Observation을 전부 넣으면 최근 정보가 묻히고, 너무 잘라 내면 모델이 방금 한 일을 잊는다. 무엇을 보여 주고 무엇을 숨길지, 오래된 기록을 어떻게 요약해 접을지가 첫 결정이다. 둘째는 <strong>도구 granularity</strong>다. 도구를 가늘게 쪼갤수록(<code class="inline">read_line(n)</code>) 모델의 통제는 정밀해지지만 호출 횟수와 토큰이 늘고, 굵게 묶을수록(<code class="inline">read_file()</code>) 한 번에 많은 일을 하지만 실패했을 때 어디서 틀렸는지 짚기 어렵다.</p>
+
+    <p>셋째는 <strong>종료 조건</strong>이다. 모델이 답을 냈다고 선언하는 순간을 종료 조건으로 삼으면 위험하다. 모델은 다 못 풀고도 끝났다고 말한다. 그래서 실무 하네스는 최대 반복 횟수 상한, 목표 달성을 확인하는 별도 검증 단계, 명시적 종료 도구(<code class="inline">finish(answer)</code>) 같은 장치를 둔다. 넷째는 <strong>에러 복구</strong>다. 도구가 예외를 던지거나 인자 형식이 어긋났을 때, 하네스는 거기서 멈출 수도 있고 에러 메시지를 Observation으로 되돌려 모델이 고치게 할 수도 있다. 후자가 ReAct에 맞는다. 다섯째는 <strong>인간 개입 지점(human-in-the-loop)</strong>이다. 결제나 파일 삭제처럼 돌이킬 수 없는 행동 앞에서 멈추고 승인을 구할지, 끝까지 자율로 갈지를 정한다. 실습에서는 이 개입 횟수를 센다.</p>
+
+    <div class="fig" id="fig2">
+      <svg viewBox="0 0 680 260" role="img" aria-label="Harness boundary: the harness sits between model and environment and decides context, tools, termination, errors, and intervention">
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <rect x="30" y="100" width="130" height="60"/>
+          <rect x="230" y="40" width="220" height="180" stroke-dasharray="4 4"/>
+          <rect x="520" y="100" width="130" height="60"/>
+          <path d="M160 116 L230 116"/><path d="M220 110 L230 116 L220 122"/>
+          <path d="M230 144 L160 144"/><path d="M170 138 L160 144 L170 150"/>
+          <path d="M450 116 L520 116"/><path d="M510 110 L520 116 L510 122"/>
+          <path d="M520 144 L450 144"/><path d="M460 138 L450 144 L460 150"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="13" font-weight="600">
+          <text x="95" y="126">Model</text>
+          <text x="340" y="66">Harness</text>
+          <text x="585" y="126">Environment</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="10">
+          <text x="95" y="145">text → text</text>
+          <text x="585" y="145">tools, files, APIs</text>
+          <text x="195" y="105">output</text>
+          <text x="195" y="166">context</text>
+          <text x="485" y="105">tool call</text>
+          <text x="485" y="166">Observation</text>
+          <text x="340" y="245" fill="#1C1917">model and environment meet only through the harness</text>
+        </g>
+        <g fill="#44403C" font-size="10.5">
+          <text x="258" y="98">1 context management</text>
+          <text x="258" y="122">2 tool granularity</text>
+          <text x="258" y="146">3 termination condition</text>
+          <text x="258" y="170">4 error recovery</text>
+          <text x="258" y="194">5 human intervention point</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 02</b> Harness boundary and the five axes</span><span>model fixed, harness varied</span></div>
+    </div>
+
+    <div class="code"><span class="file">harness_react.py</span><pre><span class="cm"># ReAct형 하네스의 뼈대. 다섯 축이 코드 어느 줄에 들어가는지 표시</span>
+<span class="kw">def</span> run_react(task, tools, max_steps=<span class="st">8</span>):
+    history = [system_prompt(tools), user(task)]   <span class="cm"># [축1] 컨텍스트 관리</span>
+    interventions = <span class="st">0</span>
+    <span class="kw">for</span> step <span class="kw">in</span> range(max_steps):        <span class="cm"># [축3] 종료 조건: 반복 상한</span>
+        reply = model(history)                <span class="cm"># Thought + Action을 한 번에 생성</span>
+        history.append(assistant(reply))
+        <span class="kw">if</span> reply.tool_call <span class="kw">is</span> <span class="kw">None</span>:
+            <span class="kw">return</span> reply.text            <span class="cm"># [축3] 모델이 finish를 택함 → 종료</span>
+        <span class="kw">if</span> reply.tool_call.name <span class="kw">in</span> IRREVERSIBLE:
+            <span class="kw">if</span> <span class="kw">not</span> ask_human(reply.tool_call):  <span class="cm"># [축5] 개입 지점</span>
+                interventions += <span class="st">1</span>
+                history.append(observation(<span class="st">"거부됨: 사람이 승인하지 않음"</span>))
+                <span class="kw">continue</span>
+        <span class="kw">try</span>:
+            obs = tools.call(reply.tool_call)     <span class="cm"># [축2] 도구 granularity는 tools 정의에</span>
+        <span class="kw">except</span> Exception <span class="kw">as</span> e:
+            obs = <span class="st">f"에러: {e}"</span>              <span class="cm"># [축4] 에러 복구: 에러도 Observation</span>
+        history.append(observation(obs))          <span class="cm"># Observation → 다음 Thought로</span>
+    <span class="kw">return</span> <span class="st">"MAX_STEPS 도달: 미완"</span>            <span class="cm"># 상한에서 강제 종료</span></pre></div>
+
+    <p>이 코드에서 다섯 축의 값은 어느 것도 모델이 정하지 않는다. 전부 사람이 정한다. 같은 모델이라도 이 값을 다르게 잡으면 다른 에이전트가 된다. 하네스는 실험으로 탐색할 수 있는 설계 공간이다. 실습에서는 그 공간에서 두 점을 골라 비교한다.</p>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A3</span><h2>메타 하네스: 하네스를 탐색하는 바깥 루프</h2></div>
+    <p>다섯 축의 값을 사람이 손으로 바꿔 가며 A/B를 돌리는 대신, 그 탐색 자체를 에이전트에게 맡길 수 있다. 하네스가 자기 실행 기록을 읽고 &ldquo;여기서 반복이 너무 많았으니 도구를 굵게 묶자&rdquo;고 판단해 다음 버전의 하네스 코드를 써내는 구조다.</p>
+
+    <p>Yoonho Lee, Roshen Nair, Qizheng Zhang, Kangwook Lee, Omar Khattab, Chelsea Finn이 2026년 3월에 낸 논문 &ldquo;Meta-Harness: End-to-End Optimization of Model Harnesses&rdquo;가 이 구조를 그대로 구현했다. 바깥 루프는 세 단계를 반복한다. 코딩 에이전트인 proposer가 새 하네스 코드를 제안하고, 그 하네스로 태스크를 풀어 점수를 매기고, 소스 코드와 점수와 실행 trace를 전부 파일시스템에 남긴다. 다음 제안 때 proposer는 이전 후보 전부의 코드와 trace를 그 파일시스템에서 직접 읽는다.</p>
+
+    <div class="define">
+      <p>메타 하네스는 하네스 코드를 탐색 대상으로 삼는 바깥 루프다.</p>
+      <p class="sub">안쪽 루프는 태스크를 풀고, 바깥 루프는 안쪽 루프의 코드를 고친다. Lee et al. (2026)의 시스템 이름이 Meta-Harness이고, 이 수업은 그 구조 일반을 가리키는 말로 쓴다.</p>
+    </div>
+
+    <div class="pull">Meta-Harness 자체도 넓은 의미의 하네스다. 탐색 중 proposer 모델이 어떤 정보를 볼지를 Meta-Harness가 정하기 때문이다.<span class="src">&ldquo;Meta-Harness is itself a harness in the broad sense (hence the name), since it determines what information the proposer model sees during search.&rdquo; Y. Lee et al., &ldquo;Meta-Harness&rdquo; (2026)</span></div>
+
+    <p>논문의 핵심 주장은 기존 텍스트 최적화기가 피드백을 너무 압축한다는 것이다. 이전 시도를 기억하지 않고, 점수 하나나 짧은 요약만 받는다. Lee 등은 online text classification에서 proposer에게 주는 정보를 세 조건으로 나눠 비교했다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>proposer가 보는 것</th><th>median 정확도</th><th>best 정확도</th></tr>
+        <tr><td class="stage">점수만</td><td><span class="m">34.6</span></td><td><span class="m">41.3</span></td></tr>
+        <tr><td class="stage">점수 + LLM 요약</td><td><span class="m">34.9</span></td><td><span class="m">38.7</span></td></tr>
+        <tr><td class="stage">점수 + 코드 + 전체 trace</td><td><span class="m">50.0</span></td><td><span class="m">56.7</span></td></tr>
+      </table>
+    </div>
+    <p class="small">Lee et al. (2026) Table 3의 수치. 요약은 점수만 줄 때와 거의 같고, 전체 trace를 줄 때만 median 후보가 다른 두 조건의 best 후보를 넘는다. 이 수치는 논문의 태스크에서 나온 것이고 이 수업의 측정값이 아니다.</p>
+
+    <p>&ldquo;나아졌는가&rdquo;를 판정하는 함수가 루프 안에 있으면 자기 개선은 표류(drift)한다. 모델이 자기 답을 자기가 채점하는 구조가 되기 때문이다. Meta-Harness에서 이 판정은 proposer가 손댈 수 없는 태스크 점수다. 아래 Ouroboros에서는 사람이 인터뷰로 고정한 acceptance criteria와 deterministic verify command다.</p>
+
+    <h3><span class="tag">CASE</span>Ouroboros의 메타 하네스 루프</h3>
+    <p>Ouroboros는 1주차 소개에서 언급한 오픈소스 Agent OS다. Meta-Harness가 점수를 최대화하는 하네스를 찾는다면, Ouroboros는 사람이 확정한 요구사항을 충족하는 실행이 나올 때까지 실행 규칙을 고친다. 저장소에서 이 루프는 네 모듈로 나뉜다. <code class="inline">core/seed_contract.py</code>의 SeedContract가 실행 전에 goal과 acceptance criteria를 고정한다. <code class="inline">orchestrator</code>가 실행을 관리하고 trace를 남긴다. <code class="inline">evaluation/pipeline.py</code>가 결과를 모으고 <code class="inline">orchestrator/verifier.py</code>가 verify command로 통과 여부를 판정한다. <code class="inline">evolution/loop.py</code>가 이 판정과 기록을 다음 generation의 입력으로 삼는다.</p>
+
+    <div class="fig" id="fig3">
+      <svg viewBox="0 0 680 270" role="img" aria-label="The Ouroboros loop: Seed fixes the goal and acceptance criteria, RUN executes, JUDGE/GATE decides, pass is adopted, fail goes to EDIT which produces the next harness and returns to RUN">
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <rect x="10" y="60" width="160" height="54"/>
+          <rect x="205" y="60" width="140" height="54"/>
+          <rect x="385" y="60" width="150" height="54"/>
+          <rect x="575" y="60" width="90" height="54" stroke="#A8A29E" stroke-dasharray="4 4"/>
+          <rect x="205" y="180" width="140" height="54"/>
+          <path d="M170 87 L205 87"/><path d="M195 81 L205 87 L195 93"/>
+          <path d="M345 87 L385 87"/><path d="M375 81 L385 87 L375 93"/>
+          <path d="M535 87 L575 87"/><path d="M565 81 L575 87 L565 93"/>
+          <path d="M460 114 L460 207 L345 207"/><path d="M355 201 L345 207 L355 213"/>
+          <path d="M275 180 L275 114"/><path d="M269 126 L275 114 L281 126"/>
+          <path d="M90 60 L90 36 L460 36 L460 60" stroke="#A8A29E" stroke-dasharray="4 4"/>
+          <path d="M454 50 L460 60 L466 50" stroke="#A8A29E"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="13" font-weight="600">
+          <text x="90" y="83">Seed</text>
+          <text x="275" y="83">RUN</text>
+          <text x="460" y="83">JUDGE / GATE</text>
+          <text x="620" y="91" fill="#78716C" font-weight="500">adopt</text>
+          <text x="275" y="203">EDIT</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="10">
+          <text x="90" y="101" font-size="9.5">goal + acceptance criteria</text>
+          <text x="275" y="101">execution + trace</text>
+          <text x="460" y="101">verifier + heldout</text>
+          <text x="275" y="221">next execution rules</text>
+          <text x="555" y="78">pass</text>
+          <text x="470" y="160" text-anchor="start">fail</text>
+          <text x="289" y="150" text-anchor="start">next generation</text>
+          <text x="275" y="26">acceptance criteria are fixed in the Seed and EDIT cannot touch them</text>
+        </g>
+        <text x="340" y="258" text-anchor="middle" font-size="10" fill="#1C1917">EDIT changes the rules that produce the next run, not the answer</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 03</b> The Ouroboros meta-harness loop</span><span>Seed → RUN → JUDGE/GATE → EDIT</span></div>
+    </div>
+
+    <div class="code"><span class="file">src/ouroboros 모듈 경계</span><pre>SeedContract        core/seed_contract.py     goal, acceptance criteria, ontology
+OrchestratorRunner  orchestrator/runner.py    runtime 호출, 세션 이벤트, 실행 상태
+EvaluationPipeline  evaluation/pipeline.py    결과 수집과 독립 평가
+Verifier            orchestrator/verifier.py  verify command의 deterministic 판정
+EvolutionaryLoop    evolution/loop.py         generation별 수정, 재실행, 회귀 확인</pre></div>
+
+    <p>이 구조를 메타 하네스라 부르는 이유는 EDIT의 대상이 답변이 아니라 다음 실행을 만드는 규칙이기 때문이다. acceptance criteria와 verify command는 Seed에 고정되어 EDIT가 손대지 못한다. 이 경계를 넘기면 모델의 자기 채점만 남는다.</p>
+
+    <div class="check">
+      <div class="lbl">READ THE CODE</div>
+      <ul>
+        <li><code class="inline">core/seed_contract.py</code>: 실행 전에 Seed가 고정하는 필드</li>
+        <li><code class="inline">orchestrator/verifier.py</code>: VerifierVerdict와 verify command의 판정 규칙</li>
+        <li><code class="inline">evaluation/pipeline.py</code>: 평가 파이프라인이 받는 입력</li>
+        <li><code class="inline">evolution/loop.py</code>: generation과 재실행의 경계</li>
+      </ul>
+    </div>
+
+    <h3><span class="tag">LINEAGE</span>자기 개선 루프의 계보</h3>
+    <p>메타 하네스 이전에도 출력 하나를 더 만드는 데서 그치지 않고 다음 실행의 조건을 바꾸는 연구가 여럿 있었다. 여섯 방법은 무엇을 바꾸는지와 무엇을 판정 신호로 쓰는지로 구분한다. Self-Refine(Madaan et al. 2023)은 같은 LLM이 초안과 피드백과 수정본을 번갈아 만든다. 바꾸는 것은 출력이고 신호는 자기 피드백이다. Reflexion(Shinn et al. 2023)은 실패 원인을 언어로 적어 다음 trial의 episodic memory에 넣는다. 바꾸는 것은 컨텍스트다. DSPy(Khattab et al. 2023)는 파이프라인을 선언적으로 쓰고, compiler가 metric을 최대화하는 prompt와 demonstration을 찾는다. GEPA(Agrawal et al. 2025)는 trajectory를 읽고 자연어로 반성해 prompt 후보를 Pareto frontier에 쌓는다. Meta-Harness는 하네스 코드를 바꾸고, Darwin Gödel Machine(Zhang et al. 2025)은 에이전트 코드 자체를 수정한 후보를 archive에 보관하고 코딩 벤치마크로 검증한다.</p>
+
+    <div class="fig" id="fig4">
+      <svg viewBox="0 0 680 250" role="img" aria-label="Comparison of six self-improvement loops: Self-Refine, Reflexion, DSPy, GEPA, Meta-Harness, and the Darwin Gödel Machine, by what each changes and what signal judges it">
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <rect x="70" y="30" width="95" height="44"/>
+          <rect x="170" y="30" width="95" height="44"/>
+          <rect x="270" y="30" width="95" height="44"/>
+          <rect x="370" y="30" width="95" height="44"/>
+          <rect x="470" y="30" width="95" height="44"/>
+          <rect x="570" y="30" width="95" height="44"/>
+          <path d="M70 218 L660 218"/><path d="M648 212 L660 218 L648 224"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="11" font-weight="600">
+          <text x="117" y="57">Self-Refine</text>
+          <text x="217" y="57">Reflexion</text>
+          <text x="317" y="57">DSPy</text>
+          <text x="417" y="57">GEPA</text>
+          <text x="517" y="57">Meta-Harness</text>
+          <text x="617" y="52">Darwin</text><text x="617" y="66">Gödel Machine</text>
+        </g>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="57">METHOD</text>
+          <text x="0" y="112">CHANGES</text>
+          <text x="0" y="156">SIGNAL</text>
+          <text x="0" y="196">YEAR</text>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="10.5">
+          <text x="117" y="112">output</text>
+          <text x="217" y="112">memory</text>
+          <text x="317" y="106">prompts,</text><text x="317" y="120">demonstrations</text>
+          <text x="417" y="112">prompt</text>
+          <text x="517" y="112">harness code</text>
+          <text x="617" y="112">agent code</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="10">
+          <text x="117" y="156">self-feedback</text>
+          <text x="217" y="150">env result +</text><text x="217" y="164">reflection</text>
+          <text x="317" y="156">metric</text>
+          <text x="417" y="150">metric +</text><text x="417" y="164">trajectory</text>
+          <text x="517" y="150">scores + code +</text><text x="517" y="164">full traces</text>
+          <text x="617" y="156">coding benchmark</text>
+          <text x="117" y="196">2023</text>
+          <text x="217" y="196">2023</text>
+          <text x="317" y="196">2023</text>
+          <text x="417" y="196">2025</text>
+          <text x="517" y="196">2026</text>
+          <text x="617" y="196">2025</text>
+          <text x="365" y="240" fill="#1C1917">what changes: output → context → prompt → code</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 04</b> The lineage of self-improvement loops</span><span>what changes, and what judges it</span></div>
+    </div>
+
+    <p>Self-Refine을 뺀 다섯 방법은 판정 신호를 수정 대상과 분리해 둔다. Self-Refine은 같은 모델이 피드백까지 만들고, 그래서 뒤의 연구들이 환경 결과, metric, 벤치마크로 신호를 옮겼다. 논문들이 제시한 수치는 각자의 태스크에서 나온 것이므로 실습 보고서에 그대로 옮기지 않는다.</p>
+  </div>
+</section>
+
+<!-- ============ 토론 ============ -->
+<section>
+  <div class="col">
+    <div class="open">
+      <div class="lbl">DISCUSSION: 하네스 개선과 모델 개선의 경계</div>
+      <ol>
+        <li>프롬프트를 바꾸는 것, 도구를 추가하는 것, 하네스 코드를 다시 쓰는 것, 파인튜닝하는 것 중 어디까지가 &lsquo;같은 모델&rsquo;이고 어디부터가 &lsquo;다른 모델&rsquo;인가.</li>
+        <li>자기 개선 루프가 표류하지 않으려면 판정 함수가 루프 바깥에 있어야 한다. 그 판정 함수 자체를 에이전트가 고치게 두면 어떻게 되는가. 절대 자동화해서는 안 되는 것은 무엇인가.</li>
+        <li>실습의 A/B 실험을 Meta-Harness처럼 바깥 루프에 맡겨 자동화한다면, 어느 지점에 사람의 판단을 남겨 두겠는가.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PART B ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART B: LAB</div>
+    <h2>하네스 A/B: ReAct형 vs Plan-then-Execute형</h2>
+    <div class="meta">GOAL: hold the model, task, and tools constant, vary only the harness, measure success, tokens, iterations, and interventions</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">LAB</span><h2>같은 태스크, 두 하네스</h2></div>
+    <p><strong>모델과 태스크와 도구는 상수로 고정하고, 하네스만 독립변수로 바꾼다.</strong> 같은 모델에 같은 태스크를 주되, 하나는 ReAct형 하네스로, 다른 하나는 Plan-then-Execute형 하네스로 풀게 한 뒤 네 지표를 나란히 잰다. 태스크는 도구가 필요한 다단계 문제면 된다. &ldquo;주어진 로그 파일에서 에러가 가장 많이 난 시간대를 찾아 요약하라&rdquo;처럼 파일을 읽고, 세고, 정리해야 답이 나오는 것을 권한다. 준비물은 1주차와 같다. Python 3.10 이상, <code class="inline">anthropic</code> 패키지, API 키 하나.</p>
+
+    <p>ReAct형은 매 스텝 Thought → Action → Observation을 돌며 다음에 무엇을 할지를 매번 다시 판단한다. Plan-then-Execute형은 먼저 전체 계획을 한 번에 세운 뒤(Plan) 그 계획의 단계를 순서대로 실행한다(Execute). 계획을 미리 굳히므로 토큰이 적게 들고 흐름이 예측 가능하지만, 중간 Observation이 계획과 어긋나면 방향을 틀기 어렵다. 어느 쪽이 이길지는 태스크에 달렸다.</p>
+
+    <ol class="pre">
+      <li><b class="lead">공용 도구와 모델 래퍼를 한 모듈에 둔다.</b> 두 하네스가 공유할 도구(<code class="inline">read_file</code>, <code class="inline">count_pattern</code>)와 모델 호출 함수, 토큰 카운터를 <code class="inline">tools_shared.py</code>에 둔다. 도구가 다르면 하네스 비교가 성립하지 않는다.</li>
+      <li><b class="lead">ReAct형 하네스를 구현한다.</b> 위의 <code class="inline">run_react</code> 뼈대를 태스크에 맞게 채운다. 종료는 모델의 <code class="inline">finish</code> 호출 또는 <code class="inline">max_steps</code> 상한으로. 반복 횟수와 개입 횟수를 실행 중에 센다.</li>
+      <li><b class="lead">Plan-then-Execute형 하네스를 구현한다.</b> 1차 호출로 단계 리스트(계획)를 받고, 2차부터 각 단계를 실행한다. 계획이 어긋나면 재계획을 1회까지만 허용해 유연성 상한을 명시한다.</li>
+      <li><b class="lead">같은 태스크로 각각 3회씩 실행한다.</b> 모델 출력은 확률적이라 1회 실행은 우연이다. 하네스당 최소 3회를 돌려 성공률과 지표의 분산을 함께 본다. 실행마다 프롬프트, 도구 집합, <code class="inline">max_steps</code> 같은 실험 조건을 기록한다.</li>
+      <li><b class="lead">결과를 <code class="inline">results.csv</code>에 기록한다.</b> 실행마다 성공 여부, 토큰, 반복 횟수, 개입 횟수를 한 줄씩 적는다. 실패한 실행도 남긴다.</li>
+      <li><b class="lead">해석을 한 문단 쓴다.</b> 어느 하네스가 이 태스크에서 어떤 지표로 이겼고 왜인지.</li>
+    </ol>
+
+    <div class="code"><span class="file">tools_shared.py</span><pre><span class="cm"># 두 하네스가 공유하는 도구, 모델, 측정 유틸. 같은 도구를 써야 공정한 비교</span>
+<span class="kw">import</span> anthropic, re, json
+client = anthropic.Anthropic()
+MODEL = <span class="st">"claude-sonnet-4-5"</span>
+
+<span class="kw">def</span> read_file(path):                    <span class="cm"># 도구 1</span>
+    <span class="kw">with</span> open(path, encoding=<span class="st">"utf-8"</span>) <span class="kw">as</span> f:
+        <span class="kw">return</span> f.read()[:<span class="st">4000</span>]           <span class="cm"># 컨텍스트 보호용 상한</span>
+
+<span class="kw">def</span> count_pattern(text, pattern):        <span class="cm"># 도구 2</span>
+    <span class="kw">return</span> len(re.findall(pattern, text))
+
+TOOLS = {<span class="st">"read_file"</span>: read_file, <span class="st">"count_pattern"</span>: count_pattern}
+
+<span class="kw">class</span> Meter:                             <span class="cm"># 네 지표를 한곳에서 센다</span>
+    <span class="kw">def</span> __init__(self):
+        self.tokens = <span class="st">0</span>; self.iters = <span class="st">0</span>; self.interventions = <span class="st">0</span>
+    <span class="kw">def</span> add(self, usage):
+        self.tokens += usage.input_tokens + usage.output_tokens
+        self.iters += <span class="st">1</span>
+
+<span class="kw">def</span> call_model(messages, meter):
+    resp = client.messages.create(model=MODEL, max_tokens=<span class="st">1024</span>, messages=messages)
+    meter.add(resp.usage)                <span class="cm"># 매 호출의 토큰을 누적</span>
+    <span class="kw">return</span> resp.content[<span class="st">0</span>].text</pre></div>
+
+    <div class="code"><span class="file">harness_plan_execute.py</span><pre><span class="cm"># Plan-then-Execute형: 계획을 먼저 굳히고 순서대로 실행한다</span>
+<span class="kw">import</span> json
+<span class="kw">from</span> tools_shared <span class="kw">import</span> TOOLS, Meter, call_model
+
+<span class="kw">def</span> run_plan_execute(task, max_replan=<span class="st">1</span>):
+    meter = Meter()
+    <span class="cm"># 1) PLAN: 전체 계획을 한 번에 요청</span>
+    plan_raw = call_model(
+        [{<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: <span class="st">f"다음 태스크의 단계별 계획을 JSON 리스트로만 답하라: {task}"</span>}],
+        meter)
+    plan = json.loads(plan_raw)          <span class="cm"># 파싱 실패도 하나의 실패 모드</span>
+    replans = <span class="st">0</span>
+    <span class="cm"># 2) EXECUTE: 계획의 각 단계를 순서대로 수행</span>
+    context = []
+    <span class="kw">for</span> step <span class="kw">in</span> plan:
+        result = execute_step(step, context, meter)     <span class="cm"># 도구 호출 포함</span>
+        context.append(result)
+        <span class="kw">if</span> result.get(<span class="st">"off_plan"</span>) <span class="kw">and</span> replans &lt; max_replan:
+            plan = replan(task, context, meter); replans += <span class="st">1</span>   <span class="cm"># 유연성 상한</span>
+    <span class="kw">return</span> summarize(context, meter), meter, replans</pre></div>
+
+    <div class="fig" id="fig5">
+      <svg viewBox="0 0 680 290" role="img" aria-label="A/B experiment structure: with the same model, task, and tool set, run the ReAct and Plan-then-Execute harnesses and measure them with the same criteria">
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <rect x="250" y="20" width="180" height="54"/>
+          <rect x="50" y="130" width="220" height="60"/>
+          <rect x="410" y="130" width="220" height="60"/>
+          <rect x="250" y="230" width="180" height="54"/>
+          <path d="M300 74 L160 130"/><path d="M172 118 L160 130 L176 129"/>
+          <path d="M380 74 L520 130"/><path d="M504 129 L520 130 L508 118"/>
+          <path d="M160 190 L300 230"/><path d="M285 230 L300 230 L290 218"/>
+          <path d="M520 190 L380 230"/><path d="M395 230 L380 230 L390 218"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="13" font-weight="600">
+          <text x="340" y="44">Same conditions</text>
+          <text x="160" y="154">ReAct</text>
+          <text x="520" y="154">Plan-then-Execute</text>
+          <text x="340" y="254">Same verdict</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="10">
+          <text x="340" y="62">model, task, tool set</text>
+          <text x="160" y="174">Thought → Action each step, 3 runs</text>
+          <text x="520" y="174">one plan → steps in order, 3 runs</text>
+          <text x="340" y="272">success, tokens, iterations, interventions</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 05</b> A/B experiment structure</span><span>one independent variable: the harness</span></div>
+    </div>
+
+    <div class="code"><span class="file">results.csv</span><pre>run,harness,success,tokens,iters,interventions,note
+<span class="cm"># run: 1..6 / harness: react | plan_exec / success: O | X (실행 전에 정한 기준으로)</span>
+<span class="cm"># tokens: Meter.tokens / iters: Meter.iters / interventions: 사람이 승인 또는 거부한 횟수</span></pre></div>
+    <p class="small">성공 여부의 기준은 실행 전에 문장으로 적어 둔다. &ldquo;에러가 가장 많은 시간대를 14시로 답하면 O&rdquo;처럼 정답이 확인되는 형태여야 한다. 실행 후에 기준을 정하면 실패가 성공으로 바뀐다.</p>
+
+    <div class="check">
+      <div class="lbl">CHECKPOINT</div>
+      <ul>
+        <li>두 하네스가 같은 <code class="inline">tools_shared.py</code>와 같은 모델명을 import한다.</li>
+        <li>성공 판정 기준이 실행 전 커밋에 문장으로 적혀 있다.</li>
+        <li><code class="inline">results.csv</code>에 하네스당 3회 이상, 실패 실행을 포함해 6줄 이상이 있다.</li>
+        <li>실행마다 <code class="inline">logs/</code>에 Thought와 Observation이 그대로 남아 있다.</li>
+      </ul>
+    </div>
+
+    <p>제출 규칙은 1주차와 같다.</p>
+    <div class="recorder">
+      <div><span class="k">커밋</span><span class="v">squash 금지. 실패한 시도의 커밋도 채점 근거다.</span></div>
+      <div><span class="k">로그</span><span class="v">에이전트 실행 콘솔 출력을 <code class="inline">logs/</code>에 파일로 커밋한다.</span></div>
+      <div><span class="k">API 키</span><span class="v">커밋 금지. 환경변수로만 쓴다.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 과제 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">HW</span><h2>과제</h2></div>
+    <div class="hw">
+      <div class="head">ASSIGNMENT: WEEK 02</div>
+      <div class="body">
+        <div class="due">DUE: 다음 주 수업 시작 전</div>
+        <p><strong>제출물</strong>: A/B 실험 보고서 1쪽. (1) <strong>변형 정의</strong>: 두 하네스가 무엇이 같고 무엇이 다른지, 다섯 축 중 어디를 어떻게 다르게 잡았는지. (2) <strong>측정표</strong>: <code class="inline">results.csv</code>의 6회 이상 실행. 실패 실행 포함. (3) <strong>해석 한 문단</strong>: 이 태스크에서 어느 하네스가 어떤 지표로 이겼고 왜인지.</p>
+        <p><strong>형식</strong>: 포크의 <code class="inline">submissions/&lt;학번&gt;/week-02/</code>에 커밋하고 upstream으로 PR을 연다. 두 하네스 코드, <code class="inline">tools_shared.py</code>, 태스크 정의와 성공 판정 기준(<code class="inline">TASK.md</code>), <code class="inline">results.csv</code>, 실행 로그(<code class="inline">logs/</code>)를 함께 넣는다.</p>
+        <p><strong>채점 기준</strong>: 1주차와 같이 재현성이 절반이다. 다른 사람이 코드와 설정만으로 같은 경향을 다시 얻을 수 있어야 한다. 나머지 절반은 해석이다. 어느 축의 차이가 어느 지표를 움직였는지를 로그에서 근거를 들어 설명한다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 읽기자료 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">READ</span><h2>읽기자료</h2></div>
+    <ul class="readings">
+      <li><span class="badge req">필수</span><b class="lead">S. Yao et al., &ldquo;ReAct: Synergizing Reasoning and Acting in Language Models&rdquo; (2022)</b><span class="why">ReAct의 원전. Thought, Action, Observation의 교차가 CoT-only와 act-only 대비 무엇을 바꾸는지를 실험 설계와 함께 읽고, 실습의 ReAct형 하네스와 대조하기 위해. <a href="https://arxiv.org/abs/2210.03629">arXiv:2210.03629</a></span></li>
+      <li><span class="badge req">필수</span><b class="lead">Y. Lee, R. Nair, Q. Zhang, K. Lee, O. Khattab, C. Finn, &ldquo;Meta-Harness: End-to-End Optimization of Model Harnesses&rdquo; (2026)</b><span class="why">메타 하네스의 원전. 하네스 정의, 바깥 루프 세 단계, 그리고 proposer에게 전체 trace를 주는 것이 왜 요약보다 나은지를 Table 3과 함께 읽기 위해. <a href="https://arxiv.org/abs/2603.28052">arXiv:2603.28052</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">A. Madaan et al., &ldquo;Self-Refine: Iterative Refinement with Self-Feedback&rdquo; (2023)</b><span class="why">생성, 피드백, 수정의 반복. 같은 모델이 피드백까지 만들 때 판정 신호가 어디에 있는지 확인하기 위해. <a href="https://arxiv.org/abs/2303.17651">arXiv:2303.17651</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">N. Shinn et al., &ldquo;Reflexion: Language Agents with Verbal Reinforcement Learning&rdquo; (2023)</b><span class="why">실패의 언어적 기록을 다음 trial에 넣는 방법. Ouroboros의 trace와 다음 generation 입력을 비교하기 위해. <a href="https://arxiv.org/abs/2303.11366">arXiv:2303.11366</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">O. Khattab et al., &ldquo;DSPy: Compiling Declarative Language Model Calls into Self-Improving Pipelines&rdquo; (2023)</b><span class="why">metric을 기준으로 파이프라인의 prompt와 demonstration을 찾는 compiler. Meta-Harness 저자 중 한 명의 앞선 작업이다. <a href="https://arxiv.org/abs/2310.03714">arXiv:2310.03714</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">L. Agrawal et al., &ldquo;GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning&rdquo; (2025)</b><span class="why">trajectory를 읽고 prompt 후보를 만들며 Pareto frontier를 유지하는 방법. Meta-Harness가 &lsquo;피드백을 너무 압축한다&rsquo;고 비교하는 대상 중 하나다. <a href="https://arxiv.org/abs/2507.19457">arXiv:2507.19457</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">J. Zhang et al., &ldquo;Darwin Gödel Machine: Open-Ended Evolution of Self-Improving Agents&rdquo; (2025)</b><span class="why">에이전트 코드 후보를 archive에 보관하고 코딩 벤치마크로 검증하는 사례. 계보 중 수정 범위가 가장 넓다. <a href="https://arxiv.org/abs/2505.22954">arXiv:2505.22954</a></span></li>
+    </ul>
+
+    <div class="next">
+      <div class="lbl">NEXT: WEEK 03</div>
+      <p><strong>에이전트가 여럿이 되면 무엇이 달라지는가</strong>. 다음 주에는 Smith의 Contract Net Protocol(1980)을 읽는다. 일을 나눠 갖는 에이전트 시장이 이미 그때 설계됐는데 왜 자리 잡지 못했는지를 묻는다. 실습에서는 그 프로토콜을 LLM 에이전트로 재현한다.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="sheet">
+  <span>AGENTIC AI: <span class="o">에이전트 시스템의 이론과 구축</span></span>
+  <span>SEOULTECH 2026 FALL, WEEK 02/15</span>
+</footer>
+
+</div>
+</body>
+</html>
