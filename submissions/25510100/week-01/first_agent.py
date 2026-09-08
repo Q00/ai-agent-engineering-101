@@ -1,14 +1,19 @@
-"""Week 01 starter — the agent from the lab, Anthropic API version.
+"""Week 01 starter — OpenAI-compatible API version (works with OpenRouter).
 
 Two tools: calculator, read_file. Your assignment: add a third.
-Requires: pip install anthropic, and ANTHROPIC_API_KEY in the environment.
+Requires: pip install openai, and in the environment:
+  OPENAI_API_KEY   your key (an OpenRouter key works)
+  OPENAI_BASE_URL  optional; set to https://openrouter.ai/api/v1 for OpenRouter
+  AGENT_MODEL      optional; defaults to gpt-4o-mini. For OpenRouter free
+                   models use e.g. AGENT_MODEL=meta-llama/llama-3.3-70b-instruct:free
 """
 import os
 import sys
 import ast
+import json
 import operator
 
-import anthropic
+from openai import OpenAI
 
 # ---- tool 1: calculator (safe, no eval) ----
 _OPS = {ast.Add: operator.add, ast.Sub: operator.sub,
@@ -45,40 +50,44 @@ TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
-    {"name": "calculator",
-     "description": "Evaluate an arithmetic expression.",
-     "input_schema": {"type": "object",
-                      "properties": {"expression": {"type": "string"}},
-                      "required": ["expression"]}},
-    {"name": "read_file",
-     "description": "Read a text file in the working directory.",
-     "input_schema": {"type": "object",
-                      "properties": {"path": {"type": "string"}},
-                      "required": ["path"]}},
+    {"type": "function",
+     "function": {
+         "name": "calculator",
+         "description": "Evaluate an arithmetic expression.",
+         "parameters": {"type": "object",
+                        "properties": {"expression": {"type": "string"}},
+                        "required": ["expression"]}}},
+    {"type": "function",
+     "function": {
+         "name": "read_file",
+         "description": "Read a text file in the working directory.",
+         "parameters": {"type": "object",
+                        "properties": {"path": {"type": "string"}},
+                        "required": ["path"]}}},
 ]
+
+MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
 
 
 def run(goal: str, max_steps: int = 8):
-    client = anthropic.Anthropic()  # uses ANTHROPIC_API_KEY
+    client = OpenAI()  # uses OPENAI_API_KEY and OPENAI_BASE_URL
     messages = [{"role": "user", "content": goal}]
 
     for step in range(max_steps):   # <- this loop is what makes it an agent
-        resp = client.messages.create(
-            model="claude-sonnet-4-5", max_tokens=1024,
-            tools=TOOLS, messages=messages)
-        messages.append({"role": "assistant", "content": resp.content})
+        resp = client.chat.completions.create(
+            model=MODEL, tools=TOOLS, messages=messages)
+        msg = resp.choices[0].message
+        messages.append(msg)
 
-        if resp.stop_reason != "tool_use":   # final answer -> stop
-            return "".join(b.text for b in resp.content if b.type == "text")
+        if not msg.tool_calls:               # final answer -> stop
+            return msg.content or ""
 
-        results = []
-        for block in resp.content:           # execute tool calls -> observe
-            if block.type == "tool_use":
-                out = TOOLS_IMPL[block.name](**block.input)
-                print(f"  [tool] {block.name}({block.input}) -> {out}")
-                results.append({"type": "tool_result",
-                                "tool_use_id": block.id, "content": str(out)})
-        messages.append({"role": "user", "content": results})
+        for call in msg.tool_calls:          # execute tool calls -> observe
+            args = json.loads(call.function.arguments)
+            out = TOOLS_IMPL[call.function.name](**args)
+            print(f"  [tool] {call.function.name}({args}) -> {out}")
+            messages.append({"role": "tool", "tool_call_id": call.id,
+                             "content": str(out)})
 
     return "stopped: max steps exceeded"   # the stop condition is a safety net
 
