@@ -1,6 +1,6 @@
 """Week 02 starter — run the A/B experiment and record results.csv.
 
-Usage: python run_ab.py [--runs 3]
+Usage: python run_ab.py [--runs 3] [--check]
 
 Reads the task and the success criterion from TASK.md, runs each harness
 --runs times, judges every run, appends one line per run to results.csv,
@@ -9,6 +9,7 @@ they are data.
 """
 import argparse
 import csv
+import importlib.util
 import os
 import re
 import time
@@ -16,6 +17,7 @@ from pathlib import Path
 
 from harness_plan_execute import run_plan_execute
 from harness_react import run_react
+from tools_shared import MODEL, PROVIDER
 
 HEADER = ["run", "harness", "success", "tokens", "iters", "interventions", "note"]
 
@@ -35,12 +37,35 @@ def judge(answer: str, expected: str) -> bool:
     return expected.lower() in (answer or "").lower()
 
 
+def check_setup():
+    """Check local prerequisites without calling a model or writing results."""
+    if not Path("app.log").is_file():
+        raise SystemExit("app.log is missing; run from the week-02 submission directory.")
+    if importlib.util.find_spec(PROVIDER) is None:
+        raise SystemExit(f"The {PROVIDER} SDK is missing; install requirements.txt first.")
+    key_name = "ANTHROPIC_API_KEY" if PROVIDER == "anthropic" else "OPENAI_API_KEY"
+    if not os.environ.get(key_name, "").strip():
+        raise SystemExit(
+            f"{key_name} is not set. Configure the provider's API key in the environment "
+            "before running (ANTHROPIC_API_KEY selects Anthropic). No runs were recorded."
+        )
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--check", action="store_true",
+                    help="check local prerequisites without API calls or result files")
     args = ap.parse_args()
+    if args.runs < 1:
+        ap.error("--runs must be at least 1")
 
     task, expected = read_task()
+    check_setup()
+    if args.check:
+        print(f"Local configuration OK: provider={PROVIDER}, model={MODEL}")
+        print("Credentials are present; authentication has not been tested. No runs were recorded.")
+        return
     Path("logs").mkdir(exist_ok=True)
     new_file = not Path("results.csv").exists()
     run_no = 0
