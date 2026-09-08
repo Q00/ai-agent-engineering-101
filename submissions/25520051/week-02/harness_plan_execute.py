@@ -46,7 +46,14 @@ def run_plan_execute(task: str, max_replan: int = 1,
     plan = parse_plan(raw)
     if plan is None:                              # a parse failure is one failure mode
         log(f"[plan] not valid JSON: {raw.strip()[:300]!r}")
-        return "plan parse failed", meter, 0
+        planner.add_user("That was not a bare JSON list. Reply again with ONLY "
+                         "the JSON list of steps -- no explanation, no code fences, "
+                         "nothing before or after the list.")
+        raw = planner.send().text
+        plan = parse_plan(raw)
+        if plan is None:
+            log(f"[plan retry] still not valid JSON: {raw.strip()[:300]!r}")
+            return "plan parse failed", meter, 0
     log(f"[plan] {plan}")
 
     # 2) EXECUTE: each step in order
