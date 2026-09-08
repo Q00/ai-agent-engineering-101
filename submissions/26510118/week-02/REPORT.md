@@ -69,28 +69,5 @@ ReAct만 `Thought:`를 요구한다. Plan-then-Execute는 추론을 텍스트로
 
 ## 3. 해석
 
-<!-- 여기를 직접 쓴다. 한 문단.
+이 태스크에서는 ReAct가 세 지표 모두 앞섰지만(성공 3/3 대 2/3, 반복 3.33 대 18.67, 토큰 4,923 대 64,557) 지표마다 원인이 다르다. **성공률을 가른 것은 에러 복구(축 4)이고 종료 조건(축 3)이 겹친다.** 두 하네스의 모델이 모두 정규식을 잘못 써 카운트가 전부 0으로 돌아온 구간이 있었는데(`logs/react-03.txt`, `logs/plan_exec-05.txt`), ReAct는 그 0을 Observation으로 받아 같은 루프 안에서 패턴을 바꿔 복구했고, Plan-then-Execute는 미리 굳은 계획과 `max_replan=1`이라는 유연성 상한 때문에 방향을 틀지 못한 채 "ERROR 줄이 없다"는 답으로 종료했다. **반복 횟수를 늘린 것은 종료 조건(축 3)이다.** 스텝당 도구 호출을 3라운드로 묶은 `max_tool_rounds=3`이 시간대 9개를 세야 하는 이 태스크와 맞지 않아 `OFF_PLAN`과 재계획이 반복됐고, 3회 실행 모두 재계획 상한을 다 썼다. **토큰 차이는 컨텍스트 관리(축 1)와 그 반복 증가가 겹친 결과다.** Plan-then-Execute는 `planner`와 `executor` 두 Chat이 히스토리를 따로 누적하므로 반복이 늘 때 양쪽 컨텍스트가 함께 커지고, 그래서 토큰 격차(13.11배)가 반복 격차(5.60배)보다 크다. 같은 모델과 같은 도구를 써도 하네스가 정한 유연성 상한, 스텝 예산, 컨텍스트 분할 방식이 성공률과 비용을 직접 결정했다.
 
-답할 것: 1부의 어느 축 차이가 2부의 어느 숫자를 만들었나.
-"ReAct가 이겼다"가 아니다.
-
-로그에서 근거를 찾을 지점:
-
-(1) iters 3.33 vs 18.67
-    logs/react-01.txt — 한 step 안에 count_pattern이 몇 개 호출됐나?
-    logs/plan_exec-06.txt — 같은 일에 모델 호출이 몇 번 필요했나?
-    harness_plan_execute.py:38 의 max_tool_rounds=3 과 시간대 9개를 나란히 볼 것.
-    로그에 'OFF_PLAN: step exceeded the tool-call budget'이 몇 번 나오나?
-
-(2) tokens 4,923 vs 64,557 (13배)
-    harness_plan_execute.py:42, 53 — Chat이 몇 개이고 각자 무엇을 쌓나?
-    harness_react.py:30 — 몇 개인가?
-
-(3) success 3/3 vs 2/3   ← 가장 좋은 소재
-    두 하네스의 모델이 같은 종류의 실수(정규식 오류로 카운트 전부 0)를 했다.
-    logs/react-03.txt   — 0이 나온 뒤 모델이 무엇을 했나?
-    logs/plan_exec-05.txt — 0이 나온 뒤 무엇을 했나? 최종 답변은?
-    harness_plan_execute.py:37 의 max_replan=1 도 함께 볼 것.
-    같은 모델, 같은 도구, 같은 실수. 구조의 무엇이 회복과 실패를 갈랐나?
-
--->
