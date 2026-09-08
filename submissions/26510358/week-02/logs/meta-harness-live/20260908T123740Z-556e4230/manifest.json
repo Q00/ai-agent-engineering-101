@@ -1,0 +1,52 @@
+{
+  "mode": "live",
+  "arguments": {
+    "check": false,
+    "demo": false,
+    "run": true,
+    "rounds": 1,
+    "repeats": 1,
+    "max_calls": 100
+  },
+  "roles": {
+    "proposer": "gpt",
+    "reviewer": "gemini",
+    "refiner": "solar",
+    "executor": "gpt"
+  },
+  "models": {
+    "gpt": {
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "key_env": "OPENAI_API_KEY",
+      "base_url": "https://api.openai.com/v1",
+      "reasoning_effort": "none"
+    },
+    "gemini": {
+      "provider": "google",
+      "model": "gemini-3.8-flash",
+      "key_env": "GEMINI_API_KEY",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "reasoning_effort": null
+    },
+    "solar": {
+      "provider": "upstage",
+      "model": "solar-pro4",
+      "key_env": "UPSTAGE_API_KEY",
+      "base_url": "https://api.upstage.ai/v1",
+      "reasoning_effort": null
+    }
+  },
+  "fixtures": {
+    "training": {
+      "reference": "e4020de6ccc11f6ac6d28eae021032cb9fed43adeba1d7ed9f96a6a2e1cc03b7",
+      "late_winner": "5e2dd1e566ed1c2b6c0060f6ea52d951d444f23c1a200688d3d92fd79bcf2653",
+      "level_not_body": "f62bb995e90592076bb88554fdce435a0848884d222ef86fd5772183a7029bb9"
+    },
+    "heldout": {
+      "heldout_tie": "f88af2b815e6bd292c5b6abc1f441f1bc9a88b053808f0cdbcfbb3e1887dea3d",
+      "heldout_late": "170e1704690e881a900f95c9546ce0fce7fe204fd695f7209c1abb28d893f88b"
+    }
+  },
+  "measurement": "provider_reported_usage"
+}
