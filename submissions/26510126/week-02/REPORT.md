@@ -354,3 +354,73 @@ better tool does not shorten: the planner still wrote five or six steps and
 the executor still walked all of them. The same element moved one harness and
 not the other, and which one it moved was decided by the termination
 condition.
+
+---
+
+## Appendix — a third harness, Plan-then-Execute with an early exit
+
+Sets A, B and C compare two harnesses that were given. This set adds one that
+was not: `harness_plan_execute_early.py`, which differs from
+`harness_plan_execute.py` by a single branch. When a step's reply already
+carries a line beginning with `Answer:`, the run returns there instead of
+walking the rest of the plan and then asking for the answer again. Nothing
+else moves — the same two-Chat context arrangement, the same tools, the same
+shared `run_tools`, still no intervention point, and `parse_plan` imported
+from the original so plan parsing cannot drift.
+
+The point is to separate the two elements that section 3 leans on. Sets A–C
+compare harnesses that differ in *both* termination condition and context
+management, so attributing the token and iteration gap to termination alone
+is inference. Here the context arrangement is identical and only the
+termination branch changes.
+
+Conditions match Set B: `claude-sonnet-5`, `AGENT_TOOLSET=fine`, same task and
+success criterion. Results are in `results_early.csv` and `logs_early/`, kept
+out of `results.csv` because `check_week02.py` counts any harness value other
+than `react|plan_exec` as a malformed row.
+
+| run | success | tokens | iters | wall | plan | exited | skipped | replans |
+|---:|:---:|---:|---:|---:|---|---|---:|---:|
+| 1 | O | 10,666 | 4 | 19.3s | 27 steps | step 1 | 26 | 0 |
+| 2 | O | 876,769 | 103 | 235.8s | 28 → 52 steps | step 50 | 2 | 1 |
+| 3 | O | 8,967 | 4 | 13.8s | 28 steps | step 1 | 27 | 0 |
+
+Against Set B's Plan-then-Execute (median 34,920 tokens, 11 iterations):
+
+| | Set B plan_exec | early exit | |
+|---|---:|---:|---|
+| tokens, median | 34,920 | 10,666 | −69% |
+| iters, median | 11 | 4 | −64% |
+| tokens, worst | 55,054 | 876,769 | 16× worse |
+
+Two of the three runs behave the way the branch was meant to: the model
+volunteers an answer at step 1 and the remaining 26 or 27 steps are dropped,
+bringing the harness to 4 model calls, close to ReAct's 3. That supports
+section 3 — with context management held identical, changing only where the
+loop stops moves iterations and tokens together.
+
+The third run says the branch is not a bound. Its planner wrote 28 steps, the
+pattern those steps used was `HH:00 ERROR`, which matches nothing because the
+timestamps carry real minutes, and every count came back 0. The step that
+noticed raised `OFF_PLAN`, and the replan — the flexibility cap allows one —
+returned **52** steps rather than a shorter list. `max_replan` counts replans,
+not their size, and `plan = plan[:i] + new_steps` splices the new list in
+whole, so a single permitted replan roughly doubled the work. The early exit
+never fired until the model finally wrote an `Answer:` line at step 50, by
+which point the run had made 103 model calls and spent 876,769 tokens.
+
+An early exit that waits for the model to volunteer a keyword is a termination
+condition that depends on the model's phrasing, not a limit the harness
+enforces. Plan-then-Execute's step cap is the plan's own length, and this
+variant does not add one; a `max_steps`-style bound of the kind ReAct has is
+what would have stopped run 2.
+
+Cost: the three runs together came to 896,402 tokens, roughly **$2.51–$3.23**
+at the Claude Sonnet 5 rate — more than Sets B and C combined, with 98% of it
+in run 2 alone.
+
+One instrumentation note: the deciding `Answer:` line in run 2 is not visible
+in `logs_early/plan_exec_early-02.txt`. The runner truncates each step's reply
+to 300 characters when logging, and in that reply the answer falls past the
+cut. `answer_line()` and the judge both read the untruncated text, so the O is
+correct, but the log does not show the evidence for it.
