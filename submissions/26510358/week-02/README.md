@@ -1,4 +1,4 @@
-# Week 02 작업 준비
+# Week 02 A/B 실험
 
 학번: `26510358` · 브랜치: `week-02`
 
@@ -10,7 +10,8 @@
 제공자는 OpenAI를 사용하며, 모델은 사용자가 `.env`에 설정한 `gpt-5.6-luna`를 사용한다.
 최초 두 실행은 API 호환성 오류로 실패했고, 원본 결과와 로그를 보존했다.
 Chat Completions의 함수 도구를 사용하기 위해 `AGENT_REASONING_EFFORT=none`을
-양쪽에 동일하게 적용한 뒤 비교 실험을 진행한다.
+양쪽에 동일하게 적용한 뒤 실행 3–8에서 각 하네스를 3회씩 비교했고 모두 성공했다.
+현재 `results.csv` 8행과 실행별 로그 8개를 커밋했다. 다음 작업은 `REPORT.md` 작성이다.
 
 ## 환경 준비
 
@@ -54,12 +55,18 @@ API를 호출하지 않으므로 키의 유효성이나 모델 접근 권한까�
 2. 설정을 확정하고 커밋한 뒤 `python run_ab.py --runs 3`으로 각 하네스를 3회 실행한다.
 3. 생성된 `results.csv`와 `logs/`를 보존하고 커밋한다. 재실행 결과는 CSV에 추가되며 실패도 남긴다.
 4. `REPORT.md`에 설계 차이, 측정표, 로그에 근거한 해석을 작성한다.
-5. 저장소 루트에서 아래 검사를 통과한 뒤 upstream에 PR을 연다. PR 제목은 `[week-02] 26510358`이다.
+5. 변경사항을 커밋하고 저장소 루트에서 아래 검사를 통과한 뒤 upstream에 PR을 연다.
+   PR 제목은 `[week-02] 26510358`이다.
+
+검사 스크립트는 숨김 파일도 검사하므로 로컬 키 파일과 SDK가 있는 작업 폴더 대신,
+커밋된 제출 파일을 임시 디렉터리에 내보내 CI와 같은 대상으로 검사한다.
 
 ```bash
-python3 scripts/check_week02.py submissions/26510358/week-02
+week02_check_dir=$(mktemp -d)
+git archive HEAD submissions/26510358/week-02 | tar -x -C "$week02_check_dir"
+python3 scripts/check_week02.py "$week02_check_dir/submissions/26510358/week-02"
 ```
 
 `results.csv`와 `logs/`에 모든 실제 실행을 보존한다. `REPORT.md`는 아직 작성 전이다.
-전체 제출 검사는 필요한 실행 횟수와 보고서를 갖춘 뒤 통과할 수 있다.
+현재 커밋 기준 구조 검사에서는 보고서 누락 1건만 남았다.
 `app.log`와 실행 전 성공 기준을 유지하고, 실패 기록을 삭제하거나 커밋을 squash하지 않는다.
