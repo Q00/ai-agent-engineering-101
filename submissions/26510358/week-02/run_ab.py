@@ -86,6 +86,7 @@ def main():
                     print(msg)
                     _lines.append(str(msg))
 
+                log(f"[config] provider={PROVIDER} model={MODEL} harness={name} run={run_no}")
                 t0 = time.time()
                 note = ""
                 try:
