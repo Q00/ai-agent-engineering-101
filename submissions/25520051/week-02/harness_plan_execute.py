@@ -12,7 +12,9 @@ from tools_shared import Chat, Meter, Reply
 
 SYSTEM_PLAN = (
     "You are a planner. Reply with a JSON list of short strings, one per step, "
-    "and nothing else. No prose, no code fences."
+    "and nothing else. No prose, no code fences, no explanation before or after "
+    "the list.\n"
+    'Example reply: ["read the file", "count matches", "report the result"]'
 )
 SYSTEM_EXEC = (
     "You execute one step of a plan at a time with the tools you are given. "
