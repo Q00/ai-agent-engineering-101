@@ -6,6 +6,10 @@ Reads the task and the success criterion from TASK.md, runs each harness
 --runs times, judges every run, appends one line per run to results.csv,
 and saves each run's console output under logs/. Failed runs are kept:
 they are data.
+
+실험 조건(제공자, 모델, 도구 스키마, 시스템 프롬프트, 하네스 상한, 과제)은
+conditions.py가 배치 시작 시 conditions/<지문>.json에 저장하고, 각 런 로그
+맨 위와 results.csv의 note 칼럼(cond=<지문>)에 같은 지문을 남긴다.
 """
 import argparse
 import csv
@@ -14,6 +18,7 @@ import re
 import time
 from pathlib import Path
 
+import conditions
 from harness_plan_execute import run_plan_execute
 from harness_react import run_react
 
@@ -41,6 +46,9 @@ def main():
     args = ap.parse_args()
 
     task, expected = read_task()
+    record = conditions.collect(task, expected, args.runs)
+    cond_path = conditions.save(record)
+    print(f"[cond] fingerprint={record['fingerprint']} -> {cond_path}")
     Path("logs").mkdir(exist_ok=True)
     new_file = not Path("results.csv").exists()
     run_no = 0
@@ -61,15 +69,19 @@ def main():
                     print(msg)
                     _lines.append(str(msg))
 
+                for line in conditions.banner(record, name, run_no):
+                    log(line)
+
                 t0 = time.time()
-                note = ""
+                note = conditions.note(record, name)
                 try:
                     out = fn(task, log=log)
                     answer, meter = out[0], out[1]
                     if name == "plan_exec":
-                        note = f"replans={out[2]}"
+                        note = f"{note} replans={out[2]}"
                 except Exception as e:            # a crash is a failed run, not a lost run
-                    answer, meter, note = "", None, f"crash: {type(e).__name__}: {e}"
+                    answer, meter = "", None
+                    note = f"{note} crash: {type(e).__name__}: {e}"
                     log(note)
                 success = judge(answer, expected)
                 log(f"[final] {answer.strip()[:300]}")
