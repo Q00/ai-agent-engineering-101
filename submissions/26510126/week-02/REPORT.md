@@ -191,20 +191,27 @@ Four things about the measurements themselves, before any interpretation:
 
 ## 3. Interpretation
 
-> **TODO — 직접 작성.** 한 문단. 어느 하네스가 어떤 지표로 이겼고 왜인지가
-> 아니라, **어느 요소의 차이가 어느 지표를 움직였는지**를 로그에서 근거를
-> 들어 설명한다. 채점의 절반이 여기다.
->
-> 로그에 남아 있는 근거들:
->
-> - `logs/react-01.txt` — 09시부터 15시까지 한 시간씩 세다 8스텝을 다 쓰고
->   `MAX_STEPS reached`. 14시가 6건이라는 답을 이미 손에 쥔 상태였다.
-> - `logs/react-07.txt` — 파일을 읽고 14시만 한 번 검증하고 3스텝에 종료.
-> - `logs/plan_exec-10.txt` — 계획서 3단계의 `HH:00.*ERROR`를 실행기가 문자
->   그대로 따라 아홉 시간대 전부 0을 받았다. step 1에서 이미 센 값이 컨텍스트에
->   남아 있어 step 4가 그리로 되돌아가 답을 건졌다. 같은 실행에 도구 인자
->   누락 에러가 하나 있고 Observation으로 돌아가 다음 호출에서 교정됐다.
-> - `logs/plan_exec-05.txt` — `max_tool_rounds`와 `max_replan`이 실제로
->   발동한 유일한 실행. 6단계 계획이 5단계로 재작성됐다.
-> - run 10·11·12 모두 `[step 1]`에서 `Answer: 14:00`이 나왔는데 계획의 나머지
->   단계를 끝까지 걷는다.
+The element that moved the numbers is the termination condition. ReAct ends
+when the model stops asking for tools, so the model decides it is finished as
+soon as it holds the answer; Plan-then-Execute ends when the plan list runs
+out, so the number of model calls is fixed by how many steps the planner
+happened to write, and the answer arriving early changes nothing. All three
+Sonnet runs show that directly — `plan_exec-10`, `-11` and `-12` each print
+`Answer: 14:00` at `[step 1]` and then walk the remaining steps anyway,
+finishing at 9, 11 and 12 iterations against ReAct's flat 3. The token gap
+follows from that gap rather than standing on its own: it is the same
+difference compounding, because every extra step is both one more call and
+one more block of history carried into every call after it, which is why
+tokens grew 6.4× while calls grew only 3.7×. Success is where the two
+elements meet instead of acting alone. Both harnesses answered correctly in
+every Sonnet run, and ReAct's single failure — `react-01` on the free model —
+was not caused by its step cap by itself: the harness spent one
+`count_pattern` call per hour because that is the only counting tool it has,
+reached `MAX_STEPS` at the eighth step with 09:00 through 15:00 counted, and
+stopped holding the correct answer of 6 errors at 14:00 without ever
+reporting it. A coarser tool would have fit inside eight steps, and a higher
+cap would have let the fine-grained approach finish; neither the termination
+condition nor the tool granularity produced that failure alone. The same tool
+set cost Plan-then-Execute nothing, because it has no global step cap for a
+long chain of calls to run into — the rigidity that made it expensive is also
+what kept it from failing this way.
