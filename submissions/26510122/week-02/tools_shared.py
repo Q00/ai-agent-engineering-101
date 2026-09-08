@@ -57,10 +57,15 @@ TOOL_SPECS = [
 # ---------------------------------------------------------------- meter
 
 
+LAST_METER = None
+
+
 class Meter:
     """The four metrics of the lab, counted in one place."""
 
     def __init__(self):
+        global LAST_METER
+        LAST_METER = self
         self.tokens = 0
         self.iters = 0            # one iteration = one model call
         self.interventions = 0    # times a human approved or denied a call
@@ -155,7 +160,7 @@ class Chat:
         return Reply(text, calls)
 
     def _send_openai(self) -> Reply:
-        kwargs = dict(model=MODEL, messages=self.messages)
+        kwargs = dict(model=MODEL, messages=self.messages, max_tokens=2048)
         if self.tools:
             kwargs["tools"] = [{"type": "function",
                                 "function": {"name": t["name"],

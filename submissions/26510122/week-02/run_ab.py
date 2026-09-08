@@ -12,6 +12,17 @@ import csv
 import os
 import re
 import time
+import signal
+import tools_shared
+
+
+class RunDeadline(BaseException):
+    pass
+
+
+def deadline_expired(signum, frame):
+    raise RunDeadline("180-second run deadline exceeded")
+
 from pathlib import Path
 
 from harness_plan_execute import run_plan_execute
@@ -56,28 +67,38 @@ def main():
             for _ in range(args.runs):
                 run_no += 1
                 lines = []
+                log_path = Path("logs", f"{name}-{run_no:02d}.txt")
+                log_file = log_path.open("x", encoding="utf-8")
 
                 def log(msg, _lines=lines):
                     print(msg)
                     _lines.append(str(msg))
+                    log_file.write(str(msg) + "\n")
+                    log_file.flush()
 
                 t0 = time.time()
-                note = ""
+                note = "cohort=bounded; max_tokens=2048; deadline=180s"
+                tools_shared.LAST_METER = None
+                signal.signal(signal.SIGALRM, deadline_expired)
+                signal.alarm(180)
                 try:
                     out = fn(task, log=log)
                     answer, meter = out[0], out[1]
                     if name == "plan_exec":
-                        note = f"replans={out[2]}"
-                except Exception as e:            # a crash is a failed run, not a lost run
-                    answer, meter, note = "", None, f"crash: {type(e).__name__}: {e}"
+                        note += f"; replans={out[2]}"
+                except (Exception, RunDeadline) as e:            # a crash is a failed run, not a lost run
+                    answer, meter = "", tools_shared.LAST_METER
+                    note += f"; incomplete usage; crash: {type(e).__name__}: {e}"
                     log(note)
+                finally:
+                    signal.alarm(0)
                 success = judge(answer, expected)
                 log(f"[final] {answer.strip()[:300]}")
                 log(f"[judge] expected={expected!r} -> {'O' if success else 'X'} "
                     f"({time.time() - t0:.1f}s)")
 
-                Path("logs", f"{name}-{run_no:02d}.txt").write_text(
-                    "\n".join(lines) + "\n", encoding="utf-8")
+                log(f"[metrics] tokens={meter.tokens if meter else None} iters={meter.iters if meter else None} interventions={meter.interventions if meter else None}")
+                log_file.close()
                 w.writerow([run_no, name, "O" if success else "X",
                             meter.tokens if meter else "",
                             meter.iters if meter else "",
