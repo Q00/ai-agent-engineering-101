@@ -1,5 +1,6 @@
 """Offline regression checks. Fake API replies never become experiment rows."""
 import contextlib
+import csv
 import io
 import json
 import os
@@ -13,6 +14,7 @@ from openai import OpenAI
 
 import harness_react
 import run_ab
+import summarize_results
 import tools_shared as shared
 from harness_plan_execute import run_plan_execute
 from harness_react import run_react
@@ -66,7 +68,7 @@ class HarnessTests(unittest.TestCase):
                 "usage": {"prompt_tokens": 11, "completion_tokens": 7, "total_tokens": 18},
             })
 
-        client = OpenAI(api_key="offline-test", base_url=shared.BASE_URL, max_retries=0,
+        client = OpenAI(api_key="offline-test-credential", base_url=shared.BASE_URL, max_retries=0,
                         http_client=httpx.Client(transport=httpx.MockTransport(handle)))
         self.addCleanup(client.close)
         mocked = patch.object(shared, "_client", client)
@@ -124,6 +126,7 @@ class HarnessTests(unittest.TestCase):
         self.assertEqual(row[2:6], ["X", 18, 2, 0])
         self.assertIn("RateLimitError", row[-1])
         capture = Path("logs/react-01.txt").read_text(encoding="utf-8")
+        self.assertNotIn("offline-test-credential", capture)
         self.assertIn("[Observation]\n" + Path("app.log").read_text(encoding="utf-8")[:4000], capture)
         self.assertEqual(run_ab.next_run_number(), 2)
         with self.assertRaises(FileExistsError):
@@ -143,6 +146,26 @@ class HarnessTests(unittest.TestCase):
             self.assertTrue(any("not set" in problem for problem in run_ab.preflight()))
         self.assertFalse(Path("results.csv").exists())
         self.assertFalse(any(Path("logs").iterdir()))
+
+    def test_summary_includes_failures_and_rejects_mixed_conditions(self):
+        config = {key: "offline-fixture" for key in summarize_results.CONTROLS}
+        with Path("results.csv").open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(run_ab.HEADER)
+            for run_no, tokens in enumerate((10, 20, 30), start=1):
+                writer.writerow([run_no, "react", "X" if run_no == 1 else "O", tokens, 2, 0, "offline test"])
+                Path(f"logs/react-{run_no:02d}.txt").write_text(
+                    "[conditions] " + json.dumps(config) + "\n", encoding="utf-8")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            summarize_results.summarize(Path.cwd())
+        self.assertIn("2/3 (66.7%)", output.getvalue())
+        self.assertIn("20.00 / 100.00", output.getvalue())
+        config["model"] = "different-offline-fixture"
+        # This is a temporary unit-test fixture, never a real experiment log.
+        Path("logs/react-03.txt").write_text("[conditions] " + json.dumps(config) + "\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "conditions differ"):
+            summarize_results.summarize(Path.cwd())
 
 
 if __name__ == "__main__":
