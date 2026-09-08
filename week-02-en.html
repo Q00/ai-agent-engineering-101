@@ -603,7 +603,7 @@ EvolutionaryLoop    evolution/loop.py         per-generation edits, reruns, regr
 <section>
   <div class="col">
     <div class="secmark"><span class="no">LAB</span><h2>Same task, two harnesses</h2></div>
-    <p><strong>Hold the model, the task, and the tools constant, and vary only the harness.</strong> Give the same model the same task, once under a ReAct-style harness and once under a Plan-then-Execute harness, and measure four metrics side by side. Any multi-step task that needs tools will do. Something like &ldquo;find the hour with the most errors in this log file and summarize it&rdquo; is a good choice, since the answer requires reading a file, counting, and writing it up. The prerequisites are the same as Week 01: Python 3.10 or later, the <code class="inline">anthropic</code> package, and one API key.</p>
+    <p><strong>Hold the model, the task, and the tools constant, and vary only the harness.</strong> Give the same model the same task, once under a ReAct-style harness and once under a Plan-then-Execute harness, and measure four metrics side by side. Any multi-step task that needs tools will do. Something like &ldquo;find the hour with the most errors in this log file and summarize it&rdquo; is a good choice, since the answer requires reading a file, counting, and writing it up. The prerequisites are the same as Week 01: Python 3.10 or later, the <code class="inline">anthropic</code> or <code class="inline">openai</code> package, and one API key.</p>
 
     <p>The ReAct harness runs Thought → Action → Observation at every step and re-decides what to do next each time. The Plan-then-Execute harness first produces the whole plan in one call (Plan), then runs the plan's steps in order (Execute). Because the plan is fixed up front it uses fewer tokens and its flow is predictable, but when a mid-run Observation contradicts the plan it is hard to change course. Which one wins depends on the task.</p>
 
@@ -617,9 +617,15 @@ EvolutionaryLoop    evolution/loop.py         per-generation edits, reruns, regr
     </ol>
 
     <div class="code"><span class="file">tools_shared.py</span><pre><span class="cm"># Tools, model, and measurement shared by both harnesses. Same tools make a fair comparison</span>
-<span class="kw">import</span> anthropic, re, json
-client = anthropic.Anthropic()
-MODEL = <span class="st">"claude-sonnet-4-5"</span>
+<span class="kw">import</span> os, anthropic, openai, re, json
+
+OPENROUTER_KEY = os.environ.get(<span class="st">"OPENROUTER_API_KEY"</span>)
+<span class="kw">if</span> OPENROUTER_KEY:                      <span class="cm"># pick the vendor from whichever key is set</span>
+    client = openai.OpenAI(base_url=<span class="st">"https://openrouter.ai/api/v1"</span>, api_key=OPENROUTER_KEY)
+    MODEL = <span class="st">"anthropic/claude-sonnet-4.5"</span>
+<span class="kw">else</span>:
+    client = anthropic.Anthropic()
+    MODEL = <span class="st">"claude-sonnet-4-5"</span>
 
 <span class="kw">def</span> read_file(path):                    <span class="cm"># tool 1</span>
     <span class="kw">with</span> open(path, encoding=<span class="st">"utf-8"</span>) <span class="kw">as</span> f:
@@ -633,13 +639,17 @@ TOOLS = {<span class="st">"read_file"</span>: read_file, <span class="st">"count
 <span class="kw">class</span> Meter:                             <span class="cm"># counts the four metrics in one place</span>
     <span class="kw">def</span> __init__(self):
         self.tokens = <span class="st">0</span>; self.iters = <span class="st">0</span>; self.interventions = <span class="st">0</span>
-    <span class="kw">def</span> add(self, usage):
-        self.tokens += usage.input_tokens + usage.output_tokens
+    <span class="kw">def</span> add(self, n_in, n_out):
+        self.tokens += n_in + n_out
         self.iters += <span class="st">1</span>
 
 <span class="kw">def</span> call_model(messages, meter):
+    <span class="kw">if</span> OPENROUTER_KEY:                 <span class="cm"># OpenAI-compatible shape: choices, prompt/completion_tokens</span>
+        resp = client.chat.completions.create(model=MODEL, max_tokens=<span class="st">1024</span>, messages=messages)
+        meter.add(resp.usage.prompt_tokens, resp.usage.completion_tokens)
+        <span class="kw">return</span> resp.choices[<span class="st">0</span>].message.content
     resp = client.messages.create(model=MODEL, max_tokens=<span class="st">1024</span>, messages=messages)
-    meter.add(resp.usage)                <span class="cm"># accumulate tokens per call</span>
+    meter.add(resp.usage.input_tokens, resp.usage.output_tokens)
     <span class="kw">return</span> resp.content[<span class="st">0</span>].text</pre></div>
 
     <div class="code"><span class="file">harness_plan_execute.py</span><pre><span class="cm"># Plan-then-Execute: fix the plan first, then run it in order</span>
