@@ -69,16 +69,30 @@ the answer (`:85`), and one more again if that call still requests tools
 (`:87`). Two inner bounds apply: `max_tool_rounds=3` per step (`:65`) and a
 hard exit if the plan does not parse as a JSON list (`:47`).
 
-### One classification left open
+### Where the replan path belongs
 
 Plan-then-Execute has a second recovery path that ReAct does not: a step
 whose reply starts with `OFF_PLAN` triggers one rebuild of the remaining plan
-(`:71`–`:82`, `max_replan=1`). Whether that belongs under error recovery
-(element 4) or under the termination/flexibility budget (element 3) is a
-judgment call — the lecture defines element 4 in terms of tool exceptions and
-malformed arguments, and `OFF_PLAN` is raised by the model or by the
-tool-round budget, not by a tool throwing. It fired in exactly one of the
-twelve runs (`logs/plan_exec-05.txt`).
+(`harness_plan_execute.py:71`–`:82`, `max_replan=1`). It is counted here
+under the termination condition (element 3), not error recovery (element 4).
+
+The lecture defines element 4 as what the harness does when a tool throws an
+exception or is called with malformed arguments, and that path is the shared
+`try/except` in `Chat.run_tools` described above — identical in both
+harnesses. `OFF_PLAN` is not raised by a tool. It comes either from the model
+declaring the step impossible as planned, or from the harness itself when a
+step exceeds `max_tool_rounds` (`:65`), and its remedy is a counter that caps
+how many times the loop may restructure itself. `max_replan=1` is a bound of
+the same kind as `max_steps=8` and `max_tool_rounds=3`: a limit on how long
+and in what shape the loop is allowed to continue.
+
+Each path fired exactly once in the twelve runs, and in different runs. The
+only genuine tool error is in `logs/plan_exec-10.txt` —
+`count_pattern() missing 1 required positional argument: 'pattern'` — which
+went through `run_tools`, came back as an observation, and was corrected on
+the next call; that is element 4, and ReAct would have handled it the same
+way. The only `OFF_PLAN` is in `logs/plan_exec-05.txt`, where a step ran past
+the tool-round budget and the plan was rebuilt from six steps to five.
 
 ## 2. Measurements
 
