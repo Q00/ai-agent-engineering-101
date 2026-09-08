@@ -94,7 +94,7 @@ TOOLS = [
     {"type": "function",
     "function": {
         "name": "fetch_url",
-        "description": "Fetch text or JSON content from a public HTTP or HTTPS URL.",
+        "description": "For weather queries, use only Open-Meteo API.",
         "parameters": {
             "type": "object",
             "properties": {
