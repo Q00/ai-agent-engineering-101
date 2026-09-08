@@ -70,3 +70,12 @@ python3 scripts/check_week02.py "$week02_check_dir/submissions/26510358/week-02"
 `results.csv`와 `logs/`에 모든 실제 실행을 보존한다. `REPORT.md`는 아직 작성 전이다.
 현재 커밋 기준 구조 검사에서는 보고서 누락 1건만 남았다.
 `app.log`와 실행 전 성공 기준을 유지하고, 실패 기록을 삭제하거나 커밋을 squash하지 않는다.
+
+## GPT · Gemini · Solar를 활용한 하네스 개선
+
+[meta_harness/README.md](meta_harness/README.md)에 설계와 실행 방법을 정리했다.
+GPT가 정책 후보를 제안하고, Gemini가 비평하며, Solar가 수정한다.
+실행 모델과 판정 코드를 고정한 상태에서 후보를 측정하고, 별도 검증 사례까지 통과하면
+해당 실행의 `result.json`에 선택한 정책을 저장한다.
+이 확장의 기록은 `logs/meta-harness-live/` 또는 `logs/meta-harness-demo/`에 저장한다.
+현재 확인한 것은 오프라인 데모와 자동 테스트이며, 실제 3개 제공자 연동 실행은 아직 하지 않았다.
