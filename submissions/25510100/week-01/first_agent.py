@@ -75,6 +75,14 @@ TOOLS = [
          "parameters": {"type": "object",
                         "properties": {"path": {"type": "string"}},
                         "required": ["path"]}}},
+    {"type": "function",
+     "function": {
+         "name": "write_note",
+         "description": "Append text line by line to a file only within the current working directory.",
+         "parameters": {"type": "object",
+                        "properties": {"path": {"type": "string"},
+                                       "text": {"type": "string"}},
+                        "required": ["path", "text"]}}},
 ]
 
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
