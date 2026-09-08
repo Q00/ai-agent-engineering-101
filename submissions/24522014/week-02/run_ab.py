@@ -1,6 +1,6 @@
 """Week 02 starter — run the A/B experiment and record results.csv.
 
-Usage: python run_ab.py [--runs 3]
+Usage: python run_ab.py [--runs 3] [--harness both|react|plan_exec]
 
 Reads the task and the success criterion from TASK.md, runs each harness
 --runs times, judges every run, appends one line per run to results.csv,
@@ -38,6 +38,12 @@ def judge(answer: str, expected: str) -> bool:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument(
+        "--harness",
+        choices=("both", "react", "plan_exec"),
+        default="both",
+        help="run both harnesses or only the selected harness",
+    )
     args = ap.parse_args()
 
     task, expected = read_task()
@@ -52,7 +58,10 @@ def main():
         w = csv.writer(f)
         if new_file:
             w.writerow(HEADER)
-        for name, fn in (("react", run_react), ("plan_exec", run_plan_execute)):
+        harnesses = (("react", run_react), ("plan_exec", run_plan_execute))
+        if args.harness != "both":
+            harnesses = tuple(item for item in harnesses if item[0] == args.harness)
+        for name, fn in harnesses:
             for _ in range(args.runs):
                 run_no += 1
                 lines = []

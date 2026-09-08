@@ -102,7 +102,9 @@ def _get_client():
             _client = anthropic.Anthropic()
         else:
             from openai import OpenAI
-            _client = OpenAI()
+            # Bound provider stalls so a failed call becomes recorded data
+            # instead of blocking the entire A/B run indefinitely.
+            _client = OpenAI(timeout=120.0, max_retries=0)
     return _client
 
 
