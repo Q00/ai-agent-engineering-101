@@ -20,6 +20,31 @@
 상태를 공유하지 않으므로 네 지표는 동시 실행에 영향받지 않는다. 벽시계로는 362초가
 146초로 줄었다(2.5배). 병렬화는 러너의 성질이고 다섯 요소 중 어느 것도 아니다.
 
+```mermaid
+flowchart LR
+  subgraph S["starter 원본 · 한 줄도 수정하지 않음"]
+    s1["tools_shared.py"]
+    s2["harness_react.py"]
+    s3["harness_plan_execute.py"]
+    s4["TASK.md"]
+    s5["app.log"]
+  end
+  subgraph W["이번에 작성"]
+    w1["run_ab.py<br/>병렬 실행으로 수정"]
+    w2["REPORT.md<br/>1·2·3부"]
+  end
+  subgraph O["실행 산출물"]
+    o1["results.csv<br/>6행"]
+    o2["logs/ · 6개 파일"]
+  end
+  S --> W --> O
+```
+
+FIG. 1 — 실험 대상인 두 하네스와 공용 도구 모듈은 starter 원본 그대로다. 하네스를
+손대면 다섯 요소의 차이라는 통제가 깨져 A/B가 성립하지 않기 때문이다. 그래서 모델명
+문제도 코드 수정이 아니라 `AGENT_MODEL` 환경변수로 우회했다. 수정한 것은 러너
+(`run_ab.py`)뿐이고, 그것은 다섯 요소 중 어느 것도 아니다.
+
 ## 1. 변형 정의 — 무엇이 같고 무엇이 다른가
 
 독립변수는 하네스 하나다. 모델, 태스크, 도구 집합은 상수로 고정했다. 두 하네스는
@@ -43,7 +68,7 @@ flowchart LR
   MET --> V["같은 판정 기준<br/>expected: 14:00"]
 ```
 
-FIG. 1 — 독립변수는 하네스 하나. 모델·태스크·도구는 상수로 묶여 있고, 두 하네스는
+FIG. 2 — 독립변수는 하네스 하나. 모델·태스크·도구는 상수로 묶여 있고, 두 하네스는
 같은 판정 기준으로 같은 네 지표를 낸다.
 
 | 요소 | ReAct | Plan-then-Execute | 같음/다름 |
@@ -102,7 +127,7 @@ flowchart TB
   end
 ```
 
-FIG. 2 — 답을 아는 시점과 멈추는 시점의 거리. ReAct는 둘이 같은 스텝에서 만나고,
+FIG. 3 — 답을 아는 시점과 멈추는 시점의 거리. ReAct는 둘이 같은 스텝에서 만나고,
 Plan-then-Execute는 step 5와 step 8로 벌어진다. 이 거리가 반복 횟수의 차이이고,
 누적 history 재전송(요소 1)이 그것을 토큰 차이로 증폭한다.
 
