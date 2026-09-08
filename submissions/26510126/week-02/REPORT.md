@@ -7,23 +7,78 @@ and were committed before the first run.
 
 ## 1. Variant definition
 
-> **TODO — 직접 작성.** 두 하네스가 무엇이 같고 무엇이 다른지, 다섯 요소
-> (컨텍스트 관리 / 도구 granularity / 종료 조건 / 에러 복구 / 인간 개입 지점)
-> 중 어디를 어떻게 다르게 잡았는지. 아래 두 줄은 코드를 읽으면 바로 확인되는
-> 사실이라 남겨 둔 것이고, 나머지는 채워야 한다.
+Both harnesses run the same task from `TASK.md`, call the same model through
+the same `Chat` wrapper, and import the same two tools from
+`tools_shared.py`. Of the five elements, two are set differently and three
+are held constant.
 
-Held constant across both harnesses:
+### Held constant
 
-- **Tool granularity.** Both import the same `read_file` / `count_pattern`
-  from `tools_shared.py`. The element is a constant here, not a variable.
-- **Human intervention point.** `IRREVERSIBLE` is empty in the ReAct harness
-  and Plan-then-Execute has no approval branch at all, so `interventions` is
-  0 in all twelve runs. On a read-only task this element cannot vary.
+**Tool granularity (element 2).** Both import `read_file` and
+`count_pattern` from `tools_shared.py`; `TOOL_SPECS` is a single module-level
+list neither harness modifies. The file is byte-identical to the starter.
+Counting ERROR lines per hour therefore costs one `count_pattern` call per
+hour in either harness.
 
-> TODO: 나머지 세 요소(컨텍스트 관리, 종료 조건, 에러 복구)를 두 하네스가
-> 각각 어떻게 잡았는지 코드 줄을 인용해 쓴다.
+**Human intervention point (element 5).** `IRREVERSIBLE` is the empty set in
+`harness_react.py:20`, so the approval branch at `:43` is never entered.
+Plan-then-Execute has no approval branch at all. `interventions` is 0 in all
+twelve runs; on a read-only task this element cannot vary.
 
----
+**Tool-level error recovery (element 4).** Every tool call in both harnesses
+goes through `Chat.run_tools` (`tools_shared.py:181`), which wraps the call
+in `try/except` and turns the exception text into the observation:
+
+```python
+except Exception as e:           # error recovery: the error is an Observation
+    out = f"error: {e}"
+```
+
+Neither harness stops on a tool error, and neither sees a different error
+than the other would.
+
+### Set differently
+
+**Context management (element 1).** ReAct keeps one conversation. `Chat` is
+constructed once (`harness_react.py:30`) and every assistant reply and tool
+result is appended to the same message list, so step *n* sees everything from
+steps 1..*n*-1.
+
+Plan-then-Execute keeps two. The `planner` (`harness_plan_execute.py:42`) is
+built with `tools=False`: it sees the task and the tool *names* but never a
+tool result. The `executor` (`:53`) receives the task and the whole plan as
+JSON up front (`:54`), then one `Execute step N` user message per step
+(`:58`), accumulating across every step. On a replan the failure text is
+appended to the **planner's** history (`:73`), not the executor's, so the two
+conversations hold different views of the run from that point on.
+
+Both `Chat` objects share one `Meter`, so `iters` counts model calls across
+the planner and the executor together.
+
+**Termination condition (element 3).** ReAct has two exits: the model returns
+a reply with no tool calls (`harness_react.py:38`), or the loop reaches
+`max_steps=8` (`:33`, falling through to `:52`). The model decides when the
+task is done.
+
+Plan-then-Execute is bounded by the plan instead. The outer loop runs
+`while i < len(plan)` (`harness_plan_execute.py:57`) — the number of
+iterations is fixed by how many steps the planner wrote, and there is no
+early exit: a step that already contains the final answer does not stop the
+loop. After the plan is exhausted the harness forces one more call asking for
+the answer (`:85`), and one more again if that call still requests tools
+(`:87`). Two inner bounds apply: `max_tool_rounds=3` per step (`:65`) and a
+hard exit if the plan does not parse as a JSON list (`:47`).
+
+### One classification left open
+
+Plan-then-Execute has a second recovery path that ReAct does not: a step
+whose reply starts with `OFF_PLAN` triggers one rebuild of the remaining plan
+(`:71`–`:82`, `max_replan=1`). Whether that belongs under error recovery
+(element 4) or under the termination/flexibility budget (element 3) is a
+judgment call — the lecture defines element 4 in terms of tool exceptions and
+malformed arguments, and `OFF_PLAN` is raised by the model or by the
+tool-round budget, not by a tool throwing. It fired in exactly one of the
+twelve runs (`logs/plan_exec-05.txt`).
 
 ## 2. Measurements
 
