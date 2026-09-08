@@ -12,6 +12,53 @@ the same `Chat` wrapper, and import the same two tools from
 `tools_shared.py`. Of the five elements, two are set differently and three
 are held constant.
 
+### Structure
+
+```mermaid
+flowchart TB
+  subgraph SH["tools_shared.py — one tool set per experiment, shared by both harnesses"]
+    TS{"AGENT_TOOLSET"}
+    TS -->|fine| FI["read_file + count_pattern<br/>one call per hour to tally"]
+    TS -->|coarse| CO["read_file + count_by_hour<br/>whole tally in one call"]
+    RT["Chat.run_tools — a tool exception<br/>becomes the observation (element 4)"]
+    MT["Meter — tokens, iters, interventions<br/>shared by every Chat in a run"]
+  end
+
+  subgraph RA["harness_react.py — the model decides when it is done"]
+    R1["Chat — one history,<br/>every step sees all earlier ones (element 1)"]
+    R1 --> R2{"step &lt; max_steps = 8 ?<br/>(element 3)"}
+    R2 -->|no| R7(["MAX_STEPS reached: incomplete"])
+    R2 -->|yes| R3["send"]
+    R3 --> R4{"tool calls in the reply ?"}
+    R4 -->|no| R5(["Answer — element 3, model chose to stop"])
+    R4 -->|yes| R6["run_tools"]
+    R6 --> R2
+  end
+
+  subgraph PE["harness_plan_execute.py — the plan decides when it is done"]
+    P1["planner Chat — tools=False,<br/>never sees a tool result (element 1)"]
+    P1 --> P2{"reply parses as a JSON list ?"}
+    P2 -->|no| P3(["plan parse failed"])
+    P2 -->|yes| P4["executor Chat — plan up front,<br/>every step accumulates (element 1)"]
+    P4 --> P5["execute step i"]
+    P5 --> P6{"tool rounds &lt; max_tool_rounds = 3 ?"}
+    P6 -->|exceeded| P7["OFF_PLAN"]
+    P7 --> P9{"replans &lt; max_replan = 1 ?<br/>(element 3)"}
+    P9 -->|yes| P1
+    P9 -->|no| P8
+    P6 -->|ok| P8{"steps remaining ?<br/>no early exit (element 3)"}
+    P8 -->|yes| P5
+    P8 -->|no| P10["forced call: give the final answer"]
+    P10 --> P11(["Answer"])
+  end
+```
+
+The two loops differ in what ends them. ReAct's exit is a property of the
+reply — no tool calls means done — with the step cap as a backstop.
+Plan-then-Execute's exit is a property of the plan: the loop runs once per
+step the planner wrote, and a step that already contains the answer does not
+shorten it.
+
 ### Held constant
 
 **Tool granularity (element 2).** Both import `read_file` and
