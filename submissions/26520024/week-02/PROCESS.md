@@ -70,3 +70,44 @@
   temporary test directories, never in experimental results.csv.
 - Existing Codex authentication was checked without printing credentials:
   Codex CLI 0.153.0, ChatGPT login, reasoning low. No live pilot was used.
+
+## Live measurements and interpretation
+
+- Ran `AGENT_PROVIDER=codex AGENT_MODEL=gpt-6-astra
+  /home/uichan/miniconda3/bin/python run_ab.py --runs 3` in the existing base
+  environment. The fixed-order six-run batch completed with exit status 0.
+- Runs 1-3 (ReAct): all correct, 2 model calls each, tokens 19368/19374/19376.
+  Runs 4-6 (plan-execute): all correct, 6 calls each, tokens 60011/60037/61572.
+  All runs made one read_file call and no count_pattern calls. Both variants
+  used zero human interventions; plan-execute needed no replans. No model
+  failures, retries, pilot runs, or discarded measurements occurred.
+- Actual model requests and raw JSONL usage are in logs/react-01.txt through
+  react-03.txt and logs/plan_exec-04.txt through plan_exec-06.txt. Nonfatal
+  CLI state-db discrepancy warnings were retained verbatim. No Codex internal
+  tool actions were observed. Each run terminated with Answer: 14:00.
+- The independent base-Python validator checked all 24 completed CLI usage
+  events, input/source hashes, shared settings/schemas, and CSV verdicts.
+  Its deterministic input count confirms 14:00 has 6 ERROR lines. Validation
+  passed; see logs/live-validation-01.log. Original inputs and experimental
+  Python files have not been changed after measurements.
+- Committed the genuine batch and validation separately in fdaf3fa, before
+  writing REPORT.md. The report explains the measured context/termination
+  overhead and explicitly limits claims about errors, human intervention,
+  count_pattern use, sample size, cache effects, and single-axis causality.
+- The course ownership checker uses Python 3.10-style annotations. For the
+  base-Python 3.8 check, execute its unmodified source with postponed annotation
+  evaluation (`__future__.annotations.compiler_flag`). No conda environment
+  or shared course script is modified for compatibility.
+
+## Final local verification
+
+- Official scripts/check_week02.py passed in conda base; see
+  logs/structural-check-01.log. The unchanged ownership checker passed for
+  LeeUichann with postponed annotations; see logs/ownership-check-01.log.
+- All seven submitted Python modules passed base-Python py_compile; git
+  diff --check found no whitespace errors. The 17 offline tests and genuine
+  raw-event validation passed. No Python/conda packages were installed.
+- All work is restricted to submissions/26520024/week-02/ on branch
+  week-02-26520024. Existing environments and the professor's starter/checker
+  files are unchanged. Work and evidence are committed locally without
+  rewriting history. No push or PR was performed, as requested.
