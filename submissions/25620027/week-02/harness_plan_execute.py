@@ -7,12 +7,17 @@ in order with tools. If a step reports OFF_PLAN, the plan is rebuilt once
 import json
 import re
 import sys
+from typing import Final
 
 from tools_shared import Chat, Meter, Reply
 
+MAX_PLAN_STEPS: Final = 6
+
 SYSTEM_PLAN = (
     "You are a planner. Reply with a JSON list of short strings, one per step, "
-    "and nothing else. No prose, no code fences."
+    "and nothing else. No prose, no code fences. "
+    f"Use 1 to {MAX_PLAN_STEPS} steps. Group related work into a step "
+    "instead of making a separate step for every item."
 )
 SYSTEM_EXEC = (
     "You execute one step of a plan at a time with the tools you are given. "
@@ -48,6 +53,9 @@ def run_plan_execute(task: str, max_replan: int = 1,
         log(f"[plan] not valid JSON: {raw.strip()[:300]!r}")
         return "plan parse failed", meter, 0
     log(f"[plan] {plan}")
+    if not 1 <= len(plan) <= MAX_PLAN_STEPS:
+        log(f"[plan_limit] steps={len(plan)} limit={MAX_PLAN_STEPS}; stopped")
+        return "plan limit failed", meter, 0
 
     # 2) EXECUTE: each step in order
     executor = Chat(SYSTEM_EXEC, meter)
@@ -70,13 +78,18 @@ def run_plan_execute(task: str, max_replan: int = 1,
 
         if reply.text.strip().startswith("OFF_PLAN") and replans < max_replan:
             replans += 1                          # flexibility cap
+            remaining = MAX_PLAN_STEPS - i
             planner.add_user(f"Step {i + 1} ({plan[i]}) failed: {reply.text.strip()[:300]}\n"
-                             f"Reply with a JSON list of the remaining steps.")
+                             f"Reply with a JSON list of 1 to {remaining} remaining steps.")
             raw = planner.send().text
             new_steps = parse_plan(raw)
             if new_steps is None:
                 log(f"[replan] not valid JSON: {raw.strip()[:300]!r}")
                 break
+            if not 1 <= len(new_steps) <= remaining:
+                log(f"[plan_limit] completed={i} proposed={len(new_steps)} "
+                    f"limit={MAX_PLAN_STEPS}; stopped")
+                return "replan limit failed", meter, replans
             plan = plan[:i] + new_steps
             log(f"[replan] {plan}")
             continue
