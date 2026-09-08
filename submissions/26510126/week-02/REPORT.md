@@ -70,7 +70,7 @@ hour in either harness.
 **Human intervention point (element 5).** `IRREVERSIBLE` is the empty set in
 `harness_react.py:20`, so the approval branch at `:43` is never entered.
 Plan-then-Execute has no approval branch at all. `interventions` is 0 in all
-twelve runs; on a read-only task this element cannot vary.
+eighteen runs; on a read-only task this element cannot vary.
 
 **Tool-level error recovery (element 4).** Every tool call in both harnesses
 goes through `Chat.run_tools` (`tools_shared.py:181`), which wraps the call
@@ -133,18 +133,50 @@ how many times the loop may restructure itself. `max_replan=1` is a bound of
 the same kind as `max_steps=8` and `max_tool_rounds=3`: a limit on how long
 and in what shape the loop is allowed to continue.
 
-Each path fired exactly once in the twelve runs, and in different runs. The
-only genuine tool error is in `logs/plan_exec-10.txt` —
+Across the eighteen runs the two paths fired three times between them, never
+in the same run. The only genuine tool error is in `logs/plan_exec-10.txt` —
 `count_pattern() missing 1 required positional argument: 'pattern'` — which
 went through `run_tools`, came back as an observation, and was corrected on
 the next call; that is element 4, and ReAct would have handled it the same
-way. The only `OFF_PLAN` is in `logs/plan_exec-05.txt`, where a step ran past
-the tool-round budget and the plan was rebuilt from six steps to five.
+way. `OFF_PLAN` fired twice, both in Plan-then-Execute and both after a step
+ran past the tool-round budget: `logs/plan_exec-05.txt`, where the plan was
+rebuilt from six steps to five, and `logs/plan_exec-17.txt` in the coarse
+tool set, the only run in that set with `replans=1`.
 
 ## 2. Measurements
 
-Twelve runs, six per model, three per harness per model. Failed runs are
-kept. `interventions` is 0 in every row and is omitted from the tables below.
+Eighteen runs in three sets of six, three per harness in each set. Failed
+runs are kept. `interventions` is 0 in every row and is omitted from the
+tables below.
+
+### Run conditions
+
+Each set holds everything constant but one variable. Set B is the assignment's
+A/B: model, task and tools fixed, harness varied. Set A is the same comparison
+on a free model and is incomplete. Set C repeats set B with one change, the
+tool set, so that tool granularity becomes the variable instead.
+
+| | Set A (1–6) | Set B (7–12) | Set C (13–18) |
+|---|---|---|---|
+| model | `nvidia/nemotron-3.5-lightning:free` | `claude-sonnet-5` | `claude-sonnet-5` |
+| provider | OpenRouter | Anthropic | Anthropic |
+| tool set (`AGENT_TOOLSET`) | `fine` | `fine` | `coarse` |
+| tools | `read_file`, `count_pattern` | same | `read_file`, `count_by_hour` |
+| `max_steps` (ReAct) | 8 | 8 | 8 |
+| `max_tool_rounds` (plan_exec) | 3 | 3 | 3 |
+| `max_replan` (plan_exec) | 1 | 1 | 1 |
+| task | `TASK.md`, unchanged | same | same |
+| success criterion | `TASK.md`, unchanged | same | same |
+
+The three system prompts are unchanged from the starter and live in
+`harness_react.py:10` (`SYSTEM`) and `harness_plan_execute.py:13`
+(`SYSTEM_PLAN`) and `:17` (`SYSTEM_EXEC`). The bounds above are the defaults
+in `run_react` (`harness_react.py:28`) and `run_plan_execute`
+(`harness_plan_execute.py:37`–`:38`); no run overrode them.
+
+The `note` column carries `provider:model` from run 7 and `tools=` from run
+13, the runs after each was added to `run_ab.py`. Earlier rows are covered by
+this table and by the commits that added them.
 
 ### Set A — `nvidia/nemotron-3.5-lightning:free` via OpenRouter
 
@@ -167,6 +199,31 @@ kept. `interventions` is 0 in every row and is omitted from the tables below.
 | 10 | plan_exec | O | 55,054 | 12 | 50.4s | replans=0 |
 | 11 | plan_exec | O | 24,088 | 9 | 22.5s | replans=0 |
 | 12 | plan_exec | O | 34,920 | 11 | 31.2s | replans=0 |
+
+### Set C — `claude-sonnet-5`, coarse tool set
+
+Identical to Set B except that `AGENT_TOOLSET=coarse` swaps `count_pattern`
+for `count_by_hour`, which returns the whole per-hour tally in one call.
+
+| run | harness | success | tokens | iters | wall | note |
+|---:|---|:---:|---:|---:|---:|---|
+| 13 | react | O | 1,688 | 2 | 4.0s | |
+| 14 | react | O | 1,744 | 2 | 3.2s | |
+| 15 | react | O | 1,704 | 2 | 3.1s | |
+| 16 | plan_exec | O | 31,956 | 11 | 28.8s | replans=0 |
+| 17 | plan_exec | O | 41,006 | 14 | 40.4s | replans=1 |
+| 18 | plan_exec | O | 28,841 | 11 | 24.7s | replans=0 |
+
+### Tool granularity, Set B against Set C
+
+Same model, same task, same harnesses; only the tool set differs.
+
+| | ReAct B → C | plan_exec B → C |
+|---|---|---|
+| tokens, median | 5,895 → **1,704** (−71%) | 34,920 → **31,956** (−8%) |
+| iters, median | 3 → 2 | 11 → 11 |
+| wall, median | 6.6s → 3.1s | 31.2s → 28.8s |
+| success | 3/3 → 3/3 | 3/3 → 3/3 |
 
 ### Harness comparison within Set B
 
@@ -194,11 +251,14 @@ both harnesses completed three runs.
 
 ### Cost
 
-Set B consumed 131,972 tokens in total (react 17,910; plan_exec 114,062). At
-the Claude Sonnet 5 rate of $2 / $10 per MTok, and assuming 80–90% of those
-tokens are input — an agent loop resends its history on every call, and no
-prompt caching was used — the set cost roughly **$0.37–$0.48**: about $0.02
-per ReAct run and $0.12 per Plan-then-Execute run.
+Set B consumed 131,972 tokens (react 17,910; plan_exec 114,062) and Set C
+106,939 (react 5,136; plan_exec 101,803). At the Claude Sonnet 5 rate of
+$2 / $10 per MTok, and assuming 80–90% of those tokens are input — an agent
+loop resends its history on every call, and no prompt caching was used — Set
+B cost roughly **$0.37–$0.48** and Set C **$0.30–$0.39**, about $0.67–$0.86
+for the two together. Per run that is roughly $0.02 for ReAct and $0.12 for
+Plan-then-Execute in Set B, falling to under $0.01 and about $0.11 in Set C.
+The coarse tool paid for itself on one harness and not the other.
 
 The estimate is a range rather than a figure because `Meter.add` sums input
 and output into one counter, so the split cannot be recovered from
@@ -220,6 +280,10 @@ env -u ANTHROPIC_API_KEY \
 # Set B
 ANTHROPIC_API_KEY=<console key> AGENT_MODEL=claude-sonnet-5 \
     python run_ab.py --runs 3
+
+# Set C
+ANTHROPIC_API_KEY=<console key> AGENT_MODEL=claude-sonnet-5 \
+    AGENT_TOOLSET=coarse python run_ab.py --runs 3
 ```
 
 Python 3.12.14; `openai` 3.6.0 for Set A, `anthropic` 1.4.0 for Set B.
@@ -276,3 +340,17 @@ condition nor the tool granularity produced that failure alone. The same tool
 set cost Plan-then-Execute nothing, because it has no global step cap for a
 long chain of calls to run into — the rigidity that made it expensive is also
 what kept it from failing this way.
+
+Set C tests that last claim directly. Swapping `count_pattern` for
+`count_by_hour` — one call for the whole tally instead of one per hour —
+changes nothing about either harness's code, and the two harnesses respond
+very differently: ReAct's median tokens fall 71% (5,895 to 1,704) and its
+iterations 3 to 2, while Plan-then-Execute's fall 8% (34,920 to 31,956) with
+iterations unchanged at 11. Tool granularity mattered to ReAct because the
+number of calls it makes is determined by what the work needs, so making the
+work cheaper makes the loop shorter. It barely mattered to Plan-then-Execute
+because the number of calls is determined by the length of the plan, which a
+better tool does not shorten: the planner still wrote five or six steps and
+the executor still walked all of them. The same element moved one harness and
+not the other, and which one it moved was decided by the termination
+condition.
