@@ -68,6 +68,12 @@ def run_plan_execute(task: str, max_replan: int = 1,
                 break
         log(f"[step {i + 1}] {reply.text.strip()[:300]}")
 
+        if reply.text.strip().upper().startswith("ANSWER:"):
+            skipped = len(plan) - (i + 1)
+            if skipped:
+                log(f"[early-stop] answer found at step {i + 1}, skipping remaining {skipped} step(s)")
+            return reply.text, meter, replans
+
         if reply.text.strip().startswith("OFF_PLAN") and replans < max_replan:
             replans += 1                          # flexibility cap
             planner.add_user(f"Step {i + 1} ({plan[i]}) failed: {reply.text.strip()[:300]}\n"
