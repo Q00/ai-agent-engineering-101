@@ -8,7 +8,9 @@
 파일 도구에는 `.env` 및 작업 폴더 외부 접근 차단을,
 `run_ab.py`에는 실행 전 준비 검사를 추가했다.
 제공자는 OpenAI를 사용하며, 모델은 사용자가 `.env`에 설정한 `gpt-5.6-luna`를 사용한다.
-실제 A/B 실험은 실행 전이다.
+최초 두 실행은 API 호환성 오류로 실패했고, 원본 결과와 로그를 보존했다.
+Chat Completions의 함수 도구를 사용하기 위해 `AGENT_REASONING_EFFORT=none`을
+양쪽에 동일하게 적용한 뒤 비교 실험을 진행한다.
 
 ## 환경 준비
 
@@ -58,6 +60,6 @@ API를 호출하지 않으므로 키의 유효성이나 모델 접근 권한까�
 python3 scripts/check_week02.py submissions/26510358/week-02
 ```
 
-현재 `results.csv`, `logs/`, `REPORT.md`는 실험 전이므로 없다.
-이 상태에서는 전체 제출 검사가 통과하지 않는다.
+`results.csv`와 `logs/`에 모든 실제 실행을 보존한다. `REPORT.md`는 아직 작성 전이다.
+전체 제출 검사는 필요한 실행 횟수와 보고서를 갖춘 뒤 통과할 수 있다.
 `app.log`와 실행 전 성공 기준을 유지하고, 실패 기록을 삭제하거나 커밋을 squash하지 않는다.

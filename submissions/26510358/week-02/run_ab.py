@@ -17,7 +17,7 @@ from pathlib import Path
 
 from harness_plan_execute import run_plan_execute
 from harness_react import run_react
-from tools_shared import MODEL, PROVIDER
+from tools_shared import MODEL, PROVIDER, REASONING_EFFORT
 
 HEADER = ["run", "harness", "success", "tokens", "iters", "interventions", "note"]
 
@@ -86,7 +86,8 @@ def main():
                     print(msg)
                     _lines.append(str(msg))
 
-                log(f"[config] provider={PROVIDER} model={MODEL} harness={name} run={run_no}")
+                log(f"[config] provider={PROVIDER} model={MODEL} "
+                    f"reasoning_effort={REASONING_EFFORT or 'default'} harness={name} run={run_no}")
                 t0 = time.time()
                 note = ""
                 try:

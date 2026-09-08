@@ -11,6 +11,7 @@ process environment. Provider is picked from the environment:
                                     OPENAI_API_KEY, optional OPENAI_BASE_URL
                                     (https://openrouter.ai/api/v1 for OpenRouter)
   AGENT_MODEL                    optional model override for either provider
+  AGENT_REASONING_EFFORT          optional OpenAI reasoning_effort override
 """
 import json
 import os
@@ -108,6 +109,7 @@ if PROVIDER not in ("openai", "anthropic"):
 MODEL = os.environ.get(
     "AGENT_MODEL",
     "claude-sonnet-4-5" if PROVIDER == "anthropic" else "gpt-4o-mini")
+REASONING_EFFORT = os.environ.get("AGENT_REASONING_EFFORT", "").strip() or None
 
 _client = None
 
@@ -174,6 +176,8 @@ class Chat:
 
     def _send_openai(self) -> Reply:
         kwargs = dict(model=MODEL, messages=self.messages)
+        if REASONING_EFFORT is not None:
+            kwargs["reasoning_effort"] = REASONING_EFFORT
         if self.tools:
             kwargs["tools"] = [{"type": "function",
                                 "function": {"name": t["name"],
