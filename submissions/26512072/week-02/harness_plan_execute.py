@@ -3,6 +3,11 @@
 One call produces the whole plan as a JSON list. Then each step is executed
 in order with tools. If a step reports OFF_PLAN, the plan is rebuilt once
 (max_replan=1): that number is the flexibility cap, and it is explicit.
+
+Condition A (runs 1-6) used SYSTEM_PLAN with the strict parser and failed at
+the plan call in all three plan_exec runs. The planner prompt and the plan
+parser are two separate candidate causes, so each is selectable here and each
+is recorded in the conditions block of every log. Do not pool conditions.
 """
 import json
 import re
@@ -14,6 +19,18 @@ SYSTEM_PLAN = (
     "You are a planner. Reply with a JSON list of short strings, one per step, "
     "and nothing else. No prose, no code fences."
 )
+# v2 states the output shape as a hard constraint and demonstrates it on a
+# different task, so the shape is shown without naming this task's answer.
+SYSTEM_PLAN_V2 = (
+    "You are a planner. Output a JSON array of short step strings and nothing "
+    "else. The first character of your reply must be '[' and the last must be "
+    "']'. Do not restate the task, do not explain your reasoning, and do not "
+    "use code fences.\n"
+    "Example task: name the day with the most WARN lines in a log.\n"
+    'Example reply: ["read_file to see the log format", '
+    '"count_pattern for WARN on each day", "compare the counts and name the day"]'
+)
+PLAN_PROMPTS = {"v1": SYSTEM_PLAN, "v2": SYSTEM_PLAN_V2}
 SYSTEM_EXEC = (
     "You execute one step of a plan at a time with the tools you are given. "
     "Before each tool call, write a short 'Thought:' line about the next action. "
@@ -23,9 +40,8 @@ SYSTEM_EXEC = (
 )
 
 
-def parse_plan(text: str):
-    """Return a list of step strings, or None if the model did not give JSON."""
-    text = re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.M).strip()
+def _as_plan(text: str):
+    """Return the step list this text encodes, or None if it is not one."""
     try:
         plan = json.loads(text)
     except json.JSONDecodeError:
@@ -35,19 +51,69 @@ def parse_plan(text: str):
     return None
 
 
+def iter_json_arrays(text: str):
+    """Yield every balanced [...] substring, outermost only, left to right."""
+    depth = 0
+    start = 0
+    in_string = False
+    escaped = False
+    for index, char in enumerate(text):
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+        elif char == '"':
+            in_string = True
+        elif char == "[":
+            if depth == 0:
+                start = index
+            depth += 1
+        elif char == "]" and depth:
+            depth -= 1
+            if depth == 0:
+                yield text[start:index + 1]
+
+
+def parse_plan(text: str, tolerant: bool = False):
+    """Return a list of step strings, or None if the model did not give a plan.
+
+    strict    the whole reply must be the JSON array (conditions A and C)
+    tolerant  the first embedded array that is a valid plan is accepted, so a
+              plan wrapped in prose still executes (condition B). This can also
+              accept an array the model wrote only as an aside; that outcome is
+              reported rather than hidden.
+    """
+    stripped = re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.M).strip()
+    plan = _as_plan(stripped)
+    if plan is not None or not tolerant:
+        return plan
+    for candidate in iter_json_arrays(text):
+        plan = _as_plan(candidate)
+        if plan is not None:
+            return plan
+    return None
+
+
 def run_plan_execute(task: str, max_replan: int = 1,
                      max_tool_rounds: int = 3, log=print, max_steps: int = 16,
-                     meter=None):
+                     meter=None, system_plan: str = SYSTEM_PLAN,
+                     plan_parser: str = "strict"):
     if max_replan not in (0, 1):
         raise ValueError("max_replan must be 0 or 1")
+    if plan_parser not in ("strict", "tolerant"):
+        raise ValueError("plan_parser must be 'strict' or 'tolerant'")
+    tolerant = plan_parser == "tolerant"
     meter = meter if meter is not None else Meter(max_steps=max_steps, log=log)
 
     # 1) PLAN: the whole plan in one call, no tools
-    planner = Chat(SYSTEM_PLAN, meter, tools=False)
+    planner = Chat(system_plan, meter, tools=False)
     planner.add_user(f"Task: {task}\nAvailable tools: read_file(path), "
                      f"count_pattern(path, pattern).")
     raw = planner.send().text
-    plan = parse_plan(raw)
+    plan = parse_plan(raw, tolerant)
     if plan is None:                              # a parse failure is one failure mode
         log(f"[plan] not valid JSON: {raw!r}")
         return "plan parse failed", meter, 0
@@ -80,7 +146,7 @@ def run_plan_execute(task: str, max_replan: int = 1,
             planner.add_user(f"Step {i + 1} ({plan[i]}) failed: {reply.text}\n"
                              f"Reply with a JSON list of the remaining steps.")
             raw = planner.send().text
-            new_steps = parse_plan(raw)
+            new_steps = parse_plan(raw, tolerant)
             if new_steps is None:
                 log(f"[replan] not valid JSON: {raw!r}")
                 return "replan parse failed", meter, replans
