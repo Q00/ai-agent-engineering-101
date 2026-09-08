@@ -1,0 +1,31 @@
+{
+  "python": "3.13.5",
+  "model": "nvidia/nemotron-3.5-lightning:free",
+  "provider": "https://openrouter.ai/api/v1",
+  "command": "python -u run_openrouter.py --runs 3",
+  "sampling": "provider defaults; no temperature or seed supplied",
+  "react_max_steps": 8,
+  "plan_max_replan": 1,
+  "plan_max_tool_rounds": 3,
+  "order": "react x3, then plan_exec x3",
+  "app_log_sha256": "e4020de6ccc11f6ac6d28eae021032cb9fed43adeba1d7ed9f96a6a2e1cc03b7",
+  "packages": [
+    "annotated-types==0.8.0",
+    "anyio==4.15.1",
+    "certifi==2026.7.22",
+    "distro==1.9.0",
+    "h11==0.16.0",
+    "httpcore==1.0.9",
+    "httpx==0.28.1",
+    "idna==3.19",
+    "jiter==0.16.0",
+    "openai==2.54.0",
+    "pydantic==2.13.5",
+    "pydantic_core==2.46.5",
+    "python-dotenv==1.2.3",
+    "sniffio==1.3.1",
+    "tqdm==4.70.0",
+    "typing-inspection==0.4.4",
+    "typing_extensions==4.16.0"
+  ]
+}
