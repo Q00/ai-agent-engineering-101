@@ -44,6 +44,8 @@ def gate(baseline, candidate, min_saving=0.10):
         return False, "duplicate_evaluation"
     if any(r["tokens"] is None for r in baseline + candidate):
         return False, "unmeasured_usage"
+    if not any(r["success"] for r in candidate):
+        return False, "no_successful_runs"
     cases = {r["case"] for r in baseline}
     wins = lambda rows, case: sum(r["success"] for r in rows if r["case"] == case)
     if any(wins(candidate, c) < wins(baseline, c) for c in cases):

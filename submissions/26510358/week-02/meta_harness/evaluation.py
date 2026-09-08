@@ -22,7 +22,7 @@ TOOLS = [{"type": "function", "function": {
     for name, description, properties in (
         ("read_file", "Read the first 4000 characters of app.log.",
          {"path": {"type": "string", "enum": ["app.log"]}}),
-        ("count_pattern", "Count lines matching a Python regular expression in all of app.log.",
+        ("count_pattern", "Count matching lines in all of app.log; use a simple regex without groups or braces.",
          {"path": {"type": "string", "enum": ["app.log"]}, "pattern": {"type": "string"}}))]
 
 
@@ -51,7 +51,7 @@ def synthetic(name, hours, noise=0, misleading=False):
 def suite():
     root = Path(__file__).resolve().parent.parent
     training = [Case("reference", (root / "app.log").read_text()),
-                synthetic("late_winner", [(8, 1), (21, 5)], noise=100),
+                synthetic("late_winner", [(8, 1), (21, 5)], noise=120),
                 synthetic("level_not_body", [(7, 4), (18, 2)], noise=15, misleading=True)]
     # These cases are not sent to proposer/reviewer/refiner. Evaluate them once
     # after all search rounds; never feed their results back into this search.
@@ -71,8 +71,8 @@ def tool_output(case, call):
         # Fixtures and patterns are small; disallow complex regex constructs
         # rather than execute unbounded user/model-provided expressions.
         pattern = args["pattern"]
-        if not isinstance(pattern, str) or len(pattern) > 120 or any(c in pattern for c in "()+{}\\"):
-            raise ValueError("Use a simple regex without groups, escapes, braces, or +")
+        if not isinstance(pattern, str) or len(pattern) > 120 or any(c in pattern for c in "(){}"):
+            raise ValueError("Use a simple regex without groups or braces")
         rx = re.compile(pattern)
         return str(sum(bool(rx.search(line)) for line in case.text.splitlines()))
     raise ValueError("Unknown tool or unexpected arguments")
