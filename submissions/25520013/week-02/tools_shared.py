@@ -89,7 +89,8 @@ class Reply:
 PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
 MODEL = os.environ.get(
     "AGENT_MODEL",
-    "claude-sonnet-4-5" if PROVIDER == "anthropic" else "gpt-4o-mini")
+    "claude-sonnet-4-5" if PROVIDER == "anthropic"
+    else "nvidia/nemotron-3.5-lightning:free")   # OpenRouter free; see commit msg
 
 _client = None
 
