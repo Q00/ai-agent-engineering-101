@@ -2,11 +2,13 @@
 
 학번: 26512072 / GitHub: BJEon01
 
-현재 상태: 2026-09-08에 실제 A/B 실험 6회를 완료했다. ReAct는 3/3 성공,
+현재 상태: 2026-09-08에 조건 A로 실제 A/B 실험 6회를 완료했다. ReAct는 3/3 성공,
 Plan-then-Execute는 0/3 성공(모두 최초 계획 JSON 파싱 실패)이었다.
 `results.csv`와 `logs/`에 실패를 포함한 원본 측정이 있고, `REPORT.md`에는 학생이 제시한
 가설을 실제 로그와 대조한 해석을 반영했다.
 `test_harnesses.py`의 가짜 응답은 프로그램 검증 전용이며 실험 결과에 포함하지 않는다.
+
+조건 B와 C는 코드와 절차만 준비했고 아직 실행하지 않았다. 아래 「추가 조건」을 본다.
 
 ## 고정 조건
 
@@ -30,6 +32,50 @@ Plan-then-Execute는 0/3 성공(모두 최초 계획 JSON 파싱 실패)이었�
 무료 모델의 현재 가용성은 바뀔 수 있다. 다른 `:free` 모델을 선택하려면 실험 전에
 `AGENT_MODEL`을 설정하고 여섯 실행에 동일하게 적용한다. 조건을 바꾼 실험은
 기존 결과를 지우지 않고 별도로 비교한다.
+
+## 추가 조건
+
+조건 A에서 Plan-then-Execute가 3회 모두 계획 호출에서 실패했다. 원인 후보는 두 개다.
+계획 프롬프트가 약했거나, 계획 파서가 엄격했다. 두 후보를 한꺼번에 바꾸면 어느 쪽이
+효과가 있었는지 알 수 없으므로 하나씩만 바꾼 조건을 따로 둔다.
+
+| 조건 | `--plan-prompt` | `--plan-parser` | 바꾼 것 | 상태 |
+| --- | --- | --- | --- | --- |
+| A | v1 | strict | (기준) | run 1–6 완료 |
+| B | v1 | tolerant | 파서만 | 미실행 |
+| C | v2 | strict | 프롬프트만 | 미실행 |
+
+- v1은 스타터의 계획 프롬프트다. v2는 출력 형태를 강제하고 **다른 태스크**의 예시를
+  하나 보여준다. 예시가 이 태스크의 정답을 알려주지 않도록 WARN·요일 예시를 쓴다.
+- strict는 응답 전체가 JSON 배열이어야 한다. tolerant는 응답 안에 들어 있는 첫 번째
+  유효한 배열을 계획으로 받는다.
+- ReAct는 계획 프롬프트와 파서를 쓰지 않으므로 조건 A의 ReAct 3회가 그대로 기준선이다.
+  그래서 B와 C는 `--only plan_exec`로 Plan 쪽만 3회씩 추가한다.
+- 조건은 각 로그의 `[conditions]`와 `results.csv`의 `note`에 함께 기록된다.
+  `summarize_results.py`는 조건이 섞인 행을 평균 내기를 거부한다.
+
+```powershell
+$env:OPENROUTER_API_KEY = "재발급한-키"
+.\submissions\26512072\.venv\Scripts\python.exe submissions/26512072/week-02/run_ab.py `
+  --runs 3 --only plan_exec --plan-parser tolerant
+.\submissions\26512072\.venv\Scripts\python.exe submissions/26512072/week-02/run_ab.py `
+  --runs 3 --only plan_exec --plan-prompt v2
+Remove-Item Env:\OPENROUTER_API_KEY
+```
+
+실행 후 조건별 집계는 다음과 같다. 조건을 섞은 평균은 쓰지 않는다.
+
+```powershell
+.\submissions\26512072\.venv\Scripts\python.exe submissions/26512072/week-02/summarize_results.py --by-condition
+```
+
+### 조건 B의 사전 예측
+
+`replay_plan_failures.py`는 API를 호출하지 않고, 이미 기록된 계획 응답 3개를 두 파서에
+다시 통과시킨다. 결과는 `verification/plan-parser-replay.txt`에 있다. tolerant는 3/3을
+파싱하지만 그중 둘은 모델이 예시로 흘린 `step1, step2, step3` 류의 자리표시자였다.
+따라서 조건 B는 파싱 성공률이 아니라 **건져낸 계획의 단계 내용과 최종 성공 여부**로
+평가한다. 이 예측은 실제 실행을 대신하지 않는다. B를 돌리면 모델은 새 응답을 낸다.
 
 ## Windows PowerShell
 
@@ -82,12 +128,19 @@ Plan-then-Execute는 JSON 계획을 먼저 만들고 각 단계를 순서대로 
 ```powershell
 Push-Location submissions/26512072/week-02
 ..\.venv\Scripts\python.exe -m unittest -v test_harnesses
+..\.venv\Scripts\python.exe replay_plan_failures.py
 Pop-Location
 ```
 
+오프라인 테스트는 16개다. 조건 추가 시점의 출력은
+`verification/offline-tests-conditions.txt`에 있다.
+
 구조 검사는 실제 6회 실행 후 통과했다. 다만 모델이 명시적인 Thought: 표기를 일부
 생략했고, 계획 파싱 실패 실행에는 Observation이 없다. 이 한계는 REPORT.md에 기록했다.
-구조 검사가 통과해도 로그 내용과 본인의 해석까지 검증한 것은 아니다.
+과제 체크포인트 중 "실행마다 로그에 Thought와 Observation이 남는다"는 조건 A에서
+충족하지 못했다. 조건 B와 C는 Plan이 실행 단계에 도달하면 Observation이 남는지를
+확인할 수 있는 실행이다. 구조 검사가 통과해도 로그 내용과 본인의 해석까지 검증한
+것은 아니다.
 
 근거: [수업 과제](../../../weeks/week-02/README.md),
 [OpenRouter 연결](https://openrouter.ai/docs/quickstart),
