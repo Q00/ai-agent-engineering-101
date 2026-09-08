@@ -90,6 +90,10 @@ PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
 MODEL = os.environ.get(
     "AGENT_MODEL",
     "claude-sonnet-4-5" if PROVIDER == "anthropic" else "gpt-4o-mini")
+# some OpenAI reasoning models reject tool calls unless reasoning_effort is
+# set explicitly (e.g. "Function tools ... are not supported ... set
+# reasoning_effort to 'none'"); opt in per-model, default models are unaffected.
+REASONING_EFFORT = os.environ.get("AGENT_REASONING_EFFORT")
 
 _client = None
 
@@ -156,6 +160,8 @@ class Chat:
 
     def _send_openai(self) -> Reply:
         kwargs = dict(model=MODEL, messages=self.messages)
+        if REASONING_EFFORT:
+            kwargs["reasoning_effort"] = REASONING_EFFORT
         if self.tools:
             kwargs["tools"] = [{"type": "function",
                                 "function": {"name": t["name"],
