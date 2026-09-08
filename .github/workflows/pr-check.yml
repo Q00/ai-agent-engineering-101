@@ -21,7 +21,10 @@ jobs:
       - name: Collect changed files
         id: diff
         run: |
-          git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD > changed.txt
+          # HEAD is the PR merged onto the current base branch; its first parent is
+          # the base tip. Diffing the two yields only the PR's own changes, even when
+          # the base branch has moved since the PR was opened.
+          git diff --name-only HEAD^1 HEAD > changed.txt
           echo "Changed files:"
           cat changed.txt
 
