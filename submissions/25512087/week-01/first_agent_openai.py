@@ -46,7 +46,7 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-# ---- tool 3 : weather ----
+# ---- tool 3 : weather : Using Open-metro API ----
 
 import urllib.request
 import ssl
