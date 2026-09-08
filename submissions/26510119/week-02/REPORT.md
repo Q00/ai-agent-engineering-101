@@ -1,5 +1,25 @@
 # Week 02 A/B 실험 보고서
 
+```mermaid
+flowchart TD
+    Task["app.log에서 ERROR 가장 많은 시간대 찾기"]
+    Model["nvidia/nemotron-3.5-lightning:free"]
+    Tools["read_file, count_pattern"]
+
+    Task --> ReAct
+    Task --> PlanExec
+    Model --> ReAct
+    Model --> PlanExec
+    Tools --> ReAct
+    Tools --> PlanExec
+
+    ReAct["ReAct\n매 스텝 판단\n3회 실행"]
+    PlanExec["Plan-then-Execute\n계획 세우고 순서대로\n3회 실행"]
+
+    ReAct --> Result["results.csv\n6회 기록"]
+    PlanExec --> Result
+```
+
 ## 1. 변형 정의
 
 모델(nvidia/nemotron-3.5-lightning:free), 도구(read_file, count_pattern), 태스크는 동일하게 고정하고 하네스만 바꿨다.
