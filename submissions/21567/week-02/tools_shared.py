@@ -12,7 +12,6 @@ Provider is picked from the environment:
 """
 import json
 import os
-import re
 from dataclasses import dataclass, field
 
 # ---------------------------------------------------------------- tools
@@ -27,17 +26,23 @@ def read_file(path: str) -> str:
         return f.read()[:4000]          # context guard, same as week 01
 
 
-def count_pattern(path: str, pattern: str) -> str:
-    """Count lines in a text file that match a regular expression."""
+def count_errors_by_hour(path: str) -> str:
+    """Count ERROR log lines by hour without compiling or running a regex."""
     full = os.path.abspath(path)
     if not full.startswith(os.getcwd()):
         return "denied: path outside the working directory"
-    rx = re.compile(pattern)
+    counts = {}
     with open(full, encoding="utf-8") as f:
-        return str(sum(1 for line in f if rx.search(line)))
+        for line in f:
+            fields = line.split(maxsplit=2)
+            if len(fields) < 3 or fields[2].split(maxsplit=1)[0] != "ERROR":
+                continue
+            hour = fields[1][:2] + ":00"
+            counts[hour] = counts.get(hour, 0) + 1
+    return json.dumps(counts, sort_keys=True)
 
 
-TOOLS_IMPL = {"read_file": read_file, "count_pattern": count_pattern}
+TOOLS_IMPL = {"read_file": read_file, "count_errors_by_hour": count_errors_by_hour}
 
 # provider-neutral schemas; Chat converts them per provider
 TOOL_SPECS = [
@@ -46,12 +51,11 @@ TOOL_SPECS = [
      "parameters": {"type": "object",
                     "properties": {"path": {"type": "string"}},
                     "required": ["path"]}},
-    {"name": "count_pattern",
-     "description": "Count the lines of a text file that match a regular expression.",
+    {"name": "count_errors_by_hour",
+     "description": "Count ERROR log lines grouped by hour (HH:00).",
      "parameters": {"type": "object",
-                    "properties": {"path": {"type": "string"},
-                                   "pattern": {"type": "string"}},
-                    "required": ["path", "pattern"]}},
+                    "properties": {"path": {"type": "string"}},
+                    "required": ["path"]}},
 ]
 
 # ---------------------------------------------------------------- meter

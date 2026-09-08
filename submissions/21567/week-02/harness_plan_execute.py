@@ -41,7 +41,7 @@ def run_plan_execute(task: str, max_replan: int = 1,
     # 1) PLAN: the whole plan in one call, no tools
     planner = Chat(SYSTEM_PLAN, meter, tools=False)
     planner.add_user(f"Task: {task}\nAvailable tools: read_file(path), "
-                     f"count_pattern(path, pattern).")
+                     f"count_errors_by_hour(path).")
     raw = planner.send().text
     plan = parse_plan(raw)
     if plan is None:                              # a parse failure is one failure mode
