@@ -11,6 +11,7 @@ import argparse
 import csv
 import os
 import re
+import sys
 import time
 from pathlib import Path
 
@@ -87,4 +88,5 @@ def main():
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles default to cp949; model output may include Unicode punctuation
     main()
