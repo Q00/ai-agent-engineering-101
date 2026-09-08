@@ -46,7 +46,18 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
-TOOLS_IMPL = {"calculator": calculator, "read_file": read_file}
+# ---- tool 3: write_note (append only, inside the working directory) ----
+def write_note(path: str, text: str) -> str:
+    """Append a line of text to a file."""
+    full = os.path.abspath(path)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+    with open(full, "a", encoding="utf-8") as f:
+        f.write(text + "\n")
+    return f"appended to {os.path.basename(full)}"
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file, "write_note": write_note}
 
 # ---- tool schemas handed to the model (the description IS the interface) ----
 TOOLS = [
