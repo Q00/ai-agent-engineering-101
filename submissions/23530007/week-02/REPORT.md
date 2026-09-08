@@ -29,6 +29,23 @@ import하므로 도구 구현·스키마·모델명·토큰 계측이 모두 동
 다섯 요소 중 실제로 다르게 잡은 것은 1·3·4이고, 2는 의도적으로 고정, 5는 두 하네스
 모두 비활성이다.
 
+```mermaid
+flowchart LR
+  subgraph CONST["상수 · 통제변수"]
+    M["모델<br/>claude-opus-5"]
+    T["태스크<br/>app.log ERROR 최다 시간대"]
+    TL["도구<br/>read_file · count_pattern"]
+  end
+  CONST --> R["ReAct 하네스<br/>3회 실행"]
+  CONST --> P["Plan-then-Execute 하네스<br/>3회 실행"]
+  R --> MET["네 지표<br/>success · tokens · iters · interventions"]
+  P --> MET
+  MET --> V["같은 판정 기준<br/>expected: 14:00"]
+```
+
+FIG. 1 — 독립변수는 하네스 하나. 모델·태스크·도구는 상수로 묶여 있고, 두 하네스는
+같은 판정 기준으로 같은 네 지표를 낸다.
+
 | 요소 | ReAct | Plan-then-Execute | 같음/다름 |
 |---|---|---|---|
 | 1 컨텍스트 관리 | `Chat` 하나. 전체 history를 매 호출에 전달 | `Chat` 둘. planner(`tools=False`)와 executor 분리. executor는 계획을 받고 단계마다 `Execute step i` 지시가 누적된다 | **다름** |
@@ -65,6 +82,30 @@ import하므로 도구 구현·스키마·모델명·토큰 계측이 모두 동
 plan_exec는 react의 **15.9배** 토큰을 썼다. 재계획은 세 번 모두 0회다.
 
 ## 3. 해석
+
+```mermaid
+flowchart TB
+  subgraph A["ReAct · 요소3: 모델이 종료를 결정 → 반복 3.0회, 토큰 6,219"]
+    a0(["태스크"]) --> a1["Thought + Action"]
+    a1 --> a2["Observation"]
+    a2 --> a3{"더 필요한가?"}
+    a3 -- "yes · 매 스텝 재판단" --> a1
+    a3 -- "no · 도구 호출 없이 응답" --> a4(["Answer: 14:00"])
+  end
+  subgraph B["Plan-then-Execute · 요소3: 구조가 종료를 결정 → 반복 15.7회, 토큰 98,825"]
+    b0(["태스크"]) --> b1["PLAN · 1회 호출로 8단계 계획 확정"]
+    b1 --> b2["step 1~4 실행"]
+    b2 --> b3["step 5 · 시간대별 카운트<br/>여기서 이미 14시=6 확정"]
+    b3 --> b4["step 6·7·8 · 총합 검증 · 동점 확인 · 재진술"]
+    b4 --> b5["최종 답변 강제 호출"]
+    b5 --> b6(["Answer: 14:00"])
+  end
+```
+
+FIG. 2 — 답을 아는 시점과 멈추는 시점의 거리. ReAct는 둘이 같은 스텝에서 만나고,
+Plan-then-Execute는 step 5와 step 8로 벌어진다. 이 거리가 반복 횟수의 차이이고,
+누적 history 재전송(요소 1)이 그것을 토큰 차이로 증폭한다.
+
 
 이 태스크에서 **성공률은 두 하네스를 가르지 못했다**(3/3 대 3/3). 갈린 것은 토큰과
 반복 횟수이고, 차이는 15.9배와 5.2배로 우연이라 보기 어렵다. 움직인 요소는 **요소 3
