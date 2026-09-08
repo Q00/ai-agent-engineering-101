@@ -1,6 +1,6 @@
 """Week 02 starter — run the A/B experiment and record results.csv.
 
-Usage: python run_ab.py [--runs 3]
+Usage: python run_ab.py [--runs 3] [--tag v2]
 
 Reads the task and the success criterion from TASK.md, runs each harness
 --runs times, judges every run, appends one line per run to results.csv,
@@ -39,6 +39,7 @@ def judge(answer: str, expected: str) -> bool:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--tag", default="", help="variant label written into the note column, e.g. v2")
     args = ap.parse_args()
 
     task, expected = read_task()
@@ -67,8 +68,8 @@ def main():
                 try:
                     out = fn(task, log=log)
                     answer, meter = out[0], out[1]
-                    if name == "plan_exec":
-                        note = f"replans={out[2]}"
+                    if len(out) > 2:              # harness-specific info for the note column
+                        note = f"replans={out[2]}" if isinstance(out[2], int) else str(out[2])
                 except Exception as e:            # a crash is a failed run, not a lost run
                     answer, meter, note = "", None, f"crash: {type(e).__name__}: {e}"
                     log(note)
@@ -79,7 +80,8 @@ def main():
 
                 Path("logs", f"{name}-{run_no:02d}.txt").write_text(
                     "\n".join(lines) + "\n", encoding="utf-8")
-                note = f"model={MODEL}" + (f";{note}" if note else "")
+                parts = ([f"variant={args.tag}"] if args.tag else []) + [f"model={MODEL}"] + ([note] if note else [])
+                note = ";".join(parts)
                 w.writerow([run_no, name, "O" if success else "X",
                             meter.tokens if meter else "",
                             meter.iters if meter else "",
