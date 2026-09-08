@@ -1,7 +1,10 @@
 param(
     [int]$Runs = 3,
     [int]$MaxSteps = 16,
-    [switch]$Check
+    [switch]$Check,
+    [ValidateSet('v1', 'v2')][string]$PlanPrompt = 'v1',
+    [ValidateSet('strict', 'tolerant')][string]$PlanParser = 'strict',
+    [ValidateSet('both', 'react', 'plan_exec')][string]$Only = 'both'
 )
 $ErrorActionPreference = 'Stop'
 $experimentPython = Join-Path $PSScriptRoot '..\.venv\Scripts\python.exe'
@@ -16,7 +19,8 @@ try {
         $secureExperimentKey = Read-Host 'OpenRouter API key (hidden; this process only)' -AsSecureString
         $env:OPENROUTER_API_KEY = [System.Net.NetworkCredential]::new('', $secureExperimentKey).Password
     }
-    $runnerArguments = @((Join-Path $PSScriptRoot 'run_ab.py'), '--runs', $Runs, '--max-steps', $MaxSteps)
+    $runnerArguments = @((Join-Path $PSScriptRoot 'run_ab.py'), '--runs', $Runs, '--max-steps', $MaxSteps,
+                         '--plan-prompt', $PlanPrompt, '--plan-parser', $PlanParser, '--only', $Only)
     if ($Check) { $runnerArguments += '--check' }
     & $experimentPython @runnerArguments
     $experimentExitCode = $LASTEXITCODE
