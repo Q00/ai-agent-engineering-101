@@ -53,6 +53,7 @@ def write_note(path: str, text: str) -> str:
     full = os.path.abspath(path)
     if not full.startswith(os.getcwd()):
         return "denied: path outside the working directory"
+    text = str(text)   # the schema says string, but models send bare numbers
     with open(full, "a", encoding="utf-8") as f:
         f.write(text.rstrip("\n") + "\n")
     return f"appended {len(text)} chars to {os.path.basename(full)}"
