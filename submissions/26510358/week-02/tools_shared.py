@@ -3,7 +3,9 @@
 Both harnesses import from here. Same tools and same model for both is what
 makes the A/B a harness comparison and not a tool comparison.
 
-Provider is picked from the environment:
+Settings are loaded from this module's .env file without overriding the
+process environment. Provider is picked from the environment:
+  AGENT_PROVIDER                optional explicit choice: openai | anthropic
   ANTHROPIC_API_KEY set          -> Anthropic SDK (pip install anthropic)
   otherwise                      -> OpenAI-compatible (pip install openai)
                                     OPENAI_API_KEY, optional OPENAI_BASE_URL
@@ -14,24 +16,37 @@ import json
 import os
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().with_name(".env"), override=False)
 
 # ---------------------------------------------------------------- tools
 
 
+def _input_path(path: str) -> Path | None:
+    """Keep file tools in the working directory and exclude local credentials."""
+    full = Path(path).resolve()
+    if not full.is_relative_to(Path.cwd().resolve()) or full.name == ".env":
+        return None
+    return full
+
+
 def read_file(path: str) -> str:
     """Return the contents of a text file in the working directory."""
-    full = os.path.abspath(path)
-    if not full.startswith(os.getcwd()):
-        return "denied: path outside the working directory"
+    full = _input_path(path)
+    if full is None:
+        return "denied: protected file or path outside the working directory"
     with open(full, encoding="utf-8") as f:
         return f.read()[:4000]          # context guard, same as week 01
 
 
 def count_pattern(path: str, pattern: str) -> str:
     """Count lines in a text file that match a regular expression."""
-    full = os.path.abspath(path)
-    if not full.startswith(os.getcwd()):
-        return "denied: path outside the working directory"
+    full = _input_path(path)
+    if full is None:
+        return "denied: protected file or path outside the working directory"
     rx = re.compile(pattern)
     with open(full, encoding="utf-8") as f:
         return str(sum(1 for line in f if rx.search(line)))
@@ -86,7 +101,10 @@ class Reply:
     tool_calls: list = field(default_factory=list)
 
 
-PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
+PROVIDER = os.environ.get("AGENT_PROVIDER", "").strip().lower() or (
+    "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai")
+if PROVIDER not in ("openai", "anthropic"):
+    raise SystemExit("AGENT_PROVIDER must be 'openai' or 'anthropic'.")
 MODEL = os.environ.get(
     "AGENT_MODEL",
     "claude-sonnet-4-5" if PROVIDER == "anthropic" else "gpt-4o-mini")

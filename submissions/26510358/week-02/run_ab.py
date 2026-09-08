@@ -47,7 +47,7 @@ def check_setup():
     if not os.environ.get(key_name, "").strip():
         raise SystemExit(
             f"{key_name} is not set. Configure the provider's API key in the environment "
-            "before running (ANTHROPIC_API_KEY selects Anthropic). No runs were recorded."
+            "or the submission's .env before running. No runs were recorded."
         )
 
 

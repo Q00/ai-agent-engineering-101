@@ -4,8 +4,11 @@
 
 강의 원본 커밋 `404ec973a4e77cc074299865fd130055abdb5e18`의 starter를
 복사해 시작했다. `TASK.md`의 문제와 성공 기준은 실험 전에 커밋했다.
-두 하네스와 공용 도구는 원본을 유지하며, `run_ab.py`에는 실행 전 준비 검사를 추가했다.
-모델 제공자와 모델명은 아직 선택하지 않았으며 실제 A/B 실험은 실행 전이다.
+두 하네스는 원본을 유지한다. 공용 모듈에는 `.env` 로딩과 제공자 선택을,
+파일 도구에는 `.env` 및 작업 폴더 외부 접근 차단을,
+`run_ab.py`에는 실행 전 준비 검사를 추가했다.
+제공자는 OpenAI를 사용하며, 모델은 starter의 기존 기본값 `gpt-4o-mini`로 설정했다.
+실제 A/B 실험은 실행 전이다.
 
 ## 환경 준비
 
@@ -18,11 +21,17 @@ uv pip install --python .venv/bin/python -r requirements.txt
 source .venv/bin/activate
 ```
 
-실험 전에 사용할 제공자의 API 키와 `AGENT_MODEL`을 환경변수로 설정한다.
-`ANTHROPIC_API_KEY`가 있으면 Anthropic을 우선 사용한다. 그렇지 않으면
-`OPENAI_API_KEY`를 사용하는 OpenAI 호환 API를 사용하며, 다른 호환 서버는
-`OPENAI_BASE_URL`로 지정한다. 키는 파일이나 커밋에 기록하지 않는다.
-실험에 사용한 제공자, 모델명, 설정은 `REPORT.md`에 기록한다.
+현재 작업 폴더에는 키 입력용 `.env`가 준비되어 있다.
+`OPENAI_API_KEY=` 뒤에 키를 입력하고 저장하면 두 하네스가 자동으로 읽는다.
+새로 clone한 환경에서는 `.env.example`을 `.env`로 복사해 사용한다.
+`.env`는 Git에서 제외되며 키가 없는 `.env.example`만 공유한다.
+
+`AGENT_PROVIDER=openai`가 OpenAI 사용을 명시하며, 모델명은 `AGENT_MODEL`로 지정한다.
+`.env`는 공용 모듈과 같은 디렉터리에서만 읽고, 이미 설정된 프로세스 환경변수가 우선한다.
+`AGENT_PROVIDER`를 생략하면 starter와 같이 `ANTHROPIC_API_KEY`의 존재 여부로 제공자를 고른다.
+OpenAI SDK는 `OPENAI_API_KEY` 환경변수를 자동으로 읽는다.
+([공식 OpenAI 문서](https://developers.openai.com/api/docs/quickstart))
+실험에 사용한 제공자, 모델명, 키를 제외한 설정은 `REPORT.md`에 기록한다.
 
 환경변수를 설정한 뒤 아래 명령으로 준비 상태를 확인한다.
 
