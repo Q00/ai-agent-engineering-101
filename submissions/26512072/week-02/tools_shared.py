@@ -3,12 +3,9 @@
 Both harnesses import from here. Same tools and same model for both is what
 makes the A/B a harness comparison and not a tool comparison.
 
-Provider is picked from the environment:
-  ANTHROPIC_API_KEY set          -> Anthropic SDK (pip install anthropic)
-  otherwise                      -> OpenAI-compatible (pip install openai)
-                                    OPENAI_API_KEY, optional OPENAI_BASE_URL
-                                    (https://openrouter.ai/api/v1 for OpenRouter)
-  AGENT_MODEL                    optional model override for either provider
+This submission fixes the provider to OpenRouter's OpenAI-compatible API.
+Set OPENROUTER_API_KEY (or OPENAI_API_KEY) in the environment. Both harnesses
+use the same explicit :free model; there is no model fallback.
 """
 import json
 import os
@@ -86,10 +83,12 @@ class Reply:
     tool_calls: list = field(default_factory=list)
 
 
-PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
-MODEL = os.environ.get(
-    "AGENT_MODEL",
-    "claude-sonnet-4-5" if PROVIDER == "anthropic" else "gpt-4o-mini")
+PROVIDER = "openai"  # message format; the actual provider is OpenRouter
+BASE_URL = "https://openrouter.ai/api/v1"
+MODEL = os.environ.get("AGENT_MODEL", "nvidia/nemotron-3.5-lightning:free")
+MAX_TOKENS = 2048
+TEMPERATURE = 0.2
+TIMEOUT = 45.0
 
 _client = None
 
@@ -102,7 +101,13 @@ def _get_client():
             _client = anthropic.Anthropic()
         else:
             from openai import OpenAI
-            _client = OpenAI()
+            key = os.environ.get("OPENROUTER_API_KEY") or os.environ.get("OPENAI_API_KEY")
+            if not key:
+                raise RuntimeError("Set OPENROUTER_API_KEY in the environment before running")
+            if not MODEL.endswith(":free"):
+                raise ValueError("AGENT_MODEL must be a fixed model ID ending in :free")
+            _client = OpenAI(api_key=key, base_url=BASE_URL,
+                             timeout=TIMEOUT, max_retries=0)
     return _client
 
 
@@ -155,7 +160,8 @@ class Chat:
         return Reply(text, calls)
 
     def _send_openai(self) -> Reply:
-        kwargs = dict(model=MODEL, messages=self.messages)
+        kwargs = dict(model=MODEL, messages=self.messages,
+                      max_tokens=MAX_TOKENS, temperature=TEMPERATURE)
         if self.tools:
             kwargs["tools"] = [{"type": "function",
                                 "function": {"name": t["name"],
