@@ -30,9 +30,21 @@ def read_task(path="TASK.md"):
 
 
 def judge(answer: str, expected: str) -> bool:
-    """Success = the expected string appears in the final answer. Fix the
-    criterion in TASK.md before running; do not loosen it afterwards."""
-    return expected.lower() in (answer or "").lower()
+    """Success = the expected string appears in the harness's conclusion.
+
+    The conclusion is the last line beginning with 'Answer:'; both harnesses
+    are instructed to emit one. Falling back to the whole response when there
+    is none. Checking the whole response instead would score a run O whenever
+    it merely mentioned the expected hour while concluding otherwise, and the
+    two harnesses do not produce final responses of the same shape, so that
+    bias would not fall equally on them.
+
+    Fixed before the first run. Do not loosen it afterwards.
+    """
+    text = answer or ""
+    lines = [l for l in text.splitlines() if l.strip().lower().startswith("answer:")]
+    target = lines[-1] if lines else text
+    return expected.lower() in target.lower()
 
 
 def main():
