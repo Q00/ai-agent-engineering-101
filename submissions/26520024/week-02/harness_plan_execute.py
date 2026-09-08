@@ -35,8 +35,8 @@ def parse_plan(text: str):
 
 
 def run_plan_execute(task: str, max_replan: int = 1,
-                     max_tool_rounds: int = 3, log=print):
-    meter = Meter()
+                     max_tool_rounds: int = 3, log=print, meter=None):
+    meter = meter if meter is not None else Meter()
 
     # 1) PLAN: the whole plan in one call, no tools
     planner = Chat(SYSTEM_PLAN, meter, tools=False)

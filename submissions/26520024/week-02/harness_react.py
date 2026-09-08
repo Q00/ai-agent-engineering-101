@@ -25,8 +25,8 @@ def ask_human(call) -> bool:
     return answer == "y"
 
 
-def run_react(task: str, max_steps: int = 8, log=print):
-    meter = Meter()
+def run_react(task: str, max_steps: int = 8, log=print, meter=None):
+    meter = meter if meter is not None else Meter()
     chat = Chat(SYSTEM, meter)                    # [axis 1] context: full history, every call
     chat.add_user(task)
 
@@ -40,10 +40,11 @@ def run_react(task: str, max_steps: int = 8, log=print):
 
         approved = []
         for call in reply.tool_calls:
-            if call.name in IRREVERSIBLE and not ask_human(call):
-                meter.interventions += 1          # [axis 5] intervention point
-                chat.add_tool_result(call, "denied: human did not approve")
-                continue
+            if call.name in IRREVERSIBLE:
+                meter.interventions += 1          # count approval AND denial
+                if not ask_human(call):
+                    chat.add_tool_result(call, "denied: human did not approve")
+                    continue
             approved.append(call)
         reply.tool_calls = approved
         chat.run_tools(reply, log)                # [axis 2] granularity lives in tools_shared

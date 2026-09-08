@@ -3,35 +3,39 @@
 Both harnesses import from here. Same tools and same model for both is what
 makes the A/B a harness comparison and not a tool comparison.
 
-Provider is picked from the environment:
-  ANTHROPIC_API_KEY set          -> Anthropic SDK (pip install anthropic)
-  otherwise                      -> OpenAI-compatible (pip install openai)
-                                    OPENAI_API_KEY, optional OPENAI_BASE_URL
-                                    (https://openrouter.ai/api/v1 for OpenRouter)
-  AGENT_MODEL                    optional model override for either provider
+AGENT_PROVIDER defaults to codex (authenticated CLI, no Python SDK needed).
+Explicit anthropic/openai providers retain the starter SDK implementations.
+AGENT_MODEL overrides the model. Both harnesses use the same configuration.
+For this benchmark only app.log is readable, excluding the reference answer.
 """
 import json
 import os
 import re
+from pathlib import Path
 from dataclasses import dataclass, field
 
 # ---------------------------------------------------------------- tools
 
+WORKSPACE = Path(__file__).resolve().parent
+
+
+def input_path(path):
+    full = (WORKSPACE / path).resolve()
+    if full != WORKSPACE / "app.log":
+        raise ValueError("only the benchmark input app.log is readable")
+    return full
+
 
 def read_file(path: str) -> str:
     """Return the contents of a text file in the working directory."""
-    full = os.path.abspath(path)
-    if not full.startswith(os.getcwd()):
-        return "denied: path outside the working directory"
+    full = input_path(path)
     with open(full, encoding="utf-8") as f:
         return f.read()[:4000]          # context guard, same as week 01
 
 
 def count_pattern(path: str, pattern: str) -> str:
     """Count lines in a text file that match a regular expression."""
-    full = os.path.abspath(path)
-    if not full.startswith(os.getcwd()):
-        return "denied: path outside the working directory"
+    full = input_path(path)
     rx = re.compile(pattern)
     with open(full, encoding="utf-8") as f:
         return str(sum(1 for line in f if rx.search(line)))
@@ -64,6 +68,10 @@ class Meter:
         self.tokens = 0
         self.iters = 0            # one iteration = one model call
         self.interventions = 0    # times a human approved or denied a call
+        self.tokens_complete = True
+
+    def record_usage(self, input_tokens, output_tokens):
+        self.tokens += input_tokens + output_tokens
 
     def add(self, input_tokens: int, output_tokens: int):
         self.tokens += int(input_tokens or 0) + int(output_tokens or 0)
@@ -86,10 +94,13 @@ class Reply:
     tool_calls: list = field(default_factory=list)
 
 
-PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
+PROVIDER = os.environ.get("AGENT_PROVIDER", "codex")
+if PROVIDER not in ("codex", "anthropic", "openai"):
+    raise ValueError("AGENT_PROVIDER must be codex, anthropic, or openai")
 MODEL = os.environ.get(
     "AGENT_MODEL",
-    "claude-sonnet-4-5" if PROVIDER == "anthropic" else "gpt-4o-mini")
+    {"codex": "gpt-6-astra", "anthropic": "claude-sonnet-4-5",
+     "openai": "gpt-4o-mini"}[PROVIDER])
 
 _client = None
 
@@ -123,6 +134,10 @@ class Chat:
         self.messages.append({"role": "user", "content": text})
 
     def add_tool_result(self, call: ToolCall, output: str):
+        if PROVIDER == "codex":
+            self.messages.append({"role": "tool", "tool_call_id": call.id,
+                                  "name": call.name, "content": output})
+            return
         if PROVIDER == "anthropic":
             block = {"type": "tool_result", "tool_use_id": call.id, "content": output}
             last = self.messages[-1]
@@ -136,9 +151,26 @@ class Chat:
 
     # ---- one model call
     def send(self) -> Reply:
+        if PROVIDER == "codex":
+            return self._send_codex()
         if PROVIDER == "anthropic":
             return self._send_anthropic()
         return self._send_openai()
+
+    def _send_codex(self) -> Reply:
+        from codex_backend import complete
+        self.meter.iters += 1
+        try:
+            text, calls = complete(self.system, self.messages, TOOL_SPECS,
+                                   self.tools, MODEL, self.meter.record_usage)
+        except Exception:
+            self.meter.tokens_complete = False
+            raise
+        tool_calls = [ToolCall(f"call-{self.meter.iters}-{i}", c["name"], c["args"])
+                      for i, c in enumerate(calls)]
+        self.messages.append({"role": "assistant", "text": text,
+                              "tool_calls": [vars(c) for c in tool_calls]})
+        return Reply(text, tool_calls)
 
     def _send_anthropic(self) -> Reply:
         kwargs = dict(model=MODEL, max_tokens=1024, system=self.system,
