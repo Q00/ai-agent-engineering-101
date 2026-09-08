@@ -37,22 +37,67 @@ def count_pattern(path: str, pattern: str) -> str:
         return str(sum(1 for line in f if rx.search(line)))
 
 
-TOOLS_IMPL = {"read_file": read_file, "count_pattern": count_pattern}
+def count_by_hour(path: str, pattern: str) -> str:
+    """Tally matching lines per clock hour, one 'HH:00 n' line per hour.
 
-# provider-neutral schemas; Chat converts them per provider
-TOOL_SPECS = [
-    {"name": "read_file",
-     "description": "Read a text file in the working directory (first 4000 characters).",
-     "parameters": {"type": "object",
-                    "properties": {"path": {"type": "string"}},
-                    "required": ["path"]}},
-    {"name": "count_pattern",
-     "description": "Count the lines of a text file that match a regular expression.",
-     "parameters": {"type": "object",
-                    "properties": {"path": {"type": "string"},
-                                   "pattern": {"type": "string"}},
-                    "required": ["path", "pattern"]}},
-]
+    The coarse counterpart of count_pattern: the same tally that costs one
+    count_pattern call per hour costs one call here. Only in the coarse tool
+    set (AGENT_TOOLSET=coarse).
+    """
+    full = os.path.abspath(path)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+    rx = re.compile(pattern)
+    hours = {}
+    with open(full, encoding="utf-8") as f:
+        for line in f:
+            if not rx.search(line):
+                continue
+            m = re.search(r"\b(\d{2}):\d{2}(?::\d{2})?\b", line)
+            if m:
+                hours[m.group(1)] = hours.get(m.group(1), 0) + 1
+    if not hours:
+        return "no matching lines with a recognisable HH:MM timestamp"
+    return "\n".join(f"{h}:00 {n}" for h, n in sorted(hours.items()))
+
+
+_READ_FILE_SPEC = {
+    "name": "read_file",
+    "description": "Read a text file in the working directory (first 4000 characters).",
+    "parameters": {"type": "object",
+                   "properties": {"path": {"type": "string"}},
+                   "required": ["path"]}}
+_COUNT_PATTERN_SPEC = {
+    "name": "count_pattern",
+    "description": "Count the lines of a text file that match a regular expression.",
+    "parameters": {"type": "object",
+                   "properties": {"path": {"type": "string"},
+                                  "pattern": {"type": "string"}},
+                   "required": ["path", "pattern"]}}
+_COUNT_BY_HOUR_SPEC = {
+    "name": "count_by_hour",
+    "description": ("Count the lines of a text file that match a regular expression, "
+                    "grouped by the clock hour of each line's HH:MM timestamp. "
+                    "Returns one 'HH:00 count' line per hour that has a match."),
+    "parameters": {"type": "object",
+                   "properties": {"path": {"type": "string"},
+                                  "pattern": {"type": "string"}},
+                   "required": ["path", "pattern"]}}
+
+# Tool granularity is element 2 of the five. It is a constant within any one
+# A/B — both harnesses import whatever this module exposes — but it can be
+# switched between experiments. "fine" is the starter set and the default, so
+# the runs recorded against it stay reproducible from this file unchanged.
+TOOLSET = os.environ.get("AGENT_TOOLSET", "fine")
+
+if TOOLSET == "coarse":
+    TOOLS_IMPL = {"read_file": read_file, "count_by_hour": count_by_hour}
+    TOOL_SPECS = [_READ_FILE_SPEC, _COUNT_BY_HOUR_SPEC]
+elif TOOLSET == "fine":
+    TOOLS_IMPL = {"read_file": read_file, "count_pattern": count_pattern}
+    TOOL_SPECS = [_READ_FILE_SPEC, _COUNT_PATTERN_SPEC]
+else:
+    raise SystemExit(f"AGENT_TOOLSET must be 'fine' or 'coarse', got {TOOLSET!r}")
 
 # ---------------------------------------------------------------- meter
 

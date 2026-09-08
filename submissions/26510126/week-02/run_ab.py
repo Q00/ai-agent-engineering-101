@@ -16,7 +16,7 @@ from pathlib import Path
 
 from harness_plan_execute import run_plan_execute
 from harness_react import run_react
-from tools_shared import MODEL, PROVIDER
+from tools_shared import MODEL, PROVIDER, TOOLSET
 
 HEADER = ["run", "harness", "success", "tokens", "iters", "interventions", "note"]
 
@@ -77,7 +77,7 @@ def main():
                 t0 = time.time()
                 # Which model produced the row belongs in the row. Mixing two
                 # providers in one results.csv is otherwise unreadable later.
-                note = f"{PROVIDER}:{MODEL}"
+                note = f"{PROVIDER}:{MODEL} tools={TOOLSET}"
                 try:
                     out = fn(task, log=log)
                     answer, meter = out[0], out[1]
