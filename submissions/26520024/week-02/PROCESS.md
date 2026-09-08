@@ -55,3 +55,18 @@
   A failed call with incomplete usage leaves CSV tokens blank, not invented.
 - Small fixed-order sample: no claim of statistical significance, universal
   superiority, or isolated causal effects of a single axis.
+
+## Instrumentation and offline checks
+
+- Extended the runner to capture all stdout/stderr, not only the starter's
+  log callback, so actual CLI events and usage remain in each run's log.
+  Source hashes, versions, original prompts, and full final answers are saved.
+  Existing logs are exclusively created and never overwritten. The runner
+  owns each Meter so a crash retains attempted calls and partial usage.
+- Added 17 offline tests covering file isolation, schemas, raw usage, failed
+  calls, ReAct termination, planning/replanning, approval counting, error
+  observations, and crash-log preservation. All passed in existing conda base
+  Python 3.8.19; see logs/offline-tests-01.log. Mock outputs exist only in
+  temporary test directories, never in experimental results.csv.
+- Existing Codex authentication was checked without printing credentials:
+  Codex CLI 0.153.0, ChatGPT login, reasoning low. No live pilot was used.
