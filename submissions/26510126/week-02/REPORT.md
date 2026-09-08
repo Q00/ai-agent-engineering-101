@@ -7,10 +7,12 @@ and were committed before the first run.
 
 ## 1. Variant definition
 
-Both harnesses run the same task from `TASK.md`, call the same model through
-the same `Chat` wrapper, and import the same two tools from
-`tools_shared.py`. Of the five elements, two are set differently and three
-are held constant.
+This section describes the two harnesses the assignment compares, as they
+were run in sets A and B: same task from `TASK.md`, same model through the
+same `Chat` wrapper, same two tools from `tools_shared.py`. Of the five
+elements, two are set differently and three are held constant. Set C changes
+one of the constants — the tool set — and the appendix adds a third harness;
+both are noted where they arise.
 
 ### Structure
 
@@ -57,15 +59,18 @@ The two loops differ in what ends them. ReAct's exit is a property of the
 reply — no tool calls means done — with the step cap as a backstop.
 Plan-then-Execute's exit is a property of the plan: the loop runs once per
 step the planner wrote, and a step that already contains the answer does not
-shorten it.
+shorten it. The diagram covers those two harnesses; the third one in the
+appendix is the right-hand loop with one branch added.
 
 ### Held constant
 
-**Tool granularity (element 2).** Both import `read_file` and
-`count_pattern` from `tools_shared.py`; `TOOL_SPECS` is a single module-level
-list neither harness modifies. The file is byte-identical to the starter.
-Counting ERROR lines per hour therefore costs one `count_pattern` call per
-hour in either harness.
+**Tool granularity (element 2).** Both import whatever `tools_shared.py`
+exposes; `TOOL_SPECS` is a single module-level list neither harness modifies,
+so the two always see the same tools. In sets A and B that is `read_file` and
+`count_pattern`, and counting ERROR lines per hour therefore costs one
+`count_pattern` call per hour in either harness. Set C switches the list to
+`read_file` and `count_by_hour` for both harnesses at once, which keeps the
+element constant within each set while making it the variable between them.
 
 **Human intervention point (element 5).** `IRREVERSIBLE` is the empty set in
 `harness_react.py:20`, so the approval branch at `:43` is never entered.
@@ -129,9 +134,10 @@ exception or is called with malformed arguments, and that path is the shared
 harnesses. `OFF_PLAN` is not raised by a tool. It comes either from the model
 declaring the step impossible as planned, or from the harness itself when a
 step exceeds `max_tool_rounds` (`:65`), and its remedy is a counter that caps
-how many times the loop may restructure itself. `max_replan=1` is a bound of
-the same kind as `max_steps=8` and `max_tool_rounds=3`: a limit on how long
-and in what shape the loop is allowed to continue.
+how many times the loop may restructure itself. `max_replan=1` bounds that
+count and nothing else: it does not constrain how long the replacement plan
+may be. The appendix records a run where the one permitted replan returned a
+plan almost twice the length of the original.
 
 Across the eighteen runs the two paths fired three times between them, never
 in the same run. The only genuine tool error is in `logs/plan_exec-10.txt` —
@@ -214,17 +220,6 @@ for `count_by_hour`, which returns the whole per-hour tally in one call.
 | 17 | plan_exec | O | 41,006 | 14 | 40.4s | replans=1 |
 | 18 | plan_exec | O | 28,841 | 11 | 24.7s | replans=0 |
 
-### Tool granularity, Set B against Set C
-
-Same model, same task, same harnesses; only the tool set differs.
-
-| | ReAct B → C | plan_exec B → C |
-|---|---|---|
-| tokens, median | 5,895 → **1,704** (−71%) | 34,920 → **31,956** (−8%) |
-| iters, median | 3 → 2 | 11 → 11 |
-| wall, median | 6.6s → 3.1s | 31.2s → 28.8s |
-| success | 3/3 → 3/3 | 3/3 → 3/3 |
-
 ### Harness comparison within Set B
 
 Set B is the comparable one: the model, the task and the tools are fixed and
@@ -238,6 +233,17 @@ both harnesses completed three runs.
 | iters, median | 3 | 11 | 3.7× |
 | wall, median | 6.6s | 31.2s | 4.7× |
 | tokens, spread | 5,861–6,154 (±2%) | 24,088–55,054 (±44%) | |
+
+### Tool granularity, Set B against Set C
+
+Same model, same task, same harnesses; only the tool set differs.
+
+| | ReAct B → C | plan_exec B → C |
+|---|---|---|
+| tokens, median | 5,895 → **1,704** (−71%) | 34,920 → **31,956** (−8%) |
+| iters, median | 3 → 2 | 11 → 11 |
+| wall, median | 6.6s → 3.1s | 31.2s → 28.8s |
+| success | 3/3 → 3/3 | 3/3 → 3/3 |
 
 ### Same harness across models
 
@@ -284,10 +290,16 @@ ANTHROPIC_API_KEY=<console key> AGENT_MODEL=claude-sonnet-5 \
 # Set C
 ANTHROPIC_API_KEY=<console key> AGENT_MODEL=claude-sonnet-5 \
     AGENT_TOOLSET=coarse python run_ab.py --runs 3
+
+# Appendix — the early-exit harness
+ANTHROPIC_API_KEY=<console key> AGENT_MODEL=claude-sonnet-5 \
+    python run_early.py --runs 3
 ```
 
-Python 3.12.14; `openai` 3.6.0 for Set A, `anthropic` 1.4.0 for Set B.
-Console captures are in `logs/`, one file per run, named `<harness>-<run>.txt`.
+Python 3.12.14; `openai` 3.6.0 for Set A, `anthropic` 1.4.0 for Sets B and C
+and for the appendix. Console captures are one file per run: `logs/` for the
+eighteen runs in `results.csv`, named `<harness>-<run>.txt`, and `logs_early/`
+for the three in `results_early.csv`.
 
 ### Reading the tables
 
@@ -302,9 +314,10 @@ Four things about the measurements themselves, before any interpretation:
    cells even though run 5 had made roughly eleven model calls before dying.
    Set A's plan_exec token figure is therefore an undercount of what was
    actually spent.
-3. **The `note` column carries `provider:model` from run 7 onward.** Rows 1–6
-   predate that change; they were all
-   `nvidia/nemotron-3.5-lightning:free`, recorded in the commit that added them.
+3. **The `note` column was filled in gradually.** `provider:model` appears
+   from run 7 and `tools=` from run 13, each starting with the runs after it
+   was added to `run_ab.py`. Rows before those points are covered by the run
+   conditions table above and by the commits that produced them.
 4. **The success criterion checks the last `Answer:` line, not the whole
    response.** A plain substring match over the full text would score a run O
    whenever it named 14:00 anywhere while concluding otherwise, and the two
@@ -350,8 +363,8 @@ iterations unchanged at 11. Tool granularity mattered to ReAct because the
 number of calls it makes is determined by what the work needs, so making the
 work cheaper makes the loop shorter. It barely mattered to Plan-then-Execute
 because the number of calls is determined by the length of the plan, which a
-better tool does not shorten: the planner still wrote five or six steps and
-the executor still walked all of them. The same element moved one harness and
+better tool does not shorten: the planner wrote six steps in each of the three
+Set C runs, as it had in Set B, and the executor still walked all of them. The same element moved one harness and
 not the other, and which one it moved was decided by the termination
 condition.
 
@@ -392,6 +405,18 @@ Against Set B's Plan-then-Execute (median 34,920 tokens, 11 iterations):
 | tokens, median | 34,920 | 10,666 | −69% |
 | iters, median | 11 | 4 | −64% |
 | tokens, worst | 55,054 | 876,769 | 16× worse |
+
+The planner's output length is not stable between the two groups. Counting
+the steps in every plan logged: the nine Plan-then-Execute runs in sets A, B
+and C produced plans of five or six steps, while the three early-exit runs
+produced 27, 28 and 28. The planner's system prompt, its first user message,
+the model and the tool set are identical across both groups — `SYSTEM_PLAN`
+and the `planner.add_user` string are byte-identical between
+`harness_plan_execute.py` and `harness_plan_execute_early.py`, both groups ran
+`claude-sonnet-5`, and `results_early.csv` records `tools=fine`. The
+difference is in what the model returned, not in the harness. The medians
+below are therefore compared across plans of unequal length: the Set B runs
+walked five or six steps, and the early-exit runs skipped 26 or 27.
 
 Two of the three runs behave the way the branch was meant to: the model
 volunteers an answer at step 1 and the remaining 26 or 27 steps are dropped,
