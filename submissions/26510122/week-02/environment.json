@@ -27,5 +27,17 @@
     "tqdm==4.70.0",
     "typing-inspection==0.4.4",
     "typing_extensions==4.16.0"
-  ]
+  ],
+  "cohorts": {
+    "pilot_runs_1_to_4": {
+      "max_tokens": "provider default",
+      "run_deadline": "none; run 4 manually interrupted"
+    },
+    "bounded_runs_5_to_10": {
+      "max_tokens": 2048,
+      "run_deadline_seconds": 180,
+      "order": "react x3 then plan_exec x3",
+      "usage_on_failure": "completed responses only; lower bound"
+    }
+  }
 }
