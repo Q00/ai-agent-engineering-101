@@ -1,23 +1,28 @@
-"""Week 02 starter — run the A/B experiment and record results.csv.
+"""Run supplied harnesses, append real measurements, preserve raw logs.
 
-Usage: python run_ab.py [--runs 3]
-
-Reads the task and the success criterion from TASK.md, runs each harness
---runs times, judges every run, appends one line per run to results.csv,
-and saves each run's console output under logs/. Failed runs are kept:
-they are data.
+python run_ab.py --check       readiness check without making an API call
+python run_ab.py --runs 3      three runs per harness, failures included
 """
 import argparse
 import csv
+import hashlib
+import importlib.util
+import json
 import os
+import platform
 import re
+import subprocess
 import time
+from datetime import datetime, timezone
+from importlib.metadata import version
 from pathlib import Path
 
-from harness_plan_execute import run_plan_execute
-from harness_react import run_react
+from harness_plan_execute import SYSTEM_EXEC, SYSTEM_PLAN, run_plan_execute
+from harness_react import SYSTEM, run_react
+from tools_shared import BASE_URL, MAX_TOKENS, MODEL, TEMPERATURE, TIMEOUT, TOOL_SPECS, Meter
 
 HEADER = ["run", "harness", "success", "tokens", "iters", "interventions", "note"]
+ROOT = Path(__file__).resolve().parent
 
 
 def read_task(path="TASK.md"):
@@ -25,66 +30,148 @@ def read_task(path="TASK.md"):
     task = re.search(r"^task:\s*(.+)$", text, flags=re.M)
     expected = re.search(r"^expected:\s*(.+)$", text, flags=re.M)
     if not task or not expected:
-        raise SystemExit("TASK.md needs a 'task:' line and an 'expected:' line")
+        raise ValueError("TASK.md needs a 'task:' line and an 'expected:' line")
     return task.group(1).strip(), expected.group(1).strip()
 
 
 def judge(answer: str, expected: str) -> bool:
-    """Success = the expected string appears in the final answer. Fix the
-    criterion in TASK.md before running; do not loosen it afterwards."""
+    """The starter's precommitted criterion: expected occurs in final answer."""
     return expected.lower() in (answer or "").lower()
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--runs", type=int, default=3)
-    args = ap.parse_args()
+def git(*args):
+    return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout.strip()
 
+
+def preflight():
+    problems = []
+    if not (os.environ.get("OPENROUTER_API_KEY") or os.environ.get("OPENAI_API_KEY")):
+        problems.append("OPENROUTER_API_KEY is not set; live runs skipped")
+    if importlib.util.find_spec("openai") is None:
+        problems.append("Install requirements.txt with this Python interpreter")
+    if not MODEL.endswith(":free"):
+        problems.append("AGENT_MODEL must end in :free; automatic model routing is not allowed")
+    try:
+        git("ls-files", "--error-unmatch", "TASK.md")
+        git("diff", "--exit-code", "HEAD", "--", "TASK.md")
+        git("show", "HEAD:submissions/26512072/week-02/TASK.md")
+    except (OSError, subprocess.CalledProcessError):
+        problems.append("Commit TASK.md with the success criterion before running")
+    if not Path("app.log").is_file():
+        problems.append("The unchanged starter app.log is required")
+    return problems
+
+
+def conditions(task, expected, max_steps):
+    sources = ["TASK.md", "app.log", "tools_shared.py", "harness_react.py",
+               "harness_plan_execute.py", "run_ab.py", "requirements.txt"]
+    return {
+        "provider": "OpenRouter", "base_url": BASE_URL, "model": MODEL,
+        "task": task, "expected": expected, "tools": TOOL_SPECS,
+        "prompts": {"react": SYSTEM, "plan": SYSTEM_PLAN, "execute": SYSTEM_EXEC},
+        "max_steps": max_steps, "max_replan": 1, "max_tool_rounds": 3,
+        "max_tokens": MAX_TOKENS, "temperature": TEMPERATURE,
+        "timeout_seconds": TIMEOUT, "sdk_retries": 0,
+        "iters_definition": "attempted model calls, including plan and final answer",
+        "tokens_definition": "sum of input and output usage reported by the API",
+        "interventions_definition": "human approvals plus human denials; replans excluded",
+        "run_order": "alternating react, plan_exec", "seed": None,
+        "python": platform.python_version(), "openai": version("openai"),
+        "git_commit": git("rev-parse", "HEAD"),
+        "git_status": git("status", "--short", "--", "."),
+        "sha256": {name: hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in sources},
+    }
+
+
+def next_run_number():
+    seen = [0]
+    if Path("results.csv").exists() and Path("results.csv").stat().st_size:
+        with open("results.csv", newline="", encoding="utf-8") as stream:
+            reader = csv.DictReader(stream)
+            if reader.fieldnames != HEADER:
+                raise ValueError("Existing results.csv has a different header; leave it intact")
+            seen.extend(int(row["run"]) for row in reader)
+    for path in Path("logs").glob("*.txt"):
+        match = re.fullmatch(r"(?:react|plan_exec)-(\d+)", path.stem)
+        if match:
+            seen.append(int(match[1]))
+    return max(seen) + 1
+
+
+def run_one(run_no, name, fn, task, expected, config):
+    path = Path("logs", f"{name}-{run_no:02d}.txt")
+    # Exclusive creation protects previous attempts. Flush every event so an
+    # interrupted process still leaves its transcript.
+    with path.open("x", encoding="utf-8") as stream:
+        def log(message):
+            print(message, flush=True)
+            stream.write(str(message) + "\n")
+            stream.flush()
+
+        meter = Meter(max_steps=config["max_steps"], log=log)
+        log("[conditions] " + json.dumps(config, ensure_ascii=False))
+        log(f"[run] {run_no} {name} {datetime.now(timezone.utc).isoformat()}")
+        started = time.monotonic()
+        note = ""
+        crashed = False
+        try:
+            out = fn(task, max_steps=config["max_steps"], log=log, meter=meter)
+            answer = out[0]
+            if name == "plan_exec":
+                note = f"replans={out[2]}"
+        except (Exception, KeyboardInterrupt) as error:
+            crashed = True
+            answer = ""
+            note = f"crash: {type(error).__name__}: {error}; tokens=reported_usage_only"
+            log(note)
+        success = not crashed and judge(answer, expected)
+        log("[final]\n" + answer)
+        log(f"[judge] expected={expected!r} -> {'O' if success else 'X'}")
+        log(f"[metrics] tokens={meter.tokens} iters={meter.iters} "
+            f"interventions={meter.interventions} seconds={time.monotonic() - started:.3f}")
+        return [run_no, name, "O" if success else "X", meter.tokens,
+                meter.iters, meter.interventions, note]
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--runs", type=int, default=3, help="runs per harness")
+    parser.add_argument("--max-steps", type=int, default=16, help="model calls per run, both harnesses")
+    parser.add_argument("--check", action="store_true", help="readiness only; no API call or result rows")
+    args = parser.parse_args(argv)
+    if args.runs < 1 or args.max_steps < 1:
+        parser.error("--runs and --max-steps must be positive")
+    os.chdir(ROOT)
     task, expected = read_task()
+    problems = preflight()
+    print(f"provider=OpenRouter model={MODEL} max_steps={args.max_steps}")
+    if problems:
+        for problem in problems:
+            print("NOT READY: " + problem)
+        return 1
+    if args.check:
+        print("READY: no API call made")
+        return 0
+    config = conditions(task, expected, args.max_steps)
+    run_no = next_run_number()
     Path("logs").mkdir(exist_ok=True)
-    new_file = not Path("results.csv").exists()
-    run_no = 0
-    if not new_file:
-        with open("results.csv", encoding="utf-8") as f:
-            run_no = sum(1 for _ in f) - 1
-
-    with open("results.csv", "a", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
+    new_file = not Path("results.csv").exists() or not Path("results.csv").stat().st_size
+    with open("results.csv", "a", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
         if new_file:
-            w.writerow(HEADER)
-        for name, fn in (("react", run_react), ("plan_exec", run_plan_execute)):
-            for _ in range(args.runs):
+            writer.writerow(HEADER)
+            stream.flush()
+        for _ in range(args.runs):
+            for name, fn in (("react", run_react), ("plan_exec", run_plan_execute)):
+                row = run_one(run_no, name, fn, task, expected, config)
+                writer.writerow(row)
+                stream.flush()
                 run_no += 1
-                lines = []
-
-                def log(msg, _lines=lines):
-                    print(msg)
-                    _lines.append(str(msg))
-
-                t0 = time.time()
-                note = ""
-                try:
-                    out = fn(task, log=log)
-                    answer, meter = out[0], out[1]
-                    if name == "plan_exec":
-                        note = f"replans={out[2]}"
-                except Exception as e:            # a crash is a failed run, not a lost run
-                    answer, meter, note = "", None, f"crash: {type(e).__name__}: {e}"
-                    log(note)
-                success = judge(answer, expected)
-                log(f"[final] {answer.strip()[:300]}")
-                log(f"[judge] expected={expected!r} -> {'O' if success else 'X'} "
-                    f"({time.time() - t0:.1f}s)")
-
-                Path("logs", f"{name}-{run_no:02d}.txt").write_text(
-                    "\n".join(lines) + "\n", encoding="utf-8")
-                w.writerow([run_no, name, "O" if success else "X",
-                            meter.tokens if meter else "",
-                            meter.iters if meter else "",
-                            meter.interventions if meter else "", note])
-                f.flush()
-    print("\nresults.csv updated;", os.path.abspath("results.csv"))
+                if "KeyboardInterrupt" in row[-1]:
+                    return 130
+    print("results.csv updated:", ROOT / "results.csv")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
