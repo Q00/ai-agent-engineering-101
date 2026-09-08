@@ -49,6 +49,8 @@ def read_file(path: str) -> str:
 # ---- tool 3 : weather ----
 
 import urllib.request
+import ssl
+import certifi
 
 
 def fetch_url(url: str) -> str:
@@ -57,7 +59,13 @@ def fetch_url(url: str) -> str:
         return "denied: only HTTP/HTTPS URLs are allowed"
 
     try:
-        with urllib.request.urlopen(url, timeout=10) as response:
+        context = ssl.create_default_context(cafile=certifi.where())
+
+        with urllib.request.urlopen(
+            url,
+            timeout=10,
+            context=context
+        ) as response:
             data = response.read()
 
         return data.decode("utf-8")[:5000]
