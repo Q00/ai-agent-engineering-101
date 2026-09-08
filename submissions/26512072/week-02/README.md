@@ -2,8 +2,10 @@
 
 학번: 26512072 / GitHub: BJEon01
 
-현재 상태: 실행 준비와 오프라인 검증을 완료했다. API 키 환경변수가 없어 실제
-A/B 실험은 수행하지 않았다. `results.csv`는 헤더만 있고, 실제 로그와 해석은 아직 없다.
+현재 상태: 2026-09-08에 실제 A/B 실험 6회를 완료했다. ReAct는 3/3 성공,
+Plan-then-Execute는 0/3 성공(모두 최초 계획 JSON 파싱 실패)이었다.
+`results.csv`와 `logs/`에 실패를 포함한 원본 측정이 있고, `REPORT.md`에는 학생이 제시한
+가설을 실제 로그와 대조한 해석을 반영했다.
 `test_harnesses.py`의 가짜 응답은 프로그램 검증 전용이며 실험 결과에 포함하지 않는다.
 
 ## 고정 조건
@@ -83,8 +85,9 @@ Push-Location submissions/26512072/week-02
 Pop-Location
 ```
 
-실제 API 실행 전에는 구조 검사에서 실행 수와 로그 수가 부족하다고 나오는 것이 맞다.
-`REPORT.md`는 작성 틀이므로 파일 존재 검사가 통과해도 보고서가 완성된 것은 아니다.
+구조 검사는 실제 6회 실행 후 통과했다. 다만 모델이 명시적인 Thought: 표기를 일부
+생략했고, 계획 파싱 실패 실행에는 Observation이 없다. 이 한계는 REPORT.md에 기록했다.
+구조 검사가 통과해도 로그 내용과 본인의 해석까지 검증한 것은 아니다.
 
 근거: [수업 과제](../../../weeks/week-02/README.md),
 [OpenRouter 연결](https://openrouter.ai/docs/quickstart),
