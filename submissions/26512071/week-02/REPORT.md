@@ -30,6 +30,107 @@
 
 즉 움직인 축은 세 개다: **컨텍스트 관리, 종료 조건, 오류 복구.** 도구 세분화는 설계상 고정했고, 인간 개입 지점은 두 도구가 모두 읽기 전용이라 이 실험으로는 검증되지 않는다.
 
+### 1-1. ReAct 하네스의 제어 흐름
+
+`harness_react.py`의 실제 분기다. 다섯 축이 어느 지점에 박혀 있는지 표시했다.
+
+```mermaid
+flowchart TD
+    S["Chat 생성: SYSTEM + add_user task<br/>축1 컨텍스트: 대화 하나에 전부 누적"] --> L{"step < max_steps<br/>축3 반복 상한"}
+    L -->|"아니오"| MX["return MAX_STEPS reached: incomplete<br/>실패 모드: 답을 알아도 말할 턴이 없음"]
+    L -->|"예"| SEND["chat.send<br/>Meter: iters +1, tokens 누적"]
+    SEND --> TC{"응답에 tool_calls 있음?"}
+    TC -->|"없음"| FIN["return reply.text<br/>축3 모델이 종료를 선언"]
+    TC -->|"있음"| IRR{"도구가 IRREVERSIBLE 집합에?<br/>축5 개입 지점"}
+    IRR -->|"예"| ASK{"ask_human 승인?"}
+    ASK -->|"거부"| DEN["interventions +1<br/>결과로 denied 문자열 주입"]
+    ASK -->|"승인"| RUN
+    IRR -->|"아니오"| RUN["run_tools 실행<br/>축2 도구 세분화는 tools_shared 소관"]
+    RUN --> ERR{"도구가 예외를 던졌나?<br/>축4 오류 복구"}
+    ERR -->|"예"| EOBS["error 문자열을 관찰로 되돌림"]
+    ERR -->|"아니오"| OBS["결과를 관찰로 되돌림"]
+    DEN --> NEXT
+    EOBS --> NEXT
+    OBS --> NEXT["다음 스텝<br/>관찰이 컨텍스트에 그대로 쌓임"]
+    NEXT --> L
+```
+
+이 실험에서 `IRREVERSIBLE`은 빈 집합이므로 `ASK` 경로는 한 번도 실행되지 않았고, 그래서 모든 런의 개입이 0이다.
+
+### 1-2. Plan-then-Execute 하네스의 제어 흐름
+
+`harness_plan_execute.py`의 실제 분기다. 강조한 세 곳이 이 하네스에만 있는 실패 모드다.
+
+```mermaid
+flowchart TD
+    P0["planner = Chat: SYSTEM_PLAN, tools 없음<br/>축1 계획자는 과제만 본다"] --> P1["planner.send<br/>Meter +1"]
+    P1 --> P2{"parse_plan: 순수 JSON 리스트인가?"}
+    P2 -->|"아니오"| PF["return plan parse failed<br/>실패 모드 1: 계획 파싱 실패"]
+    P2 -->|"예"| E0["executor = Chat: SYSTEM_EXEC, tools 있음<br/>축1 실행자는 전 스텝 전부를 계속 들고 간다"]
+    E0 --> W{"i < 계획 길이<br/>축3 종료는 계획 길이가 결정"}
+    W -->|"아니오"| FA["add_user: 최종 답변을 말하라<br/>executor.send"]
+    W -->|"예"| ST["add_user: Execute step i<br/>executor.send  Meter +1"]
+    ST --> R{"tool_calls 있음?"}
+    R -->|"있음"| RT["run_tools 후 다시 send<br/>rounds +1, Meter +1"]
+    RT --> BUD{"rounds >= max_tool_rounds?"}
+    BUD -->|"예"| OP["OFF_PLAN 강제 주입<br/>실패 모드 2: 스텝 예산 초과"]
+    BUD -->|"아니오"| R
+    R -->|"없음"| CK
+    OP --> CK{"OFF_PLAN 이고 replans < max_replan?<br/>축4 유연성 상한 1회"}
+    CK -->|"예"| RP["replans +1<br/>planner에 실패를 알리고 재계획 요청  Meter +1"]
+    RP --> RPP{"재계획도 JSON 파싱 성공?"}
+    RPP -->|"아니오"| BRK["break: 실행 루프 중단<br/>실패 모드 3: 재계획 파싱 실패"]
+    RPP -->|"예"| NEWP["남은 계획을 새 스텝들로 교체<br/>i 는 그대로 = 같은 스텝 재시도"]
+    NEWP --> W
+    CK -->|"아니오"| INC["i +1"]
+    INC --> W
+    BRK --> FA
+    FA --> FT{"최종 응답에도 tool_calls?"}
+    FT -->|"있음"| FR["run_tools 후 다시 send  Meter +1"]
+    FT -->|"없음"| DONE["return 최종 답변, meter, replans"]
+    FR --> DONE
+
+    classDef bad fill:#3a1a1a,stroke:#c0392b,color:#f5d5d5
+    class PF,OP,BRK bad
+```
+
+`plan_exec-03.txt`가 실패 모드 2를 거쳐 실패 모드 3으로 빠진 런이다. `BRK`에서 실행 루프가 끊겼는데도 `FA`는 실행되므로 최종 답변은 나왔다.
+
+### 1-3. 축1 컨텍스트 관리의 차이
+
+같은 과제를 푸는 동안 두 하네스가 모델에게 무엇을 보여 주는지가 다르다. `Meter`는 `send` 호출마다 1씩 오르므로, 아래에서 모델을 향한 화살표의 개수가 곧 `iters`다.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant H as 하네스
+    participant P as planner Chat
+    participant X as executor Chat
+    participant T as 도구
+
+    Note over H,X: ReAct 에는 P 가 없다. X 하나와 루프 하나뿐이다.
+
+    H->>P: 과제 + 도구 이름만
+    P-->>H: JSON 계획
+    H->>X: 과제 + 계획 전체
+    loop 계획의 각 스텝
+        H->>X: Execute step i
+        X-->>H: tool_calls 또는 텍스트
+        opt 도구를 부른 경우
+            H->>T: 도구 실행
+            T-->>X: 결과를 트랜스크립트에 누적
+            H->>X: 결과를 포함해 재요청
+            X-->>H: 다음 응답
+        end
+    end
+    H->>X: 최종 답변을 말하라
+    X-->>H: Answer
+
+    Note over X: 스텝이 늘어도 X 의 트랜스크립트는 잘리지 않는다. 이것이 70k 토큰의 출처다.
+```
+
+계획자는 도구도 관찰도 보지 못한다. 그래서 재계획을 요청받았을 때 실행 중 무슨 일이 있었는지를 실패 메시지 한 줄로만 안다.
+
 ## 2. 측정치
 
 `results.csv` 원본 (`O` = 성공, `X` = 실패):
