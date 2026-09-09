@@ -8,7 +8,7 @@ Instructor: Jaegyu Lee ([@Q00](https://github.com/Q00))
 
 ## Lecture notes
 
-`index.html` is the course home; `week-NN.html` is that week's note. Weeks 01 and 02 are up; the rest are published as the semester goes on.
+`index.html` is the course home; `week-NN.html` is that week's note. Weeks 01 through 03 are up; the rest are published as the semester goes on.
 
 ## How submission works: fork and PR
 

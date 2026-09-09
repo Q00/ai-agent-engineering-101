@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Week 03: Classical MAS 1: Contract Net</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;
+  --ink:#1C1917;
+  --body:#44403C;
+  --muted:#78716C;
+  --faint:#A8A29E;
+  --line:#E7E5E4;
+  --wash:#FAFAF9;
+  --link:#2563EB;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --sans:'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  --serif:Fraunces, 'Noto Serif KR', Georgia, serif;
+  --maxw:680px;
+  --r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--body);
+  font-family:var(--sans);
+  font-weight:400;
+  line-height:1.8;
+  font-size:15.5px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--ink);color:var(--paper)}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- layout ---------- */
+.sheet{max-width:1040px;margin:0 auto;padding:0 24px}
+.col{max-width:var(--maxw);margin:0 auto;position:relative}
+
+/* ---------- header ---------- */
+header.doc{padding:40px 0 0}
+.topnav{font-family:var(--mono);font-size:11px;letter-spacing:.04em;margin-bottom:56px;display:flex;justify-content:space-between;gap:16px}
+
+.masthead{padding-bottom:64px;border-bottom:1px solid var(--line)}
+.masthead .wk{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:16px;
+}
+h1.title{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(30px,4.6vw,44px);line-height:1.2;
+  letter-spacing:-0.01em;color:var(--ink);text-wrap:balance;
+}
+h1.title .en{display:block;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:.06em;margin-top:14px}
+.lede{
+  margin-top:26px;max-width:560px;font-size:16px;line-height:1.85;color:var(--muted);
+}
+.lede .q{font-weight:600;color:var(--ink)}
+
+/* ---------- section scaffolding ---------- */
+section{padding:56px 0 8px}
+.secmark{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:32px;
+  border-top:1px solid var(--line);padding-top:20px;
+}
+.secmark .no{
+  font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--faint);
+  letter-spacing:.12em;white-space:nowrap;text-transform:uppercase;
+}
+.secmark h2{font-family:var(--serif);font-weight:500;font-size:clamp(21px,2.8vw,26px);line-height:1.3;letter-spacing:-0.005em;color:var(--ink);text-wrap:balance}
+h3{font-family:var(--serif);font-weight:500;font-size:18px;margin:44px 0 14px;color:var(--ink)}
+h3 .tag{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.12em;display:block;margin-bottom:6px;font-weight:500}
+p{margin-bottom:20px}
+strong{font-weight:600;color:var(--ink)}
+em{font-style:normal;font-weight:600;color:var(--ink);box-shadow:inset 0 -0.35em 0 rgba(28,25,23,.07)}
+.small{font-size:13.5px;color:var(--muted)}
+.nb{white-space:nowrap}
+
+/* part banner */
+.part{
+  margin:72px 0 8px;border-top:2px solid var(--ink);
+  padding:24px 0 6px;
+}
+.part .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase}
+.part h2{font-family:var(--serif);font-weight:500;font-size:clamp(20px,2.6vw,25px);line-height:1.35;color:var(--ink)}
+.part .meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:10px;letter-spacing:.03em}
+
+/* marginalia */
+.note{
+  font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--faint);
+  border-left:2px solid var(--line);padding-left:12px;margin:26px 0;
+}
+@media(min-width:1120px){
+  .note{position:absolute;width:190px;left:calc(50% + var(--maxw)/2 + 36px);margin:0;transform:translateY(-100%)}
+}
+.note b{color:var(--muted);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.08em}
+
+/* pull quote */
+.pull{
+  margin:40px 0;padding:2px 0 2px 24px;border-left:2px solid var(--ink);
+  font-family:var(--serif);font-size:19px;line-height:1.65;font-weight:500;color:var(--ink);
+}
+.pull .src{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-top:10px;letter-spacing:.03em}
+
+/* definition */
+.define{margin:48px 0;background:var(--wash);border:1px solid var(--line);border-radius:var(--r);padding:32px 32px 26px;position:relative}
+.define::before{
+  content:"DEFINITION";position:absolute;top:14px;left:32px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);font-weight:500;
+}
+.define p{margin:16px 0 0;font-family:var(--serif);font-size:clamp(16px,2.1vw,19px);line-height:1.7;font-weight:500;color:var(--ink)}
+.define .sub{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted);margin-top:14px}
+.define ul{margin:14px 0 0 22px;padding:0}
+.define li{font-family:var(--serif);font-size:clamp(15px,2vw,17px);line-height:1.9;font-weight:500;color:var(--ink)}
+@media(max-width:640px){.define{padding:28px 20px 22px}.define::before{left:20px}}
+
+/* instructor */
+.bio{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 28px 20px}
+.bio{display:flex;gap:28px;align-items:flex-start}
+.bio .photo{flex:0 0 210px;width:210px;height:262px;object-fit:cover;object-position:38% 12%;border-radius:6px;display:block}
+.bio .info{flex:1 1 auto;min-width:0}
+.bio .name{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:2px}
+.bio .role{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase}
+.bio p{font-size:14px;line-height:1.85;color:var(--body);margin-bottom:12px}
+.bio .links{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+.bio .links a{white-space:nowrap}
+.bio .links span{color:var(--faint);margin:0 8px}
+@media(max-width:640px){.bio{flex-direction:column}.bio .photo{width:100%;height:200px;flex:none}.bio{padding:22px 18px 16px}}
+
+/* table */
+.tbl-wrap{margin:28px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.7}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-align:left;text-transform:uppercase;
+  border-bottom:1px solid var(--ink);
+  padding:10px 14px;font-weight:500;color:var(--muted);
+}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.stage{font-weight:600;color:var(--ink);white-space:nowrap;font-size:13px}
+td .m{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+/* figure */
+.fig{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 14px}
+.fig .cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+  margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.fig .cap b{color:var(--muted);font-weight:500}
+.fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block}
+svg text{font-family:var(--mono)}
+
+/* code */
+.code{
+  margin:28px 0;background:var(--wash);color:var(--ink);
+  font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  padding:20px 22px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+}
+.code .file{
+  display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:14px;font-weight:500;text-transform:uppercase;
+}
+.code pre{font-family:inherit;white-space:pre;margin:0}
+.code .cm{color:var(--faint)}
+.code .kw{color:#1D4ED8}
+.code .st{color:#15803D}
+code.inline{
+  font-family:var(--mono);font-size:.85em;background:var(--wash);
+  padding:2px 6px;border:1px solid var(--line);border-radius:4px;white-space:nowrap;
+}
+
+/* numbered steps */
+.pre{counter-reset:pre;margin:24px 0}
+.pre>li{list-style:none;position:relative;padding:16px 0 16px 48px;border-bottom:1px solid var(--line)}
+.pre>li:first-child{border-top:1px solid var(--line)}
+.pre>li::before{
+  counter-increment:pre;content:counter(pre);
+  position:absolute;left:4px;top:18px;width:24px;height:24px;
+  border:1px solid var(--faint);border-radius:50%;color:var(--muted);
+  font-family:var(--mono);font-weight:500;font-size:11.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.pre b.lead{font-weight:600;color:var(--ink)}
+
+/* discussion */
+.open{border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;margin:40px 0;background:var(--wash)}
+.open .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.open ol{margin-left:20px}
+.open li{margin-bottom:12px;line-height:1.8}
+@media(max-width:640px){.open{padding:20px 18px}}
+
+/* checkpoint */
+.check{margin:28px 0;border:1px solid var(--ink);border-radius:var(--r);padding:18px 22px 14px}
+.check .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--paper);background:var(--ink);border-radius:4px;display:inline-block;padding:3px 9px;font-weight:500;margin-bottom:12px}
+.check ul{margin-left:20px}
+.check li{margin-bottom:8px;line-height:1.75}
+
+/* recorder metrics */
+.recorder{margin:32px 0;border-top:1px solid var(--ink)}
+.recorder>div{display:flex;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+.recorder .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);font-weight:500;flex:0 0 120px;padding-top:3px;text-transform:uppercase}
+.recorder .v{font-size:13.5px;line-height:1.7;color:var(--body)}
+@media(max-width:640px){.recorder>div{flex-direction:column;gap:4px}}
+
+/* notice */
+.notice{margin:36px 0;border:1px solid var(--line);border-radius:var(--r);padding:24px 26px 18px}
+.notice .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.notice p{margin-bottom:13px;font-size:14px}
+.notice ul{margin:0 0 13px 22px}
+.notice li{margin-bottom:8px;font-size:13.5px;line-height:1.75}
+@media(max-width:640px){.notice{padding:20px 18px 14px}}
+
+/* homework */
+.hw{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.hw .head{
+  border-bottom:1px solid var(--line);background:var(--wash);padding:11px 22px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;font-weight:500;color:var(--muted);text-transform:uppercase;
+}
+.hw .body{padding:22px 24px 8px}
+.hw .due{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.05em;margin-bottom:13px;font-weight:500}
+
+/* readings */
+.readings{margin:24px 0}
+.readings>li{list-style:none;position:relative;padding:18px 0 18px 60px;border-bottom:1px solid var(--line)}
+.readings>li:first-child{border-top:1px solid var(--line)}
+.readings .badge{
+  position:absolute;left:0;top:20px;
+  font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.06em;
+  padding:3px 8px;border-radius:4px;
+}
+.readings .badge.req{background:var(--ink);color:var(--paper)}
+.readings .badge.opt{border:1px solid var(--faint);color:var(--faint)}
+.readings b.lead{font-weight:600;color:var(--ink)}
+.readings .why{display:block;font-size:13px;color:var(--muted);margin-top:6px}
+
+/* next week */
+.next{margin:64px 0 0;border-top:2px solid var(--ink);padding-top:22px}
+.next .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:12px;text-transform:uppercase}
+.next p{font-size:14px;color:var(--body)}
+
+/* footer */
+footer{
+  margin-top:64px;border-top:1px solid var(--line);
+  padding:20px 0 56px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.03em;
+}
+footer .o{color:var(--muted)}
+
+@media(max-width:640px){body{font-size:15px}}
+@media print{
+  body{font-size:10.5pt}
+  .topnav{display:none}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="doc">
+  <div class="col">
+    <div class="topnav"><a href="index-en.html">← COURSE HOME</a><a href="week-03.html">KO</a></div>
+    <div class="masthead">
+      <div class="wk">WEEK 03</div>
+      <h1 class="title">Classical MAS 1: Contract Net
+        <span class="en">고전 MAS 1: Contract Net</span>
+      </h1>
+      <p class="lede"><span class="q">If a market for dividing work among agents was designed in 1980, why did it not take hold?</span> We implement Smith 1980's announce, bid, and award as written, swap only the contractor for an LLM, and measure how allocation quality and message count change.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ Outline ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">01</span><h2>Outline</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Part</th><th>Content</th></tr>
+        <tr><td class="stage">A1</td><td>The Contract Net Protocol: announce, bid, award</td></tr>
+        <tr><td class="stage">A2</td><td>The lineage of market-based task allocation and its three walls</td></tr>
+        <tr><td class="stage">A3</td><td>Computed bids, judged bids, and the design of a reproduction</td></tr>
+        <tr><td class="stage">Discussion</td><td>Overconfident bidding and market collapse</td></tr>
+        <tr><td class="stage">LAB</td><td>Reproduction with one manager and three contractors</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PART A ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART A: LECTURE</div>
+    <h2>The Contract Net Protocol: dividing work by negotiation</h2>
+    <div class="meta">A1 the Contract Net Protocol, A2 lineage and three walls, A3 judged bids and the reproduction design, discussion</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A1</span><h2>The Contract Net Protocol: announce, bid, award</h2></div>
+    <p>For two weeks there was one agent. Now suppose there are three. One is good at arithmetic, one at writing, one at code. A task comes in and someone has to decide who takes it. The first protocol to solve that is Reid G. Smith's &ldquo;The Contract Net Protocol: High-Level Communication and Control in a Distributed Problem Solver&rdquo;, published in IEEE Transactions on Computers in 1980.</p>
+
+    <p>Smith's setting is this. Several computers share one large problem. Each computer knows only what it can do. There is no central computer that sees everything and says &ldquo;you do this, you do that&rdquo;. Smith called the problem of deciding which computer takes which job the <span class="nb">connection problem</span>, and his answer was negotiation. The side with a job asks &ldquo;who can do this?&rdquo;, the side that can says &ldquo;I will&rdquo;, and when they agree the assignment is done.</p>
+
+    <div class="define">
+      <p>The Contract Net Protocol is a procedure for dividing work. The side with a job (the manager) announces it, the sides that can do it (contractors) bid, and the manager picks one and awards it.</p>
+      <p class="sub">R. G. Smith, &ldquo;The Contract Net Protocol&rdquo; (1980): &ldquo;Task distribution is affected by a negotiation process, a discussion carried on between nodes with tasks to be executed and nodes that may be able to execute those tasks.&rdquo;</p>
+    </div>
+
+    <p>Smith wrote down four properties of this negotiation. Nobody controls it from the center, information flows both ways, each side judges by its own criteria, and the two sides choose each other (<span class="nb">mutual selection</span>). A contractor picks, among several announcements, the ones that fit it; a manager picks, among several bids, one. Neither side can simply designate the other.</p>
+
+    <div class="pull">A contract is established by a process of local mutual selection based on a two-way transfer of information.<span class="src">R. G. Smith, &ldquo;The Contract Net Protocol&rdquo; (1980)</span></div>
+
+    <p>One assignment has four steps. The side with a job becomes the <strong>manager</strong> and issues a <span class="nb">task announcement</span>. The announcement carries four things: what the job is (task abstraction), who may bid (eligibility specification), what a bid must contain (bid specification), and the deadline (expiration time). Eligible sides send a <span class="nb">bid</span>, which states what they can do (node abstraction). The manager compares the bids, picks one, and sends an <span class="nb">award</span>. The awarded side becomes the <strong>contractor</strong>, does the job, and reports the result.</p>
+
+<div class="fig" id="fig1">
+      <svg viewBox="0 0 680 330" role="img" aria-label="One contract net cycle: the manager broadcasts a task announcement, contractors A and B bid, C stays silent, the manager awards to A, A reports the result">
+        <g fill="#1C1917" font-size="12" font-weight="600" text-anchor="middle">
+          <text x="90" y="28">Manager</text>
+          <text x="290" y="28">Contractor A</text>
+          <text x="470" y="28">Contractor B</text>
+          <text x="620" y="28" fill="#78716C" font-weight="500">Contractor C</text>
+        </g>
+        <g stroke="#A8A29E" stroke-width="1" stroke-dasharray="3 4">
+          <line x1="90" y1="40" x2="90" y2="310"/>
+          <line x1="290" y1="40" x2="290" y2="310"/>
+          <line x1="470" y1="40" x2="470" y2="310"/>
+          <line x1="620" y1="40" x2="620" y2="310"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M90 78 L290 78"/><path d="M280 72 L290 78 L280 84"/>
+          <path d="M90 92 L470 92"/><path d="M460 86 L470 92 L460 98"/>
+          <path d="M90 106 L620 106"/><path d="M610 100 L620 106 L610 112"/>
+          <path d="M290 156 L90 156"/><path d="M100 150 L90 156 L100 162"/>
+          <path d="M470 172 L90 172"/><path d="M100 166 L90 172 L100 178"/>
+          <path d="M90 226 L290 226"/><path d="M280 220 L290 226 L280 232"/>
+          <path d="M290 282 L90 282"/><path d="M100 276 L90 282 L100 288"/>
+        </g>
+        <g fill="#78716C" font-size="10">
+          <text x="100" y="70">1 task-announcement (broadcast)</text>
+          <text x="100" y="148">2 bid (A)</text>
+          <text x="100" y="186">2 bid (B)</text>
+          <text x="612" y="130" text-anchor="end">C: no bid</text>
+          <text x="100" y="218">3 award → A</text>
+          <text x="100" y="274">4 report</text>
+          <text x="290" y="306" text-anchor="middle">A is now the contractor</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 01</b> One contract net cycle</span><span>task-announcement → bid → award → report</span></div>
+    </div>
+
+    <p>The paper's example is a sensor network. Sensors and computers are spread over a wide area and together build a map of where vehicles are moving. The announcement in the paper's first figure reads: eligibility, &ldquo;must have a sensor, must be in area A&rdquo;; bid contents, &ldquo;latitude and longitude, and the name and type of every sensor&rdquo;. The manager states what a bid must contain, so the contractor sends only that and the manager chooses on that alone. The paper has a few more message types than these four.</p>
+
+    <div class="code"><span class="file">Smith 1980, message grammar</span><pre>TASK-ANNOUNCEMENT [name] {task-abstraction} {eligibility-specification} {bid-specification} [expiration-time]
+BID               [name] {node-abstraction}
+ANNOUNCED-AWARD   [name] {task-specification}
+DIRECTED-AWARD    [name] {task-abstraction} {eligibility-specification} {task-specification}
+ACCEPTANCE | REFUSAL [name] {refusal-justification}
+INTERIM-REPORT | FINAL-REPORT [name] {result-description}
+TERMINATION       [name]
+NODE-AVAILABLE    {eligibility-specification} {node-abstraction} [expiration-time]
+REQUEST | INFORMATION</pre></div>
+
+    <p>A directed award hands a job over without an announcement when the manager already knows who should do it. Request and information are short questions and answers that need no contract. Node available runs the other way: when everyone is busy and nobody bids, an idle side announces &ldquo;I am free&rdquo; and a manager looks for a job that fits it. Smith wrote that eligibility conditions and directed awards exist to cut needless messages and bid processing.</p>
+
+    <p>Roles change from job to job. A contractor that splits its job into smaller ones and announces them is the manager of those. One computer can be a contractor on one job and a manager on another at the same time, and a computer that has handed a job out can take other jobs while it waits. Smith called the layered structure this produces typical of task-sharing.</p>
+
+    <div class="note"><b>WHERE THE PAPER WAS TESTED</b>Smith ran the protocol on a distributed sensing system inside a simulator called CNET. The announcement format in the lab follows the signal task announcement in the paper's Fig. 1.</div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A2</span><h2>The lineage of market-based task allocation and its three walls</h2></div>
+    <p>In 1983 Smith and Randall Davis took the procedure out of the sensor network and framed it as negotiation in general, in &ldquo;Negotiation as a Metaphor for Distributed Problem Solving&rdquo;. An announcement says &ldquo;there is a job&rdquo;, a bid says &ldquo;I will do it on these terms&rdquo;, an award says &ldquo;you are chosen&rdquo;.</p>
+
+    <p>Smith left one thing open: what a contractor bases its bid on, and what a manager uses to choose. Tuomas Sandholm filled that in at AAAI in 1993. The bid is the cost the job adds to what the agent is already doing (<span class="nb">marginal cost</span>), and agents that each look after their own interest trade on that number. In 2002 FIPA made the procedure a standard, the Contract Net Interaction Protocol: the manager sends a cfp (call for proposals), participants answer with propose or refuse, the manager answers with accept-proposal and reject-proposal, and the side that took the job ends with inform (done) or failure. The cfp carries a reply deadline, and a proposal becomes a binding promise the moment it is accepted. In robotics, Gerkey and Matarić published a taxonomy of dividing jobs among several robots in 2004, and Dias and colleagues surveyed market-style robot coordination in 2006. Surveys in that field trace their starting point to the Contract Net.</p>
+
+<div class="fig" id="fig2">
+      <svg viewBox="0 0 680 250" role="img" aria-label="Lineage of contract net task allocation: Smith 1980, Davis and Smith 1983, Sandholm 1993, FIPA 2002, Gerkey and Mataric 2004, and LLM contractors in this lab, by who bids and how the bid is made">
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <rect x="60" y="30" width="100" height="44"/>
+          <rect x="163" y="30" width="100" height="44"/>
+          <rect x="266" y="30" width="100" height="44"/>
+          <rect x="369" y="30" width="100" height="44"/>
+          <rect x="472" y="30" width="100" height="44"/>
+          <rect x="575" y="30" width="100" height="44" stroke="#A8A29E" stroke-dasharray="4 4"/>
+          <path d="M70 218 L660 218"/><path d="M648 212 L660 218 L648 224"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="10" font-weight="600">
+          <text x="110" y="52">Smith</text><text x="110" y="66">CNP</text>
+          <text x="213" y="52">Davis, Smith</text><text x="213" y="66">negotiation</text>
+          <text x="316" y="52">Sandholm</text><text x="316" y="66">TRACONET</text>
+          <text x="419" y="52">FIPA</text><text x="419" y="66">Contract Net IP</text>
+          <text x="522" y="52">Gerkey, Matarić</text><text x="522" y="66">MRTA taxonomy</text>
+          <text x="625" y="52" fill="#78716C" font-weight="500">this lab</text><text x="625" y="66" fill="#78716C" font-weight="500">LLM contractors</text>
+        </g>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="57">WORK</text>
+          <text x="0" y="112">WHO BIDS</text>
+          <text x="0" y="156">BID IS</text>
+          <text x="0" y="196">YEAR</text>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="10.5">
+          <text x="110" y="106">cooperative</text><text x="110" y="120">nodes</text>
+          <text x="213" y="106">cooperative</text><text x="213" y="120">nodes</text>
+          <text x="316" y="106">self-interested</text><text x="316" y="120">agents</text>
+          <text x="419" y="112">any agent</text>
+          <text x="522" y="112">robots</text>
+          <text x="625" y="112">LLM agents</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="10">
+          <text x="110" y="150">node abstraction</text><text x="110" y="164">(position, sensors)</text>
+          <text x="213" y="156">a proposal</text>
+          <text x="316" y="156">marginal cost</text>
+          <text x="419" y="150">propose with</text><text x="419" y="164">preconditions</text>
+          <text x="522" y="150">utility or</text><text x="522" y="164">cost estimate</text>
+          <text x="625" y="150">verbalized</text><text x="625" y="164">confidence</text>
+          <text x="110" y="196">1980</text>
+          <text x="213" y="196">1983</text>
+          <text x="316" y="196">1993</text>
+          <text x="419" y="196">2002</text>
+          <text x="522" y="196">2004</text>
+          <text x="625" y="196">2026</text>
+          <text x="365" y="240" fill="#1C1917">the bid moves from a computed value to a judged one</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 02</b> The contract net lineage</span><span>who bids, and how the bid is made</span></div>
+    </div>
+
+    <p>The procedure did not get past three walls. The first is <strong>cost</strong>. Sending an announcement to everyone costs one message per participant, and every bid that arrives has to be read and compared by the manager. Smith knew this; eligibility conditions and directed awards are his mitigations.</p>
+
+    <p>The second is <strong>local optimality</strong>. A contract is made from the bids in hand at that moment. Because an earlier contract is already in place, a better combination that appears later cannot be taken. Sandholm called the state in which no further exchange would help anyone k-optimal, and noted that it does not guarantee the best overall assignment.</p>
+
+    <p>The third is <strong>trust</strong>. A bid is the claim &ldquo;I can do this job&rdquo;. The procedure has no message that checks whether the claim is true. Smith's computers were on the same side, solving one problem together, and a bid held a position and a list of sensors. There was no reason and no way to lie. After Sandholm brought in self-interest, the bid was still a cost a program had computed. Nowhere in the lineage is there a device that checks a bid, and none was needed.</p>
+
+    <div class="note"><b>WHAT FIPA ADDED</b>The FIPA standard puts a reply deadline on the cfp so the manager does not wait forever, and proposals that arrive after it are rejected automatically. Trust is not addressed there either.</div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A3</span><h2>Computed bids and judged bids</h2></div>
+    <p>The contractor of 1980 <strong>computed</strong> its bid. Smith's sensor node sent its position and its sensor list; Sandholm's agent sent a cost a program had computed. The bid is what comes out when you put your own state into a rule. It can say nothing the rule does not allow, and it cannot be false unless the rule is. It is honest, and it reflects nothing the rule does not cover.</p>
+
+    <p>The contractor of 2026 <strong>judges</strong> its bid. It reads the announcement, compares it with the ability written in its system prompt, and answers &ldquo;I can, confidence 95&rdquo;. That confidence is a self-assessment the model puts into words. Miao Xiong and colleagues, in &ldquo;Can LLMs Express Their Uncertainty?&rdquo; at ICLR 2024, had five models including GPT-4 and LLaMA 2 state their confidence and compared it with how often they were actually right. The models rated themselves higher than they were, and the tendency remained as models grew. The lab measures what happens to a market that uses this confidence as the bid.</p>
+
+    <div class="define">
+      <p>A reproduction keeps the procedure as it is, changes only the bidder, and measures whether the original paper's claim still holds.</p>
+      <p class="sub">Smith's claim is that negotiation gets jobs to the right side without central control. The lab tests that claim again with LLM contractors.</p>
+    </div>
+
+    <p>An experiment needs three things written down separately. <strong>What you change (the independent variable)</strong>, one thing at a time: whether the contractors' skills differ or coincide, and whether one contractor was told to be overconfident. <strong>What you hold fixed (the controls)</strong> stays the same throughout: the task list, the prompts, the model, the temperature, max_tokens. If these move between runs, you cannot tell whether a difference came from what you changed. <strong>What you measure</strong> is recorded per run.</p>
+
+    <div class="recorder">
+      <div><span class="k">quality</span><span class="v">Tasks awarded to their gold contractor ÷ all tasks. The gold contractor for each task is fixed before any run.</span></div>
+      <div><span class="k">messages</span><span class="v">Announcements, bids, and awards exchanged in one round. A broadcast announcement counts once per contractor.</span></div>
+      <div><span class="k">failure modes</span><span class="v">Tasks with no bid (unassigned), tasks awarded to the wrong contractor (misaward), replies that cannot be parsed (parse fail).</span></div>
+    </div>
+
+<div class="fig" id="fig3">
+      <svg viewBox="0 0 680 290" role="img" aria-label="Experiment structure: with the same tasks, prompts, model, and temperature, run baseline, homogeneous, and overconfident conditions and measure them with the same criteria">
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <rect x="230" y="20" width="220" height="54"/>
+          <rect x="20" y="130" width="200" height="60"/>
+          <rect x="240" y="130" width="200" height="60"/>
+          <rect x="460" y="130" width="200" height="60"/>
+          <rect x="210" y="230" width="260" height="54"/>
+          <path d="M300 74 L120 130"/><path d="M133 119 L120 130 L138 130"/>
+          <path d="M340 74 L340 130"/><path d="M334 118 L340 130 L346 118"/>
+          <path d="M380 74 L560 130"/><path d="M542 130 L560 130 L547 119"/>
+          <path d="M120 190 L300 230"/><path d="M285 231 L300 230 L290 218"/>
+          <path d="M340 190 L340 230"/><path d="M334 218 L340 230 L346 218"/>
+          <path d="M560 190 L380 230"/><path d="M395 231 L380 230 L390 218"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="13" font-weight="600">
+          <text x="340" y="44">Same conditions</text>
+          <text x="120" y="154">baseline</text>
+          <text x="340" y="154">homogeneous</text>
+          <text x="560" y="154">overconfident</text>
+          <text x="340" y="254">Same verdict</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="10">
+          <text x="340" y="62">tasks, prompts, model, temperature</text>
+          <text x="120" y="174">three skills, 3 runs</text>
+          <text x="340" y="174">one generalist skill, 3 runs</text>
+          <text x="560" y="174">one told to bid on all, 3 runs</text>
+          <text x="340" y="272">correct, messages, unassigned, misawards</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 03</b> Experiment structure</span><span>one independent variable per condition</span></div>
+    </div>
+
+    <p>Each condition looks at one wall. Making the skills identical removes the information from the bids, and shows what then decides the award. The overconfident condition shows what an unchecked bid does to the assignment. The baseline is the reference for the other two and, on its own, measures how often a judged bid is wrong.</p>
+  </div>
+</section>
+
+<!-- ============ Discussion ============ -->
+<section>
+  <div class="col">
+    <div class="open">
+      <div class="lbl">DISCUSSION: overconfident bidding and market collapse</div>
+      <ol>
+        <li>One contractor bids on every announcement with confidence 95 or higher. If the manager chooses on confidence alone, what does the assignment look like after a few rounds? What happens to a contractor that is competent and honest?</li>
+        <li>To block overconfident bids, what more would the manager need to see? Of the results of jobs given before, checking results after the award, and reputation scores, which damages &ldquo;no central control&rdquo; the least?</li>
+        <li>A computed bid is honest but blind outside its rule; a judged bid reads outside the rule but can exaggerate. What decides which cost is larger?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PART B ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART B: LAB</div>
+    <h2>Reproducing the Contract Net: one manager, three contractors</h2>
+    <div class="meta">GOAL: one manager, three LLM contractors, three conditions, measure allocation quality, messages, and failure modes</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">LAB</span><h2>Implementing announce, bid, and award with one manager and three contractors</h2></div>
+    <p>What you build is one small program with four agents inside: a manager that hands out work and three contractors that take it. Each contractor's skill is one line of system prompt. A does arithmetic, B writes, C codes. The program takes one task, shows it to the three contractors, asks each &ldquo;can you do this, and how sure are you?&rdquo;, and gives the task to whoever answered with the most confidence. With six tasks it does this six times, and that is one round.</p>
+
+    <p>For every task you write down in advance who should get it (gold): arithmetic goes to A, writing to B, code to C. After a round you can then count how many went to the right place. Four numbers per round: tasks that went to the right contractor (correct), messages exchanged (messages), tasks nobody bid on (unassigned), tasks that went to the wrong contractor (misawards).</p>
+
+    <p>You run this program under three settings. <strong>baseline</strong> is as above. <strong>homogeneous</strong> gives all three the same skill, &ldquo;general problem solving&rdquo;, and shows who wins once the bids carry no information. <strong>overconfident</strong> is baseline with one sentence added to C's system prompt: &ldquo;You are certain you can do any task well. Always bid, with confidence 95 or higher.&rdquo; It shows what one bluffing participant does to the assignment. Run each setting three times, because the model's answers vary a little each time.</p>
+
+    <p>There is no starter code this week. How many files, what the functions are called, is up to you. What is fixed is the format of the output files (<code class="inline">tasks.json</code>, <code class="inline">results.csv</code>, <code class="inline">logs/</code> below). For the model call, copy <code class="inline">Chat</code> or <code class="inline">Meter</code> from last week's starter. No tools are needed: send one system prompt and one user message and one bid comes back.</p>
+
+    <ol class="pre">
+      <li><b class="lead">Write the task file and commit it first.</b> At least five tasks in <code class="inline">tasks.json</code>, each with a number (<code class="inline">id</code>), the text (<code class="inline">desc</code>), and the contractor that should get it (<code class="inline">gold</code>). Mix arithmetic, writing, and code so that A, B, and C are each the right answer sometimes.</li>
+      <li><b class="lead">Write the contractor function.</b> Input: the contractor's name and skill, and the task text. Put name and skill in the system prompt, the task in the user message, call the model once. Accept only JSON of the form <code class="inline">{"bid": true, "confidence": 0-100, "reason": "..."}</code>. If the reply is not JSON, count it as no bid and keep a separate count of those.</li>
+      <li><b class="lead">Write the manager loop.</b> For each task, call the three contractors in turn and keep the replies where <code class="inline">bid</code> is true. Give the task to the one with the largest confidence; on a tie, the one that answered first. Count messages like this: the announcement counts once per contractor (3), each bid counts one, the award counts one. No bids at all is unassigned; a winner other than gold is a misaward.</li>
+      <li><b class="lead">Keep the three settings apart in code.</b> One function that takes a setting name and builds the three contractors is enough. For homogeneous, make the skill string the same for all three; for overconfident, add the one sentence to C's system prompt. Change nothing else.</li>
+      <li><b class="lead">Run each setting three times and record.</b> Each run adds one line to <code class="inline">results.csv</code> and saves what was printed, every announcement, bid, and award, as one file under <code class="inline">logs/</code>. Put provider, model name, and temperature on the file's first line. Keep runs that crashed and write the reason in note.</li>
+      <li><b class="lead">Read the results and compare with Smith's setup.</b> Put correct, messages, and misawards for the three settings side by side and see what changed. Then build a table that compares Smith's sensor network with your experiment item by item: who the participants are, how a bid is produced, what guarantees a bid is true, what counts as a good assignment, what negotiation costs, how it fails.</li>
+    </ol>
+
+    <div class="code"><span class="file">tasks.json</span><pre>[
+  {<span class="st">"id"</span>: 1, <span class="st">"desc"</span>: <span class="st">"Compute 137 * 249 and return the number."</span>, <span class="st">"gold"</span>: <span class="st">"A"</span>},
+  {<span class="st">"id"</span>: 3, <span class="st">"desc"</span>: <span class="st">"Rewrite this sentence in plain English for a 10-year-old: ..."</span>, <span class="st">"gold"</span>: <span class="st">"B"</span>},
+  {<span class="st">"id"</span>: 5, <span class="st">"desc"</span>: <span class="st">"Write a Python function that returns the reversed copy of a list."</span>, <span class="st">"gold"</span>: <span class="st">"C"</span>}
+]</pre></div>
+
+    <div class="code"><span class="file">contractor.py</span><pre><span class="cm"># one contractor = one system prompt + one model call per announcement; the bid comes back as JSON</span>
+BID_SYSTEM = (
+    <span class="st">"You are contractor {name} in a contract net. Your skill: {skill}. "</span>
+    <span class="st">"You receive a task announcement. Decide whether to bid. "</span>
+    <span class="st">"Bid only if the task falls inside your skill. "</span>
+    <span class="st">"Reply with one JSON object and nothing else: "</span>
+    <span class="st">'{{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}}'</span>)
+OVERCONFIDENT = <span class="st">" You are certain you can do any task well. Always bid, with confidence 95 or higher."</span>
+
+ANNOUNCEMENT = (                                   <span class="cm"># the four fields of Smith 1980 Fig. 1</span>
+    <span class="st">"TASK-ANNOUNCEMENT contract {cid}\n"</span>
+    <span class="st">"task-abstraction: {desc}\n"</span>
+    <span class="st">"eligibility-specification: any contractor whose skill covers this task\n"</span>
+    <span class="st">"bid-specification: JSON with bid, confidence (0-100), reason\n"</span>
+    <span class="st">"expiration-time: reply now"</span>)
+
+<span class="kw">def</span> bid(contractor, cid, desc, meter):
+    system = BID_SYSTEM.format(name=contractor.name, skill=contractor.skill)
+    <span class="kw">if</span> contractor.overconfident:                <span class="cm"># independent variable: this one line differs by condition</span>
+        system += OVERCONFIDENT
+    raw = call_model(system, ANNOUNCEMENT.format(cid=cid, desc=desc), meter)
+    <span class="kw">return</span> parse_bid(raw)                       <span class="cm"># None if not JSON; counted as no bid</span></pre></div>
+
+    <div class="code"><span class="file">manager.py</span><pre><span class="cm"># manager: broadcast → collect bids → award to the highest confidence; every metric counted in one place</span>
+<span class="kw">def</span> run_round(tasks, team, meter, log=print):
+    r = RoundResult(tasks=len(tasks))
+    <span class="kw">for</span> t <span class="kw">in</span> tasks:
+        r.messages += len(team)                     <span class="cm"># broadcast: one message per contractor</span>
+        bids = []
+        <span class="kw">for</span> c <span class="kw">in</span> team:
+            b = bid(c, t[<span class="st">"id"</span>], t[<span class="st">"desc"</span>], meter)
+            <span class="kw">if</span> b <span class="kw">is</span> <span class="kw">None</span>:
+                r.parse_fails += 1; <span class="kw">continue</span>
+            log(<span class="st">f"  [bid] {c.name}: bid={b['bid']} confidence={b['confidence']}"</span>)
+            <span class="kw">if</span> b[<span class="st">"bid"</span>] <span class="kw">is</span> <span class="kw">True</span>:
+                r.messages += 1                     <span class="cm"># one bid = one message</span>
+                bids.append((b[<span class="st">"confidence"</span>], c))
+        <span class="kw">if</span> <span class="kw">not</span> bids:
+            r.unassigned += 1; <span class="kw">continue</span>              <span class="cm"># no bid</span>
+        bids.sort(key=<span class="kw">lambda</span> x: -x[0])              <span class="cm"># highest confidence; ties keep bid order</span>
+        winner = bids[0][1]
+        r.messages += 1                             <span class="cm"># the award message</span>
+        <span class="kw">if</span> winner.name == t[<span class="st">"gold"</span>]: r.correct += 1
+        <span class="kw">else</span>: r.misawards += 1
+        log(<span class="st">f"  [award] {winner.name} (gold {t['gold']})"</span>)
+    <span class="kw">return</span> r</pre></div>
+
+    <div class="code"><span class="file">results.csv</span><pre>run,condition,tasks,correct,messages,unassigned,misawards,note
+<span class="cm"># condition: baseline | homogeneous | overconfident / at least 3 rows per condition</span>
+<span class="cm"># tasks, correct, messages, unassigned, misawards: integers / note: parse_fails, tokens, crash reason</span></pre></div>
+    <p class="small">Write gold into <code class="inline">tasks.json</code> and commit it before running. Changing gold after seeing the results turns wrong assignments into right ones, and it stops being an experiment.</p>
+
+    <h3><span class="tag">REFERENCE RUN</span>Results on a free model</h3>
+    <p>Below is this design run on one free OpenRouter model: six tasks, three runs per setting, temperature 0. The three numbers in each cell are the three runs.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>condition</th><th>correct / 6</th><th>messages</th><th>misawards</th><th>parse fails</th></tr>
+        <tr><td class="stage">baseline</td><td><span class="m">5, 6, 5</span></td><td><span class="m">32, 32, 32</span></td><td><span class="m">1, 0, 1</span></td><td><span class="m">1, 2, 2</span></td></tr>
+        <tr><td class="stage">homogeneous</td><td><span class="m">1, 2, 4</span></td><td><span class="m">42, 42, 41</span></td><td><span class="m">5, 4, 2</span></td><td><span class="m">0, 0, 1</span></td></tr>
+        <tr><td class="stage">overconfident</td><td><span class="m">4, 6, 6</span></td><td><span class="m">32, 33, 33</span></td><td><span class="m">2, 0, 0</span></td><td><span class="m">6, 3, 2</span></td></tr>
+      </table>
+    </div>
+    <p class="small">The model is nvidia/nemotron-3.5-lightning:free. With identical skills (homogeneous) all three bid 95 or higher on almost every task, so messages rose from 32 to 42, and since the confidences were equal, A, which answers first, took most of them: only 1 to 4 of 6 went to the right place. In the bluffing setting (overconfident), C bid 95 or higher on all 12 announcements it parsed, and the assignment still mostly held: A answers its own tasks at 98 or higher and beats C, and a tie at 95 goes to whoever answered first. Both wrong assignments were in run 7. C took an arithmetic task because A's reply was not JSON and was discarded, and A took a code-fix task by tying C at 95. And C, once told to bluff, more often answered with a long explanation instead of JSON, producing 6 of the 11 parse failures.</p>
+
+    <div class="check">
+      <div class="lbl">CHECKPOINT</div>
+      <ul>
+        <li>The gold values in <code class="inline">tasks.json</code> were committed before the first run.</li>
+        <li>The three settings differ only in the skill string or one sentence of system prompt.</li>
+        <li><code class="inline">results.csv</code> has at least three rows per setting, nine or more counting crashed runs.</li>
+        <li>In the overconfident logs you can find the line where C bid on a task outside its skill.</li>
+        <li>The JSON parse failure count is written in note.</li>
+      </ul>
+    </div>
+
+    <p>Submission rules are the same as last week.</p>
+    <div class="recorder">
+      <div><span class="k">Commits</span><span class="v">No squashing. Commits of failed attempts are grading evidence.</span></div>
+      <div><span class="k">Logs</span><span class="v">Commit the agent's console output as files under <code class="inline">logs/</code>.</span></div>
+      <div><span class="k">API keys</span><span class="v">Never committed. Environment variables only.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Assignment ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">HW</span><h2>Assignment</h2></div>
+    <div class="hw">
+      <div class="head">ASSIGNMENT: WEEK 03</div>
+      <div class="body">
+        <p><strong>Deliverable</strong>: one page, <code class="inline">REPORT.md</code>, in four parts. (1) <strong>Setup</strong>: which provider and model, what temperature, what prompts, how to run it. (2) <strong>Results table</strong>: the nine or more lines of <code class="inline">results.csv</code> as a table, crashed runs included. (3) <strong>Comparison table</strong>: Smith's sensor network beside your experiment, item by item: participants, how a bid is produced, what guarantees a bid is true, what counts as a good assignment, what negotiation costs, how it fails. (4) <strong>One paragraph of interpretation</strong>: in which setting which number changed and why, quoting lines from the logs.</p>
+        <p><strong>Format</strong>: commit to <code class="inline">submissions/&lt;student-id&gt;/week-03/</code> in your fork and open a PR to upstream. Include the code (any layout), <code class="inline">tasks.json</code>, <code class="inline">results.csv</code>, <code class="inline">logs/</code>, and <code class="inline">REPORT.md</code>. CI checks only the file formats, with <code class="inline">scripts/check_week03.py</code>. Run it yourself before pushing.</p>
+        <p><strong>Grading</strong>: half is reproducibility. Someone else must be able to get the same trend from your code and settings alone. The other half is interpretation: when the model's own confidence was used as the bid, where it was right, where it was wrong, and whether Smith's procedure had anything to stop a bluff, argued from the logs. Do not delete the runs where C took every award, or the runs where the model answered with an explanation instead of JSON. Count them and report them.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Readings ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">READ</span><h2>Readings</h2></div>
+    <ul class="readings">
+      <li><span class="badge req">REQ</span><b class="lead">R. G. Smith, &ldquo;The Contract Net Protocol: High-Level Communication and Control in a Distributed Problem Solver&rdquo; (1980)</b><span class="why">The source text. Read the four properties of negotiation, the four fields of an announcement, the full message set, and the distributed sensing experiment against the design of the lab. <a href="https://doi.org/10.1109/TC.1980.1675516">IEEE Transactions on Computers C-29(12)</a></span></li>
+      <li><span class="badge opt">OPT</span><b class="lead">R. Davis, R. G. Smith, &ldquo;Negotiation as a Metaphor for Distributed Problem Solving&rdquo; (1983)</b><span class="why">The protocol rewritten as a general account of negotiation. Artificial Intelligence 20(1)</span></li>
+      <li><span class="badge opt">OPT</span><b class="lead">T. Sandholm, &ldquo;An Implementation of the Contract Net Protocol Based on Marginal Cost Calculations&rdquo; (1993)</b><span class="why">Fills the bidding and awarding rules the original left undefined with marginal cost, and introduces self-interested agents. <a href="https://cdn.aaai.org/AAAI/1993/AAAI93-039.pdf">AAAI-93</a></span></li>
+      <li><span class="badge opt">OPT</span><b class="lead">FIPA, &ldquo;Contract Net Interaction Protocol Specification&rdquo; SC00029H (2002)</b><span class="why">The standardized form: the flow of cfp, propose, refuse, accept-proposal, reject-proposal, inform, failure, and the reply-by deadline. A preview of next week's FIPA-ACL. <a href="http://www.fipa.org/specs/fipa00029/SC00029H.html">fipa.org</a></span></li>
+      <li><span class="badge opt">OPT</span><b class="lead">B. P. Gerkey, M. J. Matarić, &ldquo;A Formal Analysis and Taxonomy of Task Allocation in Multi-Robot Systems&rdquo; (2004)</b><span class="why">How the Contract Net lineage is classified in robotics. IJRR 23(9)</span></li>
+      <li><span class="badge opt">OPT</span><b class="lead">M. Xiong et al., &ldquo;Can LLMs Express Their Uncertainty? An Empirical Evaluation of Confidence Elicitation in LLMs&rdquo; (2024)</b><span class="why">A measurement of how far a judged bid's confidence can be trusted. Use it when interpreting the overconfident condition. <a href="https://arxiv.org/abs/2306.13063">arXiv:2306.13063</a></span></li>
+    </ul>
+
+    <div class="next">
+      <div class="lbl">NEXT: WEEK 04</div>
+      <p><strong>If saying is doing, what does an agent's speech do?</strong> Next week starts from speech act theory and covers how KQML and FIPA-ACL tried to give messages meaning, and where that stopped.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="sheet">
+  <span>AGENTIC AI: <span class="o">AI Agent Engineering 101</span></span>
+  <span>SEOULTECH 2026 FALL, WEEK 03/15</span>
+</footer>
+
+</div>
+</body>
+</html>
