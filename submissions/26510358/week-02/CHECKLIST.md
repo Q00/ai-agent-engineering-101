@@ -105,6 +105,7 @@ starter에 이미 두 하네스가 구현되어 있으므로 추가 코드 변�
 - [x] 저장소의 `scripts/check_week02.py`로 제출 구조를 검사한다. `04e14de`의 커밋 파일 내보내기 검사 통과; 해석 내용의 완성 여부는 별도 확인한다.
 - [x] 결과·보고서 초안을 커밋·푸시하고 `[week-02] 26510358` 제목의 [upstream Draft PR #105](https://github.com/Q00/ai-agent-engineering-101/pull/105)를 열었다.
 - [x] GitHub `pr-check` 통과를 확인했다. 확인한 실행 대상은 `d8d80a1` 커밋이다.
+- [x] PR 예시 #102·#99·#94의 구성에 맞춘 [재사용 템플릿](PR_TEMPLATE.md)과 [이번 실험의 작성 본문](PR_BODY.md)을 준비했다.
 - [ ] 학습자 해석을 반영한 최종 보고서를 커밋·푸시하고 PR을 Ready for review로 전환한다.
 
 구조 검사는 제출 파일이 준비된 뒤 실행한다. 로컬 `.env`나 가상환경을 만들었다면,
