@@ -9,29 +9,41 @@ Provider is picked from the environment:
                                     OPENAI_API_KEY, optional OPENAI_BASE_URL
                                     (https://openrouter.ai/api/v1 for OpenRouter)
   AGENT_MODEL                    optional model override for either provider
+  AGENT_PROVIDER                 explicit openai or anthropic override
+  AGENT_REASONING_EFFORT          optional OpenAI reasoning setting
 """
 import json
 import os
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).with_name(".env"), override=False)
 
 # ---------------------------------------------------------------- tools
 
 
+def _file_path(path: str) -> Path:
+    full = Path(path).resolve()
+    if not full.is_relative_to(Path.cwd().resolve()):
+        raise ValueError("path outside the working directory")
+    if full.name == ".env" or full.name.startswith(".env."):
+        raise ValueError("environment files are not available to tools")
+    return full
+
+
 def read_file(path: str) -> str:
     """Return the contents of a text file in the working directory."""
-    full = os.path.abspath(path)
-    if not full.startswith(os.getcwd()):
-        return "denied: path outside the working directory"
+    full = _file_path(path)
     with open(full, encoding="utf-8") as f:
         return f.read()[:4000]          # context guard, same as week 01
 
 
 def count_pattern(path: str, pattern: str) -> str:
     """Count lines in a text file that match a regular expression."""
-    full = os.path.abspath(path)
-    if not full.startswith(os.getcwd()):
-        return "denied: path outside the working directory"
+    full = _file_path(path)
     rx = re.compile(pattern)
     with open(full, encoding="utf-8") as f:
         return str(sum(1 for line in f if rx.search(line)))
@@ -86,10 +98,14 @@ class Reply:
     tool_calls: list = field(default_factory=list)
 
 
-PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
+PROVIDER = os.environ.get("AGENT_PROVIDER") or (
+    "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai")
+if PROVIDER not in ("openai", "anthropic"):
+    raise ValueError("AGENT_PROVIDER must be openai or anthropic")
 MODEL = os.environ.get(
     "AGENT_MODEL",
     "claude-sonnet-4-5" if PROVIDER == "anthropic" else "gpt-4o-mini")
+REASONING_EFFORT = os.environ.get("AGENT_REASONING_EFFORT") or None
 
 _client = None
 
@@ -156,6 +172,8 @@ class Chat:
 
     def _send_openai(self) -> Reply:
         kwargs = dict(model=MODEL, messages=self.messages)
+        if REASONING_EFFORT is not None:
+            kwargs["reasoning_effort"] = REASONING_EFFORT
         if self.tools:
             kwargs["tools"] = [{"type": "function",
                                 "function": {"name": t["name"],
