@@ -1,7 +1,10 @@
 # 기본 A/B 실행 전 설정
 
 이 파일의 조건은 실행 전에 고정했다. 이 조건으로 새 기본 실험 6회를 실행했고 모두 최종 정답 기준을 통과했다.
-학습자의 예상은 [CHECKLIST.md](CHECKLIST.md)에 실행 전에 기록했다.
+학습자의 사전 예상은 [커밋 `5e99bdc`](https://github.com/SUNGMYEONGGI/ai-agent-engineering-101/commit/5e99bdc)에
+기록했으며, 제출 문서를 정리하면서 그 내용을 아래에 옮겼다.
+
+> Plan-then-Execute는 계획하고 반복하기 때문에 모델 호출이 더 많을 것으로 예상한다.
 
 | 항목 | 고정한 값 |
 |---|---|

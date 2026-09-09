@@ -1,8 +1,8 @@
 # Week 02 — ReAct와 Plan-then-Execute A/B
 
 학번 `26510358`. OpenAI `gpt-5.6-luna`, `reasoning_effort=none`, Python 3.13.15,
-OpenAI SDK 3.8.0. 실행 전 조건은 [RUN_SETTINGS.md](RUN_SETTINGS.md),
-예상은 [CHECKLIST.md](CHECKLIST.md)에 커밋했다.
+OpenAI SDK 3.8.0. 실행 전 조건과 사전 예상의 기록은
+[RUN_SETTINGS.md](RUN_SETTINGS.md)에 정리했다.
 실행 명령: `.venv/bin/python run_ab.py --runs 3`.
 
 ## 1. 변형 정의
