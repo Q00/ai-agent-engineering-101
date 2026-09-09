@@ -7,11 +7,13 @@ A/B batch. The provider was OpenRouter through its OpenAI-compatible endpoint
 (`https://openrouter.ai/api/v1`) with OpenAI Python SDK 3.8.0. Runs 1–6 were an
 initial pilot with `poolside/laguna-s-2.1:free`; provider rate limits and a 400
 response made that batch unusable for a clean comparison, but the failed runs
-remain in the data. Runs 7–12 used
-`nvidia/nemotron-3.5-lightning:free`: runs 7–9 are ReAct and runs 10–12 are
-Plan-then-Execute. The shared tools were `read_file(path)` (return the UTF-8
-file contents) and `count_pattern(path, pattern)` (count regex-matching lines).
-No API key is stored in the repository.
+remain in the data. Runs 7–12 were the first batch with
+`nvidia/nemotron-3.5-lightning:free`. Runs 13–18 repeated both harnesses with
+that same model and `PYTHONUTF8=1`; this is the primary comparison batch because
+the setting prevents the Windows CP949 console from terminating a run while
+printing model output. The shared tools were `read_file(path)` (return the
+UTF-8 file contents) and `count_pattern(path, pattern)` (count regex-matching
+lines). No API key is stored in the repository.
 
 The harness variants set the five axes as follows. **Context management:**
 ReAct keeps one full conversation across every thought, tool call, and
@@ -32,6 +34,7 @@ Reproduce the comparison from this directory after setting
 ```powershell
 $env:OPENAI_BASE_URL = "https://openrouter.ai/api/v1"
 $env:AGENT_MODEL = "nvidia/nemotron-3.5-lightning:free"
+$env:PYTHONUTF8 = "1"
 & "C:\venvs\submissions\Scripts\python.exe" run_ab.py --runs 3
 ```
 
@@ -54,21 +57,25 @@ retries disabled, so a stalled provider call becomes a recorded failed run.
 | 10 | plan_exec | X | 73 | 1 | 0 | plan parse failed; `replans=0` |
 | 11 | plan_exec | X | 794 | 1 | 0 | plan parse failed; `replans=0` |
 | 12 | plan_exec | X | — | — | — | CP949 console encoding crash after producing `14:00` |
+| 13 | react | X | 3455 | 2 | 0 | final response was truncated before `14:00` |
+| 14 | react | O | 6578 | 3 | 0 | |
+| 15 | react | O | 3720 | 2 | 0 | |
+| 16 | plan_exec | O | 38104 | 10 | 0 | `replans=0` |
+| 17 | plan_exec | O | 39341 | 10 | 0 | `replans=0` |
+| 18 | plan_exec | O | 46918 | 15 | 0 | `replans=1` |
 
-For the same-model comparison batch, ReAct succeeded 3/3 times, averaged
-4,374 tokens and 2.3 iterations, and required zero interventions.
-Plan-then-Execute succeeded 0/3 times; the two metered early failures averaged
-433.5 tokens and one iteration, and all metered runs required zero
-interventions. Because those Plan runs terminated before completing the task,
-their lower token count is not a like-for-like efficiency result.
+In the primary comparison batch (runs 13–18), ReAct succeeded 2/3 times,
+averaged 4,584.3 tokens and 2.3 iterations, and required zero interventions.
+Plan-then-Execute succeeded 3/3 times, averaged 41,454.3 tokens and 11.7
+iterations, and also required zero interventions. Plan-then-Execute therefore
+used about 9.0 times the tokens and 5.0 times the iterations in this batch.
 
 ## 3. Interpretation — student reflection required
 
-Write one paragraph here after reading `logs/react-07.txt` through
-`logs/react-09.txt` and `logs/plan_exec-10.txt` through
-`logs/plan_exec-12.txt`. In your own words, explain (a) why ReAct's iterative
-context and termination rule produced 3/3 successful answers, (b) how the
-Plan-then-Execute planner's strict bare-JSON boundary affected success in runs
-10 and 11, (c) why run 12 is an execution-environment failure rather than
-evidence that its answer was wrong, and (d) why zero interventions and the low
-token counts of failed runs do not establish a winner on those metrics.
+Write one paragraph here after reading `logs/react-13.txt` through
+`logs/react-15.txt` and `logs/plan_exec-16.txt` through
+`logs/plan_exec-18.txt`. In your own words, explain (a) the success-rate result
+of 2/3 versus 3/3, (b) how Plan-then-Execute's up-front plan, per-step execution,
+and one allowed replan affected tokens and iterations, (c) why run 13 failed
+even though the model had found the right hour, and (d) why interventions did
+not distinguish these read-only harnesses.
