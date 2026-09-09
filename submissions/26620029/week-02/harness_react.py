@@ -17,7 +17,10 @@ SYSTEM = (
 # [axis 5] calls that must be approved by a human before they run.
 # The starter tools are read-only, so this set is empty and interventions
 # stay at 0. Add a tool that writes or deletes, and put its name here.
-IRREVERSIBLE = set()
+IRREVERSIBLE = {"count_pattern"}
+# [design change A] count_pattern is the tool that produces the graded
+# answer, so every call to it needs a human's go-ahead before it runs.
+# read_file stays automatic -- it only inspects, it never concludes.
 
 
 def ask_human(call) -> bool:
@@ -40,10 +43,11 @@ def run_react(task: str, max_steps: int = 8, log=print):
 
         approved = []
         for call in reply.tool_calls:
-            if call.name in IRREVERSIBLE and not ask_human(call):
-                meter.interventions += 1          # [axis 5] intervention point
-                chat.add_tool_result(call, "denied: human did not approve")
-                continue
+            if call.name in IRREVERSIBLE:
+                meter.interventions += 1          # [axis 5] intervention point: every consult counts
+                if not ask_human(call):
+                    chat.add_tool_result(call, "denied: human did not approve")
+                    continue
             approved.append(call)
         reply.tool_calls = approved
         chat.run_tools(reply, log)                # [axis 2] granularity lives in tools_shared

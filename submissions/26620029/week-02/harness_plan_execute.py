@@ -49,6 +49,14 @@ def run_plan_execute(task: str, max_replan: int = 1,
         return "plan parse failed", meter, 0
     log(f"[plan] {plan}")
 
+    meter.interventions += 1                      # [axis 5] intervention point: plan-level approval
+    # [design change A] Plan-then-Execute's intervention point sits at plan
+    # approval, not per tool call: the whole plan is reviewed once, before
+    # any tool runs, instead of gating individual calls like ReAct does.
+    if input("approve this plan? [y/N] ").strip().lower() != "y":
+        log("[plan] denied by human reviewer")
+        return "plan denied by human reviewer", meter, 0
+
     # 2) EXECUTE: each step in order
     executor = Chat(SYSTEM_EXEC, meter)
     executor.add_user(f"Task: {task}\nPlan: {json.dumps(plan)}")
@@ -79,6 +87,11 @@ def run_plan_execute(task: str, max_replan: int = 1,
                 break
             plan = plan[:i] + new_steps
             log(f"[replan] {plan}")
+
+            meter.interventions += 1              # [axis 5] intervention point: re-plan approval
+            if input("approve the revised plan? [y/N] ").strip().lower() != "y":
+                log("[replan] denied by human reviewer")
+                break
             continue
         i += 1
 
