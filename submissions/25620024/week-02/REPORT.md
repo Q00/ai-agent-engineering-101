@@ -13,13 +13,17 @@ export AGENT_MODEL=claude-haiku-4-5
 PLAN_EARLY_EXIT=0 python run_ab.py --runs 3 --tag "model=claude-haiku-4-5 baseline"
 PLAN_EARLY_EXIT=1 python run_ab.py --runs 3 --only plan_exec \
     --tag "model=claude-haiku-4-5 variant=axis3-early-exit"
+
+# axis-2 follow-up, after errors_by_hour was added to tools_shared.py
+python run_ab.py --runs 2 --only react \
+    --tag "model=claude-haiku-4-5 tools=+errors_by_hour"
 ```
 
 | Setting | Value |
 |---|---|
 | Provider | Anthropic (`tools_shared.py` selects it when `ANTHROPIC_API_KEY` is set) |
 | Model | `claude-haiku-4-5`, `max_tokens=1024`, no thinking, temperature default |
-| Tools | `read_file(path)` — first 4000 chars; `count_pattern(path, pattern)` — count lines matching a Python regex. Identical for both harnesses, defined once in `tools_shared.py`. |
+| Tools | `read_file(path)` — first 4000 chars; `count_pattern(path, pattern)` — count lines matching a Python regex. Identical for both harnesses, defined once in `tools_shared.py`. A third tool, `errors_by_hour(path, level)`, was added afterwards and is present only for rows 22–23. |
 | Input | `app.log`, 60 lines, 19 ERROR lines spanning hours 09–17. Ground truth 14:00 (6 ERROR lines). |
 | Metrics | `Meter` in `tools_shared.py`: one iteration = one model call; tokens = input + output summed over calls; interventions = human approvals/denials. |
 | Judge | `run_ab.py` — success iff the `expected:` string appears in the final answer. |
@@ -116,12 +120,20 @@ From `results.csv`, rows 13–21. Wall times from `logs/`.
 | 19 | plan_exec | variant | X | 834 | 1 | 0 | 6.9s | plan parse failed |
 | 20 | plan_exec | variant | O | 9,991 | 5 | 0 | 13.3s | early exit at step 1 |
 | 21 | plan_exec | variant | O | 62,705 | 12 | 0 | 52.1s | replans=1, early exit at step 2 |
+| 22 | react | +errors_by_hour | O | 2,149 | 2 | 0 | 3.8s | axis-2 follow-up, different tool set |
+| 23 | react | +errors_by_hour | O | 2,177 | 2 | 0 | 3.2s | axis-2 follow-up, different tool set |
 
 | group | success | mean tokens | mean iters | mean time |
 |---|---|---|---|---|
 | react, baseline | 3/3 | 6,888 | 3.0 | 10.1s |
 | plan_exec, baseline | 3/3 | 435,426 | 56.3 | 92.8s |
 | plan_exec, variant | 2/3 | 24,510 (36,348 over successes) | 6.0 | 24.1s |
+| react, +errors_by_hour | 2/2 | 2,163 | 2.0 | 3.5s |
+
+Rows 22–23 are **not** part of the harness A/B. They hold the harness fixed
+(ReAct, unchanged) and move the tool set instead, so they belong to axis 2 and
+must not be read against rows 16–21 as if the harness had changed. They are
+reported here because they test one claim from the interpretation below.
 
 Interventions are 0 in every run. Axis 5 was never exercised: the starter
 tools are read-only, so `IRREVERSIBLE` is empty and no run had anything to
@@ -186,6 +198,24 @@ the date prefix (`'2026-09-01 11:.*ERROR'`) and got all nine hours right — the
 difference is which regex the model happened to write, not which harness ran
 it. A tool that took an hour argument instead of a regex would have removed
 the failure mode from both.
+
+That last sentence was a prediction, so it was checked (rows 22–23).
+`errors_by_hour(path, level)` was added to `tools_shared.py`: it splits each
+line on whitespace and reads the hour from the first two characters of field 2
+and the level from field 3, so there is no pattern to under-specify. Directly
+against `app.log` it returns
+`09:00=1, 10:00=2, 11:00=1, 12:00=3, 13:00=2, 14:00=6, 15:00=2, 16:00=1, 17:00=1`,
+which is ground truth, while `count_pattern('11:.*ERROR')` still returns 2 and
+`count_pattern('15:.*ERROR')` still returns 3 — the trap is intact, so the
+comparison is live and not an artifact of the old runs. Two ReAct runs with
+the tool available (`logs/react-22.txt`, `logs/react-23.txt`) both selected it
+on the first model call, made **zero** `count_pattern` calls, and reported
+11:00=1 and 15:00=2 correctly. The miscount is gone, and it went away by
+changing the tool rather than the harness — which is the point: this failure
+was never the termination condition's to fix. The tool also collapsed the work,
+since one call returns every hour: 2,163 tokens and 2.0 iterations against
+6,888 and 3.0 for the same harness on the regex-only tool set. Two runs and one
+input, so treat the token figure as a direction, not a measurement.
 
 **Caveat.** Three runs per configuration, one task, one 60-line input. The
 token ratios are large enough to survive that sample size; the 3/3 vs 2/3
