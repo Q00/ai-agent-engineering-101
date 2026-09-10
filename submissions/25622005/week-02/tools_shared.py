@@ -15,6 +15,11 @@ import os
 import re
 from dataclasses import dataclass, field
 
+from dotenv import load_dotenv
+
+# must run before PROVIDER/MODEL below are evaluated at import time
+load_dotenv()
+
 # ---------------------------------------------------------------- tools
 
 
