@@ -1,14 +1,34 @@
-"""Week 02 starter — the Plan-then-Execute harness.
+"""Week 02 — the Plan-then-Execute harness.
 
 One call produces the whole plan as a JSON list. Then each step is executed
 in order with tools. If a step reports OFF_PLAN, the plan is rebuilt once
 (max_replan=1): that number is the flexibility cap, and it is explicit.
+
+Axis under test: [axis 3] termination condition. See EARLY_EXIT below.
 """
 import json
+import os
 import re
 import sys
 
 from tools_shared import Chat, Meter, Reply
+
+# [axis 3] termination condition — the only axis this variant changes.
+#
+#   baseline (PLAN_EARLY_EXIT=0): the execute loop ends only when every
+#       planned step has run, so iters has a floor of len(plan) + 1 however
+#       early the answer appears. Baseline runs 4-6 in results.csv.
+#   variant  (PLAN_EARLY_EXIT=1, default): a step whose reply declares
+#       'Answer:' ends the run there, which is the ReAct termination rule
+#       (model decides) grafted onto the plan-first structure.
+#
+# Everything else is untouched: same planner, same executor, same tools,
+# same max_replan and max_tool_rounds. Set PLAN_EARLY_EXIT=0 to reproduce
+# the baseline rows from this same file.
+EARLY_EXIT = os.environ.get("PLAN_EARLY_EXIT", "1") != "0"
+
+# tolerates the markdown the model sometimes wraps it in ('**Answer:**')
+ANSWER_RX = re.compile(r"^\s*\*{0,2}Answer\*{0,2}\s*:", re.M)
 
 SYSTEM_PLAN = (
     "You are a planner. Reply with a JSON list of short strings, one per step, "
@@ -67,6 +87,12 @@ def run_plan_execute(task: str, max_replan: int = 1,
                 reply = Reply("OFF_PLAN: step exceeded the tool-call budget", [])
                 break
         log(f"[step {i + 1}] {reply.text.strip()[:300]}")
+
+        if EARLY_EXIT and ANSWER_RX.search(reply.text or ""):
+            log(f"[early-exit] step {i + 1} declared the answer; "
+                f"{len(plan) - (i + 1)} planned step(s) and the final-answer "
+                f"call skipped")                # [axis 3] termination
+            return reply.text, meter, replans
 
         if reply.text.strip().startswith("OFF_PLAN") and replans < max_replan:
             replans += 1                          # flexibility cap

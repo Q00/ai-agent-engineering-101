@@ -38,6 +38,9 @@ def judge(answer: str, expected: str) -> bool:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--tag", default="",
+                    help="label written into the note column, so results.csv "
+                         "says which harness configuration a row came from")
     args = ap.parse_args()
 
     task, expected = read_task()
@@ -62,14 +65,15 @@ def main():
                     _lines.append(str(msg))
 
                 t0 = time.time()
-                note = ""
+                note = args.tag
                 try:
                     out = fn(task, log=log)
                     answer, meter = out[0], out[1]
                     if name == "plan_exec":
-                        note = f"replans={out[2]}"
+                        note = f"{note} replans={out[2]}".strip()
                 except Exception as e:            # a crash is a failed run, not a lost run
-                    answer, meter, note = "", None, f"crash: {type(e).__name__}: {e}"
+                    answer, meter = "", None
+                    note = f"{note} crash: {type(e).__name__}: {e}".strip()
                     log(note)
                 success = judge(answer, expected)
                 log(f"[final] {answer.strip()[:300]}")
