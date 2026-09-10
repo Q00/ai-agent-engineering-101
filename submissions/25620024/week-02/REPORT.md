@@ -168,15 +168,45 @@ where `logs/plan_exec-04.txt` shows `Answer: 14:00` at step 1 followed by five
 more steps.
 
 **The cost of that axis is reliability, and the honest reading is that the
-variant did not pay it.** Success went 3/3 to 2/3, but run 19 failed in the
-PLAN phase: the planner answered with prose plus a fenced JSON block, and
-`parse_plan` returned `None` before the execute loop — the only place the
-early exit exists — ever ran. The same failure appears in the nemotron
-baseline at row 6, under `PLAN_EARLY_EXIT=0`. So it is a property of the
-planner's free-form-JSON contract (axis 4: the plan is parsed once with no
-retry) and it would have occurred identically in the baseline. Two runs is too
-few to claim the change is reliability-neutral, but the evidence points at the
-plan contract, not at the termination rule.
+variant did not pay it.** Success went 3/3 to 2/3, but the single failure —
+run 19 — did not happen in the part of the harness that changed. It died in
+the PLAN phase, before the execute loop that the early exit lives in ever
+started: `logs/plan_exec-19.txt` records `[plan] not valid JSON` followed by
+the planner's reply, which opens `I'll help you find which hour has the most
+ERROR lines in app.log.` and only then starts a fenced JSON array. Its metrics
+say the same thing — 1 iteration and 834 tokens, meaning the planner call was
+the only model call and no step ever executed.
+
+Three pieces of evidence from runs that already exist put that failure on the
+plan contract rather than on axis 3.
+
+1. **Row 6 was produced by code that could not early-exit at all.** It comes
+   from the baseline block committed at `8d91f24`, and the early exit was not
+   added until `fdc0777`; `git show 8d91f24:…/harness_plan_execute.py` contains
+   zero occurrences of `EARLY_EXIT` or `ANSWER_RX`. So this is not the same
+   code with a flag flipped — the mechanism being blamed had not been written
+   yet, and the failure still happened.
+2. **The failure is the same shape.** `logs/plan_exec-06.txt` shows
+   `[plan] not valid JSON: "Here's a thinking process:\n\n1.  **Analyze User
+   Input:**…"` — again prose first, JSON later. `parse_plan` strips code
+   fences but nothing removes a prose preamble, so `json.loads` raises and the
+   function returns `None`. One planner call, no execution, in both runs.
+3. **The rate does not follow the flag.** Across the four plan_exec
+   configurations the plan-parse failures are: nemotron baseline 1/3, nemotron
+   variant 0/3, Claude baseline 0/3, Claude variant 1/3 — one on each side of
+   `PLAN_EARLY_EXIT`. (The nemotron variant's 0 is not evidence of anything:
+   those three runs died on `RateLimitError` before the planner replied.)
+
+So the reliability difference between the two Plan-then-Execute rows in
+section 2 is one draw of a planner-format failure that both configurations are
+equally exposed to, and that belongs to axis 4 — the plan is parsed once, with
+no retry and no schema — not to the termination condition. What would settle
+it is a cheap fix rather than more runs: constrain the planner's output, or
+retry the plan once on a parse failure, and the failure mode should disappear
+from both configurations. That was not run here. On the evidence available the
+claim is that axis 3 bought a large token saving at no measured reliability
+cost, with the caveat that three runs per configuration cannot resolve a
+one-run difference either way.
 
 **ReAct won on every metric that was measured, for a reason that is about
 context, not intelligence.** At 6,888 tokens and 3.0 iterations it is 63x
