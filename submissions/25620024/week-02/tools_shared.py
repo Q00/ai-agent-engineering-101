@@ -37,7 +37,43 @@ def count_pattern(path: str, pattern: str) -> str:
         return str(sum(1 for line in f if rx.search(line)))
 
 
-TOOLS_IMPL = {"read_file": read_file, "count_pattern": count_pattern}
+def errors_by_hour(path: str, level: str = "ERROR") -> str:
+    """Count log lines per hour for one level, without a regex.
+
+    count_pattern takes a raw regex, and an hour written as "11:" also matches
+    the minute field of 09:11:56, so per-hour counts came back inflated. This
+    tool reads the hour from a fixed position instead: the log format is
+    "DATE TIME LEVEL message", so the hour is the first two characters of
+    field 2 and the level is field 3. No pattern to get wrong.
+    """
+    full = os.path.abspath(path)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+    counts = {}
+    skipped = 0
+    with open(full, encoding="utf-8") as f:
+        for line in f:
+            fields = line.split()
+            if len(fields) < 3:
+                skipped += 1 if line.strip() else 0
+                continue
+            if fields[2] != level:
+                continue
+            hour = fields[1][:2]
+            if len(hour) != 2 or not hour.isdigit():
+                skipped += 1
+                continue
+            counts[hour] = counts.get(hour, 0) + 1
+    if not counts:
+        return f"no {level} lines found in {path}"
+    out = ", ".join(f"{h}:00={n}" for h, n in sorted(counts.items()))
+    total = sum(counts.values())
+    tail = f" (skipped {skipped} unparseable line(s))" if skipped else ""
+    return f"{out}; total {level}={total}{tail}"
+
+
+TOOLS_IMPL = {"read_file": read_file, "count_pattern": count_pattern,
+              "errors_by_hour": errors_by_hour}
 
 # provider-neutral schemas; Chat converts them per provider
 TOOL_SPECS = [
@@ -52,6 +88,18 @@ TOOL_SPECS = [
                     "properties": {"path": {"type": "string"},
                                    "pattern": {"type": "string"}},
                     "required": ["path", "pattern"]}},
+    {"name": "errors_by_hour",
+     "description": (
+         "Count a log file's lines per hour for one level, e.g. "
+         "'09:00=1, 10:00=2, 14:00=6; total ERROR=19'. Reads the hour from a "
+         "fixed field position, so it cannot miscount the way a regex hour "
+         "such as '11:' does by also matching the minutes of 09:11:56. "
+         "Prefer this over count_pattern for any per-hour question."),
+     "parameters": {"type": "object",
+                    "properties": {"path": {"type": "string"},
+                                   "level": {"type": "string",
+                                             "description": "log level to count, default ERROR"}},
+                    "required": ["path"]}},
 ]
 
 # ---------------------------------------------------------------- meter
