@@ -43,6 +43,59 @@ Three harness configurations, differing on two of the five axes.
 | 4 · Error recovery | Tool exceptions come back as Observations; the model sees the error text and retries | Same for tool errors. Additionally `OFF_PLAN` triggers one replan (`max_replan=1`); a step that exceeds `max_tool_rounds=3` is forced to `OFF_PLAN` | same as baseline |
 | 5 · Human intervention | `IRREVERSIBLE` is empty (tools are read-only), so interventions are 0 by construction | no gate | no gate |
 
+### Where the termination condition branches
+
+ReAct — the loop exits the moment a reply carries no tool call, so the answer
+ends the run:
+
+```mermaid
+flowchart TD
+    A["task"] --> B["model call"]
+    B --> C{"tool calls in reply?"}
+    C -- "no" --> D(["return reply.text"])
+    C -- "yes" --> E["run tools, append observations"]
+    E --> F{"step < max_steps = 8?"}
+    F -- "yes" --> B
+    F -- "no" --> G(["MAX_STEPS reached: incomplete"])
+    classDef axis3 stroke-width:3px;
+    class C axis3;
+```
+
+Plan-then-Execute — the thick node is the whole difference between the two
+configurations. The baseline has no such check, so it can only leave the loop
+by running out of planned steps:
+
+```mermaid
+flowchart TD
+    A["task"] --> B["planner call, no tools"]
+    B --> C{"parse_plan: valid JSON list?"}
+    C -- "no" --> D(["plan parse failed"])
+    C -- "yes" --> E["i = 0"]
+    E --> F["executor call for step i+1"]
+    F --> G["tool rounds, max 3, then forced OFF_PLAN"]
+    G --> V{"variant only: reply declares 'Answer:'?"}
+    V -- "yes" --> W(["return that reply, skip the rest"])
+    V -- "no, or baseline" --> H{"OFF_PLAN and replans < max_replan = 1?"}
+    H -- "yes" --> I["planner rebuilds the remaining steps"]
+    I --> F
+    H -- "no" --> J["i = i + 1"]
+    J --> K{"i < len(plan)?"}
+    K -- "yes" --> F
+    K -- "no" --> L["one more call: give the final answer"]
+    L --> M(["return final.text"])
+    classDef axis3 stroke-width:3px;
+    class V,K axis3;
+```
+
+Read together, the two diagrams show why the iteration counts differ by an
+order of magnitude. ReAct's exit test sits on the path the answer travels: the
+reply that contains the answer is the reply with no tool call. The baseline's
+exit test sits on a counter instead, so an answer produced at step 1 does not
+shorten anything — `i < len(plan)` keeps sending the loop back to the executor
+until the list is finished. The variant adds ReAct's test to the same
+plan-first structure without removing the counter; the counter is still there,
+it just stops being the only way out.
+
 The variant is exactly one axis away from the baseline: same planner, same
 executor, same system prompts, same tools, same `max_replan`, same
 `max_tool_rounds`. The flag is read from the environment so both
