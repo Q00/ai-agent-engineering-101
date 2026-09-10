@@ -87,9 +87,20 @@ class Reply:
 
 
 PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
-MODEL = os.environ.get(
-    "AGENT_MODEL",
-    "claude-sonnet-4-5" if PROVIDER == "anthropic" else "gpt-4o-mini")
+
+# One AGENT_MODEL serves both providers, so a value left over from the other
+# provider gets sent to the wrong API: an OpenRouter id such as
+# "nvidia/nemotron-3.5-lightning:free" is a 404 on the Anthropic API, and the
+# run dies as a crash row instead of a measurement. Ignore an id that cannot
+# belong to the selected provider, and say so loudly.
+_DEFAULTS = {"anthropic": "claude-haiku-4-5",   # cheapest, fastest current Claude
+             "openai": "gpt-4o-mini"}
+_requested = os.environ.get("AGENT_MODEL", "").strip()
+if PROVIDER == "anthropic" and _requested and not _requested.startswith("claude-"):
+    print(f"tools_shared: AGENT_MODEL={_requested!r} is not an Anthropic model "
+          f"id; using {_DEFAULTS['anthropic']!r} instead.")
+    _requested = ""
+MODEL = _requested or _DEFAULTS[PROVIDER]
 
 _client = None
 
