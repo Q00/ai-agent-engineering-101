@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/Users/dragonash/Documents/ACADEMY/서울과기대/2026년2학기/AX의 이해와 활용/task/ai-agent-engineering-101/submissions/25620024/week-01/first_agent.py", line 115, in <module>
+    print(run(goal))
+          ^^^^^^^^^
+  File "/Users/dragonash/Documents/ACADEMY/서울과기대/2026년2학기/AX의 이해와 활용/task/ai-agent-engineering-101/submissions/25620024/week-01/first_agent.py", line 91, in run
+    resp = client.messages.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Documents/ACADEMY/서울과기대/2026년2학기/AX의 이해와 활용/task/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/anthropic/_utils/_utils.py", line 294, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Documents/ACADEMY/서울과기대/2026년2학기/AX의 이해와 활용/task/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/anthropic/resources/messages/messages.py", line 980, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/Users/dragonash/Documents/ACADEMY/서울과기대/2026년2학기/AX의 이해와 활용/task/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/anthropic/_base_client.py", line 1507, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Documents/ACADEMY/서울과기대/2026년2학기/AX의 이해와 활용/task/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/anthropic/_base_client.py", line 1191, in request
+    raise self._make_status_error_from_response(response) from None
+anthropic.BadRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'This API key is not scoped to a workspace, so this request must include the anthropic-workspace-id header with the ID of the workspace to use. Add the header, or use an API key that is scoped to a workspace.'}, 'request_id': None}

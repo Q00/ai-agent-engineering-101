@@ -1,0 +1,46 @@
+
+==================================================================
+1) THE LOOP: three tools chained, then a final answer
+==================================================================
+  [tool] read_file({'path': 'notes.txt'}) -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+  [tool] calculator({'expression': '4 + 48000 + 9500 + 12000'}) -> 69504
+  [tool] write_note({'path': 'result.md', 'text': 'total: 69504'}) -> appended to result.md; the file now has 1 line(s)
+The numbers add up to 69504; recorded in result.md.
+  [meta] model calls made: 4 | result.md exists: True
+
+==================================================================
+2) THE LOOP REMOVED: same script, one call, no tool ever executed
+==================================================================
+  the model only SAID: tool_use -> read_file({'path': 'notes.txt'})
+  no [tool] line above: without the loop nothing is executed. It is a program again.
+
+==================================================================
+3) SAFETY: max_steps stops a model that never stops calling tools
+==================================================================
+  [tool] calculator({'expression': '1+1'}) -> 2
+  [tool] calculator({'expression': '1+1'}) -> 2
+  [tool] calculator({'expression': '1+1'}) -> 2
+stopped: max steps exceeded
+
+==================================================================
+4) SAFETY: the path guard, on both the read and the write direction
+==================================================================
+  read_file('/etc/passwd')      -> denied: path outside the working directory
+  write_note('/tmp/pwned.txt')  -> denied: path outside the working directory
+  write_note('result.md')       -> appended to result.md; the file now has 2 line(s)
+
+==================================================================
+5) TOOL COUNT (what CI counts)
+==================================================================
+  TOOLS      = ['calculator', 'read_file', 'write_note']
+  TOOLS_IMPL = ['calculator', 'read_file', 'write_note']
+
+all offline checks completed
