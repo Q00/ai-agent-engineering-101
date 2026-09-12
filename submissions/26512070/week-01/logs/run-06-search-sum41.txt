@@ -1,0 +1,13 @@
+  [tool] calculator({'expression': '18 + (18 + 5)'}) -> 41
+  [tool] calculator({'expression': '17 + (17 + 5)'}) -> 39
+  [tool] calculator({'expression': '19 + (19 + 5)'}) -> 43
+  [tool] seconds_recorder({'path': 'notes.txt', 'at_second': 18}) -> wrote 2 lines to notes.txt
+  [tool] read_file({'path': 'notes.txt'}) -> time: 18
+time_after_five: 23
+
+  [tool] calculator({'expression': '18 + 23'}) -> 41
+Traceback (most recent call last):
+  File "C:\Users\gom12\ax_¼ö¾÷\ai-agent-engineering-101\submissions\26512070\week-01\first_agent.py", line 172, in <module>
+    print(run(goal))
+    ~~~~~^^^^^^^^^^^
+UnicodeEncodeError: 'cp949' codec can't encode character '\u2014' in position 114: illegal multibyte sequence

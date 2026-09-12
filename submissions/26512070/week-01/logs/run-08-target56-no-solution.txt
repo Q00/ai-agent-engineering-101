@@ -1,0 +1,18 @@
+  [tool] calculator({'expression': '25 + 30'}) -> 55
+  [tool] calculator({'expression': '26 + 31'}) -> 57
+Traceback (most recent call last):
+  File "C:\Users\gom12\ax_수업\ai-agent-engineering-101\submissions\26512070\week-01\first_agent.py", line 177, in <module>
+    print(run(goal))
+          ~~~^^^^^^
+  File "C:\Users\gom12\ax_수업\ai-agent-engineering-101\submissions\26512070\week-01\first_agent.py", line 158, in run
+    out = TOOLS_IMPL[call.function.name](**args)
+  File "C:\Users\gom12\ax_수업\ai-agent-engineering-101\submissions\26512070\week-01\first_agent.py", line 38, in calculator
+    return str(_ev(ast.parse(expression, mode="eval").body))
+                   ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gom12\AppData\Local\Programs\Python\Python314\Lib\ast.py", line 46, in parse
+    return compile(source, filename, mode, flags,
+                   _feature_version=feature_version, optimize=optimize)
+  File "<unknown>", line 1
+    for s in range(60): print(s, s+5, (s+5)%60, s+((s+5)%60))
+                        ^^^^^
+SyntaxError: invalid syntax. Did you mean 'not'?
