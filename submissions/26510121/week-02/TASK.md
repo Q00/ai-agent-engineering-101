@@ -13,3 +13,11 @@ lines in `app.log`, written as HH:00. `app.log` is the reference input; the
 graded runs use it unchanged.
 
 expected: 14:00
+
+## Experiment controls
+
+Locked before any model run on 2026-09-12. Both harnesses will use this
+unchanged task, the unchanged `app.log`, the same shared tools, and the same
+OpenRouter model configuration. Only the harness varies. Failed runs remain
+in `results.csv` and the success criterion above will not be loosened after
+observing results.
