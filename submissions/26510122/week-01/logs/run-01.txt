@@ -1,0 +1,15 @@
+Provider: OpenRouter; model: nvidia/nemotron-3.5-lightning:free
+  [tool] read_file({'path': 'notes.txt'}) -> 피자 지출: 48000원
+음료 지출: 9500원
+이미 정산받은 금액: 12000원
+
+총지출과 아직 정산받지 못한 금액을 각각 계산하고 결과를 저장해주세요.
+
+  [tool] calculator({'expression': '48000 + 9500'}) -> 57500
+  [tool] calculator({'expression': '57500 - 12000'}) -> 45500
+  [tool] write_note({'content': '총 지출 금액: 57500원\n이미 정산받은 금액: 12000원\n정산 후 남은 금액: 45500원'}) -> Saved to expense_summary.txt
+총 지출 금액: **57,500원**  
+이미 정산받은 금액: **12,000원**  
+정산 후 남은 금액: **45,500원**  
+
+위 내용이 `expense_summary.txt`에 저장되었습니다.
