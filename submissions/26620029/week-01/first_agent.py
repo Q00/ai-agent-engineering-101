@@ -1,0 +1,107 @@
+"""Week 01 starter — the agent from the lab, Anthropic API version.
+
+Two tools: calculator, read_file. Your assignment: add a third.
+Requires: pip install anthropic, and ANTHROPIC_API_KEY in the environment.
+"""
+import os
+import sys
+import ast
+import operator
+import datetime
+
+import anthropic
+
+# ---- tool 1: calculator (safe, no eval) ----
+_OPS = {ast.Add: operator.add, ast.Sub: operator.sub,
+        ast.Mult: operator.mul, ast.Div: operator.truediv,
+        ast.Pow: operator.pow, ast.USub: operator.neg}
+
+
+def _ev(node):
+    if isinstance(node, ast.Constant):
+        return node.value
+    if isinstance(node, ast.BinOp):
+        return _OPS[type(node.op)](_ev(node.left), _ev(node.right))
+    if isinstance(node, ast.UnaryOp):
+        return _OPS[type(node.op)](_ev(node.operand))
+    raise ValueError("expression not allowed")
+
+
+def calculator(expression: str) -> str:
+    """Evaluate an arithmetic expression string, e.g. '3 * (4 + 5)'."""
+    return str(_ev(ast.parse(expression, mode="eval").body))
+
+
+# ---- tool 2: read_file (blocked outside the working directory) ----
+def read_file(path: str) -> str:
+    """Return the contents of a text file."""
+    full = os.path.abspath(path)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+    with open(full, encoding="utf-8") as f:
+        return f.read()[:4000]
+
+
+# ---- tool 3: write_file (인자로 주어진 문제를 해결하고 그 답을 저장한다) ----
+def write_note(content: str) -> str:
+    """Save a note or summary to a timestamped text file in the working directory."""
+    filename = datetime.datetime.now().strftime("%Y%m%d_%H%M%S") + ".txt"
+    full = os.path.abspath(filename)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+    with open(full, "w", encoding="utf-8") as f:
+        f.write(content)
+    return f"saved to {filename}"
+
+
+TOOLS_IMPL = {"calculator": calculator, "read_file": read_file, "write_note":write_note}
+
+# ---- tool schemas handed to the model (the description IS the interface) ----
+TOOLS = [
+    {"name": "calculator",
+     "description": "Evaluate an arithmetic expression.",
+     "input_schema": {"type": "object",
+                      "properties": {"expression": {"type": "string"}},
+                      "required": ["expression"]}},
+    {"name": "read_file",
+     "description": "Read a text file in the working directory.",
+     "input_schema": {"type": "object",
+                      "properties": {"path": {"type": "string"}},
+                      "required": ["path"]}},
+	{"name": "write_note",
+     "description": "Save a note, summary, or calculation result to a timestamped text file.",
+     "input_schema": {"type": "object",
+                  "properties": {"content": {"type": "string"}},
+                  "required": ["content"]}},
+]
+
+
+def run(goal: str, max_steps: int = 4):
+	client = anthropic.Anthropic()  # uses ANTHROPIC_API_KEY
+	messages = [{"role": "user", "content": goal}]
+
+	for step in range(max_steps):   # <- this loop is what makes it an agent
+		resp = client.messages.create(
+			model="claude-sonnet-4-5", max_tokens=1024,
+			tools=TOOLS, messages=messages)
+		messages.append({"role": "assistant", "content": resp.content})
+
+		if resp.stop_reason != "tool_use":   # final answer -> stop
+			return "".join(b.text for b in resp.content if b.type == "text")
+
+		results = []
+		for block in resp.content:           # execute tool calls -> observe
+			if block.type == "tool_use":
+				out = TOOLS_IMPL[block.name](**block.input)
+				print(f"  [tool] {block.name}({block.input}) -> {out}")
+				results.append({"type": "tool_result",
+								"tool_use_id": block.id, "content": str(out)})
+		messages.append({"role": "user", "content": results})
+
+	return "stopped: max steps exceeded"   # the stop condition is a safety net
+
+
+if __name__ == "__main__":
+    goal = sys.argv[1] if len(sys.argv) > 1 else \
+        "Read notes.txt and sum the numbers in it."
+    print(run(goal))
