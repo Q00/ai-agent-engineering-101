@@ -1,0 +1,19 @@
+# 2026-09-03T04:37:43Z | BASELINE: first_agent.py @ 0c7cf32 (2 tools: calculator, read_file; NO exchange-rate tool) | model: nvidia/nemotron-3-super-120b-a12b:free via OpenRouter
+# cmd: AGENT_MODEL=nvidia/nemotron-3-super-120b-a12b:free uv run --with openai python first_agent.py "Read fees.txt and report the total registration cost in KRW, using the exchange rates on the date written in the file."
+  [tool] read_file({'path': 'fees.txt'}) -> Conference registration fees (example figures), quoted on 2026-09-01
+
+KDD 2026 (USA): 850 USD
+ECML-PKDD 2026 (Europe): 700 EUR
+IBIS 2026 (Japan): 60000 JPY
+PAKDD 2026 (Australia): 1200 AUD
+
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-sungsoolee/cc5a9ac4-51b5-45bb-98d8-99634f1d2cc4/scratchpad/baseline2/first_agent.py", line 98, in <module>
+    print(run(goal))
+          ~~~^^^^^^
+  File "/private/tmp/claude-501/-Users-sungsoolee/cc5a9ac4-51b5-45bb-98d8-99634f1d2cc4/scratchpad/baseline2/first_agent.py", line 87, in run
+    out = TOOLS_IMPL[call.function.name](**args)
+  File "/private/tmp/claude-501/-Users-sungsoolee/cc5a9ac4-51b5-45bb-98d8-99634f1d2cc4/scratchpad/baseline2/first_agent.py", line 45, in read_file
+    with open(full, encoding="utf-8") as f:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/private/tmp/claude-501/-Users-sungsoolee/cc5a9ac4-51b5-45bb-98d8-99634f1d2cc4/scratchpad/baseline2/exchange_rates.txt'
