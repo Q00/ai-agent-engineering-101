@@ -9,7 +9,7 @@ same results.csv but are never averaged together; summarize_results.py
 refuses to pool them unless asked for a per-condition breakdown.
 
 python run_ab.py --runs 3 --only plan_exec --plan-parser tolerant
-python run_ab.py --runs 3 --only plan_exec --plan-prompt v2
+python run_ab.py --runs 3 --plan-prompt v3
 """
 import argparse
 import csv
@@ -28,7 +28,8 @@ from pathlib import Path
 
 from harness_plan_execute import PLAN_PROMPTS, SYSTEM_EXEC, run_plan_execute
 from harness_react import SYSTEM, run_react
-from tools_shared import BASE_URL, MAX_TOKENS, MODEL, TEMPERATURE, TIMEOUT, TOOL_SPECS, Meter
+from tools_shared import (BASE_URL, MAX_TOKENS, MODEL, REASONING_EFFORT,
+                          TEMPERATURE, TIMEOUT, TOOL_SPECS, Meter)
 
 HEADER = ["run", "harness", "success", "tokens", "iters", "interventions", "note"]
 ROOT = Path(__file__).resolve().parent
@@ -83,6 +84,7 @@ def conditions(task, expected, max_steps, plan_prompt="v1", plan_parser="strict"
         "plan_prompt": plan_prompt, "plan_parser": plan_parser,
         "max_steps": max_steps, "max_replan": 1, "max_tool_rounds": 3,
         "max_tokens": MAX_TOKENS, "temperature": TEMPERATURE,
+        "reasoning_effort": REASONING_EFFORT,
         "timeout_seconds": TIMEOUT, "sdk_retries": 0,
         "iters_definition": "attempted model calls, including plan and final answer",
         "tokens_definition": "sum of input and output usage reported by the API",
@@ -154,8 +156,8 @@ def main(argv=None):
     parser.add_argument("--runs", type=int, default=3, help="runs per harness")
     parser.add_argument("--max-steps", type=int, default=16, help="model calls per run, both harnesses")
     parser.add_argument("--check", action="store_true", help="readiness only; no API call or result rows")
-    parser.add_argument("--plan-prompt", choices=sorted(PLAN_PROMPTS), default="v1",
-                        help="planner system prompt variant; v1 is the condition of runs 1-6")
+    parser.add_argument("--plan-prompt", choices=sorted(PLAN_PROMPTS), default="v3",
+                        help="planner prompt; v3 is the current robust default")
     parser.add_argument("--plan-parser", choices=("strict", "tolerant"), default="strict",
                         help="strict needs the whole reply to be the JSON plan; tolerant accepts one embedded array")
     parser.add_argument("--only", choices=("both", "react", "plan_exec"), default="both",

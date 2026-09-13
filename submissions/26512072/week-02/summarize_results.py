@@ -15,10 +15,11 @@ ROOT = Path(__file__).resolve().parent
 CONTROLS = ("provider", "base_url", "model", "task", "expected", "tools", "prompts",
             "plan_prompt", "plan_parser",
             "max_steps", "max_replan", "max_tool_rounds", "max_tokens", "temperature",
-            "timeout_seconds", "sdk_retries", "seed", "python", "openai", "sha256")
+            "reasoning_effort", "timeout_seconds", "sdk_retries", "seed", "python", "openai", "sha256")
 # Runs 1-6 predate the named conditions. They used the v1 prompt with the
 # strict parser, so those are the defaults a log without the keys stands for.
-CONTROL_DEFAULTS = {"plan_prompt": "v1", "plan_parser": "strict"}
+CONTROL_DEFAULTS = {"plan_prompt": "v1", "plan_parser": "strict",
+                    "reasoning_effort": None}
 
 
 def load(root=ROOT):

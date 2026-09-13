@@ -99,6 +99,9 @@ MODEL = os.environ.get("AGENT_MODEL", "nvidia/nemotron-3.5-lightning:free")
 MAX_TOKENS = 2048
 TEMPERATURE = 0.2
 TIMEOUT = 45.0
+# OpenRouter's unified reasoning option. Keeping this shared makes the new A/B
+# condition fair: both harnesses use the same model with the same reasoning mode.
+REASONING_EFFORT = "none"
 
 _client = None
 
@@ -157,6 +160,7 @@ class Chat:
             "system": self.system, "messages": self.messages,
             "tools": TOOL_SPECS if self.tools else [],
             "max_tokens": MAX_TOKENS, "temperature": TEMPERATURE,
+            "reasoning": {"effort": REASONING_EFFORT},
         }, ensure_ascii=False, default=lambda value: value.model_dump(exclude_none=True)))
         if PROVIDER == "anthropic":
             reply = self._send_anthropic()
@@ -182,7 +186,8 @@ class Chat:
 
     def _send_openai(self) -> Reply:
         kwargs = dict(model=MODEL, messages=self.messages,
-                      max_tokens=MAX_TOKENS, temperature=TEMPERATURE)
+                      max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
+                      extra_body={"reasoning": {"effort": REASONING_EFFORT}})
         if self.tools:
             kwargs["tools"] = [{"type": "function",
                                 "function": {"name": t["name"],

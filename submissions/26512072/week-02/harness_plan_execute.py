@@ -30,13 +30,30 @@ SYSTEM_PLAN_V2 = (
     'Example reply: ["read_file to see the log format", '
     '"count_pattern for WARN on each day", "compare the counts and name the day"]'
 )
-PLAN_PROMPTS = {"v1": SYSTEM_PLAN, "v2": SYSTEM_PLAN_V2}
+SYSTEM_PLAN_V3 = (
+    "You are a planner. Output exactly one valid JSON array containing three "
+    "short step strings and nothing else. Do not output analysis, markdown, or "
+    "the final answer. Make the steps fit this executor: the first step reads "
+    "the input once, the second analyzes and counts from the returned text "
+    "without calling another tool, and the third states the requested final "
+    "answer. Each step may use at most one tool-call round.\n"
+    "Example task: name the day with the most WARN lines in a log.\n"
+    'Example reply: ["read_file the log once", '
+    '"count WARN lines per day from the returned text without a tool", '
+    '"state the day in the requested format"]'
+)
+PLAN_PROMPTS = {"v1": SYSTEM_PLAN, "v2": SYSTEM_PLAN_V2, "v3": SYSTEM_PLAN_V3}
 SYSTEM_EXEC = (
-    "You execute one step of a plan at a time with the tools you are given. "
-    "Before each tool call, write a short 'Thought:' line about the next action. "
+    "Execute only the current step, using prior tool results already present "
+    "in the conversation. Never repeat a completed tool call. A step may make "
+    "at most one tool-call response; after its Observation, finish the step "
+    "without another tool. For an analysis or counting step, inspect the "
+    "read_file result already in context and do the counting yourself. Do not "
+    "call count_pattern once per group. Before a tool call, write a short "
+    "'Thought:' line. When a step is complete, start with 'STEP_DONE:'. "
     "If the step cannot be done as planned, reply with a line that starts with "
     "'OFF_PLAN:' and explain why. When asked for the final answer, reply with a "
-    "line that starts with 'Answer:'."
+    "line that starts with 'Answer:' and make no tool call."
 )
 
 
@@ -99,7 +116,7 @@ def parse_plan(text: str, tolerant: bool = False):
 
 def run_plan_execute(task: str, max_replan: int = 1,
                      max_tool_rounds: int = 3, log=print, max_steps: int = 16,
-                     meter=None, system_plan: str = SYSTEM_PLAN,
+                     meter=None, system_plan: str = SYSTEM_PLAN_V3,
                      plan_parser: str = "strict"):
     if max_replan not in (0, 1):
         raise ValueError("max_replan must be 0 or 1")
@@ -107,6 +124,7 @@ def run_plan_execute(task: str, max_replan: int = 1,
         raise ValueError("plan_parser must be 'strict' or 'tolerant'")
     tolerant = plan_parser == "tolerant"
     meter = meter if meter is not None else Meter(max_steps=max_steps, log=log)
+    replans = 0
 
     # 1) PLAN: the whole plan in one call, no tools
     planner = Chat(system_plan, meter, tools=False)
@@ -114,15 +132,27 @@ def run_plan_execute(task: str, max_replan: int = 1,
                      f"count_pattern(path, pattern).")
     raw = planner.send().text
     plan = parse_plan(raw, tolerant)
-    if plan is None:                              # a parse failure is one failure mode
+    if plan is None:
         log(f"[plan] not valid JSON: {raw!r}")
-        return "plan parse failed", meter, 0
-    log(f"[plan] {plan}")
+        if replans >= max_replan:
+            return "plan parse failed", meter, replans
+        replans += 1
+        planner.add_user(
+            "OFF_PLAN: the previous reply was not a valid JSON list. This is "
+            "the one allowed replan. Reply with only a JSON list of the "
+            "remaining steps; the first character must be '[' and the last ']'.")
+        raw = planner.send().text
+        plan = parse_plan(raw, tolerant)
+        if plan is None:
+            log(f"[replan] not valid JSON: {raw!r}")
+            return "replan parse failed", meter, replans
+        log(f"[replan] {plan}")
+    else:
+        log(f"[plan] {plan}")
 
     # 2) EXECUTE: each step in order
     executor = Chat(SYSTEM_EXEC, meter)
     executor.add_user(f"Task: {task}\nPlan: {json.dumps(plan)}")
-    replans = 0
     i = 0
     while i < len(plan):
         executor.add_user(f"Execute step {i + 1}: {plan[i]}")

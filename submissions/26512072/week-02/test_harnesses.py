@@ -16,7 +16,7 @@ import harness_react
 import run_ab
 import summarize_results
 import tools_shared as shared
-from harness_plan_execute import SYSTEM_PLAN_V2, parse_plan, run_plan_execute
+from harness_plan_execute import SYSTEM_PLAN_V2, SYSTEM_PLAN_V3, parse_plan, run_plan_execute
 from harness_react import run_react
 
 ROOT = Path(__file__).resolve().parent
@@ -57,6 +57,7 @@ class HarnessTests(unittest.TestCase):
             self.assertEqual(body["model"], shared.MODEL)
             self.assertEqual(body["temperature"], shared.TEMPERATURE)
             self.assertEqual(body["max_tokens"], shared.MAX_TOKENS)
+            self.assertEqual(body["reasoning"], {"effort": shared.REASONING_EFFORT})
             item = next(pending)
             if isinstance(item, int):
                 return httpx.Response(item, json={"error": {"message": "offline test failure"}})
@@ -104,9 +105,17 @@ class HarnessTests(unittest.TestCase):
         self.assertEqual((replans, meter.iters), (1, 4))
 
     def test_empty_plan_is_a_failure(self):
-        self.api([text("[]")])
+        self.api([text("[]"), text("still not JSON")])
         answer, meter, replans = run_plan_execute("Inspect app.log", log=self.events.append)
-        self.assertEqual((answer, meter.iters, replans), ("plan parse failed", 1, 0))
+        self.assertEqual((answer, meter.iters, replans), ("replan parse failed", 2, 1))
+
+    def test_plan_parse_failure_uses_the_single_replan(self):
+        self.api([text("I should make a plan"), text('["Analyze the existing input"]'),
+                  text("STEP_DONE: analyzed"), text("Answer: 14:00")])
+        answer, meter, replans = run_plan_execute("Inspect app.log", log=self.events.append)
+        self.assertEqual((answer, meter.iters, meter.tokens, replans),
+                         ("Answer: 14:00", 4, 72, 1))
+        self.assertIn("one allowed replan", self.requests[1]["messages"][-1]["content"])
 
     def test_both_harnesses_obey_total_budget(self):
         for name, fn, replies in (
@@ -210,6 +219,12 @@ class HarnessTests(unittest.TestCase):
         self.assertEqual((config["plan_prompt"], config["plan_parser"]), ("v2", "tolerant"))
         self.assertEqual(config["run_order"], "alternating react, plan_exec")
 
+        with contextlib.chdir(ROOT):
+            current = run_ab.conditions("Inspect app.log", "14:00", 16,
+                                        plan_prompt="v3", plan_parser="strict")
+        self.assertEqual(current["prompts"]["plan"], SYSTEM_PLAN_V3)
+        self.assertEqual(current["reasoning_effort"], "none")
+
     def test_bad_parser_name_is_rejected_before_any_call(self):
         with self.assertRaisesRegex(ValueError, "plan_parser"):
             run_plan_execute("Inspect app.log", plan_parser="lenient", log=self.events.append)
@@ -252,7 +267,8 @@ class HarnessTests(unittest.TestCase):
         base = {key: "offline-fixture" for key in summarize_results.CONTROLS}
         old = {key: value for key, value in base.items()
                if key not in summarize_results.CONTROL_DEFAULTS}
-        new = dict(base, plan_prompt="v1", plan_parser="strict")
+        new = dict(base, plan_prompt="v1", plan_parser="strict",
+                   reasoning_effort=None)
         with Path("results.csv").open("w", encoding="utf-8", newline="") as stream:
             writer = csv.writer(stream)
             writer.writerow(run_ab.HEADER)

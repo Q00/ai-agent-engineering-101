@@ -2,7 +2,7 @@ param(
     [int]$Runs = 3,
     [int]$MaxSteps = 16,
     [switch]$Check,
-    [ValidateSet('v1', 'v2')][string]$PlanPrompt = 'v1',
+    [ValidateSet('v1', 'v2', 'v3')][string]$PlanPrompt = 'v3',
     [ValidateSet('strict', 'tolerant')][string]$PlanParser = 'strict',
     [ValidateSet('both', 'react', 'plan_exec')][string]$Only = 'both'
 )
