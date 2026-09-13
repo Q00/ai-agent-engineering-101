@@ -1,6 +1,6 @@
 """Week 02 starter — run the A/B experiment and record results.csv.
 
-Usage: python run_ab.py [--runs 3]
+Usage: python run_ab.py [--runs 3] [--early-exit]
 
 Reads the task and the success criterion from TASK.md, runs each harness
 --runs times, judges every run, appends one line per run to results.csv,
@@ -38,6 +38,9 @@ def judge(answer: str, expected: str) -> bool:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--early-exit", action="store_true",
+                    help="[axis 3] plan_exec stops at the first Answer instead "
+                         "of running the plan to exhaustion. react is unaffected.")
     args = ap.parse_args()
 
     task, expected = read_task()
@@ -63,13 +66,19 @@ def main():
 
                 t0 = time.time()
                 note = ""
+                kwargs = {"log": log}
+                tag = ""
+                if name == "plan_exec" and args.early_exit:
+                    kwargs["early_exit"] = True
+                    tag = " variant=early_exit"
                 try:
-                    out = fn(task, log=log)
+                    out = fn(task, **kwargs)
                     answer, meter = out[0], out[1]
                     if name == "plan_exec":
-                        note = f"replans={out[2]}"
+                        note = f"replans={out[2]}{tag}"
                 except Exception as e:            # a crash is a failed run, not a lost run
-                    answer, meter, note = "", None, f"crash: {type(e).__name__}: {e}"
+                    answer, meter = "", None
+                    note = f"crash: {type(e).__name__}: {e}{tag}"
                     log(note)
                 success = judge(answer, expected)
                 log(f"[final] {answer.strip()[:300]}")
