@@ -1,107 +1,52 @@
-# Week 02 — 26512072 / BJEon01
+# Week 02 — Harness A/B: ReAct vs Plan-then-Execute
 
-실행: 2026-09-08. 실제 측정, 원본 로그, 학생이 제시한 가설과 로그의 대조를 반영했다.
+학번 **26512072**, GitHub **BJEon01**. 태스크는 `app.log`에서 `ERROR`가 가장 많은 시간대를 찾는 것이며, 실행 전에 커밋한 성공 기준은 최종 답에 **`14:00`**이 포함되는 것이다.
 
-## 1. 변형 정의
+## 1. What I built — 변형 정의
 
-공통 조건은 OpenRouter의 `nvidia/nemotron-3.5-lightning:free`, 원본 `app.log`,
-`read_file(path)`·`count_pattern(path, pattern)`이다. 도구는 `app.log`만 읽는다.
-`temperature=0.2`, 출력 상한 2,048토큰, 전체 호출 예산 16회, SDK 재시도 0회로 고정했다.
-성공 기준은 최종 답변에 `14:00`이 포함되는 것이며, `d6b7028`에서 실행 전에 커밋했다.
-실험 코드 커밋은 `58facb2`이고 ReAct/Plan을 교대로 3회씩 실행했다.
-세부 프롬프트·도구 스키마·버전·파일 해시는 각 로그의 첫 줄과 README에 있다.
+최종 비교(run 13–18)는 OpenRouter의 `nvidia/nemotron-3.5-lightning:free`, 같은 태스크와 원본 `app.log`, 같은 `read_file(path)`·`count_pattern(path, pattern)` 도구를 썼다. 두 하네스 모두 `temperature=0.2`, `max_tokens=2048`, `max_steps=16`, reasoning effort `none`으로 실행했다. 독립변수는 하네스이며 ReAct와 Plan-then-Execute를 교대로 3회씩 실행했다.
 
-| 축 | ReAct | Plan-then-Execute |
+| 하네스 축 | ReAct | Plan-then-Execute |
 | --- | --- | --- |
-| 컨텍스트 관리 | 하나의 대화에 도구 결과를 누적 | Planner와 Executor 대화 분리; 실행 대화에는 계획과 도구 결과 누적 |
-| 도구 세분성 | 동일한 두 공용 도구 | 동일한 두 공용 도구; 계획 호출에서는 사용하지 않음 |
-| 종료 조건 | 도구 호출 없는 응답 또는 전체 16회 상한 | 계획 파싱 실패, 단계 수행 후 최종 답변 또는 전체 16회 상한 |
-| 오류 복구 | 오류를 Observation으로 전달 | OFF_PLAN이면 최대 1회 재계획; 최초 계획 파싱 실패는 즉시 종료 |
-| 사람 개입 | 읽기 전용 도구이므로 승인 요청 없음 | 읽기 전용 도구이므로 승인 요청 없음; 자동 재계획은 별도 집계 |
+| 컨텍스트 관리 | 하나의 대화에 Observation을 누적 | Planner와 Executor를 분리하고 Executor에 계획과 Observation을 누적 |
+| 다음 행동 결정 | Observation 뒤마다 다음 Action을 다시 결정 | 먼저 3단계 JSON 계획을 만든 뒤 순서대로 실행 |
+| 종료 조건 | 도구 호출 없는 답 또는 16회 상한 | 계획 파싱·각 단계·최종 답 완료 또는 16회 상한 |
+| 오류 복구 | 도구 오류를 Observation으로 받고 계속 판단 | `OFF_PLAN` 또는 계획 파싱 실패 때 전체 실행 중 최대 1회 재계획 |
+| 사람 개입 | 읽기 전용 도구이므로 0회 | 읽기 전용 도구이므로 0회; 자동 재계획은 사람 개입이 아님 |
 
-## 2. 측정
+Plan v3는 한 번의 모델 호출로 JSON 단계 목록 전체를 만들고, 첫 단계에서 파일을 한 번 읽으며, 다음 단계에서 이미 받은 내용을 집계하고, 마지막 단계에서 답을 쓰도록 범위를 좁혔다. 이는 앞선 실행에서 한 단계가 시간대별 도구 호출을 반복해 `max_tool_rounds`를 넘었던 문제를 고친 것이다. 실행 코드는 [harness_plan_execute.py](harness_plan_execute.py), 공용 모델·도구·측정 코드는 [tools_shared.py](tools_shared.py)에 있다.
+
+## 2. Measurements — 측정표
+
+`results.csv`의 최종 동조건 A/B 실행은 다음과 같다. 실패 실행도 그대로 포함했다.
 
 | run | harness | success | tokens | iters | interventions | note |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | react | O | 4027 | 2 | 0 | |
-| 2 | plan_exec | X | 2138 | 1 | 0 | replans=0 |
-| 3 | react | O | 3987 | 2 | 0 | |
-| 4 | plan_exec | X | 2138 | 1 | 0 | replans=0 |
-| 5 | react | O | 3835 | 2 | 0 | |
-| 6 | plan_exec | X | 2138 | 1 | 0 | replans=0 |
+| ---: | --- | :---: | ---: | ---: | ---: | --- |
+| 13 | react | O | 24,023 | 7 | 0 | |
+| 14 | plan_exec | O | 20,409 | 7 | 0 | replans=0 |
+| 15 | react | O | 4,204 | 2 | 0 | |
+| 16 | plan_exec | O | 19,317 | 7 | 0 | replans=0 |
+| 17 | react | X | 13,457 | 7 | 0 | API 429로 응답 중단 |
+| 18 | plan_exec | X | 0 | 1 | 0 | 첫 계획 호출에서 API 429 |
 
-| harness | 성공률 | tokens 평균 / 표본분산 | iters 평균 / 표본분산 | interventions 평균 / 표본분산 |
-| --- | --- | --- | --- | --- |
-| react | 3/3 (100%) | 3949.67 / 10261.33 | 2.00 / 0.00 | 0.00 / 0.00 |
-| plan_exec | 0/3 (0%) | 2138.00 / 0.00 | 1.00 / 0.00 | 0.00 / 0.00 |
+| harness | n | success | tokens 평균 / 표본분산 | iters 평균 / 표본분산 | interventions 평균 / 표본분산 |
+| --- | ---: | :---: | ---: | ---: | ---: |
+| react | 3 | 2/3 | 13,894.67 / 98,341,854.33 | 5.33 / 8.33 | 0.00 / 0.00 |
+| plan_exec | 3 | 2/3 | 13,242.00 / 131,811,039.00 | 5.00 / 12.00 | 0.00 / 0.00 |
 
-표본분산의 분모는 n−1이다. 실패를 포함한 전체 실행을 집계했다.
-tokens는 API가 보고한 입력+출력 사용량, iters는 시도한 모델 호출 수,
-interventions는 사람의 승인+거부 횟수다. 집계 재현: `python summarize_results.py`.
+API 응답을 끝까지 받은 성공 실행만 보조적으로 비교하면 ReAct는 평균 **14,113.50 tokens / 4.50 iters**, Plan은 **19,863 tokens / 7.00 iters**였다. 이 값은 실패를 뺀 공식 성공률 표가 아니라, 하네스가 실제로 답을 완성했을 때의 비용을 해석하기 위한 보조 수치다. 원본 근거는 [react-13](logs/react-13.txt), [plan_exec-14](logs/plan_exec-14.txt), [react-15](logs/react-15.txt), [plan_exec-16](logs/plan_exec-16.txt), [react-17](logs/react-17.txt), [plan_exec-18](logs/plan_exec-18.txt)에 있다.
 
-관찰 근거: [react-01](logs/react-01.txt), [react-03](logs/react-03.txt),
-[react-05](logs/react-05.txt)는 각각 read_file을 한 번 실행하고 다음 응답에서 14:00을 답했다.
-count_pattern은 사용 가능한 도구였지만 실제 호출하지 않았다.
-[plan_exec-02](logs/plan_exec-02.txt), [plan_exec-04](logs/plan_exec-04.txt),
-[plan_exec-06](logs/plan_exec-06.txt)는 모두 설명문을 반환해 최초 계획 파싱에서 실패했다.
-이 세 실행에는 도구 호출·Observation·재계획이 없다.
+앞선 실패도 삭제하지 않았다. 조건 A(run 1–6)는 Plan 0/3으로 최초 JSON 계획 파싱에서 끝났고, 파서만 바꾼 B(run 7–9)와 계획 프롬프트만 강화한 C(run 10–12)도 Plan 0/3이었다. 이 실패들로부터 엄격한 JSON 출력, 최초 파싱 실패 때의 1회 재계획, 한 단계의 도구 호출 범위를 차례로 수정했고 각 시도와 수정은 별도 커밋으로 보존했다.
 
-기록상의 한계: ReAct의 도구 호출 직전 응답에는 텍스트가 없었으며,
-명시적 Thought: 표기는 첫 실행의 최종 응답에만 있었다. 모델이 따르지 않은 표기나
-실행하지 않은 Observation을 사후에 만들어 넣지 않았다.
-따라서 모든 로그에 Thought와 Observation이 있다는 체크포인트를 충족했다고 주장할 수 없다.
-반환 응답은 그대로 보존했지만 finish_reason은 별도 기록하지 않아,
-계획 출력 실패의 세부 원인을 단정하지 않는다.
+## 3. Interpretation — 해석
 
-## 3. 해석
+“토큰이 적으면 불확실한 상황에서 덜 고민하고 그대로 실행한 것인가?”라는 가설을 로그와 대조했다. 전체 3회를 단순 평균하면 Plan이 ReAct보다 652.67토큰과 0.33회 적지만, 이는 run 18이 첫 API 호출에서 답을 받지 못해 0토큰으로 기록된 영향이므로 하네스 효율의 우위로 볼 수 없다. 실제 성공 실행에서는 ReAct가 평균 14,113.50토큰·4.50회, Plan이 19,863토큰·7회로 더 적었다. Plan은 먼저 전체 계획을 만들고 세 단계를 각각 실행한 뒤 최종 답을 요청하므로 고정 호출 비용이 생겼고, 같은 파일 내용이 Executor 컨텍스트에 누적되어 뒤 호출의 입력 토큰도 커졌다. 반면 ReAct run 15는 파일을 읽은 다음 바로 `14:00`을 답해 2회에 끝났다. 따라서 이 태스크에서는 **성공한 실행의 토큰과 반복 횟수는 ReAct가 이겼고**, Plan은 강화된 계획으로 두 번 연속 정확히 성공하며 예측 가능한 흐름을 보였지만 비용은 더 컸다. 두 하네스 모두 사람 개입은 0회였다. 토큰 수만으로 모델이 얼마나 “고민”했는지는 판단할 수 없으며, 특히 조기 종료나 API 실패로 줄어든 토큰은 성공적인 효율과 구분해야 한다.
 
-“토큰이 적으면 불확실한 상황에서 덜 고민하고 그대로 실행한 것인가?”라는 가설을 로그와 대조했다.
-이번에는 ReAct가 3/3 성공했고, Plan-then-Execute는 0/3 성공했다. Plan의 평균 토큰 2,138과
-호출 수 1회가 ReAct의 3,949.67토큰과 2회보다 작은 이유는 최초 계획 파싱 실패로 도구 실행 전에
-종료했기 때문이다. 실제로 Plan은 긴 설명을 출력했으며, 토큰 합계만으로 고민의 깊이를 판단할 수는
-없다. 이번 차이와 관련된 축은 종료 조건과 오류 복구다. 현재 구현은 최초 계획 파싱에 실패하면
-즉시 종료하고, 재계획 1회는 실행 단계의 OFF_PLAN에만 적용한다. 따라서 낮은 토큰 수를 작업을
-성공적으로 완료하는 효율의 우위라고 평가할 근거가 없다. 사람 개입은 읽기 전용 도구를 사용해
-두 하네스 모두 0회였고, 토큰 표본분산은 ReAct 10,261.33, Plan 0이었다. Plan의 분산 0도 동일한
-단계에서 실패한 세 표본의 관측값이다. 하네스당 3회이고 Plan의 정상 실행이 없으므로, 이 결과를
-다른 모델·태스크나 정상적으로 계획을 실행한 경우까지 일반화할 수 없다.
+실행은 저장소 루트에서 다음과 같이 재현한다. 키는 환경변수로만 전달하며 파일에 저장하지 않는다.
 
-## 4. 후속 조건 B·C
-
-위 결과는 Plan이 왜 실패했는지까지는 말해주지 않는다. 계획 프롬프트가 약했는지, 계획
-파서가 엄격했는지 구분되지 않기 때문이다. 두 후보를 각각 하나씩만 바꾼 조건을 정의했고,
-실행 절차는 README의 「추가 조건」에 있다. 아직 실행하지 않았으므로 수치를 적지 않는다.
-
-| 조건 | plan_prompt | plan_parser | 바꾼 것 | 실행 |
-| --- | --- | --- | --- | --- |
-| A | v1 | strict | (기준) | run 1–6 |
-| B | v1 | tolerant | 파서만 | run 7–9 |
-| C | v2 | strict | 프롬프트만 | run 10–12 |
-
-조건 A의 ReAct 3회는 계획 프롬프트·파서를 쓰지 않으므로 B와 C의 기준선으로 그대로 썼다.
-
-실행 없이 확인한 것: `replay_plan_failures.py`가 기록된 계획 응답 3개를 두 파서에 다시
-통과시킨 결과가 `verification/plan-parser-replay.txt`에 있다. strict는 0/3, tolerant는 3/3을
-파싱했지만, tolerant가 건진 셋 중 둘은 모델이 예시로 쓴 자리표시자였다
-(`["step1","step2","step3"]`, `["Step 1","Step 2","Answer: HH:00"]`). 나머지 하나만
-`["read app.log","count ERROR lines","find peak hour"]`로 이 태스크의 계획이었다.
-그래서 조건 B는 파싱 성공률이 아니라 건져낸 계획의 단계와 최종 답변으로 평가해야 한다.
-이 리플레이는 결정적이지만 예측이고, 실제 B에서는 새 응답을 사용했다.
-
-| 조건 | Plan 성공률 | tokens 평균 / 표본분산 | iters 평균 / 표본분산 | interventions 평균 / 표본분산 |
-| --- | --- | --- | --- | --- |
-| B | 0/3 | 11899.67 / 335194106.33 | 5.00 / 28.00 | 0.00 / 0.00 |
-| C | 0/3 | 18347.67 / 242550484.33 | 7.33 / 32.33 | 0.00 / 0.00 |
-
-B의 run 7은 tolerant 파서가 `["step1", "step2", "08:00"]`을 계획으로 받아 실행했지만,
-도구 왕복 상한과 재계획 한도를 소진해 실패했다. run 8은 정상 계획과 read_file Observation까지
-진행한 뒤 API 연결 오류가 났고, run 9는 첫 API 호출에서 연결 오류가 났다. 따라서 B의 0/3에는
-하네스 동작과 외부 API 실패가 섞여 있어 파서 변경의 효과를 성공률로 분리할 수 없다.
-
-C의 강화된 프롬프트는 run 10과 12에서 엄격한 파서가 받을 수 있는 JSON 계획을 만들었지만,
-run 11에서는 여전히 설명문을 출력했다. 실행에 들어간 두 번은 시간대마다 count_pattern을 호출하다
-단계별 3회 왕복 상한을 넘었다. run 10은 재계획 후 다시 상한을 소진했고, run 12는 재계획 응답이
-설명문이라 파싱에 실패했다. C도 성공률은 0/3이지만, 최초 계획 파싱만 보았던 A와 달리 실행 단계의
-두 번째 병목을 드러냈다. 추가 조건의 평균 토큰이 A의 Plan 2,138보다 커진 것은 정상 실행에 가까워질수록
-도구 호출과 대화 기록이 늘었기 때문이다. 이는 A의 낮은 토큰이 효율의 승리가 아니라 조기 종료 비용이라는
-3절의 해석을 뒷받침한다. B와 C도 각 3회뿐이며 B의 연결 오류 때문에 두 수정 중 우위를 결론내리지는 않는다.
+```powershell
+$env:OPENROUTER_API_KEY = "<your-openrouter-key>"
+powershell -NoProfile -ExecutionPolicy Bypass -File .\submissions\26512072\week-02\run_openrouter.ps1
+Remove-Item Env:\OPENROUTER_API_KEY
+python scripts/check_week02.py submissions/26512072/week-02
+```
