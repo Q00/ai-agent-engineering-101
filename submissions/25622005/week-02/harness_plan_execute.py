@@ -3,6 +3,10 @@
 One call produces the whole plan as a JSON list. Then each step is executed
 in order with tools. If a step reports OFF_PLAN, the plan is rebuilt once
 (max_replan=1): that number is the flexibility cap, and it is explicit.
+
+early_exit=True is the E2 variant: it moves axis 3 (termination) only --
+the loop stops at the first step that returns an Answer instead of running
+the plan to exhaustion. Everything else, axis 1 included, is unchanged.
 """
 import json
 import re
@@ -35,7 +39,8 @@ def parse_plan(text: str):
 
 
 def run_plan_execute(task: str, max_replan: int = 1,
-                     max_tool_rounds: int = 3, log=print):
+                     max_tool_rounds: int = 3, early_exit: bool = False,
+                     log=print):
     meter = Meter()
 
     # 1) PLAN: the whole plan in one call, no tools
@@ -67,6 +72,13 @@ def run_plan_execute(task: str, max_replan: int = 1,
                 reply = Reply("OFF_PLAN: step exceeded the tool-call budget", [])
                 break
         log(f"[step {i + 1}] {reply.text.strip()[:300]}")
+
+        # [axis 3] E2 variant: terminate on the answer instead of on plan
+        # exhaustion. Default False keeps the control harness unchanged.
+        if early_exit and reply.text.strip().startswith("Answer:"):
+            log(f"[early_exit] answer at step {i + 1} of {len(plan)}; "
+                f"skipping {len(plan) - i - 1} step(s)")
+            return reply.text, meter, replans
 
         if reply.text.strip().startswith("OFF_PLAN") and replans < max_replan:
             replans += 1                          # flexibility cap
