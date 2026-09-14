@@ -7,7 +7,7 @@ from pathlib import Path
 import statistics
 
 from run_ab import HEADER, judge, read_task
-from tools_shared import TOOL_SPECS
+from tools_shared import TOOL_SPECS, TOOLS_IMPL
 
 ROOT = Path(__file__).resolve().parent
 
@@ -40,6 +40,8 @@ def main():
         assert config == settings, "settings changed between runs"
         assert config["provider"] == "codex" and config["model"] == "gpt-6-astra"
         assert config["conda_env"] == "base"
+        assert config["variant"] == "week-02-ver2"
+        assert config["react_max_steps"] == config["plan_max_steps"] == 8
         assert config["tool_specs"] == TOOL_SPECS
         for name, digest in config["file_sha256"].items():
             assert hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest, name
@@ -50,10 +52,19 @@ def main():
         assert row["success"] == ("O" if judge(answer, expected) else "X")
         prompts = records(lines, "[model-input] ")
         assert len(prompts) == int(row["iters"]) == meter["iters"]
+        assert meter["iters"] <= 8
         assert int(row["interventions"]) == meter["interventions"] == 0
         for prompt in prompts:
             assert set(prompt) == {"instructions", "system", "history", "tools_enabled", "tools"}
             assert prompt["tools"] == (TOOL_SPECS if prompt["tools_enabled"] else [])
+            for message in prompt["history"]:
+                assert message["role"] == "user", "unexpected accumulated narration"
+                data, _ = json.JSONDecoder().raw_decode(message["content"])
+                assert data["task"] == task and "expected" not in data
+                for observation in data["observations"]:
+                    if observation["ok"]:
+                        fn = TOOLS_IMPL[observation["name"]]
+                        assert str(fn(**observation["args"])) == observation["output"]
         events = records(lines, "[codex-event] ")
         completed = [e for e in events if e.get("type") == "turn.completed"]
         for event in events:
@@ -68,6 +79,9 @@ def main():
             assert row["tokens"] == ""
         if row["success"] == "O":
             assert any(line.startswith("  [tool] ") for line in lines), "no input observations"
+            final_context, _ = json.JSONDecoder().raw_decode(prompts[-1]["history"][0]["content"])
+            assert any(o["ok"] for o in final_context["observations"]), "unsupported final"
+            assert answer.strip().startswith("Answer:")
         totals[row["harness"]].append(row)
         print(f'{row["harness"]}-{run:02d}: {row["success"]}, tokens={row["tokens"]}, '
               f'iters={row["iters"]}, verified {len(completed)} raw usage events')

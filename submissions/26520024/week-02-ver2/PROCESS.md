@@ -71,3 +71,16 @@ the independent validator calculates reference counts only after the runs.
 - Deliver REPORT.md as one concise page with three sections: variant
   definition across five axes, full CSV measurement table, one interpretation
   paragraph. Supporting setup and process details stay in other documents.
+
+## Offline validation before live runs
+
+- All 22 regression tests passed in conda base Python 3.8.19; the unchanged
+  console capture is logs/offline-tests-01.log. Tests cover early completion,
+  evidence requirements, bounded context, malformed plans, one-repair limits,
+  strict tool-round limits, model-call caps, tool errors, human approval
+  counting, input isolation, raw usage, and preserving crashed runs.
+- Tests confirm that TASK.md, app.log, the Codex backend, tool function ASTs,
+  and tool schemas match week-02. Only the harnesses and shared observation
+  bookkeeping differ. Mock replies are restricted to tests, never CSV data.
+- Source and pre-run design are committed before the six-call-sequence batch.
+  No model pilot, token estimate, or fabricated execution is used.
