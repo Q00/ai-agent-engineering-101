@@ -22,8 +22,8 @@ import sys
 from tools_shared import Meter, call_model, run_tool_calls
 
 SYSTEM_PLAN = (
-    "You are a planner. Reply with ONLY a JSON list of short step strings for "
-    "the task. No prose, no code fences."
+    "You are a planner. Output the plan as a short list of steps, one per line, "
+    "each line starting with '- '. Output only the list and no other text."
 )
 SYSTEM_STEP = (
     "You execute ONE step of a plan using the given tools. You see the plan and "
@@ -40,15 +40,24 @@ SYSTEM_ANSWER = (
 
 
 def parse_plan(text):
-    """Return a list of step strings, or None if the model did not give JSON."""
-    text = re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.M).strip()
-    try:
-        plan = json.loads(text)
-    except json.JSONDecodeError:
-        return None
-    if isinstance(plan, list) and all(isinstance(s, str) for s in plan):
-        return plan
-    return None
+    """Return a list of step strings. Accept a JSON array anywhere in the reply
+    OR a bulleted/numbered list — free models often wrap the plan in prose, so a
+    stray preamble should not sink the whole run. None if neither is present."""
+    text = re.sub(r"```(?:json)?|```", "", text).strip()
+    m = re.search(r"\[.*\]", text, re.S)              # JSON array, even after preamble
+    if m:
+        try:
+            plan = json.loads(m.group(0))
+            if isinstance(plan, list) and all(isinstance(s, str) for s in plan):
+                return [s.strip() for s in plan if s.strip()]
+        except json.JSONDecodeError:
+            pass
+    steps = []                                        # fallback: bullet/numbered lines
+    for ln in text.splitlines():
+        mm = re.match(r"^\s*(?:[-*•]|\d+[.)])\s+(.+)", ln)
+        if mm and mm.group(1).strip():
+            steps.append(mm.group(1).strip())
+    return steps or None
 
 
 def run_plan_execute(task, max_replan=1, max_tool_rounds=4, log=print):
@@ -98,8 +107,8 @@ def run_plan_execute(task, max_replan=1, max_tool_rounds=4, log=print):
                 [{"role": "system", "content": SYSTEM_PLAN},
                  {"role": "user", "content":
                      f"Task: {task}\nStep {i + 1} ({plan[i]}) failed: "
-                     f"{text.strip()[:150]}\nReply with a JSON list of the "
-                     f"remaining steps."}],
+                     f"{text.strip()[:150]}\nReply with the remaining steps as "
+                     f"a list, one per line starting with '- '."}],
                 meter, tools=False)
             new = parse_plan(raw)
             if new is None:
