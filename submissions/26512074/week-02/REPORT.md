@@ -1,106 +1,75 @@
-## What I built
+# Week 02 — Harness A/B 실험 보고서
 
-하네스 A/B 실험을 수행했다. 모델, 태스크, 도구를 상수로 고정하고
-하네스만 독립변수로 바꾸어 ReAct형과 Plan-then-Execute형을 각각
-3회씩, 총 6회 실행했다.
+## 1. 변형 정의와 실험 조건
 
-태스크는 `app.log`에서 ERROR가 가장 많이 발생한 시간대
-(HH:00)를 찾는 것이며, 정답은 `14:00`이다. 두 하네스 모두
-동일한 `read_file`과 `count_pattern` 도구를 사용했다.
+이 실험은 **모델, 태스크, 도구, 성공 판정 기준을 고정하고 하네스만 변경한 A/B 실험**이다. 두 하네스 모두 동일한 모델과 `tools_shared.py`에 정의된 `read_file(path)`, `count_pattern(path, pattern)` 도구를 사용했다.
 
-ReAct는 모델이 tool 실행 결과를 관찰한 뒤 다음 행동을 동적으로
-결정하는 방식이고, Plan-then-Execute는 먼저 전체 실행 계획을
-생성한 뒤 그 계획에 따라 작업을 수행하는 방식이다.
+태스크는 `app.log`에서 **`ERROR`가 가장 많이 발생한 시간대를 찾는 것**이며, 성공 여부는 `TASK.md`에 정의된 정답 `14:00`을 기준으로 판정했다. ReAct와 Plan-then-Execute는 교수님이 제공한 조건을 그대로 사용했으며, 실험을 위해 별도의 조건이나 기능을 추가하지 않았다.
 
-실험 결과는 다음과 같다.
+ReAct는 모델이 도구를 호출한 뒤 그 결과를 Observation으로 받고, 이를 바탕으로 **다음 행동을 다시 결정하는 방식**이다. 도구 호출이 없으면 최종 답변을 반환하며, 최대 8 iterations까지 실행한다.
 
-| Harness | 성공 | 평균 Tokens | 평균 Iterations | 평균 Interventions |
-|---|---:|---:|---:|---:|
-| ReAct | 3/3 (100%) | 4,194 | 2.33 | 0 |
-| Plan-then-Execute | 1/3 (33.3%) | 7,177 | 3.00 | 0 |
+Plan-then-Execute는 먼저 모델이 **도구를 사용하지 않고 실행 계획을 생성**한 뒤, 생성된 계획에 따라 도구를 순차적으로 실행하는 방식이다. 따라서 두 하네스는 동일한 모델과 도구를 사용하지만, **실행 전에 계획을 생성하는지와 실행 과정에서 다음 행동을 결정하는 방식**에서 차이가 있다.
 
-ReAct는 3회 모두 성공했다. Run 1과 Run 2에서는 `read_file`로
-`app.log`를 확인한 뒤 2번의 모델 호출만으로 `14:00`을 답했다.
-Run 3에서는 추가적인 `count_pattern` 호출을 사용해 ERROR 개수와
-특정 시간대의 결과를 확인했으며, 3번의 모델 호출로 성공했다.
+각 하네스를 3회씩 실행하여 `success`, `tokens`, `iters`, `interventions`를 측정했다. 모든 실행에서 별도의 인간 개입은 발생하지 않았다.
 
-Plan-then-Execute는 3회 중 1회만 성공했다. 성공한 Run 4에서는
-`14:00`에 ERROR가 가장 많다는 사실을 확인한 뒤에도 계획에 포함된
-추가 검증 작업이 계속 실행되어 7 iterations와 19,904 tokens를
-사용했다.
+### ReAct 하네스 구조
+```mermaid
+    flowchart TD
+        A[Task 입력] --> B[모델 호출]
+        B --> C{Tool Call이 있는가?}
+        C -- 아니요 --> D[최종 Answer 반환]
+        C -- 예 --> E[Tool 실행]
+        E --> F[Tool 결과를 Observation으로 추가]
+        F --> B
+```
+### Plan-then-Execute 하네스 구조
+```mermaid
+    flowchart TD
+        A[Task 입력] --> B[Planner 호출]
+        B --> C[실행 계획 생성]
+        C --> D{계획 파싱 성공?}
+        D -- 아니요 --> E[실행 실패]
+        D -- 예 --> F[계획에 따라 Tool 실행]
+        F --> G[Tool 결과를 Observation으로 반영]
+        G --> H{남은 계획 단계가 있는가?}
+        H -- 예 --> F
+        H -- 아니요 --> I[최종 Answer 반환]
+```
+## 2. 측정 결과
 
-실패한 Run 5와 Run 6에서는 모델이 요구된 JSON plan 형식을 제대로
-생성하지 못했다. 따라서 계획을 실제로 실행하기 전에 JSON parsing이
-실패했고, 각각 1 iteration에서 종료되었다.
+각 하네스를 3회씩 실행하여 총 6회의 결과를 측정했다. 각 실행에서 성공 여부, 사용 토큰 수, iterations, 인간 개입 횟수를 기록했으며, 결과는 `results.csv`에 저장했다.
 
-이번 실험에서는 **종료 조건과 오류 복구 방식에서 가장 큰 차이가
-나타났다.** ReAct는 각 observation 이후 다음 행동을 다시 결정할
-수 있어 필요한 작업이 끝나면 바로 종료할 수 있었다. 반면
-Plan-then-Execute는 먼저 생성한 계획을 실행하는 구조이므로 이미
-정답을 확인한 이후에도 계획에 남아 있는 작업을 계속 수행할 수
-있었다.
+| run | harness | success | tokens | iters | interventions | note |
+|---:|---|:---:|---:|---:|---:|---|
+| 1 | react | O | 3,108 | 2 | 0 | |
+| 2 | react | O | 3,229 | 2 | 0 | |
+| 3 | react | O | 6,244 | 3 | 0 | |
+| 4 | plan_exec | O | 19,904 | 7 | 0 | replans=0 |
+| 5 | plan_exec | X | 226 | 1 | 0 | replans=0 |
+| 6 | plan_exec | X | 1,401 | 1 | 0 | replans=0 |
+| **평균: ReAct** | | **100%** | **4,194** | **2.33** | **0** | |
+| **평균: Plan-then-Execute** | | **33.3%** | **7,177** | **3.0** | **0** | |
 
-또한 Plan-then-Execute는 계획 자체가 유효한 JSON 형식이어야 실행
-단계에 진입할 수 있기 때문에, Run 5와 Run 6처럼 계획 생성 단계에서
-실패하면 tool 실행이나 replan 단계까지 도달하지 못하는 문제가
-발생했다.
+ReAct는 3회 모두 정답을 반환하여 **100%의 성공률**을 기록했다. 반면 Plan-then-Execute는 3회 중 1회만 성공하여 **33.3%의 성공률**을 기록했다.
 
-따라서 이번 태스크와 구현에서는 ReAct가 Plan-then-Execute보다
-성공률과 평균 토큰 사용량, 평균 반복 횟수에서 모두 더 좋은 결과를
-보였다.
+전체 실행의 평균을 비교하면 Plan-then-Execute는 ReAct보다 약 **1.7배 많은 토큰**을 사용했으며, 평균 iterations도 ReAct의 2.33회에서 Plan-then-Execute의 3.0회로 증가했다.
 
-## What I tried and discarded
+ReAct의 토큰 사용량은 3,108~6,244 범위였으며, Plan-then-Execute는 19,904 tokens를 사용한 성공 실행과 226, 1,401 tokens를 사용한 실패 실행으로 실행별 차이가 크게 나타났다. 실패한 두 실행은 실제 도구 실행 과정까지 진행하지 못하고 계획 파싱 단계에서 종료되었다.
 
-- **계획 생성과 실행을 분리하는 Plan-then-Execute 구조를 그대로
-  사용했다.** 계획을 먼저 생성하면 실행 흐름을 명확하게 만들 수
-  있을 것으로 예상했지만, 실제 실행에서는 계획의 JSON 형식이
-  추가적인 실패 지점이 되었다.
+## 3. 해석
 
-- **Plan-then-Execute의 실패 결과를 제거하지 않았다.** Run 5와
-  Run 6은 계획 parsing 단계에서 실패했지만, 이 결과 역시 하네스의
-  실제 동작을 보여주는 실험 결과이므로 `results.csv`와 실행 로그에
-  그대로 보존했다.
+이번 태스크에서는 **ReAct가 Plan-then-Execute보다 안정적으로 문제를 해결했다.** ReAct는 세 번의 실행에서 모두 `app.log`를 확인하고 필요한 도구를 사용하여 `14:00`을 찾아 최종 답변을 반환했다.
 
-- **추가적인 human intervention은 사용하지 않았다.** 모든 실행에서
-  `interventions=0`으로 유지하여 사람의 개입이 실험 결과에 영향을
-  주지 않도록 했다.
+첫 번째와 두 번째 ReAct 실행에서는 `read_file`로 로그를 읽은 뒤 바로 정답을 반환하여 각각 2 iterations로 종료되었다. 세 번째 실행에서는 추가적으로 `count_pattern`을 사용하여 `ERROR` 발생 횟수를 확인한 뒤 `14:00`을 답했다. 실행마다 모델이 선택한 도구 사용 방식에는 차이가 있었지만 세 실행 모두 성공했다.
 
-- **두 하네스의 도구는 동일하게 유지했다.** `read_file`과
-  `count_pattern`을 공통 도구로 사용하여 tool 자체의 차이가
-  결과에 영향을 주지 않도록 했다.
+반면 Plan-then-Execute에서는 **실제 태스크를 수행하기 전에 실행 계획을 먼저 생성해야 하기 때문에 계획 생성 단계가 추가된다.** 성공한 4번 실행에서는 계획에 따라 도구를 실행하여 최종적으로 `14:00`을 찾았지만, 총 7 iterations와 19,904 tokens를 사용했다.
 
-- **`app.log`의 정답은 실행 전에 확인했다.** `app.log`를 직접
-  집계하여 `14:00`에 ERROR가 6개로 가장 많고, 다음으로 많은
-  `12:00`은 3개임을 확인했다. 이를 바탕으로 `TASK.md`의
-  `expected: 14:00`을 실행 전에 고정했다.
+특히 5번과 6번 실행에서는 Planner가 요구된 형식의 계획을 정상적으로 생성하지 못해 **plan parsing에 실패**했다. 이 때문에 실제 도구를 이용한 태스크 수행까지 진행하지 못했고, 각각 1 iteration에서 종료되어 실패로 기록되었다.
 
-## How to run
+이 결과를 통해 이번 실험에서는 Plan-then-Execute의 **계획 생성 단계가 실행 성공 여부에 영향을 줄 수 있으며**, 계획이 정상적으로 생성된 경우에도 계획을 생성하고 실행하는 추가 과정으로 인해 더 많은 토큰과 iterations가 사용될 수 있음을 확인했다.
 
-```powershell
-$env:OPENAI_BASE_URL="https://openrouter.ai/api/v1"
-$env:OPENAI_API_KEY="<API_KEY>"
-$env:AGENT_MODEL="<실험에 사용한 모델명>"```
+반면 ReAct는 도구 실행 결과를 Observation으로 받은 후 다음 행동을 결정하기 때문에 사전에 전체 실행 계획을 생성할 필요가 없다. 이번처럼 로그 파일을 확인하고 필요한 정보를 찾아 답하는 비교적 단순한 태스크에서는 이러한 방식이 효과적으로 동작했다.
 
-cd submissions\26512074\week-02
-python run_ab.py --runs 3
-Provider: OpenRouter (OpenAI-compatible API)
-Model: AGENT_MODEL 환경변수에 설정한 모델
-Tools: read_file(path), count_pattern(path, pattern)
-Input: app.log
-Task: TASK.md
-Runs: 각 harness 3회
+다만 이번 결과만으로 **Plan-then-Execute가 항상 ReAct보다 열등하다고 판단할 수는 없다.** 이번 실험의 태스크가 비교적 단순했기 때문에 ReAct의 방식이 유리했을 가능성이 있다. 여러 단계의 작업을 미리 구조화하거나 실행 순서를 명확하게 정하는 것이 중요한 태스크에서는 Plan-then-Execute의 사전 계획 방식이 장점으로 작용할 수 있다.
 
-API key는 환경변수로만 사용하며 제출물에 포함하지 않았다.
-
-Checklist
- TASK.md에 task:와 expected:를 실행 전에 고정
- ReAct 3회 실행
- Plan-then-Execute 3회 실행
- Run logs를 logs/에 실행별로 저장
- results.csv에 6개 실행 결과 기록
- 두 harness에서 동일한 모델과 도구 사용
- Human intervention 0회
- 실패한 실행 결과를 삭제하지 않음
- API key를 제출물에 포함하지 않음
- app.log를 수정하지 않음
- python scripts/check_week02.py submissions/26512074/week-02 통과 확인
+결론적으로 **이번 실험 조건에서는 ReAct가 Plan-then-Execute보다 높은 성공률과 낮은 평균 실행 비용을 보였다.** 특히 단순한 도구 사용 태스크에서는 실행 결과를 확인하면서 필요한 행동을 결정하는 ReAct 방식이 사전에 전체 계획을 생성하는 Plan-then-Execute 방식보다 안정적으로 동작했다.
