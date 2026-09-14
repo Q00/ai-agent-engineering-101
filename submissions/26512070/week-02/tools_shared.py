@@ -12,7 +12,7 @@ Provider: OpenRouter through the OpenAI-compatible API.
 
     export OPENAI_BASE_URL=https://openrouter.ai/api/v1
     export OPENAI_API_KEY=<openrouter key>
-    export AGENT_MODEL=minimax/minimax-m3:free     # optional, this is the default
+    export AGENT_MODEL=nvidia/nemotron-3.5-lightning:free   # optional, the default
 
 --dry-run swaps in a scripted fake model so the harness logic can be debugged
 without spending a request. The free tier allows about 50 requests a day and
@@ -23,7 +23,7 @@ import os
 import re
 import sys
 
-MODEL = os.environ.get("AGENT_MODEL", "minimax/minimax-m3:free")
+MODEL = os.environ.get("AGENT_MODEL", "nvidia/nemotron-3.5-lightning:free")
 MAX_TOKENS = 1024
 
 HERE = os.path.dirname(os.path.abspath(__file__))

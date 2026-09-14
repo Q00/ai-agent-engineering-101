@@ -29,13 +29,20 @@ expected: 14:00
 | 항목 | 값 |
 |---|---|
 | provider | OpenRouter (OpenAI 호환 API) |
-| model | `minimax/minimax-m3:free` |
+| model | `nvidia/nemotron-3.5-lightning:free` |
 | `max_tokens` | 1024 |
 | temperature | API 기본값 (미지정) |
 | 도구 집합 | `read_file(path)`, `count_pattern(path, pattern)` 두 개뿐 |
 | 도구 모듈 | `tools_shared.py` — 두 하네스가 동일하게 import |
 | 되돌릴 수 없는 도구 | **없음** → `interventions`는 구조적으로 0 |
 | 실행 횟수 | 하네스당 3회, 총 6회 |
+
+모델은 1주차에 쓰던 `minimax/minimax-m3:free`로 잡으려 했으나, 실행 직전
+스모크 테스트에서 404를 받았다: *"This model is unavailable for free. The paid
+version is available now."* 무료 티어에서 빠진 것이다. 대신 과제 README가
+`nvidia/nemotron-3.5-lightning:free`를 "tested with the starter"로 명시하고
+있어 그것으로 바꿨고, 1요청짜리 스모크 테스트로 도구 호출이 되는 것을 확인한
+뒤 실행에 들어갔다. **여섯 번의 실행은 모두 이 한 모델로 한다.**
 
 `count_pattern`은 강의 뼈대의 `(text, pattern)` 대신 `(path, pattern)`으로 두었다.
 `app.log`가 3082바이트라 `read_file`이 통째로 반환하는데, 그 전문을 도구 인자로
