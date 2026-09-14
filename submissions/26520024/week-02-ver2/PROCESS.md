@@ -82,5 +82,46 @@ the independent validator calculates reference counts only after the runs.
 - Tests confirm that TASK.md, app.log, the Codex backend, tool function ASTs,
   and tool schemas match week-02. Only the harnesses and shared observation
   bookkeeping differ. Mock replies are restricted to tests, never CSV data.
-- Source and pre-run design are committed before the six-call-sequence batch.
+- Source and pre-run design are committed before the six-run batch.
   No model pilot, token estimate, or fabricated execution is used.
+
+## Genuine six-run batch
+
+- Ran the documented command with existing conda base Python 3.8.19 and
+  explicit AGENT_PROVIDER=codex, AGENT_MODEL=gpt-6-astra. Source commit:
+  127718f. All six runs completed; the runner exited 0. No retries or live
+  failures occurred. The experiment code was not changed after seeing data.
+- ReAct runs 1/4/5: 2 calls each, 19456/19456/19458 tokens. Plan-execute runs
+  2/3/6: 3 calls each, 28656/28674/28653 tokens. All returned Answer: 14:00.
+- All six runs invoked read_file once. Plan-execute proposed a later
+  count_pattern step but solved the task from the read observation and exited
+  during step 1, as permitted by the predeclared early-final policy. No run
+  used count_pattern; no replan or human intervention occurred.
+- Raw stdout/stderr, including nonfatal CLI warnings, remain unchanged in
+  logs/. Fifteen raw turn.completed usage events reconcile exactly with CSV
+  counts. validate_results.py also checks source/input hashes, all observed
+  successful tool outputs, identical configs, and evidence before final replies.
+  All checks passed in base; see logs/live-validation-01.log.
+- Committed measurements separately in 0dc1ff1 before the report. REPORT.md
+  reports both the plan-execute reduction and the small ReAct token increase.
+  Historical change is not presented as a same-date controlled ablation.
+- Confirmed the course CI regex selects week-02 when given a week-02-ver2
+  path. Therefore ver2 is checked explicitly with the original course checker
+  command; no professor-owned script or workflow is changed.
+
+## Final verification
+
+- Official check_week02.py passed with the explicit week-02-ver2 path; see
+  logs/structural-check-01.log. The original ownership checker passed for
+  LeeUichann; see logs/ownership-check-01.log. Its Python 3.10-style annotations
+  were postponed with __future__.annotations.compiler_flag when running its
+  unchanged source in base Python 3.8.19.
+- All eight Python modules passed base-Python py_compile. The report has
+  exactly three sections and all six measurement rows match results.csv.
+  git diff --check passed. The original 22-test offline run and 15-call
+  raw-event verification logs are retained.
+- Recomputed the pre-work SHA-256 manifest: every original week-02 submission
+  file (including the pre-existing staged ARCHITECTURE.md) and course week-02
+  file is byte-for-byte unchanged. No conda environment was changed.
+- Only ver2 files are included in this work's local commits. No push or PR
+  operation was performed; branch week-02-ver2-26520024 remains local.

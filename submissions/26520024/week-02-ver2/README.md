@@ -56,9 +56,10 @@ python scripts/check_week02.py submissions/26520024/week-02-ver2
 ```
 
 The course checker is structural, not a correctness grade. Its original CI
-path handling should not be assumed to select this nonstandard ver2 directory;
-the explicit command above checks the intended files. No shared CI files
-are modified. validate_results.py independently reconciles raw usage, input
+regex extracts the week-02 prefix from week-02-ver2 paths and would check the
+old week-02 directory instead; the explicit command above checks ver2. Do not
+treat the existing PR CI result as validation of these new files. No shared
+CI files are modified. validate_results.py independently reconciles raw usage, input
 hashes, settings, successful input observations, answers, and every CSV row.
 
 All interpretation of improvement over week-02 is a historical comparison,
