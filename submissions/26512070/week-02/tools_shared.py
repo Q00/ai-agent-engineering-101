@@ -23,8 +23,16 @@ import os
 import re
 import sys
 
-MODEL = os.environ.get("AGENT_MODEL", "nvidia/nemotron-3.5-lightning:free")
-MAX_TOKENS = 1024
+MODEL = os.environ.get("AGENT_MODEL", "anthropic/claude-sonnet-4.5")
+
+# Left unset, so no max_tokens is sent and the provider default applies.
+# Runs 1-6 were made with max_tokens=1024, the value in the lecture skeleton,
+# and every one of them was truncated mid-sentence: the plan arm never reached
+# the JSON array it was asked for and one react run returned a cut-off
+# reasoning dump as its final answer. The cap was a constant shared by both
+# arms, but it did not cost them the same, which is a finding in REPORT.md
+# rather than something to leave in place.
+MAX_TOKENS = int(os.environ["AGENT_MAX_TOKENS"]) if os.environ.get("AGENT_MAX_TOKENS") else None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 READ_CAP = 4000
@@ -145,9 +153,17 @@ class ToolCall:
 
 
 class Reply:
-    def __init__(self, text, tool_calls=None):
+    def __init__(self, text, tool_calls=None, finish_reason=None):
         self.text = text or ""
         self.tool_calls = tool_calls or []
+        # "length" means the provider cut the reply off at the token ceiling.
+        # Without this the harness cannot tell a finished answer from a
+        # truncated one, and in runs 1-6 it could not.
+        self.finish_reason = finish_reason
+
+    @property
+    def truncated(self):
+        return self.finish_reason == "length"
 
     @property
     def tool_call(self):
@@ -214,9 +230,12 @@ def call_model(messages, meter, tools=None):
         text, calls = _fake.pop(0)
         meter.add(len(json.dumps(messages, ensure_ascii=False)) // 4, 40)
         return Reply(text, [ToolCall("fake_%d_%d" % (meter.iters, i), n, a)
-                            for i, (n, a) in enumerate(calls)])
+                            for i, (n, a) in enumerate(calls)],
+                     finish_reason="tool_calls" if calls else "stop")
 
-    kwargs = dict(model=MODEL, max_tokens=MAX_TOKENS, messages=messages)
+    kwargs = dict(model=MODEL, messages=messages)
+    if MAX_TOKENS:
+        kwargs["max_tokens"] = MAX_TOKENS
     if tools:
         kwargs["tools"] = tools
     resp = _client_once().chat.completions.create(**kwargs)
@@ -233,7 +252,8 @@ def call_model(messages, meter, tools=None):
             # A malformed argument string is a real failure mode, not a crash.
             args = {"__unparsed__": c.function.arguments}
         calls.append(ToolCall(c.id, c.function.name, args))
-    return Reply(msg.content, calls)
+    return Reply(msg.content, calls,
+                 finish_reason=getattr(resp.choices[0], "finish_reason", None))
 
 
 def utf8_console():

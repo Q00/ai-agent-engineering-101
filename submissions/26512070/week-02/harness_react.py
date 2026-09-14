@@ -77,6 +77,14 @@ def run_react(task, max_steps=MAX_STEPS, log=print, meter=None):
         if reply.text.strip():
             log("Thought: " + reply.text.strip())
 
+        # Logged, not acted on. Axis 3 stays exactly as it was in runs 1-6 so
+        # that only the shared model settings differ between the two batches -
+        # but a truncated reply is now visible in the log instead of having to
+        # be inferred from a sentence that stops mid-word.
+        if reply.truncated:
+            log("[truncated] the provider cut this reply off at the token ceiling")
+            note = "reply truncated at token ceiling"
+
         if reply.tool_call is None:                  # [axis 3] the model finished
             log("Final: " + reply.text.strip())
             return reply.text.strip(), meter, note or "finished by model"

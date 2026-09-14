@@ -95,6 +95,9 @@ def _ask_for_plan(task, meter, log, stricter=False):
                    'JSON array, starting with [ and ending with ]. Example: '
                    '["read the file", "count the matches"]')
     reply = call_model([{"role": "user", "content": prompt}], meter)
+    if reply.truncated:
+        log("[truncated] the plan reply was cut off at the token ceiling - "
+            "whatever JSON was coming never arrived")
     log("PLAN (raw): " + reply.text.strip()[:600])
     return _parse_plan(reply.text)
 

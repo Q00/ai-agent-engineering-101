@@ -163,7 +163,13 @@ def main():
     rows = []
     for arm in arms:
         for _ in range(args.runs):
-            rows.append(one_run(run_no, arm, task, expected, args.dry_run))
+            row = one_run(run_no, arm, task, expected, args.dry_run)
+            rows.append(row)
+            # Append as each run finishes. Writing all six at the end means an
+            # interruption halfway through loses every measurement taken so
+            # far, along with the requests that paid for them.
+            if not args.dry_run:
+                append_row(row)
             run_no += 1
 
     if args.dry_run:
@@ -172,8 +178,6 @@ def main():
             print("  " + ",".join(str(c) for c in r))
         return
 
-    for r in rows:
-        append_row(r)
     print("\nappended %d row(s) to results.csv" % len(rows))
 
 
