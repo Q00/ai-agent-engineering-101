@@ -271,7 +271,7 @@ footer .o{color:var(--muted)}
       <h1 class="title">하네스와 메타 하네스
         <span class="en">Harness and Meta-Harness</span>
       </h1>
-      <p class="lede"><span class="q">같은 모델인데 왜 결과가 다른가?</span> 오늘은 모델을 감싸는 코드, 하네스가 무엇을 정하는지 확인하고, 하네스를 스스로 고쳐 쓰는 메타 하네스까지 본다.</p>
+      <p class="lede"><span class="q">같은 모델인데 왜 결과가 다른가?</span> 모델을 감싸는 코드, 하네스가 무엇을 정하는지 확인하고 하네스를 스스로 고쳐 쓰는 메타 하네스까지 다룬다.</p>
     </div>
   </div>
 </header>
@@ -284,7 +284,7 @@ footer .o{color:var(--muted)}
       <table>
         <tr><th>구분</th><th>내용</th></tr>
         <tr><td class="stage">A1</td><td>ReAct</td></tr>
-        <tr><td class="stage">A2</td><td>하네스 설계의 다섯 축</td></tr>
+        <tr><td class="stage">A2</td><td>하네스 설계의 다섯 요소</td></tr>
         <tr><td class="stage">A3</td><td>메타 하네스와 Ouroboros</td></tr>
         <tr><td class="stage">토론</td><td>하네스 개선과 모델 개선의 경계</td></tr>
         <tr><td class="stage">LAB</td><td>ReAct vs Plan-then-Execute A/B 실험</td></tr>
@@ -298,7 +298,7 @@ footer .o{color:var(--muted)}
   <div class="part">
     <div class="lbl">PART A: LECTURE</div>
     <h2>같은 모델, 다른 결과: 하네스가 정하는 것</h2>
-    <div class="meta">A1 ReAct, A2 하네스 설계의 다섯 축, A3 메타 하네스와 Ouroboros, 토론</div>
+    <div class="meta">A1 ReAct, A2 하네스 설계의 다섯 요소, A3 메타 하네스와 Ouroboros, 토론</div>
   </div>
 </div>
 
@@ -358,7 +358,7 @@ footer .o{color:var(--muted)}
 
 <section>
   <div class="col">
-    <div class="secmark"><span class="no">A2</span><h2>하네스 설계의 다섯 축</h2></div>
+    <div class="secmark"><span class="no">A2</span><h2>하네스 설계의 다섯 요소</h2></div>
     <p>harness는 원래 말에 씌워 힘을 한 방향으로 쓰게 하는 장치를 가리킨다. 2026년 Yoonho Lee 등이 Meta-Harness 논문에서 쓴 정의는 이렇다.</p>
 
     <div class="define">
@@ -366,7 +366,7 @@ footer .o{color:var(--muted)}
       <p class="sub">Y. Lee et al., &ldquo;Meta-Harness: End-to-End Optimization of Model Harnesses&rdquo; (2026). 원문은 &ldquo;the code that determines what information to store, retrieve, and present to the model&rdquo;. 프롬프트 조립, 도구 정의, 종료 조건, 에러 처리가 모두 여기 들어간다.</p>
     </div>
 
-    <p>하네스가 정하는 것을 다섯 축으로 나눈다. 첫째는 <strong>컨텍스트 관리</strong>다. 컨텍스트 창은 유한하고, 무엇을 그 안에 넣느냐가 성능을 좌우한다. 지난 스무 스텝의 Observation을 전부 넣으면 최근 정보가 묻히고, 너무 잘라 내면 모델이 방금 한 일을 잊는다. 무엇을 보여 주고 무엇을 숨길지, 오래된 기록을 어떻게 요약해 접을지가 첫 결정이다. 둘째는 <strong>도구 granularity</strong>다. 도구를 가늘게 쪼갤수록(<code class="inline">read_line(n)</code>) 모델의 통제는 정밀해지지만 호출 횟수와 토큰이 늘고, 굵게 묶을수록(<code class="inline">read_file()</code>) 한 번에 많은 일을 하지만 실패했을 때 어디서 틀렸는지 짚기 어렵다.</p>
+    <p>하네스가 정하는 것을 다섯 요소로 나눈다. 첫째는 <strong>컨텍스트 관리</strong>다. 컨텍스트 창은 유한하고, 무엇을 그 안에 넣느냐가 성능을 좌우한다. 지난 스무 스텝의 Observation을 전부 넣으면 최근 정보가 묻히고, 너무 잘라 내면 모델이 방금 한 일을 잊는다. 무엇을 보여 주고 무엇을 숨길지, 오래된 기록을 어떻게 요약해 접을지가 첫 결정이다. 둘째는 <strong>도구 granularity</strong>다. 도구를 가늘게 쪼갤수록(<code class="inline">read_line(n)</code>) 모델의 통제는 정밀해지지만 호출 횟수와 토큰이 늘고, 굵게 묶을수록(<code class="inline">read_file()</code>) 한 번에 많은 일을 하지만 실패했을 때 어디서 틀렸는지 짚기 어렵다.</p>
 
     <p>셋째는 <strong>종료 조건</strong>이다. 모델이 답을 냈다고 선언하는 순간을 종료 조건으로 삼으면 위험하다. 모델은 다 못 풀고도 끝났다고 말한다. 그래서 실무 하네스는 최대 반복 횟수 상한, 목표 달성을 확인하는 별도 검증 단계, 명시적 종료 도구(<code class="inline">finish(answer)</code>) 같은 장치를 둔다. 넷째는 <strong>에러 복구</strong>다. 도구가 예외를 던지거나 인자 형식이 어긋났을 때, 하네스는 거기서 멈출 수도 있고 에러 메시지를 Observation으로 되돌려 모델이 고치게 할 수도 있다. 후자가 ReAct에 맞는다. 다섯째는 <strong>인간 개입 지점(human-in-the-loop)</strong>이다. 결제나 파일 삭제처럼 돌이킬 수 없는 행동 앞에서 멈추고 승인을 구할지, 끝까지 자율로 갈지를 정한다. 실습에서는 이 개입 횟수를 센다.</p>
 
@@ -406,35 +406,35 @@ footer .o{color:var(--muted)}
       <div class="cap"><span><b>FIG. 02</b> Harness boundary and the five axes</span><span>model fixed, harness varied</span></div>
     </div>
 
-    <div class="code"><span class="file">harness_react.py</span><pre><span class="cm"># ReAct형 하네스의 뼈대. 다섯 축이 코드 어느 줄에 들어가는지 표시</span>
+    <div class="code"><span class="file">harness_react.py</span><pre><span class="cm"># ReAct형 하네스의 뼈대. 다섯 요소가 코드 어느 줄에 들어가는지 표시</span>
 <span class="kw">def</span> run_react(task, tools, max_steps=<span class="st">8</span>):
-    history = [system_prompt(tools), user(task)]   <span class="cm"># [축1] 컨텍스트 관리</span>
+    history = [system_prompt(tools), user(task)]   <span class="cm"># [요소1] 컨텍스트 관리</span>
     interventions = <span class="st">0</span>
-    <span class="kw">for</span> step <span class="kw">in</span> range(max_steps):        <span class="cm"># [축3] 종료 조건: 반복 상한</span>
+    <span class="kw">for</span> step <span class="kw">in</span> range(max_steps):        <span class="cm"># [요소3] 종료 조건: 반복 상한</span>
         reply = model(history)                <span class="cm"># Thought + Action을 한 번에 생성</span>
         history.append(assistant(reply))
         <span class="kw">if</span> reply.tool_call <span class="kw">is</span> <span class="kw">None</span>:
-            <span class="kw">return</span> reply.text            <span class="cm"># [축3] 모델이 finish를 택함 → 종료</span>
+            <span class="kw">return</span> reply.text            <span class="cm"># [요소3] 모델이 finish를 택함 → 종료</span>
         <span class="kw">if</span> reply.tool_call.name <span class="kw">in</span> IRREVERSIBLE:
-            <span class="kw">if</span> <span class="kw">not</span> ask_human(reply.tool_call):  <span class="cm"># [축5] 개입 지점</span>
+            <span class="kw">if</span> <span class="kw">not</span> ask_human(reply.tool_call):  <span class="cm"># [요소5] 개입 지점</span>
                 interventions += <span class="st">1</span>
                 history.append(observation(<span class="st">"거부됨: 사람이 승인하지 않음"</span>))
                 <span class="kw">continue</span>
         <span class="kw">try</span>:
-            obs = tools.call(reply.tool_call)     <span class="cm"># [축2] 도구 granularity는 tools 정의에</span>
+            obs = tools.call(reply.tool_call)     <span class="cm"># [요소2] 도구 granularity는 tools 정의에</span>
         <span class="kw">except</span> Exception <span class="kw">as</span> e:
-            obs = <span class="st">f"에러: {e}"</span>              <span class="cm"># [축4] 에러 복구: 에러도 Observation</span>
+            obs = <span class="st">f"에러: {e}"</span>              <span class="cm"># [요소4] 에러 복구: 에러도 Observation</span>
         history.append(observation(obs))          <span class="cm"># Observation → 다음 Thought로</span>
     <span class="kw">return</span> <span class="st">"MAX_STEPS 도달: 미완"</span>            <span class="cm"># 상한에서 강제 종료</span></pre></div>
 
-    <p>이 코드에서 다섯 축의 값은 어느 것도 모델이 정하지 않는다. 전부 사람이 정한다. 같은 모델이라도 이 값을 다르게 잡으면 다른 에이전트가 된다. 하네스는 실험으로 탐색할 수 있는 설계 공간이다. 실습에서는 그 공간에서 두 점을 골라 비교한다.</p>
+    <p>이 코드에서 다섯 요소의 값은 어느 것도 모델이 정하지 않는다. 전부 사람이 정한다. 같은 모델이라도 이 값을 다르게 잡으면 다른 에이전트가 된다. 하네스는 실험으로 탐색할 수 있는 설계 공간이다. 실습에서는 그 공간에서 두 점을 골라 비교한다.</p>
   </div>
 </section>
 
 <section>
   <div class="col">
     <div class="secmark"><span class="no">A3</span><h2>메타 하네스: 하네스를 탐색하는 바깥 루프</h2></div>
-    <p>다섯 축의 값을 사람이 손으로 바꿔 가며 A/B를 돌리는 대신, 그 탐색 자체를 에이전트에게 맡길 수 있다. 하네스가 자기 실행 기록을 읽고 &ldquo;여기서 반복이 너무 많았으니 도구를 굵게 묶자&rdquo;고 판단해 다음 버전의 하네스 코드를 써내는 구조다.</p>
+    <p>다섯 요소의 값을 사람이 손으로 바꿔 가며 A/B를 돌리는 대신, 그 탐색 자체를 에이전트에게 맡길 수 있다. 하네스가 자기 실행 기록을 분석해 반복이 많았던 지점을 찾아 다음 버전의 하네스 코드를 고치는 구조다.</p>
 
     <p>Yoonho Lee, Roshen Nair, Qizheng Zhang, Kangwook Lee, Omar Khattab, Chelsea Finn이 2026년 3월에 낸 논문 &ldquo;Meta-Harness: End-to-End Optimization of Model Harnesses&rdquo;가 이 구조를 그대로 구현했다. 바깥 루프는 세 단계를 반복한다. 코딩 에이전트인 proposer가 새 하네스 코드를 제안하고, 그 하네스로 태스크를 풀어 점수를 매기고, 소스 코드와 점수와 실행 trace를 전부 파일시스템에 남긴다. 다음 제안 때 proposer는 이전 후보 전부의 코드와 trace를 그 파일시스템에서 직접 읽는다.</p>
 
@@ -603,9 +603,9 @@ EvolutionaryLoop    evolution/loop.py         generation별 수정, 재실행, �
 <section>
   <div class="col">
     <div class="secmark"><span class="no">LAB</span><h2>같은 태스크, 두 하네스</h2></div>
-    <p><strong>모델과 태스크와 도구는 상수로 고정하고, 하네스만 독립변수로 바꾼다.</strong> 같은 모델에 같은 태스크를 주되, 하나는 ReAct형 하네스로, 다른 하나는 Plan-then-Execute형 하네스로 풀게 한 뒤 네 지표를 나란히 잰다. 태스크는 도구가 필요한 다단계 문제면 된다. &ldquo;주어진 로그 파일에서 에러가 가장 많이 난 시간대를 찾아 요약하라&rdquo;처럼 파일을 읽고, 세고, 정리해야 답이 나오는 것을 권한다. 준비물은 1주차와 같다. Python 3.10 이상, <code class="inline">anthropic</code> 패키지, API 키 하나.</p>
+    <p><strong>모델과 태스크와 도구는 상수로 고정하고, 하네스만 독립변수로 바꾼다.</strong> 같은 모델에 같은 태스크를 주되, 하나는 ReAct형 하네스로, 다른 하나는 Plan-then-Execute형 하네스로 풀게 한 뒤 네 지표를 나란히 잰다. 태스크는 도구가 필요한 다단계 문제면 된다. &ldquo;주어진 로그 파일에서 에러가 가장 많이 난 시간대를 찾아 요약하라&rdquo;처럼 파일을 읽고, 세고, 정리해야 답이 나오는 것을 권한다. 준비물은 1주차와 같다. Python 3.10 이상, <code class="inline">anthropic</code> 또는 <code class="inline">openai</code> 패키지, API 키 하나.</p>
 
-    <p>ReAct형은 매 스텝 Thought → Action → Observation을 돌며 다음에 무엇을 할지를 매번 다시 판단한다. Plan-then-Execute형은 먼저 전체 계획을 한 번에 세운 뒤(Plan) 그 계획의 단계를 순서대로 실행한다(Execute). 계획을 미리 굳히므로 토큰이 적게 들고 흐름이 예측 가능하지만, 중간 Observation이 계획과 어긋나면 방향을 틀기 어렵다. 어느 쪽이 이길지는 태스크에 달렸다.</p>
+    <p>ReAct형은 매 스텝 Thought → Action → Observation을 돌며 다음에 무엇을 할지를 매번 다시 판단한다. Plan-then-Execute형은 먼저 전체 계획을 한 번에 세운 뒤(Plan) 그 계획의 단계를 순서대로 실행한다(Execute). 계획을 미리 굳히므로 토큰이 적게 들고 흐름이 예측 가능하지만, 중간 Observation이 계획과 어긋나면 방향을 틀기 어렵다. 두 방식의 우열은 태스크마다 실행 결과로 갈린다.</p>
 
     <ol class="pre">
       <li><b class="lead">공용 도구와 모델 래퍼를 한 모듈에 둔다.</b> 두 하네스가 공유할 도구(<code class="inline">read_file</code>, <code class="inline">count_pattern</code>)와 모델 호출 함수, 토큰 카운터를 <code class="inline">tools_shared.py</code>에 둔다. 도구가 다르면 하네스 비교가 성립하지 않는다.</li>
@@ -617,9 +617,15 @@ EvolutionaryLoop    evolution/loop.py         generation별 수정, 재실행, �
     </ol>
 
     <div class="code"><span class="file">tools_shared.py</span><pre><span class="cm"># 두 하네스가 공유하는 도구, 모델, 측정 유틸. 같은 도구를 써야 공정한 비교</span>
-<span class="kw">import</span> anthropic, re, json
-client = anthropic.Anthropic()
-MODEL = <span class="st">"claude-sonnet-4-5"</span>
+<span class="kw">import</span> os, anthropic, openai, re, json
+
+OPENROUTER_KEY = os.environ.get(<span class="st">"OPENROUTER_API_KEY"</span>)
+<span class="kw">if</span> OPENROUTER_KEY:                      <span class="cm"># 키 하나로 벤더 자동 판별</span>
+    client = openai.OpenAI(base_url=<span class="st">"https://openrouter.ai/api/v1"</span>, api_key=OPENROUTER_KEY)
+    MODEL = <span class="st">"anthropic/claude-sonnet-4.5"</span>
+<span class="kw">else</span>:
+    client = anthropic.Anthropic()
+    MODEL = <span class="st">"claude-sonnet-4-5"</span>
 
 <span class="kw">def</span> read_file(path):                    <span class="cm"># 도구 1</span>
     <span class="kw">with</span> open(path, encoding=<span class="st">"utf-8"</span>) <span class="kw">as</span> f:
@@ -633,13 +639,17 @@ TOOLS = {<span class="st">"read_file"</span>: read_file, <span class="st">"count
 <span class="kw">class</span> Meter:                             <span class="cm"># 네 지표를 한곳에서 센다</span>
     <span class="kw">def</span> __init__(self):
         self.tokens = <span class="st">0</span>; self.iters = <span class="st">0</span>; self.interventions = <span class="st">0</span>
-    <span class="kw">def</span> add(self, usage):
-        self.tokens += usage.input_tokens + usage.output_tokens
+    <span class="kw">def</span> add(self, n_in, n_out):
+        self.tokens += n_in + n_out
         self.iters += <span class="st">1</span>
 
 <span class="kw">def</span> call_model(messages, meter):
+    <span class="kw">if</span> OPENROUTER_KEY:                 <span class="cm"># OpenAI 호환 포맷: choices, prompt/completion_tokens</span>
+        resp = client.chat.completions.create(model=MODEL, max_tokens=<span class="st">1024</span>, messages=messages)
+        meter.add(resp.usage.prompt_tokens, resp.usage.completion_tokens)
+        <span class="kw">return</span> resp.choices[<span class="st">0</span>].message.content
     resp = client.messages.create(model=MODEL, max_tokens=<span class="st">1024</span>, messages=messages)
-    meter.add(resp.usage)                <span class="cm"># 매 호출의 토큰을 누적</span>
+    meter.add(resp.usage.input_tokens, resp.usage.output_tokens)
     <span class="kw">return</span> resp.content[<span class="st">0</span>].text</pre></div>
 
     <div class="code"><span class="file">harness_plan_execute.py</span><pre><span class="cm"># Plan-then-Execute형: 계획을 먼저 굳히고 순서대로 실행한다</span>
@@ -722,10 +732,9 @@ TOOLS = {<span class="st">"read_file"</span>: read_file, <span class="st">"count
     <div class="hw">
       <div class="head">ASSIGNMENT: WEEK 02</div>
       <div class="body">
-        <div class="due">DUE: 다음 주 수업 시작 전</div>
-        <p><strong>제출물</strong>: A/B 실험 보고서 1쪽. (1) <strong>변형 정의</strong>: 두 하네스가 무엇이 같고 무엇이 다른지, 다섯 축 중 어디를 어떻게 다르게 잡았는지. (2) <strong>측정표</strong>: <code class="inline">results.csv</code>의 6회 이상 실행. 실패 실행 포함. (3) <strong>해석 한 문단</strong>: 이 태스크에서 어느 하네스가 어떤 지표로 이겼고 왜인지.</p>
+        <p><strong>제출물</strong>: A/B 실험 보고서 1쪽. (1) <strong>변형 정의</strong>: 두 하네스가 무엇이 같고 무엇이 다른지, 다섯 요소 중 어디를 어떻게 다르게 잡았는지. (2) <strong>측정표</strong>: <code class="inline">results.csv</code>의 6회 이상 실행. 실패 실행 포함. (3) <strong>해석 한 문단</strong>: 이 태스크에서 어느 하네스가 어떤 지표로 이겼고 왜인지.</p>
         <p><strong>형식</strong>: 포크의 <code class="inline">submissions/&lt;학번&gt;/week-02/</code>에 커밋하고 upstream으로 PR을 연다. 두 하네스 코드, <code class="inline">tools_shared.py</code>, 태스크 정의와 성공 판정 기준(<code class="inline">TASK.md</code>), <code class="inline">results.csv</code>, 실행 로그(<code class="inline">logs/</code>)를 함께 넣는다.</p>
-        <p><strong>채점 기준</strong>: 1주차와 같이 재현성이 절반이다. 다른 사람이 코드와 설정만으로 같은 경향을 다시 얻을 수 있어야 한다. 나머지 절반은 해석이다. 어느 축의 차이가 어느 지표를 움직였는지를 로그에서 근거를 들어 설명한다.</p>
+        <p><strong>채점 기준</strong>: 1주차와 같이 재현성이 절반이다. 다른 사람이 코드와 설정만으로 같은 경향을 다시 얻을 수 있어야 한다. 나머지 절반은 해석이다. 어느 요소의 차이가 어느 지표를 움직였는지를 로그에서 근거를 들어 설명한다.</p>
       </div>
     </div>
   </div>
@@ -747,7 +756,7 @@ TOOLS = {<span class="st">"read_file"</span>: read_file, <span class="st">"count
 
     <div class="next">
       <div class="lbl">NEXT: WEEK 03</div>
-      <p><strong>에이전트가 여럿이 되면 무엇이 달라지는가</strong>. 다음 주에는 Smith의 Contract Net Protocol(1980)을 읽는다. 일을 나눠 갖는 에이전트 시장이 이미 그때 설계됐는데 왜 자리 잡지 못했는지를 묻는다. 실습에서는 그 프로토콜을 LLM 에이전트로 재현한다.</p>
+      <p><strong>에이전트가 여럿이 되면 무엇이 달라지는가</strong>. 읽기는 Smith의 Contract Net Protocol(1980)이다. 일을 나눠 갖는 에이전트 시장이 이미 그때 설계됐는데 왜 자리 잡지 못했는지를 묻는다. 실습에서는 그 프로토콜을 LLM 에이전트로 재현한다.</p>
     </div>
   </div>
 </section>
