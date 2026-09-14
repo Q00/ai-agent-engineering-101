@@ -27,13 +27,17 @@ Run one arm on its own:
     py harness_plan_execute.py --dry-run       # scripted model, spends nothing
 """
 import json
+import os
 import re
 import sys
 
 from tools_shared import (TOOLS, TOOL_SCHEMAS, Meter, call_model, use_fake_model,
                           utf8_console)
 
-MAX_PLAN_STEPS = 6      # [axis 3] same work-turn ceiling the ReAct arm gets
+# [axis 3] The longest plan this arm will write and execute. Matches the ReAct
+# arm's ceiling so neither side is handed more work turns than the other.
+MAX_PLAN_STEPS = int(os.environ.get("AGENT_MAX_STEPS", "8"))
+
 MAX_REPLAN = 1          # [axis 4] the flexibility ceiling, stated up front
 
 IRREVERSIBLE = frozenset()   # [axis 5] identical to the ReAct arm
@@ -180,17 +184,19 @@ def run_plan_execute(task, max_replan=MAX_REPLAN, log=print, meter=None):
     log("plan: %s" % json.dumps(plan, ensure_ascii=False))
 
     # ---- 2) EXECUTE ----------------------------------------------------
-    # [axis 3] The arm gets MAX_PLAN_STEPS executing turns for the whole run,
-    # however it chooses to spread them across the original plan and a replanned
-    # one. Without that total, a replan that restarts at step 1 would cost twice
-    # the plan length in requests, and the free tier does not have it to spend.
+    # [axis 3] Termination is the plan running out. The only total here is the
+    # natural bound of what this arm can execute at all - the original plan plus
+    # the one replanned plan it is allowed - so a replan that restarts at step 1
+    # cannot loop. Runs 1-12 capped the total at 6 instead, which was a
+    # free-tier budget number rather than a design decision, and it is gone.
+    hard_bound = MAX_PLAN_STEPS * (1 + max_replan)
     context = []
     i = 0
     steps_done = 0
-    while i < len(plan) and steps_done < MAX_PLAN_STEPS:
+    while i < len(plan) and steps_done < hard_bound:
         log("")
         log("--- step %d/%d (turn %d/%d) ---"
-            % (i + 1, len(plan), steps_done + 1, MAX_PLAN_STEPS))
+            % (i + 1, len(plan), steps_done + 1, hard_bound))
         result = execute_step(task, plan, plan[i], i + 1, context, meter, log)
         context.append(result["line"])
         steps_done += 1
@@ -209,7 +215,7 @@ def run_plan_execute(task, max_replan=MAX_REPLAN, log=print, meter=None):
                 # [axis 4] budget spent. Keep executing the plan already in hand.
         i += 1
 
-    if steps_done >= MAX_PLAN_STEPS and i < len(plan):
+    if steps_done >= hard_bound and i < len(plan):
         log("")
         log("step ceiling reached with %d plan step(s) unexecuted" % (len(plan) - i))
 

@@ -22,12 +22,17 @@ Run one arm on its own:
     py harness_react.py                 # real model, spends requests
     py harness_react.py --dry-run       # scripted model, spends nothing
 """
+import os
 import sys
 
 from tools_shared import (TOOLS, TOOL_SCHEMAS, Meter, Reply, call_model,
                           observation, use_fake_model, utf8_console)
 
-MAX_STEPS = 6
+# The value in the lecture skeleton and in weeks/week-02/starter. Runs 1-12
+# used 6, which was not a design decision: it was chosen so that six runs would
+# fit inside OpenRouter's 50-request free day, and it decided the outcome of
+# setting B instead of the harness doing so. AGENT_MAX_STEPS overrides it.
+MAX_STEPS = int(os.environ.get("AGENT_MAX_STEPS", "8"))
 
 # [axis 5] Tools that would need a human to approve them before they run.
 # This task reads and counts, so the set is empty and interventions stays 0.

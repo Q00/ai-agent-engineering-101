@@ -101,9 +101,16 @@ def one_run(run_no, harness, task, expected, dry_run):
     # that were already spent instead of silently recording 0.
     meter = tools_shared.Meter()
     try:
+        import harness_plan_execute as _pe
+        import harness_react as _re
         print("run       : %d" % run_no)
         print("harness   : %s" % harness)
         print("model     : %s%s" % (tools_shared.MODEL, "  (DRY RUN, no API)" if dry_run else ""))
+        # Both ceilings are environment-driven now, so each log records the
+        # ones its own run used.
+        print("max_tokens: %s" % (tools_shared.MAX_TOKENS or "unset (provider default)"))
+        print("ceiling   : max_steps=%d  max_plan_steps=%d  max_replan=%d"
+              % (_re.MAX_STEPS, _pe.MAX_PLAN_STEPS, _pe.MAX_REPLAN))
         print("started   : %s" % datetime.now().isoformat(timespec="seconds"))
         print("task      : %s" % task)
         print("expected  : %s" % expected)

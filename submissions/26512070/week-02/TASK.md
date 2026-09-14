@@ -29,17 +29,31 @@ expected: 14:00
 A/B는 **두 설정**에서 각각 돌렸다. 설정 안에서는 하네스만 독립변수이고,
 설정 사이에서는 하네스 코드가 아니라 **모델 호출 상수만** 달라진다.
 
-| 항목 | 설정 A (run 1–6) | 설정 B (run 7–12) |
-|---|---|---|
-| provider | OpenRouter (OpenAI 호환 API) | 동일 |
-| model | `nvidia/nemotron-3.5-lightning:free` | `anthropic/claude-sonnet-4.5` |
-| `max_tokens` | **1024** (강의 뼈대 값) | **미지정** — 보내지 않고 공급자 기본값 |
-| temperature | API 기본값 (미지정) | 동일 |
-| 도구 집합 | `read_file(path)`, `count_pattern(path, pattern)` 두 개뿐 | 동일 |
-| 도구 모듈 | `tools_shared.py` — 두 하네스가 동일하게 import | 동일 |
-| 되돌릴 수 없는 도구 | **없음** → `interventions`는 구조적으로 0 | 동일 |
-| 하네스 로직 | `max_steps=6`, `max_replan=1` | **동일 (변경 없음)** |
-| 실행 횟수 | 하네스당 3회 | 하네스당 3회 |
+모든 설정에서 공통인 것: provider는 OpenRouter(OpenAI 호환 API), temperature는
+API 기본값(미지정), 도구는 `read_file(path)`와 `count_pattern(path, pattern)`
+둘뿐이며 `tools_shared.py`에서 두 하네스가 같이 import한다. 되돌릴 수 없는
+도구는 없어 `interventions`는 구조적으로 0이고, `max_replan`은 항상 1이다.
+실행은 설정마다 하네스당 3회.
+
+| 설정 | run | model | `max_tokens` | `max_steps` |
+|---|---|---|---|---|
+| **A** | 1–6 | `nvidia/nemotron-3.5-lightning:free` | 1024 | 6 |
+| **B** | 7–12 | `anthropic/claude-sonnet-4.5` | 미지정 | 6 |
+| **C** | 13–18 | `anthropic/claude-sonnet-4.5` | 미지정 | **8** |
+| **D** | 19–24 | `anthropic/claude-sonnet-4.5` | 미지정 | **24** |
+
+설정 A와 B의 `max_steps=6`, 그리고 재계획 후 실행 턴을 총 6회로 묶었던 상한은
+둘 다 **무료 티어 하루 50요청에 6회 실행을 넣으려고 고른 값**이지 설계 결정이
+아니었다. 설정 C부터 그 둘을 되돌린다. C의 8은 강의 뼈대와
+`weeks/week-02/starter/harness_react.py`가 쓰는 값이고, 재계획 후 총량 상한은
+제거되어 이제 "원래 계획 + 재계획된 계획"이라는 자연스러운 경계만 남는다.
+
+C와 D를 둘 다 돌리는 이유는 8도 이 태스크에는 부족할 것으로 예상되기
+때문이다. `count_pattern`은 호출당 정규식 하나를 세고 로그에는 시간대가 9개
+있으므로, 읽기 1 + 세기 9 + 종료 1 = **최소 11스텝**이 필요하다. D의 24는
+가능한 시간대 24개를 전부 세고도 남는 값이라 상한이 걸리지 않는다. 즉 C는
+"과목 기본값도 이 도구 granularity에는 부족한가"를, D는 "상한을 치우면 두
+하네스가 실제로 어떻게 다른가"를 각각 답한다.
 
 설정 A는 실패한 채로 `results.csv`에 남는다. 지우지 않는 이유는 그 실패가
 설정 B를 만든 근거이기 때문이다. 두 설정 사이에서 하네스 코드의 다섯 축
