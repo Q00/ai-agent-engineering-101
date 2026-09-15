@@ -14,6 +14,11 @@ SYSTEM_PLAN = (
     "You are a planner. Reply with a JSON list of short strings, one per step, "
     "and nothing else. No prose, no code fences."
 )
+SYSTEM_PLAN_MAX_3 = (
+    "You are a planner. Create a minimal plan with at most 3 steps. Reply with "
+    "a JSON list of short strings, one per step, and nothing else. Do not "
+    "execute tools while planning. No prose, no code fences."
+)
 SYSTEM_EXEC = (
     "You execute one step of a plan at a time with the tools you are given. "
     "If the step cannot be done as planned, reply with a line that starts with "
@@ -35,11 +40,12 @@ def parse_plan(text: str):
 
 
 def run_plan_execute(task: str, max_replan: int = 1,
-                     max_tool_rounds: int = 3, log=print):
+                     max_tool_rounds: int = 3, log=print,
+                     planner_system: str = SYSTEM_PLAN):
     meter = Meter()
 
     # 1) PLAN: the whole plan in one call, no tools
-    planner = Chat(SYSTEM_PLAN, meter, tools=False)
+    planner = Chat(planner_system, meter, tools=False)
     planner.add_user(f"Task: {task}\nAvailable tools: read_file(path), "
                      f"count_pattern(path, pattern).")
     raw = planner.send().text
@@ -88,6 +94,16 @@ def run_plan_execute(task: str, max_replan: int = 1,
         executor.run_tools(final, log)
         final = executor.send()
     return final.text, meter, replans
+
+
+def run_plan_execute_short_plan(task: str, log=print):
+    """Variant: change only the planner prompt by limiting plans to 3 steps."""
+    return run_plan_execute(task, log=log, planner_system=SYSTEM_PLAN_MAX_3)
+
+
+def run_plan_execute_no_replan(task: str, log=print):
+    """Variant: change only recovery by reducing allowed replans from 1 to 0."""
+    return run_plan_execute(task, max_replan=0, log=log)
 
 
 if __name__ == "__main__":
