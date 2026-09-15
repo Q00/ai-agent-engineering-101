@@ -21,6 +21,30 @@
 | 오류 복구 | 도구 오류를 Observation으로 전달 | 같은 도구 오류 처리에 `OFF_PLAN` 재계획 최대 1회 추가 |
 | 사람 개입 | 승인 대상 없음 | 승인 흐름 없음; 자동 재계획은 사람 개입과 별도 |
 
+```mermaid
+flowchart LR
+    task["TASK.md<br/>성공 기준 14:00"]
+    input["app.log<br/>공통 입력"]
+    tools["tools_shared.py<br/>read_file, count_pattern"]
+    model["OpenRouter<br/>Nemotron free"]
+
+    input --> tools
+    task --> react["ReAct harness<br/>한 대화에서 Observation 누적"]
+    tools --> react
+    model --> react
+
+    task --> planner["Planner<br/>3단계 JSON 계획"]
+    model --> planner
+    planner --> executor["Executor<br/>단계별 실행과 최종 답변"]
+    tools --> executor
+    model --> executor
+
+    react --> reactLog["logs/react-NN.txt<br/>results.csv"]
+    executor --> planLog["logs/plan_exec-NN.txt<br/>results.csv"]
+    reactLog --> report["REPORT.md<br/>성공률, 토큰, 호출 수 비교"]
+    planLog --> report
+```
+
 Plan v3는 한 호출로 세 단계 JSON 계획 전체를 만들고 `파일 읽기 → 받은 원문 집계 → 답 작성`
 순서로 실행한다. 최초 계획 파싱 실패도 재계획 예산 1회를 사용한다. 이 설계는 앞선 조건에서
 계획이 설명문으로 나오거나 한 단계가 시간대별 도구 호출을 반복한 문제를 보완한 것이다.
