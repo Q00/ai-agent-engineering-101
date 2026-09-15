@@ -53,6 +53,12 @@ def _get_client():
     return _client
 
 
+def client():
+    """The provider client. Public so agents.py can make tool-using calls
+    without duplicating the provider switch or the lazy construction."""
+    return _get_client()
+
+
 class Meter:
     """Tokens and model calls, counted in one place.
 

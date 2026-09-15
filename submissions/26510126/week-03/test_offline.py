@@ -583,6 +583,79 @@ def suite_f():
     check("each single-tool answer is reachable with that tool", unreachable, [])
 
 
+# ------------------------------------------------------------------ suite G
+# The cache boundary. Everything the prompt cache depends on is a property of
+# the prefix, so it is checkable without a key: the role must not appear in
+# `tools` or `system`, and neither may vary with the turn.
+
+import agents as A
+
+
+def suite_g():
+    print("\n-- G. cache boundary and role tables")
+
+    a = A.Agent("P4")
+    sysprompt = a.system_prompt()
+    names = [t["name"] for t in a.tool_specs()]
+
+    check("protocol tools come first, in a fixed order",
+          names[:4], list(A.PROTOCOL_NAMES))
+    check("then this candidate's work tools, sorted",
+          names[4:], [n for n in T.TOOL_NAMES if n in a.manifest])
+    check("the declaration does not depend on the manifest's order",
+          [t["name"] for t in A.Agent("P4").tool_specs()], names)
+
+    # The role lives after the boundary. If any of this leaks forward, every
+    # turn pays full price for the prefix again.
+    check("no role word in the tool declarations",
+          any("ROLE:" in _json.dumps(t) for t in a.tool_specs()), False)
+    check("no role assignment in the system prompt",
+          "ROLE:" in sysprompt, False)
+    check("no task id in the system prompt",
+          any(f"TASK {i}" in sysprompt for i in range(1, 8)), False)
+    check("the system prompt is identical for two turns in different roles",
+          (A.Agent("P4").system_prompt(), A.Agent("P4").system_prompt()),
+          (sysprompt, sysprompt))
+
+    # Identity does belong in the prefix, which is why there are four of them.
+    prefixes = {n: (A.Agent(n).system_prompt(),
+                    tuple(t["name"] for t in A.Agent(n).tool_specs()))
+                for n in T.CANDIDATES}
+    check("each candidate has its own prefix", len(set(prefixes.values())), 4)
+    check("a candidate's prefix names only the tools it holds",
+          all(set(p[1]) - set(A.PROTOCOL_NAMES) == set(T.MANIFESTS[n])
+              for n, p in prefixes.items()), True)
+    check("the manifest is stated in the system prompt",
+          all(t in prefixes["P1"][0] for t in T.MANIFESTS["P1"]), True)
+    check("and tools it does not hold are not",
+          "read_log" in prefixes["P1"][0], False)
+
+    # Roles partition the protocol tools: none unassigned, none in both.
+    assigned = [t for role in A.ROLE_TOOLS.values() for t in role]
+    check("every protocol tool belongs to exactly one role",
+          sorted(assigned), sorted(A.PROTOCOL_NAMES))
+    check("manager holds announce, get_trajectory and award",
+          sorted(A.ROLE_TOOLS["manager"]),
+          ["announce", "award", "get_trajectory"])
+    check("contractor holds bidding only",
+          list(A.ROLE_TOOLS["contractor"]), ["bidding"])
+
+    check("an unknown candidate is refused",
+          _refuses(lambda: A.Agent("P9")), True)
+    check("an unknown role is refused",
+          _refuses(lambda: A.Agent("P1").act("boss", "x")), True)
+
+
+def _refuses(fn):
+    try:
+        fn()
+        return False
+    except (ValueError, KeyError):
+        return True
+    except SystemExit:
+        return True
+
+
 if __name__ == "__main__":
     suite_a()
     suite_b()
@@ -590,5 +663,6 @@ if __name__ == "__main__":
     suite_d()
     suite_e()
     suite_f()
+    suite_g()
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     sys.exit(1 if FAIL else 0)

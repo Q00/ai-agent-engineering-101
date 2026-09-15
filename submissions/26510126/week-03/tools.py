@@ -295,6 +295,19 @@ def capable_for(required, manifests: dict) -> list:
     This is what makes `capable` in tasks_ext.json derived rather than
     declared: if a manifest changes, the answer changes with it, and a stale
     hand-written list cannot quietly disagree with the tool sets.
+
+    It is a LOWER BOUND on who can actually finish the task, not the exact
+    set. `requires` records the intended route — the tool the task was written
+    for — and a longer route may exist: a candidate holding only `read_log`
+    can count mentions of a service by reading the file in windows, which is
+    what `grep_message` does in one call. A smoke test caught P3 bidding on a
+    grep task for exactly that reason, and it was not wrong.
+
+    So `feasible` measures whether an award landed inside the intended
+    capability set, and `solved` measures what actually happened. A solve from
+    outside `capable` is a finding, not a contradiction: either `requires` was
+    drawn too narrowly or the candidate found another way, and the logs say
+    which.
     """
     need = set(required)
     unknown = sorted(need - set(TOOL_NAMES))
