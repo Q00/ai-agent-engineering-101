@@ -46,7 +46,12 @@ def parse_plan(text: str):
 
 
 def run_plan_execute(task: str, max_replan: int = 1,
-                     max_tool_rounds: int = 3, log=print):
+                     # variation: 3 was arbitrary and bound on this task — the
+                     # answer needs one count per hour and there are nine hours,
+                     # so every run hit "step exceeded the tool-call budget".
+                     # ReAct has no per-iteration tool cap at all; 9 removes the
+                     # asymmetry instead of handicapping one side.
+                     max_tool_rounds: int = 9, log=print):
     meter = Meter()
 
     # 1) PLAN: the whole plan in one call, no tools
