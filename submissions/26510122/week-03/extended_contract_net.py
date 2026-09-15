@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import json
 import math
 from typing import Callable
@@ -28,7 +28,8 @@ Do not perform the task. Return only this JSON shape:
   }
 }
 The four dimensions have separate meanings. Do not use willingness or familiarity
-as a synonym for expected_success. Follow the shared lexicon.
+as a synonym for expected_success. Claim high capability only when your declared
+or manager-inferred capability tags support it. Follow the shared lexicon.
 """.strip()
 
 
@@ -131,6 +132,17 @@ def clarification_prompt(announcement: dict, bid: ExtendedBid) -> str:
     }, ensure_ascii=False)
 
 
+def add_profile_warnings(
+    bid: ExtendedBid, announcement: dict, ontology: OntologyState
+) -> ExtendedBid:
+    required = set(announcement.get("required_capabilities", []))
+    supported = ontology.supported_capabilities(bid.contractor)
+    extra = []
+    if bid.dimensions["capability"] >= 80 and required.isdisjoint(supported):
+        extra.append("capability_not_supported_by_profile")
+    return replace(bid, warnings=tuple(dict.fromkeys((*bid.warnings, *extra))))
+
+
 def choose_extended_winner(
     bids: list[ExtendedBid], ontology: OntologyState
 ) -> tuple[ExtendedBid | None, dict[str, float]]:
@@ -141,7 +153,12 @@ def choose_extended_winner(
         if not bid.participate or bid.parse_error:
             continue
         reliability = ontology.reliability_for(bid.contractor)
-        score = bid.dimensions["expected_success"] * (0.5 + 0.5 * reliability)
+        semantic_factor = 0.7 if bid.warnings else 1.0
+        score = (
+            bid.dimensions["expected_success"]
+            * (0.5 + 0.5 * reliability)
+            * semantic_factor
+        )
         scores[bid.contractor] = round(score, 3)
         if score > winner_score:
             winner = bid
@@ -166,7 +183,11 @@ def run_extended_contract_net(
     }
 
     for task in tasks:
-        announcement = {"id": task["id"], "desc": task["desc"]}
+        announcement = {
+            "id": task["id"],
+            "desc": task["desc"],
+            "required_capabilities": task.get("required_capabilities", []),
+        }
         bids = []
         for contractor in CONTRACTOR_ORDER:
             emit("announcement", task=announcement, contractor=contractor)
@@ -174,7 +195,9 @@ def run_extended_contract_net(
             system = prompt_for(contractor, ontology)
             raw = chat(system, json.dumps(announcement, ensure_ascii=False))
             metrics["messages"] += 1
-            bid = parse_extended_bid(contractor, raw)
+            bid = add_profile_warnings(
+                parse_extended_bid(contractor, raw), announcement, ontology
+            )
             metrics["semantic_warnings"] += len(bid.warnings)
             emit("bid", task=task["id"], contractor=contractor, **bid.as_record(),
                  warnings=bid.warnings, parse_error=bid.parse_error, raw=raw)
@@ -186,7 +209,9 @@ def run_extended_contract_net(
                 metrics["messages"] += 1
                 repaired_raw = chat(system, clarification_prompt(announcement, bid))
                 metrics["messages"] += 1
-                repaired = parse_extended_bid(contractor, repaired_raw)
+                repaired = add_profile_warnings(
+                    parse_extended_bid(contractor, repaired_raw), announcement, ontology
+                )
                 metrics["clarifications"] += 1
                 metrics["semantic_warnings"] += len(repaired.warnings)
                 emit("clarification_response", task=task["id"], contractor=contractor,
@@ -208,8 +233,10 @@ def run_extended_contract_net(
         correct = winner.contractor == task["gold"]
         metrics["correct"] += int(correct)
         metrics["misawards"] += int(not correct)
-        domain = task["id"].split("-", 1)[0]
-        ontology.observe_award(task["id"], winner.contractor, correct, domain)
+        ontology.observe_award(
+            task["id"], winner.contractor, correct,
+            task.get("required_capabilities", []),
+        )
         emit("award", task=task["id"], contractor=winner.contractor,
              selection_score=scores[winner.contractor], gold_match=correct)
 

@@ -35,12 +35,15 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--continue-state", action="store_true")
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--limit", type=int, help="limit tasks in smoke mode")
     parser.add_argument(
         "--model",
         default=os.environ.get("AGENT_MODEL", "nvidia/nemotron-3.5-lightning:free"),
     )
     parser.add_argument("--temperature", type=float, default=0.0)
     args = parser.parse_args()
+    if args.limit is not None and (not args.smoke or args.limit < 1):
+        parser.error("--limit must be positive and used with --smoke")
 
     state_path = ROOT / "state" / "latest.json"
     source = state_path if args.continue_state and state_path.exists() else ROOT / "ontology_seed.json"
@@ -60,6 +63,8 @@ def main() -> int:
         emit("setup", run=run_id, mode="extended", model=args.model,
              temperature=args.temperature, continued=args.continue_state)
         tasks = json.loads((ROOT / "tasks.json").read_text(encoding="utf-8"))
+        if args.limit is not None:
+            tasks = tasks[:args.limit]
         try:
             metrics = run_extended_contract_net(tasks, client, emit, ontology)
             row = {"run": run_id, **metrics, "note": ""}

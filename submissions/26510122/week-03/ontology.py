@@ -57,7 +57,11 @@ class OntologyState:
         )
 
     def observe_award(
-        self, task_id: str, contractor: str, gold_match: bool, task_domain: str
+        self,
+        task_id: str,
+        contractor: str,
+        gold_match: bool,
+        required_capabilities: list[str],
     ) -> None:
         manager = self.data["manager"]["observer_view"]
         manager["negotiations"] += 1
@@ -72,8 +76,10 @@ class OntologyState:
         view["calibrated_reliability"] = round(
             view["gold_matches"] / view["awards"], 3
         )
-        if gold_match and task_domain not in view["inferred_skills"]:
-            view["inferred_skills"].append(task_domain)
+        if gold_match:
+            for capability in required_capabilities:
+                if capability not in view["inferred_skills"]:
+                    view["inferred_skills"].append(capability)
         if view["awards"] >= 3 and view["calibrated_reliability"] >= 0.8:
             view["derived_status"] = "veteran"
         elif view["awards"] >= 2:
@@ -104,6 +110,12 @@ class OntologyState:
             "calibrated_reliability"
         ]
         return 1.0 if value is None else float(value)
+
+    def supported_capabilities(self, contractor: str) -> set[str]:
+        node = self.data["contractors"][contractor]
+        claimed = node["self_view"].get("capability_tags", [])
+        observed = node["manager_view"].get("inferred_skills", [])
+        return set(claimed) | set(observed)
 
     def _event(self, kind: str, **data) -> None:
         self.data["shared_events"].append({

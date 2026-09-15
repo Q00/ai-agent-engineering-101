@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from extended_contract_net import parse_extended_bid
+from extended_contract_net import add_profile_warnings, parse_extended_bid
 from ontology import OntologyState
 
 
@@ -33,7 +33,9 @@ class ExtendedContractNetTests(unittest.TestCase):
     def test_claimed_and_derived_status_remain_separate(self):
         state = OntologyState.from_file(ROOT / "ontology_seed.json")
         for index in range(3):
-            state.observe_award(f"code-{index}", "developer", True, "code")
+            state.observe_award(
+                f"code-{index}", "developer", True, ["python", "debugging"]
+            )
         node = state.data["contractors"]["developer"]
         self.assertEqual(node["self_view"]["claimed_status"], "specialist")
         self.assertEqual(node["manager_view"]["derived_status"], "veteran")
@@ -42,6 +44,26 @@ class ExtendedContractNetTests(unittest.TestCase):
             path = Path(folder) / "state.json"
             state.save(path)
             self.assertTrue(path.is_file())
+
+    def test_high_capability_needs_profile_support(self):
+        state = OntologyState.from_file(ROOT / "ontology_seed.json")
+        raw = json.dumps({
+            "participate": True,
+            "confidence": 90,
+            "reason": "I can do it",
+            "task_interpretation": "Debug Python",
+            "dimensions": {
+                "task_understanding": 90,
+                "capability": 90,
+                "expected_success": 90,
+                "willingness": 90,
+            },
+        })
+        bid = parse_extended_bid("writer", raw)
+        bid = add_profile_warnings(
+            bid, {"required_capabilities": ["python", "debugging"]}, state
+        )
+        self.assertIn("capability_not_supported_by_profile", bid.warnings)
 
 
 if __name__ == "__main__":
