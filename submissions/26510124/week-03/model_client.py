@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 
-DEFAULT_MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
+DEFAULT_MODEL = os.environ.get("AGENT_MODEL", "gpt-5.4-mini")
 
 
 @dataclass(frozen=True)
@@ -45,6 +45,7 @@ class Backend(Protocol):
     model: str
     provider: str
     temperature: float
+    reasoning_effort: str
 
     def complete(
         self,
@@ -65,10 +66,12 @@ class OpenAIBackend:
         model: str = DEFAULT_MODEL,
         temperature: float = 0.2,
         request_timeout: float = 90.0,
+        reasoning_effort: str = "none",
     ):
         self.model = model
         self.temperature = temperature
         self.request_timeout = request_timeout
+        self.reasoning_effort = reasoning_effort
         self.provider = "openrouter" if "openrouter.ai" in os.environ.get(
             "OPENAI_BASE_URL", ""
         ) else "openai-compatible"
@@ -85,6 +88,7 @@ class OpenAIBackend:
             "model": self.model,
             "messages": messages,
             "temperature": self.temperature,
+            "reasoning_effort": self.reasoning_effort,
         }
         if tools:
             kwargs["tools"] = [

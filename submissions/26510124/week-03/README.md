@@ -49,7 +49,7 @@ API 키는 파일에 쓰지 않고 환경변수로만 설정한다.
 
 ```bash
 export OPENAI_API_KEY=<key>
-export AGENT_MODEL=gpt-4o-mini
+export AGENT_MODEL=gpt-5.4-mini
 ```
 
 OpenRouter를 쓸 때만 `OPENAI_BASE_URL`을 추가한다. provider나 모델을 바꾸면 같은
@@ -64,8 +64,9 @@ OpenRouter를 쓸 때만 `OPENAI_BASE_URL`을 추가한다. provider나 모델�
 python run_experiment.py base \
   --runs 3 \
   --harness react \
-  --model gpt-4o-mini \
-  --temperature 0.2
+  --model gpt-5.4-mini \
+  --temperature 0.2 \
+  --reasoning-effort none
 ```
 
 이 명령은 `results.csv`에 9줄을 append하고 `logs/`에 9개 로그를 만든다.
@@ -82,8 +83,9 @@ python run_experiment.py extended \
   --runs 3 \
   --condition overconfident \
   --harness react \
-  --model gpt-4o-mini \
+  --model gpt-5.4-mini \
   --temperature 0.2 \
+  --reasoning-effort none \
   --bid-timeout 60
 ```
 

@@ -6,11 +6,12 @@
 
 ## 1. 실험 설정
 
-provider는 OpenAI-compatible Chat Completions, 모델은 `gpt-4o-mini`, temperature는
-`0.2`로 고정했다. 실행 환경에서 `OPENAI_BASE_URL`을 지정하지 않으면 OpenAI를
-사용하고, API 키는 환경변수로만 전달한다. 사용 SDK는 `openai==3.14.0`이고 공통
-도구 세트 버전은 `week03-tools-v1`이다. provider 내부 스케줄링과 구현 세부 사항은
-직접 통제할 수 없다.
+provider는 OpenAI-compatible Chat Completions, 모델은 `gpt-5.4-mini`,
+temperature는 `0.2`, reasoning effort는 `none`으로 고정했다. 실행 환경에서
+`OPENAI_BASE_URL`을 지정하지 않으면 OpenAI를 사용하고, API 키는 환경변수로만
+전달한다. 사용 SDK는 `openai==3.14.0`이고 공통 도구 세트 버전은
+`week03-tools-v1`이다. provider 내부 스케줄링과 구현 세부 사항은 직접 통제할
+수 없다.
 
 공식 실험의 입찰 system prompt는 contractor ID와 조건별 능력 문장 뒤에 다음
 계약을 동일하게 붙인다.
@@ -32,7 +33,7 @@ contractor 모두 같은 범용 능력 문장으로 바꾸었다. `overconfident
 
 ```bash
 python run_experiment.py base --runs 3 --harness react \
-  --model gpt-4o-mini --temperature 0.2
+  --model gpt-5.4-mini --temperature 0.2 --reasoning-effort none
 ```
 
 낙찰된 contractor는 `calculator`, `read_file`, `count_pattern`, `check_python`,

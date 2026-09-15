@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+import sys
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from agents import BidAttempt, BidDecision, make_team, parse_bid
 from contract_net import (
@@ -15,7 +18,7 @@ from contract_net import (
     token_efficiencies,
     valid_candidates,
 )
-from model_client import ModelReply, Usage
+from model_client import ModelReply, OpenAIBackend, Usage
 from monitor import Monitor, Profile, validate_result
 
 
@@ -61,6 +64,7 @@ class FakeBackend:
     model = "fake-model"
     provider = "offline"
     temperature = 0.2
+    reasoning_effort = "none"
 
     def complete(self, messages, tools=None):
         system = messages[0]["content"]
@@ -77,6 +81,33 @@ class FakeBackend:
         if "Check the proposed Answer" in joined:
             return ModelReply("VERIFIED", usage=Usage(5, 1))
         return ModelReply("Answer: 4014", usage=Usage(10, 2))
+
+
+class ModelConfigurationTests(unittest.TestCase):
+    def test_selected_model_and_reasoning_effort_reach_sdk(self):
+        captured = {}
+
+        class FakeCompletions:
+            def create(self, **kwargs):
+                captured.update(kwargs)
+                message = SimpleNamespace(content="ok", tool_calls=[])
+                usage = SimpleNamespace(prompt_tokens=3, completion_tokens=2)
+                return SimpleNamespace(
+                    choices=[SimpleNamespace(message=message)], usage=usage
+                )
+
+        fake_client = SimpleNamespace(
+            chat=SimpleNamespace(completions=FakeCompletions())
+        )
+        fake_openai = SimpleNamespace(OpenAI=lambda timeout: fake_client)
+        backend = OpenAIBackend()
+        with patch.dict(sys.modules, {"openai": fake_openai}):
+            reply = backend.complete([{"role": "user", "content": "test"}])
+
+        self.assertEqual(captured["model"], "gpt-5.4-mini")
+        self.assertEqual(captured["reasoning_effort"], "none")
+        self.assertEqual(captured["temperature"], 0.2)
+        self.assertEqual(reply.usage.total_tokens, 5)
 
 
 class BidParsingTests(unittest.TestCase):

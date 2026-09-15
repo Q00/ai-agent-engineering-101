@@ -133,6 +133,7 @@ def result_note(result: RoundResult, backend: OpenAIBackend, harness: str) -> st
             f"provider={backend.provider}",
             f"model={backend.model}",
             f"temperature={backend.temperature}",
+            f"reasoning_effort={backend.reasoning_effort}",
             f"harness={harness}",
             f"parse_fails={result.parse_fails}",
             f"timeouts={result.timeouts}",
@@ -169,6 +170,7 @@ def run_one(
             "provider": backend.provider,
             "model": backend.model,
             "temperature": backend.temperature,
+            "reasoning_effort": backend.reasoning_effort,
             "bid_timeout_seconds": bid_timeout if async_bids else None,
             "toolset_version": TOOLSET_VERSION,
             "tools": [
@@ -227,7 +229,12 @@ def run_base(args: argparse.Namespace) -> None:
     require_api_key()
     tasks = load_tasks()
     results_path = ROOT / "results.csv"
-    backend = OpenAIBackend(args.model, args.temperature, args.request_timeout)
+    backend = OpenAIBackend(
+        model=args.model,
+        temperature=args.temperature,
+        request_timeout=args.request_timeout,
+        reasoning_effort=args.reasoning_effort,
+    )
     conditions = [args.condition] if args.condition else ["baseline", "homogeneous", "overconfident"]
     run_number = next_run_number(results_path)
     for condition in conditions:
@@ -267,9 +274,10 @@ def run_extended(args: argparse.Namespace) -> None:
     tasks = load_tasks()
     results_path = ROOT / "extended_results.csv"
     backend = OpenAIBackend(
-        args.model,
-        args.temperature,
-        min(args.request_timeout, args.bid_timeout),
+        model=args.model,
+        temperature=args.temperature,
+        request_timeout=min(args.request_timeout, args.bid_timeout),
+        reasoning_effort=args.reasoning_effort,
     )
     policies = [args.policy] if args.policy else list(POLICIES)
     run_number = next_run_number(results_path)
@@ -328,6 +336,11 @@ def parser() -> argparse.ArgumentParser:
         target.add_argument("--harness", choices=["react", "plan_execute"], default="react")
         target.add_argument("--model", default=DEFAULT_MODEL)
         target.add_argument("--temperature", type=float, default=0.2)
+        target.add_argument(
+            "--reasoning-effort",
+            choices=["none", "low", "medium", "high", "xhigh"],
+            default="none",
+        )
         target.add_argument("--request-timeout", type=float, default=90.0)
         target.add_argument("--bid-timeout", type=float, default=60.0)
         target.add_argument("--allow-write-tools", action="store_true")
