@@ -1,0 +1,55 @@
+provider=openai model=gpt-4o-mini temperature=0.7
+condition=homogeneous run=5 tasks=8
+  contractor A: skill='general problem solving' overconfident=False
+  contractor B: skill='general problem solving' overconfident=False
+  contractor C: skill='general problem solving' overconfident=False
+[task 1] Compute 137 * 249 and return the number.
+  [announce] to A, B, C   (gold A)
+  [bid] A: bid=True confidence=90 reason='This task involves basic arithmetic which falls under general problem solving.'
+  [bid] B: bid=True confidence=90 reason='I can solve arithmetic problems.'
+  [bid] C: bid=True confidence=90 reason='I can solve mathematical problems.'
+  [award] A (gold A) -> correct
+[task 2] A team spent 48000 on food and 9500 on drinks, and received a 12000 refund. Return the net cost as a number.
+  [announce] to A, B, C   (gold A)
+  [bid] A: bid=True confidence=90 reason='I can solve general mathematical problems.'
+  [bid] B: bid=True confidence=90 reason='I can solve numerical problems involving basic arithmetic.'
+  [bid] C: bid=True confidence=90 reason='This task requires basic arithmetic which falls under general problem solving.'
+  [award] A (gold A) -> correct
+[task 3] Rewrite this sentence in plain English for a 10-year-old: 'The mitigation strategy necessitates the deprecation of legacy interfaces.'
+  [announce] to A, B, C   (gold B)
+  [bid] A: bid=True confidence=85 reason='I can simplify complex sentences for better understanding.'
+  [bid] B: bid=True confidence=85 reason='I can simplify complex sentences for better understanding.'
+  [bid] C: bid=True confidence=85 reason='I can simplify complex sentences for better understanding.'
+  [award] A (gold B) -> MISAWARD
+[task 4] Write a two-sentence apology email to a customer whose order shipped three days late.
+  [announce] to A, B, C   (gold B)
+  [bid] A: bid=True confidence=90 reason='I can effectively craft concise and polite communication.'
+  [bid] B: bid=True confidence=85 reason='I can create effective communication, including apology emails.'
+  [bid] C: bid=True confidence=85 reason='I can effectively create concise and polite email content.'
+  [award] A (gold B) -> MISAWARD
+[task 5] Write a Python function that returns a reversed copy of a list.
+  [announce] to A, B, C   (gold C)
+  [bid] A: bid=True confidence=90 reason='I can solve programming problems including Python functions.'
+  [bid] B: bid=True confidence=90 reason='This task involves general problem solving in Python.'
+  [bid] C: bid=True confidence=90 reason='I can solve general programming problems, including Python tasks.'
+  [award] A (gold C) -> MISAWARD
+[task 6] Write a Python function that counts how many lines of a text file match a regular expression.
+  [announce] to A, B, C   (gold C)
+  [bid] A: bid=True confidence=85 reason='I have general problem solving skills applicable to coding tasks.'
+  [bid] B: bid=True confidence=85 reason='I can solve problems related to coding tasks.'
+  [bid] C: bid=True confidence=90 reason='I can solve general programming tasks including regex in Python.'
+  [award] C (gold C) -> correct
+[task 7] Write a Python function that multiplies two integers and returns the product.
+  [announce] to A, B, C   (gold C)
+  [bid] A: bid=True confidence=95 reason='I can solve general programming problems including writing functions.'
+  [bid] B: bid=True confidence=85 reason='I can solve programming tasks including writing functions.'
+  [bid] C: bid=True confidence=90 reason='I can solve programming tasks including writing functions.'
+  [award] A (gold C) -> MISAWARD
+[task 8] In one paragraph, explain why the average of [1, 2, 3, 100] is misleading. Do not compute anything.
+  [announce] to A, B, C   (gold B)
+  [bid] A: bid=True confidence=85 reason='I can analyze and explain concepts clearly.'
+  [bid] B: bid=True confidence=85 reason='I can analyze and explain concepts effectively.'
+  [bid] C: bid=True confidence=85 reason='I can explain general problem-solving concepts effectively.'
+  [award] A (gold B) -> MISAWARD
+[round] correct=3/8 messages=56 unassigned=0 misawards=5 parse_fails=0
+[done] 24.1s  parse_fails=0 calls=24 tokens=4310

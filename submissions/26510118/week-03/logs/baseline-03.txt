@@ -1,0 +1,55 @@
+provider=openai model=gpt-4o-mini temperature=0.7
+condition=baseline run=3 tasks=8
+  contractor A: skill='arithmetic' overconfident=False
+  contractor B: skill='writing' overconfident=False
+  contractor C: skill='coding' overconfident=False
+[task 1] Compute 137 * 249 and return the number.
+  [announce] to A, B, C   (gold A)
+  [bid] A: bid=True confidence=95 reason='The task involves arithmetic, which is my skill.'
+  [bid] B: bid=False confidence=0 reason='This task requires mathematical computation, which is outside my writing skill.'
+  [bid] C: bid=True confidence=90 reason='I can perform mathematical computations.'
+  [award] A (gold A) -> correct
+[task 2] A team spent 48000 on food and 9500 on drinks, and received a 12000 refund. Return the net cost as a number.
+  [announce] to A, B, C   (gold A)
+  [bid] A: bid=True confidence=95 reason='The task requires simple arithmetic to calculate net cost.'
+  [bid] B: bid=False confidence=0 reason='This task involves calculations, not writing.'
+  [bid] C: bid=False confidence=0 reason='This task does not involve coding.'
+  [award] A (gold A) -> correct
+[task 3] Rewrite this sentence in plain English for a 10-year-old: 'The mitigation strategy necessitates the deprecation of legacy interfaces.'
+  [announce] to A, B, C   (gold B)
+  [bid] A: bid=False confidence=0 reason='This task requires language skills, not arithmetic.'
+  [bid] B: bid=True confidence=90 reason='I can simplify complex sentences for better understanding.'
+  [bid] C: bid=False confidence=0 reason='This task requires language simplification, not coding.'
+  [award] B (gold B) -> correct
+[task 4] Write a two-sentence apology email to a customer whose order shipped three days late.
+  [announce] to A, B, C   (gold B)
+  [bid] A: bid=False confidence=0 reason='The task requires writing skills, not arithmetic.'
+  [bid] B: bid=True confidence=95 reason='The task involves writing, which aligns with my skill.'
+  [bid] C: bid=True confidence=90 reason='The task involves writing, which is within my coding-related skills.'
+  [award] B (gold B) -> correct
+[task 5] Write a Python function that returns a reversed copy of a list.
+  [announce] to A, B, C   (gold C)
+  [bid] A: bid=False confidence=0 reason='This task requires programming skills, not arithmetic.'
+  [bid] B: bid=True confidence=95 reason='This task involves writing, which is my skill.'
+  [bid] C: bid=True confidence=95 reason='The task involves coding in Python, which is my skill.'
+  [award] B (gold C) -> MISAWARD
+[task 6] Write a Python function that counts how many lines of a text file match a regular expression.
+  [announce] to A, B, C   (gold C)
+  [bid] A: bid=False confidence=0 reason='My skill is arithmetic, not programming or regex.'
+  [bid] B: bid=True confidence=85 reason='I have the writing skill to create programming functions.'
+  [bid] C: bid=True confidence=95 reason='The task involves coding, which is my skill.'
+  [award] C (gold C) -> correct
+[task 7] Write a Python function that multiplies two integers and returns the product.
+  [announce] to A, B, C   (gold C)
+  [bid] A: bid=True confidence=90 reason='I can handle arithmetic operations including multiplication.'
+  [bid] B: bid=True confidence=90 reason='I have the skill to write functions in Python.'
+  [bid] C: bid=True confidence=95 reason='The task involves coding, which is my skill.'
+  [award] C (gold C) -> correct
+[task 8] In one paragraph, explain why the average of [1, 2, 3, 100] is misleading. Do not compute anything.
+  [announce] to A, B, C   (gold B)
+  [bid] A: bid=False confidence=90 reason='The task requires explanation skills rather than arithmetic.'
+  [bid] B: bid=True confidence=90 reason='I can effectively explain statistical concepts in writing.'
+  [bid] C: bid=True confidence=85 reason='The task requires coding skills to explain statistical concepts.'
+  [award] B (gold B) -> correct
+[round] correct=7/8 messages=47 unassigned=0 misawards=1 parse_fails=0
+[done] 19.9s  parse_fails=0 calls=24 tokens=4269
