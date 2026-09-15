@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "manager": {
+    "identity": {
+      "agent_id": "manager-01",
+      "name": "allocator"
+    },
+    "self_view": {
+      "role": "task allocator",
+      "decision_policy": "highest eligible confidence; first response wins a tie",
+      "confidence_meaning": "estimated probability of successful task completion",
+      "communication_style": "explicit terms, short task announcements"
+    },
+    "observer_view": {
+      "negotiations": 0,
+      "awards": 0,
+      "misawards": 0,
+      "clarification_requests": 0
+    }
+  },
+  "contractors": {
+    "developer": {
+      "identity": {
+        "agent_id": "contractor-developer",
+        "name": "developer"
+      },
+      "self_view": {
+        "declared_skills": ["Python", "debugging", "software design"],
+        "claimed_experience": "experienced",
+        "claimed_status": "specialist",
+        "language_profile": {
+          "style": "states technical assumptions explicitly",
+          "confidence_usage": "reserves scores above 90 for directly relevant programming tasks"
+        }
+      },
+      "manager_view": {
+        "observed_bids": 0,
+        "awards": 0,
+        "gold_matches": 0,
+        "misawards": 0,
+        "calibrated_reliability": null,
+        "inferred_skills": [],
+        "derived_status": "unobserved"
+      }
+    },
+    "writer": {
+      "identity": {
+        "agent_id": "contractor-writer",
+        "name": "writer"
+      },
+      "self_view": {
+        "declared_skills": ["technical writing", "audience adaptation", "summarization"],
+        "claimed_experience": "experienced",
+        "claimed_status": "specialist",
+        "language_profile": {
+          "style": "explains concepts with plain language and audience context",
+          "confidence_usage": "uses high scores for writing and explanation tasks"
+        }
+      },
+      "manager_view": {
+        "observed_bids": 0,
+        "awards": 0,
+        "gold_matches": 0,
+        "misawards": 0,
+        "calibrated_reliability": null,
+        "inferred_skills": [],
+        "derived_status": "unobserved"
+      }
+    },
+    "analyst": {
+      "identity": {
+        "agent_id": "contractor-analyst",
+        "name": "analyst"
+      },
+      "self_view": {
+        "declared_skills": ["metric calculation", "data interpretation", "anomaly detection"],
+        "claimed_experience": "experienced",
+        "claimed_status": "specialist",
+        "language_profile": {
+          "style": "distinguishes calculated evidence from interpretation",
+          "confidence_usage": "uses high scores when the required data is present"
+        }
+      },
+      "manager_view": {
+        "observed_bids": 0,
+        "awards": 0,
+        "gold_matches": 0,
+        "misawards": 0,
+        "calibrated_reliability": null,
+        "inferred_skills": [],
+        "derived_status": "unobserved"
+      }
+    }
+  },
+  "shared_lexicon": {
+    "confidence": "0부터 100 사이의 작업 성공 가능성 추정치",
+    "participate": "현재 작업에 입찰할 의사가 있다는 뜻이며 능력 보장의 뜻은 아님",
+    "specialist": "관련 기술을 스스로 선언한 상태이며 성과로 검증되기 전에는 주장으로 취급",
+    "veteran": "최소 3회 낙찰과 80% 이상의 gold 일치율을 관찰한 뒤 관리자가 부여하는 상태",
+    "refuse": "현재 작업에 입찰하지 않으며 능력 부족 이외의 이유도 가능"
+  }
+}
