@@ -496,6 +496,28 @@ def suite_e():
     check("an empty evidence list is clean",
           T.false_evidence(None, MANIFESTS["P1"]), [])
 
+    # One tool makes another unnecessary, and it was a log that said so. The
+    # arithmetic is checked against the real file rather than asserted: if the
+    # tool ever stops returning the distribution, this fails and the
+    # subsumption model should go with it.
+    import re as _re
+    for level in ("ERROR", "WARN", "INFO"):
+        byh = T.run_tool("count_by_hour", {"level": level})
+        tot = T.run_tool("count_level", {"level": level})
+        s_hours = sum(int(m) for m in _re.findall(r"=(\d+)", byh))
+        n_total = int(_re.search(r": (\d+) of", tot).group(1))
+        check(f"count_by_hour({level}) sums to count_level({level})",
+              (s_hours, n_total), (n_total, n_total))
+    check("so count_level drops out of a manifest that has count_by_hour",
+          T.effective(T.MANIFESTS["P1"]), ("count_by_hour",))
+    check("and a task requiring it is not impossible after all",
+          (T.capable_for(["count_level", "grep_message"], T.MANIFESTS),
+           T.capable_for(["count_level", "grep_message"], T.MANIFESTS,
+                         subsumption=True)),
+          ([], ["P4"]))
+    check("a manifest with no redundancy is unchanged",
+          T.effective(T.MANIFESTS["P4"]), T.MANIFESTS["P4"])
+
     # Declaration order is fixed, because the cached prefix depends on it.
     check("declaration order does not follow the manifest's order",
           [d["name"] for d in T.specs_for(["grep_message", "count_by_hour"])],

@@ -52,8 +52,12 @@ from collections import Counter, defaultdict
 
 import tools as T
 
-EXT_RESULTS = "results_ext.csv"
-EXT_DETAIL = "tasks_ext_detail.csv"
+# Globs, not single files. An appendix condition gets its own table so it can
+# run beside the main set without racing on the run number, and reading them
+# back should not care how many tables that produced.
+EXT_RESULTS = "results_ext*.csv"
+EXT_DETAIL = "tasks_ext*detail.csv"
+EXT_LOGS = "logs_ext*"
 SPEC_RESULTS = "results.csv"
 
 # claude-sonnet-5, USD per million tokens. Cache reads are a tenth of input,
@@ -61,11 +65,15 @@ SPEC_RESULTS = "results.csv"
 PRICE = {"in": 2.0, "out": 10.0, "cache_read": 0.20, "cache_write": 2.50}
 
 
-def rows(path):
-    if not os.path.exists(path):
-        return []
-    with open(path, newline="", encoding="utf-8") as fh:
-        return list(csv.DictReader(fh))
+def rows(pattern):
+    """Every row from every table matching the pattern."""
+    out = []
+    for path in sorted(glob.glob(pattern)) or ([pattern] if os.path.exists(pattern) else []):
+        with open(path, newline="", encoding="utf-8") as fh:
+            for r in csv.DictReader(fh):
+                r["_table"] = os.path.basename(path)
+                out.append(r)
+    return out
 
 
 def num(v, default=0):
@@ -100,7 +108,7 @@ def pct(a, b):
 
 def journal_records():
     out = []
-    for p in sorted(glob.glob(os.path.join("logs_ext", "*.jsonl"))):
+    for p in sorted(glob.glob(os.path.join(EXT_LOGS, "*.jsonl"))):
         cond = os.path.basename(p).rsplit("-", 1)[0]
         for line in open(p, encoding="utf-8"):
             r = json.loads(line)
@@ -108,6 +116,33 @@ def journal_records():
             r["_file"] = os.path.basename(p)
             out.append(r)
     return out
+
+
+def ext_effective(detail):
+    """feasible under the capability the task set declared, and under the
+    capability the tools actually give. The gap is a tool-design finding."""
+    import json as _j
+    doc = _j.load(open("tasks_ext.json", encoding="utf-8"))
+    req = {t["id"]: t["requires"] for t in doc["tasks"]}
+    per = defaultdict(lambda: [0, 0, 0])   # declared feasible, effective, n
+    for d in detail:
+        number = d.get("number") or d["task"].split("-")[-1].split(".")[0]
+        if number not in req:
+            continue
+        man = (T.MANIFESTS if d["condition"] != "ext_uniform_tools"
+               else {n: T.TOOL_NAMES for n in T.CANDIDATES})
+        eff = T.capable_for(req[number], man, subsumption=True)
+        cell = per[d["condition"]]
+        cell[2] += 1
+        cell[0] += num(d["feasible"])
+        cell[1] += int(bool(d["awarded"]) and d["awarded"] in eff)
+    table("EXT 9. feasible, declared against effective",
+          ["condition", "tasks", "declared", "effective"],
+          [[c, per[c][2], pct(per[c][0], per[c][2]), pct(per[c][1], per[c][2])]
+           for c in sorted(per)],
+          "count_by_hour returns the per-hour figures, which sum to what "
+          "count_level reports, so count_level is redundant to anyone holding "
+          "it. Task 6 was never the impossible task the set claimed.")
 
 
 def ext_summary(res):
@@ -350,6 +385,7 @@ def main():
         ext_failures(detail)
         ext_evidence(recs)
         ext_depth(recs, detail)
+        ext_effective(detail)
 
 
 if __name__ == "__main__":

@@ -67,6 +67,13 @@ class TaskResult:
         self.failures = []        # strings; every one is a countable mode
         self.trajectory_calls = 0
         self.messages = 0
+        # Which work tools the winner actually ran, and with what. Without
+        # this the logs cannot answer the question the design raises: how a
+        # candidate finished a task the tools it holds were not supposed to
+        # cover. The first runs had no record of it and the answer had to be
+        # guessed — the same gap this project's own week-03 review flagged one
+        # level down, repeated here.
+        self.work_calls = []      # (who, tool, args, first line of result)
 
     # -- the three metrics of the extension
     @property
@@ -100,6 +107,8 @@ class TaskResult:
             "trajectory_calls": self.trajectory_calls,
             "failures": ";".join(self.failures),
             "subtasks": len(self.subtasks),
+            "tool_calls": ";".join(
+                f"{who}:{tool}" for who, tool, _a, _r in self.work_calls),
         }
 
 
@@ -314,6 +323,10 @@ def execute_phase(task, manager, winner, endpoints, agents, result, journal,
 
     for _ in range(MAX_SUBTASKS + 1):
         turn = agents[winner].act("winner", block, round_no)
+        for name, args, out in turn.work_calls:
+            if name != "get_trajectory":
+                result.work_calls.append(
+                    (winner, name, args, str(out).splitlines()[0][:90]))
         for name, _ in turn.out_of_role:
             result.note(f"out_of_role:{winner}:{name}")
 

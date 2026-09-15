@@ -246,7 +246,7 @@ MANIFESTS = {
 CANDIDATES = tuple(sorted(MANIFESTS))
 
 
-def gold_for(required, manifests=None):
+def gold_for(required, manifests=None, subsumption: bool = False):
     """The most specialised candidate that can do the task, or None.
 
     Most specialised means holding the fewest tools among those capable. With
@@ -255,7 +255,9 @@ def gold_for(required, manifests=None):
     rather than picking one.
     """
     manifests = manifests or MANIFESTS
-    able = capable_for(required, manifests)
+    if subsumption:
+        required = effective_requirement(required)
+    able = _capable_for(required, manifests)
     if not able:
         return None
     sizes = sorted((len(manifests[w]), w) for w in able)
@@ -297,7 +299,53 @@ def run_tool(name: str, args: dict, path=None) -> str:
 # ---------------------------------------------------------------- capability
 
 
-def capable_for(required, manifests: dict) -> list:
+# What one tool makes another unnecessary.
+#
+# Found from a log, not from reading the code. P4 solved task 6 — whose
+# `requires` is count_level + grep_message, and which no candidate was
+# supposed to hold — by calling count_by_hour("WARN"), summing the per-hour
+# figures it returned, and getting the total count_level would have given.
+# Checked against the file for every level present: the hourly figures sum to
+# the total, always.
+#
+# The cause is the tool returning more than its purpose needs. Its description
+# says it names the hour with the most; handing back the whole distribution as
+# well is what dissolves the boundary with count_level. Week 01's lesson was
+# that the description is the interface — this is the return value exceeding
+# it, which the description cannot warn anyone about.
+#
+# Left in rather than fixed. Fixing it means re-running every condition, and
+# the finding is worth more than a tidier table: capability partitions assumed
+# by a task set can be undone by a tool that is merely generous. What the
+# tables do instead is report `feasible` both ways, and the gap is the result.
+SUBSUMES = {"count_by_hour": ("count_level",)}
+
+
+def effective(manifest) -> tuple:
+    """A manifest with tools their holder does not need, removed."""
+    have = set(manifest)
+    drop = {d for t in have for d in SUBSUMES.get(t, ())}
+    return tuple(t for t in TOOL_NAMES if t in have - drop)
+
+
+def effective_requirement(required) -> list:
+    """What a task really needs, once subsumption is taken into account."""
+    out = []
+    for r in required:
+        replacement = next((t for t, subs in SUBSUMES.items() if r in subs), r)
+        if replacement not in out:
+            out.append(replacement)
+    return out
+
+
+def capable_for(required, manifests: dict, subsumption: bool = False) -> list:
+    """Who can do the task. With `subsumption`, who can really do it."""
+    if subsumption:
+        required = effective_requirement(required)
+    return _capable_for(required, manifests)
+
+
+def _capable_for(required, manifests: dict) -> list:
     """Which candidates hold every tool a task needs.
 
     This is what makes `capable` in tasks_ext.json derived rather than

@@ -151,6 +151,8 @@ def one_run(run_no, condition, runs_rounds, log=print):
                         f"solved={int(r.solved)} msgs={r.messages}")
                     if r.failures:
                         out(f"  failures: {';'.join(r.failures)}")
+                    for who, tool, args, head in r.work_calls:
+                        out(f"  [tool] {who} {tool}({args}) -> {head}")
                     if r.report:
                         out(f"  report: {r.report.strip().splitlines()[-1][:120]}")
                     got["feasible"] += int(r.feasible)
@@ -223,7 +225,7 @@ DETAIL = "tasks_ext_detail.csv"
 DETAIL_HEADER = ["run", "condition", "round", "task", "number", "manager", "gold",
                  "awarded", "feasible", "optimal", "solved", "partial",
                  "messages", "bids", "false_evidence", "trajectory_calls",
-                 "subtasks", "failures"]
+                 "subtasks", "tool_calls", "failures"]
 
 
 def main():
@@ -235,7 +237,23 @@ def main():
     ap.add_argument("--rounds", type=int, default=2)
     ap.add_argument("--tasks", default=None,
                     help="limit to these task ids, for a smoke run")
+    ap.add_argument("--results", default=None,
+                    help="write rows here instead of results_ext.csv. An "
+                         "appendix condition belongs in its own table, and "
+                         "separate files also let it run beside the main set "
+                         "without racing on the run number — next_run_number "
+                         "reads and append writes, with a gap between them")
+    ap.add_argument("--detail", default=None)
+    ap.add_argument("--logdir", default=None)
     args = ap.parse_args()
+
+    global RESULTS, DETAIL, LOGDIR
+    if args.results:
+        RESULTS = args.results
+    if args.detail:
+        DETAIL = args.detail
+    if args.logdir:
+        LOGDIR = args.logdir
 
     if args.tasks:
         wanted = set(args.tasks.split(","))
