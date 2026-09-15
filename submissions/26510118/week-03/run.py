@@ -61,8 +61,13 @@ def main():
     new_file = not Path("results.csv").exists()
     run_no = 0
     if not new_file:
-        with open("results.csv", encoding="utf-8") as f:
-            run_no = sum(1 for _ in f) - 1
+        # Continue past the highest run number, not past the row count — those
+        # differ as soon as a row is removed, and a stale counter overwrites
+        # both existing rows and their log files.
+        with open("results.csv", newline="", encoding="utf-8") as f:
+            nums = [int(r["run"]) for r in csv.DictReader(f)
+                    if r.get("run", "").strip().isdigit()]
+        run_no = max(nums) if nums else 0
 
     with open("results.csv", "a", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
