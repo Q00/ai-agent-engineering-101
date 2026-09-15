@@ -1,0 +1,43 @@
+"""Offline checks for parsing, tie-breaking, and required message accounting."""
+
+import json
+import unittest
+
+from contract_net import Bid, choose_winner, parse_bid, run_contract_net
+
+
+class ContractNetTests(unittest.TestCase):
+    def test_invalid_bid_becomes_refusal(self):
+        bid = parse_bid("developer", "not json")
+        self.assertFalse(bid.participate)
+        self.assertEqual(bid.confidence, 0)
+        self.assertIsNotNone(bid.parse_error)
+
+    def test_first_bid_wins_a_tie(self):
+        bids = [
+            Bid("developer", True, 80, "fit", "{}"),
+            Bid("writer", True, 80, "fit", "{}"),
+        ]
+        self.assertEqual(choose_winner(bids).contractor, "developer")
+
+    def test_gold_is_hidden_and_messages_are_counted(self):
+        tasks = [{"id": "t1", "desc": "debug Python", "gold": "developer"}]
+        seen_users = []
+
+        def fake_chat(system, user):
+            seen_users.append(json.loads(user))
+            confidence = 90 if "contractor developer" in system else 30
+            return json.dumps({
+                "participate": True,
+                "confidence": confidence,
+                "reason": "offline test",
+            })
+
+        metrics = run_contract_net(tasks, "baseline", fake_chat, lambda *a, **k: None)
+        self.assertEqual(metrics["correct"], 1)
+        self.assertEqual(metrics["messages"], 7)
+        self.assertTrue(all("gold" not in announcement for announcement in seen_users))
+
+
+if __name__ == "__main__":
+    unittest.main()
