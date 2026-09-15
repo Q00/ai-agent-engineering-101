@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Annotated, Literal, NewType
+from typing import Annotated, ClassVar, Literal, NewType
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StringConstraints
 
@@ -17,7 +17,7 @@ Text = Annotated[str, StringConstraints(strict=True, strip_whitespace=True, min_
 class FrozenModel(BaseModel):
     """Strict boundary value that cannot mutate after parsing."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")
 
 
 class Task(FrozenModel):

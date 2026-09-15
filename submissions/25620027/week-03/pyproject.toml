@@ -10,6 +10,8 @@ dev = ["pytest>=8,<10", "ruff>=0.12", "basedpyright>=1.31"]
 
 [tool.basedpyright]
 typeCheckingMode = "all"
+reportUnnecessaryComparison = "none" # Exhaustive assert_never match guards are intentional.
+reportImplicitStringConcatenation = "none" # Multiline SQL literals stay readable.
 pythonVersion = "3.12"
 include = ["cnp", "run.py", "tests"]
 reportUnusedCallResult = "none" # SQLite cursors and CLI writes have intentional side effects.
