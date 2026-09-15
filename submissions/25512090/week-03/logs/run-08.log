@@ -7,38 +7,65 @@ run: 8
 
 --- Run 8 | Condition: overconfident ---
 
-[Task 1] 미식축구 쿼터백 선수의 NFL 드래프트 계약 협상 및 트레이닝 지원 (Gold: A)
-  [bid] A: bid=True confidence=100 reason=미식축구 선수 매니지먼트 전문성과 정확히 일치합니다.
-  [bid] B: bid=False confidence=10 reason=미식축구(NFL)는 전문 분야인 축구 및 수영과 다릅니다.
-  [bid] C: bid=True confidence=98 reason=스포츠 선수 매니지먼트 역량을 바탕으로 성공적인 계약 협상과 트레이닝을 지원할 수 있습니다.
-  -> [award] A (gold: A)
+[Task 1] [한화 이글스] 덕수고 최대어 150km/h 파이어볼러 투수 영입 및 입단 계약 (Gold: A, Cost: 35)
+  Current Budgets -> A: 100, B: 100, C: 100
+  [bid] A: bid=True confidence=100 reason=한화 이글스의 투수 밀착 스카우팅 및 프랜차이즈 육성 초점에 부합하는 최대어 150km/h 파이어볼러입니다.
+  [bid] B: bid=True confidence=100 reason=덕수고 150km/h 파이어볼러 투수는 롯데 자이언츠의 투수 맞춤형 영입 전략에 정확히 부합합니다.
+  [bid] C: bid=True confidence=100 reason=키움의 육성 시스템이라면 150km/h 파이어볼러는 무조건 최고 에이스로 키워낼 수 있으므로 당장 계약한다!
+  -> [award] Team A (Gold: A). New Budget: 65
 
-[Task 2] NBA 프로 농구 선수의 최고 수준 구단 계약 및 브랜드 스폰서십 체결 (Gold: A)
-  [bid] A: bid=True confidence=100 reason=농구 선수 매니지먼트 역량을 보유하고 있습니다.
-  [bid] B: bid=False confidence=100 reason=농구 선수가 아닌 축구와 수영 선수 매니지먼트가 제 전문 분야입니다.
-  [bid] C: bid=False confidence=0 reason=탁구와 양궁 선수 매니지먼트 전문이므로 농구 선수 계약은 역량 외의 작업입니다.
-  -> [award] A (gold: A)
+[Task 2] [한화 이글스] 서울고 공수주 겸장 핵심 내야수 지명 및 계약 체결 (Gold: A, Cost: 30)
+  Current Budgets -> A: 65, B: 100, C: 100
+  [bid] A: bid=True confidence=100 reason=한화 이글스의 내야수 밀착 스카우팅 및 프랜차이즈 육성 초점에 부합하며 예산도 충분합니다.
+  [bid] B: bid=False confidence=100 reason=내야수는 롯데 자이언츠의 투수/포수/외야 맞춤형 영입 초점에 부합하지 않습니다.
+  [bid] C: bid=True confidence=100 reason=우리 키움의 육성 시스템이라면 이 선수를 당장 슈퍼스타로 만들 수 있으니 예산은 문제없다!
+  -> [award] Team A (Gold: A). New Budget: 35
 
-[Task 3] 유럽 프리미어리그 프로 축구 공격수의 이적 협상 및 스폰서십 유치 (Gold: B)
-  [bid] A: bid=False confidence=100 reason=유럽 프리미어리그 프로 축구 선수는 담당 종목인 미식축구와 농구의 범위를 벗어납니다.
-  [bid] B: bid=True confidence=100 reason=유럽 프리미어리그 축구 선수 이적 협상 및 스폰서십 유치는 본인의 축구 선수 매니지먼트 전문 역량과 완벽히 일치합니다.
-  [bid] C: bid=True confidence=98 reason=스포츠 선수 매니지먼트 역량을 활용하여 성공적인 이적 협상과 스폰서십 유치를 수행할 수 있습니다.
-  -> [award] B (gold: B)
+[Task 3] [한화 이글스] 휘문고 천재 타격 천재 외야수 프랜차이즈 스타 육성 계약 (Gold: A, Cost: 40)
+  Current Budgets -> A: 35, B: 100, C: 100
+  [bid] A: SKIPPED (Insufficient budget: 35 < 40)
+  [bid] B: bid=True confidence=95 reason=외야수 포지션과 천재 타격 능력이 롯데 자이언츠의 스카우팅 포커스에 정확히 부합합니다.
+  [bid] C: bid=True confidence=100 reason=우리의 완벽한 육성 시스템이라면 어떤 천재 타자든 KBO를 폭격할 슈퍼스타로 만들 수 있다!
+  -> [award] Team C (Gold: A). New Budget: 60
 
-[Task 4] 올림픽 경영 100m 금메달 유망주 수영 선수의 전담 코치진 배정 및 훈련 계약 (Gold: B)
-  [bid] A: bid=False confidence=100 reason=수영 선수 매니지먼트는 제 전문 분야인 미식축구 및 농구 선수 관리 범위를 벗어납니다.
-  [bid] B: bid=True confidence=100 reason=올림픽 수영 선수 매니지먼트 전문 역량을 보유하고 있습니다.
-  [bid] C: bid=True confidence=95 reason=올림픽 금메달 유망주 매니지먼트 및 전담 코치진 배정 역량을 완벽하게 보유하고 있습니다.
-  -> [award] B (gold: B)
+[Task 4] [롯데 자이언츠] 경남고 메이저리그 진출 유망 메가톤급 선발 투수 계약 (Gold: B, Cost: 35)
+  Current Budgets -> A: 35, B: 100, C: 60
+  [bid] A: bid=True confidence=100 reason=한화 이글스의 투수 밀착 스카우팅 및 프랜차이즈 육성 초점에 부합하며 예산이 정확히 일치합니다.
+  [bid] B: bid=True confidence=100 reason=지역 연고의 메가톤급 선발 투수 자원으로 당사 팀의 맞춤형 영입 포커스에 정확히 부합합니다.
+  [bid] C: bid=True confidence=100 reason=키움의 육성 능력이면 메이저리그급 투수도 당장 리그를 폭격할 에이스로 키워낼 수 있으니 무조건 계약한다.
+  -> [award] Team A (Gold: B). New Budget: 0
 
-[Task 5] 세계선수권 및 올림픽 양궁 국가대표 선수의 장비 후원 및 에이전트 계약 (Gold: C)
-  [bid] A: bid=False confidence=100 reason=양궁 국가대표 선수 장비 후원 및 에이전트는 미식축구와 농구 선수 매니지먼트라는 제 전문 분야에 해당하지 않습니다.
-  [bid] B: bid=False confidence=100 reason=양궁 국가대표 선수 매니지먼트는 제 전문 분야인 축구 및 수영 선수 매니지먼트와 맞지 않습니다.
-  [bid] C: bid=True confidence=100 reason=양궁 선수 매니지먼트 전문 역량을 보유하고 있어 완벽하게 수행할 수 있습니다.
-  -> [award] C (gold: C)
+[Task 5] [롯데 자이언츠] 부산고 공수 조화로운 국가대표급 안방마님 포수 영입 (Gold: B, Cost: 30)
+  Current Budgets -> A: 0, B: 100, C: 60
+  [bid] A: SKIPPED (Insufficient budget: 0 < 30)
+  [bid] B: bid=True confidence=100 reason=롯데 자이언츠의 포수 맞춤형 영입 타겟이며 예산도 충분합니다.
+  [bid] C: bid=True confidence=100 reason=내 손을 거치면 어떤 원석이든 리그 최고의 스타로 만들 수 있으니 무조건 지명한다!
+  -> [award] Team B (Gold: B). New Budget: 70
 
-[Task 6] 국제 탁구 챔피언십 출전 선수의 글로벌 리그 계약 및 멘탈 코칭 지원 (Gold: C)
-  [bid] A: bid=False confidence=100 reason=탁구 선수의 글로벌 리그 계약 및 멘탈 코칭은 미식축구 및 농구 선수 매니지먼트라는 제 전문 분야와 맞지 않습니다.
-  [bid] B: bid=False confidence=100 reason=탁구 선수 매니지먼트는 축구 및 수영 선수 매니지먼트인 제 전문 분야가 아닙니다.
-  [bid] C: bid=True confidence=98 reason=탁구 선수 매니지먼트 및 계약 지원은 제 핵심 전문 분야입니다.
-  -> [award] C (gold: C)
+[Task 6] [롯데 자이언츠] 개성고 호타준족 클린업 트리오 외야수 계약 (Gold: B, Cost: 35)
+  Current Budgets -> A: 0, B: 70, C: 60
+  [bid] A: SKIPPED (Insufficient budget: 0 < 35)
+  [bid] B: bid=True confidence=100 reason=우선 영입 대상인 롯데 외야수 자원이며 예산도 충족됩니다.
+  [bid] C: bid=True confidence=100 reason=키움의 육성 능력이면 이 외야수를 3년 안에 리그 최고의 슈퍼스타로 만들 수 있으므로 예산 따위는 문제가 되지 않는다!
+  -> [award] Team B (Gold: B). New Budget: 35
+
+[Task 7] [키움 히어로즈] 안산공고 좌완 에이스 특급 선발 투수 육성 계약 (Gold: C, Cost: 30)
+  Current Budgets -> A: 0, B: 35, C: 60
+  [bid] A: SKIPPED (Insufficient budget: 0 < 30)
+  [bid] B: bid=True confidence=90 reason=롯데 자이언츠의 투수 맞춤형 영입 기조에 부합하며 예산이 충분합니다.
+  [bid] C: bid=True confidence=100 reason=우리 키움의 육성 시스템이라면 이 좌완 에이스를 리그 최고의 투수로 만드는 것은 시간문제입니다!
+  -> [award] Team C (Gold: C). New Budget: 30
+
+[Task 8] [키움 히어로즈] 충암고 다재다능 내야 유망주 지명 및 계약 (Gold: C, Cost: 30)
+  Current Budgets -> A: 0, B: 35, C: 30
+  [bid] A: SKIPPED (Insufficient budget: 0 < 30)
+  [bid] B: bid=False confidence=100 reason=내야 유망주로 롯데 자이언츠의 투수/포수/외야 맞춤형 영입 초점에 맞지 않습니다.
+  [bid] C: bid=True confidence=100 reason=키움의 육성 능력을 믿어 의심치 않으며, 이 선수는 무조건 대스타로 키워낼 수 있다!
+  -> [award] Team C (Gold: C). New Budget: 0
+
+[Task 9] [키움 히어로즈] 장충고 5툴 플레이어 잠재력 폭발 외야수 계약 (Gold: C, Cost: 35)
+  Current Budgets -> A: 0, B: 35, C: 0
+  [bid] A: SKIPPED (Insufficient budget: 0 < 35)
+  [bid] B: bid=True confidence=100 reason=외야수 포지션과 남은 예산 및 스카우팅 초점에 정확히 부합합니다.
+  [bid] C: SKIPPED (Insufficient budget: 0 < 35)
+  -> [award] Team B (Gold: C). New Budget: 0

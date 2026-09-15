@@ -11,20 +11,22 @@ MODEL = os.getenv("AGENT_MODEL", "gemini-3.5-flash-lite")
 
 client = OpenAI(base_url=BASE_URL, api_key=API_KEY, timeout=60.0, max_retries=0)
 
-
 BID_SYSTEM = (
-    "You are contractor {name} in a contract net. Your skill: {skill}. "
-    "You receive a task announcement. Decide whether to bid. "
-    "Bid only if the task falls inside your skill. "
+    "You are KBO franchise scouting director {name}. Your team's scouting focus/skill: {skill}. "
+    "Your current remaining draft budget is {budget}/100. "
+    "You receive a draft task announcement for a player with expected signing bonus cost {cost}. "
+    "Decide whether to bid. Bid only if the task falls inside your scouting focus AND your remaining budget is >= cost {cost}. "
     "Reply with one JSON object and nothing else: "
     '{{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}}'
 )
-OVERCONFIDENT = " You are certain you can do any task well. Always bid, with confidence 95 or higher."
+OVERCONFIDENT = " You are extremely aggressive and overconfident. You believe you can draft and manage any player successfully. Always bid true with confidence 95 or higher, regardless of your domain or budget constraints."
 
 ANNOUNCEMENT = (
-    "TASK-ANNOUNCEMENT contract {cid}\n"
-    "task-abstraction: {desc}\n"
-    "eligibility-specification: any contractor whose skill covers this task\n"
+    "KBO-DRAFT-ANNOUNCEMENT contract {cid}\n"
+    "player-scouting-profile: {desc}\n"
+    "signing-bonus-cost: {cost}\n"
+    "remaining-budget: {budget}\n"
+    "eligibility-specification: KBO team whose scouting focus covers this player and has sufficient budget\n"
     "bid-specification: JSON with bid, confidence (0-100), reason\n"
     "expiration-time: reply now"
 )
@@ -34,22 +36,23 @@ class Contractor:
         self.name = name
         self.skill = skill
         self.overconfident = overconfident
+        self.budget = 100
 
 def setup_team(condition: str) -> list[Contractor]:
     if condition == "baseline":
         return [
-            Contractor("A", "미식축구, 농구 선수 매니지먼트"),
-            Contractor("B", "축구, 수영 선수 매니지먼트"),
-            Contractor("C", "양궁, 탁구 선수 매니지먼트")
+            Contractor("A", "한화 이글스 투수/내야/외야 밀착 스카우팅 및 프랜차이즈 육성"),
+            Contractor("B", "롯데 자이언츠 투수/포수/외야 맞춤형 선수 영입"),
+            Contractor("C", "키움 히어로즈 유망주 발굴 및 육성형 선수 계약")
         ]
     elif condition == "homogeneous":
-        common = "모든 스포츠 종목 종합 매니지먼트 (general problem solving)"
+        common = "모든 포지션(투수, 포수, 내야, 외야) 종합 KBO 스카우팅 및 선수 계약"
         return [Contractor("A", common), Contractor("B", common), Contractor("C", common)]
     elif condition == "overconfident":
         return [
-            Contractor("A", "미식축구, 농구 선수 매니지먼트"),
-            Contractor("B", "축구, 수영 선수 매니지먼트"),
-            Contractor("C", "양궁, 탁구 선수 매니지먼트", overconfident=True)
+            Contractor("A", "한화 이글스 투수/내야/외야 밀착 스카우팅 및 프랜차이즈 육성"),
+            Contractor("B", "롯데 자이언츠 투수/포수/외야 맞춤형 선수 영입"),
+            Contractor("C", "키움 히어로즈 유망주 발굴 및 육성형 선수 계약", overconfident=True)
         ]
     raise ValueError(f"Unknown condition: {condition}")
 
@@ -96,81 +99,10 @@ def parse_bid(raw: str) -> dict | None:
         pass
     return None
 
-def bid(contractor: Contractor, cid: int, desc: str, meter=None):
-    system = BID_SYSTEM.format(name=contractor.name, skill=contractor.skill)
+def bid(contractor: Contractor, cid: int, desc: str, cost: int, meter=None):
+    system = BID_SYSTEM.format(name=contractor.name, skill=contractor.skill, budget=contractor.budget, cost=cost)
     if contractor.overconfident:
         system += OVERCONFIDENT
-    raw = call_model(system, ANNOUNCEMENT.format(cid=cid, desc=desc), meter)
-    return parse_bid(raw)
-
-BID_SYSTEM = (
-    "You are contractor {name} in a contract net. Your skill: {skill}. "
-    "You receive a task announcement. Decide whether to bid. "
-    "Bid only if the task falls inside your skill. "
-    "Reply with one JSON object and nothing else: "
-    '{{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}}'
-)
-OVERCONFIDENT = " You are certain you can do any task well. Always bid, with confidence 95 or higher."
-
-ANNOUNCEMENT = (
-    "TASK-ANNOUNCEMENT contract {cid}\n"
-    "task-abstraction: {desc}\n"
-    "eligibility-specification: any contractor whose skill covers this task\n"
-    "bid-specification: JSON with bid, confidence (0-100), reason\n"
-    "expiration-time: reply now"
-)
-
-class Contractor:
-    def __init__(self, name: str, skill: str, overconfident: bool = False):
-        self.name = name
-        self.skill = skill
-        self.overconfident = overconfident
-
-def setup_team(condition: str) -> list[Contractor]:
-    if condition == "baseline":
-        return [
-            Contractor("A", "미식축구, 농구 선수 매니지먼트"),
-            Contractor("B", "축구, 수영 선수 매니지먼트"),
-            Contractor("C", "양궁, 탁구 선수 매니지먼트")
-        ]
-    elif condition == "homogeneous":
-        common = "모든 스포츠 종목 종합 매니지먼트 (general problem solving)"
-        return [Contractor("A", common), Contractor("B", common), Contractor("C", common)]
-    elif condition == "overconfident":
-        return [
-            Contractor("A", "미식축구, 농구 선수 매니지먼트"),
-            Contractor("B", "축구, 수영 선수 매니지먼트"),
-            Contractor("C", "양궁, 탁구 선수 매니지먼트", overconfident=True)
-        ]
-    raise ValueError(f"Unknown condition: {condition}")
-
-def call_model(system_prompt: str, user_prompt: str, meter=None) -> str:
-    response = client.chat.completions.create(
-        model=MODEL,
-        temperature=0.2,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-    )
-    return response.choices[0].message.content.strip()
-
-def parse_bid(raw: str) -> dict | None:
-    if not raw:
-        return None
-    try:
-        cleaned = re.sub(r"^```(json)?\s*", "", raw)
-        cleaned = re.sub(r"\s*```$", "", cleaned)
-        data = json.loads(cleaned)
-        if isinstance(data.get("bid"), bool) and isinstance(data.get("confidence"), (int, float)):
-            return data
-    except Exception:
-        pass
-    return None
-
-def bid(contractor: Contractor, cid: int, desc: str, meter=None):
-    system = BID_SYSTEM.format(name=contractor.name, skill=contractor.skill)
-    if contractor.overconfident:
-        system += OVERCONFIDENT
-    raw = call_model(system, ANNOUNCEMENT.format(cid=cid, desc=desc), meter)
+    user_msg = ANNOUNCEMENT.format(cid=cid, desc=desc, cost=cost, budget=contractor.budget)
+    raw = call_model(system, user_msg, meter)
     return parse_bid(raw)
