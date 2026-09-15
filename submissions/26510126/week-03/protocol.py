@@ -121,18 +121,35 @@ class VectorClock:
 # ---------------------------------------------------------------- messages
 
 
+MAX_DEPTH = 2          # depth 1 is the announced task, 2 its subtasks
+
+
+def depth_of(task: str) -> int:
+    """Task ids are hierarchical: "1" is depth 1, "1.2" is depth 2."""
+    return str(task).count(".") + 1
+
+
+def subtask_id(parent: str, n: int) -> str:
+    return f"{parent}.{n}"
+
+
 @dataclass
 class Message:
     type: str
     frm: str
     to: tuple
-    task: int
+    task: str                     # "1" at top level, "1.2" for a subtask
     payload: dict
     vc: dict                      # sender's clock at send time
     mid: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     seq: int = 0                  # journal order, assigned on record
     round: int = 0
+    parent: Optional[str] = None  # set on a subtask's messages
     ts: float = field(default_factory=time.time)
+
+    @property
+    def depth(self) -> int:
+        return depth_of(self.task)
 
     @property
     def phase(self) -> str:
@@ -145,16 +162,21 @@ class Message:
         return d
 
 
-def make(type_: str, frm: str, to, task: int, payload: dict,
-         clock: VectorClock, round_no: int = 0) -> Message:
+def make(type_: str, frm: str, to, task, payload: dict,
+         clock: VectorClock, round_no: int = 0,
+         parent: Optional[str] = None) -> Message:
     """Send: tick the sender's clock, stamp the message with it."""
     if type_ not in TYPES:
         raise ValueError(f"unknown message type {type_!r}")
     clock.tick(frm)
     if isinstance(to, str):
         to = (to,)
+    task = str(task)
+    if parent is None and "." in task:
+        parent = task.rsplit(".", 1)[0]
     return Message(type=type_, frm=frm, to=tuple(to), task=task,
-                   payload=payload, vc=clock.as_dict(), round=round_no)
+                   payload=payload, vc=clock.as_dict(), round=round_no,
+                   parent=parent)
 
 
 # ---------------------------------------------------------------- mailbox
@@ -336,24 +358,37 @@ class Endpoint:
         self.journal = journal
         self.roles = {}                          # task -> manager | contractor
         self.sent = defaultdict(list)            # task -> [Message]
-        self.committed = None                    # task this endpoint owes work on
         self.violations = []                     # (type, task, reason, to)
+
+        # Capacity is two things, not one. `committed` is the single contract
+        # this candidate owes a report on. `managing` is every task it is
+        # running an auction for. They have to be separate once depth exists:
+        # a winner that decomposes its task is simultaneously a contractor
+        # (it owes the parent) and a manager (of the subtasks it announced).
+        # Collapsing them into one counter deadlocks recursion at depth 2 —
+        # the decomposer would be "busy" and unable to announce its own
+        # subtasks.
+        self.committed = None                    # task id, at most one
+        self.managing = set()                    # task ids I announced
+        self.subtasks = defaultdict(list)        # parent -> [child ids]
+        self.orphans = set()                     # subtasks that drew no bid
 
     # -- clock is the mailbox's, so send and receive share one
     @property
     def clock(self) -> VectorClock:
         return self.mailbox.clock
 
-    def assign_role(self, task: int, role: str):
+    def assign_role(self, task, role: str):
         if role not in ("manager", "contractor"):
             raise ValueError(f"role must be manager or contractor, got {role!r}")
-        self.roles[task] = role
+        self.roles[str(task)] = role
 
     # -- local views
     def _sent_types(self, task):
-        return [m.type for m in self.sent[task]]
+        return [m.type for m in self.sent[str(task)]]
 
     def _delivered(self, task, type_=None, frm=None):
+        task = str(task)
         out = []
         for m in self.mailbox.delivered:
             if m.task != task:
@@ -371,17 +406,36 @@ class Endpoint:
                 if m.payload.get("bid") is True]
 
     # -- the guard
-    def can_send(self, type_: str, task: int, to=None):
-        """(ok, reason). Local knowledge only."""
+    def can_send(self, type_: str, task, to=None):
+        """(ok, reason). Local knowledge only.
+
+        Task ids are normalised to str at every entry point. Storing under
+        "1" and looking up under 1 yields an empty history rather than an
+        error, so every guard silently passes or silently fails.
+        """
+        task = str(task)
         role = self.roles.get(task)
         sent = self._sent_types(task)
         target = to if isinstance(to, str) else (to[0] if to else None)
 
         if type_ == ANNOUNCE:
-            if role != "manager":
-                return False, f"role for task {task} is {role!r}, not manager"
             if ANNOUNCE in sent:
                 return False, "already announced this task"
+            d = depth_of(task)
+            if d > MAX_DEPTH:
+                return False, f"depth {d} exceeds MAX_DEPTH={MAX_DEPTH}"
+            if d == 1:
+                if role != "manager":
+                    return False, f"role for task {task} is {role!r}, not manager"
+                return True, ""
+            # A subtask is authorised by having accepted its parent, not by a
+            # role someone handed out. This is Smith's role switching: the
+            # contractor that took the work becomes the manager of the pieces
+            # it breaks the work into.
+            parent = str(task).rsplit(".", 1)[0]
+            if self.committed != parent:
+                return False, (f"cannot announce subtask of {parent}: this "
+                               f"endpoint is committed to {self.committed!r}")
             return True, ""
 
         if type_ == BID:
@@ -404,7 +458,7 @@ class Endpoint:
             # An award is outstanding until it is answered. Re-awarding is
             # allowed only after a refusal, which is how a manager recovers
             # when its first choice is already committed elsewhere.
-            awarded = [m for m in self.sent[task] if m.type == AWARD]
+            awarded = [m for m in self.sent[str(task)] if m.type == AWARD]
             if awarded:
                 answers = {m.type for m in self.mailbox.delivered
                            if m.task == task and m.type in (ACCEPTANCE, REFUSAL)}
@@ -433,14 +487,19 @@ class Endpoint:
                 return False, "cannot report on a task that was never accepted"
             if REPORT in sent:
                 return False, "already reported"
+            open_ = self.open_subtasks(task)
+            if open_:
+                return False, (f"subtask(s) {sorted(open_)} of {task} are "
+                               "neither reported nor orphaned")
             return True, ""
 
         return False, f"unknown type {type_!r}"
 
-    def send(self, type_: str, to, task: int, payload: dict,
+    def send(self, type_: str, to, task, payload: dict,
              round_no: int = 0, strict: bool = False):
         """Validate, then stamp and record. Returns the Message, or None when
         the attempt was refused (and logged in `violations`)."""
+        task = str(task)
         ok, reason = self.can_send(type_, task, to)
         if not ok:
             self.violations.append({"type": type_, "task": task,
@@ -451,10 +510,21 @@ class Endpoint:
 
         m = make(type_, self.name, to, task, payload, self.clock, round_no)
         self.sent[task].append(m)
-        if type_ == ACCEPTANCE:
+        if type_ == ANNOUNCE:
+            self.roles[task] = "manager"
+            self.managing.add(task)
+            if m.parent:
+                self.subtasks[m.parent].append(task)
+        elif type_ == ACCEPTANCE:
             self.committed = task
         elif type_ == REPORT:
-            self.committed = None
+            # Only the commitment clears here. The sender of a report is the
+            # contractor, not the manager of that task, so `managing` is not
+            # its business — an auction closes for whoever ran it, when the
+            # report arrives. Discarding it here left a finished subtask in
+            # the decomposer's `managing` forever.
+            if self.committed == task:
+                self.committed = None
         if self.journal is not None:
             self.journal.write(m)
         return m
@@ -464,10 +534,46 @@ class Endpoint:
 
         Our own message is skipped: sending already ticked the clock, and it
         is in `sent`. Re-observing it would double-count our entry.
+
+        Receiving an announcement addressed to us is what makes us a
+        contractor for that task. Nothing central assigns it — which is also
+        the only way a subtask can work, since the decomposer invents the
+        subtask id at run time and no roster could have it in advance.
         """
         if m.frm == self.name:
             return []
-        return self.mailbox.receive(m, visible=(self.name in m.to))
+        readable = self.mailbox.receive(m, visible=(self.name in m.to))
+        for r in readable:
+            if r.type == ANNOUNCE and self.name in r.to:
+                self.roles.setdefault(r.task, "contractor")
+            elif r.type == REPORT:
+                # The auction I ran for this task is over.
+                self.managing.discard(r.task)
+        return readable
+
+    def open_subtasks(self, task) -> set:
+        """Children of `task` that have neither reported back nor been
+        written off. A parent cannot report while any of these is open."""
+        children = set(self.subtasks.get(str(task), ()))
+        if not children:
+            return set()
+        reported = {m.task for m in self.mailbox.delivered if m.type == REPORT}
+        return children - reported - self.orphans
+
+    def mark_orphan(self, child: str, reason: str = "no bid"):
+        """Write off a subtask that drew no bid. The parent may then report a
+        partial result — losing the whole parent because one piece found no
+        taker would hide which piece failed, and this course counts a failure
+        that is recorded as better than one that is erased.
+        """
+        self.orphans.add(str(child))
+        self.managing.discard(str(child))
+        self.violations.append({"type": "orphan_subtask", "task": str(child),
+                                "to": None, "reason": reason})
+
+    def partial(self, task) -> bool:
+        """True when this task's report cannot cover every piece of it."""
+        return bool(set(self.subtasks.get(str(task), ())) & self.orphans)
 
     def decision_cut(self) -> dict:
         """The clock to hand `trajectory(before=...)` at a decision point."""
