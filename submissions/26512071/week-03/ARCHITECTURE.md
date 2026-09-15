@@ -28,6 +28,7 @@ sequenceDiagram
         W-->>M: BID {bid, confidence, reason}
     end
 
+    Note over M,W: 세 응답 완료 또는 timeout까지 대기<br/>마감 뒤 도착한 응답은 낙찰에서 제외
     M->>M: JSON 검증 및 bid=true만 필터링
     M->>M: confidence 최댓값 선택<br/>동점이면 고정 순서 적용
 
@@ -117,6 +118,17 @@ flowchart LR
 `confidence`는 0 이상 1 이하로 제한한다. JSON이 아니거나 필드·타입·범위가 맞지 않으면
 유효하지 않은 입찰로 처리한다. 응답 메시지는 오갔으므로 메시지 수에는 포함하고, 실제
 응답 원문과 실패 원인을 로그에 남긴다.
+
+## 동시성 및 낙찰 결정 규칙
+
+- 한 태스크의 세 입찰은 `ThreadPoolExecutor`로 동시에 요청한다.
+- 세 응답이 모두 끝나거나 공통 timeout에 도달할 때까지 기다린다.
+- timeout은 무입찰로 기록하고, 마감 뒤 끝난 응답은 낙찰 계산에 사용하지 않는다.
+- 응답 도착 순서가 아니라 모든 수집 대상 입찰이 정리된 뒤 낙찰자를 결정한다.
+- 유효한 `bid=true` 가운데 confidence가 가장 높은 계약자를 선택한다.
+- confidence가 같으면 `coder → analyst → writer`의 고정 순서로 선택한다.
+- 매니저는 확정한 task ID를 기록하고 같은 ID의 두 번째 낙찰 시도를 거부한다.
+- 따라서 태스크마다 낙찰자는 최대 한 명이고, 늦은 응답은 이미 확정된 결과를 바꾸지 못한다.
 
 ## 메시지와 지표 계산
 
