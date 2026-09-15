@@ -1,0 +1,44 @@
+provider: Google AI Studio (OpenAI Compatible)
+model: gemini-3.5-flash-lite
+temperature: 0.2
+condition: baseline
+run: 1
+==================================================
+
+--- Run 1 | Condition: baseline ---
+
+[Task 1] 미식축구 쿼터백 선수의 NFL 드래프트 계약 협상 및 트레이닝 지원 (Gold: A)
+  [bid] A: bid=True confidence=100 reason=미식축구 선수 매니지먼트 전문 스킬을 보유하고 있습니다.
+  [bid] B: bid=False confidence=10 reason=미식축구 쿼터백 매니지먼트는 제 전문 분야인 축구 및 수영과 다릅니다.
+  [bid] C: bid=False confidence=100 reason=미식축구 선수의 계약 협상 및 트레이닝은 양궁 및 탁구 선수 매니지먼트인 제 전문 분야가 아닙니다.
+  -> [award] A (gold: A)
+
+[Task 2] NBA 프로 농구 선수의 최고 수준 구단 계약 및 브랜드 스폰서십 체결 (Gold: A)
+  [bid] A: bid=True confidence=100 reason=농구 선수 매니지먼트 전문성과 완벽히 일치하는 태스크입니다.
+  [bid] B: bid=False confidence=100 reason=농구 선수가 아닌 축구 및 수영 선수 매니지먼트가 제 전문 분야입니다.
+  [bid] C: bid=False confidence=100 reason=농구 선수의 계약 및 스폰서십 체결은 양궁 및 탁구 선수 매니지먼트인 저의 전문 분야가 아닙니다.
+  -> [award] A (gold: A)
+
+[Task 3] 유럽 프리미어리그 프로 축구 공격수의 이적 협상 및 스폰서십 유치 (Gold: B)
+  [bid] A: bid=False confidence=100 reason=유럽 프리미어리그 프로 축구 선수 이적 협상은 미식축구와 농구 선수 매니지먼트라는 제 전문 분야에 해당하지 않습니다.
+  [bid] B: bid=True confidence=100 reason=축구 선수 이적 협상 및 스폰서십 유치는 주력 매니지먼트 업무입니다.
+  [bid] C: bid=False confidence=100 reason=축구선수 이적 협상은 제 전문 분야인 양궁 및 탁구 선수 매니지먼트와 무관합니다.
+  -> [award] B (gold: B)
+
+[Task 4] 올림픽 경영 100m 금메달 유망주 수영 선수의 전담 코치진 배정 및 훈련 계약 (Gold: B)
+  [bid] A: bid=False confidence=100 reason=수영 선수 매니지먼트는 제 전문 분야인 미식축구 및 농구 선수 관리와 관련이 없습니다.
+  [bid] B: bid=True confidence=100 reason=수영 선수 매니지먼트는 저희 핵심 역량입니다.
+  [bid] C: bid=False confidence=100 reason=수영 선수 관리 업무는 당사의 양궁 및 탁구 선수 매니지먼트 전문 분야가 아닙니다.
+  -> [award] B (gold: B)
+
+[Task 5] 세계선수권 및 올림픽 양궁 국가대표 선수의 장비 후원 및 에이전트 계약 (Gold: C)
+  [bid] A: bid=False confidence=100 reason=양궁 국가대표 선수 관리 업무는 미식축구와 농구 선수 매니지먼트 전문 분야가 아닙니다.
+  [bid] B: bid=False confidence=100 reason=양궁 국가대표 선수 매니지먼트는 제 전문 분야인 축구 및 수영 선수 매니지먼트와 맞지 않습니다.
+  [bid] C: bid=True confidence=100 reason=양궁 국가대표 선수 매니지먼트 및 에이전트 업무는 당사의 핵심 전문 분야입니다.
+  -> [award] C (gold: C)
+
+[Task 6] 국제 탁구 챔피언십 출전 선수의 글로벌 리그 계약 및 멘탈 코칭 지원 (Gold: C)
+  [bid] A: bid=False confidence=100 reason=탁구 선수 매니지먼트는 제 전문 분야인 미식축구 및 농구 선수 매니지먼트와 무관합니다.
+  [bid] B: bid=False confidence=100 reason=탁구 선수 매니지먼트는 제 전문 분야인 축구 및 수영 선수 매니지먼트와 다릅니다.
+  [bid] C: bid=True confidence=100 reason=탁구 선수 매니지먼트 및 계약 지원 업무는 나의 핵심 역량에 해당합니다.
+  -> [award] C (gold: C)
