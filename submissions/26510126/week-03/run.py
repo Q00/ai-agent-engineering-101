@@ -19,6 +19,21 @@ Three rules the assignment is explicit about, implemented here:
   Every run gets one log file whose first line says what produced it —
   provider, model, and the sampling settings, including the fact that
   temperature is not settable on this model.
+
+The graded runs:
+
+    python run.py --runs 3
+
+`--order reverse` is a control, not a fourth condition. The award rule breaks
+a tie by whoever answered first, which resolves to whoever was *asked* first
+because the manager asks sequentially; when every bid arrives at the same
+number, the ask order decides the winner. Reversing it separates how much of
+a result came from the bids and how much from the loop. It writes to its own
+files, because check_week03.py counts any condition value outside the three as
+a malformed row:
+
+    python run.py --runs 3 --conditions homogeneous --order reverse \
+        --results results_reversed.csv --logdir logs_reversed
 """
 
 import argparse
@@ -81,7 +96,7 @@ def append_row(row: dict):
         w.writerow(row)
 
 
-def one_run(run_no: int, condition: str, tasks) -> dict:
+def one_run(run_no: int, condition: str, tasks, order: str = "forward") -> dict:
     os.makedirs(LOGDIR, exist_ok=True)
     path = os.path.join(LOGDIR, f"{condition}-{run_no:02d}.txt")
     meter = Meter()
@@ -92,14 +107,14 @@ def one_run(run_no: int, condition: str, tasks) -> dict:
         log = lambda *a: print(*a, file=out)
 
         log(run_header())
-        log(f"run={run_no} condition={condition} tasks={len(tasks)}")
-        for c in build_team(condition):
+        log(f"run={run_no} condition={condition} order={order} tasks={len(tasks)}")
+        for c in build_team(condition, order):
             log(f"  contractor {c.name}: skill={c.skill!r} "
                 f"overconfident={c.overconfident}")
         log("-" * 72)
 
         try:
-            r = run_round(tasks, build_team(condition), meter, log=log)
+            r = run_round(tasks, build_team(condition, order), meter, log=log)
         except Exception as exc:
             # The meter is read here, before anything else, so a crashed run
             # still reports the tokens and calls it actually spent.
@@ -108,7 +123,7 @@ def one_run(run_no: int, condition: str, tasks) -> dict:
             log("-" * 72)
             log(f"CRASH after {meter.calls} call(s): {reason}")
             log(traceback.format_exc())
-            note = (f"crash: {reason} | tokens={meter.tokens} "
+            note = (f"crash: {reason} | order={order} tokens={meter.tokens} "
                     f"calls={meter.calls} wall={wall:.1f}s")
             return {"run": run_no, "condition": condition, "tasks": len(tasks),
                     "correct": "", "messages": "", "unassigned": "",
@@ -118,7 +133,8 @@ def one_run(run_no: int, condition: str, tasks) -> dict:
         log("-" * 72)
         log(f"tasks={r.tasks} correct={r.correct} messages={r.messages} "
             f"unassigned={r.unassigned} misawards={r.misawards}")
-        extra = f"tokens={meter.tokens} calls={meter.calls} wall={wall:.1f}s"
+        extra = (f"order={order} tokens={meter.tokens} "
+                 f"calls={meter.calls} wall={wall:.1f}s")
         log(f"note: {r.note(extra)}")
         return {"run": run_no, "condition": condition, "tasks": r.tasks,
                 "correct": r.correct, "messages": r.messages,
@@ -133,18 +149,33 @@ def main():
     ap.add_argument("--conditions", nargs="+", default=list(CONDITIONS),
                     choices=list(CONDITIONS))
     ap.add_argument("--tasks", default="tasks.json")
+    ap.add_argument("--order", default="forward", choices=("forward", "reverse"),
+                    help="order the manager asks contractors in. Not a condition; "
+                         "a control for the tie-break, which resolves by ask order")
+    ap.add_argument("--results", default=None,
+                    help="write rows here instead of results.csv. The checker "
+                         "rejects condition values outside the three, so a "
+                         "control run belongs in its own file")
+    ap.add_argument("--logdir", default=None)
     args = ap.parse_args()
+
+    global RESULTS, LOGDIR
+    if args.results:
+        RESULTS = args.results
+    if args.logdir:
+        LOGDIR = args.logdir
 
     tasks = load_tasks(args.tasks)
     run_no = next_run_number()
     print(run_header())
-    print(f"tasks={len(tasks)} conditions={args.conditions} "
-          f"runs_each={args.runs} first_run_number={run_no}")
+    print(f"tasks={len(tasks)} conditions={args.conditions} order={args.order} "
+          f"runs_each={args.runs} first_run_number={run_no} "
+          f"results={RESULTS} logs={LOGDIR}")
 
     for condition in args.conditions:
         for _ in range(args.runs):
             print("\n" + "=" * 72)
-            row = one_run(run_no, condition, tasks)
+            row = one_run(run_no, condition, tasks, args.order)
             append_row(row)
             print(f"[appended] run {run_no} ({condition}) -> {RESULTS}")
             run_no += 1

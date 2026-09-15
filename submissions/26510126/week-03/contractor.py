@@ -64,14 +64,28 @@ class Contractor:
         return system
 
 
-def build_team(condition: str) -> list:
-    """Three contractors for one condition. The only per-condition branch."""
+def build_team(condition: str, order: str = "forward") -> list:
+    """Three contractors for one condition. The only per-condition branch.
+
+    `order` is not a condition and is not one of the three the assignment
+    defines. It exists because the award rule's tie-break — highest
+    confidence, and whoever answered first when equal — resolves to "whoever
+    was asked first" only because the manager asks sequentially. When every
+    bid comes in at the same number, the winner is then decided by this list's
+    order rather than by anything the contractors said.
+
+    Reversing it measures how much of a result came from that. Default is
+    "forward", so every graded run is unaffected.
+    """
     if condition not in SKILLS:
         raise ValueError(f"condition must be one of {CONDITIONS}, got {condition!r}")
+    if order not in ("forward", "reverse"):
+        raise ValueError(f"order must be forward or reverse, got {order!r}")
     skills = SKILLS[condition]
+    names = ("A", "B", "C") if order == "forward" else ("C", "B", "A")
     return [Contractor(name=n, skill=skills[n],
                        overconfident=(condition == "overconfident" and n == "C"))
-            for n in ("A", "B", "C")]
+            for n in names]
 
 
 _OBJ = re.compile(r"\{.*\}", re.S)

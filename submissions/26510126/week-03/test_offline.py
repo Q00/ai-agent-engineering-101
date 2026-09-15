@@ -133,6 +133,24 @@ def suite_b():
     check("broad bidder outbids the owner",
           (r.correct, r.misawards), (2, n - 2))
 
+    # The tie-break control. Same bids, reversed ask order: the winner of an
+    # all-equal round follows the order, which is what makes `--order reverse`
+    # a measurement of the loop rather than of the contractors.
+    r, _, _ = round_with(lambda who, cid: 95, condition="homogeneous")
+    check("all tie, forward order: first asked wins",
+          {a["winner"] for a in r.awards}, {"A"})
+    manager.bid = fake_bid(lambda who, cid: 95)
+    try:
+        tasks = manager.load_tasks()
+        rr = manager.run_round(tasks, build_team("homogeneous", "reverse"),
+                               Meter(), log=lambda *a: None)
+    finally:
+        manager.bid = contractor.bid
+    check("all tie, reversed order: the other end wins",
+          {a["winner"] for a in rr.awards}, {"C"})
+    check("reversing order does not change the message count",
+          rr.messages, r.messages)
+
 
 # ------------------------------------------------------------------ suite C
 # The writer has to produce the exact header, keep a crashed run's row and
