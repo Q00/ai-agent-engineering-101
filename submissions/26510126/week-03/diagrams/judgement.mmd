@@ -1,0 +1,20 @@
+flowchart TD
+    AW{"award made?"} -->|"no"| UN["unassigned"]
+    AW -->|"yes"| F{"inside capable?"}
+    F -->|"no"| IF["not feasible<br/>(capable is a lower bound —<br/>a solve from here is a finding)"]
+    F -->|"yes"| FE["feasible"]
+    FE --> O{"equals gold?"}
+    O -->|"yes"| OP["optimal"]
+    O -->|"no"| SU["second best"]
+    IF --> S{"last Answer: line<br/>contains the answer?"}
+    OP --> S
+    SU --> S
+    S -->|"yes"| SO["solved"]
+    S -->|"no"| NS["not solved"]
+
+    classDef ok fill:#b2f2bb,stroke:#2f9e44,stroke-width:2px,color:#1e1e1e
+    classDef mid fill:#ffec99,stroke:#f08c00,stroke-width:2px,color:#1e1e1e
+    classDef no fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    class FE,OP,SO ok
+    class SU,IF mid
+    class UN,NS no

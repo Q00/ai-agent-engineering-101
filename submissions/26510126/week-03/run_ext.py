@@ -220,7 +220,7 @@ def append(path, header, rows):
 
 
 DETAIL = "tasks_ext_detail.csv"
-DETAIL_HEADER = ["run", "condition", "round", "task", "manager", "gold",
+DETAIL_HEADER = ["run", "condition", "round", "task", "number", "manager", "gold",
                  "awarded", "feasible", "optimal", "solved", "partial",
                  "messages", "bids", "false_evidence", "trajectory_calls",
                  "subtasks", "failures"]

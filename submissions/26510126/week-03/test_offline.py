@@ -670,7 +670,8 @@ def _refuses(fn):
 # recursion, orphaned pieces — are what is under test.
 
 import phases as P
-from protocol import Endpoint as _Endpoint, Journal as _Journal
+from protocol import (Endpoint as _Endpoint, Journal as _Journal,
+                      depth_of as PR_depth)
 
 
 class _Turn:
@@ -864,6 +865,27 @@ def suite_h():
             seen["announced"] = True
             return _ann("count the WARN lines", "whoever holds count_level")
         return _Turn(text="Answer: 4")
+
+    # A round re-poses the same questions, and each announcement is a new
+    # contract. The first two-round run failed every task in round 2 with
+    # announce_refused, because the task number was used as the contract id
+    # and the guard — correctly — refuses announcing the same id twice.
+    check("the contract id is scoped to the round",
+          (P.contract_id("5", 1), P.contract_id("5", 2)), ("1-5", "2-5"))
+    eps, ags, j = _phase_net(happy)
+    r1 = P.run_task(tasks["1"], eps, ags, j, {}, round_no=1)
+    r2 = P.run_task(tasks["1"], eps, ags, j, {}, round_no=2)
+    check("the same task announces again in the next round",
+          ([f for f in r1.failures if "announce" in f],
+           [f for f in r2.failures if "announce" in f]), ([], []))
+    check("both rounds award and solve",
+          (r1.solved, r2.solved), (True, True))
+    check("the two rounds are different contracts",
+          (r1.task, r2.task), ("1-1", "2-1"))
+    check("but the same task number",
+          (r1.number, r2.number), ("1", "1"))
+    check("and the round separator does not read as depth",
+          (PR_depth(r2.task), PR_depth(r2.task + ".1")), (1, 2))
 
     eps, ags, j = _phase_net(orphaned)
     r = P.run_task(tasks["6"], eps, ags, j, {})

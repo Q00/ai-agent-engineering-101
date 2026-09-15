@@ -57,6 +57,7 @@ class TaskResult:
         self.capable = list(capable)
         self.answer = answer
         self.manager = None
+        self.number = str(task_id).split("-")[-1].split(".")[0]
         self.bids = []            # dicts: who, bid, confidence, evidence, false_evidence
         self.awarded = None
         self.award_reason = ""
@@ -89,7 +90,8 @@ class TaskResult:
 
     def row(self):
         return {
-            "task": self.task, "manager": self.manager, "gold": self.gold,
+            "task": self.task, "number": self.number,
+            "manager": self.manager, "gold": self.gold,
             "awarded": self.awarded, "feasible": int(self.feasible),
             "optimal": int(self.optimal), "solved": int(self.solved),
             "partial": int(self.partial), "messages": self.messages,
@@ -388,15 +390,34 @@ def _run_subtask(parent_task, owner, args, endpoints, agents, result, journal,
 # ---------------------------------------------------------------- one task
 
 
+def contract_id(task_id, round_no) -> str:
+    """The protocol id for this task in this round.
+
+    A round re-poses the same questions, but each announcement is a NEW
+    contract: the send guard refuses a second ANNOUNCE for an id it has
+    already announced, and it is right to. The first two-round run failed
+    every task in round 2 with announce_refused because the task number was
+    used directly as the contract id, so round 2 looked like a duplicate
+    announcement of round 1's contracts.
+
+    The separator is "-" and not "." because "." is what marks depth: "2-5"
+    is round 2 of task 5 at depth 1, and "2-5.1" is a piece of it at depth 2.
+    """
+    return f"{round_no}-{task_id}" if round_no else str(task_id)
+
+
 def run_task(task, endpoints, agents, journal, cfg, round_no=0):
     """All phases for one top-level task."""
-    tid = str(task["id"])
+    number = str(task["id"])            # rotation and gold use the task number
+    tid = contract_id(number, round_no)  # the protocol uses the contract id
     names = tuple(sorted(endpoints))
-    manager = names[(int(tid) - 1) % len(names)]
+    manager = names[(int(number) - 1) % len(names)]
     result = TaskResult(tid, task.get("gold"), task.get("capable", []),
                         task.get("answer", ""))
+    result.number = number
     result.manager = manager
     endpoints[manager].assign_role(tid, "manager")
+    task = {**task, "id": tid}          # every phase below sends on this id
 
     ann = announce_phase(task, manager, endpoints, agents, result, round_no)
     if ann is None:
