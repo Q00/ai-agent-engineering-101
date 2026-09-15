@@ -1,8 +1,13 @@
-"""Week 02 starter — the Plan-then-Execute harness.
+"""Week 02 — the Plan-then-Execute harness (starter + one variation).
 
 One call produces the whole plan as a JSON list. Then each step is executed
 in order with tools. If a step reports OFF_PLAN, the plan is rebuilt once
 (max_replan=1): that number is the flexibility cap, and it is explicit.
+
+Variation against the starter: SYSTEM_PLAN now forbids invented function names
+and non-tool steps. In the six starter runs 60-71% of every plan's steps were
+not executable tool calls, so the A/B was measuring a tool-blind planner rather
+than planning as a strategy. Everything else is unchanged.
 """
 import json
 import re
@@ -12,7 +17,13 @@ from tools_shared import Chat, Meter, Reply
 
 SYSTEM_PLAN = (
     "You are a planner. Reply with a JSON list of short strings, one per step, "
-    "and nothing else. No prose, no code fences."
+    "and nothing else. No prose, no code fences. "
+    # variation: the planner runs with tools=False, so it never sees the tool
+    # schemas and invented step names like extract_hours_from_lines() in every
+    # starter run. Constrain it to the tools the message lists.
+    "Every step must be a call to one of the tools listed in the message, "
+    "written with that exact function name. Do not invent function names, and "
+    "do not add steps for reasoning, summarising, or formatting the answer."
 )
 SYSTEM_EXEC = (
     "You execute one step of a plan at a time with the tools you are given. "
