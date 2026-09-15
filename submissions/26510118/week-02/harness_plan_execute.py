@@ -46,12 +46,12 @@ def parse_plan(text: str):
 
 
 def run_plan_execute(task: str, max_replan: int = 1,
-                     # variation: 3 was arbitrary and bound on this task — the
-                     # answer needs one count per hour and there are nine hours,
-                     # so every run hit "step exceeded the tool-call budget".
-                     # ReAct has no per-iteration tool cap at all; 9 removes the
-                     # asymmetry instead of handicapping one side.
-                     max_tool_rounds: int = 9, log=print):
+                     # kept at the starter's 3. Raising it to 9 was tried and
+                     # reverted (runs 13-18): with SYSTEM_PLAN forcing tool-only
+                     # steps, the replan enumerated one step per hour (24 of
+                     # them) and the larger budget let every doomed step burn
+                     # nine model calls. 15,498 -> 548,644 average tokens.
+                     max_tool_rounds: int = 3, log=print):
     meter = Meter()
 
     # 1) PLAN: the whole plan in one call, no tools
