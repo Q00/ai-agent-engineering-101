@@ -24,16 +24,26 @@ class RoundResult:
     parse_fails: int = 0      # not a results.csv column — reported in `note`
 
 
-def run_round(tasks, team, meter, log=print) -> RoundResult:
+def run_round(tasks, team, meter, log=print, rotate=False) -> RoundResult:
+    """Run one round. `rotate` shifts the announcement order by one per task.
+
+    A tie on the top confidence is broken by whoever bid first — an
+    implementation choice Smith's protocol does not specify. Held fixed, that
+    choice hands a systematic advantage to whoever sits first in the team;
+    rotating spreads it evenly and keeps the run reproducible.
+    """
     r = RoundResult(tasks=len(tasks))
 
-    for t in tasks:
+    for i, t in enumerate(tasks):
+        shift = i % len(team) if rotate else 0
+        order = team[shift:] + team[:shift]
+
         log(f"[task {t['id']}] {t['desc']}")
-        log(f"  [announce] to {', '.join(c.name for c in team)}   (gold {t['gold']})")
-        r.messages += len(team)                   # broadcast: one per contractor
+        log(f"  [announce] to {', '.join(c.name for c in order)}   (gold {t['gold']})")
+        r.messages += len(order)                  # broadcast: one per contractor
 
         bids = []
-        for c in team:
+        for c in order:
             parsed, raw = bid(c, t["id"], t["desc"], meter)
             if parsed is None:                    # unparseable reply = did not bid
                 r.parse_fails += 1
