@@ -35,8 +35,7 @@ def parse_plan(text: str):
 
 
 def run_plan_execute(task: str, max_replan: int = 1,
-                     max_tool_rounds: int = 3, early_exit: bool = False,
-                     log=print):
+                     max_tool_rounds: int = 3, log=print):
     meter = Meter()
 
     # 1) PLAN: the whole plan in one call, no tools
@@ -68,16 +67,6 @@ def run_plan_execute(task: str, max_replan: int = 1,
                 reply = Reply("OFF_PLAN: step exceeded the tool-call budget", [])
                 break
         log(f"[step {i + 1}] {reply.text.strip()[:300]}")
-
-        # [axis 3 ablation] termination condition. Off by default, so the
-        # baseline reproduces the starter: the plan's length decides when the
-        # run ends, even when a step already produced the answer. Switched on,
-        # the run stops at the first "Answer:" and skips the rest of the plan.
-        # Nothing else changes, so a baseline/ablation gap is axis 3 alone.
-        if early_exit and reply.text.strip().startswith("Answer:"):
-            log(f"[early_exit] answer at step {i + 1}; "
-                f"{len(plan) - i - 1} planned step(s) skipped")
-            return reply.text, meter, replans
 
         if reply.text.strip().startswith("OFF_PLAN") and replans < max_replan:
             replans += 1                          # flexibility cap
