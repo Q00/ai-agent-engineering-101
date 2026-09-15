@@ -137,9 +137,17 @@ PROTOCOL_SPECS = [
 ]
 
 PROTOCOL_NAMES = tuple(s["name"] for s in PROTOCOL_SPECS)
+
+# Three role states, not two. A candidate that won a contract has to be able
+# to announce a piece of it, because Smith's recursion is exactly that: the
+# contractor that took the work becomes the manager of the pieces it breaks
+# the work into. `winner` therefore carries the manager's tools. The label is
+# separate from `manager` for the model's sake — what it should be doing now
+# differs — while the permission set is identical.
 ROLE_TOOLS = {
     "manager": ("announce", "get_trajectory", "award"),
     "contractor": ("bidding",),
+    "winner": ("announce", "get_trajectory", "award"),
 }
 
 SYSTEM = """You are candidate {name}, one of four peers ({peers}) in a contract net.
@@ -156,21 +164,25 @@ does the work and reports the answer back. Your role is not fixed: for one
 task you may be the manager, for the next a contractor. You are told your role
 for the current task at the start of each turn.
 
-As manager you may use: announce, get_trajectory, award.
-As contractor you may use: bidding.
-All four are visible to you at all times; using one that does not belong to
-your current role is refused and recorded.
+Your role for the current turn is one of three:
+  manager     — you may use announce, get_trajectory, award.
+  contractor  — you may use bidding.
+  winner      — you took the contract; you may use announce, get_trajectory,
+                award, because a piece you hand out makes you its manager.
+All four protocol tools are visible to you at all times; using one that does
+not belong to your current role is refused and recorded.
 
-IF YOU WIN A CONTRACT
-Run your tools, then report. End your report with a line of the form
+WHEN YOU ARE THE WINNER
+Run your own tools, then report. End your report with a line of the form
   Answer: <the answer>
 and put nothing after it. If the task asks for two things, give both on that
 one line.
 
-IF YOU CANNOT FINISH IT ALONE
-You may break the task into pieces and announce a piece to the others, in
-which case you are the manager of that piece. You still owe the answer for the
-whole task. Depth stops at one level of pieces.
+If your tools do not cover the whole task, break out the part you cannot do
+and announce it to the others; you are the manager of that piece and will be
+given its result. You still owe the answer for the whole task. Pieces cannot
+be broken up again. If nobody takes a piece, report what you do have and say
+which part is missing.
 
 HONESTY RULES
 Bid only on work your own tools cover. When you name tools in `evidence`, name

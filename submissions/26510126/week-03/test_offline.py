@@ -630,15 +630,22 @@ def suite_g():
     check("and tools it does not hold are not",
           "read_log" in prefixes["P1"][0], False)
 
-    # Roles partition the protocol tools: none unassigned, none in both.
-    assigned = [t for role in A.ROLE_TOOLS.values() for t in role]
-    check("every protocol tool belongs to exactly one role",
+    # Every protocol tool is reachable from some role, and none is stranded.
+    assigned = {t for role in A.ROLE_TOOLS.values() for t in role}
+    check("every protocol tool belongs to some role",
           sorted(assigned), sorted(A.PROTOCOL_NAMES))
     check("manager holds announce, get_trajectory and award",
           sorted(A.ROLE_TOOLS["manager"]),
           ["announce", "award", "get_trajectory"])
     check("contractor holds bidding only",
           list(A.ROLE_TOOLS["contractor"]), ["bidding"])
+    # winner shares the manager's set on purpose: a piece handed out makes the
+    # winner its manager, so it needs announce and award. The labels differ
+    # for the model's sake, the permissions do not.
+    check("winner carries the manager's tools",
+          sorted(A.ROLE_TOOLS["winner"]), sorted(A.ROLE_TOOLS["manager"]))
+    check("and cannot bid while holding a contract",
+          "bidding" in A.ROLE_TOOLS["winner"], False)
 
     check("an unknown candidate is refused",
           _refuses(lambda: A.Agent("P9")), True)
@@ -656,6 +663,217 @@ def _refuses(fn):
         return True
 
 
+# ------------------------------------------------------------------ suite H
+# The phases, driven end to end with scripted agents. No model, no key: each
+# fake returns the protocol action a real agent would have produced, so the
+# harness's own decisions — message counts, the retry after a refused award,
+# recursion, orphaned pieces — are what is under test.
+
+import phases as P
+from protocol import Endpoint as _Endpoint, Journal as _Journal
+
+
+class _Turn:
+    def __init__(self, action=None, text="", out_of_role=(), work_calls=()):
+        self.action = action
+        self.text = text
+        self.out_of_role = list(out_of_role)
+        self.work_calls = list(work_calls)
+        self.steps = 1
+        self.stopped = "scripted"
+
+
+class _Fake:
+    def __init__(self, name, script):
+        self.name = name
+        self.manifest = T.MANIFESTS[name]
+        self.trajectory_fn = None
+        self.script = script
+
+    def act(self, role, block, round_no=0):
+        return self.script(self.name, role, block)
+
+
+def _phase_net(script):
+    j = _Journal(os.path.join(tempfile.mkdtemp(prefix="w03-phase-"), "m.jsonl"))
+    eps = {n: _Endpoint(n, T.CANDIDATES, journal=j) for n in T.CANDIDATES}
+    return eps, {n: _Fake(n, script) for n in T.CANDIDATES}, j
+
+
+def _bid(conf, ev, reason="scripted"):
+    return _Turn(("bidding", {"bid": True, "confidence": conf,
+                              "evidence": list(ev), "reason": reason}))
+
+
+_NO = _Turn(("bidding", {"bid": False, "confidence": 0, "evidence": [],
+                         "reason": "no tool for it"}))
+
+
+def _ann(abstraction="do the work", eligibility="any capable candidate"):
+    return _Turn(("announce", {"task_abstraction": abstraction,
+                               "eligibility": eligibility}))
+
+
+def _award(who, why="best bid"):
+    return _Turn(("award", {"candidate": who, "reason": why}))
+
+
+def suite_h():
+    print("\n-- H. phases end to end")
+    tasks = {t["id"]: t
+             for t in _json.load(open("tasks_ext.json", encoding="utf-8"))["tasks"]}
+
+    # Task 1: manager P1 by rotation, gold P1, capable P1 and P4. The gold
+    # candidate is in the chair, so the best it can do is feasible.
+    def happy(name, role, block):
+        if "Announce" in block:
+            return _ann()
+        if role == "contractor":
+            return _bid(90, ["count_by_hour"]) if name == "P4" else _NO
+        if "Award" in block:
+            return _award("P4")
+        return _Turn(text="Checked the hourly counts.\nAnswer: 14:00")
+
+    eps, ags, j = _phase_net(happy)
+    r = P.run_task(tasks["1"], eps, ags, j, {})
+    check("rotation puts P1 in the chair for task 1", r.manager, "P1")
+    check("the only bidder wins", r.awarded, "P4")
+    check("inside capable, so feasible", r.feasible, True)
+    check("not optimal, because gold was the manager", r.optimal, False)
+    check("the answer is judged from the report", r.solved, True)
+    check("one announce, three bids, award, acceptance, report",
+          r.messages, 7)
+    check("a clean task records no failure mode", r.failures, [])
+
+    def nobody(name, role, block):
+        return _ann() if "Announce" in block else _NO
+
+    eps, ags, j = _phase_net(nobody)
+    r = P.run_task(tasks["1"], eps, ags, j, {})
+    check("no bids leaves the task unassigned",
+          (r.awarded, r.failures), (None, ["unassigned:no_bid"]))
+
+    # An agent manager awarding a candidate that never bid: refused by the
+    # endpoint, the reason fed back, one retry.
+    def bad_award(name, role, block):
+        if "Announce" in block:
+            return _ann()
+        if role == "contractor":
+            return _bid(80, ["count_by_hour"]) if name == "P4" else _NO
+        if "was refused" in block:
+            return _award("P4")
+        if "Award" in block:
+            return _award("P2")
+        return _Turn(text="Answer: 14:00")
+
+    eps, ags, j = _phase_net(bad_award)
+    r = P.run_task(tasks["1"], eps, ags, j, {})
+    check("awarding a non-bidder is recorded",
+          any(f.startswith("invalid_award:P2") for f in r.failures), True)
+    check("and retried once", "award_retry" in r.failures, True)
+    check("the retry lands", r.awarded, "P4")
+
+    def three_bids(name, role, block):
+        if "Announce" in block:
+            return _ann()
+        if role == "contractor":
+            return {"P2": _bid(60, ["grep_message"]),
+                    "P3": _bid(95, ["read_log"]),
+                    "P4": _bid(70, ["count_by_hour"])}[name]
+        return _Turn(text="Answer: 14:00")
+
+    eps, ags, j = _phase_net(three_bids)
+    r = P.run_task(tasks["1"], eps, ags, j, {"coded_manager": True})
+    check("the coded manager takes the highest confidence",
+          (r.awarded, r.award_reason), ("P3", "max(confidence)"))
+
+    def lying(name, role, block):
+        if "Announce" in block:
+            return _ann()
+        if role == "contractor":
+            return _bid(90, ["count_by_hour", "read_log"])
+        if "Award" in block:
+            return _award("P4")
+        return _Turn(text="Answer: 14:00")
+
+    eps, ags, j = _phase_net(lying)
+    r = P.run_task(tasks["1"], eps, ags, j, {})
+    check("evidence naming tools the bidder lacks is recorded",
+          "false_evidence:P2:count_by_hour,read_log" in r.failures, True)
+    check("and counted on the row", r.row()["false_evidence"] > 0, True)
+
+    def wrong_role(name, role, block):
+        if "Announce" in block:
+            return _ann()
+        if role == "contractor":
+            return _Turn(("bidding", {"bid": False, "confidence": 0,
+                                      "evidence": [], "reason": "n"}),
+                         out_of_role=[("award", {})])
+        return _Turn(text="")
+
+    eps, ags, j = _phase_net(wrong_role)
+    r = P.run_task(tasks["1"], eps, ags, j, {})
+    check("each out-of-role attempt is recorded",
+          sum(1 for f in r.failures if f.startswith("out_of_role")), 3)
+
+    # Task 6 needs count_level + grep_message, which nobody holds. The winner
+    # has to hand a piece out, which makes it the manager of that piece.
+    def decompose(name, role, block):
+        child = "contract 6.1" in block or "came back" in block
+        if "Announce" in block:
+            return _ann("count the WARN lines", "whoever holds count_level")
+        if role == "contractor":
+            if "contract 6.1" in block:
+                return _bid(85, ["count_level"]) if name == "P1" else _NO
+            return _bid(70, ["grep_message"]) if name == "P4" else _NO
+        if "came back" in block:
+            return _Turn(text="Combined both halves.\nAnswer: 11/4")
+        if "Award" in block:
+            return _award("P1") if "6.1" in block else _award("P4")
+        if "won this contract" in block:
+            return _ann("count the WARN lines", "whoever holds count_level")
+        return _Turn(text="Answer: 4")
+
+    eps, ags, j = _phase_net(decompose)
+    r = P.run_task(tasks["6"], eps, ags, j, {})
+    check("the winner hands out one piece", len(r.subtasks), 1)
+    check("the piece is numbered under its parent",
+          r.subtasks[0].task, "6.1")
+    check("the piece is awarded to the candidate that holds the missing tool",
+          r.subtasks[0].awarded, "P1")
+    check("and the parent finishes with the piece's result", r.solved, True)
+    check("task 6 has no capable candidate, so it is never feasible",
+          r.feasible, False)
+
+    # Nobody takes the piece: it is written off and the parent reports what it
+    # has. Losing the whole contract would hide which half failed.
+    seen = {"announced": False}
+
+    def orphaned(name, role, block):
+        if "Announce" in block:
+            return _ann("count the WARN lines", "whoever holds count_level")
+        if role == "contractor":
+            if "contract 6.1" in block:
+                return _NO
+            return _bid(70, ["grep_message"]) if name == "P4" else _NO
+        if "came back" in block:
+            return _Turn(text="Only the grep half.\nAnswer: 4")
+        if "Award" in block:
+            return _award("P4")
+        if "won this contract" in block and not seen["announced"]:
+            seen["announced"] = True
+            return _ann("count the WARN lines", "whoever holds count_level")
+        return _Turn(text="Answer: 4")
+
+    eps, ags, j = _phase_net(orphaned)
+    r = P.run_task(tasks["6"], eps, ags, j, {})
+    check("an untaken piece is written off",
+          any(f.startswith("orphan_subtask") for f in r.failures), True)
+    check("the parent report is partial", r.partial, True)
+    check("it still reports", bool(r.report), True)
+    check("but it is not solved", r.solved, False)
+
+
 if __name__ == "__main__":
     suite_a()
     suite_b()
@@ -664,5 +882,6 @@ if __name__ == "__main__":
     suite_e()
     suite_f()
     suite_g()
+    suite_h()
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     sys.exit(1 if FAIL else 0)
