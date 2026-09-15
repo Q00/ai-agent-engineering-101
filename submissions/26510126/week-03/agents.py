@@ -200,7 +200,8 @@ class Turn:
         self.action = None        # (protocol tool name, args) or None
         self.text = ""
         self.work_calls = []      # (tool, args, result)
-        self.out_of_role = []     # (tool, args) refused
+        self.out_of_role = []     # (tool, args) refused for the current role
+        self.disabled = []        # (tool, args) refused by the condition
         self.steps = 0
         self.stopped = ""         # why the loop ended
 
@@ -209,11 +210,20 @@ class Agent:
     """One candidate: a stable prefix plus an append-only conversation."""
 
     def __init__(self, name, journal=None, persistent=True, meter=None,
-                 trajectory_fn=None):
+                 trajectory_fn=None, manifest=None, allow_trajectory=True):
         if name not in MANIFESTS:
             raise ValueError(f"unknown candidate {name!r}")
         self.name = name
-        self.manifest = tuple(MANIFESTS[name])
+        # A condition may hand out a different manifest (ext_uniform_tools).
+        # It changes the prefix, which is correct: a candidate with different
+        # tools is a different candidate and deserves its own cache.
+        self.manifest = tuple(manifest if manifest is not None else MANIFESTS[name])
+        # Whether history may be consulted is a condition. The tool stays
+        # DECLARED either way — withdrawing it would make the tools array, and
+        # so the cached prefix, differ between conditions, and then a cache
+        # figure from one could not be compared with the other. It is refused
+        # at call time instead, and the role block says so up front.
+        self.allow_trajectory = allow_trajectory
         self.journal = journal
         self.persistent = persistent
         self.meter = meter or model.Meter()
@@ -297,6 +307,14 @@ class Agent:
                                         f"role and you are a {role} for this task")})
                         continue
                     if name == "get_trajectory":
+                        if not self.allow_trajectory:
+                            turn.disabled.append((name, args))
+                            results.append({
+                                "type": "tool_result", "tool_use_id": b.id,
+                                "is_error": True,
+                                "content": ("refused: history is not available "
+                                            "in this configuration")})
+                            continue
                         out = self._trajectory(args.get("candidate"))
                         turn.work_calls.append((name, args, out))
                         results.append({"type": "tool_result",

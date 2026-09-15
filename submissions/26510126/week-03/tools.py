@@ -36,7 +36,15 @@ import os
 from collections import Counter
 
 LOG_PATH = os.environ.get("AGENT_LOG", os.path.join(os.path.dirname(__file__), "app.log"))
-MAX_LINES = 20                       # per read_log / grep_message result
+# Per read_log / grep_message result. Configurable because it turned out to
+# decide whether tool specialisation binds at all: app.log is 60 lines, so at
+# 20 a candidate holding only read_log surveys the whole file in three calls
+# and can brute-force any question the other tools were meant to own. The
+# first full round showed exactly that — task 6 has no capable candidate and
+# was solved anyway, and no decomposition ever fired. Lowering this makes
+# substitution cost more than the step budget allows, so the constraint comes
+# from the tool rather than from shrinking the reference input.
+MAX_LINES = int(os.environ.get("AGENT_MAX_LINES", "20"))
 LEVELS = ("DEBUG", "INFO", "WARN", "ERROR", "FATAL")
 
 _cache = {"path": None, "rows": None}
