@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from cnp.domain import Agent, Bid, ContractId, FrozenModel, RuntimeTask
+from cnp.domain import Agent, Bid, ContractId, FrozenModel, RuntimeTask, Text
 
 Actor = Literal["M", "A", "B", "C"]
 Phase = Literal["QUEUED", "BIDDING", "SEALED", "AWARDED", "UNASSIGNED", "CLOSED"]
@@ -16,7 +16,7 @@ class Request(FrozenModel):
 
     contract_id: ContractId
     actor: Actor
-    request_id: str
+    request_id: Text
 
 
 class ModelReply(FrozenModel):
@@ -35,7 +35,7 @@ class Response(FrozenModel):
     """A terminal contractor outcome, including normal abstention."""
 
     agent: Agent
-    request_id: str
+    request_id: Text
     status: ResponseStatus
     proposal: Bid | None = None
     reply: ModelReply
@@ -52,7 +52,7 @@ class Contract(FrozenModel):
     expires_at: str = ""
     responses: tuple[Response, ...] = ()
     winner: Agent | None = None
-    award_request_id: str = ""
+    award_request_id: Text | None = None
 
 
 class Event(FrozenModel):
