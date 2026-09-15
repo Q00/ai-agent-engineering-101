@@ -418,10 +418,94 @@ def suite_d():
           [v["type"] for v in eps["P2"].violations], ["orphan_subtask"])
 
 
+# ------------------------------------------------------------------ suite E
+# The work tools. Deterministic over a fixed file, so every answer here is
+# pinned rather than described, and the capability helpers are checked against
+# the manifests the extension actually uses.
+
+import tools as T
+
+MANIFESTS = {
+    "P1": ["count_by_hour", "count_level"],
+    "P2": ["grep_message"],
+    "P3": ["read_log"],
+    "P4": ["count_by_hour", "grep_message"],
+}
+
+
+def suite_e():
+    print("\n-- E. work tools over app.log")
+
+    out = T.run_tool("count_by_hour", {"level": "ERROR"})
+    check("count_by_hour names the busiest hour",
+          "highest: 14:00 with 6" in out, True)
+    check("count_by_hour returns no message text",
+          "QuizService" in out, False)
+    check("count_level counts against the file total",
+          T.run_tool("count_level", {"level": "WARN"}), "WARN: 11 of 60 lines")
+    check("grep_message finds every hit",
+          T.run_tool("grep_message", {"text": "QuizService"}).splitlines()[0],
+          "7 line(s) contain 'QuizService':")
+    check("read_log returns the raw text",
+          T.run_tool("read_log", {"start": 2, "end": 2}).splitlines()[1],
+          "2026-09-01 09:11:56 ERROR NullReference in QuizService.score")
+
+    # Bad arguments come back as text the agent can read, not as exceptions.
+    check("an unknown level is refused",
+          T.run_tool("count_by_hour", {"level": "TRACE"}).startswith("error:"), True)
+    check("an empty needle is refused",
+          T.run_tool("grep_message", {"text": ""}).startswith("error:"), True)
+    check("a reversed range is refused",
+          T.run_tool("read_log", {"start": 5, "end": 2}).startswith("error:"), True)
+    check("an over-wide range is capped, not refused",
+          "capped at" in T.run_tool("read_log", {"start": 1, "end": 999}), True)
+    check("an unknown tool is refused",
+          T.run_tool("nope", {}).startswith("error:"), True)
+    check("missing arguments do not raise",
+          T.run_tool("grep_message", {"wrong": 1}).startswith("error:"), True)
+
+    # capable is derived from the manifests, so it cannot drift from them.
+    check("one tool, two holders",
+          T.capable_for(["count_by_hour"], MANIFESTS), ["P1", "P4"])
+    check("a pair only P4 holds",
+          T.capable_for(["count_by_hour", "grep_message"], MANIFESTS), ["P4"])
+    check("a pair nobody holds forces decomposition",
+          T.capable_for(["count_by_hour", "read_log"], MANIFESTS), [])
+    try:
+        T.capable_for(["calculator"], MANIFESTS)
+        check("a task needing an unknown tool is rejected", "no error", "ValueError")
+    except ValueError:
+        check("a task needing an unknown tool is rejected", "ValueError", "ValueError")
+
+    cov = T.coverage(MANIFESTS, 2)
+    uncovered = sorted(c for c, who in cov.items() if not who)
+    check("four of six tool pairs need two candidates", len(uncovered), 4)
+    check("count_by_hour + read_log is one of them",
+          ("count_by_hour", "read_log") in uncovered, True)
+
+    # Evidence is a claim about one's own manifest, so it is checkable.
+    check("naming a tool you do not hold is false evidence",
+          T.false_evidence(["count_by_hour", "grep_message"], MANIFESTS["P2"]),
+          ["count_by_hour"])
+    check("naming only what you hold is clean",
+          T.false_evidence(["count_by_hour"], MANIFESTS["P4"]), [])
+    check("an empty evidence list is clean",
+          T.false_evidence(None, MANIFESTS["P1"]), [])
+
+    # Declaration order is fixed, because the cached prefix depends on it.
+    check("declaration order does not follow the manifest's order",
+          [d["name"] for d in T.specs_for(["grep_message", "count_by_hour"])],
+          [d["name"] for d in T.specs_for(["count_by_hour", "grep_message"])])
+    check("every declaration carries a description and a schema",
+          all(d.get("description") and d.get("input_schema")
+              for d in T.specs_for(T.TOOL_NAMES)), True)
+
+
 if __name__ == "__main__":
     suite_a()
     suite_b()
     suite_c()
     suite_d()
+    suite_e()
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     sys.exit(1 if FAIL else 0)
