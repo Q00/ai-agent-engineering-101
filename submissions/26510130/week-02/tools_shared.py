@@ -13,6 +13,7 @@ Provider is picked from the environment:
 import json
 import os
 import re
+import time
 from dataclasses import dataclass, field
 
 # ---------------------------------------------------------------- tools
@@ -106,6 +107,39 @@ def _get_client():
     return _client
 
 
+MAX_RETRIES = 6
+BASE_DELAY = 8.0
+
+# Proactive pacing beats reactive retry against a requests-per-minute cap: a
+# retry that fires while the window is still full just burns another wait (the
+# provider answered "retry in 53.8s" twice in a row before this was added).
+# MIN_INTERVAL keeps the call rate under the cap instead of discovering it.
+# 0 disables pacing, for a provider that does not need it.
+MIN_INTERVAL = float(os.environ.get("AGENT_MIN_INTERVAL", "0"))
+_last_call = [0.0]
+
+
+def _pace():
+    if MIN_INTERVAL <= 0:
+        return
+    wait = MIN_INTERVAL - (time.monotonic() - _last_call[0])
+    if wait > 0:
+        time.sleep(wait)
+    _last_call[0] = time.monotonic()
+
+
+def _is_rate_limit(e: Exception) -> bool:
+    return getattr(e, "status_code", None) == 429 or "429" in str(e)
+
+
+def _retry_delay(e: Exception, attempt: int) -> float:
+    """Honour the provider's own retry hint when it gives one."""
+    m = re.search(r"retry in (\d+(?:\.\d+)?)s", str(e))
+    if m:
+        return float(m.group(1)) + 1.0
+    return BASE_DELAY * (attempt + 1)
+
+
 class Chat:
     """One conversation with the model. Owns the provider-specific message
     format so the harnesses only see Reply and ToolCall."""
@@ -136,9 +170,32 @@ class Chat:
 
     # ---- one model call
     def send(self) -> Reply:
-        if PROVIDER == "anthropic":
-            return self._send_anthropic()
-        return self._send_openai()
+        """One model call, with transport-level retry on 429.
+
+        Free tiers cap requests per minute (Gemini free: 5/min/model), and
+        Plan-then-Execute issues ~11 calls per run, so without this the harness
+        with more iterations cannot finish at all -- which would make the A/B a
+        comparison of who hit the quota first rather than of the two designs.
+
+        This sits below both harnesses in the shared module, so it applies to
+        each identically, and meter.add() still runs only on a call that
+        succeeded: retries cost wall-clock time and change no measured metric.
+        A daily-quota 429 is not retried away -- it just exhausts the attempts.
+        """
+        for attempt in range(MAX_RETRIES):
+            _pace()
+            try:
+                if PROVIDER == "anthropic":
+                    return self._send_anthropic()
+                return self._send_openai()
+            except Exception as e:
+                if not _is_rate_limit(e) or attempt == MAX_RETRIES - 1:
+                    raise
+                delay = _retry_delay(e, attempt)
+                print(f"  [429] rate limited, retrying in {delay:.1f}s "
+                      f"(attempt {attempt + 1}/{MAX_RETRIES})")
+                time.sleep(delay)
+        raise RuntimeError("unreachable")
 
     def _send_anthropic(self) -> Reply:
         kwargs = dict(model=MODEL, max_tokens=1024, system=self.system,

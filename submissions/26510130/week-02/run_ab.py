@@ -16,6 +16,7 @@ from pathlib import Path
 
 from harness_plan_execute import run_plan_execute
 from harness_react import run_react
+from tools_shared import MODEL
 
 HEADER = ["run", "harness", "success", "tokens", "iters", "interventions", "note"]
 
@@ -48,6 +49,11 @@ def main():
     args = ap.parse_args()
 
     label = args.label or ("t1" if args.task == "TASK.md" else "t2")
+    # The model goes in the note column, not in `label`: results.csv is one
+    # table across every session and a row only means something next to the
+    # model that produced it, but model ids contain "/" and label is also used
+    # to name log files.
+    tag = f"{label} {MODEL}"
     task, expected = read_task(args.task)
     Path("logs").mkdir(exist_ok=True)
     new_file = not Path("results.csv").exists()
@@ -69,17 +75,17 @@ def main():
                     print(msg)
                     _lines.append(str(msg))
 
-                log(f"[task] {label}: {task}")
+                log(f"[task] {tag}: {task}")
                 t0 = time.time()
-                note = label
+                note = tag
                 try:
                     out = fn(task, log=log)
                     answer, meter = out[0], out[1]
                     if name == "plan_exec":
-                        note = f"{label} replans={out[2]}"
+                        note = f"{tag} replans={out[2]}"
                 except Exception as e:            # a crash is a failed run, not a lost run
                     answer, meter = "", None
-                    note = f"{label} crash: {type(e).__name__}: {e}"
+                    note = f"{tag} crash: {type(e).__name__}: {e}"
                     log(note)
                 success = judge(answer, expected)
                 log(f"[final] {answer.strip()[:300]}")
