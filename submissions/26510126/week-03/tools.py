@@ -217,6 +217,46 @@ SPECS = {
 
 TOOL_NAMES = tuple(sorted(SPECS))     # fixed order: the cached prefix depends on it
 
+# Who holds what. One source of truth: agents.py builds identities on top of
+# this, tasks_ext.json derives `capable` from it, and the offline suite reads
+# it rather than keeping a second copy that could drift.
+#
+# Three specialists and one generalist, chosen so that `gold` is decidable.
+# With two candidates holding two tools each, a task needing one of those
+# tools has two equally-specialised holders and no single best answer. Here
+# the capable candidate with the fewest tools is always unique.
+#
+# P4 deliberately lacks count_level: that is what leaves combinations nobody
+# can cover alone, which is what makes decomposition necessary rather than
+# optional.
+MANIFESTS = {
+    "P1": ("count_by_hour", "count_level"),      # aggregation
+    "P2": ("grep_message",),                     # search
+    "P3": ("read_log",),                         # verbatim
+    "P4": ("count_by_hour", "grep_message", "read_log"),   # generalist
+}
+CANDIDATES = tuple(sorted(MANIFESTS))
+
+
+def gold_for(required, manifests=None):
+    """The most specialised candidate that can do the task, or None.
+
+    Most specialised means holding the fewest tools among those capable. With
+    the manifests above that is always unique; a tie would mean the task set
+    and the manifests disagree about what specialisation means, so it raises
+    rather than picking one.
+    """
+    manifests = manifests or MANIFESTS
+    able = capable_for(required, manifests)
+    if not able:
+        return None
+    sizes = sorted((len(manifests[w]), w) for w in able)
+    if len(sizes) > 1 and sizes[0][0] == sizes[1][0]:
+        raise ValueError(
+            f"gold is ambiguous for {sorted(required)}: "
+            f"{sizes[0][1]} and {sizes[1][1]} are equally specialised")
+    return sizes[0][1]
+
 
 def specs_for(names) -> list:
     """Tool declarations for one candidate, in a fixed order.
@@ -271,6 +311,48 @@ def false_evidence(evidence, manifest) -> list:
     """
     have = set(manifest)
     return sorted(t for t in (evidence or []) if t not in have)
+
+
+# ---------------------------------------------------------------- grading
+#
+# Grading lives beside the capability helpers because it is the same kind of
+# fact: what this task domain says counts as done. The rule is week 02's,
+# carried forward deliberately — judge the last line beginning with "Answer:",
+# not the whole response. A substring match over everything the agent said
+# scores a run correct whenever the right value appears anywhere, even in a
+# passage that concludes otherwise, and the two layers do not end the same way.
+
+
+def answer_line(text: str) -> str:
+    """The last line beginning with 'Answer:'. Falls back to the whole text.
+
+    The fallback matters: a report with no Answer: line is a formatting
+    failure, not automatically a wrong answer, and collapsing the two would
+    hide which one happened. Callers that need to tell them apart check
+    `has_answer_line` as well.
+    """
+    lines = [l.strip() for l in str(text or "").splitlines()]
+    tagged = [l for l in lines if l.lower().startswith("answer:")]
+    return tagged[-1] if tagged else str(text or "")
+
+
+def has_answer_line(text: str) -> bool:
+    return any(l.strip().lower().startswith("answer:")
+               for l in str(text or "").splitlines())
+
+
+def norm_answer(s: str) -> str:
+    """Whitespace removed, case folded. So "11 / 4" and "11/4" agree, and a
+    quoted message survives a difference in spacing."""
+    return "".join(str(s or "").split()).casefold()
+
+
+def judge(report_text: str, answer: str) -> bool:
+    """Did the report answer the task? Every part of a slash-separated answer
+    must appear, so half a compound answer does not score as a whole one."""
+    got = norm_answer(answer_line(report_text))
+    parts = [p for p in str(answer).split("/") if p.strip()]
+    return all(norm_answer(p) in got for p in parts) if parts else False
 
 
 def coverage(manifests: dict, size: int = 2) -> dict:

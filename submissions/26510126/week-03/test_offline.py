@@ -425,12 +425,9 @@ def suite_d():
 
 import tools as T
 
-MANIFESTS = {
-    "P1": ["count_by_hour", "count_level"],
-    "P2": ["grep_message"],
-    "P3": ["read_log"],
-    "P4": ["count_by_hour", "grep_message"],
-}
+# One source of truth. A second copy here is exactly how a test starts
+# agreeing with itself instead of with the system.
+MANIFESTS = T.MANIFESTS
 
 
 def suite_e():
@@ -469,8 +466,10 @@ def suite_e():
           T.capable_for(["count_by_hour"], MANIFESTS), ["P1", "P4"])
     check("a pair only P4 holds",
           T.capable_for(["count_by_hour", "grep_message"], MANIFESTS), ["P4"])
+    check("the generalist covers a pair the specialists split",
+          T.capable_for(["count_by_hour", "read_log"], MANIFESTS), ["P4"])
     check("a pair nobody holds forces decomposition",
-          T.capable_for(["count_by_hour", "read_log"], MANIFESTS), [])
+          T.capable_for(["count_level", "grep_message"], MANIFESTS), [])
     try:
         T.capable_for(["calculator"], MANIFESTS)
         check("a task needing an unknown tool is rejected", "no error", "ValueError")
@@ -479,9 +478,14 @@ def suite_e():
 
     cov = T.coverage(MANIFESTS, 2)
     uncovered = sorted(c for c, who in cov.items() if not who)
-    check("four of six tool pairs need two candidates", len(uncovered), 4)
-    check("count_by_hour + read_log is one of them",
-          ("count_by_hour", "read_log") in uncovered, True)
+    check("two of six tool pairs need more than one candidate",
+          len(uncovered), 2)
+    check("both uncovered pairs need count_level, which the generalist lacks",
+          all("count_level" in c for c in uncovered), True)
+    check("gold is the least-equipped capable candidate",
+          (T.gold_for(["count_by_hour"]), T.gold_for(["grep_message"]),
+           T.gold_for(["read_log"]), T.gold_for(["count_level", "read_log"])),
+          ("P1", "P2", "P3", None))
 
     # Evidence is a claim about one's own manifest, so it is checkable.
     check("naming a tool you do not hold is false evidence",
@@ -501,11 +505,90 @@ def suite_e():
               for d in T.specs_for(T.TOOL_NAMES)), True)
 
 
+# ------------------------------------------------------------------ suite F
+# The extension task set. `capable` and `gold` are derived, so the file can
+# disagree with the manifests only if something drifted — which is what this
+# suite is for. Also pins the grading rule.
+
+import json as _json
+
+
+def suite_f():
+    print("\n-- F. tasks_ext.json and grading")
+
+    doc = _json.load(open("tasks_ext.json", encoding="utf-8"))
+    tasks = doc["tasks"]
+    check("the file records the manifests it was built from",
+          {k: tuple(v) for k, v in doc["manifests"].items()}, dict(T.MANIFESTS))
+    check("ids are unique", len({t["id"] for t in tasks}), len(tasks))
+    check("every task names its required tools",
+          all(t["requires"] for t in tasks), True)
+
+    drift = []
+    for t in tasks:
+        want_capable = T.capable_for(t["requires"], T.MANIFESTS)
+        want_gold = T.gold_for(t["requires"])
+        if t["capable"] != want_capable or t["gold"] != want_gold:
+            drift.append((t["id"], t["capable"], want_capable, t["gold"], want_gold))
+    check("capable and gold match the manifests", drift, [])
+
+    forced = [t["id"] for t in tasks if not t["capable"]]
+    check("at least one task cannot be done by anyone alone",
+          bool(forced), True)
+    check("a task nobody can do alone has no gold",
+          all(t["gold"] is None for t in tasks if not t["capable"]), True)
+    check("a task somebody can do alone has a gold",
+          all(t["gold"] in t["capable"] for t in tasks if t["capable"]), True)
+
+    # Role rotation is stated in the file and has to be reproducible from it.
+    mgr = {t["id"]: T.CANDIDATES[(int(t["id"]) - 1) % len(T.CANDIDATES)]
+           for t in tasks}
+    clash = sorted(t["id"] for t in tasks if t["gold"] == mgr[t["id"]])
+    check("role rotation puts the best candidate in the chair twice",
+          clash, ["1", "7"])
+
+    # Grading. Week 02's rule: the last Answer: line, not the whole response.
+    check("the last Answer line is the one judged",
+          T.judge("Answer: 13:00\nAnswer: 14:00", "14:00"), True)
+    check("an earlier Answer line does not rescue a later wrong one",
+          T.judge("Answer: 14:00\nAnswer: 13:00", "14:00"), False)
+    check("prose after an Answer line is not searched",
+          T.judge("Answer: 13:00\nbut it could be 14:00", "14:00"), False)
+    check("with no Answer line the whole text is judged",
+          T.judge("I believe 14:00", "14:00"), True)
+    check("and that case is distinguishable",
+          T.has_answer_line("I believe 14:00"), False)
+    check("spacing does not matter",
+          T.judge("Answer: upstream  timeout  after 5000ms",
+                  "upstream timeout after 5000ms"), True)
+    check("both halves of a compound answer are required",
+          (T.judge("Answer: 11 and 4", "11/4"), T.judge("Answer: 11", "11/4")),
+          (True, False))
+
+    # Every directly checkable answer is reachable with the task's own tools.
+    reach = {
+        "1": T.run_tool("count_by_hour", {"level": "ERROR"}),
+        "2": T.run_tool("count_level", {"level": "WARN"}),
+        "3": T.run_tool("grep_message", {"text": "QuizService"}),
+        "4": T.run_tool("read_log", {"start": 35, "end": 35}),
+    }
+    unreachable = []
+    for t in tasks:
+        ev = reach.get(t["id"])
+        if ev is None:
+            continue
+        if not all(T.norm_answer(p) in T.norm_answer(ev)
+                   for p in t["answer"].split("/")):
+            unreachable.append(t["id"])
+    check("each single-tool answer is reachable with that tool", unreachable, [])
+
+
 if __name__ == "__main__":
     suite_a()
     suite_b()
     suite_c()
     suite_d()
     suite_e()
+    suite_f()
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     sys.exit(1 if FAIL else 0)
