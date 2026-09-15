@@ -116,16 +116,26 @@ model picks at runtime while plan_exec's is fixed by the plan's length. Any
 claim of the form "Plan-then-Execute costs more" is a claim about a
 model–harness pair, not about the harness.
 
-**Axis 1 never got its test, and the reason is itself an axis-3 result.**
-t2 was built to expose the planner's blindness, and the comparison it needed —
-nemotron t2 plan_exec — is the block the rate limit destroyed. It was destroyed
-because plan_exec issues 11–13 model calls per run against ReAct's 2–3, so the
-harness with the higher iteration count exhausted a shared daily quota and took
-the experiment down with it. On the evidence that does exist, blindness cost
-plan_exec nothing: 6–6 on gemini across both tasks, including the two-hop one.
-Either the plans were general enough ("count errors per hour, find the max,
-then examine that hour") that not knowing the hour was no handicap, or
-`max_replan=1` was enough. Distinguishing those needs the missing cell.
+**Axis 1 got its test and lost it to axis 3.** t2 ran to completion on
+gemini-3.5-flash-lite — react 3, plan_exec 3 — and blindness cost the planner
+nothing: plan_exec went 3–3 on the two-hop task, the same as on the one-hop
+task. So the designed difference did not show up as a success difference. But
+that result cannot be credited to axis 1, because ReAct lost t2 the same way it
+lost t1: `MAX_STEPS reached: incomplete` after per-hour enumeration, in both
+failing runs. When one harness dies of the iteration cap on both tasks, the
+second task stops discriminating between "the planner was not handicapped" and
+"the comparison never got far enough to find out". Isolating axis 1 needs a
+ReAct run that fails t2 *on the dependency* rather than on the step budget —
+which means raising `max_steps` until the cap stops binding, and that is a
+change to axis 3, so it would have to be its own experiment.
+
+The nemotron replication of t2 would have helped here, and it is the block the
+rate limit destroyed: plan_exec issues 11–13 model calls per run against
+ReAct's 2–3, so the harness with the higher iteration count exhausted a shared
+daily quota and took its own comparison down with it. Worth noting what that
+does and does not cost: the runs the assignment asks for — the six starter runs
+on `TASK.md` — are complete for both models, and the missing cell is the second
+model's copy of a task I added myself.
 
 ## 4. Reproducing this
 
