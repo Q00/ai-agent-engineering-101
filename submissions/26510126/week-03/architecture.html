@@ -53,7 +53,7 @@
   <p class="standfirst">이 문서는 손으로 그린 것이 아니다. <code>diagrams.py</code> 가
   코드와 실행 저널에서 생성하며, <code>--check</code> 가 코드와 어긋난 그림을 잡는다.
   설계안이 아니라 지금 돌아가는 것이다.</p>
-  <div class="gen">생성 2026-09-15 23:33 · 다이어그램 13개 · <code>python diagrams.py --html architecture.html</code></div>
+  <div class="gen">생성 2026-09-15 23:42 · 다이어그램 15개 · <code>python diagrams.py --html architecture.html</code></div>
 </header>
 
 <section>
@@ -459,7 +459,23 @@ flowchart TD
     <div class="plate">
 <pre class="mermaid">
 sequenceDiagram
-    Note over A: no messages
+    participant P1
+    participant P2
+    participant P3
+    participant P4
+    Note over P1,P4: phase · announce
+    P1->>P2: TASK-ANNOUNCEMENT c1-1 [P1:1]
+    P1->>P3: TASK-ANNOUNCEMENT c1-1
+    P1->>P4: TASK-ANNOUNCEMENT c1-1
+    Note over P1,P4: phase · bid
+    P2-->>P1: BID c1-1 [P1:1,P2:1]
+    P3-->>P1: BID c1-1 [P1:1,P2:1,P3:1]
+    P4-->>P1: BID c1-1 [P1:1,P2:1,P3:1,P4:1]
+    Note over P1,P4: phase · select
+    P1->>P4: ANNOUNCED-AWARD c1-1 [P1:2,P2:1,P3:1,P4:1]
+    P4-->>P1: ACCEPTANCE c1-1 [P1:2,P2:1,P3:1,P4:2]
+    Note over P1,P4: phase · execute
+    P4-->>P1: FINAL-REPORT c1-1 [P1:2,P2:1,P3:1,P4:3]
 </pre>
     </div>
     <figcaption>diagrams/sequence-task1.mmd</figcaption>
@@ -554,6 +570,82 @@ sequenceDiagram
 </pre>
     </div>
     <figcaption>diagrams/sequence-run.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">14</span>시나리오 · 동시성 (실제 실행 아님)</h2>
+  <p class="why">채점 실행의 저널에는 REFUSAL 이 0건이다. 러너가 태스크를 순차 처리하니 한 후보가 두 계약에 동시에 묶일 상황이 만들어지지 않는다. capacity-1 과 Smith 의 ACCEPTANCE | REFUSAL 쌍은 구현·검증됐으나 측정에는 부하를 지지 않는다. 이 그림은 그 경로를 관통하는 오프라인 시나리오에서 생성했다 — scenarios.concurrency, 테스트가 단정하는 바로 그 시나리오.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+sequenceDiagram
+    participant P1
+    participant P2
+    participant P3
+    participant P4
+    Note over P1,P4: phase · announce
+    P1->>P2: TASK-ANNOUNCEMENT c1 [P1:1]
+    P1->>P3: TASK-ANNOUNCEMENT c1
+    P1->>P4: TASK-ANNOUNCEMENT c1
+    P4->>P1: TASK-ANNOUNCEMENT c2 [P1:1,P4:1]
+    P4->>P2: TASK-ANNOUNCEMENT c2
+    P4->>P3: TASK-ANNOUNCEMENT c2
+    Note over P1,P4: phase · bid
+    P2-->>P1: BID c1 [P1:1,P2:1,P4:1]
+    P2-->>P4: BID c2 [P1:1,P2:2,P4:1]
+    P3-->>P1: BID c1 [P1:1,P2:2,P3:1,P4:1]
+    P3-->>P4: BID c2 [P1:1,P2:2,P3:2,P4:1]
+    Note over P1,P4: phase · select
+    P1->>P2: ANNOUNCED-AWARD c1 [P1:2,P2:2,P3:2,P4:1]
+    P2-->>P1: ACCEPTANCE c1 [P1:2,P2:3,P3:2,P4:1]
+    P4->>P2: ANNOUNCED-AWARD c2 [P1:2,P2:3,P3:2,P4:2]
+    P2-->>P4: REFUSAL c2 [P1:2,P2:4,P3:2,P4:2]
+    P4->>P3: ANNOUNCED-AWARD c2 [P1:2,P2:4,P3:2,P4:3]
+    P3-->>P4: ACCEPTANCE c2 [P1:2,P2:4,P3:3,P4:3]
+    Note over P1,P4: phase · execute
+    P2-->>P1: FINAL-REPORT c1 [P1:2,P2:5,P3:3,P4:3]
+    P3-->>P4: FINAL-REPORT c2 [P1:2,P2:5,P3:4,P4:3]
+</pre>
+    </div>
+    <figcaption>diagrams/scenario-concurrency.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">15</span>시나리오 · 재귀 (실제 실행 아님)</h2>
+  <p class="why">분해도 실제 실행에서 한 번도 일어나지 않았다. 기본 읽기 상한에서는 60줄 파일 전체를 세 번 읽어 훑을 수 있으니 대체가 분해보다 싸다. 부록 ext_tight_reads 가 진짜 분해를 만들면 그 저널이 더 나은 출처이고 이 그림은 그것으로 바꿔야 한다.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+sequenceDiagram
+    participant P1
+    participant P2
+    participant P3
+    participant P4
+    Note over P1,P4: phase · announce
+    P2->>P1: TASK-ANNOUNCEMENT c1-6 [P2:1]
+    P2->>P3: TASK-ANNOUNCEMENT c1-6
+    P2->>P4: TASK-ANNOUNCEMENT c1-6
+    Note over P1,P4: phase · bid
+    P1-->>P2: BID c1-6 [P1:1,P2:1]
+    P3-->>P2: BID c1-6 [P1:1,P2:1,P3:1]
+    P4-->>P2: BID c1-6 [P1:1,P2:1,P3:1,P4:1]
+    Note over P1,P4: phase · select
+    P2->>P4: ANNOUNCED-AWARD c1-6 [P1:1,P2:2,P3:1,P4:1]
+    P4-->>P2: ACCEPTANCE c1-6 [P1:1,P2:2,P3:1,P4:2]
+    Note over P1,P4: phase · announce
+    P4->>P1: TASK-ANNOUNCEMENT c1-6.1 [P1:1,P2:2,P3:1,P4:3]
+    P4->>P2: TASK-ANNOUNCEMENT c1-6.1
+    P4->>P3: TASK-ANNOUNCEMENT c1-6.1
+    Note over P1,P4: phase · bid
+    P1-->>P4: BID c1-6.1 [P1:2,P2:2,P3:1,P4:3]
+    P2-->>P4: BID c1-6.1 [P1:2,P2:3,P3:1,P4:3]
+    P3-->>P4: BID c1-6.1 [P1:2,P2:3,P3:2,P4:3]
+    Note over P1,P4: phase · select
+    P4->>P1: ANNOUNCED-AWARD c1-6.1 [P1:2,P2:3,P3:2,P4:4]
+    P1-->>P4: ACCEPTANCE c1-6.1 [P1:3,P2:3,P3:2,P4:4]
+</pre>
+    </div>
+    <figcaption>diagrams/scenario-depth.mmd</figcaption>
   </figure>
 </section>
 

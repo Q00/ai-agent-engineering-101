@@ -4,15 +4,15 @@ sequenceDiagram
     participant P3
     participant P4
     Note over P1,P4: phase · announce
-    P1->>P2: TASK-ANNOUNCEMENT c1 [P1:1]
-    P1->>P3: TASK-ANNOUNCEMENT c1
-    P1->>P4: TASK-ANNOUNCEMENT c1
+    P1->>P2: TASK-ANNOUNCEMENT c1-1 [P1:1]
+    P1->>P3: TASK-ANNOUNCEMENT c1-1
+    P1->>P4: TASK-ANNOUNCEMENT c1-1
     Note over P1,P4: phase · bid
-    P2-->>P1: BID c1 [P1:1,P2:1]
-    P3-->>P1: BID c1 [P1:1,P2:1,P3:1]
-    P4-->>P1: BID c1 [P1:1,P2:1,P3:1,P4:1]
+    P2-->>P1: BID c1-1 [P1:1,P2:1]
+    P3-->>P1: BID c1-1 [P1:1,P2:1,P3:1]
+    P4-->>P1: BID c1-1 [P1:1,P2:1,P3:1,P4:1]
     Note over P1,P4: phase · select
-    P1->>P4: ANNOUNCED-AWARD c1 [P1:2,P2:1,P3:1,P4:1]
-    P4-->>P1: ACCEPTANCE c1 [P1:2,P2:1,P3:1,P4:2]
+    P1->>P4: ANNOUNCED-AWARD c1-1 [P1:2,P2:1,P3:1,P4:1]
+    P4-->>P1: ACCEPTANCE c1-1 [P1:2,P2:1,P3:1,P4:2]
     Note over P1,P4: phase · execute
-    P4-->>P1: FINAL-REPORT c1 [P1:2,P2:1,P3:1,P4:3]
+    P4-->>P1: FINAL-REPORT c1-1 [P1:2,P2:1,P3:1,P4:3]

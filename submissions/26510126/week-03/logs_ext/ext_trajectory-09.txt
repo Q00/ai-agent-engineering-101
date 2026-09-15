@@ -1,0 +1,9 @@
+provider=anthropic model=claude-sonnet-5 temperature=NOT_SETTABLE(sampling removed on claude-sonnet-5; internal value unknown) effort=low thinking=disabled max_tokens=300 sdk=anthropic 1.4.0 python=3.12.14
+run=9 condition=ext_trajectory rounds=2 persistent=True trajectory=True coded_manager=False uniform=False
+  P1: tools=['count_by_hour', 'count_level']
+  P2: tools=['grep_message']
+  P3: tools=['read_log']
+  P4: tools=['count_by_hour', 'grep_message', 'read_log']
+------------------------------------------------------------------------
+
+[round 1] TASK 1 (aggregate) capable=['P1', 'P4'] gold=P1

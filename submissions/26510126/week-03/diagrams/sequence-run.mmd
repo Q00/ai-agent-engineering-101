@@ -4,77 +4,77 @@ sequenceDiagram
     participant P3
     participant P4
     Note over P1,P4: phase · announce
-    P1->>P2: TASK-ANNOUNCEMENT c1 [P1:1]
-    P1->>P3: TASK-ANNOUNCEMENT c1
-    P1->>P4: TASK-ANNOUNCEMENT c1
+    P1->>P2: TASK-ANNOUNCEMENT c1-1 [P1:1]
+    P1->>P3: TASK-ANNOUNCEMENT c1-1
+    P1->>P4: TASK-ANNOUNCEMENT c1-1
     Note over P1,P4: phase · bid
-    P2-->>P1: BID c1 [P1:1,P2:1]
-    P3-->>P1: BID c1 [P1:1,P2:1,P3:1]
-    P4-->>P1: BID c1 [P1:1,P2:1,P3:1,P4:1]
+    P2-->>P1: BID c1-1 [P1:1,P2:1]
+    P3-->>P1: BID c1-1 [P1:1,P2:1,P3:1]
+    P4-->>P1: BID c1-1 [P1:1,P2:1,P3:1,P4:1]
     Note over P1,P4: phase · select
-    P1->>P4: ANNOUNCED-AWARD c1 [P1:2,P2:1,P3:1,P4:1]
-    P4-->>P1: ACCEPTANCE c1 [P1:2,P2:1,P3:1,P4:2]
+    P1->>P4: ANNOUNCED-AWARD c1-1 [P1:2,P2:1,P3:1,P4:1]
+    P4-->>P1: ACCEPTANCE c1-1 [P1:2,P2:1,P3:1,P4:2]
     Note over P1,P4: phase · execute
-    P4-->>P1: FINAL-REPORT c1 [P1:2,P2:1,P3:1,P4:3]
+    P4-->>P1: FINAL-REPORT c1-1 [P1:2,P2:1,P3:1,P4:3]
     Note over P1,P4: phase · announce
-    P2->>P1: TASK-ANNOUNCEMENT c2 [P1:2,P2:2,P3:1,P4:3]
-    P2->>P3: TASK-ANNOUNCEMENT c2
-    P2->>P4: TASK-ANNOUNCEMENT c2
+    P2->>P1: TASK-ANNOUNCEMENT c1-2 [P1:2,P2:2,P3:1,P4:3]
+    P2->>P3: TASK-ANNOUNCEMENT c1-2
+    P2->>P4: TASK-ANNOUNCEMENT c1-2
     Note over P1,P4: phase · bid
-    P1-->>P2: BID c2 [P1:3,P2:2,P3:1,P4:3]
-    P3-->>P2: BID c2 [P1:3,P2:2,P3:2,P4:3]
-    P4-->>P2: BID c2 [P1:3,P2:2,P3:2,P4:4]
+    P1-->>P2: BID c1-2 [P1:3,P2:2,P3:1,P4:3]
+    P3-->>P2: BID c1-2 [P1:3,P2:2,P3:2,P4:3]
+    P4-->>P2: BID c1-2 [P1:3,P2:2,P3:2,P4:4]
     Note over P1,P4: phase · select
-    P2->>P1: ANNOUNCED-AWARD c2 [P1:3,P2:3,P3:2,P4:4]
-    P1-->>P2: ACCEPTANCE c2 [P1:4,P2:3,P3:2,P4:4]
+    P2->>P1: ANNOUNCED-AWARD c1-2 [P1:3,P2:3,P3:2,P4:4]
+    P1-->>P2: ACCEPTANCE c1-2 [P1:4,P2:3,P3:2,P4:4]
     Note over P1,P4: phase · execute
-    P1-->>P2: FINAL-REPORT c2 [P1:5,P2:3,P3:2,P4:4]
+    P1-->>P2: FINAL-REPORT c1-2 [P1:5,P2:3,P3:2,P4:4]
     Note over P1,P4: phase · announce
-    P3->>P1: TASK-ANNOUNCEMENT c3 [P1:5,P2:3,P3:3,P4:4]
-    P3->>P2: TASK-ANNOUNCEMENT c3
-    P3->>P4: TASK-ANNOUNCEMENT c3
+    P3->>P1: TASK-ANNOUNCEMENT c1-3 [P1:5,P2:3,P3:3,P4:4]
+    P3->>P2: TASK-ANNOUNCEMENT c1-3
+    P3->>P4: TASK-ANNOUNCEMENT c1-3
     Note over P1,P4: phase · bid
-    P1-->>P3: BID c3 [P1:6,P2:3,P3:3,P4:4]
-    P2-->>P3: BID c3 [P1:6,P2:4,P3:3,P4:4]
-    P4-->>P3: BID c3 [P1:6,P2:4,P3:3,P4:5]
+    P1-->>P3: BID c1-3 [P1:6,P2:3,P3:3,P4:4]
+    P2-->>P3: BID c1-3 [P1:6,P2:4,P3:3,P4:4]
+    P4-->>P3: BID c1-3 [P1:6,P2:4,P3:3,P4:5]
     Note over P1,P4: phase · select
-    P3->>P2: ANNOUNCED-AWARD c3 [P1:6,P2:4,P3:4,P4:5]
-    P2-->>P3: ACCEPTANCE c3 [P1:6,P2:5,P3:4,P4:5]
+    P3->>P2: ANNOUNCED-AWARD c1-3 [P1:6,P2:4,P3:4,P4:5]
+    P2-->>P3: ACCEPTANCE c1-3 [P1:6,P2:5,P3:4,P4:5]
     Note over P1,P4: phase · execute
-    P2-->>P3: FINAL-REPORT c3 [P1:6,P2:6,P3:4,P4:5]
+    P2-->>P3: FINAL-REPORT c1-3 [P1:6,P2:6,P3:4,P4:5]
     Note over P1,P4: phase · announce
-    P4->>P1: TASK-ANNOUNCEMENT c4 [P1:6,P2:6,P3:4,P4:6]
-    P4->>P2: TASK-ANNOUNCEMENT c4
-    P4->>P3: TASK-ANNOUNCEMENT c4
+    P4->>P1: TASK-ANNOUNCEMENT c1-4 [P1:6,P2:6,P3:4,P4:6]
+    P4->>P2: TASK-ANNOUNCEMENT c1-4
+    P4->>P3: TASK-ANNOUNCEMENT c1-4
     Note over P1,P4: phase · bid
-    P1-->>P4: BID c4 [P1:7,P2:6,P3:4,P4:6]
-    P2-->>P4: BID c4 [P1:7,P2:7,P3:4,P4:6]
-    P3-->>P4: BID c4 [P1:7,P2:7,P3:5,P4:6]
+    P1-->>P4: BID c1-4 [P1:7,P2:6,P3:4,P4:6]
+    P2-->>P4: BID c1-4 [P1:7,P2:7,P3:4,P4:6]
+    P3-->>P4: BID c1-4 [P1:7,P2:7,P3:5,P4:6]
     Note over P1,P4: phase · select
-    P4->>P3: ANNOUNCED-AWARD c4 [P1:7,P2:7,P3:5,P4:7]
-    P3-->>P4: ACCEPTANCE c4 [P1:7,P2:7,P3:6,P4:7]
+    P4->>P3: ANNOUNCED-AWARD c1-4 [P1:7,P2:7,P3:5,P4:7]
+    P3-->>P4: ACCEPTANCE c1-4 [P1:7,P2:7,P3:6,P4:7]
     Note over P1,P4: phase · execute
-    P3-->>P4: FINAL-REPORT c4 [P1:7,P2:7,P3:7,P4:7]
+    P3-->>P4: FINAL-REPORT c1-4 [P1:7,P2:7,P3:7,P4:7]
     Note over P1,P4: phase · announce
-    P1->>P2: TASK-ANNOUNCEMENT c5 [P1:8,P2:7,P3:7,P4:7]
-    P1->>P3: TASK-ANNOUNCEMENT c5
-    P1->>P4: TASK-ANNOUNCEMENT c5
+    P1->>P2: TASK-ANNOUNCEMENT c1-5 [P1:8,P2:7,P3:7,P4:7]
+    P1->>P3: TASK-ANNOUNCEMENT c1-5
+    P1->>P4: TASK-ANNOUNCEMENT c1-5
     Note over P1,P4: phase · bid
-    P2-->>P1: BID c5 [P1:8,P2:8,P3:7,P4:7]
-    P3-->>P1: BID c5 [P1:8,P2:8,P3:8,P4:7]
-    P4-->>P1: BID c5 [P1:8,P2:8,P3:8,P4:8]
+    P2-->>P1: BID c1-5 [P1:8,P2:8,P3:7,P4:7]
+    P3-->>P1: BID c1-5 [P1:8,P2:8,P3:8,P4:7]
+    P4-->>P1: BID c1-5 [P1:8,P2:8,P3:8,P4:8]
     Note over P1,P4: phase · select
-    P1->>P4: ANNOUNCED-AWARD c5 [P1:9,P2:8,P3:8,P4:8]
-    P4-->>P1: ACCEPTANCE c5 [P1:9,P2:8,P3:8,P4:9]
+    P1->>P4: ANNOUNCED-AWARD c1-5 [P1:9,P2:8,P3:8,P4:8]
+    P4-->>P1: ACCEPTANCE c1-5 [P1:9,P2:8,P3:8,P4:9]
     Note over P1,P4: phase · execute
-    P4-->>P1: FINAL-REPORT c5 [P1:9,P2:8,P3:8,P4:10]
+    P4-->>P1: FINAL-REPORT c1-5 [P1:9,P2:8,P3:8,P4:10]
     Note over P1,P4: phase · announce
-    P2->>P1: TASK-ANNOUNCEMENT c6 [P1:9,P2:9,P3:8,P4:10]
-    P2->>P3: TASK-ANNOUNCEMENT c6
-    P2->>P4: TASK-ANNOUNCEMENT c6
+    P2->>P1: TASK-ANNOUNCEMENT c1-6 [P1:9,P2:9,P3:8,P4:10]
+    P2->>P3: TASK-ANNOUNCEMENT c1-6
+    P2->>P4: TASK-ANNOUNCEMENT c1-6
     Note over P1,P4: phase · bid
-    P1-->>P2: BID c6 [P1:10,P2:9,P3:8,P4:10]
-    P3-->>P2: BID c6 [P1:10,P2:9,P3:9,P4:10]
-    P4-->>P2: BID c6 [P1:10,P2:9,P3:9,P4:11]
+    P1-->>P2: BID c1-6 [P1:10,P2:9,P3:8,P4:10]
+    P3-->>P2: BID c1-6 [P1:10,P2:9,P3:9,P4:10]
+    P4-->>P2: BID c1-6 [P1:10,P2:9,P3:9,P4:11]
     Note over P1,P4: phase · select
-    P2->>P4: ANNOUNCED-AWARD c6 [P1:10,P2:10,P3:9,P4:11]
+    P2->>P4: ANNOUNCED-AWARD c1-6 [P1:10,P2:10,P3:9,P4:11]

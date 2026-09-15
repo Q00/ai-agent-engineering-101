@@ -896,6 +896,49 @@ def suite_h():
     check("but it is not solved", r.solved, False)
 
 
+# ------------------------------------------------------------------ suite I
+# The two scenarios the diagrams are drawn from. Asserting on them here is
+# what makes those diagrams trustworthy: the picture and the check come from
+# one definition, so a picture cannot show a path the code no longer takes.
+
+import scenarios as S
+
+
+def suite_i():
+    print("\n-- I. scenarios behind the sequence diagrams")
+
+    path, f = S.concurrency()
+    check("a committed candidate cannot accept a second contract",
+          f["acceptance_while_committed_refused"], True)
+    check("it sends Smith's REFUSAL instead", f["refusals"], 1)
+    check("and the manager awards three times to place two contracts",
+          f["awards"], 3)
+    check("nothing is left held", f["held"], 0)
+    check("both contracts end released",
+          set(f["committed_after"].values()), {None})
+    check("the fixture exists for the diagram", os.path.exists(path), True)
+
+    path, f = S.depth()
+    check("the winner hands out exactly one piece", f["subtasks"], 1)
+    check("numbered under its parent and its round", f["subtask_id"], "1-6.1")
+    check("the piece goes to the holder of the missing tool",
+          f["subtask_awarded"], "P1")
+    check("the parent finishes with the piece's result", f["solved"], True)
+    check("while never being feasible on its own", f["feasible"], False)
+    check("the journal carries the subtask's messages",
+          f["depth_messages"] > 0, True)
+    check("nothing is left held", f["held"], 0)
+    check("the fixture exists for the diagram", os.path.exists(path), True)
+
+    # Determinism: the diagram is regenerated on every run, so two builds of
+    # the same scenario have to produce the same journal or --check would
+    # flap between commits for no reason.
+    import diagrams as D
+    a = D.sequence_from_journal(S.concurrency()[0], limit=60)
+    b = D.sequence_from_journal(S.concurrency()[0], limit=60)
+    check("rebuilding a scenario gives the same sequence", a, b)
+
+
 if __name__ == "__main__":
     suite_a()
     suite_b()
@@ -905,5 +948,6 @@ if __name__ == "__main__":
     suite_f()
     suite_g()
     suite_h()
+    suite_i()
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     sys.exit(1 if FAIL else 0)

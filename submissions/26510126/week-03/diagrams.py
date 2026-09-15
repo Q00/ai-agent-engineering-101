@@ -363,6 +363,8 @@ def sequence_from_journal(path, task=None, limit=40) -> str:
     if task is not None:
         recs = [r for r in recs
                 if r["task"] == str(task) or r["task"].startswith(str(task) + ".")]
+        if not recs:
+            return None
     recs = recs[:limit]
     if not recs:
         return "sequenceDiagram\n    Note over A: no messages"
@@ -428,6 +430,17 @@ TITLES = OrderedDict([
         "손으로 그린 이상화가 아니라 저널에서 생성한 것. 대괄호 안이 실제 벡터 시계.")),
     ("sequence-run", ("실제 실행 · 라운드 앞부분",
         "같은 저널에서. 페이즈 전환이 주석으로 들어간다.")),
+    ("scenario-concurrency", ("시나리오 · 동시성 (실제 실행 아님)",
+        "채점 실행의 저널에는 REFUSAL 이 0건이다. 러너가 태스크를 순차 처리하니 "
+        "한 후보가 두 계약에 동시에 묶일 상황이 만들어지지 않는다. capacity-1 과 "
+        "Smith 의 ACCEPTANCE | REFUSAL 쌍은 구현·검증됐으나 측정에는 부하를 지지 "
+        "않는다. 이 그림은 그 경로를 관통하는 오프라인 시나리오에서 생성했다 — "
+        "scenarios.concurrency, 테스트가 단정하는 바로 그 시나리오.")),
+    ("scenario-depth", ("시나리오 · 재귀 (실제 실행 아님)",
+        "분해도 실제 실행에서 한 번도 일어나지 않았다. 기본 읽기 상한에서는 60줄 "
+        "파일 전체를 세 번 읽어 훑을 수 있으니 대체가 분해보다 싸다. 부록 "
+        "ext_tight_reads 가 진짜 분해를 만들면 그 저널이 더 나은 출처이고 이 "
+        "그림은 그것으로 바꿔야 한다.")),
 ])
 
 HEAD = """<!doctype html>
@@ -582,7 +595,17 @@ def build():
     j = newest_journal()
     if j:
         out["sequence-run"] = sequence_from_journal(j)
-        out["sequence-task1"] = sequence_from_journal(j, task=1)
+        one = sequence_from_journal(j, task="1-1")
+        if one:
+            out["sequence-task1"] = one
+
+    # Two paths the graded runs never took, so there is no journal of them to
+    # draw from. The scenarios are regenerated here rather than read off disk:
+    # they are deterministic and need no key, so a fixture cannot go stale
+    # against the code that produced it. Every diagram from them says so.
+    import scenarios
+    for name, (path, _facts) in sorted(scenarios.build_all().items()):
+        out["scenario-" + name] = sequence_from_journal(path, limit=60)
     return out
 
 
