@@ -1,7 +1,7 @@
 # Week 03 — Contract Net with LLM contractors
 
-manager 1명과 LLM contractor 3명으로 Smith(1980)의 공고·입찰·낙찰을 재현하고, 세 조건에서
-배분 품질을 측정했다. 공고 순서(동점 처리)를 통제 변인으로 추가해 두 번 측정했다.
+manager 1명과 LLM contractor 3명으로 Smith(1980)의 공고·입찰·낙찰을 재현했다.
+세 조건에서 배분 품질을 재고, 동점 처리(공고 순서)를 통제 변인으로 추가해 두 번 측정했다.
 
 ## 1. 설정
 
@@ -9,44 +9,45 @@ manager 1명과 LLM contractor 3명으로 Smith(1980)의 공고·입찰·낙찰�
 
 | 항목 | 값 |
 |---|---|
-| provider | OpenAI 호환 (`ANTHROPIC_API_KEY` 미설정 → `model.py:PROVIDER`) |
-| 모델 | `gpt-4o-mini` (`AGENT_MODEL` 미설정 시 기본값) |
-| temperature | **0.7** — 조건당 3회 실행의 변동을 관찰하기 위해 0이 아닌 값을 고정 |
-| 도구 | 없음. contract net은 공고당 모델 호출 1회만 필요하다 |
-| 태스크 | 9개, `tasks.json` (`taskset=ed210c72`). 실행 전 커밋 |
-| 실행 | 조건당 3회 × 3조건 × 2순서 = 18회 (run 28-45) |
+| provider / 모델 | OpenAI 호환 / `gpt-4o-mini` (`model.py`가 환경에서 판정) |
+| temperature | **0.7** — 3회 실행의 변동을 보려면 0이어서는 안 된다 |
+| 도구 | 없음. 공고당 모델 호출 1회뿐이다 |
+| 태스크 | 9개, `taskset=ed210c72`. **실행 전 커밋** |
+| 실행 | 3조건 × 3회 × 2순서 = 18회 (run 28-45) |
 
 ```bash
 pip install openai
 export OPENAI_API_KEY=...            # 또는 ANTHROPIC_API_KEY
 cd submissions/26510118/week-03
-python run.py --runs 3               # Test 1: 고정 순서 (run 28-36)
-python run.py --runs 3 --rotate      # Test 2: 회전 순서 (run 37-45)
+python run.py --runs 3               # Test 1  고정 순서 (run 28-36)
+python run.py --runs 3 --rotate      # Test 2  회전 순서 (run 37-45)
 ```
 
-`results.csv`와 `logs/`는 덮어쓰지 않고 이어 붙는다. 로그 첫 줄에 provider·모델·temperature가,
-둘째 줄에 조건·순서 모드·`taskset` 해시가 기록된다. `taskset`은 `tasks.json`의 SHA-256 앞
-8자리이며, **같은 해시끼리만 비교 가능**하다.
+로그 첫 줄에 `provider=... model=... temperature=...`, 둘째 줄에 조건·순서·`taskset`이 찍힌다.
+`taskset`은 `tasks.json`의 SHA-256 앞 8자리다 — **해시가 같은 행끼리만 비교 가능**하다.
 
-### 태스크 구성
+### 태스크
+
+| gold | 개수 | 예시 |
+|---|---:|---|
+| A (계산) | 2 | `Compute 137 * 249 and return the number.` |
+| B (글쓰기) | 3 | `Rewrite this sentence in plain English for a 10-year-old: ...` |
+| C (코드) | 3 | `Implement a Python function that returns a reversed copy of a list.` |
+| **none** | 1 | `Physically replace the toner cartridge in the third-floor printer ...` |
+
+`gold`는 그 일을 맡아야 하는 contractor다. 마지막 태스크는 **셋 중 누구의 능력에도 맞지 않는다** —
+유찰이 정답이고 어떤 낙찰이든 오배정이다.
+
+8개 중 2개는 **정답이 명확하면서 오답이 매력적인** 형태로 만들었다. `id 7`("두 정수를 곱하는
+파이썬 함수", gold=C)은 곱셈으로, `id 8`("평균이 오해를 부르는 이유를 한 단락으로", gold=B)은
+숫자로 A를 유인한다. 정답이 애매한 태스크는 `gold` 자체를 임의적으로 만들기 때문에 피했다.
+
+**`gold`는 모델에게 가지 않는다.**
 
 ```
-A 계산   2개    "Compute 137 * 249 and return the number."
-B 글쓰기 3개    "Rewrite this sentence in plain English for a 10-year-old: ..."
-C 코드   3개    "Implement a Python function that returns a reversed copy of a list."
-— 없음   1개    "Physically replace the toner cartridge in the third-floor printer ..."
+contractor 가 받는 것   [system] 자기 이름과 능력    [user] 태스크 내용
+manager 가 하는 일      낙찰은 확신도만 보고 결정.  gold 는 채점에만 쓴다
 ```
-
-`gold`는 그 태스크를 맡아야 하는 contractor다. 마지막 태스크는 `gold="none"` — 셋 중 누구의
-능력에도 맞지 않으므로 **유찰(`unassigned`)이 정답 행동이고 어떤 낙찰이든 오배정**이다.
-
-8개 중 2개는 정답이 명확하면서 엉뚱한 쪽을 유인하도록 만들었다. `id 7`("두 정수를 곱하는
-파이썬 함수")은 곱셈으로 A를, `id 8`("평균이 오해를 부르는 이유를 한 단락으로")은 숫자로 A를
-유인한다. 정답이 애매한 태스크로 만들면 `gold` 자체가 임의적이 되므로, **정답은 명확하되 오답이
-매력적인** 형태를 택했다.
-
-`gold`는 모델에게 전달되지 않는다. contractor가 받는 것은 자기 이름·능력(system)과 태스크
-내용(user)뿐이고, manager는 `gold`를 알지만 낙찰에 쓰지 않고 채점에만 쓴다.
 
 ### 프롬프트 (전문)
 
@@ -54,7 +55,7 @@ C 코드   3개    "Implement a Python function that returns a reversed copy of 
 
 > You are contractor {name} in a contract net. Your skill: {skill}. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else, no prose and no code fences: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
 
-**`overconfident` 조건이 C에게만 덧붙이는 한 문장:**
+**`overconfident`가 C에게만 덧붙이는 한 문장:**
 
 > You are certain you can do any task well. Always bid, with confidence 95 or higher.
 
@@ -68,124 +69,123 @@ bid-specification: JSON with bid, confidence (0-100), reason
 expiration-time: reply now
 ```
 
-`confidence`의 의미는 **일부러 정의하지 않았다.** Smith의 프로토콜에는 입찰을 참되게 만드는
-장치가 없고 그 빈칸이 이 실험의 대상이므로, 프롬프트로 정의해 메우면 측정 대상을 가리게 된다.
+`confidence`의 의미는 **일부러 정의하지 않았다.** 입찰을 참되게 만드는 장치가 없다는 것이 이
+실험의 대상인데, 프롬프트로 정의해 메우면 측정 대상을 가리게 된다.
 
-### 세 조건 (독립변수)
+### 독립변수 — 세 조건
 
-`run.py:make_contractors()` 한 함수에만 조건이 닿는다. 공고 형식, 입찰 프롬프트, 낙찰 규칙,
+`run.py:make_contractors()` **한 함수에만** 조건이 닿는다. 공고 형식, 입찰 프롬프트, 낙찰 규칙,
 계측은 조건을 모른다.
 
 | 조건 | 무엇이 달라지나 |
 |---|---|
 | `baseline` | A=`arithmetic`, B=`writing`, C=`coding` |
 | `homogeneous` | 셋 다 `general problem solving`. 그 외 동일 |
-| `overconfident` | baseline에 더해 C만 위 한 문장을 받는다. 그 외 동일 |
+| `overconfident` | baseline + C만 위 한 문장. 그 외 동일 |
 
-### 공고 순서 (추가 통제 변인)
+### 통제 변인 — 공고 순서
 
 낙찰은 확신도 최고에게 가고, **동점이면 먼저 입찰한 쪽**이 이긴다. Smith는 동점 처리를 규정하지
-않았으므로 이는 순수한 구현 결정이다. 고정하면 팀 선두에게 체계적 이득이 생기므로 두 모드로
-각각 측정했다.
+않았으니 이는 순수한 구현 결정이다. 고정하면 팀 선두에게 체계적 이득이 생기므로 두 모드를 각각
+측정했다.
 
 ```
-Test 1  고정    모든 태스크에서 A → B → C
-Test 2  회전    태스크마다 한 칸 이동. 9태스크라 세 명이 각각 3번씩 선두
+Test 1  고정   모든 태스크에서 A → B → C
+Test 2  회전   태스크마다 한 칸 이동 (9태스크 → 세 명이 각각 3번 선두)
 ```
 
 ### 지표
 
 ```
-correct      gold 에게 간 태스크 수       ↑ 좋음.  최대 8 (태스크 9는 정답 담당자가 없음)
-misawards    gold 가 아닌 곳에 간 수      ↓ 좋음
-unassigned   아무도 입찰하지 않은 수       태스크 9는 여기가 정답
-messages     공고 3 + 입찰한 수 + 낙찰 1   ↓ 좋음.  태스크당 3~7
+correct      gold 에게 간 수           ↑ 좋음.  최대 8 — 태스크 9는 정답 담당자가 없다
+misawards    gold 아닌 곳에 간 수       ↓ 좋음
+unassigned   아무도 입찰 안 한 수       태스크 9는 여기가 정답
+messages     공고 3 + 입찰 수 + 낙찰 1   ↓ 좋음.  태스크당 3~7
 ```
 
-실행마다 `correct + misawards + unassigned = 9`. `parse_fails`(JSON 파싱 실패)는
-`results.csv`에 열이 없으므로 `note`에 기록했다 — 18회 전부 0이었다.
+실행마다 `correct + misawards + unassigned = 9`.
+`parse_fails`는 `results.csv`에 열이 없어 `note`에 적었다 — **18회 전부 0**이다.
 
 ### 한계
 
-1. **`gold`는 외부에서 부여한 기준이다.** Smith에게는 "정답 담당자"가 없고 자격 조건을 만족하면
-   정당한 입찰자다. `correct`는 배분 품질을 재기 위해 우리가 밖에서 붙인 척도다.
+1. **`gold`는 외부에서 붙인 기준이다.** Smith에게는 정답 담당자가 없고, 자격 조건을 만족하면
+   정당한 입찰자다.
 2. **표본이 조건·순서당 3회다.** `homogeneous` 고정에서 correct가 2·1·4로 흔들렸다. 추세는
-   읽을 수 있지만 조건 간 소수점 차이를 주장할 크기는 아니다.
-3. **파싱 실패가 0건이라 그 실패 모드를 관찰하지 못했다.** `parse_bid`가 코드 펜스와 앞선 산문을
-   벗겨내는 관대한 파서이므로, 몇 건이 그렇게 구제됐는지는 알 수 없다(성공한 파싱의 원문을
-   로그에 남기지 않았다).
-4. **이전 태스크 문구로 돌린 18회(run 10-27)가 `results.csv`에 함께 있다.** `taskset` 해시가
-   없는 행이 그것이다. 4부에서 다루는 교란 발견의 근거이며, 본 분석에는 포함하지 않았다.
+   읽히지만 소수점 차이를 주장할 크기는 아니다.
+3. **파싱 실패를 관찰하지 못했다.** 0건이었고, 관대한 파서가 몇 건을 구제했는지는 알 수 없다
+   (성공한 파싱의 원문을 로그에 남기지 않았다).
+4. **구 태스크 문구로 돌린 18회(run 10-27)가 `results.csv`에 함께 있다.** `taskset` 해시가
+   없는 행이 그것이며, 본 분석에서는 제외했다.
 
 ## 2. 측정 결과
 
-### Test 1 — 고정 순서 (run 28-36)
-
-| run | condition | correct | misawards | unassigned | messages |
-|---:|---|---:|---:|---:|---:|
-| 28 | baseline | 7 | 1 | 1 | 51 |
-| 29 | baseline | 5 | 3 | 1 | 51 |
-| 30 | baseline | 7 | 1 | 1 | 51 |
-| 31 | homogeneous | 2 | 7 | 0 | 63 |
-| 32 | homogeneous | 1 | 8 | 0 | 63 |
-| 33 | homogeneous | 4 | 5 | 0 | 63 |
-| 34 | overconfident | 7 | 1 | 1 | 52 |
-| 35 | overconfident | 5 | 3 | 1 | 52 |
-| 36 | overconfident | 5 | 3 | 1 | 53 |
+### 조건별 요약 (고정 → 회전)
 
 | 조건 | correct | misawards | unassigned | messages |
-|---|---:|---:|---:|---:|
-| baseline | **6.33**/8 | 1.67 | 1.00 | 51.0 |
-| homogeneous | 2.33/8 | **6.67** | 0.00 | **63.0** |
-| overconfident | 5.67/8 | 2.33 | 1.00 | 52.3 |
+|---|---|---|---|---|
+| baseline | 6.33 → **6.67** | 1.67 → 1.33 | 1.00 → 1.00 | 51.0 → 50.3 |
+| homogeneous | **2.33 → 3.67** | 6.67 → 5.33 | 0.00 → 0.00 | 63.0 → 62.7 |
+| overconfident | **5.67 → 4.00** | 2.33 → 4.00 | 1.00 → 1.00 | 52.3 → 52.3 |
 
-### Test 2 — 회전 순서 (run 37-45)
+`messages`는 거의 움직이지 않았는데 `correct`는 조건마다 다른 방향으로 움직였다.
 
-| run | condition | correct | misawards | unassigned | messages |
-|---:|---|---:|---:|---:|---:|
-| 37 | baseline | 6 | 2 | 1 | 51 |
-| 38 | baseline | 7 | 1 | 1 | 50 |
-| 39 | baseline | 7 | 1 | 1 | 50 |
-| 40 | homogeneous | 3 | 6 | 0 | 62 |
-| 41 | homogeneous | 3 | 6 | 0 | 63 |
-| 42 | homogeneous | 5 | 4 | 0 | 63 |
-| 43 | overconfident | 4 | 4 | 1 | 52 |
-| 44 | overconfident | 4 | 4 | 1 | 53 |
-| 45 | overconfident | 4 | 4 | 1 | 52 |
+### 실행별 원자료 (`results.csv`, run 28-45)
 
-| 조건 | correct | misawards | unassigned | messages |
-|---|---:|---:|---:|---:|
-| baseline | **6.67**/8 | 1.33 | 1.00 | 50.3 |
-| homogeneous | 3.67/8 | 5.33 | 0.00 | **62.7** |
-| overconfident | 4.00/8 | 4.00 | 1.00 | 52.3 |
+| run | 순서 | condition | correct | misawards | unassigned | messages |
+|---:|---|---|---:|---:|---:|---:|
+| 28 | 고정 | baseline | 7 | 1 | 1 | 51 |
+| 29 | 고정 | baseline | 5 | 3 | 1 | 51 |
+| 30 | 고정 | baseline | 7 | 1 | 1 | 51 |
+| 31 | 고정 | homogeneous | 2 | 7 | 0 | 63 |
+| 32 | 고정 | homogeneous | 1 | 8 | 0 | 63 |
+| 33 | 고정 | homogeneous | 4 | 5 | 0 | 63 |
+| 34 | 고정 | overconfident | 7 | 1 | 1 | 52 |
+| 35 | 고정 | overconfident | 5 | 3 | 1 | 52 |
+| 36 | 고정 | overconfident | 5 | 3 | 1 | 53 |
+| 37 | 회전 | baseline | 6 | 2 | 1 | 51 |
+| 38 | 회전 | baseline | 7 | 1 | 1 | 50 |
+| 39 | 회전 | baseline | 7 | 1 | 1 | 50 |
+| 40 | 회전 | homogeneous | 3 | 6 | 0 | 62 |
+| 41 | 회전 | homogeneous | 3 | 6 | 0 | 63 |
+| 42 | 회전 | homogeneous | 5 | 4 | 0 | 63 |
+| 43 | 회전 | overconfident | 4 | 4 | 1 | 52 |
+| 44 | 회전 | overconfident | 4 | 4 | 1 | 53 |
+| 45 | 회전 | overconfident | 4 | 4 | 1 | 52 |
 
 ### 로그에서 집계한 보조 지표
 
-| | 낙찰 분포 (오배정) | 최고확신도 동점 | 태스크 9 |
-|---|---|---|---|
-| baseline 고정 | A 10(4) · B 8(0) · C 6(1) | 4/24 | 유찰 |
-| homogeneous 고정 | **A 19(15)** · B 4(2) · C 4(3) | **19/27 (70%)** | 낙찰됨 |
-| overconfident 고정 | A 8(2) · B 4(0) · **C 12(5)** | 12/24 | 유찰 |
-| baseline 회전 | A 8(2) · B 11(2) · C 5(0) | 9/24 | 유찰 |
-| homogeneous 회전 | A 13(8) · B 6(2) · C 8(6) | 16/27 (59%) | 낙찰됨 |
-| overconfident 회전 | A 5(2) · B 2(0) · **C 17(10)** | 11/24 | 유찰 |
+`results.csv`의 네 열로는 "왜 그 숫자가 나왔는지"를 알 수 없어 로그에서 세 가지를 더 셌다.
 
-동점 건수 중 **먼저 입찰한 쪽이 이긴 비율은 6개 블록 모두 100%** 다(구현상 당연하지만, 동점이
-얼마나 자주 발생했는지가 조건마다 크게 다르다).
+| 블록 | 낙찰 분포 (괄호는 오배정) | 최고확신도 동점 | 태스크 9 |
+|---|---|---|---|
+| baseline 고정 | A 10(4) · B 8(0) · C 6(1) | 4/24 | 유찰 ✅ |
+| homogeneous 고정 | **A 19(15)** · B 4(2) · C 4(3) | **19/27 (70%)** | 낙찰 ❌ |
+| overconfident 고정 | A 8(2) · B 4(0) · **C 12(5)** | 12/24 | 유찰 ✅ |
+| baseline 회전 | A 8(2) · B 11(2) · C 5(0) | 9/24 | 유찰 ✅ |
+| homogeneous 회전 | A 13(8) · B 6(2) · C 8(6) | 16/27 (59%) | 낙찰 ❌ |
+| overconfident 회전 | A 5(2) · B 2(0) · **C 17(10)** | 11/24 | 유찰 ✅ |
+
+동점이 발생했을 때 **먼저 입찰한 쪽이 이긴 비율은 여섯 블록 모두 100%** 다. 구현상 당연하지만,
+동점이 얼마나 자주 생기는지는 조건에 따라 4/24에서 19/27까지 벌어진다.
 
 ## 3. Smith 1980 과의 비교
 
 | 항목 | Smith 1980 (분산 센싱) | 이번 구현 |
 |---|---|---|
-| **참여자** | 넓은 지역에 흩어진 센서 노드. 협력적이며 각자 자기 능력만 안다. 중앙 배정자가 없고 **역할이 일마다 바뀐다** — 낙찰받은 쪽이 일을 쪼개 다시 manager가 된다 | manager 1 + LLM contractor 3 (A 계산 / B 글쓰기 / C 코드). **역할 고정.** contractor는 manager가 되지 않고 재하청도 없다 |
-| **입찰을 만드는 방식** | `node abstraction` — 위도·경도, 센서마다 이름과 종류. manager가 입찰서 항목을 미리 지정하고 그 항목만 보고 고른다 | LLM이 공고를 읽고 `{"bid", "confidence", "reason"}` JSON을 생성한다. 항목은 manager가 지정하지만 값은 **모델의 자기 평가**다 |
-| **입찰이 참인지 보장하는 것** | 위치와 센서 종류는 **검증 가능한 물리적 사실**이다. 게다가 Smith는 입찰 근거를 규정하지 않았고 협력적 노드를 전제했으므로 보장 장치가 필요하지 않았다 | **없다.** 프롬프트 한 문장으로 C가 확신도를 95에 고정해 12~17건을 가져갔다. `bid=False confidence=95`처럼 두 필드가 어긋나도 프로토콜은 감지하지 못한다 |
-| **잘된 배정의 기준** | 구역 A에 센서를 가진 노드가 그 구역 신호를 맡는 것. **자격 조건으로 판정 가능**하다 | `gold`와 일치(`correct`). Smith에는 없는 개념이며, 배분 품질을 재기 위해 **사람이 미리 정해 커밋**해야 성립한다 |
-| **협상 비용** | 공고·입찰·낙찰 메시지 수. Smith는 **자격 조건과 `directed award`** 로 쓸데없는 메시지와 입찰 처리 부담을 줄였다 | `messages` 50~63. 능력 설명이 모호해지면 전원 입찰로 최대치(63)에 도달한다. 자격 필터에 해당하는 것이 **프롬프트 한 문장**("Bid only if the task falls inside your skill")뿐이고, 실제로 지켜지지 않았다 |
-| **실패하는 방식** | 입찰이 없어 유찰되거나 메시지가 폭주한다 | ① 과신 한 문장으로 한 contractor가 싹쓸이 ② 능력 모호화로 확신도가 구분력을 잃고 동점이 70%까지 올라 **공고 순서가 승자를 결정** ③ 물리적으로 불가능한 일을 모호한 능력이 수용 ④ JSON 파싱 실패(이번 18회에서는 0건) |
+| **참여자** | 흩어진 센서 노드. 협력적이고 각자 자기 능력만 안다. 중앙 배정자가 없고 **역할이 일마다 바뀐다** | manager 1 + LLM contractor 3. **역할 고정**, 재하청 없음 |
+| **입찰을 만드는 방식** | `node abstraction` — 위도·경도, 센서 이름과 종류. manager가 항목을 지정하고 그 항목만 보고 고른다 | 항목은 manager가 지정하지만 값은 **모델의 자기 평가**다 (`bid`, `confidence`, `reason`) |
+| **입찰이 참인지 보장하는 것** | 위치·센서 종류는 **검증 가능한 사실**이다. Smith는 입찰 근거를 규정하지 않았고, 협력적 노드를 전제했으므로 보장 장치가 필요 없었다 | **없다.** 프롬프트 한 문장으로 C가 95를 고정해 12~17건을 가져갔다. `bid=False confidence=95`처럼 두 필드가 어긋나도 감지되지 않는다 |
+| **잘된 배정의 기준** | 구역 A에 센서를 가진 노드가 그 구역을 맡는 것 — **자격 조건으로 판정 가능** | `gold` 일치. Smith에 없는 개념이며 **사람이 미리 정해 커밋**해야 성립한다 |
+| **협상 비용** | 메시지 수. Smith는 **자격 조건과 `directed award`** 로 이를 줄였다 | `messages` 50~63. 자격 필터가 프롬프트 한 문장뿐이고, 실제로 지켜지지 않았다 |
+| **실패하는 방식** | 유찰, 메시지 폭주 | ① 과신 한 문장으로 싹쓸이 ② 능력 모호화 → 확신도 구분력 상실 → 동점 70% → **순서가 승자 결정** ③ 물리적 불가능을 모호한 능력이 수용 ④ 파싱 실패(0건) |
 
-가장 큰 차이는 **입찰의 성질**이다. Smith의 입찰은 "위도 37.5, 음향 센서 보유"처럼 참·거짓을
-확인할 수 있는 사실이고, 이번 구현의 입찰은 "confidence 95"라는 확인 불가능한 자기 주장이다.
+가장 큰 차이는 **입찰의 성질**이다.
+
+```
+Smith   "위도 37.5, 음향 센서 보유"   →  참·거짓을 확인할 수 있는 사실
+이번    "confidence 95"             →  확인할 방법이 없는 자기 주장
+```
+
 Smith가 입찰 근거를 규정하지 않은 것은 협력적 노드를 전제했기 때문인데, contractor를 LLM으로
 바꾸면 그 빈칸이 곧 취약점이 된다.
 
