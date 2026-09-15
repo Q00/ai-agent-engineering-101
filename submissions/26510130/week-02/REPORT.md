@@ -80,7 +80,9 @@ gemini-3.5-flash-lite it lost 1–6 while Plan-then-Execute went 6–6, and it l
 the token comparison on t1 as well. Every one of the five ReAct failures ends
 the same way: seven `count_pattern` calls, one per hour, then `MAX_STEPS
 reached: incomplete` — the model enumerates hours one at a time and the
-iteration cap cuts it off before it can compare them. The one ReAct success on
+iteration cap cuts it off before it can compare them. The iteration column
+tells it without opening a log: the five failures are 8, 8, 8, 8, 8 against a
+cap of 8; the success is 2. The one ReAct success on
 that model (`t2-react-21`, 2 iterations) made **zero** `count_pattern` calls: it
 read the file once and reasoned over it. The harness did not choose between
 those two strategies; the model did, differently on different runs, and only
@@ -130,8 +132,9 @@ which means raising `max_steps` until the cap stops binding, and that is a
 change to axis 3, so it would have to be its own experiment.
 
 The nemotron replication of t2 would have helped here, and it is the block the
-rate limit destroyed: plan_exec issues 11–13 model calls per run against
-ReAct's 2–3, so the harness with the higher iteration count exhausted a shared
+rate limit destroyed: plan_exec issues 11 model calls per run on that model
+against ReAct's 2 in 6 of its 7 runs — 6–12 against 2–8 across both models —
+so the harness with the higher iteration count exhausted a shared
 daily quota and took its own comparison down with it. Worth noting what that
 does and does not cost: the runs the assignment asks for — the six starter runs
 on `TASK.md` — are complete for both models, and the missing cell is the second
@@ -179,8 +182,12 @@ answered "retry in 53.8s" twice in a row, which is why pacing was added.
 
 **What reproduces and what does not.** The direction reproduces: on
 gemini-3.5-flash-lite plan_exec beat ReAct on success in both tasks, and the
-`MAX_STEPS`-after-per-hour-enumeration failure appeared on **both** models
-(5 times on gemini, once on nemotron at `t1-react-02`, which stopped at 13:00).
+per-hour-enumeration failure appeared on **both** models — 5 times on gemini,
+once on nemotron (`t1-react-02`, which had reached 13:00). The strategy
+replicates; the way it ends does not. On gemini all five hit the cap and
+returned `MAX_STEPS reached: incomplete`; the nemotron run stopped one
+iteration short of it (7 of 8) by returning an empty answer with no tool call,
+which `judge()` scored X. Same trap, two exits.
 Individual runs do not: `temperature` is left at the provider default here, and
 week-01 showed that pinning it to 0 did not stabilise the tool path either.
 Under ReAct the same model on the same task took 2 iterations on one run and
