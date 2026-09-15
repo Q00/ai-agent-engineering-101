@@ -19,7 +19,7 @@ be measured with this tool set.
 | 5. Human intervention | `IRREVERSIBLE` set + `ask_human()` | no mechanism at all | **Not measurable** |
 
 Axis 5 is worth stating plainly rather than reporting a column of zeros without
-comment: `interventions` is 0 in all 27 runs because `IRREVERSIBLE` is empty,
+comment: `interventions` is 0 in all 29 runs because `IRREVERSIBLE` is empty,
 and it is empty because every tool here is read-only. Producing a non-zero
 number would mean adding a tool that writes or deletes — which would break
 "same tools for both variants" and turn the A/B into a tool comparison. The
@@ -43,7 +43,7 @@ confident wrong answer. Both task files were committed before any run.
 
 ## 2. Measurements
 
-27 runs. `results.csv` is the source; averages below exclude runs with no
+29 runs. `results.csv` is the source; averages below exclude runs with no
 meter (crashes).
 
 | Model | Task | Harness | n | O | X | tokens avg | iters avg |
@@ -56,18 +56,21 @@ meter (crashes).
 | nemotron-3.5-lightning:free | t1 | plan_exec | 3 | 3 | 0 | 43,558 | 11 |
 | nemotron-3.5-lightning:free | t2 | react | 3 | 3 | 0 | 4,324 | 2 |
 | nemotron-3.5-lightning:free | t2 | plan_exec | 3 | 0 | 3 | — | — |
-| gemini-2.5-flash | t2 | react | 2 | 0 | 2 | — | — |
+| gemini-2.5-flash | t2 | react | 3 | 0 | 3 | — | — |
+| gemini-2.5-flash | t2 | plan_exec | 1 | 0 | 1 | — | — |
 
 Two blocks have no usable numbers, and neither is a harness result. The
 nemotron t2 plan_exec cell is three 429 crashes: OpenRouter's free tier allows
 50 requests a day, and plan_exec had already spent 33 of the session's 52 —
 63% of the requests for 23% of the runs — so the cell that my hypothesis was
-about is the one the quota ate. The `gemini-2.5-flash` rows are two crash rows
-from a session I interrupted after discovering that model's free tier is 20
-requests **per day**, not per minute. Both are kept because deleting a failed
-run would be editing the record, and the first one is itself a finding (§3).
+about is the one the quota ate. The four `gemini-2.5-flash` rows are crashes from a
+session I interrupted: two 429s after discovering that model's free tier is 20
+requests **per day**, not per minute, and two 503s ("this model is currently
+experiencing high demand") which are not a quota at all. All are kept because
+deleting a failed run would be editing the record, and the quota pair is itself
+a finding (§3).
 
-Interventions are 0 in all 27 runs (§1).
+Interventions are 0 in all 29 runs (§1).
 
 ## 3. Interpretation
 
@@ -89,6 +92,20 @@ step decomposition once, before any tool runs, and the plans it produced
 grouped the counting into a single step. The axis usually described as
 Plan-then-Execute's weakness, its rigidity, is what protected it; flexibility is
 only an asset for a model that can exercise it.
+
+**The success criterion is weaker than it looks, and the one ReAct success
+shows it.** `t2-react-21` is the single ReAct run that solved the two-hop task,
+and it got the first hop's arithmetic wrong: "An hour with the most ERROR
+lines: 14:00 (with 5 ERROR lines)" — there are 6. It scored O because `judge()`
+tests whether `upstream timeout` appears in the answer, so it checks hop 2 and
+never checks hop 1. The run reached the right final string through a miscount
+that happened not to change which hour won. I am not loosening or tightening
+the criterion after seeing results, which is the rule I set in `TASK2.md`, so
+the row stands as O; but "6 of 6" for plan_exec and "1 of 6" for ReAct are
+counts of answers containing the expected string, not of fully correct
+reasoning. A criterion that validated both hops — requiring the hour *and* the
+message — would have been the better design, and picking one string per task is
+what made it easy to miss.
 
 **Which harness is more expensive is not a property of the harness.** On
 nemotron, plan_exec cost 6× ReAct's tokens (43,558 vs 7,272) and 11 iterations
@@ -168,6 +185,9 @@ trend, not the row.
   requests *per day*. Its two crash rows stay in `results.csv`.
 - **Reactive-retry-only** for rate limits, after watching it burn two 55-second
   waits in a row against a per-minute window.
+- **A single-string success criterion**, in hindsight. Keeping it was the
+  right call once runs existed (changing it after seeing results is exactly
+  what `TASK2.md` forbids), but `expected:` should have covered both hops.
 - **A WARN-count version of t2** ("how many WARN lines in that hour"): the
   answer is 0, and `judge()`'s substring match would pass almost any answer
   containing a zero. The criterion has to be a string the wrong answer cannot
