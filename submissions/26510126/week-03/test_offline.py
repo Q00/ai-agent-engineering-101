@@ -214,9 +214,156 @@ def suite_c():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+# ------------------------------------------------------------------ suite D
+# The message layer. Delivery order, generation order, concurrency, and the
+# causal cut that keeps a trajectory from reading the future.
+
+import random
+import tempfile as _tf
+from protocol import (Endpoint, Journal, bus, trajectory,
+                      ANNOUNCE, BID, AWARD, ACCEPTANCE, REFUSAL, REPORT)
+
+MEMBERS = ("P1", "P2", "P3", "P4")
+ROLES_1 = {1: {"P1": "manager", "P2": "contractor",
+               "P3": "contractor", "P4": "contractor"}}
+ROLES_2 = {1: {"P1": "manager", "P2": "contractor",
+               "P3": "contractor", "P4": "contractor"},
+           2: {"P4": "manager", "P1": "contractor",
+               "P2": "contractor", "P3": "contractor"}}
+
+
+def _net(roles):
+    j = Journal(os.path.join(_tf.mkdtemp(prefix="w03-proto-"), "messages.jsonl"))
+    eps = {n: Endpoint(n, MEMBERS, journal=j) for n in MEMBERS}
+    for task, per in roles.items():
+        for name, role in per.items():
+            eps[name].assign_role(task, role)
+    return eps, bus(eps), j
+
+
+def suite_d():
+    print("\n-- D. protocol: causality, generation order, concurrency")
+
+    # A message that was never generated in a legal order must be refused at
+    # the source. The mailbox fixes arrival order and says nothing about this.
+    eps, _, _ = _net(ROLES_1)
+    check("award before announcing is refused",
+          eps["P1"].send(AWARD, "P2", 1, {}), None)
+    check("the refusal is recorded with a reason",
+          eps["P1"].violations[0]["reason"],
+          "cannot award a task this endpoint never announced")
+    check("bidding before the announcement arrives is refused",
+          eps["P2"].send(BID, "P1", 1, {"bid": True}), None)
+    check("reporting without having accepted is refused",
+          eps["P2"].send(REPORT, "P1", 1, {}), None)
+
+    # Full legal sequence, and the envelope/content split.
+    eps, send, j = _net(ROLES_1)
+    send(eps["P1"].send(ANNOUNCE, ("P2", "P3", "P4"), 1, {"desc": "x"}))
+    check("announcing twice is refused",
+          eps["P1"].send(ANNOUNCE, ("P2",), 1, {}), None)
+    send(eps["P2"].send(BID, "P1", 1, {"bid": True, "confidence": 92}))
+    send(eps["P3"].send(BID, "P1", 1, {"bid": True, "confidence": 80}))
+    send(eps["P4"].send(BID, "P1", 1, {"bid": False, "confidence": 0}))
+    check("the manager sees only those who bid yes",
+          eps["P1"].bidders(1), ["P2", "P3"])
+    check("a rival's bid is not readable",
+          [m.type for m in eps["P2"].mailbox.delivered], [ANNOUNCE])
+    check("but its clock accounts for that send",
+          eps["P2"].clock.v["P3"], 1)
+    send(eps["P1"].send(AWARD, "P2", 1, {}))
+    check("so the award is not held back",
+          [m.type for m in eps["P2"].mailbox.delivered], [ANNOUNCE, AWARD])
+    check("awarding a candidate that did not bid is refused",
+          eps["P1"].send(AWARD, "P4", 1, {}), None)
+    check("re-awarding before an answer is refused",
+          eps["P1"].send(AWARD, "P3", 1, {}), None)
+    send(eps["P2"].send(ACCEPTANCE, "P1", 1, {}))
+    check("accepting commits the candidate", eps["P2"].committed, 1)
+    send(eps["P2"].send(REPORT, "P1", 1, {"answer": "14:00"}))
+    check("reporting releases it", eps["P2"].committed, None)
+    check("nothing is left held",
+          sum(e.mailbox.pending() for e in eps.values()), 0)
+    check("journal holds every message", len(j.records()), 7)
+
+    # Two tasks at once. Capacity is one contract, so Smith's REFUSAL is what
+    # a committed candidate answers with, and the manager falls to the next bid.
+    eps, send, _ = _net(ROLES_2)
+    send(eps["P1"].send(ANNOUNCE, ("P2", "P3", "P4"), 1, {}))
+    send(eps["P4"].send(ANNOUNCE, ("P1", "P2", "P3"), 2, {}))
+    for n in ("P2", "P3"):
+        send(eps[n].send(BID, "P1", 1, {"bid": True, "confidence": 95}))
+        send(eps[n].send(BID, "P4", 2, {"bid": True, "confidence": 95}))
+    send(eps["P1"].send(AWARD, "P2", 1, {}))
+    send(eps["P2"].send(ACCEPTANCE, "P1", 1, {}))
+    aw2 = eps["P4"].send(AWARD, "P2", 2, {})
+    send(aw2)
+    check("a second manager may still award the same candidate",
+          aw2.type, AWARD)
+    check("but a committed candidate cannot accept",
+          eps["P2"].send(ACCEPTANCE, "P4", 2, {}), None)
+    ref = eps["P2"].send(REFUSAL, "P4", 2, {"justification": "committed"})
+    send(ref)
+    check("it refuses instead", ref.type, REFUSAL)
+    aw3 = eps["P4"].send(AWARD, "P3", 2, {})
+    send(aw3)
+    check("and the manager falls to the next bidder", aw3.type, AWARD)
+    check("no message stranded",
+          sum(e.mailbox.pending() for e in eps.values()), 0)
+
+    # Delivery order must not change the outcome.
+    def one_run(seed=None):
+        j2 = Journal(os.path.join(_tf.mkdtemp(prefix="w03-shuf-"), "m.jsonl"))
+        e = {n: Endpoint(n, MEMBERS, journal=j2) for n in MEMBERS}
+        for name, role in ROLES_1[1].items():
+            e[name].assign_role(1, role)
+        box = []
+        put = lambda m: box.append(m) if m is not None else None
+        def flush():
+            if seed is not None:
+                random.Random(seed).shuffle(box)
+            while box:
+                m = box.pop(0)
+                for ep in e.values():
+                    ep.deliver(m)
+        put(e["P1"].send(ANNOUNCE, ("P2", "P3", "P4"), 1, {})); flush()
+        put(e["P2"].send(BID, "P1", 1, {"bid": True, "confidence": 90}))
+        put(e["P3"].send(BID, "P1", 1, {"bid": True, "confidence": 80})); flush()
+        put(e["P1"].send(AWARD, "P2", 1, {})); flush()
+        put(e["P2"].send(ACCEPTANCE, "P1", 1, {})); flush()
+        put(e["P2"].send(REPORT, "P1", 1, {"answer": "14:00"})); flush()
+        return ([(r["type"], r["frm"]) for r in j2.records()],
+                sum(x.mailbox.pending() for x in e.values()))
+
+    base = one_run(None)
+    for seed in (1, 7, 42, 99):
+        check(f"shuffled delivery, seed {seed}, same journal",
+              one_run(seed), base)
+
+    # The trajectory a manager reads must stop at its decision.
+    eps, send, j = _net(ROLES_1)
+    send(eps["P1"].send(ANNOUNCE, ("P2",), 1, {}))
+    send(eps["P2"].send(BID, "P1", 1, {"bid": True, "confidence": 90}))
+    send(eps["P1"].send(AWARD, "P2", 1, {}))
+    cut = eps["P1"].decision_cut()
+    send(eps["P2"].send(ACCEPTANCE, "P1", 1, {}))
+    send(eps["P2"].send(REPORT, "P1", 1, {"answer": "14:00"}))
+    recs = j.records()
+    check("uncut, the report is visible",
+          trajectory(recs, "P2", members=MEMBERS)["reports"], 1)
+    check("cut at the decision, it is not",
+          trajectory(recs, "P2", before=cut, members=MEMBERS)["reports"], 0)
+    check("what preceded the decision stays visible",
+          trajectory(recs, "P2", before=cut, members=MEMBERS)["bids"], 1)
+    check("and the answer never enters a trajectory",
+          "14:00" in str(trajectory(recs, "P2", before=cut, members=MEMBERS)),
+          False)
+
+
 if __name__ == "__main__":
     suite_a()
     suite_b()
     suite_c()
+    suite_d()
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     sys.exit(1 if FAIL else 0)
