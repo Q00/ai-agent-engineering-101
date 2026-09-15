@@ -15,6 +15,13 @@ python3 run.py --all --runs 3
 
 첫 명령은 `results.csv`에 기록하지 않는 확인용 실행이다. 두 번째 명령은 제출용 9회를 실행한다. 실행기는 저장소 루트의 `.env`에서 OpenRouter 키를 읽지만 키나 `.env`를 커밋하지 않는다.
 
+OpenRouter 무료 모델은 계정 상태에 따라 일일 호출 수가 작을 수 있다. HTTP 429가 발생하면 해당 실패 로그와 결과 행을 남기고 나머지 실행을 멈춘다. 한도가 갱신된 뒤 부족한 조건만 이어서 실행한다.
+
+```bash
+python3 run.py --condition baseline --runs 1
+python3 run.py --condition homogeneous --runs 2
+```
+
 ## 온톨로지 확장
 
 `run_extended.py`는 필수 세 조건에 영향을 주지 않는 별도 실험이다. `ontology_seed.json`은 정보를 다음 세 층으로 나눈다.

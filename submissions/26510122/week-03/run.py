@@ -111,7 +111,7 @@ def execute_run(
     temperature: float,
     smoke: bool,
     limit: int | None = None,
-) -> int:
+) -> str:
     run_id = new_run_id(condition)
     log_dir = ROOT / ("smoke" if smoke else "logs")
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -139,17 +139,17 @@ def execute_run(
             metrics = run_contract_net(tasks, condition, client, emit)
             row = {"run": run_id, "condition": condition, **metrics, "note": ""}
             emit("summary", **row, llm_calls=client.calls)
-            failed = 0
+            outcome = "ok"
         except Exception as exc:
             row = dict.fromkeys(RESULT_HEADER, "")
             row.update(run=run_id, condition=condition, note=type(exc).__name__)
             status = exc.code if isinstance(exc, urllib.error.HTTPError) else None
             emit("crash", **row, http_status=status, llm_calls=client.calls if client else 0)
-            failed = 1
+            outcome = "rate_limited" if status == 429 else "failed"
 
     if not smoke:
         append_result(result_path, row)
-    return failed
+    return outcome
 
 
 def main() -> int:
@@ -178,9 +178,13 @@ def main() -> int:
     failures = 0
     for condition in conditions:
         for _ in range(args.runs):
-            failures += execute_run(
+            outcome = execute_run(
                 condition, args.model, args.temperature, args.smoke, args.limit
             )
+            if outcome == "rate_limited":
+                print("OpenRouter rate limit reached; stopping remaining runs.")
+                return 1
+            failures += int(outcome != "ok")
     return int(failures > 0)
 
 
