@@ -1,8 +1,8 @@
 """Week 02 starter — run the A/B experiment and record results.csv.
 
-Usage: python run_ab.py [--runs 3]
+Usage: python run_ab.py [--runs 3] [--task TASK.md] [--label t1]
 
-Reads the task and the success criterion from TASK.md, runs each harness
+Reads the task and the success criterion from --task, runs each harness
 --runs times, judges every run, appends one line per run to results.csv,
 and saves each run's console output under logs/. Failed runs are kept:
 they are data.
@@ -38,9 +38,17 @@ def judge(answer: str, expected: str) -> bool:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=3)
+    # Task 2 lives in TASK2.md and is run with the same harnesses, tools and
+    # model. --label tags the note column so results.csv stays one table with
+    # the header CI requires, instead of a second file.
+    ap.add_argument("--task", default="TASK.md")
+    ap.add_argument("--label", default=None,
+                    help="tag written into the note column (default: t1 for "
+                         "TASK.md, t2 for TASK2.md)")
     args = ap.parse_args()
 
-    task, expected = read_task()
+    label = args.label or ("t1" if args.task == "TASK.md" else "t2")
+    task, expected = read_task(args.task)
     Path("logs").mkdir(exist_ok=True)
     new_file = not Path("results.csv").exists()
     run_no = 0
@@ -61,22 +69,24 @@ def main():
                     print(msg)
                     _lines.append(str(msg))
 
+                log(f"[task] {label}: {task}")
                 t0 = time.time()
-                note = ""
+                note = label
                 try:
                     out = fn(task, log=log)
                     answer, meter = out[0], out[1]
                     if name == "plan_exec":
-                        note = f"replans={out[2]}"
+                        note = f"{label} replans={out[2]}"
                 except Exception as e:            # a crash is a failed run, not a lost run
-                    answer, meter, note = "", None, f"crash: {type(e).__name__}: {e}"
+                    answer, meter = "", None
+                    note = f"{label} crash: {type(e).__name__}: {e}"
                     log(note)
                 success = judge(answer, expected)
                 log(f"[final] {answer.strip()[:300]}")
                 log(f"[judge] expected={expected!r} -> {'O' if success else 'X'} "
                     f"({time.time() - t0:.1f}s)")
 
-                Path("logs", f"{name}-{run_no:02d}.txt").write_text(
+                Path("logs", f"{label}-{name}-{run_no:02d}.txt").write_text(
                     "\n".join(lines) + "\n", encoding="utf-8")
                 w.writerow([run_no, name, "O" if success else "X",
                             meter.tokens if meter else "",
