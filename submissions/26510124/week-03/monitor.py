@@ -27,6 +27,22 @@ class Profile:
     recent_parse_fails: int
     token_history_status: str
 
+    def __post_init__(self) -> None:
+        if self.last_task_tokens is not None and (
+            type(self.last_task_tokens) is not int or self.last_task_tokens < 0
+        ):
+            raise ValueError("last_task_tokens must be a non-negative integer or null")
+        if self.token_history_status not in {
+            "measured",
+            "no_history",
+            "usage_unavailable",
+        }:
+            raise ValueError("invalid token_history_status")
+        if self.token_history_status == "measured" and self.last_task_tokens is None:
+            raise ValueError("measured token history requires a numeric value")
+        if self.token_history_status != "measured" and self.last_task_tokens is not None:
+            raise ValueError("unmeasured token history must use null")
+
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
 
