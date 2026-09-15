@@ -13,6 +13,7 @@ with blank counts and the error in `note`.
 """
 import argparse
 import csv
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -50,7 +51,11 @@ def main():
     args = ap.parse_args()
     order_mode = "rotate" if args.rotate else "fixed"
 
-    tasks = json.loads(Path("tasks.json").read_text(encoding="utf-8"))
+    raw_tasks = Path("tasks.json").read_text(encoding="utf-8")
+    tasks = json.loads(raw_tasks)
+    # Fingerprint the task set. Runs are only comparable to runs with the same
+    # hash, and editing a task description changes it — so the table says so.
+    taskset = hashlib.sha256(raw_tasks.encode("utf-8")).hexdigest()[:8]
     Path("logs").mkdir(exist_ok=True)
 
     new_file = not Path("results.csv").exists()
@@ -75,7 +80,7 @@ def main():
 
                 log(settings_line())          # first line: provider, model, temperature
                 log(f"condition={condition} run={run_no} tasks={len(tasks)} "
-                    f"order={order_mode}")
+                    f"order={order_mode} taskset={taskset}")
                 team = make_contractors(condition)
                 for c in team:
                     log(f"  contractor {c.name}: skill={c.skill!r} "
@@ -85,12 +90,12 @@ def main():
                 t0 = time.time()
                 try:
                     r = run_round(tasks, team, meter, log=log, rotate=args.rotate)
-                    note = (f"order={order_mode} parse_fails={r.parse_fails} "
+                    note = (f"taskset={taskset} order={order_mode} parse_fails={r.parse_fails} "
                             f"calls={meter.calls} tokens={meter.tokens}")
                     row = [run_no, condition, r.tasks, r.correct, r.messages,
                            r.unassigned, r.misawards, note]
                 except Exception as e:        # a crash is a failed run, not a lost run
-                    note = f"order={order_mode} crash: {type(e).__name__}: {e}"
+                    note = f"taskset={taskset} order={order_mode} crash: {type(e).__name__}: {e}"
                     log(note)
                     row = [run_no, condition, "", "", "", "", "", note]
 
