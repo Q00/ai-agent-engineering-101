@@ -393,6 +393,166 @@ def sequence_from_journal(path, task=None, limit=40) -> str:
     return "\n".join(lines)
 
 
+# Titles and the one thing each diagram is there to settle. Kept here so the
+# document and the .mmd files come out of the same place; a caption written
+# separately in the HTML would drift the way the diagrams themselves would.
+TITLES = OrderedDict([
+    ("modules", ("모듈 구조",
+        "무엇이 무엇에 의존하는가. 점선은 검증 경로.")),
+    ("classes", ("타입 구조",
+        "설계 판단을 담고 있는 필드만 적었다. Endpoint 의 committed 와 managing "
+        "이 갈라져 있는 것이 depth 를 가능하게 한다.")),
+    ("cache-boundary", ("캐시 경계",
+        "역할이 tools 나 system 에 들어가면 프리픽스가 가장 앞 바이트에서 깨진다. "
+        "그래서 역할은 경계 뒤 messages 로 간다.")),
+    ("message-types", ("메시지 문법",
+        "Smith 1980 의 문법 중 이 시스템이 실제로 보내는 것, 그리고 페이즈 대응.")),
+    ("causal-delivery", ("인과 배달",
+        "봉투는 전원에게, 내용은 수신자에게만. 보류 큐가 정확성과 캐시를 동시에 준다 "
+        "— 소급 삽입이 없으니 대화가 append-only 로 남는다.")),
+    ("send-guard", ("송신 가드",
+        "메일박스는 도착 순서를 고친다. 생성 순서는 이 트리가 막는다. 판단은 "
+        "로컬 지식만 쓴다.")),
+    ("candidate-states", ("후보 생애주기",
+        "capacity 가 둘로 갈린 이유. 하나면 분해자가 자기 조각을 공고할 수 없다.")),
+    ("task-states", ("태스크 생애주기",
+        "짧게 끝나는 모든 경로를 포함한다 — 유찰, 거절 후 재낙찰, orphan 후 부분 보고.")),
+    ("role-tools", ("역할과 도구",
+        "winner 가 manager 의 도구를 갖는다. 조각을 내주면 그 조각의 manager 이니까.")),
+    ("manifests", ("후보와 작업 도구",
+        "노란 도구는 둘 이상이 나눠 갖는다. 그 겹침이 manager 의 판단에 여지를 만든다.")),
+    ("judgement", ("판정",
+        "feasible · optimal · solved 는 갈라진다. capable 은 하한이므로 그 밖에서 "
+        "나온 solved 는 모순이 아니라 발견이다.")),
+    ("sequence-task1", ("실제 실행 · 태스크 하나",
+        "손으로 그린 이상화가 아니라 저널에서 생성한 것. 대괄호 안이 실제 벡터 시계.")),
+    ("sequence-run", ("실제 실행 · 라운드 앞부분",
+        "같은 저널에서. 페이즈 전환이 주석으로 들어간다.")),
+])
+
+HEAD = """<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contract Net 아키텍처</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@300;400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --board:#fbfbf9; --card:#fff; --ink:#1e1e1e; --ink-2:#43464d; --ink-3:#7c8089;
+    --grid:#e6e6e2; --red:#c92a2a; --amber:#f08c00; --amber-f:#ffec99;
+    --hand:"Gaegu","Nanum Pen Script","Apple SD Gothic Neo",cursive;
+    --body:"IBM Plex Sans","Apple SD Gothic Neo",-apple-system,system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background-color:var(--board);color:var(--ink);
+    background-image:radial-gradient(var(--grid) 1.1px,transparent 1.1px);
+    background-size:22px 22px;font-family:var(--body);font-size:16px;line-height:1.74}
+  .wrap{max-width:1060px;margin:0 auto;padding-block:52px 108px;padding-left:20px;padding-right:20px}
+  .col{max-width:660px}
+  code{font-family:var(--mono);font-size:13px;background:#f1f0eb;border:1px solid #e2e0d8;
+    padding:0 5px;border-radius:4px}
+  .slug{font-family:var(--hand);font-size:21px;color:var(--red)}
+  h1{font-family:var(--hand);font-size:46px;line-height:1.1;margin:4px 0 12px;font-weight:700;
+    position:relative;display:inline-block}
+  h1::after{content:"";position:absolute;left:-4px;right:-8px;bottom:2px;height:12px;
+    background:var(--amber-f);z-index:-1;transform:rotate(-.6deg);border-radius:40% 60% 50% 45%}
+  .standfirst{font-size:17px;color:var(--ink-2);margin:0;max-width:640px}
+  .gen{font-family:var(--mono);font-size:12px;color:var(--ink-3);margin-top:18px;
+    padding-top:12px;border-top:2px dashed var(--grid)}
+  section{margin-top:52px}
+  h2{font-family:var(--hand);font-size:32px;margin:0 0 4px;font-weight:700}
+  h2 .n{font-size:20px;color:var(--red);margin-right:10px}
+  .why{font-size:15px;color:var(--ink-2);margin:0 0 16px;max-width:680px}
+  figure{margin:0;background:var(--card);border:2px solid var(--ink);
+    border-radius:18px 10px 20px 10px;box-shadow:3px 4px 0 rgba(30,30,30,.07)}
+  figure .plate{overflow-x:auto;padding:24px 20px}
+  pre.mermaid{min-width:min-content;margin:0}
+  figcaption{border-top:2px dashed var(--grid);padding:10px 18px;font-family:var(--mono);
+    font-size:12px;color:var(--ink-3);background:#fcfcfa}
+  footer{margin-top:72px;padding-top:16px;border-top:2px dashed var(--grid);
+    font-family:var(--mono);font-size:12px;color:var(--ink-3);line-height:1.8}
+  @media (max-width:560px){h1{font-size:32px}h2{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="slug">Week 03 확장 · 구현된 시스템</div>
+  <h1>Contract Net 아키텍처</h1>
+  <p class="standfirst">이 문서는 손으로 그린 것이 아니다. <code>diagrams.py</code> 가
+  코드와 실행 저널에서 생성하며, <code>--check</code> 가 코드와 어긋난 그림을 잡는다.
+  설계안이 아니라 지금 돌아가는 것이다.</p>
+  <div class="gen">생성 @@STAMP@@ · 다이어그램 @@N@@개 · <code>python diagrams.py --html architecture.html</code></div>
+</header>
+"""
+
+TAIL = """
+<footer>
+  Contract Net 아키텍처 · Week 03 확장 · Agentic AI, SeoulTech 2026 Fall<br>
+  코드 유래 11개는 protocol.py · agents.py · phases.py · tools.py 에서, 시퀀스 2개는
+  logs_ext/*.jsonl 에서 생성된다. 손으로 고치면 다음 커밋에 어긋나므로 고치지 말 것 —
+  <code>python diagrams.py</code> 로 다시 만든다.<br>
+  화이트보드 한 세계로 커밋했다. 다이어그램은 mermaid 의 handDrawn 렌더.
+</footer>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+  if (window.mermaid) {
+    window.mermaid.initialize({
+      startOnLoad: true, look: "handDrawn", handDrawnSeed: 7, theme: "base",
+      fontFamily: '"Gaegu","Nanum Pen Script","Apple SD Gothic Neo",cursive',
+      flowchart: { curve: "basis", nodeSpacing: 46, rankSpacing: 54, padding: 14 },
+      themeVariables: {
+        background: "#ffffff", fontSize: "18px",
+        primaryColor: "#ffc9c9", primaryBorderColor: "#c92a2a", primaryTextColor: "#1e1e1e",
+        secondaryColor: "#bac8ff", secondaryBorderColor: "#4263eb",
+        tertiaryColor: "#ffec99", tertiaryBorderColor: "#f08c00",
+        lineColor: "#1e1e1e", textColor: "#1e1e1e",
+        clusterBkg: "#f7f6f1", clusterBorder: "#1e1e1e",
+        edgeLabelBackground: "#ffffff"
+      }
+    });
+  } else {
+    document.querySelectorAll("pre.mermaid").forEach(function (el) {
+      el.style.whiteSpace = "pre";
+      el.style.fontFamily = "ui-monospace, Menlo, monospace";
+      el.style.fontSize = "12px";
+      el.insertAdjacentHTML("beforebegin",
+        "<p style='margin:0 0 8px;font-size:14px;color:#c92a2a'>mermaid 를 불러올 수 없어 원본 정의를 표시합니다.</p>");
+    });
+  }
+</script>
+</body>
+</html>
+"""
+
+
+def html(made, path):
+    import datetime
+    order = [k for k in TITLES if k in made] + [k for k in made if k not in TITLES]
+    # replace, not format: the CSS in HEAD is full of braces.
+    parts = [HEAD
+             .replace("@@STAMP@@", datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+             .replace("@@N@@", str(len(order)))]
+    for i, name in enumerate(order, 1):
+        title, why = TITLES.get(name, (name, ""))
+        parts.append(f'<section>\n  <h2><span class="n">{i:02d}</span>{title}</h2>')
+        if why:
+            parts.append(f'  <p class="why">{why}</p>')
+        parts.append('  <figure>\n    <div class="plate">')
+        parts.append(f'<pre class="mermaid">\n{made[name]}\n</pre>')
+        parts.append('    </div>')
+        parts.append(f'    <figcaption>diagrams/{name}.mmd</figcaption>')
+        parts.append('  </figure>\n</section>')
+    parts.append(TAIL)
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(parts))
+    return path
+
+
 # ---------------------------------------------------------------- driver
 
 CODE_DIAGRAMS = OrderedDict([
@@ -430,6 +590,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
                     help="exit 1 if the files on disk differ from the code")
+    ap.add_argument("--html", default=None,
+                    help="also write a document embedding every diagram")
     args = ap.parse_args()
 
     made = build()
@@ -452,6 +614,8 @@ def main():
             sys.exit(1)
         print(f"ok  {len(made)} diagram(s) match the code")
         return
+    if args.html:
+        print("wrote " + html(made, args.html))
     print(f"wrote {len(made)} diagram(s) to {OUT}/"
           + (f" ({len(stale)} changed)" if stale else " (no change)"))
     for n in sorted(made):
