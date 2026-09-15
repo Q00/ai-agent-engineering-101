@@ -583,16 +583,27 @@ CODE_DIAGRAMS = OrderedDict([
 ])
 
 
-def newest_journal():
+# The journal the sequence diagrams are drawn from, pinned by name.
+#
+# It used to be "whichever is newest", and that made --check flap: every new
+# graded run changed which file was newest, so the committed diagram went
+# stale without a line of code changing. A diagram that goes stale on its own
+# cannot be used to detect drift, which was the whole point of --check.
+SEQUENCE_JOURNAL = os.path.join("logs_ext", "ext_baseline-01.jsonl")
+
+
+def sequence_journal():
+    if os.path.exists(SEQUENCE_JOURNAL):
+        return SEQUENCE_JOURNAL
     if not os.path.isdir("logs_ext"):
         return None
     js = sorted(f for f in os.listdir("logs_ext") if f.endswith(".jsonl"))
-    return os.path.join("logs_ext", js[-1]) if js else None
+    return os.path.join("logs_ext", js[0]) if js else None
 
 
 def build():
     out = {name: fn() for name, fn in CODE_DIAGRAMS.items()}
-    j = newest_journal()
+    j = sequence_journal()
     if j:
         out["sequence-run"] = sequence_from_journal(j)
         one = sequence_from_journal(j, task="1-1")
