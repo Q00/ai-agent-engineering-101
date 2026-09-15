@@ -38,6 +38,20 @@ class ContractNetTests(unittest.TestCase):
         self.assertEqual(metrics["messages"], 7)
         self.assertTrue(all("gold" not in announcement for announcement in seen_users))
 
+    def test_refusals_are_not_counted_as_bids(self):
+        tasks = [{"id": "t1", "desc": "unknown work", "gold": "developer"}]
+
+        def refuse(system, user):
+            return json.dumps({
+                "participate": False,
+                "confidence": 10,
+                "reason": "outside my specialty",
+            })
+
+        metrics = run_contract_net(tasks, "baseline", refuse, lambda *a, **k: None)
+        self.assertEqual(metrics["messages"], 3)
+        self.assertEqual(metrics["unassigned"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

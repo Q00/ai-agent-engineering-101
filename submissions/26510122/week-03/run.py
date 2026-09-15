@@ -94,7 +94,9 @@ class OpenAICompatibleChat:
 def append_result(path: Path, row: dict) -> None:
     new_file = not path.exists() or path.stat().st_size == 0
     with path.open("a", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=RESULT_HEADER)
+        writer = csv.DictWriter(
+            stream, fieldnames=RESULT_HEADER, lineterminator="\n"
+        )
         if new_file:
             writer.writeheader()
         writer.writerow(row)

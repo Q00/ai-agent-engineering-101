@@ -24,7 +24,7 @@ def append_result(row: dict) -> None:
     path = ROOT / "extended_results.csv"
     new_file = not path.exists() or path.stat().st_size == 0
     with path.open("a", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=HEADER)
+        writer = csv.DictWriter(stream, fieldnames=HEADER, lineterminator="\n")
         if new_file:
             writer.writeheader()
         writer.writerow(row)

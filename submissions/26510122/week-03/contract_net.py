@@ -132,8 +132,9 @@ def run_contract_net(
             raw = chat(contractor_prompt(contractor, condition), json.dumps(
                 announcement, ensure_ascii=False
             ))
-            metrics["messages"] += 1
             bid = parse_bid(contractor, raw)
+            if bid.participate:
+                metrics["messages"] += 1
             bids.append(bid)
             emit(
                 "bid",

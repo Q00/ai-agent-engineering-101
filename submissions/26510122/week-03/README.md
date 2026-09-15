@@ -6,7 +6,7 @@
 
 `run.py`와 `contract_net.py`가 `baseline`, `homogeneous`, `overconfident` 조건을 실행한다. Manager는 각 작업을 세 Contractor에게 공고하고, 각 Contractor는 서로 독립된 LLM 호출 한 번으로 입찰한다. 유효한 입찰 중 confidence가 가장 높은 후보가 낙찰되며 동률이면 응답 순서가 빠른 후보가 선택된다.
 
-Manager가 보내는 공고에는 `id`와 `desc`만 있고 `gold`는 없다. JSON으로 파싱할 수 없는 응답은 입찰 포기로 처리한다. 메시지는 Contractor별 공고 1회와 응답 1회, 실제 낙찰 1회로 센다.
+Manager가 보내는 공고에는 `id`와 `desc`만 있고 `gold`는 없다. JSON으로 파싱할 수 없는 응답은 입찰 포기로 처리한다. 메시지는 Contractor별 공고 1회, `participate=true`인 입찰 1회, 실제 낙찰 1회로 센다. 모델 호출 횟수와 협상 메시지 수는 별개다.
 
 ```bash
 python3 run.py --condition baseline --smoke --limit 1
