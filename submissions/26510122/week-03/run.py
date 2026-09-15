@@ -27,15 +27,22 @@ def load_env(path: Path) -> None:
     """Load simple KEY=VALUE entries without printing or overwriting secrets."""
     if not path.is_file():
         return
+    bare_values = []
     for raw_line in path.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            bare_values.append(line)
             continue
         key, value = line.split("=", 1)
         key = key.strip()
         value = value.strip().strip("\"").strip("'")
         if key:
             os.environ.setdefault(key, value)
+    # The local course setup may contain only the OpenRouter token on one line.
+    if len(bare_values) == 1:
+        os.environ.setdefault("OPENAI_API_KEY", bare_values[0])
 
 
 class OpenAICompatibleChat:
@@ -64,6 +71,9 @@ class OpenAICompatibleChat:
                 {"role": "user", "content": user},
             ],
         }
+        if self.base_url == "https://openrouter.ai/api/v1":
+            payload["reasoning"] = {"enabled": False}
+            payload["response_format"] = {"type": "json_object"}
         request = urllib.request.Request(
             f"{self.base_url}/chat/completions",
             data=json.dumps(payload).encode("utf-8"),
@@ -95,7 +105,13 @@ def new_run_id(condition: str) -> str:
     return f"{stamp}-{condition}-{uuid.uuid4().hex[:6]}"
 
 
-def execute_run(condition: str, model: str, temperature: float, smoke: bool) -> int:
+def execute_run(
+    condition: str,
+    model: str,
+    temperature: float,
+    smoke: bool,
+    limit: int | None = None,
+) -> int:
     run_id = new_run_id(condition)
     log_dir = ROOT / ("smoke" if smoke else "logs")
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -118,6 +134,8 @@ def execute_run(condition: str, model: str, temperature: float, smoke: bool) -> 
                 temperature=temperature, endpoint=client.base_url,
             )
             tasks = json.loads((ROOT / "tasks.json").read_text(encoding="utf-8"))
+            if limit is not None:
+                tasks = tasks[:limit]
             metrics = run_contract_net(tasks, condition, client, emit)
             row = {"run": run_id, "condition": condition, **metrics, "note": ""}
             emit("summary", **row, llm_calls=client.calls)
@@ -135,11 +153,13 @@ def execute_run(condition: str, model: str, temperature: float, smoke: bool) -> 
 
 
 def main() -> int:
+    load_env(REPOSITORY_ROOT / ".env")
     parser = argparse.ArgumentParser()
     parser.add_argument("--condition", choices=CONDITIONS)
     parser.add_argument("--all", action="store_true", help="run every condition")
     parser.add_argument("--runs", type=int, default=1, help="runs per condition")
     parser.add_argument("--smoke", action="store_true", help="do not write results.csv")
+    parser.add_argument("--limit", type=int, help="limit tasks in smoke mode")
     parser.add_argument(
         "--model",
         default=os.environ.get("AGENT_MODEL", "nvidia/nemotron-3.5-lightning:free"),
@@ -149,16 +169,17 @@ def main() -> int:
 
     if args.runs < 1:
         parser.error("--runs must be at least 1")
+    if args.limit is not None and (not args.smoke or args.limit < 1):
+        parser.error("--limit must be positive and used with --smoke")
     if args.all == bool(args.condition):
         parser.error("choose exactly one of --condition or --all")
 
-    load_env(REPOSITORY_ROOT / ".env")
     conditions = CONDITIONS if args.all else (args.condition,)
     failures = 0
     for condition in conditions:
         for _ in range(args.runs):
             failures += execute_run(
-                condition, args.model, args.temperature, args.smoke
+                condition, args.model, args.temperature, args.smoke, args.limit
             )
     return int(failures > 0)
 

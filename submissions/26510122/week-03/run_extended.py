@@ -31,6 +31,7 @@ def append_result(row: dict) -> None:
 
 
 def main() -> int:
+    load_env(REPOSITORY_ROOT / ".env")
     parser = argparse.ArgumentParser()
     parser.add_argument("--continue-state", action="store_true")
     parser.add_argument("--smoke", action="store_true")
@@ -41,7 +42,6 @@ def main() -> int:
     parser.add_argument("--temperature", type=float, default=0.0)
     args = parser.parse_args()
 
-    load_env(REPOSITORY_ROOT / ".env")
     state_path = ROOT / "state" / "latest.json"
     source = state_path if args.continue_state and state_path.exists() else ROOT / "ontology_seed.json"
     ontology = OntologyState.from_file(source)
