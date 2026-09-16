@@ -50,8 +50,11 @@ class Meter:
 def call_model(system: str, user: str, meter: Meter) -> str:
     """One system+user turn, no tools, no history. Returns the reply text."""
     if PROVIDER == "anthropic":
+        # The Anthropic Messages API (SDK >= 1.x, tested against 1.6.0) dropped
+        # the `temperature` request parameter, so TEMPERATURE only applies to
+        # the OpenAI-compatible path below; see REPORT.md setup notes.
         resp = _get_client().messages.create(
-            model=MODEL, max_tokens=300, temperature=TEMPERATURE,
+            model=MODEL, max_tokens=300,
             system=system, messages=[{"role": "user", "content": user}])
         meter.add(resp.usage.input_tokens, resp.usage.output_tokens)
         return "".join(b.text for b in resp.content if b.type == "text")
