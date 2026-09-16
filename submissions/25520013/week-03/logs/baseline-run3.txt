@@ -1,4 +1,4 @@
-condition=baseline run=1 model=claude-haiku-4-5-20251001 tasks=6
+condition=baseline run=3 model=claude-haiku-4-5-20251001 tasks=6
 
 === task 1 — gold A ===
 TASK ANNOUNCEMENT 1
@@ -7,9 +7,9 @@ task abstraction: Compute 137 * 249 and return only the number.
 eligibility specification: contractors whose skill covers the task above
 bid specification: one JSON object with keys bid, confidence (0-100), reason
 expiration time: this reply — there is no second round
-  [bid ] A confidence=100 :: This is a straightforward arithmetic evaluation task that falls directly within my skill of numeric computation.
-  [pass] B :: This is arithmetic computation, not plain-English writing or text summarization.
-  [bid ] C confidence=100 :: Trivial arithmetic computation; Python can compute and return the result with perfect correctness.
+  [bid ] A confidence=95 :: Arithmetic multiplication is my core skill.
+  [pass] B :: Arithmetic computation falls outside my skill in plain-English writing and text summarization.
+  [bid ] C confidence=95 :: Simple arithmetic computation well within Python contractor capabilities.
   [award] A — gold
 
 === task 2 — gold A ===
@@ -19,9 +19,9 @@ task abstraction: Compute 2**10 + 3**5 and return only the number.
 eligibility specification: contractors whose skill covers the task above
 bid specification: one JSON object with keys bid, confidence (0-100), reason
 expiration time: this reply — there is no second round
-  [bid ] A confidence=95 :: Task is pure arithmetic evaluation, which is my core skill.
-  [pass] B :: Task requires mathematical computation; my skill is plain-English writing and text rewriting, not arithmetic.
-  [bid ] C confidence=99 :: Simple arithmetic computation is well within Python skill; highly confident in correctness.
+  [bid ] A confidence=95 :: Direct arithmetic expression evaluation is my core skill.
+  [pass] B :: This task requires arithmetic computation, not plain-English writing or text rewriting.
+  [bid ] C confidence=98 :: Simple arithmetic computation well within Python skill; computing 2**10 + 3**5 is trivial.
   [award] C — misaward, gold was A
 
 === task 3 — gold B ===
@@ -31,9 +31,9 @@ task abstraction: Rewrite this sentence for a 10-year-old, in two sentences or f
 eligibility specification: contractors whose skill covers the task above
 bid specification: one JSON object with keys bid, confidence (0-100), reason
 expiration time: this reply — there is no second round
-  [pass] A :: Task requires natural language rewriting, not numeric expression evaluation.
-  [bid ] B confidence=85 :: Text rewriting and simplification for different audiences is my core skill in plain-English writing.
-  [pass] C :: This task requires text simplification and communication skills, not Python programming.
+  [pass] A :: Task requires writing and sentence simplification; my skill is arithmetic evaluation only.
+  [bid ] B confidence=88 :: Simplifying technical text for a younger audience is core to my plain-English writing skill.
+  [pass] C :: Task requires natural language writing and simplification skills, not Python programming.
   [award] B — gold
 
 === task 4 — gold B ===
@@ -43,9 +43,9 @@ task abstraction: Summarize the following in exactly one plain-English sentence:
 eligibility specification: contractors whose skill covers the task above
 bid specification: one JSON object with keys bid, confidence (0-100), reason
 expiration time: this reply — there is no second round
-  [pass] A :: Summarizing text is not an arithmetic or numeric expression evaluation task.
-  [bid ] B confidence=92 :: Summarizing and rewriting text in plain English is exactly my core skill.
-  [pass] C :: Task requires English summarization, not Python programming.
+  [pass] A :: Task requires text summarization, not arithmetic or numeric expression evaluation.
+  [bid ] B confidence=95 :: This is a straightforward text summarization task, which directly matches my core skill of rewriting and summarizing plain English.
+  [pass] C :: This is a text summarization task, not Python programming.
   [award] B — gold
 
 === task 5 — gold C ===
@@ -55,9 +55,9 @@ task abstraction: Write a Python function rev(xs) that returns a reversed copy o
 eligibility specification: contractors whose skill covers the task above
 bid specification: one JSON object with keys bid, confidence (0-100), reason
 expiration time: this reply — there is no second round
-  [pass] A :: Task requires Python function writing; my skill is arithmetic evaluation only.
-  [pass] B :: Task requires Python programming; my skill is plain-English writing and text rewriting, not code development.
-  [bid ] C confidence=98 :: Small, straightforward Python function task perfectly aligned with my skill in writing correct Python functions.
+  [pass] A :: This is a Python programming task; my skill is arithmetic expression evaluation, not software development.
+  [pass] B :: This task requires Python programming; my skill is plain-English writing and text summarization.
+  [bid ] C confidence=98 :: Straightforward Python function to reverse a list without mutation; well within my skill to implement correctly using slicing or built-in functions.
   [award] C — gold
 
 === task 6 — gold C ===
@@ -67,9 +67,9 @@ task abstraction: Write a Python function is_palindrome(s) that returns True if 
 eligibility specification: contractors whose skill covers the task above
 bid specification: one JSON object with keys bid, confidence (0-100), reason
 expiration time: this reply — there is no second round
-  [pass] A :: This task requires string manipulation and algorithmic logic, not arithmetic evaluation.
-  [pass] B :: Task requires algorithm implementation; my skill is plain-English writing and text rewriting.
-  [bid ] C confidence=95 :: Small Python function writing with clear requirements; straightforward palindrome logic handling case and space ignoring.
+  [pass] A :: Task requires string manipulation and palindrome checking, not arithmetic evaluation.
+  [pass] B :: Task requires Python programming; my skill is plain-English writing and text rewriting, not code development.
+  [bid ] C confidence=95 :: Small Python function with clear specifications matches my core skill perfectly.
   [award] C — gold
 
-model=claude-haiku-4-5-20251001 calls=18 tokens=6862 parse_fails=0 cli_failures=0
+model=claude-haiku-4-5-20251001 calls=18 tokens=6715 parse_fails=0 cli_failures=0
