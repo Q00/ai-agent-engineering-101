@@ -1,33 +1,33 @@
 # Week 03 — LLM의 자기 확신도로 행정업무를 배정하면
 
-> **구현 완료·실험 미완료(2026-09-16 14:48 KST).** 무료 API의 HTTP 429로 중단됐다. 완료된 비교 실행은 baseline 1회·homogeneous 1회이며, overconfident는 중단 기록만 있다. 조건별 3회 요건을 충족하지 못했으므로 현재 파일은 제출 완성본이 아니다.
+> **실험 9/9회 완료(2026-09-16).** GPT-4.1 nano로 세 조건을 각 3회 완료했다. 무료 시도의 원본과 실패 기록도 보존했다. 외부 PR 제출 전이다.
 
 ## 1. 실험 설정과 재현
 
 가상 행정업무 6개를 계산 A·글쓰기 B·코드 C에 두 개씩 대응시켰다. [tasks.json](tasks.json)은 첫 API 요청 전에 커밋했다(`7cc2955`). 태스크 순서는 T01→T03→T05→T02→T04→T06이다. 실제 일을 수행하는 정답률이 아니라 **사전 지정한 담당자와 배정 결과의 일치**를 측정한다.
 
-기존 무료 설정 GLM-5.2는 첫 요청부터 429를 반환했다. 날짜 경계 뒤의 재시도도 같은 오류여서 두 시도를 보존하고, 공식 과제 예시의 Nemotron 무료 모델로 별도 실험을 시작했다. 완료된 조건 비교에는 Nemotron만 사용한다.
+무료 GLM·Nemotron 실험은 HTTP 429로 중단됐다. 사용자 승인으로 기존 OpenAI 계정의 저가 모델 GPT-4.1 nano로 전환하고, 동일 모델 안에서 세 조건을 모두 다시 실행했다. 무료 결과와 유료 결과를 합쳐 조건 효과를 계산하지 않는다. 설정은 [config-gpt41-nano.json](config-gpt41-nano.json), 실행 동결 정보는 [experiment.json](experiments/gpt41-nano-paid/experiment.json)에 있다.
 
 | 항목 | 비교 실험 설정 |
 |---|---|
-| 제공자·모델 | OpenRouter · `nvidia/nemotron-3.5-lightning:free` |
+| 제공자·모델 | OpenAI · `gpt-4.1-nano-2025-04-14` |
 | 공통 생성 설정 | temperature=0, max_tokens=1024 |
 | 호출 | A→B→C 순차, 현재 system/user 두 메시지만 전송, 자동 재시도 0 |
 | 시간 설정 | SDK timeout 60초, 계약 입찰 창 240초, 각 호출 전 간격 4초 |
-| 조건·반복 | baseline→homogeneous→overconfident 순환, 조건별 완료 3회 목표; 현재 1/1/0회 완료 |
+| 조건·반복 | baseline→homogeneous→overconfident 순환, 조건별 완료 3회 |
 | 선정 | 유효 bid=true 중 최고 confidence, 최고점 동점은 먼저 접수한 후보 |
 | 형식 오류 | JSON 객체 전체를 엄격히 파싱. 코드블록·추가 필드·문자열 bool·범위 밖 confidence는 거절 |
 | 메시지 | 태스크별 공고 3 + 유효 true 입찰 수 + 낙찰 0/1 |
 | 상태 저장 | 동일한 로컬 SQLite 하네스, gold는 실행기에 전달하지 않고 사후 평가에만 사용 |
 | 도구 버전 | Python 3.12.11, OpenAI SDK 3.8.0; 전체 의존성은 uv.lock, 실행별 로그에 SDK 버전 기록 |
 
-**시간 제한의 범위:** SDK timeout은 호출 전체의 단단한 60초 상한이 아니다. 실제 baseline 1의 단일 호출은 최대 107.0초 걸렸다. 계약 마감은 별도 단조 시계로 검사하며, 응답이 마감 이후 도착하면 후보에서 제외하고 원문을 보존한다. 동일 설정을 모든 조건에 적용한다.
+**시간 제한의 범위:** SDK timeout은 호출 전체의 단단한 60초 상한이 아니다. 이전 무료 Nemotron baseline 1의 단일 호출은 최대 107.0초 걸렸다. 계약 마감은 별도 단조 시계로 검사하며, 응답이 마감 이후 도착하면 후보에서 제외하고 원문을 보존한다. 동일 설정을 모든 조건에 적용한다.
 
 [프롬프트 전문](cnp/prompts.py)은 공통 JSON 지시와 역할 지시로 구성한다. baseline은 계산/글쓰기/코드로 구분하고, homogeneous는 모두 일반 문제 해결 역할로 바꾼다. overconfident는 baseline의 C에게만 항상 입찰하며 confidence 95 이상을 내도록 지시한다. 응답을 받은 뒤 bid나 점수를 보정하지 않는다. 실제 사용 프롬프트는 각 로그의 PROMPT A/B/C에 보존한다.
 
 ```bash
 cd submissions/25620027/week-03
-./run_lab.sh --config config-nemotron.json --output experiments/nemotron-free --runs 3
+AX_LAB_ENV_FILE="$HOME/.config/ax-agent/openai.env" ./run_lab.sh --config config-gpt41-nano.json --output experiments/gpt41-nano-paid --runs 3 --allow-paid
 uv run --frozen python collect_results.py
 ```
 
@@ -35,7 +35,7 @@ uv run --frozen python collect_results.py
 
 ## 2. 실제 결과
 
-run 식별자는 `실험 이름:원본 실행 번호`다. GLM 실패는 전환 전 시도이며 Nemotron의 조건 효과 집계에 합치지 않는다. 공란은 중단 실행의 미집계 값으로, 0점이나 미배정 6건을 뜻하지 않는다.
+run 식별자는 `실험 이름:원본 실행 번호`다. GLM·Nemotron은 전환 전 시도이며 GPT-4.1 nano의 조건 효과 집계에 합치지 않는다. 공란은 중단 실행의 미집계 값으로, 0점이나 미배정 6건을 뜻하지 않는다.
 
 <!-- RESULTS_START -->
 | run | condition | tasks | correct | messages | unassigned | misawards | note |
@@ -47,19 +47,36 @@ run 식별자는 `실험 이름:원본 실행 번호`다. GLM 실패는 전환 �
 | nemotron-free:3 | overconfident |  |  |  |  |  | crashed: BatchBlockedError: HTTP 429 |
 | nemotron-free:4 | overconfident |  |  |  |  |  | crashed: BatchBlockedError: HTTP 429 |
 | nemotron-free:5 | overconfident |  |  |  |  |  | crashed: BatchBlockedError: HTTP 429 |
+| gpt41-nano-paid:1 | baseline | 6 | 5 | 30 | 1 | 0 | parse_fail=0; api_error=0; timeout=0 |
+| gpt41-nano-paid:2 | homogeneous | 6 | 1 | 34 | 2 | 3 | parse_fail=0; api_error=0; timeout=0 |
+| gpt41-nano-paid:3 | overconfident | 6 | 2 | 34 | 0 | 4 | parse_fail=0; api_error=0; timeout=0 |
+| gpt41-nano-paid:4 | baseline | 6 | 5 | 29 | 1 | 0 | parse_fail=0; api_error=0; timeout=0 |
+| gpt41-nano-paid:5 | homogeneous | 6 | 2 | 39 | 0 | 4 | parse_fail=0; api_error=0; timeout=0 |
+| gpt41-nano-paid:6 | overconfident | 6 | 2 | 34 | 0 | 4 | parse_fail=0; api_error=0; timeout=0 |
+| gpt41-nano-paid:7 | baseline | 6 | 5 | 30 | 1 | 0 | parse_fail=0; api_error=0; timeout=0 |
+| gpt41-nano-paid:8 | homogeneous | 6 | 3 | 38 | 0 | 3 | parse_fail=0; api_error=0; timeout=0 |
+| gpt41-nano-paid:9 | overconfident | 6 | 2 | 34 | 0 | 4 | parse_fail=0; api_error=0; timeout=0 |
 <!-- RESULTS_END -->
 
-원본: [결과 CSV](results.csv), [GLM 실패 1](logs/run-001-baseline.txt), [실패 2](logs/run-002-baseline.txt), [Nemotron 원본 실행](experiments/nemotron-free/runs/).
+원본: [제출 CSV](results.csv), [유료 실험 CSV](experiments/gpt41-nano-paid/results.csv), [유료 원본 로그](experiments/gpt41-nano-paid/logs/), [무료 원본 실행](experiments/nemotron-free/runs/).
 
-### 완료 횟수와 남은 실행
+### 같은 모델의 조건별 비교
 
-| 조건 | 완료 | 추가 완료 필요 |
-|---|---:|---:|
-| baseline | 1 | 2 |
-| homogeneous | 1 | 2 |
-| overconfident | 0 | 3 |
+| 조건 | 완료 | gold 일치(합계) | 일치율 | 메시지 평균 | 미배정 평균 | 오배정 평균 |
+|---|---:|---:|---:|---:|---:|---:|
+| baseline | 3 | 15/18 | 83.3% | 29.67 | 1.00 | 0.00 |
+| homogeneous | 3 | 6/18 | 33.3% | 37.00 | 0.67 | 3.33 |
+| overconfident | 3 | 6/18 | 33.3% | 34.00 | 0.00 | 4.00 |
 
-실행 명령을 다시 수행하면 실패를 삭제하지 않고 부족한 **7개 완료 실행**을 추가한다(최소 126회 Contractor 호출). 기존 실험 로그는 HTTP 코드만 저장했으나, 14:56~14:57 KST 별도 후보 진단에서 `free-models-per-day`, 일일 한도 50·잔여 0·초기화 2026-09-17 09:00 KST를 확인했다([진단 근거](experiments/free-model-probes-20260916T055658Z/README.md)). 후보 4회의 진단 호출은 과제 CSV에 포함하지 않는다. 과신 실행은 T06의 B 호출에서 멈췄으며 counts를 공란으로 유지했다. 2026-09-16 14:38 KST 재개도 첫 호출에서 429로 중단됐다(run 4). 2026-09-16 14:48 KST 추가 재개도 첫 호출 429로 중단됐다(run 5). 누적 Nemotron은 55회 요청 중 52회 API 응답을 받았고, 그 52개 원응답의 `usage.cost` 합계는 0이다. JSON 형식 실패도 API 응답 성공에는 포함되므로 배정 성공과 구분한다.
+유료 162회 호출에서 parse_fail·API 오류·timeout은 모두 0이다. 따라서 이번 유료 실험의 미배정은 형식 오류나 통신 실패가 아니라 정상 불입찰로 발생했다. 조건별 3회·고정 태스크 6개만 관측했으며 통계적 유의성을 주장하지 않는다.
+
+### 사용량과 비용
+
+원응답의 입력 38,403토큰(캐시 0), 출력 4,078토큰을 합산했다. 입력 $0.10/M·캐시 입력 $0.025/M·출력 $0.40/M을 적용한 환산 비용은 **$0.0054715**이다. [공식 가격](https://developers.openai.com/api/docs/models/gpt-4.1-nano)(2026-09-16 확인)과 [사용량 대조 기록](experiments/gpt41-nano-paid/usage-audit.json)을 근거로 하며, 세금·환율·계정 정산을 반영한 청구 금액은 아니다. OpenRouter의 더 저렴한 모델은 해당 계정에 충전 잔액이 없어 선택하지 않았다. 기존 OpenAI 키와 현재 생성 설정으로 바로 실행 가능한 저가 모델을 사용했다.
+
+### 이전 무료 시도 보존
+
+GLM 실패 2회, Nemotron 완료 2회·실패 3회를 표에 남겼다. 무료 후보 4개의 별도 진단은 `free-models-per-day`, 한도 50·잔여 0을 반환했다([진단 근거](experiments/free-model-probes-20260916T055658Z/README.md)). 이 진단은 과제 결과표에 포함하지 않는다. 무료 자동 재개 `ax-3-7`는 PAUSED이며 새 유료 결과와 섞지 않는다. 모든 실패 행의 counts는 공란이다.
 
 ## 3. Smith(1980)의 분산 센싱과 이번 재현
 
@@ -77,8 +94,4 @@ run 식별자는 `실험 이름:원본 실행 번호`다. GLM 실패는 전환 �
 
 ## 4. 해석
 
-현재 완료된 Nemotron baseline 1회에서는 correct=5, messages=31, unassigned=1, misawards=0을 얻었다. 18개 응답 중 유효 입찰 8, 정상 불입찰 3, parse_fail 7이며, 공고 18 + 입찰 8 + 낙찰 5 = 31로 SQLite 기록과 독립 대조했다. T03에서는 A가 역할 밖이라고 거절했고 B·C가 파싱에 실패해 미배정됐다([baseline 원본](experiments/nemotron-free/logs/run-001-baseline.txt), 19·22·25·26행). 따라서 이 미배정은 모두가 능력 부족을 판단한 결과가 아니다. T02는 A·C 모두 confidence=100이었지만 먼저 접수된 A를 선택했다(39·45·46행). T06에서는 B가 “Writing Python function aligns with writing skill”이라는 이유로 90에 입찰했으나 C의 100이 이겼다(62·65·66행). 이번에 정답 담당자가 선정됐더라도 역할 해석과 확신도가 객관적 능력의 보증은 아니다. 일반형 첫 실행에서는 correct=2, messages=36, unassigned=0, misawards=4였다. T05와 T06에서 세 세션 모두 95에 입찰해 A가 낙찰됐고, 원래 코드 담당자 C와 어긋났다([homogeneous 원본](experiments/nemotron-free/logs/run-002-homogeneous.txt), 29~36·59~66행). 유효 입찰이 8→12로 늘고 낙찰이 5→6으로 늘어 메시지도 31→36이 됐다. 다만 일반형에서는 세 역할이 같으므로 사전 gold가 유일한 적합자라는 뜻은 약해진다. 이 점수는 실제 업무 수행 능력이 아니라 고정된 담당자 표와의 일치도다. 조건별 반복이 끝나지 않아 이 두 실행의 차이를 안정적인 조건 효과로 결론 내리지 않는다.
-
-GLM의 앞선 두 시도는 첫 A 호출에서 `HTTP 429`와 `stop_batch=true`를 남겼고 낙찰까지 도달하지 못했다([실행 1](logs/run-001-baseline.txt)의 8~11행, [실행 2](logs/run-002-baseline.txt)의 8~11행). 이를 정상 불입찰로 바꾸면 모델이 역할에 맞지 않다고 판단한 것과 호출 자체가 거절된 것을 혼동하게 된다. 두 시도는 결과표에 남기되 Nemotron 조건별 평균에는 포함하지 않는다.
-
-과신 실행은 T06의 B 호출에서 429가 발생해 완료 지표를 만들지 않았다([overconfident 원본](experiments/nemotron-free/logs/run-003-overconfident.txt), 62~64행). 중단 전 T03에서는 B·C가 모두 95로 입찰해 B가 이겼고(22·25·26행), T04의 C는 파싱 실패로 후보가 되지 못했다(55·56행). 높은 확신도를 지시해도 동점 규칙과 형식 유효성이 낙찰을 제한하는 사례지만, 이것을 과신 조건 전체의 효과로 일반화하지 않는다. 무료 API 가용성이 비교의 완성을 제한했으며, 같은 설정으로 남은 반복을 완료한 뒤 조건별 경향을 다시 판단해야 한다.
+기본형의 gold 일치율은 15/18(83.3%)이고 일반형·과신형은 각각 6/18(33.3%)이었다. 기본형은 세 번 모두 T02가 미배정됐는데, 계산 담당 A도 “Task requires detailed calculations beyond my skill.”이라며 거절했다([기본형 run 1](experiments/gpt41-nano-paid/logs/run-001-baseline.txt), 39·42·45·46행). 즉 역할 분리는 담당자 일치에 도움이 됐지만 정상 불입찰을 통한 과소평가까지 막지는 못했다. 일반형에서는 세 후보의 점수가 같아 먼저 접수한 A가 낙찰되는 사례가 생겼다. T03·T06에서 모두 80을 제출한 run 2가 그 예다([일반형 run 2](experiments/gpt41-nano-paid/logs/run-002-homogeneous.txt), 19·22·25·26행 및 59·62·65·66행). 일반형은 correct가 1→2→3, 미배정이 2→0→0으로 변해 세 실행을 평균해야 했다. 메시지 평균은 기본형 29.67에서 일반형 37.00, 과신형 34.00으로 늘었다. 세 조건의 공고는 모두 회당 18개로 같지만 유효 입찰과 낙찰 수가 달랐기 때문이다. 과신형 C는 세 번 모두 6개 업무를 독점했고 오배정이 회당 4개였다. T03에서 정상 글쓰기 담당 B의 85보다 코드 담당 C의 100이 높아 C가 낙찰되는 장면이 명확하다([과신형 run 3](experiments/gpt41-nano-paid/logs/run-003-overconfident.txt), 22·25·26행). 미배정은 기본형의 회당 1개에서 과신형의 0개로 줄었지만 배정의 타당성이 좋아진 것은 아니다. 이 구현의 공고·입찰·낙찰 절차와 형식 검사는 정상 작동해도 자기 보고 confidence의 진실성이나 실제 능력을 보증하지 않으며, 이를 보완하려면 수행 결과 검증 등 별도 장치가 필요하다. 다만 일반형은 역할이 같아 원래 gold가 유일하게 적합한 후보라는 의미가 약해지고, 실제 업무 수행을 평가하지 않았으므로 이 수치를 모델 능력 순위로 해석하지 않는다. 고정 태스크 6개·조건별 3회·고정 호출 순서의 제한도 남는다.
