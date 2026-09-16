@@ -38,8 +38,9 @@ run 식별자는 `실험 이름:원본 실행 번호`다. GLM 실패는 전환 �
 <!-- RESULTS_START -->
 | run | condition | tasks | correct | messages | unassigned | misawards | note |
 |---|---|---:|---:|---:|---:|---:|---|
-| glm-free:1 | baseline |  |  |  |  |  | crashed: HTTP 429 |
-| glm-free:2 | baseline |  |  |  |  |  | crashed: HTTP 429 |
+| glm-free:1 | baseline |  |  |  |  |  | crashed: BatchBlockedError: HTTP 429 |
+| glm-free:2 | baseline |  |  |  |  |  | crashed: BatchBlockedError: HTTP 429 |
+| nemotron-free:1 | baseline | 6 | 5 | 31 | 1 | 0 | parse_fail=7; api_error=0; timeout=0 |
 <!-- RESULTS_END -->
 
 원본: [결과 CSV](results.csv), [GLM 실패 1](logs/run-001-baseline.txt), [실패 2](logs/run-002-baseline.txt), [Nemotron 원본 실행](experiments/nemotron-free/runs/).
