@@ -26,6 +26,53 @@ python3 run.py --condition homogeneous --runs 2
 
 `run_extended.py`는 필수 세 조건에 영향을 주지 않는 별도 실험이다. `ontology_seed.json`은 정보를 다음 세 층으로 나눈다.
 
+```mermaid
+flowchart LR
+    TQ[Task Queue] --> M[Manager]
+
+    subgraph C[Candidate Contractors]
+        D[Developer]
+        W[Writer]
+        A[Analyst]
+    end
+
+    M -->|announcement + capability tags| D
+    M -->|announcement + capability tags| W
+    M -->|announcement + capability tags| A
+
+    O[(Ontology State)] -->|self_view + manager_view<br/>shared lexicon + recent evidence| D
+    O -->|self_view + manager_view<br/>shared lexicon + recent evidence| W
+    O -->|self_view + manager_view<br/>shared lexicon + recent evidence| A
+
+    D -->|bid + confidence dimensions| V[Semantic Validator]
+    W -->|bid + confidence dimensions| V
+    A -->|bid + confidence dimensions| V
+
+    V -->|conflict detected| R[One Clarification]
+    R --> V
+    V -->|validated bid| TC[Trajectory Calibrator]
+
+    O -->|domain reliability<br/>recent trajectory<br/>calibration gap| TC
+    TC -->|manager score| M
+
+    M -->|award| SC[Selected Contractor]
+    SC --> E[Outcome Evaluator]
+    E -->|gold match + confidence error| O
+```
+
+Manager의 보정 점수는 다음 정보가 합쳐진 결과다.
+
+```mermaid
+flowchart LR
+    ES[Expected Success] --> S[Manager Score]
+    DR[Domain Reliability] --> S
+    RT[Recent Success Rate] --> S
+    CG[Calibration Gap] -->|penalty| S
+    SW[Semantic Warning] -->|penalty| S
+    EC[Evidence Count] -->|controls observation weight| S
+    S --> AW[Award Decision]
+```
+
 - `self_view`: 당사자가 선언한 기술, 경험, 지위, 언어 습관
 - `manager_view`: 입찰과 낙찰 결과를 관찰한 Manager의 가변 평가
 - `shared_events`: 두 관점의 근거가 되는 입찰, 재질문, 낙찰 사건
