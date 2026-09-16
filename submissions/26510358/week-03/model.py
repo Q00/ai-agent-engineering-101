@@ -34,7 +34,9 @@ class Settings:
         return dict(asdict(self), python=platform.python_version(),
                     sdk=f"openai=={version('openai')}",
                     dotenv=version("python-dotenv"), api="chat.completions",
-                    endpoint="custom" if os.getenv("OPENAI_BASE_URL") else "https://api.openai.com/v1",
+                    endpoint=("https://api.openai.com/v1" if
+                              os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+                              == "https://api.openai.com/v1" else "custom; supply OPENAI_BASE_URL"),
                     timeout_seconds=60, max_retries=0, tools=False,
                     response_format="text (JSON requested in prompt only)")
 

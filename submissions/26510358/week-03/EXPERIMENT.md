@@ -29,8 +29,34 @@ overconfident는 C의 분야 밖 입찰이 늘 수 있지만, A/B가 더 높은 
 동일한 모델의 역할 프롬프트는 실제로 서로 다른 능력을 가진 센서·프로그램과 구분함
 결과에 맞춰 태스크, gold, 프롬프트를 변경하지 않음
 
+## 고정한 API 설정
+
+| 항목 | 값 |
+|---|---|
+| provider / API | OpenAI / Chat Completions, `https://api.openai.com/v1` |
+| 모델 | 기존 week-02에서 사용한 `gpt-5.6-luna` |
+| temperature / reasoning_effort | `0.7` / `none` |
+| 출력 상한 | `max_completion_tokens=512` |
+| 도구 / JSON 강제 모드 | 사용하지 않음, 프롬프트로만 JSON을 요청함 |
+| 재시도 / 타임아웃 | SDK 재시도 0회 / 60초 |
+| 실행 환경 | Python 3.13.15, openai 3.8.0, python-dotenv 1.2.3 |
+| 환경변수 우선순위 | 프로세스 환경변수 → 명시한 `--env-file` → 코드 기본값 |
+
+`none` 지원은 [공식 모델 문서](https://developers.openai.com/api/docs/models/gpt-5.6-luna)에서 확인함
+실제 요청이 설정을 거부하면 해당 실행을 실패로 보존하고 수정 이유를 별도 커밋함
+모든 조건에 동일한 설정을 적용하며 temperature를 고정해도 동일 응답을 보장하지 않음
+실행마다 첫 줄에 설정·버전·코드 커밋·태스크 SHA-256을 기록함
+
+현재 로컬의 실제 실행 명령은 다음과 같음
+키 값은 읽거나 출력하지 않고 기존 week-02의 비공개 dotenv를 SDK 환경으로 로드함
+
+```bash
+submissions/26510358/week-02/.venv/bin/python submissions/26510358/week-03/run.py \
+  --env-file submissions/26510358/week-02/.env --runs 3
+```
+
 ## 자료
 
-- [week-03 강의](https://wpti.dev/ai-agent-engineering-101/week-03.html)와 [제출 명세](../../../..//weeks/week-03/README.md)를 기준으로 삼음
+- [week-03 강의](https://wpti.dev/ai-agent-engineering-101/week-03.html)와 [제출 명세](../../../weeks/week-03/README.md)를 기준으로 삼음
 - 참고 PR [156](https://github.com/Q00/ai-agent-engineering-101/pull/156), [155](https://github.com/Q00/ai-agent-engineering-101/pull/155), [154](https://github.com/Q00/ai-agent-engineering-101/pull/154)의 로그 근거, 동점 효과, 과신 지시 준수 여부를 검토함
 - 참고 PR의 결과를 이번 실행 결과로 사용하지 않음
