@@ -48,7 +48,7 @@ overconfident는 C의 분야 밖 입찰이 늘 수 있지만, A/B가 더 높은 
 실행마다 첫 줄에 설정·버전·코드 커밋·태스크 SHA-256을 기록함
 
 현재 로컬의 실제 실행 명령은 다음과 같음
-키 값은 읽거나 출력하지 않고 기존 week-02의 비공개 dotenv를 SDK 환경으로 로드함
+키 값을 콘솔에 출력하지 않고 기존 week-02의 비공개 dotenv를 SDK 환경으로 로드함
 
 ```bash
 submissions/26510358/week-02/.venv/bin/python submissions/26510358/week-03/run.py \
