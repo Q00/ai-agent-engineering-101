@@ -1,0 +1,12 @@
+  [tool] read_file({'path': 'notes.txt'}) -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+  [tool] calculator({'expression': '4 + 48000 + 9500 + 12000'}) -> 69504
+  [tool] write_note({'path': 'result.txt', 'content': '69504'}) -> wrote 5 chars to result.txt
+Done. I read notes.txt, found the numbers (4, 48000, 9500, 12000), summed them to **69504**, and saved the result to result.txt.
