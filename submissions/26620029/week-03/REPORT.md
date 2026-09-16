@@ -1,31 +1,31 @@
-# Week 03 — Contract Net with LLM Contractors
+# Week 03 — LLM 계약자를 사용한 Contract Net
 
-## 1. Setup
+## 1. 설정 (Setup)
 
-- **Provider / model / temperature**: picked at runtime by `model.py` from
-  the environment — `ANTHROPIC_API_KEY` selects the Anthropic SDK, otherwise
-  the OpenAI-compatible SDK is used with `OPENAI_API_KEY` (and optionally
-  `OPENAI_BASE_URL`, e.g. `https://openrouter.ai/api/v1` for OpenRouter).
-  `AGENT_MODEL` overrides the model, `AGENT_TEMPERATURE` overrides the
-  temperature (default `0.7`). **Runs actually captured**: `ANTHROPIC_API_KEY`
-  set, provider `anthropic`, model default `claude-sonnet-4-5`, `anthropic`
-  Python SDK 1.6.0. That SDK version no longer accepts a `temperature`
-  argument on `messages.create()` (dropped from the Messages API since the
-  Chat class this was trimmed from was written) — `model.py` was patched to
-  stop passing it on the Anthropic path rather than crash every call, so the
-  Anthropic runs below used the API's default sampling, not `0.7`. The
-  `AGENT_TEMPERATURE` knob still applies as documented on the OpenAI-compatible
-  path (e.g. OpenRouter), which is unaffected.
-- **Contractors**: three fixed identities, `alex` (coder), `brooke`
-  (writer), `casey` (researcher). Only their system prompt changes per
-  condition — `contract_net.py`'s `BASELINE_PROFILES`,
-  `HOMOGENEOUS_PROFILES`, `OVERCONFIDENT_PROFILES`.
-- **Protocol**: the manager (`run_task` in `contract_net.py`) announces
-  each task to all three contractors, collects one JSON bid per contractor
-  (`{"bid": bool, "confidence": 0-100, "reason": str}`), and awards to the
-  highest-confidence `true` bid (ties broken by announcement order:
-  alex, brooke, casey). No bid `true` -> the task is unassigned.
-- **How to run**:
+- **Provider / model / temperature**: `model.py`가 환경변수를 보고 실행 시점에
+  결정합니다 — `ANTHROPIC_API_KEY`가 설정되어 있으면 Anthropic SDK를 쓰고,
+  아니면 `OPENAI_API_KEY`(옵션으로 `OPENAI_BASE_URL`, 예: OpenRouter의
+  `https://openrouter.ai/api/v1`)로 OpenAI 호환 SDK를 씁니다. `AGENT_MODEL`로
+  모델을, `AGENT_TEMPERATURE`로 temperature(기본값 `0.7`)를 덮어쓸 수 있습니다.
+  **실제로 기록한 실행**: `ANTHROPIC_API_KEY` 설정, provider `anthropic`,
+  모델은 기본값인 `claude-sonnet-4-5`, `anthropic` Python SDK 1.6.0 사용.
+  이 SDK 버전은 `messages.create()`가 더 이상 `temperature` 인자를 받지
+  않습니다(이 코드를 옮겨온 원래 `Chat` 클래스가 작성된 시점 이후 Messages
+  API에서 제거됨) — 그래서 모든 호출이 크래시나지 않도록 `model.py`에서
+  Anthropic 경로만 `temperature`를 넘기지 않도록 고쳤고, 아래 Anthropic
+  실행 결과는 `0.7`이 아니라 API 기본 샘플링을 사용한 것입니다.
+  `AGENT_TEMPERATURE` 옵션은 영향받지 않는 OpenAI 호환 경로(예: OpenRouter)에서는
+  문서대로 그대로 적용됩니다.
+- **계약자(Contractors)**: 고정된 세 정체성 `alex`(개발자), `brooke`(작가),
+  `casey`(리서처). 조건별로 바뀌는 건 이들의 system prompt뿐입니다 —
+  `contract_net.py`의 `BASELINE_PROFILES`, `HOMOGENEOUS_PROFILES`,
+  `OVERCONFIDENT_PROFILES`.
+- **프로토콜**: manager(`contract_net.py`의 `run_task`)가 각 태스크를 세
+  계약자 모두에게 공지하고, 계약자마다 JSON 입찰 하나씩을 받아
+  (`{"bid": bool, "confidence": 0-100, "reason": str}`), `true` 입찰 중
+  confidence가 가장 높은 쪽에 낙찰합니다(동점이면 공지 순서 — alex, brooke,
+  casey — 로 결정). `true` 입찰이 하나도 없으면 미배정.
+- **실행 방법**:
   ```bash
   export OPENAI_BASE_URL=https://openrouter.ai/api/v1
   export OPENAI_API_KEY=<your key>
@@ -33,13 +33,13 @@
   cd submissions/26620029/week-03
   python run_experiments.py --runs 3
   ```
-  This overwrites `results.csv` and `logs/` with one row and one log file
-  per run (3 conditions x `--runs`).
+  실행할 때마다 `results.csv`와 `logs/`를 덮어씁니다 (3개 조건 × `--runs`
+  개, 한 줄/한 파일씩).
 
-## 2. Results
+## 2. 결과 (Results)
 
-`python run_experiments.py --runs 3` against `claude-sonnet-4-5`, 6 tasks
-per run:
+`claude-sonnet-4-5`를 대상으로 `python run_experiments.py --runs 3` 실행,
+각 run은 태스크 6개:
 
 | run | condition | tasks | correct | messages | unassigned | misawards | note |
 |---|---|---|---|---|---|---|---|
@@ -53,60 +53,63 @@ per run:
 | 8 | overconfident | 6 | 5 | 42 | 0 | 1 | |
 | 9 | overconfident | 6 | 5 | 42 | 0 | 1 | |
 
-## 3. Smith (1980) vs. this reproduction
+## 3. Smith (1980) 대 이번 재현
 
-| Aspect | Smith 1980 (distributed sensing) | This reproduction |
+| 항목 | Smith 1980 (분산 센싱) | 이번 재현 |
 |---|---|---|
-| Nodes | Sensor/processing nodes on a network, each with fixed local capability | One manager process, three named LLM contractors (`alex`, `brooke`, `casey`) |
-| How a bid is produced | A fixed local rule evaluates the announcement against the node's known capability and load | An LLM reads the task announcement and its own system-prompt persona, then judges fit and emits a JSON bid with a self-reported confidence |
-| What guarantees bid honesty | The rule is hard-coded; a node cannot misrepresent its own capability | Nothing — the `overconfident` condition exists specifically because a system prompt can tell a contractor to claim confidence it doesn't have |
-| What allocation quality means | The task reaches the node best equipped (by known, fixed capability) to run it | The task reaches whichever contractor's *self-report* wins the highest confidence among `true` bids; measured here against a pre-labelled gold contractor per task |
-| What negotiation costs | Bandwidth/time for announce + bid + award messages between nodes | One model call per contractor per task (announcement + bid = 2 messages), plus one award message; `messages` in `results.csv` totals these per run |
-| Failure modes | Node overload, message loss, stale bids | Unparseable JSON reply (counted as a non-bid), no contractor bidding `true` (unassigned), and a contractor whose prompt bids confidently outside its real skill (misaward) |
+| 노드 | 네트워크상의 센서/처리 노드, 각자 고정된 로컬 능력 보유 | 하나의 manager 프로세스, 이름을 가진 세 LLM 계약자(`alex`, `brooke`, `casey`) |
+| 입찰이 만들어지는 방식 | 고정된 로컬 규칙이 공지문을 노드의 알려진 능력·부하와 대조해 평가 | LLM이 태스크 공지문과 자신의 system prompt 페르소나를 읽고 적합성을 판단해, 자기 보고형 confidence가 담긴 JSON 입찰을 만듦 |
+| 입찰의 정직성을 보장하는 것 | 규칙이 하드코딩되어 있어 노드가 자기 능력을 속일 수 없음 | 아무것도 없음 — `overconfident` 조건 자체가 system prompt로 실제로는 없는 confidence를 주장하게 만들 수 있음을 보이기 위해 존재 |
+| 배정 품질(allocation quality)의 의미 | 태스크가 그 일을 하기에 가장 적합한(알려진, 고정된 능력 기준) 노드에 도달하는 것 | 태스크가 `true` 입찰 중 가장 높은 *자기 보고* confidence를 가진 계약자에게 도달하는 것; 여기서는 태스크마다 미리 라벨링된 gold 계약자와 비교해 측정 |
+| 협상 비용 | 노드 간 공지+입찰+낙찰 메시지에 드는 대역폭/시간 | 계약자·태스크당 모델 호출 1회(공지+입찰 = 메시지 2개) + 낙찰 메시지 1개; `results.csv`의 `messages`가 run당 이를 합산 |
+| 실패 모드 | 노드 과부하, 메시지 유실, 오래된(stale) 입찰 | 파싱 불가능한 JSON 응답(미입찰로 처리), 어떤 계약자도 `true`로 입찰하지 않음(미배정), 실제 실력 밖에서도 자신 있게 입찰하는 계약자(오배정) |
 
-## 4. Interpretation
+## 4. 해석 (Interpretation)
 
-`baseline` is clean across all three runs (6/6 correct, 0 misawards, 0
-unassigned) — with three distinct, honestly-described skills, the highest
-true-bid-confidence award reliably lands on the gold contractor. The two
-manipulated conditions break this in different ways.
+`baseline`은 세 run 모두 깨끗합니다(6/6 정답, 오배정 0, 미배정 0) — 서로
+다르고 정직하게 기술된 세 스킬이 있으면, "true 입찰 중 최고 confidence"
+낙찰 방식이 안정적으로 gold 계약자에게 도달합니다. 두 조작 조건은 이 결과를
+서로 다른 방식으로 무너뜨립니다.
 
-`homogeneous` is the worst condition (2/6 correct, 3-4 misawards per run):
-once every contractor runs the same generalist prompt, the manager loses
-its only real signal, contractor identity. On task-2 in `logs/homogeneous-run1.txt`,
-all three bid `true` at the *same* confidence — `alex` 85, `brooke` 85,
-`casey` 85 — and `run_task`'s tie-break (`max` on `(confidence, -index)`)
-awards to whichever contractor is announced first, so it went to `alex`
-over the gold `brooke`: `[award] task-2 -> alex (gold=brooke) MISAWARD`.
-That is not a bad LLM judgment, it is the protocol's own award rule
-resolving a coin flip the same way every time. Run 5 also shows the other
-homogeneous failure mode, an honest `false`: `casey` on task-3 replied
+`homogeneous`가 가장 나쁜 조건입니다(2/6 정답, run당 오배정 3~4개): 모든
+계약자가 같은 제너럴리스트 prompt로 동작하는 순간, manager는 유일하게 믿을
+만한 신호인 "계약자 정체성"을 잃습니다. `logs/homogeneous-run1.txt`의
+task-2를 보면, 세 계약자 모두 *동일한* confidence로 `true` 입찰했습니다 —
+`alex` 85, `brooke` 85, `casey` 85 — 그리고 `run_task`의 동점 처리
+규칙(`(confidence, -index)` 기준 `max`)이 가장 먼저 공지받은 계약자에게
+낙찰하기 때문에, gold인 `brooke`가 아니라 `alex`에게 돌아갔습니다:
+`[award] task-2 -> alex (gold=brooke) MISAWARD`. 이건 LLM이 판단을
+잘못한 게 아니라, 프로토콜 자체의 낙찰 규칙이 동전 던지기를 매번 같은
+방식으로 해결한 결과입니다. run 5에서는 homogeneous의 또 다른 실패
+모드도 나타나는데, 정직한 `false` 입찰입니다: task-3에서 `casey`는
 `'I cannot access or retrieve specific research papers to summarize their
-findings without the papers being provided to me.'` and every contractor
-declined, leaving `task-3` unassigned — a generalist persona with no
-subject-matter identity can also refuse in a way a specialist wouldn't.
+findings without the papers being provided to me.'`라고 답했고, 세
+계약자 모두 거절해 `task-3`이 미배정으로 남았습니다 — 전문 분야
+정체성이 없는 제너럴리스트 페르소나는 전문가라면 하지 않을 방식으로
+거절할 수도 있다는 뜻입니다.
 
-`overconfident` is more contained (5/6 correct, exactly 1 misaward, in
-all three runs, on the same task): `alex`'s system prompt forces `bid=true`
-and `confidence>=90` on everything, but the manager only ever mis-awards
-when that forced confidence actually outbids the honest gold contractor.
-On the five tasks in `alex`'s own declared skill or clearly outside it,
-the honest bidder's confidence (90-95) still ties or beats `alex`'s forced
-floor, or `alex` isn't the one who wins the tie. The one task where it
-matters is task-6 (TCP timeout causes, gold `casey`): in `baseline`, `alex`
-honestly refuses at `confidence=15`, so `casey`'s 85 wins cleanly
-(`[award] task-6 -> casey (gold=casey) CORRECT`). In `overconfident`,
-the exact same task now gets `alex`: `bid=True confidence=90` beats
-`casey`'s honest `85`, in every one of the 3 runs —
-`[award] task-6 -> alex (gold=casey) MISAWARD`. This is the clearest
-single before/after pair in the data: same task, same honest contractor,
-the only variable is one contractor's system prompt, and the award flips.
+`overconfident`는 영향이 더 제한적입니다(5/6 정답, 세 run 모두 정확히
+같은 태스크에서 오배정 1개): `alex`의 system prompt는 모든 태스크에
+`bid=true`와 `confidence>=90`을 강제하지만, 그 강제된 confidence가
+정직한 gold 계약자를 실제로 이길 때만 manager가 오배정합니다. `alex`
+본인의 실제 전문 분야이거나 명백히 그 밖인 나머지 다섯 태스크에서는,
+정직한 입찰자의 confidence(90~95)가 `alex`의 강제 하한선과 동점이거나
+그걸 이기고, 혹은 동점 상황에서 `alex`가 이기는 쪽이 아닙니다. 실제로
+결과가 갈리는 유일한 태스크는 task-6(TCP 타임아웃 원인, gold는
+`casey`)입니다: `baseline`에서는 `alex`가 `confidence=15`로 정직하게
+거절해서 `casey`의 85가 깔끔하게 이깁니다
+(`[award] task-6 -> casey (gold=casey) CORRECT`). `overconfident`에서는
+똑같은 태스크에서 `alex`가 `bid=True confidence=90`으로 `casey`의 정직한
+85를 이겨버립니다, 3개 run 전부에서 —
+`[award] task-6 -> alex (gold=casey) MISAWARD`. 이 데이터에서 가장
+명확한 전/후 비교 쌍입니다: 같은 태스크, 같은 정직한 계약자, 유일한
+변수는 계약자 한 명의 system prompt뿐인데 낙찰 결과가 뒤집힙니다.
 
-Smith's protocol has no defense against either failure because it assumes
-the bid function is the fixed, honest thing (a capability lookup), never
-the thing being manipulated. `messages` stays flat at 42 in almost every
-run regardless of condition (41 once, when one contractor didn't bid and
-so no award message was needed) — negotiation cost does not detect any of
-this; a manager counting messages would see nothing wrong in the
-`homogeneous` or `overconfident` runs even though allocation quality
-collapsed or was gamed.
+Smith의 프로토콜은 이 두 실패 모두에 대한 방어 수단이 없는데, 입찰
+함수가 (능력 조회처럼) 고정되고 정직한 것이라고 전제할 뿐, 그것이
+조작당할 수 있다는 가능성을 상정하지 않기 때문입니다. `messages`는
+조건과 거의 무관하게 42로 거의 항상 고정되어 있고(계약자 한 명이
+입찰하지 않아 낙찰 메시지가 필요 없었던 한 번만 41) — 협상 비용만
+보고는 이 문제들을 전혀 감지할 수 없습니다; 메시지 수만 세는 manager는
+`homogeneous`나 `overconfident` run에서 배정 품질이 무너지거나
+조작당했는데도 아무 이상을 발견하지 못할 것입니다.
