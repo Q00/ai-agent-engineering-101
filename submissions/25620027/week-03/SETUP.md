@@ -31,7 +31,7 @@ uv run --frozen python collect_results.py
 
 ## 현재 중단 지점
 
-2026-09-16 09:29 KST 무료 Nemotron 호출도 HTTP 429로 중단됐다. baseline·homogeneous 각 1회 완료, overconfident는 실패 보존 상태다. 위 명령을 다시 실행하면 **baseline 2회·homogeneous 2회·overconfident 3회**를 추가한다. 제한이 해제되지 않았으면 다시 실패 행을 남기고 멈춘다. 응답만으로 재개 가능 시각을 확인하지 못했으므로 반복적인 즉시 재시도는 하지 않는다. 현재 과제의 반복 횟수 요건은 미충족이다.
+2026-09-16 09:29 KST 무료 Nemotron 호출도 HTTP 429로 중단됐다. baseline·homogeneous 각 1회 완료, overconfident는 실패 보존 상태다. 위 명령을 다시 실행하면 **baseline 2회·homogeneous 2회·overconfident 3회**를 추가한다. 제한이 해제되지 않았으면 다시 실패 행을 남기고 멈춘다. 후속 진단에서 무료 일일 한도 50·잔여 0과 초기화 2026-09-17 09:00 KST를 확인했다. 그전에는 자동 호출을 건너뛰며 초기화 이후 기존 모델로 재개한다. 초기화가 실제 응답 성공까지 보장하지는 않는다. 현재 과제의 반복 횟수 요건은 미충족이다.
 
 ## 같은 실험을 이어가기
 
