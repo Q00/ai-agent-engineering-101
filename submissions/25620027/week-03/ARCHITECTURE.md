@@ -1,5 +1,7 @@
 # 도면에서 코드로 읽는 Contract Net
 
+![설계 v2.1 시스템 아키텍처](architecture-v2.1.png)
+
 [아키텍처 SVG](architecture.svg) · [편집 가능한 원본](architecture.excalidraw) · [실험 전 설계](DESIGN.md)
 
 ## 먼저 이해할 실행 흐름
@@ -17,7 +19,7 @@ Manager와 Prompt Factory는 Python 코드다. 별도 LLM이 아니다. 독립 �
 | 도면 구성 | 코드 | 책임 |
 |---|---|---|
 | tasks.json | `tasks.json`, `settings.load_inputs` | 태스크·gold 원본, 실행 순서·중복 ID 검사 |
-| Run Config | `config.json`, `Settings` | 모델·온도·토큰·마감·호출 간격 고정 |
+| Run Config | `config-gpt41-nano.json`, `Settings` | 모델·온도·토큰·마감·호출 간격 고정 |
 | Prompt Factory | `prompts.system_prompt` | 공통 지시 + 세 조건의 역할 지시 |
 | Manager Controller | `Engine`, `Protocol` | 공고·수집·봉인·낙찰·종료 |
 | Independent Sessions | `ChatAdapter.bid` | 현재 system/user 두 메시지만 모델 호출 |
@@ -56,3 +58,14 @@ A가 91로 입찰하고 B가 불입찰, C가 84로 입찰하면 A 낙찰이다. 
 - 실제 CLI + 로컬 테스트 API: CSV·원본 로그 생성, 재실행 시 중복 방지, 429의 빈 지표 행, 중단 기록 보존, 설정 변경 거절.
 
 테스트용 응답은 제출 실험 결과에 사용하지 않는다. 실제 API 실험 상태는 REPORT.md와 results.csv를 기준으로 한다.
+
+
+## 결정론적 경계로 다시 읽기
+
+- LLM 판단: `ChatAdapter.bid()`가 공고와 역할로부터 입찰 여부·확신도·이유를 생성한다. 실제 업무를 수행하지 않는다.
+- 결정론적 선정: 봉인된 후보의 유효 입찰과 순서가 같으면 `select_winner()`가 같은 승자를 반환한다. 원본 54개 계약을 재적용해 54개 모두 일치했다. [선정 재적용 근거](experiments/gpt41-nano-paid/selection-replay.json)
+- 시간·상태 경계: 마감과 중복 검사는 응답뿐 아니라 현재 계약 상태·실제 접수 시점도 입력이다. 다른 네트워크 지연까지 같은 결과로 만든다는 의미는 아니다.
+- 보장 범위: JSON이 맞고 단계가 유효하다는 검사와 confidence가 믿을 만하다는 평가는 다르다. gold는 평가기에만 있으므로 런타임에서 과신 입찰을 정답표로 걸러내지 않는다.
+- 명세와 구현: 도면의 `getTask/readAnnouncement/submitBid` 등은 개념 이름이며 위 표의 실제 Python 함수·모델에 대응한다. 에이전트의 신원·요청 ID 등은 하네스가 부착하고, 모델은 `bid/confidence/reason` 세 필드만 생성한다.
+
+v2.1 SVG·Excalidraw와 PNG는 기존 확정 도면을 그대로 사용했다. 현재 모델은 별도 Run Config로 주입하며 구조가 바뀐 것은 아니다. 그림의 `Allocation Result`와 CLOSED는 **배정 종료**를 뜻하고, 낙찰 후 업무 수행 완료를 뜻하지 않는다.
