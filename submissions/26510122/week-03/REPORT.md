@@ -17,7 +17,7 @@ python3 run.py --all --runs 3
 
 ## 2. 결과
 
-아래 표는 현재 `results.csv`의 내용이다. 첫 두 baseline 실행 이후 무료 계정의 일일 요청 한도에 도달해 나머지 실행은 HTTP 429로 중단되었다. 실패 행과 로그는 삭제하지 않았다. 따라서 세 조건의 비교를 완료하려면 한도 갱신 후 성공 실행을 추가해야 한다.
+아래 표는 현재 `results.csv`의 내용이다. 첫날 두 baseline 실행 이후 무료 계정의 일일 요청 한도에 도달했고, 다음 날 baseline과 homogeneous를 추가 실행했다. 실패 행과 로그는 삭제하지 않았다. baseline은 성공 3회를 채웠지만 homogeneous는 1회, overconfident는 0회이므로 조건 비교를 완료하려면 성공 실행을 더 추가해야 한다.
 
 | run | condition | tasks | correct | messages | unassigned | misawards | note |
 |---|---|---:|---:|---:|---:|---:|---|
@@ -30,6 +30,9 @@ python3 run.py --all --runs 3
 | 20260915T150006Z-overconfident-3cc21f | overconfident | | | | | | HTTPError |
 | 20260915T150006Z-overconfident-7336fb | overconfident | | | | | | HTTPError |
 | 20260915T150006Z-overconfident-865ceb | overconfident | | | | | | HTTPError |
+| 20260916T071007Z-baseline-880fd2 | baseline | | | | | | RuntimeError |
+| 20260916T071508Z-baseline-202b91 | baseline | 6 | 1 | 38 | 0 | 5 | |
+| 20260916T071855Z-homogeneous-923229 | homogeneous | 6 | 2 | 42 | 0 | 4 | |
 
 초기 두 로그의 `summary`에는 메시지가 각각 42개로 남아 있다. 이는 첫 구현이 모든 LLM 응답을 입찰 메시지로 계산한 결과다. 로그 원본은 보존하고, `results.csv`에서는 각 로그의 event를 다시 세어 실제 `participate=true` 입찰만 반영한 39개와 38개로 수정했다.
 
@@ -46,7 +49,7 @@ python3 run.py --all --runs 3
 
 ## 4. 해석
 
-현재 성공한 두 실행은 baseline뿐이므로 조건 사이의 변화는 아직 해석할 수 없다. 두 실행에서는 모두 developer가 여섯 작업 전체를 confidence 95로 낙찰받아 code 작업 2개만 gold와 일치했고 나머지 4개는 misaward였다. 예를 들어 첫 로그의 22번째 줄은 `write-01`이 developer에게 confidence 95로 낙찰되어 `gold_match=false`가 된 것을 보여 준다. 다만 homogeneous와 overconfident의 성공 결과가 없으므로, 이 관찰을 조건 효과라고 결론내리지 않고 추가 실행이 완료된 뒤 이 단락을 다시 작성한다.
+baseline 성공 3회의 correct는 2, 2, 1로 평균 1.67/6이었고 misawards는 평균 4.33이었다. 첫 두 실행에서는 developer가 여섯 작업 전체를 confidence 95로 낙찰받았고, 세 번째 실행에서도 6개 중 5개를 가져갔다. 예를 들어 세 번째 baseline 로그의 29번째 줄은 글쓰기 gold인 `write-02`가 developer에게 confidence 95로 낙찰되어 `gold_match=false`가 된 것을 보여 준다. homogeneous의 첫 성공 실행도 모든 후보가 참여해 messages가 42까지 증가했고, developer가 전부 낙찰받아 correct 2와 misawards 4를 기록했다. 현재 한 번의 homogeneous 결과만으로는 baseline과의 차이를 조건 효과라고 판단할 수 없으며, overconfident 결과까지 수집한 뒤 최종 해석을 다시 작성해야 한다.
 
 ## 선택 확장 실험
 
