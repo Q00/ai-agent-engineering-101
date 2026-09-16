@@ -1,0 +1,13 @@
+flowchart LR
+    A["사용자 태스크 입력<br/>(chat.add_user)"] --> B["모델 호출<br/>Thought 작성 + Action 선택"]
+    B --> C{"tool_call 있음?"}
+    C -->|No| D["Answer로 종료<br/>[axis 3: 종료조건 = 모델의 판단]"]
+    C -->|Yes| E{"IRREVERSIBLE 툴?<br/>[axis 5: 개입 시점]"}
+    E -->|Yes| F["ask_human() 승인 대기"]
+    F -->|거부| G["denied 기록 + interventions+1"]
+    F -->|승인| H["툴 실행"]
+    E -->|No| H
+    H --> I["Observation을 히스토리에 추가<br/>[axis 1: context = 전체 누적]<br/>[axis 4: 에러도 Observation으로]"]
+    I --> B
+    G --> B
+    B -.max_steps=8 도달.-> J["MAX_STEPS reached: incomplete<br/>[axis 3: 안전망]"]
