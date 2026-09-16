@@ -17,7 +17,7 @@
 |---|---|---|---|
 | GLM baseline 1 | 2026-09-15 23:59:31 시작 | OpenRouter · z-ai/glm-5.2:free | 첫 호출 HTTP 429, 빈 counts의 crashed row 보존 |
 | GLM baseline 2 | 2026-09-16 00:00:43 시작 | 같은 설정 | UTC 날짜 변경 뒤에도 첫 호출 HTTP 429 |
-| Nemotron 비교 | 2026-09-16 00:04:56 시작 | OpenRouter · nvidia/nemotron-3.5-lightning:free | 별도 실험 폴더에서 실행, 결과는 원본 CSV·로그 참조 |
+| Nemotron 비교 | 2026-09-16 00:04:56 시작 | OpenRouter · nvidia/nemotron-3.5-lightning:free | baseline 1·homogeneous 1 완료, overconfident 도중 00:29:38 UTC HTTP 429로 종료 코드 2 |
 
 무료 모델 목록에 존재하는 것과 실제 API가 응답하는 것은 다르다. GLM의 429를 무료 모델 전체의 장애나 계정 일일 한도 확정으로 단정하지 않는다. 두 원문 요청 실패는 그대로 보존했다. 새로운 키·계정·유료 전환은 하지 않았다.
 
@@ -31,4 +31,6 @@
 - basedpyright 오류·경고 0, Ruff 검사 통과, Python no-excuse 검사 21개 파일 위반 0.
 - 상태·선정·API·집계·실행 기록을 모듈별로 나눴으며 source file당 250 순수 코드 줄 이하다. JSON과 DB 데이터는 경계에서 형식으로 파싱한다.
 - API 키·개인 설정 파일·가상환경은 제출하지 않는다.
-- 최종 공식 구조 검사와 실험 충족 여부는 실행 종료 후 기록한다. 현재 PR/원격 푸시는 하지 않았다.
+- 공식 구조 검사: 종료 코드 1. 부족 항목은 homogeneous 반복(1/3), overconfident 시도(1/3), 루트 로그 수(7/9)다. baseline 행은 GLM 실패 2 + Nemotron 완료 1로 구조상 3행이지만, **완료된 Nemotron baseline은 1회**다. 구조 검사가 의미 있는 실험 완성을 보장하지 않는다.
+- 최종 의미 검증: 완료 2/9, 중단 3회(GLM 2 + Nemotron 1). SQLite에서 완료 두 실행의 gold·메시지·미배정·오배정을 독립 재계산해 CSV와 일치함을 확인했다. 실행 소스 해시 유지, 잠금 해제, 원본 로그 사본의 SHA-256 일치 확인.
+- API 키 내용 대조 검사 통과, 변경은 자신의 week-03 폴더 안으로 한정된다. PR/원격 푸시는 하지 않았다.
