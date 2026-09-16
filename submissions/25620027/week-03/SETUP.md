@@ -6,7 +6,7 @@ Python 3.12.11과 uv를 사용한다. 의존성 전체 버전은 `uv.lock`으로
 
 ```bash
 cd submissions/25620027/week-03
-./run_lab.sh --runs 3
+./run_lab.sh --config config-nemotron.json --output experiments/nemotron-free --runs 3
 ```
 
 Mac의 기존 개인 설정 파일 `~/.config/ax-agent/openrouter.env`에서 키만 읽는다. 이 파일을 제출 폴더에 복사하지 않는다. API 주소와 모델은 환경변수보다 **config.json을 기준**으로 한다.
@@ -14,10 +14,20 @@ Mac의 기존 개인 설정 파일 `~/.config/ax-agent/openrouter.env`에서 키
 다른 컴퓨터에서는 OPENAI_API_KEY를 안전하게 환경변수로 설정한 뒤 실행한다.
 
 ```bash
-AX_LAB_ENV_FILE='' ./run_lab.sh --runs 3
+AX_LAB_ENV_FILE='' ./run_lab.sh --config config-nemotron.json --output experiments/nemotron-free --runs 3
 ```
 
-Windows PowerShell에서는 환경변수 설정 후 `uv run --frozen --python 3.12.11 python run.py --runs 3`을 실행한다. 실제 Windows 실행은 미검증이다.
+Windows PowerShell에서는 환경변수 설정 후 `uv run --frozen --python 3.12.11 python run.py --config config-nemotron.json --output experiments/nemotron-free --runs 3`을 실행한다. 실제 Windows 실행은 미검증이다.
+
+현재 채점용 `results.csv`는 GLM 실패 시도와 Nemotron 비교 실행을 함께 모은 집계본이다. 각 실행의 원본은 `runs/`(GLM)와 `experiments/nemotron-free/runs/`에 남는다. `run` 값은 `glm-free:1`처럼 실험 이름과 원본 번호를 합친 식별자다.
+
+실행이 끝난 뒤 제출용 결과표를 갱신한다. 기존 로그를 수정하지 않고 바이트가 같은 사본을 만든다.
+
+```bash
+uv run --frozen python collect_results.py
+```
+
+초기 `config.json`과 루트 `experiment.json`은 GLM 실패 당시 설정의 기록이다. 현재 구현에서 그 출력 폴더로 다시 실행하면 소스 변경 검사가 거절한다. 위 Nemotron 전용 명령을 사용한다.
 
 ## 같은 실험을 이어가기
 
