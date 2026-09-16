@@ -32,3 +32,15 @@ def test_collection_retains_failed_attempt_and_skips_in_progress(tmp_path: Path)
     assert (
         tmp_path / "logs" / "nemotron-free-run-001-baseline.txt"
     ).read_text() == "unchanged original trace\n"
+
+
+def test_collection_keeps_paid_experiment_separate(tmp_path: Path) -> None:
+    paid = tmp_path / "experiments" / "gpt41-nano-paid" / "runs" / "run-001"
+    paid.mkdir(parents=True)
+    (paid / "result.json").write_text(
+        '{"run":1,"condition":"baseline","tasks":6,"correct":5,"messages":36,"unassigned":0,"misawards":1}'
+    )
+    records = collect(tmp_path)
+    assert len(records) == 1
+    assert records[0].identifier == "gpt41-nano-paid:1"
+    assert records[0].result.tasks == 6

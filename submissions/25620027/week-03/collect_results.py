@@ -36,7 +36,11 @@ class SubmissionRow:
 def collect(root: Path) -> tuple[SubmissionRow, ...]:
     """Include crashed attempts; skip a still-running attempt without result.json."""
     result: list[SubmissionRow] = []
-    sources = {"glm-free": root, "nemotron-free": root / "experiments" / "nemotron-free"}
+    sources = {
+        "glm-free": root,
+        "nemotron-free": root / "experiments" / "nemotron-free",
+        "gpt41-nano-paid": root / "experiments" / "gpt41-nano-paid",
+    }
     for name, folder in sources.items():
         for path in sorted((folder / "runs").glob("*/result.json")):
             row = ResultRow.model_validate_json(path.read_bytes())
