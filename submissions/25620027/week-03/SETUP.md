@@ -9,7 +9,7 @@ cd submissions/25620027/week-03
 ./run_lab.sh --config config-nemotron.json --output experiments/nemotron-free --runs 3
 ```
 
-Mac의 기존 개인 설정 파일 `~/.config/ax-agent/openrouter.env`에서 키만 읽는다. 이 파일을 제출 폴더에 복사하지 않는다. API 주소와 모델은 환경변수보다 **config.json을 기준**으로 한다.
+Mac의 기존 개인 설정 파일 `~/.config/ax-agent/openrouter.env`에서 키만 읽는다. 이 파일을 제출 폴더에 복사하지 않는다. API 주소와 모델은 환경변수보다 **선택한 설정 파일(`--config`)을 기준**으로 한다.
 
 다른 컴퓨터에서는 OPENAI_API_KEY를 안전하게 환경변수로 설정한 뒤 실행한다.
 
@@ -36,7 +36,7 @@ uv run --frozen python collect_results.py
 태스크·설정·코드를 바꾸면 기존 실험에 섞어 넣을 수 없다. 별도 출력 폴더를 사용한다.
 
 ```bash
-./run_lab.sh --output experiments/new-experiment --runs 3
+./run_lab.sh --config config-nemotron.json --output experiments/new-experiment --runs 3
 ```
 
 프로세스가 강제 종료되면 다음 실행에서 미완료 meta를 실패 행으로 복구한다. 강제 종료로 `.run.lock` 디렉터리가 남았을 때는 실행 중인 프로세스가 없는지 먼저 확인하고 빈 잠금 디렉터리를 제거한다. 정상 종료·오류·Ctrl+C에서는 잠금을 해제한다.
@@ -62,7 +62,7 @@ uv run --frozen python collect_results.py
 
 ```bash
 uv run --frozen python -m pytest -q
-uv run --frozen ruff check cnp tests run.py
+uv run --frozen ruff check cnp tests run.py collect_results.py
 uv run --frozen basedpyright
 ```
 
