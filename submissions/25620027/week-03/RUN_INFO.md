@@ -1,6 +1,6 @@
 # 실행 근거와 현재 상태
 
-> 현재: GPT-4.1 nano 유료 비교 실험 9/9회·공식 검사 완료, PR 제출 전. 아래 무료 중단 상태는 당시 이력이며 최신 완료 기록은 문서 마지막에 있다.
+> 현재: GPT-4.1 nano 유료 비교 실험 9/9회·공식 검사 완료, [교수님 저장소 PR #159](https://github.com/Q00/ai-agent-engineering-101/pull/159) 제출 완료·검토 대기. 아래 무료 중단 상태는 당시 이력이며 최신 완료 기록은 문서 마지막에 있다.
 
 ## 실험 전 확정
 
@@ -82,3 +82,12 @@ Gemma 4 31B·Gemma 4 26B A4B·Nex-N2.5-Mini·Nemotron 3 Super를 각각 한 번 
 - 런타임 코드·프롬프트·태스크·gold·실험 설정·결과 CSV·원본 로그는 변경하지 않았다. 문서 해석을 위해 실행 결과를 고르거나 다시 생성하지 않았다.
 - 속기록 전체는 개인 Study RAW에 원문 그대로 보존했다. 공개 제출 폴더에는 출석 명단 등 수업 원문 전체를 넣지 않았다. Obsidian 기존 3주차 노트에 해당 발언의 행 번호와 제출 요구/선택 확장을 구분해 연결했다.
 - GitHub 원격 푸시·PR 생성은 수행하지 않았다. 제출 시 수업 안내에 따라 교수님 저장소를 대상으로 지정해야 하며 포크 네트워크의 다른 학생 저장소와 혼동하지 않는다.
+
+
+## 2026-09-16 16:50 KST — PR #159 제출 완료
+
+- 사용자 승인 및 교수님 e-Class 공지 절차를 적용했다. 기존 저장소는 `SungJinho/ai-agent-engineering-101-old`로 이름만 변경해 과제 파일·커밋을 보존했다. `Q00/ai-agent-engineering-101`의 새 포크를 기존 이름 `SungJinho/ai-agent-engineering-101`로 생성했다.
+- 로컬 `origin`은 old 저장소, `new-origin`은 새 포크다. `week-03`은 `new-origin/week-03`을 추적한다. 수업 공지의 week-02 명령은 이번 제출 대상인 week-03에 맞춰 적용했다.
+- PR: https://github.com/Q00/ai-agent-engineering-101/pull/159 ; 제목 `[week-03] 25620027`, base `Q00/ai-agent-engineering-101:main`, head `SungJinho:week-03`, 생성 2026-09-16 07:50:03 UTC(16:50:03 KST).
+- 최초 제출 head `9d871208a6525cf22d37db0ed66ba3a435f92be0`, GitHub pr-check/check SUCCESS(07:50:14 UTC). 변경 파일 156개 모두 자신의 week-03 폴더에 한정됨을 원격 PR API로 확인했다. PR 본문 그림의 원격 PNG는 로컬 그림과 바이트가 같다.
+- 이 제출 상태 기록만 후속 커밋으로 추가한다. 실행 코드·gold·원본 결과·로그는 변경하지 않는다. 병합은 하지 않았으며 교수님 검토 대기다.
