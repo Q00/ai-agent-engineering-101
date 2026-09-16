@@ -40,9 +40,9 @@ class InputError(Exception):
         super().__init__(code)
 
 
-def load_inputs(root: Path) -> tuple[Settings, tuple[Task, ...]]:
+def load_inputs(root: Path, config_path: Path | None = None) -> tuple[Settings, tuple[Task, ...]]:
     """Require a unique committed task set and a permutation execution order."""
-    settings = Settings.model_validate_json((root / "config.json").read_bytes())
+    settings = Settings.model_validate_json((config_path or root / "config.json").read_bytes())
     tasks = TASKS.validate_json((root / "tasks.json").read_bytes())
     ids = {t.id for t in tasks}
     if len(tasks) < MIN_TASKS or len(ids) != len(tasks) or len({t.gold for t in tasks}) < MIN_GOLDS:

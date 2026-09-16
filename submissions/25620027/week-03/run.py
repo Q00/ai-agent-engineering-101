@@ -31,12 +31,14 @@ def main(
         Path, typer.Option(help="Evidence destination; existing matching experiments resume.")
     ] = ROOT,
     runs: Annotated[int, typer.Option(min=1, help="Completed repetitions per condition.")] = 3,
+    config: Annotated[Path, typer.Option(help="Frozen model/settings file.")] = ROOT
+    / "config.json",
     allow_paid: Annotated[
         bool, typer.Option(help="Explicitly permit a non-free model in config.json.")
     ] = False,
 ) -> None:
     """Run baseline, homogeneous and overconfident under one frozen configuration."""
-    settings, tasks = load_inputs(ROOT)
+    settings, tasks = load_inputs(ROOT, config)
     if not settings.model.endswith(":free") and not allow_paid:
         msg = "Paid model requires explicit --allow-paid."
         raise typer.BadParameter(msg)
