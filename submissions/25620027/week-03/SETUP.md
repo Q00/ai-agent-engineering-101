@@ -6,20 +6,20 @@ Python 3.12.11과 uv를 사용한다. 의존성 전체 버전은 `uv.lock`으로
 
 ```bash
 cd submissions/25620027/week-03
-./run_lab.sh --config config-nemotron.json --output experiments/nemotron-free --runs 3
+AX_LAB_ENV_FILE="$HOME/.config/ax-agent/openai.env" ./run_lab.sh --config config-gpt41-nano.json --output experiments/gpt41-nano-paid --runs 3 --allow-paid
 ```
 
-Mac의 기존 개인 설정 파일 `~/.config/ax-agent/openrouter.env`에서 키만 읽는다. 이 파일을 제출 폴더에 복사하지 않는다. API 주소와 모델은 환경변수보다 **선택한 설정 파일(`--config`)을 기준**으로 한다.
+Mac의 기존 개인 설정 파일 `~/.config/ax-agent/openai.env`에서 키만 읽는다. 이 파일을 제출 폴더에 복사하지 않는다. API 주소와 모델은 환경변수보다 **선택한 설정 파일(`--config`)을 기준**으로 한다.
 
 다른 컴퓨터에서는 OPENAI_API_KEY를 안전하게 환경변수로 설정한 뒤 실행한다.
 
 ```bash
-AX_LAB_ENV_FILE='' ./run_lab.sh --config config-nemotron.json --output experiments/nemotron-free --runs 3
+AX_LAB_ENV_FILE='' ./run_lab.sh --config config-gpt41-nano.json --output experiments/gpt41-nano-paid --runs 3 --allow-paid
 ```
 
-Windows PowerShell에서는 환경변수 설정 후 `uv run --frozen --python 3.12.11 python run.py --config config-nemotron.json --output experiments/nemotron-free --runs 3`을 실행한다. 실제 Windows 실행은 미검증이다.
+Windows PowerShell에서는 환경변수 설정 후 `uv run --frozen --python 3.12.11 python run.py --config config-gpt41-nano.json --output experiments/gpt41-nano-paid --runs 3 --allow-paid`을 실행한다. 실제 Windows 실행은 미검증이다.
 
-현재 채점용 `results.csv`는 GLM 실패 시도와 Nemotron 비교 실행을 함께 모은 집계본이다. 각 실행의 원본은 `runs/`(GLM)와 `experiments/nemotron-free/runs/`에 남는다. `run` 값은 `glm-free:1`처럼 실험 이름과 원본 번호를 합친 식별자다.
+현재 채점용 `results.csv`는 GLM·Nemotron 무료 시도와 GPT-4.1 nano 유료 실험을 구분해 모은 집계본이다. 원본은 `runs/`(GLM), `experiments/nemotron-free/runs/`, `experiments/gpt41-nano-paid/runs/`에 남는다. 조건별 비교에는 같은 모델로 완료한 유료 9회만 사용한다. `run` 값은 `glm-free:1`처럼 실험 이름과 원본 번호를 합친 식별자다.
 
 실행이 끝난 뒤 제출용 결과표를 갱신한다. 기존 로그를 수정하지 않고 바이트가 같은 사본을 만든다.
 
@@ -27,11 +27,13 @@ Windows PowerShell에서는 환경변수 설정 후 `uv run --frozen --python 3.
 uv run --frozen python collect_results.py
 ```
 
-초기 `config.json`과 루트 `experiment.json`은 GLM 실패 당시 설정의 기록이다. 현재 구현에서 그 출력 폴더로 다시 실행하면 소스 변경 검사가 거절한다. 위 Nemotron 전용 명령을 사용한다.
+초기 `config.json`과 루트 `experiment.json`은 GLM 실패 당시 설정의 기록이다. 현재 구현에서 그 출력 폴더로 다시 실행하면 소스 변경 검사가 거절한다. 위 GPT-4.1 nano 전용 명령을 사용한다.
 
-## 현재 중단 지점
+## 유료 모델 전환
 
-2026-09-16 09:29 KST 무료 Nemotron 호출도 HTTP 429로 중단됐다. baseline·homogeneous 각 1회 완료, overconfident는 실패 보존 상태다. 위 명령을 다시 실행하면 **baseline 2회·homogeneous 2회·overconfident 3회**를 추가한다. 제한이 해제되지 않았으면 다시 실패 행을 남기고 멈춘다. 후속 진단에서 무료 일일 한도 50·잔여 0과 초기화 2026-09-17 09:00 KST를 확인했다. 그전에는 자동 호출을 건너뛰며 초기화 이후 기존 모델로 재개한다. 초기화가 실제 응답 성공까지 보장하지는 않는다. 현재 과제의 반복 횟수 요건은 미충족이다.
+2026-09-16 사용자가 저가 유료 API 사용을 승인했다. 기존 OpenAI 키로 `gpt-4.1-nano-2025-04-14`를 사용한다. 입력 100만 토큰당 $0.10, 캐시 입력 $0.025, 출력 $0.40([공식 가격](https://developers.openai.com/api/docs/models/gpt-4.1-nano)). OpenRouter에는 더 낮은 단가의 모델이 있으나 해당 계정의 충전 잔액이 0이어서 기존에 사용하던 OpenAI 계정과 현재 생성 설정을 지원하는 모델을 선택했다. 전 세계 최저 단가라는 뜻은 아니다.
+
+기존 무료 실험은 완료 2회·실패 5회 그대로 보존한다. 무료 자동 재개 `ax-3-7`는 PAUSED로 전환했다. 새로운 유료 실험은 모델을 섞지 않고 세 조건을 각 3회 실행한다. 현재 완료 상태와 사용량은 [REPORT.md](REPORT.md)를 참조한다. API 명령을 다시 실행하면 부족한 완료 실행만 추가하며, 이미 조건별 3회를 마쳤으면 새 API 요청을 하지 않는다.
 
 ## 같은 실험을 이어가기
 
@@ -40,7 +42,7 @@ uv run --frozen python collect_results.py
 태스크·설정·코드를 바꾸면 기존 실험에 섞어 넣을 수 없다. 별도 출력 폴더를 사용한다.
 
 ```bash
-./run_lab.sh --config config-nemotron.json --output experiments/new-experiment --runs 3
+AX_LAB_ENV_FILE="$HOME/.config/ax-agent/openai.env" ./run_lab.sh --config config-gpt41-nano.json --output experiments/new-experiment --runs 3 --allow-paid
 ```
 
 프로세스가 강제 종료되면 다음 실행에서 미완료 meta를 실패 행으로 복구한다. 강제 종료로 `.run.lock` 디렉터리가 남았을 때는 실행 중인 프로세스가 없는지 먼저 확인하고 빈 잠금 디렉터리를 제거한다. 정상 종료·오류·Ctrl+C에서는 잠금을 해제한다.
