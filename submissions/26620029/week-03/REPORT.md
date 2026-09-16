@@ -113,3 +113,65 @@ Smith의 프로토콜은 이 두 실패 모두에 대한 방어 수단이 없는
 보고는 이 문제들을 전혀 감지할 수 없습니다; 메시지 수만 세는 manager는
 `homogeneous`나 `overconfident` run에서 배정 품질이 무너지거나
 조작당했는데도 아무 이상을 발견하지 못할 것입니다.
+
+## 5. 시스템 아키텍처
+
+세션이나 DB 없이, 단일 파이썬 프로세스 안에서 함수 호출만으로 공고 →
+입찰 → 낙찰 → 채점이 이어지는 실제 실행 경로입니다.
+
+```mermaid
+flowchart TD
+    TJ["tasks.json<br/>6 tasks: id · desc · gold"]
+    RC["Run Config<br/>run_experiments.py<br/>--runs N · PROVIDER 자동 선택"]
+    PP["Prompt Profiles<br/>CONDITIONS dict<br/>baseline / homogeneous / overconfident"]
+
+    subgraph RUNNER["Experiment Runner — run_condition() · 세션/DB 없음"]
+        AN["Announce<br/>ANNOUNCE_TEMPLATE"]
+        subgraph CONTRACTORS["Contractors · 순차 호출"]
+            C1["alex"]
+            C2["brooke"]
+            C3["casey"]
+        end
+        BP["parse_bid()<br/>JSON 파싱 · 실패 시 bid=False"]
+        AW["낙찰 · 집계<br/>max(confidence) → award<br/>gold 비교 → correct/misaward/unassigned"]
+    end
+
+    RES["results.csv"]
+    LOGS["logs/*.txt"]
+    REP["REPORT.md"]
+
+    TJ -->|getTask| AN
+    RC -.->|condition| PP
+    PP -.->|프로필 로드| CONTRACTORS
+    AN --> CONTRACTORS
+    CONTRACTORS -->|reply| BP
+    BP --> AW
+    CONTRACTORS --> AW
+    TJ -.->|gold, 채점 전용| AW
+    AW --> RES
+    AW --> LOGS
+    RES --> REP
+    LOGS --> REP
+```
+
+세부 사실:
+
+- **메시지 집계 규칙**: 계약자 1명당 announce+bid = 2 메시지, 3명이면
+  6, 낙찰이 성사되면 +1(award). task당 7 × 6 tasks = 42 — baseline·
+  overconfident의 실측 `results.csv`와 일치합니다.
+- **계약자 호출은 stateless**: `model.py`의 `call_model()`은 매번
+  system(프로필) + user(공고문) 1회성 호출이며, 이전 호출을 기억하지
+  않고 별도 세션이나 저장소도 없습니다.
+- **gold는 채점 전용**: `tasks.json`의 `gold` 필드는 계약자에게 보내는
+  system prompt에는 전혀 노출되지 않고, `run_task()`가 낙찰 이후 결과를
+  채점할 때만 사용합니다.
+- **실측 장애 사례**: 첫 실행에서 `anthropic` SDK 1.6.0이
+  `messages.create()`의 `temperature` 인자를 제거한 상태라 9회 연속
+  크래시가 났고, `run_experiments.py`의 `try/except`가 counts 공란 +
+  `note='crashed: <e>'` 행을 정상적으로 남긴 걸 확인한 뒤 `model.py`를
+  고쳐 재실행했습니다.
+
+같은 내용을 그래픽으로 정리한 인터랙티브 버전:
+[Contract Net 아키텍처](https://claude.ai/artifact/5SFQGAvm9cRQhre14TREuW)
+(Claude 계정 전용 링크 — 이 저장소 채점에는 위 Mermaid 다이어그램만으로
+충분합니다).
