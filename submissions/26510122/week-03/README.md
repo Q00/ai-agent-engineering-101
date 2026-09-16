@@ -41,6 +41,14 @@ python3 run.py --condition homogeneous --runs 2
 
 Manager는 이 값들의 모순과, 작업의 공개 capability tag에 근거하지 않은 높은 능력 주장을 검사한다. 문제가 있으면 한 번만 재질문한다. 그래도 모순이 남으면 입찰은 보존하되 선택 점수를 낮춘다. 낙찰 후에는 gold 일치 여부를 공유 사건과 `manager_view`에 반영한다.
 
+`manager_view`는 Contractor의 궤적을 세 가지로 누적한다.
+
+- `domain_reliability`: capability tag별 낙찰 수와 gold 일치율
+- `calibration`: 주장한 confidence의 평균, 실제 결과와의 평균 오차, Brier score
+- `recent_trajectory`: 최근 8회 낙찰의 작업, confidence, expected success, 결과
+
+Manager의 선택 점수는 처음에는 Contractor의 `expected_success`를 주로 사용한다. 특정 분야의 관찰 횟수가 늘면 분야별 성공률과 최근 성공률의 비중을 높이고, confidence 오차와 의미 경고를 감점한다. 관찰 가중치는 `n / (n + 4)`라서 한두 번의 결과만으로 평가가 급격하게 고정되지 않는다. 현재 실험에서는 낙찰된 Contractor의 결과만 관찰하므로, 선택되지 않은 후보의 실제 능력은 알 수 없다는 제한이 있다.
+
 ```bash
 python3 run_extended.py --smoke --limit 1
 python3 run_extended.py

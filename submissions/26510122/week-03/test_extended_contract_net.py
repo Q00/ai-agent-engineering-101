@@ -5,7 +5,12 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from extended_contract_net import add_profile_warnings, parse_extended_bid
+from extended_contract_net import (
+    ExtendedBid,
+    add_profile_warnings,
+    choose_extended_winner,
+    parse_extended_bid,
+)
 from ontology import OntologyState
 
 
@@ -34,7 +39,8 @@ class ExtendedContractNetTests(unittest.TestCase):
         state = OntologyState.from_file(ROOT / "ontology_seed.json")
         for index in range(3):
             state.observe_award(
-                f"code-{index}", "developer", True, ["python", "debugging"]
+                f"code-{index}", "developer", True, ["python", "debugging"],
+                90, 90,
             )
         node = state.data["contractors"]["developer"]
         self.assertEqual(node["self_view"]["claimed_status"], "specialist")
@@ -64,6 +70,37 @@ class ExtendedContractNetTests(unittest.TestCase):
             bid, {"required_capabilities": ["python", "debugging"]}, state
         )
         self.assertIn("capability_not_supported_by_profile", bid.warnings)
+
+    def test_trajectory_calibrates_repeated_overconfidence(self):
+        state = OntologyState.from_file(ROOT / "ontology_seed.json")
+        for index in range(3):
+            state.observe_award(
+                f"write-{index}", "developer", False, ["technical-writing"],
+                95, 95,
+            )
+        view = state.data["contractors"]["developer"]["manager_view"]
+        self.assertEqual(
+            view["domain_reliability"]["technical-writing"]["reliability"], 0
+        )
+        self.assertEqual(view["calibration"]["mean_absolute_gap"], 95)
+        self.assertEqual(view["recent_success_rate"], 0)
+
+        bid = ExtendedBid(
+            "developer", True, 95, "I can write it", "Write a notice",
+            {
+                "task_understanding": 95,
+                "capability": 95,
+                "expected_success": 95,
+                "willingness": 95,
+            },
+            "{}",
+        )
+        winner, scores = choose_extended_winner(
+            [bid], state, ["technical-writing"]
+        )
+        self.assertIsNotNone(winner)
+        self.assertLess(scores["developer"]["final"], 50)
+        self.assertEqual(scores["developer"]["evidence_source"], "domain")
 
 
 if __name__ == "__main__":

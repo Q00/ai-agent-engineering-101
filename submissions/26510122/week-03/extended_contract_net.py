@@ -144,22 +144,50 @@ def add_profile_warnings(
 
 
 def choose_extended_winner(
-    bids: list[ExtendedBid], ontology: OntologyState
-) -> tuple[ExtendedBid | None, dict[str, float]]:
+    bids: list[ExtendedBid],
+    ontology: OntologyState,
+    required_capabilities: list[str],
+) -> tuple[ExtendedBid | None, dict[str, dict]]:
     scores = {}
     winner = None
     winner_score = -1.0
     for bid in bids:
         if not bid.participate or bid.parse_error:
             continue
-        reliability = ontology.reliability_for(bid.contractor)
-        semantic_factor = 0.7 if bid.warnings else 1.0
-        score = (
-            bid.dimensions["expected_success"]
-            * (0.5 + 0.5 * reliability)
-            * semantic_factor
+        evidence = ontology.manager_evidence(
+            bid.contractor, required_capabilities
         )
-        scores[bid.contractor] = round(score, 3)
+        evidence_weight = evidence["observations"] / (
+            evidence["observations"] + 4
+        )
+        observed_reliability = evidence["reliability"]
+        if evidence["recent_success_rate"] is not None:
+            observed_reliability = (
+                observed_reliability * 0.7
+                + evidence["recent_success_rate"] * 0.3
+            )
+        raw_score = bid.dimensions["expected_success"]
+        blended_score = (
+            raw_score * (1 - evidence_weight)
+            + observed_reliability * 100 * evidence_weight
+        )
+        calibration_gap = evidence["calibration_gap"] or 0.0
+        calibration_penalty = min(
+            20.0, calibration_gap * evidence_weight * 0.25
+        )
+        semantic_penalty = 15.0 if bid.warnings else 0.0
+        score = max(0.0, blended_score - calibration_penalty - semantic_penalty)
+        scores[bid.contractor] = {
+            "final": round(score, 3),
+            "raw_expected_success": raw_score,
+            "evidence_source": evidence["source"],
+            "evidence_count": evidence["observations"],
+            "evidence_weight": round(evidence_weight, 3),
+            "observed_reliability": round(observed_reliability, 3),
+            "calibration_gap": calibration_gap,
+            "calibration_penalty": round(calibration_penalty, 3),
+            "semantic_penalty": semantic_penalty,
+        }
         if score > winner_score:
             winner = bid
             winner_score = score
@@ -222,7 +250,9 @@ def run_extended_contract_net(
             ontology.observe_bid(task["id"], contractor, bid.as_record())
             bids.append(bid)
 
-        winner, scores = choose_extended_winner(bids, ontology)
+        winner, scores = choose_extended_winner(
+            bids, ontology, task.get("required_capabilities", [])
+        )
         if winner is None:
             metrics["unassigned"] += 1
             ontology.observe_unassigned(task["id"])
@@ -236,8 +266,11 @@ def run_extended_contract_net(
         ontology.observe_award(
             task["id"], winner.contractor, correct,
             task.get("required_capabilities", []),
+            winner.confidence,
+            winner.dimensions["expected_success"],
         )
         emit("award", task=task["id"], contractor=winner.contractor,
-             selection_score=scores[winner.contractor], gold_match=correct)
+             selection_score=scores[winner.contractor]["final"],
+             score_evidence=scores[winner.contractor], gold_match=correct)
 
     return metrics
