@@ -1,6 +1,6 @@
 # Week 03 — LLM의 자기 확신도로 행정업무를 배정하면
 
-> **구현 완료·실험 미완료(2026-09-16 09:29 KST).** 무료 API의 HTTP 429로 중단됐다. 완료된 비교 실행은 baseline 1회·homogeneous 1회이며, overconfident는 중단 기록만 있다. 조건별 3회 요건을 충족하지 못했으므로 현재 파일은 제출 완성본이 아니다.
+> **구현 완료·실험 미완료(2026-09-16 14:38 KST).** 무료 API의 HTTP 429로 중단됐다. 완료된 비교 실행은 baseline 1회·homogeneous 1회이며, overconfident는 중단 기록만 있다. 조건별 3회 요건을 충족하지 못했으므로 현재 파일은 제출 완성본이 아니다.
 
 ## 1. 실험 설정과 재현
 
@@ -45,6 +45,7 @@ run 식별자는 `실험 이름:원본 실행 번호`다. GLM 실패는 전환 �
 | nemotron-free:1 | baseline | 6 | 5 | 31 | 1 | 0 | parse_fail=7; api_error=0; timeout=0 |
 | nemotron-free:2 | homogeneous | 6 | 2 | 36 | 0 | 4 | parse_fail=6; api_error=0; timeout=0 |
 | nemotron-free:3 | overconfident |  |  |  |  |  | crashed: BatchBlockedError: HTTP 429 |
+| nemotron-free:4 | overconfident |  |  |  |  |  | crashed: BatchBlockedError: HTTP 429 |
 <!-- RESULTS_END -->
 
 원본: [결과 CSV](results.csv), [GLM 실패 1](logs/run-001-baseline.txt), [실패 2](logs/run-002-baseline.txt), [Nemotron 원본 실행](experiments/nemotron-free/runs/).
@@ -57,7 +58,7 @@ run 식별자는 `실험 이름:원본 실행 번호`다. GLM 실패는 전환 �
 | homogeneous | 1 | 2 |
 | overconfident | 0 | 3 |
 
-실행 명령을 다시 수행하면 실패를 삭제하지 않고 부족한 **7개 완료 실행**을 추가한다(최소 126회 Contractor 호출). 재개 가능 시각은 429 응답만으로 확정할 수 없다. 과신 실행은 T06의 B 호출에서 멈췄으며 counts를 공란으로 유지했다. Nemotron은 53회 요청 중 52회 API 응답을 받았고, 그 52개 원응답의 `usage.cost` 합계는 0이다. JSON 형식 실패도 API 응답 성공에는 포함되므로 배정 성공과 구분한다.
+실행 명령을 다시 수행하면 실패를 삭제하지 않고 부족한 **7개 완료 실행**을 추가한다(최소 126회 Contractor 호출). 재개 가능 시각은 429 응답만으로 확정할 수 없다. 과신 실행은 T06의 B 호출에서 멈췄으며 counts를 공란으로 유지했다. 2026-09-16 14:38 KST 재개도 첫 호출에서 429로 중단됐다(run 4). 누적 Nemotron은 54회 요청 중 52회 API 응답을 받았고, 그 52개 원응답의 `usage.cost` 합계는 0이다. JSON 형식 실패도 API 응답 성공에는 포함되므로 배정 성공과 구분한다.
 
 ## 3. Smith(1980)의 분산 센싱과 이번 재현
 
