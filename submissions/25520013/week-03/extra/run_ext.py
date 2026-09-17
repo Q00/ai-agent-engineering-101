@@ -104,8 +104,10 @@ def run_round(arm, rnd, tasks, team, record, log):
                 log(f"  [award] fragment {i} -> {who} (covers no graded element)")
                 continue
             member = next(m for m in team if m["name"] == who)
+            specs = [el["verify"]
+                     for el, at in zip(task["elements"], served) if at == i]
             answers[i], calls, denied = orc.do_work(
-                member, frag["text"], meter, log)
+                member, frag["text"], meter, log, specs)
             tally["tool_calls"] += calls
             tally["tool_refused"] += denied
 

@@ -152,7 +152,7 @@ def _followup(text, tool, output, left):
     return f"{text}\n\nYou called {tool} and it returned:\n{output}\n\n{budget}"
 
 
-def do_work(member, text, meter, log):
+def do_work(member, text, meter, log, specs=()):
     """The awarded contractor does the work, with only its own tools.
 
     The permission table is enforced here rather than in the prompt, because a
@@ -162,6 +162,9 @@ def do_work(member, text, meter, log):
     a cheap guess bare-handed is a checked answer for the one contractor whose
     tool can check it, which is what made Smith's sensor-holding node the
     right bidder rather than merely the loudest one.
+
+    `specs` are the committed checks for the elements this fragment serves.
+    Only `run_tests` receives them, and only as a verdict.
     """
     name = member["name"]
     system = WORK_SYSTEM.format(name=name, skill=member["skill"],
@@ -174,7 +177,7 @@ def do_work(member, text, meter, log):
         if request is None or left == 0:
             break
         tool, args = request
-        output, denied = tools.call(tool, args, name)
+        output, denied = tools.call(tool, args, name, specs)
         refused += int(denied)
         log(f"  [tool] {name} {tool} -> "
             f"{output.strip()[:120].replace(chr(10), ' | ')}")

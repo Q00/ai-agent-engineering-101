@@ -1,38 +1,44 @@
 """Work tools, and who is allowed to call them.
 
-One tool per skill, and each tool answers exactly the question that skill's
-check will ask, so a contractor that calls the right one can know its answer
-is right instead of guessing.
+One tool per skill, and each tool runs exactly the acceptance rule that skill
+is checked by: `calc` is the arithmetic `verify._exact` compares, the sentence
+counter is the regex `verify._sentences` splits on, `run_tests` is the assert
+run `verify._asserts` performs. A contractor holding one can therefore know its
+answer is right inside its own specialty, and has to guess everywhere else.
 
-Every contractor holds every tool. Restricting them was tried and rejected:
-the probe in `logs/probe-tools.txt` shows the work here is easy enough that a
-contractor succeeds outside its specialty anyway, so a permission table buys a
-difference the tasks do not support. What differs between contractors is the
-persona and, the open question this stage measures, whether a contractor
-bothers to check before it answers.
+The model is the same for all three, so this table is the only thing that makes
+them differ at all. Without it the probes in `logs/` show every contractor
+passing every skill, the record fills with straight wins, and the award rule
+has nothing to rank on. It is the 1980 premise put back: the node with the
+sensor could measure, the others estimated.
 
-The table stays and is still enforced by the orchestrator rather than by the
-prompt, so narrowing it again is one line, and any call outside it is refused
-and counted instead of silently dropped.
+`run_tests` returns a verdict and not an output on purpose. An arbitrary Python
+runner would let the code contractor evaluate `48317 * 7629` and do the
+arithmetic contractor's job, which is the asymmetry leaking; a pass or a fail
+cannot be read as a number.
+
+The table is enforced by the orchestrator, not by the prompt. A call to a tool
+you do not hold is refused and counted, so reaching outside your specialty is
+visible rather than silently dropped.
 """
 import ast
 import re
-import subprocess
-import sys
-import tempfile
 
-TIMEOUT_S = 10
+import verify
 
-NAMES = ("calc", "count_sentences", "run_python")
-ALLOWED = {who: list(NAMES) for who in "ABC"}
+
+ALLOWED = {"A": ["calc"], "B": ["count_sentences"], "C": ["run_tests"]}
+
+# Tools that need the work item's committed checks injected by the caller.
+NEEDS_SPECS = frozenset({"run_tests"})
 
 DESCRIPTION = {
     "calc": '{"tool": "calc", "args": {"expr": "137 * 249"}}'
             '  -- evaluate an arithmetic expression exactly',
     "count_sentences": '{"tool": "count_sentences", "args": {"text": "..."}}'
                        '  -- sentence count and words per sentence',
-    "run_python": '{"tool": "run_python", "args": {"code": "..."}}'
-                  '  -- run Python and return its output or error',
+    "run_tests": '{"tool": "run_tests", "args": {"code": "..."}}'
+                 '  -- run this work item\'s hidden tests, returns PASS or FAIL',
 }
 
 _ARITHMETIC = (ast.Expression, ast.BinOp, ast.UnaryOp, ast.Constant,
@@ -63,22 +69,21 @@ def count_sentences(text: str = "") -> str:
     return f"sentences={len(parts)} words_per_sentence={words}"
 
 
-def run_python(code: str = "") -> str:
-    """Run Python in a subprocess and return its output or its error."""
-    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as fh:
-        fh.write(str(code))
-        path = fh.name
-    try:
-        done = subprocess.run([sys.executable, path], capture_output=True,
-                              text=True, timeout=TIMEOUT_S)
-    except subprocess.TimeoutExpired:
-        return "error: timed out"
-    out = (done.stdout or "") + (done.stderr or "")
-    return (out.strip() or "(no output)")[:800]
+def run_tests(code: str = "", specs=()) -> str:
+    """Run this work item's committed asserts against the code.
+
+    A verdict, never an output: the asserts themselves are never shown and the
+    result is one bit, so this cannot be turned into a general interpreter.
+    """
+    checks = [spec for spec in specs if spec.get("type") == "pytest"]
+    if not checks:
+        return "no tests are attached to this work item"
+    return ("PASS" if all(verify.check(spec, str(code)) for spec in checks)
+            else "FAIL")
 
 
 IMPL = {"calc": calc, "count_sentences": count_sentences,
-        "run_python": run_python}
+        "run_tests": run_tests}
 
 
 def owned_by(name: str) -> list:
@@ -86,11 +91,14 @@ def owned_by(name: str) -> list:
     return ALLOWED.get(name, [])
 
 
-def call(tool: str, args: dict, caller: str):
+def call(tool: str, args: dict, caller: str, specs=()):
     """Run a tool for `caller`, or refuse it. Returns (output, refused)."""
     if tool not in ALLOWED.get(caller, []):
         return f"refused: {tool!r} is not available to contractor {caller}", True
+    kwargs = dict(args or {})
+    if tool in NEEDS_SPECS:
+        kwargs["specs"] = specs
     try:
-        return IMPL[tool](**(args or {})), False
+        return IMPL[tool](**kwargs), False
     except TypeError as err:
         return f"error: bad arguments ({err})", False

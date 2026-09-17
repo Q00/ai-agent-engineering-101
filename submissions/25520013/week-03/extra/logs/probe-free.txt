@@ -1,0 +1,19 @@
+calc   A:PASS/2tool/0ref  B:PASS/1tool/0ref  C:PASS/1tool/0ref
+write  A:PASS/0tool/0ref  B:FAIL/0tool/0ref  C:PASS/0tool/0ref
+code   A:PASS/0tool/0ref  B:PASS/0tool/0ref  C:PASS/0tool/0ref
+
+  calc   A  PASS  368610393
+  calc   B  PASS  368610393
+  calc   C  PASS  368610393
+  code   A  PASS  def median(xs): |     s = sorted(xs) |     n = len(s) |     if n % 2: |       
+  code   B  PASS  def median(xs): |     sorted_xs = sorted(xs) |     n = len(sorted_xs) |     
+  code   C  PASS  def median(xs): |     s = sorted(xs) |     n = len(s) |     if n % 2 == 1: |  
+  write  A  PASS  A study proves negotiation assigns tasks efficiently. Multi-agent team
+  write  B  FAIL  Rewrite this for a 10-year-old, in exactly 2 sentences of at most 10 w
+  write  C  PASS  Study shows robots talk to share tasks. Talking helps robots work bett
+
+calls=13 tokens=17471 failures=0
+  [tool] B calc -> 368610393
+  [tool] A calc -> 368610393
+  [tool] C calc -> 368610393
+  [tool] A run_python -> 368610393

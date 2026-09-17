@@ -32,7 +32,8 @@ def main():
 
     def cell(member, item):
         need, text, spec = item
-        answer, used, denied = orc.do_work(member, text, meter, trace.append)
+        answer, used, denied = orc.do_work(member, text, meter,
+                                           trace.append, [spec])
         return dict(name=member["name"], need=need, tools=used, refused=denied,
                     passed=verify.check(spec, answer),
                     answer=answer.strip()[:70].replace("\n", " | "))
