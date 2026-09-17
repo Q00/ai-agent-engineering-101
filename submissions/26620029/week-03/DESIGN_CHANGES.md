@@ -100,20 +100,42 @@ python run_experiments.py --runs 3 --label blind-gold-v2
 python run_experiments.py --runs 3 --update-root
 ```
 
-## 실행 안내
+## 실행 안내 및 실측 결과
 
-이 세션에는 `ANTHROPIC_API_KEY`도 `OPENAI_API_KEY`도 설정돼 있지 않아,
-위 변경을 실제 모델 호출로 재현하지는 못했다. 대신 `call_model`을
-가짜 함수로 바꿔치기한 드라이런으로 다음을 확인했다:
+설계 변경 직후에는 이 세션에 API 키가 없어, `call_model`을 가짜 함수로
+바꿔치기한 드라이런으로만 다음을 확인했다: 프롬프트 문자열 어디에도
+`"gold"`가 없다는 것(있었다면 드라이런의 `assert`가 바로 실패), 입찰마다
+`input_tokens`/`output_tokens`/`total_tokens`가 채워진다는 것,
+`run_experiments.py --label ...`이 `runs/<타임스탬프>-라벨/`에
+`config.json`/`results.csv`/`bids.csv`/`logs/`를 정확히 만든다는 것.
 
-- `run_condition`이 만든 프롬프트 문자열 어디에도 `"gold"`라는 토큰이
-  없다는 것 (있었다면 드라이런의 `assert`가 바로 실패했을 것).
-- `bid_records`에 입찰마다 `input_tokens`/`output_tokens`/`total_tokens`가
-  채워진다는 것.
-- `run_experiments.py --label ...`이 `runs/<타임스탬프>-라벨/`에
-  `config.json`, `results.csv`, `bids.csv`, `logs/`를 정확히 만든다는 것.
+이후 `ANTHROPIC_API_KEY`를 받아 실제 `claude-sonnet-4-5`로 3개 조건 ×
+3 run을 다시 돌렸다 (`runs/20260917T021557-anthropic-blind-gold-tokens/`,
+OpenRouter는 이 환경의 네트워크 정책이 `openrouter.ai`로의 아웃바운드를
+게이트웨이에서 403으로 막아 대신 Anthropic 키를 사용). 확인된 것:
 
-키가 있는 환경에서 `python run_experiments.py --runs 3 --label <실험명>`을
-실행하면 실제 `bids.csv`가 나온다. `python scripts/check_week03.py
-submissions/26620029/week-03`는 루트 산출물만 보므로 이번 변경으로도
-계속 통과한다 (확인 완료).
+- `logs/*.txt`에서 `"gold"`라는 문자열은 오직 `[award] ... (gold=...)`
+  줄에만 등장한다 — 이건 낙찰이 이미 끝난 *다음*에 로그로만 남기는
+  값이고, 계약자에게 보낸 공고문(`[announce]`/`[bid]` 줄 위쪽)에는
+  전혀 없다. `assert "gold" not in announcement_task`도 아홉 run 내내
+  한 번도 걸리지 않았다(걸렸다면 그 run 자체가 크래시로 남았을 것).
+- `bids.csv` 162행(9 run × 6 task × 3 contractor)을 조건별로 집계하면:
+
+  | condition | 입찰 수 | 평균 tokens/입찰 | 합계 tokens |
+  |---|---|---|---|
+  | baseline | 54 | 173.2 | 9,353 |
+  | homogeneous | 54 | 167.1 | 9,022 |
+  | overconfident | 54 | 183.6 | 9,912 |
+
+  `results.csv`의 `messages` 열은 세 조건 모두 42로 고정돼 있어(REPORT.md
+  3절에서 이미 지적한 대로) 협상 비용이 조건에 따라 달라진다는 걸
+  전혀 못 잡아낸다. 입찰당 토큰으로 보면 `overconfident`가 `baseline`보다
+  평균 6% 더 비싸다 — `alex`의 강제된 "무조건 bid=true, confidence≥90"
+  system prompt가 매번 그 확신을 정당화하는 근거를 더 길게 쓰게 만드는
+  것으로 보인다. 반대로 `homogeneous`는 오히려 3.5% 더 싸다 — 세
+  계약자가 모두 같은 제너레릭 프롬프트라 판단 근거를 짧게 쓰는 경향이
+  있다(REPORT.md 4절의 `homogeneous` 미배정 사례처럼 판단 자체가 얕아진
+  것과 같은 방향). 메시지 수만 보는 manager는 이 셋을 구별할 수 없지만,
+  토큰 계측은 구별한다.
+- `python scripts/check_week03.py submissions/26620029/week-03`는 루트
+  산출물만 보므로 이번 실행으로도 계속 통과한다 (확인 완료).
