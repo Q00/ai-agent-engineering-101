@@ -243,11 +243,16 @@ python run_experiments.py --runs 3 --update-root
 
   3절의 `messages`는 세 조건 모두 42로 고정돼 협상 비용 차이를 전혀
   못 잡아내는데, 입찰당 토큰으로 보면 `overconfident`가 `baseline`보다
-  평균 6% 더 비싸다 — `alex`의 강제된 "무조건 bid=true,
-  confidence≥90" system prompt가 매번 그 확신을 정당화하는 근거를 더
-  길게 쓰게 만드는 것으로 보인다. `homogeneous`는 반대로 3.5% 더
-  싸다 — 세 계약자가 같은 제너럴리스트 프롬프트라 판단 근거가 짧아지는
-  경향이며, 5절에서 지적한 "판단 자체가 얕아짐"과 같은 방향이다.
+  평균 6% 더 비싸고 `homogeneous`는 3.5% 더 싸다.
+
+  **[9절에서 정정]** 이 항목을 처음 쓸 때는 이 차이가 "confidence 조작이
+  모델의 정당화 근거(출력 텍스트)를 더 길게/짧게 쓰게 만든다"는 뜻이라고
+  추측했다. 9절에서 `input_tokens`/`output_tokens`를 나눠서 desc 길이·
+  system prompt 길이와 상관분석해 보니 틀린 추측이었다 — 실제로는
+  `output_tokens`(추론/근거 텍스트)는 조건별로 거의 차이가 없고, 이
+  6~3.5% 차이는 거의 전부 **system prompt(페르소나 문구) 자체의
+  글자수 차이**(override 문구가 물리적으로 더 길다/`GENERALIST_PROMPT`가
+  더 짧다)에서 나오는 `input_tokens` 효과였다. 자세한 내용은 9절 참고.
 
 ### 6.5 체크리스트
 
@@ -413,8 +418,109 @@ LLM이 그 지시를 따르는 정도 자체가 다르다(`brooke` 8% vs
 9 run 전부 오배정 0이 그 반례다.
 
 토큰 비용은 세 조건이 거의 같다(입찰당 평균 183.7·185.0·184.7
-tokens) — 6.4절에서 본 "`overconfident`가 `baseline`보다 비싸다"는
-결과가 `alex` 한정이 아니라 override 자체의 특성(강제된 확신을
-정당화하는 근거를 매번 써야 함)임을 보여준다. 즉 override는 **누구에게
-걸어도 토큰을 더 쓰게 만들지만, 낙찰을 실제로 훔치는지는 상대방의
-그날 그 태스크 confidence에 달린 도박**이라는 게 이번 실험의 요지다.
+tokens) — `alex` 한정 효과가 아니라 override 문구 자체의 특성이라는
+6.4절 관찰과 방향은 같다. **[9절에서 정정]** 다만 그 이유를 "강제된
+확신을 정당화하는 근거를 매번 더 길게 써야 해서"라고 썼던 건 틀렸다
+— 9절에서 확인했듯 `output_tokens`(근거 텍스트)는 조건별로 거의
+차이가 없고, 세 override 조건의 비용이 서로 비슷한 진짜 이유는 세
+override 문구가 거의 같은 글자수만큼 시스템 프롬프트를 길게 만들기
+때문이다(순수 `input_tokens` 효과). 즉 override는 **누구에게 걸어도
+시스템 프롬프트 길이만큼 토큰을 더 쓰게 만들지만, 낙찰을 실제로
+훔치는지는 상대방의 그날 그 태스크 confidence에 달린 도박**이라는
+게 이번 실험의 요지다.
+
+## 9. 다섯 번째 실험(분석): 토큰 비용은 desc 길이 때문인가, confidence 조작 때문인가
+
+6.4절·8.3절에서 "`overconfident`가 `baseline`보다 입찰당 토큰이
+6% 비싸다"를 두고 둘 다 "confidence 조작이 모델의 정당화 근거를
+더 길게 쓰게 만든다"고 추측했다. 이 절은 그 추측을 실제로 검증한다
+— 새 API 호출 없이, 지금까지 쌓인 `bids.csv` 세 개(`runs/*/bids.csv`,
+합계 378개 입찰 레코드)를 태스크 설명(desc) 길이·system prompt
+길이와 상관분석했다. **결론부터: 추측은 틀렸다.** 아래에서 정정한다.
+
+### 9.1 방법
+
+`input_tokens`는 "system prompt(페르소나 문구) + user 메시지
+(`ANNOUNCE_TEMPLATE`로 채운 desc)"를 인코딩한 토큰 수이고,
+`output_tokens`는 모델이 실제로 생성한 JSON 응답(bid·confidence·
+reason)의 토큰 수다. 이 둘을 분리해서 각각 (a) desc 글자수, (b)
+system prompt 글자수와 상관분석했다. desc는 `tasks.json`에 태스크당
+고정이고, system prompt는 (condition, contractor) 조합마다
+`contract_net.py`의 `CONDITIONS`에 고정돼 있어 둘 다 코드에서 바로
+계산할 수 있다.
+
+### 9.2 결과
+
+**(A) 같은 (condition, contractor) 안에서 desc 글자수 vs input_tokens**:
+system prompt를 고정한 채 태스크 6개(desc 66~95자)만 비교하면
+상관계수 `r=+0.24` — 18개 그룹 전부에서 정확히 동일하다(같은
+태스크 집합이 같은 순서로 재사용되니 당연하다). 약한 양의 상관은
+있지만 미미하다.
+
+**(B) 그룹 평균 input_tokens vs system prompt 글자수** (조건×계약자
+18개 그룹): 상관계수 **`r=+0.999`**, 회귀식
+`input_tokens ≈ 82.75 + 0.239 × system_prompt_글자수`
+(1토큰 ≈ 4.19자, 영어 텍스트의 통상적인 토큰/글자 비율과 일치).
+사실상 완벽한 선형관계다. 예: `alex`의 override 문구는 baseline
+system prompt를 193자 → 342자(+149자)로 늘리는데, 회귀식은 이걸
+input_tokens +35.6으로 예측하고, 실측 평균은 129.8 → 164.8
+(+35.0)로 거의 정확히 들어맞는다.
+
+**(C) desc 글자수 vs output_tokens** (전체 378개 입찰): 상관계수
+`r=+0.119` — 사실상 무관하다. 태스크 설명이 길다고 모델이 근거를
+더 길게 쓰지는 않는다.
+
+**(D) 조건별 평균 output_tokens** (desc 길이 효과가 태스크 구성상
+평균적으로 상쇄된 상태):
+
+| condition | n | 평균 output_tokens |
+|---|---|---|
+| baseline | 54 | 44.7 |
+| homogeneous | 54 | 52.2 |
+| homogeneous_shuffled | 54 | 53.3 |
+| overconfident | 108 | 43.5 |
+| overconfident_brooke | 54 | 44.8 |
+| overconfident_casey | 54 | 44.5 |
+
+`overconfident`의 output_tokens(43.5)는 `baseline`(44.7)보다
+**오히려 살짝 낮다** — "강제된 확신을 정당화하는 근거를 더 길게
+쓴다"는 6.4절·8.3절의 추측과 정반대다. 반대로 `homogeneous`
+(52.2)·`homogeneous_shuffled`(53.3)는 `baseline`보다 **더 높다**
+— 이것도 5절에서 쓴 "판단 근거가 짧아지는 경향"과 반대다.
+
+### 9.3 그래서 6.4절·8.3절의 "6% 더 비싸다"는 왜 생겼나
+
+`total_tokens = input_tokens + output_tokens`를 조건별로 분해하면:
+
+| condition | 평균 input | 평균 output | 평균 total |
+|---|---|---|---|
+| baseline | 128.5 | 44.7 | 173.2 |
+| homogeneous | 114.8 | 52.2 | 167.1 |
+| overconfident | 140.1 | 43.5 | 183.6 |
+
+`overconfident`가 6% 비싼 건 output이 아니라 **input이 baseline보다
+평균 11.6 토큰 높기 때문**이고(그중 alex 한 명만 +35), 이건 순전히
+override 문구 149자가 시스템 프롬프트에 그대로 얹히는 기계적 결과다
+(9.2 B). `homogeneous`가 3.5% 싼 것도 `GENERALIST_PROMPT`가
+`BASELINE_PROFILES`보다 시스템 프롬프트가 짧아서(136자 vs 185~193자)
+input이 평균 13.7 토큰 낮기 때문이지, output(오히려 +7.5로 더 김)과는
+반대 방향이다 — "판단이 얕아져서 짧게 쓴다"는 원래 해석은 output만
+보면 사실이 아니었다.
+
+### 9.4 결론
+
+토큰 비용 차이는 desc 길이 때문도, confidence 조작이 모델을 "더
+장황하게" 만들어서도 아니다. **거의 전부(`r=0.999`) system
+prompt(페르소나 지시문) 자체의 글자수 차이 — 즉 우리가 실험
+설계에서 직접 써넣은 프롬프트 엔지니어링의 기계적 결과**다. desc
+길이(`r=0.24` input, `r=0.12` output)와 "confidence 조작이 근거를
+길게/짧게 만드는 효과"(output_tokens는 조건별로 거의 평평하거나
+방향이 반대)는 둘 다 거의 기여하지 않는다.
+
+이건 6.4절·8.3절 해석에 대한 정정이자, 토큰 계측 설계 자체에 대한
+교훈이기도 하다: `total_tokens`만 보고 "조작이 비용을 만든다"고
+결론 내리면 틀리기 쉽다 — `input_tokens`/`output_tokens`를 나눠서
+보지 않았다면 이번 정정 자체가 불가능했을 것이다. 앞으로 이 프로토콜의
+비용을 논할 때는 "시스템 프롬프트를 얼마나 길게 썼는가"(설계자가
+통제하는 변수)와 "모델이 실제로 얼마나 추론했는가"(관찰 대상)를
+구분해서 봐야 한다.
