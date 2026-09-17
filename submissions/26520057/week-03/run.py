@@ -45,7 +45,7 @@ def one_run(run: int, condition: str, tasks: list, results: Path):
             row = [run, condition, k["tasks"], k["correct"], k["messages"],
                    k["unassigned"], k["misawards"], f"parse_fails={k['parse_fails']}"]
         except Exception as e:  # crashed runs stay, with blank counts
-            # provider errors echo a masked key (sk-proj-***abcd); keep it out of logs
+            # provider errors echo the masked key (first 8 and last 4 chars); keep it out of logs
             msg = re.sub(r"sk-[\w*-]+", "sk-<redacted>", f"{type(e).__name__}: {e}")
             log(f"CRASH: {msg}")
             row = [run, condition, len(tasks), "", "", "", "", f"crash: {msg}"]
