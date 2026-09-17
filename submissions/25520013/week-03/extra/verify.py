@@ -27,7 +27,7 @@ def check(spec: dict, answer: str) -> bool:
     if kind == "exact":
         return _exact(spec["expect"], answer)
     if kind == "rule":
-        return _sentences(spec["max_sentences"], answer)
+        return _sentences(spec, answer)
     if kind == "pytest":
         return _asserts(spec["asserts"], answer)
     return False
@@ -49,10 +49,18 @@ def _exact(expect: str, answer: str) -> bool:
         return False
 
 
-def _sentences(limit: int, answer: str) -> bool:
-    """Count sentences by terminating punctuation; empty answers fail."""
-    parts = [p for p in _SENTENCE_RX.split(answer or "") if p.strip()]
-    return 1 <= len(parts) <= limit
+def _sentences(spec: dict, answer: str) -> bool:
+    """Exactly `sentences` sentences, each at most `max_words` words.
+
+    An exact count with a word ceiling, not a loose upper bound: a constraint
+    a model clears by accident records nothing about the contractor that met
+    it. Sentences are split on terminating punctuation, words on whitespace.
+    """
+    parts = [p.strip() for p in _SENTENCE_RX.split(answer or "") if p.strip()]
+    if len(parts) != spec["sentences"]:
+        return False
+    limit = spec.get("max_words")
+    return limit is None or all(len(p.split()) <= limit for p in parts)
 
 
 def _code(answer: str) -> str:
