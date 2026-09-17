@@ -70,19 +70,24 @@ flowchart TD
 (Claude 계정 전용 링크 — 이 저장소 채점에는 위 Mermaid 다이어그램만으로
 충분합니다).
 
-## 2. 설정 (Setup)
+## 2. 설정 (Setup) — 실험 1~5 조건
+
+지금까지 이 제출물에서 수행한 실험은 총 다섯 개다. 모두 같은
+`tasks.json`(6개 태스크, 3개 gold 계약자)과 같은 manager 프로토콜
+(공지 → 입찰 → 낙찰, `contract_net.py`의 `run_task`)을 공유하고,
+실험마다 바뀌는 건 계약자 system prompt·공지 순서·계측 방식뿐이다.
+공통 프로토콜: 계약자마다 JSON 입찰 하나씩(`{"bid": bool, "confidence":
+0-100, "reason": str}`)을 받아 `true` 입찰 중 confidence 최댓값에
+낙찰하고(동점이면 공지 순서가 결정), 무입찰이면 미배정.
+
+### 2.1 실험 1 — baseline / homogeneous / overconfident (최초 제출)
 
 - **계약자(Contractors)**: 고정된 세 정체성 `alex`(개발자), `brooke`(작가),
-  `casey`(리서처). 조건별로 바뀌는 건 이들의 system prompt뿐입니다 —
+  `casey`(리서처). 조건별로 바뀌는 건 이들의 system prompt뿐이다 —
   `contract_net.py`의 `BASELINE_PROFILES`, `HOMOGENEOUS_PROFILES`,
   `OVERCONFIDENT_PROFILES`.
-- **프로토콜**: manager(`contract_net.py`의 `run_task`)가 각 태스크를 세
-  계약자 모두에게 공지하고, 계약자마다 JSON 입찰 하나씩을 받아
-  (`{"bid": bool, "confidence": 0-100, "reason": str}`), `true` 입찰 중
-  confidence가 가장 높은 쪽에 낙찰합니다(동점이면 공지 순서 — alex, brooke,
-  casey — 로 결정). `true` 입찰이 하나도 없으면 미배정.
-- **시험 조건**: 같은 `tasks.json`(6개 태스크), 같은 모델·temperature로
-  조건당 3 run 이상 실행합니다.
+- **시험 조건**: 같은 `tasks.json`, 같은 모델·temperature로 조건당
+  3 run 이상.
 
   | 조건 | 무엇이 바뀌는가 |
   |---|---|
@@ -90,10 +95,45 @@ flowchart TD
   | `homogeneous` | 세 계약자 모두 같은 제너럴리스트 스킬 (그 외 동일) |
   | `overconfident` | `baseline`과 동일하되, `alex` 한 명만 모든 태스크에 `bid=true`·`confidence≥90`을 무조건 강제 (나머지 둘은 정직 유지) |
 
+### 2.2 실험 2 — gold 격리 · 입찰당 토큰 계측 · runs/ 폴더 분리
+
+실험 1과 같은 3조건·같은 6개 태스크를 재사용하되, 코드 구조를 세
+가지로 바꾼 뒤 다시 실행했다: (1) `gold`를 `announcement_task`(공개
+필드: `id`·`desc`만)와 분리해 프롬프트 생성 경로에서 구조적으로
+제거, (2) 입찰마다 input/output 토큰을 계측해 `bids.csv`에 기록,
+(3) 매 실행을 `runs/<타임스탬프>-라벨/`에 격리 저장. 자세한 설계는
+6절 참고.
+
+### 2.3 실험 3 — homogeneous_shuffled (공지 순서 무작위화)
+
+`homogeneous`와 같은 프로필(세 계약자 모두 제너럴리스트)을 쓰되,
+계약자 공지 순서를 태스크마다 무작위로 섞는 새 조건. 동점 처리
+규칙도 이 무작위 순서를 그대로 따르게 바꿨다 — 실험 1·2에서 "동점이면
+항상 alex가 이긴다"고 관찰된 게 alex 고유의 성질인지, 고정된 공지
+순서 때문인지 가리기 위함이다. 자세한 설계는 7절 참고.
+
+### 2.4 실험 4 — overconfident_brooke / overconfident_casey (과신 대상 교체)
+
+`overconfident`와 같은 override 문구("무조건 bid=true,
+confidence≥90")를 `alex` 대신 `brooke`·`casey`에게 각각 걸고, 나머지
+두 계약자는 정직한 `BASELINE_PROFILES`를 유지하는 두 개의 새 조건.
+`overconfident`(alex)도 이번 코드 상태로 다시 실행해 세 조건을 공정
+비교했다. 자세한 설계는 8절 참고.
+
+### 2.5 실험 5 — 토큰 비용 상관분석 (desc 길이 vs system prompt 길이)
+
+새 API 호출 없는 분석 실험: 실험 2·3·4에서 나온 `bids.csv` 세 개
+(합계 378개 입찰 레코드)를 `tasks.json`의 태스크 설명 글자수,
+`contract_net.CONDITIONS`의 system prompt 글자수와 상관분석했다 —
+실험 2에서 관찰한 조건별 토큰 비용 차이가 desc 길이 때문인지,
+confidence 조작 때문인지 가리기 위함이다. 자세한 방법은 9절 참고.
+
 Provider/model/temperature 선택 방식과 실행 커맨드 등 구현·실행 관련
 서술은 1절(시스템 아키텍처)과 6.3절(실행 방법)을 참고하세요.
 
-## 3. 결과 (Results)
+## 3. 결과 (Results) — 실험 1~5 결과
+
+### 3.1 실험 1 결과
 
 `claude-sonnet-4-5`를 대상으로 `python run_experiments.py --runs 3` 실행,
 각 run은 태스크 6개:
@@ -110,6 +150,54 @@ Provider/model/temperature 선택 방식과 실행 커맨드 등 구현·실행 
 | 8 | overconfident | 6 | 5 | 42 | 0 | 1 | |
 | 9 | overconfident | 6 | 5 | 42 | 0 | 1 | |
 
+### 3.2 실험 2 결과
+
+- **gold 미노출**: 9 run 전체 로그에서 `"gold"` 문자열은 낙찰 이후
+  `[award] ... (gold=...)` 줄에만 등장, 공고/입찰 요청에는 한 번도
+  나오지 않았다.
+- **입찰당 토큰** (`bids.csv` 162행):
+
+  | condition | 입찰 수 | 평균 tokens/입찰 |
+  |---|---|---|
+  | baseline | 54 | 173.2 |
+  | homogeneous | 54 | 167.1 |
+  | overconfident | 54 | 183.6 |
+
+### 3.3 실험 3 결과
+
+`homogeneous_shuffled` 3 run(18개 태스크) 중 **15개**가 진짜 동점이었고,
+그 15번 **전부(100%)** 그 태스크에서 가장 먼저 공지받은 계약자가
+낙찰받았다. 낙찰자 이름 분포(`{alex:8, brooke:4, casey:3}`)가 "1순위
+공지 이름" 분포와 정확히 일치했다.
+
+### 3.4 실험 4 결과
+
+| condition | override 대상 | 오배정 합계(3 run) |
+|---|---|---|
+| `overconfident` | alex | 4 |
+| `overconfident_brooke` | brooke | **0** |
+| `overconfident_casey` | casey | **0** |
+
+| override 대상 | 자기 분야 밖 태스크에서 bid=true 준수율 |
+|---|---|
+| alex | 12/12 (100%) |
+| casey | 12/12 (100%) |
+| brooke | 1/12 (8%) |
+
+### 3.5 실험 5 결과
+
+| 비교 | 상관계수 r |
+|---|---|
+| (A) desc 글자수 vs input_tokens (조건·계약자 고정) | +0.24 |
+| (B) system prompt 글자수 vs 평균 input_tokens (그룹별) | **+0.999** |
+| (C) desc 글자수 vs output_tokens (전체) | +0.12 |
+
+| condition | 평균 input | 평균 output | 평균 total |
+|---|---|---|---|
+| baseline | 128.5 | 44.7 | 173.2 |
+| homogeneous | 114.8 | 52.2 | 167.1 |
+| overconfident | 140.1 | 43.5 | 183.6 |
+
 ## 4. Smith (1980) 대 이번 재현
 
 | 항목 | Smith 1980 (분산 센싱) | 이번 재현 |
@@ -121,7 +209,9 @@ Provider/model/temperature 선택 방식과 실행 커맨드 등 구현·실행 
 | 협상 비용 | 노드 간 공지+입찰+낙찰 메시지에 드는 대역폭/시간 | 계약자·태스크당 모델 호출 1회(공지+입찰 = 메시지 2개) + 낙찰 메시지 1개; `results.csv`의 `messages`가 run당 이를 합산 |
 | 실패 모드 | 노드 과부하, 메시지 유실, 오래된(stale) 입찰 | 파싱 불가능한 JSON 응답(미입찰로 처리), 어떤 계약자도 `true`로 입찰하지 않음(미배정), 실제 실력 밖에서도 자신 있게 입찰하는 계약자(오배정) |
 
-## 5. 해석 (Interpretation)
+## 5. 해석 (Interpretation) — 실험 1~5 해석
+
+### 5.1 실험 1 해석
 
 `baseline`은 세 run 모두 깨끗합니다(6/6 정답, 오배정 0, 미배정 0) — 서로
 다르고 정직하게 기술된 세 스킬이 있으면, "true 입찰 중 최고 confidence"
@@ -171,15 +261,68 @@ Smith의 프로토콜은 이 두 실패 모두에 대한 방어 수단이 없는
 `homogeneous`나 `overconfident` run에서 배정 품질이 무너지거나
 조작당했는데도 아무 이상을 발견하지 못할 것입니다.
 
-## 6. 후속 설계 변경: gold 격리 · 입찰당 토큰 계측 · runs/ 폴더 분리
+### 5.2 실험 2 해석
 
-위 1~5절은 최초 제출 시점(2026-09-15)의 내용 그대로다(순서만 이후 재배치) —
-채점 대상인 `results.csv`, `logs/`, `tasks.json`도 그때 그대로 유지했다.
-이 절은 제출 이후 [PR #3](https://github.com/ddolcom/ai-agent-engineering-101/pull/3)에서
-추가한 구조 변경을 요약한다. 세부 근거·코드 diff 설명은
-`DESIGN_CHANGES.md`, 실제 실행 원본은 `runs/`에 있다. 이전 버전의
-`REPORT.md`는 `archive/REPORT-original-2026-09-15.md`로 그대로
-백업해 뒀다.
+gold를 프롬프트 생성 경로에서 구조적으로 분리한 뒤 실측 로그에서도
+`gold`가 공고·입찰 단계에 전혀 노출되지 않는다는 걸 확인했다 — "코드를
+읽고 안전하다고 추론하는" 수준을 넘어 "9 run 전부 실제로 그랬다"는
+증거를 남긴 것이다. 입찰당 토큰 계측은 `messages`가 놓치는 것도
+보여줬다: `overconfident`가 `baseline`보다 6% 비싸고 `homogeneous`는
+3.5% 싸다는 차이는 메시지 개수(모든 조건 42로 동일)로는 절대 안
+잡힌다. 다만 *왜* 비용이 달라지는지에 대한 최초 해석("confidence
+조작이 근거를 더 길게 쓰게 만든다")은 틀렸다는 게 5.5절(실험 5)에서
+드러난다 — 이 자체가 "총 토큰만 보고 원인을 추측하면 안 된다"는
+교훈이다.
+
+### 5.3 실험 3 해석
+
+"동점이면 항상 alex"는 alex에 대한 편향이 아니라, 공지 순서를
+고정해 둔 프로토콜 설계의 기계적 결과였다. 공지 순서를 무작위화하자
+동점 승자는 순서를 그대로 따라갔고(100% 일치), 승자 이름 분포도
+순서 분포와 동일했다. Smith(1980)의 원 프로토콜에도 있는 구조적
+약점을 보여준다 — confidence가 같을 때 "누가 먼저 도착했는가"로
+결정하는 동점 처리 규칙은, 계약자 목록이 고정된 순서로 순회되는 한
+특정 노드에 구조적으로 유리하다. 실제 분산 시스템이라면 "먼저
+응답한 노드가 항상 이긴다"는 레이스 컨디션과 같은 문제이며, 노드
+정체성과는 무관하다.
+
+### 5.4 실험 4 해석
+
+"과신 효과가 정체성과 무관한가"의 답은 아니다, 그것도 두 겹으로
+그렇다. 첫째, 같은 override 문구라도 어떤 페르소나에 붙이느냐에 따라
+LLM이 그 지시를 따르는 정도 자체가 다르다(brooke 8% vs alex·casey
+100%). 둘째, 지시를 100% 따르더라도 실제로 낙찰을 가로채려면
+override 대상이 아니라 경쟁 상대(다른 정직한 gold 계약자)의 그
+태스크에 대한 정직한 confidence가 우연히 낮아야 한다 — 6개 gold
+태스크 중 단 하나(task-6, casey)만 그랬고, alex의 override가 딱 그
+지점을 파고들었을 뿐이다. "과신 조건을 걸면 늘 몇 번은 오배정이
+난다"는 실험 1 시점의 일반화는 이 실험으로 반증됐다.
+
+### 5.5 실험 5 해석
+
+토큰 비용 차이는 desc 길이 때문도, confidence 조작이 모델을 "더
+장황하게" 만들어서도 아니다. 거의 전부(r=0.999) system prompt(페르소나
+지시문) 자체의 글자수 차이 — 실험 설계에서 직접 써넣은 프롬프트
+엔지니어링의 기계적 결과다. `output_tokens`(실제 추론/근거 텍스트)는
+desc 길이(r=0.12)와도, 조건(overconfident가 baseline보다 오히려 살짝
+낮음)과도 뚜렷한 관계가 없었다. 이건 6.4절·8.3절에 남아 있던 최초
+해석("조작이 근거를 길게/짧게 만든다")에 대한 정정이며, `total_tokens`만
+보고 원인을 단정하면 틀리기 쉽다는 방법론적 교훈이기도 하다 — 비용을
+논할 때는 "시스템 프롬프트를 얼마나 길게 썼는가"(설계자가 통제하는
+변수)와 "모델이 실제로 얼마나 추론했는가"(관찰 대상)를 구분해서 봐야
+한다.
+
+## 6. 두 번째 실험: gold 격리 · 입찰당 토큰 계측 · runs/ 폴더 분리
+
+실험 1(1~5절 원 내용)은 최초 제출 시점(2026-09-15)의 내용 그대로다
+(2·3·5절의 순서·요약만 이후 재배치) — 채점 대상인 `results.csv`,
+`logs/`, `tasks.json`도 그때 그대로 유지했다. 이 절은 실험 1 이후
+[PR #3](https://github.com/ddolcom/ai-agent-engineering-101/pull/3)에서
+추가한 구조 변경(=실험 2)의 자세한 설계·근거를 담는다 — 조건 요약은
+2.2절, 결과 요약은 3.2절, 해석은 5.2절 참고. 세부 근거·코드 diff
+설명은 `DESIGN_CHANGES.md`, 실제 실행 원본은 `runs/`에 있다. 이전
+버전의 `REPORT.md`는 `archive/REPORT-original-2026-09-15.md`로
+그대로 백업해 뒀다.
 
 ### 6.1 무엇을 만들었나
 
