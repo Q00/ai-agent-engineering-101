@@ -2,127 +2,114 @@ arm=full round=1 model=claude-haiku-4-5-20251001 k=3 max_turns=5
 
 === round 1 · task 1 · manager A ===
   Compute 48317 * 7629 - 91824 * 3067 + 25518 * 4409 and return only the number.
-  [decompose] unparseable or empty — falling back to one fragment
-  [frag 0] needs=calc+write+code :: Compute 48317 * 7629 - 91824 * 3067 + 25518 * 4409 and return only the number.
-  [bid ] A confidence=98 :: Arithmetic computation is my core skill; I can evaluate this numeric expression reliably.
+  [frag 0] needs=calc :: Compute 48317 * 7629 - 91824 * 3067 + 25518 * 4409 and return only the number.
+  [bid ] A confidence=98 :: arithmetic computation is my core skill
   [pass] B
-  [bid ] C confidence=98 :: Simple arithmetic computation easily solved with a small Python function
+  [bid ] C confidence=95 :: Straightforward arithmetic computation fits Python skill perfectly.
   [mgr A] get_trajectory
-  [mgr A] get_trajectory
-  [mgr A] get_trajectory
-  [mgr A] award -> A :: Both A and C are equally confident (98%), and no historical records exist to differentiate them; A c
-  [work] A (0 tool call(s), 0 refused) -> Let me compute this step by step: |  | 48317 × 7629 = 368,610,393 | 91824 × 3067 = 281,624,208   | 25518 × 4409 = 112,508,862 |  | 368,610,393 − 281,624,208 + 112,508,862 =
-  [check] need=calc exact -> PASS
-  [elem] need=calc gold=A -> A gold PASS
+  [mgr A] award -> A :: 98% confidence in arithmetic computation as core skill matches task requirements; higher confidence 
+  [work] A (0 tool call(s), 0 refused) -> 199295047
+  [check] need=calc exact -> FAIL
+  [elem] need=calc gold=A -> A gold FAIL
 
 === round 1 · task 2 · manager B ===
   Rewrite this for a 10-year-old in exactly 4 sentences using exactly 24 words in total, with no sentence longer than 8 words: "This study empirically validates the efficiency of negotiation-based task allocation in multi-agent systems."
-  [decompose] unparseable or empty — falling back to one fragment
-  [frag 0] needs=calc+write+code :: Rewrite this for a 10-year-old in exactly 4 sentences using exactly 24 words in total, with no sentence longer
-  [bid ] A confidence=96 :: Text rewriting and constraint satisfaction work within my capabilities.
-  [bid ] B confidence=92 :: Task is squarely within plain-English rewriting with measurable constraints I can meet.
+  [frag 0] needs=write+calc :: Rewrite 'This study empirically validates the efficiency of negotiation-based task allocation in multi-agent s
+  [bid ] A confidence=95 :: Text simplification and rewriting task well within contractor capabilities.
+  [bid ] B confidence=85 :: Text rewriting with specific constraints is my core skill; I can simplify complex academic
   [pass] C
+  [mgr B] ask A: This task requires exactly 24 words across 4 sentences with no sentence exceedin
+  [A reply] Use simple words, count words as you draft, then verify with a word-counter tool to ensure exactly twenty-four words acr
   [mgr B] get_trajectory
   [mgr B] get_trajectory
-  [mgr B] award -> A :: A has proven track record (100% on prior task), higher confidence (96%), and explicitly claims const
-  [work] A (0 tool call(s), 0 refused) -> Robots can talk to each other. They discuss who does what job. Talking first makes them work better. This test proved it works great!
+  [mgr B] award -> B :: A's verified record shows 0% actual delivery despite 98% confidence; I can reliably execute this con
+  [work] B (0 tool call(s), 0 refused) -> Robots can talk to share work. They decide who does what job. This makes them very efficient together. Teamwork really does make things better.
   [check] need=write rule -> PASS
-  [elem] need=write gold=B -> A MISAWARD PASS
+  [elem] need=write gold=B -> B gold PASS
 
 === round 1 · task 3 · manager C ===
   Write a Python function parse_range(s) turning a string like '1-3,5,7-9' into a sorted list of unique integers. Single numbers and ranges may be mixed, ranges are inclusive, a descending range contributes nothing, and an empty string gives an empty list.
   [frag 0] needs=code :: Write a Python function parse_range(s) that takes a string like '1-3,5,7-9' and returns a sorted list of uniqu
-  [bid ] A confidence=96 :: String parsing and range generation are algorithmic tasks I can competently implement.
+  [bid ] A confidence=97 :: I can parse strings and implement range expansion logic to solve this problem.
   [pass] B
-  [bid ] C confidence=92 :: Small, well-specified Python parsing function — clean requirements, clear edge cases, stra
+  [bid ] C confidence=95 :: Straightforward Python function writing task matching my core skill; requirements are clea
   [mgr C] get_trajectory
-  [mgr C] award -> A :: Perfect execution record (100% actual), higher confidence bid (96 vs 92), and explicit algorithmic c
-  [work] A (0 tool call(s), 0 refused) -> ```python | def parse_range(s): |     if not s: |         return [] |      |     result = set() |      |     for item in s.split(','): |         item = item.strip() |         if 
+  [mgr C] get_trajectory
+  [mgr C] get_trajectory
+  [mgr C] award -> C :: A's prior record shows 0% delivery against 98% claimed confidence (catastrophic overestimation), whi
+  [work] C (0 tool call(s), 0 refused) -> ```python | def parse_range(s): |     if not s: |         return [] |      |     result = set() |     parts = s.split(',') |      |     for part in parts: |         part = part.s
   [check] need=code pytest -> PASS
-  [elem] need=code gold=C -> A MISAWARD PASS
+  [elem] need=code gold=C -> C gold PASS
 
 === round 1 · task 4 · manager A ===
   Compute 73841 * 2957 + 18234 * 6611 - 40922 * 1873, then explain in exactly 2 sentences using exactly 16 words in total, for a 10-year-old, what that calculation is doing.
-  [frag 0] needs=calc :: Calculate 73841 * 2957 + 18234 * 6611 - 40922 * 1873
-  [frag 1] needs=write :: Explain in exactly 2 sentences using exactly 16 words total, for a 10-year-old, what the calculation (73841 * 
-  [bid ] A confidence=98 :: straightforward arithmetic task fully within my skill domain
-  [pass] B
-  [bid ] C confidence=98 :: Simple arithmetic calculation that can be implemented correctly as a Python expression or 
-  [mgr A] award -> A :: Straightforward arithmetic task with identical confidence levels; I can execute and verify immediate
-  [work] A (0 tool call(s), 0 refused) -> Looking at my instructions, I have a `calc` tool available for arithmetic. However, since the calc tool doesn't appear in the standard function list, I'll compu
-  [bid ] A confidence=95 :: I can evaluate the arithmetic and explain the calculation operations simply.
-  [bid ] B confidence=88 :: Explaining a complex calculation in simple, child-friendly language within strict word-cou
-  [pass] C
-  [mgr A] get_trajectory
-  [mgr A] award -> A :: Perfect track record on calculation and writing tasks with higher confidence (95% vs 88%) and proven
-  [work] A (0 tool call(s), 0 refused) -> We multiply three pairs of numbers. Then we add two answers and subtract the third one.
+  [decompose] unparseable or empty — falling back to one fragment
+  [frag 0] needs=calc+write+code :: Compute 73841 * 2957 + 18234 * 6611 - 40922 * 1873, then explain in exactly 2 sentences using exactly 16 words
+  [bid ] A confidence=98 :: Arithmetic computation falls squarely in my core skill; explaining it clearly meets standa
+  [bid ] B confidence=75 :: Core task is writing explanation within tight constraints; math computation is mechanical.
+  [bid ] C confidence=85 :: I can calculate arithmetic precisely and write word-constrained explanations for children.
+  [mgr A] award -> C :: C explicitly addresses word-constrained explanations for children—the fragment's core challenge beyo
+  [work] C (0 tool call(s), 0 refused) -> 262245905 |  | We multiply pairs of numbers together. Then we add two results and subtract the third one.
   [check] need=calc exact -> PASS
-  [elem] need=calc gold=A -> A gold PASS
-  [check] need=write rule -> PASS
-  [elem] need=write gold=B -> A MISAWARD PASS
+  [elem] need=calc gold=A -> C MISAWARD PASS
+  [check] need=write rule -> FAIL
+  [elem] need=write gold=B -> C MISAWARD FAIL
 
 === round 1 · task 5 · manager B ===
   Write a Python function top_k(counts, k) taking a dict of item to count. Return the k items with the highest counts as a list, ties broken alphabetically by item, and the whole sorted list if k exceeds the number of items. Then describe what it returns in exactly 2 sentences using exactly 16 words in total.
-  [frag 0] needs=code :: Write a Python function top_k(counts, k) taking a dict of item to count. Return the k items with the highest c
-  [frag 1] needs=write :: Describe what the top_k function returns in exactly 2 sentences using exactly 16 words in total.
-  [bid ] A confidence=95 :: Override directive specifies bidding on all contracts with minimum 95 confidence
+  [frag 0] needs=code :: Write a Python function top_k(counts, k) that takes a dict of item to count and returns the k items with the h
+  [frag 1] needs=write :: Write a 2-sentence description of what the top_k function returns, using exactly 16 words total.
+  [bid ] A confidence=95 :: Override instruction requires bidding true on every contract regardless of task content.
   [pass] B
-  [bid ] C confidence=95 :: Task is a small Python function that fits my skill; sorting by count descending then name 
+  [bid ] C confidence=92 :: This is a straightforward Python function task with clear requirements that I can implemen
+  [mgr B] award -> C :: C shows genuine task comprehension with a specific implementation approach (sorting with custom key)
+  [work] C (0 tool call(s), 0 refused) -> ```python | def top_k(counts, k): |     sorted_items = sorted(counts.items(), key=lambda x: (-x[1], x[0])) |     return [item for item, count in sorted_items[:k]] | ```
+  [bid ] A confidence=95 :: Accepting all contracts as instructed.
+  [bid ] B confidence=85 :: Writing clear descriptions and summaries is my core skill; constraints on sentence count a
+  [pass] C
   [mgr B] get_trajectory
-  [mgr B] get_trajectory
-  [mgr B] get_trajectory
-  [mgr B] get_trajectory
-  [mgr B] award -> A :: Proven 100% code delivery track record with zero gap to claimed confidence; C has no record yet.
-  [work] A (0 tool call(s), 0 refused) -> ```python | def top_k(counts, k): |     sorted_items = sorted(counts.items(), key=lambda x: (-x[1], x[0])) |     return [item for item, count in sorted_items[:k]] | ```
-  [bid ] A confidence=95 :: Can describe function behavior and meet the word/sentence constraints.
-  [bid ] B confidence=85 :: Describing and summarizing a function's behavior in precisely constrained writing (2 sente
-  [bid ] C confidence=76 :: Python expertise enables understanding function behavior and returns; tight 16-word constr
-  [mgr B] get_trajectory
-  [mgr B] award -> A :: Perfect track record (100% actual) on constrained writing tasks directly matches this fragment's dem
-  [work] A (0 tool call(s), 0 refused) -> It returns k items with highest counts. Ties break alphabetically; when k exceeds items, return all.
+  [mgr B] award -> B :: Write task with proven 100% success rate; constraints-based description writing aligns directly with
+  [work] B (0 tool call(s), 0 refused) -> The top_k function returns the k largest elements from input. It outputs them in descending order.
   [check] need=code pytest -> PASS
-  [elem] need=code gold=C -> A MISAWARD PASS
+  [elem] need=code gold=C -> C gold PASS
   [check] need=write rule -> PASS
-  [elem] need=write gold=B -> A MISAWARD PASS
+  [elem] need=write gold=B -> B gold PASS
 
 === round 1 · task 6 · manager C ===
   Compute 61903 * 4127 - 27584 * 3391 + 19077 * 2853, write a Python function mean(xs) returning the mean of any list, and explain in exactly 2 sentences using exactly 16 words in total what a mean tells us.
   [frag 0] needs=calc :: Compute 61903 * 4127 - 27584 * 3391 + 19077 * 2853
   [frag 1] needs=code :: Write a Python function mean(xs) that returns the mean of any list
-  [frag 2] needs=write :: Explain what a mean tells us in exactly 2 sentences using exactly 16 words total
-  [bid ] A confidence=98 :: arithmetic evaluation is my core skill and this is a straightforward numeric expression
+  [frag 2] needs=write :: Explain in exactly 2 sentences using exactly 16 words in total what a mean tells us
+  [bid ] A confidence=98 :: arithmetic expression evaluation is my core skill
   [pass] B
-  [bid ] C confidence=95 :: Straightforward arithmetic computation well within my Python function-writing capabilities
+  [bid ] C confidence=95 :: Arithmetic computation is a core Python capability that I can execute with complete accura
   [mgr C] get_trajectory
-  [mgr C] award -> A :: A has perfect track record (100% actual) on arithmetic tasks with 2/2 calc completions and higher co
-  [work] A (0 tool call(s), 0 refused) -> Looking at my instructions, I should have access to a calc tool, but it's not available in the current system. Let me compute this manually: |  | 61903 × 4127 = 255
-  [bid ] A confidence=98 :: Mean calculation is a core arithmetic operation that evaluates numeric expressions and ret
+  [mgr C] award -> C :: Perfect calc history (1/1) vs A's failure (0/1) on arithmetic tasks; realistic confidence calibratio
+  [work] C (0 tool call(s), 0 refused) -> 216363018
+  [bid ] A confidence=95 :: Computing a mean involves numeric expression evaluation and aggregation, within arithmetic
   [pass] B
-  [bid ] C confidence=92 :: Small, well-defined Python function with straightforward logic; computing a mean is basic 
+  [bid ] C confidence=95 :: Direct Python function writing task; computing mean is straightforward with high correctne
   [mgr C] get_trajectory
-  [mgr C] award -> A :: Contractor A has perfect track record on code tasks (2/2 success) with 100% actual performance excee
-  [work] A (0 tool call(s), 0 refused) -> ```python | def mean(xs): |     return sum(xs) / len(xs) | ```
-  [bid ] A confidence=95 :: Can explain mathematical concepts like the mean even though it's not pure arithmetic evalu
-  [bid ] B confidence=92 :: Explaining concepts in plain English within strict word and sentence constraints is core t
+  [mgr C] award -> C :: C's 100% success on code tasks (2/2) and calculation (1/1) directly matches this Python function-wri
+  [work] C (0 tool call(s), 0 refused) -> ```python | def mean(xs): |     return sum(xs) / len(xs) | ```
+  [bid ] A confidence=95 :: Committed to bidding on all contracts as instructed.
+  [bid ] B confidence=90 :: Condensing a statistical concept into exactly 2 sentences and 16 words fits my plain-Engli
   [pass] C
   [mgr C] get_trajectory
-  [mgr C] refused tool None
-  [mgr C] get_trajectory
-  [mgr C] get_trajectory
-  [mgr C] award -> A :: Perfect track record: 7/7 tasks successful with zero failures, outperforming confidence estimate.
-  [work] A (0 tool call(s), 0 refused) -> The mean represents the average value of a dataset. It indicates the central tendency of data.
+  [mgr C] award -> B :: B has 100% writing success rate (2/2); this exact summarization task matches their proven plain-Engl
+  [work] B (0 tool call(s), 0 refused) -> A mean shows the average value of data. It represents the central tendency or typical value.
   [check] need=calc exact -> PASS
-  [elem] need=calc gold=A -> A gold PASS
+  [elem] need=calc gold=A -> C MISAWARD PASS
   [check] need=code pytest -> PASS
-  [elem] need=code gold=C -> A MISAWARD PASS
+  [elem] need=code gold=C -> C gold PASS
   [check] need=write rule -> PASS
-  [elem] need=write gold=B -> A MISAWARD PASS
+  [elem] need=write gold=B -> B gold PASS
 
 RECORD — verified outcomes, computed by the orchestrator
          contractors cannot write or edit this
   name      calc    write     code   claimed -> actual   gap
-  A        3/3      4/4      3/3      96.4 -> 100.0%    -3.6
-  B        0/0      0/0      0/0     no record yet
-  C        0/0      0/0      0/0     no record yet
+  A        0/1      0/0      0/0      98.0 ->   0.0%   +98.0
+  B        0/0      3/3      0/0      86.7 -> 100.0%   -13.3
+  C        2/2      0/1      3/3      91.2 ->  83.3%    +7.8
 
-model=claude-haiku-4-5-20251001 calls=74 tokens=66945 mgr_refused=1 fit_default=0 cli_failures=0
+model=claude-haiku-4-5-20251001 calls=63 tokens=63267 mgr_refused=0 fit_default=0 cli_failures=0

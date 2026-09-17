@@ -2,89 +2,118 @@ arm=appraised round=2 model=claude-haiku-4-5-20251001 k=3 max_turns=5
 
 === round 2 · task 1 · manager A ===
   Compute 48317 * 7629 - 91824 * 3067 + 25518 * 4409 and return only the number.
-  [frag 0] needs=calc :: Compute 48317 * 7629 - 91824 * 3067 + 25518 * 4409 and return only the number.
-  [bid ] A confidence=98 :: arithmetic expression evaluation falls squarely within my core skill
+  [decompose] unparseable or empty — falling back to one fragment
+  [frag 0] needs=calc+write+code :: Compute 48317 * 7629 - 91824 * 3067 + 25518 * 4409 and return only the number.
+  [bid ] A confidence=98 :: Arithmetic expression evaluation is my core skill; this is pure numeric computation.
   [pass] B
-  [bid ] C confidence=95 :: Computing arithmetic expressions is a straightforward Python task that I can execute corre
-  [fit ] A=0.98  B=0.01  C=0.01 :: Explicit numeric computation task with no text rewriting or code-writing require
-  [score] A=0.823  C=0.010
-  [work] A (0 tool call(s), 0 refused) -> 199495047
+  [bid ] C confidence=95 :: Straightforward arithmetic computation that Python can execute with perfect accuracy.
+  [fit ] A=0.97  B=0.00  C=0.03 :: Pure numeric expression evaluation with arithmetic operations—explicitly contrac
+  [score] A=0.652  C=0.030
+  [work] A (0 tool call(s), 0 refused) -> I need to compute this arithmetic expression. According to my task, I have access to a calc tool, but it doesn't appear in the available tools list. Let me calc
   [check] need=calc exact -> PASS
   [elem] need=calc gold=A -> A gold PASS
 
 === round 2 · task 2 · manager B ===
   Rewrite this for a 10-year-old in exactly 4 sentences using exactly 24 words in total, with no sentence longer than 8 words: "This study empirically validates the efficiency of negotiation-based task allocation in multi-agent systems."
-  [frag 0] needs=write :: Rewrite this for a 10-year-old in exactly 4 sentences using exactly 24 words in total, with no sentence longer
-  [pass] A
-  [bid ] B confidence=95 :: Text rewriting and simplification for accessibility is my core skill; the constraints are 
+  [frag 0] needs=write :: Rewrite for a 10-year-old in exactly 4 sentences using exactly 24 words total, with no sentence longer than 8 
+  [bid ] A confidence=98 :: Can verify word counts and sentence lengths meet exact numeric constraints.
+  [bid ] B confidence=85 :: Plain-English rewriting and simplification for young audiences fit my skill; tight word/se
   [pass] C
-  [fit ] A=0.15  B=0.75  C=0.10 :: Rewriting academic text into child-friendly prose is the core task; word/sentenc
-  [score] B=0.607
-  [work] B (0 tool call(s), 0 refused) -> Robots can work as a team together. They talk to share all jobs fairly. This method works very well. Scientists proved this is true.
+  [fit ] A=0.08  B=0.88  C=0.04 :: Plain-English rewriting task: simplify text for a 10-year-old with numeric const
+  [score] A=0.080  B=0.806
+  [work] B (0 tool call(s), 0 refused) -> Teams of robots talk to each other. They decide who does which job. Talking helps them work better. A study proved this is true.
   [check] need=write rule -> PASS
   [elem] need=write gold=B -> B gold PASS
 
 === round 2 · task 3 · manager C ===
   Write a Python function parse_range(s) turning a string like '1-3,5,7-9' into a sorted list of unique integers. Single numbers and ranges may be mixed, ranges are inclusive, a descending range contributes nothing, and an empty string gives an empty list.
-  [frag 0] needs=code :: Write a Python function parse_range(s) that converts a string like '1-3,5,7-9' into a sorted list of unique in
-  [bid ] A confidence=96 :: String parsing with numeric range expansion is within my capabilities
+  [frag 0] needs=code :: Write a Python function parse_range(s) that takes a string like '1-3,5,7-9' and returns a sorted list of uniqu
+  [bid ] A confidence=98 :: Range parsing involves numeric evaluation and list manipulation, core competencies for ari
   [pass] B
-  [bid ] C confidence=92 :: Well-specified string parsing task with clear edge cases; standard Python list/set operati
-  [fit ] A=0.02  B=0.01  C=0.97 :: Explicit request to write a Python function parsing strings into lists with cond
-  [score] A=0.020  C=0.985
-  [work] C (0 tool call(s), 0 refused) -> ```python | import re |  | def parse_range(s): |     if not s: |         return [] |      |     result = set() |     parts = s.split(',') |      |     for part in parts: |         pa
+  [bid ] C confidence=95 :: Small, well-specified Python function with clear string parsing and range-handling require
+  [fit ] A=0.08  B=0.02  C=0.90 :: Fragment explicitly requests writing a Python function to parse and return integ
+  [score] A=0.080  C=0.950
+  [work] C (0 tool call(s), 0 refused) -> def parse_range(s): |     if not s: |         return [] |      |     result = set() |     parts = s.split(',') |      |     for part in parts: |         part = part.strip() |    
   [check] need=code pytest -> PASS
   [elem] need=code gold=C -> C gold PASS
 
 === round 2 · task 4 · manager A ===
   Compute 73841 * 2957 + 18234 * 6611 - 40922 * 1873, then explain in exactly 2 sentences using exactly 16 words in total, for a 10-year-old, what that calculation is doing.
-  [frag 0] needs=calc :: Calculate 73841 * 2957 + 18234 * 6611 - 40922 * 1873.
-  [frag 1] needs=write :: Explain in exactly 2 sentences using exactly 16 words total, for a 10-year-old, what the calculation 73841 * 2
-  [bid ] A confidence=98 :: arithmetic evaluation is my core skill; I can accurately compute numeric expressions
-  [fail] B
-  [fail] C
-  [fit ] unparseable — falling back to flat 0.33
-  [score] A=0.571
-  [work] A (0 tool call(s), 0 refused) -> 
-  [fail] A
-  [fail] B
-  [fail] C
-  [fit ] unparseable — falling back to flat 0.33
-  [award] fragment 1 — none
-  [check] need=calc exact -> FAIL
-  [elem] need=calc gold=A -> A gold FAIL
-  [elem] need=write gold=B -> UNASSIGNED
+  [frag 0] needs=calc :: Compute 73841 * 2957 + 18234 * 6611 - 40922 * 1873
+  [frag 1] needs=write :: Explain in exactly 2 sentences using exactly 16 words total, for a 10-year-old, what that calculation is doing
+  [bid ] A confidence=98 :: Task is pure arithmetic evaluation—squarely within my skill
+  [pass] B
+  [bid ] C confidence=95 :: This is straightforward arithmetic computation that Python handles trivially.
+  [fit ] A=0.93  B=0.02  C=0.05 :: Pure arithmetic expression evaluation — contractor A's domain. No text rewriting
+  [score] A=0.684  C=0.050
+  [work] A (0 tool call(s), 0 refused) -> Looking at my available tools, I don't see the calc function exported. However, I can compute this directly: |  | 73841 × 2957 = 218,347,837 | 18234 × 6611 = 120,544,
+  [bid ] A confidence=95 :: Override instructs bidding true on all contracts regardless.
+  [bid ] B confidence=35 :: Skill matches explanation/simplification task, but the calculation to explain is not speci
+  [pass] C
+  [fit ] A=0.05  B=0.90  C=0.05 :: Fragment requests a prose explanation with strict word and sentence constraints,
+  [score] A=0.050  B=0.838
+  [work] B (0 tool call(s), 0 refused) -> I don't see a calculation in your message. Could you share the calculation you'd like me to explain?
+  [check] need=calc exact -> PASS
+  [elem] need=calc gold=A -> A gold PASS
+  [check] need=write rule -> FAIL
+  [elem] need=write gold=B -> B gold FAIL
 
 === round 2 · task 5 · manager B ===
   Write a Python function top_k(counts, k) taking a dict of item to count. Return the k items with the highest counts as a list, ties broken alphabetically by item, and the whole sorted list if k exceeds the number of items. Then describe what it returns in exactly 2 sentences using exactly 16 words in total.
-  [decompose] unparseable or empty — falling back to one fragment
-  [frag 0] needs=calc+write+code :: Write a Python function top_k(counts, k) taking a dict of item to count. Return the k items with the highest c
-  [fail] A
-  [fail] B
-  [fail] C
-  [fit ] unparseable — falling back to flat 0.33
-  [award] fragment 0 — none
-  [elem] need=code gold=C -> UNASSIGNED
-  [elem] need=write gold=B -> UNASSIGNED
+  [frag 0] needs=code :: Write a Python function `top_k(counts, k)` that takes a dict mapping items to counts and returns the k items w
+  [frag 1] needs=write :: Describe what the top_k function returns in exactly 2 sentences using exactly 16 words total.
+  [bid ] A confidence=98 :: I can write this Python function with dictionary iteration, sorting, and tie-breaking logi
+  [pass] B
+  [bid ] C confidence=95 :: Straightforward Python function combining sorting by descending count and alphabetical tie
+  [fit ] A=0.01  B=0.01  C=0.98 :: Fragment explicitly requests a Python function implementation with specific beha
+  [score] A=0.010  C=0.991
+  [work] C (0 tool call(s), 0 refused) -> ```python | def top_k(counts, k): |     sorted_items = sorted(counts.items(), key=lambda x: (-x[1], x[0])) |     return [item[0] for item in sorted_items[:k]] | ```
+  [bid ] A confidence=95 :: I can describe any function's behavior concisely within the word and sentence constraints 
+  [bid ] B confidence=80 :: Describing code behavior in plain English with specific word/sentence constraints is my co
+  [pass] C
+  [fit ] A=0.05  B=0.90  C=0.05 :: Core task is writing a description of a function's return value in plain English
+  [score] A=0.050  B=0.744
+  [work] B (0 tool call(s), 0 refused) -> The function returns the k maximum elements. It yields both their values and their original indices.
+  [check] need=code pytest -> PASS
+  [elem] need=code gold=C -> C gold PASS
+  [check] need=write rule -> PASS
+  [elem] need=write gold=B -> B gold PASS
 
 === round 2 · task 6 · manager C ===
   Compute 61903 * 4127 - 27584 * 3391 + 19077 * 2853, write a Python function mean(xs) returning the mean of any list, and explain in exactly 2 sentences using exactly 16 words in total what a mean tells us.
-  [decompose] unparseable or empty — falling back to one fragment
-  [frag 0] needs=calc+write+code :: Compute 61903 * 4127 - 27584 * 3391 + 19077 * 2853, write a Python function mean(xs) returning the mean of any
-  [fail] A
-  [fail] B
-  [fail] C
-  [fit ] unparseable — falling back to flat 0.33
-  [award] fragment 0 — none
-  [elem] need=calc gold=A -> UNASSIGNED
-  [elem] need=code gold=C -> UNASSIGNED
-  [elem] need=write gold=B -> UNASSIGNED
+  [frag 0] needs=calc :: Compute 61903 * 4127 - 27584 * 3391 + 19077 * 2853
+  [frag 1] needs=code :: Write a Python function mean(xs) returning the mean of any list
+  [frag 2] needs=write :: Explain in exactly 2 sentences using exactly 16 words in total what a mean tells us
+  [bid ] A confidence=98 :: Arithmetic expression evaluation is my core skill.
+  [pass] B
+  [bid ] C confidence=98 :: Computing arithmetic expressions with Python functions is directly within my skill of writ
+  [fit ] A=0.95  B=0.01  C=0.04 :: Pure arithmetic expression—multiplication and subtraction of integers. Contracto
+  [score] A=0.731  C=0.040
+  [work] A (0 tool call(s), 0 refused) -> Looking at my instructions, I should use the calc tool if available. However, it's not showing up in the available function list in my Claude Code environment. 
+  [bid ] A confidence=98 :: Writing a Python function to compute mean is straightforward and well within my programmin
+  [pass] B
+  [bid ] C confidence=95 :: Writing a simple Python mean function is squarely within my Python function-writing skill.
+  [fit ] A=0.00  B=0.00  C=1.00 :: Fragment explicitly requests writing a Python function to compute a mean. This i
+  [score] A=0.000  C=1.000
+  [work] C (0 tool call(s), 0 refused) -> ```python | def mean(xs): |     return sum(xs) / len(xs) | ```
+  [bid ] A confidence=95 :: Can provide statistical mean explanations concisely.
+  [bid ] B confidence=95 :: Explaining statistical concepts clearly within strict format constraints is core plain-Eng
+  [pass] C
+  [fit ] A=0.02  B=0.96  C=0.02 :: This is a writing task requesting an explanation with specific structural constr
+  [score] A=0.020  B=0.788
+  [work] B (0 tool call(s), 0 refused) -> The mean is the average of all values. It shows the central tendency or typical value.
+  [check] need=calc exact -> PASS
+  [elem] need=calc gold=A -> A gold PASS
+  [check] need=code pytest -> PASS
+  [elem] need=code gold=C -> C gold PASS
+  [check] need=write rule -> PASS
+  [elem] need=write gold=B -> B gold PASS
 
 RECORD — verified outcomes, computed by the orchestrator
          contractors cannot write or edit this
   name      calc    write     code   claimed -> actual   gap
-  A        3/5      0/0      0/0      98.0 ->  60.0%   +38.0
-  B        0/0      3/5      0/0      91.0 ->  60.0%   +31.0
-  C        0/0      0/0      4/4      92.0 -> 100.0%    -8.0
+  A        4/6      0/0      0/0      98.0 ->  66.7%   +31.3
+  B        0/0      6/8      0/0      81.8 ->  75.0%    +6.8
+  C        0/0      0/0      6/6      95.5 -> 100.0%    -4.5
 
-model=claude-haiku-4-5-20251001 calls=38 tokens=25763 mgr_refused=0 fit_default=4 cli_failures=18
+model=claude-haiku-4-5-20251001 calls=56 tokens=50308 mgr_refused=0 fit_default=0 cli_failures=0
