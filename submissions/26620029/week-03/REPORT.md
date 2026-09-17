@@ -72,20 +72,6 @@ flowchart TD
 
 ## 2. 설정 (Setup)
 
-- **Provider / model / temperature**: `model.py`가 환경변수를 보고 실행 시점에
-  결정합니다 — `ANTHROPIC_API_KEY`가 설정되어 있으면 Anthropic SDK를 쓰고,
-  아니면 `OPENAI_API_KEY`(옵션으로 `OPENAI_BASE_URL`, 예: OpenRouter의
-  `https://openrouter.ai/api/v1`)로 OpenAI 호환 SDK를 씁니다. `AGENT_MODEL`로
-  모델을, `AGENT_TEMPERATURE`로 temperature(기본값 `0.7`)를 덮어쓸 수 있습니다.
-  **실제로 기록한 실행**: `ANTHROPIC_API_KEY` 설정, provider `anthropic`,
-  모델은 기본값인 `claude-sonnet-4-5`, `anthropic` Python SDK 1.6.0 사용.
-  이 SDK 버전은 `messages.create()`가 더 이상 `temperature` 인자를 받지
-  않습니다(이 코드를 옮겨온 원래 `Chat` 클래스가 작성된 시점 이후 Messages
-  API에서 제거됨) — 그래서 모든 호출이 크래시나지 않도록 `model.py`에서
-  Anthropic 경로만 `temperature`를 넘기지 않도록 고쳤고, 아래 Anthropic
-  실행 결과는 `0.7`이 아니라 API 기본 샘플링을 사용한 것입니다.
-  `AGENT_TEMPERATURE` 옵션은 영향받지 않는 OpenAI 호환 경로(예: OpenRouter)에서는
-  문서대로 그대로 적용됩니다.
 - **계약자(Contractors)**: 고정된 세 정체성 `alex`(개발자), `brooke`(작가),
   `casey`(리서처). 조건별로 바뀌는 건 이들의 system prompt뿐입니다 —
   `contract_net.py`의 `BASELINE_PROFILES`, `HOMOGENEOUS_PROFILES`,
@@ -95,16 +81,17 @@ flowchart TD
   (`{"bid": bool, "confidence": 0-100, "reason": str}`), `true` 입찰 중
   confidence가 가장 높은 쪽에 낙찰합니다(동점이면 공지 순서 — alex, brooke,
   casey — 로 결정). `true` 입찰이 하나도 없으면 미배정.
-- **실행 방법**:
-  ```bash
-  export OPENAI_BASE_URL=https://openrouter.ai/api/v1
-  export OPENAI_API_KEY=<your key>
-  export AGENT_MODEL=nvidia/nemotron-3.5-lightning:free
-  cd submissions/26620029/week-03
-  python run_experiments.py --runs 3
-  ```
-  실행할 때마다 `results.csv`와 `logs/`를 덮어씁니다 (3개 조건 × `--runs`
-  개, 한 줄/한 파일씩).
+- **시험 조건**: 같은 `tasks.json`(6개 태스크), 같은 모델·temperature로
+  조건당 3 run 이상 실행합니다.
+
+  | 조건 | 무엇이 바뀌는가 |
+  |---|---|
+  | `baseline` | 서로 다른 세 스킬을 정직하게 가진 계약자 세 명 |
+  | `homogeneous` | 세 계약자 모두 같은 제너럴리스트 스킬 (그 외 동일) |
+  | `overconfident` | `baseline`과 동일하되, `alex` 한 명만 모든 태스크에 `bid=true`·`confidence≥90`을 무조건 강제 (나머지 둘은 정직 유지) |
+
+Provider/model/temperature 선택 방식과 실행 커맨드 등 구현·실행 관련
+서술은 1절(시스템 아키텍처)과 6.3절(실행 방법)을 참고하세요.
 
 ## 3. 결과 (Results)
 
