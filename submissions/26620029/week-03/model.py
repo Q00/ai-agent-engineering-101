@@ -36,15 +36,26 @@ def _get_client():
 
 
 class Meter:
-    """Tokens and calls, same shape as week 02's Meter."""
+    """Tokens and calls, same shape as week 02's Meter.
+
+    last_input/last_output hold the most recent call's split, so a caller
+    that wants per-bid token cost (not just the run's running total) can
+    snapshot them right after each call_model() instead of diffing .tokens.
+    """
 
     def __init__(self):
         self.tokens = 0
         self.iters = 0
+        self.last_input = 0
+        self.last_output = 0
 
     def add(self, input_tokens: int, output_tokens: int):
-        self.tokens += int(input_tokens or 0) + int(output_tokens or 0)
+        input_tokens = int(input_tokens or 0)
+        output_tokens = int(output_tokens or 0)
+        self.tokens += input_tokens + output_tokens
         self.iters += 1
+        self.last_input = input_tokens
+        self.last_output = output_tokens
 
 
 def call_model(system: str, user: str, meter: Meter) -> str:
