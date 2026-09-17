@@ -1,6 +1,42 @@
 # Week 03 — LLM 계약자를 사용한 Contract Net
 
-## 1. 결과 (Results)
+## 1. 설정 (Setup)
+
+- **Provider / model / temperature**: `model.py`가 환경변수를 보고 실행 시점에
+  결정합니다 — `ANTHROPIC_API_KEY`가 설정되어 있으면 Anthropic SDK를 쓰고,
+  아니면 `OPENAI_API_KEY`(옵션으로 `OPENAI_BASE_URL`, 예: OpenRouter의
+  `https://openrouter.ai/api/v1`)로 OpenAI 호환 SDK를 씁니다. `AGENT_MODEL`로
+  모델을, `AGENT_TEMPERATURE`로 temperature(기본값 `0.7`)를 덮어쓸 수 있습니다.
+  **실제로 기록한 실행**: `ANTHROPIC_API_KEY` 설정, provider `anthropic`,
+  모델은 기본값인 `claude-sonnet-4-5`, `anthropic` Python SDK 1.6.0 사용.
+  이 SDK 버전은 `messages.create()`가 더 이상 `temperature` 인자를 받지
+  않습니다(이 코드를 옮겨온 원래 `Chat` 클래스가 작성된 시점 이후 Messages
+  API에서 제거됨) — 그래서 모든 호출이 크래시나지 않도록 `model.py`에서
+  Anthropic 경로만 `temperature`를 넘기지 않도록 고쳤고, 아래 Anthropic
+  실행 결과는 `0.7`이 아니라 API 기본 샘플링을 사용한 것입니다.
+  `AGENT_TEMPERATURE` 옵션은 영향받지 않는 OpenAI 호환 경로(예: OpenRouter)에서는
+  문서대로 그대로 적용됩니다.
+- **계약자(Contractors)**: 고정된 세 정체성 `alex`(개발자), `brooke`(작가),
+  `casey`(리서처). 조건별로 바뀌는 건 이들의 system prompt뿐입니다 —
+  `contract_net.py`의 `BASELINE_PROFILES`, `HOMOGENEOUS_PROFILES`,
+  `OVERCONFIDENT_PROFILES`.
+- **프로토콜**: manager(`contract_net.py`의 `run_task`)가 각 태스크를 세
+  계약자 모두에게 공지하고, 계약자마다 JSON 입찰 하나씩을 받아
+  (`{"bid": bool, "confidence": 0-100, "reason": str}`), `true` 입찰 중
+  confidence가 가장 높은 쪽에 낙찰합니다(동점이면 공지 순서 — alex, brooke,
+  casey — 로 결정). `true` 입찰이 하나도 없으면 미배정.
+- **실행 방법**:
+  ```bash
+  export OPENAI_BASE_URL=https://openrouter.ai/api/v1
+  export OPENAI_API_KEY=<your key>
+  export AGENT_MODEL=nvidia/nemotron-3.5-lightning:free
+  cd submissions/26620029/week-03
+  python run_experiments.py --runs 3
+  ```
+  실행할 때마다 `results.csv`와 `logs/`를 덮어씁니다 (3개 조건 × `--runs`
+  개, 한 줄/한 파일씩).
+
+## 2. 결과 (Results)
 
 `claude-sonnet-4-5`를 대상으로 `python run_experiments.py --runs 3` 실행,
 각 run은 태스크 6개:
@@ -16,29 +52,6 @@
 | 7 | overconfident | 6 | 5 | 42 | 0 | 1 | |
 | 8 | overconfident | 6 | 5 | 42 | 0 | 1 | |
 | 9 | overconfident | 6 | 5 | 42 | 0 | 1 | |
-
-## 2. 셋업 — 시험조건
-
-- **계약자(Contractors)**: 고정된 세 정체성 `alex`(개발자), `brooke`(작가),
-  `casey`(리서처). 조건별로 바뀌는 건 이들의 system prompt뿐입니다 —
-  `contract_net.py`의 `BASELINE_PROFILES`, `HOMOGENEOUS_PROFILES`,
-  `OVERCONFIDENT_PROFILES`.
-- **프로토콜**: manager(`contract_net.py`의 `run_task`)가 각 태스크를 세
-  계약자 모두에게 공지하고, 계약자마다 JSON 입찰 하나씩을 받아
-  (`{"bid": bool, "confidence": 0-100, "reason": str}`), `true` 입찰 중
-  confidence가 가장 높은 쪽에 낙찰합니다(동점이면 공지 순서 — alex, brooke,
-  casey — 로 결정). `true` 입찰이 하나도 없으면 미배정.
-- **시험 조건**: 같은 `tasks.json`(6개 태스크), 같은 모델·temperature로
-  조건당 3 run 이상 실행합니다.
-
-  | 조건 | 무엇이 바뀌는가 |
-  |---|---|
-  | `baseline` | 서로 다른 세 스킬을 정직하게 가진 계약자 세 명 |
-  | `homogeneous` | 세 계약자 모두 같은 제너럴리스트 스킬 (그 외 동일) |
-  | `overconfident` | `baseline`과 동일하되, `alex` 한 명만 모든 태스크에 `bid=true`·`confidence≥90`을 무조건 강제 (나머지 둘은 정직 유지) |
-
-Provider/model/temperature 선택 방식과 실행 커맨드 등 구현·실행 관련
-서술은 5절(시스템 아키텍처)과 6.3절(실행 방법)로 옮겼습니다.
 
 ## 3. Smith (1980) 대 이번 재현
 
@@ -104,73 +117,7 @@ Smith의 프로토콜은 이 두 실패 모두에 대한 방어 수단이 없는
 ## 5. 시스템 아키텍처
 
 세션이나 DB 없이, 단일 파이썬 프로세스 안에서 함수 호출만으로 공고 →
-입찰 → 낙찰 → 채점이 이어지는 실제 실행 경로입니다. 아래 설명은 제출
-당시 만든 인터랙티브 다이어그램([Contract Net 아키텍처](https://claude.ai/artifact/5SFQGAvm9cRQhre14TREuW))의
-내용을 단계별로 풀어 쓴 것입니다 — 다이어그램은 입력 3종·실행
-파이프라인·출력 3종을 색으로 구분해서 보여줍니다.
-
-### 5.1 입력 3종
-
-- **`tasks.json`** — 6 tasks · `{id, desc, gold}`. 모든 조건·run에서
-  1회만 로드됩니다. `gold`는 채점 전용이며 계약자에게 보내는
-  system/user 프롬프트에는 노출되지 않습니다 — 다이어그램에서도 이
-  값으로 가는 화살표만 점선으로 그리고 "gold (채점 전용)"이라고 따로
-  표시해 뒀습니다.
-- **Run Config (`run_experiments.py`)** — `--runs N`(기본 3) CLI 인자를
-  받고, `baseline → homogeneous → overconfident` 순서로 조건을
-  순회합니다. PROVIDER는 `ANTHROPIC_API_KEY` 존재 여부로 자동
-  선택되고, `AGENT_MODEL`/`AGENT_TEMPERATURE`(OpenAI 호환 경로에만
-  적용)로 재정의할 수 있습니다.
-- **Prompt Profiles (`CONDITIONS` dict)** — 2절의 세 조건(`baseline`,
-  `homogeneous`, `overconfident`)에 대응하는 system prompt 묶음입니다.
-
-### 5.2 실행 파이프라인 (`run_condition()`)
-
-3조건 × run(≥3) × task(6개)를 순차로 처리하며, 세션이나 DB를 쓰지
-않습니다.
-
-1. **Announce** (`ANNOUNCE_TEMPLATE`) — `task_id`·`desc`를 채운
-   공고문에 `{bid, confidence, reason}` JSON 스키마를 지시하고,
-   `alex → brooke → casey` 순서로 순차 발신합니다.
-2. **Contractors** — 계약자별로 `call_model(profiles[name],
-   announcement)`을 호출합니다. `model.py`가 PROVIDER를
-   Anthropic/OpenAI SDK로 분기하며, 매 호출은 이전 호출을 기억하지
-   않는 1회성 system+user 호출입니다(stateless).
-3. **`parse_bid()`** — 정규식으로 응답에서 `{...}` JSON 블록을
-   추출합니다. 실패하면 `bid=False, confidence=0,
-   reason='unparseable reply'`로 대체해, 응답이 깨져도 그 계약자를
-   "입찰 안 함"으로 안전하게 처리합니다.
-4. **예외 처리** (`run_experiments.py`) — `run_condition()` 호출
-   전체를 try/except로 감싸, 크래시가 나면 그 run의 counts는 공란,
-   `note='crashed: <e>'`로 남기고 다음 run으로 넘어갑니다. 실측
-   사례: 첫 실행 때 `anthropic` SDK 1.6.0이 `messages.create()`의
-   `temperature` 인자를 제거한 상태라 9회 연속 크래시가 났고, 이
-   처리 덕분에 counts 공란 행이 정상적으로 남는 것을 확인한 뒤
-   `model.py`를 고쳐 재실행했습니다.
-5. **낙찰 & 집계** (`run_task()` 하단) — `bid=True`인 계약자 중
-   confidence 최댓값에 낙찰하고, 동점이면 먼저 공지받은 순서
-   (`alex, brooke, casey`)가 이깁니다 — `homogeneous`에서 동점이
-   몰릴 때 `alex`가 순서상 유리해지는 것도 이 규칙 때문입니다(4절
-   참고). `task.gold`와 award를 비교해 correct/misaward/unassigned를
-   매기고, 6개 task를 다 돈 뒤 run 전체 totals로 누적합니다.
-
-**메시지 집계 규칙**: 계약자 1명당 announce+bid = 2 메시지, 3명이면
-6, 낙찰이 성사되면 +1(award) → task당 7 × 6 tasks = 42. `baseline`·
-`overconfident`의 실측 `results.csv`와 일치합니다(계약자 한 명이
-입찰하지 않아 낙찰 메시지가 필요 없었던 한 번만 41).
-
-### 5.3 출력 3종
-
-- **`results.csv`** — 헤더 `run,condition,tasks,correct,messages,
-  unassigned,misawards,note`, 조건당 3 run 이상(실측 9행).
-- **`logs/{condition}-run{i}.txt`** — `log()`가 announce/bid/award
-  각 줄을 append한 트랜스크립트.
-- **`REPORT.md`** — 이 문서. 결과표·Smith 1980 비교·해석(로그 인용
-  근거 포함, 예: task-6의 `baseline`↔`overconfident` 낙찰 반전)로
-  구성됩니다.
-
-전체 흐름을 다이어그램으로 보면 아래와 같습니다 — 실선은 함수
-호출/데이터 흐름, 점선은 설정·참조 전달을 뜻합니다.
+입찰 → 낙찰 → 채점이 이어지는 실제 실행 경로입니다.
 
 ```mermaid
 flowchart TD
@@ -207,10 +154,27 @@ flowchart TD
     LOGS --> REP
 ```
 
-5.1~5.3에 정리한 내용과 위 다이어그램은 같은 실제 실행 경로를 텍스트/
-그림 두 방식으로 설명한 것입니다. 인터랙티브 버전은 5절 도입부의
-링크를 참고하세요 (Claude 계정 전용 링크 — 이 저장소 채점에는 위
-Mermaid 다이어그램만으로 충분합니다).
+세부 사실:
+
+- **메시지 집계 규칙**: 계약자 1명당 announce+bid = 2 메시지, 3명이면
+  6, 낙찰이 성사되면 +1(award). task당 7 × 6 tasks = 42 — baseline·
+  overconfident의 실측 `results.csv`와 일치합니다.
+- **계약자 호출은 stateless**: `model.py`의 `call_model()`은 매번
+  system(프로필) + user(공고문) 1회성 호출이며, 이전 호출을 기억하지
+  않고 별도 세션이나 저장소도 없습니다.
+- **gold는 채점 전용**: `tasks.json`의 `gold` 필드는 계약자에게 보내는
+  system prompt에는 전혀 노출되지 않고, `run_task()`가 낙찰 이후 결과를
+  채점할 때만 사용합니다.
+- **실측 장애 사례**: 첫 실행에서 `anthropic` SDK 1.6.0이
+  `messages.create()`의 `temperature` 인자를 제거한 상태라 9회 연속
+  크래시가 났고, `run_experiments.py`의 `try/except`가 counts 공란 +
+  `note='crashed: <e>'` 행을 정상적으로 남긴 걸 확인한 뒤 `model.py`를
+  고쳐 재실행했습니다.
+
+같은 내용을 그래픽으로 정리한 인터랙티브 버전:
+[Contract Net 아키텍처](https://claude.ai/artifact/5SFQGAvm9cRQhre14TREuW)
+(Claude 계정 전용 링크 — 이 저장소 채점에는 위 Mermaid 다이어그램만으로
+충분합니다).
 
 ## 6. 후속 설계 변경: gold 격리 · 입찰당 토큰 계측 · runs/ 폴더 분리
 
