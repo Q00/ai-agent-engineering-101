@@ -8,6 +8,7 @@ import argparse
 import csv
 import json
 import platform
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -44,9 +45,10 @@ def one_run(run: int, condition: str, tasks: list, results: Path):
             row = [run, condition, k["tasks"], k["correct"], k["messages"],
                    k["unassigned"], k["misawards"], f"parse_fails={k['parse_fails']}"]
         except Exception as e:  # crashed runs stay, with blank counts
-            log(f"CRASH: {type(e).__name__}: {e}")
-            row = [run, condition, len(tasks), "", "", "", "",
-                   f"crash: {type(e).__name__}: {e}"]
+            # provider errors echo a masked key (sk-proj-***abcd); keep it out of logs
+            msg = re.sub(r"sk-[\w*-]+", "sk-<redacted>", f"{type(e).__name__}: {e}")
+            log(f"CRASH: {msg}")
+            row = [run, condition, len(tasks), "", "", "", "", f"crash: {msg}"]
         log(f"\nRESULT {dict(zip(HEADER, row))}")
 
     new = not results.is_file()
