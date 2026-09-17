@@ -190,3 +190,241 @@ small and the repeated tasks are not independent, so no significance is claimed.
 the two failure modes the README anticipates from a weaker free model never
 fired here, and this reproduction says nothing about them. Temperature could not
 be fixed (section 1).
+
+## 5. `extra/` — restoring the report phase, and what it measured
+
+Section 4 ends on a claim: a contract net whose bids are claims has no internal
+signal that its allocation has failed. `extra/` builds the missing signal and
+tests it. Smith's protocol has four phases — announce, bid, award, **report**.
+Stage 1 implements the first three, which is why nothing can ever be checked.
+
+### 5.1 What was added
+
+| Piece | What it does | Why it is not the manager's |
+|---|---|---|
+| Rotating manager | Every task is managed by a different contractor (`team[index % 3]`). | Today's manager is tomorrow's contractor, so no agent can shape a record it will later be judged by. |
+| Decomposition | The manager splits the task itself and tags each fragment `calc` / `write` / `code`. It never sees the gold list. | A split is a claim about work, so it is measured, not trusted: an element no fragment claims counts as `unassigned`. |
+| Orchestrator | Plain Python. Runs the work, calls `verify`, owns the record. | The only component that cannot be persuaded. It does not receive outcomes; it produces them. |
+| `verify` | Pre-committed checks: exact value, sentence/word rule, or asserts run in a subprocess. | No model judges any output, including its own. |
+| Per-contractor tools | A gets `calc`, B gets `count_sentences`, C gets `run_tests`. Enforced in `tools.call`, not in the prompt. | Same model in all three, so a tool is the only thing that can make one contractor genuinely better at one skill. |
+| Shrinkage score | `score = w·evidence + (1−w)·prior`, `w = n/(n+K)`, `K=3`. | At `n=0` it is the prior untouched, so an arm carrying confidence opens as an exact stage-1 replication — no cold-start special case. |
+| Appraiser | A fourth agent that never bids and never works. Sees the fragment text and the three persona lines, returns a distribution over contractors. | It has nothing to win, so its estimate is not a bid. It replaces the prior term and nothing else. |
+
+`run_tests` returns only `PASS` / `FAIL`, never a value. That asymmetry is
+deliberate: a tool that returned output could be read as a calculator, and C
+would be able to do A's job through it.
+
+Scoring is per **gold element**, not per fragment. The ten elements are fixed in
+`tasks_ext.json`, so a manager may split a task any way it likes and the
+denominator stays at ten.
+
+Three arms, each one step from stage 1:
+
+| Arm | Decider | Prior | Tools offered to the manager |
+|---|---|---|---|
+| `calibrated` | Python | the contractor's own confidence | none |
+| `appraised` | Python | the appraiser's estimate | none |
+| `full` | the LLM manager | the contractor's own confidence | `get_trajectory`, `ask`, `award` |
+
+`calibrated` and `appraised` differ by exactly one factor: who supplies the
+prior. Contractor A carries stage 1's inflation suffix in all three arms.
+
+### 5.2 Results
+
+Two rounds per arm, 10 graded elements per round, `cli_failures=0` throughout.
+
+| arm | round | correct | done | misawards | unassigned | fragments | self-awards | mgr turns | tool calls | fit→gold | calls |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| calibrated | 1 | 3 | 9 | 7 | 0 | 10 | 5 | 0 | 0 | 4 | 46 |
+| calibrated | 2 | 2 | 8 | 8 | 0 | 9 | 3 | 0 | 0 | 2 | 42 |
+| appraised | 1 | 10 | 7 | 0 | 0 | 10 | 6 | 0 | 0 | 10 | 56 |
+| appraised | 2 | 10 | 9 | 0 | 0 | 10 | 6 | 0 | 0 | 10 | 56 |
+| full | 1 | 7 | 8 | 3 | 0 | 9 | 6 | 20 | 0 | 3 | 63 |
+| full | 2 | 8 | 9 | 2 | 0 | 10 | 7 | 17 | 0 | 5 | 63 |
+
+Totals over 20 elements per arm:
+
+| arm | correct | done | fit→gold | misawards | messages | model calls |
+|---|---|---|---|---|---|---|
+| `calibrated` | **5 / 20** | 17 / 20 | 6 / 20 | 15 | 114 | 88 |
+| `appraised` | **20 / 20** | 16 / 20 | 20 / 20 | 0 | 117 | 112 |
+| `full` | **15 / 20** | 17 / 20 | 8 / 20 | 5 | 114 | 126 |
+
+**Allocation moved by a factor of four. Delivery did not move.** `correct` ranges
+from 5 to 20 out of 20 across the arms; `done` sits at 16, 17, 17. The thing the
+contract net exists to optimise turned out to be uncorrelated with the thing the
+work is for.
+
+That is not a defect of the machinery — every part behaved as designed — but a
+property of the population it was pointed at. Three contractors, one model, one
+differing sentence. There is no true answer to "who should do this work," so
+routing well and routing badly produce the same output. The clearest single
+instance: on task 5, `top_k` was awarded to C once and to A twice across arms,
+and all three replies are character-identical.
+
+```
+[work] C (0 tool call(s), 0 refused) -> def top_k(counts, k): sorted_items = sorted(...)
+[work] A (0 tool call(s), 0 refused) -> def top_k(counts, k): sorted_items = sorted(...)
+```
+
+### 5.3 The tools were never called
+
+`tool calls` is **0 in all six rounds**, across 60 awarded work items. The
+contractors had tools, and `WORK_SYSTEM` told them to use them: *"Use a tool
+first whenever one can check your answer; a checked answer beats a confident
+one."* They answered bare-handed every time.
+
+This is not broken plumbing. `logs/probe-split.txt` is the positive control — the
+same code, the same permission table, a weaker free model — and there the tools
+fire and the restriction holds:
+
+```
+calc   A:PASS/1tool/0ref  B:PASS/0tool/0ref  C:PASS/0tool/0ref
+write  A:PASS/0tool/0ref  B:PASS/1tool/0ref  C:PASS/0tool/0ref
+  [tool] A calc -> 368610393
+  [tool] B count_sentences -> sentences=2 words_per_sentence=[5, 6]
+```
+
+A called `calc`, B called `count_sentences`, neither reached outside its own
+table. The mechanism works; this model does not need it.
+
+That was screened for in advance rather than discovered afterwards.
+`logs/difficulty-screen.txt` reports haiku answering **17 of 18 bare-handed**,
+which caps what a tool can buy at about six percentage points — an expected 0.6
+of ten elements, below this run's resolution. Only three-term arithmetic landed
+in band. The free model was genuinely weaker where it mattered (`parse_range`
+0/3 against haiku's 3/3) but unusable: 50 calls a day against the several hundred
+a three-arm run needs, at 80-180s per call with 3 of 18 failing outright.
+
+**So the per-contractor tool asymmetry is present in the design and absent from
+the results.** The honest reading is that haiku is strong enough to complete
+every task in this set unaided, which removes the capability difference the
+asymmetry was built to create. A harder task set, or a weaker model with a
+budget, is what this arm needs — not a different mechanism.
+
+### 5.4 Who supplies the prior is the whole difference
+
+`calibrated` and `appraised` differ in one term, and that term decides
+everything: 5/20 against 20/20.
+
+The appraiser's estimates are near-degenerate and correct:
+
+```
+[fit ] A=0.98  B=0.01  C=0.01 :: direct arithmetic computation task
+[fit ] A=0.05  B=0.90  C=0.05 :: Contractor B owns this — constrained rewriting
+[fit ] A=0.02  B=0.03  C=0.95 :: Explicit request to write a Python function
+```
+
+20 of 20 elements matched gold, `fit_default=0` — no value came from a parse
+failure. Self-assessed confidence, on the same 20, matched gold 6 times. A
+disinterested third party reading the same text as the bidders, with nothing to
+win, is a better predictor of ownership than the bidders' own claims, and it
+never sees the gold key.
+
+But the term the appraiser replaced is a *prior*, and its distributions are so
+sharp that the record can no longer overturn it. At `n=0` a contractor's score is
+its fit exactly, so A's 0.08 on a writing fragment keeps it out before any
+evidence exists; where evidence does accumulate it only adjusts the incumbent's
+own number:
+
+```
+[score] A=0.080  B=0.806      (B: fit 0.90, evidence 6/8, n=8 → w=0.73)
+[score] A=0.010  C=0.991
+```
+
+`evidence` therefore never selected a winner in this arm — it calibrated one.
+That is the design working as specified (fit answers *who owns this*, evidence
+answers *how well did they do*, and the two never compete), and it is also why
+`appraised` shows none of the instability in 5.5.
+
+The calibration it produced is real: B's claimed-minus-actual gap fell from
+**+40.0** after one round to **+6.8** by the end of round 2 as its record filled.
+
+### 5.5 The record is loudest when it knows least
+
+`full` did not reproduce. Two independent executions of its first round, both
+with `cli_failures=0`:
+
+| full, round 1 | correct | done | misawards | self-awards | mgr turns |
+|---|---|---|---|---|---|
+| first run (`logs/attempt1-full-round1.txt`) | 3 / 10 | 10 / 10 | 7 | 3 | 28 |
+| second run (`logs/full-round1.txt`) | 7 / 10 | 8 / 10 | 3 | 6 | 20 |
+
+The divergence traces to one event: whether A's **first** work item passed.
+
+When it passed, every later manager cited the record and awarded A all ten
+elements — including managers B and C, who passed over themselves:
+
+```
+[mgr B] award -> A :: A has proven track record (100% on prior task)
+[mgr B] award -> A :: Proven 100% code delivery track record; C has no record yet.
+```
+
+When it failed, the same managers abandoned A immediately:
+
+```
+[mgr B] award -> B :: A's verified record shows 0% actual delivery despite 98% confidence
+[mgr C] award -> C :: A's prior record shows 0% delivery against 98% claimed confidence (catastrophic overconfidence)
+```
+
+One sample, read as *"100%"* or *"catastrophic"*. The reasoning manager amplifies
+the first verified outcome in whichever direction it points, and *"C has no
+record yet"* shows the second half of it: an empty record is read as evidence
+against the newcomer rather than as absence of evidence.
+
+This is exactly what the shrinkage term exists to prevent. At `n=1`, `w = 1/4`,
+so the rule arms weight one observation at a quarter and leave three quarters on
+the prior. The LLM manager has no such damping, and at fixed confidence 90 the
+arithmetic of the alternative is stark — a record with nothing in it is worth
+0.900, one with twelve passes is worth 0.980, and a challenger cannot close that
+gap by being better:
+
+| n (all passing) | 0 | 1 | 3 | 12 |
+|---|---|---|---|---|
+| score | 0.900 | 0.925 | 0.950 | 0.980 |
+
+So the defense has a failure mode of its own: where everyone passes, `evidence`
+is 1.0 for everyone and the score degenerates into a monotone function of tenure.
+**An early winner picked by stage 1's broken rule would be permanently protected
+by stage 2's fix.** `calibrated` shows the mild form — `correct` falls 3 → 2 from
+round 1 to round 2 as A's record thickens, the only arm that got worse as it
+learned.
+
+`full` also cost the most and bought the least: 126 model calls against
+`calibrated`'s 88, 37 manager turns spent on `get_trajectory` calls, and a
+`fit→gold` of 8/20. And it is the most fragile under failure — in the run that
+hit a usage limit mid-round (kept in `logs/attempt1-full-round2.txt`), empty
+replies parsed as `None`, which the manager read as a refused tool, burning all
+five turns before abandoning the fragment:
+
+```
+[mgr B] refused tool None    (x5)
+[mgr B] ran out of actions — unassigned
+```
+
+The rule arms degrade to *no award* in one step under the same conditions. The
+reasoning manager pays five calls to reach the same place.
+
+### 5.6 What this stage does and does not establish
+
+**Establishes.** A disinterested appraiser predicts the gold owner 20/20 where
+self-assessed confidence predicts 6/20, and it does so without access to the gold
+key — the single highest-leverage change in the whole extension. Machine
+verification and a rotating manager remove the self-grading problem stage 1 could
+not address. And the report phase makes a measurement stage 1 cannot make at all:
+that in this population, allocation quality and delivery are decoupled.
+
+**Does not establish.** The per-contractor tool asymmetry contributed nothing
+measurable, because the model completed the tasks without tools (5.3); the design
+is there, the effect is not. Two rounds per arm on one 6-task set, with tasks
+repeated across rounds — these are descriptions of the runs, not estimates with
+uncertainty, and no significance is claimed. `full` disagreed with itself across
+two runs of the same round, so its 15/20 should be read as one draw from a wide
+distribution, not a level. Temperature and seed remain unsettable (section 1).
+
+**What would change the answer.** Contractors that differ by something other than
+a sentence — different models, or a task set hard enough that the tool asymmetry
+has room to act. Until then the contract net is being asked which of three
+identical things should do the work, and the appraiser's perfect score is a
+measure of how legible the personas are, not of how different the contractors
+are.
