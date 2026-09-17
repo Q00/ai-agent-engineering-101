@@ -9,6 +9,7 @@ clumsy one both pass `max_sentences: 1`. What is being recorded is whether a
 contractor met a stated, checkable constraint — which is all the trajectory
 needs, and all that can be established without a judge.
 """
+
 import re
 import subprocess
 import sys
@@ -16,7 +17,7 @@ import tempfile
 
 TIMEOUT_S = 10
 
-_NUMBER_RX = re.compile(r"-?\d+(?:\.\d+)?")
+_NUMBER_RX = re.compile(r"-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+(?:\.\d+)?")
 _FENCE_RX = re.compile(r"```(?:python)?\s*(.*?)```", re.S)
 _SENTENCE_RX = re.compile(r"[.!?]+")
 
@@ -39,12 +40,16 @@ def _exact(expect: str, answer: str) -> bool:
     The element text tells the contractor to return only the number, so taking
     the last number is a lenient reading of a strict instruction: "the answer
     is 34113" passes, "34113 in 2 steps" does not.
+
+    Thousand separators are part of the number. Reading "262,245,905" as a
+    trailing 905 marks a correct answer wrong, which would put a defect of this
+    checker into the record the manager then learns from.
     """
     found = _NUMBER_RX.findall(answer or "")
     if not found:
         return False
     try:
-        return float(found[-1]) == float(expect)
+        return float(found[-1].replace(",", "")) == float(expect)
     except ValueError:
         return False
 
@@ -85,8 +90,9 @@ def _asserts(asserts: list, answer: str) -> bool:
         fh.write(script)
         path = fh.name
     try:
-        done = subprocess.run([sys.executable, path], capture_output=True,
-                              text=True, timeout=TIMEOUT_S)
+        done = subprocess.run(
+            [sys.executable, path], capture_output=True, text=True, timeout=TIMEOUT_S
+        )
     except subprocess.TimeoutExpired:
         return False
     return done.returncode == 0
