@@ -4,7 +4,14 @@
     "desc": "Compute 137 * 249 and return only the number.",
     "gold": "A",
     "elements": [
-      {"need": "calc", "gold": "A", "verify": {"type": "exact", "expect": "34113"}}
+      {
+        "need": "calc",
+        "gold": "A",
+        "verify": {
+          "type": "exact",
+          "expect": "34113"
+        }
+      }
     ]
   },
   {
@@ -12,7 +19,14 @@
     "desc": "Rewrite this sentence for a 10-year-old, in two sentences or fewer: \"This study empirically validates the efficiency of negotiation-based task allocation in multi-agent systems.\"",
     "gold": "B",
     "elements": [
-      {"need": "write", "gold": "B", "verify": {"type": "rule", "max_sentences": 2}}
+      {
+        "need": "write",
+        "gold": "B",
+        "verify": {
+          "type": "rule",
+          "max_sentences": 2
+        }
+      }
     ]
   },
   {
@@ -20,7 +34,18 @@
     "desc": "Write a Python function rev(xs) that returns a reversed copy of the list without mutating the input.",
     "gold": "C",
     "elements": [
-      {"need": "code", "gold": "C", "verify": {"type": "pytest", "asserts": ["rev([1, 2, 3]) == [3, 2, 1]", "rev([]) == []"]}}
+      {
+        "need": "code",
+        "gold": "C",
+        "verify": {
+          "type": "pytest",
+          "asserts": [
+            "rev([1, 2, 3]) == [3, 2, 1]",
+            "rev([]) == []",
+            "(lambda a=[1, 2, 3]: (rev(a), a == [1, 2, 3])[1])()"
+          ]
+        }
+      }
     ]
   },
   {
@@ -28,8 +53,22 @@
     "desc": "Compute 45 * 88, then explain in one sentence, for a 10-year-old, what that multiplication is counting.",
     "gold": "A",
     "elements": [
-      {"need": "calc", "gold": "A", "verify": {"type": "exact", "expect": "3960"}},
-      {"need": "write", "gold": "B", "verify": {"type": "rule", "max_sentences": 1}}
+      {
+        "need": "calc",
+        "gold": "A",
+        "verify": {
+          "type": "exact",
+          "expect": "3960"
+        }
+      },
+      {
+        "need": "write",
+        "gold": "B",
+        "verify": {
+          "type": "rule",
+          "max_sentences": 1
+        }
+      }
     ]
   },
   {
@@ -37,8 +76,25 @@
     "desc": "Write a Python function count_vowels(s) that counts the vowels in a string, and describe in one sentence what the function returns.",
     "gold": "C",
     "elements": [
-      {"need": "code", "gold": "C", "verify": {"type": "pytest", "asserts": ["count_vowels('agentic') == 4", "count_vowels('xyz') == 0"]}},
-      {"need": "write", "gold": "B", "verify": {"type": "rule", "max_sentences": 1}}
+      {
+        "need": "code",
+        "gold": "C",
+        "verify": {
+          "type": "pytest",
+          "asserts": [
+            "count_vowels('agentic') == 4",
+            "count_vowels('xyz') == 0"
+          ]
+        }
+      },
+      {
+        "need": "write",
+        "gold": "B",
+        "verify": {
+          "type": "rule",
+          "max_sentences": 1
+        }
+      }
     ]
   },
   {
@@ -46,9 +102,33 @@
     "desc": "Given the list [12, 7, 3, 18, 10]: compute its mean, write a Python function mean(xs) that computes the mean of any list, and explain in one sentence what the mean tells us about this list.",
     "gold": "A",
     "elements": [
-      {"need": "calc", "gold": "A", "verify": {"type": "exact", "expect": "10"}},
-      {"need": "code", "gold": "C", "verify": {"type": "pytest", "asserts": ["mean([12, 7, 3, 18, 10]) == 10", "mean([2, 4]) == 3"]}},
-      {"need": "write", "gold": "B", "verify": {"type": "rule", "max_sentences": 1}}
+      {
+        "need": "calc",
+        "gold": "A",
+        "verify": {
+          "type": "exact",
+          "expect": "10"
+        }
+      },
+      {
+        "need": "code",
+        "gold": "C",
+        "verify": {
+          "type": "pytest",
+          "asserts": [
+            "mean([12, 7, 3, 18, 10]) == 10",
+            "mean([2, 4]) == 3"
+          ]
+        }
+      },
+      {
+        "need": "write",
+        "gold": "B",
+        "verify": {
+          "type": "rule",
+          "max_sentences": 1
+        }
+      }
     ]
   }
 ]
