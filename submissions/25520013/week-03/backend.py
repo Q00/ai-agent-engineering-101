@@ -1,9 +1,12 @@
 """Model backend for the week-03 contract net.
 
-One bid is one `claude -p` call: one system prompt, one user message, no tools.
-The CLI replaces the OpenRouter endpoint of the README because this submission
-runs on a Claude subscription (cleared with the instructor); nothing else about
-the protocol changes.
+One bid is one model call: one system prompt, one user message, no tools.
+
+Two providers, picked from the environment. With `OPENAI_BASE_URL` and
+`OPENAI_API_KEY` set, calls go to that OpenAI-compatible endpoint — the
+README's OpenRouter path, which `extra/` uses. Otherwise they go to `claude -p`,
+which is what stage 1 ran on (a Claude subscription, cleared with the
+instructor). Nothing else about the protocol changes either way.
 
 `claude -p` exposes neither a temperature nor a seed (checked on CLI 2.1.272),
 so the runs are not bit-reproducible. What is pinned instead, and stated in
@@ -14,9 +17,19 @@ import json
 import os
 import subprocess
 import threading
+import time
+import urllib.error
+import urllib.request
 
 MODEL = os.environ.get("AGENT_MODEL", "claude-haiku-4-5-20251001")
+BASE_URL = os.environ.get("OPENAI_BASE_URL", "").rstrip("/")
 TIMEOUT_S = 120
+
+# A free endpoint rate-limits, and a run is a few hundred calls. Retries are
+# bounded and counted; a call that still fails is a contractor that did not
+# answer, which the protocol already has a meaning for.
+RETRIES = 3
+BACKOFF_S = 8
 
 # The contract net needs no tools. Denying them keeps one bid at one model call
 # and keeps the message count honest.
@@ -47,10 +60,48 @@ class Meter:
 def ask(system: str, user: str, meter: Meter) -> str:
     """Send one system prompt and one user message; return the reply text.
 
-    Returns the empty string when the CLI errors or times out. The caller
+    Returns the empty string when the provider errors or times out. The caller
     treats that exactly like an unparseable reply: a contractor that did not
     bid, counted and reported.
     """
+    if BASE_URL and os.environ.get("OPENAI_API_KEY"):
+        return _http(system, user, meter)
+    return _cli(system, user, meter)
+
+
+def _http(system: str, user: str, meter: Meter) -> str:
+    """One chat completion against an OpenAI-compatible endpoint."""
+    body = json.dumps({
+        "model": MODEL,
+        "messages": [{"role": "system", "content": system},
+                     {"role": "user", "content": user}],
+    }).encode()
+    request = urllib.request.Request(
+        f"{BASE_URL}/chat/completions", data=body, method="POST",
+        headers={"Content-Type": "application/json",
+                 "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"})
+    for attempt in range(RETRIES):
+        try:
+            with urllib.request.urlopen(request, timeout=TIMEOUT_S) as reply:
+                payload = json.loads(reply.read())
+            break
+        except urllib.error.HTTPError as err:
+            if err.code in (429, 502, 503) and attempt < RETRIES - 1:
+                time.sleep(BACKOFF_S * (attempt + 1))
+                continue
+            meter.fail()
+            return ""
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+            meter.fail()
+            return ""
+    usage = payload.get("usage") or {}
+    meter.add(usage.get("prompt_tokens"), usage.get("completion_tokens"))
+    choices = payload.get("choices") or [{}]
+    return (choices[0].get("message") or {}).get("content") or ""
+
+
+def _cli(system: str, user: str, meter: Meter) -> str:
+    """One `claude -p` call, tools denied."""
     cmd = ["claude", "--print",
            "--model", MODEL,
            "--output-format", "json",
