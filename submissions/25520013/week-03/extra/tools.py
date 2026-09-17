@@ -1,14 +1,19 @@
 """Work tools, and who is allowed to call them.
 
 One tool per skill, and each tool answers exactly the question that skill's
-check will ask. A contractor can therefore verify its own answer inside its
-own specialty and nowhere else — which is what a specialist is once agents
-have tools, and what Smith's nodes had in hardware: the one with the sensor
-measured, everyone else estimated.
+check will ask, so a contractor that calls the right one can know its answer
+is right instead of guessing.
 
-The owner table is enforced by the orchestrator, not by the prompt. A call to
-a tool you do not own is refused and counted; reaching for one is itself a
-signal, so the refusal is logged rather than silently dropped.
+Every contractor holds every tool. Restricting them was tried and rejected:
+the probe in `logs/probe-tools.txt` shows the work here is easy enough that a
+contractor succeeds outside its specialty anyway, so a permission table buys a
+difference the tasks do not support. What differs between contractors is the
+persona and, the open question this stage measures, whether a contractor
+bothers to check before it answers.
+
+The table stays and is still enforced by the orchestrator rather than by the
+prompt, so narrowing it again is one line, and any call outside it is refused
+and counted instead of silently dropped.
 """
 import ast
 import re
@@ -18,7 +23,8 @@ import tempfile
 
 TIMEOUT_S = 10
 
-OWNER = {"calc": "A", "count_sentences": "B", "run_python": "C"}
+NAMES = ("calc", "count_sentences", "run_python")
+ALLOWED = {who: list(NAMES) for who in "ABC"}
 
 DESCRIPTION = {
     "calc": '{"tool": "calc", "args": {"expr": "137 * 249"}}'
@@ -77,12 +83,12 @@ IMPL = {"calc": calc, "count_sentences": count_sentences,
 
 def owned_by(name: str) -> list:
     """The tools this contractor may call."""
-    return [tool for tool, owner in OWNER.items() if owner == name]
+    return ALLOWED.get(name, [])
 
 
 def call(tool: str, args: dict, caller: str):
     """Run a tool for `caller`, or refuse it. Returns (output, refused)."""
-    if OWNER.get(tool) != caller:
+    if tool not in ALLOWED.get(caller, []):
         return f"refused: {tool!r} is not available to contractor {caller}", True
     try:
         return IMPL[tool](**(args or {})), False

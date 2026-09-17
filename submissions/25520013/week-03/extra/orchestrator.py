@@ -29,16 +29,22 @@ Your skill: {skill}.
 
 {tools}
 
-You have been awarded the work below. Do it and reply with the answer only —
-no preamble, no explanation of what you are about to do. If the work asks for
-a number, reply with the number. If it asks for Python, reply with the code.
-If it asks for a sentence, reply with that sentence."""
+You have been awarded the work below. Every reply you send is exactly one of
+these two, and nothing else:
 
-_TOOLED = """Tools you may call (no other contractor has these):
+  1. a tool call — the JSON object on its own, no words around it
+  2. your finished answer — the answer on its own, no preamble and no
+     explanation of what you are about to do
+
+Use a tool first whenever one can check your answer; a checked answer beats a
+confident one. When you answer: if the work asks for a number, send the
+number; if it asks for Python, send the code; if it asks for a sentence, send
+that sentence."""
+
+_TOOLED = """Tools you may call:
 {lines}
 
-To call one, reply with that JSON object and nothing else. You get the result
-back and may then answer. Budget: {budget} tool calls for this work item."""
+Budget: {budget} tool calls for this work item."""
 
 _JSON_FENCE_RX = re.compile(r"```(?:json)?\s*(.*?)```", re.S)
 _OBJECT_RX = re.compile(r"\{(?:[^{}]|\{[^{}]*\})*\}", re.S)
