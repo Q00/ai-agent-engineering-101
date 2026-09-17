@@ -1,0 +1,20 @@
+arm=calibrated round=1 model=claude-haiku-4-5-20251001 k=3 max_turns=5
+
+=== round 1 · task 1 · manager A ===
+  Compute 48317 * 7629 - 91824 * 3067 + 25518 * 4409 and return only the number.
+  [frag 0] needs=calc :: Compute 48317 * 7629 - 91824 * 3067 + 25518 * 4409
+  [bid ] A confidence=98 :: arithmetic computation falls within my stated skill; I can evaluate this numeric expressio
+  [pass] B
+  [bid ] C confidence=95 :: Computing arithmetic expressions with Python is a core skill; I can write and execute corr
+  [score] A=0.980  C=0.950
+  [work] A (0 tool call(s), 0 refused) -> 199495047
+  [check] need=calc exact -> PASS
+  [elem] need=calc gold=A -> A gold PASS
+
+=== round 1 · task 2 · manager B ===
+  Rewrite this for a 10-year-old in exactly 4 sentences using exactly 24 words in total, with no sentence longer than 8 words: "This study empirically validates the efficiency of negotiation-based task allocation in multi-agent systems."
+  [frag 0] needs=write :: Rewrite this for a 10-year-old in exactly 4 sentences using exactly 24 words in total, with no sentence longer
+  [pass] A
+  [bid ] B confidence=85 :: Rewriting complex text into simple kid-friendly language within tight word/sentence constr
+  [pass] C
+  [score] B=0.850
