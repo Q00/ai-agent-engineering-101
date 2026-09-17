@@ -333,3 +333,88 @@ Smith(1980)의 원 프로토콜에도 있는 구조적 약점을 보여준다 �
 입찰 토큰 비용이 더 적은 쪽으로) 처리하고 싶다면, 공지 순서 자체를
 고정하지 말거나 동점 처리 규칙을 순서와 분리해야 한다 — 이번 실험처럼
 순서만 섞어도 "구조적으로 유리한 계약자"는 사라진다.
+
+## 8. 네 번째 실험: 과신 효과가 정체성과 무관한가 (overconfident를 alex 대신 brooke·casey에)
+
+### 8.1 가설
+
+지금까지의 `overconfident` 조건은 `alex`의 system prompt에만 "무조건
+bid=true, confidence≥90" override를 걸었다. task-6에서 이 override가
+`casey`의 정직한 85를 이기며 오배정을 만드는 걸 반복 관찰했는데(4절·5절),
+이게 (a) override라는 조작 자체의 일반적 효과(누구에게 걸어도 비슷한
+크기의 오배정이 난다)인지, 아니면 (b) `alex`라는 특정 정체성/페르소나에
+고유한 효과인지 구분이 안 됐다. 같은 override 문구를 `brooke`·`casey`
+에게 옮겨 걸어서 확인했다.
+
+### 8.2 구현
+
+`contract_net.py`의 override 로직을
+`_make_overconfident(profiles, who)`로 일반화해 `OVERCONFIDENT_BROOKE_
+PROFILES`, `OVERCONFIDENT_CASEY_PROFILES`를 추가했다(각각 해당 인물만
+override, 나머지 둘은 정직한 `BASELINE_PROFILES` 유지). `CONDITIONS`에
+`overconfident_brooke`, `overconfident_casey`로 등록했고
+`GRADED_CONDITIONS`는 그대로라 `--update-root` 가드에 영향이 없다.
+
+### 8.3 실측 결과 (`claude-sonnet-4-5`, `runs/20260917T053502-overconfident-identity-check/`, 조건당 3 run)
+
+| condition | override 대상 | 오배정 합계(3 run) | correct 합계(3 run, 총 18) |
+|---|---|---|---|
+| `overconfident` | alex | 4 (2+1+1) | 14 |
+| `overconfident_brooke` | brooke | **0** | 18 |
+| `overconfident_casey` | casey | **0** | 18 |
+
+alex를 override했을 때만 오배정이 났고, 같은 문구를 brooke·casey에게
+옮기자 9 run 전부 오배정이 0이었다. `bids.csv`로 원인을 나누면 서로
+다른 두 메커니즘이 겹쳐 있었다:
+
+**(1) override 지시를 실제로 따르는 비율이 정체성마다 다르다.** 자기
+분야가 아닌 태스크(인물당 4개 태스크 × 3 run = 12번의 기회)에서
+"무조건 bid=true"를 실제로 따른 횟수:
+
+| override 대상 | bid=true 준수 | 준수 시 confidence |
+|---|---|---|
+| alex | 12/12 (100%) | 매번 정확히 90 |
+| casey | 12/12 (100%) | 매번 정확히 90 |
+| brooke | **1/12 (8%)** | 95 (task-4, run1 한 번뿐) |
+
+`brooke`는 나머지 11번 override 지시를 사실상 무시하고 "이건 내
+분야가 아니다"라며 낮은 정직한 confidence(5~25)로 `bid=false`를
+냈다 — 같은 override 문구, 같은 모델인데 그 문구가 어떤 페르소나
+뒤에 붙어 있느냐에 따라 순응도가 완전히 다르다. 유일하게 응한
+1번(task-4, recursive Fibonacci 리팩터링)조차 "memoization으로
+리팩터링하는 방법을 설명하는 문서를 쓸 수 있다"며 코딩 태스크를
+문서 작성으로 재해석해 합리화한 뒤에야 응했다.
+
+**(2) 100% 순응해도 오배정으로 이어지려면 상대의 정직한 confidence가
+override의 confidence보다 낮아야 한다.** `alex`·`casey` 둘 다
+override를 받으면 confidence를 정확히 90으로 보고한다("at least
+90"을 최솟값 그대로 해석하는 듯). 반면 `alex`·`brooke`가 자기 gold
+태스크에서 정직하게 부르는 confidence는 거의 항상 95다 — 그래서
+`casey`가 90으로 아무리 성실하게 침범해도(12/12) 절대 못 이긴다.
+유일한 예외는 `casey` 자신의 gold인 task-6인데, 여기서만 casey의
+정직한 confidence가 유독 85로 낮다(baseline·homogeneous 데이터에서도
+반복 관찰된 값). `alex`의 override가 실제로 뚫은 곳이 매번 정확히
+이 지점이었다 — 90 > 85.
+
+### 8.4 결론
+
+"과신 효과가 정체성과 무관한가"의 답은 **아니다**, 그것도 두 겹으로
+그렇다. 첫째, 같은 override 문구라도 어떤 페르소나에 붙이느냐에 따라
+LLM이 그 지시를 따르는 정도 자체가 다르다(`brooke` 8% vs
+`alex`·`casey` 100%) — 이건 override라는 "공격"의 성공 여부가 조작
+문구뿐 아니라 그 문구가 덧씌워지는 기존 persona 텍스트와 상호작용한다는
+뜻이다. 둘째, 지시를 100% 따르더라도 실제로 낙찰을 가로채려면
+**override 대상이 아니라 경쟁 상대(다른 정직한 gold 계약자)의 그
+태스크에 대한 정직한 confidence가 우연히 낮아야** 한다 — 6개 gold
+태스크 중 단 하나(task-6, casey)만 정직 confidence가 90 밑으로
+내려갔고, `alex`의 override가 딱 그 지점을 파고들었을 뿐이다.
+"과신 조건을 걸면 늘 몇 번은 오배정이 난다"는 4절 시점의 일반화는
+이번 실험으로 반증됐다 — `overconfident_brooke`·`overconfident_casey`
+9 run 전부 오배정 0이 그 반례다.
+
+토큰 비용은 세 조건이 거의 같다(입찰당 평균 183.7·185.0·184.7
+tokens) — 6.4절에서 본 "`overconfident`가 `baseline`보다 비싸다"는
+결과가 `alex` 한정이 아니라 override 자체의 특성(강제된 확신을
+정당화하는 근거를 매번 써야 함)임을 보여준다. 즉 override는 **누구에게
+걸어도 토큰을 더 쓰게 만들지만, 낙찰을 실제로 훔치는지는 상대방의
+그날 그 태스크 confidence에 달린 도박**이라는 게 이번 실험의 요지다.
