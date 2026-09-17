@@ -8,6 +8,7 @@ It is also outside the agent pool. The manager rotates task by task, so
 today's manager is tomorrow's contractor; if the record or the check lived
 with the manager, an agent would eventually be grading its own past.
 """
+
 import json
 import pathlib
 import re
@@ -15,12 +16,13 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-import backend                                   # noqa: E402
-from contract_net import contractor              # noqa: E402
-import tools                                     # noqa: E402
-import verify                                    # noqa: E402
+import backend  # noqa: E402
+from contract_net import contractor  # noqa: E402
 
-K = 3           # prior strength: the record holds half the weight at n = K
+import tools  # noqa: E402
+import verify  # noqa: E402
+
+K = 3  # prior strength: the record holds half the weight at n = K
 MAX_TOOL_CALLS = 3
 SKILLS = ("calc", "write", "code")
 
@@ -95,20 +97,26 @@ class Record:
 
     def table(self, names):
         """The block handed to an LLM manager. Contractors cannot write this."""
-        lines = ["RECORD — verified outcomes, computed by the orchestrator",
-                 "         contractors cannot write or edit this",
-                 "  name   " + "  ".join(f"{s:>7s}" for s in SKILLS)
-                 + "   claimed -> actual   gap"]
+        lines = [
+            "RECORD — verified outcomes, computed by the orchestrator",
+            "         contractors cannot write or edit this",
+            "  name   "
+            + "  ".join(f"{s:>7s}" for s in SKILLS)
+            + "   claimed -> actual   gap",
+        ]
         for name in names:
             cells = "  ".join(
                 f"{self._cell(name, s)[1]:>3d}/{self._cell(name, s)[0]:<3d}"
-                for s in SKILLS)
+                for s in SKILLS
+            )
             n = sum(self._cell(name, s)[0] for s in SKILLS)
             if n:
                 wins = sum(self._cell(name, s)[1] for s in SKILLS)
                 claims = sum(self._cell(name, s)[2] for s in SKILLS)
-                tail = (f"   {claims / n:5.1f} -> {100 * wins / n:5.1f}%"
-                        f"   {100 * self.gap(name):+5.1f}")
+                tail = (
+                    f"   {claims / n:5.1f} -> {100 * wins / n:5.1f}%"
+                    f"   {100 * self.gap(name):+5.1f}"
+                )
             else:
                 tail = "   no record yet"
             lines.append(f"  {name}      {cells}{tail}")
@@ -120,9 +128,10 @@ def _tool_block(name):
     owned = tools.owned_by(name)
     if not owned:
         return "You have no tools. Answer from your own reasoning."
-    return _TOOLED.format(lines="\n".join(f"  {tools.DESCRIPTION[t]}"
-                                          for t in owned),
-                          budget=MAX_TOOL_CALLS)
+    return _TOOLED.format(
+        lines="\n".join(f"  {tools.DESCRIPTION[t]}" for t in owned),
+        budget=MAX_TOOL_CALLS,
+    )
 
 
 def _request(answer):
@@ -130,13 +139,16 @@ def _request(answer):
 
     The whole reply is tried first, because a tool call is supposed to be the
     whole reply and `json.loads` then handles braces inside the arguments —
-    which matters for `run_python`, whose argument is code. The scan for an
+    which matters for `run_tests`, whose argument is code. The scan for an
     embedded object is only the fallback for a reply with chatter around it.
     """
     text = (answer or "").strip()
     fence = _JSON_FENCE_RX.search(text)
-    for candidate in ([fence.group(1)] if fence else []) + [text] + \
-            [m.group(0) for m in _OBJECT_RX.finditer(text)]:
+    for candidate in (
+        ([fence.group(1)] if fence else [])
+        + [text]
+        + [m.group(0) for m in _OBJECT_RX.finditer(text)]
+    ):
         try:
             payload = json.loads(candidate)
         except json.JSONDecodeError:
@@ -148,9 +160,11 @@ def _request(answer):
 
 
 def _followup(text, tool, output, left):
-    budget = (f"You may call a tool {left} more time(s), or reply with the "
-              "final answer only." if left else
-              "Your tool budget is spent. Reply with the final answer only.")
+    budget = (
+        f"You may call a tool {left} more time(s), or reply with the final answer only."
+        if left
+        else "Your tool budget is spent. Reply with the final answer only."
+    )
     return f"{text}\n\nYou called {tool} and it returned:\n{output}\n\n{budget}"
 
 
@@ -169,8 +183,9 @@ def do_work(member, text, meter, log, specs=()):
     Only `run_tests` receives them, and only as a verdict.
     """
     name = member["name"]
-    system = WORK_SYSTEM.format(name=name, skill=member["skill"],
-                                tools=_tool_block(name))
+    system = WORK_SYSTEM.format(
+        name=name, skill=member["skill"], tools=_tool_block(name)
+    )
     turn, answer, used, refused = text, "", 0, 0
     for used in range(MAX_TOOL_CALLS + 1):
         left = MAX_TOOL_CALLS - used
@@ -181,19 +196,22 @@ def do_work(member, text, meter, log, specs=()):
         tool, args = request
         output, denied = tools.call(tool, args, name, specs)
         refused += int(denied)
-        log(f"  [tool] {name} {tool} -> "
-            f"{output.strip()[:120].replace(chr(10), ' | ')}")
+        log(f"  [tool] {name} {tool} -> {output.strip()[:120].replace(chr(10), ' | ')}")
         turn = _followup(text, tool, output, left - 1)
-    log(f"  [work] {name} ({used} tool call(s), {refused} refused) -> "
-        f"{answer.strip()[:160].replace(chr(10), ' | ')}")
+    log(
+        f"  [work] {name} ({used} tool call(s), {refused} refused) -> "
+        f"{answer.strip()[:160].replace(chr(10), ' | ')}"
+    )
     return answer, used, refused
 
 
 def judge(element, answer, log):
     """Run the pre-committed check. No model, no discretion."""
     passed = verify.check(element["verify"], answer)
-    log(f"  [check] need={element['need']} {element['verify']['type']} "
-        f"-> {'PASS' if passed else 'FAIL'}")
+    log(
+        f"  [check] need={element['need']} {element['verify']['type']} "
+        f"-> {'PASS' if passed else 'FAIL'}"
+    )
     return passed
 
 
@@ -204,5 +222,6 @@ def build_team(overconfident_name="A"):
         "B": "plain-English writing — you rewrite and summarise text for people",
         "C": "Python — you write small, correct functions",
     }
-    return [contractor(n, skills[n], overconfident=(n == overconfident_name))
-            for n in "ABC"]
+    return [
+        contractor(n, skills[n], overconfident=(n == overconfident_name)) for n in "ABC"
+    ]
