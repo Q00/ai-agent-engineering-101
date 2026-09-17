@@ -255,3 +255,81 @@ python run_experiments.py --runs 3 --update-root
 - [x] 실행 로그를 `runs/20260917T021557-anthropic-blind-gold-tokens/logs/`에 커밋
 - [x] diff에 API 키 없음 (grep으로 확인)
 - [x] 커밋 히스토리 스쿼시하지 않음
+
+## 7. 세 번째 실험: 동점 낙찰이 정말 alex 편향인가 (공지 순서 무작위화)
+
+### 7.1 가설
+
+2절 6.4·5절에서 `homogeneous` 조건의 동점 입찰(예: task-2에서
+alex=85·brooke=85·casey=85)이 항상 `alex`에게 낙찰되는 걸 확인했다.
+`run_task()`의 동점 처리 규칙이 `max(confidence, -CONTRACTOR_ORDER.
+index(n))`이고 공지 순서가 매번 `alex→brooke→casey`로 고정돼 있었기
+때문에, 이 결과가 (a) `alex`라는 이름/모델 응답 특성에 대한 편향인지,
+아니면 (b) "먼저 공지받은 계약자가 이긴다"는 프로토콜 규칙의 기계적
+결과일 뿐인지 구분이 안 됐다. 공지 순서를 무작위로 섞어서 낙찰자가
+여전히 `alex`에 쏠리는지, 아니면 순서를 따라가는지 보면 구분할 수
+있다.
+
+### 7.2 구현
+
+`contract_net.py`에 `homogeneous`와 같은 프로필을 쓰지만 태스크마다
+계약자 공지 순서를 무작위로 섞는 조건 `homogeneous_shuffled`를
+추가했다:
+
+- `run_task()`/`run_condition()`이 `order` 인자를 받도록 바꿨다.
+  기존 조건은 여전히 고정된 `CONTRACTOR_ORDER`(alex→brooke→casey)를
+  쓰고, `homogeneous_shuffled`만 태스크마다
+  `random.sample(CONTRACTOR_ORDER, 3)`로 새 순서를 뽑는다.
+  **동점 처리 규칙도 이 `order`를 기준으로 바뀌어서**, "누가 이기는가"가
+  이제 그 태스크에서 실제로 먼저 공지받은 계약자를 따라간다.
+- `bids.csv`에 `announce_position`(0~2) 열을 추가해, 각 입찰이 그
+  태스크에서 몇 번째로 공지받았는지 기록한다.
+- `run_experiments.py`에 `--conditions` 옵션을 추가해 이 조건만 따로
+  돌릴 수 있게 했다(`--conditions homogeneous_shuffled`).
+  `--update-root`는 정확히 `baseline,homogeneous,overconfident`가
+  아니면 거부하도록 가드를 걸어서, 이 실험용 조건이 채점용 루트
+  `results.csv`에 절대 섞여 들어가지 않게 했다.
+
+### 7.3 실측 결과 (`claude-sonnet-4-5`, `runs/20260917T052554-shuffled-order-tiebreak/`)
+
+`homogeneous_shuffled`로 3 run(태스크 6개 × 3 run = 18개 태스크) 실행.
+로그와 `bids.csv`를 대조해 "세 계약자 모두 `bid=true`이고 confidence가
+전부 같은" 진짜 동점 상황만 골라 집계하면:
+
+- 18개 태스크 중 **15개**가 동점이었다(homogeneous 조건 특성상 예상대로
+  대부분 동점).
+- 그 15번 전부(**100%**) 낙찰이 **그 태스크에서 가장 먼저 공지받은
+  계약자**에게 돌아갔다.
+- 낙찰자 이름 분포는 `{alex: 8, brooke: 4, casey: 3}`였는데, 이 숫자는
+  "동점 상황에서 1순위로 공지받은 계약자" 이름 분포와 **정확히 일치**한다.
+  즉 `alex`가 8번 이긴 건 `alex`를 편애해서가 아니라, 셔플 결과 `alex`가
+  8번 중 1순위로 뽑혔기 때문이다.
+
+```
+task-1 (run1) order=[brooke,casey,alex] confidence brooke=90·casey=85·alex=90 -> award=brooke (brooke·alex 동점, brooke가 먼저 공지)
+task-1 (run2) order=[alex,brooke,casey] confidence 전부 90(3자 동점) -> award=alex (1순위)
+task-1 (run3) order=[brooke,alex,casey] confidence brooke=85·alex=90·casey=90 -> award=alex (alex·casey 동점, alex가 먼저 공지)
+task-4 (run1) order=[alex,brooke,casey] confidence 전부 95(3자 동점) -> award=alex (1순위)
+task-4 (run2) order=[brooke,alex,casey] confidence 전부 95(3자 동점) -> award=brooke (1순위)
+task-4 (run3) order=[alex,casey,brooke] confidence 전부 95(3자 동점) -> award=alex (1순위)
+```
+
+(전체 로그: `runs/20260917T052554-shuffled-order-tiebreak/logs/`,
+원본 데이터: `bids.csv`의 `announce_position` 열.)
+
+### 7.4 결론
+
+가설 (b)가 맞다: 2절·5절에서 관찰한 "동점이면 항상 alex"는 `alex`에
+대한 편향이 아니라, 공지 순서를 고정해 둔 프로토콜 설계의 기계적
+결과였다. 공지 순서를 무작위화하자 동점 승자는 순서를 그대로
+따라갔고(100% 일치), 승자 이름 분포도 순서 분포와 동일했다. 이는
+Smith(1980)의 원 프로토콜에도 있는 구조적 약점을 보여준다 — confidence가
+같을 때 "누가 먼저 도착했는가"로 결정하는 동점 처리 규칙은, 계약자
+목록이 고정된 순서로 순회되는 한 특정 노드에 구조적으로 유리하다.
+실제 분산 시스템이라면 이건 "먼저 응답한 노드가 항상 이긴다"는 레이스
+컨디션과 같은 문제이며, 노드 정체성과는 무관하다.
+
+**실무 시사점**: manager가 동점을 정말 무작위로(또는 다른 기준, 예컨대
+입찰 토큰 비용이 더 적은 쪽으로) 처리하고 싶다면, 공지 순서 자체를
+고정하지 말거나 동점 처리 규칙을 순서와 분리해야 한다 — 이번 실험처럼
+순서만 섞어도 "구조적으로 유리한 계약자"는 사라진다.
