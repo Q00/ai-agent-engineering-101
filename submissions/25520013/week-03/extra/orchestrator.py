@@ -8,25 +8,40 @@ It is also outside the agent pool. The manager rotates task by task, so
 today's manager is tomorrow's contractor; if the record or the check lived
 with the manager, an agent would eventually be grading its own past.
 """
+import json
 import pathlib
+import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 import backend                                   # noqa: E402
 from contract_net import contractor              # noqa: E402
+import tools                                     # noqa: E402
 import verify                                    # noqa: E402
 
 K = 3           # prior strength: the record holds half the weight at n = K
+MAX_TOOL_CALLS = 3
 SKILLS = ("calc", "write", "code")
 
 WORK_SYSTEM = """You are contractor {name} in a contract net.
 Your skill: {skill}.
 
+{tools}
+
 You have been awarded the work below. Do it and reply with the answer only —
 no preamble, no explanation of what you are about to do. If the work asks for
 a number, reply with the number. If it asks for Python, reply with the code.
 If it asks for a sentence, reply with that sentence."""
+
+_TOOLED = """Tools you may call (no other contractor has these):
+{lines}
+
+To call one, reply with that JSON object and nothing else. You get the result
+back and may then answer. Budget: {budget} tool calls for this work item."""
+
+_JSON_FENCE_RX = re.compile(r"```(?:json)?\s*(.*?)```", re.S)
+_OBJECT_RX = re.compile(r"\{(?:[^{}]|\{[^{}]*\})*\}", re.S)
 
 
 class Record:
@@ -92,12 +107,75 @@ class Record:
         return "\n".join(lines)
 
 
+def _tool_block(name):
+    """The tool section of a contractor's system prompt, or a bare line."""
+    owned = tools.owned_by(name)
+    if not owned:
+        return "You have no tools. Answer from your own reasoning."
+    return _TOOLED.format(lines="\n".join(f"  {tools.DESCRIPTION[t]}"
+                                          for t in owned),
+                          budget=MAX_TOOL_CALLS)
+
+
+def _request(answer):
+    """Read a tool call out of a reply, or None if the reply is an answer.
+
+    The whole reply is tried first, because a tool call is supposed to be the
+    whole reply and `json.loads` then handles braces inside the arguments —
+    which matters for `run_python`, whose argument is code. The scan for an
+    embedded object is only the fallback for a reply with chatter around it.
+    """
+    text = (answer or "").strip()
+    fence = _JSON_FENCE_RX.search(text)
+    for candidate in ([fence.group(1)] if fence else []) + [text] + \
+            [m.group(0) for m in _OBJECT_RX.finditer(text)]:
+        try:
+            payload = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict) and isinstance(payload.get("tool"), str):
+            args = payload.get("args")
+            return payload["tool"], args if isinstance(args, dict) else {}
+    return None
+
+
+def _followup(text, tool, output, left):
+    budget = (f"You may call a tool {left} more time(s), or reply with the "
+              "final answer only." if left else
+              "Your tool budget is spent. Reply with the final answer only.")
+    return f"{text}\n\nYou called {tool} and it returned:\n{output}\n\n{budget}"
+
+
 def do_work(member, text, meter, log):
-    """The awarded contractor actually does the work. One model call."""
-    system = WORK_SYSTEM.format(name=member["name"], skill=member["skill"])
-    answer = backend.ask(system, text, meter)
-    log(f"  [work] {member['name']} -> {answer.strip()[:160].replace(chr(10), ' | ')}")
-    return answer
+    """The awarded contractor does the work, with only its own tools.
+
+    The permission table is enforced here rather than in the prompt, because a
+    prompt is a request and this has to be a wall: a contractor that reaches
+    outside its specialty gets a refusal and spends a turn, and the reach is
+    logged. That is the point of the asymmetry — the same reply that would be
+    a cheap guess bare-handed is a checked answer for the one contractor whose
+    tool can check it, which is what made Smith's sensor-holding node the
+    right bidder rather than merely the loudest one.
+    """
+    name = member["name"]
+    system = WORK_SYSTEM.format(name=name, skill=member["skill"],
+                                tools=_tool_block(name))
+    turn, answer, used, refused = text, "", 0, 0
+    for used in range(MAX_TOOL_CALLS + 1):
+        left = MAX_TOOL_CALLS - used
+        answer = backend.ask(system, turn, meter)
+        request = _request(answer)
+        if request is None or left == 0:
+            break
+        tool, args = request
+        output, denied = tools.call(tool, args, name)
+        refused += int(denied)
+        log(f"  [tool] {name} {tool} -> "
+            f"{output.strip()[:120].replace(chr(10), ' | ')}")
+        turn = _followup(text, tool, output, left - 1)
+    log(f"  [work] {name} ({used} tool call(s), {refused} refused) -> "
+        f"{answer.strip()[:160].replace(chr(10), ' | ')}")
+    return answer, used, refused
 
 
 def judge(element, answer, log):

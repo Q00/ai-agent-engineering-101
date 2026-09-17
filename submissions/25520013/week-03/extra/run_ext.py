@@ -33,7 +33,7 @@ ARMS = {
 }
 FIELDS = ["arm", "round", "elements", "correct", "done", "messages",
           "unassigned", "misawards", "fragments", "self_awards", "mgr_turns",
-          "note"]
+          "tool_calls", "tool_refused", "note"]
 
 
 def cover(elements, fragments):
@@ -54,7 +54,7 @@ def run_round(arm, rnd, tasks, team, record, log):
     meter = backend.Meter()
     tally = dict(elements=0, correct=0, done=0, messages=0, unassigned=0,
                  misawards=0, fragments=0, self_awards=0, mgr_turns=0,
-                 refused=0)
+                 refused=0, tool_calls=0, tool_refused=0)
 
     for index, task in enumerate(tasks):
         boss = team[index % len(team)]              # the manager rotates
@@ -104,7 +104,10 @@ def run_round(arm, rnd, tasks, team, record, log):
                 log(f"  [award] fragment {i} -> {who} (covers no graded element)")
                 continue
             member = next(m for m in team if m["name"] == who)
-            answers[i] = orc.do_work(member, frag["text"], meter, log)
+            answers[i], calls, denied = orc.do_work(
+                member, frag["text"], meter, log)
+            tally["tool_calls"] += calls
+            tally["tool_refused"] += denied
 
         for el, frag_index in zip(task["elements"], served):
             who = winners.get(frag_index) if frag_index is not None else None
@@ -152,7 +155,8 @@ def main():
                         f"k={orc.K} max_turns={mgr.MAX_TURNS}")
                     tally, meter = run_round(arm, rnd, tasks, team, record, log)
                     note = (f"model={backend.MODEL} calls={meter.calls} "
-                            f"tokens={meter.tokens} refused={tally['refused']} "
+                            f"tokens={meter.tokens} "
+                            f"mgr_refused={tally['refused']} "
                             f"cli_failures={meter.failures}")
                     log("\n" + note)
                 row = {k: tally[k] for k in FIELDS if k in tally}
@@ -162,6 +166,7 @@ def main():
                 print(f"{arm} round {rnd}: correct={tally['correct']}/"
                       f"{tally['elements']} done={tally['done']} "
                       f"frags={tally['fragments']} self={tally['self_awards']} "
+                      f"tools={tally['tool_calls']}/{tally['tool_refused']}ref "
                       f"calls={meter.calls}")
 
 
