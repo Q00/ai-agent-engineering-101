@@ -84,12 +84,18 @@ def decompose(manager, task, meter, log):
     return frags
 
 
-def decide_rule(bids, needs, record):
-    """The deterministic arm: highest shrunk score wins, ties by team order."""
+def decide_rule(bids, needs, record, priors):
+    """The deterministic arm: highest shrunk score wins, ties by team order.
+
+    `priors` maps a contractor to what is believed about it before the work,
+    on 0..1. Which map is handed in is the only thing that separates the
+    confidence arm from the appraised one.
+    """
     if not bids:
         return None, [], 0
     skill = needs[0]
-    scored = [(name, record.score(name, skill, conf)) for name, conf, _ in bids]
+    scored = [(name, record.score(name, skill, priors.get(name, 0.0)))
+              for name, _, _ in bids]
     winner = max(scored, key=lambda s: s[1])[0]
     return winner, scored, 0
 

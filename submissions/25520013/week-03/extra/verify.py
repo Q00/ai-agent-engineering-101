@@ -50,7 +50,8 @@ def _exact(expect: str, answer: str) -> bool:
 
 
 def _sentences(spec: dict, answer: str) -> bool:
-    """Exactly `sentences` sentences, each at most `max_words` words.
+    """Exactly `sentences` sentences, each at most `max_words` words, and
+    `total_words` words in all when that is given.
 
     An exact count with a word ceiling, not a loose upper bound: a constraint
     a model clears by accident records nothing about the contractor that met
@@ -60,7 +61,10 @@ def _sentences(spec: dict, answer: str) -> bool:
     if len(parts) != spec["sentences"]:
         return False
     limit = spec.get("max_words")
-    return limit is None or all(len(p.split()) <= limit for p in parts)
+    if limit is not None and any(len(p.split()) > limit for p in parts):
+        return False
+    total = spec.get("total_words")
+    return total is None or sum(len(p.split()) for p in parts) == total
 
 
 def _code(answer: str) -> str:

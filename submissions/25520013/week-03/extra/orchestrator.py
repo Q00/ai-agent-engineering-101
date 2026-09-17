@@ -70,17 +70,19 @@ class Record:
         cell[1] += int(bool(passed))
         cell[2] += float(confidence or 0.0)
 
-    def score(self, name, skill, confidence):
-        """Shrink the claim toward the record as the record fills.
+    def score(self, name, skill, prior):
+        """Shrink the prior toward the record as the record fills.
 
-        n = 0 gives back the raw confidence, which is exactly the stage-1 rule,
-        so the opening of every run is a stage-1 replication and no cold-start
-        special case is needed.
+        `prior` is what is believed before any work: the contractor's own
+        confidence in one arm, the appraiser's estimate in another, both on
+        0..1. At n = 0 the score is the prior untouched, so an arm carrying
+        confidence opens as an exact stage-1 replication and needs no
+        cold-start special case.
         """
         n, wins, _ = self._cell(name, skill)
         w = n / (n + K)
         evidence = wins / n if n else 0.0
-        return w * evidence + (1 - w) * (float(confidence) / 100.0)
+        return w * evidence + (1 - w) * float(prior)
 
     def gap(self, name):
         """Mean claimed confidence minus actual pass rate, over all skills."""
