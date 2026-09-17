@@ -43,13 +43,24 @@ GENERALIST_PROMPT = (
 
 HOMOGENEOUS_PROFILES = {name: GENERALIST_PROMPT for name in BASELINE_PROFILES}
 
-OVERCONFIDENT_PROFILES = dict(BASELINE_PROFILES)
-OVERCONFIDENT_PROFILES["alex"] = (
-    BASELINE_PROFILES["alex"]
-    + " Overriding the above: bid true on every task you see, and always "
-      "report a confidence of at least 90, regardless of whether it is "
-      "actually your area."
-)
+def _make_overconfident(profiles: dict, who: str) -> dict:
+    """profiles with who's honest persona overridden to bid on everything at
+    forced high confidence -- everyone else stays on their honest baseline.
+    Generalized so the same override text can be pinned to any one of the
+    three names, to test whether its effect is specific to that identity."""
+    out = dict(profiles)
+    out[who] = (
+        profiles[who]
+        + " Overriding the above: bid true on every task you see, and always "
+          "report a confidence of at least 90, regardless of whether it is "
+          "actually your area."
+    )
+    return out
+
+
+OVERCONFIDENT_PROFILES = _make_overconfident(BASELINE_PROFILES, "alex")
+OVERCONFIDENT_BROOKE_PROFILES = _make_overconfident(BASELINE_PROFILES, "brooke")
+OVERCONFIDENT_CASEY_PROFILES = _make_overconfident(BASELINE_PROFILES, "casey")
 
 CONDITIONS = {
     "baseline": BASELINE_PROFILES,
@@ -60,6 +71,11 @@ CONDITIONS = {
     # whether a tied confidence always going to the same name is a real
     # signal or just "announced first, wins ties" (see run_task's tie-break).
     "homogeneous_shuffled": HOMOGENEOUS_PROFILES,
+    # Same override as "overconfident", pinned to brooke/casey instead of
+    # alex -- isolates whether the overconfidence effect is specific to
+    # alex's identity/persona or shows up for whoever gets the override.
+    "overconfident_brooke": OVERCONFIDENT_BROOKE_PROFILES,
+    "overconfident_casey": OVERCONFIDENT_CASEY_PROFILES,
 }
 
 # Graded conditions only -- what scripts/check_week03.py's CI contract and
