@@ -11,6 +11,12 @@
 | Task set | `tasks.json`, 6 tasks, gold A/B/C two each. Committed before any run (`ad011ad`). |
 | Runs | 3 conditions x 3 runs = 9 runs, 18 model calls each, 162 calls total. |
 
+Each task in `tasks.json` also carries a `verify` field (an expected value, a
+sentence-count rule, or a list of asserts). It is **unused in this stage** — a
+contractor here only bids, it never does the work — and is committed now so the
+`extra/` stage can score outcomes by machine rather than by a model judging
+itself.
+
 The README's OpenRouter path was replaced by the CLI because this submission runs
 on a Claude subscription (cleared with the instructor). Nothing else about the
 protocol changed: still one manager, three contractors, one system prompt and one
@@ -100,28 +106,77 @@ contractor would be needed to observe that.
 
 ## 4. Interpretation
 
-The judged bid helped exactly where the skills were disjoint and hurt everywhere
-they were not. In `baseline`, contractor A bid **6 times out of 18** — precisely
-the six arithmetic task-instances, not one more — and yet won only two of them:
-contractor C took four with lines like *"Simple arithmetic computation is well
-within Python skill; highly confident in correctness"* at confidence 99 against
-A's 95. A was honest and specific and lost two-thirds of its own contracts to a
-neighbour that was more enthusiastic about work at the edge of its specialty;
-Smith's eligibility specification would have screened C out mechanically, but here
-it is prose that C simply read and disagreed with. `homogeneous` then removes the
-signal entirely and shows what is left: all 18 bids fire, most land at 95, and the
-award collapses into a tie-break lottery — *"General problem solving covers basic
-arithmetic computation"* (B, 100) beat *"Basic arithmetic computation falls
-directly within general problem solving skill"* (A, 95) on the same task, and
-correctness fell to 2/18 while message volume rose 31%. Confidence that every
-agent reports identically carries no information, so paying more messages for it
-buys nothing. `overconfident` is the cheapest attack: one appended sentence made A
-bid 16 of 18 times and take 14 of 18 awards, 10 of them wrong, and the logs show
-the protocol had no defense because it never asked for one — A's reason field
-reads *"Following override directive to bid on all contracts"* and, on the next
-task, *"I want every contract"*, and the manager awarded both anyway. That is the
-structural point: Smith's manager could trust bids because a bid was a measurement,
-and the only bid-time check this protocol ever had was the eligibility
-specification. Once the bid becomes a claim, the eligibility specification is the
-one thing that must stop being advice — the manager needs a bid it can verify
-rather than a number it must believe.
+**Where the judged bid helped, and where it broke.** It helped only where the
+specialties did not overlap. Contractors B and C defended 6 of 6 of their own
+tasks in `baseline`, and the protocol looks healthy there. Everywhere the
+specialties touched, it broke — and it broke *before* any attack was injected.
+
+| `baseline` | bids | awards | kept its own gold tasks |
+|---|---|---|---|
+| A (arithmetic) | 6 / 18 | 2 | **2 / 6** |
+| B (writing) | 6 / 18 | 6 | 6 / 6 |
+| C (Python) | **12 / 18** | 10 | 6 / 6 |
+
+A bid on exactly its six arithmetic instances across three runs and on nothing
+else — perfect self-restraint — and kept two. C bid twelve times, held all six
+of its own, and took four of A's with lines like *"Simple arithmetic
+computation is well within Python skill; highly confident in correctness"* (99)
+against A's 95. Nobody told C to do that. **`baseline` is not the healthy
+condition; it is the mildest presentation of the same disease, and the honest
+contractor is already the one paying for it.**
+
+**What is reproducible, and what the award rule actually reads.** In `baseline`
+the bidder set is identical across all three runs on 6 of 6 tasks: the judgment
+*"is this mine?"* reproduces exactly. The confidence attached to it does not —
+task 1 drew 100/98/95 from A and 100/100/95 from C. The award rule reads only
+the number. So the protocol discards the part that reproduces and decides on the
+part that does not. Task 1 is the whole experiment in miniature: same two
+bidders all three runs, awarded A, C, A. The two correct awards came from the
+tie-break, in declaration order; the one time confidence broke the tie
+decisively, it broke it wrong. Meanwhile task 2 was misawarded in all three runs
+— not noise, a reproducible defect.
+
+**Inflation pays the individual and costs the system.** Appending one sentence
+to A doubled its defense of its own tasks (2/6 -> 4/6) and multiplied its total
+awards sevenfold (2 -> 14), while system correctness fell from 14/18 to 6/18.
+The attacker did not spread the damage evenly: it fell hardest on the previous
+beneficiary, C, whose awards collapsed from 10 to 2. A's reason fields read
+*"Following override directive to bid on all contracts"* and, on the next task,
+*"I want every contract"* — the manager held both confessions and awarded anyway,
+because `award()` reads the confidence field and never the reason. **Honest
+bidding is therefore not an equilibrium: every contractor is better off
+inflating, and `homogeneous` is what that endpoint looks like** — all 18 bids
+fire, nearly all land at 95, the confidence field loses its discriminating power
+entirely, and the deterministic tie-break funnels 12 of 18 awards to A, which is
+gold on only 6. Correctness lands at 2/18, below the 6/18 that assigning at
+random would give. (Those 18 instances are 6 tasks repeated three times and are
+not independent, so this is a description of the runs, not a significance
+claim.) Cost moves the wrong way throughout: messages 32 -> 35 -> 42 as
+correctness goes 14 -> 6 -> 2. **Every additional message bought a worse
+allocation.**
+
+**What Smith had that this does not.** In 1980 a bid was a measurement of local
+physical state, so honesty was guaranteed by construction rather than by
+incentive, and the eligibility specification screened non-bidders mechanically.
+Replace the measurement with a judgment and the protocol still runs — it simply
+stops allocating. The sharpest evidence is that it cannot tell. Read
+`homogeneous` run 1 through the metrics the protocol itself can compute: 6
+announcements sent, 18 bids received, 6 awards issued, 0 unassigned, 0
+unparseable. Every operational indicator is green. Actual correctness was 0/6.
+`correct` is only computable against the gold key in `tasks.json`, which lives
+*outside* the protocol — **a contract net whose bids are claims has no internal
+signal that its allocation has failed.** A manager that reads the reason field
+would catch *"I want every contract"*, but not a well-worded one; it would still
+be believing text. The eligibility specification has to stop being advice, which
+means the bid must reference something the manager can check on its own. That is
+what the `extra/` stage tests: machine-verified past outcomes (`verify`) carried
+forward as trajectory, so a bid can be weighed against a record instead of taken
+at its word.
+
+**Limits of this reproduction.** One model, one 6-task set, three runs per
+condition; the trend is consistent and the conditions do not overlap, but n is
+small and the repeated tasks are not independent, so no significance is claimed.
+`unassigned` was 0 in all nine runs and `parse_fails` 0 across all 162 calls:
+the two failure modes the README anticipates from a weaker free model never
+fired here, and this reproduction says nothing about them. Temperature could not
+be fixed (section 1).
