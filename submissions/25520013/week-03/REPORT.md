@@ -11,6 +11,16 @@
 | Task set | `tasks.json`, 6 tasks, gold A/B/C two each. Committed before any run (`ad011ad`). |
 | Runs | 3 conditions x 3 runs = 9 runs, 18 model calls each, 162 calls total. |
 
+**Why the tools are off.** `claude -p` is a full agent by default, so taking them
+away is a decision, not a default, and the README only says the protocol does not
+need them. It should be a decision: in this stage a contractor never does work, it
+only bids, and a bid is an estimate about a job not yet won. A contractor that
+could check the answer before bidding would be returning a measurement rather than
+a judgement — which is exactly the 1980 case this lab is set against — and it would
+already have done the work it was bidding for, which is the cost the protocol
+exists to avoid. Tools return in `extra/`, where the report phase gives them
+something to do, and even there only after the bid is in.
+
 Each task in `tasks.json` also carries a `verify` field (an expected value, a
 sentence-count rule, or a list of asserts). It is **unused in this stage** — a
 contractor here only bids, it never does the work — and is committed now so the
