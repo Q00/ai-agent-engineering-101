@@ -121,33 +121,41 @@ Smith의 프로토콜은 이 두 실패 모두에 대한 방어 수단이 없는
 
 ```mermaid
 flowchart TD
-    TJ["tasks.json<br/>6 tasks: id · desc · gold"]
-    RC["Run Config<br/>run_experiments.py<br/>--runs N · PROVIDER 자동 선택"]
-    PP["Prompt Profiles<br/>CONDITIONS dict<br/>baseline / homogeneous / overconfident"]
+    subgraph INPUTS["입력 3종"]
+        TJ["tasks.json<br/>6 tasks · id·desc·gold<br/>조건·run마다 1회만 로드"]
+        RC["Run Config<br/>run_experiments.py<br/>--runs N(기본 3)<br/>PROVIDER: ANTHROPIC_API_KEY 유무로 자동 선택<br/>AGENT_MODEL·AGENT_TEMPERATURE(OpenAI 경로만)"]
+        PP["Prompt Profiles<br/>CONDITIONS dict<br/>baseline·homogeneous·overconfident"]
+    end
 
-    subgraph RUNNER["Experiment Runner — run_condition() · 세션/DB 없음"]
-        AN["Announce<br/>ANNOUNCE_TEMPLATE"]
-        subgraph CONTRACTORS["Contractors · 순차 호출"]
+    subgraph RUNNER["Experiment Runner — run_condition()<br/>3조건 × run(3+) × task(6) 순차 · 세션/DB 없음"]
+        AN["Announce<br/>ANNOUNCE_TEMPLATE<br/>id·desc + JSON 스키마 지시<br/>alex→brooke→casey 순차 발신"]
+        MSG["messages 집계 규칙<br/>계약자당 announce+bid=2<br/>3명×2=6, 낙찰 성사 시 +1<br/>task당 7×6=42"]
+        subgraph CONTRACTORS["Contractors · 순차·stateless 호출"]
             C1["alex"]
             C2["brooke"]
             C3["casey"]
         end
-        BP["parse_bid()<br/>JSON 파싱 · 실패 시 bid=False"]
-        AW["낙찰 · 집계<br/>max(confidence) → award<br/>gold 비교 → correct/misaward/unassigned"]
+        BP["parse_bid()<br/>정규식으로 JSON 블록 추출<br/>실패 시 bid=False·confidence=0"]
+        EX["예외 처리<br/>run_experiments.py의 try/except<br/>크래시 시 counts 공란 + note=crashed<br/>실측: anthropic 1.6.0이 temperature 인자 제거해 9회 연속 크래시"]
+        AW["낙찰 & 집계<br/>bid=true 중 max(confidence)<br/>동점은 공지 순서(alex·brooke·casey)가 이김<br/>무입찰→unassigned, gold와 비교→correct/misaward"]
     end
 
-    RES["results.csv"]
-    LOGS["logs/*.txt"]
-    REP["REPORT.md"]
+    subgraph OUTPUTS["출력 3종"]
+        RES["results.csv<br/>run,condition,tasks,correct,messages,unassigned,misawards,note<br/>조건당 3 run 이상"]
+        LOGS["logs/condition-runN.txt<br/>announce·bid·award 각 줄 append"]
+        REP["REPORT.md<br/>결과표·Smith 1980 비교·해석"]
+    end
 
-    TJ -->|getTask| AN
+    TJ -->|id·desc| AN
+    TJ -.->|gold, 채점 전용| AW
     RC -.->|condition| PP
+    RC -.->|runs·조건 루프| RUNNER
     PP -.->|프로필 로드| CONTRACTORS
     AN --> CONTRACTORS
     CONTRACTORS -->|reply| BP
     BP --> AW
     CONTRACTORS --> AW
-    TJ -.->|gold, 채점 전용| AW
+    EX -.-> AW
     AW --> RES
     AW --> LOGS
     RES --> REP
