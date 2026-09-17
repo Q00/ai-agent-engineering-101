@@ -10,10 +10,15 @@ instead of overwriting each other.
 --update-root reproduces the original week-03 behaviour: write results.csv
 and logs/ directly under this directory, which is what CI and the grader
 read (scripts/check_week03.py). Use it only to regenerate the graded
-artifacts; use the default for further experiments.
+artifacts (it refuses --conditions other than exactly the three graded
+ones); use the default for further experiments.
+
+--conditions lets a one-off experiment run a subset of CONDITIONS (e.g.
+the exploratory homogeneous_shuffled) without touching the default three.
 
 Usage:
     python run_experiments.py [--runs N] [--label TEXT] [--update-root]
+                               [--conditions c1,c2,...]
 """
 import argparse
 import csv
@@ -24,13 +29,13 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-from contract_net import CONDITIONS, run_condition
+from contract_net import CONDITIONS, GRADED_CONDITIONS, run_condition
 import model
 
 HERE = Path(__file__).parent
 RESULTS_HEADER = ["run", "condition", "tasks", "correct", "messages", "unassigned", "misawards", "note"]
-BIDS_HEADER = ["run", "condition", "task_id", "contractor", "bid", "confidence",
-               "input_tokens", "output_tokens", "total_tokens"]
+BIDS_HEADER = ["run", "condition", "task_id", "contractor", "announce_position", "bid",
+               "confidence", "input_tokens", "output_tokens", "total_tokens"]
 
 
 def resolve_out_dir(label: str | None, update_root: bool) -> Path:
@@ -53,7 +58,20 @@ def main() -> int:
                          help="write results.csv/logs/ at the submission root "
                               "instead of a new runs/ folder (reproduces the "
                               "graded artifacts; do not use for new experiments)")
+    parser.add_argument("--conditions", default=",".join(GRADED_CONDITIONS),
+                         help="comma-separated condition names to run "
+                              f"(default: {','.join(GRADED_CONDITIONS)})")
     args = parser.parse_args()
+
+    conditions = [c.strip() for c in args.conditions.split(",") if c.strip()]
+    unknown = [c for c in conditions if c not in CONDITIONS]
+    if unknown:
+        parser.error(f"unknown condition(s): {', '.join(unknown)} "
+                     f"(known: {', '.join(CONDITIONS)})")
+    if args.update_root and tuple(conditions) != GRADED_CONDITIONS:
+        parser.error("--update-root regenerates the graded root artifacts and only "
+                      f"accepts exactly {','.join(GRADED_CONDITIONS)} -- omit "
+                      "--conditions or drop --update-root for other experiments")
 
     tasks_path = HERE / "tasks.json"
     tasks = json.loads(tasks_path.read_text(encoding="utf-8"))
@@ -76,7 +94,7 @@ def main() -> int:
     rows = []
     bid_rows = []
     run_number = 0
-    for condition in CONDITIONS:
+    for condition in conditions:
         for i in range(1, args.runs + 1):
             run_number += 1
             log_path = out_dir / "logs" / f"{condition}-run{i}.txt"
@@ -95,8 +113,8 @@ def main() -> int:
                              totals["messages"], totals["unassigned"], totals["misawards"], ""])
                 for b in bid_records:
                     bid_rows.append([run_number, condition, b["task_id"], b["contractor"],
-                                      b["bid"], b["confidence"], b["input_tokens"],
-                                      b["output_tokens"], b["total_tokens"]])
+                                      b["announce_position"], b["bid"], b["confidence"],
+                                      b["input_tokens"], b["output_tokens"], b["total_tokens"]])
             except Exception as e:
                 log(f"=== CRASHED: {e} ===")
                 lines.append(traceback.format_exc())

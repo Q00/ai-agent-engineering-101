@@ -4,6 +4,7 @@ Reproduces Smith (1980)'s task-announcement / bidding / award protocol, with
 the contractor's bid produced by a judged LLM call instead of a fixed rule.
 """
 import json
+import random
 import re
 
 from model import Meter, call_model
@@ -54,9 +55,23 @@ CONDITIONS = {
     "baseline": BASELINE_PROFILES,
     "homogeneous": HOMOGENEOUS_PROFILES,
     "overconfident": OVERCONFIDENT_PROFILES,
+    # Same profiles as homogeneous (where ties are common) but with the
+    # announcement order shuffled per task instead of fixed -- isolates
+    # whether a tied confidence always going to the same name is a real
+    # signal or just "announced first, wins ties" (see run_task's tie-break).
+    "homogeneous_shuffled": HOMOGENEOUS_PROFILES,
 }
 
+# Graded conditions only -- what scripts/check_week03.py's CI contract and
+# the root results.csv/logs/ expect. Extra conditions (e.g.
+# homogeneous_shuffled) must never be written there; see run_experiments.py.
+GRADED_CONDITIONS = ("baseline", "homogeneous", "overconfident")
+
 CONTRACTOR_ORDER = ["alex", "brooke", "casey"]
+
+# Conditions whose per-task announcement order is randomized instead of the
+# fixed CONTRACTOR_ORDER.
+SHUFFLED_ORDER_CONDITIONS = {"homogeneous_shuffled"}
 
 # Fields a contractor is allowed to see. gold is deliberately absent: it is
 # split off before a task ever reaches announcement-building, so a bug that
@@ -87,14 +102,19 @@ def parse_bid(reply: str) -> dict:
     }
 
 
-def run_task(announcement_task: dict, gold: str, profiles: dict, meter: Meter, log) -> dict:
+def run_task(announcement_task: dict, gold: str, profiles: dict, meter: Meter, log,
+             order: list = CONTRACTOR_ORDER) -> dict:
     """Announce to all three, collect bids, award. Returns this task's counts
     plus a per-bid token breakdown.
 
     announcement_task must be the *public* view of a task (id + desc only --
     see public_view()). gold is threaded through as a separate argument
     purely for scoring after the award, never folded into the dict that
-    reaches ANNOUNCE_TEMPLATE or call_model.
+    reaches ANNOUNCE_TEMPLATE or call_model. order is the sequence contractors
+    are announced in this task -- CONTRACTOR_ORDER (fixed) unless the caller
+    is running a SHUFFLED_ORDER_CONDITIONS condition, in which case it's a
+    fresh per-task permutation. Tie-break uses this same order, so "who wins
+    a tie" tracks who was announced first *for this task*, not a global name.
     """
     assert "gold" not in announcement_task, (
         "gold leaked into the announcement-building path -- pass public_view(task), "
@@ -104,7 +124,7 @@ def run_task(announcement_task: dict, gold: str, profiles: dict, meter: Meter, l
     messages = 0
     bids = {}
     bid_records = []
-    for name in CONTRACTOR_ORDER:
+    for position, name in enumerate(order):
         log(f"  [announce] -> {name}: task {announcement_task['id']}")
         messages += 1
         reply = call_model(profiles[name], announcement, meter)
@@ -116,6 +136,7 @@ def run_task(announcement_task: dict, gold: str, profiles: dict, meter: Meter, l
         bids[name] = bid
         bid_records.append({
             "task_id": announcement_task["id"], "contractor": name,
+            "announce_position": position,
             "bid": bid["bid"], "confidence": bid["confidence"],
             "input_tokens": bid["input_tokens"], "output_tokens": bid["output_tokens"],
             "total_tokens": bid["total_tokens"],
@@ -124,10 +145,10 @@ def run_task(announcement_task: dict, gold: str, profiles: dict, meter: Meter, l
             f"tokens={bid['total_tokens']} (in={bid['input_tokens']} "
             f"out={bid['output_tokens']}) reason={bid['reason']!r}")
 
-    bidders = [n for n in CONTRACTOR_ORDER if bids[n]["bid"]]
+    bidders = [n for n in order if bids[n]["bid"]]
     awarded = None
     if bidders:
-        awarded = max(bidders, key=lambda n: (bids[n]["confidence"], -CONTRACTOR_ORDER.index(n)))
+        awarded = max(bidders, key=lambda n: (bids[n]["confidence"], -order.index(n)))
         messages += 1
 
     # gold only enters scoring here, after the award is already decided --
@@ -154,12 +175,18 @@ def run_condition(condition: str, tasks: list, log) -> tuple:
     for callers that want to write it out (e.g. bids.csv).
     """
     profiles = CONDITIONS[condition]
+    shuffle_order = condition in SHUFFLED_ORDER_CONDITIONS
     meter = Meter()
     totals = {"tasks": 0, "correct": 0, "messages": 0, "unassigned": 0, "misawards": 0}
     all_bid_records = []
     for task in tasks:
         log(f"task {task['id']}: {task['desc']}")
-        result = run_task(public_view(task), task["gold"], profiles, meter, log)
+        if shuffle_order:
+            order = random.sample(CONTRACTOR_ORDER, k=len(CONTRACTOR_ORDER))
+            log(f"  [order] announcement order shuffled to: {order}")
+        else:
+            order = CONTRACTOR_ORDER
+        result = run_task(public_view(task), task["gold"], profiles, meter, log, order=order)
         totals["tasks"] += 1
         totals["correct"] += result["correct"]
         totals["messages"] += result["messages"]
