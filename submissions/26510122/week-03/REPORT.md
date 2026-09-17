@@ -17,7 +17,7 @@ python3 run.py --all --runs 3
 
 ## 2. 결과
 
-아래 표는 현재 `results.csv`의 내용이다. 첫날 두 baseline 실행 이후 무료 계정의 일일 요청 한도에 도달했고, 다음 날 baseline과 homogeneous를 추가 실행했다. 실패 행과 로그는 삭제하지 않았다. baseline은 성공 3회를 채웠지만 homogeneous는 1회, overconfident는 0회이므로 조건 비교를 완료하려면 성공 실행을 더 추가해야 한다.
+아래 표는 현재 `results.csv`의 내용이다. 첫날 두 baseline 실행 이후 무료 계정의 일일 요청 한도에 도달했고, 이후 baseline과 homogeneous를 나누어 추가 실행했다. 실패 행과 로그는 삭제하지 않았다. baseline은 성공 3회를 채웠지만 homogeneous는 2회, overconfident는 0회이므로 조건 비교를 완료하려면 성공 실행을 더 추가해야 한다.
 
 | run | condition | tasks | correct | messages | unassigned | misawards | note |
 |---|---|---:|---:|---:|---:|---:|---|
@@ -33,6 +33,7 @@ python3 run.py --all --runs 3
 | 20260916T071007Z-baseline-880fd2 | baseline | | | | | | RuntimeError |
 | 20260916T071508Z-baseline-202b91 | baseline | 6 | 1 | 38 | 0 | 5 | |
 | 20260916T071855Z-homogeneous-923229 | homogeneous | 6 | 2 | 42 | 0 | 4 | |
+| 20260917T123626Z-homogeneous-520128 | homogeneous | 6 | 2 | 42 | 0 | 4 | |
 
 초기 두 로그의 `summary`에는 메시지가 각각 42개로 남아 있다. 이는 첫 구현이 모든 LLM 응답을 입찰 메시지로 계산한 결과다. 로그 원본은 보존하고, `results.csv`에서는 각 로그의 event를 다시 세어 실제 `participate=true` 입찰만 반영한 39개와 38개로 수정했다.
 
@@ -49,8 +50,8 @@ python3 run.py --all --runs 3
 
 ## 4. 해석
 
-baseline 성공 3회의 correct는 2, 2, 1로 평균 1.67/6이었고 misawards는 평균 4.33이었다. 첫 두 실행에서는 developer가 여섯 작업 전체를 confidence 95로 낙찰받았고, 세 번째 실행에서도 6개 중 5개를 가져갔다. 예를 들어 세 번째 baseline 로그의 29번째 줄은 글쓰기 gold인 `write-02`가 developer에게 confidence 95로 낙찰되어 `gold_match=false`가 된 것을 보여 준다. homogeneous의 첫 성공 실행도 모든 후보가 참여해 messages가 42까지 증가했고, developer가 전부 낙찰받아 correct 2와 misawards 4를 기록했다. 현재 한 번의 homogeneous 결과만으로는 baseline과의 차이를 조건 효과라고 판단할 수 없으며, overconfident 결과까지 수집한 뒤 최종 해석을 다시 작성해야 한다.
+baseline 성공 3회의 correct는 2, 2, 1로 평균 1.67/6이었고 misawards는 평균 4.33이었다. 첫 두 실행에서는 developer가 여섯 작업 전체를 confidence 95로 낙찰받았고, 세 번째 실행에서도 6개 중 5개를 가져갔다. 예를 들어 세 번째 baseline 로그의 29번째 줄은 글쓰기 gold인 `write-02`가 developer에게 confidence 95로 낙찰되어 `gold_match=false`가 된 것을 보여 준다. homogeneous 성공 2회에서는 모든 후보가 모든 작업에 참여해 messages가 모두 42였고, 동률에서 먼저 응답한 developer가 전부 낙찰받아 두 번 모두 correct 2와 misawards 4를 기록했다. overconfident 결과까지 수집하지 않았으므로 최종적인 조건 효과는 아직 판단하지 않는다.
 
 ## 선택 확장 실험
 
-필수 실험과 별도로 자기 정의, Manager의 관찰 평가, 공유 사건 기록을 분리한 온톨로지 실험을 구현했다. 이 실험은 confidence를 작업 이해도, 능력 확신, 성공 예상, 참여 의사로 나눠 언어적 혼동을 검사하고, 공개 capability tag와 맞지 않는 높은 능력 주장에 한 번의 재질문을 보낸다. 낙찰 결과는 분야별 신뢰도, confidence 오차, 최근 8회 trajectory로 누적되며, 관찰이 쌓일수록 Manager의 보정값이 자기 confidence보다 낙찰 점수에 크게 반영된다. `run_extended.py`로 실행하며 결과와 상태는 필수 세 조건의 결과에 섞지 않는다.
+필수 실험과 별도로 자기 정의, Manager의 관찰 평가, 공유 사건 기록을 분리한 온톨로지 실험을 구현했다. 이 실험은 confidence를 작업 이해도, 능력 확신, 성공 예상, 참여 의사로 나눠 언어적 혼동을 검사하고, 공개 capability tag와 맞지 않는 높은 능력 주장에 한 번의 재질문을 보낸다. 낙찰 결과는 분야별 신뢰도, confidence 오차, 최근 8회 trajectory로 누적되며, 관찰이 쌓일수록 Manager의 보정값이 자기 confidence보다 낙찰 점수에 크게 반영된다. 전체 작업을 실행한 첫 결과는 correct 6/6, misawards 0, clarifications 7, semantic warnings 14였으며 25회 LLM 호출과 56개 메시지가 필요했다. 정확도는 높아졌지만 capability 검사와 trajectory가 동시에 적용됐고 메시지 비용도 증가했으므로 trajectory 단독 효과로 해석하지 않는다. `run_extended.py`로 실행하며 결과와 상태는 필수 세 조건의 결과에 섞지 않는다.

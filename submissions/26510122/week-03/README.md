@@ -113,6 +113,7 @@ python3 run_extended.py --continue-state
 - `ontology.py`: 사건 기록과 평판 갱신
 - `extended_contract_net.py`: 의미 분리, 모순 탐지, 재질문, 평판 가중 낙찰
 - `run_extended.py`: 확장 실험 실행기
+- `extended_results.csv`, `extended_logs/`: 필수 결과와 분리한 확장 실험 기록
 - `test_*.py`: 모델 호출 없이 확인하는 프로토콜 테스트
 
 오프라인 검증은 다음과 같이 실행한다.
