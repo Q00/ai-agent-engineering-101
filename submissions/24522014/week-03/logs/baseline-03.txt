@@ -1,0 +1,57 @@
+[run] 03  model=poolside/laguna-s-2.1:free temperature=0.0
+[condition] baseline
+[contractors] crawler, analyst, notifier
+
+=== T1 (gold=crawler) ===
+[announce -> crawler, analyst, notifier] Fetch today's listing page of the public procurement portal and pull out every new construction-supervision notice as rows of notice id, title and posting date.
+  [bid  <- crawler] bid=True confidence=95 reason='This task involves fetching a listing page and extracting structured data (notice id, title, posting date) from a public procurement portal, which aligns with my web crawling and data extraction capab'
+  [bid  <- analyst] bid=False confidence=95 reason='This task requires fetching a live webpage and extracting data, which is outside my capabilities as I can only read already-extracted document text.'
+  [bid  <- notifier] bid=False confidence=95 reason='This task requires fetching and parsing web content, which is outside my capabilities as a notification-only contractor.'
+[award -> crawler] confidence=95 gold=crawler -> CORRECT
+
+=== T2 (gold=crawler) ===
+[announce -> crawler, analyst, notifier] Open the 40-page RFP document at the given URL and extract, as plain text, the sections that state the submission deadline, the required licences and the evaluation weights.
+    [retry 1/3] RateLimitError: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'poolside/laguna-s-2.1:free is temporarily rate-limited upst -- sleeping 5s
+  [bid  <- crawler] bid=True confidence=95 reason='I can fetch the RFP document from the URL and extract the specified sections as plain text.'
+  [bid  <- analyst] bid=False confidence=95 reason='I cannot open URLs or extract text from documents myself; I can only analyze text that has already been extracted by someone else.'
+  [bid  <- notifier] bid=False confidence=95 reason='This task requires fetching and extracting content from a URL, which is outside my capabilities as a contractor notifier.'
+[award -> crawler] confidence=95 gold=crawler -> CORRECT
+
+=== T3 (gold=analyst) ===
+[announce -> crawler, analyst, notifier] From the already extracted RFP text, list every mandatory qualification requirement and score our company 0-100 on how well it meets each one.
+  [bid  <- crawler] bid=False confidence=95 reason="This task requires evaluating and scoring our company's qualifications against RFP requirements, which involves judgment and scoring capabilities outside my scope of web crawling and data extraction."
+  [bid  <- analyst] bid=True confidence=95 reason='I can read the extracted RFP text, identify mandatory qualification requirements, and score the company against each one.'
+  [bid  <- notifier] bid=False confidence=95 reason='This task requires analyzing and scoring requirements against company qualifications, which is outside my capabilities of writing summaries and dispatching notifications.'
+[award -> analyst] confidence=95 gold=analyst -> CORRECT
+
+=== T4 (gold=analyst) ===
+[announce -> crawler, analyst, notifier] Given two RFPs whose text we already hold, compare their evaluation criteria and decide which one our firm is more likely to win, with a numeric qualification score for each.
+  [bid  <- crawler] bid=False confidence=95 reason='The task requires judgment, scoring, and comparison which are outside my crawling and extraction capabilities.'
+  [bid  <- analyst] bid=True confidence=95 reason='I can analyze and score RFP evaluation criteria against our firm profile to determine win likelihood.'
+    [retry 1/3] RateLimitError: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'poolside/laguna-s-2.1:free is temporarily rate-limited upst -- sleeping 5s
+  [bid  <- notifier] bid=False confidence=95 reason='This task requires analyzing and scoring RFP evaluation criteria, which is outside my capabilities as I cannot extract, analyze, or score requirements.'
+[award -> analyst] confidence=95 gold=analyst -> CORRECT
+
+=== T5 (gold=notifier) ===
+[announce -> crawler, analyst, notifier] Write a three-sentence Slack alert telling the sales team that a high-priority RFP was found, formatted for the #sales-alerts channel, and dispatch it.
+    [retry 1/3] RateLimitError: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'poolside/laguna-s-2.1:free is temporarily rate-limited upst -- sleeping 5s
+  [bid  <- crawler] bid=False confidence=95 reason='The task requires writing and dispatching a Slack message, which involves communication and messaging capabilities outside my web crawling and data extraction scope.'
+  [bid  <- analyst] bid=False confidence=95 reason='The task requires writing and dispatching a Slack message, which involves sending messages to people, outside my capabilities of only reading and analyzing documents.'
+  [bid  <- notifier] bid=True confidence=95 reason='This task involves writing a short Slack alert and dispatching it, which is within my capabilities.'
+[award -> notifier] confidence=95 gold=notifier -> CORRECT
+
+=== T6 (gold=notifier) ===
+[announce -> crawler, analyst, notifier] Draft the 08:00 daily email digest that summarises yesterday's five RFP findings in one line each, with a subject line, and send it to the distribution list.
+  [bid  <- crawler] bid=False confidence=95 reason='This task requires drafting and sending an email digest, which involves writing and communication capabilities outside my scope of web crawling and data extraction.'
+    [retry 1/3] RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'met -- sleeping 5s
+    [retry 2/3] RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'met -- sleeping 10s
+    [retry 3/3] RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'met -- sleeping 15s
+  [bid  <- analyst] NO REPLY  RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit'
+    [retry 1/3] RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'met -- sleeping 5s
+    [retry 2/3] RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'met -- sleeping 10s
+    [retry 3/3] RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'met -- sleeping 15s
+  [bid  <- notifier] NO REPLY  RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit'
+[award] none -- no contractor bid on T6
+
+[summary] tasks=6 correct=5 messages=39 unassigned=1 misawards=0 (unparseable=0 no_reply=2 model_calls=16 tokens=4378 retries=11)
+[elapsed] 208.2s
