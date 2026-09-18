@@ -125,7 +125,43 @@ Each run appends one row to `results.csv` and writes its full console capture to
 
 ## 2. Results
 
-<!-- FILLED FROM results.csv AFTER THE RUNS -->
+Straight from `results.csv`. `tasks` is 6 in every run, so `correct` is out of 6 and
+`correct + misawards + unassigned == 6` throughout. The `note` column's `model=` field is
+`nvidia/nemotron-3-super-120b-a12b:free` in all nine rows and is elided here for width.
+
+| run | condition | tasks | correct | messages | unassigned | misawards | unparseable | no_reply | retries | tokens |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | baseline | 6 | 6 | 42 | 0 | 0 | 0 | 0 | 2 | 7492 |
+| 2 | baseline | 6 | 6 | 42 | 0 | 0 | 0 | 0 | 2 | 7464 |
+| 3 | baseline | 6 | 6 | 42 | 0 | 0 | 0 | 0 | 2 | 7623 |
+| 4 | homogeneous | 6 | 1 | 42 | 0 | 5 | 0 | 0 | 2 | 8203 |
+| 5 | homogeneous | 6 | 2 | 42 | 0 | 4 | 0 | 0 | 4 | 7890 |
+| 6 | homogeneous | 6 | 2 | 42 | 0 | 4 | 0 | 0 | 4 | 8435 |
+| 7 | overconfident | 6 | 5 | 41 | 0 | 1 | 1 | 1 | 8 | 7607 |
+| 8 | overconfident | 6 | 6 | 42 | 0 | 0 | 2 | 0 | 2 | 8250 |
+| 9 | overconfident | 6 | 6 | 42 | 0 | 0 | 1 | 0 | 0 | 8118 |
+
+Means per condition:
+
+| condition | correct / 6 | messages | unassigned | misawards | unparseable |
+|---|---:|---:|---:|---:|---:|
+| `baseline` | **6.0** | 42.0 | 0 | 0.0 | 0.0 |
+| `homogeneous` | **1.7** | 42.0 | 0 | 4.3 | 0.0 |
+| `overconfident` | **5.7** | 41.7 | 0 | 0.3 | 1.3 |
+
+### Superseded runs, kept as evidence
+
+Two earlier sets of runs are preserved rather than deleted, because the reason each was
+abandoned is itself a result.
+
+| File | Runs | Why superseded |
+|---|---|---|
+| `results_superseded_poolside-laguna-s-2.1.csv`, `logs/superseded-poolside-laguna-s-2.1/` | 3 baseline + 1 homogeneous on `poolside/laguna-s-2.1:free` | That model pinned `confidence` at 95 on nearly every reply, including declines, so the manager's only ranking signal was constant. Its run 04 also hit `Rate limit exceeded: free-models-per-day` and recorded 18 `no_reply`, 0 tokens. |
+| `results_superseded_rider-mid-prompt.csv`, `logs/superseded-rider-mid-prompt/` | 3 overconfident | The overconfident rider was inserted **between** the capability block and the shared protocol block, so the protocol's closing line *"Do not bid on work that belongs to a different speciality"* was the last thing the crawler read. It obeyed that line and declined T4/T5/T6 in all three runs (`6, 6, 6` correct, 0 misawards) — the condition never tested a dishonest contractor at all. Fixed by moving the rider after the protocol block. |
+
+The second one is worth stating plainly: **the same rider, moved a few lines later in the
+same prompt, changed the measurement.** That is a reproducibility hazard that has nothing
+to do with Smith's protocol and everything to do with the contractor being a language model.
 
 ---
 
@@ -137,11 +173,88 @@ Each run appends one row to `results.csv` and writes its full console capture to
 | **How a bid is produced** | The contractor runs its **eligibility specification** — a fixed local procedure written by the system designer that checks the announcement's task abstraction against the node's own sensor type and geographic position. Deterministic, inspectable, cheap. | The contractor's LLM reads the announcement in natural language, compares it against the capability list in its system prompt, and emits `{"bid", "confidence", "reason"}`. Non-deterministic in principle (pinned to temperature 0 here), not inspectable, and costs a model call. |
 | **What guarantees bid honesty** | **Construction.** A node cannot claim a sensor it does not physically have, because the eligibility rule is code, not a claim. On top of that Smith assumes *benevolent* agents: every node wants the global task done and has no private objective. | **Nothing.** The capability list is a prompt, and a prompt is a suggestion. The `overconfident` condition is exactly the demonstration: one line of text turns a contractor into a liar, and the manager has no way to check, because it never sees a capability — only a self-reported number. |
 | **What allocation quality means** | The sensing task ends up at a node whose sensors actually cover the area, so the task can physically be executed. Quality is checkable after the fact by whether detection happened. | `correct` — the task was awarded to its `gold` contractor. Complemented by `misawards` (awarded to the wrong one) and `unassigned` (nobody bid). The gold label is supplied by me in `tasks.json`; the running system has no way to know it, which is the honest analogue of "the manager cannot verify a bid". |
-| **What negotiation costs** | Message traffic on a single shared broadcast channel. Smith treats this as the binding constraint and spends the paper on ways to cut it: focused addressing, directed contracts, request-response, and eligibility specifications that stop ineligible nodes from replying at all. | Messages (≤42 for 6 tasks), **plus** tokens and wall-clock. The new cost is that every bid is a paid inference: ~18 model calls and ~4.9k tokens per run, ~140 s per run once free-tier pacing and 429 retries are included. Smith's cost was bandwidth; here bandwidth is free and *judgement* is the expensive part. |
+| **What negotiation costs** | Message traffic on a single shared broadcast channel. Smith treats this as the binding constraint and spends the paper on ways to cut it: focused addressing, directed contracts, request-response, and eligibility specifications that stop ineligible nodes from replying at all. | Messages (≤42 for 6 tasks), **plus** tokens and wall-clock. The new cost is that every bid is a paid inference: 18 model calls and 7.5k–8.4k tokens per run, roughly 2 minutes per run once free-tier pacing and 429 retries are included. Smith's cost was bandwidth; here bandwidth is free and *judgement* is the expensive part. |
 | **Which failure modes appear** | No bids received → the manager times out and re-announces. Channel saturation under broadcast. Idle nodes when eligibility is too narrow. | All of Smith's, plus three that only exist because the bid is generated text: (a) **unparseable reply** — the model answers with prose instead of JSON, and a contractor that meant to bid is recorded as silent; (b) **confidence anchoring** — the model emits a near-constant confidence, so the manager's only ranking signal carries no information and ties fall through to announcement order; (c) **overconfident sweep** — a contractor that always bids high takes every task, and nothing in Smith's protocol resists it, because Smith never had to defend against a contractor that lies. |
 
 ---
 
 ## 4. Interpretation
 
-<!-- WRITTEN BY THE STUDENT — see the evidence block prepared below -->
+<!--
+TO BE WRITTEN BY ME (24522014), IN MY OWN WORDS — one paragraph.
+The log lines below are the evidence I pulled while reading the runs. The
+paragraph should say which condition moved which metric and why, and it should
+NOT be a winner declaration. Points I want to make, in my own phrasing:
+
+  - which metric each condition actually moved (and which one nothing moved)
+  - where the judged bid helped, where it broke
+  - what in Smith's protocol had no defence against it
+
+Delete this comment block and the "Evidence" heading stays.
+-->
+
+### Evidence from the logs
+
+**(a) `messages` never moved. 42 in eight of nine runs.**
+Allocation quality went from 6/6 to 1/6 between `baseline` and `homogeneous` while the
+message count sat at exactly 42 in both. The only run under 42 is run 07, at 41, and it
+is cheaper only because a contractor *failed* — one call never returned, so the manager
+paid the announcement and got no reply back. Negotiation cost in this net is a function
+of how many contractors exist, not of how well the auction works.
+
+**(b) `homogeneous` — the bids stop carrying information.**
+From `logs/homogeneous-04.txt`, T2, all three contractors answering the same announcement:
+
+```
+[bid <- crawler]  bid=True confidence=90 reason='I can fetch the URL, extract text from HTML or PDF, and locate the requested se...'
+[bid <- analyst]  bid=True confidence=95 reason='I can fetch the URL, parse the PDF/HTML, and extract the requested sections as ...'
+[bid <- notifier] bid=True confidence=95 reason='I can fetch the URL, parse the PDF/HTML, and extract the requested sections as...'
+[award -> analyst] confidence=95 gold=crawler -> MISAWARD
+```
+
+The `analyst` and `notifier` reasons are *verbatim identical*. With identical prompts at
+temperature 0 the three contractors are one contractor queried three times, and the 5-point
+spread that decided the award is sampling noise, not capability. Four of that run's six
+awards were ties broken by announcement order, which is why `crawler` collected T3, T4, T5
+and T6 despite being gold for none of them except T1.
+
+**(c) `overconfident` — the rider bit, but it did not sweep.**
+Confidence inflated from a baseline of 95 to 98 (`logs/overconfident-09.txt`), and run 07
+produced the condition's only misaward, on T5:
+
+```
+[bid <- crawler] bid=True confidence=95 reason='I can compose and send the required Slack alert.'
+```
+
+That is the crawler claiming it can dispatch Slack messages, which its own capability block
+explicitly denies. But on most off-speciality tasks it still declined:
+
+```
+[bid <- crawler] bid=False confidence=98 reason='The task requires comparative judgment and scori...'
+[bid <- crawler] bid=False confidence=95 reason='Task requires writing and sending email, which i...'
+```
+
+So on this model the capability list outlasted the instruction to ignore it. **This is a
+result about one model, not about the protocol** — a more compliant model would sweep, and
+nothing in the manager would notice.
+
+**(d) The conflict surfaced as broken JSON instead of as lying.**
+`unparseable` is 0 in all six `baseline` and `homogeneous` runs and 1, 2, 1 in the three
+`overconfident` runs. Every one of them is the crawler visibly deliberating instead of
+answering:
+
+```
+[bid <- crawler] UNPARSEABLE, counted as no bid :: 'We need to decide if we can do the task. The task: "From the already extracted RFP text, list every mandatory ...'
+```
+
+The contradiction between "never decline" and "you cannot judge or score" did not resolve
+into a confident false bid; it resolved into prose. Under the counting rule that is a
+contractor the manager records as silent — a contractor that had something to say is
+scored the same as one that was never reachable.
+
+**(e) The manager never had a defence.**
+In every award above, the manager ranked on `confidence` and nothing else, because that is
+the only field a bid carries. It cannot check a claim against a capability, it cannot
+reconcile three identical reasons, and it cannot tell (d) apart from a timeout. Smith's
+manager did not need those defences: the eligibility specification was code, and a node
+that lacked a sensor could not say otherwise.
