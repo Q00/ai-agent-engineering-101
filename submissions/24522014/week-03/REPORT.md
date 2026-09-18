@@ -180,18 +180,33 @@ to do with Smith's protocol and everything to do with the contractor being a lan
 
 ## 4. Interpretation
 
-<!--
-TO BE WRITTEN BY ME (24522014), IN MY OWN WORDS — one paragraph.
-The log lines below are the evidence I pulled while reading the runs. The
-paragraph should say which condition moved which metric and why, and it should
-NOT be a winner declaration. Points I want to make, in my own phrasing:
+### Summary of the numbers that moved
 
-  - which metric each condition actually moved (and which one nothing moved)
-  - where the judged bid helped, where it broke
-  - what in Smith's protocol had no defence against it
+"Before" is the `baseline` condition; "after" is the condition that moved that metric.
 
-Delete this comment block and the "Evidence" heading stays.
--->
+| Metric | Before | After | Why it moved |
+|---|---|---|---|
+| Allocation quality | 6/6 | 1/6 | Under `homogeneous` the bids stopped carrying information. |
+| Messages | 42 | 42 | No change at all. |
+| Messages, run 07 | 42 | 41 | A contractor failed to reply, not a cheaper auction. |
+| Confidence (`overconfident`) | 95 | 98 | The rider instructing the contractor to raise its own confidence. |
+| Unparseable | 0 | 1, 2, 1 | The instruction conflict produced natural language instead of JSON. |
+| Tie-broken awards | none (implicit) | 4 of 6 | Homogenised bids left the contractors indistinguishable. |
+
+The most important conclusion is that the numbers that actually broke performance were
+**not `messages`** but **allocation quality (6/6 → 1/6)** and **confidence (95 → 98)**. The
+cause in both cases is the same: the contractors lost any distinguishing capability signal,
+and the manager was left deciding on confidence alone. Under `homogeneous` the three
+contractors returned the same judgement in the same words, so the 5-point confidence spread
+that decided each award was sampling noise rather than capability, and four of six awards
+fell through to the announcement-order tie-break. Under `overconfident` the rider did not
+have to win every task to be dangerous; it only had to inflate the one number the manager
+ranks on, which it did (95 → 98), and the manager had no way to test that claim against
+what the contractor could actually do. Meanwhile `messages` stayed at 42 through all of it:
+the negotiation cost is set by how many contractors exist, not by whether the auction is
+working, so the protocol's own accounting gives no warning that allocation has collapsed.
+The single run that came in under 42 was cheaper only because a contractor failed to answer
+at all.
 
 ### Evidence from the logs
 
