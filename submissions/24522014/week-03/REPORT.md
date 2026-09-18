@@ -11,19 +11,43 @@ Student 24522014. One manager, three LLM contractors, three conditions, three ru
 | Setting | Value |
 |---|---|
 | Provider | OpenAI-compatible endpoint via OpenRouter (`OPENAI_BASE_URL=https://openrouter.ai/api/v1`) |
-| Model | `poolside/laguna-s-2.1:free` |
+| Model | `nvidia/nemotron-3-super-120b-a12b:free` |
 | Temperature | `0.0` (pinned in `llm.py`, identical in all three conditions) |
 | `max_tokens` per bid | 400 |
 | Pacing | 3.5 s between model calls (`AGENT_PACE_SECONDS`), free tier is capped at 20 requests/min |
 | Retries | up to 3, backoff 5 s / 10 s / 15 s, on any API exception |
 | Task set | `tasks.json`, 6 tasks, gold labels `crawler` ×2, `analyst` ×2, `notifier` ×2 |
 
+### Choosing the model — and why two are in this directory
+
 The README suggests `nvidia/nemotron-3.5-lightning:free`. A smoke test of that model on
 this task set returned its chain of thought instead of the JSON bid on the very first
-call, so every bid would have been scored unparseable and every task unassigned. I kept
-`poolside/laguna-s-2.1:free`, which returns bare JSON. The unparseable-reply path is
-still implemented and still counted — see `parse_bid` in `contract_net.py` and the
-`unparseable=` field in the `note` column of `results.csv`.
+call, so every bid would have been scored unparseable and every task unassigned. That is
+the failure the README warns about, reproduced on the first try.
+
+The first four runs therefore used `poolside/laguna-s-2.1:free`, which returns bare JSON.
+Those runs are **superseded but preserved**: `results_superseded_poolside-laguna-s-2.1.csv`
+and `logs/superseded-poolside-laguna-s-2.1/`. They were abandoned for two reasons, both
+findings in their own right:
+
+1. **Confidence anchoring.** That model emitted `confidence: 95` on almost every reply —
+   including replies where it declined (`bid=false`). The manager's only ranking signal
+   was a near-constant, so awards fell through to the announcement-order tie-break rather
+   than to anything the contractors said.
+2. **Daily quota exhaustion.** Run 04 recorded all 18 calls as `no_reply`, 0 tokens:
+   OpenRouter answered `Rate limit exceeded: free-models-per-day`. The row is kept with
+   `correct=0, messages=18, unassigned=6` — a contract net where no contractor can be
+   reached still costs the manager its announcements.
+
+I then probed eight free models with the real contractor prompts on two tasks (T1 and T5,
+all three contractors). Three parsed 6/6 with no errors; the rest were rate-limited or
+permission-denied. `nvidia/nemotron-3-super-120b-a12b:free` was chosen because it spreads
+confidence over 90/95/100 instead of pinning it at one value, so the award rule has
+something to rank on. All nine reported runs use it; the spec requires one model across
+all three conditions, so the earlier baseline runs were redone rather than reused.
+
+The unparseable-reply path is still implemented and still counted — see `parse_bid` in
+`contract_net.py` and the `unparseable=` field in the `note` column of `results.csv`.
 
 ### The agents
 
@@ -85,7 +109,7 @@ These are fixed in `contract_net.py`, because the numbers mean nothing without t
 pip install openai
 export OPENAI_BASE_URL=https://openrouter.ai/api/v1
 export OPENAI_API_KEY=<your key>          # never committed
-export AGENT_MODEL=poolside/laguna-s-2.1:free
+export AGENT_MODEL=nvidia/nemotron-3-super-120b-a12b:free
 export AGENT_TEMPERATURE=0.0
 
 cd submissions/24522014/week-03
