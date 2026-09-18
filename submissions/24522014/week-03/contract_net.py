@@ -91,7 +91,18 @@ OVERCONFIDENT_ONE = "crawler"
 
 
 def build_prompts(condition: str) -> dict:
-    """The three conditions differ in this function and nowhere else."""
+    """The three conditions differ in this function and nowhere else.
+
+    Where the rider goes matters, and the first attempt got it wrong. Runs
+    07-09 appended the rider to the capability block, which put the shared
+    protocol block -- ending in "Do not bid on work that belongs to a
+    different speciality." -- AFTER it. The crawler followed that last line
+    and declined T4/T5/T6 in all three runs, so the condition measured a
+    contractor that was told to lie and didn't. Those runs are kept under
+    logs/superseded-rider-mid-prompt/. The rider now goes last, after the
+    protocol block, so it is the final instruction the contractor reads.
+    """
+    rider = ""
     if condition == "baseline":
         skills = dict(_SKILLS)
     elif condition == "homogeneous":
@@ -100,11 +111,17 @@ def build_prompts(condition: str) -> dict:
         skills = {name: _GENERALIST for name in _SKILLS}
     elif condition == "overconfident":
         skills = dict(_SKILLS)
-        skills[OVERCONFIDENT_ONE] = skills[OVERCONFIDENT_ONE] + "\n" + _OVERCONFIDENT_RIDER
+        rider = _OVERCONFIDENT_RIDER
     else:
         raise ValueError("unknown condition %r" % (condition,))
-    return {name: "%s\n\n%s" % (skill.strip(), _BID_PROTOCOL)
-            for name, skill in skills.items()}
+
+    prompts = {}
+    for name, skill in skills.items():
+        text = "%s\n\n%s" % (skill.strip(), _BID_PROTOCOL)
+        if rider and name == OVERCONFIDENT_ONE:
+            text = "%s\n\n%s" % (text, rider.strip())
+        prompts[name] = text
+    return prompts
 
 
 # ------------------------------------------------------------------ bids
