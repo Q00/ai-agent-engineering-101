@@ -86,8 +86,8 @@ def main():
                 t0 = time.time()
                 try:
                     result = run_contract_net(tasks, condition, meter, log=log)
-                    note = ("unparseable=%d no_reply=%d retries=%d tokens=%d"
-                            % (result.unparseable, result.no_reply,
+                    note = ("model=%s unparseable=%d no_reply=%d retries=%d tokens=%d"
+                            % (llm.MODEL, result.unparseable, result.no_reply,
                                meter.retries, meter.tokens))
                     row = [run_no, condition, result.tasks, result.correct,
                            result.messages, result.unassigned, result.misawards,
