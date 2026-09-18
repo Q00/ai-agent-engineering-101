@@ -198,7 +198,62 @@ signal that its allocation has failed. `extra/` builds the missing signal and
 tests it. Smith's protocol has four phases — announce, bid, award, **report**.
 Stage 1 implements the first three, which is why nothing can ever be checked.
 
-### 5.1 What was added
+### 5.1 The shape of it
+
+One fragment, end to end. The dashed edges are what an agent is *not* allowed to
+see: the appraiser never sees the bids, and the manager never sees the gold key.
+
+```mermaid
+flowchart TD
+    TASK["task text + 10 gold elements<br/>committed before any run"]
+
+    subgraph AGENTS["agents: the persuadable layer"]
+        MGR["rotating manager<br/>team at task index mod 3"]
+        CA["contractor A<br/>arithmetic"]
+        CB["contractor B<br/>writing"]
+        CC["contractor C<br/>Python"]
+        APR["appraiser<br/>never bids, never works"]
+        MGL["manager decides<br/>get_trajectory / ask / award"]
+    end
+
+    subgraph ORC["orchestrator: deterministic, cannot be persuaded"]
+        SCR["score = w*evidence + (1-w)*prior<br/>w = n/(n+3)"]
+        REC[("Record<br/>one cell per contractor x skill<br/>attempts, passes")]
+        TC["tools.call permission table<br/>A: calc / B: count_sentences / C: run_tests"]
+        VER["verify<br/>exact / rule / pytest"]
+    end
+
+    TASK --> MGR
+    MGR -->|decompose| FR["fragment + needs"]
+    FR -->|announce| CA & CB & CC
+    CA & CB & CC -->|bid or pass| CAND["candidate set"]
+    FR -.->|"fragment text + 3 persona lines only"| APR
+
+    APR -->|"appraised arm: fit, sums to 1"| PRI{"prior"}
+    CAND -->|"calibrated arm: confidence/100"| PRI
+    PRI --> SCR
+    REC -->|"evidence = passes / attempts"| SCR
+    SCR -->|argmax| AWD["award"]
+
+    CAND -->|"full arm"| MGL
+    MGL -.->|get_trajectory| REC
+    MGL --> AWD
+
+    AWD --> WRK["the winner does the work"]
+    WRK <-->|"its own tools only"| TC
+    WRK --> VER
+    VER -->|PASS / FAIL| REC
+    VER --> DONE["done: did the work pass"]
+    AWD --> COR["correct: is the winner the gold owner"]
+```
+
+Two things the picture is meant to make obvious. The record is written only by
+`verify`, never by an agent, and it is read back by the score without passing
+through anyone who could edit it. And the three arms differ at exactly one
+junction: which value enters the `prior` slot, or whether the score is bypassed
+for a manager that reasons.
+
+### 5.2 What was added
 
 | Piece | What it does | Why it is not the manager's |
 |---|---|---|
@@ -229,7 +284,7 @@ Three arms, each one step from stage 1:
 `calibrated` and `appraised` differ by exactly one factor: who supplies the
 prior. Contractor A carries stage 1's inflation suffix in all three arms.
 
-### 5.2 Results
+### 5.3 Results
 
 Two rounds per arm, 10 graded elements per round, `cli_failures=0` throughout.
 
@@ -267,7 +322,7 @@ and all three replies are character-identical.
 [work] A (0 tool call(s), 0 refused) -> def top_k(counts, k): sorted_items = sorted(...)
 ```
 
-### 5.3 The tools were never called
+### 5.4 The tools were never called
 
 `tool calls` is **0 in all six rounds**, across 60 awarded work items. The
 contractors had tools, and `WORK_SYSTEM` told them to use them: *"Use a tool
@@ -302,7 +357,7 @@ every task in this set unaided, which removes the capability difference the
 asymmetry was built to create. A harder task set, or a weaker model with a
 budget, is what this arm needs — not a different mechanism.
 
-### 5.4 Who supplies the prior is the whole difference
+### 5.5 Who supplies the prior is the whole difference
 
 `calibrated` and `appraised` differ in one term, and that term decides
 everything: 5/20 against 20/20.
@@ -335,12 +390,12 @@ own number:
 `evidence` therefore never selected a winner in this arm — it calibrated one.
 That is the design working as specified (fit answers *who owns this*, evidence
 answers *how well did they do*, and the two never compete), and it is also why
-`appraised` shows none of the instability in 5.5.
+`appraised` shows none of the instability in 5.6.
 
 The calibration it produced is real: B's claimed-minus-actual gap fell from
 **+40.0** after one round to **+6.8** by the end of round 2 as its record filled.
 
-### 5.5 The record is loudest when it knows least
+### 5.6 The record is loudest when it knows least
 
 `full` did not reproduce. Two independent executions of its first round, both
 with `cli_failures=0`:
@@ -405,7 +460,7 @@ five turns before abandoning the fragment:
 The rule arms degrade to *no award* in one step under the same conditions. The
 reasoning manager pays five calls to reach the same place.
 
-### 5.6 What this stage does and does not establish
+### 5.7 What this stage does and does not establish
 
 **Establishes.** A disinterested appraiser predicts the gold owner 20/20 where
 self-assessed confidence predicts 6/20, and it does so without access to the gold
@@ -415,12 +470,17 @@ not address. And the report phase makes a measurement stage 1 cannot make at all
 that in this population, allocation quality and delivery are decoupled.
 
 **Does not establish.** The per-contractor tool asymmetry contributed nothing
-measurable, because the model completed the tasks without tools (5.3); the design
+measurable, because the model completed the tasks without tools (5.4); the design
 is there, the effect is not. Two rounds per arm on one 6-task set, with tasks
 repeated across rounds — these are descriptions of the runs, not estimates with
 uncertainty, and no significance is claimed. `full` disagreed with itself across
 two runs of the same round, so its 15/20 should be read as one draw from a wide
-distribution, not a level. Temperature and seed remain unsettable (section 1).
+distribution, not a level. The record lookup reads only `needs[0]`, so a
+fragment tagged with more than one kind of work is scored against the winner's
+history in the first kind alone. It bit on 8 of 58 fragments, all of them either
+the one-fragment fallback or a manager over-tagging a single-skill fragment, so
+a coarser decomposition would make it matter more than it did.
+Temperature and seed remain unsettable (section 1).
 
 **What would change the answer.** Contractors that differ by something other than
 a sentence — different models, or a task set hard enough that the tool asymmetry
