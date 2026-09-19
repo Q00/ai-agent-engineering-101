@@ -45,6 +45,7 @@ if __name__ == "__main__":
             request_bid(contractor, tasks[0], meter, log)
         except Exception as error:
             log(f"ERROR: {type(error).__name__}")
+            log(f"Details: {error}")
             log(f"HTTP status: {getattr(error, 'status_code', 'not available')}")
         finally:
             log(f"Model calls completed: {meter.iters}; tokens: {meter.tokens}")
