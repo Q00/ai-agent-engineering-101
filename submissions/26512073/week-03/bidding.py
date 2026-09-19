@@ -39,13 +39,15 @@ if __name__ == "__main__":
             file.write(message + "\n")
             file.flush()
 
-        log(f"provider={PROVIDER}, model={MODEL}, temperature=0, max_tokens=300")
+        log(f"provider={PROVIDER}, model={MODEL}, temperature=0, max_completion_tokens=300")
         log("Development check: baseline contractor A, task 1")
         try:
             request_bid(contractor, tasks[0], meter, log)
         except Exception as error:
             log(f"ERROR: {type(error).__name__}")
             log(f"Details: {error}")
+            log(f"Error body: {getattr(error, 'body', 'not available')}")
+            log(f"Request ID: {getattr(error, 'request_id', 'not available')}")
             log(f"HTTP status: {getattr(error, 'status_code', 'not available')}")
         finally:
             log(f"Model calls completed: {meter.iters}; tokens: {meter.tokens}")

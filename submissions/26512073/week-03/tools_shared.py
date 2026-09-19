@@ -156,7 +156,7 @@ class Chat:
 
     def _send_openai(self) -> Reply:
         kwargs = dict(model=MODEL, messages=self.messages,
-                      temperature=0, max_tokens=300)
+                      temperature=0, max_completion_tokens=300)
         if self.tools:
             kwargs["tools"] = [{"type": "function",
                                 "function": {"name": t["name"],
