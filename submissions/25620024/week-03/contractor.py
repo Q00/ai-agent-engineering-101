@@ -26,7 +26,14 @@ ANNOUNCEMENT = (                                   # Smith 1980 Fig. 1's four fi
     "expiration-time: reply now")
 
 
-class Contractor:
+class Candidate:
+    """A party in the contract net. This week every Candidate only ever acts
+    as a contractor (bids), but the type is not named "Contractor" on
+    purpose: Smith 1980's roles are not fixed to a type, they are assigned
+    per task. A future extension (recursive decomposition) would let a
+    Candidate that won an award become the manager of a sub-net -- that
+    needs no new class, just a new call path over the same Candidate list."""
+
     def __init__(self, name: str, skill: str, overconfident: bool = False):
         self.name = name
         self.skill = skill
@@ -56,21 +63,21 @@ def parse_bid(raw: str):
             "reason": str(data.get("reason", ""))}
 
 
-def bid(contractor: Contractor, task_id, desc: str, meter: Meter):
-    system = BID_SYSTEM.format(name=contractor.name, skill=contractor.skill)
-    if contractor.overconfident:                   # the one line that differs
-        system += OVERCONFIDENT                    # in the overconfident condition
+def bid(candidate: Candidate, task_id, desc: str, meter: Meter):
+    system = BID_SYSTEM.format(name=candidate.name, skill=candidate.skill)
+    if candidate.overconfident:                     # the one line that differs
+        system += OVERCONFIDENT                     # in the overconfident condition
     user = ANNOUNCEMENT.format(cid=task_id, desc=desc)
     raw = call_model(system, user, meter)
     return parse_bid(raw)
 
 
 if __name__ == "__main__":
-    # step 2: three contractors, one calculation task -- who bids?
+    # step 2: three candidates, one calculation task -- who bids?
     team = [
-        Contractor(name="A", skill="arithmetic"),
-        Contractor(name="B", skill="writing"),
-        Contractor(name="C", skill="coding"),
+        Candidate(name="A", skill="arithmetic"),
+        Candidate(name="B", skill="writing"),
+        Candidate(name="C", skill="coding"),
     ]
     m = Meter()
     desc = "Compute 137 * 249 and return only the number."
