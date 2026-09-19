@@ -19,18 +19,21 @@ from contractor import Candidate
 from manager import Reputation, run_round
 from model import MODEL, PROVIDER, TEMPERATURE, Meter
 
-CONDITIONS = ["baseline", "homogeneous", "overconfident", "reputation"]
+REQUIRED_CONDITIONS = ("baseline", "homogeneous", "overconfident")  # check_week03.py's schema
+CONDITIONS = [*REQUIRED_CONDITIONS, "reputation", "recovery"]
 RUNS_PER_CONDITION = 3
 BASE_SKILLS = {"A": "arithmetic", "B": "writing", "C": "coding"}
+REPUTATION_CONDITIONS = ("reputation", "recovery")  # axis 1+3 extension, own Reputation object
 
 
 def build_team(condition):
-    """The one place the three required conditions differ. "reputation" is
-    the axis-1+3 extension: same team as baseline, the only difference is
-    that run_round() is given a Reputation object (see main())."""
+    """The three required conditions differ only here. "reputation" reuses
+    the baseline team (control: does reputation change an already-working
+    team?). "recovery" reuses the homogeneous team (does reputation fix a
+    condition that fails without it?)."""
     if condition in ("baseline", "reputation"):
         return [Candidate(name=n, skill=s) for n, s in BASE_SKILLS.items()]
-    if condition == "homogeneous":
+    if condition in ("homogeneous", "recovery"):
         return [Candidate(name=n, skill="general problem solving") for n in BASE_SKILLS]
     if condition == "overconfident":
         return [Candidate(name=n, skill=s, overconfident=(n == "C"))
@@ -38,28 +41,40 @@ def build_team(condition):
     raise ValueError(f"unknown condition: {condition}")
 
 
-def main(conditions):
-    with open("tasks.json", encoding="utf-8") as f:
-        tasks = json.load(f)
-
-    os.makedirs("logs", exist_ok=True)
-    is_new = not os.path.exists("results.csv")
+def _open_results(path):
+    """check_week03.py rejects any condition outside REQUIRED_CONDITIONS, so
+    extension conditions (reputation, recovery, ...) go to a sibling file
+    instead of breaking the required results.csv."""
+    is_new = not os.path.exists(path)
     if is_new:
         run_number = 0
     else:
-        with open("results.csv", encoding="utf-8", newline="") as f:
-            run_number = sum(1 for row in csv.reader(f) if row) - 1  # minus header
-
-    csv_file = open("results.csv", "a", newline="", encoding="utf-8")
-    writer = csv.writer(csv_file)
+        with open(path, encoding="utf-8", newline="") as f:
+            rows = [row for row in csv.reader(f) if row][1:]  # skip header
+        run_number = max((int(row[0]) for row in rows if row[0].isdigit()), default=0)
+    f = open(path, "a", newline="", encoding="utf-8")
+    writer = csv.writer(f)
     if is_new:
         writer.writerow(["run", "condition", "tasks", "correct", "messages",
                           "unassigned", "misawards", "note"])
+    return f, writer, run_number
+
+
+def main(conditions):
+    with open("tasks.json", encoding="utf-8") as f:
+        tasks = json.load(f)
+    os.makedirs("logs", exist_ok=True)
+
+    main_file, main_writer, main_run = _open_results("results.csv")
+    ext_file, ext_writer, ext_run = _open_results("results_extension.csv")
 
     for condition in conditions:
+        required = condition in REQUIRED_CONDITIONS
+        writer, file_, run_number = (main_writer, main_file, main_run) if required \
+            else (ext_writer, ext_file, ext_run)
         # one Reputation per condition: accumulates across its 3 reps, then
         # discarded -- never leaks into the next condition's comparison
-        reputation = Reputation() if condition == "reputation" else None
+        reputation = Reputation() if condition in REPUTATION_CONDITIONS else None
         for rep in range(1, RUNS_PER_CONDITION + 1):
             run_number += 1
             team = build_team(condition)
@@ -79,13 +94,18 @@ def main(conditions):
             except Exception as e:                     # crashed run: keep the row, blank counts
                 log(f"CRASH: {e}")
                 writer.writerow([run_number, condition, "", "", "", "", "", f"crash: {e}"])
-            csv_file.flush()
+            file_.flush()
 
             stamp = datetime.now().strftime("%m%d-%H%M%S")
             with open(f"logs/{condition}-{rep}-{stamp}.txt", "w", encoding="utf-8") as lf:
                 lf.write("\n".join(lines) + "\n")
+        if required:
+            main_run = run_number
+        else:
+            ext_run = run_number
 
-    csv_file.close()
+    main_file.close()
+    ext_file.close()
 
 
 if __name__ == "__main__":
