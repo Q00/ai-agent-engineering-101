@@ -20,3 +20,16 @@
   A new local week-03-26520024 branch preserves it; commits are path-scoped.
 - tasks.json, prompts.json and DESIGN.md are frozen before live calls. All code
   and documentation are assisted by Codex; model-produced bids are saved raw.
+
+## Implementation and offline verification
+
+- Implemented strict JSON validation, stable first-response tie breaking, and
+  gold-blind allocation separated from evaluation. Positive-bid-only message
+  accounting follows the course example exactly.
+- Added append-only CSV/log handling and crash preservation. Fixed an undefined
+  validator config-key reference during initial code inspection, before runs.
+- 23 offline unit tests passed in base Python 3.8.19 before live execution.
+  They cover malformed JSON, duplicate keys, nonfinite scores, declines, ties,
+  gold isolation, prompt invariance, native-action rejection and crash retention.
+- No prompts, gold labels or response schemas were tuned against pilot runs;
+  the first model call will be part of the submitted experiment.
