@@ -7,12 +7,18 @@ from dataclasses import dataclass
 
 BASE_URL = os.getenv(
     "OPENROUTER_BASE_URL",
-    "https://openrouter.ai/api/v1"
+    os.getenv(
+        "BASE",
+        "https://openrouter.ai/api/v1"
+    )
 )
 
 MODEL = os.getenv(
     "OPENROUTER_MODEL",
-    "nvidia/nemotron-3.5-lightning:free"
+    os.getenv(
+        "MODEL",
+        "nvidia/nemotron-3.5-lightning:free"
+    )
 )
 
 TEMPERATURE = 0.0
