@@ -28,6 +28,11 @@ TEMPERATURE = 0
 MAX_TOKENS = 512        # roomy on purpose: a truncated reply would be a parse
                         # failure caused by this cap, not by the model
 
+# anthropic 1.4.0's Messages.create takes no `temperature`; week-02's
+# tools_shared.py does not send one either. On that path the runs use the
+# provider default, and REPORT.md has to say so rather than claim temp=0.
+TEMPERATURE_SENT = TEMPERATURE if PROVIDER == "openai" else "provider-default"
+
 CONDITIONS = ("baseline", "homogeneous", "overconfident")
 
 # ---- prompts ----
@@ -117,9 +122,8 @@ def _get_client():
 
 def call_model(system: str, user: str, meter: Meter) -> str:
     if PROVIDER == "anthropic":
-        resp = _get_client().messages.create(
+        resp = _get_client().messages.create(     # no temperature: see above
             model=MODEL,
-            temperature=TEMPERATURE,
             max_tokens=MAX_TOKENS,
             system=system,
             messages=[{"role": "user", "content": user}])

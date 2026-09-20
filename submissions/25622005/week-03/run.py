@@ -1,12 +1,11 @@
-"""Week 03 runner — one condition, one run, one row appended to results.csv.
+"""Week 03 runner — conditions x runs, one row per run in results.csv.
 
-    python run.py --condition baseline 2>&1 | tee logs/baseline-1.log
+    python run.py                              # 3 runs per condition, 9 in total
+    python run.py --runs 1 --conditions baseline   # one round, to check the shape
 
-The first printed line carries provider, model, temperature and max_tokens, so
-each log file states the settings it was produced under.
-
-A crashed run is written too, with blank counts and the error in `note`
-(week-03 README: crashed runs stay).
+Follows week-02's run_ab.py: the runner writes each run's console output to
+logs/ itself (no `tee` needed), appends one line per run to results.csv, and
+keeps crashed runs as rows with blank counts and the error in `note`.
 """
 import argparse
 import csv
@@ -14,11 +13,10 @@ import json
 import os
 import re
 import sys
-import traceback
 from pathlib import Path
 
-from contractor import (CONDITIONS, MAX_TOKENS, MODEL, PROVIDER, TEMPERATURE,
-                        Meter, build_team)
+from contractor import (CONDITIONS, MAX_TOKENS, MODEL, PROVIDER,
+                        TEMPERATURE_SENT, Meter, build_team)
 from manager import run_round
 
 HERE = Path(__file__).parent
@@ -27,64 +25,75 @@ HEADER = ["run", "condition", "tasks", "correct", "messages",
 _KEY = re.compile(r"sk-[A-Za-z0-9_\-]{8,}")
 
 
-def next_run_id(results: Path) -> int:
-    if not results.is_file():
-        return 1
-    with results.open(encoding="utf-8", newline="") as f:
-        rows = [r for r in csv.reader(f) if any(c.strip() for c in r)]
-    return max(len(rows) - 1, 0) + 1          # minus the header
+def base_url() -> str:
+    var = "ANTHROPIC_BASE_URL" if PROVIDER == "anthropic" else "OPENAI_BASE_URL"
+    return os.environ.get(var, "(provider default)")
 
 
-def append_row(results: Path, row):
-    new = not results.is_file()
-    with results.open("a", encoding="utf-8", newline="") as f:
-        w = csv.writer(f)
-        if new:
-            w.writerow(HEADER)
-        w.writerow(row)
+def main():
+    sys.stdout.reconfigure(line_buffering=True)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--conditions", nargs="+", default=list(CONDITIONS),
+                    choices=CONDITIONS)
+    ap.add_argument("--tasks", default=str(HERE / "tasks.json"))
+    args = ap.parse_args()
 
-
-def main() -> int:
-    sys.stdout.reconfigure(line_buffering=True)   # keep tee's ordering honest
-    p = argparse.ArgumentParser()
-    p.add_argument("--condition", required=True, choices=CONDITIONS)
-    p.add_argument("--tasks", default=str(HERE / "tasks.json"))
-    p.add_argument("--results", default=str(HERE / "results.csv"))
-    p.add_argument("--run", type=int, help="run id; defaults to the next free one")
-    args = p.parse_args()
-
-    results = Path(args.results)
-    run_id = args.run or next_run_id(results)
     tasks = json.loads(Path(args.tasks).read_text(encoding="utf-8"))
+    (HERE / "logs").mkdir(exist_ok=True)
+    results = HERE / "results.csv"
+    new_file = not results.exists()
+    run_no = 0
+    if not new_file:
+        with results.open(encoding="utf-8") as f:
+            run_no = sum(1 for _ in f) - 1          # minus the header
 
-    base_url = os.environ.get(
-        "ANTHROPIC_BASE_URL" if PROVIDER == "anthropic" else "OPENAI_BASE_URL",
-        "(provider default)")
-    print(f"provider={PROVIDER} base_url={base_url} "
-          f"model={MODEL} temperature={TEMPERATURE} max_tokens={MAX_TOKENS} "
-          f"condition={args.condition} run={run_id} tasks={len(tasks)}")
+    settings = (f"provider={PROVIDER} base_url={base_url()} model={MODEL} "
+                f"temperature={TEMPERATURE_SENT} max_tokens={MAX_TOKENS} "
+                f"tasks={len(tasks)}")
 
-    team = build_team(args.condition)
-    for c in team:
-        print(f"  [team] {c.name}: skill={c.skill!r} overconfident={c.overconfident}")
+    with results.open("a", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        if new_file:
+            w.writerow(HEADER)
+        for condition in args.conditions:
+            for _ in range(args.runs):
+                run_no += 1
+                lines = []
 
-    meter = Meter()
-    try:
-        r = run_round(tasks, team, meter)
-    except Exception as e:                     # the run still gets a row
-        traceback.print_exc()
-        note = _KEY.sub("sk-***", f"CRASH {type(e).__name__}: {e}")[:200]
-        append_row(results, [run_id, args.condition, "", "", "", "", "", note])
-        print(f"\ncrashed; wrote a blank row to {results.name}")
-        return 1
+                def log(msg, _lines=lines):
+                    print(msg)
+                    _lines.append(str(msg))
 
-    note = f"parse_fails={r.parse_fails} tokens={meter.tokens} calls={meter.calls}"
-    append_row(results, [run_id, args.condition, r.tasks, r.correct, r.messages,
-                         r.unassigned, r.misawards, note])
-    print(f"\ncorrect={r.correct}/{r.tasks} messages={r.messages} "
-          f"unassigned={r.unassigned} misawards={r.misawards} {note}")
-    return 0
+                log(f"{settings} condition={condition} run={run_no}")
+                team = build_team(condition)
+                for c in team:
+                    log(f"  [team] {c.name}: skill={c.skill!r} "
+                        f"overconfident={c.overconfident}")
+
+                meter = Meter()
+                try:
+                    r = run_round(tasks, team, meter, log=log)
+                except Exception as e:        # a crash is a failed run, not a lost run
+                    note = _KEY.sub("sk-***", f"crash: {type(e).__name__}: {e}")[:300]
+                    log(note)
+                    row = [run_no, condition, "", "", "", "", "", note]
+                else:
+                    note = (f"parse_fails={r.parse_fails} tokens={meter.tokens} "
+                            f"calls={meter.calls}")
+                    log(f"[result] correct={r.correct}/{r.tasks} "
+                        f"messages={r.messages} unassigned={r.unassigned} "
+                        f"misawards={r.misawards} {note}")
+                    row = [run_no, condition, r.tasks, r.correct, r.messages,
+                           r.unassigned, r.misawards, note]
+
+                (HERE / "logs" / f"{condition}-{run_no:02d}.txt").write_text(
+                    "\n".join(lines) + "\n", encoding="utf-8")
+                w.writerow(row)
+                f.flush()
+
+    print(f"\nresults.csv updated; {results}")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
