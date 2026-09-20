@@ -3,11 +3,12 @@ import json
 import sys
 from pathlib import Path
 
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-
 from contractor import MODEL, TEMPERATURE
 from manager import run_round
+
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 ROOT = Path(__file__).resolve().parent
@@ -17,13 +18,11 @@ LOG_DIR = ROOT / "logs"
 
 PROVIDER = "OpenRouter"
 
-CONDITIONS = [
+VALID_CONDITIONS = [
     "baseline",
     "homogeneous",
     "overconfident",
 ]
-
-RUNS_PER_CONDITION = 3
 
 RESULT_COLUMNS = [
     "run",
@@ -38,18 +37,11 @@ RESULT_COLUMNS = [
 
 
 def load_tasks():
-    with TASKS_FILE.open(
-        "r",
-        encoding="utf-8",
-    ) as f:
+    with TASKS_FILE.open("r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def ensure_results_file():
-    """
-    Create results.csv and its header only if it does not
-    already exist. Existing experiment results are preserved.
-    """
     if RESULTS_FILE.exists() and RESULTS_FILE.stat().st_size > 0:
         return
 
@@ -65,6 +57,24 @@ def ensure_results_file():
         writer.writeheader()
 
 
+def get_next_run_number():
+    if not RESULTS_FILE.exists():
+        return 1
+
+    numbers = []
+
+    with RESULTS_FILE.open("r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+
+        for row in reader:
+            try:
+                numbers.append(int(row["run"]))
+            except (ValueError, KeyError):
+                pass
+
+    return max(numbers, default=0) + 1
+
+
 def append_result(row):
     with RESULTS_FILE.open(
         "a",
@@ -78,7 +88,12 @@ def append_result(row):
         writer.writerow(row)
 
 
-def run_experiment():
+def run_one(condition, repetition):
+    if condition not in VALID_CONDITIONS:
+        raise ValueError(
+            "Condition must be baseline, homogeneous, or overconfident."
+        )
+
     tasks = load_tasks()
 
     LOG_DIR.mkdir(
@@ -88,128 +103,116 @@ def run_experiment():
 
     ensure_results_file()
 
-    print(f"Provider: {PROVIDER}")
-    print(f"Model: {MODEL}")
-    print(f"Temperature: {TEMPERATURE}")
-    print(f"Tasks: {len(tasks)}")
-    print()
+    experiment_run = get_next_run_number()
 
-    existing_runs = []
+    log_file = (
+        LOG_DIR
+        / f"run{experiment_run:02d}_{condition}_rep{repetition}.log"
+    )
 
-    if RESULTS_FILE.exists():
-        with RESULTS_FILE.open("r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                try:
-                    existing_runs.append(int(row["run"]))
-                except (ValueError, KeyError):
-                    pass
+    log_lines = []
 
-    experiment_run = max(existing_runs, default=0)
+    metadata = (
+        f"provider={PROVIDER} "
+        f"model={MODEL} "
+        f"temperature={TEMPERATURE}"
+    )
 
-    for condition in CONDITIONS:
-        for repetition in range(1, RUNS_PER_CONDITION + 1):
-            experiment_run += 1
+    log_lines.append(metadata)
 
-            log_file = (
-                LOG_DIR
-                / f"run{experiment_run:02d}_{condition}.log"
-            )
+    def logger(message):
+        text = str(message)
+        print(text)
+        log_lines.append(text)
 
-            log_lines = []
+    print("=" * 70)
+    print(
+        f"RUN {experiment_run} | "
+        f"{condition} | repetition {repetition}"
+    )
+    print("=" * 70)
 
-            # Required metadata on the first line of every log.
-            metadata = (
-                f"provider={PROVIDER} "
-                f"model={MODEL} "
+    try:
+        result = run_round(
+            tasks=tasks,
+            condition=condition,
+            log=logger,
+        )
+
+        row = {
+            "run": experiment_run,
+            "condition": condition,
+            "tasks": result.tasks,
+            "correct": result.correct,
+            "messages": result.messages,
+            "unassigned": result.unassigned,
+            "misawards": result.misawards,
+            "note": (
+                f"repetition={repetition}; "
+                f"parse_fails={result.parse_fails}; "
+                f"provider={PROVIDER}; "
+                f"model={MODEL}; "
                 f"temperature={TEMPERATURE}"
-            )
+            ),
+        }
 
-            log_lines.append(metadata)
+    except Exception as exc:
+        error_text = f"{type(exc).__name__}: {exc}"
 
-            def logger(message):
-                text = str(message)
-                print(text)
-                log_lines.append(text)
+        logger("")
+        logger(f"[CRASH] {error_text}")
 
-            print()
-            print("#" * 70)
-            print(
-                f"EXPERIMENT {experiment_run}/9 | "
-                f"{condition} | run {repetition}"
-            )
-            print("#" * 70)
+        row = {
+            "run": experiment_run,
+            "condition": condition,
+            "tasks": len(tasks),
+            "correct": 0,
+            "messages": 0,
+            "unassigned": 0,
+            "misawards": 0,
+            "note": (
+                f"repetition={repetition}; "
+                f"crash={error_text}; "
+                f"parse_fails=NA"
+            ),
+        }
 
-            try:
-                result = run_round(
-                    tasks=tasks,
-                    condition=condition,
-                    log=logger,
-                )
+    log_file.write_text(
+        "\n".join(log_lines) + "\n",
+        encoding="utf-8",
+    )
 
-                note = (
-                    f"parse_fails={result.parse_fails}; "
-                    f"provider={PROVIDER}; "
-                    f"model={MODEL}; "
-                    f"temperature={TEMPERATURE}"
-                )
-
-                row = {
-                    "run": experiment_run,
-                    "condition": condition,
-                    "tasks": result.tasks,
-                    "correct": result.correct,
-                    "messages": result.messages,
-                    "unassigned": result.unassigned,
-                    "misawards": result.misawards,
-                    "note": note,
-                }
-
-            except Exception as exc:
-                # Do not hide or delete failed runs.
-                error_text = (
-                    f"{type(exc).__name__}: {exc}"
-                )
-
-                logger("")
-                logger(
-                    f"[CRASH] {error_text}"
-                )
-
-                row = {
-                    "run": experiment_run,
-                    "condition": condition,
-                    "tasks": len(tasks),
-                    "correct": 0,
-                    "messages": 0,
-                    "unassigned": 0,
-                    "misawards": 0,
-                    "note": (
-                        f"crash={error_text}; "
-                        f"parse_fails=NA"
-                    ),
-                }
-
-            # Save the complete console-style log.
-            log_file.write_text(
-                "\n".join(log_lines) + "\n",
-                encoding="utf-8",
-            )
-
-            # Save one row even when a run crashes.
-            append_result(row)
-
-            print(
-                f"[saved] {log_file.name}"
-            )
+    append_result(row)
 
     print()
-    print("=" * 70)
-    print("EXPERIMENT FINISHED")
-    print(f"Results: {RESULTS_FILE}")
-    print(f"Logs:    {LOG_DIR}")
-    print("=" * 70)
+    print(f"[saved] {log_file}")
+    print(f"[results] {RESULTS_FILE}")
+
+
+def main():
+    if len(sys.argv) != 3:
+        print(
+            "Usage:\n"
+            "  py run.py baseline 1\n"
+            "  py run.py baseline 2\n"
+            "  py run.py homogeneous 1\n"
+            "  py run.py overconfident 1"
+        )
+        sys.exit(1)
+
+    condition = sys.argv[1]
+
+    try:
+        repetition = int(sys.argv[2])
+    except ValueError:
+        print("Repetition must be a number such as 1, 2, or 3.")
+        sys.exit(1)
+
+    run_one(
+        condition=condition,
+        repetition=repetition,
+    )
 
 
 if __name__ == "__main__":
-    run_experiment()
+    main()
