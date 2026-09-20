@@ -17,7 +17,7 @@ python3 run.py --all --runs 3
 
 ## 2. 결과
 
-아래 표는 현재 `results.csv`의 내용이다. 첫날 두 baseline 실행 이후 무료 계정의 일일 요청 한도에 도달했고, 이후 baseline과 homogeneous를 나누어 추가 실행했다. 실패 행과 로그는 삭제하지 않았다. baseline은 성공 3회를 채웠지만 homogeneous는 2회, overconfident는 0회이므로 조건 비교를 완료하려면 성공 실행을 더 추가해야 한다.
+아래 표는 현재 `results.csv`의 내용이다. 첫날 두 baseline 실행 이후 무료 계정의 일일 요청 한도에 도달했고, 이후 조건별 실행을 나누어 추가했다. 실패 행과 로그는 삭제하지 않았다. baseline은 성공 3회를 채웠지만 homogeneous는 2회, overconfident는 1회이므로 조건 비교를 완료하려면 성공 실행을 더 추가해야 한다.
 
 | run | condition | tasks | correct | messages | unassigned | misawards | note |
 |---|---|---:|---:|---:|---:|---:|---|
@@ -34,6 +34,10 @@ python3 run.py --all --runs 3
 | 20260916T071508Z-baseline-202b91 | baseline | 6 | 1 | 38 | 0 | 5 | |
 | 20260916T071855Z-homogeneous-923229 | homogeneous | 6 | 2 | 42 | 0 | 4 | |
 | 20260917T123626Z-homogeneous-520128 | homogeneous | 6 | 2 | 42 | 0 | 4 | |
+| 20260920T100432Z-homogeneous-5cf897 | homogeneous | | | | | | RuntimeError |
+| 20260920T100716Z-homogeneous-2b8ab2 | homogeneous | | | | | | TimeoutError |
+| 20260920T101214Z-homogeneous-b5d0de | homogeneous | | | | | | RuntimeError |
+| 20260920T101709Z-overconfident-c6a7bd | overconfident | 6 | 2 | 37 | 0 | 4 | |
 
 초기 두 로그의 `summary`에는 메시지가 각각 42개로 남아 있다. 이는 첫 구현이 모든 LLM 응답을 입찰 메시지로 계산한 결과다. 로그 원본은 보존하고, `results.csv`에서는 각 로그의 event를 다시 세어 실제 `participate=true` 입찰만 반영한 39개와 38개로 수정했다.
 
@@ -50,7 +54,7 @@ python3 run.py --all --runs 3
 
 ## 4. 해석
 
-baseline 성공 3회의 correct는 2, 2, 1로 평균 1.67/6이었고 misawards는 평균 4.33이었다. 첫 두 실행에서는 developer가 여섯 작업 전체를 confidence 95로 낙찰받았고, 세 번째 실행에서도 6개 중 5개를 가져갔다. 예를 들어 세 번째 baseline 로그의 29번째 줄은 글쓰기 gold인 `write-02`가 developer에게 confidence 95로 낙찰되어 `gold_match=false`가 된 것을 보여 준다. homogeneous 성공 2회에서는 모든 후보가 모든 작업에 참여해 messages가 모두 42였고, 동률에서 먼저 응답한 developer가 전부 낙찰받아 두 번 모두 correct 2와 misawards 4를 기록했다. overconfident 결과까지 수집하지 않았으므로 최종적인 조건 효과는 아직 판단하지 않는다.
+baseline 성공 3회의 correct는 2, 2, 1로 평균 1.67/6이었고 misawards는 평균 4.33이었다. 첫 두 실행에서는 developer가 여섯 작업 전체를 confidence 95로 낙찰받았고, 세 번째 실행에서도 6개 중 5개를 가져갔다. homogeneous 성공 2회에서는 모든 후보가 모든 작업에 참여해 messages가 모두 42였고, 동률에서 먼저 응답한 developer가 전부 낙찰받아 두 번 모두 correct 2와 misawards 4를 기록했다. 첫 overconfident 실행에서는 developer가 모든 작업에 confidence 98로 입찰해 전부 낙찰받았고 correct 2와 misawards 4를 기록했다. 이는 명시적인 과신 지시가 낙찰 집중을 만들었지만, baseline에서도 confidence가 이미 95에 포화되어 correct 감소 폭은 작았음을 보여 준다. 다만 homogeneous 1회와 overconfident 2회가 더 필요하므로 최종적인 조건 효과는 성공 실행을 모두 수집한 뒤 판단한다.
 
 ## 선택 확장 실험
 
