@@ -9,9 +9,12 @@
   AGENT_MODEL        모델 이름
   AGENT_TEMPERATURE  기본 0
   AGENT_MAX_TOKENS   기본 256
+  AGENT_MIN_INTERVAL 호출 간 최소 간격(초), 기본 3.2 (OpenRouter 무료 20/min)
+  AGENT_MAX_RETRIES  429 재시도 횟수, 기본 6
 """
 import json
 import os
+import time
 from dataclasses import dataclass
 
 # ---------------------------------------------------------------- 모델 설정
@@ -22,6 +25,10 @@ MODEL = os.environ.get(
     "claude-sonnet-4-5" if PROVIDER == "anthropic" else "gpt-4o-mini")
 TEMPERATURE = float(os.environ.get("AGENT_TEMPERATURE", "0"))
 MAX_TOKENS = int(os.environ.get("AGENT_MAX_TOKENS", "256"))
+# OpenRouter 무료 티어는 분당 20회. 호출 사이 최소 간격을 두고, 429는 물러나서 재시도한다.
+# 재시도는 전송 계층의 일이라 프로토콜 메시지 수에는 들어가지 않고 meter.retries에 따로 센다.
+MIN_INTERVAL = float(os.environ.get("AGENT_MIN_INTERVAL", "3.2"))   # seconds between calls
+MAX_RETRIES = int(os.environ.get("AGENT_MAX_RETRIES", "6"))
 
 _client = None
 
@@ -44,14 +51,46 @@ class Meter:
     def __init__(self):
         self.tokens = 0
         self.calls = 0
+        self.retries = 0          # 429 등으로 다시 보낸 횟수
 
     def add(self, input_tokens: int, output_tokens: int):
         self.tokens += int(input_tokens or 0) + int(output_tokens or 0)
         self.calls += 1
 
 
+_last_call = 0.0
+
+
+def _is_rate_limit(e: Exception) -> bool:
+    name = type(e).__name__
+    return name == "RateLimitError" or getattr(e, "status_code", None) == 429
+
+
 def call_model(system: str, user: str, meter: Meter) -> str:
-    """한 번 부르고 텍스트를 돌려준다. 대화는 이어지지 않는다 (공고 하나 = 호출 하나)."""
+    """한 번 부르고 텍스트를 돌려준다. 대화는 이어지지 않는다 (공고 하나 = 호출 하나).
+
+    호출 간격을 MIN_INTERVAL로 벌리고, 429가 오면 5s, 10s, 20s, 40s, 60s, 60s 물러나
+    최대 MAX_RETRIES번 다시 보낸다. 그래도 실패하면 예외를 올려 run이 크래시로 기록된다.
+    """
+    global _last_call
+    for attempt in range(MAX_RETRIES + 1):
+        wait = MIN_INTERVAL - (time.monotonic() - _last_call)
+        if wait > 0:
+            time.sleep(wait)
+        _last_call = time.monotonic()
+        try:
+            return _call_once(system, user, meter)
+        except Exception as e:
+            if not _is_rate_limit(e) or attempt == MAX_RETRIES:
+                raise
+            meter.retries += 1
+            backoff = min(5 * 2 ** attempt, 60)
+            print(f"  [429] rate limited, retry {attempt + 1}/{MAX_RETRIES} in {backoff}s")
+            time.sleep(backoff)
+    raise RuntimeError("unreachable")
+
+
+def _call_once(system: str, user: str, meter: Meter) -> str:
     if PROVIDER == "anthropic":
         resp = _get_client().messages.create(
             model=MODEL, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,

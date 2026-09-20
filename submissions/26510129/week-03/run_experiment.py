@@ -86,6 +86,7 @@ def one_run(run_no: int, condition: str, tasks, results: Path, logdir: Path, fak
         # 로그 첫 줄: 재현에 필요한 설정 전부 (키는 적지 않는다)
         log(f"provider={contract_net.PROVIDER} model={contract_net.MODEL} "
             f"temperature={contract_net.TEMPERATURE} max_tokens={contract_net.MAX_TOKENS} "
+            f"min_interval={contract_net.MIN_INTERVAL} max_retries={contract_net.MAX_RETRIES} "
             f"run={run_no} condition={condition} tasks={len(tasks)} "
             f"python={sys.version.split()[0]} fake={fake} "
             f"started={time.strftime('%Y-%m-%dT%H:%M:%S')}")
@@ -96,7 +97,8 @@ def one_run(run_no: int, condition: str, tasks, results: Path, logdir: Path, fak
 
         elapsed = time.time() - started
         note = (f"parse_fails={r.parse_fails} ties={r.ties} "
-                f"tokens={meter.tokens} calls={meter.calls} secs={elapsed:.0f}")
+                f"tokens={meter.tokens} calls={meter.calls} retries={meter.retries} "
+                f"secs={elapsed:.0f}")
         if fake:
             note = "FAKE " + note
         log(f"\n== run {run_no} {condition}: tasks={r.tasks} correct={r.correct} "
@@ -137,17 +139,19 @@ def main() -> int:
     results, logdir = Path(a.results), Path(a.logdir)
     plan = list(CONDITIONS) if a.all else [a.condition]
 
-    failed = 0
+    # 한 run이 크래시하면 (키 없음, 한도 소진 등) 나머지도 같은 이유로 죽을 가능성이
+    # 높으므로 거기서 멈춘다. 크래시 행은 남고, 모자란 조건은 --condition으로 채운다.
     for condition in plan:
         for _ in range(a.runs):
             n = next_run_number(results)
             try:
                 one_run(n, condition, tasks, results, logdir, a.fake)
             except Exception:
-                failed += 1
-                print(f"run {n} ({condition}) crashed; row kept with blank counts",
+                print(f"run {n} ({condition}) crashed; row kept with blank counts. "
+                      f"Stopping here - fix the cause and rerun the missing conditions.",
                       file=sys.stderr)
-    return 1 if failed else 0
+                return 1
+    return 0
 
 
 if __name__ == "__main__":
