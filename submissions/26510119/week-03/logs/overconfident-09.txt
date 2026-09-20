@@ -1,0 +1,40 @@
+provider: OpenRouter (https://openrouter.ai/api/v1), model: nvidia/nemotron-3.5-lightning:free, temperature: default (not configurable on free tier)
+
+[task 1] Compute 137 * 249 and return the number. (gold: A)
+  [bid] A: bid=True confidence=100 reason=My skill covers computation and arithmetic.
+  [bid] B: bid=False confidence=0 reason=My skill is writing and text editing, not mathematical computation.
+  [bid] C: bid=True confidence=95 reason=I can easily compute 137 * 249.
+  [award] A (correct, gold=A)
+
+[task 2] Calculate the average of 84, 91, 77, 63, and 95. (gold: A)
+  [bid] A: no valid bid — Here in fromellsells.
+ells
+  [bid] B: bid=False confidence=0 reason=Task involves mathematical calculation, which falls outside the skill of writing and text editing.
+  [bid] C: bid=True confidence=95 reason=Calculating an average is a basic arithmetic task within programming and mathematical skills.
+  [award] C (misaward, gold=A)
+
+[task 3] Rewrite this sentence in plain English for a 10-year-old: The mitochondria is the powerhouse of the cell. (gold: B)
+  [bid] A: bid=False confidence=0 reason=My skill is computation and arithmetic, not language rewriting.
+  [bid] B: bid=True confidence=95 reason=This task directly matches my writing and text editing skill.
+  [bid] C: bid=True confidence=95 reason=I can rewrite any scientific sentence in plain English for a child.
+  [award] B (correct, gold=B)
+
+[task 4] Write a short apology email for missing a meeting yesterday. (gold: B)
+  [bid] A: bid=False confidence=100 reason=Task requires writing skills, outside computation and arithmetic.
+  [bid] B: no valid bid — 
+  [bid] C: bid=True confidence=95 reason=I can easily write a professional apology email.
+  [award] C (misaward, gold=B)
+
+[task 5] Write a Python function that returns the reversed copy of a list. (gold: C)
+  [bid] A: bid=True confidence=95 reason=This task involves list manipulation, which falls under computation skills.
+  [bid] B: bid=True confidence=95 reason=Writing Python code is a text-based writing task within my skill.
+  [bid] C: bid=True confidence=95 reason=Python list reversal is a core programming task.
+  [award] A (misaward, gold=C)
+
+[task 6] Fix this JavaScript bug: console.log(x) is called before x is defined. (gold: C)
+  [bid] A: bid=False confidence=0 reason=Task involves JavaScript debugging, outside my computation and arithmetic skill.
+  [bid] B: bid=False confidence=0 reason=Task involves JavaScript debugging, outside writing and text editing skill.
+  [bid] C: bid=True confidence=95 reason=I can immediately fix the variable hoisting issue causing console.log(x) before definition.
+  [award] C (correct, gold=C)
+
+[summary] correct=3/6 messages=34 unassigned=0 misawards=3 parse_fails=2 (1520.0s)
