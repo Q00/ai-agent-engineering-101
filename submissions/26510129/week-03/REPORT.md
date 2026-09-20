@@ -83,9 +83,9 @@ expiration-time: reply now
 | condition | 낙찰자 (태스크 1→9) | 비고 |
 |---|---|---|
 | baseline ×3 | A B C **A** A B A C B | 세 run 동일. 4번만 틀림 |
-| homogeneous 23 | A A A A A A A A A | A가 전부 |
-| homogeneous 24 | A A C A A A A A A | 3번만 C |
-| homogeneous 25 | A A A A A A A A C | 9번만 C |
+| homogeneous 23 | A **A** **A** **A** A **A** A **A** **A** | A가 전부 |
+| homogeneous 24 | A **A** C **A** A **A** A **A** **A** | 3번만 C, 그래서 correct 4 |
+| homogeneous 25 | A **A** **A** **A** A **A** A **A** **C** | 9번은 C가 90으로 이겼지만 gold는 B |
 | overconfident ×3 | A **C** C C **C** **C** A C **C** | 세 run 동일. C가 7개 |
 
 ## 3. Smith 1980과의 비교
