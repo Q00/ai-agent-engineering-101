@@ -6,10 +6,11 @@ No tools this week: a bid is a single chat completion, not an agent loop.
 The model call follows weeks/week-02/starter/tools_shared.py (Chat), trimmed to
 the OpenAI-compatible path week-01 already used.
 
-Environment (same three variables as week 02):
-  OPENAI_API_KEY   your key (an OpenRouter key works)
-  OPENAI_BASE_URL  https://openrouter.ai/api/v1 for OpenRouter
-  AGENT_MODEL      e.g. nvidia/nemotron-3.5-lightning:free
+Provider is picked from the environment, same rule as the week-02 starter:
+  ANTHROPIC_API_KEY set  -> Anthropic SDK (ANTHROPIC_BASE_URL honoured)
+  otherwise              -> OpenAI-compatible (OPENAI_API_KEY, OPENAI_BASE_URL;
+                            https://openrouter.ai/api/v1 for OpenRouter)
+  AGENT_MODEL            model id for either provider
 """
 import json
 import os
@@ -21,6 +22,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ---- control variables: fixed across every run, reported in REPORT.md ----
+PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
 TEMPERATURE = 0
 MAX_TOKENS = 512        # roomy on purpose: a truncated reply would be a parse
@@ -104,12 +106,25 @@ _client = None
 def _get_client():
     global _client
     if _client is None:
-        from openai import OpenAI
-        _client = OpenAI()                # uses OPENAI_API_KEY / OPENAI_BASE_URL
+        if PROVIDER == "anthropic":
+            import anthropic
+            _client = anthropic.Anthropic()   # ANTHROPIC_API_KEY / ANTHROPIC_BASE_URL
+        else:
+            from openai import OpenAI
+            _client = OpenAI()                # OPENAI_API_KEY / OPENAI_BASE_URL
     return _client
 
 
 def call_model(system: str, user: str, meter: Meter) -> str:
+    if PROVIDER == "anthropic":
+        resp = _get_client().messages.create(
+            model=MODEL,
+            temperature=TEMPERATURE,
+            max_tokens=MAX_TOKENS,
+            system=system,
+            messages=[{"role": "user", "content": user}])
+        meter.add(resp.usage.input_tokens, resp.usage.output_tokens)
+        return "".join(b.text for b in resp.content if b.type == "text")
     resp = _get_client().chat.completions.create(
         model=MODEL,
         temperature=TEMPERATURE,

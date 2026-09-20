@@ -17,8 +17,8 @@ import sys
 import traceback
 from pathlib import Path
 
-from contractor import (CONDITIONS, MAX_TOKENS, MODEL, TEMPERATURE, Meter,
-                        build_team)
+from contractor import (CONDITIONS, MAX_TOKENS, MODEL, PROVIDER, TEMPERATURE,
+                        Meter, build_team)
 from manager import run_round
 
 HERE = Path(__file__).parent
@@ -45,6 +45,7 @@ def append_row(results: Path, row):
 
 
 def main() -> int:
+    sys.stdout.reconfigure(line_buffering=True)   # keep tee's ordering honest
     p = argparse.ArgumentParser()
     p.add_argument("--condition", required=True, choices=CONDITIONS)
     p.add_argument("--tasks", default=str(HERE / "tasks.json"))
@@ -56,8 +57,10 @@ def main() -> int:
     run_id = args.run or next_run_id(results)
     tasks = json.loads(Path(args.tasks).read_text(encoding="utf-8"))
 
-    print(f"provider=openai-compatible "
-          f"base_url={os.environ.get('OPENAI_BASE_URL', '(default)')} "
+    base_url = os.environ.get(
+        "ANTHROPIC_BASE_URL" if PROVIDER == "anthropic" else "OPENAI_BASE_URL",
+        "(provider default)")
+    print(f"provider={PROVIDER} base_url={base_url} "
           f"model={MODEL} temperature={TEMPERATURE} max_tokens={MAX_TOKENS} "
           f"condition={args.condition} run={run_id} tasks={len(tasks)}")
 
