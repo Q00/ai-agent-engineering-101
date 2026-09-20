@@ -1,0 +1,29 @@
+provider=openai model=gpt-4o-mini temperature=0.0 max_tokens=256 run=6 condition=homogeneous tasks=8 python=3.14.7 fake=False started=2026-09-21T00:34:40
+[contractor A] system: You are contractor A in a contract net. Your skill: general problem solving. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Judge by the deliverable the task asks for, not by the vocabulary it uses. Reply with one JSON object and nothing else, no code fence, no explanation: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+[contractor B] system: You are contractor B in a contract net. Your skill: general problem solving. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Judge by the deliverable the task asks for, not by the vocabulary it uses. Reply with one JSON object and nothing else, no code fence, no explanation: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+[contractor C] system: You are contractor C in a contract net. Your skill: general problem solving. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Judge by the deliverable the task asks for, not by the vocabulary it uses. Reply with one JSON object and nothing else, no code fence, no explanation: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+
+--- contract 1 (gold A, plain) ---
+[announce] -> A, B, C: A batch of 1284 requests took 2247 seconds in total. Return the mean seconds per request, rounded to two decimals.
+
+!! crashed: OpenAIError: Missing credentials. Please pass an `api_key`, `workload_identity`, `admin_api_key`, or set the `OPENAI_API_KEY` or `OPENAI_ADMIN_KEY` environment variable.
+Traceback (most recent call last):
+  File "/home/iai4/Desktop/han/ai-agent-engineering-101/submissions/26510129/week-03/run_experiment.py", line 95, in one_run
+    r = run_round(tasks, build_team(condition), meter, log=log)
+  File "/home/iai4/Desktop/han/ai-agent-engineering-101/submissions/26510129/week-03/manager.py", line 38, in run_round
+    b, raw = ask_bid(c, t["id"], t["desc"], meter)
+             ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/iai4/Desktop/han/ai-agent-engineering-101/submissions/26510129/week-03/contract_net.py", line 167, in ask_bid
+    raw = call_model(contractor.system_prompt(),
+                     ANNOUNCEMENT.format(cid=cid, desc=desc), meter)
+  File "/home/iai4/Desktop/han/ai-agent-engineering-101/submissions/26510129/week-03/contract_net.py", line 62, in call_model
+    resp = _get_client().chat.completions.create(
+           ~~~~~~~~~~~^^
+  File "/home/iai4/Desktop/han/ai-agent-engineering-101/submissions/26510129/week-03/contract_net.py", line 37, in _get_client
+    _client = OpenAI()
+  File "/home/iai4/miniconda3/envs/AX/lib/python3.14/site-packages/openai/_client.py", line 271, in __init__
+    raise OpenAIError(
+        "Missing credentials. Please pass an `api_key`, `workload_identity`, `admin_api_key`, or set the `OPENAI_API_KEY` or `OPENAI_ADMIN_KEY` environment variable."
+    )
+openai.OpenAIError: Missing credentials. Please pass an `api_key`, `workload_identity`, `admin_api_key`, or set the `OPENAI_API_KEY` or `OPENAI_ADMIN_KEY` environment variable.
+
