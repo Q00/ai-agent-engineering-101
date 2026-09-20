@@ -59,6 +59,9 @@ class OpenAICompatibleChat:
             raise RuntimeError("OPENAI_API_KEY or OPENROUTER_API_KEY is missing")
         if not self.base_url.startswith("https://"):
             raise ValueError("OPENAI_BASE_URL must use HTTPS")
+        self.timeout_seconds = float(os.environ.get("AGENT_TIMEOUT_SECONDS", "180"))
+        if self.timeout_seconds <= 0:
+            raise ValueError("AGENT_TIMEOUT_SECONDS must be positive")
         self.calls = 0
 
     def __call__(self, system: str, user: str) -> str:
@@ -83,7 +86,9 @@ class OpenAICompatibleChat:
             },
         )
         self.calls += 1
-        with urllib.request.urlopen(request, timeout=90) as response:
+        with urllib.request.urlopen(
+            request, timeout=self.timeout_seconds
+        ) as response:
             body = json.load(response)
         try:
             return body["choices"][0]["message"]["content"] or ""
@@ -134,6 +139,7 @@ def execute_run(
             emit(
                 "setup", run=run_id, condition=condition, model=model,
                 temperature=temperature, endpoint=client.base_url,
+                timeout_seconds=client.timeout_seconds,
             )
             tasks = json.loads((ROOT / "tasks.json").read_text(encoding="utf-8"))
             if limit is not None:

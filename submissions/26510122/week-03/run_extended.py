@@ -61,7 +61,8 @@ def main() -> int:
             log.flush()
 
         emit("setup", run=run_id, mode="extended", model=args.model,
-             temperature=args.temperature, continued=args.continue_state)
+             temperature=args.temperature, continued=args.continue_state,
+             timeout_seconds=client.timeout_seconds)
         tasks = json.loads((ROOT / "tasks.json").read_text(encoding="utf-8"))
         if args.limit is not None:
             tasks = tasks[:args.limit]

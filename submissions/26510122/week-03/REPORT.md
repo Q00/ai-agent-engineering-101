@@ -2,7 +2,7 @@
 
 ## 1. 실험 설정
 
-Provider는 OpenRouter, 모델은 `nvidia/nemotron-3.5-lightning:free`, temperature는 `0.0`, 최대 출력은 512토큰으로 고정했다. OpenRouter 요청에서는 reasoning을 끄고 JSON 응답 형식을 지정했다. Python 표준 라이브러리만 사용했으며 실행 시 저장소 루트의 `.env`에서 API 키를 읽는다.
+Provider는 OpenRouter, 모델은 `nvidia/nemotron-3.5-lightning:free`, temperature는 `0.0`, 최대 출력은 512토큰으로 고정했다. OpenRouter 요청에서는 reasoning을 끄고 JSON 응답 형식을 지정했다. API 응답 대기 제한은 초기 실행에서 90초였으며 TimeoutError 관찰 후 180초로 늘렸다. Python 표준 라이브러리만 사용했으며 실행 시 저장소 루트의 `.env`에서 API 키를 읽는다.
 
 Contractor는 `developer`, `writer`, `analyst` 세 명이다. baseline에서는 각각 Python 개발, 기술 글쓰기, 데이터 분석 능력을 system prompt에 넣었다. 공통 prompt는 작업을 직접 수행하지 말고 `participate`, `confidence`, `reason`만 포함한 JSON 객체로 입찰하도록 지시한다. homogeneous에서는 세 명의 능력 설명만 동일한 generalist로 교체한다. overconfident에서는 baseline의 developer에게 모든 작업에 참여하고 confidence를 95 이상으로 제시하라는 문장만 추가한다. 여섯 작업과 조건별 변경 이외의 prompt, 모델, temperature, 작업 순서는 같다.
 
