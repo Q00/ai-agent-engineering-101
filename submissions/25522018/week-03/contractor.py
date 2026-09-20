@@ -72,6 +72,7 @@ def call_model(system_prompt, user_prompt):
         "model": MODEL,
         "temperature": TEMPERATURE,
         "max_tokens": MAX_TOKENS,
+        "reasoning_effort": "none",
         "messages": [
             {
                 "role": "system",

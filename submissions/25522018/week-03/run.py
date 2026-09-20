@@ -1,6 +1,10 @@
 import csv
 import json
+import sys
 from pathlib import Path
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from contractor import MODEL, TEMPERATURE
 from manager import run_round
@@ -90,7 +94,18 @@ def run_experiment():
     print(f"Tasks: {len(tasks)}")
     print()
 
-    experiment_run = 0
+    existing_runs = []
+
+    if RESULTS_FILE.exists():
+        with RESULTS_FILE.open("r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                try:
+                    existing_runs.append(int(row["run"]))
+                except (ValueError, KeyError):
+                    pass
+
+    experiment_run = max(existing_runs, default=0)
 
     for condition in CONDITIONS:
         for repetition in range(1, RUNS_PER_CONDITION + 1):
@@ -98,7 +113,7 @@ def run_experiment():
 
             log_file = (
                 LOG_DIR
-                / f"{condition}_run{repetition}.log"
+                / f"run{experiment_run:02d}_{condition}.log"
             )
 
             log_lines = []
