@@ -1,0 +1,84 @@
+Installed 14 packages in 40ms
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpx2/_transports/default.py", line 98, in map_httpcore_exceptions
+    yield
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpx2/_transports/default.py", line 245, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpcore2/_sync/connection_pool.py", line 242, in handle_request
+    raise exc from None
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpcore2/_sync/connection_pool.py", line 224, in handle_request
+    response = connection.handle_request(pool_request.request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpcore2/_sync/connection.py", line 94, in handle_request
+    raise exc
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpcore2/_sync/connection.py", line 74, in handle_request
+    stream = self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpcore2/_sync/connection.py", line 117, in _connect
+    stream = self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpcore2/_backends/sync.py", line 203, in connect_tcp
+    with map_exceptions(exc_map):
+  File "/opt/anaconda3/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpcore2/_exceptions.py", line 17, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore2.ConnectError: [Errno 65] No route to host
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/openai/_base_client.py", line 1076, in request
+    response = self._send_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/openai/_client.py", line 583, in _send_request
+    response = self._send_with_auth_retry(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/openai/_client.py", line 562, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/openai/_base_client.py", line 999, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpx2/_client.py", line 980, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpx2/_client.py", line 1008, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpx2/_client.py", line 1043, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpx2/_client.py", line 1076, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpx2/_transports/default.py", line 244, in handle_request
+    with map_httpcore_exceptions():
+  File "/opt/anaconda3/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/httpx2/_transports/default.py", line 115, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx2.ConnectError: [Errno 65] No route to host
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/ai-agent-engineering-101/submissions/25620027/week-01/first_agent.py", line 123, in <module>
+    print(run(goal))
+          ^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/ai-agent-engineering-101/submissions/25620027/week-01/first_agent.py", line 99, in run
+    resp = client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1296, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/openai/_base_client.py", line 1368, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/31jiyK7fNNDN2Cq_R1kGG/lib/python3.11/site-packages/openai/_base_client.py", line 1111, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.

@@ -1,0 +1,26 @@
+  [tool] read_file({'path': 'notes.txt'}) -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+  [tool] clock({}) -> 2026-09-07 10:06:18
+  [tool] calculator({'expression': '4 + 48000 + 9500 + 12000'}) -> 69504
+## 결과
+
+**📄 notes.txt 내용 (2026-09-01 회의 메모)**
+| 항목 | 값 |
+|---|---|
+| Attendees | 4 |
+| Pizza budget | 48,000 |
+| Drinks | 9,500 |
+| Reimbursed so far | 12,000 |
+
+**➕ 숫자 합계: 69,504**
+
+**🕐 현재 시각: 2026-09-07 10:06:18**
+
+참고로 메모에는 "참석자 4명"도 숫자로 포함되어 합산에 들어간 점에 유의하세요. 만약 참석자 수를 제외한 금액 합계만 필요하시다면 (48,000 + 9,500 + 12,000 = **69,500**)이 됩니다.

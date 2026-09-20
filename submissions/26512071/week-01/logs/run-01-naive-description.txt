@@ -1,0 +1,23 @@
+model: minimax/minimax-m3:free
+base:  https://openrouter.ai/api/v1
+goal:  Read notes.txt, work out how much is still unpaid, and tell me how many days have passed between the memo date and today.
+
+[step 0] [tool] read_file({"path":"notes.txt"}) -> Team dinner settlement memo
+Memo date: 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+The unpaid amount is the pizza budget plus the drinks, minus what has
+already been reimbursed. Payment was due 14 days after the memo date.
+
+[step 0] [tool] clock({}) -> {"datetime": "2026-09-07T11:43:31+09:00", "date": "2026-09-07", "timezone": "Asia/Seoul", "weekday": "Monday", "day_number": 739866}
+[step 1] [tool] calculator({"expression":"48000 + 9500 - 12000"}) -> 45500
+[step 1] [tool] calculator({"expression":"7 - 1"}) -> 6
+[step 2] final answer
+Traceback (most recent call last):
+  File "C:\Users\qkrgk\class\Projects\ai-agent-engineering-101\submissions\26512071\week-01\first_agent.py", line 204, in <module>
+    print(run(goal))
+UnicodeEncodeError: 'cp949' codec can't encode character '\u2212' in position 78: illegal multibyte sequence
