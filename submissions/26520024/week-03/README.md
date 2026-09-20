@@ -16,7 +16,7 @@ executable; no model/temperature environment variable overrides are accepted.
 ```bash
 conda activate base
 cd /nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-03
-/home/uichan/miniconda3/bin/python -m unittest -v test_contract_net.py
+/home/uichan/miniconda3/bin/python -m unittest discover -v
 /home/uichan/miniconda3/bin/python run_experiment.py --repetitions 3
 /home/uichan/miniconda3/bin/python validate_results.py
 cd /nas/home/uichan/ai-agent-engineering-101
@@ -98,8 +98,8 @@ flowchart TD
 
 ## Sources
 
-Assignment: [week-03 README](../../../..//weeks/week-03/README.md) and
-[lecture](../../../../week-03.html), especially the manager code and
+Assignment: [week-03 README](../../../weeks/week-03/README.md) and
+[lecture](../../../week-03.html), especially the manager code and
 unavailable-temperature disclosure. Original protocol:
 [Smith 1980, author-hosted paper](https://reidgsmith.com/The_Contract_Net_Protocol_Dec-1980.pdf).
 The distributed sensing example uses task-specific bid descriptors, not a
