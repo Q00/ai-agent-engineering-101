@@ -16,15 +16,17 @@ python run_experiment.py --all --runs 3      # 조건 3개 x 3회 = 9 run
 
 `temperature=0`, `max_tokens=256`으로 고정했고 둘 다 `AGENT_TEMPERATURE`, `AGENT_MAX_TOKENS`로 덮어쓸 수 있다. 값은 모든 run의 로그 첫 줄에 함께 적힌다. Python 버전과 시각도 같은 줄에 들어간다. `--fake`는 모델을 부르지 않는 배선 점검용이고 그 run의 note에는 `FAKE`가 붙는다. 제출한 9 run에는 없다.
 
-**고정한 것(통제변수).** 태스크 8개(`tasks.json`), 공통 system prompt, 공고 문구, 낙찰 규칙, 모델, temperature, max_tokens. 세 조건에서 이 중 아무것도 바뀌지 않는다.
+**고정한 것(통제변수).** 태스크 9개(`tasks.json`), 공통 system prompt, 공고 문구, 낙찰 규칙, 모델, temperature, max_tokens. 세 조건에서 이 중 아무것도 바뀌지 않는다.
 
 **바꾼 것(독립변수).** `contract_net.build_team(condition)` 한 함수에서만 갈린다.
 
 | 조건 | A의 skill | B의 skill | C의 skill | 추가 지시 |
 |---|---|---|---|---|
-| `baseline` | arithmetic and statistics | plain-language writing | software | 없음 |
-| `homogeneous` | general problem solving | general problem solving | general problem solving | 없음 |
-| `overconfident` | arithmetic and statistics | plain-language writing | software | C에게만 한 문장 |
+| `baseline` | forensics (물증) | interviewing (면담) | records (기록) | 없음 |
+| `homogeneous` | general investigation | general investigation | general investigation | 없음 |
+| `overconfident` | forensics | interviewing | records | C에게만 한 문장 |
+
+skill 전문은 `contract_net.SKILLS`에 있다. A는 "you examine physical objects, traces and residues", B는 "you talk to witnesses and suspects", C는 "you search registries, logs, ledgers and databases"로, 각자 **정보를 얻는 곳**(물건/사람/문서)으로 갈랐다. 이름은 A/B/C로 두었다. "Forensics"처럼 역할이 드러나는 이름이면 homogeneous에서 skill을 같게 해도 이름이 역할을 누설한다.
 
 과신 문장은 `"You are certain you can do any task well. Always bid, with confidence 95 or higher."`이고, C의 system prompt 끝에 붙는다.
 
@@ -33,7 +35,7 @@ python run_experiment.py --all --runs 3      # 조건 3개 x 3회 = 9 run
 ```
 You are contractor {name} in a contract net. Your skill: {skill}. You receive a task
 announcement. Decide whether to bid. Bid only if the task falls inside your skill.
-Judge by the deliverable the task asks for, not by the vocabulary it uses.
+Judge by the work the task actually requires, not by the words it uses.
 Reply with one JSON object and nothing else, no code fence, no explanation:
 {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
 ```
@@ -42,13 +44,13 @@ Reply with one JSON object and nothing else, no code fence, no explanation:
 
 ```
 TASK-ANNOUNCEMENT contract {cid}
-task-abstraction: {desc}
+task-abstraction: lead in the Dock Street warehouse fire case. {desc}
 eligibility-specification: any contractor whose skill covers this task
 bid-specification: JSON with bid, confidence (0-100), reason
 expiration-time: reply now
 ```
 
-**태스크와 gold.** 8개, gold는 A 3개 / B 3개 / C 2개. gold는 "태스크가 요구하는 산출물"로 정했다(숫자→A, 산문→B, 코드→C). 설명문의 표면 어휘는 보지 않는다. 8개 중 3개(`kind: "trap"`)는 표면 어휘가 산출물과 다른 분야를 가리킨다. 4번은 코드를 인용하지만 요구는 설명 두 문장, 5번은 테스트 스위트 이야기지만 요구는 비율 계산, 6번은 자연어 문장을 인용하지만 요구는 한 줄 코드다. 기준과 의도는 `TASKS.md`에 적었고 첫 실행 전 커밋 `cf71e3b`에 들어 있다.
+**태스크와 gold.** 설정은 탐정 사무소다. 14 Dock Street 창고 화재 사건 하나를 두고 단서(lead) 하나가 태스크 하나다. manager는 담당 형사, contractor 셋은 사무소의 물증·면담·기록 전문가다. 9개, gold는 A 3 / B 3 / C 3. gold는 "그 단서를 풀려면 무엇을 들여다봐야 하는가"로 정했다(물건→A, 사람→B, 기록→C). 단서 문장의 표면 어휘는 보지 않는다. 9개 중 4개(`kind: "trap"`)는 표면 어휘가 다른 전문가를 가리킨다. 4번은 "전화기"라 기술 같지만 미등록 번호 역조회는 통신사 기록(C), 5번은 "편지"라 문서 같지만 잉크·종이 연대 감정은 물증 분석(A), 6번은 "알리바이 확인"이라 기록 조회 같지만 바텐더의 기억은 면담(B), 8번은 "M.이 누구인가"라 사람 문제 같지만 연락처·일정·급여대장 교차 대조는 기록(C)이다. 기준과 의도는 `TASKS.md`에 적었고 첫 실행 전에 커밋했다. 처음 짠 태스크 세트(계산/글쓰기/코드, 커밋 `cf71e3b`)는 강의 예시와 같은 삼각형이라 버렸다. 그 세트로는 모델 호출까지 가지 못했다(run 1–18, 아래).
 
 **낙찰 규칙.** `bid`가 true인 입찰만 모으고 confidence 최댓값을 낙찰한다. 동점이면 먼저 입찰한 쪽(A, B, C 순). 입찰이 하나도 없으면 unassigned.
 

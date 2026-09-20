@@ -59,17 +59,15 @@ def append_row(results: Path, row: list):
 
 
 def fake_call_model(system: str, user: str, meter: Meter) -> str:
-    """배선 점검용 가짜 모델. 담당 분야 단어가 공고에 있으면 입찰한다."""
+    """배선 점검용 가짜 모델. 전문 분야 단어가 공고에 있으면 입찰한다."""
     meter.add(100, 20)
-    skill = system.split("Your skill:")[1].split(".")[0].strip()
+    skill = system.split("Your skill:")[1].split(";")[0].strip()
     overconf = "Always bid" in system
-    hit = any(w in user.lower() for w in
-              ("mean", "median", "percentage", "rounded") if "arithmetic" in skill) \
-        or any(w in user.lower() for w in ("rewrite", "sentences", "release note")
-               if "writing" in skill) \
-        or any(w in user.lower() for w in ("python", "function", "code")
-               if "software" in skill) \
-        or "general" in skill
+    text = user.lower()
+    words = {"forensics": ("print", "ash", "residue", "ink", "paper"),
+             "interviewing": ("sit down", "bartender", "in person", "remembers"),
+             "records": ("policy", "number", "cross-reference", "payroll")}
+    hit = "general" in skill or any(w in text for w in words.get(skill, ()))
     if overconf:
         return '{"bid": true, "confidence": 97, "reason": "I can do anything."}'
     if hit:

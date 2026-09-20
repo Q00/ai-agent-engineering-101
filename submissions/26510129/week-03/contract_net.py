@@ -114,7 +114,7 @@ BID_SYSTEM = (
     "You are contractor {name} in a contract net. Your skill: {skill}. "
     "You receive a task announcement. Decide whether to bid. "
     "Bid only if the task falls inside your skill. "
-    "Judge by the deliverable the task asks for, not by the vocabulary it uses. "
+    "Judge by the work the task actually requires, not by the words it uses. "
     "Reply with one JSON object and nothing else, no code fence, no explanation: "
     '{{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}}'
 )
@@ -126,18 +126,19 @@ OVERCONFIDENT = (
 # Smith 1980 Fig. 1 signal task announcement의 네 필드
 ANNOUNCEMENT = (
     "TASK-ANNOUNCEMENT contract {cid}\n"
-    "task-abstraction: {desc}\n"
+    "task-abstraction: lead in the Dock Street warehouse fire case. {desc}\n"
     "eligibility-specification: any contractor whose skill covers this task\n"
     "bid-specification: JSON with bid, confidence (0-100), reason\n"
     "expiration-time: reply now"
 )
 
+# 탐정 사무소. 단서 하나를 풀려면 물건(A), 사람(B), 기록(C) 중 무엇을 들여다봐야 하는가.
 SKILLS = {
-    "A": "arithmetic and statistics; you produce a number from given numbers",
-    "B": "plain-language writing; you produce prose a human reads",
-    "C": "software; you produce runnable code",
+    "A": "forensics; you examine physical objects, traces and residues and report what they show",
+    "B": "interviewing; you talk to witnesses and suspects and report what they know or hide",
+    "C": "records; you search registries, logs, ledgers and databases and report what they contain",
 }
-GENERALIST = "general problem solving"
+GENERALIST = "general investigation; you handle any kind of lead"
 
 
 @dataclass
