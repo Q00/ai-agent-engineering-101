@@ -33,3 +33,18 @@
   gold isolation, prompt invariance, native-action rejection and crash retention.
 - No prompts, gold labels or response schemas were tuned against pilot runs;
   the first model call will be part of the submitted experiment.
+
+## First live repetition
+
+- Executed from existing base using the committed design/code (410561c).
+  Every run records that revision and SHA-256 hashes of its actual inputs.
+- Runs 001/002/003 completed: correct = 6/2/6; messages = 30/42/34;
+  misawards = 0/4/0. No unassigned tasks, parse failures or crashes.
+- C did bid outside its specialty under the overconfident instruction, usually
+  at 95, but the matching specialists bid 100. This is a null effect on awards,
+  not proof of robustness. Do not tune the prompt to force a failure.
+- Codex emitted state-database fallback warnings to stderr but returned
+  successful completed turns. Warnings are preserved verbatim in raw logs.
+- During execution, added four isolated validator tests (27 total), checking
+  valid replay and detection of altered CSV, frozen inputs, and final replies.
+  Only tests/docs changed; experimental code, tasks and prompts stayed frozen.
