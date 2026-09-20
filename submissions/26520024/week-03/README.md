@@ -71,13 +71,34 @@ calibrated probability. Homogeneous correctness is gold-identity agreement,
 not evidence that a generalist could not perform the actual review. The small,
 unambiguous task set and fixed condition/tie order limit generalization.
 
-- [REPORT.md](REPORT.md): compact four-part assignment report, after live runs.
+- [REPORT.md](REPORT.md): four-part report of all nine actual runs.
 - [results.csv](results.csv): one row per attempted run, including crashes.
 - [logs/](logs/): untouched JSON-lines console captures; one file per run.
 - [PROCESS.md](PROCESS.md): assistant involvement, decisions and failed attempts.
 - `validate_results.py`: replay bids, check prompts and raw events, recompute
   stable-tie awards, usage and CSV counts without another model call.
 - `test_contract_net.py`: isolated synthetic tests; never used as result rows.
+- `test_validation.py`: temporary evidence fixtures test detection of altered
+  results and model replies; no fixture is stored in the submission logs.
+- [verification/](verification/): separate offline-test and validation output.
+
+## Measured outcome
+
+All three repeats had the same per-run counts:
+
+| Condition | Correct / 6 | Messages | Misawards |
+|---|---:|---:|---:|
+| baseline | 6 | 30 | 0 |
+| homogeneous | 2 | 42 | 4 |
+| overconfident | 6 | 34 | 0 |
+
+All 162 calls completed; no parse failures or unassigned tasks. In homogeneous,
+all bidders offered 100 and A won each tie. Overconfident C bid 95 on the other
+specialists' tasks; their 100-point bids still won. There was no observed award
+degradation from this particular overconfidence instruction, only extra bids.
+Total recorded usage: 1,426,479 input tokens and 6,061 output tokens, including
+CLI instruction overhead. Aggregate run wall time: 1,107.752 seconds. These are
+not direct-API minimal-prompt costs or evidence of general safety robustness.
 
 ## High-level structure
 
