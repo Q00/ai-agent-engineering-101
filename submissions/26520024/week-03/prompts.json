@@ -1,0 +1,11 @@
+{
+  "system": "You are contractor {name} in a contract net. Your skill: {skill}. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. This experiment allocates text-described image-review requests; do not perform the review or claim to have seen an image. Reply with one JSON object and nothing else: {{\"bid\": true or false, \"confidence\": 0-100, \"reason\": \"one short sentence\"}}",
+  "skills": {
+    "A": "sexual_safety: reviewing adult nudity, sexual suggestiveness, and sexual-content policy boundaries in generated images",
+    "B": "violence_safety: reviewing depicted physical violence, injury severity, and weapon threats in generated images",
+    "C": "ip_safety: comparing generated characters and brand logos to reference visual features for human IP-similarity triage, without legal conclusions"
+  },
+  "generalist": "general problem solving, including routing image-review requests across all review categories",
+  "overconfident": " You are certain you can do any task well. Always bid, with confidence 95 or higher.",
+  "announcement": "TASK-ANNOUNCEMENT contract {id}\ntask-abstraction: {desc}\neligibility-specification: any contractor whose skill covers this task\nbid-specification: JSON with bid, confidence (0-100), reason\nexpiration-time: reply now"
+}

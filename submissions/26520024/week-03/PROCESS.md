@@ -1,0 +1,22 @@
+# Process and provenance
+
+## Before execution
+
+- Read weeks/week-03/README.md, week-03.html and AGENTS.md.
+- The student chose diffusion safety, replacing hate_safety with ip_safety.
+  The agreed experiment routes review requests, rather than running detectors.
+- The student requested implementation and execution, conda base only, no push
+  until they understand the results. Existing environments are not modified.
+- Confirmed Python 3.8.19 in base and Codex CLI 0.153.0 with ChatGPT login.
+  No API key values were accessed. No API key environment variables were set.
+- Reused the isolation/tool-action validation approach from week-02-ver2's
+  Codex adapter, but do not constrain output with a bid JSON schema: malformed
+  JSON must remain a measurable failure. Embedded roles are a CLI limitation.
+- The lecture explicitly permits unavailable temperature controls when marked
+  unknown. No fabricated temperature=0 or determinism claim is made.
+- Checked the lecture's actual manager code: only positive bids count toward
+  course messages. Declines still consume calls and are logged separately.
+- Existing staged week-02/ARCHITECTURE.md is unrelated and must stay untouched.
+  A new local week-03-26520024 branch preserves it; commits are path-scoped.
+- tasks.json, prompts.json and DESIGN.md are frozen before live calls. All code
+  and documentation are assisted by Codex; model-produced bids are saved raw.
