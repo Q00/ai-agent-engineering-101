@@ -1,6 +1,10 @@
 """Offline tests: no SDK client is constructed and no API is called."""
 
+import csv
+import os
+import tempfile
 import unittest
+from pathlib import Path
 
 from contract_net import (
     BASELINE_SKILLS,
@@ -10,6 +14,7 @@ from contract_net import (
     parse_bid,
     run_contract_net,
 )
+from run_experiment import HEADER, last_recorded_run, next_log_path, safe_text, write_log
 
 
 class QueueModel:
@@ -81,6 +86,44 @@ class ContractNetTests(unittest.TestCase):
         self.assertEqual(metrics.unassigned, 1)
         self.assertEqual(metrics.correct, 0)
         self.assertEqual(metrics.misawards, 0)
+
+    def test_existing_results_are_preserved_and_next_run_is_found(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "results.csv"
+            with path.open("w", encoding="utf-8", newline="") as result_file:
+                writer = csv.writer(result_file)
+                writer.writerow(HEADER)
+                writer.writerow([1, "baseline", "", "", "", "", "", "crash"])
+                writer.writerow([9, "overconfident", "", "", "", "", "", "crash"])
+            before = path.read_bytes()
+            self.assertEqual(last_recorded_run(path), 9)
+            self.assertEqual(path.read_bytes(), before)
+
+    def test_log_path_and_exclusive_write_never_overwrite(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log_dir = Path(directory)
+            existing = log_dir / "baseline-01.txt"
+            existing.write_text("old evidence\n", encoding="utf-8")
+            new_path = next_log_path(log_dir, "baseline")
+            self.assertEqual(new_path.name, "baseline-02.txt")
+            write_log(new_path, ["new evidence"])
+            self.assertEqual(existing.read_text(encoding="utf-8"), "old evidence\n")
+            with self.assertRaises(FileExistsError):
+                write_log(new_path, ["overwrite attempt"])
+
+    def test_safe_text_redacts_only_configured_secret(self):
+        previous = os.environ.get("OPENAI_API_KEY")
+        try:
+            os.environ["OPENAI_API_KEY"] = "test-secret-value"
+            self.assertEqual(
+                safe_text("failure for test-secret-value"),
+                "failure for [REDACTED]",
+            )
+        finally:
+            if previous is None:
+                os.environ.pop("OPENAI_API_KEY", None)
+            else:
+                os.environ["OPENAI_API_KEY"] = previous
 
 
 if __name__ == "__main__":

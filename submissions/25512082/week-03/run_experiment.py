@@ -9,7 +9,6 @@ import argparse
 import csv
 import json
 import os
-import re
 from pathlib import Path
 
 from contract_net import (
@@ -35,12 +34,11 @@ HEADER = [
     "misawards",
     "note",
 ]
-KEY_PATTERN = re.compile(r"(?:sk-ant-|sk-or-v1-|sk-proj-)[A-Za-z0-9_-]+")
-
-
 def safe_text(value: object) -> str:
-    """Keep exceptions useful without ever preserving a recognizable API key."""
-    return KEY_PATTERN.sub("[REDACTED_API_KEY]", str(value))
+    """Redact the configured secret without embedding key prefixes in source."""
+    text = str(value)
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    return text.replace(api_key, "[REDACTED]") if api_key else text
 
 
 def load_tasks(path: Path) -> list[dict]:
@@ -58,17 +56,50 @@ def load_tasks(path: Path) -> list[dict]:
     return tasks
 
 
-def refuse_to_overwrite(base: Path) -> None:
-    results = base / "results.csv"
-    log_dir = base / "logs"
-    if results.exists():
-        raise SystemExit("results.csv already exists; refusing to overwrite experiment evidence")
-    if log_dir.exists() and any(log_dir.iterdir()):
-        raise SystemExit("logs/ is not empty; refusing to overwrite experiment evidence")
+def last_recorded_run(results_path: Path) -> int:
+    """Validate existing evidence and return its largest global run number."""
+    if not results_path.exists():
+        return 0
+
+    with results_path.open(encoding="utf-8", newline="") as result_file:
+        rows = list(csv.reader(result_file))
+    if not rows or rows[0] != HEADER:
+        raise ValueError("existing results.csv has an unexpected header")
+
+    seen: set[int] = set()
+    for line_no, row in enumerate(rows[1:], start=2):
+        if not any(cell.strip() for cell in row):
+            continue
+        if len(row) != len(HEADER):
+            raise ValueError(f"existing results.csv line {line_no} has the wrong column count")
+        try:
+            run = int(row[0])
+        except ValueError as exc:
+            raise ValueError(f"existing results.csv line {line_no} has an invalid run") from exc
+        if run < 1 or run in seen:
+            raise ValueError(f"existing results.csv line {line_no} has a duplicate/invalid run")
+        if row[1] not in CONDITIONS:
+            raise ValueError(f"existing results.csv line {line_no} has an invalid condition")
+        for value in row[2:7]:
+            if value.strip() and not value.strip().isdigit():
+                raise ValueError(f"existing results.csv line {line_no} has an invalid count")
+        seen.add(run)
+    return max(seen, default=0)
+
+
+def next_log_path(log_dir: Path, condition: str) -> Path:
+    """Choose a new per-condition filename without reusing existing evidence."""
+    index = 1
+    while True:
+        candidate = log_dir / f"{condition}-{index:02d}.txt"
+        if not candidate.exists():
+            return candidate
+        index += 1
 
 
 def write_log(path: Path, lines: list[str]) -> None:
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    with path.open("x", encoding="utf-8") as log_file:
+        log_file.write("\n".join(lines) + "\n")
 
 
 def main() -> None:
@@ -81,20 +112,22 @@ def main() -> None:
         raise SystemExit("OPENAI_API_KEY is not set; no experiment was started")
 
     base = Path(__file__).resolve().parent
-    refuse_to_overwrite(base)
     tasks = load_tasks(base / "tasks.json")
     log_dir = base / "logs"
     log_dir.mkdir(exist_ok=True)
 
     results_path = base / "results.csv"
-    with results_path.open("x", encoding="utf-8", newline="") as result_file:
+    global_run = last_recorded_run(results_path)
+    new_results = not results_path.exists()
+    mode = "x" if new_results else "a"
+    with results_path.open(mode, encoding="utf-8", newline="") as result_file:
         writer = csv.writer(result_file)
-        writer.writerow(HEADER)
-        result_file.flush()
-        global_run = 0
+        if new_results:
+            writer.writerow(HEADER)
+            result_file.flush()
 
         for condition in CONDITIONS:
-            for condition_run in range(1, args.runs + 1):
+            for _ in range(args.runs):
                 global_run += 1
                 lines: list[str] = []
 
@@ -119,7 +152,7 @@ def main() -> None:
 
                 meter = Meter()
                 caller = OpenRouterChat(meter)
-                log_path = log_dir / f"{condition}-{condition_run:02d}.txt"
+                log_path = next_log_path(log_dir, condition)
                 try:
                     metrics = run_contract_net(tasks, condition, caller, log)
                     note = (
@@ -161,4 +194,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
