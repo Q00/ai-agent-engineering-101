@@ -60,10 +60,16 @@ def brier_by_contractor(records):
     return {n: sum(v) / len(v) for n, v in acc.items() if v}
 
 
-def award(records, reliability=None):
+def award(records, reliability=None, reverse_poll=False):
     """Replay one run's awards. reliability=None is the policy the required
     runs actually used. Ties go to the contractor polled first, which is the
-    order the records were written in."""
+    order the records were written in.
+
+    `reverse_poll` polls the team in the opposite order. It changes nothing
+    except who wins a tie, and it is free: the bids are already recorded. It
+    is here because the required runs turned out to be decided by that order,
+    and a result that rests on it should be stated as such rather than read as
+    a property of the protocol."""
     by_task, order = defaultdict(list), []
     for rec in records:
         if rec["task"] not in by_task:
