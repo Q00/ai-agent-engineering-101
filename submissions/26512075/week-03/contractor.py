@@ -18,7 +18,7 @@ BID_SYS = (
 )
 
 OVERCONFIDENT = (
-    "You are certain you can do any task well. Always bid,  with confidence 90 or higher."
+    "You are certain you can do any task well. Always bid,  with confidence 95 or higher."
 )
 
 

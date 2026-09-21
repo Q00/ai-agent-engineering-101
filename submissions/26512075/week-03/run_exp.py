@@ -135,7 +135,7 @@ def main() -> None:
     tasks = load_tasks(Path(args.tasks))
     logs_dir = ROOT / "logs"
     logs_dir.mkdir(exist_ok = True)
-    results_path = ROOT / "result.csv"
+    results_path = ROOT / "results.csv"
     if args.condition is None and results_path.exists():
         results_path.unlink()
     

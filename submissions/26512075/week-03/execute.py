@@ -1,4 +1,11 @@
 from __future__ import annotations
+
+
+
+import os
+os.environ["JAX_PLATFORMS"] = "cpu"
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+
 import json
 import re 
 
@@ -7,7 +14,7 @@ from typing import Any
 
 try:
     import jax.numpy as jnp
-    HAS_JAX = True
+    HAS_JAX = False
 except Exception:
     jnp = None
     HAS_JAX = False
@@ -74,6 +81,8 @@ async def execute_task(name: str, task: dict, chat) ->  dict[str, Any]:
 
     if kind == "compute":
         output, ok_parse, backend = await asyncio.to_thread(run_compute, desc)
+        
+        
         success = ok_parse and _score_execution(task, output)
         
         return {

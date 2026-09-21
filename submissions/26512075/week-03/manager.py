@@ -84,7 +84,7 @@ async def _run_round_async(tasks: list[dict], team: list[Contractor], chat: Chat
                 r.misaward_exec_ok += 1
         else:
             r.execution_fail += 1
-            if awared_gold:
+            if awarded_gold:
                 r.gold_ok_exec_fail += 1
             else:
                 r.misaward_exec_fail += 1
