@@ -1,5 +1,7 @@
 # REPORT.md
 
+Architecture diagram: [`architecture.svg`](architecture.svg).
+
 ## 1. Setup
 
 - **Provider / model**: Anthropic API, `claude-sonnet-4-5`, default temperature.
