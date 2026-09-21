@@ -145,8 +145,14 @@ def execute_run(
             if limit is not None:
                 tasks = tasks[:limit]
             metrics = run_contract_net(tasks, condition, client, emit)
-            row = {"run": run_id, "condition": condition, **metrics, "note": ""}
-            emit("summary", **row, llm_calls=client.calls)
+            parse_fails = metrics.pop("parse_fails")
+            row = {
+                "run": run_id,
+                "condition": condition,
+                **metrics,
+                "note": f"parse_fails={parse_fails}",
+            }
+            emit("summary", **row, parse_fails=parse_fails, llm_calls=client.calls)
             outcome = "ok"
         except Exception as exc:
             row = dict.fromkeys(RESULT_HEADER, "")

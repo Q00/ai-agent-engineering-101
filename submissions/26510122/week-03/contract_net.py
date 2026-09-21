@@ -119,6 +119,7 @@ def run_contract_net(
         "messages": 0,
         "unassigned": 0,
         "misawards": 0,
+        "parse_fails": 0,
     }
 
     for task in tasks:
@@ -133,6 +134,7 @@ def run_contract_net(
                 announcement, ensure_ascii=False
             ))
             bid = parse_bid(contractor, raw)
+            metrics["parse_fails"] += int(bid.parse_error is not None)
             if bid.participate:
                 metrics["messages"] += 1
             bids.append(bid)

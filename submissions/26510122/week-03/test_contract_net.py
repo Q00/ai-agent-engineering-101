@@ -52,6 +52,29 @@ class ContractNetTests(unittest.TestCase):
         self.assertEqual(metrics["messages"], 3)
         self.assertEqual(metrics["unassigned"], 1)
 
+    def test_parse_failures_are_counted(self):
+        tasks = [{"id": "t1", "desc": "debug Python", "gold": "developer"}]
+        replies = iter([
+            "not json",
+            json.dumps({
+                "participate": False,
+                "confidence": 10,
+                "reason": "outside my specialty",
+            }),
+            json.dumps({
+                "participate": True,
+                "confidence": 30,
+                "reason": "can attempt it",
+            }),
+        ])
+
+        metrics = run_contract_net(
+            tasks, "baseline", lambda system, user: next(replies),
+            lambda *a, **k: None,
+        )
+
+        self.assertEqual(metrics["parse_fails"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
