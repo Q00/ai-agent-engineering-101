@@ -131,7 +131,7 @@ class Manager:
         return BidCheck(True, flags)
 
     # ---------------------------------------------------------------- award
-    def pick_winner(self, bids, checks, advice=None):
+    def pick_winner(self, bids, checks, advice=None, coins=None):
         """Highest confidence wins; eligibility_score breaks ties, then a coin.
 
         Confidence is the axis the overconfident conditions attack, so the
@@ -153,6 +153,14 @@ class Manager:
         sort order rather than the protocol. The generator is seeded per run
         and the seed is printed, so the randomness is reproducible.
 
+        `coins` is that tie-break, drawn once per task by the caller and handed
+        to both this call and the counterfactual. Sharing it is what makes the
+        comparison paired: with separate draws, an all-zero set of adjustments
+        could still flip the winner of a three-way tie, and the flip would be
+        counted as an effect of Bias when it was the coin. That is exactly what
+        happened before this argument existed -- 6 of 32 recorded flips were
+        the coin, all of them in `homogeneous`, where every task is a tie.
+
         With advice=None this is the plain 1980 rule, which is exactly how the
         counterfactual winner is computed.
         """
@@ -161,7 +169,8 @@ class Manager:
             if not checks[b.contractor].accepted:
                 continue
             score = b.confidence + (advice or {}).get(b.contractor, 0)
-            scored.append((score, b.eligibility_score, self.rng.random(), b.contractor))
+            coin = (coins or {}).get(b.contractor, 0.0)
+            scored.append((score, b.eligibility_score, coin, b.contractor))
 
         if not scored:
             return None
@@ -261,15 +270,13 @@ class Manager:
         if self.bias is not None:
             advice = self.bias.advise(announce, bids, meter, self.log)
 
-        # The plain rule on these same bids. Bias never talks to the
-        # contractors, so this is what a no-Bias manager would have done with
-        # the identical bids -- an exact control, not an estimate. Computed
-        # from a forked generator so drawing it cannot shift the real draw.
-        forked = Manager(self.contractors, None, self.log,
-                         random.Random(self.rng.random()))
-        counterfactual = forked.pick_winner(bids, checks, None)
-
-        winner = self.pick_winner(bids, checks, advice)
+        # One set of tie-break draws for this task, shared by the real award
+        # and the counterfactual, so the only thing that differs between them
+        # is the advice. Bias never talks to the contractors, so the bids are
+        # identical too: the control is exact, not an estimate.
+        coins = {c.name: self.rng.random() for c in self.contractors}
+        counterfactual = self.pick_winner(bids, checks, None, coins)
+        winner = self.pick_winner(bids, checks, advice, coins)
 
         result = None
         traj_check = None
