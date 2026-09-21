@@ -19,20 +19,34 @@ flowchart TB
             POL["Award policy (교체 가능)<br/>confidence / reputation / capacity"] -.-> AW
             REP["Reputation store<br/>낙찰 vs gold 누적"] -.-> POL
         end
+
         BUS["Message bus<br/>Announcement · Bid · Award = messages<br/>NoBid(parse_fail / api_error)는 기록만"]
-        subgraph CTR["Candidate 1~3 · role = contractor (LLM, 시스템 프롬프트 1개)"]
-            direction LR
-            CTX["Context policy<br/>fresh: 공고마다 새 대화<br/>memory: 자기 입찰·낙찰 기억"] --> BD["bidding<br/>공고 1개 = 모델 호출 1회"] --> PR["Bid parser<br/>JSON 3단계 추출"]
+
+        subgraph CA["Candidate 1 · contractor A"]
+            SA["skill: arithmetic and<br/>numeric calculation"] --> BA["bidding<br/>공고 1개 = LLM 호출 1회"]
         end
+        subgraph CB["Candidate 2 · contractor B"]
+            SB["skill: writing and<br/>rewriting English prose"] --> BB["bidding<br/>공고 1개 = LLM 호출 1회"]
+        end
+        subgraph CC["Candidate 3 · contractor C"]
+            SC["skill: writing and<br/>fixing Python code<br/>overconfident: + '항상 95 이상으로 입찰'"] --> BC["bidding<br/>공고 1개 = LLM 호출 1회"]
+        end
+        COMMON["계약자 공통 부품<br/>Context policy: fresh(공고마다 새 대화) / memory(자기 입찰·낙찰 기억)<br/>Bid parser: JSON 3단계 추출, 실패는 NoBid"]
+
         MGR <--> BUS
-        BUS <--> CTR
+        BUS <--> CA
+        BUS <--> CB
+        BUS <--> CC
+        COMMON -.-> CA
+        COMMON -.-> CB
+        COMMON -.-> CC
     end
 
     MSG["message protocol · Bid<br/>{ bid: true, confidence: 0-100,<br/>reason: '…', trajectory: [] }"]
-    COND["조건 = 한 자리만 교체<br/>baseline · homogeneous · overconfident → 스킬 문장<br/>reputation · capacity → Award policy<br/>memory → Context policy"]
+    COND["조건 = 한 자리만 교체<br/>baseline: 스킬 A/B/C · homogeneous: 셋 다 general problem solving<br/>overconfident: C에 과신 문장<br/>reputation · capacity → Award policy · memory → Context policy"]
 
     TQ --> MGR
-    CTR -.-> MSG
+    BUS -.-> MSG
     COND -.-> NET
     BUS --> LOG["logs/run-NN-condition.txt<br/>공고 · 입찰(확신도·이유) · 낙찰 전부"]
     MGR --> RES["results.csv / results-extra.csv<br/>correct · messages · unassigned · misawards"]
