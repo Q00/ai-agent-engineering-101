@@ -4,9 +4,14 @@ This is the whole point of the week. In Smith (1980) a contractor computed its
 bid from a fixed eligibility rule, so a bid could not lie about the rule -- it
 *was* the rule. Here the bid is a judgement the model makes about itself, and
 nothing in the protocol makes that judgement honest.
-"""
-import json
 
+Note what execute() returns and what it does not. The contractor hands over an
+artifact and a plan it claims to have followed. It does not hand over a
+trajectory: sandbox.py runs the artifact and writes that record. A contractor
+that overstates its bid can also overstate a narration, so the narration is
+kept as a claim to be checked, never as evidence.
+"""
+import sandbox
 from llm import ask, extract_json, clamp_int
 from protocol import Bid, ExecResult, TaskAnnounce
 
@@ -28,11 +33,14 @@ BID_INSTRUCTIONS = """
 EXEC_INSTRUCTIONS = """
 당신은 방금 이 업무를 낙찰받았습니다. 실제로 수행하십시오.
 
+결과물은 매니저가 직접 실행하거나 검토합니다. 공고의 deliverable 형식을
+정확히 지키십시오. 형식이 어긋나면 실행에 실패한 것으로 기록됩니다.
+
 반드시 아래 JSON 객체 하나만 출력하십시오.
 
 {
-  "trajectory": ["실제로 밟은 단계를 순서대로. 3-6개 문자열."],
-  "output": "업무의 최종 결과물 전체."
+  "plan": ["밟은 단계를 순서대로. 3-6개 문자열."],
+  "artifact": "결과물 전체. 공고의 deliverable 형식을 따를 것."
 }
 """.strip()
 
@@ -68,33 +76,34 @@ class Contractor:
             f"conf={bid.confidence} :: {bid.reason[:160]}")
         return bid
 
-    # ---- step 2: do the work after the award
-    def execute(self, announce: TaskAnnounce, meter, log) -> ExecResult:
+    # ---- step 2: do the work, and be measured doing it
+    def execute(self, announce: TaskAnnounce, check: dict, meter, log) -> ExecResult:
         system = f"{self.persona}\n\n{EXEC_INSTRUCTIONS}"
         raw = ask(system, announce.render(), meter)
         obj = extract_json(raw)
 
         if obj is None:
             log(f"  [exec] {self.name}: UNPARSEABLE result")
-            return ExecResult(self.name, announce.task_id, "", [], parse_ok=False, raw=raw)
+            empty = sandbox.execute(check, "")
+            return ExecResult(self.name, announce.task_id, "", [], empty,
+                              parse_ok=False, raw=raw)
 
-        steps = obj.get("trajectory") or []
-        if isinstance(steps, str):
-            steps = [steps]
-        steps = [str(s) for s in steps][:8]
+        plan = obj.get("plan") or []
+        if isinstance(plan, str):
+            plan = [plan]
+        plan = [str(s) for s in plan][:8]
+        artifact = str(obj.get("artifact", "")).strip()
 
-        result = ExecResult(
-            contractor=self.name,
-            task_id=announce.task_id,
-            output=str(obj.get("output", "")).strip(),
-            trajectory=steps,
-            raw=raw,
-        )
-        log(f"  [exec] {self.name}: {len(steps)} step(s), "
-            f"{len(result.output)} chars of output")
-        for i, s in enumerate(steps, 1):
-            log(f"         {i}. {s[:140]}")
-        return result
+        # The harness runs it. Nothing the contractor said influences this.
+        exec_log = sandbox.execute(check, artifact)
+
+        log(f"  [exec] {self.name}: {len(plan)} claimed step(s), "
+            f"{len(artifact)} chars of artifact")
+        log(f"  [run ] {self.name}: {exec_log.summary()}")
+        if exec_log.stderr.strip():
+            log(f"         stderr: {exec_log.stderr.strip().splitlines()[-1][:180]}")
+
+        return ExecResult(self.name, announce.task_id, artifact, plan, exec_log, raw=raw)
 
 
 def build(condition_roster):

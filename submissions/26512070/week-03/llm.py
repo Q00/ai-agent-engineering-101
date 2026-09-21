@@ -3,8 +3,13 @@
 Adapted from weeks/week-02/starter/tools_shared.py. Two deliberate changes:
 
   * Tools are gone. The contract net negotiates in text; nobody calls a tool.
-  * Temperature is explicit and read from the environment, because the three
-    conditions are only comparable if every one of them ran at the same value.
+  * Temperature is explicit and read from the environment, because the arms
+    are only comparable if every one of them ran at the same value. The default
+    is 0.7, not 0: at 0 the same prompt returns the same reply, three runs of an
+    arm collapse into one, and the replicates measure nothing but provider
+    nondeterminism. The cost is that an exact rerun is not reproducible -- these
+    APIs take no seed -- so reproducibility here means the trend, not the
+    transcript. Set AGENT_TEMPERATURE=0 to trade the spread back for determinism.
 
 Every agent here is stateless per call. The one piece of memory in the whole
 system is the Bias agent's hypothesis list, and it carries that in its own
@@ -19,7 +24,7 @@ PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
 MODEL = os.environ.get(
     "AGENT_MODEL",
     "claude-sonnet-4-5" if PROVIDER == "anthropic" else "gpt-4o-mini")
-TEMPERATURE = float(os.environ.get("AGENT_TEMPERATURE", "0"))
+TEMPERATURE = float(os.environ.get("AGENT_TEMPERATURE", "0.7"))
 MAX_TOKENS = 900
 
 _client = None

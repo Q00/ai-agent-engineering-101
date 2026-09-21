@@ -2,7 +2,7 @@
 
     python run.py                          # every arm, 3 runs each
     python run.py --arms core --runs 1
-    python run.py --arms bias bias+ib
+    python run.py --arms bias bias+ib --seed 20260921
 
 Three arms, because Bias and icebreaking are two separate interventions and
 folding them together would make it impossible to say which one moved a metric:
@@ -15,11 +15,19 @@ folding them together would make it impossible to say which one moved a metric:
 
 `results.csv` holds the core arm alone and keeps the fixed header, so its
 `messages` column means what it means for everyone else.
+
+SEEDING. The model API takes no seed, so a transcript cannot be reproduced
+exactly at temperature 0.7. What is seeded is every decision this code makes
+on its own -- above all the tie-break in Manager.pick_winner, which decides the
+whole `homogeneous` condition. Each run's seed is derived from --seed and the
+run id, and printed at the top of its log.
 """
 import argparse
 import csv
 import json
+import random
 import traceback
+import zlib
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 
@@ -69,7 +77,8 @@ class Tee:
 
 def load_tasks():
     data = json.loads((HERE / "tasks.json").read_text(encoding="utf-8"))
-    tasks = [Task(t["id"], t["desc"], t["gold"], t.get("phase", "measure"))
+    tasks = [Task(t["id"], t["desc"], t["gold"],
+                  t.get("phase", "measure"), t.get("check", {}))
              for t in data]
     icebreak = [t for t in tasks if t.phase == "icebreak"]
     measure = [t for t in tasks if t.phase == "measure"]
@@ -89,7 +98,11 @@ def _plain(obj):
     return obj
 
 
-def one_run(condition, arm, icebreak_tasks, measure_tasks, run_id):
+def _count(records, attr):
+    return sum(1 for r in records if getattr(r, attr) is True)
+
+
+def one_run(condition, arm, icebreak_tasks, measure_tasks, run_id, seed):
     use_bias, use_ib, _ = ARMS[arm]
     log = Tee(HERE / "logs" / f"{run_id}.txt")
     meter = llm.Meter()
@@ -98,16 +111,18 @@ def one_run(condition, arm, icebreak_tasks, measure_tasks, run_id):
     # Fresh Bias for every run. Memory dies here, so three runs of an arm are
     # three replicates rather than one learning curve. See bias.py.
     bias = Bias([c.name for c in contractors]) if use_bias else None
-    manager = Manager(contractors, bias=bias, log=log)
+    manager = Manager(contractors, bias=bias, log=log, rng=random.Random(seed))
 
     log(f"=== run {run_id} ===")
     log(f"provider={llm.PROVIDER} model={llm.MODEL} temperature={llm.TEMPERATURE}")
     log(f"condition={condition} arm={arm} bias={'on' if use_bias else 'off'} "
         f"icebreak={'on' if use_ib else 'off'}")
-    log(f"veto_threshold={C.VETO_THRESHOLD} adj_range=({C.ADJ_MIN},{C.ADJ_MAX})")
+    log(f"seed={seed} veto_threshold={C.VETO_THRESHOLD} "
+        f"adj_range=({C.ADJ_MIN},{C.ADJ_MAX})")
     log(f"contractors={[c.name for c in contractors]}")
     log(f"icebreak_tasks={[t.id for t in icebreak_tasks] if use_ib else []}")
     log(f"measure_tasks={[t.id for t in measure_tasks]}")
+    log(f"fixtures={{{', '.join(t.id + ':' + t.check.get('kind', 'none') for t in measure_tasks)}}}")
     log("")
 
     ib_records, ib_messages = [], 0
@@ -122,33 +137,38 @@ def one_run(condition, arm, icebreak_tasks, measure_tasks, run_id):
     log("########## measured ##########")
     records = []
     for task in measure_tasks:
-        log(f"--- {task.id} (gold={task.gold}) ---")
+        log(f"--- {task.id} (gold={task.gold}, fixture={task.check.get('kind','none')}) ---")
         records.append(manager.run_task(task, meter))
         log("")
 
     first_flip = next((i for i, r in enumerate(records, 1)
                        if r.winner != r.counterfactual_winner), None)
+    fixtured = [r for r in records if r.delivered is not None]
 
     row = {
         "run": run_id,
         "condition": condition,
         "tasks": len(records),
-        "correct": sum(r.correct for r in records),
+        "correct": _count(records, "correct"),
         "messages": sum(r.messages for r in records),
-        "unassigned": sum(r.unassigned for r in records),
-        "misawards": sum(r.misawarded for r in records),
-        "note": f"tokens={meter.tokens} llm_calls={meter.calls}",
+        "unassigned": _count(records, "unassigned"),
+        "misawards": _count(records, "misawarded"),
+        # `correct` is allocation. `delivered` is whether the awarded work
+        # actually ran. They come apart, and the note is where that shows.
+        "note": (f"tokens={meter.tokens} llm_calls={meter.calls} seed={seed} "
+                 f"delivered={sum(1 for r in fixtured if r.delivered)}/{len(fixtured)} "
+                 f"judge_disagree={_count(records, 'judge_disagreed')}"),
     }
     if use_bias:
         row.update({
             "arm": arm,
             "bias_messages": bias.messages,
             "icebreak_messages": ib_messages,
-            "unassigned_nobid": sum(r.unassigned_nobid for r in records),
-            "unassigned_veto": sum(r.unassigned_veto for r in records),
-            "veto_hit_gold": sum(r.veto_hit_gold for r in records),
-            "bias_helped": sum(r.bias_helped for r in records),
-            "bias_hurt": sum(r.bias_hurt for r in records),
+            "unassigned_nobid": _count(records, "unassigned_nobid"),
+            "unassigned_veto": _count(records, "unassigned_veto"),
+            "veto_hit_gold": _count(records, "veto_hit_gold"),
+            "bias_helped": _count(records, "bias_helped"),
+            "bias_hurt": _count(records, "bias_hurt"),
             "first_intervention": bias.first_intervention or "",
             "first_flip": first_flip or "",
         })
@@ -165,7 +185,7 @@ def one_run(condition, arm, icebreak_tasks, measure_tasks, run_id):
     hist = HERE / "history" / f"{run_id}.json"
     hist.parent.mkdir(exist_ok=True)
     hist.write_text(json.dumps(
-        {"run": run_id, "condition": condition, "arm": arm,
+        {"run": run_id, "condition": condition, "arm": arm, "seed": seed,
          "model": llm.MODEL, "temperature": llm.TEMPERATURE,
          "veto_threshold": C.VETO_THRESHOLD,
          "final_hypotheses": bias.hypotheses if bias else None,
@@ -197,6 +217,8 @@ def main():
     ap.add_argument("--arms", nargs="*", default=list(ARMS), choices=list(ARMS))
     ap.add_argument("--conditions", nargs="*", default=None)
     ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--seed", type=int, default=20260921,
+                    help="base seed; each run derives its own from this and its id")
     args = ap.parse_args()
 
     icebreak_tasks, measure_tasks = load_tasks()
@@ -213,10 +235,14 @@ def main():
             for i in range(args.runs):
                 n = next_index(out)
                 run_id = f"{condition}-{arm.replace('+', '_')}-run{i + 1}"
-                print(f"\n########## {run_id} ##########")
+                # crc32, not hash(): Python randomises string hashing per
+                # process, so hash() would hand the same run a different seed
+                # on every invocation and quietly defeat the point of seeding.
+                seed = args.seed + (zlib.crc32(run_id.encode()) % 10_000)
+                print(f"\n########## {run_id} (seed={seed}) ##########")
                 try:
                     row = one_run(condition, arm, icebreak_tasks,
-                                  measure_tasks, run_id)
+                                  measure_tasks, run_id, seed)
                     row["run"] = n
                 except Exception as e:
                     # A crashed run stays in the table with blank counts.

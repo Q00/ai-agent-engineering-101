@@ -9,11 +9,17 @@ Two checks exist, and the order matters:
 
   BidCheck        runs BEFORE the award. Nothing has been executed yet, so
                   there is no trajectory to inspect -- only the reply itself.
-  TrajectoryCheck runs AFTER execution. This is the first moment the claim in
-                  the bid can be held against a record of what was done.
+  TrajectoryCheck runs AFTER execution. This is the first moment a claim made
+                  in a bid can be held against a record of what was done.
+
+And the record is not the contractor's to write. A contractor submits an
+artifact; sandbox.py runs it and produces the ExecutionLog. `claimed_plan` is
+kept alongside precisely so the gap between the two is visible.
 """
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
+
+from sandbox import ExecutionLog
 
 
 @dataclass
@@ -22,23 +28,33 @@ class Task:
     desc: str
     gold: str
     phase: str = "measure"          # "icebreak" | "measure"
+    check: dict = field(default_factory=dict)
+
+    @property
+    def has_fixture(self) -> bool:
+        return self.check.get("kind", "none") != "none"
 
 
 @dataclass
 class TaskAnnounce:
     """What the manager broadcasts. The manager writes `eligibility` without
     knowing the contractor roster, exactly as a broadcast announcement should:
-    it states what the job needs, not who it wants."""
+    it states what the job needs, not who it wants. `artifact_spec` is the
+    manager's own requirement -- it has to be able to run what comes back."""
     task_id: str
     desc: str
     eligibility: List[str]
+    artifact_spec: str = ""
 
     def render(self) -> str:
         bullets = "\n".join(f"  - {e}" for e in self.eligibility)
-        return (f"[TaskAnnounce]\n"
-                f"task_id: {self.task_id}\n"
-                f"work: {self.desc}\n"
-                f"eligibility (a bidder must be able to do all of these):\n{bullets}")
+        out = (f"[TaskAnnounce]\n"
+               f"task_id: {self.task_id}\n"
+               f"work: {self.desc}\n"
+               f"eligibility (a bidder must be able to do all of these):\n{bullets}")
+        if self.artifact_spec:
+            out += f"\ndeliverable: {self.artifact_spec}"
+        return out
 
 
 @dataclass
@@ -61,27 +77,53 @@ class BidCheck:
 
 @dataclass
 class ExecResult:
+    """What came back, split by who wrote it.
+
+    artifact / claimed_plan   the contractor's own words
+    log                       the harness's record, which the contractor
+                              cannot reach
+    """
     contractor: str
     task_id: str
-    output: str
-    trajectory: List[str]
+    artifact: str
+    claimed_plan: List[str]
+    log: ExecutionLog
     parse_ok: bool = True
     raw: str = ""
 
 
 @dataclass
 class TrajectoryCheck:
-    """Post-execution. Compares the trajectory against the eligibility the
-    contractor claimed to meet when it bid."""
+    """Post-execution verdict, from two independent sources.
+
+    supports_output / covers_eligibility are an LLM's reading of the artifact.
+    ground_truth is the fixture's verdict, or None where no fixture exists.
+    Keeping both lets the run report how often the judge and the facts
+    disagree -- which is the number that says how much any of the other
+    LLM-produced verdicts in this system are worth.
+    """
     supports_output: bool
     covers_eligibility: bool
     note: str = ""
+    ground_truth: Optional[bool] = None
+
+    @property
+    def judge_agrees(self) -> Optional[bool]:
+        if self.ground_truth is None:
+            return None
+        return self.supports_output == self.ground_truth
+
+    @property
+    def verdict(self) -> bool:
+        """The fixture wins where there is one. An opinion does not overrule
+        a program that either ran or did not."""
+        return self.ground_truth if self.ground_truth is not None else self.supports_output
 
 
 @dataclass
 class Trial:
     """One contractor's attempt at one task: what it claimed, what it did, and
-    the manager's verdict on the gap between the two."""
+    the verdict on the gap between the two."""
     contractor: str
     bid: Bid
     result: ExecResult
@@ -132,6 +174,7 @@ class TaskRecord:
     traj_check: Optional[TrajectoryCheck]
     messages: int
 
+    # --- allocation quality ------------------------------------------------
     @property
     def correct(self) -> bool:
         return self.winner == self.gold
@@ -144,7 +187,7 @@ class TaskRecord:
     def unassigned(self) -> bool:
         return self.winner is None
 
-    # --- decomposition of `unassigned`, which a veto makes ambiguous ---------
+    # --- decomposition of `unassigned`, which a veto makes ambiguous --------
     @property
     def unassigned_nobid(self) -> bool:
         """Nobody bid, or every bid was unparseable. The 1980 failure mode."""
@@ -158,14 +201,14 @@ class TaskRecord:
 
     @property
     def veto_hit_gold(self) -> bool:
-        """Bias vetoed the contractor that should have won. This is the harm
-        side of the veto and has to be counted separately, otherwise a rise in
-        `unassigned` cannot be read as good or bad."""
+        """Bias vetoed the contractor that should have won. The harm side of
+        the veto; without it, a rise in `unassigned` cannot be read as good
+        or bad."""
         return self.gold in self.vetoed
 
+    # --- what Bias changed, against its own exact control -------------------
     @property
     def bias_helped(self) -> bool:
-        """Bias changed a wrong award into a right one, or into no award."""
         cf, w = self.counterfactual_winner, self.winner
         if cf == w:
             return False
@@ -173,8 +216,21 @@ class TaskRecord:
 
     @property
     def bias_hurt(self) -> bool:
-        """Bias changed a right award into a wrong one, or into no award."""
         cf, w = self.counterfactual_winner, self.winner
         if cf == w:
             return False
         return cf == self.gold and w != self.gold
+
+    # --- did the work actually work ----------------------------------------
+    @property
+    def delivered(self) -> Optional[bool]:
+        """Fixture verdict on the awarded work. None when there is no fixture
+        or no award. Distinct from `correct`: the right contractor can still
+        ship something broken, and the wrong one can get lucky."""
+        if self.result is None:
+            return None
+        return self.result.log.passed
+
+    @property
+    def judge_disagreed(self) -> bool:
+        return bool(self.traj_check and self.traj_check.judge_agrees is False)
