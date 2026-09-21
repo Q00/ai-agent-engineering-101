@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 760" font-family="Segoe Print, Comic Sans MS, 'Segoe UI', sans-serif">
+  <style>
+    .title { font-size: 34px; font-weight: 700; fill: #1b2027; }
+    .h { font-size: 15px; font-weight: 700; fill: #7c4211; }
+    .lbl { font-size: 13px; fill: #1b2027; }
+    .lbl-sm { font-size: 11px; fill: #565f66; }
+    .code { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 11px; fill: #1b2027; }
+    .box { fill: #fdf3e0; stroke: #a85a17; stroke-width: 2; rx: 8; }
+    .box-blue { fill: #e9eef7; stroke: #2b4c7e; stroke-width: 2; }
+    .circle { fill: #f6dede; stroke: #a83a3a; stroke-width: 2; }
+    .arrow { stroke: #1b2027; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .arrow-g { stroke: #2b7a58; stroke-width: 1.6; fill: none; marker-end: url(#arrowg); }
+    .dash { stroke-dasharray: 4 3; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1b2027"/>
+    </marker>
+    <marker id="arrowg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2b7a58"/>
+    </marker>
+  </defs>
+
+  <rect width="1180" height="760" fill="#fbfbf9"/>
+  <text x="40" y="55" class="title">Contract Net — Week 03</text>
+  <text x="40" y="78" class="lbl-sm">Smith (1980) reproduced with LLM contractors · writer / coder / analyst</text>
+  <line x1="30" y1="95" x2="1150" y2="95" stroke="#d7d9d2"/>
+
+  <!-- task list -->
+  <text x="40" y="130" class="h">TASKS.JSON</text>
+  <g class="lbl-sm">
+    <rect x="35" y="140" width="180" height="26" rx="6" fill="#fff" stroke="#d7d9d2"/>
+    <text x="45" y="157">t1 changelog → writer</text>
+    <rect x="35" y="172" width="180" height="26" rx="6" fill="#fff" stroke="#d7d9d2"/>
+    <text x="45" y="189">t2 apology email → writer</text>
+    <rect x="35" y="204" width="180" height="26" rx="6" fill="#fff" stroke="#d7d9d2"/>
+    <text x="45" y="221">t3 off-by-one bug → coder</text>
+    <rect x="35" y="236" width="180" height="26" rx="6" fill="#fff" stroke="#d7d9d2"/>
+    <text x="45" y="253">t4 refactor → coder</text>
+    <rect x="35" y="268" width="180" height="26" rx="6" fill="#fff" stroke="#d7d9d2"/>
+    <text x="45" y="285">t5 mean/stdev → analyst</text>
+    <rect x="35" y="300" width="180" height="26" rx="6" fill="#fff" stroke="#d7d9d2"/>
+    <text x="45" y="317">t6 correlation → analyst</text>
+  </g>
+  <path class="arrow" d="M218,220 C245,220 245,220 268,220"/>
+
+  <!-- Manager -->
+  <rect x="270" y="150" width="190" height="46" class="box-blue" rx="8"/>
+  <text x="365" y="178" text-anchor="middle" class="h" fill="#1e3357">Manager</text>
+
+  <!-- Contractors -->
+  <text x="530" y="130" class="h">CONTRACTORS (build_contractors)</text>
+  <circle cx="580" cy="230" r="46" class="circle"/>
+  <text x="580" y="226" text-anchor="middle" class="lbl">writer</text>
+  <text x="580" y="240" text-anchor="middle" class="lbl-sm">A</text>
+
+  <circle cx="700" cy="230" r="46" class="circle"/>
+  <text x="700" y="226" text-anchor="middle" class="lbl">coder</text>
+  <text x="700" y="240" text-anchor="middle" class="lbl-sm">B</text>
+
+  <circle cx="820" cy="230" r="46" class="circle"/>
+  <text x="820" y="226" text-anchor="middle" class="lbl">analyst</text>
+  <text x="820" y="240" text-anchor="middle" class="lbl-sm">C</text>
+
+  <path class="arrow" d="M400,196 C450,210 520,220 534,225"/>
+  <path class="arrow" d="M420,196 C500,205 620,215 654,225"/>
+  <path class="arrow" d="M440,196 C560,200 720,210 774,222"/>
+
+  <text x="700" y="300" text-anchor="middle" class="lbl-sm" font-style="italic">
+    same 3 circles, 3 different prompt sets per condition:
+  </text>
+  <text x="700" y="318" text-anchor="middle" class="code">baseline=specialist · homogeneous=generalist · overconfident=coder forced conf&#8805;90</text>
+
+  <!-- sequence box -->
+  <rect x="270" y="350" width="600" height="230" class="box" rx="10"/>
+  <text x="290" y="378" class="h">MESSAGE PROTOCOL  (per task, ×6 tasks)</text>
+
+  <rect x="290" y="392" width="150" height="30" fill="#fff" stroke="#a85a17" rx="6"/>
+  <text x="365" y="412" text-anchor="middle" class="lbl-sm">1 announce (×3)</text>
+  <path class="arrow" d="M440,407 L470,407"/>
+
+  <rect x="475" y="392" width="150" height="30" fill="#fff" stroke="#a85a17" rx="6"/>
+  <text x="550" y="412" text-anchor="middle" class="lbl-sm">2 bid (×3)</text>
+  <path class="arrow" d="M625,407 L655,407"/>
+
+  <rect x="660" y="392" width="150" height="30" fill="#fff" stroke="#a85a17" rx="6"/>
+  <text x="735" y="412" text-anchor="middle" class="lbl-sm">3 award (×1)</text>
+
+  <text x="290" y="450" class="lbl-sm">bid JSON (parse_bid):</text>
+  <rect x="290" y="458" width="290" height="92" fill="#1b2027" rx="6"/>
+  <text x="304" y="478" class="code" fill="#e7e9e4">{"bid": true,</text>
+  <text x="304" y="494" class="code" fill="#e7e9e4">&#160;"confidence": 95,</text>
+  <text x="304" y="510" class="code" fill="#e7e9e4">&#160;"reason": "off-by-one fix"}</text>
+  <text x="304" y="530" class="code" fill="#e0a559">award = max(bid=true, key=confidence)</text>
+  <text x="304" y="544" class="code" fill="#e0a559">tie → first in list order wins</text>
+
+  <text x="600" y="450" class="lbl-sm">7 messages / task = 3 announce</text>
+  <text x="600" y="466" class="lbl-sm">+ 3 bid + 1 award. Same for all 3</text>
+  <text x="600" y="482" class="lbl-sm">conditions — cost is fixed by the</text>
+  <text x="600" y="498" class="lbl-sm">protocol, not by who wins.</text>
+
+  <rect x="600" y="514" width="250" height="52" fill="#f6ead6" stroke="#a85a17" rx="8"/>
+  <text x="614" y="532" class="lbl-sm" font-weight="700" fill="#7c4211">finding</text>
+  <text x="614" y="548" class="lbl-sm">tie-break rule (not the condition</text>
+  <text x="614" y="562" class="lbl-sm">itself) decided homogeneous &amp; the</text>
+
+  <text x="614" y="576" class="lbl-sm" fill="#7c4211" font-weight="700">→ see REPORT.md §4</text>
+
+  <!-- who runs the task -->
+  <text x="920" y="130" class="h">WINNER ONLY</text>
+  <rect x="905" y="145" width="230" height="200" fill="#fff" stroke="#2b4c7e" stroke-dasharray="5 4" rx="8"/>
+  <text x="920" y="170" class="lbl-sm">낙찰자만 실제로 task를</text>
+  <text x="920" y="186" class="lbl-sm">수행 — week 01/02 도구</text>
+  <text x="920" y="202" class="lbl-sm">루프는 이번 주 과제 범위</text>
+  <text x="920" y="218" class="lbl-sm">밖(입찰까지만 측정).</text>
+  <text x="920" y="248" class="lbl-sm" font-weight="700">누구에게 맡기지?</text>
+  <text x="920" y="264" class="lbl-sm">who is eligible?</text>
+  <path class="arrow-g" d="M920,278 C960,290 1000,300 1030,305"/>
+  <text x="920" y="330" class="lbl-sm" fill="#2b7a58">→ week-03 submission</text>
+
+</svg>
