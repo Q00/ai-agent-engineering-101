@@ -1,0 +1,39 @@
+provider: OpenRouter (https://openrouter.ai/api/v1), model: nvidia/nemotron-3.5-lightning:free, temperature: default (not configurable on free tier)
+
+[task 1] Compute 137 * 249 and return the number. (gold: A)
+  [bid] A: bid=True confidence=100 reason=Basic arithmetic computation is within general problem solving skills.
+  [bid] B: bid=True confidence=100 reason=The task involves basic arithmetic computation, which falls within general problem solving.
+  [bid] C: bid=True confidence=100 reason=Arithmetic computation is within general problem solving.
+  [award] A (correct, gold=A)
+
+[task 2] Calculate the average of 84, 91, 77, 63, and 95. (gold: A)
+  [bid] A: bid=True confidence=100 reason=Calculating the average of given numbers is a basic problem-solving task.
+  [bid] B: bid=True confidence=100 reason=Calculating the average of given numbers is a basic arithmetic task covered by general problem solving.
+  [bid] C: bid=True confidence=100 reason=Calculating the average of given numbers is a basic arithmetic problem within general problem solving.
+  [award] A (correct, gold=A)
+
+[task 3] Rewrite this sentence in plain English for a 10-year-old: The mitochondria is the powerhouse of the cell. (gold: B)
+  [bid] A: bid=True confidence=95 reason=Task aligns with general problem solving and child-friendly language simplification.
+  [bid] B: bid=True confidence=95 reason=I can easily simplify scientific concepts for young audiences.
+  [bid] C: bid=True confidence=95 reason=I can rewrite scientific concepts in simple, age-appropriate language.
+  [award] A (misaward, gold=B)
+
+[task 4] Write a short apology email for missing a meeting yesterday. (gold: B)
+  [bid] A: bid=True confidence=95 reason=General problem solving includes routine written communication tasks.
+  [bid] B: bid=True confidence=95 reason=Task involves standard written communication, well within general problem solving.
+  [bid] C: bid=True confidence=95 reason=The task falls within general writing and communication skills.
+  [award] A (misaward, gold=B)
+
+[task 5] Write a Python function that returns the reversed copy of a list. (gold: C)
+  [bid] A: bid=True confidence=98 reason=This task is within general problem solving and Python programming capabilities.
+  [bid] B: bid=True confidence=100 reason=This task is within general problem solving and Python programming capabilities.
+  [bid] C: bid=True confidence=98 reason=This task falls squarely within general problem solving and Python programming capabilities.
+  [award] B (misaward, gold=C)
+
+[task 6] Fix this JavaScript bug: console.log(x) is called before x is defined. (gold: C)
+  [bid] A: bid=True confidence=95 reason=Fixing undefined variable order in JS is within general problem-solving skills.
+  [bid] B: bid=True confidence=95 reason=This is a basic JavaScript debugging task within general problem solving skills.
+  [bid] C: bid=True confidence=95 reason=This is a simple JavaScript variable scoping issue that's easily resolved.
+  [award] A (misaward, gold=C)
+
+[summary] correct=2/6 messages=42 unassigned=0 misawards=4 parse_fails=0 (249.0s)
