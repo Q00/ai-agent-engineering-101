@@ -112,6 +112,30 @@ flowchart TB
     COND -.-> NET
     BUS --> LOG["logs/run-NN-condition.txt<br/>공고 · 입찰(확신도·이유) · 낙찰 전부"]
     MGR --> RES["results.csv / results-extra.csv<br/>correct · messages · unassigned · misawards"]
+
+    %% ---- 색: 판서 팔레트 (역할 = 빨강, 계약망 = 파랑, 태스크·프로토콜 = 초록)
+    classDef task fill:#e3f5e1,stroke:#2e7d32,color:#1b3d1a
+    classDef role fill:#fde2e2,stroke:#c62828,color:#5a1a1a
+    classDef manager fill:#ffd1d1,stroke:#c62828,color:#5a1a1a
+    classDef plugin fill:#fff3e0,stroke:#ef6c00,color:#5a3200
+    classDef bus fill:#fff9c4,stroke:#f9a825,color:#4a3d00
+    classDef proto fill:#e3f5e1,stroke:#2e7d32,color:#1b3d1a
+    classDef output fill:#eeeeee,stroke:#616161,color:#212121
+    classDef note fill:#f5f5f5,stroke:#9e9e9e,color:#424242,stroke-dasharray:4 3
+
+    class TQ task
+    class AN,GT,AW manager
+    class SA,SB,SC,BA,BB,BC role
+    class POL,REP,COMMON plugin
+    class BUS bus
+    class MSG proto
+    class LOG,RES output
+    class COND note
+    style NET fill:#e8f1fb,stroke:#1e5aa8,stroke-width:2px
+    style MGR fill:#fff5f5,stroke:#c62828
+    style CA fill:#fff5f5,stroke:#c62828
+    style CB fill:#fff5f5,stroke:#c62828
+    style CC fill:#fff5f5,stroke:#c62828
 ```
 
 **실행 방법.**
