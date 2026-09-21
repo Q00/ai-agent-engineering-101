@@ -3,11 +3,13 @@
 Usage:
   python run.py --condition baseline            # one run
   python run.py --condition overconfident --runs 3
+  python run.py --condition reputation --runs 3 # extra condition -> results-extra.csv
   python run.py --condition baseline --dry-run  # no model calls, rule-based fake bids
 
-Each run appends one line to results.csv and writes one console capture to
-logs/run-NN-<condition>.txt. A crashed run still gets its line, with blank
-counts and the error plus the partial tally in `note`.
+Each run appends one line to results.csv (core conditions) or
+results-extra.csv (the extra conditions, numbered from 101) and writes one
+console capture to logs/run-NN-<condition>.txt. A crashed run still gets its
+line, with blank counts and the error plus the partial tally in `note`.
 
 Calls per run = tasks x contractors (5 x 3 = 15). The OpenRouter free tier
 allows 50 free-model requests per day, so three runs a day is the ceiling.
@@ -47,7 +49,8 @@ load_dotenv()
 # imported after the environment is settled: tools_shared reads it at import
 import tools_shared                                    # noqa: E402
 from candidate import Candidate                        # noqa: E402
-from prompts import CONDITIONS, contractors_for        # noqa: E402
+from conditions import CONDITIONS                      # noqa: E402
+from prompts import contractors_for                    # noqa: E402
 from protocol import MessageBus                        # noqa: E402
 from tools_shared import Meter                         # noqa: E402
 
@@ -88,25 +91,29 @@ class FakeChat:
 
 # ------------------------------------------------------------------ one run
 
-def next_run_number(results: Path) -> int:
+def next_run_number(results: Path, offset: int = 0) -> int:
     if not results.exists():
-        return 1
+        return offset + 1
     with results.open(encoding="utf-8", newline="") as f:
-        return sum(1 for r in csv.reader(f) if any(c.strip() for c in r))   # header counts as 1
+        rows = sum(1 for r in csv.reader(f) if any(c.strip() for c in r))   # header counts as 1
+    return offset + rows
 
 
 def run_once(condition: str, tasks: list, run_no: int, dry_run: bool, log) -> dict:
+    cond = CONDITIONS[condition]
     bus, meter = MessageBus(), Meter()
     factory = FakeChat if dry_run else tools_shared.Chat
-    team = [Candidate(s.name, "contractor", bus, meter, spec=s, log=log, chat_factory=factory)
-            for s in contractors_for(condition)]
-    manager = Candidate("M", "manager", bus, meter, log=log)
+    team = [Candidate(s.name, "contractor", bus, meter, spec=s, log=log,
+                      chat_factory=factory, context=cond.context)
+            for s in contractors_for(cond.prompts)]
+    policy = cond.policy(len(tasks))
+    manager = Candidate("M", "manager", bus, meter, log=log, award_policy=policy)
 
     log(f"# run={run_no:02d} condition={condition} date={datetime.now(KST).isoformat(timespec='minutes')}")
     log(f"# provider={'dry-run' if dry_run else tools_shared.PROVIDER} model_requested={tools_shared.MODEL} "
         f"temperature={tools_shared.TEMPERATURE:g} max_tokens={tools_shared.MAX_TOKENS}")
-    log(f"# tasks={len(tasks)} contractors={','.join(c.name for c in team)} "
-        f"award_policy=confidence(tie->first registered) context=fresh")
+    log(f"# tasks={len(tasks)} contractors={','.join(c.name for c in team)} prompts={cond.prompts} "
+        f"award_policy={policy.name}(tie->first registered) context={cond.context}")
     for c in team:
         log(f"# system[{c.name}]: {c.spec.system}")
 
@@ -143,7 +150,7 @@ def run_once(condition: str, tasks: list, run_no: int, dry_run: bool, log) -> di
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--condition", required=True, choices=CONDITIONS)
+    ap.add_argument("--condition", required=True, choices=list(CONDITIONS))
     ap.add_argument("--runs", type=int, default=1)
     ap.add_argument("--tasks", default=str(HERE / "tasks.json"))
     ap.add_argument("--dry-run", action="store_true",
@@ -151,7 +158,9 @@ def main():
     args = ap.parse_args()
 
     tasks = json.loads(Path(args.tasks).read_text(encoding="utf-8"))
-    results = HERE / "results.csv"
+    cond = CONDITIONS[args.condition]
+    results = HERE / ("results.csv" if cond.core else "results-extra.csv")
+    offset = 0 if cond.core else 100
     logs = HERE / "logs"
     logs.mkdir(exist_ok=True)
     if not args.dry_run and tools_shared.PROVIDER == "openai" and not os.environ.get("OPENAI_API_KEY"):
@@ -161,7 +170,7 @@ def main():
           f"{args.runs * len(tasks) * 3} model calls" + (" (dry run)" if args.dry_run else ""))
 
     for _ in range(args.runs):
-        run_no = next_run_number(results) if not args.dry_run else 0
+        run_no = next_run_number(results, offset) if not args.dry_run else 0
         lines = []
 
         def log(msg, _lines=lines):
@@ -180,7 +189,7 @@ def main():
             w.writerow(result["row"])
         (logs / f"run-{run_no:02d}-{args.condition}.txt").write_text(
             "\n".join(lines) + "\n", encoding="utf-8")
-        print(f"[saved] results.csv row {run_no}, logs/run-{run_no:02d}-{args.condition}.txt")
+        print(f"[saved] {results.name} row {run_no}, logs/run-{run_no:02d}-{args.condition}.txt")
         if result["error"] and "RateLimitError" in result["error"]:
             print("[stop] rate limit hit; remaining runs skipped")
             break

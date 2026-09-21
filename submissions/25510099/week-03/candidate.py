@@ -8,12 +8,19 @@ protocol is the bid.
 
 Manager and contractors never call each other directly. Every message goes
 through the MessageBus, and the bus count is the `messages` metric.
+
+Two plug-in points, both off in the three core conditions:
+  award policy     what the manager looks at when it awards (policies.py)
+  context policy   `fresh` = a new Chat per announcement (default);
+                   `memory` = the contractor is told its own past bids and
+                   who was awarded before it bids again
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from prompts import ANNOUNCEMENT, ContractorSpec
 from protocol import Announcement, Award, Bid, MessageBus, NoBid, parse_bid
 from tools_shared import Chat, Meter
+from policies import ConfidencePolicy
 
 
 @dataclass
@@ -31,22 +38,10 @@ class TaskOutcome:
         return "correct" if self.winner == self.gold else "misaward"
 
 
-def award_by_confidence(bids: list[Bid]):
-    """Default award policy: highest confidence among participating bids;
-    a tie goes to the earlier registered contractor. Returns (winner, tie)."""
-    best, tie = None, False
-    for b in bids:
-        if best is None or b.confidence > best.confidence:
-            best, tie = b, False
-        elif b.confidence == best.confidence:
-            tie = True
-    return (best.contractor if best else None), tie
-
-
 class Candidate:
     def __init__(self, name: str, role: str, bus: MessageBus, meter: Meter,
                  spec: ContractorSpec | None = None, log=print,
-                 chat_factory=Chat, award_policy=award_by_confidence):
+                 chat_factory=Chat, award_policy=None, context: str = "fresh"):
         self.name = name
         self.role = role
         self.bus = bus
@@ -54,7 +49,9 @@ class Candidate:
         self.spec = spec
         self.log = log
         self.chat_factory = chat_factory
-        self.award_policy = award_policy
+        self.award_policy = award_policy or ConfidencePolicy(0)
+        self.context = context
+        self.memory: list[str] = []          # used only when context == "memory"
 
     # ------------------------------------------------------------ dispatch
     def handle(self, task: dict, team: list["Candidate"] | None = None):
@@ -66,7 +63,10 @@ class Candidate:
     def _manage(self, task: dict, team: list["Candidate"]) -> TaskOutcome:
         anns = self.announce(task, team)
         replies = self.get(anns, team)
-        return self.award(task, replies)
+        outcome = self.award(task, replies)
+        for c, r in zip(team, replies):
+            c.remember(task["id"], r, outcome.winner)
+        return outcome
 
     def announce(self, task: dict, team: list["Candidate"]) -> list[Announcement]:
         text = ANNOUNCEMENT.format(cid=task["id"], desc=task["desc"])
@@ -91,21 +91,31 @@ class Candidate:
 
     def award(self, task: dict, replies: list) -> TaskOutcome:
         bids = [r for r in replies if isinstance(r, Bid) and r.participate]
-        winner, tie = self.award_policy(bids)
+        winner, tie = self.award_policy.choose(bids, self.log)
         if winner is None:
-            self.log(f"  [unassigned] task {task['id']}: no bid")
+            why = "no bid" if not bids else "no eligible bidder"
+            self.log(f"  [unassigned] task {task['id']}: {why}")
         else:
             self.bus.send(Award(task["id"], winner))
             mark = "correct" if winner == task["gold"] else "MISAWARD"
             tie_note = " tie->first registered" if tie else ""
             self.log(f"  [award] task {task['id']} -> {winner} (gold {task['gold']}) {mark}{tie_note}")
+        self.award_policy.record(task, winner)
         return TaskOutcome(task["id"], task["gold"], winner, tie, replies)
 
     # ------------------------------------------------------------ contractor
     def bidding(self, ann: Announcement):
-        """One announcement, one fresh Chat, one model call, one Bid or NoBid."""
+        """One announcement, one fresh Chat, one model call, one Bid or NoBid.
+        Under the memory context the user message starts with the contractor's
+        own record so far; the announcement itself is unchanged."""
         chat = self.chat_factory(self.spec.system, self.meter)
-        chat.add_user(ann.text)
+        text = ann.text
+        if self.context == "memory" and self.memory:
+            text = ("Your record in this contract net so far:\n"
+                    + "\n".join(f"- {m}" for m in self.memory) + "\n\n" + ann.text)
+            self.log(f"  [memory] {self.name}: {len(self.memory)} entr{'y' if len(self.memory) == 1 else 'ies'}; "
+                     f"last: {self.memory[-1]}")
+        chat.add_user(text)
         try:
             raw = chat.send()
         except Exception as e:
@@ -113,6 +123,23 @@ class Candidate:
                 raise                          # daily quota etc.: the whole run crashes
             return NoBid(self.name, "api_error", raw=f"{type(e).__name__}: {e}")
         return parse_bid(self.name, raw)
+
+    def remember(self, task_id: int, reply, winner):
+        if self.context != "memory":
+            return
+        if isinstance(reply, Bid) and reply.participate:
+            mine = f"you bid with confidence {reply.confidence:g}"
+        elif isinstance(reply, Bid):
+            mine = "you did not bid"
+        else:
+            mine = "your reply could not be parsed and counted as no bid"
+        if winner is None:
+            result = "no award (no bid)"
+        elif winner == self.name:
+            result = "awarded to you"
+        else:
+            result = f"awarded to {winner}"
+        self.memory.append(f"task {task_id}: {mine}; {result}.")
 
 
 def _is_fatal(e: Exception) -> bool:
