@@ -65,5 +65,11 @@ def complete(system: str, user: str, meter: Meter) -> str:
         messages=[{"role": "system", "content": system},
                   {"role": "user", "content": user}])
     u = resp.usage
-    meter.add(getattr(u, "prompt_tokens", 0), getattr(u, "completion_tokens", 0))
-    return resp.choices[0].message.content or ""
+    meter.add(getattr(u, "prompt_tokens", 0) if u else 0,
+              getattr(u, "completion_tokens", 0) if u else 0)
+    # A free provider sometimes returns 200 with no choices (rate limit / error
+    # payload). Treat that as an empty reply -> the caller records a no-bid.
+    choices = resp.choices or []
+    if not choices:
+        return ""
+    return choices[0].message.content or ""

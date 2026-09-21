@@ -127,7 +127,11 @@ def collect_bid(name, system, kind, task, meter, dry, log):
         text = _dry_reply(kind, task)
         meter.add(0, 0)
     else:
-        text = llm.complete(system, announcement, meter)
+        try:
+            text = llm.complete(system, announcement, meter)
+        except Exception as e:                 # API/rate-limit failure = no bid
+            log(f"    bid[{name}] no-bid(api-error): {type(e).__name__}: {e}")
+            return Bid(name, False, 0.0, "", parse_ok=False)
     bid = parse_bid(name, text)
     tag = "no-bid(unparseable)" if not bid.parse_ok else (
         f"participate={bid.participate} conf={bid.confidence:.2f} :: {bid.reason}")
