@@ -144,7 +144,7 @@ Runs in which C swept the awards: **0 of 3**. Replies that were not JSON:
 [bid] C: bid=False confidence=5 reason=This is an audio/video editing and caption-alignment task requiring media processing tools, not general problem solving I'm equipped for.
 ```
 
-같은 contract 5를 두고 C는 `baseline`에서 "내 핵심 업무"라며 확신도 88로 입찰했고, `homogeneous`에서는 "미디어 도구가 없어 할 수 없다"며 거절했다. contract 5는 `homogeneous` 세 런 모두에서 아무도 입찰하지 않아 유찰되었고, 이런 유찰이 5건이다.
+같은 contract 5를 두고 C는 `baseline`에서 "내 핵심 업무"라며 확신도 88로 입찰했고, `homogeneous`에서는 "미디어 도구가 없어 할 수 없다"며 거절했다. contract 5는 `homogeneous` 세 run 모두에서 아무도 입찰하지 않아 유찰되었고, 이런 유찰이 총 5건 확인되었다.
 
 또한 `homogeneous`에서는 제일 많은 `misawards`(10건)가 관측되었는데, 이는 셋이 모두 입찰했으나 서로 구별되지 않는 근거를 대면서 확신도만 다르게 매겼고, 낙찰 규칙이 그 숫자만 보기 때문이다.
 
@@ -169,8 +169,9 @@ Runs in which C swept the awards: **0 of 3**. Replies that were not JSON:
 [bid] C: bid=False confidence=97 reason=This is retention-curve analysis and interpretation, not video cutting/stitching/captioning work.
 [award] A (gold A)
 ```
+위 log에서는 C가 A보다 높은 확신도를 보였음에도 불구하고 입찰하지 않아서 A에게 낙찰된 것을 확인할 수 있다. 현재의 프로토콜은 `bid: true`인 입찰에 대해서 가장 높은 확신도를 가지고 있는 contractor에게 배정하는 방식의 단순한 수치 비교를 수행할 뿐, 확신도의 출처나 근거 등을 검증하지는 못한다.
 
-<!-- 확신도가 무엇을 가리키는지에 대한 문단을 여기에. 아래 로그 (5)가 근거다. -->
+한편, 실험 결과 확신도가 정확히 무엇을 지칭하는지 알 수 없음이 확인되었다. 즉, (1) 주어진 task가 자신의 업무와 잘 맞다고 확신하는 경우와 (2) 주어진 task가 자신의 업무와 잘 맞지않는다고 확신하는 경우를 구분할 수 없었다.
 
 [근거 로그 (5)]
 `baseline` run 1, contractor B가 두 계약을 거절하며 적은 확신도:
@@ -179,5 +180,3 @@ Runs in which C swept the awards: **0 of 3**. Replies that were not JSON:
 [bid] B: bid=False confidence=90 reason=This requires analyzing retention curve data, not writing/editing channel text.
 [bid] B: bid=False confidence=5  reason=This is statistical/numerical analysis of A/B test data, not text writing or editing.
 ```
-
-`baseline`의 거절 36건은 3~5가 18건, 90~97이 18건으로 갈렸다.
