@@ -1,0 +1,127 @@
+=== run baseline-core-run5 ===
+provider=openai model=cohere/north-mini-code:free temperature=0.7
+condition=baseline arm=core bias=off icebreak=off
+seed=20269545 veto_threshold=40 adj_range=(-100,20)
+contractors=['sql_analyst', 'text_editor', 'code_fixer']
+icebreak_tasks=[]
+measure_tasks=['t1', 't2', 't3', 't4', 't5', 't6']
+fixtures={t1:sql, t2:none, t3:python, t4:sql, t5:none, t6:python}
+
+########## measured ##########
+--- t1 (gold=sql_analyst, fixture=sql) ---
+[announce] t1
+           req: SQL 쿼리 작성 능력, 특히 집계 함수(SUM, COUNT 등)와 GROUP BY 절을 활용한 숙련도
+           req: 날짜 함수 사용 경험(예: DATE_TRUNC, EXTRACT, FORMAT)을 통해 ordered_at 컬럼에서 연-월 부분 추출
+           req: PARTITION BY를 사용한 윈도우 함수(RANK, DENSE_RANK, ROW_NUMBER)를 사용하여 월별 상위 N개 레코드 계산 경험
+           req: 월별로 정렬 및 제한(LIMIT/OVER)하여 결과 집합 생성 능력
+           req: NULL 값 처리 및 데이터 유형 변환에 대한 이해
+  [bid] sql_analyst: BID elig=100 conf=95 :: 저는 SQL 집계 및 GROUP BY, DATE_TRUNC/EXTRACT를 사용한 날짜 함수, PARTITION BY를 사용한 윈도우 함수(RANK/DENSE_RANK/ROW_NUMBER), 정렬/제한, 그리고 NULL 값 처리에 대한 심층적인 전문 지식을 갖추고 있습니다. 이는 공고의
+  [bid] text_editor: BID elig=100 conf=95 :: 이 공고는 SQL 집계 함수, 날짜 함수 사용, PARTITION BY를 사용한 윈도우 함수, 정렬/제한, NULL 처리 등 다양한 숙련도를 요구합니다. 이러한 기술들은 모두 제 전문 분야에 속하므로, 해당 요구 사항을 충족할 수 있습니다.
+  [bid] code_fixer: pass elig=0 conf=0 :: 귀하의 전문 분야는 파이썬 디버깅이며, SQL 쿼리 작성, 집계 함수 사용, 날짜 함수 활용, 윈도우 함수 사용, 결과 제한 등 공고에서 요구하는 기술적 요구 사항과 일치하지 않습니다.
+  [award] t1 -> text_editor  [MISAWARD (gold=sql_analyst)]
+  [exec] text_editor: 5 claimed step(s), 298 chars of artifact
+  [run ] text_editor: FAIL (63ms)
+  [verify] text_editor: judge_says=True fixture_says=False -> verdict=False  *** 판정 불일치: 실행 결과를 따름 ***
+           제출된 쿼리는 SQLite의 strftime을 사용하여 월을 추출하고, 월별 지역별 매출을 집계하며, RANK() OVER (PARTITION BY month) ...을 사용하여 상위 2개 지역을 선택하고, 필요한 컬럼을 반환합니다. 요구 사항을 충족합니다.
+
+--- t2 (gold=text_editor, fixture=none) ---
+[announce] t2
+           req: 회의록을 읽고 주요 결정 사항을 파악하는 경험
+           req: 5문장 이내로 간결하게 요약하는 능력
+           req: 결정 사항을 식별하고 강조하는 기술
+           req: 지정된 형식(예: JSON 출력)으로 작성하는 능력
+           req: 명확하고 정확한 요약을 작성하는 강력한 글쓰기 기술
+  [bid] sql_analyst: BID elig=100 conf=100 :: 저는 회의록을 읽고 주요 결정 사항을 파악하며, 5문장 이내로 간결하게 요약하고, 결정 사항을 강조하며, JSON 형식으로 작성하고, 명확하고 정확한 요약을 작성하는 데 경험이 있습니다.
+  [bid] text_editor: BID elig=100 conf=95 :: 저는 모든 자격 요건을 충족합니다: 회의록을 읽고 주요 결정 사항을 파악하는 경험, 5문장 이내로 간결하게 요약하는 능력, 결정 사항을 식별하고 강조하는 기술, 지정된 JSON 형식으로 작성하는 능력, 명확하고 정확한 요약을 작성하는 강력한 글쓰기 기술.
+  [bid] code_fixer: UNPARSEABLE -> counted as no bid
+        raw: { |   "will_bid": false, |   "eligibility_score": 0, |   "confidence": 0, |   "reason": "이 공고는 회의록 요약, 결정 사항 강조, 간결한 글쓰기
+  [check] code_fixer: unparseable
+  [award] t2 -> sql_analyst  [MISAWARD (gold=text_editor)]
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [exec] sql_analyst: 4 claimed step(s), 176 chars of artifact
+  [run ] sql_analyst: fixture 없음 (LLM 판정만 가능)
+  [verify] sql_analyst: judge_says=False fixture_says=None -> verdict=False
+           결과물이 요구된 JSON 형식으로 작성되지 않고 일반 텍스트로만 제공되어 형식 요구 사항을 충족하지 못했습니다.
+
+--- t3 (gold=code_fixer, fixture=python) ---
+[announce] t3
+           req: Proficient in Python programming with solid understanding of list indexing and slicing.
+           req: Experience fixing functions that raise IndexError for out‑of‑range parameters.
+           req: Ability to handle edge cases such as when n exceeds list length and return the entire list.
+           req: Familiarity with writing clear, concise code and using range() for iteration.
+           req: Strong problem‑solving skills for debugging and testing small utility functions.
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 8s
+  [bid] sql_analyst: BID elig=100 conf=90 :: 이 작업은 n > len(xs)일 때 IndexError를 수정하고 전체 리스트를 반환하도록 파이썬 함수를 수정하는 것으로, 파이썬 프로그래밍과 리스트 인덱싱에 대한 이해, IndexError 수정 경험, 엣지 케이스 처리, 간결한 코드 작성, 문제 해결 능력 등 공고의 자격 요건을 직
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 8s
+  [bid] text_editor: BID elig=100 conf=95 :: 공고의 모든 자격 요건(파이썬 숙련도, 리스트 인덱싱/슬라이싱, IndexError 수정 경험, n > len(xs)인 경우 전체 리스트 반환 등)을 충족하며, 특히 "Ability to handle edge cases such as when n exceeds list length an
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 4s
+  [bid] code_fixer: BID elig=100 conf=95 :: I meet all listed eligibility requirements, including proficiency in Python list indexing, fixing IndexError, handling edge cases such as when n exceeds list le
+  [award] t3 -> code_fixer  [correct]
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 8s
+  [llm] attempt 3/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 16s
+  [exec] code_fixer: 3 claimed step(s), 114 chars of artifact
+  [run ] code_fixer: PASS (58ms)
+  [verify] code_fixer: judge_says=False fixture_says=True -> verdict=True  *** 판정 불일치: 실행 결과를 따름 ***
+           제출된 함수는 여전히 n > len(xs)일 때 부분 리스트를 반환하며, 전체 리스트를 반환하지 않습니다. 이는 자격 충족 조건인 'n이 리스트 길이보다 클 경우 전체 리스트를 반환'하는 요구 사항을 충족하지 못합니다.
+
+--- t4 (gold=sql_analyst, fixture=sql) ---
+[announce] t4
+           req: SQL 쿼리를 작성할 수 있으며, 특히 GROUP BY 절과 집계 함수(COUNT)를 사용하여 데이터를 그룹화하고 필터링할 수 있습니다.
+           req: 중복 레코드를 식별하기 위해 HAVING 절을 사용하는 방법을 알고 있습니다.
+           req: 고객 테이블의 구조(id, email, name)를 읽고 쿼리를 작성할 수 있습니다.
+           req: 쿼리를 통해 동일한 이메일이 두 번 이상 나타나는 이메일과 해당 발생 횟수를 반환할 수 있습니다.
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [bid] sql_analyst: BID elig=100 conf=95 :: 이 작업은 GROUP BY, COUNT, HAVING를 사용하여 중복 이메일을 찾는 간단한 SQL 쿼리를 요구합니다. 모든 자격 요건을 충족할 수 있습니다.
+  [bid] text_editor: BID elig=90 conf=95 :: 자격 요건은 GROUP BY와 COUNT를 사용한 쿼리 작성, 중복 식별을 위한 HAVING 절 사용, 테이블 구조 이해, 해당 이메일과 발생 횟수 반환을 요구합니다. 이러한 요구 사항들은 모두 충족할 수 있습니다.
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 8s
+  [llm] attempt 3/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 16s
+  [bid] code_fixer: BID elig=100 conf=100 :: 자격 요건은 GROUP BY, COUNT, HAVING를 사용한 쿼리 작성, 테이블 구조 이해, 중복 이메일 식별을 요구하며, 이는 모두 해당 작업에 해당합니다.
+  [award] t4 -> code_fixer  [MISAWARD (gold=sql_analyst)]
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [exec] code_fixer: 5 claimed step(s), 83 chars of artifact
+  [run ] code_fixer: PASS (71ms)
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 4s
+  [verify] code_fixer: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           쿼리는 이메일별 그룹화를 통해 중복 이메일과 해당 발생 횟수를 정확히 반환하며, 필요한 GROUP BY, COUNT, HAVING 절을 모두 포함합니다.
+
+--- t5 (gold=text_editor, fixture=none) ---
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 4s
+[announce] t5
+           req: 영어 텍스트를 맞춤법과 문법 오류에 대해 교정할 수 있는 능력
+           req: 공식적이고 정중한 어조를 유지하며 수정할 수 있는 능력
+           req: 사내 공지나 유사한 커뮤니케이션 수정을 진행한 경험
+           req: 수정된 텍스트에 적절한 대문자와 구두점을 포함할 수 있는 능력
+  [bid] sql_analyst: pass elig=0 conf=0 :: 이 작업은 SQL 분석이 아닌 영어 텍스트 교정과 정중한 어조로 공지문을 수정하는 것을 요구하며, 이는 전문 분야와 맞지 않습니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 저는 모든 자격 요건을 충족합니다: 영어 텍스트의 맞춤법과 문법 오류 교정, 공식적이고 정중한 어조 유지, 사내 공지 수정 경험, 적절한 대문자와 구두점 사용 능력.
+  [bid] code_fixer: BID elig=100 conf=95 :: 저는 영어 텍스트를 맞춤법과 문법 오류에 대해 교정할 수 있는 능력, 공식적이고 정중한 어조를 유지하며 수정할 수 있는 능력, 사내 공지나 유사한 커뮤니케이션 수정을 진행한 경험, 수정된 텍스트에 적절한 대문자와 구두점을 포함할 수 있는 능력을 갖추고 있습니다. 이는 공고의 모든 자격 
+  [award] t5 -> code_fixer  [MISAWARD (gold=text_editor)]
+  [exec] code_fixer: 4 claimed step(s), 85 chars of artifact
+  [run ] code_fixer: fixture 없음 (LLM 판정만 가능)
+  [verify] code_fixer: judge_says=True fixture_says=None -> verdict=True
+           교정된 공지문은 맞춤법과 문법이 정확하고, 정중한 공식 어조를 사용하며, 적절한 대문자와 구두점을 포함하고 있어 요구 사항을 충족합니다.
+
+--- t6 (gold=code_fixer, fixture=python) ---
+[announce] t6
+           req: 우수한 파이썬 프로그래밍 기술, 특히 함수 작성 및 수정 능력
+           req: 반복문(while loop)과 리스트 조작에 대한 경험
+           req: 홀수 처리, 양수 반환, 경계 조건 처리(예: 0 및 음수 입력) 등 숫자 알고리즘에 대한 이해
+  [bid] sql_analyst: pass elig=0 conf=0 :: 이 입찰자는 SQL 분석가이며 우수한 파이썬 프로그래밍 기술, 함수 수정 능력, 반복문 및 리스트 조작 경험, 또는 숫자 알고리즘 전문 지식이 없습니다. 공고는 이러한 자격 요건을 명시하고 있습니다.
+  [bid] text_editor: BID elig=100 conf=100 :: 이 작업은 우수한 파이썬 프로그래밍 기술, 반복문 및 리스트 조작, 홀수 처리 및 경계 조건 처리 등을 요구하며, 이러한 분야는 모두 제 전문 분야에 속합니다.
+  [bid] code_fixer: BID elig=100 conf=100 :: 이 작업은 while 루프 수정, 리스트 조작, 홀수 처리 및 경계 조건 처리(0 및 음수 입력)를 요구하며, 이는 제 우수한 파이썬 프로그래밍 기술과 숫자 알고리즘에 대한 이해와 정확히 일치합니다.
+  [award] t6 -> code_fixer  [correct]
+  [exec] code_fixer: UNPARSEABLE result
+  [verify] UNPARSEABLE verification reply
+
+=== summary ===
+  run: baseline-core-run5
+  condition: baseline
+  tasks: 6
+  correct: 2
+  messages: 42
+  unassigned: 0
+  misawards: 4
+  note: tokens=28212 llm_calls=36 seed=20269545 delivered=2/4 judge_disagree=2

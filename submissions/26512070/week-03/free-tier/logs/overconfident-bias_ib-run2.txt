@@ -1,0 +1,32 @@
+=== run overconfident-bias_ib-run2 ===
+provider=openai model=cohere/north-mini-code:free temperature=0.7
+condition=overconfident arm=bias+ib bias=on icebreak=on
+seed=20267317 veto_threshold=40 adj_range=(-100,20)
+contractors=['sql_analyst', 'text_editor', 'code_fixer']
+icebreak_tasks=['ib1', 'ib2', 'ib3']
+measure_tasks=['t1', 't2', 't3', 't4', 't5', 't6']
+fixtures={t1:sql, t2:none, t3:python, t4:sql, t5:none, t6:python}
+
+########## icebreaking (not scored) ##########
+[icebreak] ib1 -- all contractors execute, no award
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 4s
+[announce] ib1
+           req: SQL SELECT 문과 GROUP BY 절을 작성할 수 있어야 합니다.
+           req: 합계 집계 함수(SUM)를 사용하여 열의 값을 집계할 수 있어야 합니다.
+           req: 테이블 스키마(컬럼명: sku, warehouse, qty)를 읽고 이를 기반으로 쿼리를 작성할 수 있어야 합니다.
+           req: 창고 이름과 총 재고 수량 두 개의 결과 컬럼을 생성할 수 있어야 합니다.
+  [bid] sql_analyst: BID elig=100 conf=100 :: SQL SELECT, GROUP BY, SUM을 사용하여 테이블 스키마를 읽고 창고별 총 재고 수량을 반환할 수 있어 공고의 모든 자격 요건을 충족합니다.
+  [bid] text_editor: BID elig=100 conf=100 :: 공고는 SELECT, GROUP BY, SUM을 사용한 집계, 스키마 이해, 창고 이름과 총합 두 컬럼 반환을 요구합니다. 이러한 작업들은 SQL에 대해 제가 숙련된 분야이므로 해당 요구 사항을 충족할 수 있습니다.
+  [bid] code_fixer: pass elig=0 conf=0 :: 자격 요건은 SQL SELECT 문, GROUP BY 절, SUM 집계 함수 사용, 테이블 스키마 읽기, 결과 컬럼 생성 능력을 요구합니다. 이러한 작업은 SQL 작성에 관한 것이며, 이는 제 전문 분야가 아닙니다.
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [exec] sql_analyst: 5 claimed step(s), 70 chars of artifact
+  [run ] sql_analyst: PASS (63ms)
+  [exec] text_editor: 5 claimed step(s), 57 chars of artifact
+  [run ] text_editor: PASS (60ms)
+  [exec] code_fixer: 5 claimed step(s), 70 chars of artifact
+  [run ] code_fixer: PASS (61ms)
+  [verify] sql_analyst: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           쿼리는 테이블 스키마를 올바르게 읽고, GROUP BY warehouse를 사용하여 SUM(qty)를 집계하며, 창고 이름과 총 수량을 정확히 반환하므로 모든 자격 요건을 충족합니다.
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day-high-balance. ', 'code': 429, 'metadata': {'headers': {'X-Rate); retrying in 8s
+  [llm] attempt 3/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day-high-balance. ', 'code': 429, 'metadata': {'headers': {'X-Rate); retrying in 16s

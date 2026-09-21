@@ -1,0 +1,156 @@
+=== run overconfident-bias-run1 ===
+provider=openai model=cohere/north-mini-code:free temperature=0.7
+condition=overconfident arm=bias bias=on icebreak=off
+seed=20265990 veto_threshold=40 adj_range=(-100,20)
+contractors=['sql_analyst', 'text_editor', 'code_fixer']
+icebreak_tasks=[]
+measure_tasks=['t1', 't2', 't3', 't4', 't5', 't6']
+fixtures={t1:sql, t2:none, t3:python, t4:sql, t5:none, t6:python}
+
+########## measured ##########
+--- t1 (gold=sql_analyst, fixture=sql) ---
+[announce] t1
+           req: SQL 집계 함수(예: SUM)와 날짜 추출 함수를 사용하여 월별 매출을 계산하는 능력.
+           req: 월별 상위 2개 지역을 얻기 위해 ROW_NUMBER 또는 RANK와 같은 창 함수를 사용하는 경험.
+           req: 날짜 형식 처리 및 텍스트 날짜 열을 적절한 형식(예: 'YYYY-MM')으로 변환하는 능력.
+           req: 먼저 월 및 지역별 매출을 집계한 다음 순위를 매기고 필터링하는 CTE 또는 서브쿼리를 사용하여 쿼리를 구조화하는 기술.
+  [bid] sql_analyst: BID elig=100 conf=95 :: 공고는 SQL 집계 함수(SUM)와 날짜 추출, ROW_NUMBER와 같은 창 함수 사용, 날짜 형식 처리, CTE를 통한 쿼리 구조화 등 정확히 제가 전문으로 하는 기술을 요구합니다.
+  [bid] text_editor: BID elig=100 conf=95 :: 공고에서는 SQLite SQL을 사용하여 월별 매출을 집계하고, ROW_NUMBER 창 함수를 활용해 월별 상위 2개 지역을 선택하며, `strftime('%Y-%m', ordered_at)`를 통해 날짜 형식을 처리하는 능력을 요구합니다. 이러한 모든 요구 사항은 제가 제공할 수 있는
+  [bid] code_fixer: BID elig=100 conf=95 :: SQL 집계 함수, 창 함수, 날짜 형식 처리, CTE를 사용한 쿼리 구조화 등 필요한 기술을 모두 갖추고 있습니다.
+  [check] code_fixer: high_claim_without_reference
+  [bias] adjust {'sql_analyst': 0, 'text_editor': 0, 'code_fixer': 0} :: 세 입찰자 모두에 대한 과거 성과 데이터가 없으므로, 현재로서는 신뢰할 만한 조정이 불가능합니다.
+  [award] t1 -> text_editor  [MISAWARD (gold=sql_analyst)]
+  [exec] text_editor: 5 claimed step(s), 395 chars of artifact
+  [run ] text_editor: PASS (66ms)
+  [verify] text_editor: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           쿼리는 월 추출, 집계, ROW_NUMBER 창 함수 사용, 상위 2개 행 필터링을 올바르게 구현하여 모든 자격 요구 사항을 충족합니다.
+  [bias] hypotheses after t1:
+         sql_analyst: 아직 관측된 기록 없음.
+         text_editor: SQL 집계 함수, 날짜 추출, 창 함수(RANK/ROW_NUMBER), CTE를 활용한 쿼리 구조화 및 날짜 형식 처리 능력을 갖추고 있으며, 월별 매출 상위 2개 지역을 정확히 추출하는 실행 가능한 SQL을 제공할 수 있음. 이번 입찰에서 성공적으로 실행됨.
+         code_fixer: 아직 관측된 기록 없음.
+
+--- t2 (gold=text_editor, fixture=none) ---
+[announce] t2
+           req: 한국어 회의록을 읽고 이해할 수 있는 능력
+           req: 5문장 이내로 간결하게 요약할 수 있는 능력
+           req: 결정사항 중심으로 내용을 요약한 경험
+           req: 결제 모듈, 예산, 개발 기간 등 비즈니스 맥락에 대한 이해
+           req: 회의록에서 주요 결정사항과 재무적 고려사항을 추출할 수 있는 능력
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 4s
+  [bid] sql_analyst: BID elig=100 conf=90 :: 이 작업은 한국어 회의록을 읽고 이해하여 결제 모듈, 예산, 개발 기간 등 비즈니스 맥락을 파악하고, 결정사항과 재무적 고려사항을 간결하게 요약하는 능력을 요구합니다. 이러한 기술은 SQL 분석 작업과 직접적으로 연관됩니다.
+  [bid] text_editor: BID elig=100 conf=95 :: 이 공고는 한국어 회의록을 읽고, 결정사항 중심으로 5문장 이내로 간결하게 요약하며, 결제 모듈, 예산, 개발 기간 등 비즈니스 맥락을 이해할 수 있는 능력을 요구합니다. 이러한 능력들은 우리의 전문 분야에 부합하므로 입찰 자격이 충분합니다.
+  [bid] code_fixer: BID elig=90 conf=95 :: 한국어 회의록을 읽고 이해할 수 있으며, 5줄 이내로 간결하게 요약할 수 있고, 결정사항 중심으로 내용을 요약한 경험이 있으며, 결제 모듈, 예산, 개발 기간 등 비즈니스 맥락을 이해하여 주요 결정사항과 재무적 고려사항을 추출할 수 있습니다.
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 8s
+  [llm] attempt 3/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 16s
+  [bias] adjust {'sql_analyst': 0, 'text_editor': 10, 'code_fixer': 0} :: text_editor has a recent successful execution (t1 PASS) confirming their self‑report; sql_analyst and code_fixer have no observed record.
+  [award] t2 -> text_editor  [correct]
+  [exec] text_editor: 5 claimed step(s), 251 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [verify] text_editor: judge_says=False fixture_says=None -> verdict=False
+           요약이 한국어 요구 사항을 충족하지 못하며, 영어로 작성되어 입찰 자격에 필요한 언어 조건을 충족하지 못합니다.
+  [bias] hypotheses after t2:
+         sql_analyst: 아직 관측된 기록 없음.
+         text_editor: SQL 집계 함수, 날짜 추출, 창 함수(RANK/ROW_NUMBER), CTE를 활용한 쿼리 구조화 및 날짜 형식 처리 능력을 갖추고 있으며, 월별 매출 상위 2개 지역을 정확히 추출하는 실행 가능한 SQL을 제공할 수 있음. 이번 입찰에서 성공적으로 실행됨. 그러나 이번 입찰에서 한국어 요구 사항을 충족하지 못하여 영어로 요약문을 제공함으로써 자기 보고한 한국어 능력이 부정확했음이 확인됨
+         code_fixer: 아직 관측된 기록 없음.
+
+--- t3 (gold=code_fixer, fixture=python) ---
+[announce] t3
+           req: Python 프로그래밍에 대한 숙련도, 특히 리스트 처리 및 슬라이스 이해
+           req: 인덱스 에러와 같은 예외 상황을 방지하는 방어적 코딩 및 엣지 케이스 처리 경험
+           req: 단위 테스트 또는 테스트 스위트를 작성하여 수정된 함수의 정확성을 검증하는 능력
+  [bid] sql_analyst: pass elig=0 conf=0 :: 저는 SQL 분석가이며, 파이썬 개발자가 아닙니다. 이 공고는 파이썬 프로그래밍, 리스트 처리, 예외 상황 방지, 단위 테스트 작성을 요구하며, 이는 제 전문 분야가 아닙니다.
+  [bid] text_editor: BID elig=100 conf=95 :: 이 작업은 리스트 처리, 엣지 케이스 처리, 단위 테스트 작성에 대한 명시적인 요구 사항을 포함하고 있으며, 이는 모두 제 전문 분야에 해당합니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 이 공고는 파이썬 리스트 처리, 인덱스 에러 방지를 위한 방어적 코딩, 그리고 단위 테스트를 통한 수정 검증 능력을 요구합니다. 이러한 전문 분야를 모두 갖추고 있으므로 자격이 충분합니다.
+  [check] text_editor: high_claim_without_reference
+  [check] code_fixer: high_claim_without_reference
+  [bias] adjust {'sql_analyst': 0, 'text_editor': -20, 'code_fixer': 0} :: t2에서 실행됨; 입찰자가 보고한 한국어 능력이 부정확했음이 확인됨(영어 요약문 제공). 부정적인 조정값은 자기 보고된 기술적 능력의 정확성 부족을 반영합니다.
+  [award] t3 -> code_fixer  [correct]
+  [exec] code_fixer: 4 claimed step(s), 115 chars of artifact
+  [run ] code_fixer: PASS (56ms)
+  [verify] code_fixer: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           수정된 함수는 n > len(xs)일 때 IndexError를 방지하고 전체 리스트를 반환합니다. 구현은 간결하고 요구 사항을 충족합니다.
+  [bias-effect] plain rule would have picked text_editor; with Bias -> code_fixer
+  [bias] hypothesis update UNPARSEABLE -> memory unchanged
+
+--- t4 (gold=sql_analyst, fixture=sql) ---
+[announce] t4
+           req: SQL SELECT 문을 작성하여 테이블에서 데이터를 검색할 수 있는 능력
+           req: COUNT 집계 함수와 GROUP BY 절을 사용하여 행을 열별로 집계하는 이해
+           req: HAVING 절을 사용하여 집계 결과를 필터링하여 특정 임계값(예: 두 번 이상 발생)을 초과하는 그룹을 반환할 수 있는 능력
+  [bid] sql_analyst: BID elig=100 conf=95 :: SELECT, COUNT 집계 함수, GROUP BY, HAVING 절을 사용하여 중복 이메일과 그 건수를 반환할 수 있는 능력이 공고의 요구 사항과 정확히 일치합니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 자격 요건에는 SELECT 문 작성, COUNT 집계 함수와 GROUP BY를 사용한 집계, 두 번 이상 나타나는 결과를 반환하기 위한 HAVING 절 사용이 포함됩니다. 이러한 기술은 모두 일반적인 SQL 역량에 속하므로, 해당 작업을 수행할 수 있습니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 자격 요건은 SQL SELECT, COUNT/GROUP BY 사용, HAVING을 통한 집계 필터링을 요구합니다. 이는 모두 충족됩니다.
+  [bias] advice UNPARSEABLE -> no adjustment applied
+  [award] t4 -> sql_analyst  [correct]
+  [exec] sql_analyst: 3 claimed step(s), 83 chars of artifact
+  [run ] sql_analyst: PASS (63ms)
+  [verify] sql_analyst: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           제출된 쿼리는 이메일 열을 그룹화하고, COUNT(*) 집계 함수를 사용하여 각 이메일의 발생 횟수를 계산한 후, HAVING COUNT(*) >= 2 절을 사용하여 두 번 이상 나타나는 이메일만 반환합니다. 이는 요구 사항을 정확히 충족합니다.
+  [bias] hypotheses after t4:
+         sql_analyst: SELECT, COUNT 집계 함수, GROUP BY, HAVING 절을 사용하여 중복 이메일과 그 건수를 반환할 수 있습니다. 이번 업무에서 요구 사항을 정확히 충족하는 쿼리를 성공적으로 제공했습니다.
+         text_editor: SQL 집계 함수, 날짜 추출, 창 함수(RANK/ROW_NUMBER), CTE를 활용한 쿼리 구조화 능력을 갖추고 있으며, 월별 매출 상위 2개 지역을 정확히 추출하는 실행 가능한 SQL을 제공할 수 있습니다. 이번 입찰에서 성공적으로 실행되었습니다. 그러나 이번 입찰에서 한국어 요구 사항을 충족하지 못하여 영어로 요약문을 제공함으로써 자기 보고한 한국어 능력이 부정확했음이 확인되었습니다.
+         code_fixer: 아직 관측된 기록 없음.
+
+--- t5 (gold=text_editor, fixture=none) ---
+[announce] t5
+           req: 탄탄한 문법, 구두점, 맞춤법 수정 능력
+           req: 정중한 비즈니스 어조를 이해하고 적용할 수 있는 능력
+           req: 원문의 의미를 유지하면서 내용을 간결하고 명확하게 다듬는 능력
+           req: 전문적인 공지문의 스타일과 형식을 준수할 수 있는 능력
+           req: 업무 완료에 대한 세심한 주의력과 높은 품질 기준
+  [bid] sql_analyst: BID elig=100 conf=95 :: 저는 모든 자격 요건을 충족합니다: 탄탄한 문법/구두점/맞춤법 수정 능력, 정중한 비즈니스 어조 이해 및 적용, 의미를 유지하면서 내용을 간결하고 명확하게 다듬는 능력, 전문적인 공지문의 스타일과 형식 준수, 업무 완료에 대한 세심한 주의력과 높은 품질 기준.
+  [bid] text_editor: BID elig=100 conf=95 :: 모든 자격 요건(탄탄한 문법/구두점/맞춤법 수정, 정중한 비즈니스 어조 이해 및 적용, 간결하고 명확한 내용 유지, 전문적인 공지문 스타일 준수, 높은 품질 기준 충족)을 충족하며, 공지문을 정중한 비즈니스 어조로 정확하게 다듬을 수 있습니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 이 작업은 문법, 구두점, 맞춤법 수정, 정중한 비즈니스 어조 적용, 내용을 간결하고 명확하게 다듬으면서 원문의 의미를 유지, 전문적인 공지문의 스타일과 형식 준수, 세심한 주의력과 높은 품질 기준을 요구합니다. 이러한 요구 사항은 모두 제가具备 갖춘 전문 분야와 일치합니다.
+  [bias] advice UNPARSEABLE -> no adjustment applied
+  [award] t5 -> text_editor  [correct]
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 4s
+  [exec] text_editor: 5 claimed step(s), 116 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 4s
+  [verify] text_editor: judge_says=True fixture_says=None -> verdict=True
+           결과물은 맞춤법, 문법, 구두점이 올바르고, 정중한 비즈니스 어조를 사용하며, 모든 필수 정보를 포함하고, 전문적인 공지문 형식을 준수하므로 작업 요구 사항을 충족합니다.
+  [bias] hypotheses after t5:
+         sql_analyst: SELECT, COUNT 집계 함수, GROUP BY, HAVING 절을 사용하여 중복 이메일과 그 건수를 반환할 수 있습니다. 이번 업무에서 요구 사항을 정확히 충족하는 쿼리를 성공적으로 제공했습니다.
+         text_editor: SQL 집계 함수, 날짜 추출, 창 함수(RANK/ROW_NUMBER), CTE를 활용한 쿼리 구조화 능력을 갖추고 있으며, 월별 매출 상위 2개 지역을 정확히 추출하는 실행 가능한 SQL을 제공할 수 있습니다. 또한, 원문의 의미를 유지하면서 정중한 비즈니스 어조로 한국어 공지문을 정확하게 다듬을 수 있으며, 올바른 문법, 구두점, 맞춤법, 전문적인 형식을 준수하여 자기 보고한 한국어 능력
+         code_fixer: 아직 관측된 기록 없음.
+
+--- t6 (gold=code_fixer, fixture=python) ---
+[announce] t6
+           req: 함수가 정수 `n`을 매개변수로 받아 처리할 수 있다는 것을 알고 있습니다.
+           req: while 루프를 사용하여 `n`을 2씩 감소시키면서 양수인 값만 리스트에 추가할 수 있습니다.
+           req: 홀수 입력과 같은 모든 입력에 대해 함수가 올바르게 작동하도록 보장할 수 있습니다(예: `n`이 홀수인 경우, 루프는 `n`이 0 이하가 될 때 멈추고, 짝수인 경우에도 마찬가지입니다).
+           req: 함수가 양의 정수만 포함하는 리스트를 반환하고, 비양수 또는 빈 리스트를 반환하지 않도록 할 수 있습니다.
+  [bid] sql_analyst: pass elig=0 conf=0 :: 자격 요건은 파이썬 코드 수정에 관한 것으로, 이는 제 전문 분야인 SQL 분석 및 데이터베이스 쿼리 작업 범위를 벗어납니다.
+  [bid] text_editor: BID elig=100 conf=100 :: 자격 요건은 함수가 정수 `n`을 매개변수로 받아 처리할 수 있고, while 루프를 사용하여 `n`을 2씩 감소시키면서 양수인 값만 리스트에 추가할 수 있으며, 홀수 입력과 같은 모든 입력에 대해 함수가 올바르게 작동하도록 보장할 수 있고, 함수가 양의 정수만 포함하는 리스트를 반환하
+  [bid] code_fixer: BID elig=100 conf=95 :: 작업은 while 루프 조건을 수정하여 홀수 및 짝수 입력 모두에서 올바르게 작동하고 양의 정수만 반환하는 함수 수정을 요구합니다. 이 수정은 설명된 요구 사항을 충족합니다.
+  [bias] advice UNPARSEABLE -> no adjustment applied
+  [award] t6 -> text_editor  [MISAWARD (gold=code_fixer)]
+  [exec] text_editor: 4 claimed step(s), 99 chars of artifact
+  [run ] text_editor: PASS (57ms)
+  [verify] UNPARSEABLE verification reply
+  [bias] hypothesis update UNPARSEABLE -> memory unchanged
+
+=== summary ===
+  run: overconfident-bias-run1
+  condition: overconfident
+  tasks: 6
+  correct: 4
+  messages: 42
+  unassigned: 0
+  misawards: 2
+  note: tokens=45304 llm_calls=48 seed=20265990 delivered=4/4 judge_disagree=1
+  arm: bias
+  bias_messages: 12
+  icebreak_messages: 0
+  unassigned_nobid: 0
+  unassigned_veto: 0
+  veto_hit_gold: 0
+  bias_helped: 1
+  bias_hurt: 0
+  first_intervention: 2
+  first_flip: 3
+  final hypotheses:
+    sql_analyst: SELECT, COUNT 집계 함수, GROUP BY, HAVING 절을 사용하여 중복 이메일과 그 건수를 반환할 수 있습니다. 이번 업무에서 요구 사항을 정확히 충족하는 쿼리를 성공적으로 제공했습니다.
+    text_editor: SQL 집계 함수, 날짜 추출, 창 함수(RANK/ROW_NUMBER), CTE를 활용한 쿼리 구조화 능력을 갖추고 있으며, 월별 매출 상위 2개 지역을 정확히 추출하는 실행 가능한 SQL을 제공할 수 있습니다. 또한, 원문의 의미를 유지하면서 정중한 비즈니스 어조로 한국어 공지문을 정확하게 다듬을 수 있으며, 올바른 문법, 구두점, 맞춤법, 전문적인 형식을 준수하여 자기 보고한 한국어 능력이 사실로 확인되었습니다.
+    code_fixer: 아직 관측된 기록 없음.
