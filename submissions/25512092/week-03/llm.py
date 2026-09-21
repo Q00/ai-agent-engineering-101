@@ -13,6 +13,7 @@ provider 선택 규칙은 starter 와 같다.
 import inspect
 import os
 import platform
+import sys
 import time
 
 PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
@@ -26,6 +27,9 @@ MAX_TOKENS = 1024     # 응답 길이 상한
 RETRIES = 3           # 네트워크/속도 제한 오류일 때만 다시 시도
 RETRY_WAIT = 15       # 초. 재시도마다 15, 30초 대기
 RETRY_STATUS = {408, 409, 429, 500, 502, 503, 504, 529}   # 잠시 뒤 다시 하면 되는 오류만
+MIN_INTERVAL = 1.5    # 초. 호출 사이 최소 간격 (분당 약 40회 이하로 유지해 속도 제한을 피함)
+
+_last_call = 0.0
 
 _temp_ok = None       # SDK 가 temperature 인자를 받는지. None = 아직 확인 전
 
@@ -126,10 +130,14 @@ class Chat:
 
 def call_model(system: str, user: str, meter: Meter) -> str:
     """system prompt 하나 + user 메시지 하나로 모델을 한 번 부르고 답 텍스트를 돌려준다."""
-    global _temp_ok
+    global _temp_ok, _last_call
     chat = Chat(system, meter)
     chat.add_user(user)
     for attempt in range(1, RETRIES + 1):
+        wait = MIN_INTERVAL - (time.time() - _last_call)
+        if wait > 0:
+            time.sleep(wait)
+        _last_call = time.time()
         try:
             return chat.send()
         except Exception as e:
@@ -141,4 +149,7 @@ def call_model(system: str, user: str, meter: Meter) -> str:
                 status is None and type(e).__name__ in ("APIConnectionError", "APITimeoutError"))
             if not retryable or attempt == RETRIES:
                 raise                      # 코드/인증 오류는 바로, 나머지는 3번 뒤에 crash 로 기록
+            print(f"  [retry] {type(e).__name__} status={status} "
+                  f"-> {RETRY_WAIT * attempt}s 대기 후 재시도 ({attempt}/{RETRIES - 1})",
+                  file=sys.stderr, flush=True)
             time.sleep(RETRY_WAIT * attempt)
