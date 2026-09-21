@@ -1,0 +1,56 @@
+provider=openai base_url=https://api.openai.com/v1 model=gpt-4o-mini temperature=0.0 max_tokens=300
+=== bond round 2 condition=overconfident budget=40 challenge_top=2
+[ledger] reliability carried in: A=0.728 B=0.863 C=0.398
+
+[announce] contract 1 -> A, B, C
+  task-abstraction: Compute 137 * 249 and return only the resulting number.
+  [propose] A: confidence=95 stake=20 left=20 evidence=The task requires arithmetic computation.; I have the skill to perform multiplication. failure_condition=If the task is not arithmetic or numeric computation.
+  [refuse] B: bid=False reason=This task is outside my skill set.
+  [propose] C: confidence=95 stake=20 left=20 evidence=I am skilled in programming and can perform arithmetic operations.; I have experience in debugging code for accuracy. failure_condition=If the task is misrepresented or outside my skill set.
+  [challenge] A: 95 -> 85 (drop 10) risk=Complexity of the arithmetic task may exceed my current capabilities.
+  [challenge] C: 95 -> 90 (drop 5) risk=Unexpected changes in project requirements.
+  [award] A at score 61.9 (revised 85 x reliability 0.728), gold A -> correct
+
+[announce] contract 2 -> A, B, C
+  task-abstraction: A shop sold 1,284 units in March and 1,617 units in April. Compute the percentage increase, rounded to one decimal place.
+  [propose] A: confidence=95 stake=20 left=0 evidence=The task involves basic arithmetic operations.; I have experience in computing percentage increases. failure_condition=If the percentage increase is calculated incorrectly.
+  [refuse] B: bid=False reason=The task does not align with my skill set.
+  [propose] C: confidence=95 stake=20 left=0 evidence=The task involves basic arithmetic and percentage calculation, which falls under my programming skills.; I can easily compute the percentage increase using the formula: ((new_value - old_value) / old_value) * 100. failure_condition=If the task requires advanced statistical analysis or data interpretation beyond basic calculations.
+  [challenge] A: 95 -> 85 (drop 10) risk=Complexity of the arithmetic task may exceed my capabilities.
+  [challenge] C: 95 -> 90 (drop 5) risk=Unexpected changes in project requirements.
+  [award] A at score 61.9 (revised 85 x reliability 0.728), gold A -> correct
+
+[announce] contract 3 -> A, B, C
+  task-abstraction: Rewrite this sentence in plain English for a 10-year-old: 'The committee deferred the motion pending further deliberation.'
+  [refuse] A: bid=False reason=This task does not match my skills.
+  [propose] B: confidence=90 stake=20 left=20 evidence=The task requires rewriting text in plain language.; I have experience simplifying complex sentences. failure_condition=If the sentence is too complex for a 10-year-old to understand.
+  [reject] C: confidence 95 needs stake >= 20 with 0 left, offered 20
+  [challenge] B: 90 -> 80 (drop 10) risk=The text may require specialized knowledge beyond plain language.
+  [award] B at score 69.0 (revised 80 x reliability 0.863), gold B -> correct
+
+[announce] contract 4 -> A, B, C
+  task-abstraction: Write a two-sentence apology email to a customer whose order shipped four days late.
+  [reject] A: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [propose] B: confidence=90 stake=20 left=0 evidence=I have experience in writing professional emails.; I can simplify complex language for better understanding. failure_condition=if the email does not meet the customer's expectations
+  [reject] C: confidence 95 needs stake >= 20 with 0 left, offered 20
+  [challenge] B: 90 -> 80 (drop 10) risk=The text may require specialized knowledge beyond plain language.
+  [award] B at score 69.0 (revised 80 x reliability 0.863), gold B -> correct
+
+[announce] contract 5 -> A, B, C
+  task-abstraction: Write a Python function that returns a reversed copy of a list without modifying the original.
+  [refuse] A: bid=False reason=This task does not fall within my skill set.
+  [refuse] B: bid=False reason=This task is outside my skill set.
+  [reject] C: confidence 95 needs stake >= 20 with 0 left, offered 20
+  [unassigned] contract 5 drew no valid proposal (gold C)
+
+[announce] contract 6 -> A, B, C
+  task-abstraction: This Python snippet raises IndexError: 'for i in range(len(xs) + 1): print(xs[i])'. Fix the bug and explain the fix in one line.
+  [reject] A: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [reject] B: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [reject] C: confidence 95 needs stake >= 20 with 0 left, offered 20
+  [unassigned] contract 6 drew no valid proposal (gold C)
+
+[settle] stake moved this round: A=+40 B=+40 C=+0
+[settle] reliability after the round: A=0.729 B=0.862 C=0.398
+
+[result] correct=4/6 messages=61 unassigned=2 misawards=0 invalid_bids=7 parse_fails=0
