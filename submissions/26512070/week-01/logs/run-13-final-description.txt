@@ -1,0 +1,17 @@
+  [tool] calculator({'expression': '18 + ((18 + 5) % 60)'})
+Traceback (most recent call last):
+  File "C:\Users\gom12\ax_수업\ai-agent-engineering-101\submissions\26512070\week-01\first_agent.py", line 181, in <module>
+    print(run(goal))
+          ~~~^^^^^^
+  File "C:\Users\gom12\ax_수업\ai-agent-engineering-101\submissions\26512070\week-01\first_agent.py", line 162, in run
+    out = TOOLS_IMPL[call.function.name](**args)
+  File "C:\Users\gom12\ax_수업\ai-agent-engineering-101\submissions\26512070\week-01\first_agent.py", line 38, in calculator
+    return str(_ev(ast.parse(expression, mode="eval").body))
+               ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gom12\ax_수업\ai-agent-engineering-101\submissions\26512070\week-01\first_agent.py", line 30, in _ev
+    return _OPS[type(node.op)](_ev(node.left), _ev(node.right))
+                                               ~~~^^^^^^^^^^^^
+  File "C:\Users\gom12\ax_수업\ai-agent-engineering-101\submissions\26512070\week-01\first_agent.py", line 30, in _ev
+    return _OPS[type(node.op)](_ev(node.left), _ev(node.right))
+           ~~~~^^^^^^^^^^^^^^^
+KeyError: <class 'ast.Mod'>

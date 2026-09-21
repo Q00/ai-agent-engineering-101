@@ -68,3 +68,11 @@ Passing checks is the minimum bar for submission, not a grade. Actual grading â€
 ## LLM policy
 
 LLMs and agent tools (Claude Code, Codex, opencode, anything) are free to use on every assignment. `AGENTS.md` and `CLAUDE.md` in this repository exist so those tools understand the rules here. The one condition: what you asked for and what you discarded must remain in the commit history and logs.
+
+## License
+
+The lecture notes, figures, assignment specs, and course code in this repository are licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). You may read, copy, modify, and share them for study and other non-commercial purposes, as long as you credit the source and keep the same license on anything you derive from them.
+
+Using this material to teach a course, whether at a school, a company, or a paid program, is not covered by that license. If you want to do that, email jaegyu.lee@ourolabs.ai first and describe the setting. Commercial use without permission is a copyright infringement and will be pursued.
+
+`submissions/` is excluded: each student owns the work in their own directory.
