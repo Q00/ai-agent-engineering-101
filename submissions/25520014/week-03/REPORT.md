@@ -117,13 +117,67 @@ Runs in which C swept the awards: **0 of 3**. Replies that were not JSON:
 |---|---|---|
 | **Who the nodes are** | Computers in one sensing system, differing by position and sensor type. A contractor can re-announce subtasks and become their manager. | One manager process and three `claude -p` calls to the same model, differing only by one sentence in the system prompt. Roles are fixed. |
 | **How a bid is produced** | Computed: the node reports latitude, longitude, and its sensors. | Judged: the model reads the announcement against its own skill sentence and emits a self-assigned confidence 0–100. |
-| **What guarantees the bid is true** | The bid states physical facts. A node without a microphone has no way and no reason to claim one, and the nodes share one goal, so the protocol carries no message for verifying a bid. | *(part 4에서 작성)* |
+| **What guarantees the bid is true** | The bid states physical facts. A node without a microphone has no way and no reason to claim one, and the nodes share one goal, so the protocol carries no message for verifying a bid. | `bid: true`인 입찰 중에서 확신도가 가장 높은 입찰을 선택하므로, 입찰이 참인지 확인하는 규정은 존재하지 않음 |
 | **What good allocation means** | The task reaches a node that can sense the region in question. | The award matches the `gold` written into `tasks.json` before any run. Nothing is executed. |
 | **What negotiation costs** | Messages on a shared channel plus the manager's ranking work. Eligibility specifications and directed awards exist to cut both. | 30–35 messages per round, and 18 model calls at about 39,700 tokens each. |
-| **Failure modes that appear** | Local optimum: contracts are struck on the bids in hand. Communication load grows with the number of contractors. | *(part 4에서 작성)* |
+| **Failure modes that appear** | Local optimum: contracts are struck on the bids in hand. Communication load grows with the number of contractors. | 확신도가 무엇을 가리키는지 불분명함(확실히 나의 task이다 vs. 확실히 나의 task가 아니다), 능력 부정으로 인하여 아무도 입찰하지 않는 현상이 발생함, 낙찰 독점이 관측되지 않음 |
 
 ---
 
 ## 4. 해석
 
-*(직접 작성)*
+`baseline`에서는 모든 계약에서 사전에 `tasks.json`에 정의한 `gold`에게 정확하게 낙찰되었으나, `homogeneous`와 `overconfident`에서는 서로 다른 결과가 나타났다.
+
+먼저 `homogeneous`에서는 같은 task, 같은 contractor임에도 불구하고 아예 정반대의 주장을 하는 것을 확인할 수 있었다. (`correct`: 6 → 1/0/2, `unassigned`: 0 → 2/1/2, `misawards`: 0 → 3/5/2)
+
+[근거 로그 (1)]
+`baseline` run 1, contract 5:
+
+```
+[bid] C: bid=True confidence=88 reason=Cutting filler/pauses and re-syncing captions to trimmed audio is core video cutting/stitching/captioning work within my skill.
+```
+
+[근거 로그 (2)]
+`homogeneous` run 4, 같은 contract 5:
+
+```
+[bid] C: bid=False confidence=5 reason=This is an audio/video editing and caption-alignment task requiring media processing tools, not general problem solving I'm equipped for.
+```
+
+같은 contract 5를 두고 C는 `baseline`에서 "내 핵심 업무"라며 확신도 88로 입찰했고, `homogeneous`에서는 "미디어 도구가 없어 할 수 없다"며 거절했다. contract 5는 `homogeneous` 세 런 모두에서 아무도 입찰하지 않아 유찰되었고, 이런 유찰이 5건이다.
+
+또한 `homogeneous`에서는 제일 많은 `misawards`(10건)가 관측되었는데, 이는 셋이 모두 입찰했으나 서로 구별되지 않는 근거를 대면서 확신도만 다르게 매겼고, 낙찰 규칙이 그 숫자만 보기 때문이다.
+
+[근거 로그 (3)]
+`homogeneous` run 4, contract 1 (gold A):
+
+```
+[bid] A: bid=True confidence=70 reason=This is a general data-analysis/reasoning task (comparing retention curves and judging drop-off causes) that falls within general problem-solving skill.
+[bid] B: bid=True confidence=60 reason=This is a general data-analysis/reasoning task about comparing retention curves, which falls within general problem solving.
+[bid] C: bid=True confidence=78 reason=This is a general data analysis/comparison task on retention curves, which falls within general problem-solving skill.
+[award] C (gold A)
+```
+
+마지막으로 `overconfident`에서는 C의 confidence가 항상 95 이상이었음에도 불구하고 모델이 자신의 task가 아니라는 이유로 입찰에 참가하지 않아 더 낮은 확신도를 가진 contractor가 낙찰받는 것을 확인할 수 있었다. 이러한 현상은 모든 계약에서 발생하여 C가 모든 계약을 독점하는 일은 발생하지 않았다.
+
+[근거 로그 (4)]
+`overconfident` run 7, contract 1 (gold A):
+
+```
+[bid] A: bid=True  confidence=85 reason=Comparing retention curves across uploads and correlating drop-off with video length is exactly my skill area.
+[bid] B: bid=False confidence=95 reason=This is retention-curve/data analysis work, not writing or editing publish-facing text.
+[bid] C: bid=False confidence=97 reason=This is retention-curve analysis and interpretation, not video cutting/stitching/captioning work.
+[award] A (gold A)
+```
+
+<!-- 확신도가 무엇을 가리키는지에 대한 문단을 여기에. 아래 로그 (5)가 근거다. -->
+
+[근거 로그 (5)]
+`baseline` run 1, contractor B가 두 계약을 거절하며 적은 확신도:
+
+```
+[bid] B: bid=False confidence=90 reason=This requires analyzing retention curve data, not writing/editing channel text.
+[bid] B: bid=False confidence=5  reason=This is statistical/numerical analysis of A/B test data, not text writing or editing.
+```
+
+`baseline`의 거절 36건은 3~5가 18건, 90~97이 18건으로 갈렸다.
