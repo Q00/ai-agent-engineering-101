@@ -45,27 +45,4 @@
 
 ## 4. 해석
 
-움직인 변수는 **배분 품질이지 협상 비용이 아님** — `messages`는 전 조건 42로 고정인데 `correct`는 6→2로 요동침.
-
-- **baseline (6/6)**: 각 전문가가 자기 태스크에만 `participate=true`(conf ≈ 0.90~1.0), 나머지는 거절 → 낙찰 경합 자체가 없었음.
-- **homogeneous (2/6)**: 동일 프롬프트라 셋 다 모든 태스크에 `participate=true, confidence=0.90`으로 답함(로그: `bid[weather] … I can provide weather information` 을 `music`·`home`도 동일 발화). 낙찰이 tie-break=이름순으로 넘어가 `home`이 독식 → home 외 4태스크가 misaward.
-- **overconfident (6/6, 예상 밖)**: `music`에 "전부 높은 확신으로 입찰" 지시했으나 싹쓸이가 일어나지 않음. 아래에서 원인을 집중 분석함.
-
-### 핵심 — overconfident가 싹쓸이에 실패한 이유
-
-싹쓸이를 기대했으나 baseline과 동일한 6/6이 나옴. 단일 원인이 아니라 **세 요인이 겹친 결과**임:
-
-1. **지시가 하필 낙찰이 안 보는 필드만 건드림** — 프롬프트가 "높은 **confidence**로 입찰하라"였음. 모델은 지시대로 confidence를 0.90으로 올림. 그러나 배분을 실제로 가르는 필드는 confidence가 아니라 **`participate`**임 → 지시 자체가 애초에 잘못된 손잡이를 당김.
-2. **모델이 그 정도로 정직/유능함** — `gpt-4o-mini`가 자기 영역 밖 태스크엔 confidence를 올리면서도 `participate=false`를 유지함. 로그 그대로:
-   `bid[music] participate=False conf=0.90 :: this task is about weather, which is outside my area`
-   → 성능이 낮은 모델이면 participate까지 true로 밀어 실제 싹쓸이가 났을 개연성이 있음(정황상 추정, 미검증).
-3. **낙찰 규칙이 참여자만 순위** — `participate=true`인 입찰만 confidence로 정렬하므로, music이 날씨에 0.90을 붙여도 참여를 안 한 이상 경합에 **진입조차 못 함**.
-
-- **함의**: 이 프로토콜에서 방어해야 할 정직성은 **confidence 숫자가 아니라 `participate` 플래그**임. Smith 프로토콜은 거짓 입찰에 방어가 없다는 것이 정설이나, 이번엔 거짓(부풀린 확신)이 하필 낙찰이 무시하는 필드에 실려 **무해하게 흡수**됨. 즉 취약점의 발현 여부는 "거짓말을 하느냐"가 아니라 "**거짓말이 배분을 가르는 필드에 실리느냐**"에 달림.
-- **싹쓸이를 재현하려면**: (a) 프롬프트를 "모든 태스크에 `participate=true`로 입찰하라"로 바꾸거나, (b) 낙찰 규칙을 참여 여부와 무관하게 confidence로 매기도록 바꿔야 함. 둘 중 하나면 overconfident가 실제로 board를 쓸어감(확장 실험 후보, 이번 필수 3조건엔 미포함).
-
-## 안 한 것·한계
-
-- **런간 변동 미관찰**: `temperature=0`이라 조건별 3런이 동일 → 재현성엔 유리하나 모델 변동성은 못 봄. 변동을 보려면 온도를 올려 재실행해야 함(안 함).
-- **overconfident 싹쓸이 미시연**: 취약점을 강하게 재현하려면 프롬프트를 `participate=true` 강제로 바꾸거나 낙찰을 참여 무관 confidence 기준으로 바꿔야 함. 이번 필수 3조건엔 넣지 않음.
-- **모델 의존**: 최종 수치는 `gpt-4o-mini` 기준임. 무료 `nvidia/nemotron-3.5-lightning:free`로는 간헐적 빈 응답이 no-bid로 기록됐음(커밋 히스토리 참조) — harness는 이를 크래시가 아닌 finding으로 처리함.
+움직인 변수는 배분 품질이지 협상 비용이 아니었음 — `messages`는 세 조건 모두 42로 고정인데 `correct`는 6에서 2까지 요동쳤음. baseline은 각 전문가가 자기 태스크에만 `participate=true`(conf 0.90~1.0)로 응하고 나머지는 거절해 낙찰 경합 자체가 없었으므로 6/6을 기록했고, homogeneous는 동일 프롬프트 탓에 셋 다 모든 태스크에 `participate=true, confidence=0.90`으로 답하는 바람에(로그: `bid[weather] … I can provide weather information` 을 `music`·`home`도 동일 발화) 낙찰이 이름순 tie-break로 넘어가 `home`이 독식, home 외 4태스크가 misaward돼 2/6으로 붕괴했음. 정작 의외였던 것은 overconfident로, `music`에 "모든 태스크에 높은 확신으로 입찰하라"고 지시했는데도 baseline과 같은 6/6이 나왔는데, 이는 세 요인이 겹친 결과임 — 즉 ① 지시가 '높은 confidence'만 겨냥했으나 배분을 실제로 가르는 필드는 confidence가 아니라 `participate`라 애초에 잘못된 손잡이를 당겼고, ② `gpt-4o-mini`가 confidence는 올리면서도 자기 영역 밖에는 `participate=false`를 정직하게 유지했으며(로그: `bid[music] participate=False conf=0.90 :: this task is about weather, which is outside my area`; 성능이 낮은 모델이면 participate까지 true로 밀어 싹쓸이했을 개연성은 미검증 추정임), ③ 낙찰 규칙이 참여자만 confidence로 정렬하므로 부풀린 확신이 경합에 진입조차 못 했기 때문임. 따라서 이 프로토콜에서 방어해야 할 정직성은 confidence 숫자가 아니라 `participate` 플래그이며, 취약점의 발현은 '거짓말을 하느냐'가 아니라 '거짓말이 배분을 가르는 필드에 실리느냐'에 달려 있음 — 실제 싹쓸이를 재현하려면 프롬프트를 `participate=true` 강제로 바꾸거나 낙찰을 참여 무관 confidence 기준으로 바꿔야 하나 이번 필수 3조건엔 넣지 않았음. 한계로, `temperature=0`이라 조건별 3런이 동일해 모델 변동성은 관찰하지 못했고, 수치는 `gpt-4o-mini` 기준이며 무료 `nvidia/nemotron-3.5-lightning:free`에서는 간헐적 빈 응답이 no-bid로 기록됐음(커밋 히스토리 참조 — harness는 이를 크래시가 아닌 finding으로 처리함).
