@@ -3,6 +3,41 @@
 > 교수님 판서(Candidate 노드 · 역할 분기 · message protocol)의 추상 수준을 따르되,
 > 이번 주 과제 요건(매니저 1, 계약자 3, 도구 없음)에 맞춰 배치한다.
 
+## 0. 한 장 요약 — 교수님 판서 배치를 따른 전체 구조
+
+> 판서의 Candidate · 역할 분기(manager: announce · get · award / contractor: bidding) · message protocol을 그대로 두고, 이번에 추가한 낙찰 정책 · 평판 · 컨텍스트 정책을 그 위에 얹었다. 여섯 조건은 이 그림에서 표시된 한 자리씩만 바꾼다.
+
+```mermaid
+flowchart TB
+    TQ["Task queue · tasks.json<br/>id · desc · gold"]
+
+    subgraph NET["Contract net — Candidate 0~3, 같은 클래스, 역할만 다름"]
+        direction TB
+        subgraph MGR["Candidate 0 · role = manager (규칙, LLM 없음)"]
+            direction LR
+            AN["announce<br/>공고 ×3 브로드캐스트"] --> GT["get<br/>입찰 수집"] --> AW["award<br/>낙찰"]
+            POL["Award policy (교체 가능)<br/>confidence / reputation / capacity"] -.-> AW
+            REP["Reputation store<br/>낙찰 vs gold 누적"] -.-> POL
+        end
+        BUS["Message bus<br/>Announcement · Bid · Award = messages<br/>NoBid(parse_fail / api_error)는 기록만"]
+        subgraph CTR["Candidate 1~3 · role = contractor (LLM, 시스템 프롬프트 1개)"]
+            direction LR
+            CTX["Context policy<br/>fresh: 공고마다 새 대화<br/>memory: 자기 입찰·낙찰 기억"] --> BD["bidding<br/>공고 1개 = 모델 호출 1회"] --> PR["Bid parser<br/>JSON 3단계 추출"]
+        end
+        MGR <--> BUS
+        BUS <--> CTR
+    end
+
+    MSG["message protocol · Bid<br/>{ bid: true, confidence: 0-100,<br/>reason: '…', trajectory: [] }"]
+    COND["조건 = 한 자리만 교체<br/>baseline · homogeneous · overconfident → 스킬 문장<br/>reputation · capacity → Award policy<br/>memory → Context policy"]
+
+    TQ --> MGR
+    CTR -.-> MSG
+    COND -.-> NET
+    BUS --> LOG["logs/run-NN-condition.txt<br/>공고 · 입찰(확신도·이유) · 낙찰 전부"]
+    MGR --> RES["results.csv / results-extra.csv<br/>correct · messages · unassigned · misawards"]
+```
+
 ## 1. 노드 모델: Candidate 하나, 역할 둘
 
 모든 참여자는 같은 `Candidate` 클래스다. 역할(`manager` / `contractor`)은 노드의

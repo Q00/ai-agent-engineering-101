@@ -69,6 +69,39 @@ python run.py --condition overconfident --runs 3
 하루 3런이 상한이고, 아홉 런을 사흘에 나누어 돌렸습니다. 모델 호출 없이 흐름만
 확인하려면 `--dry-run`을 붙입니다.
 
+**구조.** 아래 그림이 전체 구조입니다. 참여자는 모두 같은 Candidate 클래스이고, 매니저 경로(공고 → 수집 → 낙찰)와 계약자 경로(입찰) 중 하나를 탑니다. 모든 메시지는 버스를 거치며 버스의 건수가 메시지 지표입니다. 여섯 조건은 그림에 표시된 자리 하나씩만 바꿉니다. 필수 세 조건은 스킬 문장을, 추가 세 조건은 낙찰 정책 또는 컨텍스트 정책을 바꿉니다.
+
+```mermaid
+flowchart TB
+    TQ["Task queue · tasks.json<br/>id · desc · gold"]
+
+    subgraph NET["Contract net — Candidate 0~3, 같은 클래스, 역할만 다름"]
+        direction TB
+        subgraph MGR["Candidate 0 · role = manager (규칙, LLM 없음)"]
+            direction LR
+            AN["announce<br/>공고 ×3 브로드캐스트"] --> GT["get<br/>입찰 수집"] --> AW["award<br/>낙찰"]
+            POL["Award policy (교체 가능)<br/>confidence / reputation / capacity"] -.-> AW
+            REP["Reputation store<br/>낙찰 vs gold 누적"] -.-> POL
+        end
+        BUS["Message bus<br/>Announcement · Bid · Award = messages<br/>NoBid(parse_fail / api_error)는 기록만"]
+        subgraph CTR["Candidate 1~3 · role = contractor (LLM, 시스템 프롬프트 1개)"]
+            direction LR
+            CTX["Context policy<br/>fresh: 공고마다 새 대화<br/>memory: 자기 입찰·낙찰 기억"] --> BD["bidding<br/>공고 1개 = 모델 호출 1회"] --> PR["Bid parser<br/>JSON 3단계 추출"]
+        end
+        MGR <--> BUS
+        BUS <--> CTR
+    end
+
+    MSG["message protocol · Bid<br/>{ bid: true, confidence: 0-100,<br/>reason: '…', trajectory: [] }"]
+    COND["조건 = 한 자리만 교체<br/>baseline · homogeneous · overconfident → 스킬 문장<br/>reputation · capacity → Award policy<br/>memory → Context policy"]
+
+    TQ --> MGR
+    CTR -.-> MSG
+    COND -.-> NET
+    BUS --> LOG["logs/run-NN-condition.txt<br/>공고 · 입찰(확신도·이유) · 낙찰 전부"]
+    MGR --> RES["results.csv / results-extra.csv<br/>correct · messages · unassigned · misawards"]
+```
+
 ## 2. 측정 결과
 
 `<실행 후 results.csv를 표로 옮김>`
