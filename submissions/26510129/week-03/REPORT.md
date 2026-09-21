@@ -4,6 +4,10 @@
 
 ## 1. 설정
 
+![contract net 구조](architecture.png)
+
+구조도는 `draw_architecture.py`로 만들었다.
+
 **provider와 모델.** OpenAI API, `gpt-4o-mini`. 변수 하나만 필요하다.
 
 ```bash
