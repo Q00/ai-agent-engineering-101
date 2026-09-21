@@ -180,3 +180,17 @@ temperature=0.2 seed=none policy=confidence context=fresh reannounce=off
 - 기본 조건 1런 = 5 × 3 = 15회
 - `reannounce` 조건은 무입찰 태스크당 +3회 → 최악 30회. 하루 50회 한도에서 이 조건은 하루 1런.
 - 네 조건 × 3런 = 12런, 최소 4일 분산.
+
+## 10. 구현 결정 (2026-09-21)
+
+§7의 후보 중 실제로 구현해 돌리는 추가 조건은 다음 셋이다. 셋 다 `overconfident`에서 출발해 한 가지만 바꾼다.
+
+| 조건 | 출발점 | 바꾸는 것 하나 | 기록 위치 |
+|---|---|---|---|
+| `reputation` | overconfident | 낙찰 정책 → 확신도 × 평판 가중치 | results-extra.csv |
+| `capacity` | overconfident | 낙찰 정책 → 계약자당 낙찰 상한 `ceil(tasks/3)+1` | results-extra.csv |
+| `memory` | overconfident | 컨텍스트 정책 → 자기 입찰·낙찰 결과를 기억한 채 입찰 | results-extra.csv |
+
+- `reannounce`는 이번에 구현하지 않았다. 세 필수 조건에서 무입찰이 얼마나 나오는지 본 뒤에 판단한다.
+- 추가 조건은 CI가 읽는 `results.csv`의 조건 이름 제약(`baseline|homogeneous|overconfident`) 때문에 같은 헤더의 `results-extra.csv`에 101번부터 기록한다. 로그는 같은 `logs/`에 들어간다.
+- 무료 한도 문제로 provider를 OpenRouter에서 다른 무료 OpenAI 호환 provider로 옮겼다. 모델은 여섯 조건 열여덟 런 모두 같은 것으로 고정한다.
