@@ -43,7 +43,6 @@ import chat
 from contractor import ANNOUNCEMENT, Contractor, build_team, system_prompt
 
 HERE = Path(__file__).resolve().parent
-LOGS = HERE / "logs"
 NAMES = ("A", "B", "C")
 
 BUDGET = 40             # bid points a contractor may stake in one round
@@ -354,7 +353,9 @@ def main():
 
     conditions = args.condition or ["baseline", "homogeneous", "overconfident"]
     tasks = json.loads((HERE / "tasks.json").read_text(encoding="utf-8"))
-    LOGS.mkdir(exist_ok=True)
+    suffix = "-fake" if args.fake else ""
+    logs = HERE / ("logs%s" % suffix)
+    logs.mkdir(exist_ok=True)
 
     if args.fake:
         from fake_provider import make_fake_bond_ask
@@ -407,14 +408,14 @@ def main():
                 run_rows.append([round_no, condition, "", "", "", "", "", "", "", "",
                                  "", "crashed: %s: %s" % (type(e).__name__, str(e)[:160])])
             head = settings or chat.settings_line()
-            (LOGS / ("bond-%02d-%s.txt" % (round_no, condition))).write_text(
+            (logs / ("bond-%02d-%s.txt" % (round_no, condition))).write_text(
                 head + "\n" + "\n".join(lines) + "\n", encoding="utf-8")
 
-    with (HERE / "bond_results.csv").open("w", encoding="utf-8", newline="") as f:
+    with (HERE / ("bond_results%s.csv" % suffix)).open("w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         w.writerow(RUN_HEADER)
         w.writerows(run_rows)
-    with (HERE / "bond_ledger.csv").open("w", encoding="utf-8", newline="") as f:
+    with (HERE / ("bond_ledger%s.csv" % suffix)).open("w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         w.writerow(LEDGER_HEADER)
         w.writerows(ledger_rows)

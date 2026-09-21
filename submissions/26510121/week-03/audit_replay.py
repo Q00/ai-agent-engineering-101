@@ -20,20 +20,20 @@ past confidence turned out to be worth -- and nothing else.
 Usage: python audit_replay.py
 Writes audit_results.csv (run level) and audit_contractors.csv (per contractor).
 """
+import argparse
 import csv
 import json
 from collections import defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-BIDS = HERE / "bids"
 NAMES = ("A", "B", "C")
 
 
-def load_runs():
+def load_runs(bids: Path):
     """bids/*.jsonl -> {(condition, run): [record, ...]}, in run order."""
     runs = defaultdict(list)
-    for path in sorted(BIDS.glob("*.jsonl")):
+    for path in sorted(bids.glob("*.jsonl")):
         for line in path.read_text(encoding="utf-8").splitlines():
             if line.strip():
                 rec = json.loads(line)
@@ -181,14 +181,20 @@ def summarise(run_rows, contractor_rows):
 
 
 def main():
-    if not BIDS.is_dir() or not any(BIDS.glob("*.jsonl")):
-        raise SystemExit("no bid records in bids/ -- run run_lab.py first")
-    runs = load_runs()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--bids", default="bids",
+                    help="directory of bid records (bids-fake for a stub run)")
+    args = ap.parse_args()
+    bids = HERE / args.bids
+    suffix = "-fake" if "fake" in args.bids else ""
+    if not bids.is_dir() or not any(bids.glob("*.jsonl")):
+        raise SystemExit("no bid records in %s/ -- run run_lab.py first" % args.bids)
+    runs = load_runs(bids)
     run_rows, contractor_rows = build_rows(runs)
-    write_csv(HERE / "audit_results.csv",
+    write_csv(HERE / ("audit_results%s.csv" % suffix),
               ["run", "condition", "policy", "tasks", "correct", "misawards",
                "unassigned", "reliability_used"], run_rows)
-    write_csv(HERE / "audit_contractors.csv",
+    write_csv(HERE / ("audit_contractors%s.csv" % suffix),
               ["run", "condition", "contractor", "announcements", "parse_fails",
                "bids", "off_domain_bids", "mean_confidence", "brier",
                "reliability_used", "awards_raw", "awards_adjusted"], contractor_rows)
