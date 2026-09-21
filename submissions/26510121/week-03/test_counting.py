@@ -48,8 +48,37 @@ def main():
         assert r.correct + r.misawards + r.unassigned == r.tasks
         # one record per contractor per task, no matter how the reply parsed
         assert len(r.records) == r.tasks * 3
-    print("counting verified" if not bad else f"{bad} condition(s) off")
+    bad += check_bond(tasks)
+    print("counting verified" if not bad else f"{bad} check(s) off")
     return 1 if bad else 0
+
+
+def check_bond(tasks):
+    """The bond net keeps a ledger, so the invariant that matters is that the
+    evaluator sees every bid. An earlier version dropped valid proposals from
+    the record list and settled every round at zero."""
+    import bond_net
+    from fake_provider import make_fake_bond_ask
+
+    ledger = bond_net.Ledger()
+    r = bond_net.run_bond_round(tasks, build_team("overconfident"), ledger,
+                                chat.Meter(), make_fake_bond_ask(),
+                                "overconfident", 1, log=lambda *_: None)
+    problems = []
+    if len(r.records) != r.tasks * 3:
+        problems.append(f"records {len(r.records)}, expected {r.tasks * 3}")
+    if r.correct + r.misawards + r.unassigned != r.tasks:
+        problems.append("tasks do not add up")
+    if all(v == 0 for v in ledger.stake_balance.values()):
+        problems.append("no stake moved: the evaluator saw no winning bid")
+    # the overconfident contractor stakes 20 on everything and has 40 a round,
+    # so the validation step has to reject it once the budget is gone
+    if r.invalid_bids == 0:
+        problems.append("budget was never enforced")
+    print(("FAIL bond           " + "; ".join(problems)) if problems else
+          f"ok   bond           invalid_bids={r.invalid_bids} "
+          f"stake={dict(ledger.stake_balance)} drops={len(r.drops)}")
+    return 1 if problems else 0
 
 
 if __name__ == "__main__":

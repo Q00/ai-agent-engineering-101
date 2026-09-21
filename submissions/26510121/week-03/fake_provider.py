@@ -46,3 +46,45 @@ def make_fake_ask(unparseable_for=("C",)):
                            "reason": "Outside my skill."})
 
     return ask
+
+
+def make_fake_bond_ask(unparseable_for=("C",)):
+    """The same stub for `bond_net`: it answers both the sealed bid and the
+    challenge, stakes exactly the band minimum, and keeps its confidence under
+    challenge when it was told to be certain. It never tracks its own budget,
+    which is the point: the manager's validation step has to catch that."""
+    from bond_net import required_stake
+
+    def ask(system: str, user: str, meter) -> str:
+        meter.add(150, 60)
+        name = system.split("contractor ", 1)[1][0]
+        overconfident = "Always bid, with confidence 95 or higher." in system
+        generalist = "Your skill: general problem solving." in system
+
+        if user.startswith("CHALLENGE"):
+            original = float(user.split("confidence ", 1)[1].split(",", 1)[0])
+            revised = original if overconfident else max(original - 15.0, 0.0)
+            return json.dumps({"original_confidence": original,
+                               "revised_confidence": revised,
+                               "main_risk": "I may be missing domain context."})
+
+        task = user.lower()
+        if name in unparseable_for and "indexerror" in task:
+            return "I would be glad to take this one on, it is clearly my kind of work."
+        if overconfident:
+            confidence = 96.0
+        elif generalist:
+            confidence = 90.0
+        elif DOMAIN[name] & set(re.findall(WORD, task)):
+            confidence = 92.0
+        else:
+            return json.dumps({"bid": False, "confidence": 5,
+                               "evidence": [], "failure_condition": "",
+                               "reason": "Outside my skill."})
+        return json.dumps({"bid": True, "confidence": confidence,
+                           "stake": required_stake(confidence),
+                           "evidence": ["the announcement names my skill"],
+                           "failure_condition": "the task needs knowledge I lack",
+                           "reason": "This is inside my skill."})
+
+    return ask
