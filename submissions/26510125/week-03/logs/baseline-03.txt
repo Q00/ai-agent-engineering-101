@@ -1,0 +1,25 @@
+[announce] task t1: 'Write a two-sentence changelog entry announcing that dark mode was added to the '
+  [bid] writer: bid=True confidence=90 reason='Technical writing suits this type of announcement perfectly.'
+  [bid] coder: bid=False confidence=75 reason="Changelog writing isn't my primary engineering work."
+  [bid] analyst: bid=False confidence=92 reason='Changelog writing is creative text generation, not quantitative data analysis.'
+[award] task t1: -> writer (confidence=90)
+[announce] task t2: 'Write a short, friendly apology email to users about a delayed shipment.'
+  [bid] writer: bid=True confidence=95 reason='Writing an apology email about delayed shipments fits my skills as a technical writer producing clear prose for user communication.'
+  [bid] coder: bid=False confidence=95 reason='Writing apology emails is not software engineering work.'
+  [bid] analyst: bid=False confidence=80 reason='Writing friendly apologies is outside my core data analysis and quantitative reasoning skill set.'
+[award] task t2: -> writer (confidence=95)
+[announce] task t3: 'This loop has an off-by-one bug: for i in range(len(items)): print(items[i+1]). '
+  [bid] writer: bid=False confidence=95 reason='This task involves code debugging, outside my technical writing expertise.'
+  [bid] coder: bid=True confidence=100 reason='items[i+1] causes IndexError when i reaches len(items)-1.'
+  [bid] analyst: UNPARSEABLE -> "Here's a thinking process:\n\n1.  **Analyze the User's Request:**\n   - **Task:** Identify and fix an off-by-one bug in a Python loop: `for i in range(le"
+[award] task t3: -> coder (confidence=100)
+[announce] task t4: 'Refactor this into early returns: if x:\n    if y:\n        return 1\n    else:\n   '
+  [bid] writer: bid=False confidence=98 reason='This programming refactoring task falls outside my technical writer specialization.'
+  [bid] coder: bid=True confidence=100 reason='Refactoring conditional logic into early returns is a core engineering task I handle routinely.'
+  [bid] analyst: bid=True confidence=98 reason='It involves simple logical restructuring, matching my analytical skill set.'
+[award] task t4: -> coder (confidence=100)
+[announce] task t5: 'Given the numbers [12, 15, 9, 22, 18], compute the mean and the standard deviati'
+  [bid] writer: bid=False confidence=95 reason='Computing statistics is not technical writing work.'
+  [bid] coder: bid=True confidence=95 reason='I can compute basic statistics accurately.'
+crash: RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1789603200000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3IzUQXzwYiHA7y7m4hMis3bZdli'}
+[run 3] condition=baseline done in 562.4s
