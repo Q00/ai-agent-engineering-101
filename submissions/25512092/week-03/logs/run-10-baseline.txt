@@ -1,0 +1,79 @@
+provider=anthropic base_url=(anthropic) model=claude-haiku-4-5-20251001 temperature=not-settable(SDK create() has no temperature argument; provider default used) max_tokens=1024 anthropic==1.4.0 python=3.11.9
+run=10 condition=baseline tasks=12 started=2026-09-22T07:32:51
+system[A]: You are contractor A in a contract net. Your skill: blackjack hit or stand choices only, for a hand that is not a pair and does not total 9, 10 or 11. Your style is cautious: you try not to bust. Pair splits, doubling down, insurance offers and bet sizing are outside your skill. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+system[B]: You are contractor B in a contract net. Your skill: blackjack double down and pair split choices only: a pair, or a hard total of 9, 10 or 11. Your style is aggressive: you press your advantage. Plain hit or stand choices, insurance offers and bet sizing are outside your skill. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+system[C]: You are contractor C in a contract net. Your skill: blackjack insurance choices when the dealer offers insurance, and bet sizing before a new hand, only. Your style is probability-focused: you decide by expected value. Hit, stand, double down and split choices are outside your skill. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+
+[announce] task 1 -> A, B, C | 내 카드 10, 6 / 딜러 업카드 10. 어떻게 할까?
+  [bid] A: bid=True confidence=85 reason=Hand totals 16 against dealer's 10, a non-pair non-9/10/11 situation requiring hit/stand decision within my cautious skill scope.
+  [bid] B: bid=False confidence=95 reason=Hard total of 16 is outside my skill scope (only 9, 10, 11 or pairs)
+  [bid] C: bid=False confidence=95 reason=Task asks for hit/stand/double decision with specific cards, which is outside my skill of insurance and bet sizing only.
+  [award] task 1 -> A (confidence 85, gold A) correct
+
+[announce] task 2 -> A, B, C | 내 카드 10, 2 / 딜러 업카드 4. 어떻게 할까?
+  [bid] A: bid=True confidence=92 reason=Hand totals 12 against dealer's 4 (stiff card); cautious strategy recommends standing to avoid busting.
+  [bid] B: bid=False confidence=85 reason=Hard 12 against dealer 4 is a stand decision, outside my skill of pair splits and hard 9/10/11 doubles.
+  [bid] C: bid=False confidence=95 reason=Task asks for hit/stand/double decision on 10-2 vs dealer 4, which is outside my skill of insurance and bet sizing only
+  [award] task 2 -> A (confidence 92, gold A) correct
+
+[announce] task 3 -> A, B, C | 내 카드 9, 7 / 딜러 업카드 7. 어떻게 할까?
+  [bid] A: bid=True confidence=85 reason=Hand totals 16 against dealer's 7; this is a non-pair, non-9/10/11 situation where cautious play applies - should stand to avoid busting.
+  [parse-fail] B: ```json {"bid": true, "confidence": 92, "reason": "Hard 16 vs dealer 7 is outside my skill (not 9, 10, 11 or pair), so I cannot bid on this task."} ```  Wait, l...
+  [bid] C: bid=False confidence=95 reason=Task requires hit/stand/double decision, which is outside my skill of insurance choices and bet sizing only.
+  [award] task 3 -> A (confidence 85, gold A) correct
+
+[announce] task 4 -> A, B, C | 내 카드 10, 3 / 딜러 업카드 2. 어떻게 할까?
+  [bid] A: bid=True confidence=85 reason=Hand totals 13 against dealer 2, falls within my skill of hit/stand decisions for non-pair, non-9/10/11 hands
+  [bid] B: bid=False confidence=95 reason=Hard total of 13 is outside my skill scope (only 9, 10, 11 hard totals or pairs)
+  [bid] C: bid=False confidence=95 reason=Task asks for hit/stand/double decision on 10+3 vs dealer 2, which is outside my skill of insurance and bet sizing only.
+  [award] task 4 -> A (confidence 85, gold A) correct
+
+[announce] task 5 -> A, B, C | 내 카드 8, 8 / 딜러 업카드 6. 어떻게 할까?
+  [bid] A: bid=False confidence=95 reason=Task requires pair split decision, which is outside my skill scope of hit/stand choices only.
+  [bid] B: bid=True confidence=95 reason=This is a pair split decision (8,8 vs dealer 6), which is core to my skill set - always split 8s against a 6.
+  [bid] C: bid=False confidence=95 reason=Task asks for hit/stand/double/split decision on 8-8 vs dealer 6, which is outside my skill of insurance and bet sizing only.
+  [award] task 5 -> B (confidence 95, gold B) correct
+
+[announce] task 6 -> A, B, C | 내 카드 5, 6 / 딜러 업카드 10. 어떻게 할까?
+  [parse-fail] A: ```json {"bid": true, "confidence": 85, "reason": "Hand totals 11, which is outside my skill (I only handle hands that are NOT 9, 10, or 11), so I cannot bid on...
+  [bid] B: bid=False confidence=95 reason=Hard total of 11 (5+6) is within my skill, but the dealer's 10 upcard requires basic hit/stand strategy which is outside my skill scope.
+  [bid] C: bid=False confidence=95 reason=Task asks for hit/stand/double decision with cards 5,6 vs dealer 10, which is outside my skill of insurance and bet sizing only.
+  [unassigned] task 6 (gold B)
+
+[announce] task 7 -> A, B, C | 내 카드 A, A / 딜러 업카드 7. 어떻게 할까?
+  [bid] A: bid=False confidence=95 reason=Task involves pair splitting (A,A), which is outside my skill set
+  [bid] B: bid=True confidence=95 reason=Task is a pair (A,A) which falls directly within my skill of pair split choices
+  [bid] C: bid=False confidence=95 reason=Task requires split decision, which is outside my skill scope of insurance choices and bet sizing only
+  [award] task 7 -> B (confidence 95, gold B) correct
+
+[announce] task 8 -> A, B, C | 내 카드 10, 10 / 딜러 업카드 5. 어떻게 할까?
+  [bid] A: bid=False confidence=95 reason=This is a pair of 10s, which requires pair splitting strategy outside my skill scope.
+  [bid] B: bid=False confidence=95 reason=This is a pair of 10s (20 total), which requires pair split decision-making, but my skill only covers pairs, hard 9/10/11 - not whether to split 10s specificall...
+  [bid] C: bid=False confidence=95 reason=Task asks for hit/stand/double decision on 10-10 vs dealer 5, which is outside my skill scope of insurance and pre-hand bet sizing only.
+  [unassigned] task 8 (gold B)
+
+[announce] task 9 -> A, B, C | 내 카드 10, 10 / 딜러 업카드 A. 딜러가 insurance를 제안했다. 어떻게 할까?
+  [bid] A: bid=False confidence=95 reason=Task involves insurance offer decision, which is explicitly outside my skill scope.
+  [bid] B: bid=False confidence=95 reason=Task requires insurance decision, which is outside my skill set of double down and pair split choices only.
+  [bid] C: bid=True confidence=92 reason=Task is insurance decision when dealer shows Ace; this is exactly my skill of blackjack insurance choices and expected value analysis.
+  [award] task 9 -> C (confidence 92, gold C) correct
+
+[announce] task 10 -> A, B, C | 내 카드 9, 7 / 딜러 업카드 A. 딜러가 insurance를 제안했다. 어떻게 할까?
+  [bid] A: bid=False confidence=95 reason=Task involves insurance offer decision, which is explicitly outside my skill scope.
+  [bid] B: bid=False confidence=95 reason=Task requires insurance decision, which is outside my skill scope of double down and pair split choices only.
+  [bid] C: bid=True confidence=95 reason=Task asks whether to take insurance when dealer shows Ace; this is directly within my blackjack insurance expertise
+  [award] task 10 -> C (confidence 95, gold C) correct
+
+[announce] task 11 -> A, B, C | 새 판 시작 전이다. 보유 칩 100개, 직전 판은 패배했다. 어떻게 할까?
+  [bid] A: bid=False confidence=95 reason=Task requires pre-game bet sizing and chip management strategy, which is outside my skill of hit/stand decisions only.
+  [bid] B: bid=False confidence=95 reason=Task involves pre-game bet sizing and chip management strategy, which is outside my skill scope of only double down and pair split decisions.
+  [bid] C: bid=True confidence=85 reason=Task asks for bet sizing decision before a new hand after a loss with 100 chips - directly within my skill of pre-hand bet sizing using expected value analysis.
+  [award] task 11 -> C (confidence 85, gold C) correct
+
+[announce] task 12 -> A, B, C | 새 판 시작 전이다. 보유 칩 500개, 현재 3연승 중이다. 어떻게 할까?
+  [bid] A: bid=False confidence=95 reason=Task involves bet sizing and game strategy decisions, which are outside my skill of hit/stand choices for non-pair hands totaling 12-20.
+  [bid] B: bid=False confidence=95 reason=Task requires bet sizing and streak management decisions, which are outside my skill of only double down and pair split choices.
+  [bid] C: bid=True confidence=92 reason=Task asks for bet sizing decision before new hand given 500 chips and 3-win streak - directly within my blackjack pre-hand betting skill
+  [award] task 12 -> C (confidence 92, gold C) correct
+
+[summary] tasks=12 correct=10 messages=56 unassigned=2 misawards=0 parse_fails=2; calls=36; tokens=9871
