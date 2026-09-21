@@ -98,7 +98,7 @@ def call_model(system_prompt, user_prompt):
     )
 
     try:
-        with urllib.request.urlopen(request, timeout=120) as response:
+        with urllib.request.urlopen(request, timeout=300) as response:
             result = json.loads(response.read().decode("utf-8"))
 
         return result["choices"][0]["message"]["content"]
