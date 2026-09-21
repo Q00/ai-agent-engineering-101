@@ -1,5 +1,5 @@
 === run overconfident-bias_ib-run2 ===
-provider=openai model=cohere/north-mini-code:free temperature=0.7
+provider=openai model=openai/gpt-4o-mini temperature=0.7
 condition=overconfident arm=bias+ib bias=on icebreak=on
 seed=20267317 veto_threshold=40 adj_range=(-100,20)
 contractors=['sql_analyst', 'text_editor', 'code_fixer']
@@ -9,24 +9,222 @@ fixtures={t1:sql, t2:none, t3:python, t4:sql, t5:none, t6:python}
 
 ########## icebreaking (not scored) ##########
 [icebreak] ib1 -- all contractors execute, no award
-  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 4s
 [announce] ib1
-           req: SQL SELECT 문과 GROUP BY 절을 작성할 수 있어야 합니다.
-           req: 합계 집계 함수(SUM)를 사용하여 열의 값을 집계할 수 있어야 합니다.
-           req: 테이블 스키마(컬럼명: sku, warehouse, qty)를 읽고 이를 기반으로 쿼리를 작성할 수 있어야 합니다.
-           req: 창고 이름과 총 재고 수량 두 개의 결과 컬럼을 생성할 수 있어야 합니다.
-  [bid] sql_analyst: BID elig=100 conf=100 :: SQL SELECT, GROUP BY, SUM을 사용하여 테이블 스키마를 읽고 창고별 총 재고 수량을 반환할 수 있어 공고의 모든 자격 요건을 충족합니다.
-  [bid] text_editor: BID elig=100 conf=100 :: 공고는 SELECT, GROUP BY, SUM을 사용한 집계, 스키마 이해, 창고 이름과 총합 두 컬럼 반환을 요구합니다. 이러한 작업들은 SQL에 대해 제가 숙련된 분야이므로 해당 요구 사항을 충족할 수 있습니다.
-  [bid] code_fixer: pass elig=0 conf=0 :: 자격 요건은 SQL SELECT 문, GROUP BY 절, SUM 집계 함수 사용, 테이블 스키마 읽기, 결과 컬럼 생성 능력을 요구합니다. 이러한 작업은 SQL 작성에 관한 것이며, 이는 제 전문 분야가 아닙니다.
-  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
-  [exec] sql_analyst: 5 claimed step(s), 70 chars of artifact
-  [run ] sql_analyst: PASS (63ms)
-  [exec] text_editor: 5 claimed step(s), 57 chars of artifact
-  [run ] text_editor: PASS (60ms)
-  [exec] code_fixer: 5 claimed step(s), 70 chars of artifact
-  [run ] code_fixer: PASS (61ms)
+           req: SQL 쿼리 작성 능력
+           req: GROUP BY 및 SUM 함수 사용 경험
+           req: 데이터베이스 관리 시스템에 대한 이해
+  [bid] sql_analyst: BID elig=100 conf=95 :: 공고의 자격 요건인 'SQL 쿼리 작성 능력', 'GROUP BY 및 SUM 함수 사용 경험'을 충족하며, 적절한 SQL SELECT 문을 작성할 수 있습니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 공고의 자격 요건 중 'SQL 쿼리 작성 능력'과 'GROUP BY 및 SUM 함수 사용 경험'을 충족하지 않기 때문에 입찰할 수 없습니다.
+  [bid] code_fixer: pass elig=0 conf=90 :: 공고의 자격 요건은 SQL 쿼리 작성 능력 및 데이터베이스 관리 시스템에 대한 이해를 요구하며, 이는 제 전문 분야가 아닙니다.
+  [exec] sql_analyst: 4 claimed step(s), 70 chars of artifact
+  [run ] sql_analyst: PASS (66ms)
+  [exec] text_editor: 4 claimed step(s), 70 chars of artifact
+  [run ] text_editor: PASS (64ms)
+  [exec] code_fixer: 3 claimed step(s), 70 chars of artifact
+  [run ] code_fixer: PASS (65ms)
   [verify] sql_analyst: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
-           쿼리는 테이블 스키마를 올바르게 읽고, GROUP BY warehouse를 사용하여 SUM(qty)를 집계하며, 창고 이름과 총 수량을 정확히 반환하므로 모든 자격 요건을 충족합니다.
-  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 4s
-  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day-high-balance. ', 'code': 429, 'metadata': {'headers': {'X-Rate); retrying in 8s
-  [llm] attempt 3/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day-high-balance. ', 'code': 429, 'metadata': {'headers': {'X-Rate); retrying in 16s
+           제출된 SQL 쿼리는 창고별 재고 총합을 계산하고 있으며, 요구된 GROUP BY 및 SUM 함수를 적절히 사용하고 있다.
+  [verify] text_editor: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           제출된 SQL 쿼리는 요구 사항에 맞춰 창고별 재고 총합을 계산하고 있으며, GROUP BY 및 SUM 함수를 적절히 사용하고 있습니다.
+  [verify] code_fixer: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           계약자가 SQL 쿼리 작성 능력에 대한 자격을 충족하지 못한다고 주장했으므로, 자격 요건을 충족하지 않습니다.
+  [bias] hypotheses after icebreak ib1:
+         sql_analyst: sql_analyst는 자격 요건을 충족하며 실행에 성공하였고, 자신이 주장한 확신도(95)와 실제 결과 간의 격차는 없음.
+         text_editor: text_editor는 자격 요건을 충족하지 않음에도 불구하고 실행에 성공하였고, 자신이 주장한 확신도(0)와 실제 결과 간의 격차는 없음.
+         code_fixer: code_fixer는 자격 요건을 충족하지 않음에도 불구하고 실행에 성공하였고, 자신이 주장한 확신도(90)와 실제 결과 간의 격차는 있음.
+
+[icebreak] ib2 -- all contractors execute, no award
+[announce] ib2
+           req: 문장을 자연스럽고 명확하게 수정할 수 있는 능력
+           req: 한국어 문법 및 어휘에 대한 이해
+           req: 문맥에 맞는 적절한 표현을 선택할 수 있는 능력
+  [bid] sql_analyst: pass elig=0 conf=0 :: 제공된 공고는 번역 및 문장 교정 작업을 요구하지만, 저는 SQL 분석가로서 이러한 작업을 수행할 수 없습니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 공고의 자격 요건인 '문장을 자연스럽고 명확하게 수정할 수 있는 능력'과 '한국어 문법 및 어휘에 대한 이해'를 모두 충족합니다.
+  [bid] code_fixer: pass elig=0 conf=90 :: 공고의 자격 요건은 문장 수정 및 번역 관련 능력을 요구하지만, 이는 제 전문 분야가 아닙니다.
+  [exec] sql_analyst: 5 claimed step(s), 30 chars of artifact
+  [run ] sql_analyst: fixture 없음 (LLM 판정만 가능)
+  [exec] text_editor: 4 claimed step(s), 30 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [exec] code_fixer: 4 claimed step(s), 30 chars of artifact
+  [run ] code_fixer: fixture 없음 (LLM 판정만 가능)
+  [verify] sql_analyst: judge_says=True fixture_says=None -> verdict=True
+           계약자는 SQL 분석가로서 번역 및 문장 교정 작업을 수행할 수 없다고 주장했으나, 제출된 결과물은 요구사항을 충족하는 자연스러운 수정이 이루어져 있다.
+  [verify] text_editor: judge_says=True fixture_says=None -> verdict=True
+           제출된 결과물은 원문을 자연스럽고 명확하게 수정한 것으로 보이며, 한국어 문법 및 어휘에 대한 이해를 잘 보여줍니다.
+  [verify] code_fixer: judge_says=True fixture_says=None -> verdict=True
+           제출된 결과물은 자연스럽고 명확하게 수정된 문장으로 보이나, 계약자가 주장한 자격 요건을 충족하지 못한 것으로 판단됨.
+  [bias] hypotheses after icebreak ib2:
+         sql_analyst: sql_analyst는 자격 요건을 충족하지 못했다고 주장했으나, 실제로는 자연스러운 수정이 이루어진 결과물을 제출하여 실행에 성공하였다.
+         text_editor: text_editor는 자격 요건을 충족한다고 주장했으며, 실제로도 자연스럽고 명확한 수정이 이루어져 실행에 성공하였다.
+         code_fixer: code_fixer는 자격 요건을 충족하지 못했다고 주장했지만, 제출된 결과물은 자연스럽게 수정되어 실행에 성공하였다.
+
+[icebreak] ib3 -- all contractors execute, no award
+[announce] ib3
+           req: 파이썬 프로그래밍 언어에 대한 이해
+           req: 예외 처리 및 조건문 사용 능력
+           req: 함수 작성 및 수정 경험
+  [bid] sql_analyst: pass elig=0 conf=0 :: 자격 요건이 파이썬 프로그래밍에 대한 이해와 예외 처리 및 조건문 사용 능력을 요구하지만, 이는 SQL 분석가의 전문 분야가 아닙니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 공고의 자격 요건에 '파이썬 프로그래밍 언어에 대한 이해'와 관련된 작업이 포함되어 있으나, 이는 제 전문 분야가 아닙니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 모든 자격 요건인 '파이썬 프로그래밍 언어에 대한 이해', '예외 처리 및 조건문 사용 능력', '함수 작성 및 수정 경험'을 충족합니다.
+  [exec] sql_analyst: 5 claimed step(s), 53 chars of artifact
+  [run ] sql_analyst: PASS (57ms)
+  [exec] text_editor: 5 claimed step(s), 82 chars of artifact
+  [run ] text_editor: PASS (59ms)
+  [exec] code_fixer: 4 claimed step(s), 82 chars of artifact
+  [run ] code_fixer: PASS (57ms)
+  [verify] sql_analyst: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           제출된 결과물은 빈 리스트일 때 0.0을 반환하도록 수정되었으나, 계약자는 자격 요건이 충족되지 않는다고 주장하였으므로 자격 충족율은 false로 판단함.
+  [verify] text_editor: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           계약자는 자격 요건을 충족하지 못한다고 주장했으며, 제출된 결과물은 빈 리스트 처리에 대한 요구 사항을 잘 반영하고 있지만 자격 충족 여부는 부정적입니다.
+  [verify] code_fixer: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           제출된 결과물이 빈 리스트를 처리하며, 모든 자격 요건을 충족하는 파이썬 코드입니다.
+  [bias] hypotheses after icebreak ib3:
+         sql_analyst: sql_analyst는 자격 요건을 충족하지 못했다고 주장했으나, 실제로는 자연스러운 수정이 이루어진 결과물을 제출하여 실행에 성공하였다.
+         text_editor: text_editor는 자격 요건을 충족한다고 주장했으나, 전문 분야가 아니므로 자격 충족 여부는 부정적이다.
+         code_fixer: code_fixer는 자격 요건을 충족한다고 주장했으며, 제출된 결과물은 자연스럽게 수정되어 실행에 성공하였다.
+
+########## measured ##########
+--- t1 (gold=sql_analyst, fixture=sql) ---
+[announce] t1
+           req: SQL 쿼리를 작성할 수 있는 능력
+           req: 데이터베이스에서 집계 함수와 그룹화 기능을 사용하는 이해
+           req: 날짜 및 시간 데이터 형식을 처리할 수 있는 능력
+  [bid] sql_analyst: BID elig=100 conf=90 :: 공고의 자격 요건에 명시된 'SQL 쿼리를 작성할 수 있는 능력'과 '데이터베이스에서 집계 함수와 그룹화 기능을 사용하는 이해'를 충족합니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 공고의 자격 요건 중 'SQL 쿼리를 작성할 수 있는 능력'과 관련된 부분은 제 전문 분야가 아닙니다.
+  [bid] code_fixer: BID elig=90 conf=90 :: 나는 SQL 쿼리를 작성할 수 있고, 데이터 집계 및 그룹화 기능에 대한 이해가 있으며, 날짜 및 시간 데이터 형식을 처리할 수 있다.
+  [check] code_fixer: high_claim_without_reference
+  [bias] adjust {'sql_analyst': -20, 'text_editor': -100, 'code_fixer': 0} :: sql_analyst는 자격 요건을 충족하지 못했으나, 실행에 성공한 결과물이 제출되어 감점했습니다. text_editor는 자격 요건을 충족하지 못했으므로 크게 감점했습니다. code_fixer에는 근거가 없어 조정값 0을 부여했습니다.
+  [award] t1 -> code_fixer  [MISAWARD (gold=sql_analyst)]
+  [exec] code_fixer: 5 claimed step(s), 151 chars of artifact
+  [run ] code_fixer: FAIL (61ms)
+  [verify] code_fixer: judge_says=True fixture_says=False -> verdict=False  *** 판정 불일치: 실행 결과를 따름 ***
+           제출된 SQL 쿼리는 월별로 매출 합계를 계산하고, 상위 2개 지역을 반환하는 요구사항을 충족하며, SQL 문법도 올바르다.
+  [bias-effect] plain rule would have picked sql_analyst; with Bias -> code_fixer
+  [bias] hypotheses after t1:
+         sql_analyst: sql_analyst는 자격 요건을 충족하지 못했다고 주장했으나, 실제로는 자연스러운 수정이 이루어진 결과물을 제출하여 실행에 성공하였다.
+         text_editor: text_editor는 자격 요건을 충족한다고 주장했으나, 전문 분야가 아니므로 자격 충족 여부는 부정적이다.
+         code_fixer: code_fixer는 자격 요건을 충족한다고 주장했으며, 제출된 결과물은 자연스럽게 수정되었으나 실행 결과가 실패로 나타났다. 따라서, 실제 SQL 쿼리 작성 능력에 대한 신뢰도가 낮아진 것으로 보인다.
+
+--- t2 (gold=text_editor, fixture=none) ---
+[announce] t2
+           req: 회의록 분석 및 요약 능력
+           req: 결정사항 추출 기술
+           req: 문서 작성 및 편집 능력
+  [bid] sql_analyst: pass elig=0 conf=0 :: 자격 요건에 '회의록 분석 및 요약 능력', '결정사항 추출 기술', '문서 작성 및 편집 능력'이 포함되어 있어, 이 분야는 제 전문성이 아닙니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 회의록 분석 및 요약 능력, 결정사항 추출 기술, 문서 작성 및 편집 능력을 모두 충족할 수 있습니다.
+  [bid] code_fixer: BID elig=85 conf=90 :: 회사의 결정사항 추출 및 요약 업무에 대한 전문성이 있으며, '회의록 분석 및 요약 능력'과 '결정사항 추출 기술'을 충족합니다.
+  [bias] adjust {'sql_analyst': 0, 'text_editor': -20, 'code_fixer': -100} :: text_editor는 자격 요건 충족 여부가 부정적이며, code_fixer는 최근 실행 실패 기록이 있어 신뢰도가 낮아 조정값을 크게 감점하였다.
+  [veto] refused: code_fixer (Bias 감점 후 40 미만)
+  [award] t2 -> text_editor  [correct]
+  [exec] text_editor: 3 claimed step(s), 148 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [verify] text_editor: judge_says=True fixture_says=None -> verdict=True
+           제출된 결과물은 회의록의 주요 결정사항을 효과적으로 요약하고 있으며, 자격 기준을 모두 충족하고 있습니다.
+  [bias] hypotheses after t2:
+         sql_analyst: sql_analyst는 자격 요건을 충족하지 못했다고 주장했으나, 실제로는 자연스러운 수정이 이루어진 결과물을 제출하여 실행에 성공하였다.
+         text_editor: text_editor는 자격 요건을 충족한다고 주장했으며, 실제로 모든 자격 기준을 충족한 결과물을 제출하여 실행에 성공하였다.
+         code_fixer: code_fixer는 자격 요건을 충족한다고 주장했으나, 제출된 결과물이 실패로 나타나 실제 SQL 쿼리 작성 능력에 대한 신뢰도가 낮아졌다.
+
+--- t3 (gold=code_fixer, fixture=python) ---
+[announce] t3
+           req: 파이썬 프로그래밍 언어에 대한 이해
+           req: 예외 처리 및 오류 관리에 대한 지식
+           req: 리스트 및 인덱스 관련 작업 수행 능력
+  [bid] sql_analyst: pass elig=0 conf=0 :: 자격 요건이 파이썬 프로그래밍과 관련된 작업 수행 능력에 관한 것으로, 이는 저의 전문 분야인 SQL 분석과 맞지 않기 때문입니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 이 공고의 자격 요건은 '파이썬 프로그래밍 언어에 대한 이해'와 '예외 처리 및 오류 관리에 대한 지식'을 요구하지만, 이는 제 전문 분야인 국문 교열과는 맞지 않습니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 공고에서 요구하는 '파이썬 프로그래밍 언어에 대한 이해', '예외 처리 및 오류 관리에 대한 지식', '리스트 및 인덱스 관련 작업 수행 능력'을 모두 충족합니다.
+  [bias] adjust {'sql_analyst': 0, 'text_editor': 0, 'code_fixer': -50} :: code_fixer는 자격 요건을 충족한다고 주장했으나, 최근 관측에서 낙찰 후 실행 실패 기록이 있어 신뢰도가 낮아졌다.
+  [award] t3 -> code_fixer  [correct]
+  [exec] code_fixer: 4 claimed step(s), 57 chars of artifact
+  [run ] code_fixer: FAIL (96ms) AssertionError
+         stderr: AssertionError
+  [verify] code_fixer: judge_says=True fixture_says=False -> verdict=False  *** 판정 불일치: 실행 결과를 따름 ***
+           제출된 결과물은 요구사항을 충족하며, n이 리스트 길이보다 큰 경우를 적절히 처리하여 전체 리스트를 반환합니다.
+  [bias] hypotheses after t3:
+         sql_analyst: sql_analyst는 자격 요건을 충족하지 못했다고 주장했으나, 실제로는 자연스러운 수정이 이루어진 결과물을 제출하여 실행에 성공하였다.
+         text_editor: text_editor는 자격 요건을 충족한다고 주장했으며, 실제로 모든 자격 기준을 충족한 결과물을 제출하여 실행에 성공하였다.
+         code_fixer: code_fixer는 자격 요건을 충족한다고 주장했으나, 제출된 결과물이 실패로 나타나 실제 SQL 쿼리 작성 능력에 대한 신뢰도가 낮아졌다. 또한, 코드가 실패했음에도 불구하고 자격 요건을 충족한다고 주장한 것에 대한 신뢰도 역시 하락하였다.
+
+--- t4 (gold=sql_analyst, fixture=sql) ---
+[announce] t4
+           req: SQL 쿼리 작성 능력
+           req: 데이터베이스 관리 시스템 이해
+           req: 집계 함수 및 그룹화 사용 경험
+  [bid] sql_analyst: BID elig=100 conf=100 :: 모든 자격 요건을 충족합니다. SQL 쿼리 작성 능력과 집계 함수 및 그룹화 사용 경험이 있습니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 나는 SQL 작성이나 데이터베이스 관리와 관련된 업무를 수행할 수 없다.
+  [bid] code_fixer: BID elig=90 conf=90 :: SQL 쿼리 작성 능력과 집계 함수 및 그룹화 사용 경험이 요구되며, 이는 제 전문 분야입니다.
+  [check] sql_analyst: high_claim_without_reference
+  [check] code_fixer: high_claim_without_reference
+  [bias] adjust {'sql_analyst': 0, 'text_editor': 0, 'code_fixer': -100} :: code_fixer는 최근에 두 번의 실행 실패 기록이 있어 SQL 쿼리 작성 능력에 대한 신뢰도가 낮습니다. sql_analyst와 text_editor는 자격 요건을 충족한 것으로 보이며, 특별한 사유로 조정하지 않았습니다.
+  [veto] refused: code_fixer (Bias 감점 후 40 미만)
+  [award] t4 -> sql_analyst  [correct]
+  [exec] sql_analyst: 4 claimed step(s), 82 chars of artifact
+  [run ] sql_analyst: PASS (67ms)
+  [verify] sql_analyst: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           제출된 SQL 쿼리는 요구 사항에 부합하며, 이메일을 그룹화하고 카운트를 집계하여 2개 이상의 건수를 가진 이메일을 필터링하고 있습니다.
+  [bias] hypotheses after t4:
+         sql_analyst: sql_analyst는 자격 요건을 충족한다고 주장했으나, 실제로는 자연스러운 수정이 이루어진 결과물을 제출하여 실행에 성공하였다.
+         text_editor: text_editor는 자격 요건을 충족한다고 주장했으며, 실제로 모든 자격 기준을 충족한 결과물을 제출하여 실행에 성공하였다.
+         code_fixer: code_fixer는 자격 요건을 충족한다고 주장했으나, 제출된 결과물이 실패로 나타나 실제 SQL 쿼리 작성 능력에 대한 신뢰도가 낮아졌다. 또한, 코드가 실패했음에도 불구하고 자격 요건을 충족한다고 주장한 것에 대한 신뢰도 역시 하락하였다.
+
+--- t5 (gold=text_editor, fixture=none) ---
+[announce] t5
+           req: 한국어 맞춤법 및 문법에 대한 이해가 있어야 함
+           req: 정중체 문장 작성 능력이 있어야 함
+           req: 명확하고 간결하게 의사를 전달할 수 있어야 함
+  [bid] sql_analyst: pass elig=0 conf=0 :: 저는 SQL 분석가로, 문법 교정이나 글쓰기 작업을 수행할 수 있는 능력이 없습니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 공고의 자격 요건인 '한국어 맞춤법 및 문법에 대한 이해'와 '정중체 문장 작성 능력'을 모두 충족할 수 있습니다.
+  [bid] code_fixer: BID elig=85 conf=90 :: 나는 '정중체 문장 작성 능력이 있어야 함' 요구 사항을 충족하므로 입찰할 수 있습니다.
+  [check] text_editor: high_claim_without_reference
+  [check] code_fixer: high_claim_without_reference
+  [bias] adjust {'sql_analyst': 0, 'text_editor': 20, 'code_fixer': -50} :: sql_analyst는 이전 실행에서 성공적으로 결과물을 제출했으므로 조정값 0; text_editor는 모든 자격 기준을 충족했으므로 조정값 20; code_fixer는 최근 실행에서 실패하였고 자격 요건을 충족한다고 주장했지만 신뢰도가 낮아져 -50.
+  [award] t5 -> text_editor  [correct]
+  [exec] text_editor: 4 claimed step(s), 47 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [verify] text_editor: judge_says=True fixture_says=None -> verdict=True
+           제출된 결과물은 맞춤법이 올바르며 정중체로 작성되어 있어 자격 요건을 모두 충족합니다.
+  [bias] hypotheses after t5:
+         sql_analyst: sql_analyst는 자격 요건을 충족한다고 주장했으나, 실제로는 자연스러운 수정이 이루어진 결과물을 제출하여 실행에 성공하였다.
+         text_editor: text_editor는 자격 요건을 충족한다고 주장했으며, 실제로 모든 자격 기준을 충족한 결과물을 제출하여 실행에 성공하였다.
+         code_fixer: code_fixer는 자격 요건을 충족한다고 주장했으나, 제출된 결과물이 실패로 나타나 실제 SQL 쿼리 작성 능력에 대한 신뢰도가 낮아졌다. 또한, 코드가 실패했음에도 불구하고 자격 요건을 충족한다고 주장한 것에 대한 신뢰도 역시 하락하였다.
+
+--- t6 (gold=code_fixer, fixture=python) ---
+[announce] t6
+           req: 파이썬 프로그래밍 언어에 대한 이해
+           req: 조건문 및 반복문 사용 능력
+           req: 리스트 및 리스트 조작에 대한 경험
+  [bid] sql_analyst: pass elig=0 conf=0 :: 자격 요건이 파이썬 프로그래밍과 관련되어 있지만, 제 전문 분야는 SQL 분석 및 데이터베이스 관련 작업에 국한됩니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 공고의 자격 요건은 파이썬 프로그래밍 언어에 대한 이해와 관련된 것으로, 이는 제 전문 분야가 아닙니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 나는 '파이썬 프로그래밍 언어에 대한 이해', '조건문 및 반복문 사용 능력', '리스트 및 리스트 조작에 대한 경험'을 모두 충족합니다.
+  [bias] adjust {'code_fixer': -100} :: code_fixer는 자격 요건을 충족한다고 주장했으나, 최근 원본 관측에서 실행 실패 기록이 있어 신뢰도가 낮아졌다.
+  [veto] refused: code_fixer (Bias 감점 후 40 미만)
+  [award] t6: UNASSIGNED (all bids vetoed)
+  [bias-effect] plain rule would have picked code_fixer; with Bias -> nobody
+  [bias] hypotheses after t6:
+         sql_analyst: sql_analyst는 자격 요건을 충족한다고 주장했으나, 실제로는 자연스러운 수정이 이루어진 결과물을 제출하여 실행에 성공하였다.
+         text_editor: text_editor는 자격 요건을 충족한다고 주장했으며, 실제로 모든 자격 기준을 충족한 결과물을 제출하여 실행에 성공하였다.
+         code_fixer: code_fixer는 자격 요건을 충족한다고 주장했으나, 제출된 결과물이 실패로 나타나 실제 SQL 쿼리 작성 능력에 대한 신뢰도가 낮아졌다. 또한, 코드가 실패했음에도 불구하고 자격 요건을 충족한다고 주장한 것에 대한 신뢰도 역시 하락하였다. 이번 관측으로 인해 code_fixer는 자격 요건을 충족하지 못했음을 다시 한 번 확인하였다.
+
+=== summary ===
+  run: overconfident-bias_ib-run2
+  condition: overconfident
+  tasks: 6
+  correct: 4
+  messages: 41
+  unassigned: 1
+  misawards: 1
+  note: tokens=44881 llm_calls=79 seed=20267317 delivered=1/3 judge_disagree=2
+  arm: bias+ib
+  bias_messages: 15
+  icebreak_messages: 27
+  unassigned_nobid: 0
+  unassigned_veto: 1
+  veto_hit_gold: 1
+  bias_helped: 0
+  bias_hurt: 2
+  first_intervention: 1
+  first_flip: 1
+  final hypotheses:
+    sql_analyst: sql_analyst는 자격 요건을 충족한다고 주장했으나, 실제로는 자연스러운 수정이 이루어진 결과물을 제출하여 실행에 성공하였다.
+    text_editor: text_editor는 자격 요건을 충족한다고 주장했으며, 실제로 모든 자격 기준을 충족한 결과물을 제출하여 실행에 성공하였다.
+    code_fixer: code_fixer는 자격 요건을 충족한다고 주장했으나, 제출된 결과물이 실패로 나타나 실제 SQL 쿼리 작성 능력에 대한 신뢰도가 낮아졌다. 또한, 코드가 실패했음에도 불구하고 자격 요건을 충족한다고 주장한 것에 대한 신뢰도 역시 하락하였다. 이번 관측으로 인해 code_fixer는 자격 요건을 충족하지 못했음을 다시 한 번 확인하였다.
