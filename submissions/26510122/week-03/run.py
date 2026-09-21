@@ -126,7 +126,12 @@ def execute_run(
     result_path = ROOT / "results.csv"
 
     with log_path.open("x", encoding="utf-8") as log:
+        parse_fails_seen = 0
+
         def emit(event: str, **data) -> None:
+            nonlocal parse_fails_seen
+            if event == "bid" and data.get("parse_error"):
+                parse_fails_seen += 1
             record = {"event": event, **data}
             line = json.dumps(record, ensure_ascii=False)
             print(line, flush=True)
@@ -156,7 +161,11 @@ def execute_run(
             outcome = "ok"
         except Exception as exc:
             row = dict.fromkeys(RESULT_HEADER, "")
-            row.update(run=run_id, condition=condition, note=type(exc).__name__)
+            row.update(
+                run=run_id,
+                condition=condition,
+                note=f"{type(exc).__name__};parse_fails={parse_fails_seen}",
+            )
             status = exc.code if isinstance(exc, urllib.error.HTTPError) else None
             emit("crash", **row, http_status=status, llm_calls=client.calls if client else 0)
             outcome = "rate_limited" if status == 429 else "failed"
