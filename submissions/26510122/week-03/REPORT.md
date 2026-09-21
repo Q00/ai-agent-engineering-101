@@ -17,27 +17,30 @@ python3 run.py --all --runs 3
 
 ## 2. 결과
 
-아래 표는 현재 `results.csv`의 내용이다. 첫날 두 baseline 실행 이후 무료 계정의 일일 요청 한도에 도달했고, 이후 조건별 실행을 나누어 추가했다. 실패 행과 로그는 삭제하지 않았다. baseline은 성공 3회를 채웠지만 homogeneous는 2회, overconfident는 1회이므로 조건 비교를 완료하려면 성공 실행을 더 추가해야 한다.
+아래 표는 현재 `results.csv`의 20개 실행 전부다. 중단된 실행도 삭제하지 않았다. 반복 횟수는 baseline 5회, homogeneous 10회, overconfident 5회로 조건마다 3회 이상이다. 그중 끝까지 완료된 실행은 각각 3회, 2회, 1회다. 과제의 반복 조건은 충족하지만, provider 오류가 많아 완료 실행만 비교할 때 표본 수가 서로 다르다는 한계가 있다.
 
 | run | condition | tasks | correct | messages | unassigned | misawards | note |
 |---|---|---:|---:|---:|---:|---:|---|
-| 20260915T145517Z-baseline-19557b | baseline | 6 | 2 | 39 | 0 | 4 | |
-| 20260915T145735Z-baseline-1c826d | baseline | 6 | 2 | 38 | 0 | 4 | |
-| 20260915T145917Z-baseline-72fa54 | baseline | | | | | | HTTPError |
-| 20260915T150006Z-homogeneous-6eff71 | homogeneous | | | | | | HTTPError |
-| 20260915T150006Z-homogeneous-998b3a | homogeneous | | | | | | HTTPError |
-| 20260915T150006Z-homogeneous-7a48ab | homogeneous | | | | | | HTTPError |
-| 20260915T150006Z-overconfident-3cc21f | overconfident | | | | | | HTTPError |
-| 20260915T150006Z-overconfident-7336fb | overconfident | | | | | | HTTPError |
-| 20260915T150006Z-overconfident-865ceb | overconfident | | | | | | HTTPError |
-| 20260916T071007Z-baseline-880fd2 | baseline | | | | | | RuntimeError |
-| 20260916T071508Z-baseline-202b91 | baseline | 6 | 1 | 38 | 0 | 5 | |
-| 20260916T071855Z-homogeneous-923229 | homogeneous | 6 | 2 | 42 | 0 | 4 | |
-| 20260917T123626Z-homogeneous-520128 | homogeneous | 6 | 2 | 42 | 0 | 4 | |
-| 20260920T100432Z-homogeneous-5cf897 | homogeneous | | | | | | RuntimeError |
-| 20260920T100716Z-homogeneous-2b8ab2 | homogeneous | | | | | | TimeoutError |
-| 20260920T101214Z-homogeneous-b5d0de | homogeneous | | | | | | RuntimeError |
-| 20260920T101709Z-overconfident-c6a7bd | overconfident | 6 | 2 | 37 | 0 | 4 | |
+| 20260915T145517Z-baseline-19557b | baseline | 6 | 2 | 39 | 0 | 4 | parse_fails=0 |
+| 20260915T145735Z-baseline-1c826d | baseline | 6 | 2 | 38 | 0 | 4 | parse_fails=0 |
+| 20260915T145917Z-baseline-72fa54 | baseline |  |  |  |  |  | HTTPError;parse_fails=0 |
+| 20260915T150006Z-homogeneous-6eff71 | homogeneous |  |  |  |  |  | HTTPError;parse_fails=0 |
+| 20260915T150006Z-homogeneous-998b3a | homogeneous |  |  |  |  |  | HTTPError;parse_fails=0 |
+| 20260915T150006Z-homogeneous-7a48ab | homogeneous |  |  |  |  |  | HTTPError;parse_fails=0 |
+| 20260915T150006Z-overconfident-3cc21f | overconfident |  |  |  |  |  | HTTPError;parse_fails=0 |
+| 20260915T150006Z-overconfident-7336fb | overconfident |  |  |  |  |  | HTTPError;parse_fails=0 |
+| 20260915T150006Z-overconfident-865ceb | overconfident |  |  |  |  |  | HTTPError;parse_fails=0 |
+| 20260916T071007Z-baseline-880fd2 | baseline |  |  |  |  |  | RuntimeError;parse_fails=1 |
+| 20260916T071508Z-baseline-202b91 | baseline | 6 | 1 | 38 | 0 | 5 | parse_fails=1 |
+| 20260916T071855Z-homogeneous-923229 | homogeneous | 6 | 2 | 42 | 0 | 4 | parse_fails=0 |
+| 20260917T123626Z-homogeneous-520128 | homogeneous | 6 | 2 | 42 | 0 | 4 | parse_fails=0 |
+| 20260920T100432Z-homogeneous-5cf897 | homogeneous |  |  |  |  |  | RuntimeError;parse_fails=1 |
+| 20260920T100716Z-homogeneous-2b8ab2 | homogeneous |  |  |  |  |  | TimeoutError;parse_fails=1 |
+| 20260920T101214Z-homogeneous-b5d0de | homogeneous |  |  |  |  |  | RuntimeError;parse_fails=0 |
+| 20260920T101709Z-overconfident-c6a7bd | overconfident | 6 | 2 | 37 | 0 | 4 | parse_fails=2 |
+| 20260921T080004Z-homogeneous-0a33b9 | homogeneous |  |  |  |  |  | RuntimeError;parse_fails=0 |
+| 20260921T080918Z-homogeneous-f28b10 | homogeneous |  |  |  |  |  | RuntimeError;parse_fails=2 |
+| 20260921T083719Z-overconfident-b65254 | overconfident |  |  |  |  |  | RuntimeError;parse_fails=1 |
 
 초기 두 로그의 `summary`에는 메시지가 각각 42개로 남아 있다. 이는 첫 구현이 모든 LLM 응답을 입찰 메시지로 계산한 결과다. 로그 원본은 보존하고, `results.csv`에서는 각 로그의 event를 다시 세어 실제 `participate=true` 입찰만 반영한 39개와 38개로 수정했다.
 
@@ -54,7 +57,7 @@ python3 run.py --all --runs 3
 
 ## 4. 해석
 
-baseline 성공 3회의 correct는 2, 2, 1로 평균 1.67/6이었고 misawards는 평균 4.33이었다. 첫 두 실행에서는 developer가 여섯 작업 전체를 confidence 95로 낙찰받았고, 세 번째 실행에서도 6개 중 5개를 가져갔다. homogeneous 성공 2회에서는 모든 후보가 모든 작업에 참여해 messages가 모두 42였고, 동률에서 먼저 응답한 developer가 전부 낙찰받아 두 번 모두 correct 2와 misawards 4를 기록했다. 첫 overconfident 실행에서는 developer가 모든 작업에 confidence 98로 입찰해 전부 낙찰받았고 correct 2와 misawards 4를 기록했다. 이는 명시적인 과신 지시가 낙찰 집중을 만들었지만, baseline에서도 confidence가 이미 95에 포화되어 correct 감소 폭은 작았음을 보여 준다. 다만 homogeneous 1회와 overconfident 2회가 더 필요하므로 최종적인 조건 효과는 성공 실행을 모두 수집한 뒤 판단한다.
+완료 실행만 보면 baseline의 correct는 2, 2, 1로 평균 1.67/6, messages는 평균 38.33, misawards는 평균 4.33이었다. homogeneous의 두 완료 실행은 세 후보가 모든 작업에 confidence 95로 입찰해 messages가 모두 42로 늘었고, 동률에서 먼저 응답한 developer가 전부 낙찰받아 correct 2와 misawards 4를 기록했다. overconfident의 완료 실행에서는 developer가 여섯 작업 모두 confidence 98로 입찰해 전부 낙찰받았고 correct 2, messages 37, misawards 4, parse_fails 2가 나왔다. `20260920T101709Z-overconfident-c6a7bd.jsonl`의 write-01 입찰에는 역할 밖의 고객 공지인데도 “I can create an appropriate notice with high confidence.”라고 적혀 있고, `20260921T083719Z-overconfident-b65254.jsonl`에서는 “Python 전문성이 직접적으로 적용되지는 않지만”이라고 스스로 인정하면서도 write-02에 98로 입찰했다. 따라서 높은 자기 confidence를 그대로 입찰가로 사용하면 역할 적합성보다 과신 지시와 응답 순서가 낙찰을 좌우했다. 다만 baseline에서도 developer의 confidence가 대부분 95에 포화되어 있었고 overconfident 완료 실행이 한 번뿐이므로, 조건 간 정확도 차이를 일반화하기는 어렵다. 또한 전체 20회 중 14회가 HTTPError, RuntimeError, TimeoutError로 중단되었고 파싱 실패도 로그에 남았으므로, 이 구현에서는 입찰 정직성뿐 아니라 provider 가용성과 구조화 응답 안정성도 주요 실패 요인이었다. Smith의 원래 절차에는 contractor가 제출한 능력 주장이나 확신도를 검증하고 보정하는 단계가 없어 이런 과신을 막지 못한다.
 
 ## 선택 확장 실험
 
