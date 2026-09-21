@@ -68,12 +68,18 @@ def delivered(group):
     return f"{got}/{tot}" if tot else "-"
 
 
-def section(title, data, group_key, keys):
+def section(title, data, group_key, keys, net=False):
     print(f"\n### {title}\n")
     groups = {}
     for r in data:
         groups.setdefault(group_key(r), []).append(r)
-    head = ["group", "runs", "crashed"] + keys + ["delivered", "judge_disagree"]
+    head = ["group", "runs", "crashed"] + keys
+    if net:
+        # helped - hurt is the paired comparison: Bias never talks to the
+        # contractors, so the counterfactual it is measured against used the
+        # identical bids. Comparing arms instead compares different samples.
+        head += ["net(helped-hurt)"]
+    head += ["delivered", "judge_disagree"]
     print("| " + " | ".join(head) + " |")
     print("|" + "---|" * len(head))
     for g, rs in groups.items():
@@ -81,6 +87,10 @@ def section(title, data, group_key, keys):
         jd = sum(int(note_field(r, "judge_disagree") or 0) for r in rs if not r["_crashed"])
         cells = [g, str(len(rs)), str(sum(r["_crashed"] for r in rs))]
         cells += [fmt(a[k]) for k in keys]
+        if net:
+            h = a["bias_helped"][0] or 0
+            u = a["bias_hurt"][0] or 0
+            cells += [f"{h - u:+.1f}"]
         cells += [delivered(rs), str(jd)]
         print("| " + " | ".join(cells) + " |")
 
@@ -96,7 +106,6 @@ section("core arm - plain contract net",
 if bias:
     section("bias arms",
             bias, lambda r: f"{r['condition']} / {r.get('arm', '')}",
-            ["correct", "misawards", "unassigned", "unassigned_veto",
-             "veto_hit_gold", "bias_helped", "bias_hurt",
-             "first_intervention", "first_flip", "messages", "bias_messages",
-             "icebreak_messages"])
+            ["correct", "misawards", "unassigned", "multi_bidder",
+             "bias_helped", "bias_hurt", "first_intervention", "first_flip",
+             "bias_messages", "icebreak_messages"], net=True)

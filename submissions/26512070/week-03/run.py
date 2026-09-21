@@ -45,16 +45,26 @@ HEADER = ["run", "condition", "tasks", "correct", "messages",
           "unassigned", "misawards", "note"]
 BIAS_HEADER = HEADER + [
     "arm", "bias_messages", "icebreak_messages",
-    "unassigned_nobid", "unassigned_veto", "veto_hit_gold",
-    "bias_helped", "bias_hurt", "first_intervention", "first_flip",
+    "bias_helped", "bias_hurt", "multi_bidder",
+    "first_intervention", "first_flip",
 ]
 
 ARMS = {
-    # name: (use_bias, use_icebreak, output file)
+    # name: (use_bias, use_icebreak, default output file)
     "core":    (False, False, "results.csv"),
     "bias":    (True,  False, "results_bias.csv"),
     "bias+ib": (True,  True,  "results_bias.csv"),
 }
+
+
+def output_for(arm, condition):
+    """results.csv holds the three conditions the lab fixes, and nothing else:
+    its header is checked and its `messages` column has to mean the same thing
+    as everyone else's. The fourth condition's own control goes beside it."""
+    use_bias, _, default = ARMS[arm]
+    if not use_bias and condition in C.EXTRA_CONDITIONS:
+        return "results_extra.csv"
+    return default
 
 
 class Tee:
@@ -126,8 +136,7 @@ def one_run(condition, arm, icebreak_tasks, measure_tasks, run_id, seed, quiet=F
     log(f"provider={llm.PROVIDER} model={llm.MODEL} temperature={llm.TEMPERATURE}")
     log(f"condition={condition} arm={arm} bias={'on' if use_bias else 'off'} "
         f"icebreak={'on' if use_ib else 'off'}")
-    log(f"seed={seed} veto_threshold={C.VETO_THRESHOLD} "
-        f"adj_range=({C.ADJ_MIN},{C.ADJ_MAX})")
+    log(f"seed={seed} bias_adj_range=({C.ADJ_MIN},{C.ADJ_MAX}) veto=none")
     log(f"contractors={[c.name for c in contractors]}")
     log(f"icebreak_tasks={[t.id for t in icebreak_tasks] if use_ib else []}")
     log(f"measure_tasks={[t.id for t in measure_tasks]}")
@@ -173,11 +182,14 @@ def one_run(condition, arm, icebreak_tasks, measure_tasks, run_id, seed, quiet=F
             "arm": arm,
             "bias_messages": bias.messages,
             "icebreak_messages": ib_messages,
-            "unassigned_nobid": _count(records, "unassigned_nobid"),
-            "unassigned_veto": _count(records, "unassigned_veto"),
-            "veto_hit_gold": _count(records, "veto_hit_gold"),
             "bias_helped": _count(records, "bias_helped"),
             "bias_hurt": _count(records, "bias_hurt"),
+            # Tasks where more than one contractor bid. Without a veto this is
+            # the only place Bias can act at all, so a zero here means the arm
+            # measured nothing rather than that Bias chose to do nothing.
+            "multi_bidder": sum(
+                1 for r in records
+                if sum(1 for b in r.bids if b.will_bid and b.parse_ok) > 1),
             "first_intervention": bias.first_intervention or "",
             "first_flip": first_flip or "",
         })
@@ -196,7 +208,7 @@ def one_run(condition, arm, icebreak_tasks, measure_tasks, run_id, seed, quiet=F
     hist.write_text(json.dumps(
         {"run": run_id, "condition": condition, "arm": arm, "seed": seed,
          "model": llm.MODEL, "temperature": llm.TEMPERATURE,
-         "veto_threshold": C.VETO_THRESHOLD,
+         "bias_adj_range": [C.ADJ_MIN, C.ADJ_MAX],
          "final_hypotheses": bias.hypotheses if bias else None,
          "icebreak": [_plain(r) for r in ib_records],
          "records": [_plain(r) for r in records]},
@@ -232,11 +244,13 @@ def plan_runs(arms, conditions, runs, base_seed):
     taken = {p.stem for p in (HERE / "logs").glob("*.txt")}
     plan = []
     for arm in arms:
-        use_bias, _, filename = ARMS[arm]
-        pool = C.BIAS_CONDITIONS if use_bias else C.CORE_CONDITIONS
+        use_bias, _, _ = ARMS[arm]
+        pool = (C.BIAS_CONDITIONS if use_bias
+                else C.CORE_CONDITIONS + C.EXTRA_CONDITIONS)
         for condition in (conditions or pool):
             if condition not in pool:
                 continue
+            filename = output_for(arm, condition)
             stem = f"{condition}-{arm.replace('+', '_')}-run"
             k = 1
             for _ in range(runs):

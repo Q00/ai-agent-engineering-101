@@ -16,7 +16,6 @@ import random
 from concurrent.futures import ThreadPoolExecutor
 
 import sandbox
-from conditions import VETO_THRESHOLD
 from llm import ask, extract_json
 from protocol import (Bid, BidCheck, IceBreakRecord, TaskAnnounce, TaskRecord,
                       TrajectoryCheck, Trial)
@@ -132,12 +131,20 @@ class Manager:
         return BidCheck(True, flags)
 
     # ---------------------------------------------------------------- award
-    def pick_winner(self, bids, checks, advice, veto=False):
+    def pick_winner(self, bids, checks, advice=None):
         """Highest confidence wins; eligibility_score breaks ties, then a coin.
 
-        Confidence is the axis the `overconfident` condition attacks, so the
+        Confidence is the axis the overconfident conditions attack, so the
         award rule has to read it -- a rule that ignored confidence would make
-        that condition a no-op.
+        those conditions a no-op.
+
+        Bias reorders and nothing more. An earlier version let a large enough
+        demotion refuse a bid outright; every refusal it ever issued landed on
+        the contractor that should have won, and the resulting unassignment
+        then fed back as evidence that the contractor was unqualified. Without
+        the veto, Bias can only change who is first among the bidders, so on a
+        task with one bidder it has no effect at all -- which is honest, since
+        there is nothing there to decide.
 
         The coin matters more than it looks. In `homogeneous` all three
         contractors share one prompt and return near-identical bids, so ties
@@ -146,30 +153,20 @@ class Manager:
         sort order rather than the protocol. The generator is seeded per run
         and the seed is printed, so the randomness is reproducible.
 
-        A veto only fires where Bias actually pushed a bid down. A contractor
-        that bid modestly and drew no adjustment is not refused: otherwise
-        `unassigned_veto` would count honest low bids that Bias never touched,
-        and the metric would stop meaning "Bias refused this".
-
-        With veto=False and advice=None this is the plain 1980 rule, which is
-        exactly how the counterfactual winner is computed. Returns
-        (winner, vetoed_names).
+        With advice=None this is the plain 1980 rule, which is exactly how the
+        counterfactual winner is computed.
         """
-        scored, vetoed = [], []
+        scored = []
         for b in bids:
             if not checks[b.contractor].accepted:
                 continue
-            adj = (advice or {}).get(b.contractor, 0)
-            score = b.confidence + adj
-            if veto and adj < 0 and score < VETO_THRESHOLD:
-                vetoed.append(b.contractor)
-                continue
+            score = b.confidence + (advice or {}).get(b.contractor, 0)
             scored.append((score, b.eligibility_score, self.rng.random(), b.contractor))
 
         if not scored:
-            return None, vetoed
+            return None
         scored.sort(reverse=True)
-        return scored[0][3], vetoed
+        return scored[0][3]
 
     # ------------------------------------------------------- post-execution
     def check_trajectory(self, announce, bid, result, meter) -> TrajectoryCheck:
@@ -239,7 +236,9 @@ class Manager:
 
         record = IceBreakRecord(task.id, task.desc, task.gold, announce, trials, messages)
         if self.bias is not None:
-            self.bias.observe_icebreak(record, meter, self.log)
+            # Queued, not sent: Bias sees it with its next request for advice,
+            # so belief and action come out of one call.
+            self.bias.record_icebreak(record)
         return record
 
     # -------------------------------------------------------- one full task
@@ -268,21 +267,15 @@ class Manager:
         # from a forked generator so drawing it cannot shift the real draw.
         forked = Manager(self.contractors, None, self.log,
                          random.Random(self.rng.random()))
-        counterfactual, _ = forked.pick_winner(bids, checks, None, veto=False)
+        counterfactual = forked.pick_winner(bids, checks, None)
 
-        winner, vetoed = self.pick_winner(
-            bids, checks, advice, veto=self.bias is not None)
-
-        if vetoed:
-            self.log(f"  [veto] refused: {', '.join(vetoed)} "
-                     f"(Bias 감점 후 {VETO_THRESHOLD} 미만)")
+        winner = self.pick_winner(bids, checks, advice)
 
         result = None
         traj_check = None
 
         if winner is None:
-            why = "all bids vetoed" if vetoed else "no bid"
-            self.log(f"  [award] {task.id}: UNASSIGNED ({why})")
+            self.log(f"  [award] {task.id}: UNASSIGNED (no bid)")
         else:
             messages += 1              # the award
             mark = "correct" if winner == task.gold else f"MISAWARD (gold={task.gold})"
@@ -299,11 +292,11 @@ class Manager:
         record = TaskRecord(
             task_id=task.id, desc=task.desc, gold=task.gold, announce=announce,
             bids=bids, bid_checks={k: v.flags for k, v in checks.items()},
-            bias_advice=advice, winner=winner, vetoed=vetoed,
+            bias_advice=advice, winner=winner,
             counterfactual_winner=counterfactual, result=result,
             traj_check=traj_check, messages=messages)
 
         if self.bias is not None:
-            self.bias.observe(record, meter, self.log)
+            self.bias.record_outcome(record)      # queued, no model call
 
         return record

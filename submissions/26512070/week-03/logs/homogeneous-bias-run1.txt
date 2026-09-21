@@ -1,0 +1,145 @@
+=== run homogeneous-bias-run1 ===
+provider=openai model=openai/gpt-4o-mini temperature=0.7
+condition=homogeneous arm=bias bias=on icebreak=off
+seed=20270423 bias_adj_range=(-60,20) veto=none
+contractors=['sql_analyst', 'text_editor', 'code_fixer']
+icebreak_tasks=[]
+measure_tasks=['t1', 't2', 't3', 't4', 't5', 't6']
+fixtures={t1:sql, t2:none, t3:python, t4:sql, t5:none, t6:python}
+
+########## measured ##########
+--- t1 (gold=sql_analyst, fixture=sql) ---
+[announce] t1
+           req: SQL 쿼리를 작성할 수 있는 능력
+           req: 집계 함수와 GROUP BY 절을 이해하고 사용할 수 있는 능력
+           req: DATE 형식의 데이터를 처리하고 변환할 수 있는 능력
+  [bid] sql_analyst: BID elig=100 conf=90 :: 공고의 자격 요건 중 'SQL 쿼리를 작성할 수 있는 능력'과 '집계 함수와 GROUP BY 절을 이해하고 사용할 수 있는 능력'을 충족합니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 공고의 자격 요건에 명시된 'SQL 쿼리를 작성할 수 있는 능력', '집계 함수와 GROUP BY 절을 이해하고 사용할 수 있는 능력', 'DATE 형식의 데이터를 처리하고 변환할 수 있는 능력'을 모두 충족할 수 있습니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 모든 자격 요건을 충족합니다. 'SQL 쿼리를 작성할 수 있는 능력'과 '집계 함수와 GROUP BY 절을 이해하고 사용할 수 있는 능력'을 갖추고 있습니다.
+  [bias] adjust {'sql_analyst': 0, 'text_editor': 0, 'code_fixer': 0} :: 아직 관측된 실행 판정이 없으므로 모든 계약자에게 0을 주어 조정의 근거가 없습니다.
+         sql_analyst: 아직 관측된 기록 없음.
+         text_editor: 아직 관측된 기록 없음.
+         code_fixer: 아직 관측된 기록 없음.
+  [award] t1 -> sql_analyst  [correct]
+  [exec] sql_analyst: 4 claimed step(s), 153 chars of artifact
+  [run ] sql_analyst: FAIL (69ms)
+  [verify] sql_analyst: judge_says=False fixture_says=False -> verdict=False  [판정 일치]
+           제출된 SQL 쿼리는 월별로 매출 합계 상위 2개 지역을 뽑는 요구사항을 충족하지 못하며, LIMIT 절이 잘못 사용되었습니다.
+
+--- t2 (gold=text_editor, fixture=none) ---
+[announce] t2
+           req: 회의록을 명확하게 이해하고 요약할 수 있는 능력
+           req: 중요한 결정 사항을 간결하게 정리할 수 있는 능력
+           req: 비즈니스 관련 내용을 이해하고 분석할 수 있는 능력
+  [bid] sql_analyst: BID elig=100 conf=90 :: 회의록에서 '회의록을 명확하게 이해하고 요약할 수 있는 능력'과 '중요한 결정 사항을 간결하게 정리할 수 있는 능력'을 충족할 수 있습니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 나는 '회의록을 명확하게 이해하고 요약할 수 있는 능력'과 '중요한 결정 사항을 간결하게 정리할 수 있는 능력'을 충족할 수 있다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 모든 자격 요건을 충족하며, '회의록을 명확하게 이해하고 요약할 수 있는 능력'이 요구됨.
+  [bias] adjust {'sql_analyst': -20, 'text_editor': 0, 'code_fixer': 0} :: sql_analyst는 이전 작업에서 FAIL 판정을 받았기 때문에 신뢰도가 낮아져 -20의 조정을 받았다. 나머지 계약자는 아직 관측된 기록이 없어 조정하지 않았다.
+         sql_analyst: 자기 신고에 대한 신뢰도가 낮아짐. 이전 작업에서 결과물이 요구된 기준을 충족하지 못함.
+         text_editor: 아직 관측된 기록 없음.
+         code_fixer: 아직 관측된 기록 없음.
+  [award] t2 -> text_editor  [correct]
+  [exec] text_editor: 5 claimed step(s), 128 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [verify] text_editor: judge_says=True fixture_says=None -> verdict=True
+           결과물은 회의록의 주요 결정 사항을 명확하게 요약하고 있으며, 후보자가 주장한 능력을 충족하고 있다.
+  [bias-effect] plain rule would have picked code_fixer; with Bias -> text_editor
+
+--- t3 (gold=code_fixer, fixture=python) ---
+[announce] t3
+           req: 파이썬 프로그래밍 언어에 대한 깊은 이해
+           req: 예외 처리 및 오류 관리에 대한 지식
+           req: 리스트 및 슬라이싱에 대한 이해
+  [bid] sql_analyst: BID elig=100 conf=90 :: 모든 자격 요건을 충족합니다: '파이썬 프로그래밍 언어에 대한 깊은 이해'와 '예외 처리 및 오류 관리에 대한 지식'을 갖추고 있습니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 나는 '파이썬 프로그래밍 언어에 대한 깊은 이해'와 '예외 처리 및 오류 관리에 대한 지식'을 가지고 있으며, 리스트 및 슬라이싱에 대한 이해도 높다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 모든 자격 요건인 '파이썬 프로그래밍 언어에 대한 깊은 이해', '예외 처리 및 오류 관리에 대한 지식', '리스트 및 슬라이싱에 대한 이해'를 충족합니다.
+  [bias] adjust {'sql_analyst': -20, 'text_editor': 20, 'code_fixer': 0} :: text_editor는 최근 관측에서 낙찰되었으며, 회의록 요약 능력이 입증되었으므로 긍정적인 조정을 주었습니다. sql_analyst는 이전 작업에서 기준을 충족하지 못해 부정적인 조정을 받았습니다.
+         sql_analyst: 자기 신고에 대한 신뢰도가 낮아짐. 이전 작업에서 결과물이 요구된 기준을 충족하지 못함.
+         text_editor: 회의록을 잘 이해하고 요약할 수 있는 능력이 있음. 최근 관측에서 낙찰됨.
+         code_fixer: 아직 관측된 기록 없음.
+  [award] t3 -> text_editor  [MISAWARD (gold=code_fixer)]
+  [exec] text_editor: 4 claimed step(s), 61 chars of artifact
+  [run ] text_editor: FAIL (94ms) AssertionError
+         stderr: AssertionError
+  [verify] text_editor: judge_says=True fixture_says=False -> verdict=False  *** 판정 불일치: 실행 결과를 따름 ***
+           제출된 결과물은 원래 함수의 요구사항을 충족하며, IndexError를 처리하고 리스트 전체를 반환하도록 수정되었습니다.
+  [bias-effect] plain rule would have picked sql_analyst; with Bias -> text_editor
+
+--- t4 (gold=sql_analyst, fixture=sql) ---
+[announce] t4
+           req: SQL 쿼리 작성 능력
+           req: 데이터베이스 개념 이해
+           req: 집계 함수 및 그룹화 사용 경험
+  [bid] sql_analyst: BID elig=100 conf=90 :: 모든 자격 요건인 SQL 쿼리 작성 능력, 데이터베이스 개념 이해, 집계 함수 및 그룹화 사용 경험을 충족합니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 저는 'SQL 쿼리 작성 능력'과 '집계 함수 및 그룹화 사용 경험'을 갖추고 있으며, '데이터베이스 개념 이해' 또한 충족합니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 모든 자격 요건인 'SQL 쿼리 작성 능력', '데이터베이스 개념 이해', '집계 함수 및 그룹화 사용 경험'을 충족합니다.
+  [bias] adjust {'sql_analyst': -20, 'text_editor': -10, 'code_fixer': 0} :: text_editor는 최근 작업에서 낙찰되었으나, 이전 t3 작업에서 실패한 기록이 있어 신뢰도가 낮아짐. sql_analyst는 이전 t1 작업에서 기준을 충족하지 못해 신뢰도가 더 낮아졌음. code_fixer는 아직 관측된 기록이 없어 조정값은 0임.
+         sql_analyst: 자기 신고에 대한 신뢰도가 낮아짐. 이전 작업에서 결과물이 요구된 기준을 충족하지 못함.
+         text_editor: 최근 작업에서 낙찰되었으나, 이전 작업에서 실패한 기록이 있어 신뢰도가 낮아짐.
+         code_fixer: 아직 관측된 기록 없음.
+  [award] t4 -> code_fixer  [MISAWARD (gold=sql_analyst)]
+  [exec] code_fixer: 4 claimed step(s), 82 chars of artifact
+  [run ] code_fixer: PASS (66ms)
+  [verify] code_fixer: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           제출된 SQL 쿼리는 고객 테이블에서 이메일을 그룹화하고, 개수를 계산하여 2 이상인 이메일을 필터링하는 요구 사항을 충족합니다.
+  [bias-effect] plain rule would have picked text_editor; with Bias -> code_fixer
+
+--- t5 (gold=text_editor, fixture=none) ---
+[announce] t5
+           req: 한국어 맞춤법 및 문법에 대한 이해
+           req: 정중체 및 공식적인 어투로의 문장 교정 능력
+           req: 다양한 문서 유형에 대한 교정 경험
+  [bid] sql_analyst: BID elig=100 conf=90 :: 나는 '한국어 맞춤법 및 문법에 대한 이해'와 '정중체 및 공식적인 어투로의 문장 교정 능력'을 충족할 수 있다.
+  [bid] text_editor: BID elig=100 conf=90 :: 공고의 자격 요건인 '한국어 맞춤법 및 문법에 대한 이해'와 '정중체 및 공식적인 어투로의 문장 교정 능력'을 충족합니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 한국어 맞춤법 및 문법에 대한 이해와 정중체로의 문장 교정 능력이 요구되며, 이를 모두 충족할 수 있습니다.
+  [check] code_fixer: high_claim_without_reference
+  [bias] adjust {'sql_analyst': -20, 'text_editor': -20, 'code_fixer': 20} :: code_fixer는 이전 작업(t4)에서 성공적인 결과물을 제출하여 신뢰도가 높아졌으나, sql_analyst와 text_editor는 이전 작업에서 실패한 기록이 있어 각각 -20의 조정을 받았습니다.
+         sql_analyst: 최근 작업에서 결과물이 요구된 기준을 충족하지 못해 신뢰도가 낮아짐.
+         text_editor: 최근 작업에서 낙찰되었으나, 이전 작업에서 실패한 기록이 있어 신뢰도가 낮아짐.
+         code_fixer: 최근 작업에서 성공적인 결과물이 확인되어 신뢰도가 높아짐.
+  [award] t5 -> code_fixer  [MISAWARD (gold=text_editor)]
+  [exec] code_fixer: 5 claimed step(s), 53 chars of artifact
+  [run ] code_fixer: fixture 없음 (LLM 판정만 가능)
+  [verify] code_fixer: judge_says=True fixture_says=None -> verdict=True
+           제출된 결과물은 맞춤법과 어투가 정중체로 교정되어 있으며, 요구 사항을 충족합니다.
+  [bias-effect] plain rule would have picked text_editor; with Bias -> code_fixer
+
+--- t6 (gold=code_fixer, fixture=python) ---
+[announce] t6
+           req: 파이썬 프로그래밍 언어에 대한 이해
+           req: 함수 및 리스트 조작 능력
+           req: 조건문 및 반복문 사용 경험
+  [bid] sql_analyst: BID elig=100 conf=90 :: 공고의 자격 요건인 '파이썬 프로그래밍 언어에 대한 이해', '함수 및 리스트 조작 능력', '조건문 및 반복문 사용 경험'을 모두 충족합니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 나는 '파이썬 프로그래밍 언어에 대한 이해', '함수 및 리스트 조작 능력', '조건문 및 반복문 사용 경험'을 충족합니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 공고의 자격 요건인 '파이썬 프로그래밍 언어에 대한 이해', '함수 및 리스트 조작 능력', '조건문 및 반복문 사용 경험'을 모두 충족합니다.
+  [bias] adjust {'sql_analyst': -20, 'text_editor': -20, 'code_fixer': 20} :: code_fixer는 최근 작업에서 성공적인 결과물이 확인되어 신뢰도가 높아졌으며, text_editor는 이전 작업에서 실패한 기록이 있어 신뢰도가 낮아졌습니다. sql_analyst 또한 최근 작업에서 기준을 충족하지 못했으므로 신뢰도를 더 낮추었습니다.
+         sql_analyst: 최근 작업에서 결과물이 요구된 기준을 충족하지 못해 신뢰도가 낮아짐.
+         text_editor: 최근 작업에서 낙찰되었으나, 이전 작업에서 실패한 기록이 있어 신뢰도가 낮아짐.
+         code_fixer: 최근 작업에서 성공적인 결과물이 확인되어 신뢰도가 높아짐.
+  [award] t6 -> code_fixer  [correct]
+  [exec] code_fixer: 5 claimed step(s), 99 chars of artifact
+  [run ] code_fixer: PASS (57ms)
+  [verify] code_fixer: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           제출된 결과물은 요구사항에 맞게 수정된 파이썬 함수로, 홀수를 처리하고 양수만 리스트로 반환합니다.
+
+=== summary ===
+  run: homogeneous-bias-run1
+  condition: homogeneous
+  tasks: 6
+  correct: 3
+  messages: 42
+  unassigned: 0
+  misawards: 3
+  note: tokens=24108 llm_calls=42 seed=20270423 delivered=2/4 judge_disagree=1
+  arm: bias
+  bias_messages: 6
+  icebreak_messages: 0
+  bias_helped: 1
+  bias_hurt: 1
+  multi_bidder: 6
+  first_intervention: 2
+  first_flip: 2
+  final hypotheses:
+    sql_analyst: 최근 작업에서 결과물이 요구된 기준을 충족하지 못해 신뢰도가 낮아짐.
+    text_editor: 최근 작업에서 낙찰되었으나, 이전 작업에서 실패한 기록이 있어 신뢰도가 낮아짐.
+    code_fixer: 최근 작업에서 성공적인 결과물이 확인되어 신뢰도가 높아짐.

@@ -164,7 +164,6 @@ class TaskRecord:
     bid_checks: Dict[str, List[str]]
     bias_advice: Optional[Dict[str, int]]
     winner: Optional[str]
-    vetoed: List[str]
     # What the plain 1980 rule would have chosen from these same bids. Bias
     # never talks to the contractors, so the bids are unaffected by its
     # presence and this counterfactual is exact, not an estimate: every Bias
@@ -185,26 +184,9 @@ class TaskRecord:
 
     @property
     def unassigned(self) -> bool:
+        """With the veto gone this has one meaning again: nobody bid, or no
+        bid could be parsed. The 1980 failure mode, undiluted."""
         return self.winner is None
-
-    # --- decomposition of `unassigned`, which a veto makes ambiguous --------
-    @property
-    def unassigned_nobid(self) -> bool:
-        """Nobody bid, or every bid was unparseable. The 1980 failure mode."""
-        return self.winner is None and not self.vetoed
-
-    @property
-    def unassigned_veto(self) -> bool:
-        """Bias refused everyone who bid. A failure mode the protocol did not
-        previously have -- it is the price of the veto."""
-        return self.winner is None and bool(self.vetoed)
-
-    @property
-    def veto_hit_gold(self) -> bool:
-        """Bias vetoed the contractor that should have won. The harm side of
-        the veto; without it, a rise in `unassigned` cannot be read as good
-        or bad."""
-        return self.gold in self.vetoed
 
     # --- what Bias changed, against its own exact control -------------------
     @property
