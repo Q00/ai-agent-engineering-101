@@ -63,7 +63,7 @@
 추가 조건의 결과는 `results-extra.csv`에 적었습니다.
 
 ### **시스템 구조**
-![Contract Net](./Contract%20Net.png)
+![Contract Net](./contract-net.png)
 
 **실행 방법.**
 
