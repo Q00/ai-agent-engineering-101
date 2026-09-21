@@ -26,8 +26,10 @@ import argparse
 import csv
 import json
 import random
+import threading
 import traceback
 import zlib
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 
@@ -57,15 +59,22 @@ ARMS = {
 
 class Tee:
     """Writes every line to the console and to the run's log file at once, both
-    in UTF-8, so a Korean log survives a cp949 console redirect on Windows."""
+    in UTF-8, so a Korean log survives a cp949 console redirect on Windows.
 
-    def __init__(self, path: Path):
+    With --jobs > 1 the console half is dropped: several runs writing to one
+    terminal would interleave into something unreadable. The per-run log files
+    are unaffected and stay the complete record."""
+
+    def __init__(self, path: Path, quiet: bool = False):
         self.fh = path.open("w", encoding="utf-8")
+        self.quiet = quiet
 
     def __call__(self, *parts):
         line = " ".join(str(p) for p in parts)
         self.fh.write(line + "\n")
         self.fh.flush()
+        if self.quiet:
+            return
         try:
             print(line)
         except UnicodeEncodeError:
@@ -102,9 +111,9 @@ def _count(records, attr):
     return sum(1 for r in records if getattr(r, attr) is True)
 
 
-def one_run(condition, arm, icebreak_tasks, measure_tasks, run_id, seed):
+def one_run(condition, arm, icebreak_tasks, measure_tasks, run_id, seed, quiet=False):
     use_bias, use_ib, _ = ARMS[arm]
-    log = Tee(HERE / "logs" / f"{run_id}.txt")
+    log = Tee(HERE / "logs" / f"{run_id}.txt", quiet=quiet)
     meter = llm.Meter()
 
     contractors = build(C.roster(condition))
@@ -212,6 +221,38 @@ def next_index(path: Path) -> int:
         return sum(1 for r in csv.reader(f) if any(c.strip() for c in r))
 
 
+def plan_runs(arms, conditions, runs, base_seed):
+    """Assign every run its id and seed up front.
+
+    Ids have to be handed out before anything starts: numbering them from the
+    logs on disk works fine one at a time, but with --jobs several workers
+    would read the same count and collide. Allocating here makes the plan
+    deterministic and lets a worker do nothing but run.
+    """
+    taken = {p.stem for p in (HERE / "logs").glob("*.txt")}
+    plan = []
+    for arm in arms:
+        use_bias, _, filename = ARMS[arm]
+        pool = C.BIAS_CONDITIONS if use_bias else C.CORE_CONDITIONS
+        for condition in (conditions or pool):
+            if condition not in pool:
+                continue
+            stem = f"{condition}-{arm.replace('+', '_')}-run"
+            k = 1
+            for _ in range(runs):
+                while f"{stem}{k}" in taken:      # never reuse a finished run's id
+                    k += 1
+                run_id = f"{stem}{k}"
+                taken.add(run_id)
+                # crc32, not hash(): Python randomises string hashing per
+                # process, so hash() would hand the same run a different seed
+                # on every invocation and quietly defeat the point of seeding.
+                seed = base_seed + (zlib.crc32(run_id.encode()) % 10_000)
+                plan.append((condition, arm, run_id, seed, HERE / filename,
+                             BIAS_HEADER if use_bias else HEADER))
+    return plan
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--arms", nargs="*", default=list(ARMS), choices=list(ARMS))
@@ -219,45 +260,50 @@ def main():
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--seed", type=int, default=20260921,
                     help="base seed; each run derives its own from this and its id")
+    ap.add_argument("--jobs", type=int, default=1,
+                    help="runs to execute concurrently. Runs are independent by "
+                         "construction -- Bias memory never crosses a run boundary "
+                         "-- so this changes wall clock, not results. Raise it and "
+                         "the endpoint may start rate-limiting; those land as "
+                         "crashed rows, which is visible rather than silent.")
     args = ap.parse_args()
 
     icebreak_tasks, measure_tasks = load_tasks()
     (HERE / "logs").mkdir(exist_ok=True)
 
-    for arm in args.arms:
-        use_bias, _, filename = ARMS[arm]
-        pool = C.BIAS_CONDITIONS if use_bias else C.CORE_CONDITIONS
-        for condition in (args.conditions or pool):
-            if condition not in pool:
-                continue
-            out = HERE / filename
-            header = BIAS_HEADER if use_bias else HEADER
-            stem = f"{condition}-{arm.replace('+', '_')}-run"
-            for _ in range(args.runs):
-                n = next_index(out)
-                # Number from what is already on disk, not from the loop index:
-                # a second invocation must not reuse run1 and overwrite the log
-                # and history of the first. Logs are evidence.
-                run_id = f"{stem}{1 + len(list((HERE / 'logs').glob(stem + '*.txt')))}"
-                # crc32, not hash(): Python randomises string hashing per
-                # process, so hash() would hand the same run a different seed
-                # on every invocation and quietly defeat the point of seeding.
-                seed = args.seed + (zlib.crc32(run_id.encode()) % 10_000)
-                print(f"\n########## {run_id} (seed={seed}) ##########")
-                try:
-                    row = one_run(condition, arm, icebreak_tasks,
-                                  measure_tasks, run_id, seed)
-                    row["run"] = n
-                except Exception as e:
-                    # A crashed run stays in the table with blank counts.
-                    # Deleting it would hide a failure mode that is a result.
-                    traceback.print_exc()
-                    row = {"run": n, "condition": condition, "arm": arm,
-                           "tasks": "", "correct": "", "messages": "",
-                           "unassigned": "", "misawards": "",
-                           "note": f"CRASH {type(e).__name__}: {e}".replace("\n", " ")[:300]}
-                append_row(out, header, row)
-                print(f"-> {out.name}: {row}")
+    plan = plan_runs(args.arms, args.conditions, args.runs, args.seed)
+    print(f"planned {len(plan)} run(s), {args.jobs} at a time:")
+    for condition, arm, run_id, seed, out, _ in plan:
+        print(f"  {run_id:34} {arm:8} seed={seed} -> {out.name}")
+
+    write_lock = threading.Lock()
+    quiet = args.jobs > 1
+    done = 0
+
+    def execute(item):
+        condition, arm, run_id, seed, out, header = item
+        try:
+            row = one_run(condition, arm, icebreak_tasks, measure_tasks,
+                          run_id, seed, quiet=quiet)
+        except Exception as e:
+            # A crashed run stays in the table with blank counts. Deleting it
+            # would hide a failure mode that is part of the result.
+            traceback.print_exc()
+            row = {"condition": condition, "arm": arm, "tasks": "", "correct": "",
+                   "messages": "", "unassigned": "", "misawards": "",
+                   "note": f"CRASH {type(e).__name__}: {e}".replace("\n", " ")[:300]}
+        with write_lock:
+            row["run"] = next_index(out)
+            append_row(out, header, row)
+        return run_id, out, row
+
+    with ThreadPoolExecutor(max_workers=max(1, args.jobs)) as ex:
+        for run_id, out, row in ex.map(execute, plan):
+            done += 1
+            print(f"[{done}/{len(plan)}] {run_id:34} -> {out.name}: "
+                  f"correct={row.get('correct')} msgs={row.get('messages')} "
+                  f"unassigned={row.get('unassigned')} misawards={row.get('misawards')} "
+                  f"| {row.get('note', '')}")
 
 
 if __name__ == "__main__":
