@@ -19,7 +19,7 @@ be measured with this tool set.
 | 5. Human intervention | `IRREVERSIBLE` set + `ask_human()` | no mechanism at all | **Not measurable** |
 
 Axis 5 is worth stating plainly rather than reporting a column of zeros without
-comment: `interventions` is 0 in all 29 runs because `IRREVERSIBLE` is empty,
+comment: `interventions` is 0 in all 31 runs because `IRREVERSIBLE` is empty,
 and it is empty because every tool here is read-only. Producing a non-zero
 number would mean adding a tool that writes or deletes — which would break
 "same tools for both variants" and turn the A/B into a tool comparison. The
@@ -43,7 +43,7 @@ confident wrong answer. Both task files were committed before any run.
 
 ## 2. Measurements
 
-29 runs. `results.csv` is the source; averages below exclude runs with no
+31 runs. `results.csv` is the source; averages below exclude runs with no
 meter (crashes).
 
 | Model | Task | Harness | n | O | X | tokens avg | iters avg |
@@ -57,20 +57,20 @@ meter (crashes).
 | nemotron-3.5-lightning:free | t2 | react | 3 | 3 | 0 | 4,324 | 2 |
 | nemotron-3.5-lightning:free | t2 | plan_exec | 3 | 0 | 3 | — | — |
 | gemini-2.5-flash | t2 | react | 3 | 0 | 3 | — | — |
-| gemini-2.5-flash | t2 | plan_exec | 1 | 0 | 1 | — | — |
+| gemini-2.5-flash | t2 | plan_exec | 3 | 0 | 3 | — | — |
 
 Two blocks have no usable numbers, and neither is a harness result. The
 nemotron t2 plan_exec cell is three 429 crashes: OpenRouter's free tier allows
 50 requests a day, and plan_exec had already spent 33 of the session's 52 —
 63% of the requests for 23% of the runs — so the cell that my hypothesis was
-about is the one the quota ate. The four `gemini-2.5-flash` rows are crashes from a
-session I interrupted: two 429s after discovering that model's free tier is 20
-requests **per day**, not per minute, and two 503s ("this model is currently
-experiencing high demand") which are not a quota at all. All are kept because
-deleting a failed run would be editing the record, and the quota pair is itself
-a finding (§3).
+about is the one the quota ate. The six `gemini-2.5-flash` rows are all crashes,
+from a session I interrupted once its cause was clear: 429s after discovering
+that model's free tier is 20 requests **per day**, not per minute, and two 503s
+("this model is currently experiencing high demand"), which are not a quota at
+all. They are kept because deleting a failed run would be editing the record,
+and the quota group is itself a finding (§3).
 
-Interventions are 0 in all 29 runs (§1).
+Interventions are 0 in all 31 runs (§1).
 
 ## 3. Interpretation
 
