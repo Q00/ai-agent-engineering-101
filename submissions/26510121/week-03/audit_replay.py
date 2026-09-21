@@ -80,6 +80,8 @@ def award(records, reliability=None, reverse_poll=False):
     winners = []
     for task in order:
         bids = [r for r in by_task[task] if r["parse_ok"] and r["bid"]]
+        if reverse_poll:
+            bids = list(reversed(bids))
         if not bids:
             unassigned += 1
             winners.append(None)
@@ -113,8 +115,12 @@ def build_rows(runs):
 
         raw, raw_winners = award(records)
         adj, adj_winners = award(records, reliability)
+        rev, _rev_winners = award(records, reverse_poll=True)
         run_rows.append([run_no, condition, "raw", raw["tasks"], raw["correct"],
                          raw["misawards"], raw["unassigned"], ""])
+        run_rows.append([run_no, condition, "raw_reverse_poll", rev["tasks"],
+                         rev["correct"], rev["misawards"], rev["unassigned"],
+                         "same bids, ties broken by the last responder"])
         run_rows.append([run_no, condition, "adjusted", adj["tasks"], adj["correct"],
                          adj["misawards"], adj["unassigned"],
                          " ".join("%s=%.3f" % (n, reliability[n]) for n in NAMES)])
@@ -155,11 +161,11 @@ def summarise(run_rows, contractor_rows):
         t[1] += correct
         t[2] += mis
         t[3] += un
-    print("%-14s %-9s %9s %10s %11s" % ("condition", "policy", "correct",
+    print("%-14s %-17s %9s %10s %11s" % ("condition", "policy", "correct",
                                         "misawards", "unassigned"))
     for key in sorted(totals):
         tasks, correct, mis, un = totals[key]
-        print("%-14s %-9s %6d/%-3d %10d %11d" % (key[0], key[1], correct, tasks, mis, un))
+        print("%-14s %-17s %6d/%-3d %10d %11d" % (key[0], key[1], correct, tasks, mis, un))
 
     agg = defaultdict(lambda: [0, 0, [], [], 0, 0])
     for row in contractor_rows:
