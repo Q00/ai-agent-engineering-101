@@ -53,7 +53,7 @@ class Contractor:
     # ---- step 1: answer an announcement
     def bid(self, announce: TaskAnnounce, meter, log) -> Bid:
         system = f"{self.persona}\n\n{BID_INSTRUCTIONS}"
-        raw = ask(system, announce.render(), meter)
+        raw = ask(system, announce.render(), meter, log)
         obj = extract_json(raw)
 
         if obj is None:
@@ -79,7 +79,7 @@ class Contractor:
     # ---- step 2: do the work, and be measured doing it
     def execute(self, announce: TaskAnnounce, check: dict, meter, log) -> ExecResult:
         system = f"{self.persona}\n\n{EXEC_INSTRUCTIONS}"
-        raw = ask(system, announce.render(), meter)
+        raw = ask(system, announce.render(), meter, log)
         obj = extract_json(raw)
 
         if obj is None:

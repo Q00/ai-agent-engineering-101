@@ -13,6 +13,7 @@ protocol's own price:
   icebreak_messages   the icebreaking round, where every contractor executes
 """
 import random
+from concurrent.futures import ThreadPoolExecutor
 
 import sandbox
 from conditions import VETO_THRESHOLD
@@ -62,7 +63,7 @@ class Manager:
 
     # ---------------------------------------------------------- announcement
     def announce(self, task, meter) -> TaskAnnounce:
-        raw = ask(ANNOUNCE_INSTRUCTIONS, f"업무: {task.desc}", meter)
+        raw = ask(ANNOUNCE_INSTRUCTIONS, f"업무: {task.desc}", meter, self.log)
         obj = extract_json(raw)
         items = (obj or {}).get("eligibility") or []
         if isinstance(items, str):
@@ -78,6 +79,31 @@ class Manager:
         for e in items:
             self.log(f"           req: {e}")
         return ann
+
+    # -------------------------------------------------- broadcast, in parallel
+    def _fanout(self, work):
+        """Run one call per contractor at the same time, but report their
+        output in roster order.
+
+        A broadcast announcement is simultaneous by definition, so this is
+        the faithful shape and not just a speed-up -- though on a queued free
+        endpoint the speed-up is what makes a full sweep finish at all. Each
+        worker buffers its own log lines and they are flushed in a fixed order
+        afterwards, so concurrency never shows up as interleaved log output.
+        """
+        def one(c):
+            lines = []
+            return c, work(c, lines.append), lines
+
+        with ThreadPoolExecutor(max_workers=len(self.contractors)) as ex:
+            results = list(ex.map(one, self.contractors))   # map preserves order
+
+        out = []
+        for c, value, lines in results:
+            for line in lines:
+                self.log(line)
+            out.append((c, value))
+        return out
 
     # ------------------------------------------------------- pre-award check
     def check_bid(self, announce: TaskAnnounce, bid: Bid) -> BidCheck:
@@ -162,7 +188,7 @@ class Manager:
                 f"  사유: {bid.reason}\n\n"
                 f"계약자가 주장한 수행 계획 (증거 아님):\n{plan or '  (없음)'}\n\n"
                 f"제출된 결과물:\n{result.artifact[:1500]}")
-        raw = ask(VERIFY_INSTRUCTIONS, user, meter)
+        raw = ask(VERIFY_INSTRUCTIONS, user, meter, self.log)
         obj = extract_json(raw)
 
         truth = result.log.passed          # None where the task has no fixture
@@ -198,15 +224,16 @@ class Manager:
         announce = self.announce(task, meter)
         messages = len(self.contractors)
 
-        bids = {}
-        for c in self.contractors:
-            bids[c.name] = c.bid(announce, meter, self.log)
-            messages += 1
+        bids = {c.name: b for c, b in
+                self._fanout(lambda c, lg: c.bid(announce, meter, lg))}
+        messages += len(self.contractors)
+
+        results = self._fanout(
+            lambda c, lg: c.execute(announce, task.check, meter, lg))
+        messages += len(self.contractors)        # the execution orders
 
         trials = []
-        for c in self.contractors:
-            messages += 1                       # the execution order
-            result = c.execute(announce, task.check, meter, self.log)
+        for c, result in results:
             check = self.check_trajectory(announce, bids[c.name], result, meter)
             trials.append(Trial(c.name, bids[c.name], result, check))
 
@@ -223,10 +250,8 @@ class Manager:
         # broadcast: one announcement per contractor
         messages += len(self.contractors)
 
-        bids = []
-        for c in self.contractors:
-            bids.append(c.bid(announce, meter, self.log))
-            messages += 1              # the reply is a message either way
+        bids = [b for _, b in self._fanout(lambda c, lg: c.bid(announce, meter, lg))]
+        messages += len(self.contractors)   # a reply is a message either way
 
         checks = {b.contractor: self.check_bid(announce, b) for b in bids}
         for name, ch in checks.items():

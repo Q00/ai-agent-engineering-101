@@ -160,7 +160,7 @@ class Bias:
         body = ("모든 계약자의 수행 결과:\n" + "\n\n".join(blocks))
         user = f"{record.announce.render()}\n\n{body}\n\n{self._memory_block()}"
 
-        raw = ask(ICEBREAK_INSTRUCTIONS, user, meter)
+        raw = ask(ICEBREAK_INSTRUCTIONS, user, meter, log)
         self.messages += 1
 
         verdicts = ", ".join(
@@ -181,7 +181,7 @@ class Bias:
                 + "\n".join(self._bid_line(b) for b in bids)
                 + f"\n\n{self._memory_block()}")
 
-        raw = ask(ADVISE_INSTRUCTIONS, user, meter)
+        raw = ask(ADVISE_INSTRUCTIONS, user, meter, log)
         self.messages += 1
         obj = extract_json(raw)
         if obj is None:
@@ -219,7 +219,7 @@ class Bias:
                 + "\n".join(self._bid_line(b) for b in record.bids)
                 + f"\n\n수행 결과:\n{outcome}\n\n{self._memory_block()}")
 
-        raw = ask(UPDATE_INSTRUCTIONS, user, meter)
+        raw = ask(UPDATE_INSTRUCTIONS, user, meter, log)
         self.messages += 1
         self._remember(f"  [{record.task_id}, gold={record.gold}] {short}")
 

@@ -232,9 +232,13 @@ def main():
                 continue
             out = HERE / filename
             header = BIAS_HEADER if use_bias else HEADER
-            for i in range(args.runs):
+            stem = f"{condition}-{arm.replace('+', '_')}-run"
+            for _ in range(args.runs):
                 n = next_index(out)
-                run_id = f"{condition}-{arm.replace('+', '_')}-run{i + 1}"
+                # Number from what is already on disk, not from the loop index:
+                # a second invocation must not reuse run1 and overwrite the log
+                # and history of the first. Logs are evidence.
+                run_id = f"{stem}{1 + len(list((HERE / 'logs').glob(stem + '*.txt')))}"
                 # crc32, not hash(): Python randomises string hashing per
                 # process, so hash() would hand the same run a different seed
                 # on every invocation and quietly defeat the point of seeding.

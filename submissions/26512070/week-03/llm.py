@@ -19,6 +19,8 @@ object. See bias.py.
 import json
 import os
 import re
+import threading
+import time
 
 PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
 MODEL = os.environ.get(
@@ -27,20 +29,39 @@ MODEL = os.environ.get(
 TEMPERATURE = float(os.environ.get("AGENT_TEMPERATURE", "0.7"))
 MAX_TOKENS = 900
 
+# A free-tier endpoint queues, rate-limits, and occasionally just stops
+# answering. With ~1000 calls in a full sweep, one hung request without a
+# deadline stalls the whole thing, so every call gets a wall clock and a few
+# backed-off retries. A call that still fails after those raises, the runner
+# catches it, and the run is written to the table as a crash -- which is a
+# result about the provider, not an error to paper over.
+REQUEST_TIMEOUT = float(os.environ.get("AGENT_TIMEOUT", "90"))
+MAX_ATTEMPTS = int(os.environ.get("AGENT_RETRIES", "4"))
+
 _client = None
 
 
 class Meter:
     """Token and call cost. Negotiation cost in messages is counted by the
-    manager, not here -- these are two different notions of 'what it cost'."""
+    manager, not here -- these are two different notions of 'what it cost'.
+
+    Locked because the manager broadcasts to contractors concurrently, which
+    is what a broadcast announcement means anyway."""
 
     def __init__(self):
         self.tokens = 0
         self.calls = 0
+        self.retries = 0
+        self._lock = threading.Lock()
 
     def add(self, input_tokens, output_tokens):
-        self.tokens += int(input_tokens or 0) + int(output_tokens or 0)
-        self.calls += 1
+        with self._lock:
+            self.tokens += int(input_tokens or 0) + int(output_tokens or 0)
+            self.calls += 1
+
+    def bump_retry(self):
+        with self._lock:
+            self.retries += 1
 
 
 def _get_client():
@@ -48,15 +69,14 @@ def _get_client():
     if _client is None:
         if PROVIDER == "anthropic":
             import anthropic
-            _client = anthropic.Anthropic()
+            _client = anthropic.Anthropic(timeout=REQUEST_TIMEOUT, max_retries=0)
         else:
             from openai import OpenAI
-            _client = OpenAI()
+            _client = OpenAI(timeout=REQUEST_TIMEOUT, max_retries=0)
     return _client
 
 
-def ask(system: str, user: str, meter: Meter) -> str:
-    """One turn: a system prompt and a single user message. Returns raw text."""
+def _once(system: str, user: str, meter: Meter) -> str:
     client = _get_client()
     if PROVIDER == "anthropic":
         resp = client.messages.create(
@@ -72,6 +92,29 @@ def ask(system: str, user: str, meter: Meter) -> str:
     usage = resp.usage
     meter.add(getattr(usage, "prompt_tokens", 0), getattr(usage, "completion_tokens", 0))
     return resp.choices[0].message.content or ""
+
+
+def ask(system: str, user: str, meter: Meter, log=None) -> str:
+    """One turn: a system prompt and a single user message. Returns raw text.
+
+    Retries transport failures with backoff. It does NOT retry a reply that
+    came back unparseable -- that is the model's answer, and the lab counts it.
+    """
+    delay = 4.0
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            return _once(system, user, meter)
+        except Exception as e:
+            meter.bump_retry()
+            if attempt == MAX_ATTEMPTS:
+                raise
+            msg = f"{type(e).__name__}: {e}"[:160]
+            if log:
+                log(f"  [llm] attempt {attempt}/{MAX_ATTEMPTS} failed ({msg}); "
+                    f"retrying in {delay:.0f}s")
+            time.sleep(delay)
+            delay *= 2
+    raise RuntimeError("unreachable")
 
 
 def extract_json(text: str):
