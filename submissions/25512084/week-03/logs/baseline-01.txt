@@ -1,0 +1,13 @@
+provider=OpenRouter model=nvidia/nemotron-3.5-lightning:free temperature=0 condition=baseline
+[announce] task 1: Compute 137 * 249 and return the number.
+[bid] A: PARSE_FAIL raw=''
+[bid] B: bid=False confidence=0 reason=Task is not within my writing skill.
+[bid] C: bid=True confidence=100 reason=Coding skills include arithmetic computation.
+[award] C (gold A)
+[announce] task 2: Calculate 864 divided by 12 and return the number.
+[bid] A: bid=True confidence=100 reason=This is a basic arithmetic division problem.
+[bid] B: bid=False confidence=0 reason=This task falls outside my writing skill.
+[bid] C: bid=True confidence=100 reason=Basic arithmetic is within coding skill set.
+[award] A (gold A)
+[announce] task 3: Rewrite this sentence in plain English: The implementation of the new policy will commence next Monday.
+[crash] TypeError: 'NoneType' object is not subscriptable
