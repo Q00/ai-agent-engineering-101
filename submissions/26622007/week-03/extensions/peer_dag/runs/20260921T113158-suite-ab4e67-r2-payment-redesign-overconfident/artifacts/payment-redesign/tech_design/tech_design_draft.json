@@ -1,0 +1,28 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "[설계 제안 — 실제 구현/테스트 미수행] 합성 기록(같은 order_id, 1차 504, 2초 뒤 재시도 200, 두 요청 모두 idempotency_key 공백, PG 승인 2건 vs DB 완료 1건)에 대한 분석과 설계 초안이다. 모든 코드/표/구조는 제안이며 실제 PG·DB 조회, 환불, 배포, 테스트 실행은 하지 않았다.\n\n■ 원인 가설과 확인 증거\nH1(주원인): 멱등 키 부재로 재시도가 새 승인으로 처리됨. 확인 증거: 두 요청의 idempotency_key가 모두 NULL/공백, PG 승인 2건의 승인 시각이 2초 간격, 동일 order_id·동일 금액. 반증 조건: PG 로그에 동일 idempotency_key로 2건이 기록되어 있으면 H1 기각.\nH2: 504는 게이트웨이 타임아웃이며 실제로는 승인 성공(불확정 결과). 확인 증거: PG 승인 1건의 시각이 1차 요청 구간과 겹침, 클라이언트가 응답 못 받음. 반증: PG에 1차 구간 승인 기록이 없으면 기각.\nH3: 웹훅 중복/순서 역전으로 DB 완료 처리가 1건만 반영. 확인 증거: 웹훅 수신 로그의 중복 event_id, 처리 순서와 발생 순서 불일치. 반증: 웹훅이 단일·정상 순서면 기각.\nH4: DB 유니크 제약 부재로 중복 완료 행이 이론상 가능하나 현재는 1건 → 부분 실패/미반영 상태. 확인 증거: order_id 단독 유니크 여부, 완료 행 수. 반증: order_id+상태 유니크가 이미 있으면 기각.\n\n■ 인터페이스(제안)\n- PaymentCommand: 결제/취소 유스케이스 오케스트레이션. execute(orderId, amount, op, idempotencyKey) → Result{status, pgTxnId}. 키 없으면 즉시 거부(400).\n- IdempotencyStore: reserve(key, orderId, op) → {state: NEW|IN_PROGRESS|DONE, result}; complete(key, result); get(key). 저장 스키마: idempotency_key(PK), order_id, op, state, pg_txn_id, response_hash, created_at, updated_at. 고유 제약: UNIQUE(idempotency_key), UNIQUE(order_id, op) 보조.\n- GatewayPort: authorize(orderId, amount, idempotencyKey) → {pgTxnId, status}; cancel(pgTxnId, idempotencyKey) → status; getStatus(pgTxnId). 타임아웃 시 UNKNOWN 반환(성공/실패 단정 금지).\n- WebhookHandler: handle(event) — event_id 기준 멱등 처리, 발생시각 기준 순서 판정, 상태 전이표 적용. 저장: webhook_event(event_id PK, order_id, type, occurred_at, received_at, applied bool).\n- ReconciliationJob: PG 승인 목록과 DB 완료 목록 대사, 불일치 분류(DB누락/중복승인/고아취소), 자동 보정 또는 수동 큐 적재.\n\n■ 상태 전이표(제안)\n결제: INITIATED→(authorize OK)→AUTHORIZED→(capture)→CAPTURED→(cancel)→CANCELLED. INITIATED→(UNKNOWN)→PENDING_RECON. AUTHORIZED→(cancel)→CANCEL_PENDING→CANCELLED. 중복 요청: DONE 상태 키 재사용 시 저장된 결과 반환(재승인 금지).\n취소: CAPTURED→CANCEL_REQUESTED→CANCELLED; UNKNOWN→CANCEL_PENDING→대사.\n순서 역전: 늦게 도착한 이전 이벤트(occurred_at < last_applied)는 applied=false로 기록만 하고 상태 미변경.\n\n■ 디렉터리(제안)\n/payment/command/PaymentCommand.ts, /payment/idempotency/IdempotencyStore.ts, /payment/gateway/GatewayPort.ts, /payment/webhook/WebhookHandler.ts, /payment/recon/ReconciliationJob.ts, /payment/domain/stateMachine.ts, /migration/backfill.ts, /tests/{duplicate,reorder,partial}.spec.ts\n\n■ 핵심 의사코드(제안)\nPaymentCommand.execute: key 없으면 reject → store.reserve(key): DONE이면 저장 결과 반환, IN_PROGRESS면 409 → gateway.authorize(orderId, amount, key) → OK: store.complete + DB 완료; UNKNOWN: PENDING_RECON 기록 후 재시도는 동일 key로만 허용.\nWebhookHandler: event_id 존재 시 무시; occurred_at < last_applied면 applied=false 저장; 아니면 상태 전이 적용 후 last_applied 갱신.\nReconciliationJob: PG 승인 집합 − DB 완료 집합 = 누락/중복 후보 → 자동 보정 또는 수동 큐.\n\n■ 테스트 행렬(모두 미실행 — 설계 제안)\n중복: 동시 2요청 동일 key → 1승인 기대(미검증). 순서 역전: 웹훅 역순 도착 → 상태 불변 기대(미검증). 부분 실패: authorize OK 후 DB write 실패 → 대사로 복구 기대(미검증). 타임아웃: UNKNOWN → PENDING_RECON 기대(미검증).\n\n■ 타당성\n경쟁 요청: idempotency_key UNIQUE + reserve 상태기계로 두 번째 요청이 IN_PROGRESS/DONE을 만나 재승인 차단. 순서 역전: occurred_at 기반 last_applied 비교로 늦은 이벤트가 상태를 되돌리지 못함. 부분 실패: UNKNOWN을 성공/실패로 단정하지 않고 대사로 수렴.\n\n■ 미확인/모순\n실제 PG·DB 조회 미수행, 환불·배포 미수행, 신버전 롤백·재시도·취소 검증 미완료. 구버전 앱이 키를 보내지 않으면 서버가 키를 생성해야 하며 이 경우 72시간 공존 기간 동안 구버전 재시도는 서버 생성 키로만 멱등 보장(설계 가정, 미검증).",
+    "facts": {
+      "backfill_batches": 240,
+      "serial_backfill_seconds": 3600,
+      "two_worker_backfill_seconds": 1800,
+      "downtime_budget_seconds": 1200,
+      "coexistence_hours": 72,
+      "unverified_release_checks": 3,
+      "offline_backfill_fits": false,
+      "can_release": false
+    },
+    "evidence": [
+      "배치 수 = 1,200,000 / 5,000 = 240",
+      "1개 작업자 전체 시간 = 240 × 15초 = 3,600초",
+      "2개 작업자 전체 시간 = 240/2 × 15초 = 1,800초",
+      "중단 허용 = 20분 = 1,200초; 1,800초 > 1,200초이므로 오프라인 일괄 처리는 허용 시간 내 불가(offline_backfill_fits=false)",
+      "공존 요구 = 72시간(coexistence_hours=72)",
+      "미완료 검증 3건: 롤백, 재시도 결제, 취소 결제 → unverified_release_checks=3, can_release=false",
+      "합성 기록: 1차 504, 2초 뒤 200, 두 요청 idempotency_key 공백, PG 승인 2건 vs DB 완료 1건(제공 자료)",
+      "모든 코드/표/테스트는 설계 제안이며 실제 PG·DB 조회, 환불, 배포, 테스트 실행은 수행하지 않음"
+    ]
+  },
+  "error": ""
+}

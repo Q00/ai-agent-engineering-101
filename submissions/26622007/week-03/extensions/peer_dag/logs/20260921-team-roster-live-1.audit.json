@@ -1,0 +1,102 @@
+{
+  "passed": true,
+  "errors": [],
+  "mode": "live",
+  "concurrency_policy": "task-worker-isolated-v1",
+  "peak_calls": 3,
+  "peak_execution_calls": 2,
+  "peak_calls_by_worker": {
+    "A": 2,
+    "B": 1,
+    "C": 1
+  },
+  "peak_execution_calls_by_worker": {
+    "A": 1,
+    "B": 1,
+    "C": 0
+  },
+  "calls_by_phase": {
+    "propose": 9,
+    "review": 3,
+    "execute": 2
+  },
+  "task_statuses": {
+    "release-review/tech_risk": "failed",
+    "release-review/release_recommendation": "blocked",
+    "release-review/profitability": "succeeded",
+    "release-review": "failed"
+  },
+  "awards": {
+    "release-review": {
+      "requester": "A",
+      "worker": "A",
+      "mode": "delegate",
+      "dependencies": {
+        "profitability": [],
+        "tech_risk": [],
+        "release_recommendation": [
+          "profitability",
+          "tech_risk"
+        ]
+      }
+    },
+    "release-review/profitability": {
+      "requester": "A",
+      "worker": "B",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "release-review/tech_risk": {
+      "requester": "A",
+      "worker": "A",
+      "mode": "execute",
+      "dependencies": {}
+    }
+  },
+  "providers": {
+    "Fireworks": 12
+  },
+  "models": {
+    "deepseek/deepseek-v4.1-flash": 12
+  },
+  "evaluation": {
+    "passed": false,
+    "checks": {
+      "p_margin": false,
+      "q_margin": false,
+      "p_profit": false,
+      "q_profit": false,
+      "p_break_even": false,
+      "q_break_even": false,
+      "p_low_profit": false,
+      "q_low_profit": false,
+      "p_high_profit": false,
+      "q_high_profit": false,
+      "migration_before_app": false,
+      "can_release": false
+    }
+  },
+  "request_validation": {
+    "requests_checked": 19,
+    "responses_checked": 12,
+    "errors": [],
+    "phases": {
+      "propose": 12,
+      "review": 3,
+      "execute": 4
+    },
+    "workers": {
+      "C": 4,
+      "A": 8,
+      "B": 7
+    },
+    "expected_roster": {
+      "A": "제품·기술: 소프트웨어 오류 원인 분석, 구현 의존성, 재현·회귀 테스트, 기술적 배포·롤백 판단.",
+      "B": "사업·분석: 주어진 데이터와 추정치로 고객 수요, 손익, 불확실성, 사업 우선순위를 비교하는 의사결정 분석.",
+      "C": "운영·커뮤니케이션: 확정된 사실과 정책에 따른 고객 안내, 상담 절차, 팀 간 일정·담당·전달 계획."
+    }
+  },
+  "http_error_counts": {
+    "429": 7
+  }
+}

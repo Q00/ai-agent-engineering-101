@@ -1,0 +1,122 @@
+{
+  "passed": true,
+  "errors": [],
+  "mode": "live",
+  "concurrency_policy": "task-worker-isolated-v1",
+  "peak_calls": 3,
+  "peak_execution_calls": 2,
+  "peak_calls_by_worker": {
+    "A": 2,
+    "B": 1,
+    "C": 2
+  },
+  "peak_execution_calls_by_worker": {
+    "A": 0,
+    "B": 0,
+    "C": 2
+  },
+  "calls_by_phase": {
+    "propose": 12,
+    "review": 4,
+    "execute": 3,
+    "synthesize": 1
+  },
+  "task_statuses": {
+    "release-review/tech_risk_review": "succeeded",
+    "release-review/profitability_review": "succeeded",
+    "release-review/release_recommendation": "succeeded",
+    "release-review": "succeeded"
+  },
+  "awards": {
+    "release-review": {
+      "requester": "A",
+      "worker": "C",
+      "mode": "delegate",
+      "dependencies": {
+        "profitability_review": [],
+        "tech_risk_review": [],
+        "release_recommendation": [
+          "profitability_review",
+          "tech_risk_review"
+        ]
+      }
+    },
+    "release-review/profitability_review": {
+      "requester": "C",
+      "worker": "C",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "release-review/tech_risk_review": {
+      "requester": "C",
+      "worker": "C",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "release-review/release_recommendation": {
+      "requester": "C",
+      "worker": "C",
+      "mode": "execute",
+      "dependencies": {}
+    }
+  },
+  "providers": {
+    "Fireworks": 20
+  },
+  "models": {
+    "deepseek/deepseek-v4.1-flash": 20
+  },
+  "evaluation": {
+    "passed": true,
+    "checks": {
+      "p_margin": true,
+      "q_margin": true,
+      "p_profit": true,
+      "q_profit": true,
+      "p_break_even": true,
+      "q_break_even": true,
+      "p_low_profit": true,
+      "q_low_profit": true,
+      "p_high_profit": true,
+      "q_high_profit": true,
+      "migration_before_app": true,
+      "can_release": true
+    }
+  },
+  "response_format_validation": {
+    "requests_checked": 21,
+    "responses_checked": 20,
+    "errors": []
+  },
+  "execution_overlap": [
+    {
+      "first": {
+        "task_id": "release-review/tech_risk_review",
+        "worker": "C",
+        "phase": "execute",
+        "start": "2026-09-21T09:07:21.624235+00:00",
+        "end": "2026-09-21T09:07:27.716687+00:00",
+        "start_line": 92,
+        "end_line": 97
+      },
+      "second": {
+        "task_id": "release-review/profitability_review",
+        "worker": "C",
+        "phase": "execute",
+        "start": "2026-09-21T09:07:20.308895+00:00",
+        "end": "2026-09-21T09:07:28.115696+00:00",
+        "start_line": 77,
+        "end_line": 104
+      },
+      "overlap_seconds": 6.092452,
+      "same_worker": true
+    }
+  ],
+  "http_errors": [
+    {
+      "phase": "review",
+      "status": 429,
+      "attempt": 1
+    }
+  ]
+}

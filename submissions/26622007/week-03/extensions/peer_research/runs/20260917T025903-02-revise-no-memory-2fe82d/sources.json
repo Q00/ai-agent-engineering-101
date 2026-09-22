@@ -1,0 +1,64 @@
+{
+  "https://github.com/pgvector/pgvector": {
+    "url": "https://github.com/pgvector/pgvector/?tab=readme-ov-file",
+    "title": "pgvector/pgvector",
+    "excerpt": "An HNSW index creates a multilayer graph. It has better query performance than IVFFlat (in terms of speed-recall tradeoff), but has slower build times and uses more memory. Also, an index can be created without any data in the table since there isn’t a training step like IVFFlat.\n\n...\n\n## IVFFlat\n\nAn IVFFlat index divides vectors into lists, and then searches a subset of those lists that are closest to the query vector. It has faster build times and uses less memory than HNSW, but has lower query performance (in terms of speed-recall tradeoff).\n\n...\n\nThree keys to achieving good recall\n\n...\n\n1. Create the index *after* the table has some data\n2. Choose an appropriate number of lists - a good",
+    "retrieved_at": "2026-09-17T02:59:36.613700+00:00"
+  },
+  "https://github.com/pgvector/pgvector/blob/master/README.md": {
+    "url": "https://github.com/pgvector/pgvector/blob/master/README.md",
+    "title": "README.md",
+    "excerpt": "indexes, filtering is applied *\n...\n* the index\n...\n, with HNSW and the default `hnsw.\n...\n_search` of 40, only\n...\nscan more of the index when needed.\n...\n## Iterative Index Scans\n...\nindexes, queries with\n...\n### Iterative Scan Options",
+    "retrieved_at": "2026-09-17T02:59:36.613725+00:00"
+  },
+  "https://github.com/pgvector/pgvector/blob/v0.8.2/README.md": {
+    "url": "https://github.com/pgvector/pgvector/blob/v0.8.2/README.md",
+    "title": "README.md",
+    "excerpt": "Starting with 0.8.0, you can enable iterative index scans, which will automatically scan more of the index when needed.\n...\n## Iterative Index Scans\n...\ncan return less results since\n...\nis applied *after\n...\nthe index is scanned\n...\n### Iterative",
+    "retrieved_at": "2026-09-17T02:59:36.613737+00:00"
+  },
+  "https://www.postgresql.org/docs/current/continuous-archiving.html": {
+    "url": "https://www.postgresql.org/docs/current/continuous-archiving.html",
+    "title": "18: 25.3. Continuous Archiving and Point-in-Time Recovery (PITR)",
+    "excerpt": "pg_dump and pg_dumpall do not produce file-system-level backups and cannot be used as part of a continuous-archiving solution. Such dumps are logical and do not contain enough information to be used by WAL replay.\n\n...\n\nAs with the plain file-system-backup technique, this method can only support restoration of an entire database cluster, not a subset. Also, it requires a lot of archival storage: the base backup might be bulky, and a busy system will generate many megabytes of WAL traffic that have to be archived. Still, it is the",
+    "retrieved_at": "2026-09-17T02:59:36.613748+00:00"
+  },
+  "https://www.postgresql.org/docs/current/backup.html": {
+    "url": "https://www.postgresql.org/docs/current/backup.html",
+    "title": "Documentation: 18: Chapter 25. Backup and Restore - PostgreSQL",
+    "excerpt": "25.3. Continuous Archiving and Point-in-Time Recovery (PITR)\n...\n25.3.5. Recovering Using a Continuous Archive Backup\n...\nfundamentally different approaches to backing up PostgreSQL data:\n...\n- SQL dump\n- File system level backup\n- Continuous archiving",
+    "retrieved_at": "2026-09-17T02:59:36.613757+00:00"
+  },
+  "https://www.postgresql.org/docs/18/continuous-archiving.html": {
+    "url": "https://www.postgresql.org/docs/18/continuous-archiving.html",
+    "title": "PostgreSQL: Documentation: 18: 25.3. Continuous Archiving and Point-in-Time Recovery (PITR)",
+    "excerpt": "Since we can combine an indefinitely long sequence of WAL files for replay, continuous backup can be achieved simply by continuing to archive the WAL files. This is particularly valuable for large databases, where it might not be convenient to take a full backup frequently.\n\n...\n\nIt is not necessary to replay the WAL entries all the way to the end. We could stop the replay at any point and have a consistent snapshot of the database as it was at that time. Thus, this technique supports point-in-time recovery: it is possible to restore the database to its state at any time since your base backup was taken.\n\n...\n\npg_dump and pg_dumpall do not produce file-system-level backups and cannot be used",
+    "retrieved_at": "2026-09-17T02:59:36.613766+00:00"
+  },
+  "https://qdrant.tech/documentation/concepts/snapshots": {
+    "url": "https://qdrant.tech/documentation/concepts/snapshots",
+    "resolved_url": "https://qdrant.tech/documentation/snapshots/",
+    "title": "Snapshots - Qdrant",
+    "excerpt": "Snapshots - Qdrant Develop Deploy Ecosystem Learn API Reference Search Log in Start Free Search Develop Deploy Ecosystem Learn API Reference Operations Installation Capacity Planning Scaling & Resilience Vertical Scaling Horizontal Scaling Resilience Distributed Deployment Consistency Guarantees Node Failure Recovery Configuration Configuration Resource Quotas Administration Memory Tiers Usage Statistics Running with GPU Optimization Optimize Performance Optimizer Read-Write Contention Migration and Recovery Snapshots Upgrades Security Production Checklist Monitoring & Telemetry Monitoring & Telemetry Memory Usage Slow Request Log Managed Cloud Prometheus Monitoring Self-Hosted Prometheus Mo",
+    "retrieved_at": "2026-09-17T02:59:39.887540+00:00",
+    "retrieval_method": "official_http_get",
+    "sha256": "c40ce63011d22c3913385f39cc1daf41ccef49763121eafdde03bac33524d579",
+    "bytes": 129520,
+    "status": 200,
+    "html_redirects": [
+      "https://qdrant.tech/documentation/snapshots/"
+    ]
+  },
+  "https://qdrant.tech/documentation/guides/multiple-partitions": {
+    "url": "https://qdrant.tech/documentation/guides/multiple-partitions",
+    "resolved_url": "https://qdrant.tech/documentation/manage-data/multitenancy/",
+    "title": "Multitenancy - Qdrant",
+    "excerpt": "Multitenancy - Qdrant Develop Deploy Ecosystem Learn API Reference Search Log in Start Free Search Develop Deploy Ecosystem Learn API Reference Getting Started Overview What is Qdrant? Understanding Vector Search in Qdrant Local Quickstart Cloud Quickstart User Manual Manage Data Points Vectors Payload Collections Storage Indexing Quantization Multitenancy Bulk Upload Search Search Filtering Hybrid Queries Explore Search Relevance Low-Latency Search Text Search Text Filtering Full-Text Search Hybrid Search Inference Inference API BM25 Cloud Inference External Providers Matryoshka Models Qdrant Edge Edge API Shard Lifecycle Configuration Updating Data Reading Data Snapshots Quickstart On-Devi",
+    "retrieved_at": "2026-09-17T02:59:40.057987+00:00",
+    "retrieval_method": "official_http_get",
+    "sha256": "fd0e5f90d029a53d8c84ff4ac649750e5b4939e1a56af5e730dde056d9ea9b68",
+    "bytes": 358808,
+    "status": 200,
+    "html_redirects": []
+  }
+}

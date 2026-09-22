@@ -1,0 +1,37 @@
+{
+  "status": "succeeded",
+  "worker": "B",
+  "artifact": {
+    "summary": "기술 설계 제안(실제 구현·테스트 미수행). 공통 필수 64+40+32+24=160시간. S안=160+64=224시간(240 대비 16시간 여유), E안=160+96=256시간(240 대비 16시간 초과). E안 부족분 16시간은 분기 밖으로 이월 필요. 이월 후보: (1) 감사 기록 고도화(보존 정책·내보내기·검색 필터) 약 16~24시간 → SSO 로그인·기본 감사 이벤트 적재만 MVP 포함, 고도화 이월. (2) 운영 도구 일부(관리자 대시보드 고급 필터, 대량 좌석 일괄 변경) 약 8~16시간 이월. 두 후보 중 감사 기록 고도화만 이월하면 16시간 확보로 240시간에 정확히 맞음. 단, 이월 시 E안 MVP는 'SSO 로그인 + 감사 이벤트 적재(조회/내보내기 제외)'로 축소되며, 보안·컴플라이언스 요구가 강한 고객 세그먼트에는 출시 후 1분기 내 제공 조건이 필요. 도메인·API·데이터 변경 개요: 요금/청구(Plan, Subscription, Invoice 도메인; POST /v1/subscriptions, GET /v1/invoices; 테이블 plans, subscriptions, invoices, usage_records), 조직/좌석(Org, Seat 도메인; POST /v1/orgs/{id}/seats, DELETE /v1/orgs/{id}/seats/{seatId}; 테이블 orgs, seats, seat_assignments), 지표 수집(MetricEvent; POST /v1/events; 테이블 metric_events, daily_rollups), 운영 도구(AdminAction; POST /v1/admin/actions; 테이블 admin_actions, audit_logs), 셀프 온보딩(S안; POST /v1/onboarding/start, GET /v1/onboarding/status; 테이블 onboarding_flows, onboarding_steps), SSO/감사 기록(E안; POST /v1/auth/sso/callback, GET /v1/audit/events; 테이블 sso_configs, sso_sessions, audit_events). 코드 조각 수준 예시(설계 제안, 미구현): `POST /v1/subscriptions {plan_id, org_id, seats}` → `SubscriptionService.create()`가 `Plan.price`·`Plan.variable_cost`로 공헌이익 계산, `InvoiceService.issue()`가 월 배치. `POST /v1/events {org_id, metric, value, ts}` → `MetricEventRepository.insert()` 후 `DailyRollupJob`이 집계. `POST /v1/auth/sso/callback {code, state}` → `SsoService.exchange()`가 IdP 토큰 검증 후 `SsoSession` 저장, `AuditService.record('sso.login', actor, org_id)` 호출. 측정 지표: 활성 고객 수, 온보딩 완료율(S), 청구 성공률, 좌석 사용률, SSO 로그인 성공률(E), 감사 이벤트 적재율(E), 월 이익. MVP 포함/제외: S안 포함=요금/청구·조직/좌석·지표 수집·운영 도구·셀프 온보딩; 제외=SSO/감사 기록. E안 포함=요금/청구·조직/좌석·지표 수집·운영 도구·SSO 로그인·기본 감사 이벤트 적재; 제외(이월)=감사 기록 고도화(보존 정책·내보내기·검색 필터), 운영 도구 고급 필터·대량 좌석 일괄 변경. 단계별 선후 관계: 1단계(공통 기반) 요금/청구+조직/좌석 → 2단계 지표 수집(1단계 의존) → 3단계 운영 도구(1·2단계 의존) → 4단계 S안 셀프 온보딩(1단계 의존) 또는 E안 SSO 로그인(1단계 의존) → 5단계 E안 감사 이벤트 적재(4단계 의존) → 6단계(이월) 감사 기록 고도화. 모순·미확인: (a) E안 256시간 > 240시간 예산으로 이월 없이는 일정 불가, (b) 이월 시 E안 MVP가 보안 요구를 충족하는지 고객 계약 조건 미확인, (c) 고객 수·수요는 추정치로 매출·계약 보장 없음, (d) 실제 구현·테스트·시장 조사·고객 인터뷰 미수행.",
+    "facts": {
+      "common_dev_hours": 160,
+      "s_total_dev_hours": 224,
+      "e_total_dev_hours": 256,
+      "e_budget_shortfall_hours": 16,
+      "s_fits_budget": true,
+      "e_fits_budget": false,
+      "s_margin": 16,
+      "e_margin": -16,
+      "s_profit": 0,
+      "e_profit": 0,
+      "s_break_even": 0,
+      "e_break_even": 0,
+      "s_low_profit": 0,
+      "e_low_profit": 0,
+      "s_high_profit": 0,
+      "e_high_profit": 0
+    },
+    "evidence": [
+      "공통 필수 합계: 64(요금/청구)+40(조직/좌석)+32(지표 수집)+24(운영 도구)=160시간",
+      "S안 총 개발시간: 160+64(셀프 온보딩)=224시간",
+      "E안 총 개발시간: 160+96(SSO/감사 기록)=256시간",
+      "E안 부족분: 256-240=16시간",
+      "S안 예산 여유: 240-224=16시간",
+      "이월 후보: 감사 기록 고도화(보존 정책·내보내기·검색 필터) 약 16~24시간, 운영 도구 일부(고급 필터·대량 좌석 일괄 변경) 약 8~16시간. 감사 기록 고도화만 이월 시 16시간 확보로 240시간 충족",
+      "설계 제안 코드 조각은 인터페이스·도메인 수준 예시이며 실제 구현·테스트·배포는 수행하지 않음",
+      "손익 관련 facts(s_profit, e_profit, s_break_even, e_break_even, s_low_profit, e_low_profit, s_high_profit, e_high_profit)는 본 task(tech_design) 범위 밖으로 0으로 표기하며, 사업·분석 Worker의 별도 산출물에서 계산 필요",
+      "고객 수·수요는 추정치이며 매출·계약 보장 없음. 시장 조사·고객 인터뷰 미수행"
+    ]
+  },
+  "error": ""
+}

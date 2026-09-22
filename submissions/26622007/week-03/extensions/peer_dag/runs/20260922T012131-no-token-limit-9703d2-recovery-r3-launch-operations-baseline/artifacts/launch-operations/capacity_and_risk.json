@@ -1,0 +1,37 @@
+{
+  "status": "succeeded",
+  "worker": "B",
+  "artifact": {
+    "summary": "제공된 수치만으로 출시 첫 4시간 용량·인력 대안과 정책 모순·미확인 리스크를 정리했다. 계산: 초대 800명 중 20% 문의 → 160건. 상담원 4명 × 시간당 5건 × 4시간 = 80건 처리 가능. 미처리 160-80=80건. 전량 처리를 위해서는 160/(5×4)=8명 필요, 추가 4명. 지원 창구는 4시간, 출시 시각은 10시. 정책 모순: 확정 정책은 '영업일 2일 내 처리 시작'이며 처리 완료·PG 반영 시간은 미보장인데, 광고 초안은 '즉시 자동 환불'을 약속하므로 immediate_refund_promised=false로 표기한다. 미확인: 기술 배포 승인, 결제 검증 결과, 인원 충원 승인 모두 미제공이며 각각 출시 가능성·환불 처리 정확성·대기열 규모에 영향. 충원 불가 시 대안은 대기열 운영, 결제 오류·환불 문의 우선순위, 정책에 부합하는 안내 문구(즉시 환불 아님, 영업일 2일 내 처리 시작)로 한정한다. 본 작업은 설계·분석 제안이며 실제 구현·테스트·고객 연락·외부 시스템 변경은 수행하지 않았다(미검증).",
+    "facts": {
+      "expected_contacts": 160,
+      "four_hour_capacity": 80,
+      "backlog_without_hiring": 80,
+      "required_total_agents": 8,
+      "additional_agents": 4,
+      "support_window_hours": 4,
+      "launch_hour": 10,
+      "immediate_refund_promised": false,
+      "hiring_approved": false,
+      "tech_deploy_approved": false,
+      "payment_verification_received": false,
+      "actual_implementation_performed": false,
+      "actual_testing_performed": false,
+      "customer_contact_performed": false,
+      "external_system_change_performed": false
+    },
+    "evidence": [
+      "expected_contacts = 800 × 0.2 = 160건",
+      "four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건",
+      "backlog_without_hiring = 160 - 80 = 80건",
+      "required_total_agents = 160 / (5 × 4) = 8명",
+      "additional_agents = 8 - 4 = 4명",
+      "support_window_hours = 4, launch_hour = 10 (출시 후 첫 4시간 가정)",
+      "모순: 확정 정책 '상담 접수 후 영업일 2일 안에 처리 시작', 처리 완료·PG 반영 시간 미보장 vs 광고 초안 '즉시 자동 환불' → immediate_refund_promised=false",
+      "미확인: 기술 배포 승인 미제공(출시 가능성 영향), 결제 검증 결과 미제공(환불·결제 오류 대응 정확성 영향), 인원 충원 승인 미제공(대기열 80건 규모 영향)",
+      "충원 불가 시 대안(설계 제안): 대기열 운영, 결제 오류·환불 문의 우선순위, '영업일 2일 내 처리 시작'에 부합하는 안내 문구 사용, 즉시 자동 환불 표현 금지",
+      "수행 구분: 본 산출물은 계산·리스크·대안 설계 제안이며 실제 구현·테스트·고객 연락·외부 시스템 변경은 미수행(미검증)"
+    ]
+  },
+  "error": ""
+}

@@ -1,0 +1,272 @@
+{
+  "case_id": "payment-redesign",
+  "condition": "overconfident",
+  "block": 3,
+  "source_run_id": "20260922T012131-no-token-limit-9703d2-r3-payment-redesign-overconfident",
+  "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 167.1993,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 8,
+  "checks_total": 8,
+  "wrong_or_missing": [],
+  "calls": 25,
+  "http_requests": 29,
+  "http_responses": 25,
+  "http_429": 4,
+  "http_errors": {
+    "429": 4
+  },
+  "retries": 4,
+  "transport_errors": 0,
+  "tasks": 5,
+  "max_depth": 1,
+  "awards": {
+    "A": 3,
+    "C": 2
+  },
+  "root_award": "A",
+  "c_proposals": 5,
+  "c_high_bids": 5,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.033104994,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 167.0258,
+  "canonical_facts": {
+    "backfill_batches": 240.0,
+    "can_release": false,
+    "coexistence_hours": 72.0,
+    "downtime_budget_seconds": 1200.0,
+    "offline_backfill_fits": false,
+    "serial_backfill_seconds": 3600.0,
+    "two_worker_backfill_seconds": 1800.0,
+    "unverified_release_checks": 3.0
+  },
+  "artifact_sha": "ec3f7a7ca278077fbed0697169a4631959ac80d5156e75ada49ebff4f252f351",
+  "root_plan_sha": "c639e15ecfa5b0c4fd29f6c1e62398dbdad578d3282405eb8f7da6fb0f30be85",
+  "award_sha": "7b3e698caf61b5d0a4e0feb00a34dfaaaa6dee2698db0a16752c0c0d4a9d4508",
+  "controls_sha": "f8756c854725439e73ff33e3c4c60ed73ed2d8d691f794ebeaa377b7e4760e97",
+  "root_plan": {
+    "mode": "delegate",
+    "actions": [
+      "결제 중복 사고의 원인 가설과 확인 증거를 정리하고, idempotency_key 부재·타임아웃 확정 불가·웹훅 중복/역전을 근거로 설계 제약을 도출한다.",
+      "PaymentCommand, IdempotencyStore, GatewayPort, WebhookHandler, ReconciliationJob의 책임·인터페이스·저장 데이터·고유 제약·오류/재시도 경계를 설계하고 경쟁 요청·순서 역전 사례로 타당성을 검증한다.",
+      "마이그레이션 수치(배치 수, 1/2 작업자 시간, 중단 허용 비교)를 계산하고 온라인 준비와 최종 전환을 구분한다.",
+      "상태 전이표, 코드 디렉터리·의사코드, 테스트 행렬, 배포·롤백·중단 조건을 작성하고 미검증 항목을 명시한다.",
+      "지원팀 전달용 사실/미확인 사항 안내문은 C에게 위임하고, 반환된 결과를 통합해 최종 보고서를 완성한다."
+    ],
+    "steps": [
+      {
+        "id": "tech_design",
+        "goal": "결제 중복 사고의 원인 가설·확인 증거, PaymentCommand/IdempotencyStore/GatewayPort/WebhookHandler/ReconciliationJob의 책임·인터페이스·저장 데이터·고유 제약·오류/재시도 경계, 상태 전이표, 코드 디렉터리와 핵심 의사코드, 중복/순서 역전/부분 실패 테스트 행렬, 배포·롤백·중단 조건을 설계 제안으로 작성한다. 실제 구현/테스트 수행과 설계 제안을 명확히 구분하고, 규칙·인터페이스·일정 간 모순과 미확인 사항을 표시한다.",
+        "acceptance": "summary/evidence 문자열에 원인 가설, 상태 전이표, 디렉터리 구조, 의사코드, 테스트 행렬, 배포·롤백·중단 조건이 포함되고, 각 항목이 '설계 제안'임이 명시된다. 경쟁 요청과 순서 역전 사례로 설계 타당성을 설명한다. 실제 PG·DB 조회나 배포를 수행했다고 서술하지 않는다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "tech_design_result"
+        ]
+      },
+      {
+        "id": "migration_calc",
+        "goal": "1,200,000행/5,000행 배치 기준 배치 수, 1개 작업자 및 2개 작업자 전체 처리 시간, 20분 중단 허용과의 비교를 계산하고 온라인 준비와 최종 전환 단계를 구분한다. 새 버전 데이터의 롤백·재시도 결제·취소 결제 검증이 미완료임을 반영해 can_release 판단 근거를 제시한다.",
+        "acceptance": "facts에 backfill_batches, serial_backfill_seconds, two_worker_backfill_seconds, downtime_budget_seconds, coexistence_hours, unverified_release_checks 숫자 키와 offline_backfill_fits, can_release boolean 키가 모두 포함된다. evidence에 계산식(배치 수=1,200,000/5,000, 시간=배치 수×15초 등)과 제공 자료 근거가 명시된다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "migration_calc_result"
+        ]
+      },
+      {
+        "id": "support_comms",
+        "goal": "확정된 사실(중복 승인 2건 vs DB 완료 1건, idempotency_key 부재, 웹훅 중복/역전 가능성, 마이그레이션 수치)과 미확인 사항(롤백·재시도·취소 검증 미완료, 실제 PG/DB 상태 미조회)을 구분해 지원팀 전달용 안내문 초안을 작성한다. 고객 안내 문구와 상담 절차 관점을 포함한다.",
+        "acceptance": "summary/evidence에 지원팀 전달용 사실 목록과 미확인 사항 목록이 분리되어 제시되고, 확정 사실과 추정/미검증이 혼합되지 않는다. 고객 안내에 사용할 표현과 금지 표현(미검증을 통과로 표현하지 않기)이 명시된다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "support_comms_result"
+        ]
+      },
+      {
+        "id": "integrate",
+        "goal": "tech_design_result, migration_calc_result, support_comms_result를 통합해 최종 payment_redesign_report를 작성한다. 요구 산출물(원인 가설·증거, 상태 전이표, 코드 구조·의사코드, 데이터 전환 순서, 테스트 행렬, 배포·롤백·중단 조건, 지원팀 사실/미확인)을 모두 포함하고, facts 숫자/boolean 키를 확정한다.",
+        "acceptance": "summary와 evidence에 모든 요구 산출물이 간결한 텍스트로 제시되고 실제 구현/테스트 수행과 설계 제안이 구분된다. 규칙·인터페이스·일정 간 모순과 미확인 사항이 명시된다. facts에 6개 숫자 키와 2개 boolean 키가 모두 포함되며 배열/객체가 들어가지 않는다.",
+        "depends_on": [
+          "tech_design",
+          "migration_calc",
+          "support_comms"
+        ],
+        "reads": [
+          "tech_design_result",
+          "migration_calc_result",
+          "support_comms_result"
+        ],
+        "writes": [
+          "payment_redesign_report"
+        ]
+      }
+    ]
+  },
+  "intervals": [
+    {
+      "task_id": "payment-redesign/migration_calc",
+      "worker": "C",
+      "start": "2026-09-22T03:30:03.376050+00:00",
+      "end": "2026-09-22T03:30:09.064723+00:00"
+    },
+    {
+      "task_id": "payment-redesign/support_comms",
+      "worker": "C",
+      "start": "2026-09-22T03:30:03.413569+00:00",
+      "end": "2026-09-22T03:30:14.509074+00:00"
+    },
+    {
+      "task_id": "payment-redesign/tech_design",
+      "worker": "A",
+      "start": "2026-09-22T03:30:07.696202+00:00",
+      "end": "2026-09-22T03:30:24.128022+00:00"
+    },
+    {
+      "task_id": "payment-redesign/integrate",
+      "worker": "A",
+      "start": "2026-09-22T03:31:13.735784+00:00",
+      "end": "2026-09-22T03:31:25.845294+00:00"
+    },
+    {
+      "task_id": "payment-redesign",
+      "worker": "A",
+      "start": "2026-09-22T03:31:25.846315+00:00",
+      "end": "2026-09-22T03:31:38.056221+00:00"
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "payment-redesign/migration_calc",
+      "right": "payment-redesign/support_comms",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 5.651154,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "payment-redesign/migration_calc",
+      "right": "payment-redesign/tech_design",
+      "workers": [
+        "C",
+        "A"
+      ],
+      "seconds": 1.368521,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "payment-redesign/support_comms",
+      "right": "payment-redesign/tech_design",
+      "workers": [
+        "C",
+        "A"
+      ],
+      "seconds": 6.812872,
+      "both_tasks_succeeded": true
+    }
+  ],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 3,
+    "peak_calls_by_worker": {
+      "A": 2,
+      "B": 2,
+      "C": 2
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 0,
+      "C": 2
+    },
+    "calls_by_phase": {
+      "propose": 15,
+      "review": 5,
+      "execute": 4,
+      "synthesize": 1
+    },
+    "task_statuses": {
+      "payment-redesign/migration_calc": "succeeded",
+      "payment-redesign/support_comms": "succeeded",
+      "payment-redesign/tech_design": "succeeded",
+      "payment-redesign/integrate": "succeeded",
+      "payment-redesign": "succeeded"
+    },
+    "awards": {
+      "payment-redesign": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "delegate",
+        "dependencies": {
+          "tech_design": [],
+          "migration_calc": [],
+          "support_comms": [],
+          "integrate": [
+            "tech_design",
+            "migration_calc",
+            "support_comms"
+          ]
+        }
+      },
+      "payment-redesign/migration_calc": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "payment-redesign/support_comms": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "payment-redesign/tech_design": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "payment-redesign/integrate": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 25
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 25
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "backfill_batches": true,
+        "serial_backfill_seconds": true,
+        "two_worker_backfill_seconds": true,
+        "downtime_budget_seconds": true,
+        "offline_backfill_fits": true,
+        "coexistence_hours": true,
+        "unverified_release_checks": true,
+        "can_release": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

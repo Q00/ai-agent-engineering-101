@@ -1,0 +1,29 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "결제 중복 사고의 기술 설계와 마이그레이션·운영 전환 계획을 통합한 최종 산출물이다. 모든 코드/표/구조는 설계 제안이며 실제 PG·DB 조회, 환불, 배포, 테스트 실행은 수행하지 않았다.\n\n■ 원인 가설과 확인 증거\nH1(주원인): 멱등 키 부재로 재시도가 새 승인으로 처리됨. 증거: 두 요청 idempotency_key 모두 공백, PG 승인 2건이 2초 간격, 동일 order_id·동일 금액. 반증: PG 로그에 동일 키 2건이면 기각.\nH2: 504는 게이트웨이 타임아웃이며 실제 승인 성공(불확정 결과). 증거: PG 승인 1건 시각이 1차 요청 구간과 겹침. 반증: 1차 구간 승인 기록 없으면 기각.\nH3: 웹훅 중복/순서 역전으로 DB 완료 1건만 반영. 증거: 중복 event_id, 처리 순서 불일치. 반증: 단일·정상 순서면 기각.\nH4: DB 유니크 제약 부재로 중복 완료 이론상 가능하나 현재 1건 → 부분 실패/미반영. 반증: order_id+상태 유니크 존재 시 기각.\n\n■ 인터페이스(제안)\nPaymentCommand: execute(orderId, amount, op, idempotencyKey) → Result{status, pgTxnId}. 키 없으면 400 거부.\nIdempotencyStore: reserve(key, orderId, op) → {state: NEW|IN_PROGRESS|DONE, result}; complete(key, result); get(key). 스키마: idempotency_key(PK), order_id, op, state, pg_txn_id, response_hash, created_at, updated_at. UNIQUE(idempotency_key), UNIQUE(order_id, op).\nGatewayPort: authorize(orderId, amount, idempotencyKey) → {pgTxnId, status}; cancel(pgTxnId, idempotencyKey); getStatus(pgTxnId). 타임아웃 시 UNKNOWN(성공/실패 단정 금지).\nWebhookHandler: handle(event) — event_id 멱등, occurred_at 순서 판정, 상태 전이표 적용. 저장: webhook_event(event_id PK, order_id, type, occurred_at, received_at, applied bool).\nReconciliationJob: PG 승인 목록과 DB 완료 목록 대사, 불일치 분류(DB누락/중복승인/고아취소), 자동 보정 또는 수동 큐.\n\n■ 상태 전이표(제안)\n결제: INITIATED→(authorize OK)→AUTHORIZED→(capture)→CAPTURED→(cancel)→CANCELLED. INITIATED→(UNKNOWN)→PENDING_RECON. AUTHORIZED→(cancel)→CANCEL_PENDING→CANCELLED. DONE 키 재사용 시 저장 결과 반환(재승인 금지).\n취소: CAPTURED→CANCEL_REQUESTED→CANCELLED; UNKNOWN→CANCEL_PENDING→대사.\n순서 역전: occurred_at < last_applied 이벤트는 applied=false 기록만, 상태 미변경.\n\n■ 디렉터리(제안)\n/payment/command/PaymentCommand.ts, /payment/idempotency/IdempotencyStore.ts, /payment/gateway/GatewayPort.ts, /payment/webhook/WebhookHandler.ts, /payment/recon/ReconciliationJob.ts, /payment/domain/stateMachine.ts, /migration/backfill.ts, /tests/{duplicate,reorder,partial}.spec.ts\n\n■ 핵심 의사코드(제안)\nPaymentCommand.execute: 키 없으면 reject → store.reserve: DONE이면 저장 결과 반환, IN_PROGRESS면 409 → gateway.authorize → OK: store.complete + DB 완료; UNKNOWN: PENDING_RECON 기록, 재시도는 동일 키로만.\nWebhookHandler: event_id 존재 시 무시; occurred_at < last_applied면 applied=false 저장; 아니면 전이 적용 후 last_applied 갱신.\nReconciliationJob: PG 승인 집합 − DB 완료 집합 = 누락/중복 후보 → 자동 보정 또는 수동 큐.\n\n■ 테스트 행렬(모두 미실행 — 설계 제안)\n중복: 동시 2요청 동일 키 → 1승인 기대(미검증). 순서 역전: 웹훅 역순 → 상태 불변 기대(미검증). 부분 실패: authorize OK 후 DB write 실패 → 대사 복구 기대(미검증). 타임아웃: UNKNOWN → PENDING_RECON 기대(미검증).\n\n■ 타당성\n경쟁 요청: idempotency_key UNIQUE + reserve 상태기계로 두 번째 요청이 IN_PROGRESS/DONE을 만나 재승인 차단. 순서 역전: occurred_at 기반 last_applied 비교로 늦은 이벤트가 상태를 되돌리지 못함. 부분 실패: UNKNOWN을 성공/실패로 단정하지 않고 대사로 수렴.\n\n■ 마이그레이션·운영 전환\n1,200,000행 ÷ 5,000행 = 240배치(나머지 0). 배치당 15초: 직렬 240×15=3,600초(60분), 2작업자 120×15=1,800초(30분). 중단 허용 20분=1,200초와 비교 시 직렬 3,600초>1,200초, 2작업자 1,800초>1,200초 → offline_backfill_fits=false. 따라서 온라인 준비(무중단 백필, 이중쓰기/읽기 전환, 대사 잡, 72시간 공존)와 최종 전환(짧은 쓰기 차단, 스키마/플래그 스위치, 검증 후 해제)을 분리. 대사 불일치 또는 오류율 임계 초과 시 즉시 롤백.\n\n■ 배포·롤백·중단 조건\ncan_release=false: 미검증 3건(롤백·재시도 결제·취소 결제)이 통과로 바뀌지 않았고 20분 내 일괄 처리 불가. 중단 조건: 대사 불일치, 오류율 임계 초과, 미검증 항목 잔존.\n\n■ 모순·미확인 사항\n두 선행 결과의 숫자·boolean 키 8개는 모두 일치(모순 없음). 실제 PG·DB 조회 미수행, 환불·배포 미수행, 신버전 롤백·재시도·취소 검증 미완료. 구버전 앱이 키를 보내지 않으면 서버가 키를 생성해야 하며, 72시간 공존 기간 동안 구버전 재시도는 서버 생성 키로만 멱등 보장(설계 가정, 미검증).\n\n■ 지원팀 전달 사실\n240배치, 직렬 3,600초/2작업자 1,800초, 중단 예산 1,200초, 공존 72시간, 미검증 3건, offline_backfill_fits=false, can_release=false.\n■ 미확인 사항\n실제 PG·DB 조회 미수행, 롤백/재시도/취소 검증 미완료, 서버 생성 키 가정 미검증.",
+    "facts": {
+      "backfill_batches": 240,
+      "can_release": false,
+      "coexistence_hours": 72,
+      "downtime_budget_seconds": 1200,
+      "offline_backfill_fits": false,
+      "serial_backfill_seconds": 3600,
+      "two_worker_backfill_seconds": 1800,
+      "unverified_release_checks": 3
+    },
+    "evidence": [
+      "배치 수 = 1,200,000 ÷ 5,000 = 240 (나머지 0)",
+      "직렬 시간 = 240 × 15초 = 3,600초",
+      "2작업자 시간 = 120 × 15초 = 1,800초",
+      "중단 허용 = 20분 = 1,200초; 3,600초 > 1,200초, 1,800초 > 1,200초 → offline_backfill_fits=false",
+      "공존 요구 = 72시간 → coexistence_hours=72",
+      "미완료 검증 3건(롤백·재시도 결제·취소 결제) → unverified_release_checks=3, can_release=false",
+      "합성 기록: 동일 order_id, 1차 504, 2초 뒤 200, 두 요청 idempotency_key 공백, PG 승인 2건 vs DB 완료 1건",
+      "tech_design_draft와 migration_ops_plan의 숫자·boolean 키 8개 전부 일치(모순 없음)",
+      "모든 코드/표/테스트는 설계 제안이며 실제 PG·DB 조회, 환불, 배포, 테스트 실행은 미수행"
+    ]
+  },
+  "error": ""
+}

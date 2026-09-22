@@ -1,0 +1,50 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "선행 profit_analysis(확정 계산)와 두 하위 산출물(tech_change_design, ops_rollout_plan)을 통합했다. 모든 수치는 선행 산출물 인용이며, 실제 구현·테스트·부하측정은 수행하지 않았다(설계 제안 단계, design_only=true).\n\n[1. 손익·예산 기준선 (profit_analysis 인용)]\nS안: 공헌이익 48,000원, 기준 100곳 월이익 2,800,000원, 손익분기 42곳, 저(70곳) 1,360,000원, 고(130곳) 4,240,000원. E안: 공헌이익 240,000원, 기준 18곳 월이익 2,320,000원, 손익분기 9곳, 저(12곳) 880,000원, 고(23곳) 3,520,000원. 두 안 모두 저 시나리오에서 흑자. 공통 개발 160h, S 총 224h(예산 240h 이내, 적합), E 총 256h(16h 초과, 부적합).\n\n[2. MVP 포함/제외 범위]\n포함(공통 4모듈, 160h): 요금/청구 64h, 조직/좌석 40h, 지표 수집 32h, 운영 도구 24h. S 추가 포함: 셀프 온보딩 64h. E 추가 포함: SSO/감사 기록 96h. E 이연(제외, 분기 밖): (a) 감사 로그 보존/내보내기 고도화, (b) SSO 예외 처리 고급화(IdP 메타데이터 자동 갱신·다중 IdP·SCIM), (c) 감사 로그 검색 인덱스/대시보드. 분기 내 유지: SSO SP-initiated 로그인·세션 발급/만료, 감사 로그 append+해시 체인 기록, 관리자 조회 API 최소 버전.\n\n[3. 도메인·API·데이터 변경 개요 (설계 제안, 미구현)]\n요금/청구: Plan/Subscription/Invoice 엔터티, POST /plans, POST /subscriptions, PATCH /subscriptions/{id}, GET /invoices, POST /invoices/{id}/retry; plans·subscriptions·invoices·invoice_line_items 신설, invoice 상태 전이(pending→issued→paid/failed) 단일화로 이중 청구 방지.\n조직/좌석: Organization/Seat/Invitation, POST /orgs, POST /orgs/{id}/seats, POST /invitations/{token}/accept; seats (org_id,user_id) 유니크, 좌석 상한은 plan.tier 파생.\n지표 수집: MetricEvent/MetricDaily, POST /events(배치), GET /metrics/summary; events append-only(파티셔닝=occurred_at), metrics_daily 일 롤업.\n운영 도구: AdminAction/FeatureFlag, GET /admin/orgs, POST /admin/orgs/{id}/suspend, POST /admin/flags/{key}/toggle, GET /admin/audit.\nS 추가(셀프 온보딩): OnboardingStep/OnboardingProgress, POST /onboarding/self-serve-signup(조직+플랜+좌석 한 흐름), 측정 지표=온보딩 완료율·단계별 이탈률·가입→첫 좌석 활성화 소요시간·셀프 가입 비중.\nE 추가(SSO/감사): SSOConnection/SSOSession/AuditLog, POST /orgs/{id}/sso/connections, GET /sso/login(SP-initiated), POST /sso/acs, GET /audit/logs, POST /audit/export; audit_logs append-only+해시 체인, 측정 지표=SSO 로그인 성공률·SSO p95 지연·감사 로그 커버리지·내보내기 성공률·세션 만료 후 재인증 비율.\n\n[4. 선후 관계 일정 (담당·전달)]\nStage 0(선행 없음, 4모듈 병렬): 담당 A(제품·기술). 전달=도메인/API/스키마, 마이그레이션.\nStage 1(Stage 0 의존): S 셀프 온보딩 또는 E SSO/감사 기록 — 담당 A.\nStage 2(Stage 1 의존): 지표·운영 도구 연동 — 담당 A(구현), B(지표 정의·손익 대조).\nStage 3(Stage 2 의존): 영업/지원팀 준비 및 파일럿 — 담당 C(운영·커뮤니케이션), B(사업 검증).\n\n[5. 영업/지원팀 준비]\nE 이연 범위 사전 고지(컴플라이언스 검토 지연 리스크), 요금/청구·좌석 변경 안내 스크립트(플랜 변경, 좌석 상한, 청구 상태 전이), 온보딩/SSO 지원 절차, 상담 에스컬레이션 경로(청구 이중 생성·SSO 실패·감사 로그 누락 → A).\n\n[6. 출시 중단·롤백 기준 (5건)]\nSSO 로그인 성공률 임계 미달, 감사 로그 기록 누락, 청구 이중 생성, 온보딩 완료율 급락, 지표 수집 지연 목표 초과. 트리거 발생 시 해당 모듈 배포 중단·이전 버전 복원, 이연 범위는 분기 밖 유지. 성능 목표치는 원자료에 수치 없어 설계 가정으로만 표기(실측 아님).\n\n[7. 모순·미확인 사항]\nE안 240h 예산 vs 256h 필수 범위 구조적 모순 → 이연 없이 분기 내 완료 불가. 고객 수(100/18)는 추정치로 매출·계약 보장 없음. 성능 목표(지표 수집 지연, SSO p95)는 수치 없어 설계 가정. 실제 구현/테스트/부하 측정 미수행 → 모든 성능·정확도 수치 미검증. S안은 예산 내 정합, E안은 16h 초과로 이연 필요.",
+    "facts": {
+      "s_margin": 48000,
+      "e_margin": 240000,
+      "s_profit": 2800000,
+      "e_profit": 2320000,
+      "s_break_even": 42,
+      "e_break_even": 9,
+      "s_low_profit": 1360000,
+      "e_low_profit": 880000,
+      "s_high_profit": 4240000,
+      "e_high_profit": 3520000,
+      "common_dev_hours": 160,
+      "s_total_dev_hours": 224,
+      "e_total_dev_hours": 256,
+      "e_budget_shortfall_hours": 16,
+      "s_fits_budget": true,
+      "e_fits_budget": false,
+      "common_modules_count": 4,
+      "s_extra_hours": 64,
+      "e_extra_hours": 96,
+      "e_deferred_scope_count": 3,
+      "stages_count": 4,
+      "rollback_triggers_count": 5,
+      "design_only": true,
+      "implementation_done": false,
+      "tests_executed": false
+    },
+    "evidence": [
+      "S 공헌이익 = 60,000 - 12,000 = 48,000원, E 공헌이익 = 300,000 - 60,000 = 240,000원 (profit_analysis 인용)",
+      "S 기준 월이익 = 48,000×100 - 2,000,000 = 2,800,000원, E 기준 월이익 = 240,000×18 - 2,000,000 = 2,320,000원",
+      "S 손익분기 = ceil(2,000,000/48,000)=42곳, E 손익분기 = ceil(2,000,000/240,000)=9곳",
+      "저/고 시나리오 floor 적용: S 저=floor(100×0.7)=70 → 1,360,000원, S 고=floor(100×1.3)=130 → 4,240,000원, E 저=floor(18×0.7)=12 → 880,000원, E 고=floor(18×1.3)=23 → 3,520,000원",
+      "공통 개발시간 = 요금/청구 64 + 조직/좌석 40 + 지표 수집 32 + 운영 도구 24 = 160시간",
+      "S 총 개발시간 = 160 + 셀프 온보딩 64 = 224시간 ≤ 예산 240시간 → s_fits_budget=true",
+      "E 총 개발시간 = 160 + SSO/감사 기록 96 = 256시간 > 예산 240시간 → 부족분 = 256 - 240 = 16시간, e_fits_budget=false",
+      "tech_change_design 인용: E안 이연 후보 3건(감사 로그 보존/내보내기 고도화, SSO 예외 처리 고급화, 감사 로그 검색 인덱스/대시보드), 분기 내 유지=SSO SP-initiated 로그인·세션 발급/만료·감사 로그 append 및 해시 체인 기록·관리자 조회 API 최소 버전",
+      "ops_rollout_plan 인용: 일정 단계 Stage 0(공통 4모듈, 선행 없음, 병렬) → Stage 1(S 셀프 온보딩 또는 E SSO/감사 기록) → Stage 2(지표·운영 도구 연동) → Stage 3(영업/지원팀 준비 및 파일럿), 담당 A/B/C",
+      "ops_rollout_plan 인용: 출시 중단·롤백 트리거 5건(SSO 로그인 성공률 임계 미달, 감사 로그 기록 누락, 청구 이중 생성, 온보딩 완료율 급락, 지표 수집 지연 목표 초과)",
+      "성능 목표치(지표 수집 지연, SSO p95)는 원자료에 수치 없어 설계 가정으로만 표기, 실측 아님",
+      "실제 구현·테스트·부하 측정은 수행하지 않았으므로 모든 성능·정확도 수치는 미검증(design_only=true, implementation_done=false, tests_executed=false)",
+      "고객 수(100/18)는 추정치이며 매출·계약 보장 없음(선행 분석과 동일 전제)"
+    ]
+  },
+  "error": ""
+}

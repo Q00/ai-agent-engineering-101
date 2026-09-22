@@ -1,0 +1,50 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "세 선행 결과(capacity_calc, policy_comms, schedule_contingency)를 통합해 최종 운영 패키지를 확정했다. 핵심 수치는 초대 800명 × 첫 4시간 문의율 20% = 160건, 상담원 4명 × 시간당 5건 × 4시간 = 80건 처리, 미처리 80건, 전량 처리 총원 8명, 추가 4명(미승인)이다. 확정 정책은 '상담 접수 후 영업일 2일 안에 처리 시작'이며 처리 완료·PG 반영 시간은 보장되지 않는다. 광고 초안의 '즉시 자동 환불'은 정책과 모순되므로 immediate_refund_promised=false로 확정하고 목 15시 광고 마감 전 단일 기준 문서(PMST)로 수정해야 한다.\n\n[운영 일정표(담당·기한·선행조건)] 1) 목 14:00 제품팀 — 확정 사양·알려진 제한 전달(선행 없음, 확정). 2) 목 14:00~15:00 기준 문서 관리자 — PMST 확정(선행 1, 미확인: 사양 내용 미제공). 3) 목 15:00 광고 담당 — 광고 문구 마감, '즉시 자동 환불' 제거(선행 2, 마감 확정). 4) 목 17:00 상담 리드 — 상담 교육(선행 1·2, 확정). 5) 목 18:00 랜딩 담당 — 랜딩 수정 마감(선행 2, 확정). 6) 목요일 중 제품/기술 — 기술 배포 승인(미확인). 7) 목요일 중 결제 담당 — 결제 검증(미확인). 8) 금 10:00 전 팀 — 출시(선행 3·4·5·6·7, 시각 확정이나 6·7 미확인).\n\n[확정/미확인 사항표] 확정: 정책 '영업일 2일 내 처리 시작', 완료·PG 반영 미보장, 마감 목 14/15/17/18시, 출시 금 10시, 초대 800명·문의율 20%·상담원 4명·시간당 5건. 미확인: 기술 배포 승인, 결제 검증, 인원 충원(미승인). 모순: 광고 '즉시 자동 환불' vs 정책 → 목 15시 전 PMST로 수정 필요.\n\n[PMST 구조] policy_id, status(confirmed|unconfirmed), 적용 범위, 승인된 고객 약속 문구, 변경 이력, 승인자, 유효 시점, 미확인/제한 목록. 모든 채널은 PMST 승인 문구만 인용.\n\n[고객 안내문] \"환불 요청은 상담 접수 후 영업일 2일 이내에 처리 절차가 시작됩니다. 처리 완료 시점과 PG 반영 시점은 보장되지 않습니다.\" [FAQ] 즉시 환불 아님, 광고 문구는 수정 중, PG 반영 시점 보장 불가, 기술 배포·결제 검증은 미확인. [상담 분류] (A)환불 정책 (B)처리 지연 (C)PG 반영 (D)광고 불일치 (E)기술/결제 이슈, 우선순위 결제 오류 > 환불 지연 > 일반.\n\n[용량·인력 대안] 800×0.20=160건, 4×5×4=80건, 160−80=80건, 160÷(5×4)=8명, 8−4=4명. 충원 미승인 시 FIFO 접수+우선순위(금전 피해 > 서비스 불가 > 일반)+'영업일 2일 내 처리 시작' 안내+FAQ 셀프서비스.\n\n[3종 비상계획] 1) 광고 지연: 발동=목 15시 문구 미확정/불일치 잔존, 절차=게재 보류→확정 문구 대체→이력 기록. 2) 기술 승인 지연: 발동=배포 승인·결제 검증 미수신, 절차=보류/제한 출시→미확인 고지. 3) 문의 급증: 발동=접수 160건 초과 또는 미처리 80건 초과, 절차=FIFO+우선순위+이월 고지.\n\n[출시 직전 확인표 8항목] 1)사양 전달(목14) 2)PMST 확정 3)광고 문구 확정·'즉시 자동 환불' 제거(목15) 4)상담 교육(목17) 5)랜딩 수정(목18) 6)기술 배포 승인(미수신) 7)결제 검증(미수신) 8)충원 승인(미승인, 추가 4명).\n\n[한계] 실제 구현·테스트·고객 연락·외부 시스템 변경은 수행하지 않았고, 기술 배포 승인·결제 검증·충원 승인은 미제공이므로 완료로 간주하지 않는다. 본 산출물은 설계 제안이며 새 정책 결정이 아니다.",
+    "facts": {
+      "expected_contacts": 160,
+      "four_hour_capacity": 80,
+      "backlog_without_hiring": 80,
+      "required_total_agents": 8,
+      "additional_agents": 4,
+      "support_window_hours": 4,
+      "launch_hour": 10,
+      "immediate_refund_promised": false,
+      "policy_processing_start_business_days": 2,
+      "completion_time_guaranteed": false,
+      "pg_reflection_guaranteed": false,
+      "product_spec_delivery_hour": 14,
+      "ad_copy_deadline_hour": 15,
+      "support_training_hour": 17,
+      "landing_fix_deadline_hour": 18,
+      "tech_deploy_approval_status": "unconfirmed",
+      "payment_verification_status": "unconfirmed",
+      "hiring_approved": false,
+      "single_source_document_defined": true,
+      "contingency_plans_count": 3,
+      "checklist_items": 8,
+      "external_contact_performed": false,
+      "implementation_performed": false,
+      "test_performed": false
+    },
+    "evidence": [
+      "expected_contacts = 800 × 0.20 = 160건 (초대 800명, 첫 4시간 문의율 20% 가정)",
+      "four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건 (상담원 4명, 시간당 5건, 지원 창 4시간)",
+      "backlog_without_hiring = 160 − 80 = 80건 (예상 문의 − 4시간 처리 용량)",
+      "required_total_agents = 160 ÷ (5 × 4) = 8명 (전량 처리를 위한 총 상담원 수)",
+      "additional_agents = 8 − 4 = 4명 (필요 총원 − 현재 4명)",
+      "support_window_hours = 4, launch_hour = 10 (출시 후 첫 4시간 지원 창, 금요일 10시 출시)",
+      "확정 정책 원문: '상담 접수 후 영업일 2일 안에 처리 시작', '처리 완료 시간과 PG 반영 시간은 보장하지 않는다' → completion_time_guaranteed=false, pg_reflection_guaranteed=false",
+      "광고 초안 '즉시 자동 환불'은 정책의 '영업일 2일 내 처리 시작' 및 '완료/PG 미보장'과 모순 → immediate_refund_promised=false",
+      "일정 근거: 제품팀 목 14시 사양 전달, 광고 마감 목 15시, 상담 교육 목 17시, 랜딩 수정 마감 목 18시, 금 10시 출시",
+      "미확인 근거: 기술 배포 승인과 결제 검증 결과는 미제공, 인원 충원은 미승인 → tech_deploy_approval_status=unconfirmed, payment_verification_status=unconfirmed, hiring_approved=false",
+      "PMST 구조: policy_id/status/적용 범위/승인 문구/변경 이력/승인자/유효 시점/미확인 목록 필드로 설계",
+      "비상계획 3종: 광고 지연(목 15시 트리거), 기술 승인 지연(승인·검증 미수신), 문의 급증(접수 160건 또는 미처리 80건 초과)",
+      "출시 직전 확인표 8항목: 사양 전달/PMST 확정/광고 문구/상담 교육/랜딩 수정/기술 배포 승인/결제 검증/충원 승인",
+      "실제 구현·테스트·고객 연락·외부 시스템 변경은 수행하지 않음 → implementation_performed=false, test_performed=false, external_contact_performed=false"
+    ]
+  },
+  "error": ""
+}

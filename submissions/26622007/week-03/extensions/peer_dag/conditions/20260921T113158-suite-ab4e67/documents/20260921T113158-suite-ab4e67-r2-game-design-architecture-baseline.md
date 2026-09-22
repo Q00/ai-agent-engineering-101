@@ -1,0 +1,56 @@
+# game-design-architecture / baseline / 2회
+
+상태: succeeded. 필수 facts: 10/10.
+모델 원본의 열람용 사본이다. 실제 구현/실행 검증을 뜻하지 않는다.
+
+## game-design-architecture.json
+
+Worker: A; 상태: succeeded
+[원본 JSON](../../../runs/20260921T113158-suite-ab4e67-r2-game-design-architecture-baseline/artifacts/game-design-architecture.json)
+
+'유적의 열두 밤' 개발 착수 자료(설계 제안, 실제 구현/테스트 미수행). (1) 게임 기획: 6×6 보드, 최대 12턴. 핵심 루프 탐험→전투→보상→탈출. 승리=탈출 지점 도달, 패배=체력 0 또는 12턴 초과. 난이도 곡선: 턴 1-4 약한 적/풍부한 보상, 5-8 중간, 9-12 강적/보상 희소. 전투: 공격력-방어력 기반 피해, 명중/회피 없음(결정론적, 재현성 확보). 보상: 3택1(공격+2/체력+3/시야+1). 튜토리얼: 첫 턴 강제 이동 안내, 접근성: 키보드 전용(WASD/방향키), 색맹 대비(모양+문자 병기), 텍스트 로그. 재미 가설: 제한 턴 압박→긴장, 보상 선택→전략, seed 재현→공유/반복. (2) 디렉터리: src/domain(순수 규칙), src/app(오케스트레이션), src/render(Canvas), src/persistence(저장), src/rng(주입 난수). 의존 방향 render→app→domain, domain은 순수(외부 의존 없음). (3) 타입 시그니처: interface Rng{nextInt(max:number):number} / interface Clock{now():number} / type GameState={board:Cell[][],player:Pos,hp:number,turn:number,seed:number,phase:'explore'|'combat'|'reward'|'end'} / type Command={type:'move',dir}|{type:'attack'}|{type:'chooseReward',idx} / type Event={type:'moved'|'damaged'|'rewarded'|'won'|'lost',payload} / interface SaveCodec{encode(s:GameState):string;decode(v:string):GameState;version:number}. 턴 처리 의사코드: input→validate→apply domain→emit events→render→if turn>12 or hp<=0 end. (4) 규칙→모듈→테스트 매트릭스: 이동/턴→domain/turn.ts→turn.test.ts, seed맵→rng+domain/map.ts→map.test.ts, 전투→domain/combat.ts→combat.test.ts, 저장→persistence→save.test.ts, 화면→render→(수동), 자동테스트→전체, 접근성→render/a11y→(수동). (5) 저장 스키마 version=1, 마이그레이션 함수, 동일 seed+입력 순서 재현 테스트, 저장/복원 회귀 테스트. (6) 일정: 4주, 개발 2명×20h×4=160h, QA 1명×10h×4=40h. 기본 범위 합계 24+24+32+24+20+24+12=160h로 개발 예산과 정확히 일치(여유 0h). 협동 포함 시 160+80=240h로 80h 초과. 제외 범위: 서버·로그인·결제·온라인 협동. 모순/미확인: 개발 예산 여유 0h로 리스크 버퍼 없음, 협동은 예산 초과로 기본 범위 제외 확정, 실제 코드 실행/테스트 미수행(설계 제안 단계).
+
+### Facts
+
+```json
+{
+  "board_width": 6,
+  "board_height": 6,
+  "max_turns": 12,
+  "developer_hours": 160,
+  "qa_hours": 40,
+  "core_scope_hours": 160,
+  "with_coop_hours": 240,
+  "coop_fits_budget": false,
+  "seeded_replay_required": true,
+  "offline_required": true,
+  "core_fits_budget": true,
+  "budget_slack_hours": 0,
+  "coop_over_budget_hours": 80,
+  "save_schema_version": 1,
+  "excluded_server": true,
+  "excluded_login": true,
+  "excluded_payment": true,
+  "excluded_online_coop": true,
+  "implementation_done": false,
+  "tests_executed": false
+}
+```
+
+### Evidence
+
+**1.** 개발 예산: 2명×20h×4주=160h. QA 예산: 1명×10h×4주=40h.
+
+**2.** 기본 범위 합계: 24(이동/턴)+24(seed맵)+32(전투)+24(저장/복원)+20(화면)+24(자동테스트)+12(접근성)=160h. 160h=개발 예산 160h → 여유 0h, core_fits_budget=true.
+
+**3.** 협동 포함: 160h+80h=240h. 240h-160h=80h 초과 → coop_fits_budget=false, coop_over_budget_hours=80.
+
+**4.** 보드 6×6, 최대 12턴은 source goal에 명시된 확정 수치.
+
+**5.** seed+입력 순서 재현 및 저장/복원 재현은 source goal의 필수 요구 → seeded_replay_required=true.
+
+**6.** 오프라인 동작은 source goal의 '브라우저에서 오프라인으로 동작' 요구 → offline_required=true.
+
+**7.** 서버·로그인·결제·온라인 협동은 source goal에서 기본 범위 제외로 명시.
+
+**8.** 모순/미확인: 개발 예산 여유 0h(리스크 버퍼 없음), 협동 80h 초과로 기본 범위 제외 확정, 실제 코드 실행·테스트는 수행하지 않음(설계 제안).

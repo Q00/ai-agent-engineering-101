@@ -1,0 +1,270 @@
+{
+  "case_id": "growth-roadmap",
+  "condition": "baseline",
+  "block": 1,
+  "source_run_id": "20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-baseline",
+  "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline",
+  "exit_code": 1,
+  "timed_out": false,
+  "wall_seconds": 115.4914,
+  "status": "succeeded",
+  "passed": false,
+  "checks_passed": 14,
+  "checks_total": 16,
+  "wrong_or_missing": [
+    "s_margin",
+    "e_margin"
+  ],
+  "calls": 25,
+  "http_requests": 29,
+  "http_responses": 25,
+  "http_429": 4,
+  "http_errors": {
+    "429": 4
+  },
+  "retries": 4,
+  "transport_errors": 0,
+  "tasks": 5,
+  "max_depth": 1,
+  "awards": {
+    "A": 2,
+    "B": 3
+  },
+  "root_award": "A",
+  "c_proposals": 5,
+  "c_high_bids": 0,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.034440644,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 115.3102,
+  "canonical_facts": {
+    "common_dev_hours": 160.0,
+    "e_break_even": 9.0,
+    "e_budget_shortfall_hours": 16.0,
+    "e_fits_budget": false,
+    "e_high_profit": 3520000.0,
+    "e_low_profit": 880000.0,
+    "e_margin": -16.0,
+    "e_profit": 2320000.0,
+    "e_total_dev_hours": 256.0,
+    "s_break_even": 42.0,
+    "s_fits_budget": true,
+    "s_high_profit": 4240000.0,
+    "s_low_profit": 1360000.0,
+    "s_margin": 16.0,
+    "s_profit": 2800000.0,
+    "s_total_dev_hours": 224.0
+  },
+  "artifact_sha": "50a22a6a952a6fece8426fc531dc8ac10a4aee3b6c9a626b0df530f71521f057",
+  "root_plan_sha": "503287ac7d40898f423acf4843255fb6fc7beb4358bd438c23376d7e4695c0af",
+  "award_sha": "e307788a1189fb452c0431e3f166a2c91d8ec85c12dc706e90b7805b3df81cdc",
+  "controls_sha": "29251f9726b71c9303976526c2d4fd7c12bab2f211f8ecfc2f3263a02f638588",
+  "root_plan": {
+    "mode": "delegate",
+    "actions": [
+      "손익·개발시간 계산을 확정 공식으로 검증하고 facts 키를 통합",
+      "B에게 사업 우선순위·불확실성·반증 가설 분석 위임",
+      "C에게 영업/지원 준비·출시 중단 기준·안내 절차 위임",
+      "A가 도메인·API·데이터 변경, MVP 범위, 단계별 일정, 모순 점검을 작성하고 최종 통합"
+    ],
+    "steps": [
+      {
+        "id": "biz_analysis",
+        "goal": "S/E안의 기준·저·고 손익, 손익분기, 고객 집중과 수요 불확실성, 선택 근거와 반증할 가설을 분석하라. 공식: 공헌이익=요금-변동비, 월이익=공헌이익×고객수-고정비, 손익분기=고정비/공헌이익 올림, 저/고는 기준의 70%/130% 내림 정수. S: 요금 60000, 변동비 12000, 기준 100곳. E: 요금 300000, 변동비 60000, 기준 18곳. 고정비 2000000. 고객 수는 추정치이며 보장 없음을 명시.",
+        "acceptance": "facts에 s_margin, e_margin, s_profit, e_profit, s_break_even, e_break_even, s_low_profit, e_low_profit, s_high_profit, e_high_profit 숫자와 계산식을 evidence에 제시. 비교표 텍스트, 선택 근거, 반증 가능한 가설, 고객 집중·수요 불확실성 서술 포함. 자료에 없는 시장조사·인터뷰 주장 금지.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "biz_analysis_result"
+        ]
+      },
+      {
+        "id": "ops_readiness",
+        "goal": "S/E안 각각에 대한 영업·지원팀 준비 사항(교육, 안내 스크립트, 문의 대응 절차, 담당·일정)과 출시 중단(롤백) 기준을 정책·확정 사실에 근거해 작성하라. 두 안은 대안이므로 동시 출시하지 않음을 전제로 하라.",
+        "acceptance": "영업/지원 준비 체크리스트, 고객 안내 문구 초안, 출시 중단 트리거와 롤백 절차, 팀 간 전달 계획을 텍스트로 제시. 확인되지 않은 정책·수치는 미확인으로 표시.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "ops_readiness_result"
+        ]
+      },
+      {
+        "id": "tech_design",
+        "goal": "S/E안의 도메인·API·데이터 변경 개요, 측정 지표, MVP 포함/제외 범위, 선후 관계를 갖는 단계별 일정을 설계하라. 공통 필수 64+40+32+24=160시간, S 추가 64시간=224시간, E 추가 96시간=256시간. 예산 240시간. E는 16시간 부족하므로 부족분과 분기 밖으로 미룰 범위를 명시. 동시 개발로 총시간이 줄어든다고 가정 금지.",
+        "acceptance": "facts에 common_dev_hours, s_total_dev_hours, e_total_dev_hours, e_budget_shortfall_hours 숫자와 s_fits_budget, e_fits_budget boolean 포함. 코드/데이터 변경 개요와 코드 조각은 summary/evidence 문자열로 제시. 단계별 일정에 선후 관계 명시. 기능 설계·시간표·사업 권고 간 모순과 미확인 사항 명시.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "tech_design_result"
+        ]
+      },
+      {
+        "id": "integrate",
+        "goal": "biz_analysis, ops_readiness, tech_design 결과를 통합해 경영진용 최종 보고서를 작성하라. 비교표, 선택 근거와 반증 가설, MVP 포함/제외, 코드·데이터 변경, 단계별 일정, 영업/지원 준비, 출시 중단 기준을 포함하고 설계·시간표·사업 권고의 정합성을 대조하라.",
+        "acceptance": "summary와 evidence에 요구 문서·표·코드 구조를 간결 텍스트로 제시하고 실제 구현/테스트 수행과 설계 제안을 구분. facts에 요구된 모든 숫자 키와 boolean 키 포함, 배열·객체 없이 스칼라만. 규칙·인터페이스·일정 간 모순과 미확인 사항 명시.",
+        "depends_on": [
+          "biz_analysis",
+          "ops_readiness",
+          "tech_design"
+        ],
+        "reads": [
+          "biz_analysis_result",
+          "ops_readiness_result",
+          "tech_design_result"
+        ],
+        "writes": [
+          "growth_roadmap_report"
+        ]
+      }
+    ]
+  },
+  "intervals": [
+    {
+      "task_id": "growth-roadmap/biz_analysis",
+      "worker": "B",
+      "start": "2026-09-22T03:17:41.966466+00:00",
+      "end": "2026-09-22T03:17:52.441813+00:00"
+    },
+    {
+      "task_id": "growth-roadmap/ops_readiness",
+      "worker": "B",
+      "start": "2026-09-22T03:18:24.855130+00:00",
+      "end": "2026-09-22T03:18:33.989782+00:00"
+    },
+    {
+      "task_id": "growth-roadmap/tech_design",
+      "worker": "A",
+      "start": "2026-09-22T03:18:27.642674+00:00",
+      "end": "2026-09-22T03:18:36.308459+00:00"
+    },
+    {
+      "task_id": "growth-roadmap/integrate",
+      "worker": "B",
+      "start": "2026-09-22T03:18:41.800557+00:00",
+      "end": "2026-09-22T03:18:57.200089+00:00"
+    },
+    {
+      "task_id": "growth-roadmap",
+      "worker": "A",
+      "start": "2026-09-22T03:18:57.200669+00:00",
+      "end": "2026-09-22T03:19:11.263864+00:00"
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "growth-roadmap/ops_readiness",
+      "right": "growth-roadmap/tech_design",
+      "workers": [
+        "B",
+        "A"
+      ],
+      "seconds": 6.347108,
+      "both_tasks_succeeded": true
+    }
+  ],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 2,
+    "peak_calls_by_worker": {
+      "A": 2,
+      "B": 2,
+      "C": 1
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 1,
+      "C": 0
+    },
+    "calls_by_phase": {
+      "propose": 15,
+      "review": 5,
+      "execute": 4,
+      "synthesize": 1
+    },
+    "task_statuses": {
+      "growth-roadmap/biz_analysis": "succeeded",
+      "growth-roadmap/ops_readiness": "succeeded",
+      "growth-roadmap/tech_design": "succeeded",
+      "growth-roadmap/integrate": "succeeded",
+      "growth-roadmap": "succeeded"
+    },
+    "awards": {
+      "growth-roadmap": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "delegate",
+        "dependencies": {
+          "biz_analysis": [],
+          "ops_readiness": [],
+          "tech_design": [],
+          "integrate": [
+            "biz_analysis",
+            "ops_readiness",
+            "tech_design"
+          ]
+        }
+      },
+      "growth-roadmap/biz_analysis": {
+        "requester": "A",
+        "worker": "B",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "growth-roadmap/ops_readiness": {
+        "requester": "A",
+        "worker": "B",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "growth-roadmap/tech_design": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "growth-roadmap/integrate": {
+        "requester": "A",
+        "worker": "B",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 25
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 25
+    },
+    "evaluation": {
+      "passed": false,
+      "checks": {
+        "s_margin": false,
+        "e_margin": false,
+        "s_profit": true,
+        "e_profit": true,
+        "s_break_even": true,
+        "e_break_even": true,
+        "s_low_profit": true,
+        "e_low_profit": true,
+        "s_high_profit": true,
+        "e_high_profit": true,
+        "common_dev_hours": true,
+        "s_total_dev_hours": true,
+        "e_total_dev_hours": true,
+        "e_budget_shortfall_hours": true,
+        "s_fits_budget": true,
+        "e_fits_budget": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

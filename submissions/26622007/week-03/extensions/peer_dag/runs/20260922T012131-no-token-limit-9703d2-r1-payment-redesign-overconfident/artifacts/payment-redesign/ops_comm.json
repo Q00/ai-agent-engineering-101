@@ -1,0 +1,44 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "운영·커뮤니케이션 관점에서 전환 계획을 정리했다. 선행 결과에서 확정된 수치(backfill_batches=240, serial_backfill_seconds=3600, two_worker_backfill_seconds=1800, downtime_budget_seconds=1200, offline_backfill_fits=false, coexistence_hours=72, unverified_release_checks=3, can_release=false)를 인용하고, tech_design의 컴포넌트 설계·상태 전이·의사코드는 '설계 제안(구현/테스트 미수행)'임을 명시적으로 구분했다.\n\n■ 1. 확정 사실 vs 설계 제안 구분\n- 확정(계산·제공 자료): 배치 240개, 1개 작업자 3,600초(60분), 2개 작업자 1,800초(30분), 중단 허용 1,200초(20분), 2개 작업자로도 허용 초과 → offline_backfill_fits=false, 공존 72시간, 미검증 릴리스 검증 3건(롤백·재시도 결제·취소 결제), can_release=false. 사고 재현 기록: 첫 요청 504, 2초 뒤 재시도 200, 두 요청 모두 idempotency_key 공백, PG 승인 2건 vs DB 완료 1건.\n- 설계 제안(미검증): PaymentCommand/IdempotencyStore/GatewayPort/WebhookHandler/ReconciliationJob 책임·인터페이스, 상태 전이표, 디렉터리 구조, 의사코드, 테스트 행렬. 실제 구현·PG/DB 조회·환불·배포는 수행하지 않았다.\n\n■ 2. 전환 순서 (온라인 준비 → 최종 전환)\n1단계 온라인 준비(무중단): 신규 스키마 추가(비파괴, nullable/기본값) → 이중 쓰기 활성화(구·신 스키마 동시 기록) → 온라인 백필(240배치, 2개 작업자 1,800초=30분, 서비스 중단 없이 진행). 진입 조건: 신규 스키마 마이그레이션 적용 완료, 이중 쓰기 코드 배포 완료. 완료 조건: 백필 240배치 완료 + 대사 불일치 0건. 담당: A(기술).\n2단계 최종 전환(짧은 쓰기 중단): 쓰기 중단 → 신규 스키마 기준 컷오버 → 구버전 쓰기 경로 비활성 → 쓰기 재개. 중단 예산 1,200초(20분) 내 별도 계획 필요(백필 자체는 1,800초로 예산 초과이므로 최종 전환에 백필을 포함하면 안 됨). 진입 조건: 1단계 완료 + 릴리스 검증 3건 완료. 담당: A(기술), C(공지·상담).\n\n■ 3. 배포·롤백·중단 조건\n- 배포 금지 조건: can_release=false이므로 롤백·재시도 결제·취소 결제 3건 검증 완료 전 배포 금지.\n- 중단 트리거: (a) 중복 승인 탐지(동일 order_id PG 승인 2건 이상), (b) 대사 불일치 임계 초과, (c) 결제 오류율 급증, (d) 이중 쓰기 실패율 임계 초과.\n- 롤백 절차: 이중 쓰기 유지 상태에서 구버전 코드로 복귀(신규 스키마는 비파괴 유지, 데이터 손실 없음). 롤백 후 대사 재실행으로 정합성 확인. 롤백 자체는 미검증 항목이므로 실제 롤백 리허설 필요.\n\n■ 4. 72시간 공존 운영 규칙\n- 양방향 호환 스키마 유지(구버전이 신규 컬럼 무시 가능, 신버전이 구버전 데이터 읽기 가능).\n- 이중 쓰기 기간 = 공존 72시간 전체.\n- 구버전 요청의 idempotency_key 공백 처리: 서버 측에서 order_id+요청 해시 기반 키 생성/보정(설계 제안, 미검증).\n- 공존 기간 중 대사 주기 강화(예: 일 1회 → 시간당 1회, 설계 제안).\n\n■ 5. 지원팀 전달용 확정/미확인 분리\n- 확정: 사고 재현 기록(504→재시도 200, 키 공백, PG 2건 vs DB 1건), 계산 수치(240배치, 3,600초/1,800초, 1,200초, offline_backfill_fits=false), 공존 72시간, 미검증 3건, can_release=false.\n- 미확인: 롤백·재시도 결제·취소 결제 검증, 실제 PG·DB 조회, 환불, 배포, 서버 측 키 보정 동작, 대사 주기 강화 효과.\n\n■ 6. 팀 간 일정·담당·전달 계획\n| 항목 | 담당 | 선행조건 | 전달 시점 |\n|---|---|---|---|\n| 릴리스 검증 3건(롤백·재시도 결제·취소 결제) | A | tech_design 설계 확정 | 배포 전 |\n| 온라인 준비(스키마·이중 쓰기·백필) | A | 검증 3건 완료 | D-7 |\n| 최종 전환(컷오버) | A | 1단계 완료 | D-day |\n| 고객 안내·상담 절차 | C | 확정 사실 확정 | D-3 |\n| 손익·우선순위 영향 | B | migration_math 결과 | D-5 |\n| 지원팀 전달(확정/미확인) | C | 전 단계 결과 | D-1 |\n\n■ 7. 모순 명시\ntech_design은 컴포넌트 설계·상태 전이·의사코드를 '제안'으로 제시했고 실제 구현/테스트는 미수행이다. migration_math는 offline_backfill_fits=false, can_release=false를 확정했다. 따라서 일정상 최종 전환을 전제하되, 검증 3건 완료 전에는 전환 불가 조건을 강조한다. 설계 제안이 검증된 것처럼 일정에 반영되지 않도록 한다.\n\n실제 배포·환불·PG/DB 조회는 수행하지 않았다.",
+    "facts": {
+      "backfill_batches": 240,
+      "serial_backfill_seconds": 3600,
+      "two_worker_backfill_seconds": 1800,
+      "downtime_budget_seconds": 1200,
+      "coexistence_hours": 72,
+      "unverified_release_checks": 3,
+      "offline_backfill_fits": false,
+      "can_release": false,
+      "online_prep_phase": "schema_add+dual_write+online_backfill",
+      "cutover_phase": "short_write_pause+cutover",
+      "rollback_requires_dual_write": true,
+      "deploy_blocked_until_checks": true,
+      "coexistence_dual_write_hours": 72,
+      "support_confirmed_items": 4,
+      "support_unconfirmed_items": 6,
+      "actual_deploy_performed": false,
+      "actual_refund_performed": false,
+      "actual_pg_db_query_performed": false,
+      "design_is_proposal_only": true
+    },
+    "evidence": [
+      "배치 수 = 1,200,000 ÷ 5,000 = 240배치 (migration_math)",
+      "1개 작업자 = 240 × 15초 = 3,600초(60분), 2개 작업자 = 1,800초(30분) (migration_math)",
+      "중단 허용 = 20분 = 1,200초, 1,800초 > 1,200초 → offline_backfill_fits=false (migration_math)",
+      "공존 요구 = 72시간, 미검증 릴리스 검증 = 롤백·재시도 결제·취소 결제 3건, can_release=false (migration_math)",
+      "사고 재현: 첫 요청 504, 2초 뒤 재시도 200, 두 요청 모두 idempotency_key 공백, PG 승인 2건 vs DB 완료 1건 (제공 자료)",
+      "tech_design의 컴포넌트·상태 전이·의사코드·테스트 행렬은 '설계 제안'이며 실제 구현/테스트 미수행 (tech_design summary 명시)",
+      "전환 순서: 온라인 준비(스키마 추가→이중 쓰기→온라인 백필 240배치) 후 최종 전환(짧은 쓰기 중단→컷오버)으로 분리, 최종 전환은 1,200초 예산 내 별도 계획 (migration_math 권고)",
+      "롤백: 이중 쓰기 유지 상태에서 구버전 복귀, 신규 스키마 비파괴 유지 (설계 제안)",
+      "중단 트리거: 중복 승인 탐지, 대사 불일치 임계 초과, 오류율 급증 (설계 제안)",
+      "72시간 공존: 양방향 호환 스키마, 이중 쓰기 72시간, 구버전 키 공백 시 서버 측 키 생성/보정 (설계 제안, 미검증)",
+      "지원팀 전달: 확정(사고 기록, 계산 수치, 공존 72시간, 미검증 3건, can_release=false) vs 미확인(롤백·재시도 결제·취소 결제 검증, PG/DB 조회, 환불, 배포)",
+      "모순: tech_design은 제안·미검증, migration_math는 offline_backfill_fits=false·can_release=false 확정 → 검증 3건 완료 전 전환 불가",
+      "실제 배포·환불·PG/DB 조회 미수행 (본 작업 범위)"
+    ]
+  },
+  "error": ""
+}

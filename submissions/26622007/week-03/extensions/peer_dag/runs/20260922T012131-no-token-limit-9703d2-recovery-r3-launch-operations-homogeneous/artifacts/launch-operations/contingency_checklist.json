@@ -1,0 +1,51 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "비상 계획과 출시 직전 확인표를 작성하고, 선행 산출물(capacity_calc, policy_schedule)의 수치·정책 사실과 정합화했다. 모든 항목은 설계 제안이며 실제 구현·테스트·외부 연락은 수행하지 않았다.\n\n[1] 광고 지연 시나리오\n- 상황: 광고업체 문구 마감 목요일 15시를 초과하거나, '즉시 자동 환불' 등 금지 표현이 제거되지 않은 경우.\n- 대응: (a) 기준문서 v1.0의 허용 표현만으로 임시 문구를 구성해 게시하고, '즉시', '자동 환불', '당일 환불 보장', 'PG 즉시 반영' 표현이 남아 있지 않은지 확인한다. (b) 15시 마감을 넘기면 신규 문구 게시를 보류하고 기준문서 담당 승인 요청을 우선한다. (c) 승인 전에는 광고를 게시하지 않으며, 게시 지연 사실을 출시 총괄에 보고한다. (d) 광고가 지연되어도 상담 스크립트·랜딩은 기준문서 v1.0을 단일 출처로 사용하므로 채널 간 약속 불일치는 발생하지 않는다.\n\n[2] 기술 승인 지연 시나리오\n- 상황: tech_deploy_approved=false, payment_verification_confirmed=false (미제공).\n- 대응: (a) 두 항목을 '미확인'으로 명시하고 완료로 표기하지 않는다. (b) 출시 시각(금 10시) 연기 또는 기능 제한 출시(결제/환불 관련 기능 보류) 중 하나를 출시 총괄이 결정하도록 에스컬레이션한다. (c) 고객 안내문에 미확인 사항(기술 배포 승인·결제 검증 미완)을 고지하고, 결제/환불 오류 가능성에 대한 우선 처리 경로를 안내한다. (d) 승인·검증이 확보되기 전에는 '배포 완료', '결제 검증 완료' 문구를 어떤 채널에도 쓰지 않는다.\n\n[3] 문의 급증 시나리오\n- 상황: 첫 4시간 예상 문의 160건 대비 처리 용량 80건으로 미처리 80건 발생, 추가 4명 충원은 hiring_approved=false로 미승인.\n- 대응: (a) 우선순위 큐 운영: 1순위 결제/환불 오류, 2순위 계정 접근, 3순위 일반 문의. (b) 접수 순서 기반 대기열과 예상 대기 안내 문구 제공. (c) FAQ·셀프서비스로 일반 문의 유도. (d) 추가 인원은 승인 전제로만 계획하고, 승인 없이 충원 완료로 표기하지 않는다. (e) 고객 안내에 '영업일 2일 내 처리 시작, 완료·PG 반영 미보장' 정책을 고지하고 즉시 자동 환불이 아님을 명시한다.\n\n[4] 출시 직전 확인표 (금 10시 이전 점검)\n- [ ] 기준문서 v1.0 승인 완료 (기준문서 담당)\n- [ ] 광고·상담·랜딩 3채널 금지 표현('즉시', '자동 환불', '당일 환불 보장', 'PG 즉시 반영') 제거 확인\n- [ ] 기술 배포 승인 확보 여부 (미확인 시 출시 연기/기능 제한 결정)\n- [ ] 결제 검증 결과 확보 여부 (미확인 시 결제 기능 보류)\n- [ ] 상담 인력 계획 및 충원 승인 상태 확인 (hiring_approved=false → 대기열·우선순위 대안 가동)\n- [ ] 용량 대비 대기열·우선순위·FAQ 준비 완료\n- [ ] 고객 안내문에 미확인 사항 및 정책(2영업일 내 시작, 완료·PG 미보장) 명시\n- [ ] 미승인 충원·환불·배포를 완료로 표기한 문구가 없는지 최종 검토\n\n[5] 정합성 검증\n- 인용 수치: expected_contacts=160, four_hour_capacity=80, backlog_without_hiring=80, required_total_agents=8, additional_agents=4, support_window_hours=4, launch_hour=10 — capacity_calc facts와 일치.\n- 정책: immediate_refund_promised=false, policy_processing_start_business_days=2, completion_time_guaranteed=false, pg_reflection_guaranteed=false — policy_schedule facts와 일치.\n- 미확인: tech_deploy_approved=false, payment_verification_confirmed=false, hiring_approved=false — 완료로 표기하지 않음.\n- 실제 구현·테스트·외부 연락 미수행.",
+    "facts": {
+      "expected_contacts": 160,
+      "four_hour_capacity": 80,
+      "backlog_without_hiring": 80,
+      "required_total_agents": 8,
+      "additional_agents": 4,
+      "support_window_hours": 4,
+      "launch_hour": 10,
+      "immediate_refund_promised": false,
+      "hiring_approved": false,
+      "tech_deploy_approved": false,
+      "payment_verification_confirmed": false,
+      "policy_processing_start_business_days": 2,
+      "completion_time_guaranteed": false,
+      "pg_reflection_guaranteed": false,
+      "ad_copy_deadline_hour": 15,
+      "support_training_deadline_hour": 17,
+      "landing_deadline_hour": 18,
+      "product_spec_delivery_hour": 14,
+      "priority_1": "결제/환불 오류",
+      "priority_2": "계정 접근",
+      "priority_3": "일반 문의",
+      "ad_delay_contingency_defined": true,
+      "tech_delay_contingency_defined": true,
+      "surge_contingency_defined": true,
+      "prelaunch_checklist_defined": true,
+      "actual_implementation_performed": false,
+      "actual_testing_performed": false,
+      "external_contact_performed": false
+    },
+    "evidence": [
+      "expected_contacts = 800 × 0.20 = 160건 (capacity_calc facts 인용)",
+      "four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건 (capacity_calc facts 인용)",
+      "backlog_without_hiring = 160 − 80 = 80건 (capacity_calc facts 인용)",
+      "required_total_agents = 160 ÷ (5 × 4) = 8명 (capacity_calc facts 인용)",
+      "additional_agents = 8 − 4 = 4명 (capacity_calc facts 인용)",
+      "support_window_hours = 4, launch_hour = 10 (capacity_calc facts 인용)",
+      "immediate_refund_promised = false: 확정 정책 '상담 접수 후 영업일 2일 안에 처리 시작'과 광고 초안 '즉시 자동 환불'의 모순 (policy_schedule facts 인용)",
+      "hiring_approved = false, tech_deploy_approved = false, payment_verification_confirmed = false: 미제공·미승인 사항 (capacity_calc/policy_schedule facts 인용)",
+      "마감 시각: 광고 목 15시, 상담 교육 목 17시, 랜딩 목 18시, 제품 사양 전달 목 14시 (policy_schedule facts 인용)",
+      "우선순위: 결제/환불 오류 > 계정 접근 > 일반 문의 (capacity_calc facts 인용)",
+      "비상 계획 3종(광고 지연, 기술 승인 지연, 문의 급증)과 출시 직전 확인표는 위 수치·정책 사실을 전제로 작성한 설계 제안이며, 실제 구현·테스트·외부 연락은 수행하지 않음"
+    ]
+  },
+  "error": ""
+}

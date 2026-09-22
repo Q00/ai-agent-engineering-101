@@ -1,0 +1,1169 @@
+{
+  "script_sha": "13d49bc77e9ed74c4d2072c08ad920c793f8bef0d8e685a096fe06466e270843",
+  "http_errors": {
+    "429": 361
+  },
+  "response_finish_reasons": {
+    "stop": 449
+  },
+  "token_limit_requests": [],
+  "all_requests_omit_token_limits": true,
+  "maximum_completion_tokens": 3934,
+  "responses_over_2200_tokens": 23,
+  "responses_missing_token_usage": 0,
+  "rate_limited_logical_calls": 100,
+  "rate_limited_calls_with_http_response": 55,
+  "providers": {
+    "Fireworks": 449
+  },
+  "models": {
+    "deepseek/deepseek-v4.1-flash": 449
+  },
+  "score_tied_awards": {
+    "baseline": 25,
+    "homogeneous": 23,
+    "overconfident": 30
+  },
+  "failures": [
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-baseline",
+      "status": "failed",
+      "wrong_or_missing": [
+        "s_margin",
+        "e_margin",
+        "s_profit",
+        "e_profit",
+        "s_break_even",
+        "e_break_even",
+        "s_low_profit",
+        "e_low_profit",
+        "s_high_profit",
+        "e_high_profit",
+        "common_dev_hours",
+        "s_total_dev_hours",
+        "e_total_dev_hours",
+        "e_budget_shortfall_hours",
+        "s_fits_budget",
+        "e_fits_budget"
+      ],
+      "task_failures": [
+        {
+          "task_id": "growth-roadmap",
+          "error": "CallError: HTTP 429"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-homogeneous",
+      "status": "failed",
+      "wrong_or_missing": [
+        "s_margin",
+        "e_margin",
+        "s_profit",
+        "e_profit",
+        "s_break_even",
+        "e_break_even",
+        "s_low_profit",
+        "e_low_profit",
+        "s_high_profit",
+        "e_high_profit",
+        "common_dev_hours",
+        "s_total_dev_hours",
+        "e_total_dev_hours",
+        "e_budget_shortfall_hours",
+        "s_fits_budget",
+        "e_fits_budget"
+      ],
+      "task_failures": [
+        {
+          "task_id": "growth-roadmap",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-overconfident",
+      "status": "failed",
+      "wrong_or_missing": [
+        "s_margin",
+        "e_margin",
+        "s_profit",
+        "e_profit",
+        "s_break_even",
+        "e_break_even",
+        "s_low_profit",
+        "e_low_profit",
+        "s_high_profit",
+        "e_high_profit",
+        "common_dev_hours",
+        "s_total_dev_hours",
+        "e_total_dev_hours",
+        "e_budget_shortfall_hours",
+        "s_fits_budget",
+        "e_fits_budget"
+      ],
+      "task_failures": [
+        {
+          "task_id": "growth-roadmap",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r1-launch-operations-baseline",
+      "status": "failed",
+      "wrong_or_missing": [
+        "expected_contacts",
+        "four_hour_capacity",
+        "backlog_without_hiring",
+        "required_total_agents",
+        "additional_agents",
+        "support_window_hours",
+        "immediate_refund_promised",
+        "launch_hour"
+      ],
+      "task_failures": [
+        {
+          "task_id": "launch-operations",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r1-launch-operations-homogeneous",
+      "status": "failed",
+      "wrong_or_missing": [
+        "expected_contacts",
+        "four_hour_capacity",
+        "backlog_without_hiring",
+        "required_total_agents",
+        "additional_agents",
+        "support_window_hours",
+        "immediate_refund_promised",
+        "launch_hour"
+      ],
+      "task_failures": [
+        {
+          "task_id": "launch-operations",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r1-launch-operations-overconfident",
+      "status": "failed",
+      "wrong_or_missing": [
+        "expected_contacts",
+        "four_hour_capacity",
+        "backlog_without_hiring",
+        "required_total_agents",
+        "additional_agents",
+        "support_window_hours",
+        "immediate_refund_promised",
+        "launch_hour"
+      ],
+      "task_failures": [
+        {
+          "task_id": "launch-operations",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r3-payment-redesign-overconfident",
+      "status": "failed",
+      "wrong_or_missing": [
+        "backfill_batches",
+        "serial_backfill_seconds",
+        "two_worker_backfill_seconds",
+        "downtime_budget_seconds",
+        "offline_backfill_fits",
+        "coexistence_hours",
+        "unverified_release_checks",
+        "can_release"
+      ],
+      "task_failures": [
+        {
+          "task_id": "payment-redesign/integrate_report",
+          "error": "CallError: HTTP 429"
+        },
+        {
+          "task_id": "payment-redesign",
+          "error": "ValueError: child failed or blocked; partial results retained"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r3-payment-redesign-baseline",
+      "status": "failed",
+      "wrong_or_missing": [
+        "backfill_batches",
+        "serial_backfill_seconds",
+        "two_worker_backfill_seconds",
+        "downtime_budget_seconds",
+        "offline_backfill_fits",
+        "coexistence_hours",
+        "unverified_release_checks",
+        "can_release"
+      ],
+      "task_failures": [
+        {
+          "task_id": "payment-redesign",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r3-payment-redesign-homogeneous",
+      "status": "failed",
+      "wrong_or_missing": [
+        "backfill_batches",
+        "serial_backfill_seconds",
+        "two_worker_backfill_seconds",
+        "downtime_budget_seconds",
+        "offline_backfill_fits",
+        "coexistence_hours",
+        "unverified_release_checks",
+        "can_release"
+      ],
+      "task_failures": [
+        {
+          "task_id": "payment-redesign",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-overconfident",
+      "status": "failed",
+      "wrong_or_missing": [
+        "s_margin",
+        "e_margin",
+        "s_profit",
+        "e_profit",
+        "s_break_even",
+        "e_break_even",
+        "s_low_profit",
+        "e_low_profit",
+        "s_high_profit",
+        "e_high_profit",
+        "common_dev_hours",
+        "s_total_dev_hours",
+        "e_total_dev_hours",
+        "e_budget_shortfall_hours",
+        "s_fits_budget",
+        "e_fits_budget"
+      ],
+      "task_failures": [
+        {
+          "task_id": "growth-roadmap",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-baseline",
+      "status": "failed",
+      "wrong_or_missing": [
+        "s_margin",
+        "e_margin",
+        "s_profit",
+        "e_profit",
+        "s_break_even",
+        "e_break_even",
+        "s_low_profit",
+        "e_low_profit",
+        "s_high_profit",
+        "e_high_profit",
+        "common_dev_hours",
+        "s_total_dev_hours",
+        "e_total_dev_hours",
+        "e_budget_shortfall_hours",
+        "s_fits_budget",
+        "e_fits_budget"
+      ],
+      "task_failures": [
+        {
+          "task_id": "growth-roadmap",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-homogeneous",
+      "status": "failed",
+      "wrong_or_missing": [
+        "s_margin",
+        "e_margin",
+        "s_profit",
+        "e_profit",
+        "s_break_even",
+        "e_break_even",
+        "s_low_profit",
+        "e_low_profit",
+        "s_high_profit",
+        "e_high_profit",
+        "common_dev_hours",
+        "s_total_dev_hours",
+        "e_total_dev_hours",
+        "e_budget_shortfall_hours",
+        "s_fits_budget",
+        "e_fits_budget"
+      ],
+      "task_failures": [
+        {
+          "task_id": "growth-roadmap",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r3-launch-operations-overconfident",
+      "status": "failed",
+      "wrong_or_missing": [
+        "expected_contacts",
+        "four_hour_capacity",
+        "backlog_without_hiring",
+        "required_total_agents",
+        "additional_agents",
+        "support_window_hours",
+        "immediate_refund_promised",
+        "launch_hour"
+      ],
+      "task_failures": [
+        {
+          "task_id": "launch-operations",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r3-launch-operations-baseline",
+      "status": "failed",
+      "wrong_or_missing": [
+        "expected_contacts",
+        "four_hour_capacity",
+        "backlog_without_hiring",
+        "required_total_agents",
+        "additional_agents",
+        "support_window_hours",
+        "immediate_refund_promised",
+        "launch_hour"
+      ],
+      "task_failures": [
+        {
+          "task_id": "launch-operations",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r3-launch-operations-homogeneous",
+      "status": "failed",
+      "wrong_or_missing": [
+        "expected_contacts",
+        "four_hour_capacity",
+        "backlog_without_hiring",
+        "required_total_agents",
+        "additional_agents",
+        "support_window_hours",
+        "immediate_refund_promised",
+        "launch_hour"
+      ],
+      "task_failures": [
+        {
+          "task_id": "launch-operations",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    },
+    {
+      "run_id": "20260922T012131-no-token-limit-9703d2-r3-release-review-overconfident",
+      "status": "failed",
+      "wrong_or_missing": [
+        "p_margin",
+        "q_margin",
+        "p_profit",
+        "q_profit",
+        "p_break_even",
+        "q_break_even",
+        "p_low_profit",
+        "q_low_profit",
+        "p_high_profit",
+        "q_high_profit",
+        "migration_before_app",
+        "can_release"
+      ],
+      "task_failures": [
+        {
+          "task_id": "release-review",
+          "error": "ValueError: no valid bids"
+        }
+      ],
+      "response_endings": []
+    }
+  ],
+  "overconfident_root_exceptions": [],
+  "wall_span_seconds": 6902.683163,
+  "qualitative_ratings": {
+    "충족": 8,
+    "부분 충족": 21,
+    "미충족": 16
+  },
+  "root_proposal_groups": [
+    {
+      "case_id": "game-design-architecture",
+      "condition": "baseline",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "45e96f9723a1fddd2ce599f354046e9abd631062a8f0d10254f90775fd6c8354"
+      ],
+      "reply_hashes": [
+        "7ca16dcb05707469bdc63855934229639be37a2986d607c0fdb91991a1161841",
+        "c2a85c41d85735f94e373d487776b3a3d251473e7e4cf7210ff60f577b19f946",
+        "c5dd9a261b122679945f27d29421206de547b5420e746c496846504013b2c0c4"
+      ]
+    },
+    {
+      "case_id": "game-design-architecture",
+      "condition": "baseline",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "1f6f53afecc120a8aa14d48a389841e40ce56d1cc1f1e2d161b2e2f7863d8012"
+      ],
+      "reply_hashes": [
+        "0f3a6111767b52730d63c15774f216bcb93c382dc9d896d7e602e033b880cb59",
+        "34f54737c9a6dc70f4ffb178e1db7d3939ee31d4143fafe42ef0cde58f646052",
+        "d4fef70a873085b2e296582070f0678f16ff6fbf43f2126bccef37fa0efc20ca"
+      ]
+    },
+    {
+      "case_id": "game-design-architecture",
+      "condition": "baseline",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "262f032e9713224706db1482bc3ed9cc0c07a6b2308646f9ee25fdce8da440f2"
+      ],
+      "reply_hashes": [
+        "3b9e95463e0bdce1550766c8cdd47d90a89cc337202f666d931cf45ff523bc9c",
+        "7bc11498527aeb9bb71ce7b47bb391b6bd5ee9fcf666c310077cfb4acbcf472a",
+        "b2b27baaedb0f944eb1995badbb91db06310d9adfb6519aa55dd9bd4b92b9c05"
+      ]
+    },
+    {
+      "case_id": "game-design-architecture",
+      "condition": "homogeneous",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "1ab7a1a4970808d8895c2acdb9b40446973a23b51c59ad0a8bf88ffa45812225"
+      ],
+      "reply_hashes": [
+        "405df0273ddbbd0be2310c1e8daa5f45f07ceba8bfec651c9d0e2e7e9168a14a",
+        "57348c0f6420e914707ee55feb78343b95d520c4b0d4159e2471f366a1659e29",
+        "61d7a768e13f9c2f1e951e0043be74d2f538aa9e8a1f2fa8200e4f9873eb20a3"
+      ]
+    },
+    {
+      "case_id": "game-design-architecture",
+      "condition": "homogeneous",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "394060c5a09e6f606d475dcbecc4d52df2ef565e8c5183b392e06fba06cf16e4"
+      ],
+      "reply_hashes": [
+        "0acfab7358d12a23e034511eeef05c4f31661a2d7b5f199e9d9d72a3c0783734",
+        "56f274b6b693d792967c5a79a2dbb2831fa57c676f4e7072f246a93b66baf999",
+        "e4d7d013d3a38108af45f196426424bb76fbc2e4b080c7594d4585835f44b200"
+      ]
+    },
+    {
+      "case_id": "game-design-architecture",
+      "condition": "homogeneous",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "204b96647801bbee46ab6be258510221e4526bc2eddb143f6a895b386241e3fa"
+      ],
+      "reply_hashes": [
+        "1b12ce3914131438821201be5d775bb684d26f635c4cb730a482409fb7765824",
+        "74b7fdd2748d799aaaf63586478e57c6203124f1bcaa729c885dcdc67fa1ad24",
+        "7507fe78e9f54e8fd847644dcb31700ffec57029f0d9674078a9ff8743d5ee4b"
+      ]
+    },
+    {
+      "case_id": "game-design-architecture",
+      "condition": "overconfident",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "45e96f9723a1fddd2ce599f354046e9abd631062a8f0d10254f90775fd6c8354"
+      ],
+      "reply_hashes": [
+        "3f4b8e728bdb9d3a670e2b19b6f80b948277d329460dc35e9da58c3e45ed1e35",
+        "68652966110d2ba45f04a7b4565ee731c3f65f1d06efee0f623986d472340097",
+        "c72c2328642c799161384cfdefa2219466c82292bf8a990371e2a2c741d70b58"
+      ]
+    },
+    {
+      "case_id": "game-design-architecture",
+      "condition": "overconfident",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "1f6f53afecc120a8aa14d48a389841e40ce56d1cc1f1e2d161b2e2f7863d8012"
+      ],
+      "reply_hashes": [
+        "a3b1565c1dcc513b9523b3a3dbf3b15572be1a301762257cbe1309d9e5069a07",
+        "bb5c2603f71c083044a3236440c749e5abd69a5f1429b8d3a75b7882a6cbe69e",
+        "e0ad2963a730381af462a2221979238f2c88f8f54fdc14bcb32a9d0fa4164c15"
+      ]
+    },
+    {
+      "case_id": "game-design-architecture",
+      "condition": "overconfident",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "8defcc411f3f73a5c51a30aacf73d3ebb46ae1bce8f572b38bceea58de388668"
+      ],
+      "reply_hashes": [
+        "338cd02ad42cfaf64de2cd478f9963d05783d38559bf8645ca4a3e52edbacc77",
+        "957a3707c2836efc5b08a159d5b7588d67cc23cb0a3ffe0c1a0e8c3ec41f8c75",
+        "b19fa72eaae8caff47526fdde6b5d1b7b02823074020f89b4486ebb2b29c641a"
+      ]
+    },
+    {
+      "case_id": "growth-roadmap",
+      "condition": "baseline",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 2,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 2,
+      "payload_hashes": [
+        "a38052552ad1a835f51e046d0930251f2081baac352d05f9346630a88582ab54"
+      ],
+      "reply_hashes": [
+        "2c5945ece5b138e4616664ca1d9d806ceff8ff41f5dc8c76f306a146362ac18e",
+        "8b092946b0a962d07fd391e78cf5af0cbcb959a06fccaccca84794caed70b158"
+      ]
+    },
+    {
+      "case_id": "growth-roadmap",
+      "condition": "baseline",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 2,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 2,
+      "payload_hashes": [
+        "feae7b34b0dd630dd86eb93a43e0988d56d0eefb2477cc580e9dea7911a56732"
+      ],
+      "reply_hashes": [
+        "e783f0d74212cf7b494a613f418ff72e42fde97d58845c72018c19d1927522da",
+        "fc6469b9d84288601112190eeb0663c7fc4af1445903f5c83de26fd1ad3a18b3"
+      ]
+    },
+    {
+      "case_id": "growth-roadmap",
+      "condition": "baseline",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 2,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 2,
+      "payload_hashes": [
+        "09cff7ea2eef39d2e2cf53f4f5ab38ef2dd1caa9d5c72d5834e0e1eaebd5830d"
+      ],
+      "reply_hashes": [
+        "a3644df4e76c8ead20fb16cb97fe5343ddf22d4a84998a7867cd6a656da78233",
+        "a40b6f5235b91374dea71b28db3804ad6e7265e8184945c636dcb31f37b2a46d"
+      ]
+    },
+    {
+      "case_id": "growth-roadmap",
+      "condition": "homogeneous",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "754742487dbc3d029541baccad49be5b5c8c95e7e594dc34e55108cb154ae790"
+      ],
+      "reply_hashes": [
+        "2f098649d09a9347eab4fd2a04c379e3c34b4c8b984f207fcf27c1a64c361593"
+      ]
+    },
+    {
+      "case_id": "growth-roadmap",
+      "condition": "homogeneous",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "dd3c1b194c571ce31d69799a5935b3241013f19dca3f739e6bbcd2841289abe4"
+      ],
+      "reply_hashes": [
+        "695ff027a0b0cfad9c59fc38258bc3cec7606e76723946d13b13eac72119ae03"
+      ]
+    },
+    {
+      "case_id": "growth-roadmap",
+      "condition": "homogeneous",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "00cc3e52d04720624452028dc5aa7bb154c9bf1606e13cbdc40219549b93384e"
+      ],
+      "reply_hashes": [
+        "44858f3e969c77553881a585631711c1349b7f084ee6bd31a60fc8f005ec1798"
+      ]
+    },
+    {
+      "case_id": "growth-roadmap",
+      "condition": "overconfident",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "a38052552ad1a835f51e046d0930251f2081baac352d05f9346630a88582ab54"
+      ],
+      "reply_hashes": [
+        "465e7b59074fad7f1b6b9c9a23dbed7422773a9c11af0f2a4ba01b8326df6ec4"
+      ]
+    },
+    {
+      "case_id": "growth-roadmap",
+      "condition": "overconfident",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "feae7b34b0dd630dd86eb93a43e0988d56d0eefb2477cc580e9dea7911a56732"
+      ],
+      "reply_hashes": [
+        "4f9f24b317f9b8d73664f4ace57a6c28dcce7e63963f9616a68bb23c3f0542db"
+      ]
+    },
+    {
+      "case_id": "growth-roadmap",
+      "condition": "overconfident",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "49b7eb7c19f2053544f5495127d71159c6207baf0cd6502a0c69d0ddaa4b6c45"
+      ],
+      "reply_hashes": [
+        "e6fce10b438aed1e144114912ce3357541b20c7c483cd46b495ade66ddabc0d0"
+      ]
+    },
+    {
+      "case_id": "launch-operations",
+      "condition": "baseline",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "228a979d651e36066e0d54f8545794154243ed88e6e246a81266bd52c8a863da"
+      ],
+      "reply_hashes": [
+        "70dda1a1f16e812d535a318d100298bb96086e259f844348e72ab4cb3286c19f"
+      ]
+    },
+    {
+      "case_id": "launch-operations",
+      "condition": "baseline",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "6710bd6bc2370f07de5e7cc20c78fd434eb413716fdd7114fc898534938f4e48"
+      ],
+      "reply_hashes": [
+        "1ae68e48c45d1cbd06739f2e19b79649352924662538fd50ee19eb977c51e547"
+      ]
+    },
+    {
+      "case_id": "launch-operations",
+      "condition": "baseline",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "44e5af48272e66d03feea73b717b30774297c4cee9d6459f3daf39d692d01381"
+      ],
+      "reply_hashes": [
+        "a24a98ac4d530527cecd0050182668219569e5ab0b01155ef95e957032285ecf"
+      ]
+    },
+    {
+      "case_id": "launch-operations",
+      "condition": "homogeneous",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "ff53d7a576f3b301f61e0c280090664fc48f18549462627ec02c3ee02adcf7eb"
+      ],
+      "reply_hashes": [
+        "ca265c626330a38a1273b08934c7f190349951c5aba14cd80bad3707db3c9d55"
+      ]
+    },
+    {
+      "case_id": "launch-operations",
+      "condition": "homogeneous",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "b0bbbf9744a787d201e4f78c4320320f589ac38b0a1cf74971a44d0e9b3c2736"
+      ],
+      "reply_hashes": [
+        "63d5d3466abd47648ec4dfdd50ac52738b5a5c0379a53b737c51a571b341d937"
+      ]
+    },
+    {
+      "case_id": "launch-operations",
+      "condition": "homogeneous",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "306623f02a0b3e153d938c751c8bc8a79e8cd0c89917bd8713c8f32859e0edba"
+      ],
+      "reply_hashes": [
+        "0f209666910d4dd7ea08d1fb7493883625774670d9fa5d7daaa76edb1487bba3"
+      ]
+    },
+    {
+      "case_id": "launch-operations",
+      "condition": "overconfident",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "228a979d651e36066e0d54f8545794154243ed88e6e246a81266bd52c8a863da"
+      ],
+      "reply_hashes": [
+        "318ca9580065a307f7d3b4c183e478f2ecdec11f684383a17e4190036ae236fa"
+      ]
+    },
+    {
+      "case_id": "launch-operations",
+      "condition": "overconfident",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "6710bd6bc2370f07de5e7cc20c78fd434eb413716fdd7114fc898534938f4e48"
+      ],
+      "reply_hashes": [
+        "b7e7278dbe13156bde0d4dfb670cb5bfc7ae19400ac85f6cb0a997206d34a386"
+      ]
+    },
+    {
+      "case_id": "launch-operations",
+      "condition": "overconfident",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 1,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 1,
+      "payload_hashes": [
+        "41261b72a4fa67e9b0ac9b4d64dae555ecf56080632293da3286dd3f9112cab8"
+      ],
+      "reply_hashes": [
+        "e1677671686a4227611e2532f8e297d7acd6e69e7f212f3929d632736e10cc5f"
+      ]
+    },
+    {
+      "case_id": "payment-redesign",
+      "condition": "baseline",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 2,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 2,
+      "payload_hashes": [
+        "272755db164418991613e1726416ccab47b70bf63b447b9495cb6219ab07d2c8"
+      ],
+      "reply_hashes": [
+        "7aa9c8ba8290b914b952df78554ab1de7e1da35b43d9bd4dff83ce9149f84a0d",
+        "e1895d2d4dad0a4d61c521165c87705ef7546fd0884affe3d04a16ff948e2b6e"
+      ]
+    },
+    {
+      "case_id": "payment-redesign",
+      "condition": "baseline",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 2,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 2,
+      "payload_hashes": [
+        "41c43856a390cbcc124fd80fdbb88ee7837327b49a3ff1dec926211cefc6fba5"
+      ],
+      "reply_hashes": [
+        "5a9ae1b4791474fe7a74e13439458f0d435943dd5128c1bebdf6ecad1e2c15f3",
+        "65f06f306d2b750e3e90f558bb27381de2d859dfd11343be4bfb6520bbb1bf7e"
+      ]
+    },
+    {
+      "case_id": "payment-redesign",
+      "condition": "baseline",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 2,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 2,
+      "payload_hashes": [
+        "a5bd75e852ec05ce53bdd2b690440afba0bafc2dfb8a66f1c4dc3626cd1d8072"
+      ],
+      "reply_hashes": [
+        "68fcc56920fc66a0161b0fb2971669f292c7121a02cfccea076fb1ce7c115bf6",
+        "82e212f757855db99465b3e9db310f534fb47f884342e3ef94f638d7c4926ce9"
+      ]
+    },
+    {
+      "case_id": "payment-redesign",
+      "condition": "homogeneous",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 2,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 2,
+      "payload_hashes": [
+        "0a06fdac611ee402782487599476169b71e1ed98d37b8c7b89efe7e42d783155"
+      ],
+      "reply_hashes": [
+        "23116d18e9ddca58deafa08d120c219b61a4900179f6a0b5c5438f08640d9c2c",
+        "8eb017c5de0ffecde481c584026920e33f1973b533946bfd7809589d7cfe28f7"
+      ]
+    },
+    {
+      "case_id": "payment-redesign",
+      "condition": "homogeneous",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 2,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 2,
+      "payload_hashes": [
+        "4fb31a3cb7abb32ba92e610676b1e0168556c98cc1162da3a74f7b6b0d3515b6"
+      ],
+      "reply_hashes": [
+        "4454cec66c720a6d4223003175bb5c61d23785c3bf5b0dd4c8f3df4222a71938",
+        "77c44e0c48f0b81b777fca9a59577d2efb9e50f61ff92d5cef04613b0d7673a7"
+      ]
+    },
+    {
+      "case_id": "payment-redesign",
+      "condition": "homogeneous",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 2,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 2,
+      "payload_hashes": [
+        "0b0c1b1e2c46b4912b0780c157b9db9fc42a927891a68f3abd080f43716a8025"
+      ],
+      "reply_hashes": [
+        "c716426aea00c53f7da6bd014e5dd4729b22d3896947ef6f00fab3c072940521",
+        "eba84e4269070cbbd42c5b11e5dbffa7bfa92aeb6383c5d4ca282466a991926e"
+      ]
+    },
+    {
+      "case_id": "payment-redesign",
+      "condition": "overconfident",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "272755db164418991613e1726416ccab47b70bf63b447b9495cb6219ab07d2c8"
+      ],
+      "reply_hashes": [
+        "3f12b4363446a344a67a3961942b141358509a847143508f5610f4c7a1254494",
+        "4ff89b080162d7027366ae699c5f7f350410896d31958c3ce17cc5922aa95d5d",
+        "79535e4a4bbef0508919d4e972d3648f91fa30aca7dfbb5b41038b59cc32674d"
+      ]
+    },
+    {
+      "case_id": "payment-redesign",
+      "condition": "overconfident",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "41c43856a390cbcc124fd80fdbb88ee7837327b49a3ff1dec926211cefc6fba5"
+      ],
+      "reply_hashes": [
+        "169d2f4ed9cd52257e52c0cc9ddb6adea8a1b6de89a48d38d6dd8585359670e3",
+        "33f2a86bb20c7b7c0b18456f23d57ac85962db0fb428951587893c08743113e4",
+        "6b53c1da5f6062cc8d864c2db9bcd2de93fa0fd9d6fa215e99b86bd593c48554"
+      ]
+    },
+    {
+      "case_id": "payment-redesign",
+      "condition": "overconfident",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "d2f9fd3c6943f8e2b6b06450a5eb70f9829aa8be01e881a142c82703ab333fef"
+      ],
+      "reply_hashes": [
+        "0a87ddf19bbdc938cbd08614b205ab692c7f71f644f4c7a990dbefb95810b5fb",
+        "3d09d13486ed2f2a6cdc7b6b44793cffa6dc35d0f7cf0fc584e485e2c817765e",
+        "52c1a11575293b6a70412e2299e820f4ae588e975dcd61085998649b5409230c"
+      ]
+    },
+    {
+      "case_id": "release-review",
+      "condition": "baseline",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "7254283b72d4dcf8850111ac4d655d1cd769175ba44829517a80dabc89dd7574"
+      ],
+      "reply_hashes": [
+        "27223506834afa6140f4dd6441f3478815043f9e7f89f919ade2ec17d47db5a0",
+        "4c234912d9833ad0023356a0e8e5d299cd36f32104684db837895bd42c0dd33b",
+        "a6ce3503312d3727278066a024efe8ec460f8d8d8ba1999d08d5c2d7dc84d885"
+      ]
+    },
+    {
+      "case_id": "release-review",
+      "condition": "baseline",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "bda29ac965939a0a27bae314bd8c80b71a157ddc4f7e5357e5e597fa8e9030b8"
+      ],
+      "reply_hashes": [
+        "60b21cf2782184233caab17db109684361334393601edf80817d693eac57f6bd",
+        "6b37f7c0b7b1998fb53c0cafe8e15854bdb61d642a1c9d330c22f2a0105e78f4",
+        "f13149c2e0d66c50bf1d03250f14b9ace22e44fd5fc241df160e41e7ecc88d72"
+      ]
+    },
+    {
+      "case_id": "release-review",
+      "condition": "baseline",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "4e6f2e022286f898e14991521964a788c438627484358866fd5e2f1fec86a410"
+      ],
+      "reply_hashes": [
+        "829f24704243cfd6707314f5919e698536183affe28f0776c8d23e44faaabc7c",
+        "d6554b2fdaddf16acf15d5a7ad0f24b0f3a098960b44823e9d81e46faa429929",
+        "f15075e0f844682ecaca701a34dd581389e4db45f7c03b4c8cee95fe9590b903"
+      ]
+    },
+    {
+      "case_id": "release-review",
+      "condition": "homogeneous",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "b65eed9683e03fec27dd9b7198a745f3a7b46e505454a208e54ea07533558b69"
+      ],
+      "reply_hashes": [
+        "3e32bb8817a810f28d99470c7a0fa239cb06868b3f6b7c3fc00a67468282449e",
+        "d29bd42551e26819a3a5b1a8437997abb7720beebc4533ae37616d4f6db4467c",
+        "f2515589676086b298c94a189436f651fdee212dc283e59054700c3599c06afc"
+      ]
+    },
+    {
+      "case_id": "release-review",
+      "condition": "homogeneous",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "c856a72a558fd457f87bbbdca5e54a987736a9fa00bae1d2a8f7ae8cdca7f8e8"
+      ],
+      "reply_hashes": [
+        "0e2775941177a55ccc8af28ac231bb0de075849bbcace4bdebcf1eb94e7ab985",
+        "6208a8a80f73557fe7b5384dd22f3d66de114e266da2b8f94311ba321d09a577",
+        "db5cb16d1578237d3f1a303bf6d56b1aa05dc97bb9eb9a4640ef78ea9a5a54e0"
+      ]
+    },
+    {
+      "case_id": "release-review",
+      "condition": "homogeneous",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 3,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 3,
+      "payload_hashes": [
+        "501fa680d8efbae99d4a6f9edb6f4eb89adb50a95c73cfec514a632d8b92eb93"
+      ],
+      "reply_hashes": [
+        "105642628d76fa4b8439ca42725f98321c139119b9cdf46e8778d459afb8808d",
+        "3dbb8b1534fea2d07b0dd693384661a20cbf97500c8d173795241ab7d674b4c6",
+        "ab0ff1b1c6511c62c236120cdf1489580bb7a2fab896f10734ab407b9c76dab2"
+      ]
+    },
+    {
+      "case_id": "release-review",
+      "condition": "overconfident",
+      "worker": "A",
+      "request_runs": 3,
+      "reply_runs": 2,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 2,
+      "payload_hashes": [
+        "7254283b72d4dcf8850111ac4d655d1cd769175ba44829517a80dabc89dd7574"
+      ],
+      "reply_hashes": [
+        "1ae56303b1cedf57cc2bbbda4aea3784e81f6f1765816a02c3434fd6d8d29458",
+        "be9746d679f9abe72f91a6b475468d0fdc3f3e0b6b7952c0a9cbf424295e7590"
+      ]
+    },
+    {
+      "case_id": "release-review",
+      "condition": "overconfident",
+      "worker": "B",
+      "request_runs": 3,
+      "reply_runs": 2,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 2,
+      "payload_hashes": [
+        "bda29ac965939a0a27bae314bd8c80b71a157ddc4f7e5357e5e597fa8e9030b8"
+      ],
+      "reply_hashes": [
+        "d042ab01faf99d322540284e86b4ba91055797cb92596b26cc1288e990d0c244",
+        "ddc5b7b67652dc050fac97963ef4c73a64f0b00623a50897d67999ab8ec55cf8"
+      ]
+    },
+    {
+      "case_id": "release-review",
+      "condition": "overconfident",
+      "worker": "C",
+      "request_runs": 3,
+      "reply_runs": 2,
+      "distinct_payloads": 1,
+      "distinct_raw_replies": 2,
+      "payload_hashes": [
+        "cb93208e20b3c4060492ee16630817d15be76cbfd0bf837676d9b9670a5c3e0c"
+      ],
+      "reply_hashes": [
+        "3adfef72f5c191b5903efa90d24bb91ab6b6ba866df5c9fca3894e7e1df6a466",
+        "a6242c09ff1ccd25af1a7189d4fc09214c709e4df197b285b0cc33e01970de13"
+      ]
+    }
+  ],
+  "identical_root_inputs_across_all_repeats": true,
+  "root_awards_by_condition": {
+    "baseline": {
+      "A": 9,
+      "unawarded": 5,
+      "B": 1
+    },
+    "homogeneous": {
+      "A": 10,
+      "unawarded": 5
+    },
+    "overconfident": {
+      "C": 10,
+      "unawarded": 5
+    }
+  }
+}

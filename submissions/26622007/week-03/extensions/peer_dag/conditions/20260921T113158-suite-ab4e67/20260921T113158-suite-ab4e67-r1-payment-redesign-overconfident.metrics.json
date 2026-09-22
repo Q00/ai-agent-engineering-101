@@ -1,0 +1,241 @@
+{
+  "case_id": "payment-redesign",
+  "condition": "overconfident",
+  "block": 1,
+  "run_id": "20260921T113158-suite-ab4e67-r1-payment-redesign-overconfident",
+  "exit_code": 1,
+  "timed_out": false,
+  "wall_seconds": 71.137,
+  "status": "failed",
+  "passed": false,
+  "checks_passed": 0,
+  "checks_total": 8,
+  "wrong_or_missing": [
+    "backfill_batches",
+    "serial_backfill_seconds",
+    "two_worker_backfill_seconds",
+    "downtime_budget_seconds",
+    "offline_backfill_fits",
+    "coexistence_hours",
+    "unverified_release_checks",
+    "can_release"
+  ],
+  "calls": 14,
+  "http_requests": 14,
+  "http_responses": 14,
+  "http_429": 0,
+  "http_errors": {},
+  "retries": 0,
+  "transport_errors": 0,
+  "tasks": 3,
+  "max_depth": 1,
+  "awards": {
+    "C": 3
+  },
+  "root_award": "C",
+  "c_proposals": 3,
+  "c_high_bids": 3,
+  "proposal_rejections": [],
+  "task_failures": [
+    {
+      "task_id": "payment-redesign/tech_design",
+      "error": "JSONDecodeError: Unterminated string starting at: line 1 column 12 (char 11)"
+    },
+    {
+      "task_id": "payment-redesign",
+      "error": "ValueError: child failed or blocked; partial results retained"
+    }
+  ],
+  "reported_cost_usd": 0.01248063,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 70.9668,
+  "canonical_facts": null,
+  "artifact_sha": null,
+  "root_plan_sha": "7577391d449ca57e5c10acd7b566543048933ac60dce2964f4bbc4d1871bc59b",
+  "award_sha": "8cbd4133ea1edf2ff8796fe5c335d75d136a093a430a4853639e694de46281e0",
+  "controls_sha": "a91c7caead6fdba684f990905ef2cfecaf8c8557e058473abdd7a8aad47d65ff",
+  "root_plan": {
+    "mode": "delegate",
+    "actions": [
+      "A의 결제 설계·마이그레이션 계산 결과와 B의 사업 우선순위·불확실성 평가 결과를 입력으로 받는다.",
+      "두 결과의 모순·미확인 사항을 대조하고, 확정 사실과 설계 제안을 구분한다.",
+      "운영 전환·롤백·중단 조건과 지원팀 전달 사실/미확인 사항을 작성한다.",
+      "facts 숫자·boolean 키와 evidence 계산식을 검증해 최종 payment_redesign_report로 통합한다."
+    ],
+    "steps": [
+      {
+        "id": "tech_design",
+        "goal": "결제 중복 사고의 원인 가설과 확인 증거, PaymentCommand/IdempotencyStore/GatewayPort/WebhookHandler/ReconciliationJob의 책임·인터페이스·저장 데이터·고유 제약·오류/재시도 경계, 상태 전이표, 코드 디렉터리와 핵심 의사코드, 중복/순서 역전/부분 실패 테스트 행렬, 마이그레이션 배치 수·1개/2개 작업자 처리 시간·20분 허용 내 가능 여부 계산, 온라인 준비와 최종 전환 구분, 배포·롤백·중단 조건 초안을 작성하라.",
+        "acceptance": "summary/evidence 문자열에 설계 문서·표·의사코드를 포함하고, 실제 구현/테스트 수행과 설계 제안을 명시적으로 구분한다. facts에 backfill_batches, serial_backfill_seconds, two_worker_backfill_seconds, downtime_budget_seconds, coexistence_hours, unverified_release_checks 숫자 키와 offline_backfill_fits, can_release boolean 키를 포함한다. evidence에 계산식과 제공 자료 근거를 쓴다. facts에는 배열·객체를 넣지 않는다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "tech_design_result"
+        ]
+      },
+      {
+        "id": "biz_analysis",
+        "goal": "제공된 수치와 가정만으로 마이그레이션·공존 기간·미검증 항목의 사업적 불확실성과 우선순위를 평가하고, 72시간 공존 및 20분 중단 허용의 운영 리스크를 정리하라.",
+        "acceptance": "summary/evidence에 불확실성 목록, 우선순위 근거, 미검증 항목이 출시 가능성에 미치는 영향을 텍스트로 제시한다. 제공 자료에 없는 추정은 추정임을 명시한다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "biz_analysis_result"
+        ]
+      },
+      {
+        "id": "ops_comm",
+        "goal": "tech_design_result와 biz_analysis_result를 입력으로 받아 운영 전환 절차, 롤백·중단 조건, 지원팀에 전달할 확정 사실과 미확인 사항, 팀 간 일정·담당·전달 계획을 작성하라.",
+        "acceptance": "summary/evidence에 확정 사실과 미확인 사항을 분리해 제시하고, 규칙·인터페이스·일정 사이의 모순을 명시한다. 실제 PG·DB 조회나 환불·배포를 수행했다고 표현하지 않는다.",
+        "depends_on": [
+          "tech_design",
+          "biz_analysis"
+        ],
+        "reads": [
+          "tech_design_result",
+          "biz_analysis_result"
+        ],
+        "writes": [
+          "ops_comm_result"
+        ]
+      },
+      {
+        "id": "integrate",
+        "goal": "tech_design_result, biz_analysis_result, ops_comm_result를 통합해 최종 payment_redesign_report를 작성하라.",
+        "acceptance": "summary와 evidence에 요구한 문서·표·코드 구조를 간결한 텍스트로 제시하고 실제 구현/테스트 수행과 설계 제안을 구분한다. 규칙·인터페이스·일정 사이의 모순과 미확인 사항을 명시한다. facts에 backfill_batches, serial_backfill_seconds, two_worker_backfill_seconds, downtime_budget_seconds, coexistence_hours, unverified_release_checks 숫자 키와 offline_backfill_fits, can_release boolean 키를 모두 포함한다. evidence에 계산식과 제공 자료 근거를 쓴다. 설계 문서와 코드 조각은 summary/evidence 문자열에 넣고 facts에는 배열·객체를 넣지 않는다.",
+        "depends_on": [
+          "ops_comm"
+        ],
+        "reads": [
+          "tech_design_result",
+          "biz_analysis_result",
+          "ops_comm_result"
+        ],
+        "writes": [
+          "payment_redesign_report"
+        ]
+      }
+    ]
+  },
+  "intervals": [
+    {
+      "task_id": "payment-redesign/biz_analysis",
+      "worker": "C",
+      "start": "2026-09-21T11:43:07.246068+00:00",
+      "end": "2026-09-21T11:43:24.792372+00:00"
+    },
+    {
+      "task_id": "payment-redesign/tech_design",
+      "worker": "C",
+      "start": "2026-09-21T11:43:15.049938+00:00",
+      "end": "2026-09-21T11:43:43.722248+00:00"
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "payment-redesign/biz_analysis",
+      "right": "payment-redesign/tech_design",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 9.742434,
+      "both_tasks_succeeded": false
+    }
+  ],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 2,
+    "peak_calls_by_worker": {
+      "A": 2,
+      "B": 1,
+      "C": 2
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 0,
+      "B": 0,
+      "C": 2
+    },
+    "calls_by_phase": {
+      "propose": 9,
+      "review": 3,
+      "execute": 2
+    },
+    "task_statuses": {
+      "payment-redesign/biz_analysis": "succeeded",
+      "payment-redesign/tech_design": "failed",
+      "payment-redesign/ops_comm": "blocked",
+      "payment-redesign/integrate": "blocked",
+      "payment-redesign": "failed"
+    },
+    "awards": {
+      "payment-redesign": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "delegate",
+        "dependencies": {
+          "tech_design": [],
+          "biz_analysis": [],
+          "ops_comm": [
+            "tech_design",
+            "biz_analysis"
+          ],
+          "integrate": [
+            "ops_comm"
+          ]
+        }
+      },
+      "payment-redesign/biz_analysis": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "payment-redesign/tech_design": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 14
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 14
+    },
+    "evaluation": {
+      "passed": false,
+      "checks": {
+        "backfill_batches": false,
+        "serial_backfill_seconds": false,
+        "two_worker_backfill_seconds": false,
+        "downtime_budget_seconds": false,
+        "offline_backfill_fits": false,
+        "coexistence_hours": false,
+        "unverified_release_checks": false,
+        "can_release": false
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": false,
+  "verification_errors": [
+    {
+      "kind": "response_decode",
+      "key": [
+        "payment-redesign/tech_design",
+        "C",
+        "execute",
+        1
+      ],
+      "message": "Unterminated string starting at: line 1 column 12 (char 11)"
+    }
+  ],
+  "error": "ValueError: child failed or blocked; partial results retained",
+  "recorded_case_condition_match": true
+}

@@ -1,0 +1,228 @@
+{
+  "case_id": "game-design-architecture",
+  "condition": "overconfident",
+  "block": 2,
+  "run_id": "20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-overconfident",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 77.4424,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 10,
+  "checks_total": 10,
+  "wrong_or_missing": [],
+  "calls": 20,
+  "http_requests": 23,
+  "http_responses": 20,
+  "http_429": 3,
+  "http_errors": {
+    "429": 3
+  },
+  "retries": 3,
+  "transport_errors": 0,
+  "tasks": 4,
+  "max_depth": 1,
+  "awards": {
+    "C": 3,
+    "A": 1
+  },
+  "root_award": "C",
+  "c_proposals": 4,
+  "c_high_bids": 4,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.024926533999999997,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 77.269,
+  "canonical_facts": {
+    "board_height": 6.0,
+    "board_width": 6.0,
+    "coop_fits_budget": false,
+    "core_scope_hours": 160.0,
+    "developer_hours": 160.0,
+    "max_turns": 12.0,
+    "offline_required": true,
+    "qa_hours": 40.0,
+    "seeded_replay_required": true,
+    "with_coop_hours": 240.0
+  },
+  "artifact_sha": "636800c732a6d4d433bc32ca05f1b5da1bc122c26b43427aec0cb7f5b423cbd2",
+  "root_plan_sha": "8cba929349f6f5ef2c8e9e3eeec8f4a7c10b2088684f32e4b33662628a91334c",
+  "award_sha": "fea066fe15afa413e73e734a6fb1d0f5e9b467f5ca92797cad5be9a40f132080",
+  "controls_sha": "cfd2ef459faf8ba173d8b03587b5b88883caeb14eee172ec0e868a281ecee942",
+  "root_plan": {
+    "mode": "delegate",
+    "actions": [
+      "source의 확정 추정치로 예산 계산: 개발자 2명×20h×4주=160h, QA 1명×10h×4주=40h, 총 200h. 기본 범위 합계 24+24+32+24+20+24+12=160h. 협동 포함 160+80=240h.",
+      "기본 범위 160h ≤ 200h이므로 coop_fits_budget=false, core는 예산 내. QA 40h는 자동 테스트·재현·접근성 검증에 배분.",
+      "A에게 게임 기획·아키텍처 초안(규칙, GameState/Command/Event/Rng/SaveCodec 시그니처, 턴 의사코드, 디렉터리 트리, 규칙→모듈→테스트 매핑)을 위임.",
+      "A 산출물을 받아 규칙·인터페이스·일정 간 모순과 미확인 사항을 대조하고, 저장 스키마 버전·재현 테스트·수용 기준·개발/QA 일정·제외 범위를 통합 문서로 정리.",
+      "facts에 board_width=6, board_height=6, max_turns=12, developer_hours=160, qa_hours=40, core_scope_hours=160, with_coop_hours=240, coop_fits_budget=false, seeded_replay_required=true, offline_required=true를 확정."
+    ],
+    "steps": [
+      {
+        "id": "design_draft",
+        "goal": "게임 기획서 초안과 TypeScript/HTML Canvas 코드 구조 설계를 작성한다. 포함: (1) 탐험·전투·보상·탈출 핵심 루프와 규칙-재미 가설 연결, 승리/패배·난이도·전투·보상·튜토리얼·접근성 규칙, (2) 디렉터리 트리·모듈 책임·의존 방향(도메인/렌더링 경계), (3) GameState/Command/Event/Rng/SaveCodec의 TypeScript 타입 또는 함수 시그니처와 턴 처리 의사코드(짧은 텍스트 조각), (4) 규칙→모듈→테스트 대응표, (5) 저장 스키마 버전·seed 재현·저장/복원 재현 테스트·수용 기준, (6) 제외 범위(서버·로그인·결제·온라인 협동). 실제 구현/테스트를 완료했다고 쓰지 말고 설계 제안으로 구분한다.",
+        "acceptance": "summary/evidence 문자열에 위 (1)~(6)이 모두 존재하고, 코드는 짧은 텍스트 조각으로만 제시되며 실행/구현 완료 주장이 없다. Rng·Clock이 주입 가능한 인터페이스로 분리되고 렌더링과 도메인 규칙 경계가 명시된다. 규칙→모듈→테스트 매핑표가 텍스트로 포함된다. facts에는 배열/객체 없이 문자열·숫자·불리언만 반환한다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "design_draft"
+        ]
+      },
+      {
+        "id": "budget_schedule",
+        "goal": "확정 추정치로 예산·일정을 계산하고 제외 범위를 정리한다. 개발자 2명×20h×4주=160h, QA 1명×10h×4주=40h, 총 200h. 기본 범위 24+24+32+24+20+24+12=160h, 협동 포함 240h. 기본 범위가 예산 내인지, 협동 포함이 예산 내인지 판정하고 QA 40h 배분(자동 테스트·재현·접근성 검증)과 4주 개발/QA 일정 개요를 텍스트로 제시한다.",
+        "acceptance": "evidence에 계산식(2×20×4=160, 1×10×4=40, 합계 200, 기본 160, 협동 240)이 명시되고, core_scope_hours=160, with_coop_hours=240, developer_hours=160, qa_hours=40, coop_fits_budget=false가 facts에 포함된다. 일정과 제외 범위가 텍스트로 제시된다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "budget_schedule"
+        ]
+      },
+      {
+        "id": "integration_review",
+        "goal": "design_draft와 budget_schedule을 대조해 규칙·인터페이스·일정 사이의 모순과 미확인 사항을 식별하고, 저장 스키마 버전·재현 테스트·수용 기준·개발/QA 일정·제외 범위를 하나의 개발 착수 자료로 통합한다. 실제 구현/테스트 수행과 설계 제안을 명확히 구분한다.",
+        "acceptance": "summary/evidence에 통합 문서가 제시되고, 규칙-모듈-테스트-일정 간 모순 및 미확인 사항 목록이 명시된다. facts에 board_width=6, board_height=6, max_turns=12, developer_hours=160, qa_hours=40, core_scope_hours=160, with_coop_hours=240, coop_fits_budget=false, seeded_replay_required=true, offline_required=true가 모두 포함된다. facts에 배열/객체가 없고 설계 문서·코드 조각은 문자열에만 있다.",
+        "depends_on": [
+          "design_draft",
+          "budget_schedule"
+        ],
+        "reads": [
+          "design_draft",
+          "budget_schedule"
+        ],
+        "writes": [
+          "game_design_architecture_report"
+        ]
+      }
+    ]
+  },
+  "intervals": [
+    {
+      "task_id": "game-design-architecture/budget_schedule",
+      "worker": "C",
+      "start": "2026-09-22T01:59:45.891079+00:00",
+      "end": "2026-09-22T01:59:51.890963+00:00"
+    },
+    {
+      "task_id": "game-design-architecture/design_draft",
+      "worker": "C",
+      "start": "2026-09-22T01:59:46.322738+00:00",
+      "end": "2026-09-22T02:00:01.785766+00:00"
+    },
+    {
+      "task_id": "game-design-architecture/integration_review",
+      "worker": "A",
+      "start": "2026-09-22T02:00:07.792113+00:00",
+      "end": "2026-09-22T02:00:16.956868+00:00"
+    },
+    {
+      "task_id": "game-design-architecture",
+      "worker": "C",
+      "start": "2026-09-22T02:00:16.957354+00:00",
+      "end": "2026-09-22T02:00:28.265886+00:00"
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "game-design-architecture/budget_schedule",
+      "right": "game-design-architecture/design_draft",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 5.568225,
+      "both_tasks_succeeded": true
+    }
+  ],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 2,
+    "peak_calls_by_worker": {
+      "A": 2,
+      "B": 1,
+      "C": 2
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 0,
+      "C": 2
+    },
+    "calls_by_phase": {
+      "propose": 12,
+      "review": 4,
+      "execute": 3,
+      "synthesize": 1
+    },
+    "task_statuses": {
+      "game-design-architecture/budget_schedule": "succeeded",
+      "game-design-architecture/design_draft": "succeeded",
+      "game-design-architecture/integration_review": "succeeded",
+      "game-design-architecture": "succeeded"
+    },
+    "awards": {
+      "game-design-architecture": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "delegate",
+        "dependencies": {
+          "design_draft": [],
+          "budget_schedule": [],
+          "integration_review": [
+            "design_draft",
+            "budget_schedule"
+          ]
+        }
+      },
+      "game-design-architecture/budget_schedule": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "game-design-architecture/design_draft": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "game-design-architecture/integration_review": {
+        "requester": "C",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 20
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 20
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "board_width": true,
+        "board_height": true,
+        "max_turns": true,
+        "developer_hours": true,
+        "qa_hours": true,
+        "core_scope_hours": true,
+        "with_coop_hours": true,
+        "coop_fits_budget": true,
+        "seeded_replay_required": true,
+        "offline_required": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

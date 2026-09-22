@@ -1,0 +1,353 @@
+{
+  "case_id": "launch-operations",
+  "condition": "overconfident",
+  "block": 1,
+  "source_run_id": "20260922T012131-no-token-limit-9703d2-r1-launch-operations-overconfident",
+  "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 122.6305,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 8,
+  "checks_total": 8,
+  "wrong_or_missing": [],
+  "calls": 45,
+  "http_requests": 48,
+  "http_responses": 45,
+  "http_429": 3,
+  "http_errors": {
+    "429": 3
+  },
+  "retries": 3,
+  "transport_errors": 0,
+  "tasks": 9,
+  "max_depth": 2,
+  "awards": {
+    "C": 9
+  },
+  "root_award": "C",
+  "c_proposals": 9,
+  "c_high_bids": 9,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.047724278,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 122.4546,
+  "canonical_facts": {
+    "additional_agents": 4.0,
+    "backlog_without_hiring": 80.0,
+    "expected_contacts": 160.0,
+    "four_hour_capacity": 80.0,
+    "immediate_refund_promised": false,
+    "launch_hour": 10.0,
+    "required_total_agents": 8.0,
+    "support_window_hours": 4.0
+  },
+  "artifact_sha": "52c63a78afe6b6c6a9e67c72e62e578de59b7a90d8b893630aa74a5c578f77d5",
+  "root_plan_sha": "396e6f7b6cdeb73a96fd50c72b20ad7ef5d8f6feb13aa81908533ca23e95d987",
+  "award_sha": "902022d904fb4fc373230993cd3546d9bbe5dc2e44362587b8ca98e9a3eb4c0e",
+  "controls_sha": "49bb0be4a0b09743a9cf6a6f417be6fc42680a4bfa26681e4b9bb36b72e14a07",
+  "root_plan": {
+    "mode": "delegate",
+    "actions": [
+      "용량·인력 계산과 확정/미확인 사항표를 먼저 확정해 단일 기준 문서의 수치 근거를 고정한다.",
+      "제품·기술(A)에 배포 승인·결제 검증·알려진 제한의 확정/미확인 상태와 비상 대안을 요청한다.",
+      "사업·분석(B)에 충원 불가 시 대기열·우선순위·인력 대안의 비용·영향 비교를 요청한다.",
+      "A·B 결과와 자체 작성한 고객 안내문·FAQ·상담 분류·운영 일정·비상 계획·출시 직전 확인표를 통합해 최종 패키지를 완성한다."
+    ],
+    "steps": [
+      {
+        "id": "capacity_and_facts",
+        "goal": "초대 800명, 첫 4시간 20% 문의 가정으로 예상 문의·처리 용량·미처리량·필요 총 상담원·추가 인원을 계산하고, 확정/미확인 사항표와 단일 기준 문서 초안을 작성한다.",
+        "acceptance": "expected_contacts, four_hour_capacity, backlog_without_hiring, required_total_agents, additional_agents, support_window_hours, launch_hour 숫자와 immediate_refund_promised boolean을 계산식과 함께 반환하고, 확정 정책('영업일 2일 내 처리 시작', 완료·PG 반영 미보장)과 미확인 항목(충원·배포 승인·결제 검증)을 표로 구분한다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "capacity_facts",
+          "confirmed_unconfirmed_table"
+        ]
+      },
+      {
+        "id": "tech_dependency",
+        "goal": "제품·기술 관점에서 목요일 14시 확정 사양·알려진 제한, 기술 배포 승인, 결제 검증 결과의 확정/미확인 상태와 지연 시 비상 대안(출시 연기·기능 제한 공지)을 정리한다.",
+        "acceptance": "배포 승인·결제 검증을 완료로 단정하지 않고 미확인으로 명시하며, 지연 시나리오별 트리거·담당·고객 안내 문구 초안을 반환한다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "tech_risk_plan"
+        ]
+      },
+      {
+        "id": "staffing_alternatives",
+        "goal": "충원 미승인 상황에서 대기열·우선순위·고객 안내 대안과 추가 인원 승인 시 손익·영향을 비교 분석한다.",
+        "acceptance": "충원 불가/가능 시나리오별 대기열 처리 규칙, 우선순위 기준, 고객 안내 대안, 추가 인원의 비용·효과 추정을 반환하고 승인되지 않은 충원을 완료로 쓰지 않는다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "staffing_alternatives"
+        ]
+      },
+      {
+        "id": "integrated_package",
+        "goal": "capacity_and_facts, tech_dependency, staffing_alternatives를 통합해 운영 일정(담당·기한·선행조건), 고객 안내문·FAQ·상담 분류 기준, 비상 계획(광고 지연·기술 승인 지연·문의 급증), 출시 직전 확인표를 완성한다.",
+        "acceptance": "모든 산출물이 단일 기준 문서와 일치하고, 광고(목15시)·상담 교육(목17시)·랜딩(목18시)·제품 전달(목14시) 마감과 선행조건이 연결되며, 규칙·인터페이스·일정 간 모순과 미확인 사항이 명시된다.",
+        "depends_on": [
+          "capacity_and_facts",
+          "tech_dependency",
+          "staffing_alternatives"
+        ],
+        "reads": [
+          "capacity_facts",
+          "confirmed_unconfirmed_table",
+          "tech_risk_plan",
+          "staffing_alternatives"
+        ],
+        "writes": [
+          "launch_operations_report"
+        ]
+      }
+    ]
+  },
+  "intervals": [
+    {
+      "task_id": "launch-operations/capacity_and_facts",
+      "worker": "C",
+      "start": "2026-09-22T03:26:55.666905+00:00",
+      "end": "2026-09-22T03:27:03.519097+00:00"
+    },
+    {
+      "task_id": "launch-operations/staffing_alternatives/cost_effect",
+      "worker": "C",
+      "start": "2026-09-22T03:27:11.282476+00:00",
+      "end": "2026-09-22T03:27:15.359499+00:00"
+    },
+    {
+      "task_id": "launch-operations/tech_dependency",
+      "worker": "C",
+      "start": "2026-09-22T03:27:11.163123+00:00",
+      "end": "2026-09-22T03:27:21.527990+00:00"
+    },
+    {
+      "task_id": "launch-operations/staffing_alternatives/customer_messaging",
+      "worker": "C",
+      "start": "2026-09-22T03:27:12.081329+00:00",
+      "end": "2026-09-22T03:27:23.031136+00:00"
+    },
+    {
+      "task_id": "launch-operations/staffing_alternatives/queue_policy",
+      "worker": "C",
+      "start": "2026-09-22T03:27:15.359964+00:00",
+      "end": "2026-09-22T03:27:23.644298+00:00"
+    },
+    {
+      "task_id": "launch-operations/staffing_alternatives/staffing_alternatives",
+      "worker": "C",
+      "start": "2026-09-22T03:27:29.141115+00:00",
+      "end": "2026-09-22T03:27:39.723049+00:00"
+    },
+    {
+      "task_id": "launch-operations/staffing_alternatives",
+      "worker": "C",
+      "start": "2026-09-22T03:27:39.723956+00:00",
+      "end": "2026-09-22T03:27:48.328578+00:00"
+    },
+    {
+      "task_id": "launch-operations/integrated_package",
+      "worker": "C",
+      "start": "2026-09-22T03:28:10.493616+00:00",
+      "end": "2026-09-22T03:28:25.412668+00:00"
+    },
+    {
+      "task_id": "launch-operations",
+      "worker": "C",
+      "start": "2026-09-22T03:28:25.413638+00:00",
+      "end": "2026-09-22T03:28:35.339035+00:00"
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "launch-operations/staffing_alternatives/cost_effect",
+      "right": "launch-operations/tech_dependency",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 4.077023,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "launch-operations/staffing_alternatives/cost_effect",
+      "right": "launch-operations/staffing_alternatives/customer_messaging",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 3.27817,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "launch-operations/tech_dependency",
+      "right": "launch-operations/staffing_alternatives/customer_messaging",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 9.446661,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "launch-operations/tech_dependency",
+      "right": "launch-operations/staffing_alternatives/queue_policy",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 6.168026,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "launch-operations/staffing_alternatives/customer_messaging",
+      "right": "launch-operations/staffing_alternatives/queue_policy",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 7.671172,
+      "both_tasks_succeeded": true
+    }
+  ],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 3,
+    "peak_calls_by_worker": {
+      "A": 2,
+      "B": 2,
+      "C": 3
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 0,
+      "B": 0,
+      "C": 3
+    },
+    "calls_by_phase": {
+      "propose": 27,
+      "review": 9,
+      "execute": 7,
+      "synthesize": 2
+    },
+    "task_statuses": {
+      "launch-operations/capacity_and_facts": "succeeded",
+      "launch-operations/staffing_alternatives/cost_effect": "succeeded",
+      "launch-operations/tech_dependency": "succeeded",
+      "launch-operations/staffing_alternatives/customer_messaging": "succeeded",
+      "launch-operations/staffing_alternatives/queue_policy": "succeeded",
+      "launch-operations/staffing_alternatives/staffing_alternatives": "succeeded",
+      "launch-operations/staffing_alternatives": "succeeded",
+      "launch-operations/integrated_package": "succeeded",
+      "launch-operations": "succeeded"
+    },
+    "awards": {
+      "launch-operations": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "delegate",
+        "dependencies": {
+          "capacity_and_facts": [],
+          "tech_dependency": [],
+          "staffing_alternatives": [],
+          "integrated_package": [
+            "capacity_and_facts",
+            "tech_dependency",
+            "staffing_alternatives"
+          ]
+        }
+      },
+      "launch-operations/capacity_and_facts": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/staffing_alternatives": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "delegate",
+        "dependencies": {
+          "queue_policy": [],
+          "customer_messaging": [],
+          "cost_effect": [],
+          "staffing_alternatives": [
+            "queue_policy",
+            "customer_messaging",
+            "cost_effect"
+          ]
+        }
+      },
+      "launch-operations/tech_dependency": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/staffing_alternatives/cost_effect": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/staffing_alternatives/customer_messaging": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/staffing_alternatives/queue_policy": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/staffing_alternatives/staffing_alternatives": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/integrated_package": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 45
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 45
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "expected_contacts": true,
+        "four_hour_capacity": true,
+        "backlog_without_hiring": true,
+        "required_total_agents": true,
+        "additional_agents": true,
+        "support_window_hours": true,
+        "immediate_refund_promised": true,
+        "launch_hour": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

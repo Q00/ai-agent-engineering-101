@@ -1,0 +1,45 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "예산·기획·아키텍처 선행 산출물을 통합한 최종 개발 착수 자료다. 모든 내용은 설계 제안이며 실제 구현·테스트는 수행하지 않았다.\n\n[1] 게임 기획서(규칙↔재미 가설)\n6×6 보드, 최대 12턴. 턴 루프: 탐험(이동/조사)→전투(플레이어 행동→적 행동)→보상(2~3택1)→탈출 판정. 재미 가설 매핑: 이동/탐험=발견감·경로 긴장, 전투 난수+자원 소모=위험 감수 판단, 보상 트레이드오프=빌드 소유감, 12턴 압박 속 탈출=마감 성취감. 승리: player.tile==exit AND turn<=12 AND hp>0. 패배: hp<=0 또는 turn>12. 난이도 곡선: 턴 1~4 약함(1~2), 5~8 중간(2~3), 9~12 강화(3~4) 및 출구 근처 배치. 전투: 명중 rng.roll(1..100)<=accuracy(기본 75), 피해 base+rng.roll(0..2), 방어 시 절반, 적 AI 고정 패턴. 보상: 일반(회복)/희귀(공격 강화)/특수(턴 추가), 강한 보상은 HP·턴 소모. 튜토리얼: 이동→전투 1회→보상→탈출 목표 점진 노출. 접근성: 키보드(방향키+Enter), 색맹 대비(형태+색), 텍스트 크기, 스크린리더 라벨, 모션 최소화.\n\n[2] 디렉터리 트리·모듈 책임·의존 방향\nsrc/domain(types, rules, turn, map, rng, clock) — 순수 규칙, render/input/save/app 미의존. src/sim(engine, replay) — domain만 의존, Rng/Clock 주입. src/render(canvas, sprites, hud) — domain 타입 읽기 전용. src/input(keyboard, touch) — Command 생성. src/save(codec, storage) — GameState 직렬화, localStorage. src/app(main, loop) — 조립·주입. tests(turn/replay/rules/save spec). 의존 방향: domain ← sim ← app, domain ← render/input/save, render/input/save 상호 비의존.\n\n[3] 핵심 타입/시그니처(설계 제안)\ntype Vec={x,y}; type Tile='floor'|'wall'|'exit'|'enemy'|'chest'; interface GameState{schemaVersion;seed;turn(1..12);board{w:6;h:6;tiles};player{pos,hp,atk,gold};enemies[{id,pos,hp,atk}];phase:'explore'|'combat'|'reward'|'won'|'lost';rngCursor}. type Command={type:'move',dir}|{type:'attack',targetId}|{type:'chooseReward',optionId}|{type:'wait'}. type Event='moved'|'blocked'|'damaged'|'died'|'rewardOffered'|'rewardTaken'|'turnEnded'|'gameEnded'. interface Rng{next();int(maxExclusive);cursor()}. interface Clock{now()}. interface SaveCodec{version;encode(s);decode(raw);migrate(raw,from)}. function step(state,cmd,rng):{state,events}; function replay(seed,commands,rng):GameState.\n턴 처리 의사코드: phase가 won/lost면 종료. move→경계/벽 blocked, 적 칸이면 combat, 아니면 이동. attack→dmg=atk+rng.int(3), 적 hp<=0 시 died·제거. chooseReward→적용. 적 턴: id 정렬 순서로 각 적 rng.int(2) 소비. hp<=0→lost, 출구 도달+적 없음→won, turn+=1, turn>12→lost, rngCursor 갱신. Rng 소비 순서 고정: 플레이어 행동→적 행동(정렬 id)→턴 종료.\n\n[4] 규칙→모듈→테스트 대응\n이동/턴→domain/turn.ts→turn.spec.ts. seed 맵→domain/map.ts+rng.ts→replay.spec.ts. 전투→domain/rules.ts→rules.spec.ts. 저장/복원→save/codec.ts→save.spec.ts. 화면→render/*→수동/스냅샷(설계상). 접근성→render/hud.ts+input/*→수동 점검(설계상). 대응 누락: 기획의 '조사' 커맨드가 Command 타입에 명시되지 않음(chooseReward로 흡수 가능하나 별도 'investigate' 필요 여부 미확정). 기획의 '방어' 행동이 Command에 없음(attack/wait만 존재) — 불일치 표시. 기획의 '턴 추가' 보상이 turn<=12 상한과 충돌 가능(상한 초과 허용 여부 미확정).\n\n[5] 저장 스키마·재현 테스트·수용 기준\nversion=1. decode는 raw.version 읽어 migrate(raw,from)로 최신화, 미래 버전 거부. 마이그레이션은 순수 함수(Rng/Clock 미사용), 필드 추가=기본값, 제거=무시, 타입 변경=명시 변환. 재현 테스트: (a) 같은 seed+같은 Command 배열→동일 GameState(JSON 비교), (b) 저장→복원→이어서 같은 Command→저장 없이 진행한 결과와 동일, (c) rngCursor 저장/복원 후 일치. 수용 기준: 6×6, 최대 12턴, 오프라인(localStorage만), Rng/Clock 주입으로 결정적, 서버/로그인/결제/온라인 협동 없음.\n\n[6] 일정·제외 범위\n가용: 개발 2명×20h×4주=160h, QA 1명×10h×4주=40h, 총 200h. 기본 범위=24+24+32+24+20+24+12=160h로 개발 예산과 정확히 일치(여유 0). 협동 포함=160+80=240h>개발 160h(80h 초과), 총 가용 200h 기준 40h 부족. 병렬화는 사람 시간 합계를 줄이지 않음. 4주 초안: 1주차 이동/턴·seed 맵 착수+저장 스키마 확정, 2주차 전투·저장/복원, 3주차 화면·접근성, 4주차 자동 테스트·QA 회귀·통합 대조. QA는 1주차 테스트 케이스 설계, 3~4주차 집중 검증. 제외: 서버·로그인·결제·온라인 협동.\n\n[모순·미확인]\n- core 160h=개발 160h로 여유 0 → 일정 지연 위험.\n- 협동 포함 240h>개발 160h(80h 초과), 총 가용 200h 기준 40h 부족.\n- 기획 '방어'·'조사' 행동이 Command 타입에 미반영.\n- '턴 추가' 보상과 turn<=12 상한 충돌 가능.\n- seed 재현성 요구와 Rng 소비 순서 고정 설계는 정합적이나 실제 검증 미수행.\n- 미확인: 실제 코드 실행·테스트 미수행, 성능·브라우저 호환성 미검증, 접근성 등급(WCAG) 미확정, 밸런싱 수치 가정.",
+    "facts": {
+      "board_width": 6,
+      "board_height": 6,
+      "max_turns": 12,
+      "developer_hours": 160,
+      "qa_hours": 40,
+      "core_scope_hours": 160,
+      "with_coop_hours": 240,
+      "coop_fits_budget": false,
+      "seeded_replay_required": true,
+      "offline_required": true,
+      "base_scope_fits_developer_budget": true,
+      "total_available_hours": 200,
+      "coop_over_developer_hours": 80,
+      "coop_over_total_hours": 40,
+      "implementation_performed": false,
+      "tests_performed": false,
+      "command_defense_missing": true,
+      "command_investigate_missing": true,
+      "turn_bonus_reward_conflict": true
+    },
+    "evidence": [
+      "board_width=6, board_height=6, max_turns=12: source.goal '기본 보드는 6×6, 한 판은 최대 12턴'.",
+      "developer_hours = 2명 × 20시간/주 × 4주 = 160시간.",
+      "qa_hours = 1명 × 10시간/주 × 4주 = 40시간.",
+      "core_scope_hours = 24(이동/턴)+24(seed 맵)+32(전투)+24(저장/복원)+20(화면)+24(자동 테스트)+12(접근성) = 160시간.",
+      "with_coop_hours = 160 + 80(온라인 협동) = 240시간.",
+      "coop_fits_budget=false: 240시간 > 개발 예산 160시간(80시간 초과). 총 가용 200시간 기준으로도 40시간 부족.",
+      "base_scope_fits_developer_budget=true: core 160시간 = 개발 160시간(여유 0).",
+      "seeded_replay_required=true, offline_required=true: source.goal '같은 seed와 같은 입력 순서에는 같은 시뮬레이션 결과', '브라우저에서 오프라인으로 동작'.",
+      "Rng 소비 순서 고정: 플레이어 행동→적 행동(정렬 id)→턴 종료.",
+      "SaveCodec version=1, migrate 규칙: 스키마 버전·마이그레이션 요구에 대한 설계 제안.",
+      "규칙→모듈→테스트 대응: 이동/턴→turn.ts→turn.spec.ts, seed 맵→map.ts/rng.ts→replay.spec.ts, 전투→rules.ts→rules.spec.ts, 저장/복원→codec.ts→save.spec.ts.",
+      "대응 불일치: 기획의 '방어'·'조사' 행동이 Command 타입에 없음, '턴 추가' 보상이 turn<=12 상한과 충돌 가능.",
+      "병렬화는 사람 시간 합계를 줄이지 않음(원자료 명시).",
+      "미확인: 실제 코드 실행·테스트 미수행, 성능·브라우저 호환성 미검증, 접근성 등급(WCAG) 미확정, 밸런싱 수치 가정."
+    ]
+  },
+  "error": ""
+}

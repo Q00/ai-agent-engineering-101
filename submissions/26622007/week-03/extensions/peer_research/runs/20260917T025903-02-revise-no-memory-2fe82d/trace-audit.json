@@ -1,0 +1,90 @@
+{
+  "passed": true,
+  "errors": [],
+  "mode": "research-live",
+  "peak_calls": 3,
+  "peak_execution_calls": 2,
+  "calls_by_phase": {
+    "propose": 12,
+    "review": 4,
+    "execute": 3
+  },
+  "task_statuses": {
+    "rag-revise/pgvector_closednet": "succeeded",
+    "rag-revise/qdrant_closednet": "succeeded",
+    "rag-revise/adr_checklist": "failed",
+    "rag-revise": "failed"
+  },
+  "awards": {
+    "rag-revise": {
+      "requester": "C",
+      "worker": "C",
+      "mode": "delegate",
+      "dependencies": {
+        "pgvector_closednet": [],
+        "qdrant_closednet": [],
+        "adr_checklist": [
+          "pgvector_closednet",
+          "qdrant_closednet"
+        ]
+      }
+    },
+    "rag-revise/pgvector_closednet": {
+      "requester": "C",
+      "worker": "A",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "rag-revise/qdrant_closednet": {
+      "requester": "C",
+      "worker": "B",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "rag-revise/adr_checklist": {
+      "requester": "C",
+      "worker": "C",
+      "mode": "execute",
+      "dependencies": {}
+    }
+  },
+  "providers": {
+    "Modal": 2,
+    "GMICloud": 2,
+    "Relace": 3,
+    "Together": 3,
+    "Fireworks": 2,
+    "Morph": 2,
+    "OpenAI": 3,
+    "Alibaba": 1,
+    "Makora": 1
+  },
+  "models": {
+    "deepseek/deepseek-v4.1-flash": 19
+  },
+  "evaluation": {
+    "passed": false,
+    "checks": {
+      "root_succeeded": false,
+      "required_string_facts": false,
+      "decision_id": false,
+      "backup_owner": false,
+      "no_invented_latency": false,
+      "report_length": false,
+      "comparison_table": false,
+      "two_independent_then_join": true,
+      "verified_url_count": false,
+      "fresh_search_cited": false,
+      "search_tool_used": true,
+      "no_unretrieved_evidence_urls": true,
+      "both_products_sourced": false,
+      "memory_refs_delivered": true,
+      "new_constraint": false,
+      "memory_used_or_explicitly_absent": false
+    },
+    "cited_verified_urls": [],
+    "unretrieved_urls": [],
+    "memory_refs": [],
+    "limits": "Checks trace source retrieval and known scenario facts, not claim entailment, measured performance or statistical reproducibility."
+  }
+}

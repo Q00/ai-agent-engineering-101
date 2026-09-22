@@ -1,0 +1,9 @@
+{
+  "id": "rag-revise",
+  "goal": "합성 프로젝트 rag-vector-adoption의 후속 검토다. 이전 실행의 장기 메모리에서 조사 내용, 내부 결정 ID, PostgreSQL 백업 담당 팀, 미해결 항목을 찾아 이어서 작업하라. 이번에는 배포 환경이 폐쇄망으로 바뀌어 외부 관리형 SaaS를 사용할 수 없다. 외부 웹 조사는 지금 설계 검토 환경에서만 허용되며 실제 배포 서비스는 외부 호출에 의존하면 안 된다. PostgreSQL은 이미 운영 중이고 새로운 stateful 저장소 운영 인력 증원은 불가능하다. 기존 규모와 품질 목표도 이전 메모리를 참고하되 없으면 확인 필요로 명시한다. pgvector와 자체 호스팅 Qdrant의 최신 공식 문서를 다시 검색해 (1) 폐쇄망·백업·복구 적합성, (2) tenant 필터 및 검색 품질 검증 계획을 독립 조사하고, (3) 이 두 조사에 의존하는 변경 ADR·배포 체크리스트를 작성하라. 첫 계획은 정확히 세 하위 작업을 갖는 delegate로 하고 마지막 작업은 앞의 두 조사에 의존해야 한다. 이전 추천을 무조건 유지하지 말고 새 제약을 우선하라. 과거 내부 결정 ID와 담당 팀을 기억에서 찾을 수 없으면 추측하지 말고 unknown으로 반환하라. 내부 결정 ID를 웹 검색하지 말라. 실제 벤치마크나 복구 작업을 실행하지 않았으므로 성공을 주장하지 말라.",
+  "acceptance": "최종 summary는 한국어 Markdown으로 이전 대비 변경점, 비교 표, 최종 판단, 배포/복구 체크리스트, 미해결 항목을 포함하는 1200~4000자 문서다. facts에는 recommended_storage, internal_decision_id, backup_owner, measured_latency, unresolved, memory_refs, external_saas_allowed가 있어야 한다. external_saas_allowed는 boolean false, measured_latency는 not_measured, 나머지는 문자열이다. 과거 정보가 없으면 internal_decision_id와 backup_owner는 unknown이다. memory_refs는 실제 참고한 메모리 ID를 쉼표로 연결하거나 none이다. evidence에는 실제 공식 문서 URL과 참고한 memory:ID를 기록한다. pgvector와 Qdrant 양쪽 근거를 포함한다. facts에 중첩 객체/배열을 넣지 않는다. 하위 결과도 summary/facts/evidence JSON 형식이다.",
+  "depends_on": [],
+  "reads": [],
+  "writes": ["rag_decision"],
+  "require_delegate": true
+}

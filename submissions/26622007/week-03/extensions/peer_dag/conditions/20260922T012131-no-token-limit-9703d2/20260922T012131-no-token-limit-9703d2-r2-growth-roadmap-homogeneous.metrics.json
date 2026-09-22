@@ -1,0 +1,143 @@
+{
+  "case_id": "growth-roadmap",
+  "condition": "homogeneous",
+  "block": 2,
+  "run_id": "20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-homogeneous",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 20.2548,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 16,
+  "checks_total": 16,
+  "wrong_or_missing": [],
+  "calls": 5,
+  "http_requests": 5,
+  "http_responses": 5,
+  "http_429": 0,
+  "http_errors": {},
+  "retries": 0,
+  "transport_errors": 0,
+  "tasks": 1,
+  "max_depth": 0,
+  "awards": {
+    "A": 1
+  },
+  "root_award": "A",
+  "c_proposals": 1,
+  "c_high_bids": 0,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.0048525140000000005,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 20.0764,
+  "canonical_facts": {
+    "common_dev_hours": 160.0,
+    "e_break_even": 9.0,
+    "e_budget_shortfall_hours": 16.0,
+    "e_fits_budget": false,
+    "e_high_profit": 3520000.0,
+    "e_low_profit": 880000.0,
+    "e_margin": 240000.0,
+    "e_profit": 2320000.0,
+    "e_total_dev_hours": 256.0,
+    "s_break_even": 42.0,
+    "s_fits_budget": true,
+    "s_high_profit": 4240000.0,
+    "s_low_profit": 1360000.0,
+    "s_margin": 48000.0,
+    "s_profit": 2800000.0,
+    "s_total_dev_hours": 224.0
+  },
+  "artifact_sha": "176117455b13fd86a1825b8f69e34663b5b5ff382f16b6d0588ae6cbb4ab3c37",
+  "root_plan_sha": "0519168692a360eeb4365385e5f963657080cdb3ac8b8a77e81c7cf33e44ef3f",
+  "award_sha": "7c9ee5772b0cc130ed5c869af20172bc01b86d91269105aef7b3526f4fe01e51",
+  "controls_sha": "29251f9726b71c9303976526c2d4fd7c12bab2f211f8ecfc2f3263a02f638588",
+  "root_plan": {
+    "mode": "execute",
+    "actions": [
+      "S안/E안 공헌이익, 기준·저·고 시나리오 이익, 손익분기 고객수를 계산하고 예산 적합성(공통 160h + S 64h = 224h, E 256h)을 판정한다.",
+      "고객 집중·수요 불확실성, 선택 근거와 반증 가설을 정리한다.",
+      "MVP 포함/제외 범위, 도메인·API·데이터 변경 개요, 측정 지표를 설계 제안으로 기술한다.",
+      "선후 관계를 갖는 단계별 일정과 E안 부족분(16h) 및 분기 밖 이연 범위를 명시한다.",
+      "영업/지원팀 준비와 출시 중단 기준을 제시하고, 기능·일정·권고 간 모순 및 미확인 사항을 대조한다.",
+      "facts에 요구된 모든 숫자/불리언 키를 채우고 evidence에 계산식과 근거를 기록한다."
+    ],
+    "steps": []
+  },
+  "intervals": [
+    {
+      "task_id": "growth-roadmap",
+      "worker": "A",
+      "start": "2026-09-22T02:06:44.401879+00:00",
+      "end": "2026-09-22T02:06:59.553339+00:00"
+    }
+  ],
+  "overlaps": [],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 1,
+    "peak_calls_by_worker": {
+      "A": 1,
+      "B": 1,
+      "C": 1
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 0,
+      "C": 0
+    },
+    "calls_by_phase": {
+      "propose": 3,
+      "review": 1,
+      "execute": 1
+    },
+    "task_statuses": {
+      "growth-roadmap": "succeeded"
+    },
+    "awards": {
+      "growth-roadmap": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 5
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 5
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "s_margin": true,
+        "e_margin": true,
+        "s_profit": true,
+        "e_profit": true,
+        "s_break_even": true,
+        "e_break_even": true,
+        "s_low_profit": true,
+        "e_low_profit": true,
+        "s_high_profit": true,
+        "e_high_profit": true,
+        "common_dev_hours": true,
+        "s_total_dev_hours": true,
+        "e_total_dev_hours": true,
+        "e_budget_shortfall_hours": true,
+        "s_fits_budget": true,
+        "e_fits_budget": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

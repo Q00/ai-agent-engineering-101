@@ -1,0 +1,52 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "S안과 E안을 대안으로 비교한 경영진 결정용 통합 보고서다. economics_result와 design_result의 수치를 전부 대조했고 충돌은 없었다. S 공헌이익 48,000원, E 240,000원; 기준 월이익 S 2,800,000원 > E 2,320,000원; 저 시나리오 S 1,360,000원 > E 880,000원; 고 시나리오 S 4,240,000원 > E 3,520,000원; 손익분기 S 42곳, E 9곳; 공통 160h, S 총 224h(예산 적합, 여유 16h), E 총 256h(16h 초과). design의 E안 이월 범위(감사 기록 고도화 8h + 운영 도구 자동 알림·배치 리포트 8h = 16h)가 E 부족분 16h와 정확히 일치하고 일정 2단계·MVP 제외 범위와도 정합한다. 권고는 S안이다.\n\n[1] 비교표(원, 시간): 항목 | S안 | E안 — 월 요금 60,000 | 300,000; 변동비 12,000 | 60,000; 공헌이익 48,000 | 240,000; 기준 고객 100 | 18; 기준 월이익 2,800,000 | 2,320,000; 저(70%) 고객 70 | 12, 이익 1,360,000 | 880,000; 고(130%) 고객 130 | 23, 이익 4,240,000 | 3,520,000; 손익분기 42 | 9; 공통 160 | 160; 추가 64(셀프 온보딩) | 96(SSO/감사 기록); 총 224 | 256; 240h 적합 적합(여유 16h) | 부적합(16h 초과).\n\n[2] 선택 근거와 반증 가설: S안은 기준·저·고 모든 시나리오에서 이익이 크고, 손익분기 여유(42/100=58% vs 9/18=50%)와 예산 적합(224≤240)에서 우위. 반증 가설 — H1 S 활성 고객 42곳 미만 시 적자; H2 E 9곳 미만 시 적자; H3 E 고객당 매출이 300,000원을 크게 상회(좌석·사용량 과금)하면 역전 가능; H4 S 이탈률로 실효 고객 42곳 미달 시 우위 소멸.\n\n[3] MVP 포함/제외: 포함(공통 160h) 요금/청구 64h, 조직/좌석 40h, 지표 수집 32h, 운영 도구 24h. S 선택 시 +64h 셀프 온보딩(가입→조직 생성→좌석 초대→첫 학습 배정, 완료 이벤트). E 선택 시 +96h SSO(SAML/OIDC) + 감사 기록(로그인·권한 변경·데이터 접근) + 조직 단위 프로비저닝. 제외: 다중 통화/세금 자동화, 고급 분석 대시보드, 감사 기록 고도화(보존 정책·SIEM), 운영 도구 자동 알림/배치 리포트, 모바일 앱, 커스텀 계약 청구. E안 16h 부족분 처리: 감사 기록 고도화 8h + 운영 도구 일부 8h를 분기 밖 이월, E MVP는 SSO 기본 인증 + 감사 최소(로그인/권한 변경 로그)만 포함.\n\n[4] 코드·데이터 변경 개요(설계 제안, 미구현): 도메인 Plan/Subscription/Seat/Invoice/UsageMetric/Onboarding/Identity. API: POST·GET /plans; POST /organizations, POST·DELETE /organizations/{id}/seats; POST /subscriptions, GET /subscriptions/{id}; POST /invoices/generate(배치), GET /invoices/{id}; POST /metrics/events, GET /metrics/summary; S: POST /onboarding/start·step, GET /onboarding/status; E: POST /sso/connections, GET /sso/login, POST /audit/events, GET /audit/logs. 테이블 신설: plans, organizations, seats, subscriptions, invoices, usage_events (+S: onboarding_progress, E: sso_connections, audit_logs). 마이그레이션 순서: 공통 테이블 → 대안별 테이블, 기존 사용자 조직 1개 백필, 청구는 월 1회 배치. 경계: 청구는 plans 요금·변동비를 읽고, 지표는 usage_events에서 활성 고객·이탈 집계, 온보딩/SSO는 조직·좌석 API 호출, 감사는 인증·권한 이벤트 구독.\n\n[5] 측정 지표·수집 지점·검증: 활성 고객수(subscriptions+usage_events, 청구서 수 대조), 공헌이익(plans×활성 고객, 재무 집계 대조), 이탈률(취소 이벤트, 사유 코드 분포), 온보딩 완료율(S, 조직 생성 대비 완료 비율), SSO 인증 성공률(E, 실패 사유 분류), 손익분기 도달(활성 고객 vs 42/9, 월 마감 자동 비교).\n\n[6] 단계별 일정(선후 관계): 1단계 공통 160h(요금/청구→조직/좌석→지표→운영 도구) → 2단계 대안별(S 64h 또는 E 96h, E는 16h 이월) → 3단계 통합·회귀 테스트(청구↔지표 정합성, 온보딩/SSO↔조직·좌석 연동) → 4단계 파일럿(소수 고객, 지표 검증) → 5단계 출시(중단 기준 통과 시).\n\n[7] 영업/지원 준비: 요금 안내(S 60,000원/조직, E 300,000원/조직, 변동비·청구 주기), S 온보딩 가이드·완료율 모니터링, E SSO 설정 가이드·실패 사유별 대응·감사 조회, 상담 스크립트에 손익분기(S 42, E 9)와 저/고 시나리오 기대치 관리 및 고객 수 추정치·매출 미보장 명시, 단계별 담당·전달물 팀 간 공유.\n\n[8] 출시 중단 기준: S 활성 고객 42곳 미만 또는 E 9곳 미만 시 중단/재검토; 총 개발시간 240h 초과 시 중단(E는 이월 없이 16h 초과 상태); E SSO 인증 성공률 임계(예 95%) 미만; S 온보딩 완료율 임계 미달; 청구서 수와 활성 고객수 불일치 임계 초과.\n\n[9] 모순·미확인: 모순 — E안 전체 범위를 이번 분기에 출시한다는 가정과 240h 예산이 16h 충돌(해결: 이월 범위 명시); S/E는 대안이라 동시 선택 불가(비교표는 평가용). 미확인 — 고객 수 100/18은 추정치로 매출·계약 미보장, 시장 조사·고객 인터뷰 미수행; E 고객당 추가 과금 여부, S 이탈률 실측치, SSO 성공률 임계 구체 수치, 변동비 12,000/60,000원 구성 항목과 청구 주기 세부 규칙. 실제 구현·테스트는 수행하지 않았고 본 문서는 설계 제안이다.",
+    "facts": {
+      "s_margin": 48000,
+      "e_margin": 240000,
+      "s_profit": 2800000,
+      "e_profit": 2320000,
+      "s_break_even": 42,
+      "e_break_even": 9,
+      "s_low_profit": 1360000,
+      "e_low_profit": 880000,
+      "s_high_profit": 4240000,
+      "e_high_profit": 3520000,
+      "common_dev_hours": 160,
+      "s_total_dev_hours": 224,
+      "e_total_dev_hours": 256,
+      "e_budget_shortfall_hours": 16,
+      "s_fits_budget": true,
+      "e_fits_budget": false,
+      "s_budget_headroom_hours": 16,
+      "s_break_even_margin_ratio": 0.58,
+      "e_break_even_margin_ratio": 0.5,
+      "e_deferred_audit_hours": 8,
+      "e_deferred_ops_hours": 8,
+      "recommended_option": "S",
+      "economics_design_consistency": true,
+      "implementation_performed": false,
+      "testing_performed": false,
+      "market_research_performed": false
+    },
+    "evidence": [
+      "S 공헌이익 = 60,000 - 12,000 = 48,000; E 공헌이익 = 300,000 - 60,000 = 240,000 (source 요금·변동비)",
+      "S 기준이익 = 48,000 × 100 - 2,000,000 = 2,800,000; E 기준이익 = 240,000 × 18 - 2,000,000 = 2,320,000",
+      "S 저 = 48,000 × 70 - 2,000,000 = 1,360,000; E 저 = 240,000 × 12 - 2,000,000 = 880,000 (저 = 기준×70% 후 버림: 18×0.7=12.6→12)",
+      "S 고 = 48,000 × 130 - 2,000,000 = 4,240,000; E 고 = 240,000 × 23 - 2,000,000 = 3,520,000 (고 = 기준×130% 후 버림: 18×1.3=23.4→23)",
+      "S 손익분기 = ceil(2,000,000 / 48,000) = ceil(41.67) = 42; E 손익분기 = ceil(2,000,000 / 240,000) = ceil(8.33) = 9",
+      "공통 개발시간 = 64 + 40 + 32 + 24 = 160; S 총 = 160 + 64 = 224; E 총 = 160 + 96 = 256",
+      "S 예산 적합 = 224 ≤ 240 → true, 여유 = 240 - 224 = 16h; E 예산 적합 = 256 ≤ 240 → false, 부족분 = 256 - 240 = 16h",
+      "E안 16h 이월 범위 = 감사 기록 고도화 8h + 운영 도구 일부(자동 알림·배치 리포트) 8h = 16h (design_result facts와 일치)",
+      "정합성 대조: economics의 e_budget_shortfall_hours=16 = design의 e_deferred_audit_hours 8 + e_deferred_ops_hours 8; economics의 s_total_dev_hours 224 / e_total_dev_hours 256 = design의 동일 값; economics의 s/e_margin·s/e_profit·s/e_break_even = design의 동일 값 → 전 항목 일치",
+      "선택 근거: S안이 기준/저/고 모든 시나리오에서 이익이 크고(2,800,000>2,320,000; 1,360,000>880,000; 4,240,000>3,520,000), 손익분기 여유(42/100=58% vs 9/18=50%)와 예산 적합(224 vs 256)에서 우위",
+      "반증 가설: S 활성 고객 42곳 미만 시 적자; E 9곳 미만 시 적자; E 고객당 매출이 300,000원을 크게 상회하면 역전 가능; S 이탈률로 실효 고객 42곳 미달 시 우위 소멸",
+      "미확인: 고객 수(100/18)는 추정치이며 매출·계약 보장 없음. 시장 조사·고객 인터뷰는 수행하지 않았고 자료에 없음",
+      "미확인: E 고객당 추가 과금(좌석·사용량) 여부, S 이탈률 실측치, SSO 인증 성공률 임계 구체 수치, 변동비 12,000/60,000원 구성 항목과 청구 주기 세부 규칙",
+      "실제 구현·테스트는 수행하지 않았으며 본 산출물은 설계 제안임(implementation_performed=false, testing_performed=false)"
+    ]
+  },
+  "error": ""
+}

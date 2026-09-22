@@ -1,0 +1,317 @@
+{
+  "case_id": "launch-operations",
+  "condition": "homogeneous",
+  "block": 1,
+  "source_run_id": "20260922T012131-no-token-limit-9703d2-r1-launch-operations-homogeneous",
+  "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 132.4782,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 8,
+  "checks_total": 8,
+  "wrong_or_missing": [],
+  "calls": 40,
+  "http_requests": 42,
+  "http_responses": 40,
+  "http_429": 2,
+  "http_errors": {
+    "429": 2
+  },
+  "retries": 2,
+  "transport_errors": 0,
+  "tasks": 8,
+  "max_depth": 2,
+  "awards": {
+    "A": 2,
+    "B": 3,
+    "C": 3
+  },
+  "root_award": "A",
+  "c_proposals": 8,
+  "c_high_bids": 1,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.03911015799999999,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 132.299,
+  "canonical_facts": {
+    "additional_agents": 4.0,
+    "backlog_without_hiring": 80.0,
+    "expected_contacts": 160.0,
+    "four_hour_capacity": 80.0,
+    "immediate_refund_promised": false,
+    "launch_hour": 10.0,
+    "required_total_agents": 8.0,
+    "support_window_hours": 4.0
+  },
+  "artifact_sha": "e70e4ac77aceee9820b21c771455fdcf0aad2a6f8aa9d292c8102fe221e95ab3",
+  "root_plan_sha": "d7c2dc307052824b216ebaf5941f2df2e0630b21aa0bbc2231c66a4fe47e9321",
+  "award_sha": "ea004032c66648e2d2e4c2f7a916e27f8e66bb62ee9369ec40a441ac055e2451",
+  "controls_sha": "49bb0be4a0b09743a9cf6a6f417be6fc42680a4bfa26681e4b9bb36b72e14a07",
+  "root_plan": {
+    "mode": "delegate",
+    "actions": [
+      "제공 자료에서 확정 사실과 미확인 사항을 분리하고 숫자 계산에 필요한 입력을 정리한다.",
+      "용량 계산, 정책·커뮤니케이션 설계, 일정·비상계획·확인표를 독립/의존 관계로 분해한다.",
+      "각 하위 산출물의 acceptance에 요구 필드와 모순 명시를 포함시킨다.",
+      "통합 단계에서 facts 숫자 키와 boolean 키를 확정하고 summary/evidence에 설계·코드 조각을 문자열로 넣는다."
+    ],
+    "steps": [
+      {
+        "id": "capacity_calc",
+        "goal": "첫 4시간 예상 문의, 처리 용량, 미처리량, 필요 총 상담원 수, 추가 인원, 지원 창 시간, 출시 시각을 계산하고 충원 불가 시 대기열·우선순위·고객 안내 대안을 제시하라.",
+        "acceptance": "expected_contacts, four_hour_capacity, backlog_without_hiring, required_total_agents, additional_agents, support_window_hours, launch_hour 숫자와 계산식을 evidence 문자열로 반환. 충원 미승인 전제의 대안 포함. facts에 배열/객체 금지.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "capacity_analysis"
+        ]
+      },
+      {
+        "id": "policy_comms",
+        "goal": "확정 정책('영업일 2일 내 처리 시작', 완료/PG 반영 미보장')과 광고 초안('즉시 자동 환불')의 모순을 식별하고, 단일 기준 문서·변경 전달·승인 흐름, 고객 안내문·FAQ·상담 분류 기준을 설계하라.",
+        "acceptance": "immediate_refund_promised boolean과 모순 설명, 단일 기준 문서 구조, 변경 전달/승인 흐름, 안내문·FAQ·분류 기준 초안을 summary/evidence 문자열로 반환. 새 정책 결정이나 승인 완료 표현 금지.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "policy_comms_design"
+        ]
+      },
+      {
+        "id": "schedule_contingency",
+        "goal": "담당·기한·선행조건이 연결된 운영 일정, 확정/미확인 사항표, 광고 지연·기술 승인 지연·문의 급증 비상 계획, 출시 직전 확인표를 작성하라.",
+        "acceptance": "목요일 14/15/17/18시 마감과 금요일 10시 출시를 반영한 일정표, 확정/미확인 표, 3종 비상계획, 확인표를 summary/evidence 문자열로 반환. 미제공 승인·검증을 완료로 표기하지 않음.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "schedule_contingency"
+        ]
+      },
+      {
+        "id": "integrate",
+        "goal": "capacity_analysis, policy_comms_design, schedule_contingency를 통합해 최종 운영 패키지와 facts 숫자/boolean 키를 확정하라.",
+        "acceptance": "summary와 evidence에 모든 요구 산출물을 간결한 텍스트로 제시하고 실제 구현/테스트와 설계 제안을 구분, 규칙·인터페이스·일정 모순과 미확인 사항 명시. facts에 7개 숫자 키와 immediate_refund_promised boolean 포함, 배열/객체 없음.",
+        "depends_on": [
+          "capacity_calc",
+          "policy_comms",
+          "schedule_contingency"
+        ],
+        "reads": [
+          "capacity_analysis",
+          "policy_comms_design",
+          "schedule_contingency"
+        ],
+        "writes": [
+          "launch_operations_report"
+        ]
+      }
+    ]
+  },
+  "intervals": [
+    {
+      "task_id": "launch-operations/capacity_calc",
+      "worker": "B",
+      "start": "2026-09-22T03:24:19.293486+00:00",
+      "end": "2026-09-22T03:24:24.042734+00:00"
+    },
+    {
+      "task_id": "launch-operations/policy_comms",
+      "worker": "C",
+      "start": "2026-09-22T03:24:19.511285+00:00",
+      "end": "2026-09-22T03:24:30.668413+00:00"
+    },
+    {
+      "task_id": "launch-operations/schedule_contingency/capacity_calc",
+      "worker": "C",
+      "start": "2026-09-22T03:24:30.566075+00:00",
+      "end": "2026-09-22T03:24:38.812329+00:00"
+    },
+    {
+      "task_id": "launch-operations/schedule_contingency/schedule_table",
+      "worker": "A",
+      "start": "2026-09-22T03:24:31.394582+00:00",
+      "end": "2026-09-22T03:24:39.340285+00:00"
+    },
+    {
+      "task_id": "launch-operations/schedule_contingency/contingency_plan",
+      "worker": "B",
+      "start": "2026-09-22T03:24:44.882979+00:00",
+      "end": "2026-09-22T03:24:58.081669+00:00"
+    },
+    {
+      "task_id": "launch-operations/schedule_contingency",
+      "worker": "B",
+      "start": "2026-09-22T03:24:58.082290+00:00",
+      "end": "2026-09-22T03:25:07.572593+00:00"
+    },
+    {
+      "task_id": "launch-operations/integrate",
+      "worker": "C",
+      "start": "2026-09-22T03:25:57.604829+00:00",
+      "end": "2026-09-22T03:26:06.315046+00:00"
+    },
+    {
+      "task_id": "launch-operations",
+      "worker": "A",
+      "start": "2026-09-22T03:26:06.315871+00:00",
+      "end": "2026-09-22T03:26:17.227566+00:00"
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "launch-operations/capacity_calc",
+      "right": "launch-operations/policy_comms",
+      "workers": [
+        "B",
+        "C"
+      ],
+      "seconds": 4.531449,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "launch-operations/policy_comms",
+      "right": "launch-operations/schedule_contingency/capacity_calc",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 0.102338,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "launch-operations/schedule_contingency/capacity_calc",
+      "right": "launch-operations/schedule_contingency/schedule_table",
+      "workers": [
+        "C",
+        "A"
+      ],
+      "seconds": 7.417747,
+      "both_tasks_succeeded": true
+    }
+  ],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 2,
+    "peak_calls_by_worker": {
+      "A": 2,
+      "B": 2,
+      "C": 2
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 1,
+      "C": 2
+    },
+    "calls_by_phase": {
+      "propose": 24,
+      "review": 8,
+      "execute": 6,
+      "synthesize": 2
+    },
+    "task_statuses": {
+      "launch-operations/capacity_calc": "succeeded",
+      "launch-operations/policy_comms": "succeeded",
+      "launch-operations/schedule_contingency/capacity_calc": "succeeded",
+      "launch-operations/schedule_contingency/schedule_table": "succeeded",
+      "launch-operations/schedule_contingency/contingency_plan": "succeeded",
+      "launch-operations/schedule_contingency": "succeeded",
+      "launch-operations/integrate": "succeeded",
+      "launch-operations": "succeeded"
+    },
+    "awards": {
+      "launch-operations": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "delegate",
+        "dependencies": {
+          "capacity_calc": [],
+          "policy_comms": [],
+          "schedule_contingency": [],
+          "integrate": [
+            "capacity_calc",
+            "policy_comms",
+            "schedule_contingency"
+          ]
+        }
+      },
+      "launch-operations/capacity_calc": {
+        "requester": "A",
+        "worker": "B",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/policy_comms": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/schedule_contingency": {
+        "requester": "A",
+        "worker": "B",
+        "mode": "delegate",
+        "dependencies": {
+          "capacity_calc": [],
+          "schedule_table": [],
+          "contingency_plan": [
+            "capacity_calc"
+          ]
+        }
+      },
+      "launch-operations/schedule_contingency/capacity_calc": {
+        "requester": "B",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/schedule_contingency/schedule_table": {
+        "requester": "B",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/schedule_contingency/contingency_plan": {
+        "requester": "B",
+        "worker": "B",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/integrate": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 40
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 40
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "expected_contacts": true,
+        "four_hour_capacity": true,
+        "backlog_without_hiring": true,
+        "required_total_agents": true,
+        "additional_agents": true,
+        "support_window_hours": true,
+        "immediate_refund_promised": true,
+        "launch_hour": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

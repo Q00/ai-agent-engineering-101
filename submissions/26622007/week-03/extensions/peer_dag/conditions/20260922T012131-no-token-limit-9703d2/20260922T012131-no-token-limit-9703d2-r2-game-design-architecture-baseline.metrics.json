@@ -1,0 +1,134 @@
+{
+  "case_id": "game-design-architecture",
+  "condition": "baseline",
+  "block": 2,
+  "run_id": "20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-baseline",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 64.7922,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 10,
+  "checks_total": 10,
+  "wrong_or_missing": [],
+  "calls": 5,
+  "http_requests": 9,
+  "http_responses": 5,
+  "http_429": 4,
+  "http_errors": {
+    "429": 4
+  },
+  "retries": 4,
+  "transport_errors": 0,
+  "tasks": 1,
+  "max_depth": 0,
+  "awards": {
+    "A": 1
+  },
+  "root_award": "A",
+  "c_proposals": 1,
+  "c_high_bids": 0,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.0054059,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 64.62,
+  "canonical_facts": {
+    "board_height": 6.0,
+    "board_width": 6.0,
+    "coop_fits_budget": false,
+    "core_scope_hours": 160.0,
+    "developer_hours": 160.0,
+    "max_turns": 12.0,
+    "offline_required": true,
+    "qa_hours": 40.0,
+    "seeded_replay_required": true,
+    "with_coop_hours": 240.0
+  },
+  "artifact_sha": "274be95d3789b7d77ab61fb0a2edc089ba0dd3ec1f8dbf33bd06035f93e6b3f0",
+  "root_plan_sha": "aa2796fd74affc5989df9c14035293f45400463b1c01e9da51d8bc32faeb3958",
+  "award_sha": "97150bcfad177a63c0ffaf5157b26557ce426e64aed5334e4cd6b1c30fb19cf9",
+  "controls_sha": "cfd2ef459faf8ba173d8b03587b5b88883caeb14eee172ec0e868a281ecee942",
+  "root_plan": {
+    "mode": "execute",
+    "actions": [
+      "제공 자료의 확정 수치를 정리: 보드 6×6, 최대 12턴, 개발자 2명×20h×4주=160h, QA 1명×10h×4주=40h, 개발 추정 합계 24+24+32+24+20+24+12=160h, 협동 추가 80h.",
+      "예산 계산: core_scope_hours=160, with_coop_hours=240, developer_hours=160, qa_hours=40. 기본 범위는 개발 예산 160h에 정확히 일치(여유 0), 협동 포함 240h는 160h 예산 초과로 coop_fits_budget=false. QA 40h는 자동 테스트 24h+접근성 12h 검증에 배분.",
+      "게임 기획서 작성: 핵심 루프(탐험→전투→보상 선택→탈출), 승리(12턴 내 탈출)/패배(체력 0 또는 턴 소진), 난이도 곡선, 전투·보상 규칙, 튜토리얼·접근성, 각 규칙에 재미 가설 연결.",
+      "코드 구조 설계: 디렉터리 트리, 모듈 책임과 의존 방향(domain←application←infra/render, domain은 순수), GameState/Command/Event/Rng/SaveCodec TS 시그니처와 턴 처리 의사코드, Rng·Clock 주입 인터페이스로 결정론 확보.",
+      "대응·검증 설계: 규칙→모듈→테스트 매트릭스, 저장 스키마 버전·seed 재현 테스트·수용 기준, 개발/QA 4주 일정과 제외 범위 명시.",
+      "통합 대조: 기획 규칙이 코드 설계로 지원되는지 매핑표로 확인하고, 규칙·인터페이스·일정 간 모순 및 미확인 사항을 별도 목록화.",
+      "facts에 숫자 키(board_width=6, board_height=6, max_turns=12, developer_hours=160, qa_hours=40, core_scope_hours=160, with_coop_hours=240)와 boolean(coop_fits_budget=false, seeded_replay_required=true, offline_required=true)을 채우고, summary/evidence에 문서·표·코드 조각을 문자열로 기술하며 실제 구현/테스트 미수행을 명시."
+    ],
+    "steps": []
+  },
+  "intervals": [
+    {
+      "task_id": "game-design-architecture",
+      "worker": "A",
+      "start": "2026-09-22T02:01:37.294598+00:00",
+      "end": "2026-09-22T02:01:48.471019+00:00"
+    }
+  ],
+  "overlaps": [],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 1,
+    "peak_calls_by_worker": {
+      "A": 1,
+      "B": 1,
+      "C": 1
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 0,
+      "C": 0
+    },
+    "calls_by_phase": {
+      "propose": 3,
+      "review": 1,
+      "execute": 1
+    },
+    "task_statuses": {
+      "game-design-architecture": "succeeded"
+    },
+    "awards": {
+      "game-design-architecture": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 5
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 5
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "board_width": true,
+        "board_height": true,
+        "max_turns": true,
+        "developer_hours": true,
+        "qa_hours": true,
+        "core_scope_hours": true,
+        "with_coop_hours": true,
+        "coop_fits_budget": true,
+        "seeded_replay_required": true,
+        "offline_required": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

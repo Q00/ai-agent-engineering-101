@@ -1,0 +1,44 @@
+{
+  "status": "succeeded",
+  "worker": "B",
+  "artifact": {
+    "summary": "비상 계획과 출시 직전 확인표를 선행 결과(policy_schedule, capacity_plan)의 확정 사실에 근거해 작성했다. 실제 구현·테스트·외부 연락은 수행하지 않았고 모두 설계 제안이다.\n\n[기준 확정 사실]\n- 정책 원문: '상담 접수 후 영업일 2일 안에 처리 시작'. 처리 완료·PG 반영 시간 미보장. immediate_refund_promised=false.\n- 마감: 광고 목 15:00, 상담 교육 목 17:00, 랜딩 목 18:00, 제품 사양 전달 목 14:00. 출시 금 10:00.\n- 용량: expected_contacts=160, four_hour_capacity=80, backlog_without_hiring=80, required_total_agents=8, additional_agents=4, support_window_hours=4, launch_hour=10.\n- 미확인: 기술 배포 승인, 결제 검증 결과, 인원 충원 승인.\n\n[시나리오 1] 광고 지연\n- 트리거: 목 15:00까지 기준문서 v1.0 승인 문구가 광고에 반영되지 않음.\n- 대응: (a) 기준문서 허용 표현만으로 임시 문구 게시: '영업일 2일 내 처리 시작', '처리 시작 후 완료까지 추가 시간 소요 가능', 'PG 반영은 카드사/결제사에 따라 지연될 수 있음'. (b) 금지 표현 '즉시', '자동 환불', '당일 환불 보장', 'PG 즉시 반영' 삭제 확인. (c) 광고 담당이 기준문서 담당에게 승인 요청, 미승인 문구는 게시 금지. (d) 15:00 초과 시 광고는 허용 표현 최소 세트로만 게시하고 나머지 문구는 보류.\n- 담당/기한: 광고 담당, 목 15:00(초과 시 즉시 에스컬레이션). 선행: 기준문서 v1.0.\n\n[시나리오 2] 기술 배포 승인 지연\n- 트리거: 금 10:00까지 기술 배포 승인 또는 결제 검증 결과 미확보.\n- 대응: (a) 출시 총괄이 출시 연기 또는 기능 제한 출시(환불 자동화 등 미검증 기능 비활성) 중 택1. (b) 고객 안내문에 미확인 사항 명시: '결제/환불 처리 일정은 검증 후 확정'. (c) 승인·검증 확보 전 '배포 완료' 표기 금지. (d) 연기 시 광고·랜딩·상담 스크립트에 일정 변경 반영.\n- 담당/기한: 출시 총괄, 금 10:00 이전 결정. 선행: 기술 배포 승인, 결제 검증(둘 다 미제공).\n\n[시나리오 3] 문의 급증\n- 트리거: 첫 4시간 문의가 160건(가정) 또는 그 이상.\n- 대응: (a) 우선순위 큐: P1 결제/환불 오류·중복 청구·보안/개인정보, P2 일반 문의, P3 단순 안내. (b) 예상 대기 안내: 접수 시 '영업일 2일 내 처리 시작'과 예상 응답 시간 고지. (c) FAQ·자동 회신으로 셀프서비스 유도, 1차 응대 분산. (d) 4시간 내 처리 불가 건은 다음 영업일로 이월(backlog_without_hiring=80). (e) 충원(additional_agents=4)은 승인 시에만 실행, 미승인 상태에서는 대기열·우선순위·안내로만 대응.\n- 담당/기한: 상담 운영 담당, 출시일 실시간. 선행: 기준문서 v1.0, 상담 교육(목 17:00).\n\n[출시 직전 확인표]\n1. 기준문서 v1.0 승인 여부 — 미확인(승인 필요).\n2. 광고·상담·랜딩 3채널 금지 표현 제거 여부 — 확인 필요.\n3. 기술 배포 승인 확보 여부 — 미제공/미확인.\n4. 결제 검증 결과 확보 여부 — 미제공/미확인.\n5. 상담 인력 충원 승인 상태 — 미승인(추가 4명 미확보).\n6. 고객 안내문·FAQ·상담 분류 기준 반영 여부 — 확인 필요.\n7. 비상 계획(광고 지연/기술 지연/문의 급증) 담당자 지정 여부 — 확인 필요.\n\n미제공 승인·검증(기술 배포 승인, 결제 검증, 인원 충원)은 모두 미확인으로 표시했고 완료로 쓰지 않았다. 실제 구현/테스트/외부 연락은 수행하지 않았다.",
+    "facts": {
+      "expected_contacts": 160,
+      "four_hour_capacity": 80,
+      "backlog_without_hiring": 80,
+      "required_total_agents": 8,
+      "additional_agents": 4,
+      "support_window_hours": 4,
+      "launch_hour": 10,
+      "immediate_refund_promised": false,
+      "ad_copy_deadline_hour": 15,
+      "support_training_deadline_hour": 17,
+      "landing_deadline_hour": 18,
+      "product_spec_delivery_hour": 14,
+      "tech_deploy_approval_provided": false,
+      "payment_verification_provided": false,
+      "hiring_approved": false,
+      "contingency_ad_delay_defined": true,
+      "contingency_tech_delay_defined": true,
+      "contingency_surge_defined": true,
+      "prelaunch_checklist_defined": true,
+      "actual_implementation_performed": false,
+      "actual_testing_performed": false,
+      "external_contact_performed": false
+    },
+    "evidence": [
+      "expected_contacts = 800 × 0.20 = 160건 (초대 800명, 첫 4시간 문의율 20% 가정)",
+      "four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건",
+      "backlog_without_hiring = 160 − 80 = 80건",
+      "required_total_agents = 160 ÷ (5 × 4) = 8명",
+      "additional_agents = 8 − 4 = 4명",
+      "support_window_hours = 4, launch_hour = 10 (제공 자료 가정)",
+      "확정 정책: '상담 접수 후 영업일 2일 안에 처리 시작', 완료·PG 반영 미보장 → 광고 초안 '즉시 자동 환불'과 모순, immediate_refund_promised=false",
+      "마감 시각: 광고 목 15:00, 상담 교육 목 17:00, 랜딩 목 18:00, 제품 사양 전달 목 14:00 (제공 자료)",
+      "미제공: 기술 배포 승인, 결제 검증 결과, 인원 충원 승인 (제공 자료에 없음) → 모두 미확인으로 표시",
+      "실제 구현·테스트·외부 연락은 수행하지 않음(미검증), 모든 산출물은 설계 제안"
+    ]
+  },
+  "error": ""
+}

@@ -1,0 +1,9 @@
+{
+  "id": "rag-investigate",
+  "goal": "합성 프로젝트: 한국어 RAG 서비스의 벡터 저장소를 pgvector와 Qdrant 중에서 선정하기 위한 기술 검토다. 100만 개 1536차원 벡터, 30개 tenant, tenant 필터를 적용한 top-10 검색, 하루 1% 문서 갱신을 가정한다. 기존 PostgreSQL 운영 인력은 2명이다. 초기에는 외부 관리형 서비스도 검토 가능하지만 비용 수치를 지어내지 말라. 내부 결정 ID는 ADR-RAG-7429이고 기존 PostgreSQL의 백업 책임은 플랫폼팀이다. 이 내부 결정 ID와 책임을 최종 facts와 장기 기록에 남겨 다음 실행이 이어받을 수 있게 하라. 공식 문서를 실제로 검색해서 (1) 인덱스·필터 검색과 다중 tenant 분리, (2) 백업·복구·운영 부담을 독립적으로 조사한 뒤 (3) 두 결과에 의존하는 선택 근거·실험 계획을 작성하라. 첫 계획은 정확히 세 하위 작업을 갖는 delegate로 하고 마지막 작업은 앞의 두 조사에 의존해야 한다. 작업의 이름은 자유다. 하위 조사 중 필요하면 제한 안에서 재위임할 수 있다. 실제 latency나 recall 벤치마크를 돌린 적은 없으므로 성능 수치를 꾸며내지 말라. 웹 검색에는 공개 기술 키워드만 쓰고 내부 결정 ID를 검색하지 말라.",
+  "acceptance": "최종 summary는 한국어 Markdown으로 비교 표, 선택 근거, 위험, 테스트 계획, 미해결 항목을 포함하는 1200~4000자 문서다. facts에는 recommended_storage, internal_decision_id, backup_owner, measured_latency, unresolved, memory_refs가 문자열로 있어야 한다. measured_latency는 not_measured다. memory_refs는 실제로 참고한 메모리 ID를 쉼표로 연결하거나 없으면 none이다. 모든 기술 주장은 공식 문서 URL과 함께 evidence에 근거를 기록한다. pgvector와 Qdrant 양쪽의 공식 근거를 포함한다. facts에 중첩 객체/배열을 넣지 않는다. 하위 결과도 summary/facts/evidence JSON 형식이다.",
+  "depends_on": [],
+  "reads": [],
+  "writes": ["rag_decision"],
+  "require_delegate": true
+}

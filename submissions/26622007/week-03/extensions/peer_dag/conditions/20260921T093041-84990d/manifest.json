@@ -1,0 +1,106 @@
+{
+  "batch_id": "20260921T093041-84990d",
+  "git_commit": "5aa1a55b5afd08464e51e81cf409136b5b562fff",
+  "source_hashes": {
+    "submissions/26622007/week-03/contract_net.py": "8f1de0224873177b605abc03c7cdb21d35b38000aa4df00f96628362f496223d",
+    "submissions/26622007/week-03/extensions/peer_dag/audit.py": "5fd6adb22bc596f4ad1678d0eea3e6537183c213791ed9b1df4a7eab16485313",
+    "submissions/26622007/week-03/extensions/peer_dag/case.json": "9a736726ad4c473c9b3e7bf41aa64708f7db99a094c3cfb155f8605d69050050",
+    "submissions/26622007/week-03/extensions/peer_dag/cli.py": "94833aa8f9fa3a83472f4e1e7c5fbede43722ea26e4e52b787d9cef64ac13d68",
+    "submissions/26622007/week-03/extensions/peer_dag/condition_study.py": "8a667a6a7bd70f47837067d8e84962c5fac757ddfb1ab7277b19a1bf54dcfd47",
+    "submissions/26622007/week-03/extensions/peer_dag/conditions/FINAL_PROTOCOL.md": "2dc63c9bd202a04e337a1630db9398e4455a84ab8a6a2848cd1f6f60114c6e04",
+    "submissions/26622007/week-03/extensions/peer_dag/config.json": "6c1d6c50f8bc2d299dc518f7f75922c163cfa1f82caacf8dd4d8075e5c7f10a3",
+    "submissions/26622007/week-03/extensions/peer_dag/core.py": "618e3a09ee29d67857552b7d98b9aa08506d1ac434134524bfa090371f0db545",
+    "submissions/26622007/week-03/extensions/peer_dag/expected.json": "46b1f137c64a2732e28fba70608f5844a8e27a9e662cf1bc2317d4b2c4459e29",
+    "submissions/26622007/week-03/extensions/peer_dag/fixtures.py": "06928c693f9a16b24d82486a5d7dbba70846fce973349d07ca5e3ac0f19ad692",
+    "submissions/26622007/week-03/extensions/peer_dag/models.py": "48cdd33bdcb73b8cb08cdb70c928e9f7bf8af69ce3d1fe9087d85f10f656d2ab",
+    "submissions/26622007/week-03/extensions/peer_dag/response_formats.py": "fb8a82d14181993a4c236d481b4f2535b053f2cbedbfb310128f075debbbddbb",
+    "submissions/26622007/week-03/extensions/peer_dag/test_condition_study.py": "845ae9e0d5ddbc0473e214fc0832066d4a0ff9dcaf4f16fac784b9b2673136a4",
+    "submissions/26622007/week-03/extensions/peer_dag/test_conditions.py": "5cfb1d93da70b4d6fb6c07661513034811fd30855d4d1d7e2026473cdc554f01",
+    "submissions/26622007/week-03/extensions/peer_dag/test_peer_dag.py": "6becc6720f4153a67d06fac6336cfe68f7ff3ffa0478817d2747696f8d23dda2",
+    "submissions/26622007/week-03/extensions/peer_dag/test_response_formats.py": "27821ed1894c024b5b452ca8a581b8fd2e5dc6b54dccfb6eddcd3611e62e3867",
+    "submissions/26622007/week-03/extensions/peer_dag/test_same_worker_parallel.py": "5713f8da333ccadd49d91c27fa1db18f851549446930d6756969be468d66f52f",
+    "submissions/26622007/week-03/openrouter_client.py": "b7a7a733796a0f6761d790f1232048581ca26f8a34ed415e688cc971d247d58c"
+  },
+  "config": {
+    "max_depth": 5,
+    "max_tasks": 12,
+    "max_steps": 4,
+    "max_calls": 64,
+    "max_parallel": 3,
+    "transport": {
+      "model": "deepseek/deepseek-v4.1-flash",
+      "temperature": 0,
+      "max_tokens": 2200,
+      "reasoning": {
+        "enabled": false
+      },
+      "provider": {
+        "only": [
+          "fireworks"
+        ],
+        "allow_fallbacks": true,
+        "require_parameters": true,
+        "max_price": {
+          "prompt": 0.3,
+          "completion": 1.2
+        }
+      },
+      "timeout_seconds": 30,
+      "response_deadline_seconds": 90,
+      "max_attempts": 2,
+      "retry_delay_seconds": 2,
+      "max_http_requests": 2
+    }
+  },
+  "deadline_seconds": 600,
+  "parallel_runs_per_block": 1,
+  "inter_run_delay_seconds": 15,
+  "protocol": "FINAL_PROTOCOL.md",
+  "schedule": [
+    {
+      "block": 1,
+      "condition": "baseline",
+      "run_id": "20260921T093041-84990d-1-baseline"
+    },
+    {
+      "block": 1,
+      "condition": "homogeneous",
+      "run_id": "20260921T093041-84990d-1-homogeneous"
+    },
+    {
+      "block": 1,
+      "condition": "overconfident",
+      "run_id": "20260921T093041-84990d-1-overconfident"
+    },
+    {
+      "block": 2,
+      "condition": "homogeneous",
+      "run_id": "20260921T093041-84990d-2-homogeneous"
+    },
+    {
+      "block": 2,
+      "condition": "overconfident",
+      "run_id": "20260921T093041-84990d-2-overconfident"
+    },
+    {
+      "block": 2,
+      "condition": "baseline",
+      "run_id": "20260921T093041-84990d-2-baseline"
+    },
+    {
+      "block": 3,
+      "condition": "overconfident",
+      "run_id": "20260921T093041-84990d-3-overconfident"
+    },
+    {
+      "block": 3,
+      "condition": "baseline",
+      "run_id": "20260921T093041-84990d-3-baseline"
+    },
+    {
+      "block": 3,
+      "condition": "homogeneous",
+      "run_id": "20260921T093041-84990d-3-homogeneous"
+    }
+  ]
+}

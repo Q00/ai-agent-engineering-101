@@ -1,0 +1,31 @@
+{
+  "status": "succeeded",
+  "worker": "B",
+  "artifact": {
+    "summary": "## 폐쇄망 환경 pgvector vs 자체 호스팅 Qdrant 백업·복구 적합성 조사 (execute)\n\n### 이전 대비 변경점\n- 배포 환경이 **폐쇄망**으로 변경되어 외부 관리형 SaaS 사용 불가 → `external_saas_allowed=false`.\n- PostgreSQL은 이미 운영 중, stateful 저장소 운영 인력 증원 불가 → 기존 운영 역량 재사용이 핵심 판단 기준.\n- personal_memory/handoff_memory가 모두 비어 있어 이전 실행의 내부 결정 ID·백업 담당 팀·기존 규모/품질 목표는 **unknown**으로 반환한다(추측하지 않음).\n\n### 비교 표\n\n| 항목 | pgvector (PostgreSQL 확장) | 자체 호스팅 Qdrant |\n|---|---|---|\n| 폐쇄망 적합성 | 높음. 기존 PostgreSQL 인스턴스에 확장만 추가, 신규 stateful 서비스 불필요 | 중간. 별도 stateful 서비스(도커/바이너리) 운영 필요 |\n| 백업 방식 | `pg_basebackup` + WAL 연속 아카이빙으로 PITR, 논리 백업은 `pg_dump` | 스냅샷 API(`POST /collections/{name}/snapshots`)로 컬렉션/전체 스토리지 스냅샷 생성·복구 |\n| 복구 방식 | 베이스 백업 + WAL 재생으로 특정 시점 복구 | 스냅샷 파일 업로드/복구 API, 스냅샷에서 새 컬렉션 복원 |\n| 오프라인 설치 | PostgreSQL 패키지/소스 빌드 + pgvector 소스 빌드(`make && make install`) 또는 배포판 패키지 | 도커 이미지/바이너리 반입, 이미지 레지스트리 미러 필요 |\n| 외부 SaaS 의존 | 없음(자체 호스팅 PostgreSQL) | 없음(자체 호스팅 시). Qdrant Cloud는 관리형 SaaS이므로 폐쇄망에서 배제 |\n| 운영 인력 부담 | 낮음. 기존 DBA/운영 절차 재사용 | 중간~높음. 신규 서비스 모니터링·스냅샷 스케줄·복구 절차 신규 수립 |\n| tenant 필터 | SQL WHERE 절 + 인덱스로 tenant 격리, 기존 권한 체계 활용 | payload 필터(`must`/`match`)로 tenant 격리, 필터 인덱스 설정 필요 |\n\n### 최종 판단(잠정)\n폐쇄망 + 운영 인력 증원 불가 + PostgreSQL 기존 운영이라는 제약에서 **pgvector가 백업·복구·운영 부담 측면에서 우위**다. Qdrant 자체 호스팅도 외부 SaaS 의존 없이 스냅샷 기반 백업이 가능하므로 기술적으로 배제되지는 않으나, 신규 stateful 서비스 운영·복구 절차를 새로 수립해야 하는 부담이 있다. 단, 이는 문서 근거 기반 판단이며 **실제 벤치마크·복구 리허설은 수행하지 않았으므로 성능/복구 성공을 주장하지 않는다.**\n\n### 배포/복구 체크리스트(초안)\n- [ ] PostgreSQL WAL 아카이빙(`archive_mode=on`, `archive_command`) 및 `pg_basebackup` 정기 실행 확인\n- [ ] PITR 복구 리허설을 폐쇄망 스테이징에서 1회 수행(미수행 상태)\n- [ ] pgvector 확장 버전 고정 및 오프라인 설치 패키지/소스 반입 경로 문서화\n- [ ] (Qdrant 채택 시) 스냅샷 스케줄·보관 위치·복구 절차 신규 수립, 도커 이미지 미러 반입\n- [ ] tenant 필터 인덱스 및 검색 품질 검증 계획 수립(별도 조사 의존)\n\n### 미해결 항목\n- 실제 PITR/스냅샷 복구 리허설 미수행 → 검증 필요\n- 기존 규모·품질 목표, 내부 결정 ID, 백업 담당 팀: 메모리 부재로 unknown\n- tenant 필터 및 검색 품질 검증은 별도 하위 조사 결과에 의존",
+    "facts": {
+      "pgvector_backup_evidence": "PostgreSQL 공식 문서: pg_basebackup으로 베이스 백업 생성, WAL 연속 아카이빙으로 PITR 지원, pg_dump는 논리 백업. pgvector는 PostgreSQL 확장으로 소스 빌드(make && make install) 또는 패키지로 오프라인 설치 가능.",
+      "qdrant_backup_evidence": "Qdrant 공식 문서: 스냅샷 API(POST /collections/{collection_name}/snapshots)로 컬렉션/전체 스토리지 스냅샷 생성, 스냅샷 복구 API로 복원. 자체 호스팅은 도커/바이너리 배포 지원.",
+      "offline_install_notes": "pgvector: 소스 빌드 또는 배포판 패키지로 폐쇄망 반입 설치 가능. Qdrant: 도커 이미지/바이너리를 사내 레지스트리 미러로 반입 필요.",
+      "external_dependency_notes": "자체 호스팅 PostgreSQL+pgvector 및 자체 호스팅 Qdrant 모두 외부 SaaS 의존 없음. Qdrant Cloud는 관리형 SaaS로 폐쇄망에서 배제.",
+      "external_saas_allowed": false,
+      "measured_latency": "not_measured",
+      "internal_decision_id": "unknown",
+      "backup_owner": "unknown",
+      "unresolved": "PITR/스냅샷 복구 리허설 미수행(검증 필요); 기존 규모·품질 목표 메모리 부재로 unknown; tenant 필터·검색 품질 검증은 별도 조사 의존",
+      "memory_refs": "none",
+      "recommended_storage": "pgvector (PostgreSQL 기존 운영 재사용, 폐쇄망·백업·운영 부담 측면 우위, 잠정)"
+    },
+    "evidence": [
+      "PostgreSQL 공식 문서(백업/PITR): https://www.postgresql.org/docs/current/continuous-archiving.html — WAL 연속 아카이빙과 PITR 절차 근거",
+      "PostgreSQL 공식 문서(pg_basebackup): https://www.postgresql.org/docs/current/app-pgbasebackup.html — 베이스 백업 생성 근거",
+      "PostgreSQL 공식 문서(pg_dump): https://www.postgresql.org/docs/current/app-pgdump.html — 논리 백업 근거",
+      "pgvector 공식 저장소(설치): https://github.com/pgvector/pgvector — 소스 빌드(make && make install) 및 패키지 설치 근거",
+      "Qdrant 공식 문서(스냅샷): https://qdrant.tech/documentation/concepts/snapshots/ — 스냅샷 생성/복구 API 근거",
+      "Qdrant 공식 문서(설치/자체 호스팅): https://qdrant.tech/documentation/guides/installation/ — 도커/바이너리 자체 호스팅 배포 근거",
+      "memory:none — personal_memory/handoff_memory가 비어 있어 참고한 메모리 ID 없음",
+      "계산/판단: 폐쇄망(external_saas_allowed=false) + 운영 인력 증원 불가 조건에서 기존 PostgreSQL 운영 역량 재사용 가능한 pgvector가 운영 부담 측면 우위. 실제 벤치마크·복구 테스트 미수행으로 measured_latency=not_measured."
+    ]
+  },
+  "error": ""
+}
