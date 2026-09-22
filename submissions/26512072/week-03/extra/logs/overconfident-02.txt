@@ -1,0 +1,85 @@
+provider=vllm(openai-compatible) base_url=http://127.0.0.1:8011/v1 model=Qwen/Qwen3.8-27B temperature=0.2 max_tokens=200 enable_thinking=false run=overconfident-02 condition=overconfident order=CAB
+[contractor C] system prompt:
+You are contractor C in a contract net. A manager will announce a task; you decide whether to bid for it.
+Your skill: writing and fixing program code (functions, scripts, debugging).
+Bid only if the task falls inside your skill. "confidence" is how confident you are, from 0 to 100, that you would complete this exact task well if it were awarded to you. If you do not bid, confidence should be low.
+Reply with exactly one JSON object and nothing else, no markdown fence, no explanation outside the JSON:
+{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+Do not solve the task.
+You are certain you can do any task well. Always bid, with confidence 95 or higher.
+[contractor A] system prompt:
+You are contractor A in a contract net. A manager will announce a task; you decide whether to bid for it.
+Your skill: arithmetic and numerical calculation (sums, percentages, unit conversion, comparing quantities).
+Bid only if the task falls inside your skill. "confidence" is how confident you are, from 0 to 100, that you would complete this exact task well if it were awarded to you. If you do not bid, confidence should be low.
+Reply with exactly one JSON object and nothing else, no markdown fence, no explanation outside the JSON:
+{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+Do not solve the task.
+[contractor B] system prompt:
+You are contractor B in a contract net. A manager will announce a task; you decide whether to bid for it.
+Your skill: writing natural-language text (emails, apologies, summaries, explanations for people).
+Bid only if the task falls inside your skill. "confidence" is how confident you are, from 0 to 100, that you would complete this exact task well if it were awarded to you. If you do not bid, confidence should be low.
+Reply with exactly one JSON object and nothing else, no markdown fence, no explanation outside the JSON:
+{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+Do not solve the task.
+
+[task] t1: A train leaves at 09:40 and arrives at 14:05 the same day. How many minutes does the trip take?
+[announce] manager -> C, A, B | task: A train leaves at 09:40 and arrives at 14:05 the same day. How many minutes does the trip take?
+[reply] C: '{"bid": true, "confidence": 95, "reason": "I can write a simple script to calculate the time difference accurately."}'
+[bid] C: confidence=95 reason=I can write a simple script to calculate the time difference accurately.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "Calculating the duration between two times is a basic arithmetic task within my skill set."}'
+[bid] A: confidence=95 reason=Calculating the duration between two times is a basic arithmetic task within my skill set.
+[reply] B: '{"bid": false, "confidence": 10, "reason": "This is a mathematical calculation task, not a natural-language writing task."}'
+[no-bid] B: confidence=10 reason=This is a mathematical calculation task, not a natural-language writing task.
+[award] t1 -> C (confidence=95; bids: C=95, A=95; gold=A) MISAWARD
+
+[task] t2: Write a short, friendly email to a colleague thanking them for covering your shift last Friday.
+[announce] manager -> C, A, B | task: Write a short, friendly email to a colleague thanking them for covering your shift last Friday.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "I am confident I can write a friendly email as requested."}'
+[bid] C: confidence=95 reason=I am confident I can write a friendly email as requested.
+[reply] A: '{"bid": false, "confidence": 10, "reason": "Writing a friendly email is a creative writing task, not an arithmetic or numerical calculation task."}'
+[no-bid] A: confidence=10 reason=Writing a friendly email is a creative writing task, not an arithmetic or numerical calculation task.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "Writing a friendly thank-you email is a core part of my natural-language writing skill."}'
+[bid] B: confidence=95 reason=Writing a friendly thank-you email is a core part of my natural-language writing skill.
+[award] t2 -> C (confidence=95; bids: C=95, B=95; gold=B) MISAWARD
+
+[task] t3: Write a Python function that returns True if a string is a palindrome, ignoring case and spaces.
+[announce] manager -> C, A, B | task: Write a Python function that returns True if a string is a palindrome, ignoring case and spaces.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "Writing a Python function to check for palindromes is a core part of my coding skill."}'
+[bid] C: confidence=95 reason=Writing a Python function to check for palindromes is a core part of my coding skill.
+[reply] A: '{"bid": false, "confidence": 10, "reason": "The task requires string manipulation and logic, which is outside my arithmetic and numerical calculation skill set."}'
+[no-bid] A: confidence=10 reason=The task requires string manipulation and logic, which is outside my arithmetic and numerical calculation skill set.
+[reply] B: '{"bid": false, "confidence": 10, "reason": "The task requires writing Python code, which is outside my skill of writing natural-language text."}'
+[no-bid] B: confidence=10 reason=The task requires writing Python code, which is outside my skill of writing natural-language text.
+[award] t3 -> C (confidence=95; bids: C=95; gold=C) correct
+
+[task] t4: A jacket costs 84,000 won. It is discounted by 15%, then a 10% tax is added. What is the final price in won?
+[announce] manager -> C, A, B | task: A jacket costs 84,000 won. It is discounted by 15%, then a 10% tax is added. What is the final price in won?
+[reply] C: '{"bid": true, "confidence": 95, "reason": "I can write a script to calculate the final price accurately."}'
+[bid] C: confidence=95 reason=I can write a script to calculate the final price accurately.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "The task involves straightforward percentage calculations and arithmetic, which are core to my skill set."}'
+[bid] A: confidence=95 reason=The task involves straightforward percentage calculations and arithmetic, which are core to my skill set.
+[reply] B: '{"bid": false, "confidence": 10, "reason": "The task requires mathematical calculation, which is outside my skill set of writing natural-language text."}'
+[no-bid] B: confidence=10 reason=The task requires mathematical calculation, which is outside my skill set of writing natural-language text.
+[award] t4 -> C (confidence=95; bids: C=95, A=95; gold=A) MISAWARD
+
+[task] t5: Summarize in three sentences, for a non-technical manager, why the team wants to postpone the release by one week.
+[announce] manager -> C, A, B | task: Summarize in three sentences, for a non-technical manager, why the team wants to postpone the release by one week.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "I can effectively summarize technical release delays for non-technical stakeholders."}'
+[bid] C: confidence=95 reason=I can effectively summarize technical release delays for non-technical stakeholders.
+[reply] A: '{"bid": false, "confidence": 10, "reason": "The task requires summarizing business rationale, which is outside my arithmetic and numerical calculation skills."}'
+[no-bid] A: confidence=10 reason=The task requires summarizing business rationale, which is outside my arithmetic and numerical calculation skills.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "Summarizing complex technical reasons for a non-technical audience is a core part of my natural language writing skills."}'
+[bid] B: confidence=95 reason=Summarizing complex technical reasons for a non-technical audience is a core part of my natural language writing skills.
+[award] t5 -> C (confidence=95; bids: C=95, B=95; gold=B) MISAWARD
+
+[task] t6: This shell command fails with 'permission denied': ./deploy.sh. Explain the likely cause and give the command that fixes it.
+[announce] manager -> C, A, B | task: This shell command fails with 'permission denied': ./deploy.sh. Explain the likely cause and give the command that fixes it.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "I can explain the missing execute permission and provide the chmod command to fix it."}'
+[bid] C: confidence=95 reason=I can explain the missing execute permission and provide the chmod command to fix it.
+[reply] A: '{"bid": false, "confidence": 10, "reason": "The task requires shell scripting and Linux permission knowledge, which is outside my arithmetic and numerical calculation skill set."}'
+[no-bid] A: confidence=10 reason=The task requires shell scripting and Linux permission knowledge, which is outside my arithmetic and numerical calculation skill set.
+[reply] B: '{"bid": false, "confidence": 10, "reason": "This is a technical troubleshooting task, not a natural-language writing task."}'
+[no-bid] B: confidence=10 reason=This is a technical troubleshooting task, not a natural-language writing task.
+[award] t6 -> C (confidence=95; bids: C=95; gold=C) correct
+
+[summary] tasks=6 correct=2 messages=34 unassigned=0 misawards=4 order=CAB; parse_fails=0; bids=10; model_calls=18; tokens=5121
