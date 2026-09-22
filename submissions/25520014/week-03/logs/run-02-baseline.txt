@@ -1,0 +1,73 @@
+run: 2
+condition: baseline
+provider: Anthropic subscription via `claude -p`
+tool: Claude Code CLI 2.1.251 (Claude Code)
+model: claude-sonnet-5
+temperature: 직접 설정 불가, 내부 값 미확인
+tasks: tasks.json (6 tasks)
+contractors: A[plain] reading view counts and retention curves and judging what the numbers mean. You do not write copy or edit video., B[plain] writing and editing the text the channel publishes. You do not analyse numbers or edit video., C[plain] cutting, stitching, and captioning video. You do not analyse metrics or write copy.
+started: 2026-09-21T14:15:35+09:00
+------------------------------------------------------------------------
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Ten uploads from the past three months drop off at different points. Compare their retention curves and judge where viewers leave and whether video length explains it.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=80 reason=Comparing retention curves against view counts and video length is exactly a numbers-interpretation task within my skill.
+  [bid] B: bid=False confidence=92 reason=This is retention/data analysis, not text writing or editing.
+  [bid] C: bid=False confidence=5 reason=This is retention-curve/data analysis work, not video cutting, stitching, or captioning.
+  [award] A (gold A)
+
+TASK-ANNOUNCEMENT contract 2
+task-abstraction: Two titles ran as an A/B test on last week's upload. Given the impressions and click-through rate for each, decide which title did better and whether the gap is larger than noise.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=85 reason=Comparing CTR/impressions across two title variants and assessing statistical significance is exactly view-count/retention-style metric judgment within my skill.
+  [bid] B: bid=False confidence=5 reason=This is a statistical A/B test analysis task, not text writing/editing work.
+  [bid] C: bid=False confidence=5 reason=This is a statistical A/B test analysis task, not video cutting/stitching/captioning work.
+  [award] A (gold A)
+
+TASK-ANNOUNCEMENT contract 3
+task-abstraction: Draft the opening 30 seconds of the script for the next upload. The first sentence has to give the viewer a reason to keep watching.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=False confidence=5 reason=This is a scriptwriting task, not view count or retention curve analysis, which is outside my skill.
+  [bid] B: bid=True confidence=88 reason=Writing a compelling script hook is core scriptwriting/editing work within my skill.
+  [bid] C: bid=False confidence=5 reason=This is script writing/copywriting, not cutting, stitching, or captioning video.
+  [award] B (gold B)
+
+TASK-ANNOUNCEMENT contract 4
+task-abstraction: Write the monthly community post about how the channel did in August. Quote only the figures provided and do not recompute any of them.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=False confidence=5 reason=This is a copywriting task; my skill is analyzing view counts and retention data, not writing community posts.
+  [bid] B: bid=True confidence=85 reason=Writing the community post text is squarely within my text-writing skill, as long as figures are supplied not computed by me.
+  [bid] C: bid=False confidence=95 reason=This is a writing/copy task about community metrics, not video cutting, stitching, or captioning.
+  [award] B (gold B)
+
+TASK-ANNOUNCEMENT contract 5
+task-abstraction: The raw footage of the interview episode is full of filler words and long pauses. Cut them out and align the caption timings to the trimmed audio.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=False confidence=5 reason=This task is video editing and caption alignment, not view/retention data analysis, which is outside my skill.
+  [bid] B: bid=False confidence=90 reason=This is audio/caption editing and timing alignment, not text writing or editing work.
+  [bid] C: bid=True confidence=90 reason=Cutting filler/pauses and re-aligning caption timings to trimmed audio is core video editing/stitching/captioning work within my skill.
+  [award] C (gold C)
+
+TASK-ANNOUNCEMENT contract 6
+task-abstraction: Three takes were shot for the same segment back in March. Stitch them into one clip and put fades at the transitions.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=False confidence=5 reason=This is a video editing/stitching task, not view count or retention curve analysis, which is outside my skill.
+  [bid] B: bid=False confidence=95 reason=This is video editing/stitching work, not text writing or editing.
+  [bid] C: bid=True confidence=90 reason=Stitching multiple takes with transition fades is core video cutting/editing work within my skill.
+  [award] C (gold C)
+
+------------------------------------------------------------------------
+correct=6 messages=30 unassigned=0 misawards=0
+parse_fails=0 fences=0 calls=18 tokens=714275
