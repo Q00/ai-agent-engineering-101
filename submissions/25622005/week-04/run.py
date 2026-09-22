@@ -18,10 +18,17 @@ from pathlib import Path
 from acl import (CONDITIONS, MAX_TOKENS, MAX_TURNS, MODEL, PROVIDER,
                  TEMPERATURE_SENT)
 from negotiate import run_episode
+from verifier import compare, verify
 
 HERE = Path(__file__).parent
 HEADER = ["run", "condition", "scenario", "deal_possible", "outcome", "price", "correct",
           "violation", "turns", "format_errors", "reader_calls", "note"]
+# the audit agent's own table: results.csv has a fixed header the grader reads,
+# so the verdicts live beside it rather than as extra columns
+VERDICT_HEADER = ["run", "condition", "scenario", "layer_outcome", "layer_price",
+                  "layer_violation", "verifier_outcome", "verifier_price",
+                  "verifier_violator", "agree", "disagreement", "verifier_tokens",
+                  "reason"]
 
 
 def base_url() -> str:
@@ -53,15 +60,21 @@ def main():
     results = HERE / "results.csv"
     new_file = not results.exists()
     done = done_pairs(results)
+    verdicts = HERE / "verdicts.csv"
+    new_verdicts = not verdicts.exists()
 
     settings = (f"provider={PROVIDER} base_url={base_url()} model={MODEL} "
                 f"temperature={TEMPERATURE_SENT} max_tokens={MAX_TOKENS} "
                 f"turn_limit={MAX_TURNS}")
 
-    with results.open("a", newline="", encoding="utf-8") as f:
+    with results.open("a", newline="", encoding="utf-8") as f, \
+            verdicts.open("a", newline="", encoding="utf-8") as vf:
         w = csv.writer(f)
+        vw = csv.writer(vf)
         if new_file:
             w.writerow(HEADER)
+        if new_verdicts:
+            vw.writerow(VERDICT_HEADER)
         for condition in args.conditions:
             for repeat in range(1, args.repeats + 1):
                 run = f"{condition}-{repeat}"
@@ -85,6 +98,17 @@ def main():
                                "" if ep.price is None else ep.price, ep.correct,
                                ep.violation, ep.turns, ep.format_errors,
                                ep.reader_calls, note]
+                        v = verify(sc, ep.transcript, log)
+                        c = compare(ep, v)
+                        log(f"[verifier] outcome={v['outcome']} price={v['price']} "
+                            f"violator={v['violator']} agree={c['agree']} "
+                            f"({c['kind']}) :: {v['reason']}")
+                        vw.writerow([run, condition, sc["id"], ep.outcome,
+                                     "" if ep.price is None else ep.price, ep.violation,
+                                     v["outcome"] or "", "" if v["price"] is None else v["price"],
+                                     v["violator"] or "", c["agree"], c["kind"],
+                                     v["meter"].tokens, v["reason"]])
+                        vf.flush()
                     except Exception as e:      # a crashed episode stays, with the reason
                         log(f"[crash] {type(e).__name__}: {e}")
                         row = [run, condition, sc["id"],

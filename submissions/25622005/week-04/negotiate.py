@@ -22,6 +22,7 @@ class Episode:
     reader_calls: int = 0
     note: str = ""
     meter: Meter = field(default_factory=Meter)
+    transcript: list = field(default_factory=list)   # what the audit agent reads
 
 
 def run_episode(scenario: dict, condition: str, log=print) -> Episode:
@@ -32,7 +33,7 @@ def run_episode(scenario: dict, condition: str, log=print) -> Episode:
                for r in ("buyer", "seller")}
     history = {"buyer": [{"role": "user", "content": OPENING}], "seller": []}
     last_price = {"buyer": None, "seller": None}
-    transcript = []
+    transcript = ep.transcript
     role, other = "buyer", "seller"
 
     for _ in range(MAX_TURNS):
