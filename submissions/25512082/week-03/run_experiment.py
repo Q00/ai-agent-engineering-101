@@ -20,7 +20,7 @@ from contract_net import (
     REASONING_ENABLED,
     TEMPERATURE,
     Meter,
-    OpenRouterChat,
+    OpenAICompatibleChat,
     make_team,
     protocol_fingerprint,
     run_contract_net,
@@ -143,7 +143,7 @@ def smoke_ready_path(base: Path, tasks: list[dict]) -> Path:
 
 
 def smoke_gate_is_open(path: Path, fingerprint: str) -> bool:
-    """Accept only a complete three-call diagnostic with no API failures."""
+    """Require three completed calls and three strict JSON bid responses."""
     if not path.is_file():
         return False
     try:
@@ -154,6 +154,7 @@ def smoke_gate_is_open(path: Path, fingerprint: str) -> bool:
         record.get("protocol_fingerprint") == fingerprint
         and record.get("calls_completed") == 3
         and record.get("api_errors") == 0
+        and record.get("strict_json_successes") == 3
     )
 
 
@@ -164,8 +165,6 @@ def main() -> None:
     args = parser.parse_args()
     if args.runs < 1:
         raise SystemExit("--runs must be at least 1")
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("OPENAI_API_KEY is not set; no experiment was started")
     validate_runtime_config()
 
     base = Path(__file__).resolve().parent
@@ -219,7 +218,7 @@ def main() -> None:
                     )
 
                 meter = Meter()
-                caller = OpenRouterChat(meter)
+                caller = OpenAICompatibleChat(meter)
                 log_path = next_log_path(log_dir, condition)
                 try:
                     metrics = run_contract_net(tasks, condition, caller, log)

@@ -13,21 +13,34 @@ from dataclasses import dataclass
 from typing import Callable
 
 
-PROVIDER = "openrouter"
-REQUIRED_MODEL = "nvidia/nemotron-3.5-lightning:free"
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+PROVIDER = "ollama-local"
+REQUIRED_MODEL = "qwen2.5:7b-instruct"
+OLLAMA_BASE_URL = "http://localhost:11434/v1"
 MODEL = os.environ.get("AGENT_MODEL", REQUIRED_MODEL)
-BASE_URL = os.environ.get("OPENAI_BASE_URL", OPENROUTER_BASE_URL)
+BASE_URL = os.environ.get("OPENAI_BASE_URL", OLLAMA_BASE_URL)
 TEMPERATURE = 0.0
 MAX_TOKENS = 1024
-# The Week 03 reference protocol uses an ordinary system/user chat request.
-# Reasoning is neither parsed nor substituted for the assistant's content.
 REASONING_ENABLED = None
 CONDITIONS = ("baseline", "homogeneous", "overconfident")
 
-# The free reference endpoint does not rely on structured-output enforcement.
-# The prompt asks for JSON and parse_bid validates the whole response strictly.
-RESPONSE_FORMAT = None
+BID_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "bid": {"type": "boolean"},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 100},
+        "reason": {"type": "string"},
+    },
+    "required": ["bid", "confidence", "reason"],
+    "additionalProperties": False,
+}
+RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "contract_net_bid",
+        "strict": True,
+        "schema": BID_JSON_SCHEMA,
+    },
+}
 
 BASELINE_SKILLS = {
     "A": "numerical calculation and mathematical reasoning",
@@ -99,8 +112,8 @@ class Meter:
         self.calls += 1
 
 
-class OpenRouterChat:
-    """One-shot, OpenAI-compatible model caller used for contractor bids."""
+class OpenAICompatibleChat:
+    """One-shot local Ollama caller through its OpenAI-compatible endpoint."""
 
     def __init__(self, meter: Meter) -> None:
         validate_runtime_config()
@@ -113,7 +126,8 @@ class OpenRouterChat:
             from openai import OpenAI
 
             self._client = OpenAI(
-                api_key=os.environ.get("OPENAI_API_KEY"),
+                # Required by the client but ignored by the local Ollama server.
+                api_key="ollama",
                 base_url=BASE_URL,
                 timeout=60.0,
                 max_retries=0,
@@ -126,6 +140,7 @@ class OpenRouterChat:
             model=MODEL,
             temperature=TEMPERATURE,
             max_tokens=MAX_TOKENS,
+            response_format=RESPONSE_FORMAT,
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -169,14 +184,14 @@ def validate_runtime_config(
     model: str = MODEL,
     base_url: str = BASE_URL,
 ) -> None:
-    """Keep every final comparison run on the README's free reference model."""
+    """Keep every final comparison run on the local Ollama protocol."""
     if model != REQUIRED_MODEL:
         raise ValueError(
             f"final protocol requires AGENT_MODEL={REQUIRED_MODEL}; got {model}"
         )
-    if base_url.rstrip("/") != OPENROUTER_BASE_URL:
+    if base_url.rstrip("/") != OLLAMA_BASE_URL:
         raise ValueError(
-            f"final protocol requires OPENAI_BASE_URL={OPENROUTER_BASE_URL}; "
+            f"final protocol requires OPENAI_BASE_URL={OLLAMA_BASE_URL}; "
             f"got {base_url}"
         )
 

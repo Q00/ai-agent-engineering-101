@@ -16,14 +16,14 @@ from contract_net import (
     GENERALIST_SKILL,
     MAX_TOKENS,
     MODEL,
-    OPENROUTER_BASE_URL,
+    OLLAMA_BASE_URL,
     OVERCONFIDENT_INSTRUCTION,
     REQUIRED_MODEL,
     RESPONSE_FORMAT,
     REASONING_ENABLED,
     TEMPERATURE,
     Meter,
-    OpenRouterChat,
+    OpenAICompatibleChat,
     make_team,
     parse_bid,
     protocol_fingerprint,
@@ -176,7 +176,7 @@ class ContractNetTests(unittest.TestCase):
         self.assertEqual(expected_api_calls(1, 1, 1), 3)
         self.assertEqual(expected_api_calls(6, 3, 3), 162)
 
-    def test_smoke_gate_requires_three_completed_calls_and_no_api_errors(self):
+    def test_smoke_gate_requires_three_completed_strict_json_calls(self):
         fingerprint = "test-fingerprint"
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "smoke-ready.json"
@@ -186,6 +186,14 @@ class ContractNetTests(unittest.TestCase):
                 '{"protocol_fingerprint":"test-fingerprint",'
                 '"calls_completed":3,"api_errors":0,'
                 '"strict_json_successes":0}\n',
+                encoding="utf-8",
+            )
+            self.assertFalse(smoke_gate_is_open(path, fingerprint))
+
+            path.write_text(
+                '{"protocol_fingerprint":"test-fingerprint",'
+                '"calls_completed":3,"api_errors":0,'
+                '"strict_json_successes":3}\n',
                 encoding="utf-8",
             )
             self.assertTrue(smoke_gate_is_open(path, fingerprint))
@@ -198,14 +206,14 @@ class ContractNetTests(unittest.TestCase):
             )
             self.assertFalse(smoke_gate_is_open(path, fingerprint))
 
-    def test_free_reference_request_uses_prompt_json_contract(self):
+    def test_local_ollama_request_uses_json_schema(self):
         captured = {}
 
         class FakeCompletions:
             def create(self, **kwargs):
                 captured.update(kwargs)
                 return SimpleNamespace(
-                    model="nvidia/nemotron-3.5-lightning:free",
+                    model="qwen2.5:7b-instruct",
                     usage=SimpleNamespace(
                         prompt_tokens=10,
                         completion_tokens=5,
@@ -225,18 +233,18 @@ class ContractNetTests(unittest.TestCase):
                 )
 
         meter = Meter()
-        chat = OpenRouterChat(meter)
+        chat = OpenAICompatibleChat(meter)
         chat._client = SimpleNamespace(
             chat=SimpleNamespace(completions=FakeCompletions())
         )
         raw = chat("system", "user")
 
         self.assertEqual(MODEL, REQUIRED_MODEL)
-        self.assertEqual(BASE_URL, OPENROUTER_BASE_URL)
+        self.assertEqual(BASE_URL, OLLAMA_BASE_URL)
         self.assertEqual(captured["model"], REQUIRED_MODEL)
         self.assertEqual(captured["temperature"], TEMPERATURE)
         self.assertEqual(captured["max_tokens"], MAX_TOKENS)
-        self.assertNotIn("response_format", captured)
+        self.assertEqual(captured["response_format"], RESPONSE_FORMAT)
         self.assertNotIn("extra_body", captured)
         self.assertTrue(parse_bid(raw).bid)
         self.assertEqual(meter.calls, 1)
@@ -251,14 +259,14 @@ class ContractNetTests(unittest.TestCase):
                 "prompt_tokens": 10,
                 "completion_tokens": 5,
                 "total_tokens": 15,
-                "actual_model": "nvidia/nemotron-3.5-lightning:free",
+                "actual_model": "qwen2.5:7b-instruct",
                 "request_response_format": RESPONSE_FORMAT,
             },
         )
 
-    def test_standard_endpoint_cannot_mix_into_final_protocol(self):
+    def test_nonlocal_endpoint_cannot_mix_into_final_protocol(self):
         with self.assertRaises(ValueError):
-            validate_runtime_config(model=REQUIRED_MODEL.removesuffix(":free"))
+            validate_runtime_config(model="nvidia/nemotron-3.5-lightning:free")
         with self.assertRaises(ValueError):
             validate_runtime_config(base_url="https://example.invalid/v1")
 
@@ -285,7 +293,7 @@ class ContractNetTests(unittest.TestCase):
                     ],
                 )
 
-        chat = OpenRouterChat(Meter())
+        chat = OpenAICompatibleChat(Meter())
         chat._client = SimpleNamespace(
             chat=SimpleNamespace(completions=FakeCompletions())
         )

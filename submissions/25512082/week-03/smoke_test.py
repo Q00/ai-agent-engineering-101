@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -16,7 +15,7 @@ from contract_net import (
     REASONING_ENABLED,
     TEMPERATURE,
     Meter,
-    OpenRouterChat,
+    OpenAICompatibleChat,
     make_team,
     parse_bid,
     protocol_fingerprint,
@@ -44,8 +43,6 @@ def next_smoke_log_path(log_dir: Path) -> Path:
 
 
 def main() -> None:
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("OPENAI_API_KEY is not set; smoke test was not started")
     validate_runtime_config()
 
     base = Path(__file__).resolve().parent
@@ -92,7 +89,7 @@ def main() -> None:
     log(f"[setup] protocol_fingerprint={fingerprint}")
 
     announcement = ANNOUNCEMENT.format(task_id=task["id"], desc=task["desc"])
-    caller = OpenRouterChat(Meter())
+    caller = OpenAICompatibleChat(Meter())
     successes = 0
     completed_calls = 0
     api_errors = 0
@@ -133,7 +130,7 @@ def main() -> None:
         with log_path.open("x", encoding="utf-8") as log_file:
             log_file.write("\n".join(lines) + "\n")
 
-    if completed_calls != 3 or api_errors:
+    if completed_calls != 3 or api_errors or successes != 3:
         raise SystemExit(
             f"smoke test blocked: completed_calls={completed_calls}/3; "
             f"api_errors={api_errors}; strict_json={successes}/3; "
@@ -155,7 +152,7 @@ def main() -> None:
             ready_file.write("\n")
     print(
         f"smoke test completed: calls=3/3; api_errors=0; "
-        f"strict_json={successes}/3; gate file: {ready_path}"
+        f"strict_json=3/3; gate file: {ready_path}"
     )
 
 
