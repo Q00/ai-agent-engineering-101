@@ -17,8 +17,8 @@
 
 ```bash
 cd submissions/26512071/week-03
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv /tmp/agent-ai-week03-venv
+source /tmp/agent-ai-week03-venv/bin/activate
 python -m pip install -r requirements.txt
 
 # https://platform.openai.com/api-keys 에서 만든 키를 현재 셸에만 설정한다.
