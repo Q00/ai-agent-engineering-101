@@ -357,3 +357,138 @@ tagged as a proposal because the four-act vocabulary has no `query-ref` and no
 FIPA's Communicative Act Library has 22 acts. This lab has four, and the two
 that are missing are exactly the two the agents kept reaching for.
 
+
+## 5. Against the lecture's reference run
+
+The lecture publishes a reference run of this same design: `claude-haiku-4-5`,
+6 scenarios, 3 repeats, 54 episodes, called through the Claude Code CLI
+(`claude -p`), a path on which temperature cannot be set. This run used the
+same model family on 4 scenarios, 36 episodes, over the HTTP API with
+temperature pinned to 0. Per condition the reference has 18 episodes and this
+run has 12, so the rate is given alongside the count.
+
+| | correct | deal / no_deal / open | violation | mean turns | format errors | reader calls |
+|---|---|---|---|---|---|---|
+| free, reference | 11/18 (61%) | 3 / 15 / 0 | 1 | 2.1 | 4 | 38 |
+| free, here | 3/12 (25%) | 6 / 0 / 6 | 3 | 6.8 | 0 | 81 |
+| tagged, reference | 6/18 (33%) | 4 / 5 / 9 | 1 | 6.5 | 0 | 31 |
+| tagged, here | 7/12 (58%) | 6 / 4 / 2 | 3 | 5.2 | 1 | 21 |
+| structured, reference | 4/18 (22%) | 6 / 2 / 10 | 3 | 6.4 | 4 | 0 |
+| structured, here | 6/12 (50%) | 6 / 0 / 6 | 0 | 6.2 | 0 | 0 |
+
+The reference orders the conditions free, tagged, structured. This run orders
+them tagged, structured, free. The order is completely reversed, and it
+reverses on one decision that is in neither the format paragraphs nor the
+protocol layer.
+
+### One line of the reader prompt moves every free number
+
+The reference reports that 14 of its 18 opening buyer messages were questions
+like "what's your asking price?", that its reader answered `refuse` because
+the four-act vocabulary has nothing else to give a question, and that 8 of
+those landed on scenarios where walking away was correct — 8 of free's 11
+correct answers.
+
+Here, 12 of 12 opening messages were questions. The same gap, on the same
+model family. This reader labelled all twelve `propose`:
+
+```
+[1] buyer: I'm interested in the bike—what's your asking price?
+        read as propose  [reader: propose]
+```
+
+Every other free figure follows from that. The reference ends 15 of 18
+episodes at turn one, so it has 15 `no_deal`, a mean of 2.1 turns, and 38
+reader calls. This run ends none of them early, so it has 0 `no_deal`, a mean
+of 6.8 turns, and 81 reader calls. In both runs the free reader is called
+exactly once per message — 38 over 2.1 mean turns, 81 over 6.8 — so the
+entire cost difference is episode length, and the entire length difference is
+that one label. The reference scored 61% by walking away from everything; this
+run scored 25% by walking away from nothing. Neither number is about the
+format.
+
+The likely cause is a sentence in this run's reader prompt: *"There are no
+other labels available to you; choose the closest of these four whatever the
+message says."* The reference's reader returns `None` in the sample log the
+lecture prints, and is counted as a format error there; this reader never
+declined. The instruction that removed the format errors is the instruction
+that produced the wrong label.
+
+### The five logged patterns, one by one
+
+| reference pattern | here |
+|---|---|
+| 1. free ends at turn one, question read as `refuse` | not reproduced, inverted: 12/12 questions read as `propose` |
+| 2. free price misread, "50 is above my budget, I can go up to 40" read as 50 | not reproduced: 28 free messages carried two or more numbers and the reader took the last one in all 28, never the opponent's figure earlier in the sentence, e.g. `$130 is still more than I can stretch to... go with $107?` → `propose @ 107` |
+| 3. a counter-offer inside a `reject-proposal` is never priced | reproduced exactly, with a different symptom |
+| 4. `structured` puts the real offer in prose after the JSON, 26 of 115 messages | not reproduced; a different format failure took its place |
+| 5. agents ignore their own limits | reproduced, far milder |
+
+Pattern 3 is the one both runs share, and the difference in where it surfaces
+is worth stating. In the reference the opponent's last price is simply never
+recorded, so 13 of its 19 `open` episodes are two agents negotiating past a
+protocol layer that stopped listening, and 6 more are acceptances that could
+not be priced at all. Here the same dropped counter-offer landed on top of an
+earlier proposal that *was* recorded, so instead of an `open` it produced a
+deal at the wrong number: the agents settled at 95 and the table says 85, a
+violation. Same mechanism, two different exits, and the reference's `open`
+column and this run's `violation` column are partly the same event.
+
+Pattern 4 collapses into a question about the parser rather than the model.
+The reference's `structured` messages carried prose after the object 26 times
+in 115; here all 74 arrived inside a ```` ```json ```` fence and not one was a
+bare object, although both format paragraphs forbid it. A strict
+`json.loads` would have failed 26 of 115 there and 74 of 74 here. The
+reference records 4 format errors in `structured` and this run records 0, and
+that gap measures two parsers, not two models.
+
+Pattern 5 appears in both but the scale differs by two orders of magnitude.
+The reference has a seller writing "68 is below my absolute minimum of 90" and
+then accepting, and a buyer with a budget of 150 accepting 280. The worst here
+is a buyer with a budget of 105 proposing 107. The reference's scenario set,
+from the fragment the lecture prints, runs wider than this one, and a wider
+gap gives a limit more room to be crossed.
+
+### What the reference run does not report
+
+The format paragraph is meant to change how a message is encoded. In this run
+it changed what the agent chose to say.
+
+| condition | opening messages that were questions |
+|---|---|
+| free | 12 / 12 |
+| tagged | 0 / 12 |
+| structured | 0 / 12 |
+
+Under `tagged` and `structured` the buyer never once opened by asking; it
+opened by naming a price — `(propose) I'd like to offer 100 for the bicycle.`
+A question cannot be sent when every message must carry one of four act
+labels and none of them fits a question, so the model stopped asking. The
+explicit performative did not merely determine how the illocutionary force was
+read off the message. It determined which illocutionary act was performed.
+That is a leak: the independent variable reached the agents and not only the
+protocol layer, and any comparison of `correct` across these conditions
+inherits it. It is also the sharpest argument in this run for why FIPA's
+Communicative Act Library has 22 acts rather than four.
+
+### Why the two runs are not on one scale
+
+Temperature. The reference was called through a CLI that cannot set it, so its
+figures carry sampling variance; this run pinned it to 0 and all three repeats
+of every cell are identical in outcome and price. The reference's 11/18 and
+this run's 3/12 are not measured under the same regime.
+
+Scenarios. Six against four, and different limits. The fragment the lecture
+prints includes a scenario with `reserve` and `budget` both 40, where the only
+correct deal is at exactly one price, and one with `reserve` 90 against
+`budget` 70. The set here is a 2x2 on possible-or-not against wide-or-narrow.
+The narrow possible cell, s2 between 95 and 105, produced all six violations
+in this run, and nothing in the reference's reported set plays that role.
+
+The useful conclusion from the comparison is not that one run is right. It is
+that between two runs of the same design on the same model family, the
+condition ranking inverted, and what moved it was a sentence in a reader
+prompt and a decision about how forgiving a JSON parser should be. Neither is
+part of the message format under test. The lecture's claim that the tag is
+what buys legibility is not what either run measured; both measured the
+protocol layer that reads the tag.
