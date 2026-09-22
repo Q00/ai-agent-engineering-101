@@ -9,6 +9,7 @@ from dataclasses import asdict
 import json
 import os
 from pathlib import Path
+import subprocess
 import time
 from typing import Callable
 import urllib.error
@@ -115,6 +116,49 @@ class Chat:
             self.retries += 1
             time.sleep(min(2 ** attempt, 4))
         raise AssertionError("retry loop exhausted")
+
+
+class ClaudeCLIChat:
+    """Stateless model calls through the course-approved Claude Code CLI path."""
+
+    def __init__(self, model: str, temperature: float | None) -> None:
+        if temperature is not None:
+            raise ValueError("claude-cli does not expose temperature")
+        self.model = model
+        self.temperature = "not-settable"
+        self.calls = 0
+        self.retries = 0
+        self.timeout = float(os.environ.get("AGENT_TIMEOUT_SECONDS", "180"))
+
+    def __call__(self, system: str, user: str, json_mode: bool = False) -> str:
+        del json_mode  # Output constraints remain in the fixed prompts.
+        self.calls += 1
+        command = [
+            "claude", "-p", user,
+            "--model", self.model,
+            "--system-prompt", system,
+            "--output-format", "text",
+            "--no-session-persistence",
+            "--disable-slash-commands",
+            "--tools", "",
+        ]
+        try:
+            completed = subprocess.run(
+                command,
+                text=True,
+                capture_output=True,
+                timeout=self.timeout,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise ProviderError("claude-cli timed out") from exc
+        if completed.returncode != 0:
+            detail = completed.stderr.strip().splitlines()
+            message = detail[-1] if detail else f"exit {completed.returncode}"
+            raise ProviderError(f"claude-cli failed: {message}")
+        if not completed.stdout.strip():
+            raise ProviderError("claude-cli returned no completion")
+        return completed.stdout.strip()
 
 
 def _completion_content(body: dict) -> str:
@@ -229,7 +273,7 @@ def run_one(
     condition: str,
     scenarios: list[dict],
     turn_limit: int,
-    client: Chat,
+    client,
     results_path: Path | None,
     log_path: Path,
 ) -> bool:
@@ -309,10 +353,11 @@ def main() -> int:
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--limit", type=int)
     parser.add_argument(
-        "--model",
-        default=os.environ.get("AGENT_MODEL", "nvidia/nemotron-3-super-120b-a12b:free"),
+        "--backend", choices=("openrouter", "claude-cli"),
+        default=os.environ.get("AGENT_BACKEND", "openrouter"),
     )
-    parser.add_argument("--temperature", type=float, default=0.0)
+    parser.add_argument("--model", default=os.environ.get("AGENT_MODEL"))
+    parser.add_argument("--temperature", type=float)
     args = parser.parse_args()
     if args.runs < 1 or args.turn_limit < 1:
         parser.error("--runs and --turn-limit must be positive")
@@ -323,7 +368,12 @@ def main() -> int:
     if args.limit is not None:
         scenarios = scenarios[:args.limit]
     conditions = CONDITIONS if args.all else (args.condition,)
-    client = Chat(args.model, args.temperature)
+    if args.backend == "openrouter":
+        model = args.model or "nvidia/nemotron-3-super-120b-a12b:free"
+        temperature = 0.0 if args.temperature is None else args.temperature
+        client = Chat(model, temperature)
+    else:
+        client = ClaudeCLIChat(args.model or "haiku", args.temperature)
     results_path = None if args.smoke else ROOT / "results.csv"
     log_dir = ROOT / ("smoke" if args.smoke else "logs")
 
