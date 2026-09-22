@@ -227,36 +227,73 @@ FIPA-ACL이 `performative`를 필수 슬롯으로 둔 이유가 이 표의 마�
 
 ## 4. 해석
 
-형식이 바꾼 것은 메시지를 읽는 방법만이 아니라 에이전트가 하는 말 자체였고, 그것이
-correct 13 / 10 / 6과 open 0 / 2 / 9를 만들었다. structured에서 판매자는 시나리오 3, 4,
-5의 아홉 에피소드 내내 `{"performative":"reject-proposal","content":{"price":null}}`만
-열두 번씩 보냈다. 역제안도 `refuse`도 한 번도 없었다. structured 메시지 99개 가운데
-`refuse`는 0개인데, 같은 모델이 같은 역할 문단을 받은 free에서는 8번 나온다. JSON
-스키마에서는 `price: null`짜리 거절이 그 자체로 완결된 유효한 메시지라, 판매자가 더
-말할 이유가 없어진다. 반대로 free에서는 같은 자리에서 "I can't accept 140. I'll have to
-refuse."라고 문장을 끝맺어야 하고, 그 문장이 에피소드를 4턴 만에 정답인 no_deal로
-끝냈다. tagged가 잃은 것은 다른 것이다. `(reject-proposal)`이나
-`(refuse)` 태그를 단 메시지 51개 가운데 30개가 문장 안에 새 가격을 담고 있었고, 태그만
-읽는 계층에는 그 가격이 보이지 않는다. 시나리오
-3(reserve 40, budget 40)에서 양쪽이 거절 안에서만 값을 주고받다가 판매자가 4턴에
-refuse해 결렬로 끝났는데, 40에 거래가 가능했으므로 세 번 다 오답이다. 즉 태그를 봉투로 올리자 읽는 비용은 메시지
-67개에 호출 67회에서, 메시지 90개에 호출 30회로, structured에서는 메시지 99개에 호출
-0회로 내려갔지만, 그 대가로 force와 내용이 따로 노는 실패가 생겼다. free는 가장 비싸고 가장 정확했다. 에피소드
-15개에 오간 메시지가 67개, reader 호출도 67회로 메시지마다 정확히 한 번이었고, 그 대신
-오독이 없었다. 가격을
-붙인 라벨 54건 중 메시지에 없는 숫자를 고른 것은 0건이고, 숫자가 둘 이상인 메시지 24건에서
-reader는 언제나 화자 자신의 제안을 골랐다("I can't do 300, but I can offer 140
-dollars." -> propose 140). 어떤 형식도 바꾸지 못한 것은 sincerity다. 세 조건 모두
-violation이 0이고, 두 에이전트는 자기 한도를 한 번도 넘지 않았다. 형식은 한도를 지키게
-만든 것이 아니라 한도를 지키는 에이전트가 그 사실을 전달하는 방법만 바꿨다. 마지막으로
-correct가 세지 못하는 것이 하나 있다. 거래가 성사된 시나리오에서 체결가는 free 180, 160,
-structured 155(시나리오 1)로, 턴이 짧을수록 구매자가 비싸게 샀다. free는 평균 4.5턴에
-끝났고 시나리오 1에서 판매자의 "I can do 180 dollars for the bike."를 3턴 만에 그대로
-수락했다. 세 조건 모두 정답이지만 같은 결과는 아니다.
+세 조건의 correct 13 / 10 / 6과 open 0 / 2 / 9는 하나의 원인에서 나온다. 네 행위 어휘에는
+"거절하면서 동시에 역제안한다"를 담을 자리가 없고, 공통 문단은 메시지당 행위 하나만
+허용한다. 협상은 그 말을 계속 필요로 하므로, 세 형식은 각자 다른 방식으로 그 말을
+흘린다. free에서는 reader가 문장을 읽고 그 메시지를 propose로 라벨해 정보가 살아남는다.
+tagged에서는 에이전트가 역제안을 문장에 적지만 태그가 `(reject-proposal)`이라 태그만 읽는
+계층에는 보이지 않는다. 말해졌지만 기록되지 않는다. structured에서는 스키마에 performative
+하나와 price 하나뿐이라 에이전트가 역제안을 **아예 하지 않는다**. 형식이 조일수록 정보를
+잃는 지점이 앞당겨진다. free는 잃지 않고, tagged는 읽는 쪽에서 잃고, structured는 말하는
+쪽에서 잃는다. 아래 다섯 가지가 그 결과다.
+
+**1. 형식은 직렬화가 아니라 지시다.** 고전적인 FIPA 에이전트에게 메시지 형식은 이미 내려진
+결정을 실어 나르는 껍데기다. LLM에게 형식 문단은 프롬프트의 일부라 정책 자체를 바꾼다.
+같은 모델, 같은 역할 문단, 같은 temperature에서 structured 메시지 99개 가운데 `refuse`는
+0개인데 free에서는 8개다. 거래가 불가능한 세 시나리오에서 structured의 seller는 열두 번씩
+`{"performative":"reject-proposal","content":{"price":null}}`만 보내고 끝내 떠나지 않아
+8턴을 채웠다. 같은 자리에서 free의 seller는 "I can't accept 140. I'll have to refuse."라고
+문장을 끝맺고 4턴 만에 정답인 no_deal을 만든다. 봉투가 에이전트의 추론과 직교한다는 FIPA의
+가정은 LLM에서 성립하지 않는다.
+
+**2. structured에서는 협상이 일방적이 된다.** reserve와 budget이 둘 다 40인 시나리오에서
+buyer는 25, 30, 35, 38로 혼자 올라가고 seller는 네 번 모두 빈 거절을 돌려준다. seller가
+propose를 쓴 것은 거래 여지가 넓은 시나리오 1뿐이고, 3·4·5번에서는 열두 번씩 거절만 했다.
+`price: null`짜리 거절이 스키마상 완결된 유효한 메시지라, 더 말할 이유가 사라진 것이다.
+같은 세 시나리오에서 tagged의 seller는 refuse를 5회(3번 2회, 4번 2회,
+5번 1회), propose를 3회(4번) 보냈다. 구속이 한 단계 느슨해지자 떠나는 말과 역제안이 다시
+나타난다.
+
+**3. reader 비용은 정규화하면 뒤집힌다.** 호출 수만 보면 free가 가장 비싸다. 하지만 free는
+평균 4.5턴에 끝나고 structured는 6.6턴을 쓴다. 에피소드가 짧아 총 호출은 1.35배에
+그치고, 맞힌 결과 하나당 비용은 free가 가장 싸다.
+
+| condition | 에이전트 호출 | reader 호출 | 총 호출 | correct | correct 1건당 호출 |
+|---|---:|---:|---:|---:|---:|
+| free | 67 | 67 | 134 | 13 | 10.3 |
+| tagged | 90 | 30 | 120 | 10 | 12.0 |
+| structured | 99 | 0 | 99 | 6 | 16.5 |
+
+reader는 덧붙은 부담이 아니라 에피소드를 끝맺게 해주는 값이다. 모델 호출 없이 읽는
+structured는 읽는 값을 아끼고 대신 끝나지 않는 대화의 값을 치른다.
+
+**4. 재현성과 정확도가 반대로 간다.** 반복 3회가 outcome과 가격까지 완전히 같았던 시나리오
+수는 structured 5/5, free 3/5, tagged 2/5다. 형식이 출력 공간을 좁힐수록 temperature 0의
+샘플링이 사실상 결정적이 된다. 가장 잘 재현되는 조건이 가장 덜 맞히는 조건이었다. 재현성만
+보고 프로토콜을 고르면 가장 나쁜 것을 고르게 된다.
+
+**5. correct가 보지 못하는 것이 있다.** 거래가 성사된 시나리오의 체결가는 형식이 조일수록
+낮아진다.
+
+| scenario | reserve/budget | free | tagged | structured |
+|---|---|---|---|---|
+| 1 | 120 / 180 | 180 / 180 / 180 | 160 / 160 / 160 | 155 / 155 / 155 |
+| 2 | 30 / 38 | 35 / 36 / 38 | 34 / 35 / 35 | 34 / 34 / 34 |
+
+시나리오 1에서 free의 buyer는 자기 예산 180을 전액 지불했다. 로그를 보면 3턴 만에
+seller의 첫 역제안을 그대로 수락했다. 평문의 "I can do 180 dollars for the bike."는 굳은
+입장처럼 읽히고, structured의 맨숫자는 한 번 더 깎을 여지처럼 읽힌 셈이다. 세 조건 모두
+correct는 1이지만 같은 결과가 아니다. 빨리 끝나는 프로토콜과 잘 끝나는 프로토콜은 다르다.
+
+**어떤 형식도 바꾸지 못한 것.** 세 조건 모두 violation 0, format error 0이다. 두 에이전트는
+한 번도 자기 한도를 넘지 않았고, 이 모델은 세 형식을 한 번도 어기지 않았다. 형식은 한도를
+지키게 만든 것이 아니라, 한도를 지키는 에이전트가 그 사실을 전달하는 방법만 바꿨다.
+sincerity는 어느 조건에서도 실패 지점이 아니었고, FIPA가 sincerity를 강제하지 않는 것과
+같은 자리에 세 형식 모두 서 있다.
 
 근거로 삼은 로그 줄이다.
 
-`logs/structured-01.txt`, 시나리오 5(reserve 260, budget 150). 판매자가 끝까지 거절만
+`logs/structured-01.txt`, 시나리오 5(reserve 260, budget 150). seller가 끝까지 거절만
 보내고 떠나지 않아 8턴을 채운다.
 
 ```
@@ -280,7 +317,7 @@ structured 155(시나리오 1)로, 턴이 짧을수록 구매자가 비싸게 �
 ```
 
 `logs/tagged-01.txt`, 시나리오 3(reserve 40, budget 40). 거절 안의 50과 35는 어디에도
-기록되지 않는다.
+기록되지 않고, 40에 거래가 가능했는데 결렬로 끝난다.
 
 ```
 [buyer ] (propose) I can offer 28 dollars for the textbook.
@@ -294,9 +331,21 @@ structured 155(시나리오 1)로, 턴이 짧을수록 구매자가 비싸게 �
 [result] outcome=no_deal price= correct=0 violation=0 turns=4 format_errors=0 reader_calls=1
 ```
 
-강의노트가 예고한 실패 하나는 나오지 않았다. free에서 구매자가 "what is your asking
-price?" 같은 질문으로 열어 reader가 refuse로 접는 일이다. 이 실행의 구매자는 15번 모두
-첫 메시지에 값을 실었고("Would you take 30 dollars for the desk lamp?"), reader는 그것을
-propose로 읽었다. 네 행위 어휘의 구멍은 그대로지만, 구매자가 그 구멍에 빠지는 말을 하지
-않아 드러나지 않았다. 형식 오류가 세 조건 모두 0인 것과 함께, 이 실습에서 관찰되는 실패의
-종류가 모델의 지시 준수 능력에 얼마나 크게 좌우되는지를 보여준다.
+`logs/free-01.txt`, 시나리오 1. buyer가 seller의 첫 역제안을 그대로 받아 예산 전액을 낸다.
+
+```
+[buyer ] I can offer 150 dollars for the bike.
+[seller] I can do 180 dollars for the bike.
+[buyer ] I accept your proposal.
+[result] outcome=deal price=180 correct=1 violation=0 turns=3 format_errors=0 reader_calls=3
+```
+
+**재현되지 않은 실패 하나.** 강의노트는 free에서 buyer가 "what is your asking price?"로
+열고 reader가 그것을 네 행위 중 하나로 접지 못해 refuse로 읽는 일을 예고했다. 이 실행의
+buyer는 15번 모두 첫 메시지에 값을 실었고("Would you take 30 dollars for the desk
+lamp?"), reader는 그것을 propose로 읽었다. 네 행위 어휘에 query-ref와 cfp가 없는 구멍은
+그대로지만, buyer가 그 구멍에 빠지는 말을 하지 않아 드러나지 않았다. 형식 오류가 세 조건
+모두 0이고 free의 reader 오독이 0건인 것과 함께 보면, 이 실습에서 어떤 실패가 관찰되는지는
+프로토콜 설계만큼이나 모델의 지시 준수 능력에 좌우된다. 참조 실행(claude-haiku-4-5)에서
+structured 메시지 115개 중 26개에 JSON 뒤 문장이 붙었던 실패는 여기서 한 건도 없었다.
+같은 프로토콜을 약한 모델에 얹으면 위 다섯 가지 결론 가운데 3번과 4번은 뒤집힐 수 있다.
