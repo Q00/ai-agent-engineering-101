@@ -1,9 +1,11 @@
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from contract_net import Contractor, build_team, choose_winner, parse_bid, run_round
+from run_experiment import read_setting
 
 
 class ScriptedModel:
@@ -103,6 +105,15 @@ class RoundTests(unittest.TestCase):
                 logger({"event": "bid", "contractor": "A"})
             lines = [json.loads(line) for line in path.read_text().splitlines()]
         self.assertEqual([line["event"] for line in lines], ["announcement", "bid"])
+
+
+class RunnerTests(unittest.TestCase):
+    @patch.dict("os.environ", {"OPENAI_BASE_URL": "https://openrouter.ai/api/v1\n"})
+    def test_environment_settings_strip_accidental_newlines(self):
+        self.assertEqual(
+            read_setting("OPENAI_BASE_URL"),
+            "https://openrouter.ai/api/v1",
+        )
 
 
 if __name__ == "__main__":
