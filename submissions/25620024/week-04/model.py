@@ -1,10 +1,10 @@
-"""Week 04 — model call and meter, adapted from week-03's model.py.
+"""Week 04 — model call and meter.
 
-Negotiation needs no tools, but unlike week 03's one-shot bid, each side must
-see the turns so far, so call_conversation() takes a message history instead
-of a single user string (call_model() is kept for any one-shot use, e.g. the
-free/tagged reader).
-Provider is picked from the environment, same as week 02:
+Negotiation needs no tools: call_conversation() sends a system prompt plus
+the turn history so far (the other side's messages as "user", this agent's
+own prior messages as "assistant") and returns the raw reply text.
+
+Provider is picked from the environment:
   ANTHROPIC_API_KEY set          -> Anthropic SDK (pip install anthropic)
   otherwise                      -> OpenAI-compatible (pip install openai)
                                     OPENAI_API_KEY, optional OPENAI_BASE_URL
@@ -22,7 +22,7 @@ if PROVIDER == "anthropic" and _requested and not _requested.startswith("claude-
           f"using {_DEFAULTS['anthropic']!r} instead.")
     _requested = ""
 MODEL = _requested or _DEFAULTS[PROVIDER]
-TEMPERATURE = 0  # fixed for every condition; see run.py header comment
+TEMPERATURE = 0  # fixed for every condition
 
 _client = None
 
@@ -52,32 +52,15 @@ class Meter:
 
 
 def call_model(system: str, user: str, meter: "Meter") -> str:
-    """One model call, system + one user message, no history, no tools.
-    Returns the raw text reply (the contractor's bid, still unparsed)."""
-    if PROVIDER == "anthropic":
-        resp = _get_client().messages.create(
-            model=MODEL, max_tokens=300, temperature=TEMPERATURE,
-            system=system, messages=[{"role": "user", "content": user}])
-        meter.add(resp.usage.input_tokens, resp.usage.output_tokens)
-        return "".join(b.text for b in resp.content if b.type == "text")
-    else:
-        # Anthropic accepts temperature=0 directly; the OpenAI-compatible
-        # path is used for OpenRouter free models too, same parameter name.
-        resp = _get_client().chat.completions.create(
-            model=MODEL, temperature=TEMPERATURE,
-            messages=[{"role": "system", "content": system},
-                      {"role": "user", "content": user}])
-        usage = resp.usage
-        meter.add(getattr(usage, "prompt_tokens", 0),
-                   getattr(usage, "completion_tokens", 0))
-        return resp.choices[0].message.content or ""
+    """One-shot call: system + a single user message, no history. Used by
+    the reader (it only ever looks at one message at a time)."""
+    return call_conversation(system, [{"role": "user", "content": user}], meter)
 
 
 def call_conversation(system: str, messages: list, meter: "Meter") -> str:
-    """Like call_model, but `messages` is the full turn history so far:
-    a list of {"role": "user"|"assistant", "content": str}. Each side calls
-    this with its own system prompt and the same shared history, so it
-    always answers as if it just received the other side's last message."""
+    """`messages` is the turn history so far: a list of
+    {"role": "user"|"assistant", "content": str}. The caller decides which
+    side is "assistant" (itself) and which is "user" (the other agent)."""
     if PROVIDER == "anthropic":
         resp = _get_client().messages.create(
             model=MODEL, max_tokens=300, temperature=TEMPERATURE,
