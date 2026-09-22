@@ -28,6 +28,14 @@ Use reject-proposal when it rejects the current offer but continues negotiation.
 Use refuse when it leaves or ends negotiation without a deal.
 """
 
+PRICE_READER_SYSTEM = """
+You are a price reader.
+
+Extract the offered price from the negotiation message.
+Reply with exactly one JSON object:
+{"price": integer_or_null}
+"""
+
 
 def llm_read(message, meter: Meter):
     raw = call_model(
@@ -65,6 +73,35 @@ def llm_read(message, meter: Meter):
     }, raw
 
 
+def llm_read_price(message, meter: Meter):
+    raw = call_model(
+        system=PRICE_READER_SYSTEM,
+        messages=[
+            {
+                "role": "user",
+                "content": f"Extract the offered price:\n{message}",
+            }
+        ],
+        meter=meter,
+        temperature=0,
+    )
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return None, raw
+
+    if not isinstance(data, dict):
+        return None, raw
+
+    price = data.get("price")
+
+    if not isinstance(price, int):
+        return None, raw
+
+    return price, raw
+
+
 def read_free(message, meter: Meter):
     parsed, raw = llm_read(message, meter)
     return parsed, raw, 1
@@ -88,14 +125,14 @@ def read_tagged(message, meter: Meter):
             "price": None,
         }, "tag parsed", 0
 
-    parsed, raw = llm_read(message, meter)
+    price, raw = llm_read_price(message, meter)
 
-    if parsed is None:
+    if price is None:
         return None, raw, 1
 
     return {
         "performative": performative,
-        "price": parsed.get("price"),
+        "price": price,
     }, raw, 1
 
 
