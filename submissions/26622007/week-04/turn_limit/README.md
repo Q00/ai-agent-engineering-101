@@ -18,6 +18,7 @@
 ```sh
 python3 -m unittest discover -s submissions/26622007/week-04/turn_limit -p 'test_*.py' -v
 python3 -u submissions/26622007/week-04/turn_limit/run_unlimited.py --suite unlimited-deepseek-20260922 --env-file submissions/26622007/.env --jobs 3 --observation-seconds 180
+python3 submissions/26622007/week-04/turn_limit/compare.py --suite unlimited-deepseek-20260922
 ```
 
 원본 로그는 `../logs/<run>.jsonl` 및 `.txt`, 결과는 `runs/<suite>/results.csv`,
