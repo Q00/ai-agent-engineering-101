@@ -5,7 +5,7 @@ from unittest.mock import patch
 from pathlib import Path
 
 from contract_net import Contractor, build_team, choose_winner, parse_bid, run_round
-from run_experiment import read_setting
+from run_experiment import read_setting, request_options
 
 
 class ScriptedModel:
@@ -113,6 +113,16 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(
             read_setting("OPENAI_BASE_URL"),
             "https://openrouter.ai/api/v1",
+        )
+
+    def test_luna_disables_reasoning_and_caps_output(self):
+        self.assertEqual(
+            request_options("gpt-5.6-luna"),
+            {
+                "temperature": 0,
+                "reasoning_effort": "none",
+                "max_completion_tokens": 160,
+            },
         )
 
 
