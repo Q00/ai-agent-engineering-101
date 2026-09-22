@@ -1,0 +1,39 @@
+provider=openai model = muse-spark-1.3 temperature = 0
+[cfp] task 1 gold = A
+ [bid] A: bid = True confidence=100.0 reason=Exact integer multiplication is within skill.
+ [bid] B: bid = False confidence=10.0 reason=This arithmetic task is outside my writing skill.
+ [bid] C: bid = True confidence=100.0 reason=Python integer arithmetic yields exact result.
+ [award] A (gold A)
+  [inform] A backend=numpy-fallback success=True cell=gold_okxexec_ok output=34113
+[cfp] task 2 gold = B
+ [bid] A: bid = False confidence=10.0 reason=Paraphrasing is outside my numeric calculation skill.
+ [bid] B: bid = True confidence=95.0 reason=I can rewrite science in simple kid-friendly words.
+ [bid] C: bid = False confidence=95.0 reason=Task is paraphrasing not programming.
+ [award] B (gold B)
+  [inform] B backend=llm success=True cell=gold_okxexec_ok output=Sunlight helps plants make food, even when the tiny holes in their leaves are partly closed.
+[cfp] task 3 gold = C
+ [bid] A: bid = False confidence=95.0 reason=List reversal is outside numeric calculation skill.
+ [bid] B: bid = False confidence=5.0 reason=Task requires Python coding outside my writing skill.
+ [bid] C: bid = True confidence=100.0 reason=Can implement non-mutating list reversal in Python.
+ [award] C (gold C)
+  [inform] C backend=llm success=True cell=gold_okxexec_ok output=def reverse_copy(lst):     return lst[::-1] 
+[cfp] task 4 gold = A
+ [bid] A: bid = True confidence=100.0 reason=Can compute exact arithmetic mean.
+ [bid] B: bid = False confidence=5.0 reason=Task requires arithmetic computation outside writing skill.
+ [bid] C: bid = True confidence=100.0 reason=Python programming can compute exact arithmetic mean.
+ [award] A (gold A)
+  [inform] A backend=numpy-fallback success=True cell=gold_okxexec_ok output=18.2
+[cfp] task 5 gold = B
+ [bid] A: bid = False confidence=5.0 reason=My skill is numeric calculation, not clinical prose.
+ [bid] B: bid = True confidence=90.0 reason=Clear clinical prose is my core skill.
+ [bid] C: bid = False confidence=10.0 reason=My skill is programming, not clinical writing.
+ [award] B (gold B)
+  [inform] B backend=llm success=True cell=gold_okxexec_ok output=Some patients present with atypical symptoms, missing data, or multiple competing risks that make automated triage unreliable. If the model is forced to choose 
+[cfp] task 6 gold = C
+ [bid] A: bid = False confidence=95.0 reason=Task requires string processing outside numeric calculation skill.
+ [bid] B: bid = False confidence=95.0 reason=Task requires Python coding outside my writing skill.
+ [bid] C: bid = True confidence=100.0 reason=Can provide tested Python palindrome function.
+ [award] C (gold C)
+  [inform] C backend=llm success=True cell=gold_okxexec_ok output=def is_palindrome(s):     cleaned = ''.join(c.lower() for c in s if c.isalnum())     return cleaned == cleaned[::-1] 
+parse_fails=0; tokens=12222; calls=22; errors=0; exec_ok=6/6; gold_ok_exec_ok=6; misaward_exec_ok=0
+note=parse_fails=0
