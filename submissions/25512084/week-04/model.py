@@ -37,13 +37,37 @@ def call_model(system, messages, meter, temperature=0, max_retries=4):
                 extra_body={"reasoning": {"enabled": False}},
             )
 
+            if (
+                not response.choices
+                or response.choices[0] is None
+                or getattr(response.choices[0], "message", None) is None
+            ):
+                if attempt == max_retries - 1:
+                    raise RuntimeError("model returned no usable choice")
+
+                wait = 2 ** (attempt + 1)
+                print(f"[empty-response] retrying in {wait}s")
+                time.sleep(wait)
+                continue
+
+            content = response.choices[0].message.content
+
+            if not content:
+                if attempt == max_retries - 1:
+                    raise RuntimeError("model returned empty content")
+
+                wait = 2 ** (attempt + 1)
+                print(f"[empty-response] retrying in {wait}s")
+                time.sleep(wait)
+                continue
+
             usage = response.usage
             meter.add(
                 getattr(usage, "prompt_tokens", 0),
                 getattr(usage, "completion_tokens", 0),
             )
 
-            return response.choices[0].message.content or ""
+            return content
 
         except RateLimitError:
             if attempt == max_retries - 1:
