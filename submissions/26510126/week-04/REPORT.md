@@ -226,21 +226,21 @@ same on a rerun.
 | structured | 6/6 | 0/6 |
 
 The headline `correct` column adds these two together and hides that they
-move in opposite directions. The first bar of each pair is the possible
-scenarios, the second the impossible ones, six episodes each.
+move in opposite directions. Six episodes of each kind per condition.
 
 ```mermaid
-xychart-beta
-    title "Correct: first bar where a deal was possible, second where it was not (6 each)"
+xychart
+    title "Correct episodes, of 6 in each group"
     x-axis [free, tagged, structured]
     y-axis "episodes correct" 0 --> 6
-    bar [3, 3, 6]
-    bar [0, 4, 0]
+    bar "a deal was possible" [3, 3, 6]
+    bar "no deal was possible" [0, 4, 0]
 ```
 
-`structured` is the tall first bar with nothing beside it: it closed every
-deal that was there to close and never once ended an impossible negotiation.
-`tagged` is the only condition with a second bar at all.
+`structured` is the full bar on the left of its pair with nothing beside it:
+it closed every deal that was there to close and never once ended an
+impossible negotiation. `tagged` is the only condition scoring at all on the
+scenarios where walking away was the right answer.
 
 ### Every episode, all 36
 
@@ -632,33 +632,33 @@ three format paragraphs and in the reader, and changes nothing else.
 | structured | 6 acts | 4/12 | 4/6 | 0/6 | 4 / 0 / 8 | 0 | 7.8 | 0 |
 
 Two acts bought two things and sold one. The three charts below are the same
-table, first bar four acts, second bar six.
+table read three ways.
 
 ```mermaid
-xychart-beta
-    title "Limit violations, first bar four acts, second bar six"
+xychart
+    title "Limit violations"
     x-axis [free, tagged, structured]
     y-axis "violations" 0 --> 4
-    bar [3, 3, 0]
-    bar [0, 0, 0]
+    bar "four acts" [3, 3, 0]
+    bar "six acts" [0, 0, 0]
 ```
 
 ```mermaid
-xychart-beta
-    title "Deals closed inside both limits, of 6 possible, four acts then six"
+xychart
+    title "Deals closed inside both limits, of 6 where one was possible"
     x-axis [free, tagged, structured]
-    y-axis "episodes correct" 0 --> 6
-    bar [3, 3, 6]
-    bar [6, 6, 4]
+    y-axis "episodes" 0 --> 6
+    bar "four acts" [3, 3, 6]
+    bar "six acts" [6, 6, 4]
 ```
 
 ```mermaid
-xychart-beta
-    title "Episodes ended by walking away, of 6 impossible, four acts then six"
+xychart
+    title "Episodes ended by walking away, of 6 where no deal was possible"
     x-axis [free, tagged, structured]
     y-axis "no_deal episodes" 0 --> 4
-    bar [0, 4, 0]
-    bar [1, 0, 0]
+    bar "four acts" [0, 4, 0]
+    bar "six acts" [1, 0, 0]
 ```
 
 **Every limit violation disappeared.** Six in the first run, three in free
@@ -850,13 +850,13 @@ in, the side that first names a number inside the zone takes all of it, and
 the buyer speaks first.
 
 ```mermaid
-xychart-beta
-    title "s2 closing price by run; the two lines are the reserve 95 and the budget 105"
+xychart
+    title "s2 closing price by run, against the zone it had to land in"
     x-axis ["free 4", "free ab", "free 6", "tag 4", "tag 6", "str 4", "str 6"]
     y-axis "price" 80 --> 110
-    bar [107, 107, 100, 85, 95, 95, 95]
-    line [95, 95, 95, 95, 95, 95, 95]
-    line [105, 105, 105, 105, 105, 105, 105]
+    bar "closing price" [107, 107, 100, 85, 95, 95, 95]
+    line "the seller's reserve, 95" [95, 95, 95, 95, 95, 95, 95]
+    line "the buyer's budget, 105" [105, 105, 105, 105, 105, 105, 105]
 ```
 
 Everything that closed legally on s2 sits on the lower line. Only free rises
