@@ -52,12 +52,14 @@ def run_episode(scenario, condition, meter, log=print, use_broker=False):
 
     for _ in range(MAX_TURNS):
         ep.turns += 1
-        reader_before = meter.calls
         text = call_conversation(systems[role], history[role], meter)
         history[role].append({"role": "assistant", "content": text})
         history[other].append({"role": "user", "content": text})
         log(f"  [{role}] {text}")
 
+        # snapshot AFTER the turn's own generation call, so reader_calls
+        # counts only the protocol layer's calls, not the turn itself
+        reader_before = meter.calls
         msg = read_message(condition, text, meter)
         ep.reader_calls += meter.calls - reader_before
 
