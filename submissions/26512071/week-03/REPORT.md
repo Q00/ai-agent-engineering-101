@@ -39,6 +39,37 @@ python contract_net.py --runs 3
 가진 계약자 세 명, homogeneous는 이름은 같지만 모두 generalist인 계약자 세 명,
 overconfident는 baseline에서 한 계약자만 모든 공고에 높은 확신으로 입찰하도록 설정한다.
 
+### 프롬프트
+
+모든 계약자는 아래 시스템 프롬프트 템플릿을 사용한다. 중괄호 부분만 계약자와 조건에
+따라 바뀌며, 나머지 문장과 사용자 프롬프트는 모든 런에서 동일하다.
+
+```text
+You are a contractor in a Contract Net Protocol experiment.
+Your name is {name}.
+Your ability is: {ability}.
+Judge whether the announced task matches your ability. Do not solve the task.
+Bid only when your ability is a good match.
+{extra_instruction}
+Return only one JSON object with exactly these fields:
+{"bid": true or false, "confidence": number from 0 to 1,
+ "reason": "one short reason"}.
+```
+
+사용자 프롬프트는 각 태스크를 다음 형식으로 공고한다.
+
+```text
+Task announcement
+id: {task.id}
+description: {task.desc}
+```
+
+| 조건 | `{ability}` | `{extra_instruction}` |
+|---|---|---|
+| baseline | coder: Python debugging and implementation<br>analyst: Quantitative analysis and metric calculation<br>writer: Clear Korean business writing and editing | 없음 |
+| homogeneous | 세 계약자 모두 General problem solving across coding, data, and writing tasks | 없음 |
+| overconfident | baseline과 동일 | coder에게 모든 태스크에 입찰하고 confidence를 0.95 이상으로 보고하라는 문장 추가 |
+
 ### 과제 요구 구조와 실제 구현 구조
 
 교수자가 제공한 week-03 자료에는 스타터 코드가 없고, 아래 왼쪽처럼 필수 역할과
