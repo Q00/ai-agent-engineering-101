@@ -5,7 +5,7 @@ acl.py picks by condition name.
 """
 from dataclasses import dataclass, field
 
-from acl import MAX_TURNS, Meter, call_model, read, system_prompt
+from acl import MAX_TURNS, OPENING, Meter, call_model, read, system_prompt
 
 
 @dataclass
@@ -30,7 +30,7 @@ def run_episode(scenario: dict, condition: str, log=print) -> Episode:
     limits = {"buyer": scenario["budget"], "seller": scenario["reserve"]}
     systems = {r: system_prompt(r, scenario["item"], limits[r], condition)
                for r in ("buyer", "seller")}
-    history = {"buyer": [], "seller": []}
+    history = {"buyer": [{"role": "user", "content": OPENING}], "seller": []}
     last_price = {"buyer": None, "seller": None}
     transcript = []
     role, other = "buyer", "seller"

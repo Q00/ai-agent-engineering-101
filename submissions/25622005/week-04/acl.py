@@ -40,6 +40,12 @@ TEMPERATURE_SENT = TEMPERATURE if PROVIDER == "openai" else "provider-default"
 CONDITIONS = ("free", "tagged", "structured")
 ACTS = ("propose", "accept-proposal", "reject-proposal", "refuse")
 
+# The buyer opens, so its history is empty on the first turn. The Anthropic API
+# rejects a call with no messages, so the buyer is handed this one line to open
+# on. It is sent in both providers and in all three conditions, which keeps it a
+# control variable rather than a difference between paths.
+OPENING = "Begin the negotiation."
+
 RETRIES = 5             # 429 comes in bursts on free endpoints
 BACKOFF = 4             # seconds, doubled each retry
 
