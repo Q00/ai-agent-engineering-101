@@ -16,8 +16,11 @@ results.csv에 append하고, 이미 있는 (run, scenario) 쌍은 건너뛴다. 
 """
 import argparse
 import csv
+import fcntl
 import json
+import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import acl
@@ -144,12 +147,21 @@ def done_pairs():
 
 
 def append_row(row):
+    """results.csv에 한 줄 붙인다.
+
+    run들을 병렬로 돌리면 여러 프로세스가 같은 파일에 append한다. flock으로 직렬화한다.
+    한 줄은 짧아서 락을 잡는 시간이 호출 한 번(약 10초)에 비해 무시할 수준이다."""
     new = not RESULTS.is_file()
     with RESULTS.open("a", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=HEADER)
-        if new:
-            w.writeheader()
-        w.writerow({k: ("" if row.get(k) is None else row[k]) for k in HEADER})
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            w = csv.DictWriter(f, fieldnames=HEADER)
+            if new and f.tell() == 0:
+                w.writeheader()
+            w.writerow({k: ("" if row.get(k) is None else row[k]) for k in HEADER})
+            f.flush()
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
 
 
 def run(condition, repeat, scenarios):
@@ -179,18 +191,53 @@ def run(condition, repeat, scenarios):
     log.close()
 
 
+def ensure_header():
+    """헤더 줄을 미리 만들어 둔다. 병렬 실행에서 두 프로세스가 동시에 '파일이 없다'를
+    보고 헤더를 두 번 쓰는 경우를 없앤다."""
+    if not RESULTS.is_file():
+        with RESULTS.open("w", encoding="utf-8", newline="") as f:
+            csv.DictWriter(f, fieldnames=HEADER).writeheader()
+
+
+def run_parallel(jobs, workers):
+    """run들을 각각 별도 프로세스로 돌린다.
+
+    에피소드 안에서는 턴을 주고받아야 하므로 호출이 직렬일 수밖에 없지만, run끼리는
+    서로 아무것도 공유하지 않는다(로그 파일이 다르고, results.csv는 flock으로 보호된다).
+    자식의 stdout은 버린다. 같은 내용이 logs/<run>.txt에 이미 들어간다.
+    """
+    def one(job):
+        c, r = job
+        p = subprocess.run([sys.executable, str(Path(__file__).resolve()), c, str(r)],
+                           capture_output=True, text=True)
+        return c, r, p.returncode, p.stderr[-300:]
+
+    print(f"# {len(jobs)} run(s), {workers} at a time")
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for c, r, code, err in pool.map(one, jobs):
+            status = "done" if code == 0 else f"FAILED ({code}) {err}"
+            print(f"  {c}-{r}: {status}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("condition", nargs="?", choices=acl.CONDITIONS)
     ap.add_argument("repeat", nargs="?", type=int)
     ap.add_argument("--all", action="store_true", help="9 run 전부")
+    ap.add_argument("--jobs", type=int, default=9,
+                    help="--all일 때 동시에 돌릴 run 수. run끼리는 독립이므로 "
+                         "벽시계 시간이 가장 긴 run 하나로 줄어든다. 1이면 직렬.")
     a = ap.parse_args()
 
     scenarios = json.loads(SCENARIOS.read_text(encoding="utf-8"))
+    ensure_header()
     if a.all:
-        for c in acl.CONDITIONS:
-            for r in (1, 2, 3):
+        jobs = [(c, r) for c in acl.CONDITIONS for r in (1, 2, 3)]
+        if a.jobs <= 1:
+            for c, r in jobs:
                 run(c, r, scenarios)
+        else:
+            run_parallel(jobs, a.jobs)
     elif a.condition and a.repeat:
         run(a.condition, a.repeat, scenarios)
     else:
