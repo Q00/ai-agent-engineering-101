@@ -61,4 +61,8 @@ python3 run.py --all --runs 3
 
 ## 선택 확장 실험
 
-필수 실험과 별도로 자기 서술, Manager의 관찰 평가, 공유 사건 기록을 분리한 동적 정체성 모델을 구현했다. 이 실험은 confidence를 작업 이해도, 능력 확신, 성공 예상, 참여 의사로 나눠 언어적 혼동을 검사하고, 공개 capability tag와 맞지 않는 높은 능력 주장에 한 번의 재질문을 보낸다. 낙찰 결과는 분야별 신뢰도, confidence 오차, 최근 8회 trajectory로 누적되며, 관찰이 쌓일수록 Manager의 보정값이 자기 confidence보다 낙찰 점수에 크게 반영된다. 전체 작업을 실행한 첫 결과는 correct 6/6, misawards 0, clarifications 7, semantic warnings 14였으며 25회 LLM 호출과 56개 메시지가 필요했다. 정확도는 높아졌지만 capability 검사와 trajectory가 동시에 적용됐고 메시지 비용도 증가했으므로 trajectory 단독 효과로 해석하지 않는다. `run_extended.py`로 실행하며 결과와 상태는 필수 세 조건의 결과에 섞지 않는다.
+필수 실험과 별도로 자기 서술, Manager의 관찰 평가, 공유 사건 기록을 분리한 동적 정체성 모델을 구현했다. 이 실험은 confidence를 작업 이해도, 능력 확신, 성공 예상, 참여 의사로 나눠 언어적 혼동을 검사하고, 공개 capability tag와 맞지 않는 높은 능력 주장에 한 번의 재질문을 보낸다. 낙찰 결과는 분야별 신뢰도, confidence 오차, 최근 8회 trajectory로 누적되며, 관찰이 쌓일수록 Manager의 보정값이 자기 confidence보다 낙찰 점수에 크게 반영된다.
+
+전체 작업을 실행한 첫 결과는 correct 6/6, misawards 0, clarifications 7, semantic warnings 14였으며 25회 LLM 호출과 56개 메시지가 필요했다. 용어를 정리한 뒤 같은 모델과 seed로 다시 실행하는 과정에서는 빈 모델 응답으로 세 번 중단됐다. 응답 형태를 기록하도록 오류 처리를 보강한 마지막 중단 로그에서 OpenRouter가 정상 선택지 대신 504 오류 정보를 반환한 사실을 확인했다. 이후 502, 503, 504에 한해 호출당 최대 2회 재시도한 최종 실행은 correct 6/6, misawards 0, clarifications 6, semantic warnings 6, 메시지 54개를 기록했다. 논리적 LLM 호출에 재시도 5회를 더해 실제 API 요청은 29회였다. 최종 실행에서 각 분야의 Contractor가 두 작업씩 모두 낙찰됐으며, 5번째와 6번째 작업에서는 담당 Contractor가 자기 관찰 기록 부족을 이유로 처음 참여를 거절했지만 의미 모순 검사와 재질문 뒤 참여해 정답으로 선정됐다.
+
+두 성공 실행 모두 정확도는 높았지만 capability 검사, 의미 재질문, trajectory 보정이 동시에 적용됐고 메시지 비용도 증가했으므로 trajectory 단독 효과로 해석하지 않는다. 재시도 역시 provider의 일시적 장애를 견디게 할 뿐 입찰 품질을 높이는 장치는 아니다. `run_extended.py`로 실행하며 결과와 상태는 필수 세 조건의 결과에 섞지 않는다.

@@ -101,10 +101,11 @@ Manager의 선택 점수는 처음에는 Contractor의 `expected_success`를 주
 ```bash
 python3 run_extended.py --smoke --limit 1
 python3 run_extended.py
+AGENT_MAX_RETRIES=2 python3 run_extended.py
 python3 run_extended.py --continue-state
 ```
 
-기본 실행은 같은 seed에서 시작하고, `--continue-state`를 사용하면 앞 실행의 관찰 기록을 이어받는다. 실행 상태는 `state/`에 저장되며 제출 파일에는 포함하지 않는다.
+기본 실행은 같은 seed에서 시작하고, `--continue-state`를 사용하면 앞 실행의 관찰 기록을 이어받는다. `AGENT_MAX_RETRIES`의 기본값은 0이며, 값을 지정하면 OpenRouter 응답에 포함된 502, 503, 504 오류에 한해서만 같은 호출을 다시 시도한다. 오류 응답에는 API 키나 prompt가 아닌 provider, 종료 사유, 오류 코드 같은 응답 형태만 로그로 남긴다. 실행 상태는 `state/`에 저장되며 제출 파일에는 포함하지 않는다.
 
 ## 파일 구성
 
