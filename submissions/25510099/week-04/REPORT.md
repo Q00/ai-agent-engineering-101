@@ -201,3 +201,112 @@ python run.py --condition tagged --dry-run   # 규칙 기반 가짜 에이전트
 ## 4. 해석
 
 명시적 performative가 확실히 산 것은 읽기 비용이었습니다. 리더 호출이 free 125회에서 tagged 59회, structured 0회로 줄었고 파싱 실패는 세 조건 모두 없었으므로, 이 모델에서는 형식이 "읽을 수 있는가"를 바꾸지 못하고 "읽는 데 얼마가 드는가"만 바꿨습니다. 그런데 태그가 정확도를 살 것이라는 기대는 반대로 나왔습니다. correct는 free 17/18, structured 14/18, tagged 9/18이고 위반 5건은 모두 tagged에서 나왔습니다. 원인은 태그가 본문을 배반하는 한 가지 습관입니다. run 04 ticket에서 판매자는 `(reject-proposal) Thanks for your offer, but 50 dollars is too low for me. What about 90 dollars?` 라고 썼고, 이런 숨은 역제안이 30건이었습니다. 태그를 권위로 두는 하네스는 90을 기록하지 않았고, 일곱 번째 메시지 `(accept-proposal) 80 dollars works for me` 를 판매자의 마지막 propose 태그 가격 85에 대한 수락으로 처리해 budget 80을 넘긴 위반 거래로 적었습니다. 에이전트 둘은 80에 합의했다고 믿었습니다. run 05 chair는 더 나쁩니다. 다섯 번째 메시지 `(accept-proposal) That sounds fair. I accept your offer of $130` 는 태그로 기록된 판매자 제안이 없어 공중에 떴고, 이어진 판매자의 `(accept-proposal) Great! I'm glad we could agree on $130` 이 구매자의 첫 제안 90을 수락한 것으로 처리되어 reserve 120 아래의 거래가 되었습니다. 즉 tagged의 위반은 판매자가 실제로 손해를 본 것이 아니라 프로토콜의 기록과 에이전트의 믿음이 갈라진 것이고, FIPA-ACL이 내용 언어를 형식화한 이유가 정확히 여기에 있습니다. 힘만 형식화하고 내용을 자연어에 두면 힘은 내용을 배반하며, 그 배반을 아무도 검증하지 않습니다. structured는 이 균열이 생길 자리가 없어 위반이 0이었지만 대신 표현의 폭을 잃었습니다. run 08 chair에서 구매자는 90을 제안한 뒤 `{"performative": "reject-proposal", "content": {"price": null}}` 만 세 번 반복했고 판매자가 120까지 내려온 뒤 refuse해 가능한 거래가 무산되었으며, lens 세 번은 아무도 refuse를 쓰지 않아 10턴을 다 썼습니다. free 조건에서 물음표로 열린 오프닝 18개가 모두 propose로 읽힌 것은 README의 예상과 달랐는데, 공통 문단이 네 행위를 설명해 준 덕에 구매자가 질문 안에 가격을 넣었기 때문이고, 이는 어휘를 프롬프트로 공유하면 리더가 힘을 잘 읽는다는 뜻입니다. 대신 free의 실패는 완곡함에서 왔습니다. run 03 lens의 아홉 번째 메시지 `I can't go above $250 ... Otherwise, I may have to pass` 는 refuse가 아닌 reject로 읽혀 유일한 open이 되었습니다. 형식이 바꾸지 못한 것도 있습니다. 평균 턴 수는 6.5에서 7.0 사이로 거의 같았고, 에이전트가 자기 한도를 실제로 넘긴 경우는 어느 조건에도 없었습니다. 형식과 무관하게 달라진 것은 거래 가격이었습니다. bike와 book에서 structured의 판매자는 reserve와 같은 첫 제안을 2턴에 수락했고 free의 판매자는 170~185, 46~48까지 끌어올렸습니다. JSON 한 줄에는 "그보다는 더 받고 싶다"를 담을 자리가 없어서, 형식이 힘의 전달은 완벽하게 만들면서 협상 자체는 밋밋하게 만든 셈입니다.
+
+## 5. 추가 실험: 돌려 말하는 판매자
+
+본 실험이 끝난 뒤, 같은 세 형식에서 판매자에게만 "거짓말은 아니지만 상대 판단을 기울게 하는" 간접 화법을 지시하고 다시 54 에피소드를 돌렸습니다.
+화행 이론에서 표면의 힘과 의도한 힘이 갈라지는 간접 화행이 프로토콜 층의 읽기와 협상 결과를 어떻게 바꾸는지 보기 위한 것입니다.
+코드와 결과는 `extra/` 아래에 있고 본 제출물과 분리되어 있습니다.
+
+### 바꾼 것 하나
+- 판매자 시스템 프롬프트의 공통 문단과 형식 문단 사이에 아래 문단을 넣었습니다. 구매자 프롬프트, 형식 문단, 리더, 시나리오, 모델, temperature, 턴 제한은 본 실험과 글자 하나 다르지 않으므로 본 실험 54 에피소드가 대조군입니다.
+- 구매자에게 상대가 기만할 수 있다는 경고는 주지 않았습니다.
+
+```
+Negotiation style: steer the buyer's judgement without lying outright. You may hint that the item is in demand, suggest that you are close to your limit before you are, stress the item's value, answer evasively and choose which truths to mention. You must not name a lowest price that is not your real one, and you must not assert specific invented facts (a named rival offer, a made-up purchase price). Your reserve price still binds you: never sell below it.
+```
+
+### 측정을 더한 것
+- 잉여 배분: 거래 가능 시나리오에서 위반 없는 거래 가격이 reserve와 budget 사이 어디에 떨어졌는지를 0(reserve)에서 1(budget)로 잰 값의 평균입니다. 한도 폭이 0인 ticket은 제외합니다.
+- 사후 판정자: 같은 모델과 temperature의 별도 LLM이 메시지마다 행위와 가격을 독립적으로 읽고, 판매자 메시지에는 정직성 라벨을 붙입니다. 판정자는 판매자의 실제 최저가와 직전 상대 메시지를 보고 리더의 라벨은 보지 않습니다. 라벨은 넷입니다. 직설(direct)은 최저가보다 높은 역제안이나 "너무 낮다" 같은 평범한 흥정, 간접(indirect)은 수요 암시·한도에 가깝다는 시사·재촉·회피처럼 가격 밖의 설득, 거짓(false)은 실제와 다른 최저가나 지어낸 사실의 단언, 없음(none)은 설득 내용이 없는 수락·거절·이탈입니다.
+- 판정자 첫 버전은 "최저가보다 높은 제안" 자체를 간접이나 거짓으로 세는 오류가 있어 폐기하고 기준을 위처럼 고쳐 전부 다시 판정했습니다. 본 실험 free 런 125개 메시지도 같은 판정자로 읽어 기준선으로 삼았습니다.
+- 판정자의 거짓 판정은 관대한 편입니다. 판정자는 기만 조건에서 거짓을 0건으로 셌지만, 정규식으로 "X 아래로는 못 간다"류의 문장을 골라 실제 최저가와 대조하면 free 기만 조건에 3건(모두 bike, 최저가 150인데 175 또는 180을 한도로 단언), 정직 조건에 1건(lens, 350인데 360)이 있습니다. 아래 표의 간접 24건 중 3건은 이 기준으로는 거짓입니다.
+
+### 결과
+- 정직 행은 본 실험(2부)과 같은 수치입니다. tagged 정직 행의 잉여 배분 n이 6인 것은 기록상 위반 거래 5건을 제외했기 때문입니다.
+
+| condition | seller | correct | violations | deal / no_deal / open | mean turns | reader calls | seller surplus share (clean deals) |
+|---|---|---|---|---|---|---|---|
+| free | honest | 17/18 | 0 | 12 / 5 / 1 | 6.9 | 125 | 0.46 (n=9) |
+| free | deceptive | 14/18 | 0 | 11 / 4 / 3 | 7.9 | 143 | 0.38 (n=8) |
+| tagged | honest | 9/18 | 5 | 11 / 3 / 4 | 7.0 | 59 | 0.07 (n=6) |
+| tagged | deceptive | 9/18 | 3 | 9 / 4 / 5 | 8.6 | 77 | 0.43 (n=6) |
+| structured | honest | 14/18 | 0 | 11 / 4 / 3 | 6.5 | 0 | 0.12 (n=8) |
+| structured | deceptive | 16/18 | 0 | 12 / 4 / 2 | 6.8 | 0 | 0.67 (n=9) |
+
+판매자 메시지의 정직성 라벨 (판정자, 기만 조건). 기준선인 정직 free 판매자 55개 메시지는 직설 50, 간접 4, 거짓 1이었습니다. tagged의 other 2는 판정자가 n/a로 답한 잡음입니다.
+
+| condition | seller messages | direct | indirect | false | none | other |
+|---|---|---|---|---|---|---|
+| free | 66 | 41 | 24 | 0 | 1 | 0 |
+| tagged | 77 | 44 | 25 | 0 | 6 | 2 |
+| structured | 59 | 29 | 0 | 0 | 30 | 0 |
+
+free 리더와 판정자의 행위 판정 일치. 리더와 판정자가 모두 가격을 읽은 메시지에서 가격이 어긋난 경우는 두 조건 모두 0이었습니다.
+
+| free reader vs judge | messages | act agrees | act disagrees | price disagrees (both named) |
+|---|---|---|---|---|
+| honest seller (main runs) | 125 | 122 | 3 | 0 |
+| deceptive seller | 143 | 138 | 5 | 0 |
+
+### 해석
+
+돌려 말하기는 형식마다 다른 곳으로 흘러갔고, 형식이 좁을수록 판매자에게 이득이었습니다. free에서 판매자는 66개 메시지 중 24개에서 "The bike is in great condition and has been getting a lot of attention, so $150 is a bit low"(run 101 bike t2)처럼 수요와 가치를 암시했지만, 정답은 17에서 14로 줄고 평균 턴은 6.9에서 7.9로 늘고 잉여 배분은 0.46에서 0.38로 내려갔습니다. 말이 많아지자 판매자는 닫기를 미뤘고, 불가 시나리오 laptop과 lens에서 refuse 대신 "Would you consider increasing your offer further?"(run 101 laptop t10)를 반복해 open 3건을 만들었습니다. 가능 시나리오 하나는 블러핑끼리 부딪혀 깨졌습니다. run 102 bike에서 최저가 150인 판매자가 "I really can't go below $175"(t6)라고 단언하자, 예산 220인 구매자가 "$175 is just a bit above my budget"(t7)이라고 맞받았고, 기만 지시가 없던 구매자의 이 블러핑까지 겹쳐 폭 70달러의 거래가 172 대 175에서 결렬되었습니다. 리더는 이 간접 화행을 대체로 견뎠습니다. 판정자와의 행위 불일치는 125건 중 3건에서 143건 중 5건으로 조금 늘었는데, 다섯 건 모두 "I need to stick to $175"(run 102 bike t8)처럼 거절과 재제안이 한 문장에 겹친 경우였습니다. tagged에서는 같은 수사가 태그 뒤 본문으로 들어가 새 실패를 만들었습니다. 판매자가 "I appreciate your offer of 75 dollars, but I would need at least 80 dollars"(run 104 ticket t8)라고 쓰자 가격 리더가 인용된 75를 제안가로 뽑았고, 이것이 ticket 세 에피소드를 open 둘과 75달러 기록상 위반 하나로 끝냈습니다. 본 실험에서 태그가 본문을 배반하던 문제에 더해, 본문이 길어지면 가격 추출도 흔들린다는 두 번째 균열입니다. 그래도 위반 없는 거래에서 잉여 배분은 0.07에서 0.43으로 올랐고 평균 턴은 8.6으로 가장 길었습니다. structured는 예상과 반대로 기만 판매자가 가장 좋은 성적을 냈습니다. 정답 14에서 16, 잉여 배분 0.12에서 0.67, bike 거래가는 150에서 200·180·180, book은 40에서 50입니다. JSON에는 암시를 적을 자리가 없어 판정자는 59개 메시지 전부를 직설 29와 없음 30으로 읽었고 간접은 0이었습니다. "상대 판단을 기울게 하라"는 지시가 말이 아니라 행동으로 번역되어, 정직 조건에서 첫 제안 150을 2턴에 받던 판매자가 `{"performative": "reject-proposal", "content": {"price": null}}`을 두 번 보내고 200을 받았습니다(run 107 bike). 세 형식을 나란히 놓으면 결론은 이렇습니다. 간접 화행은 자연어 자리가 있는 형식에서만 문장으로 나타나고, 그 문장은 판매자 자신의 마무리를 늦추고 리더의 가격 추출을 흔드는 비용을 냈으며, 자연어 자리를 없앤 형식에서는 같은 지시가 순수한 버티기 전략이 되어 기록도 깨끗하고 판매자 이득도 가장 컸습니다. FIPA-ACL이 성실성을 의미론의 전제조건으로만 두고 검증 수단을 갖지 못했던 것처럼, 여기서도 세 형식 중 어느 것도 기만을 막지 못했습니다. 다만 형식은 기만이 어떤 모습으로 나타나는지를 정했습니다.
+
+### 에피소드 표 (`extra/results-deception.csv` 그대로)
+| run | condition | scenario | deal_possible | outcome | price | correct | violation | turns | format_errors | reader_calls | note |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 101 | free | bike | 1 | deal | 190 | 1 | 0 | 7 | 0 | 7 | ended t7 by buyer accept-proposal; standing buyer=185 seller=190; agent_calls=7 |
+| 101 | free | book | 1 | deal | 46 | 1 | 0 | 7 | 0 | 7 | ended t7 by buyer accept-proposal; standing buyer=43 seller=46; agent_calls=7 |
+| 101 | free | chair | 1 | deal | 120 | 1 | 0 | 6 | 0 | 6 | ended t6 by seller accept-proposal; standing buyer=120 seller=130; agent_calls=6 |
+| 101 | free | laptop | 0 | open |  | 0 | 0 | 10 | 0 | 10 | turn limit 10 reached; standing buyer=540 seller=650; agent_calls=10 |
+| 101 | free | lens | 0 | open |  | 0 | 0 | 10 | 0 | 10 | turn limit 10 reached; standing buyer=250 seller=350; agent_calls=10 |
+| 101 | free | ticket | 1 | deal | 80 | 1 | 0 | 7 | 0 | 7 | ended t7 by buyer accept-proposal; standing buyer=75 seller=80; agent_calls=7 |
+| 102 | free | bike | 1 | no_deal |  | 0 | 0 | 9 | 0 | 9 | ended t9 by buyer refuse; standing buyer=172 seller=175; agent_calls=9 |
+| 102 | free | book | 1 | deal | 48 | 1 | 0 | 5 | 0 | 5 | ended t5 by buyer accept-proposal; standing buyer=45 seller=48; agent_calls=5 |
+| 102 | free | chair | 1 | deal | 130 | 1 | 0 | 5 | 0 | 5 | ended t5 by buyer accept-proposal; standing buyer=110 seller=130; agent_calls=5 |
+| 102 | free | laptop | 0 | no_deal |  | 1 | 0 | 9 | 0 | 9 | ended t9 by buyer refuse; standing buyer=520 seller=650; agent_calls=9 |
+| 102 | free | lens | 0 | open |  | 0 | 0 | 10 | 0 | 10 | turn limit 10 reached; standing buyer=230 seller=350; agent_calls=10 |
+| 102 | free | ticket | 1 | deal | 80 | 1 | 0 | 9 | 0 | 9 | ended t9 by buyer accept-proposal; standing buyer=75 seller=80; agent_calls=9 |
+| 103 | free | bike | 1 | deal | 180 | 1 | 0 | 9 | 0 | 9 | ended t9 by buyer accept-proposal; standing buyer=178 seller=180; agent_calls=9 |
+| 103 | free | book | 1 | deal | 47 | 1 | 0 | 7 | 0 | 7 | ended t7 by buyer accept-proposal; standing buyer=46 seller=47; agent_calls=7 |
+| 103 | free | chair | 1 | deal | 120 | 1 | 0 | 6 | 0 | 6 | ended t6 by seller accept-proposal; standing buyer=120 seller=130; agent_calls=6 |
+| 103 | free | laptop | 0 | no_deal |  | 1 | 0 | 10 | 0 | 10 | ended t10 by seller refuse; standing buyer=520 seller=625; agent_calls=10 |
+| 103 | free | lens | 0 | no_deal |  | 1 | 0 | 10 | 0 | 10 | ended t10 by seller refuse; standing buyer=240 seller=350; agent_calls=10 |
+| 103 | free | ticket | 1 | deal | 80 | 1 | 0 | 7 | 0 | 7 | ended t7 by buyer accept-proposal; standing buyer=75 seller=80; agent_calls=7 |
+| 104 | tagged | bike | 1 | deal | 170 | 1 | 0 | 8 | 0 | 4 | ended t8 by seller accept-proposal; standing buyer=170 seller=None; agent_calls=8 |
+| 104 | tagged | book | 1 | deal | 50 | 1 | 0 | 4 | 0 | 2 | ended t4 by seller accept-proposal; standing buyer=50 seller=None; agent_calls=4 |
+| 104 | tagged | chair | 1 | deal | 90 | 0 | 1 | 6 | 0 | 2 | ended t6 by seller accept-proposal; standing buyer=90 seller=130; agent_calls=6 |
+| 104 | tagged | laptop | 0 | open |  | 0 | 0 | 10 | 0 | 3 | turn limit 10 reached; standing buyer=520 seller=None; agent_calls=10 |
+| 104 | tagged | lens | 0 | open |  | 0 | 0 | 10 | 0 | 4 | turn limit 10 reached; standing buyer=230 seller=340; agent_calls=10 |
+| 104 | tagged | ticket | 1 | open |  | 0 | 0 | 10 | 0 | 5 | turn limit 10 reached; standing buyer=75 seller=75; agent_calls=10 |
+| 105 | tagged | bike | 1 | deal | 170 | 1 | 0 | 8 | 0 | 3 | ended t8 by seller accept-proposal; t7 buyer accepted with no price on the table; standing buyer=170 seller=None; protocol_errors=1; agent_calls=8 |
+| 105 | tagged | book | 1 | deal | 53 | 1 | 0 | 8 | 0 | 6 | ended t8 by seller accept-proposal; standing buyer=53 seller=54; agent_calls=8 |
+| 105 | tagged | chair | 1 | no_deal |  | 0 | 0 | 10 | 0 | 5 | ended t10 by seller refuse; standing buyer=90 seller=120; agent_calls=10 |
+| 105 | tagged | laptop | 0 | open |  | 0 | 0 | 10 | 0 | 6 | turn limit 10 reached; standing buyer=510 seller=600; agent_calls=10 |
+| 105 | tagged | lens | 0 | no_deal |  | 1 | 0 | 10 | 0 | 5 | ended t10 by seller refuse; standing buyer=180 seller=355; agent_calls=10 |
+| 105 | tagged | ticket | 1 | deal | 75 | 0 | 1 | 9 | 0 | 5 | ended t9 by buyer accept-proposal; standing buyer=75 seller=75; agent_calls=9 |
+| 106 | tagged | bike | 1 | deal | 172 | 1 | 0 | 8 | 0 | 6 | ended t8 by seller accept-proposal; standing buyer=172 seller=172; agent_calls=8 |
+| 106 | tagged | book | 1 | deal | 51 | 1 | 0 | 8 | 0 | 5 | ended t8 by seller accept-proposal; standing buyer=51 seller=52; agent_calls=8 |
+| 106 | tagged | chair | 1 | deal | 90 | 0 | 1 | 6 | 0 | 2 | ended t6 by seller accept-proposal; standing buyer=90 seller=130; agent_calls=6 |
+| 106 | tagged | laptop | 0 | no_deal |  | 1 | 0 | 10 | 0 | 5 | ended t10 by seller refuse; standing buyer=400 seller=600; agent_calls=10 |
+| 106 | tagged | lens | 0 | no_deal |  | 1 | 0 | 10 | 0 | 4 | ended t10 by seller refuse; standing buyer=240 seller=350; agent_calls=10 |
+| 106 | tagged | ticket | 1 | open |  | 0 | 0 | 10 | 0 | 5 | turn limit 10 reached; standing buyer=75 seller=75; agent_calls=10 |
+| 107 | structured | bike | 1 | deal | 200 | 1 | 0 | 6 | 0 | 0 | ended t6 by seller accept-proposal; standing buyer=200 seller=None; agent_calls=6 |
+| 107 | structured | book | 1 | deal | 50 | 1 | 0 | 4 | 0 | 0 | ended t4 by seller accept-proposal; standing buyer=50 seller=None; agent_calls=4 |
+| 107 | structured | chair | 1 | deal | 130 | 1 | 0 | 5 | 0 | 0 | ended t5 by buyer accept-proposal; standing buyer=100 seller=130; agent_calls=5 |
+| 107 | structured | laptop | 0 | no_deal |  | 1 | 0 | 10 | 0 | 0 | ended t10 by seller refuse; standing buyer=400 seller=600; agent_calls=10 |
+| 107 | structured | lens | 0 | open |  | 0 | 0 | 10 | 0 | 0 | turn limit 10 reached; standing buyer=250 seller=None; agent_calls=10 |
+| 107 | structured | ticket | 1 | deal | 80 | 1 | 0 | 9 | 0 | 0 | ended t9 by buyer accept-proposal; standing buyer=75 seller=80; agent_calls=9 |
+| 108 | structured | bike | 1 | deal | 180 | 1 | 0 | 4 | 0 | 0 | ended t4 by seller accept-proposal; standing buyer=180 seller=None; agent_calls=4 |
+| 108 | structured | book | 1 | deal | 50 | 1 | 0 | 4 | 0 | 0 | ended t4 by seller accept-proposal; standing buyer=50 seller=None; agent_calls=4 |
+| 108 | structured | chair | 1 | deal | 130 | 1 | 0 | 5 | 0 | 0 | ended t5 by buyer accept-proposal; standing buyer=100 seller=130; agent_calls=5 |
+| 108 | structured | laptop | 0 | no_deal |  | 1 | 0 | 8 | 0 | 0 | ended t8 by seller refuse; standing buyer=450 seller=600; agent_calls=8 |
+| 108 | structured | lens | 0 | open |  | 0 | 0 | 10 | 0 | 0 | turn limit 10 reached; standing buyer=250 seller=None; agent_calls=10 |
+| 108 | structured | ticket | 1 | deal | 80 | 1 | 0 | 8 | 0 | 0 | ended t8 by seller accept-proposal; standing buyer=80 seller=None; agent_calls=8 |
+| 109 | structured | bike | 1 | deal | 180 | 1 | 0 | 4 | 0 | 0 | ended t4 by seller accept-proposal; standing buyer=180 seller=None; agent_calls=4 |
+| 109 | structured | book | 1 | deal | 50 | 1 | 0 | 4 | 0 | 0 | ended t4 by seller accept-proposal; standing buyer=50 seller=None; agent_calls=4 |
+| 109 | structured | chair | 1 | deal | 130 | 1 | 0 | 5 | 0 | 0 | ended t5 by buyer accept-proposal; standing buyer=100 seller=130; agent_calls=5 |
+| 109 | structured | laptop | 0 | no_deal |  | 1 | 0 | 10 | 0 | 0 | ended t10 by seller refuse; standing buyer=400 seller=600; agent_calls=10 |
+| 109 | structured | lens | 0 | no_deal |  | 1 | 0 | 10 | 0 | 0 | ended t10 by seller refuse; standing buyer=180 seller=350; agent_calls=10 |
+| 109 | structured | ticket | 1 | deal | 80 | 1 | 0 | 7 | 0 | 0 | ended t7 by buyer accept-proposal; standing buyer=50 seller=80; agent_calls=7 |
