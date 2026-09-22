@@ -1,4 +1,4 @@
-"""Run the optional ontology and language-repair Contract Net extension."""
+"""Run the optional identity-state and language-repair Contract Net extension."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 
 from extended_contract_net import run_extended_contract_net
-from ontology import OntologyState
+from identity_state import IdentityState
 from run import OpenAICompatibleChat, REPOSITORY_ROOT, load_env, new_run_id
 
 
@@ -46,8 +46,12 @@ def main() -> int:
         parser.error("--limit must be positive and used with --smoke")
 
     state_path = ROOT / "state" / "latest.json"
-    source = state_path if args.continue_state and state_path.exists() else ROOT / "ontology_seed.json"
-    ontology = OntologyState.from_file(source)
+    source = (
+        state_path
+        if args.continue_state and state_path.exists()
+        else ROOT / "identity_seed.json"
+    )
+    identity_state = IdentityState.from_file(source)
     client = OpenAICompatibleChat(args.model, args.temperature)
     run_id = new_run_id("extended")
     log_dir = ROOT / ("smoke" if args.smoke else "extended_logs")
@@ -67,7 +71,7 @@ def main() -> int:
         if args.limit is not None:
             tasks = tasks[:args.limit]
         try:
-            metrics = run_extended_contract_net(tasks, client, emit, ontology)
+            metrics = run_extended_contract_net(tasks, client, emit, identity_state)
             row = {"run": run_id, **metrics, "note": ""}
             emit("summary", **row, llm_calls=client.calls)
             failed = 0
@@ -77,7 +81,7 @@ def main() -> int:
             emit("crash", **row, llm_calls=client.calls)
             failed = 1
 
-    ontology.save(state_path)
+    identity_state.save(state_path)
     if not args.smoke:
         append_result(row)
     return failed

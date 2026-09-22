@@ -11,7 +11,7 @@ from extended_contract_net import (
     choose_extended_winner,
     parse_extended_bid,
 )
-from ontology import OntologyState
+from identity_state import IdentityState
 
 
 ROOT = Path(__file__).resolve().parent
@@ -36,7 +36,7 @@ class ExtendedContractNetTests(unittest.TestCase):
         self.assertIn("high_confidence_low_capability", bid.warnings)
 
     def test_claimed_and_derived_status_remain_separate(self):
-        state = OntologyState.from_file(ROOT / "ontology_seed.json")
+        state = IdentityState.from_file(ROOT / "identity_seed.json")
         for index in range(3):
             state.observe_award(
                 f"code-{index}", "developer", True, ["python", "debugging"],
@@ -52,7 +52,7 @@ class ExtendedContractNetTests(unittest.TestCase):
             self.assertTrue(path.is_file())
 
     def test_high_capability_needs_profile_support(self):
-        state = OntologyState.from_file(ROOT / "ontology_seed.json")
+        state = IdentityState.from_file(ROOT / "identity_seed.json")
         raw = json.dumps({
             "participate": True,
             "confidence": 90,
@@ -72,7 +72,7 @@ class ExtendedContractNetTests(unittest.TestCase):
         self.assertIn("capability_not_supported_by_profile", bid.warnings)
 
     def test_trajectory_calibrates_repeated_overconfidence(self):
-        state = OntologyState.from_file(ROOT / "ontology_seed.json")
+        state = IdentityState.from_file(ROOT / "identity_seed.json")
         for index in range(3):
             state.observe_award(
                 f"write-{index}", "developer", False, ["technical-writing"],

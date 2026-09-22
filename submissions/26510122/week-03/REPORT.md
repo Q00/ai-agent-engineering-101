@@ -61,4 +61,4 @@ python3 run.py --all --runs 3
 
 ## 선택 확장 실험
 
-필수 실험과 별도로 자기 정의, Manager의 관찰 평가, 공유 사건 기록을 분리한 온톨로지 실험을 구현했다. 이 실험은 confidence를 작업 이해도, 능력 확신, 성공 예상, 참여 의사로 나눠 언어적 혼동을 검사하고, 공개 capability tag와 맞지 않는 높은 능력 주장에 한 번의 재질문을 보낸다. 낙찰 결과는 분야별 신뢰도, confidence 오차, 최근 8회 trajectory로 누적되며, 관찰이 쌓일수록 Manager의 보정값이 자기 confidence보다 낙찰 점수에 크게 반영된다. 전체 작업을 실행한 첫 결과는 correct 6/6, misawards 0, clarifications 7, semantic warnings 14였으며 25회 LLM 호출과 56개 메시지가 필요했다. 정확도는 높아졌지만 capability 검사와 trajectory가 동시에 적용됐고 메시지 비용도 증가했으므로 trajectory 단독 효과로 해석하지 않는다. `run_extended.py`로 실행하며 결과와 상태는 필수 세 조건의 결과에 섞지 않는다.
+필수 실험과 별도로 자기 서술, Manager의 관찰 평가, 공유 사건 기록을 분리한 동적 정체성 모델을 구현했다. 이 실험은 confidence를 작업 이해도, 능력 확신, 성공 예상, 참여 의사로 나눠 언어적 혼동을 검사하고, 공개 capability tag와 맞지 않는 높은 능력 주장에 한 번의 재질문을 보낸다. 낙찰 결과는 분야별 신뢰도, confidence 오차, 최근 8회 trajectory로 누적되며, 관찰이 쌓일수록 Manager의 보정값이 자기 confidence보다 낙찰 점수에 크게 반영된다. 전체 작업을 실행한 첫 결과는 correct 6/6, misawards 0, clarifications 7, semantic warnings 14였으며 25회 LLM 호출과 56개 메시지가 필요했다. 정확도는 높아졌지만 capability 검사와 trajectory가 동시에 적용됐고 메시지 비용도 증가했으므로 trajectory 단독 효과로 해석하지 않는다. `run_extended.py`로 실행하며 결과와 상태는 필수 세 조건의 결과에 섞지 않는다.

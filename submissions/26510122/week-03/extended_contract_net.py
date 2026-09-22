@@ -1,4 +1,4 @@
-"""Ontology and language-game extension kept outside the graded conditions."""
+"""Identity-state and language-repair extension kept outside the graded conditions."""
 
 from __future__ import annotations
 
@@ -8,11 +8,11 @@ import math
 from typing import Callable
 
 from contract_net import CONTRACTOR_ORDER, _json_object
-from ontology import OntologyState
+from identity_state import IdentityState
 
 
 EXTENDED_PROTOCOL = """
-You are bidding in a Contract Net negotiation. Use the supplied ontology context,
+You are bidding in a Contract Net negotiation. Use the supplied identity context,
 but treat your self-view as a claim and the manager-view as revisable evidence.
 Do not perform the task. Return only this JSON shape:
 {
@@ -55,9 +55,9 @@ class ExtendedBid:
         }
 
 
-def prompt_for(contractor: str, ontology: OntologyState) -> str:
-    context = json.dumps(ontology.context_for(contractor), ensure_ascii=False)
-    return f"{EXTENDED_PROTOCOL}\n\nONTOLOGY CONTEXT:\n{context}"
+def prompt_for(contractor: str, identity_state: IdentityState) -> str:
+    context = json.dumps(identity_state.context_for(contractor), ensure_ascii=False)
+    return f"{EXTENDED_PROTOCOL}\n\nIDENTITY CONTEXT:\n{context}"
 
 
 def parse_extended_bid(contractor: str, raw: str) -> ExtendedBid:
@@ -133,10 +133,10 @@ def clarification_prompt(announcement: dict, bid: ExtendedBid) -> str:
 
 
 def add_profile_warnings(
-    bid: ExtendedBid, announcement: dict, ontology: OntologyState
+    bid: ExtendedBid, announcement: dict, identity_state: IdentityState
 ) -> ExtendedBid:
     required = set(announcement.get("required_capabilities", []))
-    supported = ontology.supported_capabilities(bid.contractor)
+    supported = identity_state.supported_capabilities(bid.contractor)
     extra = []
     if bid.dimensions["capability"] >= 80 and required.isdisjoint(supported):
         extra.append("capability_not_supported_by_profile")
@@ -145,7 +145,7 @@ def add_profile_warnings(
 
 def choose_extended_winner(
     bids: list[ExtendedBid],
-    ontology: OntologyState,
+    identity_state: IdentityState,
     required_capabilities: list[str],
 ) -> tuple[ExtendedBid | None, dict[str, dict]]:
     scores = {}
@@ -154,7 +154,7 @@ def choose_extended_winner(
     for bid in bids:
         if not bid.participate or bid.parse_error:
             continue
-        evidence = ontology.manager_evidence(
+        evidence = identity_state.manager_evidence(
             bid.contractor, required_capabilities
         )
         evidence_weight = evidence["observations"] / (
@@ -198,7 +198,7 @@ def run_extended_contract_net(
     tasks: list[dict],
     chat: Callable[[str, str], str],
     emit: Callable[..., None],
-    ontology: OntologyState,
+    identity_state: IdentityState,
 ) -> dict[str, int]:
     metrics = {
         "tasks": len(tasks),
@@ -220,25 +220,25 @@ def run_extended_contract_net(
         for contractor in CONTRACTOR_ORDER:
             emit("announcement", task=announcement, contractor=contractor)
             metrics["messages"] += 1
-            system = prompt_for(contractor, ontology)
+            system = prompt_for(contractor, identity_state)
             raw = chat(system, json.dumps(announcement, ensure_ascii=False))
             metrics["messages"] += 1
             bid = add_profile_warnings(
-                parse_extended_bid(contractor, raw), announcement, ontology
+                parse_extended_bid(contractor, raw), announcement, identity_state
             )
             metrics["semantic_warnings"] += len(bid.warnings)
             emit("bid", task=task["id"], contractor=contractor, **bid.as_record(),
                  warnings=bid.warnings, parse_error=bid.parse_error, raw=raw)
 
             if bid.warnings:
-                ontology.observe_clarification(task["id"], contractor)
+                identity_state.observe_clarification(task["id"], contractor)
                 emit("clarification_request", task=task["id"], contractor=contractor,
                      warnings=bid.warnings)
                 metrics["messages"] += 1
                 repaired_raw = chat(system, clarification_prompt(announcement, bid))
                 metrics["messages"] += 1
                 repaired = add_profile_warnings(
-                    parse_extended_bid(contractor, repaired_raw), announcement, ontology
+                    parse_extended_bid(contractor, repaired_raw), announcement, identity_state
                 )
                 metrics["clarifications"] += 1
                 metrics["semantic_warnings"] += len(repaired.warnings)
@@ -247,15 +247,15 @@ def run_extended_contract_net(
                      parse_error=repaired.parse_error, raw=repaired_raw)
                 bid = repaired
 
-            ontology.observe_bid(task["id"], contractor, bid.as_record())
+            identity_state.observe_bid(task["id"], contractor, bid.as_record())
             bids.append(bid)
 
         winner, scores = choose_extended_winner(
-            bids, ontology, task.get("required_capabilities", [])
+            bids, identity_state, task.get("required_capabilities", [])
         )
         if winner is None:
             metrics["unassigned"] += 1
-            ontology.observe_unassigned(task["id"])
+            identity_state.observe_unassigned(task["id"])
             emit("unassigned", task=task["id"], selection_scores=scores)
             continue
 
@@ -263,7 +263,7 @@ def run_extended_contract_net(
         correct = winner.contractor == task["gold"]
         metrics["correct"] += int(correct)
         metrics["misawards"] += int(not correct)
-        ontology.observe_award(
+        identity_state.observe_award(
             task["id"], winner.contractor, correct,
             task.get("required_capabilities", []),
             winner.confidence,

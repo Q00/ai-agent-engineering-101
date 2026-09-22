@@ -1,6 +1,6 @@
 # Week 03 Contract Net
 
-이 구현은 과제에서 요구한 Contract Net과 온톨로지 기반 확장 실험을 분리한다.
+이 구현은 과제에서 요구한 Contract Net과 행위 이력 기반 정체성 확장 실험을 분리한다.
 
 ## 필수 실험
 
@@ -24,9 +24,9 @@ python3 run.py --condition baseline --runs 1
 python3 run.py --condition homogeneous --runs 2
 ```
 
-## 온톨로지 확장
+## 동적 정체성 확장
 
-`run_extended.py`는 필수 세 조건에 영향을 주지 않는 별도 실험이다. `ontology_seed.json`은 정보를 다음 세 층으로 나눈다.
+`run_extended.py`는 필수 세 조건에 영향을 주지 않는 별도 실험이다. `identity_seed.json`은 자기 서술, Manager의 관찰 평가, 양측이 공유하는 사건 기록을 분리한다.
 
 ```mermaid
 flowchart LR
@@ -42,7 +42,7 @@ flowchart LR
     M -->|announcement + capability tags| W
     M -->|announcement + capability tags| A
 
-    O[(Ontology State)] -->|self_view + manager_view<br/>shared lexicon + recent evidence| D
+    O[(Identity State)] -->|self_view + manager_view<br/>shared lexicon + recent evidence| D
     O -->|self_view + manager_view<br/>shared lexicon + recent evidence| W
     O -->|self_view + manager_view<br/>shared lexicon + recent evidence| A
 
@@ -111,8 +111,8 @@ python3 run_extended.py --continue-state
 - `tasks.json`: 여섯 작업과 gold Contractor, 공개 capability tag
 - `contract_net.py`: 필수 협상과 낙찰 규칙
 - `run.py`: OpenRouter 호출, 로그, `results.csv` 기록
-- `ontology_seed.json`: 자기 정의, Manager 평가, 공유 단어장의 초기값
-- `ontology.py`: 사건 기록과 평판 갱신
+- `identity_seed.json`: 자기 서술, Manager 평가, 공유 단어장의 초기값
+- `identity_state.py`: 자기 서술, 관찰 평가, 사건 기록과 신뢰도 갱신
 - `extended_contract_net.py`: 의미 분리, 모순 탐지, 재질문, 평판 가중 낙찰
 - `run_extended.py`: 확장 실험 실행기
 - `extended_results.csv`, `extended_logs/`: 필수 결과와 분리한 확장 실험 기록

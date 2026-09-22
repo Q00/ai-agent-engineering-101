@@ -1,4 +1,4 @@
-"""Mutable social knowledge for the optional ontology-aware experiment."""
+"""Mutable identity and performance history for the optional extension."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 
-class OntologyState:
+class IdentityState:
     """Keep self claims, manager observations, and evidence as separate layers."""
 
     def __init__(self, data: dict) -> None:
@@ -28,7 +28,7 @@ class OntologyState:
             view.setdefault("recent_success_rate", None)
 
     @classmethod
-    def from_file(cls, path: Path) -> "OntologyState":
+    def from_file(cls, path: Path) -> "IdentityState":
         return cls(json.loads(path.read_text(encoding="utf-8")))
 
     def save(self, path: Path) -> None:
