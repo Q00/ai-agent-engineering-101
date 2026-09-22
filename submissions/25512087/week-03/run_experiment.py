@@ -21,6 +21,14 @@ def read_setting(name: str, default: str = "") -> str:
     return os.environ.get(name, default).strip()
 
 
+def request_options(model: str) -> dict:
+    """Keep high-volume Luna bids short and disable unnecessary reasoning."""
+    options = {"temperature": TEMPERATURE}
+    if model.startswith("gpt-5.6-"):
+        options.update(reasoning_effort="none", max_completion_tokens=160)
+    return options
+
+
 class JsonlLogger:
     def __init__(self, path: Path):
         self.path = path
@@ -56,11 +64,11 @@ class OpenRouterModel:
     def __call__(self, system_prompt: str, announcement: str) -> str:
         response = self.client.chat.completions.create(
             model=self.model,
-            temperature=TEMPERATURE,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": announcement},
             ],
+            **request_options(self.model),
         )
         return response.choices[0].message.content or ""
 
