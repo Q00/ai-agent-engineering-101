@@ -84,7 +84,9 @@ You are the {role} negotiating the price of {scenario['item']} with one other ag
 Keep your private limit secret. You may perform only four acts: propose a price,
 accept the other agent's latest proposal, reject it and continue, or refuse and
 leave without a deal. An acceptance is valid only when the other agent has made a
-price proposal. Respond with one negotiation message and no commentary.
+price proposal. If the other agent's latest proposal is within your private limit,
+accept it instead of making another counterproposal. Respond with one negotiation
+message and no commentary.
 """.strip()
     return f"{base}\n\n{FORMAT_PARAGRAPHS[condition]}"
 
