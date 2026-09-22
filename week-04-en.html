@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Week 04: Communication Languages: From Speech Acts to FIPA-ACL</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;
+  --ink:#1C1917;
+  --body:#44403C;
+  --muted:#78716C;
+  --faint:#A8A29E;
+  --line:#E7E5E4;
+  --wash:#FAFAF9;
+  --link:#2563EB;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --sans:'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  --serif:Fraunces, 'Noto Serif KR', Georgia, serif;
+  --maxw:680px;
+  --r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--body);
+  font-family:var(--sans);
+  font-weight:400;
+  line-height:1.8;
+  font-size:15.5px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--ink);color:var(--paper)}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- layout ---------- */
+.sheet{max-width:1040px;margin:0 auto;padding:0 24px}
+.col{max-width:var(--maxw);margin:0 auto;position:relative}
+
+/* ---------- header ---------- */
+header.doc{padding:40px 0 0}
+.topnav{font-family:var(--mono);font-size:11px;letter-spacing:.04em;margin-bottom:56px;display:flex;justify-content:space-between;gap:16px}
+
+.masthead{padding-bottom:64px;border-bottom:1px solid var(--line)}
+.masthead .wk{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:16px;
+}
+h1.title{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(30px,4.6vw,44px);line-height:1.2;
+  letter-spacing:-0.01em;color:var(--ink);text-wrap:balance;
+}
+h1.title .en{display:block;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:.06em;margin-top:14px}
+.lede{
+  margin-top:26px;max-width:560px;font-size:16px;line-height:1.85;color:var(--muted);
+}
+.lede .q{font-weight:600;color:var(--ink)}
+
+/* ---------- section scaffolding ---------- */
+section{padding:56px 0 8px}
+.secmark{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:32px;
+  border-top:1px solid var(--line);padding-top:20px;
+}
+.secmark .no{
+  font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--faint);
+  letter-spacing:.12em;white-space:nowrap;text-transform:uppercase;
+}
+.secmark h2{font-family:var(--serif);font-weight:500;font-size:clamp(21px,2.8vw,26px);line-height:1.3;letter-spacing:-0.005em;color:var(--ink);text-wrap:balance}
+h3{font-family:var(--serif);font-weight:500;font-size:18px;margin:44px 0 14px;color:var(--ink)}
+h3 .tag{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.12em;display:block;margin-bottom:6px;font-weight:500}
+p{margin-bottom:20px}
+strong{font-weight:600;color:var(--ink)}
+em{font-style:normal;font-weight:600;color:var(--ink);box-shadow:inset 0 -0.35em 0 rgba(28,25,23,.07)}
+.small{font-size:13.5px;color:var(--muted)}
+.nb{white-space:nowrap}
+
+/* part banner */
+.part{
+  margin:72px 0 8px;border-top:2px solid var(--ink);
+  padding:24px 0 6px;
+}
+.part .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase}
+.part h2{font-family:var(--serif);font-weight:500;font-size:clamp(20px,2.6vw,25px);line-height:1.35;color:var(--ink)}
+.part .meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:10px;letter-spacing:.03em}
+
+/* marginalia */
+.note{
+  font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--faint);
+  border-left:2px solid var(--line);padding-left:12px;margin:26px 0;
+}
+@media(min-width:1120px){
+  .note{position:absolute;width:190px;left:calc(50% + var(--maxw)/2 + 36px);margin:0;transform:translateY(-100%)}
+}
+.note b{color:var(--muted);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.08em}
+
+/* pull quote */
+.pull{
+  margin:40px 0;padding:2px 0 2px 24px;border-left:2px solid var(--ink);
+  font-family:var(--serif);font-size:19px;line-height:1.65;font-weight:500;color:var(--ink);
+}
+.pull .src{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-top:10px;letter-spacing:.03em}
+
+/* definition */
+.define{margin:48px 0;background:var(--wash);border:1px solid var(--line);border-radius:var(--r);padding:32px 32px 26px;position:relative}
+.define::before{
+  content:"DEFINITION";position:absolute;top:14px;left:32px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);font-weight:500;
+}
+.define p{margin:16px 0 0;font-family:var(--serif);font-size:clamp(16px,2.1vw,19px);line-height:1.7;font-weight:500;color:var(--ink)}
+.define .sub{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted);margin-top:14px}
+.define ul{margin:14px 0 0 22px;padding:0}
+.define li{font-family:var(--serif);font-size:clamp(15px,2vw,17px);line-height:1.9;font-weight:500;color:var(--ink)}
+@media(max-width:640px){.define{padding:28px 20px 22px}.define::before{left:20px}}
+
+/* instructor */
+.bio{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 28px 20px}
+.bio{display:flex;gap:28px;align-items:flex-start}
+.bio .photo{flex:0 0 210px;width:210px;height:262px;object-fit:cover;object-position:38% 12%;border-radius:6px;display:block}
+.bio .info{flex:1 1 auto;min-width:0}
+.bio .name{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:2px}
+.bio .role{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase}
+.bio p{font-size:14px;line-height:1.85;color:var(--body);margin-bottom:12px}
+.bio .links{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+.bio .links a{white-space:nowrap}
+.bio .links span{color:var(--faint);margin:0 8px}
+@media(max-width:640px){.bio{flex-direction:column}.bio .photo{width:100%;height:200px;flex:none}.bio{padding:22px 18px 16px}}
+
+/* table */
+.tbl-wrap{margin:28px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.7}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-align:left;text-transform:uppercase;
+  border-bottom:1px solid var(--ink);
+  padding:10px 14px;font-weight:500;color:var(--muted);
+}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.stage{font-weight:600;color:var(--ink);white-space:nowrap;font-size:13px}
+td .m{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+/* figure */
+.fig{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 14px}
+.fig .cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+  margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.fig .cap b{color:var(--muted);font-weight:500}
+.fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block}
+svg text{font-family:var(--mono)}
+
+/* code */
+.code{
+  margin:28px 0;background:var(--wash);color:var(--ink);
+  font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  padding:20px 22px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+}
+.code .file{
+  display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:14px;font-weight:500;text-transform:uppercase;
+}
+.code pre{font-family:inherit;white-space:pre;margin:0}
+.code .cm{color:var(--faint)}
+.code .kw{color:#1D4ED8}
+.code .st{color:#15803D}
+code.inline{
+  font-family:var(--mono);font-size:.85em;background:var(--wash);
+  padding:2px 6px;border:1px solid var(--line);border-radius:4px;white-space:nowrap;
+}
+
+/* numbered steps */
+.pre{counter-reset:pre;margin:24px 0}
+.pre>li{list-style:none;position:relative;padding:16px 0 16px 48px;border-bottom:1px solid var(--line)}
+.pre>li:first-child{border-top:1px solid var(--line)}
+.pre>li::before{
+  counter-increment:pre;content:counter(pre);
+  position:absolute;left:4px;top:18px;width:24px;height:24px;
+  border:1px solid var(--faint);border-radius:50%;color:var(--muted);
+  font-family:var(--mono);font-weight:500;font-size:11.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.pre b.lead{font-weight:600;color:var(--ink)}
+
+/* discussion */
+.open{border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;margin:40px 0;background:var(--wash)}
+.open .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.open ol{margin-left:20px}
+.open li{margin-bottom:12px;line-height:1.8}
+@media(max-width:640px){.open{padding:20px 18px}}
+
+/* checkpoint */
+.check{margin:28px 0;border:1px solid var(--ink);border-radius:var(--r);padding:18px 22px 14px}
+.check .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--paper);background:var(--ink);border-radius:4px;display:inline-block;padding:3px 9px;font-weight:500;margin-bottom:12px}
+.check ul{margin-left:20px}
+.check li{margin-bottom:8px;line-height:1.75}
+
+/* recorder metrics */
+.recorder{margin:32px 0;border-top:1px solid var(--ink)}
+.recorder>div{display:flex;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+.recorder .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);font-weight:500;flex:0 0 120px;padding-top:3px;text-transform:uppercase}
+.recorder .v{font-size:13.5px;line-height:1.7;color:var(--body)}
+@media(max-width:640px){.recorder>div{flex-direction:column;gap:4px}}
+
+/* notice */
+.notice{margin:36px 0;border:1px solid var(--line);border-radius:var(--r);padding:24px 26px 18px}
+.notice .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.notice p{margin-bottom:13px;font-size:14px}
+.notice ul{margin:0 0 13px 22px}
+.notice li{margin-bottom:8px;font-size:13.5px;line-height:1.75}
+@media(max-width:640px){.notice{padding:20px 18px 14px}}
+
+/* homework */
+.hw{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.hw .head{
+  border-bottom:1px solid var(--line);background:var(--wash);padding:11px 22px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;font-weight:500;color:var(--muted);text-transform:uppercase;
+}
+.hw .body{padding:22px 24px 8px}
+.hw .due{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.05em;margin-bottom:13px;font-weight:500}
+
+/* readings */
+.readings{margin:24px 0}
+.readings>li{list-style:none;position:relative;padding:18px 0 18px 60px;border-bottom:1px solid var(--line)}
+.readings>li:first-child{border-top:1px solid var(--line)}
+.readings .badge{
+  position:absolute;left:0;top:20px;
+  font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.06em;
+  padding:3px 8px;border-radius:4px;
+}
+.readings .badge.req{background:var(--ink);color:var(--paper)}
+.readings .badge.opt{border:1px solid var(--faint);color:var(--faint)}
+.readings b.lead{font-weight:600;color:var(--ink)}
+.readings .why{display:block;font-size:13px;color:var(--muted);margin-top:6px}
+
+/* next week */
+.next{margin:64px 0 0;border-top:2px solid var(--ink);padding-top:22px}
+.next .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:12px;text-transform:uppercase}
+.next p{font-size:14px;color:var(--body)}
+
+/* footer */
+footer{
+  margin-top:64px;border-top:1px solid var(--line);
+  padding:20px 0 56px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.03em;
+}
+footer .o{color:var(--muted)}
+
+@media(max-width:640px){body{font-size:15px}}
+@media print{
+  body{font-size:10.5pt}
+  .topnav{display:none}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="doc">
+  <div class="col">
+    <div class="topnav"><a href="index-en.html">← COURSE HOME</a><a href="week-04.html">KO</a></div>
+    <div class="masthead">
+      <div class="wk">WEEK 04</div>
+      <h1 class="title">Communication Languages: From Speech Acts to FIPA-ACL
+        <span class="en">통신 언어: 화행에서 FIPA-ACL까지</span>
+      </h1>
+      <p class="lede"><span class="q">Is the message an agent sends data, or an act?</span> The agent communication languages of the 1990s put a performative (the kind of speech act) on every message and defined its meaning in logic. We run the same price negotiation in three message formats and measure how a format with a performative differs in outcome correctness, limit violations, turns, format errors, and reader calls.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ Outline ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">01</span><h2>Outline</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Part</th><th>Content</th></tr>
+        <tr><td class="stage">A1</td><td>Speech act theory: saying is doing</td></tr>
+        <tr><td class="stage">A2</td><td>KQML and FIPA-ACL: message structure and semantics</td></tr>
+        <tr><td class="stage">A3</td><td>Four limits of FIPA-ACL, the LLM, and the design of a reproduction</td></tr>
+        <tr><td class="stage">Discussion</td><td>Natural-language content and the ontology problem</td></tr>
+        <tr><td class="stage">LAB</td><td>One buyer, one seller, three message formats</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PART A ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART A: LECTURE</div>
+    <h2>Agent communication languages: a performative on every message</h2>
+    <div class="meta">A1 speech acts, A2 KQML and FIPA-ACL, A3 four limits and the LLM, discussion</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A1</span><h2>Speech act theory: saying is doing</h2></div>
+    <p>Week 03's Contract Net had a fixed set of messages, task-announcement, bid, award, and what each message did was in its name. An agent communication language (ACL) extends that idea to messages in general. In his 1955 William James Lectures at Harvard, published in 1962 as <span class="nb">How to Do Things with Words</span>, J. L. Austin took sentences such as &ldquo;I name this ship the Queen Elizabeth&rdquo;. The sentence is neither true nor false. Said by the right person in the right place, it gives the ship its name. Austin called such sentences <span class="nb">performatives</span>.</p>
+
+    <p>Austin then split every utterance into three acts. Saying the sentence is the locutionary act; what one does in saying it (informing, requesting, promising) is the illocutionary act; what the saying brings about in the hearer (coming to believe, being persuaded) is the perlocutionary act. The same sentence, &ldquo;the price is 120&rdquo;, can be an inform or a propose. What an agent communication language tried to attach to a message is the second of these, the <span class="nb">illocutionary force</span>.</p>
+
+    <p>Take the sentence in FIG. 01. What the buyer said, &ldquo;I can go to 120 for the bicycle&rdquo;, the words, the grammar, and the number 120, is the locutionary act. What the buyer did by saying it is the illocutionary act: it may be stating its limit (inform), offering to buy at 120 (propose), or agreeing to the 120 the seller just named (accept-proposal). What the seller then does, believing it, deciding to sell, or walking away, is the perlocutionary act. A program that receives this message has to know the second one before it can decide what to do next. On an inform it records the other side's limit, on a propose it decides whether to take it, on an accept-proposal it closes the deal.</p>
+
+    <div class="define">
+      <p>A speech act is the act performed by uttering a sentence. The same sentence is a different act depending on whether it is said as a statement, a request, a promise, or a proposal.</p>
+      <p class="sub">J. L. Austin, <span class="nb">How to Do Things with Words</span> (1962): &ldquo;to utter the sentence (in, of course, the appropriate circumstances) is not to describe my doing of what I should be said in so uttering to be doing or to state that I am doing it: it is to do it.&rdquo;</p>
+    </div>
+
+    <p>In &ldquo;A Taxonomy of Illocutionary Acts&rdquo; (1975) John Searle sorted illocutionary acts into five classes. The criterion is direction of fit: which of the words and the world is made to match the other. The statement &ldquo;the price is 120&rdquo; is wrong if the world is not like that; the request &ldquo;sell it to me for 120&rdquo; is unfulfilled if the world does not become like that.</p>
+    <div class="recorder">
+      <div><span class="k">assertives</span><span class="v">Words follow the world. Statements, reports. They can be true or false.</span></div>
+      <div><span class="k">directives</span><span class="v">The world is to be made to match the words. Orders, requests, questions.</span></div>
+      <div><span class="k">commissives</span><span class="v">The speaker binds their own future action to the words. Promises, offers.</span></div>
+      <div><span class="k">expressives</span><span class="v">A psychological state is expressed. Thanks, apologies.</span></div>
+      <div><span class="k">declarations</span><span class="v">Saying it changes the world. Naming, dismissing. An institution that grants the authority is presupposed.</span></div>
+    </div>
+
+    <p>Of the lab's four acts, propose and accept-proposal bind the speaker's own future action and are commissives. FIPA defines all four as informing &ldquo;this is my intention&rdquo;, so inside FIPA all four become assertive-type acts.</p>
+
+    <p>The classification entered AI through Philip Cohen and C. Raymond Perrault's &ldquo;Elements of a Plan-Based Theory of Speech Acts&rdquo; (1979). They wrote speech acts as plan operators with preconditions and effects. A plan operator is the action format of robot planning: &ldquo;to open the door you need the key (precondition), and afterwards the door is open (effect)&rdquo;. Written in the same format, speech becomes something an agent can plan like a movement or a manipulation, &ldquo;to make the other side know the price, send an inform&rdquo;. The precondition of request is &ldquo;the speaker wants the hearer to do the action&rdquo;, and its effect is &ldquo;the hearer knows the speaker wants it&rdquo;. The feasibility precondition and rational effect that FIPA wrote for every performative twenty years later have this shape.</p>
+
+    <div class="fig" id="fig1">
+      <svg viewBox="0 0 680 322" role="img" aria-label="One utterance, three acts: the locutionary, illocutionary, and perlocutionary act of Austin 1962, and where FIPA-ACL puts each: content, performative, and rational effect">
+        <defs>
+          <marker id="f1-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f1-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#A8A29E" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="44">UTTERANCE</text>
+          <text x="0" y="150">AUSTIN 1962</text>
+          <text x="0" y="274">FIPA-ACL 2002</text>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <rect x="100" y="20" width="570" height="40" fill="#FAFAF9"/>
+          <rect x="110" y="110" width="160" height="76"/>
+          <rect x="305" y="110" width="160" height="76"/>
+          <rect x="500" y="110" width="160" height="76"/>
+          <rect x="110" y="238" width="160" height="66"/>
+          <rect x="305" y="238" width="160" height="66"/>
+          <rect x="500" y="238" width="160" height="66" stroke="#A8A29E" stroke-dasharray="4 4"/>
+          <path d="M190 60 L190 109" marker-end="url(#f1-ah)"/>
+          <path d="M385 60 L385 109" marker-end="url(#f1-ah)"/>
+          <path d="M580 60 L580 109" marker-end="url(#f1-ah)"/>
+          <path d="M190 186 L190 237" marker-end="url(#f1-ah)"/>
+          <path d="M385 186 L385 237" marker-end="url(#f1-ah)"/>
+          <path d="M580 186 L580 237" stroke="#A8A29E" stroke-dasharray="4 4" marker-end="url(#f1-ahd)"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="12.5" font-weight="600">
+          <text x="385" y="45">“I can go to 120 for the bicycle.”</text>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">
+          <text x="190" y="131">locutionary act</text>
+          <text x="385" y="131">illocutionary act</text>
+          <text x="580" y="131">perlocutionary act</text>
+          <text x="190" y="261" font-size="12">:content</text>
+          <text x="385" y="261" font-size="12">performative</text>
+          <text x="580" y="261" font-size="12" fill="#78716C">rational effect</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="9.5">
+          <text x="190" y="147">the sentence said</text>
+          <text x="385" y="147">what is done in saying it</text>
+          <text x="580" y="147">the effect on the hearer</text>
+          <text x="190" y="164">words, syntax,</text><text x="190" y="177">reference to 120</text>
+          <text x="385" y="164">a propose, or an inform,</text><text x="385" y="177">or an accept-proposal</text>
+          <text x="580" y="164">the seller believes it,</text><text x="580" y="177">or agrees, or walks away</text>
+          <text x="190" y="279">a content language</text><text x="190" y="292">plus an ontology</text>
+          <text x="385" y="279">the only mandatory</text><text x="385" y="292">parameter</text>
+          <text x="580" y="279">defined in the semantics,</text><text x="580" y="292">not carried in the message</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 01</b> One utterance, three acts</span><span>locution → content, illocution → performative</span></div>
+    </div>
+
+    <div class="note"><b>WHICH ACTS THE LAB USES</b>The lab uses only FIPA's four negotiation acts: propose, accept-proposal, reject-proposal, refuse. The question acts, query-ref and cfp, are left out. What happens when the first message is a question shows up in the reference run.</div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A2</span><h2>KQML and FIPA-ACL: message structure and semantics</h2></div>
+    <p>The first agent communication language was KQML (Knowledge Query and Manipulation Language). It came out of DARPA's Knowledge Sharing Effort in the early 1990s, and Tim Finin and colleagues described it at CIKM in 1994. A message has an outer performative and an inner content. The performative fixes what act the message is; <code class="inline">:language</code> and <code class="inline">:ontology</code> fix how the content is read. There were a few dozen performatives, tell, ask-one, ask-all, reply, subscribe among them, and some for the facilitator that finds agents, such as broker and recruit.</p>
+
+    <div class="code"><span class="file">KQML, Finin et al. 1994</span><pre>(ask-one
+  :sender    buyer
+  :receiver  seller
+  :content   (price bicycle ?x)
+  :language  KIF
+  :ontology  used-goods
+  :reply-with q1)</pre></div>
+    <p>The message above is the buyer asking the seller the price of the bicycle. ask-one is the performative that asks for one answer; <code class="inline">?x</code> in the content is the variable the seller fills in; KIF is the logic language the content is written in; used-goods is the vocabulary (ontology) that fixes what price and bicycle refer to. <code class="inline">:reply-with q1</code> asks for the reply to carry <code class="inline">:in-reply-to q1</code>, which is how an answer is matched to its question when several conversations run at once.</p>
+
+    <p>KQML's problem was that the meaning of a performative existed only as English prose. Implementations read tell slightly differently. Yannis Labrou and Finin proposed a formal semantics in 1997, and Labrou, Finin, and Yun Peng's &ldquo;Agent Communication Languages: The Current Landscape&rdquo; (1999) set KQML and FIPA-ACL side by side around this problem.</p>
+
+    <p>FIPA (Foundation for Intelligent Physical Agents), a standards body founded in 1996, published its first ACL specification in 1997 and made it a standard in 2002. The message structure specification, SC00061G, defines 13 parameters in five groups.</p>
+    <div class="recorder">
+      <div><span class="k">type of act</span><span class="v"><code class="inline">performative</code>. The specification: &ldquo;the only parameter that is mandatory in all ACL messages is the performative&rdquo;. The other twelve are optional.</span></div>
+      <div><span class="k">participants</span><span class="v"><code class="inline">sender</code>, <code class="inline">receiver</code>, <code class="inline">reply-to</code></span></div>
+      <div><span class="k">content</span><span class="v"><code class="inline">content</code>. The object of the act. The specification says it is &ldquo;interpreted by the receiver&rdquo;.</span></div>
+      <div><span class="k">description</span><span class="v"><code class="inline">language</code>, <code class="inline">encoding</code>, <code class="inline">ontology</code>. What gives the symbols in the content their meaning.</span></div>
+      <div><span class="k">conversation</span><span class="v"><code class="inline">protocol</code>, <code class="inline">conversation-id</code>, <code class="inline">reply-with</code>, <code class="inline">in-reply-to</code>, <code class="inline">reply-by</code>. Week 03's Contract Net is one value of protocol (fipa-contract-net).</span></div>
+    </div>
+
+    <div class="fig" id="fig2">
+      <svg viewBox="0 0 680 318" role="img" aria-label="Anatomy of a FIPA-ACL propose message: the performative, the participants, the content, the description of content, and the control of conversation parameters, with the feasibility precondition and rational effect of propose below">
+        <rect x="0" y="10" width="410" height="222" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
+        <g fill="#1C1917" font-size="11">
+          <text x="16" y="34">(propose</text>
+          <text x="16" y="55">&#160;&#160;:sender&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;buyer</text>
+          <text x="16" y="76">&#160;&#160;:receiver&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;seller</text>
+          <text x="16" y="97">&#160;&#160;:content&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;"(=&#160;(price&#160;bicycle)&#160;120)"</text>
+          <text x="16" y="118">&#160;&#160;:language&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;fipa-sl</text>
+          <text x="16" y="139">&#160;&#160;:ontology&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;used-goods</text>
+          <text x="16" y="160">&#160;&#160;:protocol&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;fipa-contract-net</text>
+          <text x="16" y="181">&#160;&#160;:conversation-id&#160;&#160;c-42</text>
+          <text x="16" y="202">&#160;&#160;:in-reply-to&#160;&#160;&#160;&#160;&#160;&#160;cfp-7</text>
+          <text x="16" y="223">&#160;&#160;:reply-by&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;20260925T1000)</text>
+        </g>
+        <g fill="none" stroke="#A8A29E" stroke-width="1">
+          <path d="M432 21 L426 21 L426 39 L432 39"/>
+          <path d="M432 42 L426 42 L426 81 L432 81"/>
+          <path d="M432 84 L426 84 L426 102 L432 102"/>
+          <path d="M432 105 L426 105 L426 144 L432 144"/>
+          <path d="M432 147 L426 147 L426 228 L432 228"/>
+        </g>
+        <g fill="#1C1917" font-size="11" font-weight="600">
+          <text x="442" y="34">type of act <tspan fill="#78716C" font-size="9.5" font-weight="400">the only mandatory one</tspan></text>
+          <text x="442" y="57">participants</text>
+          <text x="442" y="97">content <tspan fill="#78716C" font-size="9.5" font-weight="400">read by the receiver</tspan></text>
+          <text x="442" y="120">description of content</text>
+          <text x="442" y="179">control of conversation</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="442" y="71">sender, receiver, reply-to</text>
+          <text x="442" y="134">language, encoding, ontology</text>
+          <text x="442" y="193">protocol, conversation-id,</text>
+          <text x="442" y="206">reply-with, in-reply-to, reply-by</text>
+        </g>
+        <g fill="#1C1917" font-size="11" font-weight="600">
+          <text x="0" y="260">semantics of propose, SC00037J 3.13</text>
+        </g>
+        <g fill="#78716C" font-size="10">
+          <text x="0" y="278">FP: the sender believes α, and does not believe the receiver already knows α</text>
+          <text x="0" y="292">RE: the receiver comes to believe α</text>
+          <text x="0" y="306">α: once the receiver wants the act done, the sender will intend to do it. Neither belief is in the message.</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 02</b> Anatomy of a FIPA-ACL message</span><span>13 parameters, 1 mandatory</span></div>
+    </div>
+
+    <p>Where FIPA parts from KQML is the semantics. The Communicative Act Library specification, SC00037J, gives each of the 22 acts a <span class="nb">feasibility precondition (FP)</span> and a <span class="nb">rational effect (RE)</span>, written in David Sadek's logic: B for belief, U for uncertainty, I for intention, Done for an action having been performed. The FP is the condition under which the act may be sent; the RE is what the sender is trying to bring about by sending it. The FP of inform is &ldquo;the sender believes φ and does not believe the receiver already knows φ&rdquo;; its RE is &ldquo;the receiver comes to believe φ&rdquo;. The FP of request is &ldquo;the sender believes the receiver can do action a and does not believe it already intends to&rdquo;; its RE is &ldquo;a is done&rdquo;. The negotiation acts are all defined as combinations of inform. propose is &ldquo;informing that I intend to do act if condition φ holds&rdquo;, accept-proposal is &ldquo;informing that I intend the other to do act&rdquo;, and reject-proposal is informing that I have no such intention. The buyer's propose 120 informs &ldquo;if you want it, I will adopt the intention to buy at 120&rdquo;, and its FP is that the buyer really means it and believes the seller does not yet know it.</p>
+
+    <div class="define">
+      <p>In FIPA-ACL the meaning of a message is defined by the sender's beliefs and intentions. For inform(i, j, φ) the FP is B<sub>i</sub>φ ∧ ¬B<sub>i</sub>(Bif<sub>j</sub>φ ∨ Uif<sub>j</sub>φ) and the RE is B<sub>j</sub>φ.</p>
+      <p class="sub">FIPA, &ldquo;Communicative Act Library Specification&rdquo; SC00037J (2002), 3.8 Inform. Every condition is a proposition about i's beliefs (B<sub>i</sub>) and j's beliefs (B<sub>j</sub>).</p>
+    </div>
+    <p>Read symbol by symbol, with i the buyer, j the seller, and φ &ldquo;the price of the bicycle is 120&rdquo;.</p>
+    <div class="recorder">
+      <div><span class="k" style="text-transform:none">B<sub>i</sub>φ</span><span class="v">The buyer believes φ. B is belief.</span></div>
+      <div><span class="k" style="text-transform:none">Bif<sub>j</sub>φ</span><span class="v">The seller already knows whether φ is true or false. Bif is &ldquo;believes whether&rdquo;: it has an answer either way.</span></div>
+      <div><span class="k" style="text-transform:none">Uif<sub>j</sub>φ</span><span class="v">The seller is not certain but leans one way about φ. U is uncertain.</span></div>
+      <div><span class="k" style="text-transform:none">¬B<sub>i</sub>(Bif<sub>j</sub>φ ∨ Uif<sub>j</sub>φ)</span><span class="v">As far as the buyer can tell, the seller has neither an answer nor a guess yet. The condition that there is no reason to inform someone who already knows.</span></div>
+      <div><span class="k" style="text-transform:none">∧</span><span class="v">And. Both conditions must hold for the FP to hold.</span></div>
+      <div><span class="k" style="text-transform:none">B<sub>j</sub>φ</span><span class="v">The seller comes to believe φ. The result the sender of an inform is after.</span></div>
+    </div>
+    <p>In one sentence, the FP is &ldquo;the buyer believes the price is 120 and thinks the seller does not know it yet&rdquo;, and the RE is &ldquo;the seller comes to believe the price is 120&rdquo;. Sending an inform when the FP does not hold violates the specification, and nothing guarantees that the RE actually happens after it is sent.</p>
+
+    <div class="fig" id="fig3">
+      <svg viewBox="0 0 680 350" role="img" aria-label="Reading the FP and RE of inform: the two FP conjuncts are beliefs inside the buyer, the RE is a belief inside the seller, and the only thing that travels is the message string">
+        <defs>
+          <marker id="f3-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f3-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#A8A29E" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#1C1917" font-size="13" font-weight="600" text-anchor="middle">
+          <text x="125" y="34">B<tspan baseline-shift="sub" font-size="8">i</tspan>φ</text>
+          <text x="218" y="34">∧</text>
+          <text x="340" y="34">¬B<tspan baseline-shift="sub" font-size="8">i</tspan>(Bif<tspan baseline-shift="sub" font-size="8">j</tspan>φ ∨ Uif<tspan baseline-shift="sub" font-size="8">j</tspan>φ)</text>
+          <text x="580" y="34">B<tspan baseline-shift="sub" font-size="8">j</tspan>φ</text>
+        </g>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="40" y="34">FP</text>
+          <text x="515" y="34">RE</text>
+          <text x="12" y="322">BUYER i</text>
+          <text x="668" y="322" text-anchor="end">SELLER j</text>
+        </g>
+        <g fill="none" stroke="#A8A29E" stroke-width="1">
+          <path d="M125 44 L125 78" marker-end="url(#f3-ahd)"/>
+          <path d="M340 44 L340 78" marker-end="url(#f3-ahd)"/>
+          <path d="M580 44 L580 78" stroke-dasharray="4 4" marker-end="url(#f3-ahd)"/>
+        </g>
+        <g fill="none" stroke="#A8A29E" stroke-width="1" stroke-dasharray="4 4">
+          <rect x="10" y="88" width="450" height="130"/>
+          <rect x="500" y="88" width="170" height="130"/>
+        </g>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="20" y="208">INSIDE THE BUYER, NOT IN THE MESSAGE</text>
+          <text x="510" y="208">INSIDE THE SELLER</text>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <rect x="30" y="102" width="190" height="72"/>
+          <rect x="250" y="102" width="190" height="72"/>
+          <rect x="508" y="102" width="154" height="72" stroke="#A8A29E" stroke-dasharray="4 4"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="11" font-weight="600">
+          <text x="125" y="126">the buyer believes φ</text>
+          <text x="345" y="126">and believes the seller</text><text x="345" y="140">does not know φ yet</text>
+          <text x="585" y="126" fill="#78716C">the seller comes</text><text x="585" y="140" fill="#78716C">to believe φ</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="9.5">
+          <text x="125" y="146">φ: the price of the</text><text x="125" y="159">bicycle is 120</text>
+          <text x="345" y="159">no answer (Bif), no guess (Uif)</text>
+          <text x="585" y="159">hoped for, not guaranteed</text>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <rect x="170" y="250" width="340" height="46" fill="#FAFAF9"/>
+          <path d="M40 273 L169 273"/>
+          <path d="M510 273 L640 273" marker-end="url(#f3-ah)"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="10.5">
+          <text x="340" y="268">(inform :sender buyer :receiver seller</text>
+          <text x="340" y="284">:content "(= (price bicycle) 120)")</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="9.5">
+          <text x="340" y="240">the only thing that travels</text>
+          <text x="340" y="312">a program can check this string, none of the three boxes above</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 03</b> Reading the semantics of inform</span><span>FP inside the sender, RE inside the receiver</span></div>
+    </div>
+
+    <p>The specification assumes sincerity. The inform entry says &ldquo;the sending agent is sincere&rdquo;, and whether the receiver adopts the content depends on &ldquo;the receiver's trust in the sincerity and reliability of the sender&rdquo;. On insincere agents it says this.</p>
+
+    <div class="pull">Arguably there are situations where an agent might not want to be sincere, for example to protect confidential information. We consider these cases to be beyond the current scope of this specification.<span class="src">FIPA SC00037J (2002), 3.5 Confirm</span></div>
+
+    <div class="note"><b>INTERACTION PROTOCOLS</b>Eleven of them: request, query, contract net, iterated contract net, brokering, and others. The reference implementation is JADE.</div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A3</span><h2>Four limits of FIPA-ACL, and the LLM</h2></div>
+    <p>FIPA-ACL was a complete standard. It had a message structure, a semantics, interaction protocols, and a reference implementation. In 2005 FIPA became a standards committee of the IEEE Computer Society. Agent communication after that was built outside the specification. There are four reasons.</p>
+
+    <p>First, <strong>the semantics cannot be verified</strong>. The FP conditions an act on the sender's beliefs. Those beliefs do not travel in the message, and the receiver cannot see inside the other program. What reaches the seller is the string <code class="inline">(propose ... 120)</code>; whether the buyer really holds that intention sits in the buyer program's variables and weights. Michael Wooldridge named this the semantic verification problem in &ldquo;Verifiable Semantics for Agent Communication Languages&rdquo; (ICMAS 1998). To judge whether an agent conforms, one would have to attribute beliefs and intentions to its program, and there is no way to do that for an arbitrary program. In the same year Munindar Singh, in &ldquo;Agent Communication Languages: Rethinking the Principles&rdquo; (IEEE Computer), proposed defining meaning by publicly checkable social commitments instead of mental states. Jeremy Pitt and Abe Mamdani (1999) pointed at the same place.</p>
+
+    <p>Second, <strong>the agents could not reason enough to use the semantics</strong>. Using FP and RE requires inferring the other side's beliefs and intentions. The implementations of the time were code that branched on the performative string.</p>
+
+    <p>Third, <strong>the cost of agreeing on an ontology</strong>. To read the content, both sides must already share <code class="inline">:language</code> and <code class="inline">:ontology</code>. Inside one organisation communication worked without an ACL; across organisations, aligning ontologies took separate work.</p>
+
+    <p>Fourth, <strong>there were no agents to use the standard</strong>. The interoperability specification was written before a population of agents that needed to interoperate existed, and nobody had a reason to adopt it.</p>
+
+    <p>The LLM has removed most of the second and the third. The model reads whether &ldquo;I can do 120 for you&rdquo; is an accept or a propose without a tag, and treats price, 가격, and 값 as the same thing without prior alignment. Samuele Marro and colleagues' <span class="nb">agent communication trilemma</span> in the 2024 Agora paper describes this state: natural language handles any situation but costs a model call every time it is read, and a fixed protocol is cheap but handles only the situations it was written for. The lab's three conditions sit on this axis. free is the natural-language end, so every message costs a reader call; structured is the fixed-protocol end, so it carries one price and drops everything else that was said; tagged sits between them, fixing the act and leaving the content in English. The first limit remains, and shows more often with an LLM. An LLM can inform what it does not believe (a hallucination) and can accept a price outside its own limit. That sincerity cannot be checked from outside the message is as true as in 1997. Federico Bianchi and colleagues' NegotiationArena (2024) reports LLM negotiators gaining a 20% higher payoff against GPT-4 by feigning desperation.</p>
+
+    <div class="define">
+      <p>The reproduction keeps the negotiation procedure and the participants and changes only the message format, and measures how outcome, violation, turns, and reader_calls differ when a performative tag is present.</p>
+      <p class="sub">FIPA made the illocutionary force a mandatory field on the surface of the message. The tagged and structured conditions of the lab are that field.</p>
+    </div>
+
+    <p><strong>What changes (the independent variable)</strong> is one thing, the message format. free is plain English; tagged is one performative tag followed by one plain sentence; structured is one JSON object carrying the performative and the content (price). <strong>What is held constant (the controls)</strong>: the scenarios, the role prompts, the model, the temperature, the turn limit, and the reader prompt that labels messages in the free condition. Only the last paragraph of the system prompt, the one that dictates the format, differs between conditions. <strong>What is measured</strong> is recorded per episode.</p>
+
+    <div class="recorder">
+      <div><span class="k">outcome</span><span class="v">One of deal, no_deal, open, plus the deal price. Correct when a deal happens exactly if reserve ≤ budget and the price lies inside both limits.</span></div>
+      <div><span class="k">violation</span><span class="v">A deal below the seller's reserve or above the buyer's budget. An utterance that broke the limit instruction in the system prompt.</span></div>
+      <div><span class="k">cost</span><span class="v">Messages exchanged (turns), messages the protocol layer could not parse (format_errors), model calls spent reading messages (reader_calls).</span></div>
+    </div>
+
+    <div class="fig" id="fig4">
+      <svg viewBox="0 0 680 290" role="img" aria-label="Experiment structure: with the same scenarios, role prompts, model, temperature, and turn limit, run the free, tagged, and structured conditions and measure them with the same criteria">
+        <defs>
+          <marker id="f4-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <rect x="110" y="20" width="460" height="54"/>
+          <rect x="10" y="130" width="205" height="60"/>
+          <rect x="237" y="130" width="205" height="60"/>
+          <rect x="464" y="130" width="205" height="60"/>
+          <rect x="40" y="230" width="600" height="54"/>
+          <path d="M250 74 L114 128" marker-end="url(#f4-ah)"/>
+          <path d="M340 74 L340 128" marker-end="url(#f4-ah)"/>
+          <path d="M430 74 L564 128" marker-end="url(#f4-ah)"/>
+          <path d="M112 190 L248 228" marker-end="url(#f4-ah)"/>
+          <path d="M340 190 L340 228" marker-end="url(#f4-ah)"/>
+          <path d="M566 190 L432 228" marker-end="url(#f4-ah)"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="13" font-weight="600">
+          <text x="340" y="44">Same conditions</text>
+          <text x="112" y="154">free</text>
+          <text x="340" y="154">tagged</text>
+          <text x="566" y="154">structured</text>
+          <text x="340" y="254">Same verdict</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="10">
+          <text x="340" y="62">scenarios, role prompts, model, temperature, turn limit</text>
+          <text x="112" y="174">plain English, LLM reader</text>
+          <text x="340" y="174">performative + English</text>
+          <text x="566" y="174">performative + JSON content</text>
+          <text x="340" y="272">outcome, price, violation, turns, format errors, reader calls</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 04</b> Experiment structure</span><span>one independent variable, the message format</span></div>
+    </div>
+
+    <p>The free condition measures, as reader_calls, what it costs a program to find out the state of the conversation when there is no tag and no format. In the tagged condition a regex reads the tag and the reader reads only the price inside a sentence, so the question is how far reader_calls drop. In the structured condition the content is bound to price: int, and turns and violation are compared. violation is recorded in all three.</p>
+  </div>
+</section>
+
+<!-- ============ Discussion ============ -->
+<section>
+  <div class="col">
+    <div class="open">
+      <div class="lbl">DISCUSSION: natural-language content and the ontology problem</div>
+      <ol>
+        <li>FIPA put the point of agreement on the surface of the message, as in <code class="inline">:ontology used-goods</code>. When two LLMs negotiate in natural language alone, where does that agreement go? Has it disappeared, or moved into the model weights where it cannot be seen? If the two agents are different models, what comes apart?</li>
+        <li>FIPA required the sincerity of inform as a norm and could not enforce it. Is a system prompt that says &ldquo;never accept a price outside your limit&rdquo; the same thing as that sincerity condition? If so, what verifies it?</li>
+        <li>If the reader labelled &ldquo;I can go up to 120, would that work?&rdquo; as an accept-proposal, is that an error of the reader or an ambiguity of the sentence? In a transaction with money at stake, who should make that call?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PART B ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART B: LAB</div>
+    <h2>The same negotiation in three message formats: one buyer, one seller</h2>
+    <div class="meta">GOAL: one buyer, one seller, three message formats, measure outcome correctness, limit violations, turns, format errors, and reader calls</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">LAB</span><h2>Implement propose, accept-proposal, reject-proposal, and refuse with one buyer and one seller</h2></div>
+    <p>What you build is two agents. The buyer and the seller each have a role and a private limit in their system prompt: the buyer a maximum it can pay (budget), the seller a minimum it can accept (reserve). The buyer speaks first and the two alternate. Four acts are allowed. propose offers a price, accept-proposal agrees to the other side's last price (the episode ends with a deal), reject-proposal declines and continues, refuse leaves the negotiation (the episode ends with no deal). If eight messages pass without an end, the episode ends as open. That is one episode.</p>
+
+    <p>Each scenario fixes a reserve and a budget in advance. A deal is possible when reserve ≤ budget; otherwise no deal is the right answer. Seven things are recorded per episode: the outcome, the deal price, whether it is correct, whether a limit was violated, the number of messages (turns), the number of messages the protocol layer could not read (format_errors), and the number of model calls spent reading messages (reader_calls).</p>
+
+    <p>A program that receives a message has to know which of the four acts it is and what price it names before the episode can continue. The code that does this is the protocol layer. The three formats differ in how this layer reads a message. <strong>free</strong> is plain English. Nothing in it is machine-readable, so a reader (the same model, the same temperature) labels every message with a performative and a price. <strong>tagged</strong> is one performative tag in front and one plain sentence behind. A regex reads the tag; the reader reads the price inside a propose. <strong>structured</strong> is one JSON object. The performative and content.price are parsed without a model call. Each format runs the whole scenario set three times.</p>
+
+    <p>Here is one free-condition episode from the reference run log. The indented lines are the reader's labels.</p>
+    <div class="code"><span class="file">logs/free-03.txt, scenario 2 (a desk lamp), reserve 30, budget 45</span><pre>[buyer]  I'm interested in buying your desk lamp—would you be willing to start at 30?
+  [reader] None
+           <span class="cm"># no act among the four recognised, format_errors 1</span>
+[seller] I appreciate your interest, but I'm looking to get 50 for this lamp.
+         Does that work for you?
+  [reader] {'performative': 'propose', 'price': 50}
+[buyer]  I appreciate you sharing your asking price, but 50 is above my budget—
+         I can go up to 40 if that works for you.
+  [reader] {'performative': 'propose', 'price': 50}
+           <span class="cm"># misread: of the two numbers in the sentence,</span>
+           <span class="cm">#   it took the other side's price</span>
+[seller] I can work with 40—that's a fair price for a quality desk lamp,
+         and we have a deal.  **Action: accept-proposal**
+  [reader] {'performative': 'accept-proposal', 'price': 40}
+[result] outcome=deal price=50 correct=0 violation=1 turns=4
+         format_errors=1 reader_calls=4</pre></div>
+    <p>The two agents agreed on 40. The program had recorded the buyer's last propose as 50, so when the seller's accept-proposal arrived it wrote the deal price as 50, and 50 is above the budget of 45, a violation. The violation came from the reader's misreading; both agents kept their limits. In tagged the tag fixes the act, so the failure on the first line disappears; in structured the price arrives as a number field, so the misreading on the fourth line disappears. The failures the two formats have instead show up in the reference run.</p>
+
+    <p>There is no starter code this week either. The file layout and the function names are yours. What is fixed is the format of the output files (<code class="inline">scenarios.json</code>, <code class="inline">results.csv</code>, <code class="inline">logs/</code> below). For the model call, take <code class="inline">Chat</code> from the week 02 starter or the <code class="inline">call_model</code> you wrote in week 03. No tools are needed. The other side's messages are the user turns, your own are the assistant turns.</p>
+
+    <ol class="pre">
+      <li><b class="lead">Write the scenario file and commit it first.</b> At least four scenarios in <code class="inline">scenarios.json</code>, each with a number (<code class="inline">id</code>), the item (<code class="inline">item</code>), the seller's minimum (<code class="inline">reserve</code>), and the buyer's maximum (<code class="inline">budget</code>). Mix scenarios where a deal is possible with ones where it is not.</li>
+      <li><b class="lead">Separate the role prompt from the format paragraph.</b> The common paragraph, role, limit, and the meaning of the four acts, is the same in all three conditions. Only the format paragraph is picked by condition name and appended. Change nothing else.</li>
+      <li><b class="lead">Write the layer that reads a message.</b> structured parses the JSON and passes only if the performative is one of the four and a propose carries a price. tagged reads the leading tag with a regex and, for a propose, calls the reader for the price. free hands the whole conversation to the reader, which answers with the performative and price of the last message as JSON. A message that cannot be read counts in format_errors and is still delivered to the other side.</li>
+      <li><b class="lead">Write the episode loop.</b> The buyer goes first. Each message goes into the speaker's history as assistant and into the other side's history as user. accept-proposal ends with a deal at the other side's last proposed price, refuse ends with no_deal, eight turns end as open. For a deal, compare the price with reserve and budget to set violation and correct.</li>
+      <li><b class="lead">Run each format three times and record.</b> One line of <code class="inline">results.csv</code> is one episode; one file in <code class="inline">logs/</code> is one run (one format over the whole scenario set once). Put provider, model, temperature, and the turn limit on the first line of the log. On HTTP 429, wait and retry; to resume an interrupted run, skip the (run, scenario) pairs already in <code class="inline">results.csv</code>. Keep crashed episodes and write the reason in note.</li>
+      <li><b class="lead">Read the results and compare with FIPA-ACL.</b> Put correct, violation, mean turns, format_errors, and reader_calls for the three formats side by side. Then build a table that compares FIPA-ACL with the three conditions item by item: where the illocutionary force lives, what the content language is, who interprets the content, how a conversation ends, what guarantees sincerity, what it costs to read one message, how it fails.</li>
+    </ol>
+
+    <div class="code"><span class="file">scenarios.json</span><pre>[
+  {<span class="st">"id"</span>: 1, <span class="st">"item"</span>: <span class="st">"a used bicycle"</span>, <span class="st">"reserve"</span>: 120, <span class="st">"budget"</span>: 150},
+  {<span class="st">"id"</span>: 3, <span class="st">"item"</span>: <span class="st">"a second-hand textbook"</span>, <span class="st">"reserve"</span>: 40, <span class="st">"budget"</span>: 40},
+  {<span class="st">"id"</span>: 4, <span class="st">"item"</span>: <span class="st">"a mechanical keyboard"</span>, <span class="st">"reserve"</span>: 90, <span class="st">"budget"</span>: 70}
+]</pre></div>
+
+    <div class="code"><span class="file">acl.py</span><pre><span class="cm"># the role paragraph is shared; only the format paragraph changes with the condition</span>
+ROLE = {<span class="st">"buyer"</span>: <span class="st">"You are the buyer of {item}, negotiating the price with the seller. "</span>
+                 <span class="st">"Your private limit: you can pay at most {limit}. Never agree to a price above {limit}. ..."</span>,
+        <span class="st">"seller"</span>: <span class="st">"You are the seller of {item} ... you can accept at least {limit}. Never agree to a price below {limit}. ..."</span>}
+COMMON = (<span class="st">" Four acts are available: propose (offer a price), accept-proposal (agree to the other side's "</span>
+          <span class="st">"last price, which ends the negotiation with a deal), reject-proposal (decline the last price and "</span>
+          <span class="st">"keep negotiating), refuse (leave the negotiation for good, no deal). ..."</span>)
+FORMAT = {
+    <span class="st">"free"</span>:       <span class="st">" Write your message as one or two plain English sentences."</span>,
+    <span class="st">"tagged"</span>:     <span class="st">" Start your message with exactly one performative tag in parentheses, one of (propose), "</span>
+                  <span class="st">"(accept-proposal), (reject-proposal), (refuse), then write one plain English sentence."</span>,
+    <span class="st">"structured"</span>: <span class="st">' Reply with exactly one JSON object and nothing else: {"performative": "propose" | '</span>
+                  <span class="st">'"accept-proposal" | "reject-proposal" | "refuse", "content": {"price": &lt;whole number or null&gt;}}.'</span>}
+
+<span class="kw">def</span> system_prompt(role, item, limit, condition):
+    <span class="kw">return</span> ROLE[role].format(item=item, limit=limit) + COMMON + FORMAT[condition]
+
+READER_SYSTEM = (<span class="st">"You are an observer reading a price negotiation between a buyer and a seller. "</span>
+                 <span class="st">"Label the LAST message only. Reply with exactly one JSON object and nothing else: "</span>
+                 <span class="st">'{"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "price": &lt;whole number or null&gt;}. ...'</span>)</pre></div>
+
+    <div class="code"><span class="file">negotiate.py</span><pre><span class="cm"># one episode: the buyer first, alternating turns, the condition's protocol layer reads each message</span>
+<span class="kw">for</span> _ <span class="kw">in</span> range(MAX_TURNS):                       <span class="cm"># MAX_TURNS = 8</span>
+    text = call_model(systems[role], history[role], meter)
+    history[role].append({<span class="st">"role"</span>: <span class="st">"assistant"</span>, <span class="st">"content"</span>: text})
+    history[other].append({<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: text})
+    perf, price, ok = read(condition, text, transcript, meter)   <span class="cm"># parser, regex, or reader</span>
+    <span class="kw">if</span> <span class="kw">not</span> ok:
+        ep.format_errors += 1                        <span class="cm"># unreadable, but still delivered</span>
+    <span class="kw">elif</span> perf == <span class="st">"propose"</span>:
+        last_price[role] = price
+    <span class="kw">elif</span> perf == <span class="st">"accept-proposal"</span>:
+        ep.outcome, ep.price = <span class="st">"deal"</span>, last_price[other]; <span class="kw">break</span>
+    <span class="kw">elif</span> perf == <span class="st">"refuse"</span>:
+        ep.outcome = <span class="st">"no_deal"</span>; <span class="kw">break</span>
+    role, other = other, role
+<span class="kw">if</span> ep.outcome == <span class="st">"deal"</span>:
+    ep.violation = int(ep.price &lt; sc[<span class="st">"reserve"</span>] <span class="kw">or</span> ep.price &gt; sc[<span class="st">"budget"</span>])
+    ep.correct = int(ep.deal_possible <span class="kw">and</span> <span class="kw">not</span> ep.violation)</pre></div>
+
+    <div class="code"><span class="file">results.csv</span><pre>run,condition,scenario,deal_possible,outcome,price,correct,violation,turns,format_errors,reader_calls,note
+<span class="cm"># condition: free | tagged | structured / outcome: deal | no_deal | open / three or more lines per scenario per condition</span>
+<span class="cm"># price is an integer or blank, the other counts are integers / note: tokens, calls, crash reason</span></pre></div>
+    <p class="small">Write reserve and budget into <code class="inline">scenarios.json</code> and commit before running. If a limit is changed to fit the results, violation can no longer be measured.</p>
+
+    <h3><span class="tag">REFERENCE RUN</span>Results on the Claude Code CLI</h3>
+    <p>Below is this design run on claude-haiku-4-5: six scenarios, three runs per format, 54 episodes. The calls went through the Claude Code CLI (<code class="inline">claude -p</code>), which does not expose temperature.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>condition</th><th>correct / 18</th><th>deal, no_deal, open</th><th>violation</th><th>mean turns</th><th>format errors</th><th>reader calls</th></tr>
+        <tr><td class="stage">free</td><td><span class="m">11</span></td><td><span class="m">3, 15, 0</span></td><td><span class="m">1</span></td><td><span class="m">2.1</span></td><td><span class="m">4</span></td><td><span class="m">38</span></td></tr>
+        <tr><td class="stage">tagged</td><td><span class="m">6</span></td><td><span class="m">4, 5, 9</span></td><td><span class="m">1</span></td><td><span class="m">6.5</span></td><td><span class="m">0</span></td><td><span class="m">31</span></td></tr>
+        <tr><td class="stage">structured</td><td><span class="m">4</span></td><td><span class="m">6, 2, 10</span></td><td><span class="m">3</span></td><td><span class="m">6.4</span></td><td><span class="m">4</span></td><td><span class="m">0</span></td></tr>
+      </table>
+    </div>
+    <p>Five things were confirmed in the log.</p>
+    <div class="recorder">
+      <div><span class="k">free, ended at turn one</span><span class="v">In 14 of the buyer&rsquo;s 18 opening messages it asked a question, &ldquo;what&rsquo;s your asking price?&rdquo;. The reader, which has to pick one of the four acts, labelled it refuse and the episode ended at turn one with no_deal. FIPA has query-ref and cfp for this message; the lab&rsquo;s vocabulary does not. Eight of those 14 landed on scenarios where no deal was the right answer and counted as correct, and they are 8 of free&rsquo;s 11 correct episodes.</span></div>
+      <div><span class="k">free, misread prices</span><span class="v">Of the 4 free episodes that did run, 3 closed a deal, and in all 3 the reader read a price wrong once: &ldquo;50 is above my budget, I can go up to 40&rdquo; as propose 50, &ldquo;I can do $45&rdquo; as the previous price, 40. free&rsquo;s one violation is the price 50 recorded by that misreading; the two agents had agreed on 40.</span></div>
+      <div><span class="k">counter-offers after the tag</span><span class="v">The model wrote a new price after a reject-proposal (&ldquo;(reject-proposal) ... let me counter at 45 dollars&rdquo;). To a layer that reads only the tag or the JSON this is a plain rejection, so the other side&rsquo;s last propose price was never updated. Of the 19 open episodes in the two conditions, 13 ran to the 8-turn limit in this state, and 6 ended when an accept-proposal arrived and the program had no recorded price to accept.</span></div>
+      <div><span class="k">structured, prose after the JSON</span><span class="v">26 of the 115 structured messages carried a sentence after the JSON, and the real offer was in the sentence (<code class="inline">"price": null</code> followed by &ldquo;I need at least $50&rdquo;). The parser reads only the JSON, so that price is never recorded.</span></div>
+      <div><span class="k">real limit violations</span><span class="v">Four of the five violations are the agents&rsquo; own. The seller of the keyboard (reserve 90) wrote &ldquo;68 is below my absolute minimum of 90&rdquo; and sent accept-proposal; the buyer of the monitor (budget 150) accepted a propose of 280.</span></div>
+    </div>
+
+    <div class="check">
+      <div class="lbl">CHECKPOINT</div>
+      <ul>
+        <li>The reserve and budget values in <code class="inline">scenarios.json</code> were committed before the first run.</li>
+        <li>The three system prompts differ in the format paragraph only, and the reader prompt is the same regardless of condition.</li>
+        <li><code class="inline">results.csv</code> has three or more lines per scenario per condition, crashed episodes included.</li>
+        <li>The free-condition logs contain at least one line where the reader's label and the sentence disagree.</li>
+        <li>format_errors and reader_calls are recorded for every episode.</li>
+      </ul>
+    </div>
+
+    <p>Submission rules are the same as in week 03.</p>
+    <div class="recorder">
+      <div><span class="k">commits</span><span class="v">No squashing. Commits of failed attempts are grading evidence.</span></div>
+      <div><span class="k">logs</span><span class="v">Commit the console output of agent runs as files under <code class="inline">logs/</code>.</span></div>
+      <div><span class="k">API keys</span><span class="v">Never committed. Environment variables only.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Assignment ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">HW</span><h2>Assignment</h2></div>
+    <div class="hw">
+      <div class="head">ASSIGNMENT: WEEK 04</div>
+      <div class="body">
+        <p><strong>Deliverable</strong>: one page, <code class="inline">REPORT.md</code>, in four parts. (1) <strong>Setup</strong>: provider, model, temperature, the three format paragraphs, the reader prompt, how to run. (2) <strong>Results table</strong>: one line per condition with correct, violation, mean turns, format_errors, and reader_calls, then every episode of <code class="inline">results.csv</code> as a table, crashed episodes included. (3) <strong>Comparison table</strong>: FIPA-ACL beside the three conditions, item by item: where the illocutionary force lives, the content language, who interprets the content, how a conversation ends, what guarantees sincerity, what it costs to read one message, how it fails. (4) <strong>One paragraph of interpretation</strong>: which condition moved which number and why, quoting lines from the logs.</p>
+        <p><strong>Format</strong>: commit to <code class="inline">submissions/&lt;student-id&gt;/week-04/</code> in your fork and open a PR to upstream. Include the code (any layout), <code class="inline">scenarios.json</code>, <code class="inline">results.csv</code>, <code class="inline">logs/</code>, and <code class="inline">REPORT.md</code>. CI checks only the file formats, with <code class="inline">scripts/check_week04.py</code>. Run it yourself before pushing.</p>
+        <p><strong>Grading</strong>: half is reproducibility. Someone else must be able to get the same trend from your code and settings alone. The other half is interpretation: where the performative label helped, where it cost something, and what no format changed, argued from the logs. Do not delete the episodes where the reader took a counter-offer for an acceptance, or the ones where the seller sold below its reserve. Count them and report them.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Readings ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">READ</span><h2>Readings</h2></div>
+    <ul class="readings">
+      <li><span class="badge req">Required</span><b class="lead">FIPA, &ldquo;ACL Message Structure Specification&rdquo; SC00061G and &ldquo;Communicative Act Library Specification&rdquo; SC00037J (2002)</b><span class="why">The definitions of the 13 parameters and the FP and RE of the 22 acts. The lab's four acts are sections 3.13, 3.1, 3.18, and 3.17. The fipa.org domain no longer belongs to FIPA; read the Internet Archive copies. <a href="https://web.archive.org/web/2023/http://www.fipa.org/specs/fipa00061/SC00061G.html">SC00061G</a>, <a href="https://web.archive.org/web/2023/http://www.fipa.org/specs/fipa00037/SC00037J.pdf">SC00037J (PDF)</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">J. L. Austin, <span class="nb">How to Do Things with Words</span> (1962)</b><span class="why">The source of performatives and the three acts. Lectures I and VIII.</span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">J. R. Searle, &ldquo;A Taxonomy of Illocutionary Acts&rdquo; (1975)</b><span class="why">The source of the five classes. Mapping FIPA's 22 acts onto them shows where propose and accept-proposal sit. Language, Mind, and Knowledge, University of Minnesota Press</span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">T. Finin, R. Fritzson, D. McKay, R. McEntire, &ldquo;KQML as an Agent Communication Language&rdquo; (1994)</b><span class="why">The design of the first ACL and its performative list. <a href="https://doi.org/10.1145/191246.191322">CIKM &rsquo;94</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">M. Wooldridge, &ldquo;Verifiable Semantics for Agent Communication Languages&rdquo; (1998)</b><span class="why">The paper that states the semantic verification problem. The source of the first limit. <a href="https://doi.org/10.1109/ICMAS.1998.699219">ICMAS 1998</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">M. P. Singh, &ldquo;Agent Communication Languages: Rethinking the Principles&rdquo; (1998)</b><span class="why">The proposal to define meaning by social commitments instead of mental states. It leads into week 07, contracts and verification. <a href="https://doi.org/10.1109/2.735849">IEEE Computer 31(12)</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">S. Marro et al., &ldquo;A Scalable Communication Protocol for Networks of Large Language Models&rdquo; (2024)</b><span class="why">The agent communication trilemma and Agora: how LLM agents pick a format between natural language and a fixed protocol. <a href="https://arxiv.org/abs/2410.11905">arXiv:2410.11905</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">F. Bianchi et al., &ldquo;How Well Can LLMs Negotiate? NegotiationArena Platform and Analysis&rdquo; (2024)</b><span class="why">Measurements of LLM negotiators' tactics and irrationality. Evidence for reading violations and the free-condition logs. <a href="https://arxiv.org/abs/2402.05863">arXiv:2402.05863</a></span></li>
+    </ul>
+
+    <div class="next">
+      <div class="lbl">NEXT: WEEK 05</div>
+      <p><strong>Modern protocols 1: MCP</strong>. The structure of the Model Context Protocol, which makes a tool's description its interface, and an item-by-item comparison of how MCP handles each of FIPA-ACL's four limits.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="sheet">
+  <span>AGENTIC AI: <span class="o">AI Agent Engineering 101</span></span>
+  <span>SEOULTECH 2026 FALL, WEEK 04/15</span>
+</footer>
+
+</div>
+</body>
+</html>
