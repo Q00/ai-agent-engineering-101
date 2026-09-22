@@ -47,7 +47,11 @@ def load_env() -> None:
             continue
         for line in candidate.read_text(encoding="utf-8").splitlines():
             line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
+            if not line or line.startswith("#"):
+                continue
+            if "=" not in line:
+                if line.startswith("sk-or-v1-"):
+                    os.environ.setdefault("OPENROUTER_API_KEY", line)
                 continue
             key, value = line.split("=", 1)
             os.environ.setdefault(key.strip(), value.strip().strip("'\""))
