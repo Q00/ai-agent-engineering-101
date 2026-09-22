@@ -71,7 +71,7 @@ class RoundTests(unittest.TestCase):
         result = run_round(tasks, build_team("baseline"), model, events.append)
         self.assertEqual(result.tasks, 2)
         self.assertEqual(result.correct, 2)
-        self.assertEqual(result.messages, 10)
+        self.assertEqual(result.messages, 11)
         self.assertEqual(result.unassigned, 0)
         self.assertEqual(result.misawards, 0)
         self.assertEqual(result.parse_fails, 1)
