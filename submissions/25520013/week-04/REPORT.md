@@ -118,10 +118,19 @@ export OPENAI_BASE_URL=https://openrouter.ai/api/v1
 export OPENAI_API_KEY=<key>
 export AGENT_MODEL=nvidia/nemotron-3-super-120b-a12b:free
 python negotiate.py
+
+# every number quoted below, recomputed from results.csv and logs/
+python analyze.py
+python analyze.py --check-report     # exits 1 if this file disagrees with the data
 ```
 
 `results.csv` is appended as each episode finishes and a `(run, scenario)` pair
 already in it is skipped, so an interrupted run continues where it stopped.
+
+The first draft of this report was written from ad-hoc greps and two of its
+counts were wrong, so every number it now quotes is derived in `analyze.py` and
+checked against this file by `--check-report`. A count that appears here and
+not there is a count nobody verified.
 
 ## 2. Results
 
@@ -238,6 +247,19 @@ an acceptance or inside a rejection, the rule reaches back past it to a stale
 offer. In 45 episodes there are 23 deals and **0 agent violations**. The sincerity
 that FIPA could not enforce was never actually tested here, and everything the
 violation column recorded was the protocol layer measuring itself.
+
+That last claim rests on two grades of evidence, which `analyze.py` separates
+rather than pools. In four of the six the agents wrote the number down: both
+closing acceptances name the same price and it is inside both limits, so the
+recorded breach is contradicted by the transcript. In the other two, both in
+`structured`, the acceptances carry `"price": null` and name nothing, so the
+agreement has to be read off the last number either side put on the table, 120
+and 150, each legal for both agents. That reading is the natural one and no
+other number was in play, but it is an inference and it is marked as one. What
+does not depend on the inference is the direct check: across all 45 episodes,
+**not one acceptance says in its own sentence that the price is outside the
+sender's limit**, which is exactly the shape the reference run's four real
+breaches took.
 
 ### Evidence
 

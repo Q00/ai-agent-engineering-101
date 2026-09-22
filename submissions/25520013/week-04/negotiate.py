@@ -105,7 +105,11 @@ def _ask_reader(transcript: list, meter: backend.Meter):
 
 
 def read(condition: str, text: str, transcript: list, meter: backend.Meter):
-    """Read one message. Returns (performative, price, ok, leftover_prose).
+    """Read one message.
+
+    Returns (performative, price, ok, leftover_prose, read_by), where `read_by`
+    names what actually named the act, so a log line never credits the reader
+    for work a parser did.
 
     `ok` is False when this layer could not name the act, which the episode
     counts in format_errors and otherwise ignores: an unread message is still
@@ -114,36 +118,36 @@ def read(condition: str, text: str, transcript: list, meter: backend.Meter):
     if condition == "structured":
         obj, outside = _first_json_object(text)
         if not isinstance(obj, dict):
-            return None, None, False, outside
+            return None, None, False, outside, "parser"
         perf = obj.get("performative")
         if perf not in acl.PERFORMATIVES:
-            return None, None, False, outside
+            return None, None, False, outside, "parser"
         content = obj.get("content")
         price = (
             _whole_number(content.get("price")) if isinstance(content, dict) else None
         )
         if perf == "propose" and price is None:
-            return perf, None, False, outside
-        return perf, price, True, outside
+            return perf, None, False, outside, "parser"
+        return perf, price, True, outside, "parser"
 
     if condition == "tagged":
         tag = re.match(r"\s*\(\s*([a-zA-Z-]+)\s*\)", text)
         perf = tag.group(1).lower() if tag else None
         if perf not in acl.PERFORMATIVES:
-            return None, None, False, ""
+            return None, None, False, "", "regex"
         if perf != "propose":
-            return perf, None, True, ""
+            return perf, None, True, "", "regex"
         _, price = _ask_reader(transcript, meter)  # the price only
         if price is None:
-            return perf, None, False, ""
-        return perf, price, True, ""
+            return perf, None, False, "", "regex+reader"
+        return perf, price, True, "", "regex+reader"
 
     perf, price = _ask_reader(transcript, meter)  # free: the act and the price
     if perf is None:
-        return None, None, False, ""
+        return None, None, False, "", "reader"
     if perf == "propose" and price is None:
-        return perf, None, False, ""
-    return perf, price, True, ""
+        return perf, None, False, "", "reader"
+    return perf, price, True, "", "reader"
 
 
 # --------------------------------------------------------------------- one episode
@@ -192,9 +196,11 @@ def run_episode(condition: str, scenario: dict, run: str, log) -> dict:
             transcript.append((role, text))
             log(f"[{role}] {text}")
 
-            perf, read_price, ok, leftover = read(condition, text, transcript, meter)
+            perf, read_price, ok, leftover, read_by = read(
+                condition, text, transcript, meter
+            )
             log(
-                f"  [reader] {{'performative': {perf!r}, 'price': {read_price!r}}}"
+                f"  [{read_by}] {{'performative': {perf!r}, 'price': {read_price!r}}}"
                 f"{'' if ok else '   # unread, format_errors += 1'}"
             )
             if leftover:
