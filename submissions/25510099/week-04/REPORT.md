@@ -1,0 +1,203 @@
+# REPORT.md — 화행 실습: 자유·태그·구조화 형식의 가격 협상 비교
+
+구매자와 판매자 LLM 두 에이전트가 같은 여섯 시나리오에서 가격을 협상하는 실험을
+메시지 형식만 바꾸어 세 번 반복하였습니다. FIPA-ACL이 필수 필드로 두었던 performative를
+명시하지 않을 때(free), 괄호 태그로 붙일 때(tagged), JSON 필드로 넣을 때(structured)
+결과의 정확도, 한도 위반, 턴 수, 파싱 실패, 리더 호출 수가 어떻게 달라지는지 측정하였습니다.
+
+## 1. 설정
+
+### 모델과 고정 변수
+- provider는 OpenAI이고 모델은 `gpt-4.1-mini` 입니다. 응답에 보고된 실제 모델은 `gpt-4.1-mini-2025-04-14` 입니다.
+- temperature는 0, 응답 토큰 상한은 256, 턴 제한은 메시지 10개입니다. 세 조건과 아홉 런에서 모두 같습니다.
+- 메시지를 읽는 리더 LLM도 에이전트와 같은 모델, 같은 temperature를 씁니다. 리더 호출은 에이전트 호출과 따로 셉니다.
+- 에이전트 호출 수는 조건별로 free 125, tagged 126, structured 117이고, 리더 호출을 더한 총 호출은 약 550회입니다.
+
+### 시나리오 (`scenarios.json`)
+- 실행 전에 커밋하였습니다. 거래 가능 네 개, 불가 두 개입니다.
+- 한도 위반과 오독이 드러나기 쉽도록 두 시나리오는 한도가 겹치는 폭을 좁게 두었습니다. ticket은 reserve와 budget이 80으로 같고, chair는 120 대 130입니다.
+
+| id | item | reserve (판매자 최저) | budget (구매자 최고) | 거래 가능 |
+|---|---|---|---|---|
+| bike | a used city bicycle | 150 | 220 | 1 |
+| ticket | one concert ticket for Friday | 80 | 80 | 1 |
+| laptop | a two-year-old laptop | 600 | 520 | 0 |
+| book | a linear algebra textbook | 40 | 60 | 1 |
+| lens | a 50mm camera lens | 350 | 250 | 0 |
+| chair | an ergonomic office chair | 120 | 130 | 1 |
+
+### 에이전트 시스템 프롬프트
+- 시스템 프롬프트는 역할 문단, 공통 문단, 형식 문단 셋을 빈 줄로 이어 만듭니다. 세 조건에서 형식 문단만 다릅니다.
+- 구매자는 협상 시작을 알리는 고정 문장 `The negotiation begins. Send your opening message.` 를 받고 첫 메시지를 냅니다. 이 문장은 협상 메시지가 아니며 턴으로 세지 않습니다.
+- 각 에이전트는 상대 메시지를 user 턴으로, 자기 메시지를 assistant 턴으로 쌓아 대화 전체를 봅니다.
+
+역할 문단 (구매자 / 판매자, `{item}` `{budget}` `{reserve}` 는 시나리오 값으로 치환):
+
+```
+You are the buyer in a price negotiation for {item}. Your budget is {budget} dollars: the most you may ever pay. This number is private; never reveal it. Pay as little as you can. You speak first.
+
+You are the seller in a price negotiation for {item}. Your reserve price is {reserve} dollars: the least you may ever accept. This number is private; never reveal it. Get as much as you can. The buyer speaks first.
+```
+
+공통 문단 (네 행위의 의미, 모든 조건 동일, `{max_turns}` 는 10):
+
+```
+Each message you send does exactly one of four things:
+- propose: name a price you would trade at (a first offer or a counter-offer);
+- accept-proposal: agree to the price the other side named most recently, which closes the deal at that price;
+- reject-proposal: decline the other side's most recent price and keep negotiating, without naming a new price;
+- refuse: leave the negotiation; there is no deal.
+Accept only a price the other side has actually named, and never agree to a price outside your private limit. If no price inside your limit looks reachable, refuse rather than cross the limit. The negotiation ends automatically after {max_turns} messages in total; a negotiation that runs out of turns is a failure for both sides.
+```
+
+형식 문단 세 개 (조건별로 이 문단만 바뀜):
+
+```
+free:
+Format: write your message in plain English, one or two sentences, as you would speak to the other person. No tags, no labels, no JSON.
+
+tagged:
+Format: begin your message with exactly one tag in parentheses naming your act: (propose), (accept-proposal), (reject-proposal) or (refuse). Then one or two sentences of plain English. Example: (propose) I could go to 45 dollars for it.
+
+structured:
+Format: reply with exactly one JSON object and nothing else, no prose, no code fence: {"performative": "<propose|accept-proposal|reject-proposal|refuse>", "content": {"price": <integer or null>}}. With propose, price is the integer you offer. With accept-proposal, price is the price you are accepting. With reject-proposal and refuse, price is null.
+```
+
+### 프로토콜 층: 메시지를 읽는 방법
+- free: 메시지마다 리더 LLM을 한 번 호출합니다. 리더는 직전 상대 메시지 하나만 문맥으로 받습니다. "그럼 180으로 하죠"가 수락인지 제안인지는 직전 가격 없이는 정할 수 없기 때문입니다. 한도나 그 이전 대화는 보지 않습니다.
+- tagged: 메시지 첫머리의 괄호 태그를 정규식으로 읽습니다. 태그가 propose일 때만 본문 가격을 리더 LLM에 묻습니다. 태그가 권위이며, reject 태그 본문에 가격이 있어도 제안으로 치지 않습니다. 대신 태그와 본문의 불일치를 로그에 경고로 남깁니다.
+- structured: JSON 파서만 씁니다. 모델 호출은 없습니다. 객체 하나가 아니거나 performative가 넷 중 하나가 아니거나 propose에 정수 가격이 없으면 파싱 실패입니다.
+
+free 리더 프롬프트 (시스템):
+
+```
+You label messages in a two-party price negotiation between a buyer and a seller. Decide which one act the message performs:
+- propose: the speaker names a price at which they would trade (first offer or counter-offer);
+- accept-proposal: the speaker agrees to the price the other side named most recently, closing the deal;
+- reject-proposal: the speaker declines the other side's price but keeps negotiating without naming a new price;
+- refuse: the speaker ends the negotiation with no deal.
+Reply with exactly one JSON object and nothing else: {"performative": "<propose|accept-proposal|reject-proposal|refuse>", "price": <the integer price the speaker names, or null>}.
+```
+
+free 리더 입력 (user): `Previous message from the {other}: {previous}` 한 줄과 `Message from the {speaker} to label: {text}` 한 줄. 첫 메시지에는 previous 자리에 `(none; this is the opening message)` 가 들어갑니다.
+
+tagged 가격 리더 프롬프트 (시스템), 입력은 `Message: {태그 뒤 본문}`:
+
+```
+A speaker in a price negotiation is making an offer. Extract the price they propose. Reply with exactly one JSON object and nothing else: {"price": <integer or null>}.
+```
+
+### 에피소드 규칙과 판정
+- 구매자가 열고 둘이 번갈아 말합니다. 리더가 읽은 결과가 진행을 결정하며, 에이전트는 상대의 원문만 봅니다.
+- accept-proposal이 읽히면 상대가 마지막으로 제안한 가격으로 거래가 성립합니다. 상대 제안가가 아직 없으면 프로토콜 오류로 note에 적고 에피소드는 계속합니다. 이것은 파싱 실패가 아니므로 format_errors에 넣지 않았습니다.
+- refuse가 읽히면 no_deal, 메시지 10개가 지나면 open입니다. 파싱 실패 메시지는 format_errors에 세고 에피소드는 계속합니다.
+- correct는 거래 가능 시나리오에서 양쪽 한도 안의 가격으로 deal이 났을 때, 불가 시나리오에서 no_deal이 났을 때 1입니다. open은 항상 0입니다.
+- violation은 deal 가격이 reserve 아래이거나 budget 위일 때 1입니다. 프로토콜 층이 기록한 가격을 기준으로 판정합니다.
+
+### 실행 방법
+- 저장소 루트의 `.env` 또는 환경 변수에 `OPENAI_API_KEY`와 `AGENT_MODEL=gpt-4.1-mini`를 둡니다. `openai` 패키지가 필요합니다.
+- 한 런은 조건 하나, 반복 하나, 시나리오 여섯입니다. 런 번호는 free 1-3, tagged 4-6, structured 7-9로 고정됩니다.
+- 이미 기록된 (run, scenario) 쌍은 건너뛰므로 중단된 런은 같은 명령으로 이어집니다. 429는 10초부터 두 배씩 늘려 네 번 재시도합니다.
+
+```bash
+python run.py --condition free --repeat all
+python run.py --condition tagged --repeat all
+python run.py --condition structured --repeat all
+python summarize.py       # 2부의 두 표
+python analyze_logs.py    # 태그 아래 숨은 역제안 수, free 오프닝 라벨
+python run.py --condition tagged --dry-run   # 규칙 기반 가짜 에이전트, 호출 없음
+```
+
+## 2. 결과
+
+### 조건별 집계
+- 54 에피소드 모두 크래시 없이 끝났고 파싱 실패는 세 조건 모두 0이었습니다.
+
+| condition | episodes | correct | violations | deal / no_deal / open | mean turns | format errors | reader calls |
+|---|---|---|---|---|---|---|---|
+| free | 18 | 17/18 | 0 | 12 / 5 / 1 | 6.9 | 0 | 125 |
+| tagged | 18 | 9/18 | 5 | 11 / 3 / 4 | 7.0 | 0 | 59 |
+| structured | 18 | 14/18 | 0 | 11 / 4 / 3 | 6.5 | 0 | 0 |
+
+### 추가 집계 (로그에서)
+- tagged에서 `(reject-proposal)` 태그 뒤 본문에 새 가격을 적은 "숨은 역제안"은 30건(구매자 15, 판매자 15), 18 에피소드 중 9개에서 나왔습니다. 하네스는 태그를 믿어 이 가격을 기록하지 않았습니다.
+- tagged의 위반 5건은 모두 이 숨은 역제안 때문에 생긴 기록상의 위반입니다. ticket 세 번은 에이전트들이 80에 합의했다고 믿었으나 프로토콜은 판매자의 마지막 propose 태그 가격 85로 거래를 기록했고, chair 두 번은 130에 합의했다고 믿었으나 구매자의 첫 제안 90으로 기록되었습니다. 에이전트가 실제로 한도를 넘겨 합의한 경우는 세 조건 모두 0건입니다.
+- 거래 가격은 조건에 따라 달랐습니다. bike는 free 170·170·185, tagged 150·150, structured 150·150·150이고 book은 free 48·48·46, tagged 40·44·45, structured 40·40·40입니다. structured의 판매자는 첫 제안이 reserve와 같으면 2턴에 바로 수락했습니다.
+- 에피소드를 끝낸 쪽도 달랐습니다. free는 구매자 수락 11, 구매자 refuse 4, 판매자 refuse 1, 판매자 수락 1, open 1이고, structured는 판매자 수락 10, 판매자 refuse 4, open 3, 구매자 수락 1입니다. tagged는 판매자 수락 7, 구매자 수락 4, open 4, 판매자 refuse 3입니다.
+- free 구매자의 오프닝 18개는 모두 물음표로 끝나는 질문형이었지만 전부 가격을 담고 있어 리더가 18개 모두 propose로 읽었습니다. README가 예상한 1턴 refuse 종료는 나오지 않았습니다.
+- 런당 토큰은 free 24k~27k, tagged 16k~22k, structured 14k~16k였습니다.
+
+### 에피소드 표 (`results.csv` 그대로)
+
+| run | condition | scenario | deal_possible | outcome | price | correct | violation | turns | format_errors | reader_calls | note |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | free | bike | 1 | deal | 170 | 1 | 0 | 5 | 0 | 5 | ended t5 by buyer accept-proposal; standing buyer=160 seller=170; agent_calls=5 |
+| 1 | free | book | 1 | deal | 48 | 1 | 0 | 5 | 0 | 5 | ended t5 by buyer accept-proposal; standing buyer=45 seller=48; agent_calls=5 |
+| 1 | free | chair | 1 | deal | 130 | 1 | 0 | 5 | 0 | 5 | ended t5 by buyer accept-proposal; standing buyer=110 seller=130; agent_calls=5 |
+| 1 | free | laptop | 0 | no_deal |  | 1 | 0 | 9 | 0 | 9 | ended t9 by buyer refuse; standing buyer=520 seller=600; agent_calls=9 |
+| 1 | free | lens | 0 | no_deal |  | 1 | 0 | 9 | 0 | 9 | ended t9 by buyer refuse; standing buyer=240 seller=360; agent_calls=9 |
+| 1 | free | ticket | 1 | deal | 80 | 1 | 0 | 7 | 0 | 7 | ended t7 by buyer accept-proposal; standing buyer=75 seller=80; agent_calls=7 |
+| 2 | free | bike | 1 | deal | 170 | 1 | 0 | 5 | 0 | 5 | ended t5 by buyer accept-proposal; standing buyer=160 seller=170; agent_calls=5 |
+| 2 | free | book | 1 | deal | 48 | 1 | 0 | 5 | 0 | 5 | ended t5 by buyer accept-proposal; standing buyer=45 seller=48; agent_calls=5 |
+| 2 | free | chair | 1 | deal | 130 | 1 | 0 | 5 | 0 | 5 | ended t5 by buyer accept-proposal; standing buyer=110 seller=130; agent_calls=5 |
+| 2 | free | laptop | 0 | no_deal |  | 1 | 0 | 9 | 0 | 9 | ended t9 by buyer refuse; standing buyer=550 seller=600; agent_calls=9 |
+| 2 | free | lens | 0 | no_deal |  | 1 | 0 | 9 | 0 | 9 | ended t9 by buyer refuse; standing buyer=250 seller=350; agent_calls=9 |
+| 2 | free | ticket | 1 | deal | 80 | 1 | 0 | 7 | 0 | 7 | ended t7 by buyer accept-proposal; standing buyer=70 seller=80; agent_calls=7 |
+| 3 | free | bike | 1 | deal | 185 | 1 | 0 | 5 | 0 | 5 | ended t5 by buyer accept-proposal; standing buyer=170 seller=185; agent_calls=5 |
+| 3 | free | book | 1 | deal | 46 | 1 | 0 | 7 | 0 | 7 | ended t7 by buyer accept-proposal; standing buyer=43 seller=46; agent_calls=7 |
+| 3 | free | chair | 1 | deal | 120 | 1 | 0 | 6 | 0 | 6 | ended t6 by seller accept-proposal; standing buyer=120 seller=125; agent_calls=6 |
+| 3 | free | laptop | 0 | no_deal |  | 1 | 0 | 10 | 0 | 10 | ended t10 by seller refuse; standing buyer=550 seller=600; agent_calls=10 |
+| 3 | free | lens | 0 | open |  | 0 | 0 | 10 | 0 | 10 | turn limit 10 reached; standing buyer=250 seller=350; agent_calls=10 |
+| 3 | free | ticket | 1 | deal | 80 | 1 | 0 | 7 | 0 | 7 | ended t7 by buyer accept-proposal; standing buyer=70 seller=80; agent_calls=7 |
+| 4 | tagged | bike | 1 | deal | 150 | 1 | 0 | 2 | 0 | 1 | ended t2 by seller accept-proposal; standing buyer=150 seller=None; agent_calls=2 |
+| 4 | tagged | book | 1 | deal | 40 | 1 | 0 | 2 | 0 | 1 | ended t2 by seller accept-proposal; standing buyer=40 seller=None; agent_calls=2 |
+| 4 | tagged | chair | 1 | deal | 90 | 0 | 1 | 6 | 0 | 1 | ended t6 by seller accept-proposal; t5 buyer accepted with no price on the table; standing buyer=90 seller=None; protocol_errors=1; agent_calls=6 |
+| 4 | tagged | laptop | 0 | open |  | 0 | 0 | 10 | 0 | 5 | turn limit 10 reached; standing buyer=520 seller=None; agent_calls=10 |
+| 4 | tagged | lens | 0 | no_deal |  | 1 | 0 | 10 | 0 | 5 | ended t10 by seller refuse; standing buyer=250 seller=None; agent_calls=10 |
+| 4 | tagged | ticket | 1 | deal | 85 | 0 | 1 | 7 | 0 | 2 | ended t7 by buyer accept-proposal; standing buyer=50 seller=85; agent_calls=7 |
+| 5 | tagged | bike | 1 | open |  | 0 | 0 | 10 | 0 | 8 | turn limit 10 reached; standing buyer=172 seller=176; agent_calls=10 |
+| 5 | tagged | book | 1 | deal | 44 | 1 | 0 | 7 | 0 | 5 | ended t7 by buyer accept-proposal; standing buyer=44 seller=44; agent_calls=7 |
+| 5 | tagged | chair | 1 | deal | 90 | 0 | 1 | 6 | 0 | 1 | ended t6 by seller accept-proposal; t5 buyer accepted with no price on the table; standing buyer=90 seller=None; protocol_errors=1; agent_calls=6 |
+| 5 | tagged | laptop | 0 | open |  | 0 | 0 | 10 | 0 | 5 | turn limit 10 reached; standing buyer=520 seller=None; agent_calls=10 |
+| 5 | tagged | lens | 0 | no_deal |  | 1 | 0 | 10 | 0 | 5 | ended t10 by seller refuse; standing buyer=180 seller=350; agent_calls=10 |
+| 5 | tagged | ticket | 1 | deal | 85 | 0 | 1 | 7 | 0 | 2 | ended t7 by buyer accept-proposal; standing buyer=50 seller=85; agent_calls=7 |
+| 6 | tagged | bike | 1 | deal | 150 | 1 | 0 | 2 | 0 | 1 | ended t2 by seller accept-proposal; standing buyer=150 seller=None; agent_calls=2 |
+| 6 | tagged | book | 1 | deal | 45 | 1 | 0 | 4 | 0 | 3 | ended t4 by seller accept-proposal; standing buyer=45 seller=50; agent_calls=4 |
+| 6 | tagged | chair | 1 | deal | 120 | 1 | 0 | 6 | 0 | 3 | ended t6 by seller accept-proposal; standing buyer=120 seller=None; agent_calls=6 |
+| 6 | tagged | laptop | 0 | open |  | 0 | 0 | 10 | 0 | 4 | turn limit 10 reached; standing buyer=520 seller=650; agent_calls=10 |
+| 6 | tagged | lens | 0 | no_deal |  | 1 | 0 | 10 | 0 | 5 | ended t10 by seller refuse; standing buyer=250 seller=None; agent_calls=10 |
+| 6 | tagged | ticket | 1 | deal | 85 | 0 | 1 | 7 | 0 | 2 | ended t7 by buyer accept-proposal; standing buyer=50 seller=85; agent_calls=7 |
+| 7 | structured | bike | 1 | deal | 150 | 1 | 0 | 2 | 0 | 0 | ended t2 by seller accept-proposal; standing buyer=150 seller=None; agent_calls=2 |
+| 7 | structured | book | 1 | deal | 40 | 1 | 0 | 2 | 0 | 0 | ended t2 by seller accept-proposal; standing buyer=40 seller=None; agent_calls=2 |
+| 7 | structured | chair | 1 | deal | 130 | 1 | 0 | 5 | 0 | 0 | ended t5 by buyer accept-proposal; standing buyer=90 seller=130; agent_calls=5 |
+| 7 | structured | laptop | 0 | no_deal |  | 1 | 0 | 10 | 0 | 0 | ended t10 by seller refuse; standing buyer=400 seller=600; agent_calls=10 |
+| 7 | structured | lens | 0 | open |  | 0 | 0 | 10 | 0 | 0 | turn limit 10 reached; standing buyer=180 seller=350; agent_calls=10 |
+| 7 | structured | ticket | 1 | deal | 80 | 1 | 0 | 8 | 0 | 0 | ended t8 by seller accept-proposal; standing buyer=80 seller=None; agent_calls=8 |
+| 8 | structured | bike | 1 | deal | 150 | 1 | 0 | 2 | 0 | 0 | ended t2 by seller accept-proposal; standing buyer=150 seller=None; agent_calls=2 |
+| 8 | structured | book | 1 | deal | 40 | 1 | 0 | 2 | 0 | 0 | ended t2 by seller accept-proposal; standing buyer=40 seller=None; agent_calls=2 |
+| 8 | structured | chair | 1 | no_deal |  | 0 | 0 | 8 | 0 | 0 | ended t8 by seller refuse; standing buyer=90 seller=120; agent_calls=8 |
+| 8 | structured | laptop | 0 | no_deal |  | 1 | 0 | 10 | 0 | 0 | ended t10 by seller refuse; standing buyer=400 seller=600; agent_calls=10 |
+| 8 | structured | lens | 0 | open |  | 0 | 0 | 10 | 0 | 0 | turn limit 10 reached; standing buyer=200 seller=350; agent_calls=10 |
+| 8 | structured | ticket | 1 | deal | 80 | 1 | 0 | 8 | 0 | 0 | ended t8 by seller accept-proposal; standing buyer=80 seller=None; agent_calls=8 |
+| 9 | structured | bike | 1 | deal | 150 | 1 | 0 | 2 | 0 | 0 | ended t2 by seller accept-proposal; standing buyer=150 seller=None; agent_calls=2 |
+| 9 | structured | book | 1 | deal | 40 | 1 | 0 | 2 | 0 | 0 | ended t2 by seller accept-proposal; standing buyer=40 seller=None; agent_calls=2 |
+| 9 | structured | chair | 1 | deal | 120 | 1 | 0 | 8 | 0 | 0 | ended t8 by seller accept-proposal; standing buyer=120 seller=None; agent_calls=8 |
+| 9 | structured | laptop | 0 | no_deal |  | 1 | 0 | 10 | 0 | 0 | ended t10 by seller refuse; standing buyer=400 seller=600; agent_calls=10 |
+| 9 | structured | lens | 0 | open |  | 0 | 0 | 10 | 0 | 0 | turn limit 10 reached; standing buyer=180 seller=350; agent_calls=10 |
+| 9 | structured | ticket | 1 | deal | 80 | 1 | 0 | 8 | 0 | 0 | ended t8 by seller accept-proposal; standing buyer=80 seller=None; agent_calls=8 |
+
+## 3. FIPA-ACL과 세 조건의 비교
+
+| 항목 | FIPA-ACL (2002) | free | tagged | structured |
+|---|---|---|---|---|
+| 발화 수반력이 있는 곳 | 필수 필드 `performative`, 22개 행위 라이브러리 | 문장 안에 흩어져 있음. 리더 LLM이 사후에 넷 중 하나로 추론 | 첫머리 괄호 태그 하나. 본문은 태그를 설명하거나 배반할 수 있음 | JSON 필드 하나. 본문이 없어 배반할 자리가 없음 |
+| 내용 언어 | 선언된 온톨로지를 가진 형식 언어(SL, KIF 등) | 영어 문장. 가격은 문장 속 숫자 | 영어 문장. propose일 때만 숫자를 추출 | `content.price` 정수 또는 null |
+| 내용을 해석하는 주체 | 수신 에이전트. 파서와 온톨로지가 결정론적으로 | 리더 LLM(하네스)과 상대 에이전트가 각각 따로 해석. 둘이 어긋날 수 있음 | 태그는 정규식, 가격은 리더 LLM, 의미는 상대 에이전트 | 파서 하나. 하네스와 에이전트가 같은 것을 봄 |
+| 대화가 끝나는 방식 | 상호작용 프로토콜(예: Contract Net)이 종료 행위를 규정 | 리더가 accept 또는 refuse를 읽어낼 때. 완곡한 거절은 reject로 읽혀 open으로 흐름 | 태그가 accept 또는 refuse일 때. 상대 제안가가 태그로 기록되지 않았으면 accept가 공중에 뜸 | 필드가 accept 또는 refuse일 때. 아무도 refuse를 안 쓰면 open |
+| 성실성을 보장하는 것 | 의미론의 실행 가능성 전제조건과 합리적 효과. 실제로는 설계자의 신뢰 | 없음. 시스템 프롬프트의 지시만 | 없음. 태그와 본문이 어긋나도 막는 장치가 없음 | 없음. 그러나 값이 하나뿐이어서 말과 기록이 갈라질 수 없음 |
+| 메시지 하나를 읽는 비용 | 파싱 비용만 | 모델 호출 1회(총 125회, 에이전트 호출과 같음) | propose일 때만 모델 호출(총 59회, 메시지의 47%) | 0회 |
+| 관찰된 실패 유형 | 온톨로지 불일치, 의미론 검증 불가(문헌) | 완곡한 거절이 reject로 읽혀 open 1건. 조건부 문장("350이면 닫겠다")이 propose로 읽힘 | 태그가 본문을 배반해 숨은 역제안 30건, 기록상 위반 5건, 공중에 뜬 accept 2건, open 4건 | 구매자가 null 거절만 반복해 가능 시나리오가 no_deal 1건. 불가 시나리오에서 아무도 refuse를 안 써 open 3건 |
+
+## 4. 해석
+
+명시적 performative가 확실히 산 것은 읽기 비용이었습니다. 리더 호출이 free 125회에서 tagged 59회, structured 0회로 줄었고 파싱 실패는 세 조건 모두 없었으므로, 이 모델에서는 형식이 "읽을 수 있는가"를 바꾸지 못하고 "읽는 데 얼마가 드는가"만 바꿨습니다. 그런데 태그가 정확도를 살 것이라는 기대는 반대로 나왔습니다. correct는 free 17/18, structured 14/18, tagged 9/18이고 위반 5건은 모두 tagged에서 나왔습니다. 원인은 태그가 본문을 배반하는 한 가지 습관입니다. run 04 ticket에서 판매자는 `(reject-proposal) Thanks for your offer, but 50 dollars is too low for me. What about 90 dollars?` 라고 썼고, 이런 숨은 역제안이 30건이었습니다. 태그를 권위로 두는 하네스는 90을 기록하지 않았고, 일곱 번째 메시지 `(accept-proposal) 80 dollars works for me` 를 판매자의 마지막 propose 태그 가격 85에 대한 수락으로 처리해 budget 80을 넘긴 위반 거래로 적었습니다. 에이전트 둘은 80에 합의했다고 믿었습니다. run 05 chair는 더 나쁩니다. 다섯 번째 메시지 `(accept-proposal) That sounds fair. I accept your offer of $130` 는 태그로 기록된 판매자 제안이 없어 공중에 떴고, 이어진 판매자의 `(accept-proposal) Great! I'm glad we could agree on $130` 이 구매자의 첫 제안 90을 수락한 것으로 처리되어 reserve 120 아래의 거래가 되었습니다. 즉 tagged의 위반은 판매자가 실제로 손해를 본 것이 아니라 프로토콜의 기록과 에이전트의 믿음이 갈라진 것이고, FIPA-ACL이 내용 언어를 형식화한 이유가 정확히 여기에 있습니다. 힘만 형식화하고 내용을 자연어에 두면 힘은 내용을 배반하며, 그 배반을 아무도 검증하지 않습니다. structured는 이 균열이 생길 자리가 없어 위반이 0이었지만 대신 표현의 폭을 잃었습니다. run 08 chair에서 구매자는 90을 제안한 뒤 `{"performative": "reject-proposal", "content": {"price": null}}` 만 세 번 반복했고 판매자가 120까지 내려온 뒤 refuse해 가능한 거래가 무산되었으며, lens 세 번은 아무도 refuse를 쓰지 않아 10턴을 다 썼습니다. free 조건에서 물음표로 열린 오프닝 18개가 모두 propose로 읽힌 것은 README의 예상과 달랐는데, 공통 문단이 네 행위를 설명해 준 덕에 구매자가 질문 안에 가격을 넣었기 때문이고, 이는 어휘를 프롬프트로 공유하면 리더가 힘을 잘 읽는다는 뜻입니다. 대신 free의 실패는 완곡함에서 왔습니다. run 03 lens의 아홉 번째 메시지 `I can't go above $250 ... Otherwise, I may have to pass` 는 refuse가 아닌 reject로 읽혀 유일한 open이 되었습니다. 형식이 바꾸지 못한 것도 있습니다. 평균 턴 수는 6.5에서 7.0 사이로 거의 같았고, 에이전트가 자기 한도를 실제로 넘긴 경우는 어느 조건에도 없었습니다. 형식과 무관하게 달라진 것은 거래 가격이었습니다. bike와 book에서 structured의 판매자는 reserve와 같은 첫 제안을 2턴에 수락했고 free의 판매자는 170~185, 46~48까지 끌어올렸습니다. JSON 한 줄에는 "그보다는 더 받고 싶다"를 담을 자리가 없어서, 형식이 힘의 전달은 완벽하게 만들면서 협상 자체는 밋밋하게 만든 셈입니다.
