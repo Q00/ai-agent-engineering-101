@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import tempfile
 import time
 from typing import Callable
 import urllib.error
@@ -60,6 +61,7 @@ def load_env() -> None:
 
 class Chat:
     def __init__(self, model: str, temperature: float) -> None:
+        self.backend_name = "openrouter"
         self.model = model
         self.temperature = temperature
         self.base_url = os.environ.get(
@@ -124,6 +126,7 @@ class ClaudeCLIChat:
     def __init__(self, model: str, temperature: float | None) -> None:
         if temperature is not None:
             raise ValueError("claude-cli does not expose temperature")
+        self.backend_name = "claude-cli"
         self.model = model
         self.temperature = "not-settable"
         self.calls = 0
@@ -159,6 +162,62 @@ class ClaudeCLIChat:
         if not completed.stdout.strip():
             raise ProviderError("claude-cli returned no completion")
         return completed.stdout.strip()
+
+
+class CodexCLIChat:
+    """Use a fixed developer message through a stateless Codex CLI call."""
+
+    def __init__(self, model: str, temperature: float | None) -> None:
+        if temperature is not None:
+            raise ValueError("codex-cli does not expose temperature")
+        self.backend_name = "codex-cli"
+        self.model = model
+        self.temperature = "not-settable"
+        self.calls = 0
+        self.retries = 0
+        self.timeout = float(os.environ.get("AGENT_TIMEOUT_SECONDS", "180"))
+
+    def __call__(self, system: str, user: str, json_mode: bool = False) -> str:
+        del json_mode  # Output constraints remain in the fixed prompts.
+        self.calls += 1
+        developer = system + "\n\nDo not use tools or inspect files. Produce only the requested message."
+        with tempfile.NamedTemporaryFile(prefix="week04-codex-", delete=False) as tmp:
+            output_path = Path(tmp.name)
+        command = [
+            "codex", "exec",
+            "--ephemeral",
+            "--ignore-user-config",
+            "--ignore-rules",
+            "--strict-config",
+            "--skip-git-repo-check",
+            "--sandbox", "read-only",
+            "--cd", "/tmp",
+            "--model", self.model,
+            "--config", f"developer_instructions={json.dumps(developer)}",
+            "--output-last-message", str(output_path),
+            user,
+        ]
+        try:
+            completed = subprocess.run(
+                command,
+                stdin=subprocess.DEVNULL,
+                text=True,
+                capture_output=True,
+                timeout=self.timeout,
+                check=False,
+            )
+            if completed.returncode != 0:
+                detail = completed.stderr.strip().splitlines()
+                message = detail[-1] if detail else f"exit {completed.returncode}"
+                raise ProviderError(f"codex-cli failed: {message}")
+            content = output_path.read_text(encoding="utf-8").strip()
+            if not content:
+                raise ProviderError("codex-cli returned no completion")
+            return content
+        except subprocess.TimeoutExpired as exc:
+            raise ProviderError("codex-cli timed out") from exc
+        finally:
+            output_path.unlink(missing_ok=True)
 
 
 def _completion_content(body: dict) -> str:
@@ -292,7 +351,7 @@ def run_one(
             log.flush()
 
         emit(
-            "setup", condition=condition, model=client.model,
+            "setup", condition=condition, backend=client.backend_name, model=client.model,
             temperature=client.temperature, turn_limit=turn_limit,
             reader_prompt=READER_PROMPT, pending=[s["id"] for s in pending],
         )
@@ -353,7 +412,7 @@ def main() -> int:
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--limit", type=int)
     parser.add_argument(
-        "--backend", choices=("openrouter", "claude-cli"),
+        "--backend", choices=("openrouter", "claude-cli", "codex-cli"),
         default=os.environ.get("AGENT_BACKEND", "openrouter"),
     )
     parser.add_argument("--model", default=os.environ.get("AGENT_MODEL"))
@@ -372,8 +431,10 @@ def main() -> int:
         model = args.model or "nvidia/nemotron-3-super-120b-a12b:free"
         temperature = 0.0 if args.temperature is None else args.temperature
         client = Chat(model, temperature)
-    else:
+    elif args.backend == "claude-cli":
         client = ClaudeCLIChat(args.model or "haiku", args.temperature)
+    else:
+        client = CodexCLIChat(args.model or "gpt-5.6-sol", args.temperature)
     results_path = None if args.smoke else ROOT / "results.csv"
     log_dir = ROOT / ("smoke" if args.smoke else "logs")
 
