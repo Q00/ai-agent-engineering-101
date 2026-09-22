@@ -32,6 +32,7 @@ class PilotTests(unittest.TestCase):
         self.assertNotIn("120", buyer[0]["content"])
         self.assertIn("120", seller[0]["content"])
         self.assertNotIn("150", seller[0]["content"])
+        self.assertEqual([m["role"] for m in buyer], ["system"])
         self.assertEqual(seller[1], {"role": "user", "content": "Public message 1."})
         for index, (_, messages, fmt) in enumerate(calls[1::2], 1):
             self.assertEqual(len(json.loads(messages[1]["content"])), index)
@@ -43,7 +44,7 @@ class PilotTests(unittest.TestCase):
         self.assertEqual((result["turns"], result["outcome"], result["price"]), (8, "deal", 130))
         self.assertEqual(len(calls), 16)
         # Third speaker invocation has own prior assistant and opponent user message.
-        self.assertEqual([m["role"] for m in calls[4][1]], ["system", "user", "assistant", "user"])
+        self.assertEqual([m["role"] for m in calls[4][1]], ["system", "assistant", "user"])
 
     def test_eight_nonterminal_messages_are_open(self):
         result, _ = self.run_episode([("reject-proposal", None)] * 8)
