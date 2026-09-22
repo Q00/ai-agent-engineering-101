@@ -15,6 +15,7 @@ Provider:
                            OpenRouter reasoning models put thinking in the text)
 """
 import os
+import time
 
 PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
 MODEL = os.environ.get(
@@ -50,27 +51,49 @@ class Meter:
         self.calls += 1
 
 
-def call_model(system, messages, meter):
-    """system prompt + a list of {role, content} messages -> assistant text.
+def _is_rate_limit(e):
+    return "429" in str(e) or "ratelimit" in type(e).__name__.lower() \
+        or getattr(e, "status_code", None) == 429
 
-    `messages` uses roles "user"/"assistant" with string content, which both
-    providers accept. Empty/failed responses return "" (the caller treats an
-    unreadable message as a format error, not a crash).
-    """
+
+def _raw_call(system, messages):
+    """One provider round-trip -> (text, input_tokens, output_tokens)."""
     client = _get_client()
     if PROVIDER == "anthropic":
         resp = client.messages.create(
             model=MODEL, max_tokens=512, temperature=TEMPERATURE,
             system=system, messages=messages)
-        meter.add(resp.usage.input_tokens, resp.usage.output_tokens)
-        return "".join(b.text for b in resp.content if b.type == "text")
+        text = "".join(b.text for b in resp.content if b.type == "text")
+        return text, resp.usage.input_tokens, resp.usage.output_tokens
     kwargs = dict(model=MODEL, temperature=TEMPERATURE,
                   messages=[{"role": "system", "content": system}, *messages])
     if NO_REASONING:
         kwargs["extra_body"] = {"reasoning": {"enabled": False}}
     resp = client.chat.completions.create(**kwargs)
     u = resp.usage
-    meter.add(getattr(u, "prompt_tokens", 0) if u else 0,
-              getattr(u, "completion_tokens", 0) if u else 0)
     choices = resp.choices or []
-    return choices[0].message.content or "" if choices else ""
+    text = (choices[0].message.content or "") if choices else ""
+    return text, (getattr(u, "prompt_tokens", 0) if u else 0), \
+        (getattr(u, "completion_tokens", 0) if u else 0)
+
+
+def call_model(system, messages, meter, max_retries=5):
+    """system prompt + a list of {role, content} messages -> assistant text.
+
+    `messages` uses roles "user"/"assistant" with string content, which both
+    providers accept. HTTP 429 is retried with a growing wait (free endpoints
+    return it in bursts); other errors propagate. Empty responses return ""
+    (the caller treats an unreadable message as a format error, not a crash).
+    """
+    wait = 2
+    for attempt in range(max_retries + 1):
+        try:
+            text, in_tok, out_tok = _raw_call(system, messages)
+            meter.add(in_tok, out_tok)
+            return text
+        except Exception as e:
+            if _is_rate_limit(e) and attempt < max_retries:
+                time.sleep(wait)
+                wait *= 2
+                continue
+            raise
