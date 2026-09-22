@@ -32,7 +32,7 @@ RESULT_HEADER = [
     "reader_calls",
     "note",
 ]
-DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
+DEFAULT_MODEL = "gpt-5.6-luna"
 DEFAULT_TEMPERATURE = 0.2
 DEFAULT_MAX_TURNS = 8
 DEFAULT_MAX_RETRIES = 5
@@ -266,16 +266,14 @@ class OpenAIModel:
         request: dict[str, Any] = {
             "model": self.model,
             "temperature": self.temperature,
-            "max_tokens": 240,
+            "reasoning_effort": "none",
+            "max_completion_tokens": 240,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 *messages,
             ],
             "timeout": 90.0,
         }
-        if "openrouter.ai" in os.environ.get("OPENAI_BASE_URL", ""):
-            request["extra_body"] = {"reasoning": {"enabled": False}}
-
         for attempt in range(self.max_retries + 1):
             try:
                 response = self.client.chat.completions.create(**request)
