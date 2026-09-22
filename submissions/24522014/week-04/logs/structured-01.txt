@@ -1,0 +1,88 @@
+
+[run] 07 condition=structured repeat=1 provider=OpenRouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0 max_turns=8
+[episode] scenario=1 item=a used bicycle reserve=120 budget=150
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[buyer] {"performative":"propose","content":{"price":100}}
+  [reader] {"performative": "propose", "price": 100, "ok": true, "reader_calls": 0}
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 0}
+[buyer] {"performative":"propose","content":{"price":120}}
+  [reader] {"performative": "propose", "price": 120, "ok": true, "reader_calls": 0}
+[seller] {"performative":"accept-proposal","content":{"price":null}}
+  [reader] {"performative": "accept-proposal", "price": null, "ok": true, "reader_calls": 0}
+[result] outcome=deal price=120 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
+[elapsed] scenario=1 seconds=21.4
+[episode] scenario=2 item=a second-hand textbook reserve=40 budget=40
+[buyer] {"performative":"propose","content":{"price":20}}
+  [reader] {"performative": "propose", "price": 20, "ok": true, "reader_calls": 0}
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 0}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+  [retry 2/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 10s
+  [retry 3/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 15s
+[buyer] {"performative":"propose","content":{"price":30}}
+  [reader] {"performative": "propose", "price": 30, "ok": true, "reader_calls": 0}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+  [retry 2/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 10s
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 0}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+  [retry 2/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 10s
+[buyer] {"performative":"propose","content":{"price":35}}
+  [reader] {"performative": "propose", "price": 35, "ok": true, "reader_calls": 0}
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 0}
+[buyer] {"performative":"propose","content":{"price":38}}
+  [reader] {"performative": "propose", "price": 38, "ok": true, "reader_calls": 0}
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 0}
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+[elapsed] scenario=2 seconds=93.1
+[episode] scenario=3 item=a mechanical keyboard reserve=90 budget=70
+[buyer] {"performative":"propose","content":{"price":30}}
+  [reader] {"performative": "propose", "price": 30, "ok": true, "reader_calls": 0}
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 0}
+[buyer] {"performative":"propose","content":{"price":40}}
+  [reader] {"performative": "propose", "price": 40, "ok": true, "reader_calls": 0}
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 0}
+[buyer] {"performative":"propose","content":{"price":50}}
+  [reader] {"performative": "propose", "price": 50, "ok": true, "reader_calls": 0}
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 0}
+[buyer] {"performative":"propose","content":{"price":60}}
+  [reader] {"performative": "propose", "price": 60, "ok": true, "reader_calls": 0}
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 0}
+[result] outcome=open price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=0
+[elapsed] scenario=3 seconds=32.8
+[episode] scenario=4 item=a camera reserve=200 budget=160
+[buyer] {"performative":"propose","content":{"price":100}}
+  [reader] {"performative": "propose", "price": 100, "ok": true, "reader_calls": 0}
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 0}
+[buyer] {"performative":"propose","content":{"price":120}}
+  [reader] {"performative": "propose", "price": 120, "ok": true, "reader_calls": 0}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+  [retry 2/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 10s
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 0}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[buyer] {"performative":"propose","content":{"price":140}}
+  [reader] {"performative": "propose", "price": 140, "ok": true, "reader_calls": 0}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 0}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+  [retry 2/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 10s
+  [retry 3/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 15s
+[buyer] {"performative":"propose","content":{"price":160}}
+  [reader] {"performative": "propose", "price": 160, "ok": true, "reader_calls": 0}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+  [retry 2/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 10s
+  [retry 3/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 15s
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 0}
+[result] outcome=open price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=0
+[elapsed] scenario=4 seconds=121.0
