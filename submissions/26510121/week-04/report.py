@@ -107,11 +107,35 @@ def evidence(rows, episodes):
                     lines.append(quote(run, last_msg[0], f"{last_msg[3]}: {last_msg[4]}"))
                     lines.append(f"  read as `{act}` price={price}, but the message "
                                  f"names {', '.join(sorted(nums))} — scenario {sid}")
-                elif len(nums) > 1 and act == "propose":
-                    lines.append(quote(run, last_msg[0], f"{last_msg[3]}: {last_msg[4]}"))
-                    lines.append(f"  read as `{act}` price={price}; the message names "
-                                 f"{len(nums)} numbers, so which one is the offer is a "
-                                 f"judgement — scenario {sid}")
+    # an acceptance does not normally name a new number. When it does, the
+    # message was probably a counter-offer, and the deal closes at the other
+    # side's standing price instead -- the reference run's exact failure.
+    for (run, sid), ep in sorted(episodes.items()):
+        last_msg = None
+        for item in ep:
+            if item[1] == "msg":
+                last_msg = item
+            elif item[1] == "read" and item[2] == "accept-proposal" and last_msg:
+                nums = sorted(set(NUMBER.findall(last_msg[4])))
+                if not nums:
+                    continue
+                row = next((r for r in rows if r["run"] == run
+                            and r["scenario"] == sid), None)
+                closed = (row or {}).get("price", "").strip()
+                # an acceptance that restates the agreed number is normal. The
+                # interesting case is the one that names a DIFFERENT number:
+                # the message was a counter-offer, and the episode closed at
+                # the other side's standing price instead.
+                if closed in nums:
+                    continue
+                lines.append(quote(run, last_msg[0], f"{last_msg[3]}: {last_msg[4]}"))
+                lines.append(f"  read as `accept-proposal`, but the message names "
+                             f"{', '.join(nums)}"
+                             + (f"; the deal closed at {closed}, the other side's "
+                                f"standing price" if closed else ", and no deal was "
+                                "recorded")
+                             + f" — scenario {sid}")
+
     section("Reader labels worth checking by hand", lines,
             "no label disagreed with the numbers in its message")
 
