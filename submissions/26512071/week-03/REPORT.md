@@ -41,11 +41,21 @@ overconfident는 baseline에서 한 계약자만 모든 공고에 높은 확신�
 
 ## 2. 측정 결과
 
-| condition | runs | correct | messages | unassigned | misawards |
-|---|---:|---:|---:|---:|---:|
-| baseline | 실행 전 |  |  |  |  |
-| homogeneous | 실행 전 |  |  |  |  |
-| overconfident | 실행 전 |  |  |  |  |
+| run | condition | tasks | correct | messages | unassigned | misawards | note |
+|---:|---|---:|---:|---:|---:|---:|---|
+| 1 | baseline | 6 | 6 | 42 | 0 | 0 | parse_failures=0; timeouts=0 |
+| 2 | baseline | 6 | 6 | 42 | 0 | 0 | parse_failures=0; timeouts=0 |
+| 3 | baseline | 6 | 6 | 42 | 0 | 0 | parse_failures=0; timeouts=0 |
+| 4 | homogeneous | 6 | 2 | 42 | 0 | 4 | parse_failures=0; timeouts=0 |
+| 5 | homogeneous | 6 | 2 | 42 | 0 | 4 | parse_failures=0; timeouts=0 |
+| 6 | homogeneous | 6 | 2 | 42 | 0 | 4 | parse_failures=0; timeouts=0 |
+| 7 | overconfident | 6 | 5 | 42 | 0 | 1 | parse_failures=0; timeouts=0 |
+| 8 | overconfident | 6 | 5 | 42 | 0 | 1 | parse_failures=0; timeouts=0 |
+| 9 | overconfident | 6 | 6 | 42 | 0 | 0 | parse_failures=0; timeouts=0 |
+
+조건별로 합치면 baseline은 18개 중 18개, homogeneous는 18개 중 6개,
+overconfident는 18개 중 16개를 gold 계약자에게 배정했다. 세 조건 모두 런당 메시지는
+42개였고 미배정, 파싱 실패, timeout은 없었다.
 
 ## 3. Smith(1980)과 재현 실험 비교
 
@@ -69,5 +79,19 @@ C-29(12), 1104-1113.
 
 ## 4. 해석
 
-실험 완료 후 어느 조건이 어떤 지표를 움직였는지 로그의 실제 입찰과 낙찰을 근거로
-한 문단으로 작성한다.
+baseline은 3런 모두 6/6으로 맞았다. 예를 들어 `baseline-01.txt`의 `data-churn`에서
+coder는 자신의 일이 아니라며 `bid=false`를, analyst는 정량 분석에 정확히 맞는다며
+`bid=true`를 반환해 analyst가 낙찰됐다. 반면 전문성 문구를 모두 generalist로 바꾼
+homogeneous는 매 런 2/6만 맞고 4건을 오배정했다. `homogeneous-04.txt`의 같은
+`data-churn`에서는 세 계약자가 모두 confidence 0.99로 입찰했고, 동점 규칙 때문에
+gold인 analyst 대신 coder가 이겼다. 즉 서로 다른 전문성 프롬프트가 사라지자 자연어
+판단이 계약자를 구분하지 못했고 고정 동점 규칙이 배정을 지배했다. overconfident는
+각각 5/6, 5/6, 6/6으로 총 2건을 오배정했다. `overconfident-07.txt`와
+`overconfident-08.txt`의 `data-conversion`에서 coder와 analyst가 모두 0.99를 보고해
+coder가 동점 규칙으로 analyst의 계약을 가져갔지만, `overconfident-09.txt`에서는 coder가
+0.98, analyst가 0.99를 보고해 올바르게 배정됐다. 이는 같은 과신 지시에서도 자기 보고
+confidence가 조금만 달라지면 결과가 바뀌며, 매니저가 confidence의 진실성을 검증하지
+않는다는 실패를 보여준다. 메시지 수는 모든 조건에서 42로 같았고 무입찰·파싱 실패·
+timeout도 없었으므로 이번 실험에서 움직인 지표는 협상량이 아니라 배정 정확도였다.
+Smith의 선의 가정에는 이런 판단형 입찰의 과장이나 동률을 검증하는 장치가 없으므로,
+LLM 계약자에서는 자격 필터나 외부 검증 없이 최고 confidence만 고르는 정책이 취약하다.
