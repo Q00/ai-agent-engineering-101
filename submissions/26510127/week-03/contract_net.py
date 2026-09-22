@@ -17,11 +17,16 @@ from openai import OpenAI
 # Model configuration
 # ---------------------------------------------------------------------------
 
-PROVIDER = "OpenRouter"
+PROVIDER = os.environ.get(
+    "AGENT_PROVIDER",
+    "OpenRouter",
+)
+
 MODEL = os.environ.get(
     "AGENT_MODEL",
     "inclusionai/ling-3.0-flash-vl:free",
 )
+
 TEMPERATURE = 0
 MAX_TOKENS = 300
 
@@ -229,20 +234,18 @@ def request_bid(
         messages=[
             {
                 "role": "system",
-                "content": BID_SYSTEM.format(
-                    name=contractor.name,
-                    skill=contractor.skill,
-                ),
+                "content": system_prompt,
             },
             {
                 "role": "user",
-                "content": make_announcement(task),
+                "content": announcement,
             },
         ],
+        response_format={
+            "type": "json_object",
+        },
         extra_body={
-            "reasoning": {
-                "enabled": False,
-            }
+            "include_reasoning": False,
         },
     )
 
