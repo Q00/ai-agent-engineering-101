@@ -118,6 +118,7 @@ class OpenRouterChat:
         validate_runtime_config()
         self.meter = meter
         self._client = None
+        self.last_metadata: dict | None = None
 
     def _get_client(self):
         if self._client is None:
@@ -132,6 +133,7 @@ class OpenRouterChat:
         return self._client
 
     def __call__(self, system: str, user: str) -> str:
+        self.last_metadata = None
         response = self._get_client().chat.completions.create(
             model=MODEL,
             temperature=TEMPERATURE,
@@ -146,11 +148,36 @@ class OpenRouterChat:
             ],
         )
         usage = response.usage
+        choice = response.choices[0]
+        message = choice.message
+        content = message.content
+        prompt_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
+        completion_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
+        total_tokens = getattr(usage, "total_tokens", None)
+        if total_tokens is None:
+            total_tokens = prompt_tokens + completion_tokens
+        self.last_metadata = {
+            "finish_reason": getattr(choice, "finish_reason", None),
+            "content_null": content is None,
+            "content_empty": content == "",
+            "reasoning_present": bool(
+                getattr(message, "reasoning", None)
+                or getattr(message, "reasoning_content", None)
+            ),
+            "reasoning_details_present": bool(
+                getattr(message, "reasoning_details", None)
+            ),
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": int(total_tokens or 0),
+            "actual_model": getattr(response, "model", None),
+            "request_response_format": RESPONSE_FORMAT,
+        }
         self.meter.add(
-            getattr(usage, "prompt_tokens", 0),
-            getattr(usage, "completion_tokens", 0),
+            prompt_tokens,
+            completion_tokens,
         )
-        return response.choices[0].message.content or ""
+        return content or ""
 
 
 def validate_runtime_config(

@@ -32,6 +32,7 @@ from contract_net import (
 )
 from run_experiment import (
     HEADER,
+    api_error_metadata,
     expected_api_calls,
     is_rate_limit_error,
     last_recorded_run,
@@ -181,11 +182,20 @@ class ContractNetTests(unittest.TestCase):
             def create(self, **kwargs):
                 captured.update(kwargs)
                 return SimpleNamespace(
-                    usage=SimpleNamespace(prompt_tokens=10, completion_tokens=5),
+                    model="nvidia/nemotron-3.5-lightning",
+                    usage=SimpleNamespace(
+                        prompt_tokens=10,
+                        completion_tokens=5,
+                        total_tokens=15,
+                    ),
                     choices=[
                         SimpleNamespace(
+                            finish_reason="stop",
                             message=SimpleNamespace(
-                                content='{"bid": true, "confidence": 90, "reason": "fit"}'
+                                content='{"bid": true, "confidence": 90, "reason": "fit"}',
+                                reasoning=None,
+                                reasoning_content=None,
+                                reasoning_details=None,
                             )
                         )
                     ],
@@ -210,12 +220,75 @@ class ContractNetTests(unittest.TestCase):
         )
         self.assertTrue(parse_bid(raw).bid)
         self.assertEqual(meter.calls, 1)
+        self.assertEqual(
+            chat.last_metadata,
+            {
+                "finish_reason": "stop",
+                "content_null": False,
+                "content_empty": False,
+                "reasoning_present": False,
+                "reasoning_details_present": False,
+                "prompt_tokens": 10,
+                "completion_tokens": 5,
+                "total_tokens": 15,
+                "actual_model": "nvidia/nemotron-3.5-lightning",
+                "request_response_format": RESPONSE_FORMAT,
+            },
+        )
 
     def test_free_endpoint_cannot_mix_into_final_protocol(self):
         with self.assertRaises(ValueError):
             validate_runtime_config(model=REQUIRED_MODEL + ":free")
         with self.assertRaises(ValueError):
             validate_runtime_config(base_url="https://example.invalid/v1")
+
+    def test_empty_content_metadata_does_not_use_reasoning_as_content(self):
+        class FakeCompletions:
+            def create(self, **_kwargs):
+                return SimpleNamespace(
+                    model="nvidia/nemotron-3.5-lightning",
+                    usage=SimpleNamespace(
+                        prompt_tokens=20,
+                        completion_tokens=256,
+                        total_tokens=276,
+                    ),
+                    choices=[
+                        SimpleNamespace(
+                            finish_reason="length",
+                            message=SimpleNamespace(
+                                content=None,
+                                reasoning="hidden reasoning",
+                                reasoning_content=None,
+                                reasoning_details=[{"type": "reasoning"}],
+                            ),
+                        )
+                    ],
+                )
+
+        chat = OpenRouterChat(Meter())
+        chat._client = SimpleNamespace(
+            chat=SimpleNamespace(completions=FakeCompletions())
+        )
+        raw = chat("system", "user")
+
+        self.assertEqual(raw, "")
+        self.assertTrue(chat.last_metadata["content_null"])
+        self.assertFalse(chat.last_metadata["content_empty"])
+        self.assertTrue(chat.last_metadata["reasoning_present"])
+        self.assertTrue(chat.last_metadata["reasoning_details_present"])
+        self.assertEqual(chat.last_metadata["finish_reason"], "length")
+        with self.assertRaises(ValueError):
+            parse_bid(raw)
+
+    def test_api_error_metadata_has_only_diagnostic_fields(self):
+        class ApiFailure(Exception):
+            status_code = 429
+            body = {"error": {"code": "rate_limit", "message": "secret-free"}}
+
+        self.assertEqual(
+            api_error_metadata(ApiFailure()),
+            {"error_type": "ApiFailure", "status": 429, "code": "rate_limit"},
+        )
 
 
 if __name__ == "__main__":

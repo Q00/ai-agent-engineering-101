@@ -22,7 +22,16 @@ from contract_net import (
     protocol_fingerprint,
     validate_runtime_config,
 )
-from run_experiment import is_rate_limit_error, load_tasks, safe_text, smoke_pass_path
+from run_experiment import (
+    api_error_metadata,
+    is_rate_limit_error,
+    load_tasks,
+    safe_text,
+    smoke_pass_path,
+)
+
+
+SMOKE_DIAGNOSTIC_VERSION = "metadata-v2"
 
 
 def next_smoke_log_path(log_dir: Path) -> Path:
@@ -45,6 +54,26 @@ def main() -> None:
     fingerprint = protocol_fingerprint(tasks)
     smoke_dir = base / "smoke_logs"
     smoke_dir.mkdir(exist_ok=True)
+    attempt_path = (
+        smoke_dir
+        / f"smoke-attempt-{fingerprint}-{SMOKE_DIAGNOSTIC_VERSION}.json"
+    )
+    try:
+        with attempt_path.open("x", encoding="utf-8") as attempt_file:
+            json.dump(
+                {
+                    "protocol_fingerprint": fingerprint,
+                    "diagnostic_version": SMOKE_DIAGNOSTIC_VERSION,
+                    "maximum_calls": 3,
+                },
+                attempt_file,
+                indent=2,
+            )
+            attempt_file.write("\n")
+    except FileExistsError as exc:
+        raise SystemExit(
+            "this metadata smoke test was already attempted; refusing another API run"
+        ) from exc
     log_path = next_smoke_log_path(smoke_dir)
     lines: list[str] = []
 
@@ -70,6 +99,10 @@ def main() -> None:
             log(f"[announcement] task_id={task['id']} contractor={contractor.name}")
             log(announcement)
             raw = caller(contractor.system_prompt, announcement)
+            log(
+                f"[response_metadata] contractor={contractor.name} "
+                f"{json.dumps(caller.last_metadata, ensure_ascii=False, sort_keys=True)}"
+            )
             log(f"[raw_response_begin] contractor={contractor.name}")
             log(raw)
             log(f"[raw_response_end] contractor={contractor.name}")
@@ -85,6 +118,10 @@ def main() -> None:
                 f"reason={json.dumps(bid.reason, ensure_ascii=False)}"
             )
     except Exception as exc:
+        log(
+            "[api_error_metadata] "
+            + json.dumps(api_error_metadata(exc), ensure_ascii=False, sort_keys=True)
+        )
         log(f"[crash] {type(exc).__name__}: {safe_text(exc)}")
         if is_rate_limit_error(exc):
             log("[stop] rate limit reached; no further smoke calls were attempted")

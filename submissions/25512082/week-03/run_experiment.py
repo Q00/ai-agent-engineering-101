@@ -114,6 +114,25 @@ def is_rate_limit_error(exc: BaseException) -> bool:
     return getattr(response, "status_code", None) == 429
 
 
+def api_error_metadata(exc: BaseException) -> dict:
+    """Return non-secret diagnostic fields from an SDK/API exception."""
+    status = getattr(exc, "status_code", None)
+    response = getattr(exc, "response", None)
+    if status is None:
+        status = getattr(response, "status_code", None)
+    body = getattr(exc, "body", None)
+    code = None
+    if isinstance(body, dict):
+        error = body.get("error", body)
+        if isinstance(error, dict):
+            code = error.get("code")
+    return {
+        "error_type": type(exc).__name__,
+        "status": status,
+        "code": code,
+    }
+
+
 def expected_api_calls(task_count: int, condition_count: int, runs: int) -> int:
     return task_count * 3 * condition_count * runs
 
