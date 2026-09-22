@@ -189,9 +189,17 @@ with the clean walk-aways would pay a condition for stalling. `violation` is
 ## 2. Results
 
 36 episodes, none crashed. 315 model calls: 213 by the agents, 102 by the
-reader. Temperature is 0 and the three repeats of every cell are identical
-in outcome and price throughout, so every number below is reproducible
-rather than an average over noise.
+reader.
+
+Temperature is pinned to 0, and it makes the runs mostly but not entirely
+repeatable. Of the twelve condition-and-scenario cells, ten gave the same
+outcome and the same price in all three repeats. Two did not:
+`structured` on s1 closed at 115, 115 and 125, and `tagged` on s4 ran to the
+turn limit twice and walked away once, at seven turns instead of eight.
+Temperature 0 makes sampling greedy; it does not make a served model
+deterministic. Every figure below is a count over 36 episodes, not an average
+over noise, but two of those episodes would not necessarily come back the
+same on a rerun.
 
 ### Per condition
 
@@ -216,6 +224,23 @@ rather than an average over noise.
 | free | 3/6 | 0/6 |
 | tagged | 3/6 | 4/6 |
 | structured | 6/6 | 0/6 |
+
+The headline `correct` column adds these two together and hides that they
+move in opposite directions. The first bar of each pair is the possible
+scenarios, the second the impossible ones, six episodes each.
+
+```mermaid
+xychart-beta
+    title "Correct: first bar where a deal was possible, second where it was not (6 each)"
+    x-axis [free, tagged, structured]
+    y-axis "episodes correct" 0 --> 6
+    bar [3, 3, 6]
+    bar [0, 4, 0]
+```
+
+`structured` is the tall first bar with nothing beside it: it closed every
+deal that was there to close and never once ended an impossible negotiation.
+`tagged` is the only condition with a second bar at all.
 
 ### Every episode, all 36
 
@@ -517,9 +542,10 @@ Communicative Act Library has 22 acts rather than four.
 ### Why the two runs are not on one scale
 
 Temperature. The reference was called through a CLI that cannot set it, so its
-figures carry sampling variance; this run pinned it to 0 and all three repeats
-of every cell are identical in outcome and price. The reference's 11/18 and
-this run's 3/12 are not measured under the same regime.
+figures carry whatever sampling the default does; this run pinned it to 0, and
+ten of its twelve cells then repeated exactly, with `structured` on s1 and
+`tagged` on s4 the two that did not. The reference's 11/18 and this run's 3/12
+are not measured under the same regime, and neither is free of variance.
 
 Scenarios. Six against four, and different limits. The fragment the lecture
 prints includes a scenario with `reserve` and `budget` both 40, where the only
@@ -605,7 +631,35 @@ three format paragraphs and in the reader, and changes nothing else.
 | structured | 4 acts | 6/12 | 6/6 | 0/6 | 6 / 0 / 6 | 0 | 6.2 | 0 |
 | structured | 6 acts | 4/12 | 4/6 | 0/6 | 4 / 0 / 8 | 0 | 7.8 | 0 |
 
-Two acts bought two things and sold one.
+Two acts bought two things and sold one. The three charts below are the same
+table, first bar four acts, second bar six.
+
+```mermaid
+xychart-beta
+    title "Limit violations, first bar four acts, second bar six"
+    x-axis [free, tagged, structured]
+    y-axis "violations" 0 --> 4
+    bar [3, 3, 0]
+    bar [0, 0, 0]
+```
+
+```mermaid
+xychart-beta
+    title "Deals closed inside both limits, of 6 possible, four acts then six"
+    x-axis [free, tagged, structured]
+    y-axis "episodes correct" 0 --> 6
+    bar [3, 3, 6]
+    bar [6, 6, 4]
+```
+
+```mermaid
+xychart-beta
+    title "Episodes ended by walking away, of 6 impossible, four acts then six"
+    x-axis [free, tagged, structured]
+    y-axis "no_deal episodes" 0 --> 4
+    bar [0, 4, 0]
+    bar [1, 0, 0]
+```
 
 **Every limit violation disappeared.** Six in the first run, three in free
 and three in tagged, all of them on s2, the narrow zone between 95 and 105.
@@ -744,3 +798,98 @@ In none of the three did the encoding decide anything. What decided things
 was which acts existed to be performed, and which could be read. FIPA gave
 the first 22 entries and a mandatory `:ontology` for the second, and this lab
 kept four acts and one integer. These runs are a measurement of that gap.
+
+## 7. Who came out ahead
+
+The assignment asks which format got the right answer. It does not ask who
+won, and the two are not the same question: a deal can be correct, inside
+both limits, and still hand almost everything to one side. This section reads
+the 40 closed deals of all the runs above on one axis.
+
+Every scenario where a deal is possible defines a bargaining zone from the
+seller's reserve to the buyer's budget. A deal at price p gives the seller
+`p - reserve` and the buyer `budget - p`, so the seller's share of the zone
+puts s1's width of 80 and s2's width of 10 on the same scale. A share of 0.5
+is an even split, 1.0 means the buyer paid exactly its budget, 0.0 means the
+seller got exactly its reserve, and anything outside [0, 1] is one of the
+violations of section 2 seen from a different angle — not a separate kind of
+event, but a split that ran off the end of the zone. `surplus.py` prints
+everything below.
+
+| run | deals | mean seller share | ahead | the accepted price was named by |
+|---|---|---|---|---|
+| free, 4 acts | 6 | +0.94 | seller | buyer 3, seller 3 |
+| free, abstain | 6 | +0.94 | seller | buyer 3, seller 3 |
+| free, 6 acts | 6 | +0.56 | seller, slightly | seller 6 |
+| tagged, 4 acts | 6 | −0.12 | buyer | buyer 6 |
+| tagged, 6 acts | 6 | +0.27 | buyer | buyer 3, seller 3 |
+| structured, 4 acts | 6 | +0.36 | buyer | buyer 6 |
+| structured, 6 acts | 4 | +0.47 | about even | buyer 1, seller 3 |
+
+Across all 40 deals the mean seller share is +0.49, which looks like a fair
+fight and is not one. The median is +0.62. The mean sits near the middle
+because two opposite pathologies cancel: three deals at +1.20 where the buyer
+paid above its budget, and three recorded at −1.00 where the seller sold
+below its reserve.
+
+**The wide zone belongs to the seller, in every run without exception.** On
+s1, between 60 and 140, the seller's share is +0.54 at its lowest and +0.75
+at its highest; it is never even, and it never favours the buyer. The buyer
+opens, the seller answers with an anchor well above the zone — 150, 180 and
+240 all appear in the logs against a reserve of 60 — and the convergence
+happens in the upper half. The buyer's budget is the binding constraint and
+the buyer walks toward it.
+
+**The narrow zone belongs to the buyer, and usually completely.** On s2,
+between 95 and 105, every legal deal in every run closed at exactly 95: the
+seller's reserve, a seller's share of 0.00, the entire surplus to the buyer.
+That holds for structured at four acts and at six, and for tagged at six. The
+only condition that landed anywhere else was free, at 107 with four acts,
+which is not in the zone at all, and at 100 with six. With ten units to move
+in, the side that first names a number inside the zone takes all of it, and
+the buyer speaks first.
+
+```mermaid
+xychart-beta
+    title "s2 closing price by run; the two lines are the reserve 95 and the budget 105"
+    x-axis ["free 4", "free ab", "free 6", "tag 4", "tag 6", "str 4", "str 6"]
+    y-axis "price" 80 --> 110
+    bar [107, 107, 100, 85, 95, 95, 95]
+    line [95, 95, 95, 95, 95, 95, 95]
+    line [105, 105, 105, 105, 105, 105, 105]
+```
+
+Everything that closed legally on s2 sits on the lower line. Only free rises
+off it, once above the upper line and once between the two.
+
+Those two results are the same mechanism seen twice. What decides the split
+is how much room there is between the opening anchors and the zone, not who
+is better at negotiating.
+
+**Six acts made the outcomes markedly fairer.** The mean distance from an even
+split falls from 0.56 at four acts to 0.20 at six, and every condition moves
+toward the middle: free from +0.94 to +0.56, tagged from −0.12 to +0.27,
+structured from +0.36 to +0.47. This is the same change that removed every
+limit violation in section 6.2, and for the same reason. When both sides can
+ask before either offers, they locate the zone instead of racing toward one
+side's anchor, and the deal lands nearer the middle of it.
+
+**Naming the price does not win the negotiation.** In tagged and structured at
+four acts the buyer named every one of the twelve accepted prices, and still
+lost s1 by +0.75 and +0.73. In free at six acts the seller named all six, and
+the split came out near even at +0.56. Whoever concedes last decides the
+number; whoever has more room decides who that will be.
+
+**Letting the reader abstain changed nothing here.** The free abstain run
+closed the same deals at the same prices as the first run, 115 on s1 and 107
+on s2, so its row is identical. Extension 1 touched the observer, not the
+bargain, which is what it was designed to do and a useful check that it did
+nothing else.
+
+One caveat, carried from section 4. The prices here are the ones the protocol
+layer recorded. The three tagged deals on s2 are recorded at 85 and the agents
+had actually agreed on 95, so their true share is 0.00 rather than −1.00 —
+the same complete concession as everywhere else on that scenario. Corrected,
+tagged at four acts is not the one run where the buyer did unusually well; it
+is one more run where the narrow zone went entirely to the buyer, and the
+harness turned that into an apparent violation by the seller.
