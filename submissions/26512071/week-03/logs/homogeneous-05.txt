@@ -1,0 +1,47 @@
+[run] run=5 repeat=2 condition=homogeneous model=gpt-5.6-luna temperature=0.0 reasoning_effort=none max_completion_tokens=200 timeout_seconds=60.0
+[contractor] name=coder ability="General problem solving across coding, data, and writing tasks" extra=""
+[contractor] name=analyst ability="General problem solving across coding, data, and writing tasks" extra=""
+[contractor] name=writer ability="General problem solving across coding, data, and writing tasks" extra=""
+[announce] task=code-debug to=coder desc="파이썬 딕셔너리 조회 중 발생하는 KeyError의 원인을 찾고 안전한 수정 방법을 제안한다."
+[announce] task=code-debug to=analyst desc="파이썬 딕셔너리 조회 중 발생하는 KeyError의 원인을 찾고 안전한 수정 방법을 제안한다."
+[announce] task=code-debug to=writer desc="파이썬 딕셔너리 조회 중 발생하는 KeyError의 원인을 찾고 안전한 수정 방법을 제안한다."
+[bid] task=code-debug contractor=coder valid=true bid=true confidence=0.99 reason="파이썬 디버깅과 딕셔너리 KeyError 원인 분석 및 안전한 수정 제안에 적합합니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"파이썬 디버깅과 딕셔너리 KeyError 원인 분석 및 안전한 수정 제안에 적합합니다.\"}"
+[bid] task=code-debug contractor=analyst valid=true bid=true confidence=0.99 reason="파이썬 딕셔너리 KeyError의 원인 분석과 안전한 수정 방법 제안은 일반적인 코드 디버깅 능력에 잘 부합합니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"파이썬 딕셔너리 KeyError의 원인 분석과 안전한 수정 방법 제안은 일반적인 코드 디버깅 능력에 잘 부합합니다.\"}"
+[bid] task=code-debug contractor=writer valid=true bid=true confidence=0.99 reason="파이썬 디버깅과 딕셔너리 KeyError 원인 분석 및 안전한 수정 제안에 적합합니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"파이썬 디버깅과 딕셔너리 KeyError 원인 분석 및 안전한 수정 제안에 적합합니다.\"}"
+[award] task=code-debug winner=coder confidence=0.99 gold=coder outcome=correct
+[announce] task=code-retry to=coder desc="실패한 함수를 지수 백오프로 다시 호출하는 파이썬 데코레이터를 설계한다."
+[announce] task=code-retry to=analyst desc="실패한 함수를 지수 백오프로 다시 호출하는 파이썬 데코레이터를 설계한다."
+[announce] task=code-retry to=writer desc="실패한 함수를 지수 백오프로 다시 호출하는 파이썬 데코레이터를 설계한다."
+[bid] task=code-retry contractor=coder valid=true bid=true confidence=0.99 reason="Python decorator design and exponential backoff retry logic match my coding abilities." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"Python decorator design and exponential backoff retry logic match my coding abilities.\"}"
+[bid] task=code-retry contractor=analyst valid=true bid=true confidence=0.99 reason="Python 데코레이터와 지수 백오프 재시도 로직 설계는 일반적인 코딩 문제로 능력에 잘 맞습니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"Python 데코레이터와 지수 백오프 재시도 로직 설계는 일반적인 코딩 문제로 능력에 잘 맞습니다.\"}"
+[bid] task=code-retry contractor=writer valid=true bid=true confidence=0.99 reason="Python decorator design and exponential backoff retry logic are a strong match for my coding ability." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"Python decorator design and exponential backoff retry logic are a strong match for my coding ability.\"}"
+[award] task=code-retry winner=coder confidence=0.99 gold=coder outcome=correct
+[announce] task=data-churn to=coder desc="월초 고객 1,000명 중 80명이 이탈했을 때 월간 이탈률을 계산하고 공식을 설명한다."
+[announce] task=data-churn to=analyst desc="월초 고객 1,000명 중 80명이 이탈했을 때 월간 이탈률을 계산하고 공식을 설명한다."
+[announce] task=data-churn to=writer desc="월초 고객 1,000명 중 80명이 이탈했을 때 월간 이탈률을 계산하고 공식을 설명한다."
+[bid] task=data-churn contractor=coder valid=true bid=true confidence=0.99 reason="고객 이탈률 계산과 공식 설명은 일반적인 데이터 분석 능력에 잘 맞습니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"고객 이탈률 계산과 공식 설명은 일반적인 데이터 분석 능력에 잘 맞습니다.\"}"
+[bid] task=data-churn contractor=analyst valid=true bid=true confidence=0.99 reason="계산 및 공식 설명이 가능한 일반 문제입니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"계산 및 공식 설명이 가능한 일반 문제입니다.\"}"
+[bid] task=data-churn contractor=writer valid=true bid=true confidence=0.99 reason="이탈률 계산과 공식 설명은 일반적인 데이터 분석 및 문제 해결 능력에 잘 맞습니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"이탈률 계산과 공식 설명은 일반적인 데이터 분석 및 문제 해결 능력에 잘 맞습니다.\"}"
+[award] task=data-churn winner=coder confidence=0.99 gold=analyst outcome=misaward
+[announce] task=data-conversion to=coder desc="방문자 2,500명과 구매자 125명의 데이터를 이용해 전환율을 계산하고 해석한다."
+[announce] task=data-conversion to=analyst desc="방문자 2,500명과 구매자 125명의 데이터를 이용해 전환율을 계산하고 해석한다."
+[announce] task=data-conversion to=writer desc="방문자 2,500명과 구매자 125명의 데이터를 이용해 전환율을 계산하고 해석한다."
+[bid] task=data-conversion contractor=coder valid=true bid=true confidence=0.99 reason="전환율 계산과 데이터 해석은 일반적인 데이터 분석 능력에 잘 부합합니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"전환율 계산과 데이터 해석은 일반적인 데이터 분석 능력에 잘 부합합니다.\"}"
+[bid] task=data-conversion contractor=analyst valid=true bid=true confidence=0.99 reason="전환율 계산과 데이터 해석은 일반적인 데이터 분석 능력에 잘 부합합니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"전환율 계산과 데이터 해석은 일반적인 데이터 분석 능력에 잘 부합합니다.\"}"
+[bid] task=data-conversion contractor=writer valid=true bid=true confidence=0.99 reason="전환율 계산과 데이터 해석은 일반적인 데이터 분석 능력에 잘 맞습니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"전환율 계산과 데이터 해석은 일반적인 데이터 분석 능력에 잘 맞습니다.\"}"
+[award] task=data-conversion winner=coder confidence=0.99 gold=analyst outcome=misaward
+[announce] task=writing-release to=coder desc="기능 출시 안내문을 사용자가 이해하기 쉬운 간결한 한국어로 다듬는다."
+[announce] task=writing-release to=analyst desc="기능 출시 안내문을 사용자가 이해하기 쉬운 간결한 한국어로 다듬는다."
+[announce] task=writing-release to=writer desc="기능 출시 안내문을 사용자가 이해하기 쉬운 간결한 한국어로 다듬는다."
+[bid] task=writing-release contractor=coder valid=true bid=true confidence=0.98 reason="한국어 기능 출시 안내문을 간결하고 이해하기 쉽게 다듬는 작업은 글쓰기 능력과 잘 맞습니다." error="" raw="{\"bid\":true,\"confidence\":0.98,\"reason\":\"한국어 기능 출시 안내문을 간결하고 이해하기 쉽게 다듬는 작업은 글쓰기 능력과 잘 맞습니다.\"}"
+[bid] task=writing-release contractor=analyst valid=true bid=true confidence=0.99 reason="한국어 기능 출시 안내문을 간결하고 이해하기 쉽게 다듬는 작업은 글쓰기 능력에 잘 맞습니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"한국어 기능 출시 안내문을 간결하고 이해하기 쉽게 다듬는 작업은 글쓰기 능력에 잘 맞습니다.\"}"
+[bid] task=writing-release contractor=writer valid=true bid=true confidence=0.99 reason="한국어 기능 출시 안내문을 간결하고 이해하기 쉽게 다듬는 작업은 글쓰기 능력에 잘 맞습니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"한국어 기능 출시 안내문을 간결하고 이해하기 쉽게 다듬는 작업은 글쓰기 능력에 잘 맞습니다.\"}"
+[award] task=writing-release winner=analyst confidence=0.99 gold=writer outcome=misaward
+[announce] task=writing-apology to=coder desc="서비스 지연에 대해 책임과 후속 조치를 분명히 밝히는 고객 사과문을 작성한다."
+[announce] task=writing-apology to=analyst desc="서비스 지연에 대해 책임과 후속 조치를 분명히 밝히는 고객 사과문을 작성한다."
+[announce] task=writing-apology to=writer desc="서비스 지연에 대해 책임과 후속 조치를 분명히 밝히는 고객 사과문을 작성한다."
+[bid] task=writing-apology contractor=coder valid=true bid=true confidence=0.98 reason="고객 사과문 작성과 책임 및 후속 조치의 명확한 표현은 일반적인 글쓰기 능력에 잘 부합합니다." error="" raw="{\"bid\":true,\"confidence\":0.98,\"reason\":\"고객 사과문 작성과 책임 및 후속 조치의 명확한 표현은 일반적인 글쓰기 능력에 잘 부합합니다.\"}"
+[bid] task=writing-apology contractor=analyst valid=true bid=true confidence=0.99 reason="고객 사과문 작성과 책임 및 후속 조치의 명확한 표현은 글쓰기 능력에 잘 부합합니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"고객 사과문 작성과 책임 및 후속 조치의 명확한 표현은 글쓰기 능력에 잘 부합합니다.\"}"
+[bid] task=writing-apology contractor=writer valid=true bid=true confidence=0.99 reason="고객 서비스 지연에 대한 책임과 후속 조치를 담은 사과문 작성은 글쓰기 능력에 잘 맞습니다." error="" raw="{\"bid\":true,\"confidence\":0.99,\"reason\":\"고객 서비스 지연에 대한 책임과 후속 조치를 담은 사과문 작성은 글쓰기 능력에 잘 맞습니다.\"}"
+[award] task=writing-apology winner=analyst confidence=0.99 gold=writer outcome=misaward
+[summary] parse_failures=0;timeouts=0
