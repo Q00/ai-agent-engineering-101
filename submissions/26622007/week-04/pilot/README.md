@@ -19,7 +19,7 @@ python3 -m unittest discover -s submissions/26622007/week-04/pilot -p 'test_*.py
 ## 설정과 해석
 
 - 기존 week-03의 OpenRouter 전송기를 복사해 명시적 `response_format: text`를 허용했다.
-- 동일 DeepSeek V4.1 Flash / Fireworks / temperature 0 / reasoning off로 두 협상자와 판독기를 실행한다.
+- 동일 DeepSeek V4.1 Flash / DeepInfra FP8 / temperature 0 / reasoning off로 두 협상자와 판독기를 실행한다.
 - 협상자: `response_format={"type":"text"}`, reader: strict JSON Schema. 실제 직렬화 요청과 원응답을 JSONL에 보존한다.
 - 자기 발언은 assistant, 상대 발언은 user로 누적한다. reader는 공개 대화 전체만 보고 마지막 발언을 분류한다.
 - 시스템 프롬프트에는 본인의 한도만 주며, 가격 제한 위반을 사후 측정한다. 잘못된 거래를 코드로 차단하거나 가격을 보정하지 않는다.
@@ -30,6 +30,11 @@ python3 -m unittest discover -s submissions/26622007/week-04/pilot -p 'test_*.py
 
 `pilot/runs/<실행 ID>/`에 결과 JSON/CSV, `../logs/`에 콘솔 출력과 요청/원응답 JSONL이 생성된다.
 실행 전에 시나리오와 코드를 커밋하고, 실행 로그를 후속 검증 기록으로 함께 커밋한다.
+
+첫 Fireworks 실행(`20260922T104737Z-free-119f11`)은 구매자 첫 호출에서 HTTP 429가 3회
+발생해 발언 전에 실패했다. 해당 원본과 결과는 보존했다. OpenRouter의 모델별 endpoint
+메타데이터에서 DeepInfra FP8의 `response_format`, `structured_outputs` 지원을 확인하고
+동일 모델의 제공업체만 명시적으로 바꿨다. 이 실행들은 서로 다른 제공업체 조건이다.
 
 출처: [강의 LAB](https://github.com/Q00/ai-agent-engineering-101/blob/main/week-04.html),
 [과제 안내](https://github.com/Q00/ai-agent-engineering-101/blob/main/weeks/week-04/README.md).
