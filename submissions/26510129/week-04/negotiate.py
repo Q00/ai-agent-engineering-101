@@ -24,7 +24,7 @@ from pathlib import Path
 
 import acl
 import protocol
-from model import Meter, call_model, settings_line
+from model import Meter, call_model, effective_settings, settings_line
 
 HERE = Path(__file__).resolve().parent
 RESULTS = HERE / "results.csv"
@@ -181,6 +181,7 @@ def main() -> int:
     print(f"[run] {run} done. agent_calls={meter.agent_calls} "
           f"reader_calls={meter.reader_calls} retries={meter.retries} tokens={meter.tokens}",
           flush=True)
+    print(f"[run] {effective_settings()}", flush=True)
     return 0
 
 

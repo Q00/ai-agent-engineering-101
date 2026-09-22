@@ -103,7 +103,33 @@ def call_model(system: str, messages: list, meter: Meter, kind: str = "agent") -
     raise RuntimeError("unreachable")
 
 
+# 최신 OpenAI 모델은 max_tokens 대신 max_completion_tokens를 받고, temperature를
+# 기본값 말고는 받지 않는 것이 있다. 400을 보고 한 번 맞춘 뒤 그 선택을 기억한다.
+# 무엇이 실제로 적용됐는지는 run 끝의 effective_settings()로 로그에 남는다.
+_token_param = "max_tokens"
+_send_temperature = True
+_adjusted = []
+
+
+def _openai_kwargs() -> dict:
+    kw = {_token_param: MAX_TOKENS}
+    if _send_temperature:
+        kw["temperature"] = TEMPERATURE
+    if NO_REASONING:
+        kw["extra_body"] = {"reasoning": {"enabled": False}}
+    return kw
+
+
+def _param_rejected(msg: str, name: str) -> bool:
+    low = msg.lower()
+    return name in low and any(w in low for w in
+                               ("unsupported", "not supported", "does not support",
+                                "unrecognized", "is not permitted", "invalid"))
+
+
 def _call_once(system: str, messages: list, meter: Meter, kind: str) -> str:
+    global _token_param, _send_temperature
+
     if PROVIDER == "anthropic":
         resp = _get_client().messages.create(
             model=MODEL, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
@@ -111,17 +137,50 @@ def _call_once(system: str, messages: list, meter: Meter, kind: str) -> str:
         meter.add(resp.usage.input_tokens, resp.usage.output_tokens, kind)
         return "".join(b.text for b in resp.content if b.type == "text")
 
-    extra = {"reasoning": {"enabled": False}} if NO_REASONING else None
-    resp = _get_client().chat.completions.create(
-        model=MODEL, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
-        messages=[{"role": "system", "content": system}] + messages,
-        **({"extra_body": extra} if extra else {}))
+    full = [{"role": "system", "content": system}] + messages
+    for _ in range(3):
+        try:
+            resp = _get_client().chat.completions.create(
+                model=MODEL, messages=full, **_openai_kwargs())
+            break
+        except Exception as e:
+            msg = str(e)
+            if _token_param == "max_tokens" and "max_completion_tokens" in msg:
+                _token_param = "max_completion_tokens"
+                _adjusted.append("max_tokens -> max_completion_tokens")
+                print("  [param] this model wants max_completion_tokens; switching",
+                      flush=True)
+                continue
+            if _send_temperature and _param_rejected(msg, "temperature"):
+                _send_temperature = False
+                _adjusted.append("temperature not settable on this model")
+                print("  [param] this model does not take temperature; "
+                      "dropping it and recording it as not settable", flush=True)
+                continue
+            raise
+    else:
+        raise RuntimeError("could not find a parameter set this model accepts")
+
     usage = resp.usage
     meter.add(getattr(usage, "prompt_tokens", 0), getattr(usage, "completion_tokens", 0), kind)
-    return resp.choices[0].message.content or ""
+    choice = resp.choices[0]
+    text = choice.message.content or ""
+    if not text.strip():
+        # 추론 모델이 출력 예산을 생각에 다 쓰면 본문이 비어 온다. 조용히 format error로
+        # 넘기면 run 전체가 망가지므로 눈에 보이게 적는다.
+        print(f"  [warn] empty message (finish_reason={getattr(choice, 'finish_reason', '?')}); "
+              f"raise AGENT_MAX_TOKENS above {MAX_TOKENS}", flush=True)
+    return text
 
 
 def settings_line() -> str:
     """로그 첫 줄. provider, 모델, temperature, 턴 한도는 실행마다 기록한다."""
     return (f"provider={PROVIDER} base_url={BASE_URL if PROVIDER == 'openai' else 'anthropic'} "
             f"model={MODEL} temperature={TEMPERATURE} max_tokens={MAX_TOKENS}")
+
+
+def effective_settings() -> str:
+    """run 끝에 찍는다. 요청한 설정과 실제로 적용된 설정이 다를 수 있기 때문이다."""
+    temp = f"{TEMPERATURE}" if _send_temperature else "not settable on this model"
+    return (f"effective: token_param={_token_param} temperature={temp}"
+            + (f" adjusted=[{'; '.join(sorted(set(_adjusted)))}]" if _adjusted else ""))

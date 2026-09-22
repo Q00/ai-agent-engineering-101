@@ -7,16 +7,33 @@
 
 ## 1. 설정
 
-**provider와 모델.** OpenAI API, `gpt-4o-mini`. 3주차와 같다.
+**provider와 모델.** OpenAI API. 모델 이름은 `AGENT_MODEL`로 주고, 실제로 쓴 이름은
+모든 로그의 첫 줄에 박힌다. 이 문단의 모델 이름은 그 줄과 같아야 한다.
 
 ```bash
 export OPENAI_API_KEY=<openai key>      # 키는 환경변수로만. 코드에 적지 않는다.
 unset OPENAI_BASE_URL                   # OpenAI 직접 호출 (OpenRouter를 쓸 때만 설정)
-export AGENT_MODEL=gpt-4o-mini
+export AGENT_MODEL=<모델 이름>
 export AGENT_TEMPERATURE=0
 cd submissions/26510129/week-04
 ./run_all.sh                            # 조건 3개 x 반복 3회 = 9 run
 ```
+
+모델 이름은 계정이 실제로 부를 수 있는 것이어야 한다. 확인은 이렇게 한다.
+
+```bash
+curl -s https://api.openai.com/v1/models -H "Authorization: Bearer $OPENAI_API_KEY" \
+  | python3 -c "import json,sys; print('\n'.join(sorted(m['id'] for m in json.load(sys.stdin)['data'])))"
+```
+
+**temperature와 토큰 파라미터.** 모델에 따라 `max_tokens` 대신
+`max_completion_tokens`를 받고, `temperature`를 기본값 말고는 받지 않는 것이 있다.
+`model.py`는 400을 한 번 받으면 파라미터를 바꿔 다시 보내고 그 선택을 기억한다.
+무엇이 실제로 적용됐는지는 각 run의 마지막 줄에 `effective: token_param=... temperature=...`
+로 남는다. temperature가 설정되지 않는 모델이면 그 줄에 `not settable on this model`이
+찍히고, 3주차 note와 같이 설정 불가로 기록한다. 세 조건이 같은 설정을 쓴다는 점은
+그래도 유지된다. 추론에 출력 예산을 다 써서 본문이 비어 오면 `[warn] empty message`가
+찍히므로 `AGENT_MAX_TOKENS`를 올린다.
 
 `temperature=0`, `max_tokens=200`, 턴 한도 8로 고정했고 각각 `AGENT_TEMPERATURE`,
 `AGENT_MAX_TOKENS`, `AGENT_MAX_TURNS`로 덮어쓸 수 있다. `AGENT_MIN_INTERVAL`(호출 간
