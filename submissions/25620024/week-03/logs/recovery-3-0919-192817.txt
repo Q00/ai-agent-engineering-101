@@ -1,0 +1,16 @@
+provider=anthropic model=claude-haiku-4-5 temperature=0
+=== run 6: recovery (rep 3) ===
+[directed-award] task 1 -> A (reputation: announce/bid skipped)
+[directed-award] task 2 -> A (reputation: announce/bid skipped)
+[announce] task 3 -> ['A', 'B', 'C']
+  [bid] A: bid=True confidence=85
+  [bid] B: bid=True confidence=85
+  [bid] C: bid=True confidence=85
+  [award] A (gold B)
+[directed-award] task 4 -> B (reputation: announce/bid skipped)
+[announce] task 5 -> ['A', 'B', 'C']
+  [bid] A: bid=True confidence=95
+  [bid] B: bid=True confidence=95
+  [bid] C: bid=True confidence=95
+  [award] B (gold C)
+[directed-award] task 6 -> C (reputation: announce/bid skipped)
