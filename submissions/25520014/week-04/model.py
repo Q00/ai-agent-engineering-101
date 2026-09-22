@@ -83,14 +83,17 @@ def render_history(history: list) -> str:
             + "\n\nWrite your next message now.")
 
 
-def call_model(system: str, history: list, meter: Meter, retries: int = 3) -> str:
-    """claude -p를 한 번 부르고 응답 텍스트를 돌려준다. 메시지 1건 = 호출 1회.
+def call_claude(system: str, prompt: str, meter: Meter, retries: int = 3) -> str:
+    """claude -p를 한 번 부르고 응답 텍스트를 돌려준다. 호출 1회 = 메시지 1건.
+
+    저수준 호출이다. 에이전트는 call_model을 거쳐 들어오고, 프로토콜 계층의 reader는
+    대화 기록이 아니라 관찰용 프롬프트를 통째로 넘기므로 이 함수를 직접 쓴다.
 
     claude -p도 과부하나 네트워크로 간헐적으로 죽는다. lab이 429에 대해 요구하는 것과
     같은 이유로, 실패한 호출은 대기를 늘려 가며 다시 시도하고 그래도 안 되면 에피소드를
     크래시로 남긴다.
     """
-    cmd = ["claude", "-p", render_history(history), "--system-prompt", system] + _BASE_FLAGS
+    cmd = ["claude", "-p", prompt, "--system-prompt", system] + _BASE_FLAGS
     last = None
     for attempt in range(retries):
         if attempt:
@@ -114,3 +117,8 @@ def call_model(system: str, history: list, meter: Meter, retries: int = 3) -> st
         meter.add(payload.get("usage", {}))
         return (payload.get("result") or "").strip()
     raise last
+
+
+def call_model(system: str, history: list, meter: Meter) -> str:
+    """에이전트 한 턴. history를 (A) 방식으로 펼쳐 저수준 호출에 넘긴다."""
+    return call_claude(system, render_history(history), meter)
