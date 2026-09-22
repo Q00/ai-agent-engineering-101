@@ -14,6 +14,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from analyze_results import AuditError, audit, render_report
 from model_client import ModelCallError, ModelReply, OpenAIBackend, Usage
 from negotiation import run_episode
 from prompts import FORMAT, system_prompt
@@ -562,6 +563,82 @@ class RunnerTests(unittest.TestCase):
                 path.write_text(json.dumps(values), encoding="utf-8")
                 with self.assertRaises(ValueError):
                     load_scenarios(path)
+
+
+class AnalyzerTests(unittest.TestCase):
+    """Audit synthetic records only; the saved live experiment is never touched."""
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix="week04-audit-tests-")
+        self.addCleanup(temporary.cleanup)
+        self.output = Path(temporary.name) / "experiment"
+        self.scenarios = load_scenarios(Path(__file__).parent / "scenarios.json")
+        self.backend = RefusingBackend()
+        quiet = redirect_stdout(io.StringIO())
+        quiet.__enter__()
+        self.addCleanup(quiet.__exit__, None, None, None)
+
+    def batch(self, backend=None):
+        return run_batch(backend or self.backend, self.scenarios, self.output, repeats=3)
+
+    def test_complete_scripted_experiment_audits_and_renders_all_rows(self):
+        self.batch()
+        report = audit(self.output)
+        self.assertEqual(len(report["rows"]), 36)
+        self.assertEqual(report["logs"], 9)
+        self.assertEqual(report["warnings"], [])
+        self.assertEqual(report["diagnostics"]["first_turn_no_deal"], 36)
+        rendered = render_report(report)
+        self.assertIn("Audit passed: 36 episode rows, 9 run logs", rendered)
+        self.assertEqual(sum(line.startswith("| free |") for line in rendered.splitlines()), 1)
+        self.assertEqual(sum(line.startswith("| tagged |") for line in rendered.splitlines()), 1)
+        self.assertEqual(sum(line.startswith("| structured |") for line in rendered.splitlines()), 1)
+        self.assertEqual(sum(line.startswith(("| 1 |", "| 2 |", "| 3 |"))
+                             for line in rendered.splitlines()), 36)
+
+    def test_replay_rejects_consistently_tampered_csv_and_summary_events(self):
+        self.batch()
+        csv_path = self.output / "results.csv"
+        rows = read_results(csv_path)
+        target_scenario = rows[0]["scenario"]
+        rows[0]["outcome"] = "open"
+        with csv_path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, HEADER)
+            writer.writeheader()
+            writer.writerows(rows)
+        log_path = self.output / "logs" / "free-run-01.log"
+        events = read_events(log_path)
+        for event in events:
+            if str(event.get("scenario")) != target_scenario:
+                continue
+            if event["event"] == "episode_result":
+                event["outcome"] = "open"
+            elif event["event"] == "episode_record":
+                event["row"]["outcome"] = "open"
+        # Leave messages, parse results, and transitions intact. Merely comparing
+        # CSV to the two summary events would now miss this fabricated outcome.
+        log_path.write_text("".join(json.dumps(event) + "\n" for event in events), encoding="utf-8")
+        with self.assertRaisesRegex(AuditError, "outcome=.*replay expects"):
+            audit(self.output)
+
+    def test_recovered_crash_unknown_metrics_stay_unknown_in_summary(self):
+        with self.assertRaises(SystemExit):
+            self.batch(RefusingBackend(fail_once=SystemExit(9)))
+        self.batch()
+        report = audit(self.output)
+        crashed = [row for row in report["rows"] if not row["outcome"]]
+        self.assertEqual(len(crashed), 1)
+        for field in ("price", "correct", "violation", "turns", "format_errors", "reader_calls"):
+            self.assertEqual(crashed[0][field], "")
+        summary = next(line for line in render_report(report).splitlines()
+                       if line.startswith("| free |"))
+        cells = [cell.strip() for cell in summary.split("|")[1:-1]]
+        self.assertIn("1 unknown", cells[1])
+        self.assertEqual(cells[2], "0 / 11 / 0 / 1")
+        self.assertEqual(cells[3], "0 (+1 unknown)")
+        self.assertEqual(cells[4], "1.00 (+1 unknown)")
+        self.assertEqual(cells[5], "0 (+1 unknown)")
+        self.assertEqual(cells[6], "11 (+1 unknown)")
 
 
 if __name__ == "__main__":
