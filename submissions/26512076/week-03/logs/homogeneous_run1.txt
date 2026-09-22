@@ -1,0 +1,56 @@
+provider=Groq, model=openai/gpt-oss-20b, temperature=0.7
+condition=homogeneous, run=1
+
+[task] id=1 gold=A desc=Compute the value of (137 * 249) + (864 / 12) and return the number.
+[announcement] task=1 to=A
+[bid-response] contractor=A bid=True confidence=85 reason=It is a simple arithmetic calculation within my skill.
+[announcement] task=1 to=B
+[bid-response] contractor=B bid=True confidence=85 reason=The task is a straightforward arithmetic problem.
+[announcement] task=1 to=C
+[bid-response] contractor=C bid=True confidence=85 reason=It is a straightforward arithmetic calculation.
+[award] task=1 winner=A confidence=85 gold=A outcome=correct
+
+[task] id=2 gold=A desc=A product costs 240,000 won. It is discounted by 15 percent, and then 10 percent VAT is added to the discounted price. Calculate the final price.
+[announcement] task=2 to=A
+[bid-response] contractor=A bid=True confidence=90 reason=It’s a simple arithmetic calculation.
+[announcement] task=2 to=B
+[bid-response] contractor=B bid=True confidence=90 reason=Simple arithmetic calculation.
+[announcement] task=2 to=C
+[bid-response] contractor=C bid=True confidence=90 reason=This is a straightforward arithmetic calculation.
+[award] task=2 winner=A confidence=90 gold=A outcome=correct
+
+[task] id=3 gold=B desc=Write a concise and professional email asking a professor for a meeting to discuss a graduate research topic.
+[announcement] task=3 to=A
+[bid-response] contractor=A bid=True confidence=90 reason=Writing a concise email is a straightforward problem-solving task.
+[announcement] task=3 to=B
+[bid-response] contractor=B bid=False confidence=90 reason=Task is writing an email, not problem solving.
+[announcement] task=3 to=C
+[bid-response] contractor=C bid=True confidence=90 reason=Writing a professional email is within general problem solving skills.
+[award] task=3 winner=A confidence=90 gold=B outcome=misaward
+
+[task] id=4 gold=B desc=Rewrite the following sentence so that a 10-year-old can understand it: Machine learning models improve their predictions by identifying statistical patterns in previously observed data.
+[announcement] task=4 to=A
+[bid-response] contractor=A bid=True confidence=85 reason=Simplifying language is a problem-solving task.
+[announcement] task=4 to=B
+[bid-response] contractor=B bid=True confidence=85 reason=I can simplify the sentence for a child.
+[announcement] task=4 to=C
+[bid-response] contractor=C bid=True confidence=90 reason=Simplifying language is a form of general problem solving.
+[award] task=4 winner=C confidence=90 gold=B outcome=misaward
+
+[task] id=5 gold=C desc=Write a Python function that removes duplicate values from a list while preserving the original order.
+[announcement] task=5 to=A
+[bid-response] contractor=A bid=True confidence=90 reason=Matches my general problem solving skill.
+[announcement] task=5 to=B
+[bid-response] contractor=B bid=True confidence=85 reason=Task involves coding, which fits general problem solving.
+[announcement] task=5 to=C
+[bid-response] contractor=C bid=True confidence=90 reason=Task fits my general problem-solving skill.
+[award] task=5 winner=A confidence=90 gold=C outcome=misaward
+
+[task] id=6 gold=C desc=Write a Python function that takes a list of integers and returns the second-largest distinct value, raising a ValueError if fewer than two distinct values exist.
+[announcement] task=6 to=A
+[bid-response] contractor=A bid=True confidence=85 reason=The task is a typical coding problem within my skill set.
+[announcement] task=6 to=B
+[bid-response] contractor=B bid=True confidence=90 reason=The task is a straightforward programming problem within my skill set.
+[announcement] task=6 to=C
+[bid-response] contractor=C bid=True confidence=85 reason=I can solve this programming problem.
+[award] task=6 winner=B confidence=90 gold=C outcome=misaward
