@@ -18,8 +18,6 @@ Comparing its verdict with the protocol layer's record separates two failures
 the layer alone reports identically: a price the reader misread, and an agent
 that really did agree outside its own limit.
 """
-import json
-
 from acl import Meter, _loads, call_model
 
 VERIFIER_SYSTEM = (
