@@ -5,15 +5,30 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
+
+import contract_net
 
 from contract_net import (
     BASELINE_SKILLS,
+    BASE_URL,
     GENERALIST_SKILL,
+    MAX_TOKENS,
+    MODEL,
+    OPENROUTER_BASE_URL,
     OVERCONFIDENT_INSTRUCTION,
+    REQUIRED_MODEL,
+    RESPONSE_FORMAT,
+    REASONING_ENABLED,
+    TEMPERATURE,
+    Meter,
+    OpenRouterChat,
     make_team,
     parse_bid,
     protocol_fingerprint,
     run_contract_net,
+    validate_runtime_config,
 )
 from run_experiment import (
     HEADER,
@@ -150,10 +165,57 @@ class ContractNetTests(unittest.TestCase):
         self.assertEqual(first, protocol_fingerprint(tasks))
         changed = [{"id": 1, "desc": "changed", "gold": "A"}]
         self.assertNotEqual(first, protocol_fingerprint(changed))
+        with patch.object(contract_net, "BID_SYSTEM", "changed prompt"):
+            self.assertNotEqual(first, protocol_fingerprint(tasks))
+        with patch.object(contract_net, "RESPONSE_FORMAT", {"type": "changed"}):
+            self.assertNotEqual(first, protocol_fingerprint(tasks))
 
     def test_expected_call_counts(self):
         self.assertEqual(expected_api_calls(1, 1, 1), 3)
         self.assertEqual(expected_api_calls(6, 3, 3), 162)
+
+    def test_standard_endpoint_and_json_schema_are_in_request(self):
+        captured = {}
+
+        class FakeCompletions:
+            def create(self, **kwargs):
+                captured.update(kwargs)
+                return SimpleNamespace(
+                    usage=SimpleNamespace(prompt_tokens=10, completion_tokens=5),
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(
+                                content='{"bid": true, "confidence": 90, "reason": "fit"}'
+                            )
+                        )
+                    ],
+                )
+
+        meter = Meter()
+        chat = OpenRouterChat(meter)
+        chat._client = SimpleNamespace(
+            chat=SimpleNamespace(completions=FakeCompletions())
+        )
+        raw = chat("system", "user")
+
+        self.assertEqual(MODEL, REQUIRED_MODEL)
+        self.assertEqual(BASE_URL, OPENROUTER_BASE_URL)
+        self.assertEqual(captured["model"], REQUIRED_MODEL)
+        self.assertEqual(captured["temperature"], TEMPERATURE)
+        self.assertEqual(captured["max_tokens"], MAX_TOKENS)
+        self.assertEqual(captured["response_format"], RESPONSE_FORMAT)
+        self.assertEqual(
+            captured["extra_body"],
+            {"chat_template_kwargs": {"enable_thinking": REASONING_ENABLED}},
+        )
+        self.assertTrue(parse_bid(raw).bid)
+        self.assertEqual(meter.calls, 1)
+
+    def test_free_endpoint_cannot_mix_into_final_protocol(self):
+        with self.assertRaises(ValueError):
+            validate_runtime_config(model=REQUIRED_MODEL + ":free")
+        with self.assertRaises(ValueError):
+            validate_runtime_config(base_url="https://example.invalid/v1")
 
 
 if __name__ == "__main__":

@@ -14,11 +14,33 @@ from typing import Callable
 
 
 PROVIDER = "openrouter"
-MODEL = os.environ.get("AGENT_MODEL", "nvidia/nemotron-3.5-lightning:free")
+REQUIRED_MODEL = "nvidia/nemotron-3.5-lightning"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+MODEL = os.environ.get("AGENT_MODEL", REQUIRED_MODEL)
+BASE_URL = os.environ.get("OPENAI_BASE_URL", OPENROUTER_BASE_URL)
 TEMPERATURE = 0.0
 MAX_TOKENS = 256
 REASONING_ENABLED = False
 CONDITIONS = ("baseline", "homogeneous", "overconfident")
+
+BID_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "bid": {"type": "boolean"},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 100},
+        "reason": {"type": "string"},
+    },
+    "required": ["bid", "confidence", "reason"],
+    "additionalProperties": False,
+}
+RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "contract_net_bid",
+        "strict": True,
+        "schema": BID_JSON_SCHEMA,
+    },
+}
 
 BASELINE_SKILLS = {
     "A": "numerical calculation and mathematical reasoning",
@@ -93,6 +115,7 @@ class OpenRouterChat:
     """One-shot, OpenAI-compatible model caller used for contractor bids."""
 
     def __init__(self, meter: Meter) -> None:
+        validate_runtime_config()
         self.meter = meter
         self._client = None
 
@@ -102,9 +125,7 @@ class OpenRouterChat:
 
             self._client = OpenAI(
                 api_key=os.environ.get("OPENAI_API_KEY"),
-                base_url=os.environ.get(
-                    "OPENAI_BASE_URL", "https://openrouter.ai/api/v1"
-                ),
+                base_url=BASE_URL,
                 timeout=60.0,
                 max_retries=0,
             )
@@ -115,6 +136,7 @@ class OpenRouterChat:
             model=MODEL,
             temperature=TEMPERATURE,
             max_tokens=MAX_TOKENS,
+            response_format=RESPONSE_FORMAT,
             extra_body={
                 "chat_template_kwargs": {"enable_thinking": REASONING_ENABLED}
             },
@@ -129,6 +151,22 @@ class OpenRouterChat:
             getattr(usage, "completion_tokens", 0),
         )
         return response.choices[0].message.content or ""
+
+
+def validate_runtime_config(
+    model: str = MODEL,
+    base_url: str = BASE_URL,
+) -> None:
+    """Prevent mixing the earlier free pilot with the standard final protocol."""
+    if model != REQUIRED_MODEL:
+        raise ValueError(
+            f"final protocol requires AGENT_MODEL={REQUIRED_MODEL}; got {model}"
+        )
+    if base_url.rstrip("/") != OPENROUTER_BASE_URL:
+        raise ValueError(
+            f"final protocol requires OPENAI_BASE_URL={OPENROUTER_BASE_URL}; "
+            f"got {base_url}"
+        )
 
 
 def make_team(condition: str) -> list[Contractor]:
@@ -160,9 +198,11 @@ def protocol_fingerprint(tasks: list[dict]) -> str:
     protocol = {
         "provider": PROVIDER,
         "model": MODEL,
+        "base_url": BASE_URL,
         "temperature": TEMPERATURE,
         "max_tokens": MAX_TOKENS,
         "reasoning_enabled": REASONING_ENABLED,
+        "response_format": RESPONSE_FORMAT,
         "tasks": tasks,
         "conditions": CONDITIONS,
         "baseline_skills": BASELINE_SKILLS,

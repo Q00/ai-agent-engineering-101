@@ -13,6 +13,7 @@ from pathlib import Path
 
 from contract_net import (
     CONDITIONS,
+    BASE_URL,
     MAX_TOKENS,
     MODEL,
     PROVIDER,
@@ -23,6 +24,7 @@ from contract_net import (
     make_team,
     protocol_fingerprint,
     run_contract_net,
+    validate_runtime_config,
 )
 
 
@@ -130,6 +132,7 @@ def main() -> None:
         raise SystemExit("--runs must be at least 1")
     if not os.environ.get("OPENAI_API_KEY"):
         raise SystemExit("OPENAI_API_KEY is not set; no experiment was started")
+    validate_runtime_config()
 
     base = Path(__file__).resolve().parent
     tasks = load_tasks(base / "tasks.json")
@@ -164,6 +167,7 @@ def main() -> None:
 
                 log(f"[setup] provider={PROVIDER}")
                 log(f"[setup] model={MODEL}")
+                log(f"[setup] base_url={BASE_URL}")
                 log(f"[setup] temperature={TEMPERATURE:g}")
                 log(f"[setup] max_tokens={MAX_TOKENS}")
                 log(f"[setup] reasoning_enabled={str(REASONING_ENABLED).lower()}")
