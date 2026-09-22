@@ -409,6 +409,7 @@ def main() -> int:
     group.add_argument("--all", action="store_true")
     parser.add_argument("--runs", type=int, default=1)
     parser.add_argument("--turn-limit", type=int, default=6)
+    parser.add_argument("--run-prefix", default="")
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--limit", type=int)
     parser.add_argument(
@@ -441,7 +442,7 @@ def main() -> int:
     for condition in conditions:
         for repeat in range(1, args.runs + 1):
             suffix = "smoke" if args.smoke else f"r{repeat:02d}"
-            run_id = f"{condition}-{suffix}"
+            run_id = f"{args.run_prefix}{condition}-{suffix}"
             ok = run_one(
                 run_id, condition, scenarios, args.turn_limit, client,
                 results_path, log_dir / f"{run_id}.jsonl",
