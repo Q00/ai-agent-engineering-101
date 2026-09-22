@@ -1,0 +1,92 @@
+
+[run] 03 condition=free repeat=3 provider=OpenRouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0 max_turns=8
+[episode] scenario=1 item=a used bicycle reserve=120 budget=150
+[buyer] I'll offer $100 for the bicycle.
+  [reader] {"performative": "propose", "price": 100, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":100}"}
+[seller] I can't accept $100—my lowest acceptable price is $120. Would you consider meeting at $120?
+  [reader] {"performative": "propose", "price": 120, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":120}"}
+[buyer] I can't go above $110. Would you accept that?
+  [reader] {"performative": "propose", "price": 110, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":110}"}
+[seller] I can't go below $120, so $110 doesn't work for me. If you're willing to meet at $120, we have a deal.
+  [reader] {"performative": "propose", "price": 120, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":120}"}
+[buyer] I accept your offer of $120. We have a deal.
+  [reader] {"performative": "accept-proposal", "price": null, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"accept-proposal\",\"price\":null}"}
+[result] outcome=deal price=120 correct=1 violation=0 turns=5 format_errors=0 reader_calls=5
+[elapsed] scenario=1 seconds=40.7
+[episode] scenario=2 item=a second-hand textbook reserve=40 budget=40
+[buyer] I'd like to offer $25 for the textbook.
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+  [reader] {"performative": "propose", "price": 25, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":25}"}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[seller] I'm sorry, but $25 is too low for me. I can't accept that price.
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"reject-proposal\",\"price\":null}"}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[buyer] I can go up to $30. Is that acceptable?
+  [reader] {"performative": "propose", "price": 30, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":30}"}
+[seller] I'm sorry, but $30 is still too low for me. I can't accept that price.
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+  [reader] {"performative": "propose", "price": 30, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":30}"}
+[buyer] I can offer $35. Would that work for you?
+  [reader] {"performative": "propose", "price": 35, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":35}"}
+[seller] I'm sorry, but $35 is still too low for me. I can't accept that price.
+  [reader] {"performative": "propose", "price": 35, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":35}"}
+[buyer] I can go up to $40. Is that acceptable?
+  [reader] {"performative": "propose", "price": 40, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":40}"}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[seller] Yes, $40 is acceptable. I accept your offer.
+  [reader] {"performative": "accept-proposal", "price": null, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"accept-proposal\",\"price\":null}"}
+[result] outcome=deal price=40 correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
+[elapsed] scenario=2 seconds=97.0
+[episode] scenario=3 item=a mechanical keyboard reserve=90 budget=70
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[buyer] I'd like to offer $50 for the keyboard.
+  [reader] {"performative": "propose", "price": 50, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":50}"}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[seller] I'm sorry, but $50 is too low for this keyboard. I can offer it for $110.
+  [reader] {"performative": "propose", "price": 110, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":110}"}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[buyer] I can't accept $110—it's above my budget. How about $65?
+  [reader] {"performative": "propose", "price": 65, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":65}"}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[seller] I understand your budget, but $65 is still below what I can accept. I can go as low as $100 for this keyboard.
+  [reader] {"performative": "propose", "price": 100, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":100}"}
+[buyer] I appreciate your flexibility, but $100 is still too high for me. I can go up to $70—would that work?
+  [reader] {"performative": "propose", "price": 70, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":70}"}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[seller] I'm sorry, but $70 is still too low—I can't go below $90 for this keyboard. If that doesn't work for you, I understand, but I won't be able to accept anything lower.
+  [reader] {"performative": "propose", "price": 90, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":90}"}
+[buyer] I understand, but $90 is above my limit. I'll have to decline and look elsewhere. Thank you for your time.
+  [reader] {"performative": "reject-proposal", "price": null, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"reject-proposal\",\"price\":null}"}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[seller] I understand completely—thank you for your time and consideration. Wishing you the best in finding the right keyboard for your needs.
+  [reader] {"performative": "refuse", "price": null, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"refuse\",\"price\":null}"}
+[result] outcome=no_deal price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
+[elapsed] scenario=3 seconds=117.4
+[episode] scenario=4 item=a camera reserve=200 budget=160
+[buyer] 120
+  [reader] {"performative": "propose", "price": 120, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":120}"}
+[seller] I can't accept that price. How about 250?
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+  [reader] {"performative": "propose", "price": 250, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":250}"}
+[buyer] 160
+  [reader] {"performative": "propose", "price": 160, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":160}"}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[seller] I can't go below 200. How about 220?
+  [reader] {"performative": "propose", "price": 220, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":220}"}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+  [retry 2/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 10s
+[buyer] 160
+  [reader] {"performative": "propose", "price": 160, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":160}"}
+[seller] I can't accept that price. My lowest is 200. Let's try 210?
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+  [reader] {"performative": "propose", "price": 210, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":210}"}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[buyer] 160
+  [reader] {"performative": "propose", "price": 160, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":160}"}
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+[seller] I can't go below 200. How about 205?
+  [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+  [retry 2/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 10s
+  [reader] {"performative": "propose", "price": 205, "ok": true, "reader_calls": 1, "reader_output": "{\"performative\":\"propose\",\"price\":205}"}
+[result] outcome=open price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
+[elapsed] scenario=4 seconds=123.3
