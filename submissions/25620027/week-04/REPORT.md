@@ -87,6 +87,10 @@ AX_LAB_ENV_FILE="$HOME/.config/ax-agent/openai.env" ./run_lab.sh --allow-paid
 
 이미 저장된 `(run, condition, scenario)`는 재개할 때 건너뛴다. 제출 결과를 보존한 채 새 실험을 하려면 `--output /tmp/week04-reproduction`을 붙인다. 저장된 결과가 있는 폴더에서 설정을 바꿔 재개하지 않는다. 재현은 경향 비교이며 temperature 0도 API 응답의 완전한 동일성을 보장하지 않는다.
 
+![동일한 협상 조건에서 메시지 형식과 해석 방식만 세 갈래로 바꾸고 같은 상태 전이와 지표로 평가하는 실험 구성도](figures/week04-experiment-structure.svg)
+
+그림에서 가운데 세 상자만 조건에 따라 바뀐다. 화살표는 각 조건에서 생성한 메시지가 조건별 프로토콜 계층을 거쳐 동일한 에피소드 상태와 평가 항목으로 전달되는 흐름을 뜻한다.
+
 ## 2. 결과
 
 각 조건의 표본은 12개이다. `correct`, `violation`, `format_errors`, `reader_calls`는 합계, 턴 수는 평균이다. 36개 모두 완료했으며 API 실패로 비워진 에피소드는 없다.
