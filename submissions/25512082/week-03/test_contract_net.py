@@ -12,10 +12,12 @@ from contract_net import (
     OVERCONFIDENT_INSTRUCTION,
     make_team,
     parse_bid,
+    protocol_fingerprint,
     run_contract_net,
 )
 from run_experiment import (
     HEADER,
+    expected_api_calls,
     is_rate_limit_error,
     last_recorded_run,
     next_log_path,
@@ -141,6 +143,17 @@ class ContractNetTests(unittest.TestCase):
 
         self.assertTrue(is_rate_limit_error(RateLimited()))
         self.assertFalse(is_rate_limit_error(OtherError()))
+
+    def test_protocol_fingerprint_is_stable_and_sensitive(self):
+        tasks = [{"id": 1, "desc": "task", "gold": "A"}]
+        first = protocol_fingerprint(tasks)
+        self.assertEqual(first, protocol_fingerprint(tasks))
+        changed = [{"id": 1, "desc": "changed", "gold": "A"}]
+        self.assertNotEqual(first, protocol_fingerprint(changed))
+
+    def test_expected_call_counts(self):
+        self.assertEqual(expected_api_calls(1, 1, 1), 3)
+        self.assertEqual(expected_api_calls(6, 3, 3), 162)
 
 
 if __name__ == "__main__":

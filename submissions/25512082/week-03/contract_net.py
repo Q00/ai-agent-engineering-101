@@ -7,6 +7,7 @@ model settings, call order, parser, and manager award rule stay fixed.
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 from dataclasses import dataclass
 from typing import Callable
@@ -152,6 +153,31 @@ def make_team(condition: str) -> list[Contractor]:
         )
         for name in ("A", "B", "C")
     ]
+
+
+def protocol_fingerprint(tasks: list[dict]) -> str:
+    """Identify every controlled input used by smoke and final experiments."""
+    protocol = {
+        "provider": PROVIDER,
+        "model": MODEL,
+        "temperature": TEMPERATURE,
+        "max_tokens": MAX_TOKENS,
+        "reasoning_enabled": REASONING_ENABLED,
+        "tasks": tasks,
+        "conditions": CONDITIONS,
+        "baseline_skills": BASELINE_SKILLS,
+        "generalist_skill": GENERALIST_SKILL,
+        "overconfident_instruction": OVERCONFIDENT_INSTRUCTION,
+        "bid_system": BID_SYSTEM,
+        "announcement": ANNOUNCEMENT,
+        "contractor_order": ["A", "B", "C"],
+        "award_rule": "highest confidence; ties use response order",
+        "parser": "strict-whole-response-json-v1",
+    }
+    encoded = json.dumps(
+        protocol, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def parse_bid(raw: str) -> Bid:

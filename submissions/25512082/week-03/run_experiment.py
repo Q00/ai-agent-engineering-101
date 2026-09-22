@@ -21,6 +21,7 @@ from contract_net import (
     Meter,
     OpenRouterChat,
     make_team,
+    protocol_fingerprint,
     run_contract_net,
 )
 
@@ -111,6 +112,15 @@ def is_rate_limit_error(exc: BaseException) -> bool:
     return getattr(response, "status_code", None) == 429
 
 
+def expected_api_calls(task_count: int, condition_count: int, runs: int) -> int:
+    return task_count * 3 * condition_count * runs
+
+
+def smoke_pass_path(base: Path, tasks: list[dict]) -> Path:
+    fingerprint = protocol_fingerprint(tasks)
+    return base / "smoke_logs" / f"smoke-pass-{fingerprint}.json"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--runs", type=int, default=3)
@@ -123,6 +133,11 @@ def main() -> None:
 
     base = Path(__file__).resolve().parent
     tasks = load_tasks(base / "tasks.json")
+    pass_path = smoke_pass_path(base, tasks)
+    if not pass_path.is_file():
+        raise SystemExit(
+            "matching smoke test has not passed; run smoke_test.py before the experiment"
+        )
     log_dir = base / "logs"
     log_dir.mkdir(exist_ok=True)
 
