@@ -619,7 +619,7 @@ column that recorded the purchase read zero.
 FIPA's Communicative Act Library defines 22 acts. The lab uses four and says
 so: *"질문에 해당하는 query-ref와 cfp는 뺐다."* In the first run every free
 episode opened with a question, so this extension restores exactly those two
-— `query-ref` (SC00037J 3.14) and `cfp` (3.2) — in the role prompt, in the
+— `query-ref` (SC00037J 3.16) and `cfp` (3.4) — in the role prompt, in the
 three format paragraphs and in the reader, and changes nothing else.
 
 | condition | vocabulary | correct | deal possible | impossible | deal / no_deal / open | violations | mean turns | reader calls |

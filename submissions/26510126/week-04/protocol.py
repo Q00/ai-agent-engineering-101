@@ -22,7 +22,7 @@ import prompts
 ACTS = ("propose", "accept-proposal", "reject-proposal", "refuse")
 # Extension 2. FIPA's Communicative Act Library has 22; the lab took four and
 # said so. These are the two the agents kept reaching for: query-ref is
-# SC00037J 3.14, cfp is 3.2. Neither ends an episode and neither carries a
+# SC00037J 3.16, cfp is 3.4. Neither ends an episode and neither carries a
 # price, so the episode loop needs no new branch for them.
 ACTS_6 = ACTS + ("query-ref", "cfp")
 

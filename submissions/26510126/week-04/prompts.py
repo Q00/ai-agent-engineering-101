@@ -119,7 +119,7 @@ is propose, and null for every other act."""
 # FIPA's Communicative Act Library has 22 acts. The lab uses four and says so:
 # "질문에 해당하는 query-ref와 cfp는 뺐다." In the first run 12 of 12 free
 # opening messages were questions, so this variant puts those two back and
-# changes nothing else. query-ref is SC00037J 3.14, cfp is 3.2.
+# changes nothing else. query-ref is SC00037J 3.16, cfp is 3.4.
 
 ROLE_6 = """You are the {role} in a one-to-one price negotiation over {item}.
 
