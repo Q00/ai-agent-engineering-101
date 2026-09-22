@@ -112,7 +112,7 @@ class OpenRouterClient:
             raise ConfigurationError("response_format requires provider.require_parameters=true")
         rate_policy = rate_limit_policy(self.config)
         payload = {key: self.config[key] for key in
-                   ("model", "temperature", "reasoning", "provider")}
+                   ("model", "temperature", "top_p", "reasoning", "provider")}
         # Omit an unset token limit; never substitute an application default.
         # Explicit limits remain supported for replaying historical configurations.
         if "max_tokens" in self.config:

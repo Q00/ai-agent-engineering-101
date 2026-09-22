@@ -76,13 +76,16 @@ class PilotTests(unittest.TestCase):
 
         config = json.loads((smoke.HERE / "config.json").read_text())
         client = OpenRouterClient("test-placeholder", config, opener=opener)
-        for fmt in (smoke.TEXT_FORMAT, smoke.READER_FORMAT):
-            client.complete([], lambda *a, **kw: None, "test", "buyer", response_format=fmt)
+        for role, fmt in (("buyer", smoke.TEXT_FORMAT), ("seller", smoke.TEXT_FORMAT),
+                          ("reader", smoke.READER_FORMAT)):
+            client.complete([], lambda *a, **kw: None, "test", role, response_format=fmt)
             self.assertEqual(payloads[-1]["response_format"], fmt)
+            self.assertEqual(payloads[-1]["temperature"], 1.0)
+            self.assertEqual(payloads[-1]["top_p"], 0.95)
             self.assertTrue(payloads[-1]["provider"]["require_parameters"])
         with self.assertRaises(ConfigurationError):
             client.complete([], lambda *a, **kw: None, "test", "buyer")
-        self.assertEqual(len(payloads), 2)
+        self.assertEqual(len(payloads), 3)
 
 
 if __name__ == "__main__":
