@@ -1,0 +1,22 @@
+{
+  "model": "deepseek/deepseek-v4.1-flash",
+  "temperature": 0,
+  "reasoning": {"enabled": false},
+  "provider": {
+    "only": ["fireworks"],
+    "allow_fallbacks": false,
+    "require_parameters": true,
+    "max_price": {"prompt": 0.3, "completion": 1.2}
+  },
+  "timeout_seconds": 30,
+  "response_deadline_seconds": 90,
+  "max_attempts": 2,
+  "retry_delay_seconds": 2,
+  "rate_limit_retry": {
+    "max_attempts": 3,
+    "initial_delay_seconds": 5,
+    "max_delay_seconds": 15,
+    "max_wait_seconds": 30
+  },
+  "max_http_requests": 24
+}
