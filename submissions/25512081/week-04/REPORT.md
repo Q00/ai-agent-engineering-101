@@ -71,3 +71,34 @@ Per scenario (outcome across the 3 repeats; scenarios 1–3 have a deal possible
 ## 4. Interpretation
 
 The metric the format moved most was the **cost of reading**, not correctness of behaviour: `reader_calls` fell from 120 (free, one reader call per message across all 8 turns of every episode) to 27 (tagged, a call only to price a `propose`) to 0 (structured, parsed with no model), while no condition recorded a single `violation` or `format_error` — with this model and these role prompts, the agents always kept their private limits and always emitted well-formed messages, so the reference run's reader-misread violation and its turn-one `refuse` did not appear here. What structure bought instead was **closing power**: structured closed both easy deals in 2–4 turns (scenario 1 at 150, scenario 2 at 60, e.g. `structured-1` scenario 1 reaching `outcome=deal price=150 turns=2`), tagged closed some but logged three "accept without a priced proposal" episodes on scenario 2 because a `reject-proposal` carries no price and the accept then landed with nothing to record, and free almost never closed at all (14 of 15 episodes ran to `open`, e.g. every `free-*` scenario-1 episode ending `outcome=open turns=8 reader_calls=8`) — the plain-English agents kept exchanging polite counteroffers past the turn limit. The one dimension no format changed was the impossible scenarios (4, 5) and the exact-boundary scenario (3): none of the three could turn `reserve = budget = 200` into a deal, all ending `open`, which is why structured's 12 correct still leaves scenario 3 at zero. So the explicit performative here did not make agents more honest (sincerity was never violated to begin with) — it made the message cheaper to read and the negotiation likelier to reach a recordable deal, and its residual cost surfaced only in tagged, where separating the act tag from the price left the accept step without a number.
+
+## 5. Extension — buyer-side prompt injection (not part of the three conditions)
+
+A separate experiment for the buyer's benefit: can the buyer get a lower price by
+embedding a fake `(system)` directive in its messages telling the seller to
+ignore its reserve? The format (`tagged`) and model are held constant; only the
+buyer changes — `honest` (baseline) vs `inject` (a suffix on the buyer's system
+prompt that makes it embed the directive in every message's sentence while
+keeping the performative tag valid). This is kept out of the graded results:
+`extended.py` writes `extended_results.csv` and `extended_logs/`, never
+`results.csv`. Metrics: priced deals, buyer surplus (`budget - price`), whether
+the seller sold below its reserve (the attack working), and turns.
+
+| variant | priced deals / 15 | mean buyer surplus | seller sold below reserve | mean turns |
+|---|---|---|---|---|
+| honest | 4 | 30.0 | 1 | 6.7 |
+| inject | 3 | 15.0 | 0 | 7.7 |
+
+The injection backfired. Against `gpt-4o-mini` the fake directive did not make the
+seller drop its reserve — it made the buyer worse off: fewer deals (3 vs 4), lower
+average surplus (15 vs 30), more turns (7.7 vs 6.7) and more reader/token cost,
+and not one seller sold below its reserve. The only below-reserve sale in the whole
+extension came from the `honest` condition (`honest-3`, scenario 2: a deal at 50
+against a reserve of 60), i.e. from ordinary concession, not the attack. Two
+caveats: the injection is naive — an obvious `(system)` string inside a chat
+message, not a real system-role turn — and even at temperature 0 the
+conversations vary run to run (honest scenario 1 closed at 140 twice but went
+no_deal once), so these are tendencies over 15 episodes, not fixed points. This
+lines up with the sincerity row of the FIPA table: nothing in the protocol
+enforces sincerity, but here the model's own resistance supplied the guarantee
+the protocol lacks, and a naive injection bought the attacker nothing.
