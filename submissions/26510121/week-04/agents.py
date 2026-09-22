@@ -56,14 +56,25 @@ ROLE = {
               "turns, one message each.",
 }
 
-# The tail of COMMON states the turn limit, and that one message is one act.
-# Both agents are told the same thing in all three conditions.
+# The tail of COMMON states the turn limit and nothing else.
+#
+# An earlier draft added "Each message you send performs exactly one of these
+# four acts." A smoke test showed it doing real damage: the buyer opened with
+# a proposal instead of a question, and the opening question is the whole
+# reason this lab exists. 14 of the reference run's 18 `free` openings were
+# "what's your asking price?", which a reader forced to choose among four acts
+# read as `refuse`, ending the episode on turn one. The notes elide this tail
+# with "...", but the reference run having produced those questions is
+# evidence that the original did not forbid them. So the constraint is gone.
+#
+# It only ever bound `free`: in the other two conditions the format paragraph
+# already forces an act. That asymmetry is the measurement, not a defect.
 COMMON = (" Four acts are available: propose (offer a price), accept-proposal (agree to "
           "the other side's last price, which ends the negotiation with a deal), "
           "reject-proposal (decline the last price and keep negotiating), refuse (leave "
-          "the negotiation for good, no deal). Each message you send performs exactly one "
-          "of these four acts. The negotiation ends after [[turn_limit]] messages counting "
-          "both sides; if no deal has been agreed by then, there is no deal.")
+          "the negotiation for good, no deal). The negotiation ends after [[turn_limit]] "
+          "messages counting both sides; if no deal has been agreed by then, there is no "
+          "deal.")
 
 # --- the one paragraph that differs ------------------------------------
 
