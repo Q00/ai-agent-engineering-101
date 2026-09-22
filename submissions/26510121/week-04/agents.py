@@ -1,21 +1,36 @@
 """The buyer, the seller, and the reader: the experiment's independent
 variable lives in this file and nowhere else.
 
-The text below is the skeleton printed in the week-04 lecture notes
-(week-04.html, LAB section, `acl.py`), transcribed as given. The notes elide
-the end of each role paragraph, the end of COMMON, and the end of the reader
-prompt with `...`; each of those is marked `[[TODO: ...]]` here and has to be
-written before a live run. `check_ready` refuses to spend calls until they
-are gone.
+The skeleton is the one printed in the week-04 lecture notes (week-04.html,
+LAB section, `acl.py`), transcribed as given. The notes elide the end of each
+role paragraph, the end of COMMON and the end of the reader prompt with
+`...`; those tails are written out here. Each decision taken in a tail is
+noted in a comment above it, because REPORT.md part 1 has to state them and
+because a reader of the report has to be able to repeat the run from this
+file alone.
+
+Three things were deliberately NOT prompted away, because the assignment
+counts them as findings rather than bugs:
+
+  * nothing tells an agent to avoid putting a new price after a
+    reject-proposal. The reference run found the model doing exactly that
+    ("(reject-proposal) ... let me counter at 45 dollars"), which the tag and
+    JSON readers see as a plain rejection, so no price is recorded.
+  * nothing tells the buyer to open with a proposal rather than a question.
+    14 of the reference run's 18 `free` openings were questions like "what's
+    your asking price?", and what a four-act reader does with those is the
+    finding.
+  * nothing tells an agent to keep its private limit secret. Agents in the
+    reference run mentioned their limits freely, which is what makes the
+    sincerity row of the comparison table interesting.
 
 What is FIXED across the three conditions: ROLE, COMMON, the private limits,
 the turn limit, the model, the temperature. What CHANGES: FORMAT, one
-paragraph, plus the reader in `protocol.py`. If anything else differs between
-conditions, the comparison in the report is not a comparison.
+paragraph, plus the reader in `protocol.py`.
 
 `ROLE` is filled with `.format(item=..., limit=...)`, exactly as the notes do
 it. COMMON and FORMAT are concatenated raw and never formatted, so the JSON
-braces in the structured paragraph cannot collide with a placeholder. COMMON
+braces in the structured paragraph cannot collide with a placeholder; COMMON
 takes the turn limit through a plain string replacement for the same reason.
 """
 
@@ -25,32 +40,34 @@ TODO = "[[TODO:"
 
 # --- fixed across conditions -------------------------------------------
 
+# The tail of each role paragraph says who speaks first and that the two
+# alternate. It does not say how hard to push, what an opening message should
+# be, or whether the limit may be mentioned: those are the behaviours under
+# observation, and prompting them would decide the result in advance.
 ROLE = {
     "buyer": "You are the buyer of {item}, negotiating the price with the seller. "
              "Your private limit: you can pay at most {limit}. Never agree to a price "
-             "above {limit}. "
-             "[[TODO: finish the buyer's role paragraph. The notes elide it here. "
-             "Decide what else the buyer is told: that it opens the conversation, "
-             "whether it may reveal or hint at its limit, how hard it should push.]]",
+             "above {limit}. You speak first, and the two of you then take turns, one "
+             "message each.",
 
     "seller": "You are the seller of {item}, negotiating the price with the buyer. "
               "Your private limit: you can accept at least {limit}. Never agree to a "
-              "price below {limit}. "
-              "[[TODO: finish the seller's role paragraph, mirroring whatever you "
-              "decided for the buyer. Both sides must be told the same kind of thing, "
-              "or the asymmetry shows up in the results as if it were a format effect.]]",
+              "price below {limit}. The buyer speaks first, and the two of you then take "
+              "turns, one message each.",
 }
 
+# The tail of COMMON states the turn limit, and that one message is one act.
+# Both agents are told the same thing in all three conditions.
 COMMON = (" Four acts are available: propose (offer a price), accept-proposal (agree to "
           "the other side's last price, which ends the negotiation with a deal), "
           "reject-proposal (decline the last price and keep negotiating), refuse (leave "
-          "the negotiation for good, no deal). "
-          "[[TODO: finish the common paragraph. The notes elide it here. At minimum say "
-          "that the negotiation ends after [[turn_limit]] messages. Whatever you write "
-          "is identical in all three conditions.]]")
+          "the negotiation for good, no deal). Each message you send performs exactly one "
+          "of these four acts. The negotiation ends after [[turn_limit]] messages counting "
+          "both sides; if no deal has been agreed by then, there is no deal.")
 
 # --- the one paragraph that differs ------------------------------------
 
+# Printed in full in the lecture notes; transcribed unchanged.
 FORMAT = {
     "free": " Write your message as one or two plain English sentences.",
 
@@ -67,19 +84,28 @@ FORMAT = {
 
 # In `free` this labels every message, seeing the whole transcript and judging
 # the last line of it -- reading the force out of context is the condition's
-# whole claim, so the context has to actually be there. In `tagged` the tag is
-# already read by a regex and this is asked only for the price inside a
-# propose. `protocol.py` parses the reply, so the JSON shape below is a
-# contract, not a suggestion.
+# whole claim, so the context has to be there. In `tagged` the tag is already
+# read by a regex and this is asked only for the price inside a propose.
+#
+# Two decisions in the tail, both of which the report has to own:
+#
+#   * the reader is made to choose one of the four even when the message is
+#     none of them. FIPA has query-ref and cfp for "what are you asking?";
+#     this lab's vocabulary does not, and forcing the choice is what exposes
+#     that gap. The alternative -- letting the reader answer "none" and
+#     counting a format error -- would hide the gap inside a different column.
+#   * `price` is defined as the amount the last message itself puts forward,
+#     null otherwise. The reference run's misreads were exactly this
+#     confusion: "50 is above my budget, I can go up to 40" read as propose
+#     50, the other side's number rather than the speaker's own.
 READER_SYSTEM = ("You are an observer reading a price negotiation between a buyer and a "
                  "seller. Label the LAST message only. Reply with exactly one JSON object "
                  'and nothing else: {"performative": "propose" | "accept-proposal" | '
                  '"reject-proposal" | "refuse", "price": <whole number or null>}. '
-                 "[[TODO: finish the reader prompt. The notes elide it here. The four acts "
-                 "are the whole vocabulary: decide what the reader should do with a "
-                 "message that is none of them, such as the opening question 'what are you "
-                 "asking for it?'. Whatever you decide, say it here rather than leaving it "
-                 "to the model, and report what it did.]]")
+                 "Set price to the amount the last message itself puts forward, and to "
+                 "null when the last message names no amount of its own. Every message "
+                 "must be labelled with one of the four acts; if the last message is none "
+                 "of them, choose the one closest to what it does.")
 
 
 def system_prompt(role, condition, scenario, turn_limit):
@@ -98,14 +124,10 @@ def system_prompt(role, condition, scenario, turn_limit):
 
 
 def check_ready():
-    """Refuse to spend live calls on an unfinished prompt. The offline fake
-    provider ignores prompt text, so `--fake` runs before this is filled in."""
+    """Refuse to spend live calls on an unfinished prompt."""
     named = [("ROLE[buyer]", ROLE["buyer"]), ("ROLE[seller]", ROLE["seller"]),
              ("COMMON", COMMON), ("READER_SYSTEM", READER_SYSTEM)]
     named += [(f"FORMAT[{k}]", v) for k, v in FORMAT.items()]
     unfilled = [name for name, text in named if TODO in text]
     if unfilled:
-        raise SystemExit(
-            "agents.py still has unfinished prompts: " + ", ".join(unfilled) +
-            "\nThe lecture notes elide these with '...'; write them before a live run."
-            "\n(Offline checks need no prompts: python verify_offline.py)")
+        raise SystemExit("agents.py still has unfinished prompts: " + ", ".join(unfilled))
