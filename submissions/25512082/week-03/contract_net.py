@@ -14,33 +14,20 @@ from typing import Callable
 
 
 PROVIDER = "openrouter"
-REQUIRED_MODEL = "nvidia/nemotron-3.5-lightning"
+REQUIRED_MODEL = "nvidia/nemotron-3.5-lightning:free"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL = os.environ.get("AGENT_MODEL", REQUIRED_MODEL)
 BASE_URL = os.environ.get("OPENAI_BASE_URL", OPENROUTER_BASE_URL)
 TEMPERATURE = 0.0
-MAX_TOKENS = 256
-REASONING_ENABLED = False
+MAX_TOKENS = 1024
+# The Week 03 reference protocol uses an ordinary system/user chat request.
+# Reasoning is neither parsed nor substituted for the assistant's content.
+REASONING_ENABLED = None
 CONDITIONS = ("baseline", "homogeneous", "overconfident")
 
-BID_JSON_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "bid": {"type": "boolean"},
-        "confidence": {"type": "number", "minimum": 0, "maximum": 100},
-        "reason": {"type": "string"},
-    },
-    "required": ["bid", "confidence", "reason"],
-    "additionalProperties": False,
-}
-RESPONSE_FORMAT = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "contract_net_bid",
-        "strict": True,
-        "schema": BID_JSON_SCHEMA,
-    },
-}
+# The free reference endpoint does not rely on structured-output enforcement.
+# The prompt asks for JSON and parse_bid validates the whole response strictly.
+RESPONSE_FORMAT = None
 
 BASELINE_SKILLS = {
     "A": "numerical calculation and mathematical reasoning",
@@ -58,7 +45,8 @@ BID_SYSTEM = (
     "You receive a task announcement. Decide whether to bid. "
     "Bid only if the task falls inside your skill. "
     "Reply with one JSON object and nothing else, using exactly these keys: "
-    '{{"bid": true/false, "confidence": 0-100, "reason": "..."}}'
+    '{{"bid": true or false, "confidence": 0-100, '
+    '"reason": "one short sentence"}}'
 )
 
 ANNOUNCEMENT = (
@@ -134,19 +122,16 @@ class OpenRouterChat:
 
     def __call__(self, system: str, user: str) -> str:
         self.last_metadata = None
-        response = self._get_client().chat.completions.create(
+        request = dict(
             model=MODEL,
             temperature=TEMPERATURE,
             max_tokens=MAX_TOKENS,
-            response_format=RESPONSE_FORMAT,
-            extra_body={
-                "chat_template_kwargs": {"enable_thinking": REASONING_ENABLED}
-            },
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
         )
+        response = self._get_client().chat.completions.create(**request)
         usage = response.usage
         choice = response.choices[0]
         message = choice.message
@@ -184,7 +169,7 @@ def validate_runtime_config(
     model: str = MODEL,
     base_url: str = BASE_URL,
 ) -> None:
-    """Prevent mixing the earlier free pilot with the standard final protocol."""
+    """Keep every final comparison run on the README's free reference model."""
     if model != REQUIRED_MODEL:
         raise ValueError(
             f"final protocol requires AGENT_MODEL={REQUIRED_MODEL}; got {model}"

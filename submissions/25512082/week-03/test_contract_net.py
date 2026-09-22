@@ -175,14 +175,14 @@ class ContractNetTests(unittest.TestCase):
         self.assertEqual(expected_api_calls(1, 1, 1), 3)
         self.assertEqual(expected_api_calls(6, 3, 3), 162)
 
-    def test_standard_endpoint_and_json_schema_are_in_request(self):
+    def test_free_reference_request_uses_prompt_json_contract(self):
         captured = {}
 
         class FakeCompletions:
             def create(self, **kwargs):
                 captured.update(kwargs)
                 return SimpleNamespace(
-                    model="nvidia/nemotron-3.5-lightning",
+                    model="nvidia/nemotron-3.5-lightning:free",
                     usage=SimpleNamespace(
                         prompt_tokens=10,
                         completion_tokens=5,
@@ -213,11 +213,8 @@ class ContractNetTests(unittest.TestCase):
         self.assertEqual(captured["model"], REQUIRED_MODEL)
         self.assertEqual(captured["temperature"], TEMPERATURE)
         self.assertEqual(captured["max_tokens"], MAX_TOKENS)
-        self.assertEqual(captured["response_format"], RESPONSE_FORMAT)
-        self.assertEqual(
-            captured["extra_body"],
-            {"chat_template_kwargs": {"enable_thinking": REASONING_ENABLED}},
-        )
+        self.assertNotIn("response_format", captured)
+        self.assertNotIn("extra_body", captured)
         self.assertTrue(parse_bid(raw).bid)
         self.assertEqual(meter.calls, 1)
         self.assertEqual(
@@ -231,14 +228,14 @@ class ContractNetTests(unittest.TestCase):
                 "prompt_tokens": 10,
                 "completion_tokens": 5,
                 "total_tokens": 15,
-                "actual_model": "nvidia/nemotron-3.5-lightning",
+                "actual_model": "nvidia/nemotron-3.5-lightning:free",
                 "request_response_format": RESPONSE_FORMAT,
             },
         )
 
-    def test_free_endpoint_cannot_mix_into_final_protocol(self):
+    def test_standard_endpoint_cannot_mix_into_final_protocol(self):
         with self.assertRaises(ValueError):
-            validate_runtime_config(model=REQUIRED_MODEL + ":free")
+            validate_runtime_config(model=REQUIRED_MODEL.removesuffix(":free"))
         with self.assertRaises(ValueError):
             validate_runtime_config(base_url="https://example.invalid/v1")
 
