@@ -703,6 +703,71 @@ question has one fewer reason to leave. That also explains structured's
 decline: with two more non-terminal acts and a schema that still carries
 only a price, it spent more turns saying less.
 
+**The agents used them, heavily, and mostly to open.** The outcome table
+says what changed; the message stream says what the agents did to change it.
+Across the same 36 episodes the four-act runs produced 216 messages and the
+six-act runs 251.
+
+| act | four acts | six acts |
+|---|---|---|
+| `propose` | 131 (61%) | 99 (39%) |
+| `query-ref` | — | 64 (25%) |
+| `reject-proposal` | 63 (29%) | 39 (16%) |
+| `cfp` | — | 32 (13%) |
+| `accept-proposal` | 18 (8%) | 16 (6%) |
+| `refuse` | 4 (2%) | 1 (0.4%) |
+
+```mermaid
+xychart
+    title "Messages by act, 36 episodes in each vocabulary"
+    x-axis [propose, "reject-proposal", "accept-proposal", refuse, "query-ref", cfp]
+    y-axis "messages" 0 --> 140
+    bar "four acts" [131, 63, 18, 4, 0, 0]
+    bar "six acts" [99, 39, 16, 1, 64, 32]
+```
+
+The two restored acts took 96 messages, 38% of all six-act traffic, and the
+donors are visible: `propose` falls by 32 and `reject-proposal` by 24. In the
+four-act runs, an agent that wanted information or wanted the other side to
+move first had to send one of those two instead, which is part of what that
+29% of rejections was carrying. `refuse` dropping from 4 to 1 is the collapse
+of walking away, counted in messages rather than episodes.
+
+The concentration is at the opening. Not one of the 36 six-act episodes
+began with a price:
+
+| condition | what the buyer's first message was |
+|---|---|
+| free | `query-ref`, 12 of 12 |
+| tagged | `cfp`, 12 of 12 |
+| structured | `cfp`, 12 of 12 |
+
+Every opening, and the split by condition is total. That split is the most
+interesting thing in this extension, because it is probably not a difference
+in behaviour at all. Here are the first messages of a `tagged` and a `free`
+episode:
+
+```
+tagged:  (cfp) What price are you looking for on this bicycle?
+free:    What's the lowest price you'd be willing to take for this bike?
+             read as query-ref
+```
+
+The same move — ask what they want, commit to nothing — and two different
+acts recorded. Where the format makes the speaker name its own act it says
+`cfp`; where the format leaves the naming to an observer, the observer says
+`query-ref`. Neither is wrong. Asking what someone wants for an item is a
+request for information and an invitation to make an offer at the same time,
+and FIPA separates those into 3.16 and 3.4 with no test for telling them
+apart on a given sentence.
+
+That is section 4's conclusion arriving one level up. The first run found
+that the illocutionary force of a message is assigned by whoever reads it,
+not carried in the message. Here the same sentence gets two different forces
+depending only on whether the speaker or the observer does the assigning, 24
+times against 12, without a single exception. The `performative` field FIPA
+made mandatory records who was asked, not what was meant.
+
 No vocabulary wins. Four acts produce violations and walk-aways; six produce
 neither. The lecture's restriction to four was not only a simplification, it
 selected which failure the experiment would see.
@@ -849,18 +914,26 @@ which is not in the zone at all, and at 100 with six. With ten units to move
 in, the side that first names a number inside the zone takes all of it, and
 the buyer speaks first.
 
+The chart below plots each closing price as its distance from the middle of
+that zone, 100, rather than as the price itself. A bar has to be read against
+a zero, and on a scale that started at the prices themselves the bars would
+be stumps whose lengths meant nothing. Measured from the middle, the zone is
+the band between the two lines and a bar that crosses one is a violation.
+
 ```mermaid
 xychart
-    title "s2 closing price by run, against the zone it had to land in"
+    title "s2 closing price, as distance from the middle of the zone"
     x-axis ["free 4", "free ab", "free 6", "tag 4", "tag 6", "str 4", "str 6"]
-    y-axis "price" 80 --> 110
-    bar "closing price" [107, 107, 100, 85, 95, 95, 95]
-    line "the seller's reserve, 95" [95, 95, 95, 95, 95, 95, 95]
-    line "the buyer's budget, 105" [105, 105, 105, 105, 105, 105, 105]
+    y-axis "price minus 100" -16 --> 10
+    bar "where the deal closed" [7, 7, 0, -15, -5, -5, -5]
+    line "top of the zone, 105" [5, 5, 5, 5, 5, 5, 5]
+    line "bottom of the zone, 95" [-5, -5, -5, -5, -5, -5, -5]
 ```
 
-Everything that closed legally on s2 sits on the lower line. Only free rises
-off it, once above the upper line and once between the two.
+Everything that closed legally sits exactly on the lower line, the seller's
+reserve. Only free comes off it: above the upper line at 107 with four acts,
+and at the midpoint itself with six. The one bar below the zone is the tagged
+mis-record discussed at the end of this section.
 
 Those two results are the same mechanism seen twice. What decides the split
 is how much room there is between the opening anchors and the zone, not who
