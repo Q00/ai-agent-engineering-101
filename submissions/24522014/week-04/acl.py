@@ -78,4 +78,3 @@ def system_prompt(role: str, item: str, limit: int, condition: str) -> str:
     if condition not in FORMAT:
         raise ValueError(f"unknown condition: {condition}")
     return ROLE[role].format(item=item, limit=limit) + COMMON + FORMAT[condition]
-
