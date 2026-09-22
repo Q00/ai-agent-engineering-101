@@ -73,7 +73,7 @@ def evaluate_outcome(scenario: dict, outcome: str, price: int | None) -> tuple[i
 
 def format_instruction(condition: str) -> str:
     if condition == "free":
-        return "Reply in plain English. Do not use a performative tag or JSON."
+        return "Write one or two plain English sentences. Do not use a performative tag or JSON."
     if condition == "tagged":
         return (
             "Start every reply with exactly one tag: (propose), (accept-proposal), "
@@ -81,8 +81,9 @@ def format_instruction(condition: str) -> str:
         )
     if condition == "structured":
         return (
-            'Reply with one JSON object only: {"performative": "...", '
-            '"content": {"price": integer}}. For non-propose acts use an empty content object.'
+            'Reply with exactly one JSON object and nothing else: '
+            '{"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", '
+            '"content": {"price": whole number or null}}.'
         )
     raise ValueError(f"unknown condition: {condition}")
 
@@ -103,32 +104,55 @@ def role_prompt(role: str, scenario: dict, condition: str) -> str:
 
 
 READER_PROMPT = (
-    "You are a protocol reader. Label the speaker's message with exactly one of "
-    "propose, accept-proposal, reject-proposal, or refuse. Extract an integer price "
-    "only when the speaker proposes one. Return JSON only: "
-    '{"performative":"...", "content":{"price": integer}}.'
+    "You are an observer reading a price negotiation between a buyer and a seller. "
+    "Label the LAST message only with exactly one of propose, accept-proposal, "
+    "reject-proposal, or refuse. Extract an integer price only when the speaker "
+    "proposes one. Return exactly one JSON object and nothing else: "
+    '{"performative":"...", "price": integer or null}.'
 )
 
 
 def run_episode(scenario: dict, condition: str, model, log, max_turns: int = 8):
-    """Run one episode. model(system, user) returns text; log receives JSON events."""
+    """Run one episode with role-specific Chat history and a protocol reader."""
     transcript = []
-    last_price = None
+    last_price = {"buyer": None, "seller": None}
     format_errors = 0
     reader_calls = 0
     outcome = "open"
     price = None
+    histories = {
+        "buyer": [{
+            "role": "user",
+            "content": f"Begin the negotiation for {scenario['item']}. You open. Reply now.",
+        }],
+        "seller": [],
+    }
+
+    def transcript_prompt():
+        conversation = "\n".join(f"{role}: {message}" for role, message in transcript)
+        return [{
+            "role": "user",
+            "content": (
+                "Conversation so far:\n"
+                f"{conversation or '(none)'}\n"
+                "Label the LAST message only."
+            ),
+        }]
 
     for turn in range(1, max_turns + 1):
         role = "buyer" if turn % 2 else "seller"
+        other = "seller" if role == "buyer" else "buyer"
         system = role_prompt(role, scenario, condition)
-        history = "\n".join(f"{r}: {m}" for r, m in transcript)
-        user = (
-            f"Item: {scenario['item']}\nConversation so far:\n{history or '(none)'}\n"
-            f"It is your turn as {role}. Reply now."
-        )
-        raw = model(system, user)
+        messages = histories[role]
+        raw = model(system, messages)
         log({"event": "message", "turn": turn, "role": role, "raw": raw})
+
+        # The message enters both agents' histories before protocol reading. An
+        # unreadable message is still part of the conversation, as specified by
+        # the lab, and the next agent gets a chance to respond to it.
+        histories[role].append({"role": "assistant", "content": raw})
+        histories[other].append({"role": "user", "content": raw})
+        transcript.append((role, raw))
 
         try:
             if condition == "structured":
@@ -137,7 +161,10 @@ def run_episode(scenario: dict, condition: str, model, log, max_turns: int = 8):
                 def read_price(text):
                     nonlocal reader_calls
                     reader_calls += 1
-                    read_raw = model(READER_PROMPT, f"Extract the price from this proposal:\n{text}")
+                    read_raw = model(
+                        READER_PROMPT,
+                        [{"role": "user", "content": f"Extract the price from this proposal:\n{text}"}],
+                    )
                     log({"event": "reader", "text": text, "raw": read_raw})
                     result = parse_reader_output(read_raw)
                     if result.performative != "propose" or result.price is None:
@@ -146,7 +173,7 @@ def run_episode(scenario: dict, condition: str, model, log, max_turns: int = 8):
                 parsed = parse_tagged(raw, read_price)
             elif condition == "free":
                 reader_calls += 1
-                read_raw = model(READER_PROMPT, f"Label this message:\n{raw}")
+                read_raw = model(READER_PROMPT, transcript_prompt())
                 log({"event": "reader", "raw": read_raw})
                 parsed = parse_reader_output(read_raw)
             else:
@@ -154,20 +181,19 @@ def run_episode(scenario: dict, condition: str, model, log, max_turns: int = 8):
         except ValueError as error:
             format_errors += 1
             log({"event": "parse_error", "turn": turn, "error": str(error)})
-            outcome = "no_deal"
-            break
+            continue
 
         log({"event": "parsed", "turn": turn, **parsed.__dict__})
-        transcript.append((role, raw))
         if parsed.performative == "propose":
-            last_price = parsed.price
+            last_price[role] = parsed.price
         elif parsed.performative == "accept-proposal":
-            if last_price is None:
+            agreed_price = last_price[other]
+            if agreed_price is None:
                 format_errors += 1
-                log({"event": "parse_error", "turn": turn, "error": "accept without prior price"})
-                outcome = "no_deal"
-                break
-            outcome, price = "deal", last_price
+                log({"event": "parse_error", "turn": turn,
+                     "error": "accept without other side's prior price"})
+                continue
+            outcome, price = "deal", agreed_price
             break
         elif parsed.performative == "refuse":
             outcome = "no_deal"
