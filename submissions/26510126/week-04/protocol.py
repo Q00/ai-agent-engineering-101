@@ -20,6 +20,11 @@ from dataclasses import dataclass
 import prompts
 
 ACTS = ("propose", "accept-proposal", "reject-proposal", "refuse")
+# Extension 2. FIPA's Communicative Act Library has 22; the lab took four and
+# said so. These are the two the agents kept reaching for: query-ref is
+# SC00037J 3.14, cfp is 3.2. Neither ends an episode and neither carries a
+# price, so the episode loop needs no new branch for them.
+ACTS_6 = ACTS + ("query-ref", "cfp")
 
 _TAG = re.compile(r"^\s*\(\s*([a-zA-Z-]+)\s*\)")
 
@@ -32,6 +37,11 @@ class Reading:
     ok: bool
     how: str          # for the log: which path produced this reading
     reader_calls: int = 0
+    # Extension 1. The reader was asked and answered that it does not know.
+    # Kept apart from ok=False, which means the layer could not read the
+    # message at all. An abstention is a reading, and counting it as a format
+    # error would hide the thing the extension exists to measure.
+    unclear: bool = False
 
 
 def _first_json_object(text: str):
@@ -88,7 +98,7 @@ def _as_int(value):
     return None
 
 
-def read_structured(text: str) -> Reading:
+def read_structured(text: str, acts=ACTS) -> Reading:
     """A parser and no model call. This is the condition's whole claim."""
     obj = _first_json_object(text)
     if obj is None or not isinstance(obj, dict):
@@ -96,7 +106,7 @@ def read_structured(text: str) -> Reading:
     how = "json" if text.strip().startswith("{") and text.strip().endswith("}") \
         else "json embedded in other text"
     act = obj.get("performative")
-    if act not in ACTS:
+    if act not in acts:
         return Reading(None, None, False, f"{how}, performative={act!r} not an act")
     content = obj.get("content")
     price = _as_int(content.get("price")) if isinstance(content, dict) else None
@@ -105,7 +115,7 @@ def read_structured(text: str) -> Reading:
     return Reading(act, price, True, how)
 
 
-def read_tagged(text: str, meter, chat) -> Reading:
+def read_tagged(text: str, meter, chat, acts=ACTS) -> Reading:
     """A regex for the tag, and the reader only for a proposal's price.
 
     This is the middle of the trilemma: the act is fixed and free, the
@@ -116,8 +126,9 @@ def read_tagged(text: str, meter, chat) -> Reading:
     if not m:
         return Reading(None, None, False, "no leading tag")
     act = m.group(1).lower()
-    if act not in ACTS:
-        return Reading(None, None, False, f"tag ({act}) is not one of the four acts")
+    if act not in acts:
+        return Reading(None, None, False,
+                       f"tag ({act}) is not one of the {len(acts)} acts")
     if act != "propose":
         return Reading(act, None, True, "tag only, no reader call")
     raw = chat(prompts.PRICE_READER, [{"role": "user", "content": text}],
@@ -130,33 +141,45 @@ def read_tagged(text: str, meter, chat) -> Reading:
     return Reading(act, price, True, "tag + reader for price", reader_calls=1)
 
 
-def read_free(history: list, meter, chat) -> Reading:
+def read_free(history: list, meter, chat, acts=ACTS, abstain: bool = False) -> Reading:
     """The reader labels the last message, having seen the whole conversation.
 
-    The reader is given the same four acts the agents have. It has no
-    query-ref and no cfp, so a message that asks a question has to be forced
-    into one of the four. What it does with that is data, not a defect.
+    In the first run the reader is given the same four acts the agents have.
+    It has no query-ref and no cfp, so a message that asks a question has to
+    be forced into one of the four, and the prompt tells it to force one. What
+    it did with that is data, not a defect, and the two extensions take the
+    two ways out of it: let the reader abstain, or give it the missing acts.
     """
     transcript = "\n\n".join(f"{m['who']}: {m['text']}" for m in history)
-    raw = chat(prompts.READER, [{"role": "user", "content": transcript}],
-               meter, kind="reader")
+    vocab = 6 if len(acts) == 6 else 4
+    raw = chat(prompts.reader_prompt(vocab=vocab, abstain=abstain),
+               [{"role": "user", "content": transcript}], meter, kind="reader")
     obj = _first_json_object(raw)
     if not isinstance(obj, dict):
         return Reading(None, None, False, f"reader returned no JSON: {raw!r}", reader_calls=1)
     act = obj.get("performative")
-    if act not in ACTS:
+    if abstain and act == "unclear":
+        return Reading(None, None, True, "reader: unclear", reader_calls=1, unclear=True)
+    if act not in acts:
         return Reading(None, None, False, f"reader said performative={act!r}", reader_calls=1)
     price = _as_int(obj.get("price"))
     return Reading(act, price, True, f"reader: {act}" + (f" @ {price}" if price is not None else ""),
                    reader_calls=1)
 
 
-def read(condition: str, text: str, history: list, meter, chat) -> Reading:
-    """Read one message under one condition. `history` ends with that message."""
+def read(condition: str, text: str, history: list, meter, chat,
+         acts=ACTS, abstain: bool = False) -> Reading:
+    """Read one message under one condition. `history` ends with that message.
+
+    The defaults reproduce the first run. `acts` widens the vocabulary
+    (extension 2) and `abstain` lets the free reader decline (extension 1);
+    abstention is a property of the reader, so it does nothing in the two
+    conditions that have no reader deciding the act.
+    """
     if condition == "structured":
-        return read_structured(text)
+        return read_structured(text, acts)
     if condition == "tagged":
-        return read_tagged(text, meter, chat)
+        return read_tagged(text, meter, chat, acts)
     if condition == "free":
-        return read_free(history, meter, chat)
+        return read_free(history, meter, chat, acts, abstain)
     raise ValueError(f"unknown condition {condition!r}")

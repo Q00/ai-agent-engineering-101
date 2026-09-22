@@ -12,6 +12,7 @@ import sys
 
 import model
 import negotiate
+import prompts
 import protocol
 
 
@@ -269,6 +270,100 @@ def _():
 
     ep = negotiate.run_episode(POSSIBLE, "structured", m, chat, lambda *a: None)
     eq((ep.reader_calls, m.reader_calls), (0, 0))
+
+
+# --- extension 1: the reader may decline ---------------------------------
+
+@check("ext1: the first run's reader prompt is untouched by the extensions")
+def _():
+    eq(prompts.reader_prompt(), prompts.READER)
+    eq(prompts.reader_prompt(vocab=4, abstain=False), prompts.READER)
+    if "whatever the message says" not in prompts.READER:
+        raise Fail("the first run's forcing clause is gone from READER")
+    if "whatever the message says" in prompts.READER_ABSTAIN:
+        raise Fail("the abstaining reader must not keep the forcing clause")
+
+
+@check("ext1: `unclear` is a reading, not a format error")
+def _():
+    def chat(system, messages, meter, kind="agent"):
+        meter.add(0, 0, kind)
+        return '{"performative": "unclear", "price": null}'
+
+    r = protocol.read_free([{"who": "buyer", "text": "what are you asking?"}],
+                           model.Meter(), chat, abstain=True)
+    eq((r.ok, r.unclear, r.performative, r.reader_calls), (True, True, None, 1))
+
+
+@check("ext1: without --abstain, `unclear` is still an invalid label")
+def _():
+    def chat(system, messages, meter, kind="agent"):
+        meter.add(0, 0, kind)
+        return '{"performative": "unclear", "price": null}'
+
+    r = protocol.read_free([{"who": "buyer", "text": "hi"}], model.Meter(), chat)
+    eq((r.ok, r.unclear), (False, False))
+
+
+@check("ext1: an abstention neither ends the episode nor moves the price")
+def _():
+    def chat(system, messages, meter, kind="agent"):
+        meter.add(0, 0, kind)
+        if "You label messages" in system:
+            return '{"performative": "unclear", "price": null}'
+        return "what are you asking for it?"
+
+    ep = negotiate.run_episode(POSSIBLE, "free", model.Meter(), chat,
+                               lambda *a: None, abstain=True)
+    eq((ep.outcome, ep.turns), ("open", negotiate.TURN_LIMIT))
+    eq((ep.unclear_reads, ep.format_errors), (negotiate.TURN_LIMIT, 0))
+
+
+# --- extension 2: six acts ------------------------------------------------
+
+@check("ext2: query-ref and cfp parse only when the vocabulary has them")
+def _():
+    msg = '{"performative": "query-ref", "content": {"price": null}}'
+    eq(protocol.read_structured(msg).ok, False)
+    eq(protocol.read_structured(msg, protocol.ACTS_6).ok, True)
+
+
+@check("ext2: a (cfp) tag costs no reader call and is legal at six acts")
+def _():
+    r = protocol.read_tagged("(cfp) what would you take for it?",
+                             model.Meter(), _no_chat, protocol.ACTS_6)
+    eq((r.ok, r.performative, r.reader_calls), (True, "cfp", 0))
+    eq(protocol.read_tagged("(cfp) what would you take for it?",
+                            model.Meter(), _no_chat).ok, False)
+
+
+@check("ext2: asking a question does not end an episode or set a price")
+def _():
+    script = ['{"performative": "query-ref", "content": {"price": null}}',
+              '{"performative": "propose", "content": {"price": 100}}',
+              '{"performative": "accept-proposal", "content": {"price": null}}']
+    it = iter(script)
+
+    def chat(system, messages, meter, kind="agent"):
+        meter.add(0, 0, kind)
+        return next(it)
+
+    ep = negotiate.run_episode(POSSIBLE, "structured", model.Meter(), chat,
+                               lambda *a: None, vocab=6)
+    eq((ep.outcome, ep.price, ep.turns, ep.format_errors), ("deal", 100, 3, 0))
+
+
+@check("ext2: the six-act role prompt reaches the agents, the four-act one does not")
+def _():
+    six = prompts.system_prompt("buyer", POSSIBLE, "tagged", vocab=6)
+    four = prompts.system_prompt("buyer", POSSIBLE, "tagged", vocab=4)
+    for token in ("query-ref", "cfp", "Exactly six acts"):
+        if token not in six:
+            raise Fail(f"{token!r} missing from the six-act prompt")
+        if token in four:
+            raise Fail(f"{token!r} leaked into the four-act prompt")
+    if "Exactly four acts" not in four:
+        raise Fail("the four-act prompt changed")
 
 
 def main() -> int:

@@ -25,6 +25,9 @@ class Episode:
         self.turns = 0
         self.format_errors = 0
         self.reader_calls = 0
+        # Extension 1 only. Messages the reader was allowed to decline to
+        # label. Zero by construction in the first run, where it could not.
+        self.unclear_reads = 0
         self.note = ""
 
     @property
@@ -64,11 +67,17 @@ class Episode:
         return 0
 
 
-def run_episode(scenario: dict, condition: str, meter, chat, log) -> Episode:
-    """Buyer opens. Each message goes to the reader, then to the other agent."""
-    ep = Episode(scenario, condition)
+def run_episode(scenario: dict, condition: str, meter, chat, log,
+                vocab: int = 4, abstain: bool = False) -> Episode:
+    """Buyer opens. Each message goes to the reader, then to the other agent.
 
-    systems = {role: prompts.system_prompt(role, scenario, condition)
+    The defaults are the first run. vocab=6 restores query-ref and cfp,
+    abstain=True lets the free reader answer `unclear`.
+    """
+    ep = Episode(scenario, condition)
+    acts = protocol.ACTS_6 if vocab == 6 else protocol.ACTS
+
+    systems = {role: prompts.system_prompt(role, scenario, condition, vocab)
                for role in ("buyer", "seller")}
     # Each agent's own view: its messages are assistant turns, the other
     # side's are user turns. The two lists are never shared.
@@ -96,9 +105,13 @@ def run_episode(scenario: dict, condition: str, meter, chat, log) -> Episode:
         transcript.append({"who": speaker, "text": text})
         log(f"    [{ep.turns}] {speaker}: {text}")
 
-        reading = protocol.read(condition, text, transcript, meter, chat)
+        reading = protocol.read(condition, text, transcript, meter, chat,
+                                acts, abstain)
         ep.reader_calls += reading.reader_calls
-        if not reading.ok:
+        if reading.unclear:
+            ep.unclear_reads += 1
+            log(f"        no label ({reading.how})")
+        elif not reading.ok:
             ep.format_errors += 1
             log(f"        unreadable ({reading.how})")
         else:
@@ -138,5 +151,6 @@ def run_episode(scenario: dict, condition: str, meter, chat, log) -> Episode:
     log(f"    result: outcome={ep.outcome} price={ep.price} "
         f"correct={ep.correct} violation={ep.violation} turns={ep.turns} "
         f"format_errors={ep.format_errors} reader_calls={ep.reader_calls} "
+        f"unclear_reads={ep.unclear_reads} "
         f"(reserve={s['reserve']} budget={s['budget']})")
     return ep

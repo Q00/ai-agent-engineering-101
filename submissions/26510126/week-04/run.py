@@ -85,13 +85,32 @@ def main() -> int:
                     help="scripted replies, no model calls, for testing the harness")
     ap.add_argument("--out", default=None,
                     help="write results.csv and logs/ here instead of beside this file")
+    ap.add_argument("--vocab", type=int, default=4, choices=(4, 6),
+                    help="4 is the first run; 6 restores query-ref and cfp")
+    ap.add_argument("--abstain", action="store_true",
+                    help="let the free reader answer `unclear` instead of forcing a label")
     args = ap.parse_args()
 
+    global RESULTS, LOGS, HEADER
+    # An extension does not write into the first run's table. results.csv has
+    # the header CI checks and no room for a column, and mixing a different
+    # act vocabulary into it would make the first run unreadable. Each
+    # extension gets its own file with the extra columns it needs, which is
+    # what week 03 did with results_ext.csv.
+    variant = ""
+    if args.vocab == 6:
+        variant += "-v6"
+    if args.abstain:
+        variant += "-abstain"
+    if variant:
+        HEADER = HEADER + ["unclear_reads", "vocab", "abstain"]
+        RESULTS, LOGS = HERE / "results_ext.csv", HERE / "logs_ext"
+
     if args.out:
-        global RESULTS, LOGS
         out = Path(args.out).resolve()
         out.mkdir(parents=True, exist_ok=True)
-        RESULTS, LOGS = out / "results.csv", out / "logs"
+        RESULTS = out / ("results_ext.csv" if variant else "results.csv")
+        LOGS = out / ("logs_ext" if variant else "logs")
 
     scenarios = load_scenarios(args.scenarios)
     if not scenarios:
@@ -110,7 +129,7 @@ def main() -> int:
 
     for condition in args.conditions:
         for repeat in args.repeats:
-            run_id = f"{condition}-r{repeat}"
+            run_id = f"{condition}{variant}-r{repeat}"
             pending = [s for s in scenarios if (run_id, str(s["id"])) not in already]
             if not pending:
                 print(f"{run_id}: already complete, skipping")
@@ -124,7 +143,8 @@ def main() -> int:
                     lf.flush()
 
                 log(model.run_header(negotiate.TURN_LIMIT))
-                log(f"run={run_id} condition={condition} "
+                log(f"run={run_id} condition={condition} vocab={args.vocab} "
+                    f"abstain={int(args.abstain)} "
                     f"scenarios={[str(s['id']) for s in pending]}")
 
                 for s in pending:
@@ -138,8 +158,12 @@ def main() -> int:
                            "deal_possible": 1 if s["reserve"] <= s["budget"] else 0,
                            "outcome": "", "price": "", "correct": "", "violation": "",
                            "turns": "", "format_errors": "", "reader_calls": "", "note": ""}
+                    if variant:
+                        row.update(unclear_reads="", vocab=args.vocab,
+                                   abstain=int(args.abstain))
                     try:
-                        ep = negotiate.run_episode(s, condition, meter, chat, log)
+                        ep = negotiate.run_episode(s, condition, meter, chat, log,
+                                                   vocab=args.vocab, abstain=args.abstain)
                     except model.DailyQuotaExhausted as exc:
                         row["note"] = f"daily free-model quota exhausted: {exc}"
                         append_row(row)
@@ -158,6 +182,8 @@ def main() -> int:
                                correct=ep.correct, violation=ep.violation,
                                turns=ep.turns, format_errors=ep.format_errors,
                                reader_calls=ep.reader_calls, note=ep.note)
+                    if variant:
+                        row["unclear_reads"] = ep.unclear_reads
                     append_row(row)
 
                 log("")

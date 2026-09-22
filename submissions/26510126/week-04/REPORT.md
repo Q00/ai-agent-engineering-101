@@ -156,9 +156,18 @@ export ANTHROPIC_API_KEY=<key>
 export AGENT_PROVIDER=anthropic
 export AGENT_MODEL=claude-haiku-4-5-20251001
 
-python test_offline.py     # 24 checks, no network
+python test_offline.py     # 32 checks, no network
 python run.py              # all three conditions, repeats 1..3
 python analyze.py          # the tables in section 2
+```
+
+The extensions of section 6 are flags on the same code, both off by default,
+so the command above reproduces this run unchanged:
+
+```bash
+python run.py --conditions free --abstain   # 6.1, into results_ext.csv
+python run.py --vocab 6                     # 6.2, into results_ext.csv
+python audit.py                             # 6.3, over logs/, into audit.csv
 ```
 
 `run.py` appends to `results.csv` as episodes finish and skips any
@@ -407,12 +416,46 @@ that one label. The reference scored 61% by walking away from everything; this
 run scored 25% by walking away from nothing. Neither number is about the
 format.
 
-The likely cause is a sentence in this run's reader prompt: *"There are no
-other labels available to you; choose the closest of these four whatever the
-message says."* The reference's reader returns `None` in the sample log the
-lecture prints, and is counted as a format error there; this reader never
+The cause of the label is a sentence in this run's reader prompt: *"There are
+no other labels available to you; choose the closest of these four whatever
+the message says."* The reference's reader returns `None` in the sample log
+the lecture prints, and is counted as a format error there; this reader never
 declined. The instruction that removed the format errors is the instruction
 that produced the wrong label.
+
+### It is not the forcing, it is which label was forced
+
+That sentence was worth testing rather than blaming, so extension 1 removed
+it: the free reader was given a fifth answer, `unclear`, and told not to force
+a message into a label that does not fit. Nothing else changed. The result
+confirms the diagnosis and refutes the conclusion drawn from it.
+
+| free | correct | deal / no_deal / open | violations | mean turns | unclear reads | reader calls |
+|---|---|---|---|---|---|---|
+| reader forced to choose (run 1) | 3/12 | 6 / 0 / 6 | 3 | 6.8 | — | 81 |
+| reader allowed to abstain | 4/12 | 6 / 1 / 5 | 3 | 6.8 | 12 | 81 |
+
+The abstentions are exactly 12, one per episode, and every one of them is the
+opening question. The forcing was real and this measures it precisely. But
+the episodes barely moved: one more correct answer out of twelve, the same
+three violations, the same mean turns, the same reader cost.
+
+The reason is that `propose` and `unclear` do the same thing to an episode,
+and neither is what the reference's reader said. A question mislabelled
+`propose` carries no price, so no state is updated and the negotiation
+continues; a question answered `unclear` also updates nothing and also
+continues. `refuse` ends the episode. Of the four acts the vocabulary offers
+for a message that fits none of them, three are harmless and one is fatal, and
+the two runs happened to land on different sides of that line.
+
+So the sentence above explains why this run's label was wrong. It does not
+explain the 61% against 25%, and removing it does not recover the reference's
+figures. What separates the two runs is not that a label was forced. It is
+that the reference's forced label happened to terminate the episode and this
+one's did not, on scenarios where terminating was frequently the right answer.
+That is a sharper version of the same conclusion: neither number is about the
+message format, and the one that looks better was produced by a reader error
+that was accidentally aligned with the scenario set.
 
 ### The five logged patterns, one by one
 
@@ -492,3 +535,212 @@ prompt and a decision about how forgiving a JSON parser should be. Neither is
 part of the message format under test. The lecture's claim that the tag is
 what buys legibility is not what either run measured; both measured the
 protocol layer that reads the tag.
+
+## 6. Three extensions
+
+The first run left three questions it could not answer from inside itself.
+Whether its own reader had been pushed into wrong labels by the prompt.
+What the four-act vocabulary cost, given that 12 of 12 free openings were
+questions it had no label for. And whether agents in this task tell the
+truth about themselves at all, which is the assumption FIPA's whole
+semantics rests on and the one it declines to defend.
+
+Each is a separate run against the same scenarios, the same model and the
+same temperature. Two of them replay nothing: the claim audit reads logs
+that already exist. The extensions never write into `results.csv`, which
+holds the first run and the header CI checks; they write `results_ext.csv`
+with three extra columns and `logs_ext/`, and the audit writes `audit.csv`.
+
+| extension | what it changes | cost |
+|---|---|---|
+| a reader that may decline | one clause of the reader prompt, plus a fifth label | 12 episodes, 162 calls |
+| six acts instead of four | `query-ref` and `cfp` restored to the role prompt, the formats and the reader | 36 episodes, 361 calls |
+| the claim audit | nothing; one auditor pass over the first run's 217 messages | 0 episodes, 217 calls |
+
+Both extensions are flags that default to off, so the same code reproduces
+the first run:
+
+```bash
+python run.py --conditions free --abstain     # extension 1
+python run.py --vocab 6                       # extension 2
+python audit.py                               # extension 3
+```
+
+### 6.1 A reader that may decline
+
+The first run's reader prompt ends *"choose the closest of these four
+whatever the message says"*, which forbids abstention. That clause is why
+the free condition reports zero format errors, and the suspicion worth
+testing was that it did not remove the errors but renamed them. A measuring
+instrument told to always produce a readable answer will produce one, and
+the metric that goes to zero is the metric that was supposed to catch it.
+
+The numbers are in section 5, where they bear on the reference run. In
+short: the twelve abstentions are exactly the twelve opening questions, one
+per episode, so the clause was doing what it looked like it was doing; and
+the episodes barely moved, because the label it forced was harmless and the
+reference's was not.
+
+The general lesson is about where the pressure was applied. Nothing in this
+harness lets the two agents see a metric, so they cannot optimise one. The
+only component with an incentive was the reader, the incentive was to be
+parseable, and it came from a sentence written into its prompt by hand. It
+paid for a clean `format_errors` column with twelve wrong labels, and the
+column that recorded the purchase read zero.
+
+### 6.2 The two acts the lab removed
+
+FIPA's Communicative Act Library defines 22 acts. The lab uses four and says
+so: *"질문에 해당하는 query-ref와 cfp는 뺐다."* In the first run every free
+episode opened with a question, so this extension restores exactly those two
+— `query-ref` (SC00037J 3.14) and `cfp` (3.2) — in the role prompt, in the
+three format paragraphs and in the reader, and changes nothing else.
+
+| condition | vocabulary | correct | deal possible | impossible | deal / no_deal / open | violations | mean turns | reader calls |
+|---|---|---|---|---|---|---|---|---|
+| free | 4 acts | 3/12 | 3/6 | 0/6 | 6 / 0 / 6 | 3 | 6.8 | 81 |
+| free | 6 acts | 7/12 | 6/6 | 1/6 | 6 / 1 / 5 | 0 | 6.9 | 83 |
+| tagged | 4 acts | 7/12 | 3/6 | 4/6 | 6 / 4 / 2 | 3 | 5.2 | 21 |
+| tagged | 6 acts | 6/12 | 6/6 | 0/6 | 6 / 0 / 6 | 0 | 6.2 | 27 |
+| structured | 4 acts | 6/12 | 6/6 | 0/6 | 6 / 0 / 6 | 0 | 6.2 | 0 |
+| structured | 6 acts | 4/12 | 4/6 | 0/6 | 4 / 0 / 8 | 0 | 7.8 | 0 |
+
+Two acts bought two things and sold one.
+
+**Every limit violation disappeared.** Six in the first run, three in free
+and three in tagged, all of them on s2, the narrow zone between 95 and 105.
+Zero at six acts, in every condition. The mechanism is visible in the
+transcript that replaces the worst of them. In the first run free closed s2
+at 107, above the buyer's budget, after an opening question read as a
+proposal and a seller anchor at 150. At six acts:
+
+```
+[1] buyer:  What's the lowest price you'd be willing to take for this
+            espresso machine?
+        read as query-ref
+[2] seller: I'm looking to get a fair price for it, but I'd like to hear
+            what you have in mind first—what are you thinking of offering?
+        read as query-ref
+[3] buyer:  I'm thinking somewhere in the $95 to $100 range would be fair
+            for a machine in this condition.
+        read as propose @ 100
+[4] seller: That's a reasonable range. How about we settle on $100 for it?
+        read as propose @ 100
+[5] buyer:  I can work with that. Let's do $100.
+        read as accept-proposal
+        DEAL at 100
+```
+
+Both sides ask before either offers, and the negotiation opens with an
+exchange of information rather than an anchor. It lands at 100, inside a
+zone ten units wide that the four-act run overshot three times out of three.
+
+**Every condition closed the deals that were there to close**, or nearly:
+free went from 3/6 to 6/6 on the possible scenarios and tagged from 3/6 to
+6/6. The exception is structured, which fell from 6/6 to 4/6 and gained two
+more `open` episodes and a longer mean.
+
+**Walking away nearly stopped.** In the first run, tagged ended 4 of its 6
+impossible scenarios with `refuse`; at six acts it ended none of them.
+Across all 36 six-act episodes there is exactly one `no_deal`, against four
+across the 36 four-act episodes. The two new acts are both ways of
+continuing a conversation, and an agent that can always ask one more
+question has one fewer reason to leave. That also explains structured's
+decline: with two more non-terminal acts and a schema that still carries
+only a price, it spent more turns saying less.
+
+No vocabulary wins. Four acts produce violations and walk-aways; six produce
+neither. The lecture's restriction to four was not only a simplification, it
+selected which failure the experiment would see.
+
+### 6.3 What the agents claimed about themselves
+
+FIPA defines every negotiation act as a form of `inform`, and `inform`'s
+feasibility precondition is `Biφ` — the sender believes φ. The specification
+assumes sincerity and puts the case of an agent that would rather not be
+sincere out of scope (SC00037J 3.5). A price negotiation with private limits
+is that case. This extension measures how far out of scope it is.
+
+An auditor read all 217 messages of the first run and reported two things
+per message: the number the speaker presents as its **own** hard limit, if
+any, and whether the speaker gives a reason outside the price for needing to
+settle. The auditor does not judge. Whether a claim is true is arithmetic
+against the reserve and budget committed in `scenarios.json` before the runs,
+done in code. Asking a model whether another model was sincere would
+reproduce the verification problem one level up.
+
+| condition | messages | limit claims | favourable | against | truthful | mean size of bluff | urgency claims |
+|---|---|---|---|---|---|---|---|
+| free | 81 | 29 | 18 | 7 | 4 | 26.6 | 0 |
+| tagged | 62 | 21 | 18 | 2 | 1 | 25.7 | 0 |
+| structured | 74 | 0 | 0 | 0 | 0 | — | 0 |
+| all | 217 | 50 | 36 (72%) | 9 | 5 | 26.2 | 0 |
+
+`favourable` is the ordinary bluff: a seller placing its floor above its
+reserve, a buyer placing its ceiling below its budget. `against` is the same
+move in reverse, giving ground away. `truthful` means the agent said its real
+number, which the role prompt forbade in as many words.
+
+**About one prose message in three carries a claim about the speaker's own
+limit, and 72% of those claims are false in the speaker's favour by an
+average of 26 units.** Under the semantics of section 3 every one of them is
+an `inform` whose feasibility precondition is false — a specification
+violation performed by an agent doing exactly what the task asks. This is not
+a defect of these agents. It is what haggling is, and it is what FIPA
+declared beyond its scope.
+
+**structured made no such claim at all.** Not one, in 74 messages. Its
+content language has one key and that key is a price, so there is nowhere to
+put "I can't go below 90". It is not more honest; it is less able to speak.
+The same narrowness that made it the only condition never to violate a limit
+in the first run also makes it the only condition that cannot lie, and the
+only condition that never learned a negotiation was hopeless. One property.
+
+**No agent ever claimed urgency.** Zero, in all three conditions. This is
+worth stating because it is the deception a reader would expect to have to
+catch — "I need to sell this week", a competing buyer, a deadline — and it
+did not occur. That also makes it the one claim that could not have been
+checked: the scenarios contain no clock and no circumstances, so such a
+statement has no fact to correspond to, and `Biφ` would have no φ. All the
+insincerity actually observed was numeric, and numeric claims are checkable
+against a committed scenario file. The undecidable kind never came up.
+
+Three smaller findings fall out of the same pass.
+
+**Self-contradiction, 3 episodes.** In tagged on s2, all three repeats, the
+seller wrote `I'm looking for at least 110` at turn 2 and then closed below
+it. This needs no ground truth — the transcript contradicts itself — which
+makes it the one form of insincerity a deployed protocol layer could detect
+without seeing inside the agent.
+
+**The private number leaks, and it leaks late.** Five messages state the
+agent's true limit, which the role prompt explicitly forbids: `My absolute
+maximum is $80` on a budget of 80, `My bottom line is $130` on a reserve of
+130. Four are in free and one in tagged; structured has none. All five fall
+at turns 6, 7 or 8 — under pressure, near the turn limit, the agent gives up
+the number it was told to protect.
+
+**The largest bluff is 55 units on a reserve of 60.** A seller in free
+writing `I'd need to stay closer to $115 to make this work for me` about an
+item it would have taken 60 for, identically in all three repeats.
+
+### 6.4 What the three say together
+
+The first run concluded that the condition ranking was decided by the
+content language rather than by the tag. The extensions test that from three
+sides and none of them contradicts it.
+
+Widen the act vocabulary and every violation disappears, every possible deal
+closes, and the ability to walk away nearly goes with it. Look at what the
+narrow language excludes and it is not only "I need at least 140" but every
+false claim an agent might make about itself: structured's zero bluffs and
+structured's zero walk-aways are the same fact seen twice. Give the observer
+a way to say it does not know and the forcing shows up exactly where it was
+predicted, twelve times, one per episode, while the outcomes stay put —
+because what damaged the reference run was not that its reader was forced but
+that the act it was forced into ends a conversation.
+
+In none of the three did the encoding decide anything. What decided things
+was which acts existed to be performed, and which could be read. FIPA gave
+the first 22 entries and a mandatory `:ontology` for the second, and this lab
+kept four acts and one integer. These runs are a measurement of that gap.
