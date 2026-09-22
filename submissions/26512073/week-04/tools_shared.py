@@ -15,6 +15,9 @@ import os
 import re
 from dataclasses import dataclass, field
 
+TEMPERATURE = 0
+MAX_COMPLETION_TOKENS = 300
+
 # ---------------------------------------------------------------- tools
 
 
@@ -155,7 +158,12 @@ class Chat:
         return Reply(text, calls)
 
     def _send_openai(self) -> Reply:
-        kwargs = dict(model=MODEL, messages=self.messages)
+        kwargs = dict(
+            model=MODEL,
+            messages=self.messages,
+            temperature=TEMPERATURE,
+            max_completion_tokens=MAX_COMPLETION_TOKENS,
+        )
         if self.tools:
             kwargs["tools"] = [{"type": "function",
                                 "function": {"name": t["name"],
