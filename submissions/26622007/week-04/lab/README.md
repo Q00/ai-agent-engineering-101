@@ -1,7 +1,9 @@
 # Week 04 HTML 실습 실행
 
 강의 HTML의 `acl.py`, `negotiate.py`, 탁상등 참조 로그와 다섯 가지 실패 사례를 기준으로
-실습을 실행한다. `reference/`는 upstream 커밋에 고정한 과제 안내, 코드 조각, 검사기다.
+실습을 실행한다. `reference/`는 upstream 커밋에 고정한 과제 안내와 코드 조각이다.
+같은 커밋의 검사기는 `submissions/26622007/course_checks/check_week04_51c09f4.py`에 있다.
+검사기 자체의 키 탐지 문자열이 검사 대상에 포함되지 않도록 week-04 밖에 보관한다.
 공개된 코드는 완성된 starter가 아니며 역할·reader 문구의 `...`는 생략 표시다.
 공개 문구를 사용하고 생략 표시는 제거했다. seller 문장 연결 외에 협상 전략이나
 가격 선택 요령을 추가하지 않는다. 초기화, 파서, CSV·로그·재개는 공개 명세를 구현했다.
@@ -11,7 +13,7 @@
 ```sh
 python3 submissions/26622007/week-04/lab/experiment.py --suite html-deepseek-20260922 --env-file submissions/26622007/.env --jobs 3
 python3 -m unittest discover -s submissions/26622007/week-04/lab -p 'test_*.py' -v
-python3 submissions/26622007/week-04/lab/reference/check_week04.py submissions/26622007/week-04
+python3 submissions/26622007/course_checks/check_week04_51c09f4.py submissions/26622007/week-04
 ```
 
 동일 명령은 기록된 `(run, scenario)`를 건너뛰며 재개한다. 실패 행도 지우지 않는다.
