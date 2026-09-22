@@ -16,6 +16,11 @@ HEADER = [
 TEMPERATURE = 0
 
 
+def read_setting(name: str, default: str = "") -> str:
+    """Read a text setting without accidental shell whitespace or newlines."""
+    return os.environ.get(name, default).strip()
+
+
 class JsonlLogger:
     def __init__(self, path: Path):
         self.path = path
@@ -40,8 +45,13 @@ class OpenRouterModel:
     def __init__(self):
         from openai import OpenAI
 
-        self.model = os.environ.get("AGENT_MODEL", "nvidia/nemotron-3.5-lightning:free")
-        self.client = OpenAI()
+        self.model = read_setting(
+            "AGENT_MODEL", "nvidia/nemotron-3.5-lightning:free"
+        )
+        self.client = OpenAI(
+            api_key=read_setting("OPENAI_API_KEY"),
+            base_url=read_setting("OPENAI_BASE_URL") or None,
+        )
 
     def __call__(self, system_prompt: str, announcement: str) -> str:
         response = self.client.chat.completions.create(
@@ -72,7 +82,7 @@ def main():
     args = parser.parse_args()
     if args.runs < 1:
         parser.error("--runs must be at least 1")
-    if not os.environ.get("OPENAI_API_KEY"):
+    if not read_setting("OPENAI_API_KEY"):
         raise SystemExit("OPENAI_API_KEY is required; no key is stored by this program")
 
     root = Path(__file__).resolve().parent
@@ -81,7 +91,7 @@ def main():
     new_file = not results_path.exists()
     run_number = completed_runs(results_path)
     model = OpenRouterModel()
-    provider = os.environ.get("OPENAI_BASE_URL", "OpenAI-compatible endpoint")
+    provider = read_setting("OPENAI_BASE_URL", "OpenAI-compatible endpoint")
 
     with results_path.open("a", encoding="utf-8", newline="") as results:
         writer = csv.writer(results)
