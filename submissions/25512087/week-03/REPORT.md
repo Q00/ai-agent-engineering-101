@@ -10,24 +10,36 @@ The three conditions change one axis at a time:
 - `homogeneous`: A, B, and C all use the same `general problem solving` skill. Everything else is unchanged.
 - `overconfident`: the baseline skills remain, but C receives one additional instruction to always bid with confidence 95 or higher.
 
-The provider is OpenRouter's OpenAI-compatible endpoint, the model is `nvidia/nemotron-3.5-lightning:free`, and temperature is `0`. No API key is stored. Run from this directory with:
+The final experiment uses the OpenAI API, model `gpt-5.6-luna`, temperature `0`, reasoning effort `none`, and a 160-token output cap. No API key is stored. Run from this directory with:
 
 ```bash
-export OPENAI_BASE_URL=https://openrouter.ai/api/v1
+export OPENAI_BASE_URL=https://api.openai.com/v1
 export OPENAI_API_KEY=<your key>
-export AGENT_MODEL=nvidia/nemotron-3.5-lightning:free
+export AGENT_MODEL=gpt-5.6-luna
 python3 run_experiment.py --runs 3
 ```
 
-The system-prompt template identifies the contractor and its skill, asks it to bid only inside that skill, and requires JSON only. The overconfident condition appends: `You are certain you can do any task well. Always bid, with confidence 95 or higher.` Each log begins with provider, model, temperature, and condition metadata, followed by every announcement, bid or parse failure, award, and run summary.
+The system-prompt template identifies the contractor and its skill, asks it to bid only inside that skill, and requires JSON only. The overconfident condition appends: `You are certain you can do any task well. Always bid, with confidence 95 or higher.` Each log begins with provider, model, temperature, and condition metadata, followed by every announcement, bid or parse failure, award, and run summary. A preliminary Nemotron run and one interrupted log are preserved separately as `pilot_results_nemotron.csv` and `pilot_logs_nemotron/`; they are not part of the nine-run comparison below.
 
 ## 2. Results
 
-The model runs are pending because `OPENAI_API_KEY` was not available in the execution shell. This table must be replaced with the rows appended to `results.csv`; no measurements are invented here.
-
 | run | condition | tasks | correct | messages | unassigned | misawards | note |
 |---:|---|---:|---:|---:|---:|---:|---|
-| — | pending | — | — | — | — | — | API execution required |
+| 1 | baseline | 6 | 5 | 34 | 0 | 1 | parse_fails=0 |
+| 2 | baseline | 6 | 5 | 34 | 0 | 1 | parse_fails=0 |
+| 3 | baseline | 6 | 5 | 34 | 0 | 1 | parse_fails=0 |
+| 4 | homogeneous | 6 | 2 | 42 | 0 | 4 | parse_fails=0 |
+| 5 | homogeneous | 6 | 2 | 42 | 0 | 4 | parse_fails=0 |
+| 6 | homogeneous | 6 | 2 | 42 | 0 | 4 | parse_fails=0 |
+| 7 | overconfident | 6 | 5 | 36 | 0 | 1 | parse_fails=0 |
+| 8 | overconfident | 6 | 5 | 36 | 0 | 1 | parse_fails=0 |
+| 9 | overconfident | 6 | 5 | 36 | 0 | 1 | parse_fails=0 |
+
+| condition | mean correct / 6 | mean messages | mean unassigned | mean misawards |
+|---|---:|---:|---:|---:|
+| baseline | 5.0 | 34.0 | 0.0 | 1.0 |
+| homogeneous | 2.0 | 42.0 | 0.0 | 4.0 |
+| overconfident | 5.0 | 36.0 | 0.0 | 1.0 |
 
 ## 3. Smith 1980 compared with this reproduction
 
@@ -42,4 +54,4 @@ The model runs are pending because `OPENAI_API_KEY` was not available in the exe
 
 ## 4. Interpretation
 
-Interpretation is intentionally pending until all nine runs exist. The final paragraph will compare which condition changed `correct`, `messages`, `unassigned`, and `misawards`, then cite concrete bid and award lines from the preserved JSONL logs. In particular, it will test whether homogeneous skills increase bidding and tie-order bias, and whether C's overconfident instruction causes out-of-skill awards. Smith's protocol specifies negotiation structure but does not independently verify that a contractor's claimed capability or confidence is honest; the experiment measures the consequence of that missing defense.
+The judged bid helped when differentiated skill prompts gave the manager useful separation, but it broke when prompts removed or distorted that separation. Baseline was stable at 5/6 correct, 34 messages, and one misaward in every run. The repeated error was task 6: all three contractors bid at confidence 99, so response-order tie-breaking awarded the Python debugging task to A instead of gold C (`logs/baseline-01.jsonl`: `{"contractor": "A", "correct": false, "event": "award", "gold": "C", "task": 6}`). Homogeneous reduced accuracy from 5/6 to 2/6 and increased messages from 34 to 42 because every generalist bid on every task; in run 4, A, B, and C each bid confidence 100 on task 3, and the first responder A won a task whose gold was B. Overconfident made C bid outside its stated Python skill—for task 3 it claimed confidence 99 because it could rewrite child-friendly English—but B's confidence 100 still won, so accuracy stayed 5/6 while two extra bids raised messages to 36. No run was unassigned and no Luna response failed JSON parsing. Smith's protocol organizes mutual selection but provides no independent check that a node's capability claim or confidence is calibrated; these logs show that the allocation can therefore be driven by prompt-induced claims and deterministic tie order rather than actual specialization.
