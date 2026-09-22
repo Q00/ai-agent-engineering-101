@@ -16,6 +16,7 @@ from contract_net import (
     MAX_TOKENS,
     MODEL,
     PROVIDER,
+    REASONING_ENABLED,
     TEMPERATURE,
     Meter,
     OpenRouterChat,
@@ -102,12 +103,21 @@ def write_log(path: Path, lines: list[str]) -> None:
         log_file.write("\n".join(lines) + "\n")
 
 
+def is_rate_limit_error(exc: BaseException) -> bool:
+    """Recognize an HTTP 429 without importing an SDK-specific exception."""
+    if getattr(exc, "status_code", None) == 429:
+        return True
+    response = getattr(exc, "response", None)
+    return getattr(response, "status_code", None) == 429
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--runs", type=int, default=3)
+    parser.add_argument("--condition", choices=("all", *CONDITIONS), default="all")
     args = parser.parse_args()
-    if args.runs != 3:
-        raise SystemExit("this experiment is fixed at exactly --runs 3")
+    if args.runs < 1:
+        raise SystemExit("--runs must be at least 1")
     if not os.environ.get("OPENAI_API_KEY"):
         raise SystemExit("OPENAI_API_KEY is not set; no experiment was started")
 
@@ -126,7 +136,8 @@ def main() -> None:
             writer.writerow(HEADER)
             result_file.flush()
 
-        for condition in CONDITIONS:
+        selected_conditions = CONDITIONS if args.condition == "all" else (args.condition,)
+        for condition in selected_conditions:
             for _ in range(args.runs):
                 global_run += 1
                 lines: list[str] = []
@@ -140,6 +151,7 @@ def main() -> None:
                 log(f"[setup] model={MODEL}")
                 log(f"[setup] temperature={TEMPERATURE:g}")
                 log(f"[setup] max_tokens={MAX_TOKENS}")
+                log(f"[setup] reasoning_enabled={str(REASONING_ENABLED).lower()}")
                 log(f"[setup] condition={condition}")
                 log(f"[setup] run={global_run}")
                 log("[setup] contractor_order=A,B,C")
@@ -185,6 +197,9 @@ def main() -> None:
                     write_log(log_path, lines)
                     if isinstance(exc, KeyboardInterrupt):
                         raise
+                    if is_rate_limit_error(exc):
+                        print("[stop] rate limit reached; no further runs were attempted")
+                        return
                     continue
 
                 writer.writerow(row)

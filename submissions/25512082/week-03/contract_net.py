@@ -16,6 +16,7 @@ PROVIDER = "openrouter"
 MODEL = os.environ.get("AGENT_MODEL", "nvidia/nemotron-3.5-lightning:free")
 TEMPERATURE = 0.0
 MAX_TOKENS = 256
+REASONING_ENABLED = False
 CONDITIONS = ("baseline", "homogeneous", "overconfident")
 
 BASELINE_SKILLS = {
@@ -113,6 +114,9 @@ class OpenRouterChat:
             model=MODEL,
             temperature=TEMPERATURE,
             max_tokens=MAX_TOKENS,
+            extra_body={
+                "chat_template_kwargs": {"enable_thinking": REASONING_ENABLED}
+            },
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},

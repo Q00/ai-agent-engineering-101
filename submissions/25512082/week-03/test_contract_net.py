@@ -14,7 +14,14 @@ from contract_net import (
     parse_bid,
     run_contract_net,
 )
-from run_experiment import HEADER, last_recorded_run, next_log_path, safe_text, write_log
+from run_experiment import (
+    HEADER,
+    is_rate_limit_error,
+    last_recorded_run,
+    next_log_path,
+    safe_text,
+    write_log,
+)
 
 
 class QueueModel:
@@ -124,6 +131,16 @@ class ContractNetTests(unittest.TestCase):
                 os.environ.pop("OPENAI_API_KEY", None)
             else:
                 os.environ["OPENAI_API_KEY"] = previous
+
+    def test_rate_limit_detection_uses_status_code(self):
+        class RateLimited(Exception):
+            status_code = 429
+
+        class OtherError(Exception):
+            status_code = 500
+
+        self.assertTrue(is_rate_limit_error(RateLimited()))
+        self.assertFalse(is_rate_limit_error(OtherError()))
 
 
 if __name__ == "__main__":
