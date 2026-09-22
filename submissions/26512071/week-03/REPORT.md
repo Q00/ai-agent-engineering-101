@@ -2,11 +2,11 @@
 
 ## 1. 실험 설정
 
-- 제공자: OpenRouter (OpenAI 호환 엔드포인트, `https://openrouter.ai/api/v1`)
-- 모델: `qwen/qwen3.8-27b:free`
-- temperature: 0.0 (`contract_net.py` 상수). 이 모델은 `supported_parameters` 에
-  `temperature` 를 포함하므로 값이 실제로 적용된다.
-- `max_tokens`: 200. 제공자 추론 필드는 사용하지 않는다(`AGENT_REASONING` 미설정).
+- 제공자: OpenAI API
+- 모델: `gpt-5.6-luna`
+- temperature: 0.0 (`contract_net.py` 상수)
+- `reasoning_effort`: `none`. 입찰은 짧은 분류이므로 별도 추론 토큰을 사용하지 않는다.
+- `max_completion_tokens`: 200
 - 계약자: `coder`(파이썬 디버깅·구현), `analyst`(정량 분석·지표 계산),
   `writer`(한국어 비즈니스 문서 작성·교정)
 - 조건: `baseline`, `homogeneous`, `overconfident`
@@ -16,15 +16,24 @@
 실행 방법:
 
 ```bash
-export OPENAI_BASE_URL=https://openrouter.ai/api/v1
-export OPENAI_API_KEY=<자신의 키>
-export AGENT_MODEL=qwen/qwen3.8-27b:free
+cd submissions/26512071/week-03
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+
+# https://platform.openai.com/api-keys 에서 만든 키를 현재 셸에만 설정한다.
+# 키를 .env, 소스 코드, 로그, Git 커밋에 넣지 않는다.
+export OPENAI_API_KEY="<자신의 OpenAI API 키>"
+unset OPENAI_BASE_URL
+export AGENT_MODEL=gpt-5.6-luna
+export AGENT_REASONING_EFFORT=none
 python contract_net.py --runs 3
 ```
 
 한 번 실행하면 세 조건에 각 3런씩 9런이 돌고, `results.csv` 에 9줄이 덧붙고
 `logs/<condition>-<run>.txt` 파일 9개가 생긴다. 각 런은 6태스크 × 계약자 3명 =
-18회의 모델 호출을 쓴다.
+18회의 모델 호출을 쓴다. 전체 9런은 162회의 호출이다. ChatGPT/Codex 구독과 API
+과금은 별도이며, API 계정에 결제 수단과 사용 한도를 먼저 설정해야 한다.
 
 세 조건은 같은 태스크, 모델, temperature를 사용한다. baseline은 서로 다른 전문성을
 가진 계약자 세 명, homogeneous는 이름은 같지만 모두 generalist인 계약자 세 명,

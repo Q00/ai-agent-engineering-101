@@ -17,14 +17,12 @@ RESULT_HEADER = [
     "run", "condition", "tasks", "correct", "messages",
     "unassigned", "misawards", "note",
 ]
-MODEL = os.environ.get("AGENT_MODEL", "nvidia/nemotron-3.5-lightning:free")
+MODEL = os.environ.get("AGENT_MODEL", "gpt-5.6-luna")
 TEMPERATURE = 0.0
-# Free models often emit reasoning in place of the JSON bid. With reasoning
-# enabled the provider returns it in a separate field and content stays
-# parseable. Off by default: it changes the request, so a run must state it.
-REASONING_ENABLED = os.environ.get("AGENT_REASONING", "0") == "1"
-# Reasoning tokens come out of the same budget; 200 leaves content empty.
-MAX_BID_TOKENS = 1200 if REASONING_ENABLED else 200
+# A bid is a short classification task. Disabling reasoning keeps latency and
+# billed output tokens low while preserving the same setting in every condition.
+REASONING_EFFORT = os.environ.get("AGENT_REASONING_EFFORT", "none")
+MAX_BID_TOKENS = 200
 DEFAULT_TIMEOUT_SECONDS = 60.0
 GENERALIST_ABILITY = "General problem solving across coding, data, and writing tasks"
 OVERCONFIDENT_NAME = "coder"
@@ -166,19 +164,16 @@ def request_bid(contractor: Contractor, task: dict[str, Any],
         f"id: {task['id']}\n"
         f"description: {task['desc']}"
     )
-    extra: dict[str, Any] = {}
-    if REASONING_ENABLED:
-        extra["extra_body"] = {"reasoning": {"enabled": True}}
     response = _get_client().chat.completions.create(
         model=MODEL,
         temperature=TEMPERATURE,
-        max_tokens=MAX_BID_TOKENS,
+        reasoning_effort=REASONING_EFFORT,
+        max_completion_tokens=MAX_BID_TOKENS,
         timeout=timeout_seconds,
         messages=[
             {"role": "system", "content": contractor.system_prompt},
             {"role": "user", "content": announcement},
         ],
-        **extra,
     )
     raw = response.choices[0].message.content or ""
     return parse_bid(contractor.name, raw)
@@ -362,7 +357,8 @@ def run_experiments(tasks: list[dict[str, Any]], runs: int,
             log(
                 f"[run] run={run_number} repeat={repeat} condition={condition} "
                 f"model={MODEL} temperature={TEMPERATURE} "
-                f"reasoning={REASONING_ENABLED} max_tokens={MAX_BID_TOKENS} "
+                f"reasoning_effort={REASONING_EFFORT} "
+                f"max_completion_tokens={MAX_BID_TOKENS} "
                 f"timeout_seconds={timeout_seconds}"
             )
             for contractor in contractors_for(condition):
