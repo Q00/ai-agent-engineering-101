@@ -1,0 +1,409 @@
+provider=lmstudio model=qwen/qwen3.8-27b temperature=0.2 run=baseline-01
+[task] id=task-01 desc='A shop sold 24 boxes containing 18 items each. Determine the total number of items sold.'
+[announcement] to=A payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-01",
+  "task_description": "A shop sold 24 boxes containing 18 items each. Determine the total number of items sold.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=A value='{"bid": true, "confidence": 95, "reason": "The task requires simple calculation, which aligns with my high calculation ability of 90."}'
+[bid] contractor=A bid=True confidence=95 reason='The task requires simple calculation, which aligns with my high calculation ability of 90.'
+[announcement] to=B payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-01",
+  "task_description": "A shop sold 24 boxes containing 18 items each. Determine the total number of items sold.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=B value='{"bid": false, "confidence": 40, "reason": "The task requires calculation, which is my weakest ability at 40."}'
+[bid] contractor=B bid=False confidence=40 reason='The task requires calculation, which is my weakest ability at 40.'
+[announcement] to=C payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-01",
+  "task_description": "A shop sold 24 boxes containing 18 items each. Determine the total number of items sold.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=C value='{"bid": false, "confidence": 50, "reason": "The task requires calculation, which is my primary ability, but the simple multiplication does not justify a high confidence score above my base ability."}'
+[bid] contractor=C bid=False confidence=50 reason='The task requires calculation, which is my primary ability, but the simple multiplication does not justify a high confidence score above my base ability.'
+[award] task=task-01 winner=A confidence=95 gold=A
+[task] id=task-02 desc='Write a polite two-sentence apology to a customer whose delivery has been delayed.'
+[announcement] to=A payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-02",
+  "task_description": "Write a polite two-sentence apology to a customer whose delivery has been delayed.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=A value='{"bid": false, "confidence": 45, "reason": "The task requires writing, which is a weak ability (40) for this profile."}'
+[bid] contractor=A bid=False confidence=45 reason='The task requires writing, which is a weak ability (40) for this profile.'
+[announcement] to=B payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-02",
+  "task_description": "Write a polite two-sentence apology to a customer whose delivery has been delayed.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=B value='{"bid": true, "confidence": 95, "reason": "The task requires writing, which is my strongest ability (90), and the simple two-sentence constraint allows for a high confidence score."}'
+[bid] contractor=B bid=True confidence=95 reason='The task requires writing, which is my strongest ability (90), and the simple two-sentence constraint allows for a high confidence score.'
+[announcement] to=C payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-02",
+  "task_description": "Write a polite two-sentence apology to a customer whose delivery has been delayed.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=C value='{"bid": false, "confidence": 45, "reason": "The task requires writing, which is my weakest ability at 40, making me a poor fit."}'
+[bid] contractor=C bid=False confidence=45 reason='The task requires writing, which is my weakest ability at 40, making me a poor fit.'
+[award] task=task-02 winner=B confidence=95 gold=B
+[task] id=task-03 desc='Write a Python function that returns the largest number in a non-empty list.'
+[announcement] to=A payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-03",
+  "task_description": "Write a Python function that returns the largest number in a non-empty list.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=A value='{"bid": false, "confidence": 55, "reason": "The task requires coding, which is my secondary ability (50), and while simple, it does not leverage my strong calculation skill sufficiently to reach a high confidence threshold."}'
+[bid] contractor=A bid=False confidence=55 reason='The task requires coding, which is my secondary ability (50), and while simple, it does not leverage my strong calculation skill sufficiently to reach a high confidence threshold.'
+[announcement] to=B payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-03",
+  "task_description": "Write a Python function that returns the largest number in a non-empty list.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=B value='{"bid": true, "confidence": 75, "reason": "The task requires coding, which is a moderate strength (50) for me, but the simplicity of the task allows for a partial fit."}'
+[bid] contractor=B bid=True confidence=75 reason='The task requires coding, which is a moderate strength (50) for me, but the simplicity of the task allows for a partial fit.'
+[announcement] to=C payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-03",
+  "task_description": "Write a Python function that returns the largest number in a non-empty list.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=C value='{"bid": true, "confidence": 90, "reason": "The task requires coding, which is my strongest ability (90), and the simplicity of the task allows for a high confidence score."}'
+[bid] contractor=C bid=True confidence=90 reason='The task requires coding, which is my strongest ability (90), and the simplicity of the task allows for a high confidence score.'
+[award] task=task-03 winner=C confidence=90 gold=C
+[task] id=task-04 desc='Plan X costs $20 per month plus a $30 setup fee. Plan Y costs $25 per month with no setup fee. Compare their total costs over six months and recommend the cheaper plan in one clear sentence.'
+[announcement] to=A payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-04",
+  "task_description": "Plan X costs $20 per month plus a $30 setup fee. Plan Y costs $25 per month with no setup fee. Compare their total costs over six months and recommend the cheaper plan in one clear sentence.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=A value='{"bid": true, "confidence": 85, "reason": "The task requires basic calculation and a short writing sentence, both of which align well with my high calculation and moderate writing abilities."}'
+[bid] contractor=A bid=True confidence=85 reason='The task requires basic calculation and a short writing sentence, both of which align well with my high calculation and moderate writing abilities.'
+[announcement] to=B payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-04",
+  "task_description": "Plan X costs $20 per month plus a $30 setup fee. Plan Y costs $25 per month with no setup fee. Compare their total costs over six months and recommend the cheaper plan in one clear sentence.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=B value='{"bid": true, "confidence": 85, "reason": "The task requires basic calculation and a short writing recommendation, both of which align well with my strong writing and adequate calculation abilities."}'
+[bid] contractor=B bid=True confidence=85 reason='The task requires basic calculation and a short writing recommendation, both of which align well with my strong writing and adequate calculation abilities.'
+[announcement] to=C payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-04",
+  "task_description": "Plan X costs $20 per month plus a $30 setup fee. Plan Y costs $25 per month with no setup fee. Compare their total costs over six months and recommend the cheaper plan in one clear sentence.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=C value='{"bid": false, "confidence": 55, "reason": "The task requires calculation and writing, and my writing ability of 40 is a significant weakness for the recommendation component."}'
+[bid] contractor=C bid=False confidence=55 reason='The task requires calculation and writing, and my writing ability of 40 is a significant weakness for the recommendation component.'
+[award] task=task-04 winner=A confidence=85 gold=A
+[task] id=task-05 desc="Read the following Python error and explain it to a beginner in two clear sentences: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+[announcement] to=A payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-05",
+  "task_description": "Read the following Python error and explain it to a beginner in two clear sentences: TypeError: unsupported operand type(s) for +: 'int' and 'str'",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=A value='{"bid": false, "confidence": 45, "reason": "The task requires explaining a coding error, which relies on my moderate coding ability (50) and weak writing ability (40), resulting in a poor fit."}'
+[bid] contractor=A bid=False confidence=45 reason='The task requires explaining a coding error, which relies on my moderate coding ability (50) and weak writing ability (40), resulting in a poor fit.'
+[announcement] to=B payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-05",
+  "task_description": "Read the following Python error and explain it to a beginner in two clear sentences: TypeError: unsupported operand type(s) for +: 'int' and 'str'",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=B value='{"bid": true, "confidence": 85, "reason": "The task requires explaining a coding error, which aligns with my strong writing ability (90) and moderate coding knowledge (50)."}'
+[bid] contractor=B bid=True confidence=85 reason='The task requires explaining a coding error, which aligns with my strong writing ability (90) and moderate coding knowledge (50).'
+[announcement] to=C payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-05",
+  "task_description": "Read the following Python error and explain it to a beginner in two clear sentences: TypeError: unsupported operand type(s) for +: 'int' and 'str'",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=C value='{"bid": true, "confidence": 85, "reason": "The task requires explaining a coding error, which aligns with my high coding ability (90) and moderate writing ability (40)."}'
+[bid] contractor=C bid=True confidence=85 reason='The task requires explaining a coding error, which aligns with my high coding ability (90) and moderate writing ability (40).'
+[award] task=task-05 winner=B confidence=85 gold=B
+[task] id=task-06 desc='Write a Python function that calculates the final price after applying a percentage discount, and include one example call.'
+[announcement] to=A payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-06",
+  "task_description": "Write a Python function that calculates the final price after applying a percentage discount, and include one example call.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=A value='{"bid": true, "confidence": 75, "reason": "The task requires coding and calculation, where my coding ability is moderate and calculation is strong."}'
+[bid] contractor=A bid=True confidence=75 reason='The task requires coding and calculation, where my coding ability is moderate and calculation is strong.'
+[announcement] to=B payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-06",
+  "task_description": "Write a Python function that calculates the final price after applying a percentage discount, and include one example call.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=B value='{"bid": true, "confidence": 75, "reason": "The task requires coding and calculation, which aligns with my moderate coding ability and strong calculation skills."}'
+[bid] contractor=B bid=True confidence=75 reason='The task requires coding and calculation, which aligns with my moderate coding ability and strong calculation skills.'
+[announcement] to=C payload={
+  "message_type": "TASK_ANNOUNCEMENT",
+  "task_id": "task-06",
+  "task_description": "Write a Python function that calculates the final price after applying a percentage discount, and include one example call.",
+  "eligibility_specification": "Every contractor must respond. Bid only when confidence is at least 70.",
+  "bid_specification": {
+    "required_fields": [
+      "bid",
+      "confidence",
+      "reason"
+    ],
+    "confidence_range": [
+      0,
+      100
+    ],
+    "bid_rule": "bid must be true exactly when confidence >= 70",
+    "response_format": "one JSON object only"
+  },
+  "reply_by": "immediate"
+}
+[raw-response] from=C value='{"bid": true, "confidence": 85, "reason": "The task primarily requires coding (90) with a minor calculation component (50), which is a strong fit for my profile."}'
+[bid] contractor=C bid=True confidence=85 reason='The task primarily requires coding (90) with a minor calculation component (50), which is a strong fit for my profile.'
+[award] task=task-06 winner=C confidence=85 gold=C
