@@ -1,6 +1,5 @@
 import os
 import time
-import json
 from openai import OpenAI
 
 PROVIDER = "openrouter"
@@ -37,13 +36,21 @@ def call_model(system, messages, meter, max_retries=5):
                 messages=full,
                 temperature=TEMPERATURE,
                 max_tokens=256,
+                extra_body={"reasoning": {"enabled": False}},
             )
             meter.add()
-            return resp.choices[0].message.content.strip()
+            if not resp.choices:
+                if attempt < max_retries - 1:
+                    print(f"  [empty] retrying in {2 ** attempt}s...")
+                    time.sleep(2 ** attempt)
+                    continue
+                raise RuntimeError("API returned empty choices")
+            content = resp.choices[0].message.content
+            return content.strip() if content else ""
         except Exception as e:
-            if "429" in str(e) and attempt < max_retries - 1:
+            if ("429" in str(e) or "empty" in str(e)) and attempt < max_retries - 1:
                 wait = 2 ** attempt
-                print(f"  [429] retrying in {wait}s...")
+                print(f"  [retry] {e} — waiting {wait}s...")
                 time.sleep(wait)
             else:
                 raise
