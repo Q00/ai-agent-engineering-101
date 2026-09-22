@@ -23,6 +23,38 @@ RESULT_HEADER = [
 ]
 
 
+class ProviderResponseError(RuntimeError):
+    """Raised when a provider response has no usable assistant completion."""
+
+
+def completion_content(body: object) -> str:
+    """Extract content or raise with a non-sensitive response-shape summary."""
+    choices = body.get("choices") if isinstance(body, dict) else None
+    choice = choices[0] if isinstance(choices, list) and choices else None
+    message = choice.get("message") if isinstance(choice, dict) else None
+    content = message.get("content") if isinstance(message, dict) else None
+    if isinstance(content, str) and content.strip():
+        return content
+
+    error = body.get("error") if isinstance(body, dict) else None
+    diagnostic = {
+        "model": body.get("model") if isinstance(body, dict) else None,
+        "provider": body.get("provider") if isinstance(body, dict) else None,
+        "choices_count": len(choices) if isinstance(choices, list) else None,
+        "finish_reason": choice.get("finish_reason")
+        if isinstance(choice, dict) else None,
+        "message_keys": sorted(message) if isinstance(message, dict) else None,
+        "content_type": type(content).__name__,
+        "reasoning_length": len(message.get("reasoning") or "")
+        if isinstance(message, dict) else None,
+        "error_code": error.get("code") if isinstance(error, dict) else None,
+    }
+    raise ProviderResponseError(
+        "provider returned no completion: "
+        + json.dumps(diagnostic, ensure_ascii=False, sort_keys=True)
+    )
+
+
 def load_env(path: Path) -> None:
     """Load simple KEY=VALUE entries without printing or overwriting secrets."""
     if not path.is_file():
@@ -90,10 +122,7 @@ class OpenAICompatibleChat:
             request, timeout=self.timeout_seconds
         ) as response:
             body = json.load(response)
-        try:
-            return body["choices"][0]["message"]["content"] or ""
-        except (KeyError, IndexError, TypeError) as exc:
-            raise RuntimeError("provider returned no completion") from exc
+        return completion_content(body)
 
 
 def append_result(path: Path, row: dict) -> None:
@@ -167,7 +196,11 @@ def execute_run(
                 note=f"{type(exc).__name__};parse_fails={parse_fails_seen}",
             )
             status = exc.code if isinstance(exc, urllib.error.HTTPError) else None
-            emit("crash", **row, http_status=status, llm_calls=client.calls if client else 0)
+            detail = str(exc) if isinstance(exc, ProviderResponseError) else None
+            emit(
+                "crash", **row, http_status=status, error_detail=detail,
+                llm_calls=client.calls if client else 0,
+            )
             outcome = "rate_limited" if status == 429 else "failed"
 
     if not smoke:

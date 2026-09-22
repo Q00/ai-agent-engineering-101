@@ -10,7 +10,13 @@ from pathlib import Path
 
 from extended_contract_net import run_extended_contract_net
 from identity_state import IdentityState
-from run import OpenAICompatibleChat, REPOSITORY_ROOT, load_env, new_run_id
+from run import (
+    OpenAICompatibleChat,
+    ProviderResponseError,
+    REPOSITORY_ROOT,
+    load_env,
+    new_run_id,
+)
 
 
 ROOT = Path(__file__).resolve().parent
@@ -78,7 +84,8 @@ def main() -> int:
         except Exception as exc:
             row = dict.fromkeys(HEADER, "")
             row.update(run=run_id, note=type(exc).__name__)
-            emit("crash", **row, llm_calls=client.calls)
+            detail = str(exc) if isinstance(exc, ProviderResponseError) else None
+            emit("crash", **row, error_detail=detail, llm_calls=client.calls)
             failed = 1
 
     identity_state.save(state_path)
