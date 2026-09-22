@@ -47,13 +47,22 @@ def load_scenarios(only=None):
 
 
 def done_pairs() -> set:
-    """The (run, scenario) pairs already recorded, so a rerun does not repeat
-    work that cost model calls."""
+    """The (run, scenario) pairs that finished, so a rerun does not repeat work
+    that cost model calls.
+
+    Finished means the row has an outcome. A crashed episode has a note and
+    blank fields, and it stays in the file, but it does not count as done: the
+    first real run here died on a missing package before it sent anything, and
+    skipping the pair on that basis would have thrown the episode away to
+    protect calls that were never spent. The dead row is kept and the retry
+    appends a second row, so the file shows both the failure and what followed
+    it rather than quietly replacing one with the other.
+    """
     if not RESULTS.is_file():
         return set()
     with RESULTS.open(encoding="utf-8", newline="") as f:
         rows = list(csv.DictReader(f))
-    return {(r["run"], r["scenario"]) for r in rows}
+    return {(r["run"], r["scenario"]) for r in rows if (r.get("outcome") or "").strip()}
 
 
 def append_row(row: dict):

@@ -21,6 +21,16 @@ Rate limits are survived, not failed on. OpenRouter's free endpoints return
 A 429 that ends an episode would silently bias the results toward whatever
 condition happened to run first, so chat() waits and retries, and the
 runner records what it could not finish rather than dropping the row.
+
+The OpenAI-compatible path speaks HTTP directly instead of through the
+`openai` package. That was not a preference. The runs here go out through
+an intercepting TLS proxy, and the installed SDK's transport (httpx2, which
+verifies through macOS Secure Transport) rejects its certificate chain with
+OSStatus -26276 while the standard library's ssl module accepts it. The
+alternative was to pass verify=False, which would have put a disabled
+certificate check into the submitted code to work around a condition local
+to one machine. Sixty lines of urllib keeps the verification on, drops the
+dependency, and runs on any Python 3 without a virtualenv.
 """
 
 import json
@@ -59,15 +69,32 @@ class DailyQuotaExhausted(RuntimeError):
 
 
 def _get_client():
+    """Only the anthropic path has a client. The OpenAI-compatible path is
+    plain HTTP; see the module docstring for why."""
     global _client
     if _client is None:
-        if PROVIDER == "anthropic":
-            import anthropic
-            _client = anthropic.Anthropic()
-        else:
-            from openai import OpenAI
-            _client = OpenAI()
+        import anthropic
+        _client = anthropic.Anthropic()
     return _client
+
+
+def _post_json(url: str, payload: dict, key: str, timeout: int = 120) -> dict:
+    req = urllib.request.Request(
+        url, data=json.dumps(payload).encode("utf-8"), method="POST",
+        headers={"Authorization": f"Bearer {key}",
+                 "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")[:500]
+        raise ApiError(e.code, f"HTTP {e.code} from {url}: {body}") from None
+
+
+class ApiError(RuntimeError):
+    def __init__(self, status: int, message: str):
+        super().__init__(message)
+        self.status_code = status
 
 
 class Meter:
@@ -97,9 +124,23 @@ class Meter:
             self.agent_calls += 1
 
 
-def _is_rate_limit(exc: Exception) -> bool:
+def _is_retryable(exc: Exception) -> bool:
+    """A 429, or an upstream that is merely busy.
+
+    OpenRouter returns some upstream failures as HTTP 200 with an `error`
+    object in the body, so status alone is not enough. The first real run
+    here died on {"code": 503, "error_type": "provider_overloaded"} two
+    messages into an episode, which is a queue being full, not an answer.
+    Treating it as fatal would have thrown away the calls already spent on
+    that episode and, worse, biased the results toward whichever condition
+    happened to run when the free pool was quiet.
+    """
     status = getattr(exc, "status_code", None) or getattr(exc, "code", None)
-    return status == 429 or "429" in str(exc) or "rate limit" in str(exc).lower()
+    if status == 429 or (isinstance(status, int) and 500 <= status < 600):
+        return True
+    text = str(exc).lower()
+    return ("429" in text or "rate limit" in text
+            or "overloaded" in text or "temporarily unavailable" in text)
 
 
 def _is_daily_quota(exc: Exception) -> bool:
@@ -122,11 +163,12 @@ def chat(system: str, messages: list, meter: Meter, kind: str = "agent") -> str:
             last = exc
             if _is_daily_quota(exc):
                 raise DailyQuotaExhausted(str(exc)) from exc
-            if not _is_rate_limit(exc):
+            if not _is_retryable(exc):
                 raise
             wait = BASE_BACKOFF * (2 ** attempt) + random.uniform(0, 1)
-            print(f"      [429] attempt {attempt + 1}/{MAX_RETRIES}, waiting {wait:.1f}s",
-                  flush=True)
+            status = getattr(exc, "status_code", "?")
+            print(f"      [{status}] attempt {attempt + 1}/{MAX_RETRIES}, "
+                  f"waiting {wait:.1f}s", flush=True)
             time.sleep(wait)
     raise RuntimeError(f"rate limited {MAX_RETRIES} times in a row: {last}")
 
@@ -139,17 +181,29 @@ def _chat_once(system: str, messages: list, meter: Meter, kind: str) -> str:
         meter.add(resp.usage.input_tokens, resp.usage.output_tokens, kind)
         return "".join(b.text for b in resp.content if b.type == "text")
 
-    resp = _get_client().chat.completions.create(
-        model=MODEL, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
-        messages=[{"role": "system", "content": system}] + messages,
+    base = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+    data = _post_json(base + "/chat/completions", {
+        "model": MODEL,
+        "max_tokens": MAX_TOKENS,
+        "temperature": TEMPERATURE,
+        "messages": [{"role": "system", "content": system}] + messages,
         # Reasoning models on OpenRouter put their thinking into the message
         # text unless this is off. A negotiation message with the model's
         # deliberation prepended parses as neither JSON nor a tagged line.
-        extra_body={"reasoning": {"enabled": False}})
-    usage = resp.usage
-    meter.add(getattr(usage, "prompt_tokens", 0),
-              getattr(usage, "completion_tokens", 0), kind)
-    return resp.choices[0].message.content or ""
+        "reasoning": {"enabled": False},
+    }, os.environ.get("OPENAI_API_KEY", ""))
+    # An upstream failure can arrive as HTTP 200 with an error object and no
+    # choices. It is charged as a request either way, so the meter is fed
+    # before the error is raised.
+    usage = data.get("usage") or {}
+    meter.add(usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0), kind)
+    err = data.get("error")
+    if err:
+        raise ApiError(int(err.get("code") or 0), f"upstream error: {json.dumps(err)[:300]}")
+    choices = data.get("choices") or []
+    if not choices:
+        raise ApiError(0, f"no choices in response: {json.dumps(data)[:300]}")
+    return (choices[0].get("message") or {}).get("content") or ""
 
 
 def free_quota_remaining():
@@ -179,15 +233,14 @@ def free_quota_remaining():
 def run_header(turn_limit: int) -> str:
     """The first line of every log file: what produced the numbers below it."""
     import platform
-    try:
-        if PROVIDER == "anthropic":
+    if PROVIDER == "anthropic":
+        try:
             import anthropic
             sdk = f"anthropic {anthropic.__version__}"
-        else:
-            import openai
-            sdk = f"openai {openai.__version__}"
-    except Exception:  # noqa: BLE001
-        sdk = "sdk version unavailable"
+        except Exception:  # noqa: BLE001
+            sdk = "anthropic version unavailable"
+    else:
+        sdk = "stdlib urllib (no SDK)"
     if PROVIDER == "anthropic":
         sampling = (f"temperature=NOT_SETTABLE(sampling removed on {MODEL}; "
                     f"internal value unknown)")
