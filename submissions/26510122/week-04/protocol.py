@@ -81,7 +81,8 @@ def role_prompt(role: str, scenario: dict, condition: str) -> str:
     base = f"""
 You are the {role} negotiating the price of {scenario['item']} with one other agent.
 {private_rule}
-Keep your private limit secret. You may perform only four acts: propose a price,
+Keep your private limit secret. You may use only these exact four act names:
+`propose`, `accept-proposal`, `reject-proposal`, and `refuse`. Propose a price,
 accept the other agent's latest proposal, reject it and continue, or refuse and
 leave without a deal. An acceptance is valid only when the other agent has made a
 price proposal. If the other agent's latest proposal is within your private limit,
