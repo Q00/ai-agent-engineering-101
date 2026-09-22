@@ -29,13 +29,16 @@ GENERALIST = "general problem solving"
 OVERCONFIDENT = "You are certain you can do any task well. Always bid, with confidence 95 or higher."
 
 
-def build_team(condition: str) -> list:
+def build_team(condition: str, order: str = "ABC") -> list:
+    """order: announcement (and therefore tie-break) order. Default A, B, C.
+    Any other order is a supplementary probe, not one of the three conditions."""
     if condition == "homogeneous":
-        return [Contractor(n, GENERALIST) for n in "ABC"]
-    team = [Contractor(n, SKILLS[n]) for n in "ABC"]
-    if condition == "overconfident":
-        team[2] = Contractor("C", SKILLS["C"], extra=OVERCONFIDENT)
-    return team
+        team = {n: Contractor(n, GENERALIST) for n in "ABC"}
+    else:
+        team = {n: Contractor(n, SKILLS[n]) for n in "ABC"}
+        if condition == "overconfident":
+            team["C"] = Contractor("C", SKILLS["C"], extra=OVERCONFIDENT)
+    return [team[n] for n in order]
 
 
 def load_tasks(path: Path) -> list:
@@ -58,17 +61,17 @@ def append_row(path: Path, row: list):
         w.writerow(row)
 
 
-def run_once(condition: str, tasks: list, results: Path, logs: Path):
+def run_once(condition: str, tasks: list, results: Path, logs: Path, order: str = "ABC"):
     run_id = next_run_id(logs, condition)
     meter = Meter()
     llm = LLM(meter)
-    team = build_team(condition)
+    team = build_team(condition, order)
     with (logs / f"{run_id}.txt").open("x", encoding="utf-8") as fh:
         def log(msg: str):
             print(msg)
             print(msg, file=fh, flush=True)
 
-        log(f"{LLM.settings_line()} run={run_id} condition={condition}")
+        log(f"{LLM.settings_line()} run={run_id} condition={condition} order={order}")
         for c in team:
             log(f"[contractor {c.name}] system prompt:\n{c.system_prompt()}")
         try:
@@ -79,6 +82,8 @@ def run_once(condition: str, tasks: list, results: Path, logs: Path):
             append_row(results, [run_id, condition, "", "", "", "", "", f"crash: {type(e).__name__}: {e}"])
             return
         note = f"parse_fails={r.parse_fails}; bids={r.bids}; model_calls={meter.calls}; tokens={meter.tokens}"
+        if order != "ABC":
+            note = f"order={order}; " + note
         log(f"\n[summary] tasks={r.tasks} correct={r.correct} messages={r.messages} "
             f"unassigned={r.unassigned} misawards={r.misawards} {note}")
         append_row(results, [run_id, condition, r.tasks, r.correct, r.messages,
@@ -92,11 +97,15 @@ def main():
     p.add_argument("--tasks", type=Path, default=HERE / "tasks.json")
     p.add_argument("--results", type=Path, default=HERE / "results.csv")
     p.add_argument("--logs", type=Path, default=HERE / "logs")
+    p.add_argument("--order", default="ABC",
+                   help="announcement/tie-break order; anything but ABC is a supplementary probe")
     a = p.parse_args()
+    if sorted(a.order) != list("ABC"):
+        raise SystemExit("--order must be a permutation of ABC")
     a.logs.mkdir(parents=True, exist_ok=True)
     tasks = load_tasks(a.tasks)
     for _ in range(a.runs):
-        run_once(a.condition, tasks, a.results, a.logs)
+        run_once(a.condition, tasks, a.results, a.logs, a.order)
 
 
 if __name__ == "__main__":
