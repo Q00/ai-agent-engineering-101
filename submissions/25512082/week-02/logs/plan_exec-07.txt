@@ -1,0 +1,21 @@
+[condition] provider=openai model=nvidia/nemotron-3.5-lightning:free
+[condition] max_output_tokens=provider-default
+[condition] task=In app.log, which hour (HH:00) has the most ERROR lines? Answer with the hour in HH:00 form.
+[condition] system_prompts=['You are a planner. Reply with a JSON list of short strings, one per step, and nothing else. No prose, no code fences.', "You execute one step of a plan at a time with the tools you are given. If the step cannot be done as planned, reply with a line that starts with 'OFF_PLAN:' and explain why. During a numbered step, perform only that step and reply with 'STEP_DONE:' after any tool calls; do not give the final answer. Only when explicitly asked for the final answer, reply with a line that starts with 'Answer:' and make no tool call."]
+[condition] tools=[{'name': 'read_file', 'description': 'Read a text file in the working directory (first 4000 characters).', 'parameters': {'type': 'object', 'properties': {'path': {'type': 'string'}}, 'required': ['path']}}, {'name': 'count_pattern', 'description': 'Count the lines of a text file that match a regular expression.', 'parameters': {'type': 'object', 'properties': {'path': {'type': 'string'}, 'pattern': {'type': 'string'}}, 'required': ['path', 'pattern']}}]
+[condition] limits={'max_replan': 1, 'max_tool_rounds': 3, 'max_steps': 16}
+[plan] ['Read app.log', 'Identify ERROR lines', "Extract hour from each line's timestamp", 'Count ERROR occurrences per hour', 'Determine hour with maximum count', 'Output hour in HH:00 format']
+  [tool] read_file({'path': 'app.log'}) -> 2026-09-01 09:07:27 INFO  job finished in 320ms | 2026-09-01 09:11:56 ERROR NullReference in QuizService.score | 2026-09-01 09:13:14 INFO  health check ok | 2026-09-01 09:26:45 INFO  health check ok | 2026-09
+[step 1] STEP_DONE: Identify ERROR lines
+  [tool] count_pattern({'pattern': 'ERROR', 'path': 'app.log'}) -> 19
+  [tool] count_pattern({'path': 'app.log', 'pattern': '^2026-09-01 09:.*ERROR'}) -> 1
+  [tool] count_pattern({'pattern': '^2026-09-01 10:.*ERROR', 'path': 'app.log'}) -> 2
+  [tool] count_pattern({'pattern': '^2026-09-01 11:.*ERROR', 'path': 'app.log'}) -> 1
+[step 2] OFF_PLAN: step exceeded the tool-call budget
+[replan] ['Read app.log', 'Extract hour from timestamp', 'Count ERROR occurrences per hour', 'Determine hour with maximum count', 'Output hour in HH:00 format']
+[step 2] Answer: 14:00
+[step 3] STEP_DONE: Count ERROR occurrences per hour
+[step 4] Answer: 14:00
+[step 5] Answer: 14:00
+[final] Answer: 14:00
+[judge] expected='14:00' -> O (244.3s)
