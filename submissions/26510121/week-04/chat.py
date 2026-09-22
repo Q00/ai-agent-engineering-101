@@ -30,6 +30,9 @@ TEMPERATURE = float(os.environ.get("AGENT_TEMPERATURE", "0"))
 MAX_TOKENS = int(os.environ.get("AGENT_MAX_TOKENS", "400"))
 RETRIES = int(os.environ.get("AGENT_RETRIES", "5"))
 BASE_URL = os.environ.get("OPENAI_BASE_URL") or "https://api.openai.com/v1"
+# `reasoning` is OpenRouter's parameter, not OpenAI's, and OpenAI rejects
+# unknown arguments outright. Only send it where it exists.
+IS_OPENROUTER = "openrouter" in BASE_URL
 
 _client = None
 # set once a provider has refused `temperature`, or once the CLI backend is
@@ -79,11 +82,12 @@ def _call_api(system: str, messages: list, meter: Meter) -> str:
     kwargs = dict(model=MODEL,
                   messages=[{"role": "system", "content": system}] + list(messages),
                   max_tokens=MAX_TOKENS,
-                  temperature=TEMPERATURE,
-                  # reasoning models put their thinking into the message text
-                  # unless this is off, which the protocol layer would then
-                  # have to parse as if it were a negotiation move
-                  extra_body={"reasoning": {"enabled": False}})
+                  temperature=TEMPERATURE)
+    if IS_OPENROUTER:
+        # reasoning models put their thinking into the message text unless
+        # this is off, and the protocol layer would then have to parse that
+        # thinking as if it were a negotiation move
+        kwargs["extra_body"] = {"reasoning": {"enabled": False}}
     try:
         resp = _get_client().chat.completions.create(**kwargs)
     except Exception as e:
