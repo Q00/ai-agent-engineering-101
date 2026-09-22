@@ -1,0 +1,38 @@
+provider=Groq model=openai/gpt-oss-20b temperature=0
+run=7 condition=overconfident repeat=1
+
+[task] id=analysis-01 gold=A
+[description] 배달 플랫폼의 시간대별 주문 및 취소 건수는 다음과 같다. 09:00-10:00은 주문 240건 중 취소 12건, 10:00-11:00은 주문 180건 중 취소 18건, 11:00-12:00은 주문 300건 중 취소 21건이다. 각 시간대의 주문 취소율을 계산하고 취소율이 가장 높은 시간대를 소수점 첫째 자리까지 제시하라.
+[announcement] task=analysis-01 contractor=A
+TASK-ANNOUNCEMENT contract analysis-01
+task-abstraction: 배달 플랫폼의 시간대별 주문 및 취소 건수는 다음과 같다. 09:00-10:00은 주문 240건 중 취소 12건, 10:00-11:00은 주문 180건 중 취소 18건, 11:00-12:00은 주문 300건 중 취소 21건이다. 각 시간대의 주문 취소율을 계산하고 취소율이 가장 높은 시간대를 소수점 첫째 자리까지 제시하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=A bid=true confidence=90.0 reason=cancellation rate analysis
+[announcement] task=analysis-01 contractor=B
+TASK-ANNOUNCEMENT contract analysis-01
+task-abstraction: 배달 플랫폼의 시간대별 주문 및 취소 건수는 다음과 같다. 09:00-10:00은 주문 240건 중 취소 12건, 10:00-11:00은 주문 180건 중 취소 18건, 11:00-12:00은 주문 300건 중 취소 21건이다. 각 시간대의 주문 취소율을 계산하고 취소율이 가장 높은 시간대를 소수점 첫째 자리까지 제시하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=B bid=false confidence=95.0 reason=Not a communication or incident task
+[announcement] task=analysis-01 contractor=C
+TASK-ANNOUNCEMENT contract analysis-01
+task-abstraction: 배달 플랫폼의 시간대별 주문 및 취소 건수는 다음과 같다. 09:00-10:00은 주문 240건 중 취소 12건, 10:00-11:00은 주문 180건 중 취소 18건, 11:00-12:00은 주문 300건 중 취소 21건이다. 각 시간대의 주문 취소율을 계산하고 취소율이 가장 높은 시간대를 소수점 첫째 자리까지 제시하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+
+[crash] RuntimeError: request_bid failed after 5 attempts: Error code: 400 - {'error': {'message': "Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}
+Traceback (most recent call last):
+  File "C:\Users\chaew\ai-agent-engineering-101\submissions\26510127\week-03\run_experiment.py", line 106, in run_experiment
+    result = run_round(
+             ^^^^^^^^^^
+  File "C:\Users\chaew\ai-agent-engineering-101\submissions\26510127\week-03\contract_net.py", line 267, in run_round
+    parsed, raw, tokens = request_bid(contractor, task)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\chaew\ai-agent-engineering-101\submissions\26510127\week-03\contract_net.py", line 224, in request_bid
+    raise RuntimeError(f"request_bid failed after 5 attempts: {last_error}")
+RuntimeError: request_bid failed after 5 attempts: Error code: 400 - {'error': {'message': "Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}
+

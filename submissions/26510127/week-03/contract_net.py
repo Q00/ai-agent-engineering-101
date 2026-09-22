@@ -10,22 +10,15 @@ import os
 from dataclasses import dataclass
 from typing import Callable
 
-from openai import OpenAI
-
+import time
+from openai import OpenAI, RateLimitError, APIConnectionError, APITimeoutError, APIError
 
 # ---------------------------------------------------------------------------
 # Model configuration
 # ---------------------------------------------------------------------------
 
-PROVIDER = os.environ.get(
-    "AGENT_PROVIDER",
-    "OpenRouter",
-)
-
-MODEL = os.environ.get(
-    "AGENT_MODEL",
-    "inclusionai/ling-3.0-flash-vl:free",
-)
+PROVIDER = os.environ.get("AGENT_PROVIDER", "Groq")
+MODEL = os.environ.get("AGENT_MODEL", "llama-3.1-8b-instant")
 
 TEMPERATURE = 0
 MAX_TOKENS = 300
@@ -39,10 +32,7 @@ def get_client() -> OpenAI:
 
     if _client is None:
         api_key = os.environ.get("OPENAI_API_KEY")
-        base_url = os.environ.get(
-            "OPENAI_BASE_URL",
-            "https://openrouter.ai/api/v1",
-        )
+        base_url = os.environ.get("OPENAI_BASE_URL", "https://api.groq.com/openai/v1")
 
         if not api_key:
             raise RuntimeError("OPENAI_API_KEY is not configured")
@@ -205,62 +195,39 @@ def parse_bid(raw: str) -> dict | None:
     }
 
 
-def request_bid(
-    contractor: Contractor,
-    task: dict,
-) -> tuple[dict | None, str, int]:
-    """Ask one contractor for one bid.
-
-    Returns:
-        parsed bid or None,
-        raw model response,
-        number of tokens used.
-    """
-
-    system_prompt = BID_SYSTEM.format(
-        name=contractor.name,
-        skill=contractor.skill,
-    )
-
+def request_bid(contractor: Contractor, task: dict) -> tuple[dict | None, str, int]:
+    system_prompt = BID_SYSTEM.format(name=contractor.name, skill=contractor.skill)
     if contractor.overconfident:
         system_prompt += OVERCONFIDENT_PROMPT
-
     announcement = make_announcement(task)
 
-    response = get_client().chat.completions.create(
-        model=MODEL,
-        temperature=TEMPERATURE,
-        max_tokens=MAX_TOKENS,
-        messages=[
-            {
-                "role": "system",
-                "content": system_prompt,
-            },
-            {
-                "role": "user",
-                "content": announcement,
-            },
-        ],
-        response_format={
-            "type": "json_object",
-        },
-        extra_body={
-            "include_reasoning": False,
-        },
-    )
+    last_error = None
+    for attempt in range(5):
+        try:
+            response = get_client().chat.completions.create(
+                model=MODEL,
+                temperature=TEMPERATURE,
+                max_tokens=MAX_TOKENS,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": announcement},
+                ],
+                response_format={"type": "json_object"},
+            )
+            break
+        except (RateLimitError, APIConnectionError, APITimeoutError, APIError) as error:
+            last_error = error
+            wait = 2 * (2 ** attempt)
+            print(f"[retry] {contractor.name} attempt {attempt + 1} failed: {error} -- waiting {wait}s")
+            time.sleep(wait)
+    else:
+        raise RuntimeError(f"request_bid failed after 5 attempts: {last_error}")
 
     if not response.choices:
         raise RuntimeError("model response contained no choices")
-
     raw = response.choices[0].message.content or ""
-
     usage = response.usage
-    tokens = 0
-    if usage is not None:
-        tokens = int(usage.prompt_tokens or 0) + int(
-            usage.completion_tokens or 0
-        )
-
+    tokens = int(usage.prompt_tokens or 0) + int(usage.completion_tokens or 0) if usage else 0
     return parse_bid(raw), raw, tokens
 
 

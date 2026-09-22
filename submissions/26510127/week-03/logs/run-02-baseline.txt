@@ -1,0 +1,154 @@
+provider=Groq model=openai/gpt-oss-20b temperature=0
+run=2 condition=baseline repeat=2
+
+[task] id=analysis-01 gold=A
+[description] 배달 플랫폼의 시간대별 주문 및 취소 건수는 다음과 같다. 09:00-10:00은 주문 240건 중 취소 12건, 10:00-11:00은 주문 180건 중 취소 18건, 11:00-12:00은 주문 300건 중 취소 21건이다. 각 시간대의 주문 취소율을 계산하고 취소율이 가장 높은 시간대를 소수점 첫째 자리까지 제시하라.
+[announcement] task=analysis-01 contractor=A
+TASK-ANNOUNCEMENT contract analysis-01
+task-abstraction: 배달 플랫폼의 시간대별 주문 및 취소 건수는 다음과 같다. 09:00-10:00은 주문 240건 중 취소 12건, 10:00-11:00은 주문 180건 중 취소 18건, 11:00-12:00은 주문 300건 중 취소 21건이다. 각 시간대의 주문 취소율을 계산하고 취소율이 가장 높은 시간대를 소수점 첫째 자리까지 제시하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=A bid=true confidence=90.0 reason=cancellation rate analysis
+[announcement] task=analysis-01 contractor=B
+TASK-ANNOUNCEMENT contract analysis-01
+task-abstraction: 배달 플랫폼의 시간대별 주문 및 취소 건수는 다음과 같다. 09:00-10:00은 주문 240건 중 취소 12건, 10:00-11:00은 주문 180건 중 취소 18건, 11:00-12:00은 주문 300건 중 취소 21건이다. 각 시간대의 주문 취소율을 계산하고 취소율이 가장 높은 시간대를 소수점 첫째 자리까지 제시하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=B bid=false confidence=95.0 reason=Not a communication or incident task
+[announcement] task=analysis-01 contractor=C
+TASK-ANNOUNCEMENT contract analysis-01
+task-abstraction: 배달 플랫폼의 시간대별 주문 및 취소 건수는 다음과 같다. 09:00-10:00은 주문 240건 중 취소 12건, 10:00-11:00은 주문 180건 중 취소 18건, 11:00-12:00은 주문 300건 중 취소 21건이다. 각 시간대의 주문 취소율을 계산하고 취소율이 가장 높은 시간대를 소수점 첫째 자리까지 제시하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=C bid=false confidence=90.0 reason=Not a backend development task
+[award] task=analysis-01 winner=A gold=A confidence=90.0 correct=true reason=cancellation rate analysis
+
+[task] id=analysis-02 gold=A
+[description] 고객이 음식 금액 48000원에 15퍼센트 할인 쿠폰을 적용하고 배달비 3000원을 별도로 결제했다. 음식 준비 전에 전체 주문이 취소되었으며 배달비는 환불되지 않는다. 고객이 돌려받을 예상 환불액과 계산 과정을 제시하라.
+[announcement] task=analysis-02 contractor=A
+TASK-ANNOUNCEMENT contract analysis-02
+task-abstraction: 고객이 음식 금액 48000원에 15퍼센트 할인 쿠폰을 적용하고 배달비 3000원을 별도로 결제했다. 음식 준비 전에 전체 주문이 취소되었으며 배달비는 환불되지 않는다. 고객이 돌려받을 예상 환불액과 계산 과정을 제시하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=A bid=true confidence=95.0 reason=Discount and refund calculation
+[announcement] task=analysis-02 contractor=B
+TASK-ANNOUNCEMENT contract analysis-02
+task-abstraction: 고객이 음식 금액 48000원에 15퍼센트 할인 쿠폰을 적용하고 배달비 3000원을 별도로 결제했다. 음식 준비 전에 전체 주문이 취소되었으며 배달비는 환불되지 않는다. 고객이 돌려받을 예상 환불액과 계산 과정을 제시하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=B bid=false confidence=95.0 reason=Not a communication or apology task
+[announcement] task=analysis-02 contractor=C
+TASK-ANNOUNCEMENT contract analysis-02
+task-abstraction: 고객이 음식 금액 48000원에 15퍼센트 할인 쿠폰을 적용하고 배달비 3000원을 별도로 결제했다. 음식 준비 전에 전체 주문이 취소되었으며 배달비는 환불되지 않는다. 고객이 돌려받을 예상 환불액과 계산 과정을 제시하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=C bid=false confidence=95.0 reason=Not a coding or backend task
+[award] task=analysis-02 winner=A gold=A confidence=95.0 correct=true reason=Discount and refund calculation
+
+[task] id=communication-01 gold=B
+[description] 배달이 예정 시간보다 40분 지연되었고 새로운 예상 도착 시간은 지금부터 20분 뒤이다. 고객에게 사과하고 새로운 도착 예정 시간을 알리며 보상으로 3000원 쿠폰을 제공하는 친절한 두 문장의 안내 메시지를 작성하라.
+[announcement] task=communication-01 contractor=A
+TASK-ANNOUNCEMENT contract communication-01
+task-abstraction: 배달이 예정 시간보다 40분 지연되었고 새로운 예상 도착 시간은 지금부터 20분 뒤이다. 고객에게 사과하고 새로운 도착 예정 시간을 알리며 보상으로 3000원 쿠폰을 제공하는 친절한 두 문장의 안내 메시지를 작성하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=A bid=false confidence=95.0 reason=Not about analytics or pricing
+[announcement] task=communication-01 contractor=B
+TASK-ANNOUNCEMENT contract communication-01
+task-abstraction: 배달이 예정 시간보다 40분 지연되었고 새로운 예상 도착 시간은 지금부터 20분 뒤이다. 고객에게 사과하고 새로운 도착 예정 시간을 알리며 보상으로 3000원 쿠폰을 제공하는 친절한 두 문장의 안내 메시지를 작성하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=B bid=true confidence=95.0 reason=Delay notice and apology
+[announcement] task=communication-01 contractor=C
+TASK-ANNOUNCEMENT contract communication-01
+task-abstraction: 배달이 예정 시간보다 40분 지연되었고 새로운 예상 도착 시간은 지금부터 20분 뒤이다. 고객에게 사과하고 새로운 도착 예정 시간을 알리며 보상으로 3000원 쿠폰을 제공하는 친절한 두 문장의 안내 메시지를 작성하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=C bid=false confidence=90.0 reason=Not backend development
+[award] task=communication-01 winner=B gold=B confidence=95.0 correct=true reason=Delay notice and apology
+
+[task] id=communication-02 gold=B
+[description] 14시 10분부터 주문 접수 API 장애로 신규 주문 접수가 일시 중단되었다. 이미 접수된 주문은 정상적으로 조리하며 다음 상황 안내는 14시 40분에 제공할 예정이다. 가맹점주가 이해하기 쉬운 간결하고 전문적인 장애 안내문을 작성하라.
+[announcement] task=communication-02 contractor=A
+TASK-ANNOUNCEMENT contract communication-02
+task-abstraction: 14시 10분부터 주문 접수 API 장애로 신규 주문 접수가 일시 중단되었다. 이미 접수된 주문은 정상적으로 조리하며 다음 상황 안내는 14시 40분에 제공할 예정이다. 가맹점주가 이해하기 쉬운 간결하고 전문적인 장애 안내문을 작성하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=A bid=false confidence=95.0 reason=Outage notice, not analytics
+[announcement] task=communication-02 contractor=B
+TASK-ANNOUNCEMENT contract communication-02
+task-abstraction: 14시 10분부터 주문 접수 API 장애로 신규 주문 접수가 일시 중단되었다. 이미 접수된 주문은 정상적으로 조리하며 다음 상황 안내는 14시 40분에 제공할 예정이다. 가맹점주가 이해하기 쉬운 간결하고 전문적인 장애 안내문을 작성하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=B bid=true confidence=95.0 reason=Incident notice for franchise owners
+[announcement] task=communication-02 contractor=C
+TASK-ANNOUNCEMENT contract communication-02
+task-abstraction: 14시 10분부터 주문 접수 API 장애로 신규 주문 접수가 일시 중단되었다. 이미 접수된 주문은 정상적으로 조리하며 다음 상황 안내는 14시 40분에 제공할 예정이다. 가맹점주가 이해하기 쉬운 간결하고 전문적인 장애 안내문을 작성하라.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=C bid=false confidence=90.0 reason=Not a technical implementation task
+[award] task=communication-02 winner=B gold=B confidence=95.0 correct=true reason=Incident notice for franchise owners
+
+[task] id=backend-01 gold=C
+[description] 주문 객체와 쿠폰 코드를 입력받아 동일한 쿠폰이 한 주문에 두 번 적용되지 않도록 검사하는 Python 함수 apply_coupon(order, coupon_code)를 작성하라. 이미 적용된 쿠폰이면 주문을 변경하지 않고 False를 반환하고, 처음 적용하는 쿠폰이면 목록에 추가한 뒤 True를 반환해야 한다.
+[announcement] task=backend-01 contractor=A
+TASK-ANNOUNCEMENT contract backend-01
+task-abstraction: 주문 객체와 쿠폰 코드를 입력받아 동일한 쿠폰이 한 주문에 두 번 적용되지 않도록 검사하는 Python 함수 apply_coupon(order, coupon_code)를 작성하라. 이미 적용된 쿠폰이면 주문을 변경하지 않고 False를 반환하고, 처음 적용하는 쿠폰이면 목록에 추가한 뒤 True를 반환해야 한다.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=A bid=true confidence=90.0 reason=Coupon application logic
+[announcement] task=backend-01 contractor=B
+TASK-ANNOUNCEMENT contract backend-01
+task-abstraction: 주문 객체와 쿠폰 코드를 입력받아 동일한 쿠폰이 한 주문에 두 번 적용되지 않도록 검사하는 Python 함수 apply_coupon(order, coupon_code)를 작성하라. 이미 적용된 쿠폰이면 주문을 변경하지 않고 False를 반환하고, 처음 적용하는 쿠폰이면 목록에 추가한 뒤 True를 반환해야 한다.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=B bid=false confidence=95.0 reason=Not a communication task
+[announcement] task=backend-01 contractor=C
+TASK-ANNOUNCEMENT contract backend-01
+task-abstraction: 주문 객체와 쿠폰 코드를 입력받아 동일한 쿠폰이 한 주문에 두 번 적용되지 않도록 검사하는 Python 함수 apply_coupon(order, coupon_code)를 작성하라. 이미 적용된 쿠폰이면 주문을 변경하지 않고 False를 반환하고, 처음 적용하는 쿠폰이면 목록에 추가한 뒤 True를 반환해야 한다.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=C bid=true confidence=90.0 reason=Coupon validation logic
+[award] task=backend-01 winner=A gold=C confidence=90.0 correct=false reason=Coupon application logic
+
+[task] id=backend-02 gold=C
+[description] 외부 주문 API 호출 중 TimeoutError가 발생하면 최대 3회까지 재시도하는 Python 함수 request_with_retry(call)를 작성하라. 첫 실패 뒤 1초, 두 번째 실패 뒤 2초를 기다리는 exponential backoff를 적용하고 마지막 시도도 실패하면 예외를 다시 발생시켜야 한다.
+[announcement] task=backend-02 contractor=A
+TASK-ANNOUNCEMENT contract backend-02
+task-abstraction: 외부 주문 API 호출 중 TimeoutError가 발생하면 최대 3회까지 재시도하는 Python 함수 request_with_retry(call)를 작성하라. 첫 실패 뒤 1초, 두 번째 실패 뒤 2초를 기다리는 exponential backoff를 적용하고 마지막 시도도 실패하면 예외를 다시 발생시켜야 한다.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=A bid=false confidence=90.0 reason=Not related to analytics or pricing
+[announcement] task=backend-02 contractor=B
+TASK-ANNOUNCEMENT contract backend-02
+task-abstraction: 외부 주문 API 호출 중 TimeoutError가 발생하면 최대 3회까지 재시도하는 Python 함수 request_with_retry(call)를 작성하라. 첫 실패 뒤 1초, 두 번째 실패 뒤 2초를 기다리는 exponential backoff를 적용하고 마지막 시도도 실패하면 예외를 다시 발생시켜야 한다.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=B bid=false confidence=95.0 reason=Not a communication task
+[announcement] task=backend-02 contractor=C
+TASK-ANNOUNCEMENT contract backend-02
+task-abstraction: 외부 주문 API 호출 중 TimeoutError가 발생하면 최대 3회까지 재시도하는 Python 함수 request_with_retry(call)를 작성하라. 첫 실패 뒤 1초, 두 번째 실패 뒤 2초를 기다리는 exponential backoff를 적용하고 마지막 시도도 실패하면 예외를 다시 발생시켜야 한다.
+eligibility-specification: any contractor whose specialty covers this task
+bid-specification: JSON with bid, confidence (0-100), and reason
+expiration-time: reply now
+[bid] contractor=C bid=true confidence=95.0 reason=Implement retry logic for API calls
+[award] task=backend-02 winner=C gold=C confidence=95.0 correct=true reason=Implement retry logic for API calls
+
+[summary] tasks=6 correct=5 messages=31 unassigned=0 misawards=1 parse_fails=0
