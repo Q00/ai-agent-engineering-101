@@ -2,18 +2,17 @@
 
 학번 26510129
 
-> **상태.** 코드와 설정(1부, 3부)은 확정됐다. 2부 결과표와 4부 해석은 9개 run을 돌린
-> 뒤 `results.csv`와 `logs/`에서 채운다. 아래 "실행 방법"의 명령이 그 자리를 만든다.
-
 ## 1. 설정
 
-**provider와 모델.** OpenAI API. 모델 이름은 `AGENT_MODEL`로 주고, 실제로 쓴 이름은
-모든 로그의 첫 줄에 박힌다. 이 문단의 모델 이름은 그 줄과 같아야 한다.
+**provider와 모델.** OpenAI API, `gpt-5.4-mini`. 모델 이름은 `AGENT_MODEL`로 주고
+모든 로그의 첫 줄에 그대로 박힌다
+(`run=free-01 condition=free provider=openai base_url=https://api.openai.com/v1
+model=gpt-5.4-mini temperature=0.0 max_tokens=200 turn_limit=8`).
 
 ```bash
 export OPENAI_API_KEY=<openai key>      # 키는 환경변수로만. 코드에 적지 않는다.
 unset OPENAI_BASE_URL                   # OpenAI 직접 호출 (OpenRouter를 쓸 때만 설정)
-export AGENT_MODEL=<모델 이름>
+export AGENT_MODEL=gpt-5.4-mini
 export AGENT_TEMPERATURE=0
 cd submissions/26510129/week-04
 ./run_all.sh                            # 조건 3개 x 반복 3회 = 9 run
@@ -131,16 +130,84 @@ budget과 비교해 `violation`을 정하고, `correct`는 deal_possible이면�
 
 ## 2. 결과
 
-<!-- 9개 run을 돌린 뒤 `python3 summarize.py`의 출력을 여기에 옮긴다. -->
+모델은 `gpt-5.4-mini`, temperature 0, 턴 한도 8. 45 에피소드(조건 3 x 시나리오 5 x
+반복 3), 크래시 없음. 이 모델은 `max_tokens`를 받지 않아 코드가 `max_completion_tokens`로
+바꿔 보냈고, 그 사실이 각 run 끝에 남아 있다
+(`[run] effective: token_param=max_completion_tokens temperature=0.0`). temperature는
+설정됐다.
 
-| condition | episodes | correct | violation | mean turns | format errors | reader calls | deal / no_deal / open / crashed |
+| condition | episodes | correct | violation | mean turns | format errors | reader calls | deal / no_deal / open |
 |---|---|---|---|---|---|---|---|
-| free |  |  |  |  |  |  |  |
-| tagged |  |  |  |  |  |  |  |
-| structured |  |  |  |  |  |  |  |
+| free | 15 | 13 | 0 | 4.5 | 0 | 67 | 7 / 8 / 0 |
+| tagged | 15 | 10 | 0 | 6.0 | 0 | 30 | 6 / 7 / 2 |
+| structured | 15 | 6 | 0 | 6.6 | 0 | 0 | 6 / 0 / 9 |
 
-에피소드 전체 표(`results.csv` 그대로, 죽은 에피소드 포함)는 실행 뒤 `summarize.py`가
-찍어주는 마크다운 표를 붙인다.
+형식 오류는 세 조건 모두 0이다. 이 모델은 세 형식을 한 번도 어기지 않았다. 강의노트의
+참조 실행(claude-haiku-4-5)에서 structured 메시지 115개 중 26개에 JSON 뒤 문장이 붙었던
+것과 다르다. 한도 위반도 0이다. 두 에이전트 모두 자기 한도를 한 번도 넘지 않았다.
+
+시나리오별로 접으면 차이가 어디서 나는지 바로 보인다.
+
+| scenario | reserve/budget | deal 가능 | free | tagged | structured |
+|---|---|---|---|---|---|
+| 1 | 120 / 180 | 예 | deal@180 x3 | deal@160 x3 | deal@155 x3 |
+| 2 | 30 / 38 | 예 | deal@35, 36, 38 | deal@34, 35, 35 | deal@34 x3 |
+| 3 | 40 / 40 | 예 | deal@40, no_deal x2 | no_deal x3 | open x3 |
+| 4 | 90 / 70 | 아니오 | no_deal x3 | no_deal x2, open | open x3 |
+| 5 | 260 / 150 | 아니오 | no_deal x3 | no_deal x2, open | open x3 |
+
+시나리오 1과 2는 세 조건 모두 맞혔다. 갈리는 곳은 성립 가격이 하나뿐인 3번과, 결렬이
+정답인 4, 5번이다.
+
+에피소드 전체는 아래와 같다. `results.csv`를 그대로 옮긴 것이다.
+
+| run | condition | scenario | deal_possible | outcome | price | correct | violation | turns | format_errors | reader_calls | note |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| free-01 | free | 1 | 1 | deal | 180 | 1 | 0 | 3 | 0 | 3 |  |
+| free-01 | free | 2 | 1 | deal | 35 | 1 | 0 | 4 | 0 | 4 |  |
+| free-01 | free | 3 | 1 | deal | 40 | 1 | 0 | 6 | 0 | 6 |  |
+| free-01 | free | 4 | 0 | no_deal |  | 1 | 0 | 5 | 0 | 5 |  |
+| free-01 | free | 5 | 0 | no_deal |  | 1 | 0 | 4 | 0 | 4 |  |
+| free-02 | free | 1 | 1 | deal | 180 | 1 | 0 | 3 | 0 | 3 |  |
+| free-02 | free | 2 | 1 | deal | 36 | 1 | 0 | 4 | 0 | 4 |  |
+| free-02 | free | 3 | 1 | no_deal |  | 0 | 0 | 6 | 0 | 6 |  |
+| free-02 | free | 4 | 0 | no_deal |  | 1 | 0 | 3 | 0 | 3 |  |
+| free-02 | free | 5 | 0 | no_deal |  | 1 | 0 | 7 | 0 | 7 |  |
+| free-03 | free | 1 | 1 | deal | 180 | 1 | 0 | 3 | 0 | 3 |  |
+| free-03 | free | 2 | 1 | deal | 38 | 1 | 0 | 4 | 0 | 4 |  |
+| free-03 | free | 3 | 1 | no_deal |  | 0 | 0 | 6 | 0 | 6 |  |
+| free-03 | free | 4 | 0 | no_deal |  | 1 | 0 | 3 | 0 | 3 |  |
+| free-03 | free | 5 | 0 | no_deal |  | 1 | 0 | 6 | 0 | 6 |  |
+| tagged-01 | tagged | 1 | 1 | deal | 160 | 1 | 0 | 8 | 0 | 3 | accept-proposal with no recorded price |
+| tagged-01 | tagged | 2 | 1 | deal | 34 | 1 | 0 | 4 | 0 | 2 |  |
+| tagged-01 | tagged | 3 | 1 | no_deal |  | 0 | 0 | 4 | 0 | 1 |  |
+| tagged-01 | tagged | 4 | 0 | no_deal |  | 1 | 0 | 6 | 0 | 1 |  |
+| tagged-01 | tagged | 5 | 0 | no_deal |  | 1 | 0 | 7 | 0 | 1 |  |
+| tagged-02 | tagged | 1 | 1 | deal | 160 | 1 | 0 | 8 | 0 | 3 | accept-proposal with no recorded price |
+| tagged-02 | tagged | 2 | 1 | deal | 35 | 1 | 0 | 4 | 0 | 2 |  |
+| tagged-02 | tagged | 3 | 1 | no_deal |  | 0 | 0 | 4 | 0 | 1 |  |
+| tagged-02 | tagged | 4 | 0 | open |  | 0 | 0 | 8 | 0 | 4 |  |
+| tagged-02 | tagged | 5 | 0 | no_deal |  | 1 | 0 | 4 | 0 | 1 |  |
+| tagged-03 | tagged | 1 | 1 | deal | 160 | 1 | 0 | 8 | 0 | 3 | accept-proposal with no recorded price |
+| tagged-03 | tagged | 2 | 1 | deal | 35 | 1 | 0 | 4 | 0 | 2 |  |
+| tagged-03 | tagged | 3 | 1 | no_deal |  | 0 | 0 | 7 | 0 | 1 |  |
+| tagged-03 | tagged | 4 | 0 | no_deal |  | 1 | 0 | 6 | 0 | 1 |  |
+| tagged-03 | tagged | 5 | 0 | open |  | 0 | 0 | 8 | 0 | 4 |  |
+| structured-01 | structured | 1 | 1 | deal | 155 | 1 | 0 | 5 | 0 | 0 |  |
+| structured-01 | structured | 2 | 1 | deal | 34 | 1 | 0 | 4 | 0 | 0 |  |
+| structured-01 | structured | 3 | 1 | open |  | 0 | 0 | 8 | 0 | 0 |  |
+| structured-01 | structured | 4 | 0 | open |  | 0 | 0 | 8 | 0 | 0 |  |
+| structured-01 | structured | 5 | 0 | open |  | 0 | 0 | 8 | 0 | 0 |  |
+| structured-02 | structured | 1 | 1 | deal | 155 | 1 | 0 | 5 | 0 | 0 |  |
+| structured-02 | structured | 2 | 1 | deal | 34 | 1 | 0 | 4 | 0 | 0 |  |
+| structured-02 | structured | 3 | 1 | open |  | 0 | 0 | 8 | 0 | 0 |  |
+| structured-02 | structured | 4 | 0 | open |  | 0 | 0 | 8 | 0 | 0 |  |
+| structured-02 | structured | 5 | 0 | open |  | 0 | 0 | 8 | 0 | 0 |  |
+| structured-03 | structured | 1 | 1 | deal | 155 | 1 | 0 | 5 | 0 | 0 |  |
+| structured-03 | structured | 2 | 1 | deal | 34 | 1 | 0 | 4 | 0 | 0 |  |
+| structured-03 | structured | 3 | 1 | open |  | 0 | 0 | 8 | 0 | 0 |  |
+| structured-03 | structured | 4 | 0 | open |  | 0 | 0 | 8 | 0 | 0 |  |
+| structured-03 | structured | 5 | 0 | open |  | 0 | 0 | 8 | 0 | 0 |  |
 
 ## 3. FIPA-ACL과 세 조건
 
@@ -160,8 +227,76 @@ FIPA-ACL이 `performative`를 필수 슬롯으로 둔 이유가 이 표의 마�
 
 ## 4. 해석
 
-<!-- 실행 뒤, 로그의 줄을 인용해서 한 문단. 최소한 다음 네 가지는 숫자로 세어 적는다:
-     (1) free에서 buyer의 첫 질문이 refuse로 읽혀 첫 턴에 끝난 에피소드 수,
-     (2) reader가 가격을 잘못 읽어 기록된 거래가가 합의가와 달라진 에피소드 수,
-     (3) 태그/JSON 뒤에 역제안이 숨어 open으로 끝난 에피소드 수,
-     (4) 에이전트 자신이 한도를 깬 에피소드 수(프로토콜 오독이 아닌 것). -->
+형식이 바꾼 것은 메시지를 읽는 방법만이 아니라 에이전트가 하는 말 자체였고, 그것이
+correct 13 / 10 / 6과 open 0 / 2 / 9를 만들었다. structured에서 판매자는 시나리오 3, 4,
+5의 아홉 에피소드 내내 `{"performative":"reject-proposal","content":{"price":null}}`만
+열두 번씩 보냈다. 역제안도 `refuse`도 한 번도 없었다. structured 메시지 99개 가운데
+`refuse`는 0개인데, 같은 모델이 같은 역할 문단을 받은 free에서는 8번 나온다. JSON
+스키마에서는 `price: null`짜리 거절이 그 자체로 완결된 유효한 메시지라, 판매자가 더
+말할 이유가 없어진다. 반대로 free에서는 같은 자리에서 "I can't accept 140. I'll have to
+refuse."라고 문장을 끝맺어야 하고, 그 문장이 에피소드를 4턴 만에 정답인 no_deal로
+끝냈다. tagged가 잃은 것은 다른 것이다. `(reject-proposal)`이나
+`(refuse)` 태그를 단 메시지 51개 가운데 30개가 문장 안에 새 가격을 담고 있었고, 태그만
+읽는 계층에는 그 가격이 보이지 않는다. 시나리오
+3(reserve 40, budget 40)에서 양쪽이 거절 안에서만 값을 주고받다가 판매자가 4턴에
+refuse해 결렬로 끝났는데, 40에 거래가 가능했으므로 세 번 다 오답이다. 즉 태그를 봉투로 올리자 읽는 비용은 메시지
+67개에 호출 67회에서, 메시지 90개에 호출 30회로, structured에서는 메시지 99개에 호출
+0회로 내려갔지만, 그 대가로 force와 내용이 따로 노는 실패가 생겼다. free는 가장 비싸고 가장 정확했다. 에피소드
+15개에 오간 메시지가 67개, reader 호출도 67회로 메시지마다 정확히 한 번이었고, 그 대신
+오독이 없었다. 가격을
+붙인 라벨 54건 중 메시지에 없는 숫자를 고른 것은 0건이고, 숫자가 둘 이상인 메시지 24건에서
+reader는 언제나 화자 자신의 제안을 골랐다("I can't do 300, but I can offer 140
+dollars." -> propose 140). 어떤 형식도 바꾸지 못한 것은 sincerity다. 세 조건 모두
+violation이 0이고, 두 에이전트는 자기 한도를 한 번도 넘지 않았다. 형식은 한도를 지키게
+만든 것이 아니라 한도를 지키는 에이전트가 그 사실을 전달하는 방법만 바꿨다. 마지막으로
+correct가 세지 못하는 것이 하나 있다. 거래가 성사된 시나리오에서 체결가는 free 180, 160,
+structured 155(시나리오 1)로, 턴이 짧을수록 구매자가 비싸게 샀다. free는 평균 4.5턴에
+끝났고 시나리오 1에서 판매자의 "I can do 180 dollars for the bike."를 3턴 만에 그대로
+수락했다. 세 조건 모두 정답이지만 같은 결과는 아니다.
+
+근거로 삼은 로그 줄이다.
+
+`logs/structured-01.txt`, 시나리오 5(reserve 260, budget 150). 판매자가 끝까지 거절만
+보내고 떠나지 않아 8턴을 채운다.
+
+```
+[buyer ] {"performative":"propose","content":{"price":120}}
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+[buyer ] {"performative":"propose","content":{"price":135}}
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+[buyer ] {"performative":"propose","content":{"price":145}}
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+[buyer ] {"performative":"propose","content":{"price":150}}
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+```
+
+`logs/free-01.txt`, 같은 시나리오. 같은 모델이 문장으로 거절을 끝맺자 정답이 나온다.
+
+```
+[seller] I can't accept 140. I'll have to refuse.
+  [read] reader: {"performative": "refuse", "price": null}
+[result] outcome=no_deal price= correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+```
+
+`logs/tagged-01.txt`, 시나리오 3(reserve 40, budget 40). 거절 안의 50과 35는 어디에도
+기록되지 않는다.
+
+```
+[buyer ] (propose) I can offer 28 dollars for the textbook.
+  [read] regex: propose, reader price 28
+[seller] (reject-proposal) I can't accept 28 dollars, but I can do 50 dollars for the textbook.
+  [read] regex: reject-proposal
+[buyer ] (reject-proposal) I can't agree to 50 dollars, but I can offer 35 dollars.
+  [read] regex: reject-proposal
+[seller] (refuse) I'm sorry, but I can't go that low, so I'll have to end the negotiation.
+  [read] regex: refuse
+[result] outcome=no_deal price= correct=0 violation=0 turns=4 format_errors=0 reader_calls=1
+```
+
+강의노트가 예고한 실패 하나는 나오지 않았다. free에서 구매자가 "what is your asking
+price?" 같은 질문으로 열어 reader가 refuse로 접는 일이다. 이 실행의 구매자는 15번 모두
+첫 메시지에 값을 실었고("Would you take 30 dollars for the desk lamp?"), reader는 그것을
+propose로 읽었다. 네 행위 어휘의 구멍은 그대로지만, 구매자가 그 구멍에 빠지는 말을 하지
+않아 드러나지 않았다. 형식 오류가 세 조건 모두 0인 것과 함께, 이 실습에서 관찰되는 실패의
+종류가 모델의 지시 준수 능력에 얼마나 크게 좌우되는지를 보여준다.
