@@ -1,0 +1,10 @@
+provider=OpenRouter model=nvidia/nemotron-3.5-lightning:free temperature=0.0
+======================================================================
+CONDITION: baseline
+======================================================================
+
+----------------------------------------------------------------------
+[task] id=1 gold=A desc=Compute 137 * 249 and return only the numerical result.
+[announce] -> contractor A
+
+[CRASH] UnicodeEncodeError: 'charmap' codec can't encode character '\u200b' in position 162: character maps to <undefined>
