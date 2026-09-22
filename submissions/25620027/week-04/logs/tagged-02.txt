@@ -1,0 +1,63 @@
+provider=OpenAI model=gpt-4.1-nano-2025-04-14 temperature=0.0 max_turns=8
+
+=== scenario 1 ===
+[buyer] (propose) I can offer $130 for the portable monitor.
+  [reader] {"performative":"propose","price":130}
+[seller] (accept-proposal) I agree to sell the portable monitor for $130.
+  [tag] ParsedMessage(performative=<Performative.ACCEPT: 'accept-proposal'>, price=None, reader_needed=False)
+[result] EpisodeResult(outcome=<Outcome.DEAL: 'deal'>, price=130, correct=1, violation=0, turns=2, format_errors=0, reader_calls=1, note='tokens=420;api_attempts=3')
+
+=== scenario 2 ===
+[buyer] (propose) I am willing to pay up to 80 for the mechanical keyboard.
+  [reader] {"performative":"propose","price":80}
+[seller] (reject-proposal) I cannot accept that price, but I am willing to offer 90.
+  [tag] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] (propose) I appreciate your offer, but I cannot go higher than 85.
+  [reader] {"performative":"propose","price":85}
+[seller] (reject-proposal) I appreciate your offer, but I cannot go higher than 85. Would you consider 90?
+  [tag] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] (reject-proposal) I understand, but I cannot accept 90 since it exceeds my private limit.
+  [tag] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[seller] (propose) How about 88?
+  [reader] {"performative":"propose","price":88}
+[buyer] (reject-proposal) I appreciate the offer, but I cannot accept 88 as it is above my private limit.
+  [tag] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[seller] (propose) Then I can offer 90, which is my final price.
+  [reader] {"performative":"reject-proposal","price":90}
+[result] EpisodeResult(outcome=<Outcome.OPEN: 'open'>, price=None, correct=0, violation=0, turns=8, format_errors=0, reader_calls=4, note='tokens=2599;api_attempts=12')
+
+=== scenario 3 ===
+[buyer] (propose) I am willing to buy the bicycle for 70.
+  [reader] {"performative":"propose","price":70}
+[seller] (reject-proposal) I can't accept that offer, but I am willing to go higher.
+  [tag] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] (propose) How about 80?
+  [reader] {"performative":"propose","price":80}
+[seller] (reject-proposal) That's still too low; I can't accept 80.
+  [tag] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] (propose) Would you accept 90?
+  [reader] {"performative":"propose","price":90}
+[seller] (reject-proposal) 90 is still below my minimum; I can't accept that.
+  [tag] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] (propose) How about 100?
+  [reader] {"performative":"propose","price":100}
+[seller] (reject-proposal) 100 is still too low; I need at least 120.
+  [tag] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[result] EpisodeResult(outcome=<Outcome.OPEN: 'open'>, price=None, correct=1, violation=0, turns=8, format_errors=0, reader_calls=4, note='tokens=2309;api_attempts=12')
+
+=== scenario 4 ===
+[buyer] (propose) I am willing to pay 100 for the noise-cancelling headphones.
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] (reject-proposal) I appreciate your offer, but I cannot accept a price that low.
+  [tag] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] (propose) How about 115?
+  [reader] {"performative":"propose","price":115}
+[seller] (reject-proposal) I appreciate your offer, but I cannot accept a price that low.
+  [tag] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] (propose) Would you consider 120?
+  [reader] {"performative":"propose","price":120}
+[seller] (reject-proposal) I appreciate your offer, but I cannot accept a price that low.
+  [tag] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] (refuse) I cannot go any lower than 120, and I cannot accept your current offer.
+  [tag] ParsedMessage(performative=<Performative.REFUSE: 'refuse'>, price=None, reader_needed=False)
+[result] EpisodeResult(outcome=<Outcome.NO_DEAL: 'no_deal'>, price=None, correct=1, violation=0, turns=7, format_errors=1, reader_calls=3, note='tokens=1903;api_attempts=10')
