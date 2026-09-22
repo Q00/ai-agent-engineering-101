@@ -27,7 +27,7 @@ from run_experiment import (
     is_rate_limit_error,
     load_tasks,
     safe_text,
-    smoke_pass_path,
+    smoke_ready_path,
 )
 
 
@@ -94,11 +94,14 @@ def main() -> None:
     announcement = ANNOUNCEMENT.format(task_id=task["id"], desc=task["desc"])
     caller = OpenRouterChat(Meter())
     successes = 0
+    completed_calls = 0
+    api_errors = 0
     try:
         for contractor in make_team("baseline"):
             log(f"[announcement] task_id={task['id']} contractor={contractor.name}")
             log(announcement)
             raw = caller(contractor.system_prompt, announcement)
+            completed_calls += 1
             log(
                 f"[response_metadata] contractor={contractor.name} "
                 f"{json.dumps(caller.last_metadata, ensure_ascii=False, sort_keys=True)}"
@@ -118,6 +121,7 @@ def main() -> None:
                 f"reason={json.dumps(bid.reason, ensure_ascii=False)}"
             )
     except Exception as exc:
+        api_errors += 1
         log(
             "[api_error_metadata] "
             + json.dumps(api_error_metadata(exc), ensure_ascii=False, sort_keys=True)
@@ -129,24 +133,30 @@ def main() -> None:
         with log_path.open("x", encoding="utf-8") as log_file:
             log_file.write("\n".join(lines) + "\n")
 
-    if successes != 3:
+    if completed_calls != 3 or api_errors:
         raise SystemExit(
-            f"smoke test failed: {successes}/3 strict JSON responses; "
+            f"smoke test blocked: completed_calls={completed_calls}/3; "
+            f"api_errors={api_errors}; strict_json={successes}/3; "
             f"diagnostic log: {log_path}"
         )
 
-    pass_path = smoke_pass_path(base, tasks)
-    if not pass_path.exists():
+    ready_path = smoke_ready_path(base, tasks)
+    if not ready_path.exists():
         record = {
             "protocol_fingerprint": fingerprint,
-            "passed_at_utc": datetime.now(timezone.utc).isoformat(),
-            "calls": 3,
+            "completed_at_utc": datetime.now(timezone.utc).isoformat(),
+            "calls_completed": completed_calls,
+            "api_errors": api_errors,
+            "strict_json_successes": successes,
             "log": log_path.name,
         }
-        with pass_path.open("x", encoding="utf-8") as pass_file:
-            json.dump(record, pass_file, ensure_ascii=False, indent=2)
-            pass_file.write("\n")
-    print(f"smoke test passed: 3/3 strict JSON responses; pass file: {pass_path}")
+        with ready_path.open("x", encoding="utf-8") as ready_file:
+            json.dump(record, ready_file, ensure_ascii=False, indent=2)
+            ready_file.write("\n")
+    print(
+        f"smoke test completed: calls=3/3; api_errors=0; "
+        f"strict_json={successes}/3; gate file: {ready_path}"
+    )
 
 
 if __name__ == "__main__":

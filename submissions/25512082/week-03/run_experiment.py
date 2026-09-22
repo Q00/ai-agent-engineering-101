@@ -137,9 +137,24 @@ def expected_api_calls(task_count: int, condition_count: int, runs: int) -> int:
     return task_count * 3 * condition_count * runs
 
 
-def smoke_pass_path(base: Path, tasks: list[dict]) -> Path:
+def smoke_ready_path(base: Path, tasks: list[dict]) -> Path:
     fingerprint = protocol_fingerprint(tasks)
-    return base / "smoke_logs" / f"smoke-pass-{fingerprint}.json"
+    return base / "smoke_logs" / f"smoke-ready-{fingerprint}.json"
+
+
+def smoke_gate_is_open(path: Path, fingerprint: str) -> bool:
+    """Accept only a complete three-call diagnostic with no API failures."""
+    if not path.is_file():
+        return False
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return (
+        record.get("protocol_fingerprint") == fingerprint
+        and record.get("calls_completed") == 3
+        and record.get("api_errors") == 0
+    )
 
 
 def main() -> None:
@@ -155,10 +170,12 @@ def main() -> None:
 
     base = Path(__file__).resolve().parent
     tasks = load_tasks(base / "tasks.json")
-    pass_path = smoke_pass_path(base, tasks)
-    if not pass_path.is_file():
+    fingerprint = protocol_fingerprint(tasks)
+    ready_path = smoke_ready_path(base, tasks)
+    if not smoke_gate_is_open(ready_path, fingerprint):
         raise SystemExit(
-            "matching smoke test has not passed; run smoke_test.py before the experiment"
+            "matching three-call smoke test has not completed without API errors; "
+            "run smoke_test.py before the experiment"
         )
     log_dir = base / "logs"
     log_dir.mkdir(exist_ok=True)
@@ -190,6 +207,7 @@ def main() -> None:
                 log(f"[setup] temperature={TEMPERATURE:g}")
                 log(f"[setup] max_tokens={MAX_TOKENS}")
                 log(f"[setup] reasoning_enabled={str(REASONING_ENABLED).lower()}")
+                log(f"[setup] protocol_fingerprint={fingerprint}")
                 log(f"[setup] condition={condition}")
                 log(f"[setup] run={global_run}")
                 log("[setup] contractor_order=A,B,C")

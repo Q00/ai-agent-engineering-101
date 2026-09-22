@@ -38,6 +38,7 @@ from run_experiment import (
     last_recorded_run,
     next_log_path,
     safe_text,
+    smoke_gate_is_open,
     write_log,
 )
 
@@ -174,6 +175,28 @@ class ContractNetTests(unittest.TestCase):
     def test_expected_call_counts(self):
         self.assertEqual(expected_api_calls(1, 1, 1), 3)
         self.assertEqual(expected_api_calls(6, 3, 3), 162)
+
+    def test_smoke_gate_requires_three_completed_calls_and_no_api_errors(self):
+        fingerprint = "test-fingerprint"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "smoke-ready.json"
+            self.assertFalse(smoke_gate_is_open(path, fingerprint))
+
+            path.write_text(
+                '{"protocol_fingerprint":"test-fingerprint",'
+                '"calls_completed":3,"api_errors":0,'
+                '"strict_json_successes":0}\n',
+                encoding="utf-8",
+            )
+            self.assertTrue(smoke_gate_is_open(path, fingerprint))
+
+            path.write_text(
+                '{"protocol_fingerprint":"test-fingerprint",'
+                '"calls_completed":2,"api_errors":1,'
+                '"strict_json_successes":2}\n',
+                encoding="utf-8",
+            )
+            self.assertFalse(smoke_gate_is_open(path, fingerprint))
 
     def test_free_reference_request_uses_prompt_json_contract(self):
         captured = {}
