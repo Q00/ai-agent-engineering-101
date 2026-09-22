@@ -95,11 +95,13 @@ def read(condition, text, transcript, meter, ep):
     return perf, price, True
 
 
-def run_episode(scenario, condition, meter, log=print):
+def run_episode(scenario, condition, meter, log=print, buyer_extra=""):
+    # buyer_extra: text appended to the buyer's system prompt. Empty for the
+    # required baseline; the extension uses it to make the buyer inject.
     item, reserve, budget = scenario["item"], scenario["reserve"], scenario["budget"]
     ep = Episode(scenario=scenario["id"], condition=condition,
                  deal_possible=int(reserve <= budget))
-    systems = {"buyer": acl.system_prompt("buyer", item, budget, condition),
+    systems = {"buyer": acl.system_prompt("buyer", item, budget, condition) + buyer_extra,
                "seller": acl.system_prompt("seller", item, reserve, condition)}
     history = {"buyer": [], "seller": []}
     last_price = {"buyer": None, "seller": None}
