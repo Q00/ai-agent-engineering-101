@@ -1,5 +1,6 @@
 import csv
 import json
+from openai import RateLimitError
 from pathlib import Path
 
 from negotiation import run_episode
@@ -148,6 +149,9 @@ def main():
 
                     done.add(key)
 
+                except RateLimitError as exc:
+                    log(f"[rate-limit] stopping run: {exc}")
+                    raise
                 except Exception as exc:
                     error = f"{type(exc).__name__}: {exc}"
                     log(f"[crash] {error}")
