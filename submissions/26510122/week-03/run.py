@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import time
 import urllib.error
 import urllib.request
 import uuid
@@ -25,6 +26,13 @@ RESULT_HEADER = [
 
 class ProviderResponseError(RuntimeError):
     """Raised when a provider response has no usable assistant completion."""
+
+    def __init__(self, diagnostic: dict) -> None:
+        self.diagnostic = diagnostic
+        super().__init__(
+            "provider returned no completion: "
+            + json.dumps(diagnostic, ensure_ascii=False, sort_keys=True)
+        )
 
 
 def completion_content(body: object) -> str:
@@ -49,10 +57,7 @@ def completion_content(body: object) -> str:
         if isinstance(message, dict) else None,
         "error_code": error.get("code") if isinstance(error, dict) else None,
     }
-    raise ProviderResponseError(
-        "provider returned no completion: "
-        + json.dumps(diagnostic, ensure_ascii=False, sort_keys=True)
-    )
+    raise ProviderResponseError(diagnostic)
 
 
 def load_env(path: Path) -> None:
@@ -94,7 +99,11 @@ class OpenAICompatibleChat:
         self.timeout_seconds = float(os.environ.get("AGENT_TIMEOUT_SECONDS", "180"))
         if self.timeout_seconds <= 0:
             raise ValueError("AGENT_TIMEOUT_SECONDS must be positive")
+        self.max_retries = int(os.environ.get("AGENT_MAX_RETRIES", "0"))
+        if self.max_retries < 0:
+            raise ValueError("AGENT_MAX_RETRIES must be non-negative")
         self.calls = 0
+        self.retries = 0
 
     def __call__(self, system: str, user: str) -> str:
         payload = {
@@ -117,12 +126,22 @@ class OpenAICompatibleChat:
                 "Content-Type": "application/json",
             },
         )
-        self.calls += 1
-        with urllib.request.urlopen(
-            request, timeout=self.timeout_seconds
-        ) as response:
-            body = json.load(response)
-        return completion_content(body)
+        for attempt in range(self.max_retries + 1):
+            self.calls += 1
+            with urllib.request.urlopen(
+                request, timeout=self.timeout_seconds
+            ) as response:
+                body = json.load(response)
+            try:
+                return completion_content(body)
+            except ProviderResponseError as exc:
+                retryable = exc.diagnostic.get("error_code") in (502, 503, 504)
+                if not retryable or attempt >= self.max_retries:
+                    raise
+                self.retries += 1
+                time.sleep(min(2 ** attempt, 4))
+
+        raise AssertionError("provider retry loop exhausted unexpectedly")
 
 
 def append_result(path: Path, row: dict) -> None:
@@ -174,6 +193,7 @@ def execute_run(
                 "setup", run=run_id, condition=condition, model=model,
                 temperature=temperature, endpoint=client.base_url,
                 timeout_seconds=client.timeout_seconds,
+                max_retries=client.max_retries,
             )
             tasks = json.loads((ROOT / "tasks.json").read_text(encoding="utf-8"))
             if limit is not None:
@@ -186,7 +206,10 @@ def execute_run(
                 **metrics,
                 "note": f"parse_fails={parse_fails}",
             }
-            emit("summary", **row, parse_fails=parse_fails, llm_calls=client.calls)
+            emit(
+                "summary", **row, parse_fails=parse_fails,
+                llm_calls=client.calls, provider_retries=client.retries,
+            )
             outcome = "ok"
         except Exception as exc:
             row = dict.fromkeys(RESULT_HEADER, "")
@@ -200,6 +223,7 @@ def execute_run(
             emit(
                 "crash", **row, http_status=status, error_detail=detail,
                 llm_calls=client.calls if client else 0,
+                provider_retries=client.retries if client else 0,
             )
             outcome = "rate_limited" if status == 429 else "failed"
 

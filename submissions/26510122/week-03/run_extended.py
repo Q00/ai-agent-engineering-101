@@ -72,20 +72,27 @@ def main() -> int:
 
         emit("setup", run=run_id, mode="extended", model=args.model,
              temperature=args.temperature, continued=args.continue_state,
-             timeout_seconds=client.timeout_seconds)
+             timeout_seconds=client.timeout_seconds,
+             max_retries=client.max_retries)
         tasks = json.loads((ROOT / "tasks.json").read_text(encoding="utf-8"))
         if args.limit is not None:
             tasks = tasks[:args.limit]
         try:
             metrics = run_extended_contract_net(tasks, client, emit, identity_state)
             row = {"run": run_id, **metrics, "note": ""}
-            emit("summary", **row, llm_calls=client.calls)
+            emit(
+                "summary", **row, llm_calls=client.calls,
+                provider_retries=client.retries,
+            )
             failed = 0
         except Exception as exc:
             row = dict.fromkeys(HEADER, "")
             row.update(run=run_id, note=type(exc).__name__)
             detail = str(exc) if isinstance(exc, ProviderResponseError) else None
-            emit("crash", **row, error_detail=detail, llm_calls=client.calls)
+            emit(
+                "crash", **row, error_detail=detail, llm_calls=client.calls,
+                provider_retries=client.retries,
+            )
             failed = 1
 
     identity_state.save(state_path)
