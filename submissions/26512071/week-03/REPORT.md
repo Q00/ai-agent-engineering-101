@@ -39,6 +39,51 @@ python contract_net.py --runs 3
 가진 계약자 세 명, homogeneous는 이름은 같지만 모두 generalist인 계약자 세 명,
 overconfident는 baseline에서 한 계약자만 모든 공고에 높은 확신으로 입찰하도록 설정한다.
 
+### 과제 요구 구조와 실제 구현 구조
+
+교수자가 제공한 week-03 자료에는 스타터 코드가 없고, 아래 왼쪽처럼 필수 역할과
+입출력 계약만 주어졌다. 이번 구현은 그 요구를 오른쪽의 실행 가능한 구성요소로
+구체화했다.
+
+```mermaid
+flowchart LR
+    subgraph SPEC[과제에서 요구한 구조]
+        direction TB
+        ST[tasks.json<br/>태스크와 gold]
+        SM[Manager<br/>공고·입찰·낙찰]
+        SC[LLM 계약자 3명<br/>각자 다른 시스템 프롬프트]
+        SE[gold와 winner 비교]
+        SO[results.csv · logs · REPORT]
+        ST --> SM --> SC
+        SC --> SM
+        SM --> SE --> SO
+    end
+
+    subgraph IMPLEMENTATION[이번에 구현한 구조]
+        direction TB
+        IC[CLI와 환경변수<br/>Luna · runs · timeout]
+        IL[Task Loader<br/>JSON·중복·gold 검증]
+        IF[Condition Factory<br/>조건별 프롬프트 생성]
+        IM[Manager]
+        IT[ThreadPoolExecutor<br/>세 입찰 동시 호출]
+        IP[Strict JSON Parser<br/>필드·타입·범위 검증]
+        IA[Award Policy<br/>confidence 정렬·고정 동점 규칙]
+        IR[Metrics와 Recorder<br/>원문 로그·CSV]
+        IC --> IL --> IM
+        IC --> IF --> IM
+        IM --> IT --> IP --> IA --> IR
+    end
+
+    SPEC ==>|요구사항을 실행 방식으로 구체화| IMPLEMENTATION
+```
+
+과제 자료는 OpenRouter 무료 모델을 실행 예시로 제시했지만 이번 실험은 공식 OpenAI
+API의 `gpt-5.6-luna`를 사용했다. 또한 명세에서 정하지 않은 세부 동작으로 세 계약자의
+동시 호출, 공통 60초 마감, 늦은 응답 제외, 정확한 JSON 검증, 중복 낙찰 방지와
+`coder → analyst → writer` 동점 순서를 두었다. 따라서 과제 구조가 무엇을 측정할지를
+정의한다면, 이번 구현은 API 지연이나 잘못된 응답이 있어도 같은 규칙으로 실험을
+기록하도록 실행 방식을 고정한다.
+
 ## 2. 측정 결과
 
 | run | condition | tasks | correct | messages | unassigned | misawards | note |
