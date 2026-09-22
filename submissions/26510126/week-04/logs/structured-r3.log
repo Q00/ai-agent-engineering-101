@@ -1,5 +1,5 @@
 provider=anthropic base_url=https://api.anthropic.com model=claude-haiku-4-5-20251001 temperature=0.0 max_tokens=300 turn_limit=8 anthropic-version=2023-06-01 transport=stdlib-urllib python=3.14.7
-run=structured-r1 condition=structured scenarios=['s1']
+run=structured-r3 condition=structured scenarios=['s1', 's2', 's3', 's4']
 
   scenario s1: a used road bicycle (reserve=60 budget=140)
     [1] buyer: ```json
@@ -11,19 +11,23 @@ run=structured-r1 condition=structured scenarios=['s1']
 ```
         read as reject-proposal  [json embedded in other text]
     [3] buyer: ```json
-{"performative": "propose", "content": {"price": 115}}
+{"performative": "propose", "content": {"price": 110}}
 ```
-        read as propose @ 115  [json embedded in other text]
+        read as propose @ 110  [json embedded in other text]
     [4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+        read as reject-proposal  [json embedded in other text]
+    [5] buyer: ```json
+{"performative": "propose", "content": {"price": 125}}
+```
+        read as propose @ 125  [json embedded in other text]
+    [6] seller: ```json
 {"performative": "accept-proposal", "content": {"price": null}}
 ```
         read as accept-proposal  [json embedded in other text]
-        DEAL at 115 (last buyer proposal)
-    result: outcome=deal price=115 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0 (reserve=60 budget=140)
-
-  calls so far: agent=4 reader=0 total=4 tokens=1386
-provider=anthropic base_url=https://api.anthropic.com model=claude-haiku-4-5-20251001 temperature=0.0 max_tokens=300 turn_limit=8 anthropic-version=2023-06-01 transport=stdlib-urllib python=3.14.7
-run=structured-r1 condition=structured scenarios=['s2', 's3', 's4']
+        DEAL at 125 (last buyer proposal)
+    result: outcome=deal price=125 correct=1 violation=0 turns=6 format_errors=0 reader_calls=0 (reserve=60 budget=140)
 
   scenario s2: an espresso machine (reserve=95 budget=105)
     [1] buyer: ```json
@@ -117,4 +121,4 @@ run=structured-r1 condition=structured scenarios=['s2', 's3', 's4']
         OPEN, hit the 8-message limit
     result: outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0 (reserve=200 budget=80)
 
-  calls so far: agent=163 reader=102 total=265 tokens=82726
+  calls so far: agent=213 reader=102 total=315 tokens=101752

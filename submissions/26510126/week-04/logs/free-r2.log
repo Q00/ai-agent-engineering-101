@@ -1,5 +1,5 @@
 provider=anthropic base_url=https://api.anthropic.com model=claude-haiku-4-5-20251001 temperature=0.0 max_tokens=300 turn_limit=8 anthropic-version=2023-06-01 transport=stdlib-urllib python=3.14.7
-run=free-r1 condition=free scenarios=['s1', 's2', 's3', 's4']
+run=free-r2 condition=free scenarios=['s1', 's2', 's3', 's4']
 
   scenario s1: a used road bicycle (reserve=60 budget=140)
     [1] buyer: I'm interested in the bike—what's your asking price?
@@ -20,13 +20,13 @@ run=free-r1 condition=free scenarios=['s1', 's2', 's3', 's4']
         read as propose  [reader: propose]
     [2] seller: I'm looking to get $150 for it, but I'm open to negotiation if you're a serious buyer.
         read as propose @ 150  [reader: propose @ 150]
-    [3] buyer: That's higher than I was hoping to spend. How about we start at $85 and see if we can meet somewhere in the middle?
+    [3] buyer: That's higher than I was hoping to spend. How about we start at $85 and see if we can find middle ground?
         read as propose @ 85  [reader: propose @ 85]
     [4] seller: I appreciate the offer, but $85 is too low for me. How about $130—that's a fair price for a quality machine like this one.
         read as propose @ 130  [reader: propose @ 130]
-    [5] buyer: I appreciate the quality, but $130 is still more than I can stretch to. What if we split the difference and go with $107?
+    [5] buyer: I appreciate the quality, but $130 is still more than I can stretch to. What if we split the difference and meet at $107?
         read as propose @ 107  [reader: propose @ 107]
-    [6] seller: I can work with that. $107 sounds reasonable, and I think we've found a fair middle ground here.
+    [6] seller: I can work with that. $107 sounds reasonable, and I appreciate you meeting me closer to my asking price.
         read as accept-proposal  [reader: accept-proposal]
         DEAL at 107 (last buyer proposal)
     result: outcome=deal price=107 correct=0 violation=1 turns=6 format_errors=0 reader_calls=6 (reserve=95 budget=105)
@@ -44,10 +44,10 @@ run=free-r1 condition=free scenarios=['s1', 's2', 's3', 's4']
         read as propose @ 110  [reader: propose @ 110]
     [6] seller: I appreciate that, but $110 is still below what I need to get for this camera. I'd be willing to come down to $145—that's a fair price for the quality here.
         read as propose @ 145  [reader: propose @ 145]
-    [7] buyer: I appreciate the quality, but $145 is still beyond what I'm comfortable spending. Would you consider $115? That's as high as I can really go.
+    [7] buyer: I appreciate the quality, but $145 is still beyond what I'm comfortable spending. How about $115—that's as high as I can go?
         read as propose @ 115  [reader: propose @ 115]
-    [8] seller: I understand your position, but I can't go that low. How about $135? That's my best offer and I think it's fair for what you're getting.
-        read as propose @ 135  [reader: propose @ 135]
+    [8] seller: I understand your position, but I can't go that low. My bottom line is $130, and that's a fair price for what you're getting. Can you meet me there?
+        read as propose @ 115  [reader: propose @ 115]
         OPEN, hit the 8-message limit
     result: outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8 (reserve=130 budget=120)
 
@@ -62,13 +62,13 @@ run=free-r1 condition=free scenarios=['s1', 's2', 's3', 's4']
         read as propose @ 280  [reader: propose @ 280]
     [5] buyer: I appreciate you coming down, but $280 is still more than I can stretch to. Would you consider $70? That's what I'm really comfortable spending right now.
         read as propose @ 70  [reader: propose @ 70]
-    [6] seller: I can't go that low—the guitar is worth much more than that. Let me come down to $240, and that's a fair price for what you're getting here.
+    [6] seller: I can't go that low—this is a quality instrument and $70 doesn't reflect that. What if we split the difference and you come up to $240?
         read as propose @ 240  [reader: propose @ 240]
-    [7] buyer: I hear you, but $240 is still way outside what I can do. My absolute maximum is $80—that's the limit of what I've got to work with. Can you meet me anywhere close to that?
+    [7] buyer: I hear you, but $240 is still way beyond what I'm working with. Let me be straight with you—my absolute maximum is $80, and that's really pushing it for my budget.
         read as propose @ 80  [reader: propose @ 80]
-    [8] seller: I understand you're working with a tight budget, but $80 just isn't realistic for this guitar. I'd need at least $220 to make this work—can you stretch that far?
+    [8] seller: I appreciate your honesty, but I can't meet you at $80—that's just too far apart from where I need to be. I'm willing to come down further though. What about $220?
         read as propose @ 220  [reader: propose @ 220]
         OPEN, hit the 8-message limit
     result: outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8 (reserve=200 budget=80)
 
-  calls so far: agent=27 reader=27 total=54 tokens=17524
+  calls so far: agent=54 reader=54 total=108 tokens=35061

@@ -46,17 +46,15 @@ MODEL = os.environ.get(
     "claude-haiku-4-5-20251001" if PROVIDER == "anthropic"
     else "nvidia/nemotron-3-super-120b-a12b:free")
 
-# openai/OpenRouter path only. The anthropic path cannot set it on the models
-# where sampling was removed; run_header() reports which case applies.
+# Settable on both paths used here. Week 03 had to record temperature as not
+# settable because sampling is removed on claude-sonnet-5; haiku 4.5 takes it,
+# so this run can pin it and say so.
 TEMPERATURE = float(os.environ.get("AGENT_TEMPERATURE", "0"))
 MAX_TOKENS = int(os.environ.get("AGENT_MAX_TOKENS", "300"))
-EFFORT = os.environ.get("AGENT_EFFORT", "low")
 
-# A 429 on a free endpoint is routine, not an error. Wait and try again.
+# A 429, or a busy upstream, is routine rather than an error. Wait and retry.
 MAX_RETRIES = int(os.environ.get("AGENT_MAX_RETRIES", "6"))
 BASE_BACKOFF = float(os.environ.get("AGENT_BASE_BACKOFF", "4"))
-
-_client = None
 
 
 class DailyQuotaExhausted(RuntimeError):
@@ -68,21 +66,11 @@ class DailyQuotaExhausted(RuntimeError):
     """
 
 
-def _get_client():
-    """Only the anthropic path has a client. The OpenAI-compatible path is
-    plain HTTP; see the module docstring for why."""
-    global _client
-    if _client is None:
-        import anthropic
-        _client = anthropic.Anthropic()
-    return _client
-
-
-def _post_json(url: str, payload: dict, key: str, timeout: int = 120) -> dict:
+def _post_json(url: str, payload: dict, headers: dict, timeout: int = 120) -> dict:
+    """Both providers go out this way. Neither SDK is used; see the docstring."""
     req = urllib.request.Request(
         url, data=json.dumps(payload).encode("utf-8"), method="POST",
-        headers={"Authorization": f"Bearer {key}",
-                 "Content-Type": "application/json"})
+        headers={"Content-Type": "application/json", **headers})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.load(r)
@@ -175,11 +163,21 @@ def chat(system: str, messages: list, meter: Meter, kind: str = "agent") -> str:
 
 def _chat_once(system: str, messages: list, meter: Meter, kind: str) -> str:
     if PROVIDER == "anthropic":
-        resp = _get_client().messages.create(
-            model=MODEL, max_tokens=MAX_TOKENS,
-            system=system, messages=messages)
-        meter.add(resp.usage.input_tokens, resp.usage.output_tokens, kind)
-        return "".join(b.text for b in resp.content if b.type == "text")
+        base = os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com").rstrip("/")
+        data = _post_json(base + "/v1/messages", {
+            "model": MODEL,
+            "max_tokens": MAX_TOKENS,
+            "temperature": TEMPERATURE,
+            "system": system,
+            "messages": messages,
+        }, {"x-api-key": os.environ.get("ANTHROPIC_API_KEY", ""),
+            "anthropic-version": "2023-06-01"})
+        usage = data.get("usage") or {}
+        meter.add(usage.get("input_tokens", 0), usage.get("output_tokens", 0), kind)
+        if data.get("type") == "error":
+            raise ApiError(0, f"upstream error: {json.dumps(data.get('error'))[:300]}")
+        return "".join(b.get("text", "") for b in data.get("content", [])
+                       if b.get("type") == "text")
 
     base = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
     data = _post_json(base + "/chat/completions", {
@@ -191,7 +189,7 @@ def _chat_once(system: str, messages: list, meter: Meter, kind: str) -> str:
         # text unless this is off. A negotiation message with the model's
         # deliberation prepended parses as neither JSON nor a tagged line.
         "reasoning": {"enabled": False},
-    }, os.environ.get("OPENAI_API_KEY", ""))
+    }, {"Authorization": "Bearer " + os.environ.get("OPENAI_API_KEY", "")})
     # An upstream failure can arrive as HTTP 200 with an error object and no
     # choices. It is charged as a request either way, so the meter is fed
     # before the error is raised.
@@ -234,21 +232,14 @@ def run_header(turn_limit: int) -> str:
     """The first line of every log file: what produced the numbers below it."""
     import platform
     if PROVIDER == "anthropic":
-        try:
-            import anthropic
-            sdk = f"anthropic {anthropic.__version__}"
-        except Exception:  # noqa: BLE001
-            sdk = "anthropic version unavailable"
+        base = os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com")
+        extra = "anthropic-version=2023-06-01"
     else:
-        sdk = "stdlib urllib (no SDK)"
-    if PROVIDER == "anthropic":
-        sampling = (f"temperature=NOT_SETTABLE(sampling removed on {MODEL}; "
-                    f"internal value unknown)")
-    else:
-        sampling = f"temperature={TEMPERATURE}"
-    base = os.environ.get("OPENAI_BASE_URL", "(default)") if PROVIDER != "anthropic" else "-"
+        base = os.environ.get("OPENAI_BASE_URL", "(default)")
+        extra = "reasoning=disabled"
     quota = free_quota_remaining()
     quota_s = f" free_daily={quota[0]}/{quota[1]}" if quota else ""
-    return (f"provider={PROVIDER} base_url={base} model={MODEL} {sampling} "
-            f"max_tokens={MAX_TOKENS} turn_limit={turn_limit} "
-            f"reasoning=disabled sdk={sdk} python={platform.python_version()}{quota_s}")
+    return (f"provider={PROVIDER} base_url={base} model={MODEL} "
+            f"temperature={TEMPERATURE} max_tokens={MAX_TOKENS} "
+            f"turn_limit={turn_limit} {extra} transport=stdlib-urllib "
+            f"python={platform.python_version()}{quota_s}")
