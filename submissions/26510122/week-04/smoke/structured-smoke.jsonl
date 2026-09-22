@@ -14,3 +14,19 @@
 {"event": "episode_result", "run": "structured-smoke", "scenario": "bicycle-wide", "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 6, "format_errors": 0, "reader_calls": 0}
 {"event": "usage", "run": "structured-smoke", "scenario": "bicycle-wide", "model_calls": 6, "provider_retries": 0}
 {"event": "run_complete", "run": "structured-smoke", "condition": "structured", "scenarios": 1}
+{"event": "setup", "run": "structured-smoke", "condition": "structured", "model": "nvidia/nemotron-3-super-120b-a12b:free", "temperature": 0.0, "turn_limit": 6, "reader_prompt": "You are the fixed protocol reader for a price negotiation. Classify the message as\nexactly one of: propose, accept-proposal, reject-proposal, refuse. Extract an\ninteger price only when the message proposes a price; otherwise use null. A\nquestion or departure that cannot be represented by the four acts is refuse.\nReturn only one JSON object in this shape:\n{\"performative\":\"propose\",\"price\":100}", "pending": ["bicycle-wide"]}
+{"event": "message", "run": "structured-smoke", "scenario": "bicycle-wide", "turn": 1, "speaker": "buyer", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":60}}"}
+{"event": "read", "run": "structured-smoke", "scenario": "bicycle-wide", "turn": 1, "performative": "propose", "price": 60, "error": null, "reader_calls": 0}
+{"event": "message", "run": "structured-smoke", "scenario": "bicycle-wide", "turn": 2, "speaker": "seller", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":100}}"}
+{"event": "read", "run": "structured-smoke", "scenario": "bicycle-wide", "turn": 2, "performative": "propose", "price": 100, "error": null, "reader_calls": 0}
+{"event": "message", "run": "structured-smoke", "scenario": "bicycle-wide", "turn": 3, "speaker": "buyer", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":65}}"}
+{"event": "read", "run": "structured-smoke", "scenario": "bicycle-wide", "turn": 3, "performative": "propose", "price": 65, "error": null, "reader_calls": 0}
+{"event": "message", "run": "structured-smoke", "scenario": "bicycle-wide", "turn": 4, "speaker": "seller", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":95}}"}
+{"event": "read", "run": "structured-smoke", "scenario": "bicycle-wide", "turn": 4, "performative": "propose", "price": 95, "error": null, "reader_calls": 0}
+{"event": "message", "run": "structured-smoke", "scenario": "bicycle-wide", "turn": 5, "speaker": "buyer", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":70}}"}
+{"event": "read", "run": "structured-smoke", "scenario": "bicycle-wide", "turn": 5, "performative": "propose", "price": 70, "error": null, "reader_calls": 0}
+{"event": "message", "run": "structured-smoke", "scenario": "bicycle-wide", "turn": 6, "speaker": "seller", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":90}}"}
+{"event": "read", "run": "structured-smoke", "scenario": "bicycle-wide", "turn": 6, "performative": "propose", "price": 90, "error": null, "reader_calls": 0}
+{"event": "episode_result", "run": "structured-smoke", "scenario": "bicycle-wide", "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 6, "format_errors": 0, "reader_calls": 0}
+{"event": "usage", "run": "structured-smoke", "scenario": "bicycle-wide", "model_calls": 10, "provider_retries": 4}
+{"event": "run_complete", "run": "structured-smoke", "condition": "structured", "scenarios": 1}
