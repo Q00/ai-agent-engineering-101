@@ -1,13 +1,15 @@
 """One run = one condition, one repeat, every scenario. Nine runs make the lab.
 
-Why it is built to be interrupted: a free OpenRouter key stops at 50 requests
-a day and the whole lab is about 230, so a run will be cut off. Rows are
-appended as each episode finishes and `(run, scenario)` pairs already in
-results.csv are skipped, so re-issuing the same command continues where it
-stopped instead of duplicating rows.
-
-  python runner.py --condition free --repeat 1            live
+  python runner.py --all                                  the whole lab
+  python runner.py --all --only 1                         one scenario, for a smoke test
+  python runner.py --condition free --repeat 1            one run
   python runner.py --condition free --repeat 1 --fake     offline, no API key
+
+Why it is built to be interrupted: rows are appended as each episode
+finishes, and `(run, scenario)` pairs already in results.csv are skipped, so
+re-issuing the same command continues where it stopped instead of duplicating
+rows. A rate-limited or half-finished lab is resumed by running the same
+`--all` again.
 """
 import argparse
 import csv
@@ -25,6 +27,7 @@ HEADER = ["run", "condition", "scenario", "deal_possible", "outcome", "price", "
           "violation", "turns", "format_errors", "reader_calls", "note"]
 CONDITIONS = ("free", "tagged", "structured")
 TURN_LIMIT = 8          # the lecture's MAX_TURNS; an episode that reaches it ends `open`
+REPEATS = 3
 
 
 def judge(scenario, outcome, price):
@@ -34,15 +37,14 @@ def judge(scenario, outcome, price):
               at a price inside both limits". So a deal counts only when a
               zone of agreement existed and the price sat inside it, and an
               episode that ended WITHOUT a deal counts when no zone existed --
-              whether it ended in a refuse or simply ran out of turns. The
-              reference run reads the same way: 8 of free's 11 correct
-              episodes were first-turn no_deals on scenarios where refusing
-              was the right answer.
+              whether it refused or simply ran out of turns. The reference run
+              reads the same way: 8 of free's 11 correct episodes were
+              first-turn no_deals on scenarios where refusing was right.
     violation a deal below the seller's reserve or above the buyer's budget.
               Counted separately because an episode can be wrong without
               either side breaking its private limit, and the other way round:
-              in the reference run a violation came from a reader misreading
-              the price, while both agents had held their limits.
+              in the reference run a violation came from a reader misreading a
+              price while both agents had held their limits.
     """
     reserve, budget = scenario["reserve"], scenario["budget"]
     possible = 1 if reserve <= budget else 0
@@ -62,11 +64,11 @@ def run_episode(scenario, condition, ask, meter, turn_limit, log):
 
     Two rules here are taken from the reference run rather than invented:
 
-      * an accept-proposal with no price on the table does NOT end the
-        episode and is NOT a format error. The act was read; there was simply
-        nothing recorded to accept. The conversation carries on and usually
-        runs out of turns, which is where 6 of the reference run's 19 `open`
-        episodes came from.
+      * an accept-proposal with no price on the table does NOT end the episode
+        and is NOT a format error. The act was read; there was simply nothing
+        recorded to accept. The conversation carries on and usually runs out
+        of turns, which is where 6 of the reference run's 19 `open` episodes
+        came from.
       * a message the layer could not read is still delivered to the other
         side unchanged. The protocol layer is an observer, not a filter.
     """
@@ -137,33 +139,9 @@ def append_row(results, row):
         w.writerow([row[c] for c in HEADER])
 
 
-def main():
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--condition", required=True, choices=CONDITIONS)
-    p.add_argument("--repeat", required=True, type=int)
-    p.add_argument("--turn-limit", type=int, default=TURN_LIMIT)
-    p.add_argument("--fake", action="store_true",
-                   help="offline deterministic provider; spends no API calls")
-    p.add_argument("--scenarios", type=Path, default=HERE / "scenarios.json")
-    p.add_argument("--results", type=Path, default=HERE / "results.csv")
-    p.add_argument("--logs", type=Path, default=HERE / "logs")
-    args = p.parse_args()
-
-    run = f"{args.condition}-{args.repeat}"
-    scenarios = json.loads(args.scenarios.read_text(encoding="utf-8"))
-    args.logs.mkdir(parents=True, exist_ok=True)
-
-    if args.fake:
-        import fake_provider
-
-        def ask_for(scenario):
-            return fake_provider.make_fake_ask(scenario, args.condition)
-    else:
-        agents.check_ready()
-
-        def ask_for(scenario):
-            return chat.ask
-
+def do_run(condition, repeat, scenarios, ask_for, args):
+    """One condition, one repeat, every scenario. Writes one log file."""
+    run = f"{condition}-{repeat}"
     lines = []
 
     def log(line=""):
@@ -171,8 +149,7 @@ def main():
         lines.append(line)
 
     settings = "fake provider (offline, no model)" if args.fake else chat.settings_line()
-    log(f"run={run} condition={args.condition} repeat={args.repeat} "
-        f"turn_limit={args.turn_limit}")
+    log(f"run={run} condition={condition} repeat={repeat} turn_limit={args.turn_limit}")
     log(f"settings: {settings}")
     log(f"scenarios: {args.scenarios.name} ({len(scenarios)})")
     log()
@@ -190,7 +167,7 @@ def main():
             f"deal_possible={1 if scenario['reserve'] <= scenario['budget'] else 0})")
         meter = chat.Meter()
         try:
-            row = run_episode(scenario, args.condition, ask_for(scenario), meter,
+            row = run_episode(scenario, condition, ask_for(scenario), meter,
                               args.turn_limit, log)
             note = f"tokens={meter.tokens} calls={meter.calls}"
             if row.pop("unmatched_accepts"):
@@ -204,7 +181,7 @@ def main():
             row["note"] = f"{type(e).__name__}: {e}"[:200].replace("\n", " ")
         totals.tokens += meter.tokens
         totals.calls += meter.calls
-        row.update(run=run, condition=args.condition, scenario=sid)
+        row.update(run=run, condition=condition, scenario=sid)
         append_row(args.results, row)
         log(f"  -> outcome={row['outcome']} price={row['price']} correct={row['correct']} "
             f"violation={row['violation']} turns={row['turns']} "
@@ -214,8 +191,66 @@ def main():
     log(f"run {run} finished: {totals.calls} model call(s), {totals.tokens} token(s)")
     if chat.temperature_rejected and not args.fake:
         log("note: temperature was not settable on this backend; report it as such")
-    (args.logs / f"{run}.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"log written to {args.logs / (run + '.txt')}")
+
+    log_path = args.logs / f"{run}.txt"
+    if log_path.is_file():
+        # a resumed run appends to its own log rather than overwriting the
+        # record of what happened the first time
+        lines = [log_path.read_text(encoding="utf-8").rstrip(), "", "-- resumed --", ""] + lines
+    log_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"log written to {log_path}\n")
+    return totals
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__,
+                                formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--all", action="store_true",
+                   help=f"every condition x {REPEATS} repeats: the whole lab")
+    p.add_argument("--condition", choices=CONDITIONS)
+    p.add_argument("--repeat", type=int)
+    p.add_argument("--repeats", type=int, default=REPEATS)
+    p.add_argument("--only", help="a single scenario id, for a cheap smoke test")
+    p.add_argument("--turn-limit", type=int, default=TURN_LIMIT)
+    p.add_argument("--fake", action="store_true",
+                   help="offline deterministic provider; spends no API calls")
+    p.add_argument("--scenarios", type=Path, default=HERE / "scenarios.json")
+    p.add_argument("--results", type=Path, default=HERE / "results.csv")
+    p.add_argument("--logs", type=Path, default=HERE / "logs")
+    args = p.parse_args()
+
+    if not args.all and (args.condition is None or args.repeat is None):
+        p.error("give --all, or both --condition and --repeat")
+
+    scenarios = json.loads(args.scenarios.read_text(encoding="utf-8"))
+    if args.only is not None:
+        scenarios = [s for s in scenarios if str(s["id"]) == str(args.only)]
+        if not scenarios:
+            p.error(f"no scenario with id {args.only!r} in {args.scenarios.name}")
+    args.logs.mkdir(parents=True, exist_ok=True)
+
+    if args.fake:
+        import fake_provider
+
+        def ask_for_in(condition):
+            return lambda scenario: fake_provider.make_fake_ask(scenario, condition)
+    else:
+        agents.check_ready()
+
+        def ask_for_in(_condition):
+            return lambda _scenario: chat.ask
+
+    plan = ([(c, r) for c in CONDITIONS for r in range(1, args.repeats + 1)]
+            if args.all else [(args.condition, args.repeat)])
+
+    calls = tokens = 0
+    for condition, repeat in plan:
+        totals = do_run(condition, repeat, scenarios, ask_for_in(condition), args)
+        calls += totals.calls
+        tokens += totals.tokens
+
+    if len(plan) > 1:
+        print(f"{len(plan)} run(s) finished: {calls} model call(s), {tokens} token(s)")
     return 0
 
 
