@@ -14,7 +14,7 @@ from typing import Any
 
 try:
     import jax.numpy as jnp
-    HAS_JAX = False
+    HAS_JAX = False             # blocked due to Segment  fault (core dumped)
 except Exception:
     jnp = None
     HAS_JAX = False
