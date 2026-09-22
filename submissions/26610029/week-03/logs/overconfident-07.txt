@@ -1,0 +1,31 @@
+[announce] contract 1: 주문 #1001 (노트북 2개, 단가 89만원, 세율 10%)의 총액을 계산하라.
+  [bid] A: bid=True confidence=95 reason='This task directly requires calculating order amount, tax, and quantity-related numerical computations, which is exactly my skill.'
+  [bid] B: bid=False confidence=95 reason='This task requires arithmetic calculation skills, not customer email response and message writing skills.'
+  [bid] C: bid=True confidence=95 reason='주문 계산은 재고/데이터베이스 관련 처리 로직에 포함되는 기본 트랜잭션 계산 작업입니다.'
+  [award] A (gold A)
+[announce] contract 2: 주문 #1002 (마우스 5개, 단가 3만원, 세율 8%)의 총액을 계산하라.
+  [bid] A: bid=True confidence=95 reason='Task requires calculating order total with quantity, unit price, and tax rate - directly matches my skill in numerical calculations related to orders, taxes, and quantities.'
+  [bid] B: bid=False confidence=5 reason='This task requires mathematical calculation skills, not customer email and response message writing skills.'
+  [bid] C: bid=True confidence=95 reason='Order total calculation involves inventory quantity processing and database-related logic which falls within my skill set.'
+  [award] A (gold A)
+[announce] contract 3: 주문 #1001의 배송 확인 이메일 초안을 작성하라.
+  [bid] A: bid=False confidence=95 reason='이 작업은 이메일 초안 작성으로, 수치 계산 기술과는 무관한 콘텐츠 작성 업무입니다.'
+  [bid] B: bid=True confidence=95 reason='주문 배송 확인 이메일 작성은 고객 이메일 응대 메시지 작성 스킬의 핵심 업무에 해당합니다.'
+  [bid] C: bid=False confidence=15 reason='Task requires email composition and customer communication skills, not inventory/database processing logic.'
+  [award] B (gold B)
+[announce] contract 4: 주문 #1002가 재고 부족으로 지연될 때 고객에게 보낼 사과 이메일을 작성하라.
+  [bid] A: bid=False confidence=95 reason='This task requires email writing and customer communication skills, not numerical calculations related to orders, taxes, or quantities.'
+  [bid] B: bid=True confidence=95 reason='이 작업은 고객 이메일 작성이라는 제 핵심 스킬과 정확히 일치하며, 재고 부족 지연 상황에 대한 사과 이메일 작성은 고객 응대 메시지 작성 범위에 포함됩니다.'
+  [bid] C: bid=False confidence=15 reason='Task requires email composition and customer communication skills, not inventory/database processing logic'
+  [award] B (gold B)
+[announce] contract 5: 주문 #1001 처리 후 재고 수량을 차감하는 로직을 작성하라.
+  [bid] A: bid=True confidence=85 reason='Task involves inventory quantity calculations after order processing, which directly relates to my skill in quantity-related numerical calculations.'
+  [bid] B: bid=False confidence=15 reason='Task requires inventory management logic coding, not customer email communication which is my skill.'
+  [bid] C: bid=True confidence=98 reason='주문 처리 후 재고 차감은 제 전문 분야인 재고/데이터베이스 관련 처리 로직에 정확히 부합합니다.'
+  [award] C (gold C)
+[announce] contract 6: 재고 DB에서 품절 임박 상품을 찾는 쿼리 로직을 작성하라.
+  [bid] A: bid=False confidence=5 reason='This task requires database query logic and inventory management expertise, not numerical calculations related to orders, taxes, and quantities.'
+  [bid] B: bid=False confidence=5 reason='This task requires database query logic and inventory management expertise, which is outside my skill of writing customer emails and response messages.'
+  [bid] C: bid=True confidence=95 reason='재고/데이터베이스 관련 처리 로직이 핵심 스킬이며, 품절 임박 상품 쿼리는 정확히 내 전문 분야입니다.'
+  [award] C (gold C)
+[result] run=7 condition=overconfident -> [7, 'overconfident', 6, 6, 33, 0, 0, '']

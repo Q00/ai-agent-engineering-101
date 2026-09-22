@@ -1,0 +1,23 @@
+flowchart LR
+    A["tasks.json 로드 + make_team(condition)<br/>baseline / homogeneous / overconfident"] --> B["태스크 순회 시작"]
+    B --> C["announce: 모든 contractor(A,B,C)에게<br/>task-abstraction / eligibility-spec / bid-spec 전송"]
+    C --> D["contractor.bid() 호출<br/>LLM이 System(skill, overconfident 여부) + announcement 보고 판단"]
+    D --> E{"JSON 파싱 성공?"}
+    E -->|No| F["parse_fails += 1<br/>'입찰 안 함'으로 취급"]
+    E -->|Yes| G{"bid == true?"}
+    G -->|No| H["후보에서 제외"]
+    G -->|Yes| I["confidence와 함께 후보 목록에 추가"]
+    F --> J{"이 태스크에 후보 있음?"}
+    H --> J
+    I --> J
+    J -->|No| K["unassigned += 1"]
+    J -->|Yes| L["confidence 내림차순 정렬<br/>(동점이면 team 순서 A>B>C 승)"]
+    L --> M["award: winner 통보"]
+    M --> N{"winner == gold?"}
+    N -->|Yes| O["correct += 1"]
+    N -->|No| P["misawards += 1"]
+    K --> Q{"남은 태스크 있음?"}
+    O --> Q
+    P --> Q
+    Q -->|Yes| B
+    Q -->|No| R["RoundResult 반환 -> results.csv 한 줄"]
