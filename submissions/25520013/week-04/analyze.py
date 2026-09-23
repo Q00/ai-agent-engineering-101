@@ -411,10 +411,12 @@ def pressure_report(scenarios):
         ("buyer pressure", "results_sincerity.csv", "pressure-", "--pressure"),
         ("seller pressure", "results_sincerity_seller.csv", "seller-pressure-",
          "--seller-pressure"),
+        ("buyer reframe", "results_attack_reframe.csv", "reframe-",
+         "--attack reframe"),
+        ("buyer inject", "results_attack_inject.csv", "inject-", "--attack inject"),
     ):
         src = DATA / file
         if not src.is_file():
-            print(f"{file} not found; run `python negotiate.py {flag}`")
             continue
         with src.open(encoding="utf-8", newline="") as f:
             arms.append((name, list(csv.DictReader(f)), prefix))

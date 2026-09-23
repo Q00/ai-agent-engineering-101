@@ -35,6 +35,7 @@ OUT = (
 RESULTS = OUT / "results.csv"
 SINCERITY = OUT / "results_sincerity.csv"
 SINCERITY_SELLER = OUT / "results_sincerity_seller.csv"
+ATTACKS = ("reframe", "inject")
 LOGS = OUT / "logs"
 
 HEADER = [
@@ -289,13 +290,15 @@ def _append(results: Path, row: dict) -> None:
 
 
 def main(argv: list) -> int:
-    # --pressure makes the buyer insincere, --seller-pressure the seller. Each
-    # arm writes its own results file and log prefix, so the neutral run that
-    # results.csv holds is never appended to.
+    # --pressure makes the buyer insincere, --seller-pressure the seller, and
+    # --attack reframe|inject gives the buyer a stronger attack on the reserve.
+    # Each arm writes its own results file and log prefix, so the neutral run
+    # that results.csv holds is never appended to.
     arms = {
         "": (RESULTS, ""),
         "buyer": (SINCERITY, "pressure-"),
         "seller": (SINCERITY_SELLER, "seller-pressure-"),
+        **{a: (OUT / f"results_attack_{a}.csv", f"{a}-") for a in ATTACKS},
     }
     pressure = (
         "seller" if "--seller-pressure" in argv
@@ -303,6 +306,13 @@ def main(argv: list) -> int:
         else ""
     )
     argv = [a for a in argv if a not in ("--pressure", "--seller-pressure")]
+    if "--attack" in argv:
+        i = argv.index("--attack")
+        pressure = argv[i + 1]
+        if pressure not in ATTACKS:
+            print(f"--attack must be one of {', '.join(ATTACKS)}")
+            return 2
+        argv = argv[:i] + argv[i + 2 :]
     results, prefix = arms[pressure]
 
     scenarios = json.loads(SCENARIOS.read_text(encoding="utf-8"))
