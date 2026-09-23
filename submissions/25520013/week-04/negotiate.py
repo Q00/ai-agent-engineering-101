@@ -25,6 +25,7 @@ import backend
 HERE = Path(__file__).resolve().parent
 SCENARIOS = HERE / "scenarios.json"
 RESULTS = HERE / "results.csv"
+SINCERITY = HERE / "results_sincerity.csv"
 LOGS = HERE / "logs"
 
 HEADER = [
@@ -153,7 +154,7 @@ def read(condition: str, text: str, transcript: list, meter: backend.Meter):
 # --------------------------------------------------------------------- one episode
 
 
-def run_episode(condition: str, scenario: dict, run: str, log) -> dict:
+def run_episode(condition: str, scenario: dict, run: str, log, pressure=False) -> dict:
     """One negotiation. Returns the results.csv row as a dict."""
     item, reserve, budget = scenario["item"], scenario["reserve"], scenario["budget"]
     meter = backend.Meter()
@@ -174,7 +175,7 @@ def run_episode(condition: str, scenario: dict, run: str, log) -> dict:
 
     sessions = {
         "buyer": backend.Session(
-            acl.system_prompt("buyer", item, budget, condition), meter
+            acl.system_prompt("buyer", item, budget, condition, pressure), meter
         ),
         "seller": backend.Session(
             acl.system_prompt("seller", item, reserve, condition), meter
@@ -261,17 +262,17 @@ def run_episode(condition: str, scenario: dict, run: str, log) -> dict:
 # ------------------------------------------------------------------------ the runner
 
 
-def _done_pairs() -> set:
-    """(run, scenario) pairs already in results.csv."""
-    if not RESULTS.is_file():
+def _done_pairs(results: Path) -> set:
+    """(run, scenario) pairs already in the results file."""
+    if not results.is_file():
         return set()
-    with RESULTS.open(encoding="utf-8", newline="") as f:
+    with results.open(encoding="utf-8", newline="") as f:
         return {(r["run"], r["scenario"]) for r in csv.DictReader(f)}
 
 
-def _append(row: dict) -> None:
-    new = not RESULTS.is_file()
-    with RESULTS.open("a", encoding="utf-8", newline="") as f:
+def _append(results: Path, row: dict) -> None:
+    new = not results.is_file()
+    with results.open("a", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=HEADER)
         if new:
             writer.writeheader()
@@ -279,11 +280,16 @@ def _append(row: dict) -> None:
 
 
 def main(argv: list) -> int:
+    pressure = "--pressure" in argv
+    argv = [a for a in argv if a != "--pressure"]
+    results = SINCERITY if pressure else RESULTS
+    prefix = "pressure-" if pressure else ""
+
     scenarios = json.loads(SCENARIOS.read_text(encoding="utf-8"))
     conditions = [argv[0]] if argv else list(CONDITIONS)
     repeats = [int(argv[1])] if len(argv) > 1 else list(REPEATS)
     LOGS.mkdir(exist_ok=True)
-    done = _done_pairs()
+    done = _done_pairs(results)
 
     for condition in conditions:
         for repeat in repeats:
@@ -292,7 +298,7 @@ def main(argv: list) -> int:
             if not todo:
                 print(f"{run}: already complete, skipped")
                 continue
-            path = LOGS / f"{run}.txt"
+            path = LOGS / f"{prefix}{run}.txt"
             with path.open("a", encoding="utf-8") as handle:
 
                 def log(line, handle=handle):
@@ -301,11 +307,12 @@ def main(argv: list) -> int:
 
                 log(
                     f"run={run} provider={backend.provider()} model={backend.MODEL} "
-                    f"temperature=not settable turn_limit={MAX_TURNS}"
+                    f"temperature=not settable turn_limit={MAX_TURNS} "
+                    f"buyer={'pressure' if pressure else 'neutral'}"
                 )
                 for scenario in todo:
-                    row = run_episode(condition, scenario, run, log)
-                    _append(row)
+                    row = run_episode(condition, scenario, run, log, pressure)
+                    _append(results, row)
                     print(
                         f"{run} scenario {row['scenario']}: "
                         f"outcome={row['outcome'] or 'crash'} price={row['price']} "
