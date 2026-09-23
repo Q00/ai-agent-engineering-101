@@ -116,9 +116,16 @@ def read_message(condition, raw, transcript, chat, log):
         )
     raw_label = chat.complete(READER_SYSTEM, [{"role": "user", "content": prompt}], log)
     log(f"[reader-raw] {json.dumps(raw_label, ensure_ascii=False)}")
-    parsed = _read_reader_json(raw_label)
     if condition == "tagged":
-        parsed = (act, parsed[1]) if parsed and _price(parsed[1]) else None
+        try:
+            label = json.loads(raw_label)
+        except (TypeError, ValueError):
+            label = None
+        # The tag is authoritative. The reader supplies only the proposed price.
+        parsed = ((act, label["price"]) if isinstance(label, dict) and
+                  _price(label.get("price")) else None)
+    else:
+        parsed = _read_reader_json(raw_label)
     log(f"[reader] {parsed!r}")
     return parsed
 
