@@ -117,4 +117,3 @@ def test_hybrid_guard_veto_prevents_unsafe_deal_and_returns_to_bargaining() -> N
     assert execution.result.settlement_vetoes == 1
     assert execution.result.guard_vetoes == 1
     assert any("seller_guard=reject" in line for line in execution.transcript)
-

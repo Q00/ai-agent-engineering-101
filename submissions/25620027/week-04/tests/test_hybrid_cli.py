@@ -25,4 +25,3 @@ def test_hybrid_paid_run_requires_explicit_flag(
 
     assert result.exit_code != 0
     assert "Paid model requires explicit --allow-paid" in result.output
-

@@ -79,4 +79,3 @@ def settlement_guards(scenario: Scenario, candidate_price: int) -> SettlementGua
         buyer_approved=candidate_price <= scenario.budget,
         seller_approved=candidate_price >= scenario.reserve,
     )
-

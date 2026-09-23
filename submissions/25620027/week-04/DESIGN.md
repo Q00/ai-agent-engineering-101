@@ -46,3 +46,11 @@ seller LLM <─ delivered message ───────────────�
 - tagged: 행위 오독은 줄지만 태그 뒤 역제안을 프로토콜 상태가 놓칠 수 있음.
 - structured: reader 비용은 0이지만 JSON 뒤 문장이나 `price=null`의 실제 가격을 버릴 수 있음.
 - 공통: 형식은 agent가 자기 한도를 실제로 지키는지 보장하지 못함.
+
+## 후속 확장
+
+기본 36개 에피소드를 보존한 채, `free discovery → tagged bargaining → structured
+settlement`로 전환하는 상태 기반 혼합 프로토콜을 별도 실험했다. 양쪽 구조화 확인과 양쪽
+로컬 한도 guard가 모두 통과해야 거래를 커밋한다. 사전 설계는
+[`extension/DESIGN.md`](extension/DESIGN.md), 실제 12개 결과와 해석은
+[`extension/REPORT.md`](extension/REPORT.md)에 있다.
