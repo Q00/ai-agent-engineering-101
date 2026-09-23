@@ -42,7 +42,7 @@ class HybridArchive:
         self.logs.mkdir(parents=True, exist_ok=True)
         if not self.results_path.exists():
             with self.results_path.open("w", encoding="utf-8", newline="") as stream:
-                csv.writer(stream).writerow(HYBRID_HEADER)
+                csv.writer(stream, lineterminator="\n").writerow(HYBRID_HEADER)
 
     def completed_keys(self) -> frozenset[tuple[int, str]]:
         """Return exact persisted `(run, scenario)` keys."""
@@ -54,7 +54,7 @@ class HybridArchive:
         """Append one hybrid episode immediately for safe resume."""
         result = record.result
         with self.results_path.open("a", encoding="utf-8", newline="") as stream:
-            csv.writer(stream).writerow(
+            csv.writer(stream, lineterminator="\n").writerow(
                 (
                     record.run,
                     "hybrid",
