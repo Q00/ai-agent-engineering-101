@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 420" role="img" aria-labelledby="title desc">
+  <title id="title">동일한 협상에서 메시지 형식과 해석 방식 비교</title>
+  <desc id="desc">동일한 구매자, 판매자, 시나리오, 모델을 free, tagged, structured 조건으로 나누어 실행한 뒤 같은 상태 전이와 지표로 평가하는 실험 구성도</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+    </marker>
+    <style>
+      .ko{font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+      .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+      .head{fill:#1C1917;font-size:13px;font-weight:600}
+      .body{fill:#44403C;font-size:10.5px;font-weight:400}
+      .meta{fill:#78716C;font-size:9.5px;font-weight:400}
+      .cap{fill:#A8A29E;font-size:10.5px;font-weight:400;letter-spacing:.04em}
+      .capnum{fill:#78716C;font-weight:500}
+    </style>
+  </defs>
+
+  <rect x="0.75" y="0.75" width="678.5" height="418.5" rx="8" fill="#FFFFFF" stroke="#E7E5E4" stroke-width="1.5"/>
+
+  <text x="26" y="31" class="ko meta">고정</text>
+  <rect x="84" y="18" width="570" height="64" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
+  <text x="369" y="42" text-anchor="middle" class="ko head">동일한 협상 조건</text>
+  <text x="369" y="62" text-anchor="middle" class="ko body">구매자 budget · 판매자 reserve · 시나리오 4개 · 동일 모델/temperature · 최대 8턴</text>
+
+  <text x="26" y="144" class="ko meta">변경</text>
+  <text x="340" y="111" text-anchor="middle" class="ko meta">조건별 독립 실행 · 각 12개 에피소드</text>
+
+  <g fill="none" stroke="#1C1917" stroke-width="1.5">
+    <path d="M240 82 L116 132" marker-end="url(#arrow)"/>
+    <path d="M369 82 L369 132" marker-end="url(#arrow)"/>
+    <path d="M498 82 L622 132" marker-end="url(#arrow)"/>
+    <rect x="18" y="134" width="196" height="88"/>
+    <rect x="242" y="134" width="254" height="88"/>
+    <rect x="524" y="134" width="138" height="88"/>
+  </g>
+
+  <text x="116" y="158" text-anchor="middle" class="mono head">free</text>
+  <text x="116" y="181" text-anchor="middle" class="ko body">자유문장</text>
+  <text x="116" y="201" text-anchor="middle" class="ko meta">매 메시지 → LLM reader</text>
+
+  <text x="369" y="158" text-anchor="middle" class="mono head">tagged</text>
+  <text x="369" y="181" text-anchor="middle" class="ko body">행위 태그 + 자유문장</text>
+  <text x="369" y="201" text-anchor="middle" class="ko meta">행위 → 정규식 · 제안 가격 → LLM reader</text>
+
+  <text x="593" y="158" text-anchor="middle" class="mono head">structured</text>
+  <text x="593" y="181" text-anchor="middle" class="ko body">JSON 객체</text>
+  <text x="593" y="201" text-anchor="middle" class="ko meta">행위·가격 → parser</text>
+
+  <g fill="none" stroke="#1C1917" stroke-width="1.5">
+    <path d="M116 222 L258 266" marker-end="url(#arrow)"/>
+    <path d="M369 222 L369 266" marker-end="url(#arrow)"/>
+    <path d="M593 222 L480 266" marker-end="url(#arrow)"/>
+  </g>
+
+  <text x="26" y="284" class="ko meta">공통 처리</text>
+  <rect x="102" y="268" width="536" height="58" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
+  <text x="370" y="291" text-anchor="middle" class="ko head">동일한 에피소드 상태 전이</text>
+  <text x="370" y="311" text-anchor="middle" class="ko body">제안 가격 기록 → 수락 시 거래 · 거부 시 결렬 · 8턴이면 open</text>
+
+  <path d="M370 326 L370 348" fill="none" stroke="#1C1917" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="26" y="367" class="ko meta">공통 측정</text>
+  <rect x="102" y="350" width="536" height="38" fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5"/>
+  <text x="370" y="374" text-anchor="middle" class="ko body">outcome · price · correct · violation · turns · format errors · reader calls</text>
+
+  <line x1="22" y1="400" x2="658" y2="400" stroke="#E7E5E4" stroke-width="1"/>
+  <text x="24" y="414" class="mono cap"><tspan class="capnum">FIG. 01</tspan><tspan> Experiment structure</tspan></text>
+  <text x="656" y="414" text-anchor="end" class="ko cap">독립변수: 메시지 형식과 해석 방식</text>
+</svg>
