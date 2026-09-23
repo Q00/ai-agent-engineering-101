@@ -24,10 +24,18 @@ import backend
 
 HERE = Path(__file__).resolve().parent
 SCENARIOS = HERE / "scenarios.json"
-RESULTS = HERE / "results.csv"
-SINCERITY = HERE / "results_sincerity.csv"
-SINCERITY_SELLER = HERE / "results_sincerity_seller.csv"
-LOGS = HERE / "logs"
+# A run on another negotiator model (AGENT_MODEL) gets a directory of its own
+# with the same layout, so the committed default-model files are never
+# appended to and analyze.py reads either with --dir.
+OUT = (
+    HERE
+    if backend.MODEL == backend.DEFAULT_MODEL
+    else HERE / "models" / backend.MODEL
+)
+RESULTS = OUT / "results.csv"
+SINCERITY = OUT / "results_sincerity.csv"
+SINCERITY_SELLER = OUT / "results_sincerity_seller.csv"
+LOGS = OUT / "logs"
 
 HEADER = [
     "run",
@@ -300,7 +308,7 @@ def main(argv: list) -> int:
     scenarios = json.loads(SCENARIOS.read_text(encoding="utf-8"))
     conditions = [argv[0]] if argv else list(CONDITIONS)
     repeats = [int(argv[1])] if len(argv) > 1 else list(REPEATS)
-    LOGS.mkdir(exist_ok=True)
+    LOGS.mkdir(parents=True, exist_ok=True)
     done = _done_pairs(results)
 
     for condition in conditions:
@@ -319,6 +327,7 @@ def main(argv: list) -> int:
 
                 log(
                     f"run={run} provider={backend.provider()} model={backend.MODEL} "
+                    f"reader_model={backend.READER_MODEL} "
                     f"temperature=not settable turn_limit={MAX_TURNS} "
                     f"pressure={pressure or 'none'}"
                 )

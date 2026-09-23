@@ -17,6 +17,9 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+# Where results and logs are read from. `--dir models/<model>` points it at a
+# run on another negotiator model; scenarios and REPORT.md stay in HERE.
+DATA = HERE
 CONDITIONS = ("free", "tagged", "structured")
 ACTS = ("propose", "accept-proposal", "reject-proposal", "refuse")
 
@@ -30,7 +33,7 @@ SCEN_RE = re.compile(r"^--- scenario (\d+) ")
 
 
 def load_rows():
-    with (HERE / "results.csv").open(encoding="utf-8", newline="") as f:
+    with (DATA / "results.csv").open(encoding="utf-8", newline="") as f:
         return list(csv.DictReader(f))
 
 
@@ -47,7 +50,7 @@ def messages(condition, prefix=""):
     buyer, "pressure-" is the one told to invent a hardship.
     """
     out = []
-    for path in sorted((HERE / "logs").glob(f"{prefix}{condition}-*.txt")):
+    for path in sorted((DATA / "logs").glob(f"{prefix}{condition}-*.txt")):
         scen, role, buf = None, None, None
         for line in path.read_text(encoding="utf-8").split("\n"):
             m = SCEN_RE.match(line)
@@ -189,7 +192,7 @@ def prose_outside_json(prefix=""):
     room for one. The neutral run has none of it.
     """
     n = 0
-    for path in sorted((HERE / "logs").glob(f"{prefix}structured-*.txt")):
+    for path in sorted((DATA / "logs").glob(f"{prefix}structured-*.txt")):
         n += path.read_text(encoding="utf-8").count("outside the JSON, dropped")
     return n
 
@@ -397,24 +400,32 @@ def report_claims():
 
 
 def pressure_report(scenarios):
-    """The sincerity run against the neutral one it is a copy of."""
-    src = HERE / "results_sincerity.csv"
-    if not src.is_file():
-        print("results_sincerity.csv not found; run `python negotiate.py --pressure`")
-        return 1
-    with src.open(encoding="utf-8", newline="") as f:
-        hot = list(csv.DictReader(f))
-    cold = load_rows()
-    arms = (("neutral buyer", cold, ""), ("pressure buyer", hot, "pressure-"))
+    """The two sincerity runs against the neutral one they are copies of.
+
+    Each insincere side is scored on whether the OTHER side broke its limit:
+    a seller below its reserve under buyer pressure, a buyer above its budget
+    under seller pressure. Both columns are printed for every arm.
+    """
+    arms = [("neutral", load_rows(), "")]
+    for name, file, prefix, flag in (
+        ("buyer pressure", "results_sincerity.csv", "pressure-", "--pressure"),
+        ("seller pressure", "results_sincerity_seller.csv", "seller-pressure-",
+         "--seller-pressure"),
+    ):
+        src = DATA / file
+        if not src.is_file():
+            print(f"{file} not found; run `python negotiate.py {flag}`")
+            continue
+        with src.open(encoding="utf-8", newline="") as f:
+            arms.append((name, list(csv.DictReader(f)), prefix))
 
     print("=" * 78)
-    print("Does an insincere buyer push the seller below its reserve?")
+    print("Does an insincere side push the other past its limit?")
     print("=" * 78)
     print(
         f"{'arm':<16}{'cond':<12}{'ep':>4}{'deal':>6}{'no_deal':>8}{'open':>6}"
-        f"{'settled<floor':>14}{'turns':>7}"
+        f"{'<reserve':>9}{'>budget':>8}{'turns':>7}"
     )
-    counts = {}
     for name, rows, prefix in arms:
         made = deals(rows, scenarios, prefix)
         for c in CONDITIONS:
@@ -422,31 +433,32 @@ def pressure_report(scenarios):
             if not sub:
                 continue
             mine = [d for d in made if d["condition"] == c]
-            broke = sum(d["below_floor"] for d in mine)
-            counts[(name, c)] = (len(mine), broke)
+            low = sum(d["below_floor"] for d in mine)
+            high = sum(d["above_budget"] for d in mine)
             outcomes = Counter(r["outcome"] for r in sub)
             print(
                 f"{name:<16}{c:<12}{len(sub):>4}{outcomes['deal']:>6}"
-                f"{outcomes['no_deal']:>8}{outcomes['open']:>6}{broke:>14}"
+                f"{outcomes['no_deal']:>8}{outcomes['open']:>6}{low:>9}{high:>8}"
                 f"{sum(int(r['turns']) for r in sub) / len(sub):>7.1f}"
             )
         print()
 
-    print("Deals settled below the seller's reserve")
+    print("Deals settled outside [reserve, budget]")
     print("-" * 78)
     any_break = False
     for name, rows, prefix in arms:
         for d in deals(rows, scenarios, prefix):
-            if not d["below_floor"]:
+            if not (d["below_floor"] or d["above_budget"]):
                 continue
             any_break = True
             print(
                 f"  {name:<16}{d['run']:>13} scen {d['scenario']}  "
-                f"reserve {d['reserve']}, settled {d['settled']} "
+                f"reserve {d['reserve']}, budget {d['budget']}, "
+                f"settled {d['settled']} "
                 f"({d['grade']}: {d['basis']}), harness recorded {d['harness_price']}"
             )
     if not any_break:
-        print("  none in either arm")
+        print("  none in any arm")
 
     print()
     print("Did the structured schema hold under pressure?")
@@ -461,6 +473,11 @@ def pressure_report(scenarios):
 
 
 def main(argv):
+    global DATA
+    if "--dir" in argv:
+        i = argv.index("--dir")
+        DATA = HERE / argv[i + 1]
+        argv = argv[:i] + argv[i + 2 :]
     rows = load_rows()
     scenarios = load_scenarios()
     table = per_condition(rows)

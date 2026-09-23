@@ -26,7 +26,12 @@ import time
 import urllib.error
 import urllib.request
 
-MODEL = os.environ.get("AGENT_MODEL", "claude-haiku-4-5-20251001")
+DEFAULT_MODEL = "claude-haiku-4-5-20251001"
+MODEL = os.environ.get("AGENT_MODEL", DEFAULT_MODEL)
+# The reader is the measuring instrument, so a run that swaps the negotiators'
+# model keeps it on the default unless told otherwise: a change in the results
+# then belongs to the agents, not to a different observer.
+READER_MODEL = os.environ.get("READER_MODEL", DEFAULT_MODEL)
 BASE_URL = os.environ.get("OPENAI_BASE_URL", "").rstrip("/")
 TIMEOUT_S = 180
 
@@ -109,7 +114,7 @@ class Session:
         """Add one user turn, return the assistant reply, keep both in history."""
         if _http_available():
             self.messages.append({"role": "user", "content": user})
-            text = _http(self.messages, self.meter, reader=False)
+            text = _http(self.messages, self.meter, reader=False, model=MODEL)
             self.messages.append({"role": "assistant", "content": text})
             return text
         payload = _cli(
@@ -118,6 +123,7 @@ class Session:
             system=self.system,
             session_id=self.session_id,
             reader=False,
+            model=MODEL,
         )
         self.session_id = payload.get("session_id") or self.session_id
         return payload.get("result", "")
@@ -134,15 +140,15 @@ def ask(system: str, user: str, meter: Meter) -> str:
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ]
-        return _http(messages, meter, reader=True)
-    return _cli(user, meter, system=system, session_id=None, reader=True).get(
-        "result", ""
-    )
+        return _http(messages, meter, reader=True, model=READER_MODEL)
+    return _cli(
+        user, meter, system=system, session_id=None, reader=True, model=READER_MODEL
+    ).get("result", "")
 
 
-def _http(messages: list, meter: Meter, *, reader: bool) -> str:
+def _http(messages: list, meter: Meter, *, reader: bool, model: str) -> str:
     """One chat completion against an OpenAI-compatible endpoint."""
-    body = json.dumps({"model": MODEL, "messages": messages}).encode()
+    body = json.dumps({"model": model, "messages": messages}).encode()
     request = urllib.request.Request(
         f"{BASE_URL}/chat/completions",
         data=body,
@@ -175,7 +181,9 @@ def _http(messages: list, meter: Meter, *, reader: bool) -> str:
     return (choices[0].get("message") or {}).get("content") or ""
 
 
-def _cli(user: str, meter: Meter, *, system: str, session_id, reader: bool) -> dict:
+def _cli(
+    user: str, meter: Meter, *, system: str, session_id, reader: bool, model: str
+) -> dict:
     """One `claude -p` call, either opening a session or resuming one."""
     if session_id:
         cmd = [
@@ -195,7 +203,7 @@ def _cli(user: str, meter: Meter, *, system: str, session_id, reader: bool) -> d
             "claude",
             "--print",
             "--model",
-            MODEL,
+            model,
             "--output-format",
             "json",
             "--exclude-dynamic-system-prompt-sections",
