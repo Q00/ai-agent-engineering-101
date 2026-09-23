@@ -31,9 +31,12 @@ def main():
         assert lines[0].startswith(f"[run] number={run} condition={condition}")
         current = None
         observed = {}
+        raw_counts = Counter()
         for line in lines:
             if line.startswith("[scenario] id="):
                 current = line.split()[1].split("=", 1)[1]
+            elif line.startswith("[reader-raw] "):
+                raw_counts[current] += 1
             elif line.startswith("[result] "):
                 observed[current] = json.loads(line[len("[result] "):])
         result = observed.get(row["scenario"])
@@ -49,7 +52,7 @@ def main():
                       "turns", "format_errors", "reader_calls"):
             actual = "" if result[field] is None else str(result[field])
             assert row[field] == actual, (run, row["scenario"], field, row[field], actual)
-        raw_labels = sum(line.startswith("[reader-raw] ") for line in lines)
+        raw_labels = raw_counts[row["scenario"]]
         if condition == "free":
             assert raw_labels == result["turns"]
         if condition == "structured":
