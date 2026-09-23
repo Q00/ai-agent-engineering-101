@@ -49,10 +49,13 @@ def main():
                       "turns", "format_errors", "reader_calls"):
             actual = "" if result[field] is None else str(result[field])
             assert row[field] == actual, (run, row["scenario"], field, row[field], actual)
-        assert len([line for line in lines if line.startswith("[reader-raw] ")]) >= (
-            result["reader_calls"] if condition == "free" else 0)
+        raw_labels = sum(line.startswith("[reader-raw] ") for line in lines)
+        if condition == "free":
+            assert raw_labels == result["turns"]
         if condition == "structured":
-            assert result["reader_calls"] == 0
+            assert raw_labels == result["reader_calls"] == 0
+        else:
+            assert result["reader_calls"] >= raw_labels
     print(f"verified {len(rows)} episodes against 9 original run logs")
 
 
