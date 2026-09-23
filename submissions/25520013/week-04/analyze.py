@@ -136,13 +136,17 @@ def settlement(msgs):
       implicit  they name none, so the last number either side put on the
                 table stands in
     """
-    closing = [stated_numbers(m[3]) for m in msgs if m[4] == "accept-proposal"]
+    # Only the acceptances that close the episode count. An earlier message can
+    # be read as an accept too (a fake operator notice that says "please
+    # accept" was), and it closed nothing.
+    tail = 0
+    while tail < len(msgs) and msgs[-1 - tail][4] == "accept-proposal":
+        tail += 1
+    closing = [stated_numbers(m[3]) for m in msgs[len(msgs) - tail :]]
     named = [n for ns in closing for n in ns]
     if named and len(set(named)) == 1:
         return named[-1], "explicit", f"both acceptances say {named[-1]}"
-    earlier = [
-        n for m in msgs[: len(msgs) - len(closing)] for n in stated_numbers(m[3])
-    ]
+    earlier = [n for m in msgs[: len(msgs) - tail] for n in stated_numbers(m[3])]
     if earlier:
         return earlier[-1], "implicit", f"last number on the table was {earlier[-1]}"
     return None, "unknown", "no number was named"
