@@ -28,10 +28,12 @@ import urllib.request
 
 DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 MODEL = os.environ.get("AGENT_MODEL", DEFAULT_MODEL)
-# The reader is the measuring instrument, so a run that swaps the negotiators'
-# model keeps it on the default unless told otherwise: a change in the results
-# then belongs to the agents, not to a different observer.
-READER_MODEL = os.environ.get("READER_MODEL", DEFAULT_MODEL)
+# The reader follows the negotiators' model unless READER_MODEL says otherwise,
+# so a run on a stronger model is stronger throughout, and a problem that
+# persists there is not one of model capability. A first Sonnet run that kept
+# the reader on haiku was stopped after two episodes; its files are kept in
+# models/discarded-sonnet-agents-haiku-reader/.
+READER_MODEL = os.environ.get("READER_MODEL", MODEL)
 BASE_URL = os.environ.get("OPENAI_BASE_URL", "").rstrip("/")
 TIMEOUT_S = 180
 
