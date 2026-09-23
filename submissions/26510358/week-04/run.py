@@ -41,7 +41,7 @@ def run_all(settings, selected=None):
     chat = Chat(settings)
     csv_path = ROOT / "results.csv"
     with csv_path.open("a", newline="", encoding="utf-8") as csv_file:
-        writer = csv.writer(csv_file)
+        writer = csv.writer(csv_file, lineterminator="\n")
         if csv_file.tell() == 0:
             writer.writerow(HEADER)
             csv_file.flush()
