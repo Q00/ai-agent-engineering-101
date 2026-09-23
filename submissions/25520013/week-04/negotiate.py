@@ -26,6 +26,7 @@ HERE = Path(__file__).resolve().parent
 SCENARIOS = HERE / "scenarios.json"
 RESULTS = HERE / "results.csv"
 SINCERITY = HERE / "results_sincerity.csv"
+SINCERITY_SELLER = HERE / "results_sincerity_seller.csv"
 LOGS = HERE / "logs"
 
 HEADER = [
@@ -154,7 +155,7 @@ def read(condition: str, text: str, transcript: list, meter: backend.Meter):
 # --------------------------------------------------------------------- one episode
 
 
-def run_episode(condition: str, scenario: dict, run: str, log, pressure=False) -> dict:
+def run_episode(condition: str, scenario: dict, run: str, log, pressure="") -> dict:
     """One negotiation. Returns the results.csv row as a dict."""
     item, reserve, budget = scenario["item"], scenario["reserve"], scenario["budget"]
     meter = backend.Meter()
@@ -178,7 +179,7 @@ def run_episode(condition: str, scenario: dict, run: str, log, pressure=False) -
             acl.system_prompt("buyer", item, budget, condition, pressure), meter
         ),
         "seller": backend.Session(
-            acl.system_prompt("seller", item, reserve, condition), meter
+            acl.system_prompt("seller", item, reserve, condition, pressure), meter
         ),
     }
     transcript, last_price = [], {"buyer": None, "seller": None}
@@ -280,10 +281,21 @@ def _append(results: Path, row: dict) -> None:
 
 
 def main(argv: list) -> int:
-    pressure = "--pressure" in argv
-    argv = [a for a in argv if a != "--pressure"]
-    results = SINCERITY if pressure else RESULTS
-    prefix = "pressure-" if pressure else ""
+    # --pressure makes the buyer insincere, --seller-pressure the seller. Each
+    # arm writes its own results file and log prefix, so the neutral run that
+    # results.csv holds is never appended to.
+    arms = {
+        "": (RESULTS, ""),
+        "buyer": (SINCERITY, "pressure-"),
+        "seller": (SINCERITY_SELLER, "seller-pressure-"),
+    }
+    pressure = (
+        "seller" if "--seller-pressure" in argv
+        else "buyer" if "--pressure" in argv
+        else ""
+    )
+    argv = [a for a in argv if a not in ("--pressure", "--seller-pressure")]
+    results, prefix = arms[pressure]
 
     scenarios = json.loads(SCENARIOS.read_text(encoding="utf-8"))
     conditions = [argv[0]] if argv else list(CONDITIONS)
@@ -308,7 +320,7 @@ def main(argv: list) -> int:
                 log(
                     f"run={run} provider={backend.provider()} model={backend.MODEL} "
                     f"temperature=not settable turn_limit={MAX_TURNS} "
-                    f"buyer={'pressure' if pressure else 'neutral'}"
+                    f"pressure={pressure or 'none'}"
                 )
                 for scenario in todo:
                     row = run_episode(condition, scenario, run, log, pressure)
