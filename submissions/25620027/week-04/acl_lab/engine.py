@@ -100,7 +100,8 @@ def _call_reader(request: ReadRequest, tagged_performative: Performative | None)
             assert_never(unreachable)
 
 
-def _read_message(request: ReadRequest) -> ReadExecution:
+def read_message(request: ReadRequest) -> ReadExecution:
+    """Interpret one message with the selected public protocol."""
     match request.condition:
         case Condition.STRUCTURED:
             parsed = parse_structured(request.text)
@@ -116,7 +117,8 @@ def _read_message(request: ReadRequest) -> ReadExecution:
             assert_never(unreachable)
 
 
-def _speak(model: ModelClient, system: str, history: tuple[ChatMessage, ...]) -> SpeakerExecution:
+def speak(model: ModelClient, system: str, history: tuple[ChatMessage, ...]) -> SpeakerExecution:
+    """Normalize one model call for a public or internal protocol step."""
     reply = model.complete(system, history)
     match reply:
         case ModelFailure():
@@ -179,7 +181,7 @@ def run_episode(context: EpisodeContext, model: ModelClient) -> EpisodeExecution
     for turn_number in range(1, context.max_turns + 1):
         turns = turn_number
         other = Negotiator.SELLER if role is Negotiator.BUYER else Negotiator.BUYER
-        speaker = _speak(
+        speaker = speak(
             model,
             system_prompt(role, context.scenario, context.condition),
             tuple(histories[role]),
@@ -195,7 +197,7 @@ def run_episode(context: EpisodeContext, model: ModelClient) -> EpisodeExecution
         visible_line = f"[{role.value}] {text}"
         visible_transcript.append(visible_line)
         transcript.append(visible_line)
-        read = _read_message(ReadRequest(context.condition, text, tuple(visible_transcript), model))
+        read = read_message(ReadRequest(context.condition, text, tuple(visible_transcript), model))
         reader_calls += read.reader_calls
         total_tokens += read.tokens
         total_attempts += read.attempts
