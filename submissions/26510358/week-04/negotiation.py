@@ -49,8 +49,9 @@ READER_SYSTEM = (
     "Reply with exactly one JSON object and nothing else: "
     '{"performative":"propose|accept-proposal|reject-proposal|refuse",'
     '"price":integer-or-null}. Use one of the four literal act names, not the '
-    "pipe-separated display above. Use an integer only for a proposed price and "
-    "null otherwise. If a message has several prices, choose the speaker's offered "
+    "pipe-separated display above. Use an integer when a price is stated and "
+    "null when no price is stated. A non-proposal can still mention a price. "
+    "If a message has several prices, choose the speaker's offered "
     "price, not a price they reject or a private limit."
 )
 
@@ -73,9 +74,9 @@ def _read_reader_json(raw):
     if not isinstance(obj, dict) or set(obj) != {"performative", "price"}:
         return None
     act, price = obj["performative"], obj["price"]
-    if act not in ACTS or (act == "propose" and not _price(price)):
+    if act not in ACTS or (price is not None and not _price(price)):
         return None
-    if act != "propose" and price is not None:
+    if act == "propose" and price is None:
         return None
     return act, price
 
