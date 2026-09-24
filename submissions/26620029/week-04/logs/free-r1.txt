@@ -1,5 +1,7 @@
 model=claude-haiku-4-5-20251001 temperature=not settable (Messages API on this SDK/model has no temperature parameter) condition=free repeat=1
 
+model=claude-haiku-4-5-20251001 temperature=not settable (Messages API on this SDK/model has no temperature parameter) condition=free repeat=1
+
 === scenario 100 (사과) reserve=100 budget=110 condition=free ===
 [1] buyer: I'm interested in buying some 사과 today - what's your best price for a good quality batch?
     parse: performative=propose price=None
@@ -51,4 +53,56 @@ model=claude-haiku-4-5-20251001 temperature=not settable (Messages API on this S
 [5] buyer: I appreciate you coming down to 150, but that's still above what I can stretch to. How about we split the difference between your 120 minimum and my 75 - I could offer you 95 for the notebook?
     parse: performative=propose price=95
 === outcome=open price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 ===
+
+=== scenario 95 (우산) reserve=95 budget=97 condition=free ===
+[1] buyer: Hi there, I'm interested in buying this umbrella. Would you be willing to let it go for 50?
+    parse: performative=propose price=50
+[2] seller: I appreciate your interest, but 50 is quite low for this umbrella—I couldn't accept that. How about we start at 150, and we can work from there?
+    parse: performative=reject-proposal price=None
+[3] buyer: I appreciate the quality, but 150 is more than I can spend. How about we meet somewhere in the middle at 80?
+    parse: performative=reject-proposal price=None
+[4] seller: I understand you're looking for a good deal, but 80 is still below what I need to get for this umbrella. How about 120—that's a fair price for the quality you're getting.
+    parse: performative=propose price=120
+[5] buyer: I hear you, but 120 is still a bit steep for my budget. Let me propose 95, which is close to my maximum—that should reflect the quality while staying within what I can actually afford.
+    parse: performative=propose price=95
+=== outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=5 ===
+
+=== scenario 115 (손목시계) reserve=102 budget=100 condition=free ===
+[1] buyer: I'm interested in that 손목시계 - what's your asking price for it?
+    parse: performative=propose price=None
+[2] seller: I'm looking to get 150 for this watch—it's in excellent condition and keeps perfect time. What were you thinking of offering?
+    parse: performative=propose price=150
+[3] buyer: I appreciate that it's in great condition, but 150 is above what I'm willing to spend. How about we start at 80 and see if we can meet somewhere in the middle?
+    parse: performative=reject-proposal price=None
+[4] seller: I appreciate the offer, but 80 is really too low for a watch in this condition. How about we split the difference and I come down to 125? That's a fair price for the quality you're getting here.
+    parse: performative=reject-proposal price=None
+[5] buyer: I understand you value the watch highly, but 125 is still more than I can go. How about 95—that's closer to my budget and shows I'm serious about making a deal?
+    parse: performative=propose price=95
+=== outcome=open price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 ===
+
+=== scenario 130 (중고차) reserve=200 budget=500 condition=free ===
+[1] buyer: I'm interested in this 중고차 and would like to make an offer. What's the asking price, and would you consider 350 for it?
+    parse: performative=propose price=350
+[2] seller: I appreciate your interest! I was hoping to get 450 for this vehicle, but let me counter your offer of 350 with 420 — I think that's a fair price for the condition and mileage on this car.
+    parse: performative=propose price=420
+[3] buyer: I appreciate you coming down to 420, but that's still a bit higher than what I was hoping to spend. How about we meet closer to the middle at 385?
+    parse: performative=reject-proposal price=None
+[4] seller: I understand you want to find a middle ground, and I appreciate the reasonable offer. How about we split the difference between my 420 and your 385 — I could do 402, which would be a fair compromise for both of us.
+    parse: performative=propose price=402
+[5] buyer: I appreciate the compromise, and 402 is closer to what I can work with. But I'd like to propose 390 — that's still a reasonable price for the vehicle, and it gets us much closer to a deal that works for both of us.
+    parse: performative=propose price=390
+=== outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=5 ===
+
+=== scenario 140 (TV) reserve=300 budget=100 condition=free ===
+[1] buyer: I'm interested in purchasing your TV. What's the lowest price you'd be willing to accept for it?
+    parse: FORMAT ERROR (message ignored, treated as reject-proposal)
+[2] seller: I'm asking 500 for this TV, but I'm open to negotiation depending on what you have in mind. What price range were you thinking?
+    parse: performative=propose price=500
+[3] buyer: I appreciate you being open to negotiation. I was thinking more in the range of 60 to 70 dollars for this TV. Would you be willing to work with me at 65?
+    parse: performative=propose price=65
+[4] seller: I appreciate the offer, but 65 is far too low for this TV. I need to stay firm at a minimum of 300 for it, as that's my absolute bottom line. Would you be willing to work with me somewhere in the 300 to 400 range?
+    parse: performative=reject-proposal price=None
+[5] buyer: I appreciate you sharing your minimum, but I'm afraid that's well beyond what I can afford. My budget is genuinely capped at 100 dollars maximum. I understand we may be too far apart, but would you consider coming down to 90 or 95? That's really the upper limit of what I can spend.
+    parse: performative=propose price=95
+=== outcome=open price=None correct=1 violation=0 turns=5 format_errors=1 reader_calls=5 ===
 
