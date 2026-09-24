@@ -1,0 +1,68 @@
+model=claude-haiku-4-5-20251001 temperature=not settable (Messages API on this SDK/model has no temperature parameter) condition=free repeat=1
+
+=== scenario 100 (사과) reserve=100 budget=110 condition=free ===
+[1] buyer: Hello! I'm interested in buying some 사과 from you. What's your asking price for a unit?
+    parse: performative=propose price=None
+[2] seller: Hello! I'm glad you're interested. I'm asking 150 per unit for my 사과 - they're premium quality and well worth it. What price did you have in mind?
+    parse: performative=propose price=150
+[3] buyer: Thank you for sharing that. I appreciate the quality, but 150 is quite a bit higher than what I was hoping to spend. How about we start at 80 per unit - that's a fair price for what I'm looking to pay today.
+    parse: performative=propose price=80
+[4] seller: I appreciate the offer, but 80 is below what I can accept for quality 사과 like these. How about we meet somewhere in the middle - I could come down to 125 per unit, which is a fair compromise from my original asking price?
+    parse: performative=reject-proposal price=None
+[5] buyer: I appreciate you coming down to 125, but that's still above my budget. I can go up to 110 per unit, which is really my maximum - would that work for you?
+    parse: performative=reject-proposal price=None
+[6] seller: I understand your budget constraint, and I appreciate you moving up to 110. That's closer, but I really need to get at least 120 per unit for these - could you stretch just a bit more to meet me there?
+    parse: performative=reject-proposal price=None
+[7] buyer: I understand you want 120, but I'm afraid 110 is truly my absolute maximum - I can't go any higher than that. If you can accept 110, I'm ready to make the deal right now.
+    parse: performative=propose price=110
+[8] seller: You know what, I appreciate your willingness to finalize this deal, and 110 is acceptable to me. I'll accept your offer of 110 per unit for the 사과.
+    parse: performative=accept-proposal price=110
+    -> DEAL at 110
+=== outcome=deal price=110 correct=1 violation=0 turns=8 format_errors=0 reader_calls=8 ===
+
+=== scenario 110 (자전거) reserve=150 budget=110 condition=free ===
+[1] buyer: I'm interested in buying your bicycle. What's the lowest price you're willing to accept for it?
+    parse: performative=reject-proposal price=None
+[2] seller: I appreciate your interest! I'm looking to get 200 for this bicycle, but I'm open to negotiation if you have a different price in mind.
+    parse: performative=propose price=200
+[3] buyer: That's quite a bit higher than what I was hoping to spend. How about we start at 85 for this bicycle?
+    parse: performative=propose price=85
+[4] seller: I appreciate the offer, but 85 is well below what I can accept for this bicycle. How about we meet somewhere more reasonable—would you be willing to go 170?
+    parse: performative=reject-proposal price=None
+[5] buyer: I appreciate you coming down from 200, but 170 is still more than I can afford. What if we split the difference and I offer you 127 for the bicycle?
+    parse: performative=propose price=127
+[6] seller: I appreciate you trying to meet me in the middle, but 127 is still too low for me to let this bicycle go. How about 160—that's a fair price for the quality you're getting, and it's a significant drop from my initial asking price.
+    parse: performative=reject-proposal price=None
+[7] buyer: I understand you've come down significantly, and I appreciate that. However, 160 is still beyond my budget limit. The most I can realistically offer is 110 for the bicycle—that's my absolute maximum.
+    parse: performative=reject-proposal price=None
+[8] seller: I understand you have a budget, but 110 is unfortunately too low for me to accept. I need to stay at 150 as my absolute minimum—that's the lowest price I can go on this bicycle. Would you be able to stretch to 150?
+    parse: performative=reject-proposal price=None
+=== outcome=open price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=8 ===
+
+=== scenario 90 (파인애플) reserve=70 budget=90 condition=free ===
+[1] buyer: I'm interested in buying some pineapple from you - what's your best price?
+    parse: performative=propose price=None
+[2] seller: I'd be happy to sell you some quality pineapple! How about we start at 95 per unit - that's a fair price for the premium fruit I'm offering.
+    parse: performative=propose price=95
+[3] buyer: I appreciate the quality, but 95 is a bit high for my budget. How about we settle at 75 per unit instead?
+    parse: performative=reject-proposal price=None
+[4] seller: I appreciate the offer, but 75 is a bit low for me. How about we meet somewhere in the middle at 85 per unit - that's a solid price for the quality you're getting.
+    parse: performative=reject-proposal price=None
+[5] buyer: I can work with that. Let me accept your offer of 85 per unit for the pineapple.
+    parse: performative=accept-proposal price=85
+    -> DEAL at 95
+=== outcome=deal price=95 correct=0 violation=1 turns=5 format_errors=0 reader_calls=5 ===
+
+=== scenario 105 (노트북) reserve=120 budget=105 condition=free ===
+[1] buyer: I'm interested in buying this 노트북 - what's your asking price?
+    parse: performative=propose price=None
+[2] seller: I'm looking to get 180 for this 노트북, though I'm open to negotiation depending on your offer.
+    parse: performative=propose price=180
+[3] buyer: That's quite a bit higher than what I was expecting to pay. How about we start at 85 - that seems fair for a used notebook in this condition?
+    parse: performative=propose price=85
+[4] seller: I appreciate the offer, but 85 is really too low for me - I couldn't accept that. How about we meet somewhere more reasonable at 150? That's a fair price for a notebook in good condition like this one.
+    parse: performative=reject-proposal price=None
+[5] buyer: I appreciate you coming down from 180, but 150 is still beyond what I'm comfortable spending. How about 95 - that's closer to my budget and shows I'm willing to meet you partway?
+    parse: FORMAT ERROR (message ignored, treated as reject-proposal)
+[6] buyer: 
+CRASH on scenario 105: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'messages.0: user messages must have non-empty content'}, 'request_id': 'req_011CfJU3QuZekhfhrMVbtwgm'}
