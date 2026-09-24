@@ -3,7 +3,7 @@ and outcome scoring."""
 from model import call_model
 from protocol import build_system_prompt, parse_message
 
-MAX_TURNS = 5  # messages exchanged before an unresolved episode is "open"
+MAX_TURNS = 20  # messages exchanged before an unresolved episode is "open"
 
 
 def run_episode(scenario: dict, condition: str, log=print) -> dict:
