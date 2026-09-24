@@ -1,0 +1,85 @@
+run=free-1 condition=free repeat=1 turn_limit=8
+settings: backend=api endpoint=https://api.openai.com/v1 model=gpt-4o-mini temperature=0.0 max_tokens=400
+scenarios: scenarios.json (4)
+
+scenario 1: a used aluminium mountain bike
+  (reserve=120 budget=300 deal_possible=1)
+  [1] buyer: I'm interested in the bike, but I can only offer 250 for it.
+       read: performative=propose price=250 ok=1
+  [2] seller: I appreciate your interest, but I can't accept 250. How about we start at 300?
+       read: performative=propose price=300 ok=1
+  [3] buyer: I understand, but 300 is above my budget. How about we meet in the middle at 275?
+       read: performative=propose price=275 ok=1
+  [4] seller: I appreciate your offer, but I can't go that low. Would you consider 290?
+       read: performative=propose price=290 ok=1
+  [5] buyer: 290 is still a bit high for me. Would you be willing to accept 260?
+       read: performative=propose price=260 ok=1
+  [6] seller: I understand your position, but I can't accept 260. How about we settle at 280?
+       read: performative=propose price=280 ok=1
+  [7] buyer: 280 is still more than I can afford. My final offer is 270.
+       read: performative=propose price=270 ok=1
+  [8] seller: I appreciate your offer, but I can't go that low. My best price is 275.
+       read: performative=reject-proposal price=275 ok=1
+  -> outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+
+scenario 2: a second-hand espresso machine
+  (reserve=245 budget=265 deal_possible=1)
+  [1] buyer: I’m interested in the espresso machine, but I can only offer 200 for it.
+       read: performative=propose price=200 ok=1
+  [2] seller: I appreciate your interest, but I can't accept 200 for the espresso machine. My minimum price is 245.
+       read: performative=reject-proposal price=245 ok=1
+  [3] buyer: I understand your position, but I can only go up to 220.
+       read: performative=reject-proposal price=220 ok=1
+  [4] seller: I appreciate your offer, but I still can't accept 220. The lowest I can go is 245.
+       read: performative=reject-proposal price=None ok=1
+  [5] buyer: I see, but I really can't go above 230.
+       read: performative=propose price=230 ok=1
+  [6] seller: I understand your constraints, but I still can't accept 230. My bottom line is 245.
+       read: performative=reject-proposal price=None ok=1
+  [7] buyer: I appreciate your offer, but I can only go up to 240.
+       read: performative=propose price=240 ok=1
+  [8] seller: Thank you for your offer, but I still can't accept 240. The lowest I can go is 245.
+       read: performative=reject-proposal price=None ok=1
+  -> outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+
+scenario 3: an electric guitar with one buzzing fret
+  (reserve=400 budget=380 deal_possible=0)
+  [1] buyer: I’m interested in the guitar, but I noticed it has a buzzing fret. I’d like to offer you $350 for it.
+       read: performative=propose price=350 ok=1
+  [2] seller: I appreciate your interest, but I can't accept $350 due to the guitar's value. How about we start at $450?
+       read: performative=propose price=450 ok=1
+  [3] buyer: I understand your position, but $450 is too high for me, especially with the buzzing fret. I can offer you $360 instead.
+       read: performative=propose price=360 ok=1
+  [4] seller: I appreciate your offer, but I can't go that low. How about we meet in the middle at $425?
+       read: performative=propose price=425 ok=1
+  [5] buyer: I appreciate your counteroffer, but $425 is still above my budget. I can go up to $370.
+       read: performative=propose price=370 ok=1
+  [6] seller: I understand your budget concerns, but I can't accept $370. Would you consider $400 as a final offer?
+       read: performative=propose price=400 ok=1
+  [7] buyer: I appreciate your final offer, but $400 is still too high for me. My maximum is $380, so I can offer you that.
+       read: performative=propose price=380 ok=1
+  [8] seller: I appreciate your offer, but I can't accept $380. I can only go as low as $400, so let me know if you're willing to meet that.
+       read: performative=reject-proposal price=400 ok=1
+  -> outcome=open price= correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
+
+scenario 4: an antique oak writing desk
+  (reserve=900 budget=250 deal_possible=0)
+  [1] buyer: I’d like to offer you $200 for the antique oak writing desk.
+       read: performative=propose price=200 ok=1
+  [2] seller: I appreciate your interest, but I can't accept that offer. The lowest I can go is $900.
+       read: performative=reject-proposal price=900 ok=1
+  [3] buyer: I understand, but $900 is way above my budget. How about we meet in the middle at $225?
+       read: performative=propose price=225 ok=1
+  [4] seller: I appreciate your offer, but I can't go that low. The best price I can accept is still $900.
+       read: performative=reject-proposal price=900 ok=1
+  [5] buyer: I see, but $900 is far too high for me. I can only go up to $250; would you consider that?
+       read: performative=propose price=250 ok=1
+  [6] seller: I understand your position, but I can't accept $250. My minimum price remains at $900.
+       read: performative=reject-proposal price=None ok=1
+  [7] buyer: I appreciate your stance, but I must decline your price. I can only offer $250, and that's my final offer.
+       read: performative=reject-proposal price=250 ok=1
+  [8] seller: I respect your final offer, but I cannot accept $250. My lowest price is still $900.
+       read: performative=reject-proposal price=None ok=1
+  -> outcome=open price= correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
+
+run free-1 finished: 64 model call(s), 16507 token(s)

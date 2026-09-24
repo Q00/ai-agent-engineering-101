@@ -1,0 +1,75 @@
+run=tagged-1 condition=tagged repeat=1 turn_limit=8
+settings: backend=api endpoint=https://api.openai.com/v1 model=gpt-4o-mini temperature=0.0 max_tokens=400
+scenarios: scenarios.json (4)
+
+scenario 1: a used aluminium mountain bike
+  (reserve=120 budget=300 deal_possible=1)
+  [1] buyer: (propose) I would like to offer you 250 for the mountain bike.
+       read: performative=propose price=250 ok=1
+  [2] seller: (reject-proposal) I appreciate your offer, but I can't accept anything below 200 for the mountain bike.
+       read: performative=reject-proposal price=None ok=1
+  [3] buyer: (propose) How about we meet in the middle at 275?
+       read: performative=propose price=275 ok=1
+  [4] seller: (reject-proposal) I understand your position, but I can only go as low as 200.
+       read: performative=reject-proposal price=None ok=1
+  [5] buyer: (propose) I can offer you 260 for the bike.
+       read: performative=propose price=260 ok=1
+  [6] seller: (reject-proposal) Thank you for your offer, but I still need to get at least 200 for the bike.
+       read: performative=reject-proposal price=None ok=1
+  [7] buyer: (propose) I can increase my offer to 270, which is my final offer.
+       read: performative=propose price=270 ok=1
+  [8] seller: (accept-proposal) I can accept your offer of 270 for the mountain bike.
+       read: performative=accept-proposal price=None ok=1
+  -> outcome=deal price=270 correct=1 violation=0 turns=8 format_errors=0 reader_calls=4
+
+scenario 2: a second-hand espresso machine
+  (reserve=245 budget=265 deal_possible=1)
+  [1] buyer: (propose) I would like to offer you 220 for the espresso machine.
+       read: performative=propose price=220 ok=1
+  [2] seller: (reject-proposal) I appreciate your offer, but I can't accept anything below 245.
+       read: performative=reject-proposal price=None ok=1
+  [3] buyer: (propose) How about we settle at 230?
+       read: performative=propose price=230 ok=1
+  [4] seller: (reject-proposal) Thank you for your offer, but I still can't go below 245.
+       read: performative=reject-proposal price=None ok=1
+  [5] buyer: (propose) I understand, but my best offer is 240.
+       read: performative=propose price=240 ok=1
+  [6] seller: (reject-proposal) I appreciate your willingness to negotiate, but I can only accept 245 or higher.
+       read: performative=reject-proposal price=None ok=1
+  [7] buyer: (propose) I can stretch to 245, but that's my absolute limit.
+       read: performative=propose price=245 ok=1
+  [8] seller: (accept-proposal) Great! I accept your offer of 245. Let's finalize the deal.
+       read: performative=accept-proposal price=None ok=1
+  -> outcome=deal price=245 correct=1 violation=0 turns=8 format_errors=0 reader_calls=4
+
+scenario 3: an electric guitar with one buzzing fret
+  (reserve=400 budget=380 deal_possible=0)
+  [1] buyer: (propose) I would like to offer 350 for the electric guitar, considering the buzzing fret issue.
+       read: performative=propose price=350 ok=1
+  [2] seller: (reject-proposal) I appreciate your offer, but I can't accept anything below 400 for the guitar.
+       read: performative=reject-proposal price=None ok=1
+  [3] buyer: (propose) How about we meet in the middle at 360?
+       read: performative=propose price=360 ok=1
+  [4] seller: (reject-proposal) I understand your position, but I still need to stick to a minimum of 400 for the guitar.
+       read: performative=reject-proposal price=None ok=1
+  [5] buyer: (propose) I can go up to 370, but that's my final offer given the buzzing fret.
+       read: performative=propose price=370 ok=1
+  [6] seller: (reject-proposal) I appreciate your willingness to negotiate, but I still cannot accept anything below 400.
+       read: performative=reject-proposal price=None ok=1
+  [7] buyer: (propose) I understand, but I can only offer 380 as my maximum price for the guitar.
+       read: performative=propose price=380 ok=1
+  [8] seller: (reject-proposal) Thank you for your offer, but I must hold firm at 400 as my lowest price.
+       read: performative=reject-proposal price=None ok=1
+  -> outcome=open price= correct=1 violation=0 turns=8 format_errors=0 reader_calls=4
+
+scenario 4: an antique oak writing desk
+  (reserve=900 budget=250 deal_possible=0)
+  [1] buyer: (propose) I would like to offer you $200 for the antique oak writing desk.
+       read: performative=propose price=200 ok=1
+  [2] seller: (reject-proposal) I appreciate your offer, but I cannot accept anything below $900 for the desk.
+       read: performative=reject-proposal price=None ok=1
+  [3] buyer: (refuse) Thank you for your time, but I will have to walk away from this negotiation.
+       read: performative=refuse price=None ok=1
+  -> outcome=no_deal price= correct=1 violation=0 turns=3 format_errors=0 reader_calls=1
+
+run tagged-1 finished: 40 model call(s), 9572 token(s)

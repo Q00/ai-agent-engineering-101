@@ -1,0 +1,77 @@
+run=structured-2 condition=structured repeat=2 turn_limit=8
+settings: backend=api endpoint=https://api.openai.com/v1 model=gpt-4o-mini temperature=0.0 max_tokens=400
+scenarios: scenarios.json (4)
+
+scenario 1: a used aluminium mountain bike
+  (reserve=120 budget=300 deal_possible=1)
+  [1] buyer: {"performative": "propose", "content": {"price": 250}}
+       read: performative=propose price=250 ok=1
+  [2] seller: {"performative": "reject-proposal", "content": {"price": null}}
+       read: performative=reject-proposal price=None ok=1
+  [3] buyer: {"performative": "propose", "content": {"price": 275}}
+       read: performative=propose price=275 ok=1
+  [4] seller: {"performative": "reject-proposal", "content": {"price": null}}
+       read: performative=reject-proposal price=None ok=1
+  [5] buyer: {"performative": "propose", "content": {"price": 290}}
+       read: performative=propose price=290 ok=1
+  [6] seller: {"performative": "reject-proposal", "content": {"price": null}}
+       read: performative=reject-proposal price=None ok=1
+  [7] buyer: {"performative": "propose", "content": {"price": 300}}
+       read: performative=propose price=300 ok=1
+  [8] seller: {"performative": "reject-proposal", "content": {"price": null}}
+       read: performative=reject-proposal price=None ok=1
+  -> outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+
+scenario 2: a second-hand espresso machine
+  (reserve=245 budget=265 deal_possible=1)
+  [1] buyer: {"performative": "propose", "content": {"price": 250}}
+       read: performative=propose price=250 ok=1
+  [2] seller: {"performative": "reject-proposal", "content": {"price": null}}
+       read: performative=reject-proposal price=None ok=1
+  [3] buyer: {"performative": "propose", "content": {"price": 255}}
+       read: performative=propose price=255 ok=1
+  [4] seller: {"performative": "accept-proposal", "content": {"price": 255}}
+       read: performative=accept-proposal price=255 ok=1
+  -> outcome=deal price=255 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
+
+scenario 3: an electric guitar with one buzzing fret
+  (reserve=400 budget=380 deal_possible=0)
+  [1] buyer: {"performative": "propose", "content": {"price": 350}}
+       read: performative=propose price=350 ok=1
+  [2] seller: {"performative": "reject-proposal", "content": {"price": null}}
+       read: performative=reject-proposal price=None ok=1
+  [3] buyer: {"performative": "propose", "content": {"price": 360}}
+       read: performative=propose price=360 ok=1
+  [4] seller: {"performative": "reject-proposal", "content": {"price": null}}
+       read: performative=reject-proposal price=None ok=1
+  [5] buyer: {"performative": "propose", "content": {"price": 370}}
+       read: performative=propose price=370 ok=1
+  [6] seller: {"performative": "reject-proposal", "content": {"price": null}}
+       read: performative=reject-proposal price=None ok=1
+  [7] buyer: {"performative": "propose", "content": {"price": 375}}
+       read: performative=propose price=375 ok=1
+  [8] seller: {"performative": "reject-proposal", "content": {"price": null}}
+       read: performative=reject-proposal price=None ok=1
+  -> outcome=open price= correct=1 violation=0 turns=8 format_errors=0 reader_calls=0
+
+scenario 4: an antique oak writing desk
+  (reserve=900 budget=250 deal_possible=0)
+  [1] buyer: {"performative": "propose", "content": {"price": 200}}
+       read: performative=propose price=200 ok=1
+  [2] seller: {"performative": "reject-proposal", "content": {"price": null}}
+       read: performative=reject-proposal price=None ok=1
+  [3] buyer: {"performative": "propose", "content": {"price": 220}}
+       read: performative=propose price=220 ok=1
+  [4] seller: {"performative": "reject-proposal", "content": {"price": null}}
+       read: performative=reject-proposal price=None ok=1
+  [5] buyer: {"performative": "propose", "content": {"price": 230}}
+       read: performative=propose price=230 ok=1
+  [6] seller: {"performative": "reject-proposal", "content": {"price": null}}
+       read: performative=reject-proposal price=None ok=1
+  [7] buyer: {"performative": "propose", "content": {"price": 240}}
+       read: performative=propose price=240 ok=1
+  [8] seller: {"performative": "reject-proposal", "content": {"price": null}}
+       read: performative=reject-proposal price=None ok=1
+  -> outcome=open price= correct=1 violation=0 turns=8 format_errors=0 reader_calls=0
+
+run structured-2 finished: 28 model call(s), 7801 token(s)
