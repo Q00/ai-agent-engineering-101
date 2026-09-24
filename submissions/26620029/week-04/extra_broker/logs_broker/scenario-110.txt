@@ -1,0 +1,92 @@
+=== scenario 110 (자전거) reserve=150 budget=110 gap=-40 broker window=[130,130] ===
+--- direct buyer <-> seller (no broker) ---
+=== scenario 110 (자전거) reserve=150 budget=110 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 80}}
+```
+    parse: performative=propose price=80
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 90}}
+```
+    parse: performative=propose price=90
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 100}}
+```
+    parse: performative=propose price=100
+[6] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[7] buyer: ```json
+{"performative": "propose", "content": {"price": 105}}
+```
+    parse: performative=propose price=105
+[8] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[9] buyer: ```json
+{"performative": "propose", "content": {"price": 110}}
+```
+    parse: performative=propose price=110
+[10] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+=== outcome=open price=None correct=1 violation=0 turns=10 format_errors=0 reader_calls=0 ===
+
+--- broker-mediated (window widened by 3 each side) ---
+=== scenario 110 (자전거) reserve=130 budget=130 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 85}}
+```
+    parse: performative=propose price=85
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 100}}
+```
+    parse: performative=propose price=100
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 115}}
+```
+    parse: performative=propose price=115
+[6] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[7] buyer: ```json
+{"performative": "propose", "content": {"price": 125}}
+```
+    parse: performative=propose price=125
+[8] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[9] buyer: ```json
+{"performative": "propose", "content": {"price": 130}}
+```
+    parse: performative=propose price=130
+[10] seller: ```json
+{"performative": "accept-proposal", "content": {"price": 130}}
+```
+    parse: performative=accept-proposal price=130
+    -> DEAL at 130
+=== outcome=deal price=130 correct=1 violation=0 turns=10 format_errors=0 reader_calls=0 ===
+
+=== direct=open(None) broker=deal(130) new_deal=1 position=0.5 favors=balanced ===
+
