@@ -3,7 +3,7 @@ and outcome scoring."""
 from model import call_model
 from protocol import build_system_prompt, parse_message
 
-MAX_TURNS = 20  # messages exchanged before an unresolved episode is "open"
+MAX_TURNS = 5  # messages exchanged before an unresolved episode is "open"
 
 
 def run_episode(scenario: dict, condition: str, log=print) -> dict:
@@ -15,6 +15,8 @@ def run_episode(scenario: dict, condition: str, log=print) -> dict:
     format_errors = 0
     reader_calls = 0
     last_price = None
+    buyer_last_offer = None
+    seller_last_offer = None
     outcome = "open"
     deal_price = None
     notes = []
@@ -59,6 +61,10 @@ def run_episode(scenario: dict, condition: str, log=print) -> dict:
 
             if parsed.performative == "propose" and parsed.price is not None:
                 last_price = parsed.price
+                if speaker == "buyer":
+                    buyer_last_offer = parsed.price
+                else:
+                    seller_last_offer = parsed.price
             elif parsed.performative == "accept-proposal":
                 if last_price is not None:
                     outcome, deal_price = "deal", last_price
@@ -96,4 +102,12 @@ def run_episode(scenario: dict, condition: str, log=print) -> dict:
         "format_errors": format_errors,
         "reader_calls": reader_calls,
         "note": "; ".join(notes),
+        # Extra fields beyond the graded CSV schema, for callers (e.g. the
+        # broker-escalation exploration) that need to continue this exact
+        # conversation rather than starting a fresh one. run.py's CSV writer
+        # only reads the HEADER-listed keys above, so these are harmless.
+        "buyer_history": buyer_history,
+        "seller_history": seller_history,
+        "buyer_last_offer": buyer_last_offer,
+        "seller_last_offer": seller_last_offer,
     }
