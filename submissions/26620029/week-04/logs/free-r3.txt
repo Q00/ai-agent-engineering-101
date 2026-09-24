@@ -1,0 +1,48 @@
+model=claude-haiku-4-5-20251001 temperature=not settable (Messages API on this SDK/model has no temperature parameter) condition=free repeat=3
+
+=== scenario 100 (사과) reserve=100 budget=110 condition=free ===
+[1] buyer: I'm interested in buying 사과 today—what's your best price for it?
+    parse: performative=propose price=None
+[2] seller: I have some excellent 사과 available today. I'm looking to get 150 for it—does that work for you?
+    parse: performative=propose price=150
+[3] buyer: I appreciate the offer, but 150 is more than I can spend on this. How about we start at 80 and see if we can find a price that works for both of us?
+    parse: performative=reject-proposal price=None
+[4] seller: I appreciate you putting an offer on the table, but I can't go that low—my minimum is 100 for this quality 사과. How about we meet somewhere in the middle at 125?
+    parse: performative=reject-proposal price=None
+[5] buyer: I understand you need 100 as your minimum, but 125 is still above my budget limit of 110. How about we split the difference and I offer you 105 for the 사과?
+    parse: performative=propose price=105
+=== outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=5 ===
+
+=== scenario 110 (자전거) reserve=150 budget=110 condition=free ===
+[1] buyer: I'm interested in the bicycle – what's your asking price for it?
+    parse: performative=propose price=None
+[2] seller: I'm looking to get 250 for this bicycle since it's in great condition. What did you have in mind?
+    parse: performative=propose price=250
+[3] buyer: That's quite a bit higher than I was hoping to pay. How about we start at 80 – I'd like to get a good deal on this.
+    parse: performative=reject-proposal price=None
+[4] seller: I appreciate the offer, but 80 is too low for me – I need to get at least 150 for it. How about we meet somewhere in the middle at 200?
+    parse: performative=reject-proposal price=None
+[5] buyer: I appreciate you coming down from 250, but 200 is still above my budget. How about 110 – that's the maximum I can spend on this bicycle?
+    parse: performative=reject-proposal price=None
+=== outcome=open price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 ===
+
+=== scenario 90 (파인애플) reserve=70 budget=90 condition=free ===
+[1] buyer: Hi there, I'm interested in buying some pineapple. Would you be willing to sell it for 50?
+    parse: performative=propose price=50
+[2] seller: I appreciate your interest, but 50 is unfortunately too low for me—I need to get at least 70 for this pineapple. How about we start at 85 and see if we can find a price that works for both of us?
+    parse: performative=reject-proposal price=None
+[3] buyer: I appreciate you sharing that, but 85 is a bit higher than I'd like to start. How about we meet somewhere in the middle at 65?
+    parse: performative=reject-proposal price=None
+[4] seller: I understand wanting to meet in the middle, but I can't go below 70—that's my absolute minimum. How about we split the difference between your 65 and my 70, and settle on 72.50?
+    parse: performative=propose price=72
+[5] buyer: I can work with that. I'll accept 72.50 for the pineapple.
+    parse: performative=accept-proposal price=72
+    -> DEAL at 72
+=== outcome=deal price=72 correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 ===
+
+=== scenario 105 (노트북) reserve=120 budget=105 condition=free ===
+[1] buyer: Hi, I'm interested in the notebook you're selling. What's your asking price?
+    parse: performative=refuse price=None
+    -> REFUSE, no deal
+=== outcome=no_deal price=None correct=1 violation=0 turns=1 format_errors=0 reader_calls=1 ===
+
