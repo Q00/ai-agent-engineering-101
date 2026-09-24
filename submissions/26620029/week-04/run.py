@@ -20,7 +20,7 @@ RESULTS_PATH = HERE / "results.csv"
 LOGS_DIR = HERE / "logs"
 
 CONDITIONS = ("free", "tagged", "structured")
-REPEATS = 3
+REPEATS = 5
 HEADER = ["run", "condition", "scenario", "deal_possible", "outcome", "price", "correct",
           "violation", "turns", "format_errors", "reader_calls", "note"]
 
