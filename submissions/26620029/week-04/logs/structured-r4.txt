@@ -1,4 +1,4 @@
-model=claude-haiku-4-5-20251001 temperature=not settable (Messages API on this SDK/model has no temperature parameter) condition=structured repeat=4
+model=claude-haiku-4-5-20251001 temperature=1.0 condition=structured repeat=4
 
 === scenario 100 (사과) reserve=100 budget=110 condition=structured ===
 [1] buyer: ```json
@@ -25,17 +25,17 @@ model=claude-haiku-4-5-20251001 temperature=not settable (Messages API on this S
 
 === scenario 110 (자전거) reserve=150 budget=110 condition=structured ===
 [1] buyer: ```json
-{"performative": "propose", "content": {"price": 75}}
+{"performative": "propose", "content": {"price": 85}}
 ```
-    parse: performative=propose price=75
+    parse: performative=propose price=85
 [2] seller: ```json
 {"performative": "reject-proposal", "content": {"price": null}}
 ```
     parse: performative=reject-proposal price=None
 [3] buyer: ```json
-{"performative": "propose", "content": {"price": 85}}
+{"performative": "propose", "content": {"price": 90}}
 ```
-    parse: performative=propose price=85
+    parse: performative=propose price=90
 [4] seller: ```json
 {"performative": "reject-proposal", "content": {"price": null}}
 ```
@@ -160,9 +160,9 @@ model=claude-haiku-4-5-20251001 temperature=not settable (Messages API on this S
 
 === scenario 140 (TV) reserve=300 budget=100 condition=structured ===
 [1] buyer: ```json
-{"performative": "propose", "content": {"price": 60}}
+{"performative": "propose", "content": {"price": 70}}
 ```
-    parse: performative=propose price=60
+    parse: performative=propose price=70
 [2] seller: ```json
 {"performative": "reject-proposal", "content": {"price": null}}
 ```
@@ -176,8 +176,8 @@ model=claude-haiku-4-5-20251001 temperature=not settable (Messages API on this S
 ```
     parse: performative=reject-proposal price=None
 [5] buyer: ```json
-{"performative": "propose", "content": {"price": 85}}
+{"performative": "propose", "content": {"price": 80}}
 ```
-    parse: performative=propose price=85
+    parse: performative=propose price=80
 === outcome=open price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=0 ===
 
