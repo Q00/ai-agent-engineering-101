@@ -1,0 +1,5 @@
+
+RUN 8 condition=structured repeat=2 model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0 turn_limit=4
+
+=== scenario=s1 item=Laptop stand reserve=60 budget=90 ===
+INTERRUPTED: daily rate limit: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790380800000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iiulu8CXiG7DSzt2tgDoGz2exH'}

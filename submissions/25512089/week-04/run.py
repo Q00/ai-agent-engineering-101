@@ -530,7 +530,24 @@ def main() -> None:
                 append_result(row)
 
             except DailyRateLimit as e:
+                note = f"crash: DailyRateLimit: {e}"
                 log.write(f"INTERRUPTED: daily rate limit: {e}\n")
+
+                append_result({
+                    "run": rid,
+                    "condition": args.condition,
+                    "scenario": sid,
+                    "deal_possible": "",
+                    "outcome": "",
+                    "price": "",
+                    "correct": "",
+                    "violation": "",
+                    "turns": "",
+                    "format_errors": "",
+                    "reader_calls": "",
+                    "note": note,
+                })
+
                 print("\n[stopped] OpenRouter daily free-model limit reached.")
                 print("Run the SAME command after the quota resets; completed scenarios will be skipped.")
                 return
