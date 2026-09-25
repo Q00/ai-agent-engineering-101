@@ -337,7 +337,7 @@ def evaluate(
             and reserve <= price <= budget
         )
     else:
-        correct = int(outcome in ("no_deal", "open"))
+        correct = int(outcome == "no_deal")
 
     return correct, violation
 
