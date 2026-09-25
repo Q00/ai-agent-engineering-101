@@ -3,6 +3,7 @@ import json
 from protocol import ACTS, parse_structured, split_tagged
 from reader_prompts import FREE_READER_PROMPT, PRICE_READER_PROMPT
 from tools_shared import Chat
+from retry import send_with_retry
 
 
 class MessageReader:
@@ -16,7 +17,7 @@ class MessageReader:
         chat.add_user(json.dumps(conversation, ensure_ascii=False))
 
         self.reader_calls += 1
-        reply = chat.send()
+        reply = send_with_retry(chat, self.log)
         self.log(f"[reader raw] {reply.text}")
 
         try:

@@ -1,5 +1,6 @@
 from prompts import make_system_prompt
 from reader import MessageReader
+from retry import send_with_retry
 from tools_shared import Chat, Meter
 
 
@@ -43,7 +44,7 @@ def run_episode(scenario, condition, log=print):
         other = "seller" if speaker == "buyer" else "buyer"
 
         # Chat.send() already saves this reply as assistant history.
-        reply = agents[speaker].send()
+        reply = send_with_retry(agents[speaker], log)
         text = reply.text
         log(f"[turn {turn}] [{speaker}] {text}")
 
