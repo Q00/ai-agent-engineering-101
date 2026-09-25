@@ -1,0 +1,124 @@
+provider=openai, model=gpt-4o-mini, temperature=0, turn_limit=8, max_completion_tokens=300, condition=free, run=3
+[episode start] run=3, scenario=1
+[scenario] {'id': 1, 'item': 'desk lamp', 'reserve': 30, 'budget': 45}
+[condition] free
+[turn 1] [buyer] I’m interested in buying a desk lamp. What’s the best price you can offer?
+[reader raw] {"performative": null, "price": null}
+[parse result] null
+[format error] Message could not be interpreted.
+[turn 2] [seller] Thank you for your interest! I can offer the desk lamp for $50. What do you think?
+[reader raw] {"performative":"reject-proposal","price":50}
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 3] [buyer] I appreciate your offer, but $50 is a bit too high for me. How about I offer you $35 instead?
+[reader raw] {"performative":"propose","price":35}
+[parse result] {"performative": "propose", "price": 35}
+[turn 4] [seller] I understand your position, but $35 is too low for me. How about we meet in the middle at $45?
+[reader raw] {"performative":"propose","price":45}
+[parse result] {"performative": "propose", "price": 45}
+[turn 5] [buyer] $45 is still a bit above what I was hoping to spend. Would you consider $40?
+[reader raw] {"performative":"propose","price":40}
+[parse result] {"performative": "propose", "price": 40}
+[turn 6] [seller] I appreciate your counteroffer, but $40 is still below my acceptable range. How about we settle at $43?
+[reader raw] {"performative":"propose","price":43}
+[parse result] {"performative": "propose", "price": 43}
+[turn 7] [buyer] $43 is closer, but I would really prefer to stay under $40. How about we compromise at $41?
+[reader raw] {"performative":"propose","price":41}
+[parse result] {"performative": "propose", "price": 41}
+[turn 8] [seller] I appreciate your willingness to negotiate, but I can't go that low. My final offer is $42. What do you say?
+[reader raw] {"performative":"propose","price":42}
+[parse result] {"performative": "propose", "price": 42}
+[episode result] {'scenario': 1, 'deal_possible': 1, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 8, 'format_errors': 1, 'reader_calls': 8, 'note': ''}
+[usage] completed_calls=16, tokens=4723
+[saved row] {"run": 3, "condition": "free", "scenario": 1, "deal_possible": 1, "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 8, "format_errors": 1, "reader_calls": 8, "note": ""}
+[episode start] run=3, scenario=2
+[scenario] {'id': 2, 'item': 'used bicycle', 'reserve': 80, 'budget': 120}
+[condition] free
+[turn 1] [buyer] Hi there! I'm interested in the bicycle you're selling. What’s the lowest price you’re willing to accept?
+[reader raw] {"performative": null, "price": null}
+[parse result] null
+[format error] Message could not be interpreted.
+[turn 2] [seller] Thanks for your interest! I'm looking to get around 100 for the bicycle. It's in great condition and has some nice features. What do you think?
+[reader raw] {"performative":"reject-proposal","price":100}
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 3] [buyer] I appreciate the information! However, I was hoping to spend a bit less. Would you consider an offer of 80?
+[reader raw] {"performative":"reject-proposal","price":80}
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 4] [seller] I appreciate your offer, but I can't go that low. How about we meet in the middle at 90? It's a great bike, and I think it's worth it!
+[reader raw] {"performative":"propose","price":90}
+[parse result] {"performative": "propose", "price": 90}
+[turn 5] [buyer] Thank you for your counteroffer! I understand the bike is in great condition, but I can only go up to 85. Would you be willing to accept that?
+[reader raw] {"performative":"reject-proposal","price":85}
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 6] [seller] I appreciate your offer, but I really can't accept 85. How about we settle at 88? I think that's a fair price for such a quality bike!
+[reader raw] {"performative":"propose","price":88}
+[parse result] {"performative": "propose", "price": 88}
+[turn 7] [buyer] I see your point, and I appreciate your flexibility. However, my maximum is 86. Would you be willing to accept that?
+[reader raw] {"performative":"reject-proposal","price":86}
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 8] [seller] I understand your position, but I can't accept 86. The bike is worth more than that. How about we try 87? It's a small step up, and I think it's a fair compromise!
+[reader raw] {"performative":"propose","price":87}
+[parse result] {"performative": "propose", "price": 87}
+[episode result] {'scenario': 2, 'deal_possible': 1, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 8, 'format_errors': 1, 'reader_calls': 8, 'note': ''}
+[usage] completed_calls=16, tokens=5244
+[saved row] {"run": 3, "condition": "free", "scenario": 2, "deal_possible": 1, "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 8, "format_errors": 1, "reader_calls": 8, "note": ""}
+[episode start] run=3, scenario=3
+[scenario] {'id': 3, 'item': 'office chair', 'reserve': 60, 'budget': 45}
+[condition] free
+[turn 1] [buyer] I’m interested in buying an office chair. What’s the best price you can offer?
+[reader raw] {"performative": null, "price": null}
+[parse result] null
+[format error] Message could not be interpreted.
+[turn 2] [seller] Thank you for your interest! I can offer the office chair for $80. What do you think?
+[reader raw] {"performative":"reject-proposal","price":80}
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 3] [buyer] Thank you for your offer, but $80 is quite high for my budget. How about I offer you $30 for the chair?
+[reader raw] {"performative":"propose","price":30}
+[parse result] {"performative": "propose", "price": 30}
+[turn 4] [seller] I appreciate your offer, but $30 is too low for the chair. How about we meet in the middle at $60?
+[reader raw] {"performative":"propose","price":60}
+[parse result] {"performative": "propose", "price": 60}
+[turn 5] [buyer] I understand your position, but $60 is still above my budget. How about I raise my offer to $40?
+[reader raw] {"performative":"propose","price":40}
+[parse result] {"performative": "propose", "price": 40}
+[turn 6] [seller] Thank you for your counteroffer, but $40 is still below what I can accept. How about we settle at $70?
+[reader raw] {"performative":"reject-proposal","price":70}
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 7] [buyer] I appreciate your willingness to negotiate, but $70 is still too high for me. I can go up to $45. Would you consider that?
+[reader raw] {"performative":"propose","price":45}
+[parse result] {"performative": "propose", "price": 45}
+[turn 8] [seller] I appreciate your offer, but $45 is still too low for the chair. How about we compromise at $65?
+[reader raw] {"performative":"reject-proposal","price":65}
+[parse result] {"performative": "reject-proposal", "price": null}
+[episode result] {'scenario': 3, 'deal_possible': 0, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 8, 'format_errors': 1, 'reader_calls': 8, 'note': ''}
+[usage] completed_calls=16, tokens=4829
+[saved row] {"run": 3, "condition": "free", "scenario": 3, "deal_possible": 0, "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 8, "format_errors": 1, "reader_calls": 8, "note": ""}
+[episode start] run=3, scenario=4
+[scenario] {'id': 4, 'item': 'bookshelf', 'reserve': 50, 'budget': 50}
+[condition] free
+[turn 1] [buyer] I would like to start by offering you 30 for the bookshelf. What do you think?
+[reader raw] {"performative":"propose","price":30}
+[parse result] {"performative": "propose", "price": 30}
+[turn 2] [seller] Thank you for your offer, but I believe the value of the bookshelf is higher than that. How about we start at 60?
+[reader raw] {"performative":"reject-proposal","price":60}
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 3] [buyer] I appreciate your response, but 60 is quite a bit above my budget. How about we meet in the middle? I can offer 35.
+[reader raw] {"performative":"propose","price":35}
+[parse result] {"performative": "propose", "price": 35}
+[turn 4] [seller] I understand your position, but 35 is still too low for the bookshelf. How about we settle at 55?
+[reader raw] {"performative":"reject-proposal","price":55}
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 5] [buyer] I appreciate your willingness to negotiate, but 55 is still beyond what I can spend. How about I raise my offer to 40?
+[reader raw] {"performative":"propose","price":40}
+[parse result] {"performative": "propose", "price": 40}
+[turn 6] [seller] Thank you for your counteroffer, but 40 is still below what I'm willing to accept. Let's try 52.
+[reader raw] {"performative":"reject-proposal","price":52}
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 7] [buyer] I appreciate your offer, but 52 is still too high for me. How about we compromise at 45?
+[reader raw] {"performative":"propose","price":45}
+[parse result] {"performative": "propose", "price": 45}
+[turn 8] [seller] I appreciate your effort to find a middle ground, but 45 is still too low for the bookshelf. How about we go with 50?
+[reader raw] {"performative":"propose","price":50}
+[parse result] {"performative": "propose", "price": 50}
+[episode result] {'scenario': 4, 'deal_possible': 1, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 8, 'format_errors': 0, 'reader_calls': 8, 'note': ''}
+[usage] completed_calls=16, tokens=4939
+[saved row] {"run": 3, "condition": "free", "scenario": 4, "deal_possible": 1, "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 8, "format_errors": 0, "reader_calls": 8, "note": ""}
