@@ -1,0 +1,50 @@
+condition=tagged
+run=3
+[buyer] (propose) I'd like to offer $35 for the desk lamp.
+  [parsed] {'performative': 'propose', 'price': 35, 'format_error': 0, 'reader_calls': 1}
+[seller] 
+  [parsed] {'performative': None, 'price': None, 'format_error': 1, 'reader_calls': 0}
+[buyer] (propose) How about $40?
+  [parsed] {'performative': 'propose', 'price': 40, 'format_error': 0, 'reader_calls': 1}
+[seller] (accept-proposal) Great, deal at $40.
+  [parsed] {'performative': 'accept-proposal', 'price': None, 'format_error': 0, 'reader_calls': 0}
+[result] {'scenario': 1, 'deal_possible': 1, 'outcome': 'deal', 'price': 40, 'correct': 1, 'violation': 0, 'turns': 4, 'format_errors': 1, 'reader_calls': 2, 'note': ''}
+[buyer] (propose) I would be willing to pay $70 for the office chair.
+  [parsed] {'performative': 'propose', 'price': 70, 'format_error': 0, 'reader_calls': 1}
+[seller] (accept-proposal) Deal at $70.
+  [parsed] {'performative': 'accept-proposal', 'price': None, 'format_error': 0, 'reader_calls': 0}
+[result] {'scenario': 2, 'deal_possible': 1, 'outcome': 'deal', 'price': 70, 'correct': 1, 'violation': 0, 'turns': 2, 'format_errors': 0, 'reader_calls': 1, 'note': ''}
+[buyer] (propose) I can offer $60 for the keyboard.
+  [parsed] {'performative': 'propose', 'price': 60, 'format_error': 0, 'reader_calls': 1}
+[seller] (propose) I can offer $80 for the keyboard.
+  [parsed] {'performative': 'propose', 'price': 80, 'format_error': 0, 'reader_calls': 1}
+[buyer] (reject-proposal) That’s a bit above my budget. I can offer $60.
+  [parsed] {'performative': 'reject-proposal', 'price': None, 'format_error': 0, 'reader_calls': 0}
+[seller] (propose) I can offer $90 for the keyboard.
+  [parsed] {'performative': 'propose', 'price': 90, 'format_error': 0, 'reader_calls': 1}
+[buyer] (propose) I can offer $60 for the keyboard.
+  [parsed] {'performative': 'propose', 'price': 60, 'format_error': 0, 'reader_calls': 1}
+[seller] (propose) I can offer $90 for the keyboard.
+  [parsed] {'performative': 'propose', 'price': 90, 'format_error': 0, 'reader_calls': 1}
+[buyer] (propose) I can offer $65 for the keyboard.
+  [parsed] {'performative': 'propose', 'price': 65, 'format_error': 0, 'reader_calls': 1}
+[seller] (propose) I can offer $90 for the keyboard.
+  [parsed] {'performative': 'propose', 'price': 90, 'format_error': 0, 'reader_calls': 1}
+[result] {'scenario': 3, 'deal_possible': 0, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 8, 'format_errors': 0, 'reader_calls': 7, 'note': ''}
+[buyer] (propose) I can offer $120 for the monitor.
+  [parsed] {'performative': 'propose', 'price': 120, 'format_error': 0, 'reader_calls': 1}
+[seller] (propose) I can offer $280 for the monitor.
+  [parsed] {'performative': 'propose', 'price': 280, 'format_error': 0, 'reader_calls': 1}
+[buyer] (propose) I can offer $140 for the monitor.
+  [parsed] {'performative': 'propose', 'price': 140, 'format_error': 0, 'reader_calls': 1}
+[seller] (propose) I can offer $280 for the monitor.
+  [parsed] {'performative': 'propose', 'price': 280, 'format_error': 0, 'reader_calls': 1}
+[buyer] (propose) I can offer $140 for the monitor.
+  [parsed] {'performative': 'propose', 'price': 140, 'format_error': 0, 'reader_calls': 1}
+[seller] (propose) I can offer $280 for the monitor.
+  [parsed] {'performative': 'propose', 'price': 280, 'format_error': 0, 'reader_calls': 1}
+[buyer] 
+  [parsed] {'performative': None, 'price': None, 'format_error': 1, 'reader_calls': 0}
+[seller] (propose) I can offer $280 for the monitor.
+  [parsed] {'performative': 'propose', 'price': 280, 'format_error': 0, 'reader_calls': 1}
+[result] {'scenario': 4, 'deal_possible': 0, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 8, 'format_errors': 1, 'reader_calls': 7, 'note': ''}
