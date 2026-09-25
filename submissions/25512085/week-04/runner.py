@@ -147,6 +147,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--condition", choices=CONDITIONS, help="run one condition; default is all three")
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--retry-scenario", help="run only this scenario as a recorded supplemental episode")
+    parser.add_argument("--retry-run", help="new run ID for the supplemental episode")
     parser.add_argument("--scenarios", type=Path, default=Path("scenarios.json"))
     parser.add_argument("--results", type=Path, default=Path("results.csv"))
     parser.add_argument("--logs", type=Path, default=Path("logs"))
@@ -156,10 +158,31 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if bool(args.retry_scenario) != bool(args.retry_run):
+        raise SystemExit("--retry-scenario and --retry-run must be supplied together")
+    if args.retry_scenario and not args.condition:
+        raise SystemExit("--condition is required for a supplemental episode")
     if args.repeats < 1:
         raise SystemExit("--repeats must be at least 1")
     scenarios = load_scenarios(args.scenarios)
     completed = completed_pairs(args.results)
+    if args.retry_scenario:
+        selected = [s for s in scenarios if str(s["id"]) == args.retry_scenario]
+        if len(selected) != 1:
+            raise SystemExit(f"scenario ID must match exactly one scenario: {args.retry_scenario}")
+        existing_runs = {run_id for run_id, _ in completed}
+        if args.retry_run in existing_runs and (args.retry_run, args.retry_scenario) not in completed:
+            raise SystemExit("--retry-run already belongs to a different recorded episode")
+        pending = (args.retry_run, args.retry_scenario) not in completed
+        if args.dry_run:
+            print(f"pending_episodes={int(pending)}")
+            if pending:
+                print(f"{args.retry_run},{args.condition},{args.retry_scenario}")
+            return
+        if pending:
+            settings = ModelSettings.from_env()
+            run_one(args.retry_run, args.condition, selected, completed, settings, args.results, args.logs)
+        return
     conditions = (args.condition,) if args.condition else CONDITIONS
     planned = [
         (f"{condition}-{repeat:02d}", condition, str(scenario["id"]))
