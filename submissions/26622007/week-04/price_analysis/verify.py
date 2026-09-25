@@ -1,13 +1,18 @@
 """Verify raw preservation and the report's specific transcript-based claims."""
 from collections import Counter
+import argparse
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 
 from extract import HERE, ROOT, dataset
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check-index", action="store_true", help="Also compare exported CSV bytes with the staged Git blobs")
+    args = parser.parse_args()
     episodes, points, violations = dataset()
     assert (len(episodes), len(points), len(violations)) == (144, 1348, 12)
     turn_counts = Counter(v["violation_turn"] for v in violations)
@@ -52,9 +57,15 @@ def main():
                ROOT / "language/runs/korean-deepseek-20260922/results.csv"]
     sources += sorted({ROOT / "logs" / (e["row"]["run"] + ".jsonl") for e in episodes})
     artifacts = sorted(p for p in HERE.iterdir() if (p.suffix in (".py", ".md", ".csv", ".json", ".png", ".svg") or p.name == ".gitattributes") and p.name != "verification.json")
+    if args.check_index:
+        repo = ROOT.parents[2]
+        for p in HERE.glob("*.csv"):
+            staged = subprocess.check_output(["git", "show", ":" + str(p.relative_to(repo))], cwd=repo)
+            assert staged == p.read_bytes(), f"Git CSV bytes differ: {p.name}; stage with git add --renormalize"
     report = {"episodes": len(episodes), "messages": len(points), "recorded_violations": len(violations),
               "violation_turn_counts": dict(sorted(turn_counts.items())), "all_original_artifacts_unchanged": True,
               "representative_transcript_claims_verified": True,
+              "csv_index_byte_equality_checked": args.check_index,
               "source_hashes": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
               "analysis_artifact_hashes": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in artifacts}}
     (HERE / "verification.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
@@ -62,6 +73,7 @@ def main():
     print("PASS: all English/Korean original artifact hashes unchanged.")
     print("PASS: explicit transcript checks for structured price descent, zero-proposal loops, and 40/30 mismatch.")
     print("Violation terminal turns: 2=1, 4=4, 6=3, 7=1, 8=3.")
+    if args.check_index: print("PASS: staged CSV bytes exactly match exports, including 30 embedded CRLF sequences.")
 
 
 if __name__ == "__main__": main()
