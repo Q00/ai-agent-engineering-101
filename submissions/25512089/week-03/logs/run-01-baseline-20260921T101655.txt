@@ -1,0 +1,10 @@
+run=1
+condition=baseline
+provider=OpenAI-compatible API
+model=nvidia/nemotron-3.5-lightning:free
+temperature=0.0
+
+TASK calc-01 gold=calculator
+DESC Calculate 18% of 275. Return the numeric result and a one-line calculation.
+ANNOUNCE -> calculator: Calculate 18% of 275. Return the numeric result and a one-line calculation.
+crash: AuthenticationError: Error code: 401 - {'error': {'message': 'Missing Authentication header', 'code': 401}}
