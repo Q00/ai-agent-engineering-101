@@ -94,7 +94,28 @@ def model_call(messages: list[dict[str, str]], max_tokens: int = 160) -> str:
                 max_tokens=max_tokens,
                 extra_body={"reasoning": {"enabled": False}},
             )
-            return (response.choices[0].message.content or "").strip()
+
+            choices = getattr(response, "choices", None)
+            if not choices:
+                if attempt < len(waits):
+                    wait = waits[attempt]
+                    print(f"[retry] provider returned no choices; waiting {wait}s")
+                    time.sleep(wait)
+                    continue
+                raise RuntimeError("provider returned no choices")
+
+            message = getattr(choices[0], "message", None)
+            content = getattr(message, "content", None) if message is not None else None
+
+            if content is None or not str(content).strip():
+                if attempt < len(waits):
+                    wait = waits[attempt]
+                    print(f"[retry] provider returned empty content; waiting {wait}s")
+                    time.sleep(wait)
+                    continue
+                raise RuntimeError("provider returned empty message content")
+
+            return str(content).strip()
 
         except Exception as e:
             text = str(e)
@@ -333,7 +354,7 @@ def existing_success_keys() -> set[tuple[str, str]]:
 
     with RESULTS_FILE.open(encoding="utf-8", newline="") as f:
         for row in csv.DictReader(f):
-            if row.get("run", "").strip() and row.get("scenario", "").strip():
+            if row.get("outcome", "").strip():
                 keys.add((row["run"].strip(), row["scenario"].strip()))
 
     return keys
