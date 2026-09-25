@@ -1,12 +1,18 @@
 import json
 import re
 
+
 ACTS = {
     "propose",
     "accept-proposal",
     "reject-proposal",
     "refuse",
 }
+
+TAG_PATTERN = re.compile(
+    r"\A\((propose|accept-proposal|reject-proposal|refuse)\)\s+(.+)\Z",
+    re.DOTALL,
+)
 
 
 def parse_structured(text):
@@ -37,13 +43,6 @@ def parse_structured(text):
     return {"performative": act, "price": price}
 
 
-if __name__ == "__main__":
-    TAG_PATTERN = re.compile(
-    r"\A\((propose|accept-proposal|reject-proposal|refuse)\)\s+(.+)\Z",
-    re.DOTALL,
-)
-
-
 def split_tagged(text):
     """Read the leading tag and keep the remaining sentence."""
     match = TAG_PATTERN.fullmatch(text.strip())
@@ -61,6 +60,9 @@ def split_tagged(text):
         return None
 
     return {"performative": act, "text": sentence}
+
+
+if __name__ == "__main__":
     offer = '{"performative":"propose","content":{"price":30}}'
     assert parse_structured(offer) == {
         "performative": "propose",
@@ -79,6 +81,7 @@ def split_tagged(text):
     }
 
     print("All 4 structured-parser checks passed. No API calls.")
+
     assert split_tagged("(propose) I offer 35.") == {
         "performative": "propose",
         "text": "I offer 35.",
