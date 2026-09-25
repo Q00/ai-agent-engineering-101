@@ -256,7 +256,7 @@ def call_agent(
     if opening:
         instruction = (
             "You are the buyer and must open the negotiation now. "
-            "Make a concrete opening price proposal."
+            "Produce exactly one short opening message appropriate for a buyer."
         )
     else:
         instruction = (
@@ -333,7 +333,7 @@ def existing_success_keys() -> set[tuple[str, str]]:
 
     with RESULTS_FILE.open(encoding="utf-8", newline="") as f:
         for row in csv.DictReader(f):
-            if row.get("outcome", "").strip():
+            if row.get("run", "").strip() and row.get("scenario", "").strip():
                 keys.add((row["run"].strip(), row["scenario"].strip()))
 
     return keys
@@ -362,6 +362,7 @@ def run_episode(
 
     transcript: list[str] = []
     last_proposal: int | None = None
+    last_proposer: str | None = None
 
     outcome = "open"
     deal_price: int | None = None
@@ -410,14 +411,19 @@ def run_episode(
         if perf == "propose":
             if price is not None:
                 last_proposal = price
+                last_proposer = speaker
 
         elif perf == "accept-proposal":
-            if last_proposal is not None:
+            if (
+                last_proposal is not None
+                and last_proposer is not None
+                and last_proposer != speaker
+            ):
                 outcome = "deal"
                 deal_price = last_proposal
+                break
             else:
                 format_errors += 1
-            break
 
         elif perf == "refuse":
             outcome = "no_deal"
