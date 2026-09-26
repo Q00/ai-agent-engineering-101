@@ -108,6 +108,39 @@ def audit(rows):
         print("mismatch", *difference)
 
 
+def audit_structured():
+    """Independent syntax/type check; JSON has no prose for an intent audit."""
+    count = 0
+    mismatches = 0
+    for run in range(7, 10):
+        path = BASE / "logs" / f"structured-{run:02d}.txt"
+        last_message = None
+        for line in path.read_text(encoding="utf-8").splitlines():
+            match = MESSAGE.match(line)
+            if match:
+                last_message = json.loads(match.group(3))
+            elif line.startswith("[parser] "):
+                parsed = ast.literal_eval(line[len("[parser] "):])
+                try:
+                    obj = json.loads(last_message)
+                    content = obj["content"]
+                    act = obj["performative"]
+                    price = content["price"]
+                    valid = (set(obj) == {"performative", "content"} and
+                             set(content) == {"price"} and
+                             act in ACTS - {"ambiguous"} and
+                             ((act == "propose" and type(price) is int and price > 0) or
+                              (act != "propose" and price is None)))
+                except (TypeError, ValueError, KeyError):
+                    valid = False
+                count += 1
+                if not valid or parsed != (act, price):
+                    mismatches += 1
+    print(f"structured schema messages={count} invalid_or_parser_mismatch={mismatches}")
+    assert count == 94
+    return count, mismatches
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--extract", action="store_true")
@@ -118,6 +151,7 @@ def main():
         print(f"extracted {len(rows)} messages to audit_input.csv")
     else:
         audit(rows)
+        audit_structured()
 
 
 if __name__ == "__main__":
