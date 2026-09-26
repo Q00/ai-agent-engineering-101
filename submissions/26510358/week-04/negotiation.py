@@ -58,8 +58,8 @@ READER_SYSTEM = (
 TAG = re.compile(r"^\((propose|accept-proposal|reject-proposal|refuse)\) ([^\n]+)$")
 
 
-def system_prompt(role, item, limit, condition):
-    return ROLE[role].format(item=item, limit=limit) + COMMON + FORMAT[condition]
+def system_prompt(role, item, limit, condition, shared_policy=""):
+    return ROLE[role].format(item=item, limit=limit) + COMMON + shared_policy + FORMAT[condition]
 
 
 def _price(value):
@@ -140,11 +140,13 @@ def score(scenario, outcome, price):
     return possible, correct, violation
 
 
-def episode(scenario, condition, chat, log):
+def episode(scenario, condition, chat, log, shared_policy=""):
     """Run one eight-message negotiation, preserving every utterance in the log."""
     systems = {
-        "buyer": system_prompt("buyer", scenario["item"], scenario["budget"], condition),
-        "seller": system_prompt("seller", scenario["item"], scenario["reserve"], condition),
+        "buyer": system_prompt("buyer", scenario["item"], scenario["budget"], condition,
+                               shared_policy),
+        "seller": system_prompt("seller", scenario["item"], scenario["reserve"], condition,
+                                shared_policy),
     }
     history = {"buyer": [{"role": "user", "content": "Begin with your opening message."}],
                "seller": []}

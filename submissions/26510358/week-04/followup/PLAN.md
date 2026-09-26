@@ -14,3 +14,9 @@
 - 기존 `results.csv`와 로그는 원본 그대로 보존한다. 추가 실험은 `followup/replication.csv`, `followup/termination.csv`, 새 원본 콘솔 로그는 `logs/`에 각각 별도 이름으로 저장한다.
 - 추가 CSV는 Week 04의 12열 계약을 그대로 사용한다. 최소 9개 로그와 36개 행을 연구별로 만들고 중단 시 `(run, scenario)` 단위로 재개한다. 실패한 에피소드는 삭제하지 않는다.
 - 종료 연구의 공통 지침, 실행 순서, 코드 버전과 해석 기준을 결과 보기 전에 확정한다. 두 연구 간의 성과 차이는 프롬프트 효과에 대한 탐색적 관찰로만 다룬다.
+
+## 종료 지침 원문 (첫 추가 실행 전 고정)
+
+```text
+In this follow-up, use a deadline policy. Each side has at most four messages. If the other party's latest offered price is within your private limit, choose accept-proposal rather than another counter-offer. On your fourth message, if no offer you can accept has arrived, use refuse and leave; do not make a new offer or reject on that final turn. Never reveal either party's private limit.
+```
