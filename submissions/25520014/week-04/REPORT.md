@@ -45,7 +45,8 @@ python ../../../scripts/check_week04.py .
 ```
 
 run끼리는 독립이라 병렬로 돌아간다. `results.csv`에 이미 있는 `(run, scenario)` 쌍은
-건너뛰므로 중단된 실행은 같은 명령으로 이어 돌린다.
+건너뛰므로 중단된 실행은 같은 명령으로 이어 돌린다. 처음부터 재현하려면 `results.csv`와
+`logs/`를 비우고 실행한다. 비우지 않으면 36개 쌍을 모두 건너뛰고 로그 파일에 이어 쓴다.
 
 ## 2. Results
 
@@ -60,7 +61,7 @@ run끼리는 독립이라 병렬로 돌아간다. `results.csv`에 이미 있는
 정답으로 치면 `free` 12, `tagged` 8, `structured` 10이 된다.
 
 `violation`은 프로토콜 계층이 **기록한** 거래가가 한도 밖인 경우다. 에이전트가 문장으로
-합의한 가격을 기준으로 하면 36 에피소드 전부 두 한도 안이었다(4부 표).
+합의한 가격을 기준으로 하면 36 에피소드 전부 두 한도 안이었다(4부 (2)).
 
 `structured` 메시지 88개는 전부 코드펜스에 싸여 왔고, 파서가 벗겨서 읽으므로
 `format_errors`에는 0으로 잡힌다.
@@ -87,57 +88,52 @@ run끼리는 독립이라 병렬로 돌아간다. `results.csv`에 이미 있는
 | 실패하는 방식 | ontology 불일치, 프로토콜 상태 불일치 | reader의 라벨 오류 (1건) | 역제안 가격이 `(reject-proposal)` 안에 실려 와 유실 (37건) | 같은 유실 (35건). 형식 위반이 `format_errors`에 안 잡힘 (펜스 88건) |
 
 ## 4. 해석
+(1) Performative 태그는 어디에서 도움이 되었고, 어디에서 비용이 되었는가?
+- Performative 태그는 메시지를 읽는 비용에서 가장 큰 도움이 되었다.
 
-*(한 문단. 아직 안 씀.)*
+| condition | reader 호출 | reader 토큰 | 전체 토큰 중 reader 비중 |
+|---|---|---|---|
+| `free` | 81 (메시지 81개 전부) | 2,083,038 | 50% |
+| `tagged` | 33 (`propose` 33개의 가격만) | 841,244 | 29% |
+| `structured` | 0 | 0 | 0% |
 
-증거로 쓸 것:
+토큰에는 `claude -p`의 호출당 고정 오버헤드가 포함되어 있다.
 
-**프로토콜 계층이 읽어 낸 performative의 분포.**
+`free`는 전체 토큰의 절반을 메시지를 읽는 데 사용한 반면, `tagged`는 `free`의 약 40% 수준의 reader 토큰만을 사용하였고, `structured`는 메시지를 읽는 데 모델 호출이 필요하지 않았다.
 
-| condition | propose | reject-proposal | accept-proposal | refuse |
-|---|---|---|---|---|
-| `free` | 73 | 0 | 6 | 2 |
-| `tagged` | 33 | 37 | 7 | 3 |
-| `structured` | 47 | 35 | 6 | 0 |
+- Performative 태그의 가장 큰 비용은 역제안 가격을 놓친다는 것이었다.
+기본적으로 태그는 한 메시지에 하나의 행위만을 허용한다. 실제 시나리오 중에서 에이전트가 "제안한 가격을 거절하고 새로운 가격을 제시"하는 역제안을 `reject-proposal` 태그로 보냈으나, 프로토콜은 그 안의 가격을 폐기하였다.
+그 결과 `tagged`에서 4건, `structured`에서 2건의 위반이 발생하였고, 정답이 40 하나뿐인 시나리오 2의 정답 수는 `free` 3/3, `tagged` 0/3, `structured` 1/3이었다.
+추가로 원인은 알 수 없지만 `structured` 조건에서는 `refuse`가 단 한 건도 발생하지 않아, 거래 불가능한 시나리오 6건이 전부 `open`으로 종결되었다.
 
-**위반 6건. 전부 프로토콜 계층이 만들었고, 에이전트가 한도를 어긴 경우는 0건이다.**
+(2) `reader`가 역제안을 `accept`으로 읽은 에피소드, `seller`가 `reserve` 아래로 판 에피소드가 존재하였는가?
+- `reader`가 역제안을 `accept`으로 읽은 에피소드는 존재하지 않았다.
 
-| run | sc | 합의가 | 기록된 거래가 | 한도 | 기록가가 나온 자리 |
-|---|---|---|---|---|---|
-| `tagged-1` | 1 | 135 | **160** | 120–150 | seller의 첫 `(propose)` |
-| `tagged-1` | 2 | 40 | **32** | 40–40 | buyer의 마지막 `(propose)` |
-| `tagged-2` | 2 | 40 | **15** | 40–40 | buyer의 여는 `(propose)` |
-| `tagged-3` | 2 | 40 | **55** | 40–40 | seller의 유일한 `(propose)` |
-| `structured-2` | 2 | 40 | **25** | 40–40 | buyer의 여는 `propose` |
-| `structured-3` | 2 | 40 | **20** | 40–40 | buyer의 여는 `propose` |
+| run | sc | 상대의 직전 가격 | reader가 accept로 읽은 메시지 |
+|---|---|---|---|
+| `free-1` | 1 | 125 | "I can work with $125—that's a fair price and we have a deal." |
+| `free-1` | 2 | 40 | "I appreciate you working with me on this—I can do 40 and we have a deal." |
+| `free-2` | 1 | 135 | "I think $135 is fair—you've moved to meet me halfway ... Let's go with $135." |
+| `free-2` | 2 | 40 | "I can accept $40 for the textbook—that works for me. Let's finalize the deal!" |
+| `free-3` | 1 | 125 | "I appreciate you meeting me closer to the middle—$125 works for me, and we have a deal." |
+| `free-3` | 2 | 40 | "I appreciate your flexibility—$40 works for me, and we have a deal!" |
 
-**`logs/tagged-2.txt` 시나리오 2.** 15 → 55 → 28 → 45 → 38 → 42 → 40 → 수락으로 흘렀고
-`(propose)` 태그가 붙은 것은 첫 줄뿐이다.
+- `seller`가 `reserve` 아래로 판매한 에피소드는 4건이 존재하였다.
+네 건(`tagged-1`, `tagged-2`, `structured-2`, `structured-3`의 시나리오 2) 모두 에이전트가 합의한 가격은 40이었다.
+40이 `reject-proposal` 안에 실려 와 버려졌고, 거래가 그보다 앞선 `propose`의 가격(32, 15, 25, 20)으로 기록되었기 때문이다.
 
-```
-[buyer]  (propose) I'd like to offer 15 for this textbook.
-  [read] {'performative': 'propose', 'price': 15}
-[buyer]  (reject-proposal) would you accept $40, which is genuinely my maximum limit?
-  [read] {'performative': 'reject-proposal', 'price': None}
-[seller] (accept-proposal) You've got a deal at $40—that works for me ...
-[result] outcome=deal price=15 correct=0 violation=1
-```
+| run | 기록된 가격 | 기록된 가격을 만든 메시지 | 40에 합의한 메시지 |
+|---|---|---|---|
+| `tagged-1` | 32 | buyer: "(propose) ... would you consider $32 as a middle ground?" | seller: "(accept-proposal) Great, $40 works perfectly for me—let's finalize this deal for the textbook." |
+| `tagged-2` | 15 | buyer: "(propose) I'd like to offer 15 for this textbook if it's in decent condition." | seller: "(accept-proposal) You've got a deal at $40—that works for me ..." |
+| `structured-2` | 25 | buyer: `{"performative": "propose", "content": {"price": 25}}` | buyer: `{"performative": "reject-proposal", "content": {"price": 40}}` → seller: `{"performative": "accept-proposal", "content": {"price": null}}` |
+| `structured-3` | 20 | buyer: `{"performative": "propose", "content": {"price": 20}}` | buyer: `{"performative": "reject-proposal", "content": {"price": 40}}` → seller: `{"performative": "accept-proposal", "content": {"price": 40}}` |
 
-**`logs/structured-3.txt` 시나리오 2.** 정답 40이 JSON 안에 두 번 있었으나 둘 다 안 쓰였다.
+budget 위로 기록된 위반 2건도 같은 구조다. `tagged-1` 시나리오 1은 135에 합의했으나 seller의 첫 `(propose)`인 160으로,
+`tagged-3` 시나리오 2는 40에 합의했으나 seller의 유일한 `(propose)`인 55로 기록되었다.
 
-```
-  [read] {'performative': 'propose', 'price': 20}          <- 기록된 거래가
-  [read] {'performative': 'reject-proposal', 'price': 40}   <- 버려짐. 거절은 제안이 아니다
-  [read] {'performative': 'accept-proposal', 'price': 40}   <- 무시됨. 성사가는 last_price[other]
-```
+(3) 어떤 형식도 바꾸지 못한 것은 무엇인가?
+- 거래가 불가능한 시나리오에서 에이전트가 결렬을 선언하지 않는 것은 어떤 형식도 바꾸지 못하였다.
+에이전트들은 `refuse` 대신 한도 근처의 가격을 반복해서 제시하다 8턴을 채웠고, `open`이 `free` 4/6, `tagged` 3/6, `structured` 6/6이었다. `free-1` 시나리오 4는 buyer의 "I can go up to $145 as my final offer"와 seller의 "$200 is the absolute lowest I can go on this monitor"로 끝났다.
+- 에이전트가 자신의 한도를 지키는 것 역시 형식과 무관하였다. 36개 에피소드 중 에이전트가 한도 밖의 가격에 합의한 경우는 존재하지 않았다.
 
-**설계의 한계.** 위반 6건은 코드가 설계와 다르게 동작해서 생긴 것이 아니다. 설계에 빈
-자리가 있었다.
-
-- 공통 문단의 `reject-proposal` 정의("decline the last price and keep negotiating")는
-  거절하면서 새 가격을 말하는 것을 막지 않는다. 역제안은 `propose`로 하라는 문장이 없다.
-- 프로토콜은 `reject-proposal`의 가격을 버린다. 거절은 제안이 아니라는 FIPA 의미론을
-  따른 것이고(`protocol.py`), 받도록 바꾸면 `tagged`와 `structured`의 숫자가 달라진다.
-- FIPA의 `accept-proposal`은 수락하는 제안을 content에 담아 가리키지만, 이 실습의
-  `accept-proposal`은 아무것도 가리키지 않는다. 그래서 수락 메시지의 가격(`structured-3`의
-  40)과 기록된 가격(20)이 달라도 알아챌 장치가 없다.
