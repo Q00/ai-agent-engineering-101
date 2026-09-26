@@ -1,0 +1,102 @@
+[run] study=termination number=23 block=2 slot=2 order=free,tagged,structured condition=tagged provider=openai model=gpt-5.6-luna temperature=0.7 max_tokens=512 reasoning_effort=none turn_limit=8 python=3.13.15 openai=3.8.0 utc=2026-09-26T13:44:18.443699+00:00 scenarios_sha256=277c73933f164d8ce9f686838391c845fe8d6d90fc8c8bb1c50c991acbaaac05 policy_sha256=54f7b4809605a388e01dd287a971b0c6c976a7b34fab17fc599fd476bff370ec
+[scenario] id=bike item=a used bicycle reserve=120 budget=180
+[api] id=chatcmpl-ESMwT0g41jQhQ4dayq9YtLSVbQc46 finish=stop input=285 output=12
+[buyer turn=1] "(propose) I can offer 120."
+[tag] propose
+[api] id=chatcmpl-ESMwUAekou1IuLL4gNhkhqVmN3HM5 finish=stop input=150 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":120}"
+[reader] ('propose', 120)
+[api] id=chatcmpl-ESMwV6t4FkAPTqb7Yd7a6iTNwmfkv finish=stop input=288 output=16
+[seller turn=2] "(accept-proposal) I accept your offer of 120."
+[tag] accept-proposal
+[result] {"deal_possible": 1, "outcome": "deal", "price": 120, "correct": 1, "violation": 0, "turns": 2, "format_errors": 0, "reader_calls": 1}
+[scenario] id=textbook item=a second-hand textbook reserve=40 budget=45
+[api] id=chatcmpl-ESMwW9PYiJKAz7DnpqanAMJ2rdNo6 finish=stop input=286 output=11
+[buyer turn=1] "(propose) I offer 30."
+[tag] propose
+[api] id=chatcmpl-ESMwXtW099LARPTIcVhtgawmRcSKw finish=stop input=149 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":30}"
+[reader] ('propose', 30)
+[api] id=chatcmpl-ESMwYwbXz0wKdGw8YrCieaVpgP9ew finish=stop input=288 output=13
+[seller turn=2] "(reject-proposal) I decline your offer."
+[tag] reject-proposal
+[api] id=chatcmpl-ESMwYItLBk8Qnz7lq0SBP8KpZbQwE finish=stop input=314 output=11
+[buyer turn=3] "(propose) I offer 35."
+[tag] propose
+[api] id=chatcmpl-ESMwZiQau3NJP7TdTyeqW5vcRZ8L0 finish=stop input=149 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":35}"
+[reader] ('propose', 35)
+[api] id=chatcmpl-ESMwaAgpy29xzb3L53KPC3L44RYtS finish=stop input=316 output=15
+[seller turn=4] "(propose) I can offer the textbook for 50."
+[tag] propose
+[api] id=chatcmpl-ESMwbiu99AZZhdws39krPnUqb8wFy finish=stop input=153 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":50}"
+[reader] ('propose', 50)
+[api] id=chatcmpl-ESMwcoCFAwWA5MYwOs2nldIwv2z4e finish=stop input=344 output=13
+[buyer turn=5] "(accept-proposal) I accept your offer."
+[tag] accept-proposal
+[result] {"deal_possible": 1, "outcome": "deal", "price": 50, "correct": 0, "violation": 1, "turns": 5, "format_errors": 0, "reader_calls": 3}
+[scenario] id=keyboard item=a mechanical keyboard reserve=90 budget=70
+[api] id=chatcmpl-ESMwdTEiCrnt5uVclhh7z1CYLAZzn finish=stop input=285 output=12
+[buyer turn=1] "(propose) I can offer $50."
+[tag] propose
+[api] id=chatcmpl-ESMwoj0crwnYLWLOXfvslZpVDMPsw finish=stop input=150 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":50}"
+[reader] ('propose', 50)
+[api] id=chatcmpl-ESMwoI8A0gGJNYWVrImrrBIRhIwkC finish=stop input=288 output=15
+[seller turn=2] "(reject-proposal) I can’t accept $50."
+[tag] reject-proposal
+[api] id=chatcmpl-ESMwpkSpBHOfOSWyBmaB9eDS4USvr finish=stop input=316 output=12
+[buyer turn=3] "(propose) I can offer $55."
+[tag] propose
+[api] id=chatcmpl-ESMwqIIzXH8ilAoNm74VBpqWIeUiR finish=stop input=150 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":55}"
+[reader] ('propose', 55)
+[api] id=chatcmpl-ESMwrptr354S0RQisF0CIeuYNECGz finish=stop input=319 output=15
+[seller turn=4] "(reject-proposal) I can’t accept $55."
+[tag] reject-proposal
+[api] id=chatcmpl-ESMws7ouXsciFSmszvkEpzvUsAd3h finish=stop input=347 output=12
+[buyer turn=5] "(propose) I can offer $60."
+[tag] propose
+[api] id=chatcmpl-ESMwtscW4PhZsr75NaysducohYNsK finish=stop input=150 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":60}"
+[reader] ('propose', 60)
+[api] id=chatcmpl-ESMwur8uuSxqTQ4Om26op7XEYpzfM finish=stop input=350 output=15
+[seller turn=6] "(reject-proposal) I can’t accept $60."
+[tag] reject-proposal
+[api] id=chatcmpl-ESMwvhXFaOx3ilBGB9ItgsTxnjLPM finish=stop input=378 output=13
+[buyer turn=7] "(refuse) I’m leaving without a deal."
+[tag] refuse
+[result] {"deal_possible": 0, "outcome": "no_deal", "price": null, "correct": 1, "violation": 0, "turns": 7, "format_errors": 0, "reader_calls": 3}
+[scenario] id=laptop item=a used laptop reserve=500 budget=420
+[api] id=chatcmpl-ESMwwE6zI3eP3Pjvzcfje2C94bGGj finish=stop input=285 output=12
+[buyer turn=1] "(propose) I can offer $350."
+[tag] propose
+[api] id=chatcmpl-ESMwx6bxcBQOVchFmtUPKCoE5sTEr finish=stop input=150 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":350}"
+[reader] ('propose', 350)
+[api] id=chatcmpl-ESMwyNcMhaDervnG2x7o1QU9BcCbz finish=stop input=288 output=15
+[seller turn=2] "(reject-proposal) I can’t accept that offer."
+[tag] reject-proposal
+[api] id=chatcmpl-ESMwy07X20LV1FPbsoGgw8MbVp8Eo finish=stop input=316 output=12
+[buyer turn=3] "(propose) I can offer $375."
+[tag] propose
+[api] id=chatcmpl-ESMwzCbLXHlgrU0AfirYarIgFqgNO finish=stop input=150 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":375}"
+[reader] ('propose', 375)
+[api] id=chatcmpl-ESMx0ZGCGbnegwggUuJ0Vgw9ukjBm finish=stop input=319 output=15
+[seller turn=4] "(reject-proposal) I can’t accept that offer."
+[tag] reject-proposal
+[api] id=chatcmpl-ESMx1khezr60STLKIndU8MP3JPJIL finish=stop input=347 output=12
+[buyer turn=5] "(propose) I can offer $400."
+[tag] propose
+[api] id=chatcmpl-ESMx2pbe6gr7kxkrCzihYkLd6iNjj finish=stop input=150 output=14
+[reader-raw] "{\"performative\":\"propose\",\"price\":400}"
+[reader] ('propose', 400)
+[api] id=chatcmpl-ESMx3FtQzs5mZSV7DCl3zWoXVddpP finish=stop input=350 output=15
+[seller turn=6] "(reject-proposal) I can’t accept that offer."
+[tag] reject-proposal
+[api] id=chatcmpl-ESMx4cpvTEzZoYSAvQpLdXRPgYvAq finish=stop input=378 output=13
+[buyer turn=7] "(refuse) I’ll leave without a deal."
+[tag] refuse
+[result] {"deal_possible": 0, "outcome": "no_deal", "price": null, "correct": 1, "violation": 0, "turns": 7, "format_errors": 0, "reader_calls": 3}
