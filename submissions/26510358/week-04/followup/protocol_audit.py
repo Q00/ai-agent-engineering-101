@@ -86,7 +86,8 @@ def parse_log(condition, run):
 
 
 def replay_all():
-    results = list(csv.DictReader((BASE / "results.csv").open(newline="", encoding="utf-8")))
+    with (BASE / "results.csv").open(newline="", encoding="utf-8") as stream:
+        results = list(csv.DictReader(stream))
     details = []
     for run in range(1, 10):
         condition = ("free", "tagged", "structured")[(run - 1) // 3]
