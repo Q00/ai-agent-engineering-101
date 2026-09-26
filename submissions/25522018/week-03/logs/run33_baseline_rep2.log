@@ -1,0 +1,98 @@
+provider=OpenRouter model=nvidia/nemotron-3.5-lightning:free temperature=0.0
+======================================================================
+CONDITION: baseline
+======================================================================
+
+----------------------------------------------------------------------
+[task] id=1 gold=A desc=Compute 137 * 249 and return only the numerical result.
+[announce] -> contractor A
+[raw] A: {"bid": true, "confidence": 100, "reason": "Arithmetic calculation is within my skill set."}
+[bid] A: bid=True confidence=100.0 reason=Arithmetic calculation is within my skill set.
+[announce] -> contractor B
+[raw] B: {"bid": false, "Compute 137 * 249 and return only the numerical result." -> Wait, the task says "Compute 137 * 249 is a calculation task, not writing or language.
+[parse-fail] contractor B
+[announce] -> contractor C
+[raw] C: {"bid": true, "confidence": 100, "reason": "Simple arithmetic computation within Python programming skill."}
+[bid] C: bid=True confidence=100.0 reason=Simple arithmetic computation within Python programming skill.
+[award] contractor A confidence=100.0 (gold=A)
+[result] correct
+
+----------------------------------------------------------------------
+[task] id=2 gold=B desc=Rewrite this sentence in clear and polite English: Send me the report now.
+[announce] -> contractor A
+[raw] A: {"payload":"payload","usage":"text_completion"}
+[parse-fail] contractor A
+[announce] -> contractor B
+[raw] B: {"bid": true, "confidence": 95, "reason": "Task requires rewriting a sentence in clear and polite English, which falls within my writing and language skills."}
+[bid] B: bid=True confidence=95.0 reason=Task requires rewriting a sentence in clear and polite English, which falls within my writing and language skills.
+[announce] -> contractor C
+[raw] C: {"bid": false, "confidence": 50,
+[parse-fail] contractor C
+[award] contractor B confidence=95.0 (gold=B)
+[result] correct
+
+----------------------------------------------------------------------
+[task] id=3 gold=C desc=Write a Python function that returns the reversed copy of a list.
+[announce] -> contractor A
+[raw] A: {"bid": true, "confidence": 100, "reason": "Arithmetic and numerical calculation skills include list manipulation and reversal."}
+[bid] A: bid=True confidence=100.0 reason=Arithmetic and numerical calculation skills include list manipulation and reversal.
+[announce] -> contractor B
+[raw] B: {"bid": true, "confidence": 100, "reason": "Task directly matches my skill of writing Python code."}
+[bid] B: bid=True confidence=100.0 reason=Task directly matches my skill of writing Python code.
+[announce] -> contractor C
+[raw] C: {"bid": true, "confidence": 100, "reason": "Python programming skill covers list reversal tasks."}
+[bid] C: bid=True confidence=100.0 reason=Python programming skill covers list reversal tasks.
+[award] contractor A confidence=100.0 (gold=C)
+[result] misaward: winner=A, gold=C
+
+----------------------------------------------------------------------
+[task] id=4 gold=A desc=Calculate the average of 18, 24, 30, 36, and 42.
+[announce] -> contractor A
+[raw] A: {"bid": true, "confidence": 100, "reason": "Arithmetic calculation of average is within my skill set."}
+[bid] A: bid=True confidence=100.0 reason=Arithmetic calculation of average is within my skill set.
+[announce] -> contractor B
+[raw] B: {"bid": false, "confidence": 0, "reason": "Task requires calculation, not writing or language skills."}
+[bid] B: bid=False confidence=0.0 reason=Task requires calculation, not writing or language skills.
+[announce] -> contractor C
+[raw] C: {"bid": true, "confidence": 95, "reason": "Task involves calculating the average of a list of numbers, which is a basic Python programming task."}
+[bid] C: bid=True confidence=95.0 reason=Task involves calculating the average of a list of numbers, which is a basic Python programming task.
+[award] contractor A confidence=100.0 (gold=A)
+[result] correct
+
+----------------------------------------------------------------------
+[task] id=5 gold=B desc=Write a short professional thank-you message to a professor after receiving research advice.
+[announce] -> contractor A
+[raw] A: {"bid": true, "confidence": 95, "reason": "Task involves writing a professional thank-you message, which falls within my capabilities for numerical and structured text generation."}
+[bid] A: bid=True confidence=95.0 reason=Task involves writing a professional thank-you message, which falls within my capabilities for numerical and structured text generation.
+[announce] -> contractor B
+[raw] B: {"bid": true, "confidence": 95, "reason": "Task falls within writing and language skills."}
+[bid] B: bid=True confidence=95.0 reason=Task falls within writing and language skills.
+[announce] -> contractor C
+[raw] C: {"bid": true, "confidence": 95, "reason": "Task falls within Python programming and code task skills."}
+[bid] C: bid=True confidence=95.0 reason=Task falls within Python programming and code task skills.
+[award] contractor A confidence=95.0 (gold=B)
+[result] misaward: winner=A, gold=B
+
+----------------------------------------------------------------------
+[task] id=6 gold=C desc=Fix this Python code so it prints numbers 0 through 4: for i in range(5) print(i)
+[announce] -> contractor A
+[raw] A: {"bid": true, "confidence": 100, "reason": "The task requires fixing Python syntax to print numbers 0-4, which falls under arithmetic and numerical calculation skills."}
+[bid] A: bid=True confidence=100.0 reason=The task requires fixing Python syntax to print numbers 0-4, which falls under arithmetic and numerical calculation skills.
+[announce] -> contractor B
+[raw] B: {"bid": true, "confidence": 100, "reason": "The task involves fixing Python code, which falls within my writing and language skills."}
+[bid] B: bid=True confidence=100.0 reason=The task involves fixing Python code, which falls within my writing and language skills.
+[announce] -> contractor C
+[raw] C: {" ( ( ( ( (,,
+[parse-fail] contractor C
+[award] contractor A confidence=100.0 (gold=C)
+[result] misaward: winner=A, gold=C
+
+======================================================================
+ROUND SUMMARY
+tasks       = 6
+correct     = 3
+messages    = 37
+unassigned  = 0
+misawards   = 3
+parse_fails = 4
+======================================================================

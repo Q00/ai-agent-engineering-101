@@ -1,0 +1,24 @@
+provider=OpenRouter model=nvidia/nemotron-3.5-lightning:free temperature=0.0
+======================================================================
+CONDITION: homogeneous
+======================================================================
+
+----------------------------------------------------------------------
+[task] id=1 gold=A desc=Compute 137 * 249 and return only the numerical result.
+[announce] -> contractor A
+[raw] A: {"bidirectional, and the user wants me to reply with one JSON object containing `bid`, `confidence`, and `reason`.\n\nThe task is to search for more information.
+[parse-fail] contractor A
+[announce] -> contractor B
+[raw] B: {"bid": true, "confidence": 95, "reason": "Multiplication of two integers is within general problem solving capabilities."}
+[bid] B: bid=True confidence=95.0 reason=Multiplication of two integers is within general problem solving capabilities.
+[announce] -> contractor C
+[raw] C: {"bid": true, "confidence": 100, "reason": "Multiplication of two integers is within general problem solving skills."}
+[bid] C: bid=True confidence=100.0 reason=Multiplication of two integers is within general problem solving skills.
+[award] contractor C confidence=100.0 (gold=A)
+[result] misaward: winner=C, gold=A
+
+----------------------------------------------------------------------
+[task] id=2 gold=B desc=Rewrite this sentence in clear and polite English: Send me the report now.
+[announce] -> contractor A
+
+[CRASH] KeyError: 'choices'

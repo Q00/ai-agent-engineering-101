@@ -1,0 +1,10 @@
+provider=OpenRouter model=nvidia/nemotron-3.5-lightning:free temperature=0.0
+======================================================================
+CONDITION: homogeneous
+======================================================================
+
+----------------------------------------------------------------------
+[task] id=1 gold=A desc=Compute 137 * 249 and return only the numerical result.
+[announce] -> contractor A
+
+[CRASH] TimeoutError: The read operation timed out
