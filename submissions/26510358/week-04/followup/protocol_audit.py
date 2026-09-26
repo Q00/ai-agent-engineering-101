@@ -77,7 +77,10 @@ def parse_log(condition, run, study="original"):
         elif line.startswith(("[reader] ", "[parser] ")):
             prefix = "[reader] " if line.startswith("[reader] ") else "[parser] "
             parsed = ast.literal_eval(line[len(prefix):])
-            assert parsed is not None, (run, scenario, line)
+            if parsed is None:
+                # A format error leaves the utterance delivered but without an act.
+                events[-1] = Event(events[-1].sender, None, None)
+                continue
             act, price = parsed
             if condition == "tagged":
                 assert events[-1].act == act
