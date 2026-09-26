@@ -1,5 +1,6 @@
 """Replay Week 04 messages with legacy and explicit pending-offer semantics."""
 
+import argparse
 import ast
 import csv
 import json
@@ -56,8 +57,9 @@ def simulate(events, pending_only=False):
     return "open", None, invalid_accepts, expired
 
 
-def parse_log(condition, run):
-    path = BASE / "logs" / f"{condition}-{run:02d}.txt"
+def parse_log(condition, run, study="original"):
+    prefix = condition if study == "original" else study
+    path = BASE / "logs" / f"{prefix}-{run:02d}.txt"
     episodes = {}
     scenario = None
     events = []
@@ -85,28 +87,38 @@ def parse_log(condition, run):
     return episodes
 
 
-def replay_all():
-    with (BASE / "results.csv").open(newline="", encoding="utf-8") as stream:
+def replay_all(study="original"):
+    path = (BASE / "results.csv" if study == "original" else
+            BASE / "followup" / f"{study}.csv")
+    with path.open(newline="", encoding="utf-8") as stream:
         results = list(csv.DictReader(stream))
     details = []
-    for run in range(1, 10):
-        condition = ("free", "tagged", "structured")[(run - 1) // 3]
-        episodes = parse_log(condition, run)
-        for row in (r for r in results if int(r["run"]) == run):
-            events, recorded = episodes[row["scenario"]]
-            assert len(events) == int(row["turns"])
-            legacy = simulate(events)
-            strict = simulate(events, pending_only=True)
-            assert legacy[:2] == (recorded["outcome"], recorded["price"]), (row, legacy)
-            details.append((run, condition, row["scenario"], legacy, strict))
-    assert len(details) == 36
+    episodes_by_run = {}
+    for row in results:
+        if not row["outcome"]:  # A crashed episode has no full event stream to replay.
+            continue
+        run = int(row["run"])
+        condition = row["condition"]
+        if run not in episodes_by_run:
+            episodes_by_run[run] = parse_log(condition, run, study)
+        events, recorded = episodes_by_run[run][row["scenario"]]
+        assert len(events) == int(row["turns"])
+        legacy = simulate(events)
+        strict = simulate(events, pending_only=True)
+        assert legacy[:2] == (recorded["outcome"], recorded["price"]), (row, legacy)
+        details.append((run, condition, row["scenario"], legacy, strict))
+    assert len(details) == sum(bool(row["outcome"]) for row in results)
     return details
 
 
 def main():
-    details = replay_all()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--study", choices=("original", "replication", "termination"),
+                        default="original")
+    study = parser.parse_args().study
+    details = replay_all(study)
     differences = [x for x in details if x[3][:2] != x[4][:2]]
-    print(f"replayed={len(details)} outcome_differences={len(differences)}")
+    print(f"study={study} replayed={len(details)} outcome_differences={len(differences)}")
     print("strict_invalid_accepts=", sum(x[4][2] for x in details))
     print("strict_expired_offers=", sum(x[4][3] for x in details))
     for item in differences:
