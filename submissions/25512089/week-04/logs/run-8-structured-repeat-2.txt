@@ -13,3 +13,45 @@ RUN 8 condition=structured repeat=2 model=nvidia/nemotron-3-super-120b-a12b:free
 
 === scenario=s1 item=Laptop stand reserve=60 budget=90 ===
 INTERRUPTED: daily rate limit: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790380800000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iiulu8CXiG7DSzt2tgDoGz2exH'}
+
+RUN 8 condition=structured repeat=2 model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0 turn_limit=4
+
+=== scenario=s1 item=Laptop stand reserve=60 budget=90 ===
+BUYER: {"performative":"propose","content":{"price":60}}
+PARSED: performative=propose price=60 format_error=0 reader_calls+=0
+SELLER: {"performative":"accept-proposal","content":{"price":60}}
+PARSED: performative=accept-proposal price=None format_error=0 reader_calls+=0
+RESULT: outcome=deal price=60 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0
+
+=== scenario=s2 item=Wireless mouse reserve=35 budget=50 ===
+BUYER: {"performative":"propose","content":{"price":25}}
+PARSED: performative=propose price=25 format_error=0 reader_calls+=0
+SELLER: {"performative":"reject-proposal","content":{"price":25}}
+PARSED: performative=reject-proposal price=None format_error=0 reader_calls+=0
+BUYER: {"performative":"propose","content":{"price":30}}
+PARSED: performative=propose price=30 format_error=0 reader_calls+=0
+SELLER: {"performative":"reject-proposal","content":{"price":30}}
+PARSED: performative=reject-proposal price=None format_error=0 reader_calls+=0
+RESULT: outcome=open price=None correct=0 violation=0 turns=4 format_errors=0 reader_calls=0
+
+=== scenario=s3 item=Mechanical keyboard reserve=80 budget=65 ===
+BUYER: {"performative":"propose","content":{"price":45}}
+PARSED: performative=propose price=45 format_error=0 reader_calls+=0
+SELLER: {"performative":"propose","content":{"price":75}}
+PARSED: performative=propose price=75 format_error=0 reader_calls+=0
+BUYER: {"performative":"propose","content":{"price":55}}
+PARSED: performative=propose price=55 format_error=0 reader_calls+=0
+SELLER: {"performative":"propose","content":{"price":70}}
+PARSED: performative=propose price=70 format_error=0 reader_calls+=0
+RESULT: outcome=open price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
+
+=== scenario=s4 item=USB-C hub reserve=55 budget=40 ===
+BUYER: {"performative":"propose","content":{"price":25}}
+PARSED: performative=propose price=25 format_error=0 reader_calls+=0
+SELLER: {"performative":"propose","content":{"price":65}}
+PARSED: performative=propose price=65 format_error=0 reader_calls+=0
+BUYER: {"performative":"propose","content":{"price":30}}
+PARSED: performative=propose price=30 format_error=0 reader_calls+=0
+SELLER: {"performative":"propose","content":{"price":60}}
+PARSED: performative=propose price=60 format_error=0 reader_calls+=0
+RESULT: outcome=open price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
