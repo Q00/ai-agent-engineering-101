@@ -19,7 +19,8 @@ ACTS = {"propose", "accept-proposal", "reject-proposal", "refuse", "ambiguous"}
 
 def extract():
     result_rows = list(csv.DictReader((BASE / "results.csv").open(newline="", encoding="utf-8")))
-    expected = {(int(r["run"]), r["scenario"]): int(r["turns"]) for r in result_rows}
+    expected = {(int(r["run"]), r["scenario"]): int(r["turns"])
+                for r in result_rows if int(r["run"]) <= 6}
     rows = []
     for run in range(1, 7):
         condition = "free" if run <= 3 else "tagged"
