@@ -108,6 +108,38 @@ def audit(rows):
         print("mismatch", *difference)
 
 
+def replay_reference_labels(rows):
+    """Estimate observed outcome impact; retain parser labels on ambiguous rows."""
+    from protocol_audit import Event, simulate
+
+    with (HERE / "audit_labels.csv").open(newline="", encoding="utf-8") as stream:
+        labels = {(r["run"], r["scenario"], r["turn"]): r
+                  for r in csv.DictReader(stream)}
+    with (BASE / "results.csv").open(newline="", encoding="utf-8") as stream:
+        results = {(r["run"], r["scenario"]): r for r in csv.DictReader(stream)}
+    grouped = {}
+    for row in rows:
+        key = (row["run"], row["scenario"], row["turn"])
+        label = labels[key]
+        act = (row["protocol_act"] if label["reference_act"] == "ambiguous"
+               else label["reference_act"])
+        price = (row["protocol_price"] if label["reference_act"] == "ambiguous"
+                 else label["reference_price"])
+        grouped.setdefault(key[:2], []).append(Event(row["speaker"], act,
+                                                       int(price) if price else None))
+    changed = []
+    for key, events in grouped.items():
+        outcome, price, _, _ = simulate(events)
+        result = results[key]
+        if (outcome, price) != (result["outcome"],
+                                int(result["price"]) if result["price"] else None):
+            changed.append((key, outcome, price))
+    print(f"reference-label replay episodes={len(grouped)} changed_outcomes={len(changed)}")
+    for item in changed:
+        print("changed", item)
+    return changed
+
+
 def audit_structured():
     """Independent syntax/type check; JSON has no prose for an intent audit."""
     count = 0
@@ -151,6 +183,7 @@ def main():
         print(f"extracted {len(rows)} messages to audit_input.csv")
     else:
         audit(rows)
+        replay_reference_labels(rows)
         audit_structured()
 
 
