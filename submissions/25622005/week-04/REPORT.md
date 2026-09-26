@@ -1,6 +1,6 @@
-# Week 04 — 같은 협상, 세 가지 메시지 형식
+# Week 04
 
-학번 25622005 · buyer 1 + seller 1의 가격 협상을 `free`, `tagged`, `structured` 세
+ buyer 1 + seller 1의 가격 협상을 `free`, `tagged`, `structured` 세
 메시지 형식으로 돌려, FIPA-ACL이 필수 필드로 둔 performative 태그가 무엇을 사주고
 무엇을 비용으로 치르는지 측정한 실험. 여기에 Wooldridge(1998)의 semantic verification
 problem을 겨냥한 감사 에이전트를 하나 더 붙여, 프로토콜 계층이 기록한 결과와 공개
@@ -24,8 +24,7 @@ API 키는 `.env`로만 쓰고 커밋하지 않았다.
 
 `temperature`는 **보내지 않은 것이 아니라 보낼 수 없었다.** 설치된 `anthropic 1.4.0`의
 `Messages.create`에는 `temperature` 파라미터 자체가 없다(`inspect.signature`로 확인).
-week-02 starter의 `tools_shared.py`도 Anthropic 경로에서는 보내지 않는다. 따라서 세
-조건은 모두 provider 기본값으로 돌았고, 이는 세 조건에 **동일하게** 적용되므로 통제
+따라서 세 조건은 모두 provider 기본값으로 돌았고, 이는 세 조건에 **동일하게** 적용되므로 통제
 변수로서는 성립한다. 과제 README가 허용한 "not settable"에 해당한다. OpenAI 호환
 경로로 돌리면 `TEMPERATURE = 0`이 전송된다([acl.py](acl.py) `TEMPERATURE_SENT`).
 
@@ -49,13 +48,53 @@ buyer는 history가 빈 상태로 먼저 말해야 하는데 Anthropic API가 �
 buyer에게만 `OPENING = "Begin the negotiation."` 한 줄을 준다. 세 조건과 두 provider에
 모두 동일하게 들어가므로 통제 변수다.
 
-### 형식 문단 (독립변수 — 여기만 다르다)
+### 형식 문단 (독립변수)
 
 | 조건 | 문단 |
 |---|---|
 | `free` | `" Write your message as one or two plain English sentences."` |
 | `tagged` | `" Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence."` |
 | `structured` | `' Reply with exactly one JSON object and nothing else: {"performative": "propose" \| "accept-proposal" \| "reject-proposal" \| "refuse", "content": {"price": <whole number or null>}}.'` |
+
+### 프로토콜 계층: 조건별 읽기 경로
+
+형식이 바꾸는 것은 이 그림의 위쪽 갈래뿐이다. 아래쪽 루프는 세 조건이 공유한다.
+`reject-proposal` 분기가 이번 실행에서 가격이 유실된 지점이다.
+
+```mermaid
+flowchart TD
+    A["에이전트 메시지 1개"] --> B{"condition"}
+
+    B -->|free| F1["reader LLM 1회<br/>transcript 전체 → performative + price"]
+    B -->|tagged| T1["정규식으로 맨 앞 태그<br/>모델 호출 없음"]
+    B -->|structured| S1["json.loads<br/>performative + content.price"]
+
+    T1 --> T2{"태그가 propose?"}
+    T2 -->|yes| T3["reader LLM 1회<br/>가격만"]
+    T2 -->|no| T4["가격은 읽지 않음"]
+
+    F1 --> R{"performative"}
+    T3 --> R
+    T4 --> R
+    S1 --> R
+
+    R -->|propose| P["last_price 갱신"]
+    R -->|accept-proposal| AC{"상대의 last_price가 있는가?"}
+    R -->|reject-proposal| K["아무것도 기록하지 않음<br/>역제안 가격이 여기서 사라진다"]
+    R -->|refuse| NO["outcome = no_deal"]
+    R -->|읽기 실패| FE["format_errors + 1<br/>메시지는 상대에게 그대로 전달"]
+
+    AC -->|있음| DE["outcome = deal<br/>price = 상대의 last_price"]
+    AC -->|없음| CONT["거래로 잡지 못하고 계속 진행"]
+
+    P --> NEXT["턴 교대"]
+    K --> NEXT
+    FE --> NEXT
+    CONT --> NEXT
+    NEXT --> LIM{"8턴 도달?"}
+    LIM -->|아니오| A
+    LIM -->|예| OP["outcome = open"]
+```
 
 ### reader 프롬프트 (세 조건 공통)
 
@@ -87,27 +126,49 @@ buyer에게만 `OPENING = "Begin the negotiation."` 한 줄을 준다. 세 조�
   "violator": "buyer" | "seller" | "none", "reason": "<one sentence>"}. ..."
 ```
 
-### 실행 방법
+설계의 핵심은 **무엇을 감췄는가**다. reader의 라벨과 계층의 기록을 감사자에게 주면
+감사자는 그것을 따라갈 뿐이고, 오독을 잡을 수 없다.
 
-**1. 의존성.** 저장소 루트의 `pyproject.toml`이 `anthropic`, `openai`, `dotenv`를 잡는다.
+```mermaid
+flowchart LR
+    subgraph GIVE["감사자가 보는 것"]
+        TR["공개 transcript<br/>주고받은 메시지 전부"]
+        SC["reserve · budget<br/>scenarios.json, 실행 전 커밋됨"]
+    end
 
-```bash
-uv sync                      # 또는: pip install anthropic openai python-dotenv
+    subgraph HIDE["감사자가 못 보는 것"]
+        LB["reader가 붙인 라벨"]
+        REC["계층의 outcome · price"]
+        IN["에이전트 내부<br/>system prompt · history"]
+    end
+
+    GIVE --> V["감사 에이전트<br/>LLM 1회 · 자기 Meter<br/>reader_calls에 안 들어감"]
+    HIDE -.->|"입력에서 제외"| V
+
+    V --> OUT["outcome · price · violator · reason"]
+    OUT --> CMP{"계층 기록과 대조"}
+    REC --> CMP
+
+    CMP --> D1["agree · 26건"]
+    CMP --> D2["price 38→42 · 1건<br/>계층의 오독"]
+    CMP --> D3["outcome open→no_deal · 9건<br/>감사자의 과독"]
+    CMP --> D4["unverified · 0건<br/>감사자 자신의 실패"]
 ```
 
-**2. 자격증명.** 저장소 루트에 `.env`를 만든다(`.gitignore`에 포함). provider는 week-02
-`tools_shared.py`와 같은 규칙 — `ANTHROPIC_API_KEY`가 있으면 Anthropic, 없으면 OpenAI 호환.
+### 실행 방법
+
+**1. 의존성.** 패키지 세 개면 된다. 이 실험은 `anthropic 1.4.0`으로 돌렸다.
 
 ```bash
-# 이 실험이 실제로 쓴 설정
+pip install anthropic openai python-dotenv
+```
+
+**2. 자격증명.** 저장소 루트에 `.env`를 만든다(`.gitignore`에 포함). 
+
+```bash
 ANTHROPIC_API_KEY=<key>
 ANTHROPIC_BASE_URL=https://factchat-cloud.mindlogic.ai/v1/gateway/claude
 AGENT_MODEL=claude-sonnet-5
-
-# OpenRouter 무료 모델로 재현하려면 (과제 README의 권장 경로)
-OPENAI_API_KEY=<key>
-OPENAI_BASE_URL=https://openrouter.ai/api/v1
-AGENT_MODEL=nvidia/nemotron-3-super-120b-a12b:free
 ```
 
 **3. API 없이 먼저 검증.** 가짜 모델로 세 읽기 경로, violation 규칙, 감사자 비교를 12개
@@ -241,20 +302,20 @@ JSON만 오가는 transcript에서는 12/12 동의했다.
 | **대화가 끝나는 방식** | interaction protocol이 종료 상태를 규정 (fipa-contract-net 등 11개) | reader가 `accept-proposal`/`refuse`로 라벨하거나 8턴 소진 | 태그가 `accept-proposal`/`refuse`이거나 8턴 소진 | `performative` 필드가 `accept-proposal`/`refuse`이거나 8턴 소진 |
 | **sincerity를 보장하는 것** | 아무것도. 규범으로 요구하고 "범위 밖"으로 둔다 (SC00037J 3.5) | system prompt의 한도 지시 + 사후 감사 에이전트. 강제력은 없다 | 동일 | 동일 |
 | **메시지 하나를 읽는 비용** | 0 (파싱). 단 `:ontology` 사전 합의 비용이 앞단에 있다 | 모델 호출 1회 (84 / 84 메시지) | `propose`일 때만 1회 (51 / 88 메시지) | 0 (12 에피소드 내내 0회) |
-| **실패하는 방식** | FP가 보내는 쪽의 믿음이라 위반을 검출할 수 없다 (semantic verification problem) | reader 오독. 이번 실행 0건, 참조 실행에서는 다수 | 태그 뒤 역제안의 가격이 문장에 남아 유실. `open` 6/6에서 발생, 거래가로 번진 것 1건 | 같은 역제안 손실(`open` 6/6). 더해 JSON 뒤 문장이나 JSON 2개는 본 실행 0건, 스모크에서 1건 관찰 |
+| **실패하는 방식** | FP가 보내는 쪽의 믿음이라 위반을 검출할 수 없다 (semantic verification problem) | reader 오독. 결과·가격 수준에서는 감사자가 0건 확인. 메시지 수준에서는 "reject"라 쓴 문장이 `propose`로 읽힌 줄이 있다(4절). 강의의 참조 실행(haiku)에서는 다수 | 태그 뒤 역제안의 가격이 문장에 남아 유실. `open` 6/6에서 발생, 거래가로 번진 것 1건 | 같은 역제안 손실(`open` 6/6). JSON 뒤 문장이나 JSON 2개는 본 실행 0건 |
 
 한 줄로 줄이면, `structured`가 FIPA-ACL에 가장 가깝다. force를 필수 필드로 표면에 두고,
 content 언어를 선언된 스키마로 고정하고, 해석을 파서에 맡긴다. 다른 점은 ontology를
 `price: int` 하나로 줄여 합의 비용을 없앤 것이고, 그 대가로 그 필드에 안 들어가는 말은
 전부 버려진다.
 
-## 4. 해석 *(초안 — 직접 고쳐 쓸 것)*
+## 4. 해석
 
 이번 실행에서 **performative 태그가 산 것은 정확도가 아니라 읽는 비용뿐이다.** correct는
 세 조건 모두 6/12, violation은 모두 0, format_errors도 모두 0으로 완전히 같았고, 움직인
 것은 reader_calls 84 → 51 → 0과 협상 토큰 66,960 → 33,839뿐이다. 이는 강의가 예고한
-trilemma 축(Marro et al. 2024) 위의 이동이되, 정확도를 내주지 않은 이동이다. 참조
-실행(haiku)에서 free의 correct가 11/18로 가장 높았던 것과 갈리는데, 그 11건 중 8건은
+trilemma 축(Marro et al. 2024) 위의 이동이되, 정확도를 내주지 않은 이동이다. 강의 노트의
+참조 실행(haiku)에서 free의 correct가 11/18로 가장 높았던 것과 갈리는데, 그 11건 중 8건은
 buyer의 첫 질문을 reader가 `refuse`로 읽어 1턴에 끝난 우연이었다. claude-sonnet-5는 free
 조건에서도 첫 메시지부터 값을 부르며 열었고(`free-1` 시나리오 2: "I'd like to open with
 an offer of $20 for the desk lamp") 세 형식을 36 에피소드 내내 한 번도 어기지 않았다.
@@ -265,11 +326,49 @@ an offer of $20 for the desk lamp") 세 형식을 36 에피소드 내내 한 번
 counter-propose가 없다는 사실의 대가를 `tagged`와 `structured`만 치렀다.** 모델은 거절과
 새 제안을 한 메시지에 욱여넣는데, 태그와 JSON만 읽는 계층에는 그것이 거절로만 보인다.
 `open`으로 끝난 18 에피소드를 세어 보면 `tagged` 6/6, `structured` 6/6에서
-`reject-proposal`이 숫자를 동반했고, **`free`는 0/6이다.** free의 reader는 태그가 아니라
-문장을 읽으므로 같은 메시지를 `propose`로 라벨해 가격을 살린다. 즉 performative를 표면에
+`reject-proposal`이 숫자를 동반했고, **`free`는 1/6이다.** free의 reader는 태그가 아니라
+문장을 읽으므로 "I have to reject that. I can offer it to you for $55"(`free-1` 시나리오 2)
+같은 메시지를 `propose`로 라벨해 가격을 살린다. 문장의 동사는 reject인데 라벨은 propose이니
+라벨과 문장이 어긋난 줄이지만, 이 실행에서는 그 어긋남이 가격을 지키는 쪽으로 작용했다.
+free에서 유일하게 `reject-proposal`로 읽힌 `free-2` 시나리오 4의 "$260" 역제안은 다른
+조건과 똑같이 계층에서 버려졌다.
+
+```
+[seller]  I appreciate the offer, but $90 is far too low for this monitor's quality and
+          condition—I'll have to reject that. Could you come up closer to $260, ...
+  [reader] {'performative': 'reject-proposal', 'price': 260}
+```
+
+즉 performative를 표면에
 고정한 대가가 여기서 나온다 — 태그는 읽는 비용을 39~100% 깎는 대신, 태그와 실제 내용이
 어긋난 메시지에서 내용을 통째로 버린다. `tagged-2` 시나리오 2가 그 대가가 숫자로 나타난
 유일한 경우다.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as buyer
+    participant L as 프로토콜 계층
+    participant S as seller
+    participant V as 감사자
+
+    B->>L: "(propose) $38로 올리겠습니다"
+    L->>L: 태그 = propose → last_price[buyer] = 38
+    L->>S: 메시지 그대로 전달
+    S->>L: "(reject-proposal) $38은 가깝지만 $42로 합시다"
+    L->>L: 태그 = reject-proposal<br/>$42는 문장 안에 있어 기록되지 않음
+    L->>B: 메시지 그대로 전달
+    B->>L: "(accept-proposal) $42 좋습니다, 확정하죠"
+    L->>L: 상대의 last_price 없음<br/>거래로 잡지 못하고 계속 진행
+    L->>S: 메시지 그대로 전달
+    S->>L: "(accept-proposal) $42로 확정, 감사합니다"
+    L->>L: deal, price = last_price[buyer] = 38
+    Note over L: 기록: deal @ 38, correct=1<br/>38이 우연히 [30,45] 안이라 정답 처리
+    V->>V: 같은 transcript를 라벨 없이 다시 읽음
+    Note over V: 판정: deal @ 42<br/>두 에이전트가 실제로 합의한 값
+```
+
+로그 원문은 이렇다.
 
 ```
 [seller]  (reject-proposal) $38 is closer, but I'd like to settle at $42 to make this work.
