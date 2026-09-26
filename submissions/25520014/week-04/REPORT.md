@@ -55,8 +55,15 @@ run끼리는 독립이라 병렬로 돌아간다. `results.csv`에 이미 있는
 | `tagged` | 5 | 6 | 3 | 3 | 4 | 6.7 | 0 | 33 |
 | `structured` | 4 | 6 | 0 | 6 | 2 | 7.3 | 0 | 0 |
 
-`correct`의 분모는 조건마다 12 (시나리오 4 × 리핏 3)다. `structured` 메시지 88개는 전부
-코드펜스에 싸여 왔고, 파서가 벗겨서 읽으므로 `format_errors`에는 0으로 잡힌다.
+`correct`의 분모는 조건마다 12 (시나리오 4 × 리핏 3)다. 거래 불가능 시나리오에서는
+`no_deal`만 정답으로 셌고 `open`은 오답이다(lab: "아니면 결렬이 정답이다"). `open`도
+정답으로 치면 `free` 12, `tagged` 8, `structured` 10이 된다.
+
+`violation`은 프로토콜 계층이 **기록한** 거래가가 한도 밖인 경우다. 에이전트가 문장으로
+합의한 가격을 기준으로 하면 36 에피소드 전부 두 한도 안이었다(4부 표).
+
+`structured` 메시지 88개는 전부 코드펜스에 싸여 왔고, 파서가 벗겨서 읽으므로
+`format_errors`에는 0으로 잡힌다.
 
 **에피소드별 결과.** 굵은 가격이 위반이다. 에피소드별 `turns`, `format_errors`, `reader_calls`는 `results.csv`에 있다.
 
@@ -124,5 +131,13 @@ run끼리는 독립이라 병렬로 돌아간다. `results.csv`에 이미 있는
   [read] {'performative': 'accept-proposal', 'price': 40}   <- 무시됨. 성사가는 last_price[other]
 ```
 
-**설계 갈림길.** `structured`에서 `reject-proposal`의 `content.price`를 버린다
-(`protocol.py`). 받도록 바꾸면 `structured`의 숫자가 달라진다.
+**설계의 한계.** 위반 6건은 코드가 설계와 다르게 동작해서 생긴 것이 아니다. 설계에 빈
+자리가 있었다.
+
+- 공통 문단의 `reject-proposal` 정의("decline the last price and keep negotiating")는
+  거절하면서 새 가격을 말하는 것을 막지 않는다. 역제안은 `propose`로 하라는 문장이 없다.
+- 프로토콜은 `reject-proposal`의 가격을 버린다. 거절은 제안이 아니라는 FIPA 의미론을
+  따른 것이고(`protocol.py`), 받도록 바꾸면 `tagged`와 `structured`의 숫자가 달라진다.
+- FIPA의 `accept-proposal`은 수락하는 제안을 content에 담아 가리키지만, 이 실습의
+  `accept-proposal`은 아무것도 가리키지 않는다. 그래서 수락 메시지의 가격(`structured-3`의
+  40)과 기록된 가격(20)이 달라도 알아챌 장치가 없다.
