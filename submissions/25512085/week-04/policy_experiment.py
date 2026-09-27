@@ -101,7 +101,7 @@ def prompt(role: str, item: str, limit: int, condition: str, remaining: int, con
             'and remain inside your exceptional boundary. Do not propose or accept beyond that boundary. '
             'Set discretion yes/true only when proposing or accepting a price outside YOUR normal limit. '
             'A proposal authorizes that price if accepted; one quota is charged only when a deal closes. '
-            + ('Give your own decision reason in English, 1 to 30 characters including spaces and punctuation. '
+            + ('Give your own decision reason in English, one sentence of 1 to 150 characters including spaces and punctuation. '
                if context is not None else
                'Give your own decision reason in Korean, 1 to 30 Unicode characters including spaces and punctuation. ')
             +
@@ -133,8 +133,9 @@ def metadata(raw: str, condition: str, private=False) -> tuple[str, str, bool]:
             raise ValueError('missing/invalid Reason or Discretion lines')
         body, reason, flag = match.groups()
         discretion = flag == 'yes'
-    if not isinstance(reason, str) or not 1 <= len(reason) <= 30:
-        raise ValueError('reason must contain 1..30 Unicode characters')
+    max_reason_chars = 150 if private else 30
+    if not isinstance(reason, str) or not 1 <= len(reason) <= max_reason_chars:
+        raise ValueError(f'reason must contain 1..{max_reason_chars} characters')
     if private and (not reason.isascii() or not re.search('[A-Za-z]', reason)):
         raise ValueError('private reason must contain English text using ASCII characters')
     if not private and not re.search('[가-힣]', reason):
@@ -278,7 +279,7 @@ def main():
             def event(data):
                 print(json.dumps(data, ensure_ascii=False), file=events, flush=True)
             if log_path.stat().st_size == 0:
-                log(f'provider=LM Studio model={settings.model} temperature={settings.temperature} max_turns={MAX_TURNS} condition={condition} run={run} agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat agent_reasoning_effort=none enable_thinking=false policy=20percent quota=2per-role-per-run reason_max_chars=30 scenario_file={scenario_file} contextual={args.context} reason_visibility={"private" if args.context else "public"}')
+                log(f'provider=LM Studio model={settings.model} temperature={settings.temperature} max_turns={MAX_TURNS} condition={condition} run={run} agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat agent_reasoning_effort=none enable_thinking=false policy=20percent quota=2per-role-per-run reason_max_chars={150 if args.context else 30} scenario_file={scenario_file} contextual={args.context} reason_visibility={"private" if args.context else "public"}')
             meter = Meter()
             caller = PolicyCaller(settings, meter)
             for scenario in scenarios:

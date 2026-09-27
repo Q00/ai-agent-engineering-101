@@ -67,7 +67,7 @@ class PrivateReasonTests(unittest.TestCase):
     def test_invalid_metadata_is_not_forwarded(self):
         for condition in ('free','tagged','structured'):
             with self.subTest(condition=condition):
-                bad = output(condition,'propose',80,'Secret'*6)
+                bad = output(condition,'propose',80,'Secret'*26)
                 caller = SpyCaller([bad,output(condition,'refuse',None,'Walk away')])
                 # Reader labels refusal; only free requires this reader call.
                 def reader(system,user):
@@ -104,10 +104,10 @@ class PrivateReasonTests(unittest.TestCase):
 
     def test_private_reason_language_and_length(self):
         for condition in ('free','tagged','structured'):
-            for invalid in ('한국어 사유', '12345', 'a'*31):
+            for invalid in ('한국어 사유', '12345', 'a'*151):
                 with self.assertRaises(ValueError):
                     metadata(output(condition,'propose',80,invalid),condition,private=True)
-            self.assertEqual(metadata(output(condition,'propose',80,'a'*30),condition,private=True)[1], 'a'*30)
+            self.assertEqual(metadata(output(condition,'propose',80,'a'*150),condition,private=True)[1], 'a'*150)
 
 
 if __name__=='__main__':
