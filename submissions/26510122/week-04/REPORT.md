@@ -100,3 +100,19 @@ free와 tagged는 `bicycle-wide`만 세 번 모두 거래했고 `desk-narrow`는
 ## 4. 해석
 
 명시적 형식은 이 실행에서 판독 비용과 일부 협상 결과를 바꿨다. reader_calls는 free 61회에서 tagged 45회로 16회(26.2%) 줄고 structured에서 0회가 되었으며, structured의 평균 turns도 5.08에서 4.25로 줄었다. `logs/luna-free-r01.jsonl` 26~27행에서 Buyer의 `reject-proposal, I can offer $70`을 reader는 `propose 70`으로 읽어 한 문장에 섞인 거절과 역제안 가운데 하나를 선택했다. `logs/luna-tagged-r01.jsonl` 26~27행에서는 같은 종류의 문장이 태그에 따라 `reject-proposal`로 고정됐지만 문장 안의 역제안 70은 protocol state에 반영되지 않아, 태그가 모호성을 없애는 대신 태그 밖 의미를 버리는 비용을 보였다. 반면 structured의 같은 시나리오는 24~28행에서 Seller가 100을 `propose`하고 Buyer가 별도 `accept-proposal`을 보내 3턴에 끝났고, 이 차이가 correct를 3/12에서 6/12로 높였다. 다만 표본은 조건별 12개뿐이고 형식이 모델의 발화 전략 자체도 바꿨으므로 structured의 일반적 우월성으로 확대하지 않는다. 세 조건 모두 violation은 0이었지만 거래 불가능한 두 시나리오를 매번 `open`으로 끝냈으므로, 명시적 performative와 JSON도 system prompt의 종료 정책이나 sincerity를 강제하지는 못했다.
+
+## 5. 선택 실험: 쇼펜하우어식 논쟁 전략
+
+필수 실험 결과를 바꾸지 않고 별도 처치로 Seller에게만 논쟁적 수사를 추가했다. 여기서 말하는 전략은 [Project Gutenberg의 *The Art of Controversy*](https://www.gutenberg.org/cache/epub/10731/pg10731.html)에 열거된 논쟁 술책 전체를 재현한 것이 아니다. 그중 1번 논점 확대, 12번 유리한 명명, 14번 성급한 결론, 18번 논점 전환, 35번 이해관계에 호소를 가격 협상에서 관찰할 수 있는 짧은 지시로 바꿨다. 한 메시지에 하나만 쓰고, 사실을 꾸미거나 상대를 모욕하거나 비공개 reserve를 밝히거나 가격 한도를 위반하지 못하게 제한했다. Buyer prompt는 그대로 두었으며 Seller prompt의 마지막 형식 문단도 필수 실험과 완전히 같게 유지했다. structured처럼 스키마가 자연어 수사를 담지 못하면 수사보다 형식을 우선하도록 했다.
+
+동일한 Luna 모델과 네 시나리오로 각 형식을 한 번씩 실행한 탐색 결과는 다음과 같다. 비교를 위해 필수 실험의 `r01` 한 회도 함께 표시했다.
+
+| condition | baseline r01 correct | eristic r01 correct | eristic violation | eristic mean turns | eristic format_errors | eristic reader_calls |
+|---|---:|---:|---:|---:|---:|---:|
+| free | 1/4 | 1/4 | 0 | 5.00 | 0 | 20 |
+| tagged | 1/4 | 1/4 | 0 | 5.00 | 0 | 13 |
+| structured | 2/4 | 1/4 | 0 | 5.00 | 0 | 0 |
+
+전략은 발화 표면에는 적용됐지만 이번 한 번의 실행에서 성과를 높이지 않았다. `eristic_logs/eristic-free-r01.jsonl` 38~46행에서 Seller는 자기 가격을 `fair`, 상대 가격을 `weak`이라고 반복했으나 두 Agent의 가격 차이는 좁혀지지 않고 `open`으로 끝났다. tagged의 24~32행에서도 `undervalues`, `fair`, `too weak`라는 유리한 명명이 나타났다. 그러나 Buyer가 `(reject-proposal) I can offer 70`처럼 거절 태그와 역제안을 한 문장에 함께 넣었고, parser는 태그에 따라 가격을 버렸다. 수사가 대화 의미를 풍부하게 해도 protocol state는 한 performative만 처리하므로 협상을 진전시키지 못했다.
+
+structured에서는 지시대로 수사 표현이 모두 사라졌지만 `desk-narrow`가 6턴 `open`으로 끝나 baseline r01의 correct 거래를 재현하지 못했다. 이는 출력에 수사가 보이지 않아도 추가된 Seller prompt가 가격 선택 경로에 영향을 주었을 가능성과 모델 호출의 비결정성을 함께 보여준다. 반복이 한 번뿐이고 baseline과 짝지어진 결정론적 실행이 아니므로, 수사가 structured 성능을 낮췄다는 인과 결론은 내릴 수 없다. 이 선택 실험에서 확인할 수 있는 범위는 수사 전략이 자연어 발화에는 나타났고, 현재의 단일 행위 protocol과 제한된 턴 안에서는 거래 성공 증가로 이어지지 않았다는 데까지다.
