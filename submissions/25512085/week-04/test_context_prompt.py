@@ -47,16 +47,21 @@ class ContextTests(unittest.TestCase):
             self.assertNotIn('normal maximum budget is 113', seller)
             for text in (buyer, seller):
                 self.assertIn('strictly private', text)
-                self.assertIn('in the English text or Korean Reason', text)
+                self.assertIn('in your public English message', text)
                 self.assertIn('never identify it as that boundary', text)
                 self.assertNotIn('unless needed', text)
 
     def test_contextual_episode_uses_private_prompts_and_existing_policy(self):
-        caller = FakeCaller([message('propose',80), message('accept-proposal',None)])
+        outputs = []
+        for act, price in [('propose',80), ('accept-proposal',None)]:
+            payload = json.loads(message(act,price))
+            payload['content']['message'] = 'I offer 80.' if act == 'propose' else 'I accept your offer.'
+            outputs.append(json.dumps(payload, ensure_ascii=False))
+        caller = FakeCaller(outputs)
         result, note = episode(self.scenario, 'structured', caller, {'buyer':2,'seller':2},
                                lambda text:None, lambda data:None, contextual=True)
         self.assertEqual((result.outcome,result.price,result.correct),('deal',80,1))
-        self.assertEqual(note['experiment'],'context20-v1')
+        self.assertEqual(note['experiment'],'context20-private-v2')
         self.assertEqual(note['quota_remaining'],{'buyer':2,'seller':2})
         self.assertIn(self.scenario['buyer_context'][0],caller.requests[0][0])
         self.assertNotIn(self.scenario['seller_context'][0],caller.requests[0][0])

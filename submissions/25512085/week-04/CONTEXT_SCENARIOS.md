@@ -12,13 +12,14 @@ policy_experiment.py --context가 이 파일과 context_prompt.py의 공통 협�
 - buyer_context: buyer system prompt에만 제공한다.
 - seller_context: seller system prompt에만 제공한다.
 - reserve/budget: 기존 값 유지. 각자 해당 한도만 본인의 system prompt로 받는다.
-- 새 context 실험에서는 정상/예외 한도, 20% 규칙, 권한 잔량을 영어 본문과
-  한국어 Reason에서 공개하지 않도록 명시한다. 제안/수락 가격을 말하는 것은
+- 새 context 실험에서는 정상/예외 한도, 20% 규칙, 권한 잔량을 공개 영어 본문에서
+  공개하지 않도록 명시한다. 비공개 Reason에는 자기 한도/양보 의사를 설명할 수 있다.
+  제안/수락 가격을 말하는 것은
   허용하지만 그 숫자를 자신의 최저가/최대 예산이라고 설명하지 않는다.
   기존 정책 실험의 disclosure 문구는 재현을 위해 context 옵션이 없으면 유지한다.
   이는 모델 지침이며 모든 의미상의 유출을 차단하는 출력 필터는 아니다.
-  Discretion 표시는 여전히 상대에게 공개되므로 제안과 함께 한도에 관한
-  간접 추론은 가능하다. 비공개 한도를 전혀 추론할 수 없다고 주장하지 않는다.
+  Reason과 Discretion 표시는 상대와 reader에서 제거한다. 공개 발언 자체가
+  한도를 암시할 가능성은 남으므로 상대가 한도를 전혀 추론할 수 없다고 주장하지 않는다.
 - private context는 입력 단계에서 상대에게 전달하지 않는다. 협상 중 본인이
   사정을 말하면 그 발언은 상대에게 전달되는 일반적인 공개 메시지가 된다.
 - 각 사정은 가격의 논거일 뿐, 양보나 재량권 사용을 반드시 요구하지 않는다.
@@ -40,20 +41,25 @@ policy_experiment.py --context가 이 파일과 context_prompt.py의 공통 협�
 있지만 거래/양보/재량권 사용을 강제하지 않는다. 부르는 가격은 근거와 함께
 바꿀 수 있으나 고정된 한도와 20% 재량 범위는 바뀌지 않는다.
 세 형식에 동일한 시나리오/역할별 사정을 적용한다. 기존 20% 재량 정책 등
-다른 조건은 유지한다. free/tagged의 영어 문장에는 협상 논거를 담고,
-structured는 기존 content.reason에 짧은 논거를 담는다. message 필드는 추가하지
-않았으며 한국어 Reason 30자 제한도 유지한다. 따라서 structured의 논거 표현량은
-자연어 두 조건보다 제한적이다. 이는 이번 설계의 해석상 한계다.
+다른 조건은 유지한다. free/tagged의 영어 문장에는 공개 협상 논거를 담고,
+structured는 새 content.message에 공개 영어 문장을 담는다. content.reason과
+discretion은 상대에게 공개하지 않는다. 한국어 Reason 30자 제한은 유지한다.
+Reason은 모델이 생성한 비공개 판단 설명이지 실제 내부 추론을 검증한 자료가 아니다.
+본인에게만 이전 원문을 assistant history로 돌려주고 상대에게는 공개 투영만
+user history로 전달한다. reader도 공개 transcript/본문만 받는다.
+정상 필드 검증에 실패하면 원문 대신 invalid public message 안내를 상대에게 전달해
+비공개 필드가 그대로 유출되지 않게 한다. 대화의 전략적 속내와 공개 논거는
+다를 수 있지만 사실 조작이나 공개 한도에 대한 거짓말을 요구하지 않는다.
 
 ## 검증 및 실행 준비
 
 ```powershell
-python -m unittest test_protocol.py test_policy_experiment.py test_context_prompt.py
+python -m unittest test_protocol.py test_policy_experiment.py test_context_prompt.py test_private_reason.py
 python policy_experiment.py --context --dry-run
 # 실행을 요청한 다음, 기존과 같은 모델/temperature 환경에서:
 python -u policy_experiment.py --context
 ```
 
-새 실행 ID는 context20-v1-free-01부터 context20-v1-structured-03까지다.
+새 실행 ID는 context20-private-v2-free-01부터 context20-private-v2-structured-03까지다.
 기존 results.csv는 삭제/수정하지 않고 새 행을 추가하며, 새 로그 파일을 만든다.
 현재 제공된 전체 4개 시나리오를 각 형식으로 3회 실행하도록 계획된다.

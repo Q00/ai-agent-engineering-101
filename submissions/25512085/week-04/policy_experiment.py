@@ -71,17 +71,24 @@ def prompt(role: str, item: str, limit: int, condition: str, remaining: int, con
         'tagged': 'Start with exactly one tag (propose), (accept-proposal), (reject-proposal), or (refuse), then one English sentence. Then on separate lines write Reason: <Korean reason> and Discretion: yes or no.',
         'structured': 'Reply only with JSON: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <integer or null>, "reason": "<Korean reason>", "discretion": <true or false>}}.',
     }
+    if context is not None:
+        formats['structured'] = (
+            'Reply only with JSON: {"performative": "propose" | "accept-proposal" | '
+            '"reject-proposal" | "refuse", "content": {"price": <integer or null>, '
+            '"message": "<public English utterance>", "reason": "<private Korean reason>", '
+            '"discretion": <true or false>}}. The public message must match the act and price fields.'
+        )
     return (f'You are the {role} of {item}. {objective}{limit}. '
             f'Your private exceptional boundary is {bounds(role, limit)}. '
             f'You have {remaining} discretionary trades left in this run of four scenarios. '
             + ('Keep your normal limit, exceptional boundary and remaining quota strictly private. '
                'Never state, quote, label or explain those values as your minimum, maximum, budget, '
-               'reserve, limit or exception boundary in the English text or Korean Reason. '
-               'Do not reveal the 20-percent rule or quota counts. You may state an offered or '
+               'reserve, limit or exception boundary in your public English message. '
+               'Do not reveal the 20-percent rule or quota counts in public. You may state an offered or '
                'accepted price, including one equal to a private boundary, but never identify '
                'it as that boundary. Justify prices using item facts, convenience and your '
                'circumstances, not private-limit calculations. Keep the required Discretion '
-               'metadata, but do not explain its numeric threshold. '
+               'metadata privately, but do not publicly explain its numeric threshold. '
                if context is not None else
                'Never disclose this private quota or private limits unless needed in your own negotiation message. ')
             +
@@ -94,18 +101,27 @@ def prompt(role: str, item: str, limit: int, condition: str, remaining: int, con
             'A proposal authorizes that price if accepted; one quota is charged only when a deal closes. '
             'Give your own decision reason in Korean, 1 to 30 Unicode characters including spaces and punctuation. '
             'When using discretion, explain why that exceptional price is reasonable for YOUR role. '
-            'Reasons are visible to the other party. Do not impersonate the other role. '
+            + ('Reason and discretion are private metadata; only your public utterance is sent '
+               'to the other party. Do not impersonate the other role. '
+               if context is not None else
+               'Reasons are visible to the other party. Do not impersonate the other role. ')
             + (context_paragraph(role, context) if context is not None else '')
             + formats[condition])
 
 
-def metadata(raw: str, condition: str) -> tuple[str, str, bool]:
+def metadata(raw: str, condition: str, private=False) -> tuple[str, str, bool]:
     if condition == 'structured':
         payload = json.loads(raw)
         content = payload['content']
         reason, discretion = content['reason'], content['discretion']
+        public_content = {'price': content['price']}
+        if private:
+            utterance = content['message']
+            if not isinstance(utterance, str) or not utterance.strip():
+                raise ValueError('structured public message must be a nonempty string')
+            public_content['message'] = utterance
         body = json.dumps({'performative': payload['performative'],
-                           'content': {'price': content['price']}}, ensure_ascii=False)
+                           'content': public_content}, ensure_ascii=False)
     else:
         match = re.fullmatch(r'(.*?)\nReason: ([^\n]+)\nDiscretion: (yes|no)', raw, re.S)
         if match is None:
@@ -121,6 +137,15 @@ def metadata(raw: str, condition: str) -> tuple[str, str, bool]:
     return body, reason, discretion
 
 
+def private_history_for(role, transcript, own_outputs):
+    """Own raw assistant outputs, opposing public user utterances only."""
+    if not transcript:
+        return history_for(role, transcript)
+    return [{'role': 'assistant' if speaker == role else 'user',
+             'content': own_outputs[index] if speaker == role else public}
+            for index, (speaker, public) in enumerate(transcript)]
+
+
 def episode(scenario, condition, caller, quota, log, event, contextual=False):
     limits = {'buyer': scenario['budget'], 'seller': scenario['reserve']}
     result = EpisodeResult(str(scenario['id']), int(limits['seller'] <= limits['buyer']))
@@ -131,11 +156,13 @@ def episode(scenario, condition, caller, quota, log, event, contextual=False):
     agent_call = retrying_caller(caller.chat, log)
     policy_rejections = 0
     uses = []
+    own_outputs = {}
     for turn in range(MAX_TURNS):
         role, other = ('buyer', 'seller') if turn % 2 == 0 else ('seller', 'buyer')
         system = prompt(role, scenario['item'], limits[role], condition, quota[role],
                         context=scenario if contextual else None)
-        messages = history_for(role, result.transcript)
+        messages = (private_history_for(role, result.transcript, own_outputs)
+                    if contextual else history_for(role, result.transcript))
         # Evidence includes only this caller's system prompt and exact API role mapping.
         event({'type': 'request', 'scenario': result.scenario_id, 'turn': turn+1,
                'role': role, 'system': system, 'messages': messages})
@@ -145,17 +172,22 @@ def episode(scenario, condition, caller, quota, log, event, contextual=False):
         result.turns += 1
         log(f'[{role}] {raw}')
         try:
-            body, reason, discretion = metadata(raw, condition)
+            body, reason, discretion = metadata(raw, condition, private=contextual)
             act, price, ok = read(condition, body, result.transcript, read_call, reader)
         except (ValueError, KeyError, TypeError) as exc:
             log(f'[metadata-error] {exc}')
             act, price, ok = None, None, False
             reason, discretion = '', False
-        result.transcript.append((role, raw))
+            # Fail closed: never forward malformed raw output containing private metadata.
+            body = '[The other party sent an invalid public message.]'
+        own_outputs[len(result.transcript)] = raw
+        result.transcript.append((role, body if contextual else raw))
         log(f'[protocol] performative={act} price={price} parsed={ok} reason={reason!r} discretion={discretion} reader_calls={reader.calls}')
         event({'type': 'message', 'scenario': result.scenario_id, 'turn': turn+1,
                'role': role, 'raw': raw, 'performative': act, 'price': price,
-               'parsed': ok, 'reason': reason, 'discretion': discretion})
+               'parsed': ok, 'reason': reason, 'discretion': discretion,
+               'public_message': body if contextual else raw,
+               'reason_visibility': 'private' if contextual else 'public'})
         if not ok:
             result.format_errors += 1
             continue
@@ -192,7 +224,7 @@ def episode(scenario, condition, caller, quota, log, event, contextual=False):
     effective_budget = bounds('buyer', limits['buyer']) if quota_before['buyer'] else limits['buyer']
     possible_policy = int(effective_reserve <= effective_budget)
     # Actual authorized deal is policy-valid even if the original correct remains zero.
-    note = {'experiment': 'context20-v1' if contextual else 'policy20-history-v1',
+    note = {'experiment': 'context20-private-v2' if contextual else 'policy20-history-v1',
             'quota_before': quota_before, 'quota_remaining': dict(quota),
             'discretion_uses': uses, 'policy_rejections': policy_rejections,
             'policy_valid_deal': int(result.outcome == 'deal'),
@@ -208,7 +240,7 @@ def main():
     parser.add_argument('--context', action='store_true', help='use grounded item facts, private circumstances and bargaining guidance')
     args = parser.parse_args()
     if args.run_prefix is None:
-        args.run_prefix = 'context20-v1-' if args.context else 'policy20-v2-'
+        args.run_prefix = 'context20-private-v2-' if args.context else 'policy20-v2-'
     if args.context and not args.run_prefix.startswith('context20-'):
         raise SystemExit('context runs must use a context20- prefix to preserve earlier experiments')
     if not re.fullmatch(r'[A-Za-z0-9_-]+', args.run_prefix):
@@ -239,7 +271,7 @@ def main():
             def event(data):
                 print(json.dumps(data, ensure_ascii=False), file=events, flush=True)
             if log_path.stat().st_size == 0:
-                log(f'provider=LM Studio model={settings.model} temperature={settings.temperature} max_turns={MAX_TURNS} condition={condition} run={run} agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat agent_reasoning_effort=none enable_thinking=false policy=20percent quota=2per-role-per-run reason_max_chars=30 scenario_file={scenario_file} contextual={args.context}')
+                log(f'provider=LM Studio model={settings.model} temperature={settings.temperature} max_turns={MAX_TURNS} condition={condition} run={run} agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat agent_reasoning_effort=none enable_thinking=false policy=20percent quota=2per-role-per-run reason_max_chars=30 scenario_file={scenario_file} contextual={args.context} reason_visibility={"private" if args.context else "public"}')
             meter = Meter()
             caller = PolicyCaller(settings, meter)
             for scenario in scenarios:

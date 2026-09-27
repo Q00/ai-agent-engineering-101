@@ -22,10 +22,16 @@ NEGOTIATION_GUIDANCE = (
     'If you accept the other party\'s last proposal, choose accept-proposal; '
     'if you suggest a different price, choose propose, even if you say you agree. '
     'If you judge further bargaining pointless, consider refuse rather than endless repetition. '
-    'Your short Korean Reason must summarize the concrete bargaining reason, not merely '
-    'repeat that a price is above or below a limit. '
-    'For free and tagged, include the bargaining argument in the English sentence too. '
-    'For structured, express the concrete argument in content.reason; do not add a message field. '
+    'Your short Korean Reason is a PRIVATE generated decision explanation, not a public utterance. '
+    'It is saved for the researcher and remembered only in your own assistant history; '
+    'the other party and the message reader never receive it. '
+    'You may privately describe willingness to concede or your limits in Reason. '
+    'Your public message may emphasize a different truthful bargaining argument and '
+    'withhold your private willingness to concede; it need not repeat Reason. '
+    'Do not fabricate facts or falsely label your asking price as your actual private limit. '
+    'For free and tagged, your English sentence is the public utterance. '
+    'For structured, content.message is the public English utterance. '
+    'Reason and discretion metadata are withheld from the other party. '
 )
 
 
