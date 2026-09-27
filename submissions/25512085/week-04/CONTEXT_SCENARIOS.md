@@ -4,7 +4,8 @@ scenarios_context.json은 실험용으로 만든 가상의 설정이다. 실제 
 시장 가격을 검증한 자료가 아니다. 기존 scenarios.json과 결과/로그는 변경하지 않는다.
 policy_experiment.py --context가 이 파일과 context_prompt.py의 공통 협상 지침을
 사용한다. 옵션을 생략하면 기존 정책 실험의 프롬프트/시나리오를 사용한다.
-현재는 준비와 오프라인 검증만 완료했으며 모델 호출 및 추가 실험은 실행하지 않았다.
+2026-09-28 context20-private-v2 실험 36개 에피소드를 완료했다.
+설정·결과·한계와 전체 에피소드 표는 REPORT.md에 정리했다.
 
 ## 정보 구분
 
