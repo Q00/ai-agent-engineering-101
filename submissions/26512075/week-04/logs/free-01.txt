@@ -1,0 +1,37 @@
+provider=openai model=gpt-6-luna temperature=unset turn_limit=8
+
+=== scenario 1 (a used bicycle) reserve=120 budget=150 ===
+[buyer] I can offer 100 for the used bicycle.
+  [reader] {"performative":"propose","price":100}
+[seller] I can’t accept 100, but I’d be willing to sell the bicycle for 150.
+  [reader] {"performative":"propose","price":150}
+[buyer] I accept your offer of 150.
+  [reader] {"performative":"accept-proposal","price":150}
+[result] outcome=deal price=150 correct=1 violation=0 turns=3 format_errors=0 reader_calls=3
+
+=== scenario 2 (a desk lamp) reserve=30 budget=50 ===
+[buyer] I can offer 35 for the desk lamp.
+  [reader] {"performative":"propose","price":35}
+[seller] I propose 45 for the desk lamp.
+  [reader] {"performative":"propose","price":45}
+[buyer] I can offer 40 for the desk lamp.
+  [reader] {"performative":"propose","price":40}
+[seller] I accept your offer of 40 for the desk lamp.
+  [reader] {"performative":"accept-proposal","price":40}
+[result] outcome=deal price=40 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+
+=== scenario 3 (a second-hand textbook) reserve=40 budget=40 ===
+[buyer] Would you sell the textbook for 25?
+  [reader] {"performative":"propose","price":25}
+[seller] I can’t sell it for 25, but I can offer it for 50.
+  [reader] {"performative":"propose","price":50}
+[buyer] Would you consider 35 for the textbook?
+  [reader] {"performative":"propose","price":35}
+[seller] I can’t go as low as 35, but I can sell it for 45.
+  [reader] {"performative":"propose","price":45}
+[buyer] I can offer 40 for the textbook.
+  [reader] {"performative":"propose","price":40}
+[seller] I accept your offer of 40.
+  [reader] {"performative":"accept-proposal","price":40}
+[result] outcome=deal price=40 correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
+
