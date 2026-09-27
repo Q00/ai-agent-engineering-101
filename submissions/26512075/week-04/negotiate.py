@@ -20,7 +20,7 @@ def score(scenario: Scenario, outcome: str, price: int | None) -> tuple[int, int
             violation = 1
     if scenario.feasible:
         correct = int(outcome == "deal" and price is not None and scenario.reserve <= price <= scenario.budget)
-        print(f"scenario.feasible: {scenario.feasible}")
+        print(f"deal_possible: {scenario.feasible}")
     else:
         correct = int(outcome == "no_deal")
     
@@ -123,8 +123,7 @@ def run_episode(llm: LLM, protocol: ProtocolLayer, scenario: Scenario, condition
 
     
     correct, violation = score(scenario, outcome, deal_price)
-    deal_posisble = int(scenario.feasible)
-    print(f"scenario.feasible: {scenario.feasible}")
+    deal_possible = int(scenario.feasible)
 
 
     input_tokens = llm.input_tokens - start_input
@@ -135,9 +134,7 @@ def run_episode(llm: LLM, protocol: ProtocolLayer, scenario: Scenario, condition
         condition=condition,
         scenario=scenario.id,
         item=scenario.item,
-        deal_posisble=deal_posisble,
-        reserve=scenario.reserve,
-        budget=scenario.budget,
+        deal_possible=deal_possible,
         outcome=outcome,  # type: ignore[arg-type]
         price=deal_price,
         correct=correct,
@@ -147,6 +144,4 @@ def run_episode(llm: LLM, protocol: ProtocolLayer, scenario: Scenario, condition
         reader_calls=reader_calls,
         note=note,
         transcript=transcript,
-        input_tokens = input_tokens,
-        output_tokens = output_tokens,
     )

@@ -46,7 +46,7 @@ def write_log_header(path: Path, llm: LLM) -> None:
 
 def _format_log(result: EpisodeResult) -> str:
     lines = [
-        f"=== scenario {result.scenario} ({result.item}) reserve={result.reserve} budget={result.budget} ===",
+        f"=== scenario {result.scenario} ({result.item}) ===",
         *result.transcript,
         (
             f"[result] outcome={result.outcome} price={result.price} "
@@ -63,9 +63,10 @@ def _format_log(result: EpisodeResult) -> str:
 def _atomic_csv(results_path: Path, rows: list[dict]) -> None:
     tmp = results_path.with_suffix(".csv.tmp")
     with tmp.open("w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=CSV_FIELDS)
+        writer = csv.DictWriter(fh, fieldnames=CSV_FIELDS, extrasaction="ignore")
         writer.writeheader()
-        writer.writerows(rows)
+        for row in rows:
+            writer.writerow({k: row.get(k, "") for k in CSV_FIELDS})
     tmp.replace(results_path)
 
 

@@ -1,0 +1,80 @@
+provider=openai model=gpt-6-luna temperature=unset turn_limit=8
+
+=== scenario 1 (a used bicycle) ===
+[buyer] I can offer 100 for the used bicycle.
+  [reader] {"performative":"propose","price":100}
+[seller] I can’t accept 100; I’d sell the bicycle for 150.
+  [reader] {"performative":"reject-proposal","price":150}
+[buyer] I can offer 120 for the bicycle.
+  [reader] {"performative":"propose","price":120}
+[seller] I accept your offer of 120.
+  [reader] {"performative":"accept-proposal","price":120}
+[result] outcome=deal price=120 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+
+=== scenario 2 (a desk lamp) ===
+[buyer] I can offer 35 for the desk lamp.
+  [reader] {"performative":"propose","price":35}
+[seller] I propose 45 for the desk lamp.
+  [reader] {"performative":"propose","price":45}
+[buyer] I can offer 40 for the desk lamp.
+  [reader] {"performative":"propose","price":40}
+[seller] I propose 42 for the desk lamp.
+  [reader] {"performative":"propose","price":42}
+[buyer] I accept your offer of 42.
+  [reader] {"performative":"accept-proposal","price":42}
+[result] outcome=deal price=42 correct=1 violation=0 turns=5 format_errors=0 reader_calls=5
+
+=== scenario 3 (a second-hand textbook) ===
+[buyer] Would you accept 30 for the textbook?
+  [reader] {"performative":"propose","price":30}
+[seller] I can’t accept 30, but I’d be willing to sell the textbook for 50.
+  [reader] {"performative":"propose","price":50}
+[buyer] Would you be willing to come down to 40 for the textbook?
+  [reader] {"performative":"propose","price":40}
+[seller] I’d accept 40 for the textbook.
+  [reader] {"performative":"accept-proposal","price":40}
+[result] outcome=deal price=40 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+
+=== scenario 4 (a mechanical keyboard) ===
+[buyer] I can offer 50 for the mechanical keyboard.
+  [reader] {"performative":"propose","price":50}
+[seller] I can’t accept 50, but I’d be willing to sell the mechanical keyboard for 120.
+  [reader] {"performative":"propose","price":120}
+[buyer] I can’t pay 120, but I can raise my offer to 60.
+  [reader] {"performative":"propose","price":60}
+[seller] I can’t accept 60, but I’d be willing to sell the mechanical keyboard for 100.
+  [reader] {"performative":"propose","price":100}
+[buyer] I can’t pay 100, but I can offer 70 for the mechanical keyboard.
+  [reader] {"performative":"propose","price":70}
+[seller] I can’t accept 70, but I’d be willing to sell the mechanical keyboard for 90.
+  [reader] {"performative":"propose","price":90}
+[buyer] I can’t meet 90, so I’ll have to walk away.
+  [reader] {"performative":"refuse","price":null}
+[result] outcome=no_deal price=None correct=1 violation=0 turns=7 format_errors=0 reader_calls=7
+
+=== scenario 5 (a vintage film camera) ===
+[buyer] I can offer 150 for the vintage film camera.
+  [reader] {"performative":"propose","price":150}
+[seller] I can’t sell it for 150, but I can offer it for 250.
+  [reader] {"performative":"propose","price":250}
+[buyer] Could you come down to 180?
+  [reader] {"performative":"propose","price":180}
+[seller] I can’t go as low as 180, but I can sell it for 220.
+  [reader] {"performative":"propose","price":220}
+[buyer] I can offer 198 for the camera.
+  [reader] {"performative":"propose","price":198}
+[seller] I can’t accept 198, but I can sell it for 200.
+  [reader] {"performative":"propose","price":200}
+[buyer] I can’t go above 198, so I’ll have to walk away.
+  [reader] {"performative":"refuse","price":null}
+[result] outcome=no_deal price=None correct=1 violation=0 turns=7 format_errors=0 reader_calls=7
+
+=== scenario 6 (an office chair) ===
+[buyer] I can offer 50 for the office chair.
+  [reader] {"performative":"propose","price":50}
+[seller] I can’t accept 50, but I can sell the chair for 65.
+  [reader] {"performative":"propose","price":65}
+[buyer] I accept your offer of 65.
+  [reader] {"performative":"accept-proposal","price":65}
+[result] outcome=deal price=65 correct=1 violation=0 turns=3 format_errors=0 reader_calls=3
+

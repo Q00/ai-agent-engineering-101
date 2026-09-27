@@ -58,9 +58,7 @@ class EpisodeResult:
     condition: str
     scenario: int
     item: str
-    deal_posisble: int
-    reserve: int
-    budget: int
+    deal_possible: int
     outcome: Outcome
     price: Optional[int]
     correct: int
@@ -68,8 +66,6 @@ class EpisodeResult:
     turns: int
     format_errors: int
     reader_calls: int
-    input_tokens: int
-    output_tokens: int
     note: str = ""
     transcript: list[str] = field(default_factory=list)
 
@@ -78,10 +74,7 @@ class EpisodeResult:
             "run": self.run,
             "condition": self.condition,
             "scenario": self.scenario,
-            "item": self.item,
-            "deal_posisble": self.deal_posisble,
-            "reserve": self.reserve,
-            "budget": self.budget,
+            "deal_possible": self.deal_possible,
             "outcome": self.outcome,
             "price": "" if self.price is None else self.price,
             "correct": self.correct,
@@ -90,8 +83,6 @@ class EpisodeResult:
             "format_errors": self.format_errors,
             "reader_calls": self.reader_calls,
             "note": self.note,
-            "input_tokens": self.input_tokens,
-            "output_tokens": self.output_tokens,
         }
 
 
@@ -99,10 +90,7 @@ CSV_FIELDS = [
     "run",
     "condition",
     "scenario",
-    "item",
-    "deal_posisble",
-    "reserve",
-    "budget",
+    "deal_possible",
     "outcome",
     "price",
     "correct",
@@ -111,7 +99,5 @@ CSV_FIELDS = [
     "format_errors",
     "reader_calls",
     "note",
-    "input_tokens",
-    "output_tokens",
 ]
 
