@@ -43,7 +43,10 @@ policy_experiment.py --context가 이 파일과 context_prompt.py의 공통 협�
 세 형식에 동일한 시나리오/역할별 사정을 적용한다. 기존 20% 재량 정책 등
 다른 조건은 유지한다. free/tagged의 영어 문장에는 공개 협상 논거를 담고,
 structured는 새 content.message에 공개 영어 문장을 담는다. content.reason과
-discretion은 상대에게 공개하지 않는다. 한국어 Reason 30자 제한은 유지한다.
+discretion은 상대에게 공개하지 않는다. 비공개 Reason은 영어 1~30자로 출력한다
+(공백/문장부호 포함). 구현 검증은 ASCII 문자와 영문자 포함 여부를 확인하며
+문장의 의미가 실제 영어인지까지 판정하지 않는다. 기존 정책 실험의 한국어
+Reason 설정은 context 옵션이 없을 때 그대로 유지한다.
 Reason은 모델이 생성한 비공개 판단 설명이지 실제 내부 추론을 검증한 자료가 아니다.
 본인에게만 이전 원문을 assistant history로 돌려주고 상대에게는 공개 투영만
 user history로 전달한다. reader도 공개 transcript/본문만 받는다.

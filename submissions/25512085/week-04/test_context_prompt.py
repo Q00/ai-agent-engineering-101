@@ -55,6 +55,7 @@ class ContextTests(unittest.TestCase):
         outputs = []
         for act, price in [('propose',80), ('accept-proposal',None)]:
             payload = json.loads(message(act,price))
+            payload['content']['reason'] = 'Fair price for pickup'
             payload['content']['message'] = 'I offer 80.' if act == 'propose' else 'I accept your offer.'
             outputs.append(json.dumps(payload, ensure_ascii=False))
         caller = FakeCaller(outputs)

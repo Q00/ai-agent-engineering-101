@@ -72,10 +72,12 @@ def prompt(role: str, item: str, limit: int, condition: str, remaining: int, con
         'structured': 'Reply only with JSON: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <integer or null>, "reason": "<Korean reason>", "discretion": <true or false>}}.',
     }
     if context is not None:
+        formats['free'] = formats['free'].replace('<Korean reason>', '<private English reason>')
+        formats['tagged'] = formats['tagged'].replace('<Korean reason>', '<private English reason>')
         formats['structured'] = (
             'Reply only with JSON: {"performative": "propose" | "accept-proposal" | '
             '"reject-proposal" | "refuse", "content": {"price": <integer or null>, '
-            '"message": "<public English utterance>", "reason": "<private Korean reason>", '
+            '"message": "<public English utterance>", "reason": "<private English reason>", '
             '"discretion": <true or false>}}. The public message must match the act and price fields.'
         )
     return (f'You are the {role} of {item}. {objective}{limit}. '
@@ -99,7 +101,10 @@ def prompt(role: str, item: str, limit: int, condition: str, remaining: int, con
             'and remain inside your exceptional boundary. Do not propose or accept beyond that boundary. '
             'Set discretion yes/true only when proposing or accepting a price outside YOUR normal limit. '
             'A proposal authorizes that price if accepted; one quota is charged only when a deal closes. '
-            'Give your own decision reason in Korean, 1 to 30 Unicode characters including spaces and punctuation. '
+            + ('Give your own decision reason in English, 1 to 30 characters including spaces and punctuation. '
+               if context is not None else
+               'Give your own decision reason in Korean, 1 to 30 Unicode characters including spaces and punctuation. ')
+            +
             'When using discretion, explain why that exceptional price is reasonable for YOUR role. '
             + ('Reason and discretion are private metadata; only your public utterance is sent '
                'to the other party. Do not impersonate the other role. '
@@ -130,7 +135,9 @@ def metadata(raw: str, condition: str, private=False) -> tuple[str, str, bool]:
         discretion = flag == 'yes'
     if not isinstance(reason, str) or not 1 <= len(reason) <= 30:
         raise ValueError('reason must contain 1..30 Unicode characters')
-    if not re.search('[가-힣]', reason):
+    if private and (not reason.isascii() or not re.search('[A-Za-z]', reason)):
+        raise ValueError('private reason must contain English text using ASCII characters')
+    if not private and not re.search('[가-힣]', reason):
         raise ValueError('reason must contain Korean text')
     if not isinstance(discretion, bool):
         raise ValueError('discretion must be boolean')
