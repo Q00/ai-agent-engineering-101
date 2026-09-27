@@ -1,6 +1,6 @@
 # Week 04 REPORT — 근거 있는 협상과 비공개 판단 설명
 
-학번: 25512085. 주 분석은 `context20-private-v2-` 36개 에피소드(2026-09-28, 마지막 로그 02:55:48 KST)다. 이전 실험은 짧은 이력으로만 설명하고 원자료 전체는 접힌 표로 보존한다. 추가 6메시지 협상은 실행하지 않았다. 기본 규칙을 확장한 추가 실험임을 명시하며, 여러 변경을 동시에 적용했으므로 개별 요소의 효과나 형식의 일반적 우열을 주장하지 않는다.
+학번: 25512085.
 
 ## 1. 설정과 실행 방법
 
@@ -90,7 +90,17 @@ python -u policy_experiment.py --context
 python -u policy_experiment.py --context --run-prefix context20-private-v2-reproduce-
 ```
 
-동일 실행 ID의 재개 시 기존 CSV에서 권한 잔량을 복원한다. HTTP 429는 1/2/4/8/16초 대기 후 재시도한다. 전송 실패는 크래시 행을 보존하고 실행을 중단한다. 새 명령의 반복은 새로운 표본이며 난수 seed를 고정하지 않았으므로 결과가 정확히 동일할 필요는 없다. 역할 history를 위해 API 경로를 바꿨고 agent reasoning 설정도 달라져, 초기 실험과 단일 요인 비교가 아니다. [LM Studio 전송 문서](https://lmstudio.ai/docs/developer/openai-compat/chat-completions)
+실행·재개 시 동작:
+
+- 같은 실행 ID로 재개하면 이미 기록된 에피소드는 건너뛰고, 기존 CSV에서 각 역할의 재량권 잔량을 복원한다.
+- HTTP 429가 발생하면 1/2/4/8/16초 대기 후 재시도한다.
+- 재시도로 해결되지 않은 전송 실패는 크래시 행으로 보존하고 실행을 중단한다.
+- 새 `--run-prefix`로 실행하면 별도의 실험 표본이 기록된다. 난수 seed를 고정하지 않았으므로 기존 결과와 정확히 같지는 않을 수 있다.
+
+이전 실험과 비교할 때의 주의사항:
+
+- 초기 실험 이후 역할별 대화 history를 전달하도록 API 경로를 변경했고, agent의 reasoning 설정도 변경했다. 따라서 이번 결과와 초기 결과의 차이를 메시지 형식이나 특정 변경 하나의 효과로만 해석할 수 없다.
+- API 사용 방식은 [LM Studio 전송 문서](https://lmstudio.ai/docs/developer/openai-compat/chat-completions)를 참고했다.
 
 ## 2. 결과
 
@@ -114,48 +124,55 @@ python -u policy_experiment.py --context --run-prefix context20-private-v2-repro
 
 총 25 deal, 2 no_deal, 9 open이며 크래시는 없다. 9개의 원래 한도 밖 deal은 모두 하네스의 예외 정책을 통과한 거래다. 메타데이터/판독 오류는 8개 메시지이며, 정책상 수락 거부·무시는 별도 14개다. `policy_valid_deal`은 정책 검사 통과 거래 표시이지 전체 에피소드의 정답률이 아니다. 본 실험은 기존 정책 실험의 deal 30건보다 5건 적고 open은 5→9건으로 늘었다. 사람 같은 논거를 추가했다고 종료 성능이 일관되게 좋아진 것은 아니다.
 
-### 이번 실험 36개 에피소드 전체
+### 이번 실험 원자료
 
-note는 CSV의 원문 그대로 표시한다. `quota_before/remaining`과 `discretion_uses`를 통해 실행 순서와 예외 사유를 추적할 수 있다.
+전체 에피소드 결과는 [results.csv](results.csv), 대화 및 호출 기록은 [logs/](logs/)에서 확인할 수 있다. 이번 실험의 실행 ID는 `context20-private-v2-`로 시작한다. 과제에서 요구하는 에피소드별 표는 아래 접힌 영역에 보존했다.
 
-| run | condition | scenario | deal_possible | outcome | price | correct | violation | turns | format_errors | reader_calls | note |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| context20-private-v2-free-01 | free | S01 | 1 | deal | 80 | 1 | 0 | 4 | 0 | 4 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 8} |
-| context20-private-v2-free-01 | free | S02 | 1 | deal | 50 | 1 | 0 | 4 | 0 | 4 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 8} |
-| context20-private-v2-free-01 | free | S03 | 0 | deal | 120 | 0 | 1 | 5 | 0 | 5 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "Buyer's $110 is below my normal limit but within my exceptional boundary, and I have quota left to close the deal.", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 10} |
-| context20-private-v2-free-01 | free | S04 | 0 | deal | 75 | 0 | 1 | 6 | 1 | 5 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 2, "seller": 0}, "discretion_uses": [{"role": "seller", "price": 75, "normal_limit": 90, "reason": "$75 is above my $72 boundary and I have quota, so I can accept this exceptional price.", "remaining": 0}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 11} |
-| context20-private-v2-free-02 | free | S01 | 1 | deal | 80 | 1 | 0 | 4 | 0 | 4 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 8} |
-| context20-private-v2-free-02 | free | S02 | 1 | deal | 50 | 1 | 0 | 5 | 0 | 5 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 10} |
-| context20-private-v2-free-02 | free | S03 | 0 | deal | 120 | 0 | 1 | 6 | 0 | 6 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "Buyer's $120 is at my exceptional boundary and I have quota left, so I accept to clear my desk.", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 12} |
-| context20-private-v2-free-02 | free | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 8 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [], "policy_rejections": 4, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 16} |
-| context20-private-v2-free-03 | free | S01 | 1 | open |  | 0 | 0 | 8 | 0 | 8 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 16} |
-| context20-private-v2-free-03 | free | S02 | 1 | deal | 50 | 1 | 0 | 4 | 0 | 4 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 8} |
-| context20-private-v2-free-03 | free | S03 | 0 | deal | 120 | 0 | 1 | 5 | 0 | 5 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "Buyer's $100 is below my normal limit but within my exceptional boundary, and I have quota left to close the deal quickly.", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 10} |
-| context20-private-v2-free-03 | free | S04 | 0 | deal | 72 | 0 | 1 | 8 | 0 | 8 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 2, "seller": 0}, "discretion_uses": [{"role": "seller", "price": 72, "normal_limit": 90, "reason": "72 is within my exceptional boundary and I have quota left, so I accept to close the deal.", "remaining": 0}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 16} |
-| context20-private-v2-tagged-01 | tagged | S01 | 1 | deal | 82 | 1 | 0 | 6 | 0 | 5 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 11} |
-| context20-private-v2-tagged-01 | tagged | S02 | 1 | deal | 47 | 1 | 0 | 5 | 0 | 4 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 9} |
-| context20-private-v2-tagged-01 | tagged | S03 | 0 | open |  | 0 | 0 | 8 | 1 | 7 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 15} |
-| context20-private-v2-tagged-01 | tagged | S04 | 0 | open |  | 0 | 0 | 8 | 2 | 6 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 14} |
-| context20-private-v2-tagged-02 | tagged | S01 | 1 | deal | 78 | 1 | 0 | 6 | 0 | 5 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 11} |
-| context20-private-v2-tagged-02 | tagged | S02 | 1 | deal | 53 | 1 | 0 | 6 | 0 | 5 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 11} |
-| context20-private-v2-tagged-02 | tagged | S03 | 0 | open |  | 0 | 0 | 8 | 1 | 5 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 13} |
-| context20-private-v2-tagged-02 | tagged | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 4 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 12} |
-| context20-private-v2-tagged-03 | tagged | S01 | 1 | deal | 85 | 1 | 0 | 6 | 0 | 5 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 11} |
-| context20-private-v2-tagged-03 | tagged | S02 | 1 | deal | 51 | 1 | 0 | 6 | 0 | 5 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 11} |
-| context20-private-v2-tagged-03 | tagged | S03 | 0 | deal | 120 | 0 | 1 | 7 | 0 | 6 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "Buyer's prompt pickup justifies dropping to my exceptional boundary to close the deal before my move.", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 13} |
-| context20-private-v2-tagged-03 | tagged | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 6 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [], "policy_rejections": 2, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 14} |
-| context20-private-v2-structured-01 | structured | S01 | 1 | deal | 70 | 1 | 0 | 5 | 0 | 0 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 5} |
-| context20-private-v2-structured-01 | structured | S02 | 1 | deal | 52 | 1 | 0 | 5 | 0 | 0 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 5} |
-| context20-private-v2-structured-01 | structured | S03 | 0 | deal | 120 | 0 | 1 | 6 | 0 | 0 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "Accepting 120 to clear desk before move, using one quota slot as price is below normal limit.", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 6} |
-| context20-private-v2-structured-01 | structured | S04 | 0 | no_deal |  | 1 | 0 | 8 | 0 | 0 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [], "policy_rejections": 2, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 8} |
-| context20-private-v2-structured-02 | structured | S01 | 1 | deal | 70 | 1 | 0 | 4 | 0 | 0 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 4} |
-| context20-private-v2-structured-02 | structured | S02 | 1 | deal | 50 | 1 | 0 | 4 | 0 | 0 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 4} |
-| context20-private-v2-structured-02 | structured | S03 | 0 | deal | 120 | 0 | 1 | 6 | 0 | 0 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "Buyer's offer matches my exceptional boundary and I have quota left, so I accept to close the deal.", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 6} |
-| context20-private-v2-structured-02 | structured | S04 | 0 | deal | 75 | 0 | 1 | 7 | 0 | 0 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 2, "seller": 0}, "discretion_uses": [{"role": "seller", "price": 75, "normal_limit": 90, "reason": "Offering 75 to close the deal, which is below my normal reserve but above my exceptional boundary.", "remaining": 0}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 7} |
-| context20-private-v2-structured-03 | structured | S01 | 1 | no_deal |  | 0 | 0 | 7 | 3 | 0 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 7} |
-| context20-private-v2-structured-03 | structured | S02 | 1 | deal | 52 | 1 | 0 | 5 | 0 | 0 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 5} |
-| context20-private-v2-structured-03 | structured | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 3, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 8} |
-| context20-private-v2-structured-03 | structured | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | {"experiment": "context20-private-v2", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 3, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 8} |
+<details>
+<summary>이번 실험 36개 에피소드 결과 펼치기</summary>
+
+표에서는 가독성을 위해 `note` 열을 생략했다. 재량권 잔량·사용 사유와 크래시 상세는 [results.csv](results.csv)의 `note` 및 [logs/](logs/)에서 확인할 수 있다.
+
+| run | condition | scenario | deal_possible | outcome | price | correct | violation | turns | format_errors | reader_calls |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| context20-private-v2-free-01 | free | S01 | 1 | deal | 80 | 1 | 0 | 4 | 0 | 4 |
+| context20-private-v2-free-01 | free | S02 | 1 | deal | 50 | 1 | 0 | 4 | 0 | 4 |
+| context20-private-v2-free-01 | free | S03 | 0 | deal | 120 | 0 | 1 | 5 | 0 | 5 |
+| context20-private-v2-free-01 | free | S04 | 0 | deal | 75 | 0 | 1 | 6 | 1 | 5 |
+| context20-private-v2-free-02 | free | S01 | 1 | deal | 80 | 1 | 0 | 4 | 0 | 4 |
+| context20-private-v2-free-02 | free | S02 | 1 | deal | 50 | 1 | 0 | 5 | 0 | 5 |
+| context20-private-v2-free-02 | free | S03 | 0 | deal | 120 | 0 | 1 | 6 | 0 | 6 |
+| context20-private-v2-free-02 | free | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 8 |
+| context20-private-v2-free-03 | free | S01 | 1 | open |  | 0 | 0 | 8 | 0 | 8 |
+| context20-private-v2-free-03 | free | S02 | 1 | deal | 50 | 1 | 0 | 4 | 0 | 4 |
+| context20-private-v2-free-03 | free | S03 | 0 | deal | 120 | 0 | 1 | 5 | 0 | 5 |
+| context20-private-v2-free-03 | free | S04 | 0 | deal | 72 | 0 | 1 | 8 | 0 | 8 |
+| context20-private-v2-tagged-01 | tagged | S01 | 1 | deal | 82 | 1 | 0 | 6 | 0 | 5 |
+| context20-private-v2-tagged-01 | tagged | S02 | 1 | deal | 47 | 1 | 0 | 5 | 0 | 4 |
+| context20-private-v2-tagged-01 | tagged | S03 | 0 | open |  | 0 | 0 | 8 | 1 | 7 |
+| context20-private-v2-tagged-01 | tagged | S04 | 0 | open |  | 0 | 0 | 8 | 2 | 6 |
+| context20-private-v2-tagged-02 | tagged | S01 | 1 | deal | 78 | 1 | 0 | 6 | 0 | 5 |
+| context20-private-v2-tagged-02 | tagged | S02 | 1 | deal | 53 | 1 | 0 | 6 | 0 | 5 |
+| context20-private-v2-tagged-02 | tagged | S03 | 0 | open |  | 0 | 0 | 8 | 1 | 5 |
+| context20-private-v2-tagged-02 | tagged | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 4 |
+| context20-private-v2-tagged-03 | tagged | S01 | 1 | deal | 85 | 1 | 0 | 6 | 0 | 5 |
+| context20-private-v2-tagged-03 | tagged | S02 | 1 | deal | 51 | 1 | 0 | 6 | 0 | 5 |
+| context20-private-v2-tagged-03 | tagged | S03 | 0 | deal | 120 | 0 | 1 | 7 | 0 | 6 |
+| context20-private-v2-tagged-03 | tagged | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 6 |
+| context20-private-v2-structured-01 | structured | S01 | 1 | deal | 70 | 1 | 0 | 5 | 0 | 0 |
+| context20-private-v2-structured-01 | structured | S02 | 1 | deal | 52 | 1 | 0 | 5 | 0 | 0 |
+| context20-private-v2-structured-01 | structured | S03 | 0 | deal | 120 | 0 | 1 | 6 | 0 | 0 |
+| context20-private-v2-structured-01 | structured | S04 | 0 | no_deal |  | 1 | 0 | 8 | 0 | 0 |
+| context20-private-v2-structured-02 | structured | S01 | 1 | deal | 70 | 1 | 0 | 4 | 0 | 0 |
+| context20-private-v2-structured-02 | structured | S02 | 1 | deal | 50 | 1 | 0 | 4 | 0 | 0 |
+| context20-private-v2-structured-02 | structured | S03 | 0 | deal | 120 | 0 | 1 | 6 | 0 | 0 |
+| context20-private-v2-structured-02 | structured | S04 | 0 | deal | 75 | 0 | 1 | 7 | 0 | 0 |
+| context20-private-v2-structured-03 | structured | S01 | 1 | no_deal |  | 0 | 0 | 7 | 3 | 0 |
+| context20-private-v2-structured-03 | structured | S02 | 1 | deal | 52 | 1 | 0 | 5 | 0 | 0 |
+| context20-private-v2-structured-03 | structured | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 0 |
+| context20-private-v2-structured-03 | structured | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 0 |
+
+</details>
 
 ### 이전 실험: 최소한의 변경 이력
 
@@ -167,127 +184,12 @@ note는 CSV의 원문 그대로 표시한다. `quota_before/remaining`과 `discr
 | 하네스 수정 | 7/12 · 4/12 · 6/12 | 0 · 0 · 0 | 5 · 2 · 6 | 5 · 8 · 6 |
 | 공개 사유·20% 재량·역할 history | 7/12 · 6/12 · 6/12 | 0 · 0 · 0 | 9 · 11 · 10 | 2 · 1 · 2 |
 
-초기 structured의 오류 24개는 가격을 포함한 수락을 null-only 검증으로 거부한 구현 영향이었다. 이후 수락의 가격을 무시하고, tagged의 reader를 가격 전용으로 수정했다. 정책 실험은 공개 한국어 30자 사유·20% 재량·역할별 history를 함께 추가했다. 초기 free-03/S02는 전원 문제 시점의 HTTP 500 크래시를 보존하고 free-S02-retry-01로 보충했다. 초기 요약은 보충을 반영한 정상 36개다. policy20-free-01/S01은 API 전환 후 reasoning 256토큰 소진으로 content가 비어 실패했고, 설정 수정 후 policy20-v2로 별도 36개를 실행했다.
-
-<details>
-<summary>이전 에피소드 전체 110행 펼치기 — 두 크래시와 보충 실행 포함</summary>
-
-| run | condition | scenario | deal_possible | outcome | price | correct | violation | turns | format_errors | reader_calls | note |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| free-01 | free | S01 | 1 | deal | 90 | 1 | 0 | 6 | 0 | 6 | all_model_calls=12 |
-| free-01 | free | S02 | 1 | no_deal |  | 0 | 0 | 7 | 0 | 7 | all_model_calls=14 |
-| free-01 | free | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| free-01 | free | S04 | 0 | no_deal |  | 1 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| free-02 | free | S01 | 1 | deal | 85 | 1 | 0 | 5 | 0 | 5 | all_model_calls=10 |
-| free-02 | free | S02 | 1 | deal | 45 | 1 | 0 | 7 | 0 | 7 | all_model_calls=14 |
-| free-02 | free | S03 | 0 | deal | 100 | 0 | 1 | 6 | 0 | 6 | all_model_calls=12 |
-| free-02 | free | S04 | 0 | no_deal |  | 1 | 0 | 6 | 0 | 6 | all_model_calls=12 |
-| free-03 | free | S01 | 1 | deal | 85 | 1 | 0 | 4 | 0 | 4 | all_model_calls=8 |
-| free-03 | free | S02 |  |  |  |  |  |  |  |  | crash: RuntimeError: LM Studio returned HTTP 500 |
-| free-03 | free | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| free-03 | free | S04 | 0 | no_deal |  | 1 | 0 | 6 | 0 | 6 | all_model_calls=12 |
-| tagged-01 | tagged | S01 | 1 | open |  | 0 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| tagged-01 | tagged | S02 | 1 | deal | 55 | 1 | 0 | 8 | 2 | 6 | all_model_calls=14 |
-| tagged-01 | tagged | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 4 | all_model_calls=12 |
-| tagged-01 | tagged | S04 | 0 | no_deal |  | 1 | 0 | 8 | 0 | 4 | all_model_calls=12 |
-| tagged-02 | tagged | S01 | 1 | open |  | 0 | 0 | 8 | 3 | 8 | all_model_calls=16 |
-| tagged-02 | tagged | S02 | 1 | open |  | 0 | 0 | 8 | 2 | 8 | all_model_calls=16 |
-| tagged-02 | tagged | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 5 | all_model_calls=13 |
-| tagged-02 | tagged | S04 | 0 | no_deal |  | 1 | 0 | 8 | 1 | 5 | all_model_calls=13 |
-| tagged-03 | tagged | S01 | 1 | open |  | 0 | 0 | 8 | 2 | 8 | all_model_calls=16 |
-| tagged-03 | tagged | S02 | 1 | open |  | 0 | 0 | 8 | 1 | 7 | all_model_calls=15 |
-| tagged-03 | tagged | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 4 | all_model_calls=12 |
-| tagged-03 | tagged | S04 | 0 | no_deal |  | 1 | 0 | 7 | 0 | 4 | all_model_calls=11 |
-| structured-01 | structured | S01 | 1 | open |  | 0 | 0 | 8 | 7 | 0 | all_model_calls=8 |
-| structured-01 | structured | S02 | 1 | open |  | 0 | 0 | 8 | 5 | 0 | all_model_calls=8 |
-| structured-01 | structured | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | all_model_calls=8 |
-| structured-01 | structured | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | all_model_calls=8 |
-| structured-02 | structured | S01 | 1 | open |  | 0 | 0 | 8 | 5 | 0 | all_model_calls=8 |
-| structured-02 | structured | S02 | 1 | deal | 45 | 1 | 0 | 2 | 0 | 0 | all_model_calls=2 |
-| structured-02 | structured | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | all_model_calls=8 |
-| structured-02 | structured | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | all_model_calls=8 |
-| structured-03 | structured | S01 | 1 | open |  | 0 | 0 | 8 | 7 | 0 | all_model_calls=8 |
-| structured-03 | structured | S02 | 1 | deal | 50 | 1 | 0 | 2 | 0 | 0 | all_model_calls=2 |
-| structured-03 | structured | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | all_model_calls=8 |
-| structured-03 | structured | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | all_model_calls=8 |
-| free-S02-retry-01 | free | S02 | 1 | deal | 60 | 1 | 0 | 6 | 0 | 6 | all_model_calls=12 |
-| corrected-free-01 | free | S01 | 1 | deal | 80 | 1 | 0 | 5 | 0 | 5 | all_model_calls=10 |
-| corrected-free-01 | free | S02 | 1 | open |  | 0 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| corrected-free-01 | free | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| corrected-free-01 | free | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| corrected-free-02 | free | S01 | 1 | deal | 75 | 1 | 0 | 7 | 0 | 7 | all_model_calls=14 |
-| corrected-free-02 | free | S02 | 1 | deal | 60 | 1 | 0 | 4 | 0 | 4 | all_model_calls=8 |
-| corrected-free-02 | free | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| corrected-free-02 | free | S04 | 0 | no_deal |  | 1 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| corrected-free-03 | free | S01 | 1 | deal | 80 | 1 | 0 | 5 | 0 | 5 | all_model_calls=10 |
-| corrected-free-03 | free | S02 | 1 | deal | 50 | 1 | 0 | 5 | 0 | 5 | all_model_calls=10 |
-| corrected-free-03 | free | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| corrected-free-03 | free | S04 | 0 | no_deal |  | 1 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| corrected-tagged-01 | tagged | S01 | 1 | open |  | 0 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| corrected-tagged-01 | tagged | S02 | 1 | open |  | 0 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| corrected-tagged-01 | tagged | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 4 | all_model_calls=12 |
-| corrected-tagged-01 | tagged | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 5 | all_model_calls=13 |
-| corrected-tagged-02 | tagged | S01 | 1 | open |  | 0 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| corrected-tagged-02 | tagged | S02 | 1 | deal | 55 | 1 | 0 | 6 | 0 | 4 | all_model_calls=10 |
-| corrected-tagged-02 | tagged | S03 | 0 | no_deal |  | 1 | 0 | 7 | 0 | 3 | all_model_calls=10 |
-| corrected-tagged-02 | tagged | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 4 | all_model_calls=12 |
-| corrected-tagged-03 | tagged | S01 | 1 | open |  | 0 | 0 | 8 | 0 | 8 | all_model_calls=16 |
-| corrected-tagged-03 | tagged | S02 | 1 | deal | 60 | 1 | 0 | 6 | 0 | 4 | all_model_calls=10 |
-| corrected-tagged-03 | tagged | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 5 | all_model_calls=13 |
-| corrected-tagged-03 | tagged | S04 | 0 | no_deal |  | 1 | 0 | 7 | 0 | 4 | all_model_calls=11 |
-| corrected-structured-01 | structured | S01 | 1 | deal | 80 | 1 | 0 | 2 | 0 | 0 | all_model_calls=2 |
-| corrected-structured-01 | structured | S02 | 1 | deal | 50 | 1 | 0 | 2 | 0 | 0 | all_model_calls=2 |
-| corrected-structured-01 | structured | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | all_model_calls=8 |
-| corrected-structured-01 | structured | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | all_model_calls=8 |
-| corrected-structured-02 | structured | S01 | 1 | deal | 80 | 1 | 0 | 2 | 0 | 0 | all_model_calls=2 |
-| corrected-structured-02 | structured | S02 | 1 | deal | 50 | 1 | 0 | 4 | 0 | 0 | all_model_calls=4 |
-| corrected-structured-02 | structured | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | all_model_calls=8 |
-| corrected-structured-02 | structured | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | all_model_calls=8 |
-| corrected-structured-03 | structured | S01 | 1 | deal | 80 | 1 | 0 | 2 | 0 | 0 | all_model_calls=2 |
-| corrected-structured-03 | structured | S02 | 1 | deal | 50 | 1 | 0 | 4 | 0 | 0 | all_model_calls=4 |
-| corrected-structured-03 | structured | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | all_model_calls=8 |
-| corrected-structured-03 | structured | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | all_model_calls=8 |
-| policy20-free-01 | free | S01 |  |  |  |  |  |  |  |  | crash: {"crash": "RuntimeError: LM Studio response has no message content", "quota_remaining": {"buyer": 2, "seller": 2}} |
-| policy20-v2-free-01 | free | S01 | 1 | deal | 80 | 1 | 0 | 2 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 4} |
-| policy20-v2-free-01 | free | S02 | 1 | deal | 55 | 1 | 0 | 2 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 4} |
-| policy20-v2-free-01 | free | S03 | 0 | open |  | 0 | 0 | 8 | 0 | 8 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 16} |
-| policy20-v2-free-01 | free | S04 | 0 | no_deal |  | 1 | 0 | 7 | 0 | 7 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 14} |
-| policy20-v2-free-02 | free | S01 | 1 | deal | 80 | 1 | 0 | 2 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 4} |
-| policy20-v2-free-02 | free | S02 | 1 | deal | 50 | 1 | 0 | 2 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 4} |
-| policy20-v2-free-02 | free | S03 | 0 | deal | 120 | 0 | 1 | 6 | 0 | 6 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "예외 한계 내 타협 가능", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 12} |
-| policy20-v2-free-02 | free | S04 | 0 | deal | 85 | 0 | 1 | 6 | 0 | 6 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 1, "seller": 0}, "discretion_uses": [{"role": "buyer", "price": 85, "normal_limit": 75, "reason": "예외 한도 내 합리적 상한 제시", "remaining": 1}, {"role": "seller", "price": 85, "normal_limit": 90, "reason": "예외 한도 내 합리적 가격이라 수용", "remaining": 0}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 12} |
-| policy20-v2-free-03 | free | S01 | 1 | deal | 80 | 1 | 0 | 2 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 4} |
-| policy20-v2-free-03 | free | S02 | 1 | deal | 50 | 1 | 0 | 2 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 4} |
-| policy20-v2-free-03 | free | S03 | 0 | deal | 120 | 0 | 1 | 4 | 0 | 4 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "예외 한도 내 합리적 가격이라 수락합니다.", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 8} |
-| policy20-v2-free-03 | free | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 8 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 16} |
-| policy20-v2-tagged-01 | tagged | S01 | 1 | deal | 75 | 1 | 0 | 3 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 5} |
-| policy20-v2-tagged-01 | tagged | S02 | 1 | deal | 50 | 1 | 0 | 3 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 5} |
-| policy20-v2-tagged-01 | tagged | S03 | 0 | deal | 120 | 0 | 1 | 6 | 0 | 3 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "예외 한계치 내 타협", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 9} |
-| policy20-v2-tagged-01 | tagged | S04 | 0 | deal | 85 | 0 | 1 | 6 | 0 | 3 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 1, "seller": 0}, "discretion_uses": [{"role": "buyer", "price": 85, "normal_limit": 75, "reason": "예외 한도 내 합리적 상향 제안", "remaining": 1}, {"role": "seller", "price": 85, "normal_limit": 90, "reason": "85는 예외 한도 72 이상이라 수용 가능.", "remaining": 0}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 9} |
-| policy20-v2-tagged-02 | tagged | S01 | 1 | deal | 75 | 1 | 0 | 3 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 5} |
-| policy20-v2-tagged-02 | tagged | S02 | 1 | deal | 50 | 1 | 0 | 3 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 5} |
-| policy20-v2-tagged-02 | tagged | S03 | 0 | deal | 120 | 0 | 1 | 4 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "120은 예외 한계 내라 수용합니다.", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 6} |
-| policy20-v2-tagged-02 | tagged | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 10} |
-| policy20-v2-tagged-03 | tagged | S01 | 1 | deal | 75 | 1 | 0 | 3 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 5} |
-| policy20-v2-tagged-03 | tagged | S02 | 1 | deal | 48 | 1 | 0 | 3 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 5} |
-| policy20-v2-tagged-03 | tagged | S03 | 0 | deal | 120 | 0 | 1 | 4 | 0 | 2 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "예외 한도 내 합리적 가격이라 수용합니다.", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 6} |
-| policy20-v2-tagged-03 | tagged | S04 | 0 | deal | 85 | 0 | 1 | 6 | 0 | 3 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 1, "seller": 0}, "discretion_uses": [{"role": "buyer", "price": 85, "normal_limit": 75, "reason": "예외 한도 내 합리적 최고가 제안입니다.", "remaining": 1}, {"role": "seller", "price": 85, "normal_limit": 90, "reason": "85는 예외 한도 72 이상이라 수용 가능합니다.", "remaining": 0}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 9} |
-| policy20-v2-structured-01 | structured | S01 | 1 | deal | 80 | 1 | 0 | 2 | 0 | 0 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 2} |
-| policy20-v2-structured-01 | structured | S02 | 1 | deal | 55 | 1 | 0 | 2 | 0 | 0 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 2} |
-| policy20-v2-structured-01 | structured | S03 | 0 | deal | 120 | 0 | 1 | 8 | 0 | 0 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "120원은 예외 한도 내 타당", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 8} |
-| policy20-v2-structured-01 | structured | S04 | 0 | deal | 75 | 0 | 1 | 6 | 0 | 0 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 2, "seller": 0}, "discretion_uses": [{"role": "seller", "price": 75, "normal_limit": 90, "reason": "75원은 예외적 합리적 가격입니다.", "remaining": 0}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 6} |
-| policy20-v2-structured-02 | structured | S01 | 1 | deal | 70 | 1 | 0 | 7 | 0 | 0 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 7} |
-| policy20-v2-structured-02 | structured | S02 | 1 | deal | 55 | 1 | 0 | 2 | 0 | 0 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 2} |
-| policy20-v2-structured-02 | structured | S03 | 0 | deal | 120 | 0 | 1 | 6 | 0 | 0 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "120원은 예외적 합리 가격입니다.", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 6} |
-| policy20-v2-structured-02 | structured | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [], "policy_rejections": 5, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 8} |
-| policy20-v2-structured-03 | structured | S01 | 1 | deal | 75 | 1 | 0 | 4 | 0 | 0 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 4} |
-| policy20-v2-structured-03 | structured | S02 | 1 | deal | 50 | 1 | 0 | 2 | 0 | 0 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 2}, "discretion_uses": [], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 2} |
-| policy20-v2-structured-03 | structured | S03 | 0 | deal | 120 | 0 | 1 | 6 | 0 | 0 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 2}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [{"role": "seller", "price": 120, "normal_limit": 150, "reason": "예외 한도 내 수용", "remaining": 1}], "policy_rejections": 0, "policy_valid_deal": 1, "expanded_price_overlap": 1, "all_model_calls": 6} |
-| policy20-v2-structured-03 | structured | S04 | 0 | open |  | 0 | 0 | 8 | 0 | 0 | {"experiment": "policy20-history-v1", "quota_before": {"buyer": 2, "seller": 1}, "quota_remaining": {"buyer": 2, "seller": 1}, "discretion_uses": [], "policy_rejections": 5, "policy_valid_deal": 0, "expanded_price_overlap": 1, "all_model_calls": 8} |
-
-</details>
-
-CSV 전체 146행 = 이번 36 + 이전 110. 어떤 실패/로그도 삭제하지 않았다.
+- 초기 구현 문제: structured의 오류 24개는 수락 메시지의 price가 null이어야 한다는 검증 때문에 발생했다. 가격을 포함한 수락까지 거부한 하네스의 문제였다.
+- 하네스 수정: 수락 메시지에 적힌 가격 대신 상대의 마지막 제안 가격을 거래 가격으로 사용하고, tagged의 reader는 행위 분류 없이 제안 가격만 추출하도록 변경했다.
+- 정책 실험 추가: 공개 한국어 30자 사유, 20% 범위의 재량권, 역할별 대화 history를 함께 적용했다.
+- 전원 문제로 중단된 실행 보충: 초기 free-03/S02의 HTTP 500 크래시는 보존하고, free-S02-retry-01로 보충했다. 표의 초기 결과는 보충을 반영한 정상 36개 에피소드다.
+- API 전환 후 실패와 재실행: policy20-free-01/S01은 reasoning이 출력 한도 256토큰을 소진해 content가 비어 실패했다. 설정을 수정한 뒤 policy20-v2로 별도 36개 에피소드를 실행했다.
+- 원자료 보존: 상세 결과와 실패 기록은 [results.csv](results.csv) 및 [logs/](logs/)에 남겼다. CSV는 이번 36개와 이전 110개를 합한 총 146행이며, 실패 기록이나 로그는 삭제하지 않았다.
 
 ## 3. FIPA-ACL과 세 조건 비교
 
@@ -307,15 +209,26 @@ FIPA 내용은 [Week 04 강의](../../../week-04.html)의 메시지 구조·FP/R
 
 ## 4. 해석 — 로그 근거와 한계
 
-이번 실험에서는 free의 공개 발언에 흠집·보증 부재·당일 픽업을 근거로 70→85→80의 역제안과 수락이 나타나, 단순 한도 반복을 넘어선 협상 논거를 관찰했다([free-01 로그 3~19줄](logs/context20-private-v2-free-01.txt)). 그러나 free는 correct 5/12, tagged·structured는 각각 6/12여서 형식의 우열을 선언할 수 없다. free-02/S04에서는 seller가 75를 예외 경계 72보다 높다는 이유로 재량권 없이 수락 가능하다고 설명해 정상 최저가 90과 예외 한도를 혼동했고, 합의처럼 보이는 발언이 정책상 거부되어 open으로 남았다([free-02 로그 69줄 이후](logs/context20-private-v2-free-02.txt)). tagged-01/S03에서는 마지막에 양측 가격이 120으로 모였지만 seller가 accept가 아닌 propose를 보내 8메시지 안에 종료하지 못했다([tagged-01 로그 80~84줄](logs/context20-private-v2-tagged-01.txt)). structured-03/S01에서는 75 제안의 비공개 reason이 150자를 초과해 공개 제안까지 세 번 차단됐고 buyer가 다른 매물로 떠나 no_deal이 됐다([structured-03 로그 22·43·64·76줄](logs/context20-private-v2-structured-03.txt)); 이는 모델의 길이 지시 미준수와 하네스의 강한 결합이 함께 만든 실패다. 영어의 곡선 아포스트로피를 ASCII 검사로 거부한 사례도 있어 판독 오류를 영어 능력 문제로 해석하면 안 된다([tagged-01 로그 98줄](logs/context20-private-v2-tagged-01.txt)). structured-01/S04는 seller가 70을 수락했지만 예외 최저가 72 미만이라 거래가 거부된 뒤, 마지막에는 refuse 필드와 “The deal is done. See you at pickup.”이 충돌해 no_deal로 기록됐다([structured-01 로그 190~204줄](logs/context20-private-v2-structured-01.txt)). 따라서 그 correct=1은 의미상 올바른 결렬의 증거가 아니다. structured-03/S03·S04에서도 각각 115<120, 70<72인 수락과 후속 확인이 반복됐으며 정책 거부를 agent에게 알려주지 않는 현재 구현이 상태 불일치를 지속시켰다. 비공개 reason 전달 경로는 분리했으나 free-03/S01의 공개 문장 “the maximum I am willing to pay”와 가격 100은 실제 정상 예산 공개와 일치해 공개 금지 프롬프트의 한계를 보였다([free-03 로그 27줄](logs/context20-private-v2-free-03.txt)). 형식은 판독 비용을 바꾸지만 전략의 타당성, 경계 계산, 공개 발언의 정직성, 종료 선택을 자동 보장하지 않는다. 시나리오·논거·reason 비공개·message 필드를 함께 바꾼 작은 표본이고 quota가 run 내 실행 순서에 의존하므로, 결과 차이를 하나의 변경에 인과적으로 귀속하지 않는다.
+### 핵심 결과
 
-### 검증 상태
+- 협상 논거가 나타났다. free-01에서는 흠집·보증 부재·당일 픽업을 근거로 70→85→80의 역제안과 수락이 이어졌다. 단순히 한도를 반복하는 것보다 다양한 대화가 관찰됐다. ([free-01 로그 3~19줄](logs/context20-private-v2-free-01.txt))
+- 형식의 우열은 단정할 수 없다. correct는 free 5/12, tagged·structured 각각 6/12였다. structured는 reader 호출이 없지만, 이것이 올바른 협상 전략이나 거래 종료를 보장하지는 않았다.
 
-오프라인 테스트 23개 통과. 제출 형식 검사 명령(저장소 루트):
+### 확인된 문제
 
-```powershell
-python scripts/check_week04.py submissions/25512085/week-04
-```
+- 정상 한도와 예외 한도 혼동: free-02/S04의 seller는 75가 예외 경계 72보다 높다는 이유로 재량권 없이 수락할 수 있다고 판단했다. 정상 최저가는 90이어서 하네스가 거래를 거부했고, 합의처럼 보이는 대화가 open으로 남았다. ([free-02 로그 69줄 이후](logs/context20-private-v2-free-02.txt))
+- 가격이 맞아도 종료 행위를 선택하지 못함: tagged-01/S03은 양측 가격이 120으로 모였지만, seller가 accept 대신 propose를 보내 8메시지 안에 종료하지 못했다. ([tagged-01 로그 80~84줄](logs/context20-private-v2-tagged-01.txt))
+- 비공개 설명 오류가 공개 대화까지 차단: structured-03/S01은 reason이 150자를 초과해 75 제안이 세 번 차단됐고, buyer가 떠나 no_deal이 됐다. 모델의 길이 지시 미준수와 하네스의 과도한 차단이 함께 만든 실패다. ([structured-03 로그 22·43·64·76줄](logs/context20-private-v2-structured-03.txt))
+- 영어 검증이 지나치게 엄격함: 곡선 아포스트로피를 ASCII 검사로 거부했다. 이 오류는 영어 능력 문제가 아니라 검증 방식의 한계다. ([tagged-01 로그 98줄](logs/context20-private-v2-tagged-01.txt))
+- 행위 필드와 실제 발언의 충돌: structured-01/S04는 예외 최저가 72보다 낮은 70 수락이 거부된 뒤, 마지막에 refuse 필드와 “The deal is done. See you at pickup.”이 함께 나왔다. no_deal로 기록되어 correct=1이지만, 의미상 올바른 결렬이라고 볼 수 없다. ([structured-01 로그 190~204줄](logs/context20-private-v2-structured-01.txt))
+- 하네스와 에이전트의 거래 상태 불일치: structured-03/S03·S04에서도 경계 밖 가격(115<120, 70<72)의 수락과 확인이 반복됐다. 현재 구현은 정책 거부를 agent에게 알려주지 않아, agent가 합의가 끝났다고 여기는 상태를 바로잡지 못했다. ([structured-03 로그](logs/context20-private-v2-structured-03.txt))
+- 공개 발언을 통한 비공개 한도 유출: reason 전달은 분리했지만 free-03/S01은 “the maximum I am willing to pay”와 가격 100을 공개했다. 실제 정상 예산과 일치하므로, 공개 금지 프롬프트만으로 한도 유출을 막지는 못했다. ([free-03 로그 27줄](logs/context20-private-v2-free-03.txt))
 
-CI 검사는 구조 검사이며 대화의 의미, 개인정보 공개, 비교의 타당성을 보장하지 않는다. 알려진 결함은 결과와 로그를 보존하고 보고서에 설명했으며, 이번 제출을 위해 재실행/추가 6메시지/사후 로그 수정은 하지 않았다.
+### 해석의 한계
+
+- 여러 변경을 동시에 적용했다. 시나리오 맥락·협상 논거·reason 비공개·message 필드를 함께 바꿨으므로, 결과 차이를 특정 변경 하나의 효과로 설명할 수 없다. 초기 실험과는 API 경로·reasoning 설정도 다르다.
+- 표본이 작고 실행 순서의 영향을 받는다. 형식별 12개 에피소드이며, 재량권 잔량은 run 안에서 앞선 시나리오의 거래에 따라 달라진다.
+- correct와 정책상 거래 성공은 다르다. 지표는 원래 reserve/budget 기준이다. 허용된 예외 거래도 violation으로 기록되고, 행위·발언이 충돌한 no_deal이 correct로 집계될 수 있다.
+- 형식의 명확성과 협상 판단의 정확성은 별개다. 태그나 JSON은 행위 판독과 reader 비용을 바꾸지만, 경계 계산·전략의 타당성·공개 발언의 정직성·적절한 종료 선택까지 보장하지 않는다.
+- reason은 모델이 생성한 설명이다. 비공개 reason과 공개 발언을 비교할 수는 있지만, 이를 실제 내부 사고나 진정성의 증거로 볼 수는 없다.
 
