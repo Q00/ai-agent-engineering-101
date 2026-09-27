@@ -12,6 +12,13 @@ policy_experiment.py --context가 이 파일과 context_prompt.py의 공통 협�
 - buyer_context: buyer system prompt에만 제공한다.
 - seller_context: seller system prompt에만 제공한다.
 - reserve/budget: 기존 값 유지. 각자 해당 한도만 본인의 system prompt로 받는다.
+- 새 context 실험에서는 정상/예외 한도, 20% 규칙, 권한 잔량을 영어 본문과
+  한국어 Reason에서 공개하지 않도록 명시한다. 제안/수락 가격을 말하는 것은
+  허용하지만 그 숫자를 자신의 최저가/최대 예산이라고 설명하지 않는다.
+  기존 정책 실험의 disclosure 문구는 재현을 위해 context 옵션이 없으면 유지한다.
+  이는 모델 지침이며 모든 의미상의 유출을 차단하는 출력 필터는 아니다.
+  Discretion 표시는 여전히 상대에게 공개되므로 제안과 함께 한도에 관한
+  간접 추론은 가능하다. 비공개 한도를 전혀 추론할 수 없다고 주장하지 않는다.
 - private context는 입력 단계에서 상대에게 전달하지 않는다. 협상 중 본인이
   사정을 말하면 그 발언은 상대에게 전달되는 일반적인 공개 메시지가 된다.
 - 각 사정은 가격의 논거일 뿐, 양보나 재량권 사용을 반드시 요구하지 않는다.

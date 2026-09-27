@@ -37,6 +37,20 @@ class ContextTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             context_paragraph('buyer', invalid)
 
+    def test_limits_are_private_and_disclosure_is_forbidden_in_all_formats(self):
+        for condition in ('free', 'tagged', 'structured'):
+            buyer = prompt('buyer', 'keyboard', 113, condition, 2, self.scenario)
+            seller = prompt('seller', 'keyboard', 67, condition, 1, self.scenario)
+            self.assertIn('normal maximum budget is 113', buyer)
+            self.assertNotIn('normal minimum reserve is 67', buyer)
+            self.assertIn('normal minimum reserve is 67', seller)
+            self.assertNotIn('normal maximum budget is 113', seller)
+            for text in (buyer, seller):
+                self.assertIn('strictly private', text)
+                self.assertIn('in the English text or Korean Reason', text)
+                self.assertIn('never identify it as that boundary', text)
+                self.assertNotIn('unless needed', text)
+
     def test_contextual_episode_uses_private_prompts_and_existing_policy(self):
         caller = FakeCaller([message('propose',80), message('accept-proposal',None)])
         result, note = episode(self.scenario, 'structured', caller, {'buyer':2,'seller':2},

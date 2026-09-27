@@ -74,7 +74,17 @@ def prompt(role: str, item: str, limit: int, condition: str, remaining: int, con
     return (f'You are the {role} of {item}. {objective}{limit}. '
             f'Your private exceptional boundary is {bounds(role, limit)}. '
             f'You have {remaining} discretionary trades left in this run of four scenarios. '
-            'Never disclose this private quota or private limits unless needed in your own negotiation message. '
+            + ('Keep your normal limit, exceptional boundary and remaining quota strictly private. '
+               'Never state, quote, label or explain those values as your minimum, maximum, budget, '
+               'reserve, limit or exception boundary in the English text or Korean Reason. '
+               'Do not reveal the 20-percent rule or quota counts. You may state an offered or '
+               'accepted price, including one equal to a private boundary, but never identify '
+               'it as that boundary. Justify prices using item facts, convenience and your '
+               'circumstances, not private-limit calculations. Keep the required Discretion '
+               'metadata, but do not explain its numeric threshold. '
+               if context is not None else
+               'Never disclose this private quota or private limits unless needed in your own negotiation message. ')
+            +
             'Use propose to offer an integer price; accept-proposal to accept the OTHER party\'s last proposal '
             'and end with a deal; reject-proposal to decline and continue; refuse to leave without a deal. '
             'The buyer must open with a price proposal. Use exactly one act. '
