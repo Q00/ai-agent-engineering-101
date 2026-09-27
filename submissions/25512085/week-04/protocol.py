@@ -83,8 +83,19 @@ def read_tagged(
     if performative != "propose":
         return performative, None, True
 
-    _, price, ok = _read_with_model(text, transcript, caller, reader_meter)
-    if not ok or price is None:
+    reader_meter.calls += 1
+    try:
+        raw = caller(
+            'Extract the whole-number price stated in the LAST message. The propose '
+            'tag already determines the act; do not classify the act again. '
+            'Reply with exactly one JSON object: {"price": <whole number or null>}. '
+            'Use null if no single proposal price can be identified.',
+            _transcript_text(transcript, text),
+        )
+        price = json.loads(raw)["price"]
+    except (KeyError, TypeError, json.JSONDecodeError):
+        return None, None, False
+    if not _is_whole_number(price):
         return None, None, False
     return "propose", price, True
 
@@ -106,8 +117,10 @@ def read_structured(text: str) -> tuple[str | None, int | None, bool]:
     if performative == "propose":
         if not _is_whole_number(price):
             return None, None, False
-    elif price is not None:
-        return None, None, False
+    else:
+        # The act determines termination. A quoted acceptance price must not
+        # replace the opposing party's last recorded proposal.
+        price = None
     return performative, price, True
 
 

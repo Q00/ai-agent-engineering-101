@@ -147,6 +147,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--condition", choices=CONDITIONS, help="run one condition; default is all three")
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--run-prefix", default="", help="prefix new run IDs to preserve earlier experiments")
     parser.add_argument("--retry-scenario", help="run only this scenario as a recorded supplemental episode")
     parser.add_argument("--retry-run", help="new run ID for the supplemental episode")
     parser.add_argument("--scenarios", type=Path, default=Path("scenarios.json"))
@@ -158,6 +159,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if any(character not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_" for character in args.run_prefix):
+        raise SystemExit("--run-prefix may contain only letters, digits, hyphens and underscores")
     if bool(args.retry_scenario) != bool(args.retry_run):
         raise SystemExit("--retry-scenario and --retry-run must be supplied together")
     if args.retry_scenario and not args.condition:
@@ -185,11 +188,11 @@ def main() -> None:
         return
     conditions = (args.condition,) if args.condition else CONDITIONS
     planned = [
-        (f"{condition}-{repeat:02d}", condition, str(scenario["id"]))
+        (f"{args.run_prefix}{condition}-{repeat:02d}", condition, str(scenario["id"]))
         for condition in conditions
         for repeat in range(1, args.repeats + 1)
         for scenario in scenarios
-        if (f"{condition}-{repeat:02d}", str(scenario["id"])) not in completed
+        if (f"{args.run_prefix}{condition}-{repeat:02d}", str(scenario["id"])) not in completed
     ]
     if args.dry_run:
         print(f"pending_episodes={len(planned)}")
@@ -200,7 +203,7 @@ def main() -> None:
     settings = ModelSettings.from_env()
     for condition in conditions:
         for repeat in range(1, args.repeats + 1):
-            run_id = f"{condition}-{repeat:02d}"
+            run_id = f"{args.run_prefix}{condition}-{repeat:02d}"
             run_one(run_id, condition, scenarios, completed, settings, args.results, args.logs)
 
 
