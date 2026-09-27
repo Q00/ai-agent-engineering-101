@@ -20,7 +20,8 @@ class PolicyCaller(LMStudioCaller):
         payload = {'model': self.settings.model,
                    'messages': [{'role': 'system', 'content': system}] + messages,
                    'temperature': self.settings.temperature, 'max_tokens': 256,
-                   'stream': False}
+                   'stream': False, 'reasoning_effort': 'none',
+                   'chat_template_kwargs': {'enable_thinking': False}}
         request = Request(self.settings.server_url + '/v1/chat/completions',
                           data=json.dumps(payload).encode('utf-8'),
                           headers={'Content-Type': 'application/json'}, method='POST')
@@ -32,6 +33,8 @@ class PolicyCaller(LMStudioCaller):
         except URLError as exc:
             raise RuntimeError(f'cannot reach LM Studio: {exc.reason}') from exc
         content = data['choices'][0]['message'].get('content')
+        self.last_stats = {'finish_reason': data['choices'][0].get('finish_reason'),
+                           'usage': data.get('usage', {})}
         if not isinstance(content, str) or not content.strip():
             raise RuntimeError('LM Studio response has no message content')
         self.meter.calls += 1
@@ -124,6 +127,8 @@ def episode(scenario, condition, caller, quota, log, event):
         event({'type': 'request', 'scenario': result.scenario_id, 'turn': turn+1,
                'role': role, 'system': system, 'messages': messages})
         raw = agent_call(system, messages)
+        event({'type': 'agent_usage', 'scenario': result.scenario_id, 'turn': turn+1,
+               'role': role, 'stats': getattr(caller, 'last_stats', {})})
         result.turns += 1
         log(f'[{role}] {raw}')
         try:
@@ -185,12 +190,15 @@ def episode(scenario, condition, caller, quota, log, event):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--run-prefix', default='policy20-v2-')
     args = parser.parse_args()
+    if not re.fullmatch(r'[A-Za-z0-9_-]+', args.run_prefix):
+        raise SystemExit('run prefix must contain only letters, digits, hyphens and underscores')
     root = Path(__file__).resolve().parent
     results_path = root / 'results.csv'
     scenarios = load_scenarios(root / 'scenarios.json')
     completed = completed_pairs(results_path)
-    plans = [(f'policy20-{condition}-{repeat:02d}', condition)
+    plans = [(f'{args.run_prefix}{condition}-{repeat:02d}', condition)
              for condition in ('free', 'tagged', 'structured') for repeat in range(1,4)]
     if args.dry_run:
         print('pending_episodes=' + str(sum((run, str(s['id'])) not in completed for run, _ in plans for s in scenarios)))
@@ -207,7 +215,7 @@ def main():
             def event(data):
                 print(json.dumps(data, ensure_ascii=False), file=events, flush=True)
             if log_path.stat().st_size == 0:
-                log(f'provider=LM Studio model={settings.model} temperature={settings.temperature} max_turns={MAX_TURNS} condition={condition} run={run} agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat policy=20percent quota=2per-role-per-run reason_max_chars=30')
+                log(f'provider=LM Studio model={settings.model} temperature={settings.temperature} max_turns={MAX_TURNS} condition={condition} run={run} agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat agent_reasoning_effort=none enable_thinking=false policy=20percent quota=2per-role-per-run reason_max_chars=30')
             meter = Meter()
             caller = PolicyCaller(settings, meter)
             for scenario in scenarios:

@@ -27,13 +27,17 @@ free/tagged: 기존 자연어/태그 본문 뒤 별도 두 줄 `Reason: <사유>
 협상 행위 판독에는 사유/재량 메타데이터를 제거한 본문을 사용한다.
 에이전트는 LM Studio의 /v1/chat/completions에서 messages 배열을 사용한다.
 reader는 기존 /api/v1/chat을 유지한다. API 경로 변경도 비교의 한계로 기록한다.
-새 agent 호출은 미지원 reasoning='off' 값을 보내지 않으므로 서버의 모델
-설정에 의존한다. reasoning 활성 여부가 이전과 동일하다고 단정하지 않는다.
+첫 policy20-free-01/S01은 서버 기본 reasoning이 256토큰 전체를 사용해
+최종 content가 없어 실패했다. 그 기록을 보존하고 새 policy20-v2- ID를 사용한다.
+새 agent 호출은 reasoning_effort='none', chat_template_kwargs.enable_thinking=false를
+요청한다. 진단 호출에서 content='OK', reasoning_tokens=0을 확인했다.
+각 실제 agent 응답의 usage도 jsonl에 기록하며 이전과 완전히 같은 추론
+설정이라고 단정하지 않는다. reader는 기존 설정을 유지한다.
 공식 전송 문서: https://lmstudio.ai/docs/developer/openai-compat/chat-completions
 
 ## 기록 및 해석
 
-results.csv에 policy20-<condition>-01..03을 추가한다. 기존 correct/violation은
+results.csv에 policy20-v2-<condition>-01..03을 추가한다. 기존 correct/violation은
 원래 한도로 계산한다. 허용된 예외 거래도 violation=1일 수 있다.
 note에는 quota_before/remaining, discretion_uses(역할·가격·한도·사유),
 policy_rejections, policy_valid_deal, expanded_price_overlap을 JSON으로 기록한다.
