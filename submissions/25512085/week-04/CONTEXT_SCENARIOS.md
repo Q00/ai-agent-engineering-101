@@ -2,8 +2,9 @@
 
 scenarios_context.json은 실험용으로 만든 가상의 설정이다. 실제 상품 정보나
 시장 가격을 검증한 자료가 아니다. 기존 scenarios.json과 결과/로그는 변경하지 않는다.
-이번 단계는 데이터 준비만이며, 현재 runner와 policy_experiment는 아직 이 파일을
-읽지 않는다. 모델 호출 및 추가 실험은 실행하지 않았다.
+policy_experiment.py --context가 이 파일과 context_prompt.py의 공통 협상 지침을
+사용한다. 옵션을 생략하면 기존 정책 실험의 프롬프트/시나리오를 사용한다.
+현재는 준비와 오프라인 검증만 완료했으며 모델 호출 및 추가 실험은 실행하지 않았다.
 
 ## 정보 구분
 
@@ -26,7 +27,26 @@ scenarios_context.json은 실험용으로 만든 가상의 설정이다. 실제 
 
 공통으로 장점과 단점을 함께 제공해 양측이 다른 논거를 활용할 수 있게 한다.
 대체품 가격, 원래 구매가, 할인 약속 등 새로운 숫자는 추가하지 않는다.
-다음 단계에서 프롬프트에 연결할 때는 제공된 사실만 근거로 사용하도록 하고,
-없는 성능/구매자/시장 가격을 지어내지 않도록 명시한다.
+프롬프트는 제공된 사실만 근거로 사용하고, 없는 성능/구매자/시장 가격을
+지어내지 않도록 명시한다. 상대 주장에 반응하고, 계속 협상할 의향이 있으면
+근거 있는 역제안을 고려한다. 상대의 설득이나 픽업 편의 등을 고려해 양보할 수
+있지만 거래/양보/재량권 사용을 강제하지 않는다. 부르는 가격은 근거와 함께
+바꿀 수 있으나 고정된 한도와 20% 재량 범위는 바뀌지 않는다.
 세 형식에 동일한 시나리오/역할별 사정을 적용한다. 기존 20% 재량 정책 등
-다른 조건 변경은 이 데이터 준비 단계에서 수행하지 않는다.
+다른 조건은 유지한다. free/tagged의 영어 문장에는 협상 논거를 담고,
+structured는 기존 content.reason에 짧은 논거를 담는다. message 필드는 추가하지
+않았으며 한국어 Reason 30자 제한도 유지한다. 따라서 structured의 논거 표현량은
+자연어 두 조건보다 제한적이다. 이는 이번 설계의 해석상 한계다.
+
+## 검증 및 실행 준비
+
+```powershell
+python -m unittest test_protocol.py test_policy_experiment.py test_context_prompt.py
+python policy_experiment.py --context --dry-run
+# 실행을 요청한 다음, 기존과 같은 모델/temperature 환경에서:
+python -u policy_experiment.py --context
+```
+
+새 실행 ID는 context20-v1-free-01부터 context20-v1-structured-03까지다.
+기존 results.csv는 삭제/수정하지 않고 새 행을 추가하며, 새 로그 파일을 만든다.
+현재 제공된 전체 4개 시나리오를 각 형식으로 3회 실행하도록 계획된다.

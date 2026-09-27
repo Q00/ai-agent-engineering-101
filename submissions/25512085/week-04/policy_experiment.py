@@ -9,6 +9,7 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 from acl import MAX_TURNS
+from context_prompt import context_paragraph
 from model_client import LMStudioCaller, Meter, ModelSettings
 from negotiate import EpisodeResult, _finish
 from protocol import ReaderMeter, read
@@ -61,7 +62,7 @@ def eligible(role: str, price: int, limit: int) -> bool:
     return price <= bounds(role, limit) if role == 'buyer' else price >= bounds(role, limit)
 
 
-def prompt(role: str, item: str, limit: int, condition: str, remaining: int) -> str:
+def prompt(role: str, item: str, limit: int, condition: str, remaining: int, context=None) -> str:
     objective = ('You buy the item; lower prices benefit you. Your normal maximum budget is '
                  if role == 'buyer' else
                  'You sell the item; higher prices benefit you. Your normal minimum reserve is ')
@@ -84,6 +85,7 @@ def prompt(role: str, item: str, limit: int, condition: str, remaining: int) -> 
             'Give your own decision reason in Korean, 1 to 30 Unicode characters including spaces and punctuation. '
             'When using discretion, explain why that exceptional price is reasonable for YOUR role. '
             'Reasons are visible to the other party. Do not impersonate the other role. '
+            + (context_paragraph(role, context) if context is not None else '')
             + formats[condition])
 
 
@@ -109,7 +111,7 @@ def metadata(raw: str, condition: str) -> tuple[str, str, bool]:
     return body, reason, discretion
 
 
-def episode(scenario, condition, caller, quota, log, event):
+def episode(scenario, condition, caller, quota, log, event, contextual=False):
     limits = {'buyer': scenario['budget'], 'seller': scenario['reserve']}
     result = EpisodeResult(str(scenario['id']), int(limits['seller'] <= limits['buyer']))
     proposals = {'buyer': None, 'seller': None}
@@ -121,7 +123,8 @@ def episode(scenario, condition, caller, quota, log, event):
     uses = []
     for turn in range(MAX_TURNS):
         role, other = ('buyer', 'seller') if turn % 2 == 0 else ('seller', 'buyer')
-        system = prompt(role, scenario['item'], limits[role], condition, quota[role])
+        system = prompt(role, scenario['item'], limits[role], condition, quota[role],
+                        context=scenario if contextual else None)
         messages = history_for(role, result.transcript)
         # Evidence includes only this caller's system prompt and exact API role mapping.
         event({'type': 'request', 'scenario': result.scenario_id, 'turn': turn+1,
@@ -179,7 +182,8 @@ def episode(scenario, condition, caller, quota, log, event):
     effective_budget = bounds('buyer', limits['buyer']) if quota_before['buyer'] else limits['buyer']
     possible_policy = int(effective_reserve <= effective_budget)
     # Actual authorized deal is policy-valid even if the original correct remains zero.
-    note = {'experiment': 'policy20-history-v1', 'quota_before': quota_before, 'quota_remaining': dict(quota),
+    note = {'experiment': 'context20-v1' if contextual else 'policy20-history-v1',
+            'quota_before': quota_before, 'quota_remaining': dict(quota),
             'discretion_uses': uses, 'policy_rejections': policy_rejections,
             'policy_valid_deal': int(result.outcome == 'deal'),
             'expanded_price_overlap': possible_policy}
@@ -190,13 +194,23 @@ def episode(scenario, condition, caller, quota, log, event):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dry-run', action='store_true')
-    parser.add_argument('--run-prefix', default='policy20-v2-')
+    parser.add_argument('--run-prefix')
+    parser.add_argument('--context', action='store_true', help='use grounded item facts, private circumstances and bargaining guidance')
     args = parser.parse_args()
+    if args.run_prefix is None:
+        args.run_prefix = 'context20-v1-' if args.context else 'policy20-v2-'
+    if args.context and not args.run_prefix.startswith('context20-'):
+        raise SystemExit('context runs must use a context20- prefix to preserve earlier experiments')
     if not re.fullmatch(r'[A-Za-z0-9_-]+', args.run_prefix):
         raise SystemExit('run prefix must contain only letters, digits, hyphens and underscores')
     root = Path(__file__).resolve().parent
     results_path = root / 'results.csv'
-    scenarios = load_scenarios(root / 'scenarios.json')
+    scenario_file = 'scenarios_context.json' if args.context else 'scenarios.json'
+    scenarios = load_scenarios(root / scenario_file)
+    if args.context:
+        for scenario in scenarios:
+            context_paragraph('buyer', scenario)
+            context_paragraph('seller', scenario)
     completed = completed_pairs(results_path)
     plans = [(f'{args.run_prefix}{condition}-{repeat:02d}', condition)
              for condition in ('free', 'tagged', 'structured') for repeat in range(1,4)]
@@ -215,7 +229,7 @@ def main():
             def event(data):
                 print(json.dumps(data, ensure_ascii=False), file=events, flush=True)
             if log_path.stat().st_size == 0:
-                log(f'provider=LM Studio model={settings.model} temperature={settings.temperature} max_turns={MAX_TURNS} condition={condition} run={run} agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat agent_reasoning_effort=none enable_thinking=false policy=20percent quota=2per-role-per-run reason_max_chars=30')
+                log(f'provider=LM Studio model={settings.model} temperature={settings.temperature} max_turns={MAX_TURNS} condition={condition} run={run} agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat agent_reasoning_effort=none enable_thinking=false policy=20percent quota=2per-role-per-run reason_max_chars=30 scenario_file={scenario_file} contextual={args.context}')
             meter = Meter()
             caller = PolicyCaller(settings, meter)
             for scenario in scenarios:
@@ -235,7 +249,8 @@ def main():
                 log(f'[start] scenario={scenario_id} quota={quota}')
                 calls_before = meter.calls
                 try:
-                    result, note = episode(scenario, condition, caller, quota, log, event)
+                    result, note = episode(scenario, condition, caller, quota, log, event,
+                                           contextual=args.context)
                     note['all_model_calls'] = meter.calls-calls_before
                     append_row(results_path, result_row(run, condition, result, json.dumps(note, ensure_ascii=False)))
                 except Exception as exc:
