@@ -1,3 +1,4 @@
+import argparse
 import csv
 import json
 from openai import RateLimitError
@@ -66,15 +67,19 @@ def append_row(row):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--start-run", type=int, default=1)
+    args = parser.parse_args()
+
     scenarios = load_scenarios()
     ensure_results_file()
     done = completed_keys()
 
-    run_number = 1
+    run_number = args.start_run
 
     for condition in CONDITIONS:
         for repeat in range(1, 4):
-            log_path = LOG_DIR / f"{condition}-{repeat:02d}.txt"
+            log_path = LOG_DIR / f"run-{run_number:02d}-{condition}-repeat-{repeat:02d}.txt"
             LOG_DIR.mkdir(exist_ok=True)
 
             existing_text = ""
