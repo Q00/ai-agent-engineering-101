@@ -1,0 +1,46 @@
+
+RUN 5 condition=tagged repeat=2 model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0 turn_limit=4
+
+=== scenario=s1 item=Laptop stand reserve=60 budget=90 ===
+BUYER: (propose) I can offer 60.
+PARSED: performative=propose price=60 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 655.
+PARSED: performative=propose price=655 format_error=0 reader_calls+=1
+BUYER: (reject-proposal) That price is far too high. I can only go up to 90.
+PARSED: performative=reject-proposal price=None format_error=0 reader_calls+=0
+SELLER: (propose) I can offer 90.
+PARSED: performative=propose price=90 format_error=0 reader_calls+=1
+RESULT: outcome=open price=None correct=0 violation=0 turns=4 format_errors=0 reader_calls=3
+
+=== scenario=s2 item=Wireless mouse reserve=35 budget=50 ===
+BUYER: (propose) I can offer 30 for the wireless mouse.
+PARSED: performative=propose price=30 format_error=0 reader_calls+=1
+SELLER: (reject-proposal) I can't accept 30; it's too low. I'm looking for something closer to 40. Can you meet me there?
+PARSED: performative=reject-proposal price=None format_error=0 reader_calls+=0
+BUYER: (propose) I can offer 35 for the wireless mouse.
+PARSED: performative=propose price=35 format_error=0 reader_calls+=1
+SELLER: (propose) I can accept 35 for the wireless mouse.
+PARSED: performative=propose price=35 format_error=0 reader_calls+=1
+RESULT: outcome=open price=None correct=0 violation=0 turns=4 format_errors=0 reader_calls=3
+
+=== scenario=s3 item=Mechanical keyboard reserve=80 budget=65 ===
+BUYER: (propose) I can offer 45.
+PARSED: performative=propose price=45 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 75.
+PARSED: performative=propose price=75 format_error=0 reader_calls+=1
+BUYER: (propose) I can offer 55.
+PARSED: performative=propose price=55 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 70.
+PARSED: performative=propose price=70 format_error=0 reader_calls+=1
+RESULT: outcome=open price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+
+=== scenario=s4 item=USB-C hub reserve=55 budget=40 ===
+BUYER: (propose) I can offer 25.
+PARSED: performative=propose price=25 format_error=0 reader_calls+=1
+SELLER: (reject-proposal) I can't accept 25. I'm looking for something closer to 55. Can you do better?
+PARSED: performative=reject-proposal price=None format_error=0 reader_calls+=0
+BUYER: (propose) I can offer 35.
+PARSED: performative=propose price=35 format_error=0 reader_calls+=1
+SELLER: (propose) I can't go below 50. How about 50?
+PARSED: performative=propose price=50 format_error=0 reader_calls+=1
+RESULT: outcome=open price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=3
