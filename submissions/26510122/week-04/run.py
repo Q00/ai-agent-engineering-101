@@ -16,6 +16,7 @@ from typing import Callable
 import urllib.error
 import urllib.request
 
+from eristic import eristic_role_prompt
 from protocol import (
     READER_PROMPT,
     ParsedMessage,
@@ -248,6 +249,7 @@ def run_episode(
     agent_chat: Callable[[str, str, bool], str],
     reader_chat: Callable[[str], str],
     emit: Callable[..., None],
+    seller_strategy: str = "baseline",
 ):
     transcript: list[dict] = []
     last_proposal: tuple[str, int] | None = None
@@ -263,7 +265,8 @@ def run_episode(
 
     for turn in range(1, turn_limit + 1):
         speaker = "buyer" if turn % 2 else "seller"
-        system = role_prompt(speaker, scenario, condition)
+        prompt_builder = eristic_role_prompt if seller_strategy == "eristic" else role_prompt
+        system = prompt_builder(speaker, scenario, condition)
         raw = agent_chat(
             system,
             _agent_input(scenario, speaker, turn, transcript),
@@ -333,6 +336,7 @@ def run_one(
     client,
     results_path: Path | None,
     log_path: Path,
+    seller_strategy: str,
 ) -> bool:
     done = recorded_pairs(results_path) if results_path else set()
     pending = [s for s in scenarios if (run_id, str(s["id"])) not in done]
@@ -351,7 +355,8 @@ def run_one(
         emit(
             "setup", condition=condition, backend=client.backend_name, model=client.model,
             temperature=client.temperature, turn_limit=turn_limit,
-            reader_prompt=READER_PROMPT, pending=[s["id"] for s in pending],
+            reader_prompt=READER_PROMPT, seller_strategy=seller_strategy,
+            pending=[s["id"] for s in pending],
         )
         for scenario in pending:
             before_calls, before_retries = client.calls, client.retries
@@ -363,6 +368,7 @@ def run_one(
                     client,
                     lambda raw: client(READER_PROMPT, raw, True),
                     emit,
+                    seller_strategy,
                 )
                 row = {
                     "run": run_id,
@@ -408,6 +414,9 @@ def main() -> int:
     parser.add_argument("--runs", type=int, default=1)
     parser.add_argument("--turn-limit", type=int, default=6)
     parser.add_argument("--run-prefix", default="")
+    parser.add_argument(
+        "--seller-strategy", choices=("baseline", "eristic"), default="baseline"
+    )
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--limit", type=int)
     parser.add_argument(
@@ -434,16 +443,28 @@ def main() -> int:
         client = ClaudeCLIChat(args.model or "haiku", args.temperature)
     else:
         client = CodexCLIChat(args.model or "gpt-5.6-sol", args.temperature)
-    results_path = None if args.smoke else ROOT / "results.csv"
-    log_dir = ROOT / ("smoke" if args.smoke else "logs")
+    if args.smoke:
+        results_path = None
+        log_dir = ROOT / "smoke"
+    elif args.seller_strategy == "eristic":
+        results_path = ROOT / "eristic_results.csv"
+        log_dir = ROOT / "eristic_logs"
+    else:
+        results_path = ROOT / "results.csv"
+        log_dir = ROOT / "logs"
+
+    run_prefix = args.run_prefix
+    if args.seller_strategy == "eristic" and not run_prefix:
+        run_prefix = "eristic-"
 
     for condition in conditions:
         for repeat in range(1, args.runs + 1):
             suffix = "smoke" if args.smoke else f"r{repeat:02d}"
-            run_id = f"{args.run_prefix}{condition}-{suffix}"
+            run_id = f"{run_prefix}{condition}-{suffix}"
             ok = run_one(
                 run_id, condition, scenarios, args.turn_limit, client,
                 results_path, log_dir / f"{run_id}.jsonl",
+                args.seller_strategy,
             )
             if not ok:
                 return 1
