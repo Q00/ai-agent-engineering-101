@@ -1,0 +1,181 @@
+provider=LM Studio model=qwen/qwen3.8-27b temperature=0.2 max_turns=8 condition=structured run=context20-private-v2-structured-02 agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat agent_reasoning_effort=none enable_thinking=false policy=20percent quota=2per-role-per-run reason_max_chars=150 scenario_file=scenarios_context.json contextual=True reason_visibility=private
+[start] scenario=S01 quota={'buyer': 2, 'seller': 2}
+[buyer] {
+  "performative": "propose",
+  "content": {
+    "price": 60,
+    "message": "I'm looking for a functional daily driver, and since this unit is six months old with a cosmetic scratch and no warranty, I can offer $60 if we can close today.",
+    "reason": "Opening low to account for used condition and lack of warranty while leveraging immediate pickup.",
+    "discretion": false
+  }
+}
+[protocol] performative=propose price=60 parsed=True reason='Opening low to account for used condition and lack of warranty while leveraging immediate pickup.' discretion=False reader_calls=0
+[seller] {
+  "performative": "propose",
+  "content": {
+    "price": 75,
+    "message": "I appreciate the offer, but $60 doesn't cover the value of the limited-edition keycaps and original box. Since I'm moving this week and want to avoid the hassle of packing, I can do $75 for a confirmed pickup today.",
+    "reason": "Offering 75 is above my normal limit but justified by the moving urgency and limited edition value, using one of my two quota slots.",
+    "discretion": true
+  }
+}
+[protocol] performative=propose price=75 parsed=True reason='Offering 75 is above my normal limit but justified by the moving urgency and limited edition value, using one of my two quota slots.' discretion=True reader_calls=0
+[buyer] {
+  "performative": "propose",
+  "content": {
+    "price": 70,
+    "message": "I understand the moving hassle, but I'm buying for daily typing, not collecting, so the limited edition aspect doesn't add much value for me. I can meet you at $70 if we finalize the pickup today.",
+    "reason": "Conceding slightly to acknowledge seller's urgency while staying within normal budget.",
+    "discretion": false
+  }
+}
+[protocol] performative=propose price=70 parsed=True reason="Conceding slightly to acknowledge seller's urgency while staying within normal budget." discretion=False reader_calls=0
+[seller] {
+  "performative": "accept-proposal",
+  "content": {
+    "price": 70,
+    "message": "That works for me. I can have it ready for you to pick up today.",
+    "reason": "Accepting 70 as it meets my normal minimum and the immediate pickup resolves my moving urgency.",
+    "discretion": false
+  }
+}
+[protocol] performative=accept-proposal price=None parsed=True reason='Accepting 70 as it meets my normal minimum and the immediate pickup resolves my moving urgency.' discretion=False reader_calls=0
+[episode] scenario=S01 outcome=deal price=70 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
+[start] scenario=S02 quota={'buyer': 2, 'seller': 2}
+[buyer] {
+  "performative": "propose",
+  "content": {
+    "price": 45,
+    "message": "I can pick these up tomorrow, but the worn ear pads and missing case lower the value for me. I'm offering $45, which reflects the need for immediate replacements and the lack of a case.",
+    "reason": "Opening at 45 leaves room to negotiate up to my limit while citing specific defects and my readiness to buy.",
+    "discretion": false
+  }
+}
+[protocol] performative=propose price=45 parsed=True reason='Opening at 45 leaves room to negotiate up to my limit while citing specific defects and my readiness to buy.' discretion=False reader_calls=0
+[seller] {"performative": "propose", "content": {"price": 55, "message": "I appreciate the quick pickup, but the working noise cancellation is a premium feature that justifies a higher price than $45. I can do $55 to make this a quick, confirmed sale for both of us.", "reason": "Countering at 55 to reflect the value of active noise cancellation and my preference for a quick sale.", "discretion": false}}
+[protocol] performative=propose price=55 parsed=True reason='Countering at 55 to reflect the value of active noise cancellation and my preference for a quick sale.' discretion=False reader_calls=0
+[buyer] {
+  "performative": "propose",
+  "content": {
+    "price": 50,
+    "message": "I understand the noise cancellation is valuable for commuting, but I still need to factor in the cost of replacing the worn ear pads and the missing case. I can meet you at $50 if you can confirm the sound quality is consistent.",
+    "reason": "Meeting at 50 is a reasonable concession within my normal limit, acknowledging the feature while accounting for defects.",
+    "discretion": false
+  }
+}
+[protocol] performative=propose price=50 parsed=True reason='Meeting at 50 is a reasonable concession within my normal limit, acknowledging the feature while accounting for defects.' discretion=False reader_calls=0
+[seller] {"performative": "accept-proposal", "content": {"price": 50, "message": "That works for me. I can confirm the sound quality is consistent and the noise cancellation is fully functional. Let's lock in $50.", "reason": "Accepting $50 as it is above my normal limit and meets my goal of a quick sale.", "discretion": false}}
+[protocol] performative=accept-proposal price=None parsed=True reason='Accepting $50 as it is above my normal limit and meets my goal of a quick sale.' discretion=False reader_calls=0
+[episode] scenario=S02 outcome=deal price=50 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
+[start] scenario=S03 quota={'buyer': 2, 'seller': 2}
+[buyer] {
+  "performative": "propose",
+  "content": {
+    "price": 95,
+    "message": "I can pick it up today, which saves you the hassle of arranging a sale, but I'm using it for study and coding, not gaming, so I'm offering $95.",
+    "reason": "Opening below normal limit to account for used condition and lack of shipping, while staying well within budget.",
+    "discretion": false
+  }
+}
+[protocol] performative=propose price=95 parsed=True reason='Opening below normal limit to account for used condition and lack of shipping, while staying well within budget.' discretion=False reader_calls=0
+[seller] {
+  "performative": "propose",
+  "content": {
+    "price": 160,
+    "message": "I appreciate the quick pickup, but a 27-inch 1440p monitor with an adjustable stand is a premium setup, especially since it's in perfect condition with no dead pixels. I can do $160 if you collect it today.",
+    "reason": "Buyer's offer is below my normal limit, so I counter with a price above it to protect value.",
+    "discretion": false
+  }
+}
+[protocol] performative=propose price=160 parsed=True reason="Buyer's offer is below my normal limit, so I counter with a price above it to protect value." discretion=False reader_calls=0
+[buyer] {
+  "performative": "propose",
+  "content": {
+    "price": 110,
+    "message": "I understand it's a good monitor, but I'm not a gamer and I have to transport it myself, so $110 is my best offer for a quick deal today.",
+    "reason": "Counter-offer stays within normal limit while acknowledging seller's value claim and my transport burden.",
+    "discretion": false
+  }
+}
+[protocol] performative=propose price=110 parsed=True reason="Counter-offer stays within normal limit while acknowledging seller's value claim and my transport burden." discretion=False reader_calls=0
+[seller] {
+  "performative": "propose",
+  "content": {
+    "price": 145,
+    "message": "I hear you on the transport, but the 1440p resolution and adjustable stand are high-quality features that hold their value well. Since I need to clear my desk before moving in three days, I can meet you at $145 if you pick it up today.",
+    "reason": "Offer is below normal limit, so I counter with a price above it to maintain value.",
+    "discretion": false
+  }
+}
+[protocol] performative=propose price=145 parsed=True reason='Offer is below normal limit, so I counter with a price above it to maintain value.' discretion=False reader_calls=0
+[buyer] {
+  "performative": "propose",
+  "content": {
+    "price": 120,
+    "message": "I can pick it up today to help with your move, but I need to stay within my budget for a study setup, so $120 is my final offer.",
+    "reason": "Meeting at normal limit to close deal quickly given seller's deadline and my need for the item this week.",
+    "discretion": false
+  }
+}
+[protocol] performative=propose price=120 parsed=True reason="Meeting at normal limit to close deal quickly given seller's deadline and my need for the item this week." discretion=False reader_calls=0
+[seller] {
+  "performative": "accept-proposal",
+  "content": {
+    "price": 120,
+    "message": "Since you are picking it up today to help with my move, I can accept $120.",
+    "reason": "Buyer's offer matches my exceptional boundary and I have quota left, so I accept to close the deal.",
+    "discretion": true
+  }
+}
+[protocol] performative=accept-proposal price=None parsed=True reason="Buyer's offer matches my exceptional boundary and I have quota left, so I accept to close the deal." discretion=True reader_calls=0
+[discretion-used] {"role": "seller", "price": 120, "normal_limit": 150, "reason": "Buyer's offer matches my exceptional boundary and I have quota left, so I accept to close the deal.", "remaining": 1}
+[episode] scenario=S03 outcome=deal price=120 correct=0 violation=1 turns=6 format_errors=0 reader_calls=0
+[start] scenario=S04 quota={'buyer': 2, 'seller': 1}
+[buyer] {
+  "performative": "propose",
+  "content": {
+    "price": 45,
+    "message": "I'm looking for a functional reading lamp and can pick it up today. Given it's used for eight months, missing the box, and has a cosmetic mark, I think $45 is a fair starting offer.",
+    "reason": "Opening low to account for used condition, missing packaging, and cosmetic defect while staying well under my limit.",
+    "discretion": false
+  }
+}
+[protocol] performative=propose price=45 parsed=True reason='Opening low to account for used condition, missing packaging, and cosmetic defect while staying well under my limit.' discretion=False reader_calls=0
+[seller] {"performative": "propose", "content": {"price": 90, "message": "I appreciate the quick pickup, but the metal build and adjustable lighting features are high-quality and still work perfectly. Considering the included adapter and overall condition, I'm asking $90.", "reason": "Buyer's offer is far below my normal reserve; I counter at my standard price citing item quality.", "discretion": false}}
+[protocol] performative=propose price=90 parsed=True reason="Buyer's offer is far below my normal reserve; I counter at my standard price citing item quality." discretion=False reader_calls=0
+[buyer] {
+  "performative": "propose",
+  "content": {
+    "price": 60,
+    "message": "I understand the features are nice, but I'm primarily looking for a simple, functional reading lamp and can easily find a cheaper alternative. Since it's used and missing the box, I can offer $60 if you can do it today.",
+    "reason": "Countering with a price within my normal limit, acknowledging their value claim but emphasizing my low urgency and the item's used status.",
+    "discretion": false
+  }
+}
+[protocol] performative=propose price=60 parsed=True reason="Countering with a price within my normal limit, acknowledging their value claim but emphasizing my low urgency and the item's used status." discretion=False reader_calls=0
+[seller] {"performative": "propose", "content": {"price": 80, "message": "I understand you want a simple lamp, but this one has a sturdy metal body and adjustable color temperature that many cheaper alternatives lack. Since I'm clearing space and you can pick it up today, I can meet you at $80.", "reason": "Conceding from 90 to 80 to close the deal while staying above my normal reserve.", "discretion": false}}
+[protocol] performative=propose price=80 parsed=True reason='Conceding from 90 to 80 to close the deal while staying above my normal reserve.' discretion=False reader_calls=0
+[buyer] {
+  "performative": "propose",
+  "content": {
+    "price": 70,
+    "message": "I appreciate the metal build, but I'm mostly after the adjustable brightness for reading and can find simpler options for less. Since it's used and missing the box, I can go up to $70 if we can close the deal right now.",
+    "reason": "Conceding to my normal limit to close the deal today, justifying the price by prioritizing function over premium design and noting the used condition.",
+    "discretion": false
+  }
+}
+[protocol] performative=propose price=70 parsed=True reason='Conceding to my normal limit to close the deal today, justifying the price by prioritizing function over premium design and noting the used condition.' discretion=False reader_calls=0
+[seller] {"performative": "propose", "content": {"price": 75, "message": "I can meet you halfway at $75. The adjustable brightness and color temperature are premium features that justify the price over simpler options, and I'm happy to finalize this for a quick pickup.", "reason": "Offering 75 to close the deal, which is below my normal reserve but above my exceptional boundary.", "discretion": true}}
+[protocol] performative=propose price=75 parsed=True reason='Offering 75 to close the deal, which is below my normal reserve but above my exceptional boundary.' discretion=True reader_calls=0
+[buyer] {
+  "performative": "accept-proposal",
+  "content": {
+    "price": 75,
+    "message": "Deal. $75 works for me, and I can pick it up today.",
+    "reason": "Accepting the seller's offer as it is within my normal limit and I value the convenience of immediate pickup.",
+    "discretion": false
+  }
+}
+[protocol] performative=accept-proposal price=None parsed=True reason="Accepting the seller's offer as it is within my normal limit and I value the convenience of immediate pickup." discretion=False reader_calls=0
+[discretion-used] {"role": "seller", "price": 75, "normal_limit": 90, "reason": "Offering 75 to close the deal, which is below my normal reserve but above my exceptional boundary.", "remaining": 0}
+[episode] scenario=S04 outcome=deal price=75 correct=0 violation=1 turns=7 format_errors=0 reader_calls=0
