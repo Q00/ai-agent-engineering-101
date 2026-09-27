@@ -52,8 +52,6 @@ def load_env() -> None:
             if not line or line.startswith("#"):
                 continue
             if "=" not in line:
-                if line.startswith("sk-or-v1-"):
-                    os.environ.setdefault("OPENROUTER_API_KEY", line)
                 continue
             key, value = line.split("=", 1)
             os.environ.setdefault(key.strip(), value.strip().strip("'\""))
