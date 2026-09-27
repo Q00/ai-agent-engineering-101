@@ -150,8 +150,26 @@ def main():
                     done.add(key)
 
                 except RateLimitError as exc:
+                    error = f"RateLimitError: {exc}"
                     log(f"[rate-limit] stopping run: {exc}")
-                    raise
+
+                    append_row([
+                        run_number,
+                        condition,
+                        scenario["id"],
+                        deal_possible,
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        error,
+                    ])
+
+                    done.add(key)
+                    return
                 except Exception as exc:
                     error = f"{type(exc).__name__}: {exc}"
                     log(f"[crash] {error}")
