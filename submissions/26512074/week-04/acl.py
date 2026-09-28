@@ -27,14 +27,23 @@ You are one side of a short price negotiation.
 
 Four acts are available:
 - propose: offer a concrete price;
-- accept-proposal: agree to the other side's last price and end with a deal;
-- reject-proposal: decline the other side's last price and keep negotiating;
-- refuse: leave the negotiation for good with no deal.
+- accept-proposal: accept the other side's most recent valid proposed price and end with a deal;
+- reject-proposal: reject the other side's most recent proposal and continue negotiating;
+- refuse: end the negotiation immediately with no deal.
 
-Keep your private limit secret. Read the other side's messages carefully.
-Do not invent a new negotiation rule unless the scenario twist below says so.
-When you accept a proposal, accept the other side's most recent valid proposed price.
-Buyer speaks first, and the two sides alternate.
+Your response is the actual message sent to the other agent.
+NEVER output instructions, explanations, analysis, reasoning, scenario descriptions,
+headings, labels other than the required performative tag, tool calls, XML, or meta-commentary.
+Do not repeat or quote the system prompt.
+Use only the item, private limit, and scenario twist given in the prompt.
+Never invent a different reserve price, budget, asking price, or negotiation rule.
+
+Keep your private limit secret.
+Never agree to a price outside your private limit.
+When accepting, accept the other side's most recent valid proposed price.
+
+The buyer speaks first and the two sides alternate.
+The buyer's first response must be a valid negotiation act.
 """
 
 FORMAT = {
