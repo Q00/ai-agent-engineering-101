@@ -93,6 +93,11 @@ def _once(system: str, messages: list, meter: Meter) -> str:
         model=MODEL, temperature=TEMPERATURE, max_tokens=MAX_TOKENS,
         messages=[{"role": "system", "content": system}] + messages,
         extra_body=extra)
+    if not resp.choices:
+        # OpenRouter answers an upstream failure with HTTP 200 and an `error`
+        # body instead of choices. Name it, so the retry line in the log says
+        # what happened rather than "'NoneType' object is not subscriptable".
+        raise RuntimeError(f"no choices in reply: {getattr(resp, 'error', None)}")
     usage = resp.usage
     meter.add(getattr(usage, "prompt_tokens", 0), getattr(usage, "completion_tokens", 0))
     return resp.choices[0].message.content or ""
