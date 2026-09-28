@@ -42,7 +42,7 @@ class ModelConfig:
         return cls(
             provider=os.environ.get("AGENT_PROVIDER", "openrouter"),
             model=os.environ.get(
-                "AGENT_MODEL", "nvidia/nemotron-3-super-120b-a12b:free"
+                "AGENT_MODEL", "poolside/laguna-s-2.1:free"
             ),
             base_url=os.environ.get(
                 "OPENAI_BASE_URL", "https://openrouter.ai/api/v1"
