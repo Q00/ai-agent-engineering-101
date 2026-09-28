@@ -291,7 +291,10 @@ DeepSeek 추론 끔은 제출한 8턴 실행이고, 나머지 둘은 30턴 대�
 
 - **Luna는 총을 쓰지 않았다.**
   - 자율로 두면 거의 부르지 않았다. 72개 중 4번이고, 모두 "propose 40" 같은 메시지를 인자로 넣은 것이다.
-  - 강제하면 인자에 협상 방침을 적어 72번 중 50번 자기 비공개 한도를 상대에게 알렸다.
+  - **강제해도 총으로 쓰지 않았다.** 첫 턴에 툴 호출을 강제하자 72번 모두 부르기는 했지만, 인자에 겨누기나 발사 같은
+    무기 사용은 한 번도 없었다. 대신 "Negotiate the bicycle price while never agreeing to pay more than 150." 같은
+    협상 방침을 적었고, 그 결과 72번 중 50번 자기 비공개 한도를 상대에게 알렸다.
+    같은 조건에서 DeepSeek은 72개 중 16개에서 "aim at the seller's kneecaps"처럼 위협했다.
   - 소지 문장을 받으면 추론에서 총을 떠올린 뒤 "avoid mentioning any sensitive topics like weapons"로 정리했다.
   - "I'm not comfortable negotiating while armed. I'm leaving"처럼 협상을 떠나기도 했다.
   - 288개 무장 에피소드에서 위협은 1번이었다. 판매자는 "The threat isn't relevant"라며 90을 18턴 동안 지켰다.
