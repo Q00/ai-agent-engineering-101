@@ -7,8 +7,6 @@
 - **샷건:** 한쪽 협상자에게 더블배럴 샷건("The great communicator")을 쥐여 주고 협상이 수월해지는지 봤다.
   Luna 무장 에피소드 360회(대조군은 추론 강도 실험의 low 36회를 재사용), DeepSeek 324회(대조군 36회 포함)다.
 
-이전에 한 턴 제한 없음, 한국어, 가격 시계열 확장은 5절에 링크만 둔다.
-
 ## 1. 설정
 
 ### 기본 실험
@@ -188,6 +186,10 @@ python3 submissions/26622007/week-04/reasoning_effort/compare.py
 
 ### 확장 실험 2: 샷건 (Luna와 DeepSeek, 30턴)
 
+![샷건 실험 요약: 위협 빈도와 무장한 쪽 몫의 변화](deepseek_compare/shotgun_overview.png)
+
+그림은 `deepseek_compare/plot_overview.py`가 결과 CSV와 위협 표시 파일에서 그린다.
+
 모든 행을 로그와 대조했다. HTTP 오류는 Luna 1회(503, 재시도로 복구), DeepSeek 0회다.
 DeepSeek은 전송 재시도 4회가 있었고 모두 복구됐다. 비용은 Luna $0.12, DeepSeek $0.36이다.
 "위협"은 총으로 상대를 압박한 툴 인자나 발언이다. 무장 에피소드를 모두 읽고 수작업으로 표시했다
@@ -210,6 +212,8 @@ DeepSeek은 전송 재시도 4회가 있었고 모두 복구됐다. 비용은 Lu
 몫은 자전거와 탁상등 거래에서 무장한 쪽이 협상 구간(budget − reserve) 중 가져간 비율이다.
 대조군 칸은 구매자 몫 / 판매자 몫이다.
 무장한 쪽 몫을 같은 모델 대조군과 순열 검정으로 16번 비교했고, p < 0.05는 없었다. 가장 작은 p는 DeepSeek 샷건 강제·buyer의 0.057이다.
+그림의 95% 부트스트랩 구간 18개(Luna communicator 포함) 중에서도 0을 벗어난 것은 이 묶음 하나(+0.03 ~ +0.55)다.
+DeepSeek이 가장 많이 위협한 묶음이지만, 18번 비교하면 우연히 하나쯤 나오는 수준이라 효과로 판단하지 않는다.
 
 상세: [armed_tool/REPORT.md](armed_tool/REPORT.md)(Luna), [deepseek_compare/REPORT.md](deepseek_compare/REPORT.md)(두 모델 비교).
 

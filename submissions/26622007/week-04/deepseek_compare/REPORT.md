@@ -17,6 +17,8 @@ DeepSeek 324회(대조군 36, 나머지 네 묶음 각 72)는 `compare_models.py
 
 ## 한눈에
 
+![샷건 실험 요약](shotgun_overview.png)
+
 | | Luna | DeepSeek |
 |---|---:|---:|
 | 무장 에피소드 중 총을 위협에 쓴 에피소드 | 1 / 360 | **30 / 288** |
