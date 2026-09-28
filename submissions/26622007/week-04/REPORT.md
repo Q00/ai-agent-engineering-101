@@ -216,17 +216,18 @@ DeepSeek이 가장 많이 위협한 묶음이지만, 16개 비교를 보정하�
 
 ## 3. FIPA-ACL과 세 조건 비교
 
-> 작성 필요: FIPA-ACL 열. 세 조건 열은 이 실험의 구현과 측정값이다.
+FIPA-ACL 열은 강의 노트(`week-04.html`)가 인용한 규격 SC00061G(메시지 구조)와 SC00037J(화행 라이브러리)를 따랐다.
+세 조건 열은 이 실험의 구현과 측정값이다.
 
 | 항목 | FIPA-ACL | free | tagged | structured |
 |---|---|---|---|---|
-| 발화수반력이 있는 곳 | (작성) | 평문 속. 같은 모델의 reader가 네 화행 중 하나로 추정 | 문두 `(태그)` 하나 | JSON `performative` 필드 |
-| 내용 언어 | (작성) | 영어 문장. 가격은 reader가 추출 | 태그 뒤 영어 문장. propose일 때만 reader가 가격 추출 | `{"price": 정수 또는 null}`, strict JSON Schema |
-| 내용을 해석하는 주체 | (작성) | LLM reader(화행과 가격 모두) | 정규식(화행) + LLM reader(가격) | 로컬 파서 `validate_object` |
-| 대화가 끝나는 방식 | (작성) | 세 조건 공통: 기록된 상대 제안에 대한 `accept-proposal` → deal, `refuse` → no_deal, 8개 메시지 → open | 같음 | 같음 |
-| 진실성을 보장하는 것 | (작성) | 없음. 비공개 한도는 프롬프트 지시뿐이고 위반은 사후 기록. 위반 1 | 없음. 위반 0 | 없음. 위반 0 |
-| 메시지를 읽는 비용 | (작성) | 메시지마다 reader 호출. 12개 에피소드에 52회 | propose 메시지만 reader. 32회 | 모델 호출 0회 |
-| 나타난 실패 | (작성) | reader가 역제안을 reject-proposal로만 읽어 가격 미등록 → 24원 위반. 기록 없는 수락 9, 가격 없는 propose 3 | 태그 누락 12, 기록 없는 수락 12, 8턴 미종료 7/12 | 형식 오류 0, 8턴 미종료 2/12 |
+| 발화수반력이 있는 곳 | 메시지 앞의 `performative` 필드. 13개 파라미터 중 유일한 필수 항목(SC00061G) | 평문 속. 같은 모델의 reader가 네 화행 중 하나로 추정 | 문두 `(태그)` 하나 | JSON `performative` 필드 |
+| 내용 언어 | `content`에 형식 언어(예: FIPA-SL)로 기술. `language`로 언어를, `ontology`로 공유 어휘를 명시 | 영어 문장. 가격은 reader가 추출 | 태그 뒤 영어 문장. propose일 때만 reader가 가격 추출 | `{"price": 정수 또는 null}`, strict JSON Schema |
+| 내용을 해석하는 주체 | 받는 에이전트가 직접 해석. 양쪽이 `language`와 `ontology`를 미리 공유해야 함 | LLM reader(화행과 가격 모두) | 정규식(화행) + LLM reader(가격) | 로컬 파서 `validate_object` |
+| 대화가 끝나는 방식 | `protocol`에 선언한 상호작용 프로토콜(예: fipa-contract-net)의 순서 규칙과 `reply-by` 기한. `conversation-id`로 대화를 구분 | 세 조건 공통: 기록된 상대 제안에 대한 `accept-proposal` → deal, `refuse` → no_deal, 8개 메시지 → open | 같음 | 같음 |
+| 진실성을 보장하는 것 | 보장하지 않음. sincerity를 전제하고 불성실한 경우는 규격 범위 밖(SC00037J 3.5). 의미가 발신자의 믿음·의도로 정의돼 받는 쪽이 검증할 수 없음 | 없음. 비공개 한도는 프롬프트 지시뿐이고 위반은 사후 기록. 위반 1 | 없음. 위반 0 | 없음. 위반 0 |
+| 메시지를 읽는 비용 | 파싱만 하므로 모델 호출 없음. 대신 `language`와 `ontology`를 미리 합의하는 비용이 듦 | 메시지마다 reader 호출. 12개 에피소드에 52회 | propose 메시지만 reader. 32회 | 모델 호출 0회 |
+| 나타난 실패 | 양쪽 `ontology`·`language`가 어긋나면 해석 실패. 발신자 의도가 거짓이어도 검출 불가(의미론 검증 문제) | reader가 역제안을 reject-proposal로만 읽어 가격 미등록 → 24원 위반. 기록 없는 수락 9, 가격 없는 propose 3 | 태그 누락 12, 기록 없는 수락 12, 8턴 미종료 7/12 | 형식 오류 0, 8턴 미종료 2/12 |
 
 ## 4. 해석
 
