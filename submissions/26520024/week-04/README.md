@@ -4,6 +4,15 @@ Student 26520024 (LeeUichann). A buyer and seller negotiate fictional GPU-slot
 prices in integer credits. There are no real purchases, GPU jobs or image tests.
 The independent variable is message format, not role instructions or model.
 
+## Measured result
+
+All 36 genuine episodes completed on 2026-09-28, with nine original run logs.
+Each condition had 7/12 correct outcomes, zero limit violations and zero format
+errors. Reader calls were 85 (free), 79 (tagged), and 0 (structured); mean turns
+were 7.08, 7.25, and 7.50. Fifteen unresolved episodes remain in the data.
+Structured messages removed interpretation calls, not negotiation failures.
+See the Korean [report](REPORT.md) for the full table and log-based explanation.
+
 ## Reproduce in existing conda base
 
 Requires Python 3.8+ and an already authenticated Codex CLI; tested setup is base
@@ -75,6 +84,8 @@ is performed during the experiment.
 - [PROCESS.md](PROCESS.md): implementation assistance and chronological decisions.
 - `validate_results.py`: offline replay of prompts, traces, states and counts.
 - `test_negotiation.py`: synthetic tests isolated in temporary directories.
+- `test_validation.py`: replay and evidence-tampering regression tests.
+- [verification/](verification/): offline test and actual-evidence validation output.
 
 Course source: [assignment](../../../weeks/week-04/README.md) and
 [lecture](../../../week-04.html). This implements the four-act exercise, not full

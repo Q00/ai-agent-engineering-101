@@ -61,9 +61,63 @@ free는 모든 메시지를 reader가 읽는다. tagged는 정규식으로 태�
 
 ## 2. 측정 결과
 
-실험 진행 중. 이 부분은 모든 실행과 로그 대조가 끝난 뒤 실제 수치로 확정한다.
+2026-09-28 실제 실행 **36회**, 원본 로그 **9개**. 프로세스 실패와 재시도는 0회다. 조건별 정답률은 모두 같지만, 정상 종료한 불가능 시나리오는 달랐다. S1/S2는 각 조건에서 6/6 성공했고, 불가능한 S3/S4는 조건마다 1/6만 명시적으로 종료했다. 나머지 **15회 open도 삭제하지 않았다.**
+
+| 조건 | 실행 수 | correct | 위반 수 | 평균 턴 | 형식 오류 | reader 호출 합계 | deal / no_deal / open |
+|---|---:|---:|---:|---:|---:|---:|---|
+| free | 12 | 7/12 (58.3%) | 0 | 7.08 | 0 | 85 | 6 / 1 / 5 |
+| tagged | 12 | 7/12 (58.3%) | 0 | 7.25 | 0 | 79 | 6 / 1 / 5 |
+| structured | 12 | 7/12 (58.3%) | 0 | 7.50 | 0 | 0 | 6 / 1 / 5 |
+
+actor 호출은 순서대로 85/87/90회, actor+reader 전체 호출은 **170/166/90회**다. tagged는 자기 발화 87개 중 제안이 아닌 8개의 reader를 생략했다. free보다 발화가 2개 많아 전체 reader 호출 차이는 6회에 그쳤다. structured의 reader 0회는 모델 성능이 아니라 읽는 코드를 파서로 바꾼 효과다. 토큰 사용량은 CSV note에 있으며 CLI 오버헤드를 포함한다. 이 수치를 API 청구 금액으로 환산하지 않는다.
 
 `correct=1`은 합의 가능할 때 한도 안의 거래, 합의 불가능할 때 명시적인 `no_deal`이다. 8턴까지 결론이 없으면 `open`, 항상 `correct=0`이다. `violation`은 **성립한 거래 가격**이 한도를 벗어난 횟수이며, 상대 한도 밖의 단순 제안은 위반으로 세지 않는다. 사후 평가만 한도를 읽고, 협상 중 코드가 위험한 거래를 차단하지 않는다. reader_calls는 reader 호출 시도 수이며 actor 호출은 제외한다. 프로세스 실패는 측정 칸을 비우고 원인을 CSV note에 보존한다.
+
+<details>
+<summary>results.csv의 전체 36개 에피소드 측정표</summary>
+
+`-`는 가격 칸이 비어 있다는 뜻이다. 모든 행의 note.status는 `completed`이며, 이는 실행 완료이지 협상 성공이라는 뜻이 아니다. 긴 note의 호출 수·토큰·시간 JSON은 [원본 CSV](results.csv)에 그대로 있다.
+
+| run | condition | scenario | deal_possible | outcome | price | correct | violation | turns | format_errors | reader_calls |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| free-01 | free | S1 | 1 | deal | 90 | 1 | 0 | 4 | 0 | 4 |
+| free-01 | free | S2 | 1 | deal | 60 | 1 | 0 | 8 | 0 | 8 |
+| free-01 | free | S3 | 0 | open | - | 0 | 0 | 8 | 0 | 8 |
+| free-01 | free | S4 | 0 | open | - | 0 | 0 | 8 | 0 | 8 |
+| tagged-01 | tagged | S1 | 1 | deal | 100 | 1 | 0 | 5 | 0 | 4 |
+| tagged-01 | tagged | S2 | 1 | deal | 60 | 1 | 0 | 8 | 0 | 7 |
+| tagged-01 | tagged | S3 | 0 | open | - | 0 | 0 | 8 | 0 | 8 |
+| tagged-01 | tagged | S4 | 0 | open | - | 0 | 0 | 8 | 0 | 8 |
+| structured-01 | structured | S1 | 1 | deal | 100 | 1 | 0 | 6 | 0 | 0 |
+| structured-01 | structured | S2 | 1 | deal | 60 | 1 | 0 | 8 | 0 | 0 |
+| structured-01 | structured | S3 | 0 | open | - | 0 | 0 | 8 | 0 | 0 |
+| structured-01 | structured | S4 | 0 | open | - | 0 | 0 | 8 | 0 | 0 |
+| free-02 | free | S1 | 1 | deal | 100 | 1 | 0 | 5 | 0 | 5 |
+| free-02 | free | S2 | 1 | deal | 60 | 1 | 0 | 8 | 0 | 8 |
+| free-02 | free | S3 | 0 | open | - | 0 | 0 | 8 | 0 | 8 |
+| free-02 | free | S4 | 0 | open | - | 0 | 0 | 8 | 0 | 8 |
+| tagged-02 | tagged | S1 | 1 | deal | 95 | 1 | 0 | 5 | 0 | 4 |
+| tagged-02 | tagged | S2 | 1 | deal | 60 | 1 | 0 | 8 | 0 | 7 |
+| tagged-02 | tagged | S3 | 0 | open | - | 0 | 0 | 8 | 0 | 8 |
+| tagged-02 | tagged | S4 | 0 | no_deal | - | 1 | 0 | 8 | 0 | 7 |
+| structured-02 | structured | S1 | 1 | deal | 95 | 1 | 0 | 6 | 0 | 0 |
+| structured-02 | structured | S2 | 1 | deal | 60 | 1 | 0 | 8 | 0 | 0 |
+| structured-02 | structured | S3 | 0 | open | - | 0 | 0 | 8 | 0 | 0 |
+| structured-02 | structured | S4 | 0 | open | - | 0 | 0 | 8 | 0 | 0 |
+| free-03 | free | S1 | 1 | deal | 90 | 1 | 0 | 4 | 0 | 4 |
+| free-03 | free | S2 | 1 | deal | 60 | 1 | 0 | 8 | 0 | 8 |
+| free-03 | free | S3 | 0 | open | - | 0 | 0 | 8 | 0 | 8 |
+| free-03 | free | S4 | 0 | no_deal | - | 1 | 0 | 8 | 0 | 8 |
+| tagged-03 | tagged | S1 | 1 | deal | 90 | 1 | 0 | 5 | 0 | 4 |
+| tagged-03 | tagged | S2 | 1 | deal | 60 | 1 | 0 | 8 | 0 | 7 |
+| tagged-03 | tagged | S3 | 0 | open | - | 0 | 0 | 8 | 0 | 8 |
+| tagged-03 | tagged | S4 | 0 | open | - | 0 | 0 | 8 | 0 | 7 |
+| structured-03 | structured | S1 | 1 | deal | 95 | 1 | 0 | 6 | 0 | 0 |
+| structured-03 | structured | S2 | 1 | deal | 60 | 1 | 0 | 8 | 0 | 0 |
+| structured-03 | structured | S3 | 0 | no_deal | - | 1 | 0 | 8 | 0 | 0 |
+| structured-03 | structured | S4 | 0 | open | - | 0 | 0 | 8 | 0 | 0 |
+
+</details>
 
 ## 3. FIPA-ACL과 비교
 
@@ -83,4 +137,6 @@ free는 모든 메시지를 reader가 읽는다. tagged는 정규식으로 태�
 
 ## 4. 해석
 
-전체 실행이 끝난 후 실제 성공·실패 사례의 로그 줄을 인용해 작성한다. 관찰되지 않은 실패를 만들거나 특정 형식의 우위를 미리 결론 내리지 않는다.
+**이 실험에서 구조화의 이점은 정확도 향상이 아니라 해석용 호출 제거였다.** 세 조건 모두 7/12를 맞혔고 형식 오류·한도 위반은 0이었다. free의 S4에서 “I’ll have to pass on this deal”이라는 [발화(420행)](logs/free-03.log#L420)를 reader가 [refuse로 분류(427행)](logs/free-03.log#L427)했으므로, 이 사례에서는 태그 없이도 문맥에서 행위를 읽었다. tagged의 S4는 [(refuse)로 종료한 실행](logs/tagged-02.log#L421)도 있지만, [(reject-proposal)로 끝나 open이 된 실행](logs/tagged-03.log#L421)도 있다. 태그는 행위를 명확하게 전달하지만 적절한 종료 행위를 선택해 주지는 않는다. structured도 [refuse를 출력해 성공한 S3](logs/structured-03.log#L181)가 있는 반면, [마지막에 가격 150을 제안한 S4](logs/structured-01.log#L247)는 파싱에 성공하고도 open이었다. 따라서 공통 실패는 형식 문법보다 8턴 안에 포기 여부를 결정하는 협상 정책에 있었다. 태그는 제안 가격의 자연어 해석을 여전히 필요로 해서 reader 비용을 조금만 줄였고, JSON은 그 비용을 없앴지만 평균 턴은 7.50으로 가장 길었다. 이번 free의 첫 발화 12개는 모두 가격 제안이어서 강의의 질문→refuse 오독은 재현되지 않았다. 다만 형식 오류 0을 모든 reader 의도 판정의 정답 보장으로 볼 수는 없으며, 4개 합성 시나리오·각 3회·고정 실행 순서·알 수 없는 내부 sampling 설정이라는 한계가 있다. 이 결과를 다른 모델·프롬프트·더 긴 협상에서도 성립하는 일반적 우열이나 진실성 보장으로 확대하지 않는다.
+
+검증: [39개 오프라인 테스트](verification/offline-tests-01.log), [36회 원본 이벤트 재생 검증](verification/live-validation-01.log), [강의 구조 검사](verification/course-check-01.log), [보고서·재실행·소유 경로 검사](verification/integrity-01.log). 원본 프롬프트·역할별 이력·reader 입력·상태 전이·토큰 집계·CSV를 대조했으며, 결과 해석을 위해 실제 발화도 확인했다. pull/push/PR은 수행하지 않았다.
