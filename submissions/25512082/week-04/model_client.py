@@ -16,6 +16,10 @@ class RateLimitError(RuntimeError):
     """A retryable HTTP 429 returned by the configured provider."""
 
 
+class ProviderResponseError(RuntimeError):
+    """A successful HTTP response without a usable chat completion."""
+
+
 def redact_secrets(value: object) -> str:
     """Remove the configured API key from text before it reaches logs or CSV."""
     text = str(value)
@@ -143,6 +147,20 @@ class ModelClient:
                 self._on_retry(attempt + 1, self.config.max_retries, delay)
                 self._sleep(delay)
                 continue
-            content = response.choices[0].message.content
-            return content or ""
+            choices = getattr(response, "choices", None)
+            if not isinstance(choices, list) or not choices:
+                raise ProviderResponseError(
+                    "provider response has no completion choices"
+                )
+            message = getattr(choices[0], "message", None)
+            if message is None:
+                raise ProviderResponseError(
+                    "provider response choice has no message"
+                )
+            content = getattr(message, "content", None)
+            if not isinstance(content, str):
+                raise ProviderResponseError(
+                    "provider response message has no text content"
+                )
+            return content
         raise AssertionError("retry loop exhausted unexpectedly")

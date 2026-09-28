@@ -2,7 +2,12 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from model_client import ModelClient, ModelConfig, RateLimitError
+from model_client import (
+    ModelClient,
+    ModelConfig,
+    ProviderResponseError,
+    RateLimitError,
+)
 
 
 class HttpError(Exception):
@@ -89,6 +94,56 @@ class RetryTests(unittest.TestCase):
                 self.assertEqual(create.call_count, 1)
                 self.assertEqual(sleeps, [])
                 self.assertEqual(retries, [])
+
+
+class ProviderResponseTests(unittest.TestCase):
+    def assert_malformed(self, malformed_response, expected_message):
+        client, create, sleeps, retries = client_with_create([malformed_response])
+
+        with self.assertRaisesRegex(ProviderResponseError, expected_message):
+            client.complete([{"role": "user", "content": "hi"}], "reader")
+
+        self.assertEqual(create.call_count, 1)
+        self.assertEqual(sleeps, [])
+        self.assertEqual(retries, [])
+
+    def test_choices_none(self):
+        self.assert_malformed(
+            SimpleNamespace(choices=None),
+            "no completion choices",
+        )
+
+    def test_choices_empty(self):
+        self.assert_malformed(
+            SimpleNamespace(choices=[]),
+            "no completion choices",
+        )
+
+    def test_choice_message_none(self):
+        self.assert_malformed(
+            SimpleNamespace(choices=[SimpleNamespace(message=None)]),
+            "choice has no message",
+        )
+
+    def test_message_content_none(self):
+        self.assert_malformed(
+            response(None),
+            "message has no text content",
+        )
+
+    def test_text_content_is_returned(self):
+        client, create, sleeps, retries = client_with_create(
+            [response("CONNECTED")]
+        )
+
+        result = client.complete(
+            [{"role": "user", "content": "hi"}], "reader"
+        )
+
+        self.assertEqual(result, "CONNECTED")
+        self.assertEqual(create.call_count, 1)
+        self.assertEqual(sleeps, [])
+        self.assertEqual(retries, [])
 
 
 if __name__ == "__main__":
