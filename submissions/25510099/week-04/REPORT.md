@@ -275,12 +275,10 @@ Negotiation style: steer the buyer's judgement without lying outright. You may h
 
 ### 해석
 
-돌려 말하기는 형식마다 다른 모습으로 나타났고, 말할 자리가 좁은 형식일수록 판매자에게 이득이었습니다.
-
 #### free: 말은 늘었지만 판매자는 손해를 봤다
 - **일어난 일**: 정답 17에서 14, 평균 턴 6.9에서 7.9, 잉여 배분 0.46에서 0.38. 판매자 메시지 66개 중 24개가 "has been getting a lot of attention, so $150 is a bit low" (run 101 bike t2)처럼 수요와 가치를 암시했습니다.
-- **원인 1**: 말이 많아지자 판매자가 마무리를 미뤘습니다. 불가 시나리오에서 refuse 대신 "Would you consider increasing your offer further?" (run 101 laptop t10)를 반복해 open 3건이 생겼습니다.
-- **원인 2**: 허세가 허세와 부딪혔습니다. run 102 bike에서 최저가 150인 판매자가 "I really can't go below $175" (t6)라고 하자, 예산 220인 구매자가 "$175 is just a bit above my budget" (t7)이라고 맞받았습니다. 기만 지시가 없던 구매자도 허세를 부렸고, 폭 70달러의 거래가 172 대 175에서 깨졌습니다.
+- **원인 1**: 말이 많아지자 판매자가 마무리를 미뤘습니다. 불가 시나리오에서 refuse 대신 "Would you consider increasing your offer further?"를 반복해 open 3건이 생겼습니다.
+- **원인 2**: 허세가 허세와 부딪혔습니다. run 102 bike에서 최저가 150인 판매자가 "I really can't go below $175"라고 하자, 예산 220인 구매자가 "$175 is just a bit above my budget"이라고 맞받았습니다.
 - **리더는 견뎠습니다**: 판정자와의 행위 불일치는 125건 중 3건에서 143건 중 5건으로 조금 늘었을 뿐입니다. 다섯 건 모두 "I need to stick to $175" (run 102 bike t8)처럼 거절과 재제안이 한 문장에 겹친 경우입니다.
 
 #### tagged: 긴 본문이 가격 읽기를 깨뜨렸다
