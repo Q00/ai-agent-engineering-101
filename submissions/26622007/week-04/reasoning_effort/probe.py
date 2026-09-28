@@ -10,7 +10,7 @@ import threading
 
 import run_luna as luna
 
-SUITE = "luna-probe-20260928"
+SUITE = "luna-probe2-20260928"  # luna-probe-20260928 kept its null-temperature 404 rows
 
 
 def main():

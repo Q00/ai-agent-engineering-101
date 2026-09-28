@@ -29,6 +29,8 @@ def load_module(name, path):
 # An isolated copy: the English 8-turn module keeps MAX_TURNS=8.
 lab = load_module("luna_effort_protocol", ROOT / "lab/experiment.py")
 lab.MAX_TURNS = 30
+# The local transport omits the sampling keys this model does not support.
+lab.OpenRouterClient = load_module("luna_effort_transport", HERE / "transport.py").OpenRouterClient
 EFFORTS = ("low", "max")
 SUITE = "luna-effort-20260928"
 SCHEDULE_SEED = 20260928
@@ -83,14 +85,14 @@ def load_inputs():
 
 def prepare_suite(suite, jobs, tasks, scenarios, configs):
     """Write or verify the manifest; open the suite CSV and return the recorded episodes."""
-    sources = [HERE / "run_luna.py", HERE / "config.json", ROOT / "lab/experiment.py",
-               ROOT / "pilot/transport.py", ROOT / "scenarios.json"]
+    sources = [HERE / "run_luna.py", HERE / "config.json", HERE / "transport.py", ROOT / "lab/experiment.py",
+               ROOT / "scenarios.json"]
     manifest = {"suite": suite, "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
                 "inputs": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
                 "configs": configs, "scenarios": scenarios, "max_turns": lab.MAX_TURNS, "repeats": 3,
                 "efforts": list(EFFORTS), "jobs": jobs, "schedule_seed": SCHEDULE_SEED, "tasks": tasks,
-                "unsettable": {"temperature": "not supported by the model; sent as null",
-                               "top_p": "not supported by the model; sent as null", "seed": "not sent"},
+                "unsettable": {"temperature": "not supported by the model; omitted from the request",
+                               "top_p": "not supported by the model; omitted from the request", "seed": "not sent"},
                 "reader": "same model and effort as the negotiators",
                 "format": lab.FORMAT, "roles": lab.ROLE, "common": lab.COMMON, "reader_system": lab.READER_SYSTEM}
     out = HERE / "runs" / suite

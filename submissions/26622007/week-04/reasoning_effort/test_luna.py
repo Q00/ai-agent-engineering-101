@@ -46,11 +46,22 @@ class LunaTests(unittest.TestCase):
                 self.assertEqual(sent["response_format"], fmt)
                 self.assertEqual(sent["reasoning"], {"effort": effort})
                 self.assertEqual(sent["model"], "openai/gpt-6-luna")
-                self.assertIsNone(sent["temperature"])
-                self.assertIsNone(sent["top_p"])
+                self.assertNotIn("temperature", sent)
+                self.assertNotIn("top_p", sent)
                 self.assertEqual(sent["provider"]["only"], ["openai"])
                 self.assertTrue(sent["provider"]["require_parameters"])
                 self.assertNotIn("max_tokens", sent)
+
+    def test_transport_copy_differs_only_in_omitting_absent_keys(self):
+        def body(path):  # code after the module docstring
+            text = path.read_text()
+            return text[text.index('"""', 3) + 3:]
+        old = '("model", "temperature", "top_p", "reasoning", "provider")}'
+        new = '("model", "temperature", "top_p", "reasoning", "provider") if key in self.config}'
+        original = body(luna.ROOT / "pilot/transport.py")
+        self.assertEqual(original.count(old), 1)
+        self.assertEqual(body(luna.HERE / "transport.py"), original.replace(old, new))
+        self.assertIsNot(luna.lab.OpenRouterClient, english.OpenRouterClient)
 
     def test_unknown_effort_and_prefilled_reasoning_are_rejected(self):
         base = json.loads((luna.HERE / "config.json").read_text())
