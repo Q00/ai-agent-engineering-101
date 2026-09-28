@@ -71,6 +71,7 @@ def call_model(messages: list[dict[str, str]], meter: Meter, temperature: float 
                 model=MODEL,
                 messages=messages,
                 temperature=temperature,
+                max_tokens=1024,
                 extra_body=DEFAULT_EXTRA_BODY,
             )
             meter.model_calls += 1
