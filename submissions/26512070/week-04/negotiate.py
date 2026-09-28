@@ -58,6 +58,7 @@ def episode(scenario, condition, log, model=chat):
     systems = {r: system_prompt(r, scenario, condition) for r in ROLE}
     views = {"buyer": [{"role": "user", "content": OPENER}], "seller": []}
     last_offer = {"buyer": None, "seller": None}
+    history = []  # (speaker, raw text) -- what the reader is shown as context
     format_errors = reader_calls = 0
     notes = []
     outcome, price = "open", None
@@ -69,7 +70,9 @@ def episode(scenario, condition, log, model=chat):
         views[speaker].append({"role": "assistant", "content": text})
         views[other].append({"role": "user", "content": text})
 
-        got = protocol.read(condition, text, reader, model=model, log=log)
+        got = protocol.read(condition, text, reader, model=model, log=log,
+                            context={"speaker": speaker, "history": list(history)})
+        history.append((speaker, text))
         reader_calls += got["reader_calls"]
         act, error = got["performative"], got["error"]
         if act in ("accept-proposal", "reject-proposal") and last_offer[other] is None:

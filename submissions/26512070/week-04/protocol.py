@@ -73,16 +73,42 @@ Message format: write every message as exactly one JSON object and nothing else 
 Example: {"performative": "reject-proposal", "content": {"price": 150}}""",
 }
 
-# TODO(26512070): write this yourself.
-# READER_PROMPT is the system prompt of the reader model used by `free` (act +
-# price) and by `tagged` (price only, for propose and reject-proposal). It
-# receives ONE message, no history, and must answer with one JSON object:
-#     {"performative": "<one of ACTS>", "price": <integer or null>}
-# "price" is the speaker's own price: the offer of a propose, the counter-offer
-# of a reject-proposal, null otherwise. Decide what the reader is told about a
-# message that fits none of the four acts, and report that choice -- do not
-# quietly add a fifth act.
-READER_PROMPT = None
+# The reader, used by `free` (act + price) and by `tagged` (price only, for
+# propose and reject-proposal). Rules chosen by 26512070: a decline with a new
+# price is reject-proposal carrying that price; with several numbers, the price
+# is the speaker's own; anything else -- including a message that fits no act
+# well -- is judged from the conversation and the speaker's role, with no
+# fallback act spelled out. So the reader sees the speaker and the history,
+# not the message alone (see reader_input).
+READER_PROMPT = """\
+You label messages from a price negotiation between a buyer and a seller. You are given who sent the message, the conversation before it, and the message itself. Reply with only one JSON object and nothing else:
+{"performative": "<act>", "price": <integer or null>}
+
+<act> is exactly one of these four:
+- propose: the speaker offers a price. In this negotiation only the buyer's opening message is a propose.
+- accept-proposal: the speaker agrees to the other side's most recent price. price is null.
+- reject-proposal: the speaker declines the other side's most recent price and offers a new price of their own. price is that new price.
+- refuse: the speaker leaves the negotiation with no deal. price is null.
+
+Rules:
+1. A message that declines the other side's price and states a new price is reject-proposal, and price is the new price: the speaker's counter-offer.
+2. If the message mentions more than one number, price is the speaker's own price, never a price the other side named.
+3. Judge from the conversation so far and the speaker's role (buyer or seller) which act the message actually performs and whose price each number is.
+price is a whole number of US dollars, or null."""
+
+LABEL_MARK = "Message to label"
+
+
+def reader_input(text, context):
+    """The reader's user turn: speaker, history, then the message.
+    context = {"speaker": "buyer"|"seller", "history": [(speaker, text), ...]}"""
+    context = context or {}
+    speaker = context.get("speaker", "unknown")
+    history = context.get("history") or []
+    past = "\n".join(f"{who}: {msg}" for who, msg in history) or \
+        "(none -- this is the opening message)"
+    return (f"Speaker: {speaker}\n\nConversation so far:\n{past}\n\n"
+            f"{LABEL_MARK} (sent by the {speaker}):\n{text}")
 
 
 def ready() -> list:
@@ -110,9 +136,10 @@ def _reply(performative=None, price=None, error=None, reader_calls=0, raw=None):
             "reader_calls": reader_calls, "reader_raw": raw}
 
 
-def _llm_read(text: str, meter: Meter, model, log):
+def _llm_read(text: str, meter: Meter, model, log, context=None):
     """One reader call. Returns (performative, price, raw_reply)."""
-    raw = model(READER_PROMPT, [{"role": "user", "content": text}], meter, log)
+    raw = model(READER_PROMPT, [{"role": "user", "content": reader_input(text, context)}],
+                meter, log)
     obj = extract_json(raw)
     if obj is None:
         return None, None, raw
@@ -131,15 +158,15 @@ def _check(act, price, calls, raw):
     return _reply(act, price if act in PRICED else None, reader_calls=calls, raw=raw)
 
 
-def read_free(text, meter, model=chat, log=None):
-    act, price, raw = _llm_read(text, meter, model, log)
+def read_free(text, meter, model=chat, log=None, context=None):
+    act, price, raw = _llm_read(text, meter, model, log, context)
     return _check(act, price, 1, raw)
 
 
 TAG = re.compile(r"^\s*\(\s*(" + "|".join(ACTS) + r")\s*\)", re.I)
 
 
-def read_tagged(text, meter, model=chat, log=None):
+def read_tagged(text, meter, model=chat, log=None, context=None):
     m = TAG.match(text or "")
     if not m:
         return _reply(error="no leading (performative) tag")
@@ -149,11 +176,11 @@ def read_tagged(text, meter, model=chat, log=None):
     # The tag carries the force; the price still lives in English, so the
     # reader is called for it -- and only its price is used. A reject-proposal
     # needs one too: in this protocol it always carries the counter-offer.
-    _, price, raw = _llm_read(text, meter, model, log)
+    _, price, raw = _llm_read(text, meter, model, log, context)
     return _check(act, price, 1, raw)
 
 
-def read_structured(text, meter=None, model=None, log=None):
+def read_structured(text, meter=None, model=None, log=None, context=None):
     stripped = (text or "").strip()
     try:
         obj = json.loads(stripped)
@@ -179,5 +206,5 @@ def read_structured(text, meter=None, model=None, log=None):
 READERS = {"free": read_free, "tagged": read_tagged, "structured": read_structured}
 
 
-def read(condition, text, meter, model=chat, log=None):
-    return READERS[condition](text, meter, model=model, log=log)
+def read(condition, text, meter, model=chat, log=None, context=None):
+    return READERS[condition](text, meter, model=model, log=log, context=context)

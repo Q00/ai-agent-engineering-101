@@ -61,7 +61,7 @@ def fake_model(system, messages, meter, log=None):
     """A concession-by-steps agent and a regex 'reader'. Deterministic."""
     meter.add(0, 0)
     if system == FAKE_READER:
-        text = messages[-1]["content"]
+        text = messages[-1]["content"].split(protocol.LABEL_MARK)[-1]
         act = next((a for a in protocol.ACTS if a.split("-")[0] in text.lower()), "refuse")
         m = re.search(r"\$(\d+)", text)
         return json.dumps({"performative": act, "price": int(m.group(1)) if m else None})
