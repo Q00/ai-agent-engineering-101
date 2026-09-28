@@ -262,7 +262,26 @@ python summarize.py                                   # 아래 2부 표
 
 ## 3. FIPA-ACL과 세 조건 비교
 
-<!-- TODO(26512070) -->
+| | FIPA-ACL | free | tagged | structured |
+|---|---|---|---|---|
+| **발화의 힘(force)이 있는 곳** | 필수 필드 `:performative`, 메시지당 하나 | 영어 문장의 표현 속에 암묵적으로 있다. 판독기 LLM이 대화 맥락과 함께 추론한다 | 맨 앞의 괄호 태그. 정규식이 읽는다. 뒤의 영어가 태그와 일치하는지는 아무도 검사하지 않는다 | JSON의 `performative` 필드. 파서가 읽는다 |
+| **내용 언어** | `:language`(예: FIPA-SL)와 `:ontology`를 메시지마다 선언한 형식 언어 | 영어. 가격은 문장 속 숫자다. "정수 달러"라는 온톨로지는 메시지가 아니라 프롬프트(`ACT_RULES` 마지막 줄)에만 있다 | 태그 뒤는 free와 같은 영어 | 필드 하나(`content.price`, 정수)짜리 JSON. 온톨로지는 키 이름과 프롬프트에 암묵적으로 있고, 메시지에는 선언되지 않는다 |
+| **내용을 해석하는 주체** | 수신 에이전트가 선언된 온톨로지로 해석한다. 해석하는 쪽과 행동하는 쪽이 같다 | **해석이 둘로 갈라진다.** 협상 상태는 판독기 LLM(act와 가격)이 정하고, 상대 에이전트는 원문을 따로 읽는다 | act는 정규식, 가격은 판독기 LLM이 해석하고, 상대 에이전트는 원문을 따로 읽는다 | 파서가 해석하고, 상대 에이전트는 원문을 따로 읽는다 |
+| **대화가 끝나는 방식** | 상호작용 프로토콜이 종료 act를 정하고, `:conversation-id`, `:in-reply-to`, `:reply-by`로 응답을 묶는다 | `accept-proposal`, `refuse`, 턴 제한(10) 중 하나. "무엇에 대한 응답인가"는 필드가 아니라 "상대의 최근 가격"이라는 규칙으로만 정해진다. `open` 3/18 | 같음. `open` 3/18 | 같음. `open` 3/18 |
+| **성실성(sincerity)을 보장하는 것** | 형식 의미론의 전제 조건(발신자는 내용을 믿는다)을 **가정할 뿐** 검증하지 않는다 | 없음. 한계는 역할 프롬프트의 지시로만 지켜진다 | 없음. 조건 전체에서 유일한 한계 위반이 여기서 나왔다(tagged-r3 guitar, budget $390, 거래 $420) | 없음. 파서는 형식만 검사한다 |
+| **메시지 하나를 읽는 비용** | 결정론적 파싱. 모델 호출 없음 | 메시지마다 판독기 1회(129회). 메시지당 약 970 토큰 | 가격이 있는 act에서만 판독기 호출. 그런데 이 프로토콜에서는 거의 모든 메시지가 가격이 있는 act라 124/141 메시지(88%)에서 호출했다. 메시지당 약 930 토큰으로 free와 거의 같다 | 판독기 0회. 메시지당 약 530 토큰(free의 54%) |
+| **나타난 실패 유형** | 읽을 수 없는 메시지에는 수신자가 `not-understood`로 응답한다. 실패가 대화 안에서 드러난다 | 판독기가 의도를 잘못 읽는다(최후통첩을 refuse로 판정). 판독기 자신의 JSON이 깨진다. `not-understood`가 없어서 둘 다 상대에게 알려지지 않는다 | 판독기 JSON 깨짐 2건. 한 메시지에 태그 두 개. 협상이 끝났다고 믿은 에이전트의 태그 없는 소감문 2건. 형식 오류 5건이 모두 lamp에서 나왔다 | 가격 없는 `reject-proposal` 2건. 시험 실행에서는 깨진 JSON 때문에 수락 하나가 사라졌다. 어느 쪽이든 발화 전체가 무효가 된다 |
+
+**표의 근거 (로그 위치)**
+
+- **해석이 둘로 갈라진 사례 2건.** 협상 상태와 두 에이전트의 믿음이 어긋났다.
+  - `logs/structured-r0.txt` bike t06: 판매자가 구매자의 $120을 수락하려고 보낸 메시지가 `{"performative": "performative": "accept-proposal", "content": {}}`로 깨졌다. 협상 상태는 그대로였고, 이어서 구매자가 수락하자 판매자의 이전 제안 **$150**으로 거래됐다.
+  - `logs/tagged-r3.txt` lamp t08: 판매자가 `(reject-proposal) … I must refuse …`에 이어 `(refuse) Thank you for the negotiation…`을 한 메시지에 썼다. 정규식은 첫 태그만 읽었고, 판독기는 가격 없음(refuse)이라고 답했다. 그래서 형식 오류로 처리됐고 협상 상태는 계속 열려 있었다. 두 에이전트는 t09와 t10에 "The seller has refused, ending the negotiation with no deal"이라고 쓰며 끝났다고 믿었지만, 결과는 `open`이다. 이 t09에서 구매자는 "my budget of $80"라고 **비공개 한계를 밝혔다.**
+- **판독기의 오판.** `logs/free-r3.txt` camera t03, "$180 is my final offer; if you cannot meet it, I will have to walk away." → `refuse`로 판정되어 3턴 만에 무산됐다. 조건부 위협이 네 act 중 가장 가까운 것으로 떨어졌다.
+- **판독기 JSON 깨짐.** free-r2 lamp t06, tagged-r1·r2 lamp에서 판독기가 `{"performative": "performative": "reject-proposal", …}`를 돌려줬다. 에이전트 메시지는 올바랐다("I reject your offer of $50 and counter with $130."). 같은 모델이 structured의 에이전트 출력(r0)에서 보인 것과 같은 버릇이다. 따라서 free의 형식 오류 1건과 tagged의 2건은 **판독기가 원인**이다.
+- **종료 규칙은 프롬프트에만 있다.** `refuse` 26건 중 20건이 "자신이 역제안을 3번 보낸 뒤" 규칙보다 일렀다(free 7/8, tagged 5/8, structured 8/10). 구매자의 이른 refuse는 대부분 t07이었다. 즉 첫 `propose`를 역제안 한 번으로 셌다. 세 형식 모두 이 위반을 막지 못했다. 파서, 정규식, 판독기는 act의 형식만 볼 뿐 대화 규칙은 보지 않는다.
+- **한계 위반.** `logs/tagged-r3.txt` guitar: t03에서 "$480 exceeds my budget"라고 한 구매자가 t07에서 "(accept-proposal) $420 is acceptable."이라고 썼다. 태그는 정확히 읽혔고, 문제는 형식이 아니라 성실성이다.
+- **비용.** 수치는 1부의 호출 비용 표에 있다. tagged가 free보다 싸지 않은 이유는 "reject에 항상 역제안 가격을 붙인다"는 규칙 때문이다. 이 규칙으로 가격을 읽어야 하는 메시지가 대부분이 되었다.
 
 ---
 
