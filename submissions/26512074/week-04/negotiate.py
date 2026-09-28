@@ -29,7 +29,7 @@ if not MODEL:
 client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
 
 if BASE_URL.startswith("https://openrouter.ai/"):
-    DEFAULT_EXTRA_BODY = {"reasoning": {"enabled": False}}
+    DEFAULT_EXTRA_BODY = {"thinking": {"type": "disabled"}}
 else:
     DEFAULT_EXTRA_BODY = {}
 
