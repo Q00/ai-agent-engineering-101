@@ -8,7 +8,9 @@ import json
 import re
 
 import run_deepseek as ds
-import compare as luna_compare  # armed_tool/compare.py, on sys.path through run_deepseek
+
+# By path: several experiment folders have a compare.py, and sys.path order depends on import order.
+luna_compare = ds.luna.load_module("armed_compare", ds.ROOT / "armed_tool/compare.py")
 
 lab = ds.base_lab
 GUN = luna_compare.WEAPON_WORDS
@@ -65,7 +67,7 @@ def audit(rows, manifest):
 
 def speech(rows):
     """Per episode set: holder/other messages naming the gun, and empty messages."""
-    out = Counter()
+    out = Counter(dict.fromkeys(("messages", "empty_messages", "holder_gun_messages", "other_gun_messages"), 0))
     for r in rows:
         side = r["armed_role"]
         for e in events_of(r["run"], r["scenario"]):
