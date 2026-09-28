@@ -231,8 +231,28 @@ FIPA-ACL 열은 강의 노트(`week-04.html`)가 인용한 규격 SC00061G(메�
 
 ## 4. 해석
 
-> 작성 필요: 어느 조건이 어떤 지표를 왜 움직였는지 한 문단. 로그 인용을 근거로.
-> 아래는 인용할 수 있게 모은 사실이다. 판단은 들어 있지 않다.
+명시적 performative는 모델이 약할 때 실패를 줄였지만, 강한 모델에서는 형식과 상관없이 결과가 같았다. 가장 큰 차이를 만든 것은 형식이 아니라 모델이었다.
+기본 실험(DeepSeek, 추론 끔)에서 performative를 JSON 필드로 강제한 structured는 형식 오류 0개로 12개 중 10개를 맞혔다.
+태그를 붙이라고 지시만 한 tagged는 태그 누락 12개를 포함해 형식 오류 24개를 냈고, 7개가 8턴 안에 끝나지 않아 5개만 맞혔다.
+`tagged-01`의 교재 협상에서는 판매자가 아직 말하지도 않았는데 구매자가 태그 없이 "The seller's last proposal is 30"이라고 쓰고
+"(accept-proposal) I accept your offer of 30 for the textbook."을 이어 붙였고, 두 에이전트는 유효한 제안 없이 수락만 반복하다 8턴을 소진했다.
+free는 이름표가 없어 reader가 발화수반력을 추측해야 했고(reader 호출 52회, tagged 32회, structured 0회), 유일한 한도 위반이 그 추측에서 나왔다.
+`free-02`의 교재 협상에서 reader는 판매자의 "최소 40" 역제안을 가격 없는 reject-proposal로 읽었고, 판매자가 마지막에
+"I accept your offer of 40. Let's finalize the deal."이라고 말했는데도 기록은 구매자의 이전 제안 24로 체결됐다.
+판매자가 실제로 최저가 아래로 판 것이 아니라 판독 오류가 만든 위반이다.
+같은 프롬프트와 파서에서 DeepSeek에 추론을 켜자 tagged는 10/12로 올랐지만 형식 오류 11개가 남았고, 세 형식을 합쳐 빈 메시지 16개가 새로 생겼다.
+Luna(추론 low)는 세 형식 모두 형식 오류 0개로 10–12/12를 맞혔고, 오답 4개는 모두 거래가 불가능한 키보드가 8턴 안에 결렬되지 않은 경우다.
+형식이 분명히 바꾼 것도 있다. 상대의 기록된 제안 없이 수락하는 실패는 거절과 역제안을 한 문장에 함께 담을 수 있는 free와 tagged에서만 나왔고
+(DeepSeek 추론 low의 30턴 전체에서 free 30개, tagged 29개), 한 메시지에 performative 하나와 가격 하나만 담는 structured에서는 두 설정 모두 0개였다.
+형식이 바꾸지 못한 것은 진실성이다. 세 조건 모두 비공개 한도는 프롬프트 지시뿐이었고 위반은 사후에 기록할 수밖에 없었다.
+강의가 말한 대로 LLM은 FIPA의 둘째와 셋째 한계(추론 능력, 어휘 합의)를 줄였지만 그 정도는 모델에 따라 달랐고, 첫째 한계인 의미론 검증 문제는 어떤 형식에서도 그대로 남았다.
+
+![세 형식을 모델·추론 설정별로 비교한 막대 그래프](deepseek_compare/format_by_model.png)
+
+그림은 `deepseek_compare/format_by_model.py`가 저장된 대화에서 다시 계산해 그린다(데이터: [format-by-model.csv](deepseek_compare/runs/format-by-model.csv)).
+DeepSeek 추론 끔은 제출한 8턴 실행이고, 나머지 둘은 30턴 대화의 첫 8턴을 원래 8턴 runner로 다시 판정했다.
+
+### 근거
 
 - `html-deepseek-20260922-free-02`, 교재(40/40):
   - 판매자가 "최소 40"이라고 말했지만 reader는 reject-proposal로 읽었고, 40은 제안으로 기록되지 않았다.
@@ -248,23 +268,12 @@ FIPA-ACL 열은 강의 노트(`week-04.html`)가 인용한 규격 SC00061G(메�
   대신 DeepSeek의 첫 발언이 시스템 프롬프트 지시문을 이어 쓰는 경우가 여러 번 있었다
   (`free-01` 탁상등의 첫 줄 "Always end with: [Act: <act> | Price: <number or none>]").
 - structured는 형식 오류 0개, 12개 중 10개 정답이다. 미종료 2개는 키보드 1개와 교재 1개다.
-- 같은 프롬프트, 파서, 시나리오에서 모델과 추론 설정만 바꾼 세 실행을 원래 8턴 규칙으로 맞춰 비교했다.
-  30턴으로 돌린 두 실행은 저장된 대화의 첫 8턴을 원래 runner로 다시 판정했다
-  ([deepseek_compare/runs/format-by-model.csv](deepseek_compare/runs/format-by-model.csv), `deepseek_compare/format_by_model.py`).
-
-  | 8턴 기준 정답 / 형식 오류 | free | tagged | structured |
-  |---|---|---|---|
-  | DeepSeek · 추론 끔 (기본 실험) | 7 / 12 | 5 / 24 | 10 / 0 |
-  | DeepSeek · 추론 low (샷건 대조군) | 9 / 11 | 10 / 11 | 9 / 6 |
-  | Luna · 추론 low | 10 / 0 | 12 / 0 | 10 / 0 |
-
+- 모델과 추론 설정만 바꾼 세 실행(위 그림):
   - DeepSeek에서 추론을 켜자 tagged의 태그 누락이 12개에서 4개로 줄었다(추론 low는 30턴 전체 기준).
   - 기록된 제안 없는 수락은 추론을 켜도 남았다. 추론 low의 30턴 전체에서 free 30개, tagged 29개다.
   - 추론 low에서는 빈 메시지가 16개 새로 나왔고, structured는 그중 6개가 JSON 파싱 실패였다.
   - Luna는 세 형식 모두 형식 오류, 태그 누락, 빈 메시지가 0이다.
   - DeepSeek 두 실행은 모델, 제공업체, temperature가 같다. Luna는 temperature를 설정할 수 없다. 모두 조건마다 12개의 독립 표본이다.
-
-(해석 문단 작성)
 
 ## 5. 확장 실험에서 본 것
 
