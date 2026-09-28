@@ -11,7 +11,13 @@ import json
 from pathlib import Path
 
 from acl import CONDITIONS, READER_SYSTEM
-from model_client import CallMeter, ModelClient, ModelConfig, RateLimitError
+from model_client import (
+    CallMeter,
+    ModelClient,
+    ModelConfig,
+    RateLimitError,
+    redact_secrets,
+)
 from negotiate import MAX_MESSAGES, run_episode
 
 
@@ -169,10 +175,15 @@ def run_all(base: Path) -> None:
                             )
                         except RateLimitError as exc:
                             # No CSV row: the same key remains retryable on restart.
-                            log(f"[rate-limit] scenario={scenario_id} error={exc}")
+                            log(
+                                f"[rate-limit] scenario={scenario_id} "
+                                f"error={redact_secrets(exc)}"
+                            )
                             return
                         except (Exception, KeyboardInterrupt) as exc:
-                            note = f"crash: {type(exc).__name__}: {exc}"
+                            note = (
+                                f"crash: {type(exc).__name__}: {redact_secrets(exc)}"
+                            )
                             log(f"[crash] scenario={scenario_id} {note}")
                             append_row(
                                 writer,

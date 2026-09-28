@@ -14,6 +14,13 @@ class RateLimitError(RuntimeError):
     """A retryable HTTP 429 returned by the configured provider."""
 
 
+def redact_secrets(value: object) -> str:
+    """Remove the configured API key from text before it reaches logs or CSV."""
+    text = str(value)
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    return text.replace(api_key, "[REDACTED]") if api_key else text
+
+
 @dataclass(frozen=True)
 class ModelConfig:
     provider: str

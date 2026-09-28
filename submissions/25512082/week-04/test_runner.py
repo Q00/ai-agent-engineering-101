@@ -1,8 +1,11 @@
 import csv
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from model_client import redact_secrets
 from run_experiment import HEADER, load_completed
 
 
@@ -30,6 +33,13 @@ class ResumeTests(unittest.TestCase):
         temporary, path = self.write_results([crash])
         self.addCleanup(temporary.cleanup)
         self.assertIn(("free", 1, "S1"), load_completed(path))
+
+
+class SecretRedactionTests(unittest.TestCase):
+    def test_configured_key_is_removed_from_exception_text(self):
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test-key-value"}):
+            clean = redact_secrets("request failed for test-key-value")
+        self.assertEqual(clean, "request failed for [REDACTED]")
 
 
 if __name__ == "__main__":
