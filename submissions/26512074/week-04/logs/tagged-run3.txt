@@ -1,0 +1,110 @@
+provider=openrouter base_url=https://openrouter.ai/api/v1 model=inclusionai/ling-3.0-flash-fin:free temperature=0.3 max_turns=8
+condition=tagged repeat=3
+
+scenarios=4
+[episode] run=3 condition=tagged scenario=1 item='a used bicycle' reserve=120 budget=150
+[crash] scenario=1 RuntimeError: HTTP 429 persisted after retries
+Traceback (most recent call last):
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/negotiate.py", line 70, in call_model
+    response = client.chat.completions.create(
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/_utils/_utils.py", line 286, in wrapper
+    return func(*args, **kwargs)
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/resources/chat/completions/completions.py", line 1156, in create
+    return self._post(
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/_base_client.py", line 1259, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/_base_client.py", line 1047, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790640000000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3IitQsWnYBrBal8FvQJAZlFQSWS'}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/run_experiment.py", line 91, in main
+    episode = negotiate_episode(
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/negotiate.py", line 233, in negotiate_episode
+    text = call_model(messages_for_model, ep.meter)
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/negotiate.py", line 84, in call_model
+    raise RuntimeError("HTTP 429 persisted after retries") from exc
+RuntimeError: HTTP 429 persisted after retries
+
+[episode] run=3 condition=tagged scenario=2 item='a desk lamp' reserve=30 budget=45
+[crash] scenario=2 RuntimeError: HTTP 429 persisted after retries
+Traceback (most recent call last):
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/negotiate.py", line 70, in call_model
+    response = client.chat.completions.create(
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/_utils/_utils.py", line 286, in wrapper
+    return func(*args, **kwargs)
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/resources/chat/completions/completions.py", line 1156, in create
+    return self._post(
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/_base_client.py", line 1259, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/_base_client.py", line 1047, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790640000000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3IitQsWnYBrBal8FvQJAZlFQSWS'}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/run_experiment.py", line 91, in main
+    episode = negotiate_episode(
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/negotiate.py", line 233, in negotiate_episode
+    text = call_model(messages_for_model, ep.meter)
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/negotiate.py", line 84, in call_model
+    raise RuntimeError("HTTP 429 persisted after retries") from exc
+RuntimeError: HTTP 429 persisted after retries
+
+[episode] run=3 condition=tagged scenario=3 item='a second-hand textbook' reserve=40 budget=40
+[crash] scenario=3 RuntimeError: HTTP 429 persisted after retries
+Traceback (most recent call last):
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/negotiate.py", line 70, in call_model
+    response = client.chat.completions.create(
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/_utils/_utils.py", line 286, in wrapper
+    return func(*args, **kwargs)
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/resources/chat/completions/completions.py", line 1156, in create
+    return self._post(
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/_base_client.py", line 1259, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/_base_client.py", line 1047, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790640000000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3IitQsWnYBrBal8FvQJAZlFQSWS'}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/run_experiment.py", line 91, in main
+    episode = negotiate_episode(
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/negotiate.py", line 233, in negotiate_episode
+    text = call_model(messages_for_model, ep.meter)
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/negotiate.py", line 84, in call_model
+    raise RuntimeError("HTTP 429 persisted after retries") from exc
+RuntimeError: HTTP 429 persisted after retries
+
+[episode] run=3 condition=tagged scenario=4 item='a mechanical keyboard' reserve=90 budget=70
+[crash] scenario=4 RuntimeError: HTTP 429 persisted after retries
+Traceback (most recent call last):
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/negotiate.py", line 70, in call_model
+    response = client.chat.completions.create(
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/_utils/_utils.py", line 286, in wrapper
+    return func(*args, **kwargs)
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/resources/chat/completions/completions.py", line 1156, in create
+    return self._post(
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/_base_client.py", line 1259, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+  File "/dshome/ddualab/micromamba/lib/python3.9/site-packages/openai/_base_client.py", line 1047, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790640000000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3IitQsWnYBrBal8FvQJAZlFQSWS'}
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/run_experiment.py", line 91, in main
+    episode = negotiate_episode(
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/negotiate.py", line 233, in negotiate_episode
+    text = call_model(messages_for_model, ep.meter)
+  File "/dshome/ddualab/Desktop/ai-agent-engineering-101/submissions/26512074/week-04/negotiate.py", line 84, in call_model
+    raise RuntimeError("HTTP 429 persisted after retries") from exc
+RuntimeError: HTTP 429 persisted after retries
+
+
+[done] 2026-09-28T21:55:36
