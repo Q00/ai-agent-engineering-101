@@ -3,3 +3,49 @@ RUN 6 condition=tagged repeat=3 model=nvidia/nemotron-3-super-120b-a12b:free tem
 
 === scenario=s1 item=Laptop stand reserve=60 budget=90 ===
 INTERRUPTED: daily rate limit: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iiulu8CXiG7DSzt2tgDoGz2exH'}
+
+RUN 6 condition=tagged repeat=3 model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0 turn_limit=4
+
+=== scenario=s1 item=Laptop stand reserve=60 budget=90 ===
+BUYER: (propose) I can offer 60.
+PARSED: performative=propose price=60 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 65.
+PARSED: performative=propose price=65 format_error=0 reader_calls+=1
+BUYER: (propose) I can offer 62.
+PARSED: performative=propose price=62 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 63.
+PARSED: performative=propose price=63 format_error=0 reader_calls+=1
+RESULT: outcome=open price=None correct=0 violation=0 turns=4 format_errors=0 reader_calls=4
+
+=== scenario=s2 item=Wireless mouse reserve=35 budget=50 ===
+BUYER: (propose) I can offer 30.
+PARSED: performative=propose price=30 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 35.
+PARSED: performative=propose price=35 format_error=0 reader_calls+=1
+BUYER: (propose) I can offer 32.
+PARSED: performative=propose price=32 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 34.
+PARSED: performative=propose price=34 format_error=0 reader_calls+=1
+RESULT: outcome=open price=None correct=0 violation=0 turns=4 format_errors=0 reader_calls=4
+
+=== scenario=s3 item=Mechanical keyboard reserve=80 budget=65 ===
+BUYER: (propose) I can offer 40.
+PARSED: performative=propose price=40 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 75.
+PARSED: performative=propose price=75 format_error=0 reader_calls+=1
+BUYER: (propose) I can offer 50.
+PARSED: performative=propose price=50 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 70.
+PARSED: performative=propose price=70 format_error=0 reader_calls+=1
+RESULT: outcome=open price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+
+=== scenario=s4 item=USB-C hub reserve=55 budget=40 ===
+BUYER: (propose) I can offer 25.
+PARSED: performative=propose price=25 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 55.
+PARSED: performative=propose price=55 format_error=0 reader_calls+=1
+BUYER: (propose) I can offer 30.
+PARSED: performative=propose price=30 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 50.
+PARSED: performative=propose price=50 format_error=0 reader_calls+=1
+RESULT: outcome=open price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
