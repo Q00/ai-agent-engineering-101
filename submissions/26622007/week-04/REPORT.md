@@ -248,7 +248,21 @@ FIPA-ACL 열은 강의 노트(`week-04.html`)가 인용한 규격 SC00061G(메�
   대신 DeepSeek의 첫 발언이 시스템 프롬프트 지시문을 이어 쓰는 경우가 여러 번 있었다
   (`free-01` 탁상등의 첫 줄 "Always end with: [Act: <act> | Price: <number or none>]").
 - structured는 형식 오류 0개, 12개 중 10개 정답이다. 미종료 2개는 키보드 1개와 교재 1개다.
-- 같은 프롬프트와 파서로 Luna(low, 첫 8턴 재판정)는 tagged 형식 오류 0, 정답 12/12였다(2절 표).
+- 같은 프롬프트, 파서, 시나리오에서 모델과 추론 설정만 바꾼 세 실행을 원래 8턴 규칙으로 맞춰 비교했다.
+  30턴으로 돌린 두 실행은 저장된 대화의 첫 8턴을 원래 runner로 다시 판정했다
+  ([deepseek_compare/runs/format-by-model.csv](deepseek_compare/runs/format-by-model.csv), `deepseek_compare/format_by_model.py`).
+
+  | 8턴 기준 정답 / 형식 오류 | free | tagged | structured |
+  |---|---|---|---|
+  | DeepSeek · 추론 끔 (기본 실험) | 7 / 12 | 5 / 24 | 10 / 0 |
+  | DeepSeek · 추론 low (샷건 대조군) | 9 / 11 | 10 / 11 | 9 / 6 |
+  | Luna · 추론 low | 10 / 0 | 12 / 0 | 10 / 0 |
+
+  - DeepSeek에서 추론을 켜자 tagged의 태그 누락이 12개에서 4개로 줄었다(추론 low는 30턴 전체 기준).
+  - 기록된 제안 없는 수락은 추론을 켜도 남았다. 추론 low의 30턴 전체에서 free 30개, tagged 29개다.
+  - 추론 low에서는 빈 메시지가 16개 새로 나왔고, structured는 그중 6개가 JSON 파싱 실패였다.
+  - Luna는 세 형식 모두 형식 오류, 태그 누락, 빈 메시지가 0이다.
+  - DeepSeek 두 실행은 모델, 제공업체, temperature가 같다. Luna는 temperature를 설정할 수 없다. 모두 조건마다 12개의 독립 표본이다.
 
 (해석 문단 작성)
 
