@@ -27,7 +27,8 @@ plt.rcParams.update({"font.family": "Pretendard", "axes.unicode_minus": False, "
 
 SURFACE, INK, INK2, MUTED, GRID, BASE = "#fcfcfb", "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7"
 MODELS = {"luna": ("GPT-6 Luna", "#2a78d6"), "deepseek": ("DeepSeek V4.1 Flash", "#eb6834")}
-DESIGNS = [("communicator", "communicator 이름"), ("shotgun-auto", "샷건 툴 · 자율"), ("shotgun-forced", "샷건 툴 · 강제"),
+# Luna's first design (the_great_communicator) has no DeepSeek counterpart and is left out of the overview.
+DESIGNS = [("shotgun-auto", "샷건 툴 · 자율"), ("shotgun-forced", "샷건 툴 · 강제"),
            ("holding-with-tool", "소지 문장 + 툴"), ("holding-only", "소지 문장만")]
 SIDES = [("buyer", "buyer 무장"), ("seller", "seller 무장")]
 SCENARIOS = {str(s["id"]): s for s in json.loads((ROOT / "scenarios.json").read_text())}
@@ -80,9 +81,9 @@ def threat_counts():
 
 def main():
     threats = threat_counts()
-    fig = plt.figure(figsize=(13.5, 7.2), dpi=200, facecolor=SURFACE)
-    left = fig.add_axes([0.155, 0.17, 0.29, 0.62], facecolor=SURFACE)
-    right = fig.add_axes([0.61, 0.17, 0.36, 0.62], facecolor=SURFACE)
+    fig = plt.figure(figsize=(13.5, 6.6), dpi=200, facecolor=SURFACE)
+    left = fig.add_axes([0.155, 0.19, 0.29, 0.58], facecolor=SURFACE)
+    right = fig.add_axes([0.61, 0.19, 0.36, 0.58], facecolor=SURFACE)
 
     # Left: how often the holder threatened.
     height, gap = 0.34, 0.04
@@ -140,7 +141,7 @@ def main():
 
     fig.text(0.035, 0.94, "샷건을 쥐여 줘도 협상은 쉬워지지 않았다", fontsize=19, color=INK, fontweight="semibold")
     fig.text(0.035, 0.895, "한쪽 협상자만 무장 · 추론 low · 30턴 · 묶음마다 무장 에피소드 72개(buyer 36 + seller 36) · "
-             "DeepSeek은 총을 꺼냈고 Luna는 거의 꺼내지 않았다. 가격 변화는 어느 쪽도 우연과 구분되지 않았다",
+             "DeepSeek은 총을 꺼냈고 Luna는 거의 꺼내지 않았다. 가격 변화는 어느 쪽도 통계적으로 유의미하지 않았다",
              fontsize=10, color=INK2)
     handles = [Line2D([], [], marker="o", ls="", ms=8, color=c, mec=SURFACE, mew=2, label=n) for n, c in MODELS.values()]
     fig.legend(handles=handles, loc="upper right", bbox_to_anchor=(0.97, 0.955), ncol=2, frameon=False, fontsize=10,
@@ -150,8 +151,8 @@ def main():
              fontsize=9, color=INK2)
     fig.text(0.035, 0.060, "몫: 자전거·탁상등 거래에서 협상 구간(budget − reserve) 중 무장한 쪽 몫, 같은 모델의 무장 없는 대조군 36회와의 차이. "
              "선은 95% 부트스트랩 구간(5,000회).", fontsize=9, color=MUTED)
-    fig.text(0.035, 0.032, "18개 구간 중 0을 벗어난 것은 DeepSeek 샷건 강제·buyer 무장 하나(+0.28, 순열 p = 0.057)로, "
-             "18번 비교하면 우연히 하나쯤 나오는 수준이다.", fontsize=9, color=MUTED)
+    fig.text(0.035, 0.032, "순열 검정 16개 모두 p ≥ 0.05(최소 0.057, DeepSeek 샷건 강제·buyer). 이 구간만 보정 없이 0을 살짝 벗어나지만(+0.28), "
+             "16개 비교를 보정하면 유의하지 않다.", fontsize=9, color=MUTED)
     out = HERE / "shotgun_overview.png"
     fig.savefig(out, facecolor=SURFACE)
     print(out)
