@@ -6,7 +6,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from model_client import redact_secrets
-from run_experiment import HEADER, load_completed
+from model_client import RateLimitError
+from run_experiment import HEADER, load_completed, run_all
 
 
 class ResumeTests(unittest.TestCase):
@@ -33,6 +34,33 @@ class ResumeTests(unittest.TestCase):
         temporary, path = self.write_results([crash])
         self.addCleanup(temporary.cleanup)
         self.assertIn(("free", 1, "S1"), load_completed(path))
+
+    def test_exhausted_429_preserves_existing_results(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            (base / "scenarios.json").write_text(
+                '[{"id":"S1","item":"lamp","reserve":40,"budget":55},'
+                '{"id":"S2","item":"keyboard","reserve":80,"budget":105},'
+                '{"id":"S3","item":"table","reserve":55,"budget":40},'
+                '{"id":"S4","item":"monitor","reserve":105,"budget":80}]',
+                encoding="utf-8",
+            )
+            results = base / "results.csv"
+            with results.open("w", encoding="utf-8", newline="") as result_file:
+                writer = csv.writer(result_file)
+                writer.writerow(HEADER)
+                writer.writerow(
+                    [1, "free", "S1", 1, "deal", 50, 1, 0, 2, 0, 2, ""]
+                )
+            before = results.read_bytes()
+
+            with patch(
+                "run_experiment.ModelClient.complete",
+                side_effect=RateLimitError("provider returned HTTP 429"),
+            ):
+                run_all(base)
+
+            self.assertEqual(results.read_bytes(), before)
 
 
 class SecretRedactionTests(unittest.TestCase):

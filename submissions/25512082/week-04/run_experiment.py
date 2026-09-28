@@ -164,7 +164,14 @@ def run_all(base: Path) -> None:
                             f"reserve={scenario['reserve']} budget={scenario['budget']}"
                         )
                         meter = CallMeter()
-                        client = ModelClient(config, meter)
+                        client = ModelClient(
+                            config,
+                            meter,
+                            on_retry=lambda retry, maximum, delay: log(
+                                f"[retry] reason=http-429 retry={retry}/{maximum} "
+                                f"wait_seconds={delay:g}"
+                            ),
+                        )
                         try:
                             result = run_episode(
                                 scenario,

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass
-from typing import Literal
+from typing import Callable, Literal
 
 
 Purpose = Literal["agent", "reader"]
+RetryObserver = Callable[[int, int, float], None]
 
 
 class RateLimitError(RuntimeError):
@@ -28,6 +30,8 @@ class ModelConfig:
     base_url: str
     temperature: float
     max_tokens: int
+    max_retries: int
+    backoff_seconds: float
 
     @classmethod
     def from_env(cls) -> "ModelConfig":
@@ -41,6 +45,8 @@ class ModelConfig:
             ),
             temperature=float(os.environ.get("AGENT_TEMPERATURE", "0")),
             max_tokens=int(os.environ.get("AGENT_MAX_TOKENS", "512")),
+            max_retries=int(os.environ.get("AGENT_MAX_RETRIES", "3")),
+            backoff_seconds=float(os.environ.get("AGENT_BACKOFF_SECONDS", "2")),
         )
 
 
@@ -65,12 +71,36 @@ def is_rate_limit_error(exc: BaseException) -> bool:
     return getattr(response, "status_code", None) == 429
 
 
+def retry_after_seconds(exc: BaseException) -> float | None:
+    """Return a non-negative numeric Retry-After value when one is available."""
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None)
+    if headers is None:
+        return None
+    value = headers.get("Retry-After")
+    if value is None:
+        value = headers.get("retry-after")
+    try:
+        seconds = float(value)
+    except (TypeError, ValueError):
+        return None
+    return seconds if seconds >= 0 else None
+
+
 class ModelClient:
     """One client/config shared by buyer, seller, and reader calls."""
 
-    def __init__(self, config: ModelConfig, meter: CallMeter | None = None) -> None:
+    def __init__(
+        self,
+        config: ModelConfig,
+        meter: CallMeter | None = None,
+        sleep: Callable[[float], None] = time.sleep,
+        on_retry: RetryObserver | None = None,
+    ) -> None:
         self.config = config
         self.meter = meter or CallMeter()
+        self._sleep = sleep
+        self._on_retry = on_retry or (lambda _retry, _maximum, _delay: None)
         self._client = None
 
     def _get_client(self):
@@ -89,19 +119,30 @@ class ModelClient:
         return self._client
 
     def complete(self, messages: list[dict[str, str]], purpose: Purpose) -> str:
-        """Make one attempt and count it according to its protocol purpose."""
-        self.meter.record(purpose)
-        try:
-            response = self._get_client().chat.completions.create(
-                model=self.config.model,
-                temperature=self.config.temperature,
-                max_tokens=self.config.max_tokens,
-                messages=messages,
-                extra_body={"reasoning": {"enabled": False}},
-            )
-        except Exception as exc:
-            if is_rate_limit_error(exc):
-                raise RateLimitError("provider returned HTTP 429") from exc
-            raise
-        content = response.choices[0].message.content
-        return content or ""
+        """Call the model, retrying only HTTP 429 responses a bounded number of times."""
+        for attempt in range(self.config.max_retries + 1):
+            self.meter.record(purpose)
+            try:
+                response = self._get_client().chat.completions.create(
+                    model=self.config.model,
+                    temperature=self.config.temperature,
+                    max_tokens=self.config.max_tokens,
+                    messages=messages,
+                    extra_body={"reasoning": {"enabled": False}},
+                )
+            except Exception as exc:
+                if not is_rate_limit_error(exc):
+                    raise
+                if attempt >= self.config.max_retries:
+                    raise RateLimitError(
+                        f"provider returned HTTP 429 after {attempt + 1} attempts"
+                    ) from exc
+                delay = retry_after_seconds(exc)
+                if delay is None:
+                    delay = self.config.backoff_seconds * (attempt + 1)
+                self._on_retry(attempt + 1, self.config.max_retries, delay)
+                self._sleep(delay)
+                continue
+            content = response.choices[0].message.content
+            return content or ""
+        raise AssertionError("retry loop exhausted unexpectedly")
