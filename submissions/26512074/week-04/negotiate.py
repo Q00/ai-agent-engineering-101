@@ -217,7 +217,19 @@ def negotiate_episode(
             scenario.get("twist"),
         ),
     }
-    history = {"buyer": [], "seller": []}
+    history = {
+        "buyer": [
+            {
+                "role": "user",
+                "content": (
+                    "Begin the negotiation now. Send your first negotiation message "
+                    "to the seller. Your response must be the actual message sent "
+                    "to the other agent."
+                ),
+            }
+        ],
+        "seller": [],
+    }
     transcript: list[dict[str, str]] = []
     last_price: dict[str, Optional[int]] = {"buyer": None, "seller": None}
 

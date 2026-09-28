@@ -73,7 +73,7 @@ def main() -> int:
 
     for condition in conditions:
         for run in repeats:
-            log_path = LOG_DIR / f"{condition}-run{run}-deepseek.txt"
+            log_path = LOG_DIR / f"{condition}-run{run}-final.txt"
             logger = RunLogger(log_path)
             write_run_log_header(logger, condition, run)
             logger.log(f"scenarios={len(scenarios)}")
