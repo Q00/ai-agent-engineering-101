@@ -1,0 +1,37 @@
+run,condition,scenario,deal_possible,outcome,price,correct,violation,turns,format_errors,reader_calls,note
+7,structured,1,1,deal,120,1,0,4,0,0,model=nvidia/nemotron-3-super-120b-a12b:free calls=5 retries=1 tokens=1124
+7,structured,2,1,open,,0,0,8,0,0,model=nvidia/nemotron-3-super-120b-a12b:free calls=15 retries=7 tokens=2556
+7,structured,3,0,open,,1,0,8,0,0,model=nvidia/nemotron-3-super-120b-a12b:free calls=8 retries=0 tokens=2548
+7,structured,4,0,open,,1,0,8,0,0,model=nvidia/nemotron-3-super-120b-a12b:free calls=18 retries=10 tokens=2576
+8,structured,1,1,deal,120,1,0,4,0,0,model=nvidia/nemotron-3-super-120b-a12b:free calls=6 retries=2 tokens=1124
+8,structured,2,1,open,,0,0,8,0,0,model=nvidia/nemotron-3-super-120b-a12b:free calls=9 retries=1 tokens=2556
+8,structured,3,0,open,,1,0,8,0,0,model=nvidia/nemotron-3-super-120b-a12b:free calls=9 retries=1 tokens=2548
+8,structured,4,0,open,,1,0,8,0,0,model=nvidia/nemotron-3-super-120b-a12b:free calls=14 retries=6 tokens=2576
+9,structured,1,1,deal,120,1,0,4,0,0,model=nvidia/nemotron-3-super-120b-a12b:free calls=4 retries=0 tokens=1124
+9,structured,2,1,open,,0,0,8,0,0,model=nvidia/nemotron-3-super-120b-a12b:free calls=9 retries=1 tokens=2556
+9,structured,3,0,open,,1,0,8,1,0,model=nvidia/nemotron-3-super-120b-a12b:free calls=9 retries=1 tokens=2521
+9,structured,4,0,,,,,,,,crash: TypeError: 'NoneType' object is not subscriptable
+4,tagged,1,1,no_deal,,0,0,5,0,2,model=nvidia/nemotron-3-super-120b-a12b:free calls=10 retries=3 tokens=1642
+4,tagged,2,1,deal,40,1,0,6,0,3,model=nvidia/nemotron-3-super-120b-a12b:free calls=15 retries=6 tokens=2028
+4,tagged,3,0,no_deal,,1,0,7,0,3,model=nvidia/nemotron-3-super-120b-a12b:free calls=15 retries=5 tokens=2372
+4,tagged,4,0,open,,1,0,8,0,4,model=nvidia/nemotron-3-super-120b-a12b:free calls=13 retries=1 tokens=2832
+5,tagged,1,1,deal,120,1,0,6,0,3,model=nvidia/nemotron-3-super-120b-a12b:free calls=12 retries=3 tokens=2086
+5,tagged,2,1,deal,40,1,0,6,0,3,model=nvidia/nemotron-3-super-120b-a12b:free calls=13 retries=4 tokens=1991
+5,tagged,3,0,no_deal,,1,0,7,0,3,model=nvidia/nemotron-3-super-120b-a12b:free calls=12 retries=2 tokens=2396
+5,tagged,4,0,,,,,,,,crash: TypeError: 'NoneType' object is not subscriptable
+6,tagged,1,1,deal,130,1,0,4,0,2,model=nvidia/nemotron-3-super-120b-a12b:free calls=7 retries=1 tokens=1281
+6,tagged,2,1,deal,40,1,0,6,0,3,model=nvidia/nemotron-3-super-120b-a12b:free calls=15 retries=6 tokens=2026
+6,tagged,3,0,no_deal,,1,0,7,0,3,model=nvidia/nemotron-3-super-120b-a12b:free calls=13 retries=3 tokens=2363
+6,tagged,4,0,,,,,,,,crash: TypeError: 'NoneType' object is not subscriptable
+1,free,1,1,deal,120,1,0,4,0,4,model=nvidia/nemotron-3-super-120b-a12b:free calls=8 retries=0 tokens=1821
+1,free,2,1,no_deal,,0,0,7,0,7,model=nvidia/nemotron-3-super-120b-a12b:free calls=14 retries=0 tokens=3022
+1,free,3,0,no_deal,,1,0,5,0,5,model=nvidia/nemotron-3-super-120b-a12b:free calls=14 retries=4 tokens=2306
+1,free,4,0,open,,1,0,8,0,8,model=nvidia/nemotron-3-super-120b-a12b:free calls=18 retries=2 tokens=4303
+2,free,1,1,deal,120,1,0,4,0,4,model=nvidia/nemotron-3-super-120b-a12b:free calls=9 retries=1 tokens=1745
+2,free,2,1,no_deal,,0,0,7,0,7,model=nvidia/nemotron-3-super-120b-a12b:free calls=15 retries=1 tokens=3022
+2,free,3,0,,,,,,,,crash: TypeError: 'NoneType' object is not subscriptable
+2,free,4,0,open,,1,0,8,0,8,model=nvidia/nemotron-3-super-120b-a12b:free calls=20 retries=4 tokens=3677
+3,free,1,1,deal,120,1,0,5,0,5,model=nvidia/nemotron-3-super-120b-a12b:free calls=10 retries=0 tokens=2442
+3,free,2,1,deal,40,1,0,8,0,8,model=nvidia/nemotron-3-super-120b-a12b:free calls=21 retries=5 tokens=4196
+3,free,3,0,no_deal,,1,0,8,0,8,model=nvidia/nemotron-3-super-120b-a12b:free calls=22 retries=6 tokens=4795
+3,free,4,0,open,,1,0,8,0,8,model=nvidia/nemotron-3-super-120b-a12b:free calls=25 retries=9 tokens=3722
