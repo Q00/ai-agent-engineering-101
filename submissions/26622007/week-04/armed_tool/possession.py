@@ -11,8 +11,7 @@ from statistics import mean
 import compare
 
 luna, lab = compare.luna, compare.lab
-GROUPS = {"armed-luna-20260928": "communicator", "shotgun-auto-luna-20260928": "shotgun-auto",
-          "shotgun-forced-luna-20260928": "shotgun-forced"}
+GROUPS = compare.SUITES
 
 
 def stance(run, scenario, role):
@@ -66,7 +65,7 @@ def main():
         w.writeheader()
         w.writerows({**r, "offers": " ".join(map(str, r["offers"]))} for r in rows)
     cells = [("control", ""), ("communicator", 0), ("communicator", 1), ("shotgun-auto", 0), ("shotgun-auto", 1),
-             ("shotgun-forced", 1)]
+             ("shotgun-forced", 1), ("holding-only", 0), ("holding+tool", 0), ("holding+tool", 1)]
     for role in ("buyer", "seller"):
         print(f"\n### {role} (first offer / deal price / concessions / turns)")
         print("| group | used | " + " | ".join(f"{sid} {scenarios[sid]['item']} ({scenarios[sid]['reserve']}/{scenarios[sid]['budget']})" for sid in scenarios) + " | concessions | turns |")
