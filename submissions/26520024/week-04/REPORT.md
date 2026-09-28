@@ -15,14 +15,8 @@
 
 각 조건에서 4개 시나리오를 3회 반복한다(총 36회). 구매자 선발, 최대 **8개 메시지**이며 구매자/판매자는 자신의 비공개 한도만 안다. 상대 발화는 `user`, 본인 발화는 `assistant`로 별도 이력에 쌓는다. reader는 공개 대화 전체만 보고 마지막 발화를 해석한다. 역할 지시, 모델, 시나리오, 순서, 종료·채점 규칙은 같고 **출력 형식 문단과 읽는 코드만** 달라진다. 시나리오는 첫 호출 전에 `cc5f766`으로, 최종 프롬프트와 실행 코드는 `b787481`로 커밋했다. 반복 순서는 `free → tagged → structured`, 시나리오 순서는 S1~S4이다.
 
-**모델/환경:** OpenAI, 인증된 Codex CLI 0.153.0(ChatGPT 로그인), actor와 reader 모두 `gpt-6-astra`, reasoning `low`. 기존 conda `base`의 Python 3.8.19와 표준 라이브러리만 사용했다. **temperature와 max output tokens는 어댑터에서 설정하지 못하며 내부값은 모른다.** API 키는 추출하지 않았다. 각 호출은 새 ephemeral 세션이며 도구/웹 검색을 끄고, 도구 실행 이벤트가 있으면 실패 처리한다. JSON 강제 스키마는 사용하지 않는다. system/history를 고정 CLI 요청 안에 넣는 방식이므로 네이티브 API 역할 지정과 동일하다고 주장하지 않는다. 전체 설정은 각 로그 첫 줄에 있다.
+**모델/환경:** OpenAI, 인증된 Codex CLI 0.153.0 actor와 reader 모두 `gpt-6-astra`, reasoning `low`.
 
-```bash
-conda activate base
-cd /nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-04
-/home/uichan/miniconda3/bin/python run_experiment.py --repetitions 3
-/home/uichan/miniconda3/bin/python validate_results.py
-```
 
 이미 기록된 `(run, scenario)`는 재호출하지 않는다. 새로운 반복은 `--repetitions 4`로 추가한다. 모델 호출당 timeout은 180초, 식별 가능한 rate limit만 최대 3회(2/4/8초 대기) 재시도한다. 실패나 파싱 오류를 숨기기 위한 재시도는 없다. 설치·검증 명령은 [README](README.md), 시행 과정은 [PROCESS](PROCESS.md)에 있다.
 
