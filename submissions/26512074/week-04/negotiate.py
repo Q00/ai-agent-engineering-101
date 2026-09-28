@@ -29,7 +29,7 @@ if not MODEL:
 client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
 
 if BASE_URL.startswith("https://openrouter.ai/"):
-    DEFAULT_EXTRA_BODY = {"thinking": {"type": "disabled"}}
+    DEFAULT_EXTRA_BODY = {"reasoning": {"enabled": False}}
 else:
     DEFAULT_EXTRA_BODY = {}
 
@@ -71,7 +71,7 @@ def call_model(messages: list[dict[str, str]], meter: Meter, temperature: float 
                 model=MODEL,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=1024,
+                max_tokens=256,
                 extra_body=DEFAULT_EXTRA_BODY,
             )
             meter.model_calls += 1
