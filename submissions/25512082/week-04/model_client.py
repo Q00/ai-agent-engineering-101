@@ -40,12 +40,10 @@ class ModelConfig:
     @classmethod
     def from_env(cls) -> "ModelConfig":
         return cls(
-            provider=os.environ.get("AGENT_PROVIDER", "openrouter"),
-            model=os.environ.get(
-                "AGENT_MODEL", "poolside/laguna-s-2.1:free"
-            ),
+            provider=os.environ.get("AGENT_PROVIDER", "ollama-local"),
+            model=os.environ.get("AGENT_MODEL", "qwen2.5:7b-instruct"),
             base_url=os.environ.get(
-                "OPENAI_BASE_URL", "https://openrouter.ai/api/v1"
+                "OPENAI_BASE_URL", "http://localhost:11434/v1"
             ),
             temperature=float(os.environ.get("AGENT_TEMPERATURE", "0")),
             max_tokens=int(os.environ.get("AGENT_MAX_TOKENS", "512")),
@@ -127,12 +125,17 @@ class ModelClient:
         for attempt in range(self.config.max_retries + 1):
             self.meter.record(purpose)
             try:
+                provider_options = (
+                    {"extra_body": {"reasoning": {"enabled": False}}}
+                    if self.config.provider == "openrouter"
+                    else {}
+                )
                 response = self._get_client().chat.completions.create(
                     model=self.config.model,
                     temperature=self.config.temperature,
                     max_tokens=self.config.max_tokens,
                     messages=messages,
-                    extra_body={"reasoning": {"enabled": False}},
+                    **provider_options,
                 )
             except Exception as exc:
                 if not is_rate_limit_error(exc):
