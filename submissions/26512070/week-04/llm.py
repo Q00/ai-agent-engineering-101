@@ -76,26 +76,35 @@ def _get_client():
     return _client
 
 
-def _once(system: str, user: str, meter: Meter) -> str:
+def _once(system: str, messages: list, meter: Meter) -> str:
     client = _get_client()
     if PROVIDER == "anthropic":
         resp = client.messages.create(
             model=MODEL, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
-            system=system, messages=[{"role": "user", "content": user}])
+            system=system, messages=messages)
         meter.add(resp.usage.input_tokens, resp.usage.output_tokens)
         return "".join(b.text for b in resp.content if b.type == "text")
 
+    # OpenRouter reasoning models write their thinking into the message text
+    # unless told not to (week-04 README). Other endpoints reject the field.
+    extra = ({"reasoning": {"enabled": False}}
+             if "openrouter" in os.environ.get("OPENAI_BASE_URL", "") else None)
     resp = client.chat.completions.create(
         model=MODEL, temperature=TEMPERATURE, max_tokens=MAX_TOKENS,
-        messages=[{"role": "system", "content": system},
-                  {"role": "user", "content": user}])
+        messages=[{"role": "system", "content": system}] + messages,
+        extra_body=extra)
     usage = resp.usage
     meter.add(getattr(usage, "prompt_tokens", 0), getattr(usage, "completion_tokens", 0))
     return resp.choices[0].message.content or ""
 
 
 def ask(system: str, user: str, meter: Meter, log=None) -> str:
-    """One turn: a system prompt and a single user message. Returns raw text.
+    """One turn: a system prompt and a single user message. Returns raw text."""
+    return chat(system, [{"role": "user", "content": user}], meter, log)
+
+
+def chat(system: str, messages: list, meter: Meter, log=None) -> str:
+    """One turn over a whole conversation (role/content dicts). Returns raw text.
 
     Retries transport failures with backoff. It does NOT retry a reply that
     came back unparseable -- that is the model's answer, and the lab counts it.
@@ -103,7 +112,7 @@ def ask(system: str, user: str, meter: Meter, log=None) -> str:
     delay = 4.0
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            return _once(system, user, meter)
+            return _once(system, messages, meter)
         except Exception as e:
             meter.bump_retry()
             if attempt == MAX_ATTEMPTS:
