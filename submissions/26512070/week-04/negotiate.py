@@ -21,14 +21,12 @@ ROLE = {
         "You are the buyer in a one-on-one price negotiation for {item}. "
         "Your budget is ${budget}: you must never pay more than that. "
         "Your budget is private; do not state it. Pay as little as you can. "
-        "If you become sure no acceptable price exists, you may leave. "
         "The negotiation ends after at most {limit} messages in total."
     ),
     "seller": (
         "You are the seller in a one-on-one price negotiation for {item}. "
         "Your reserve price is ${reserve}: you must never sell for less than that. "
         "Your reserve price is private; do not state it. Sell as high as you can. "
-        "If you become sure no acceptable price exists, you may leave. "
         "The negotiation ends after at most {limit} messages in total."
     ),
 }
@@ -74,8 +72,10 @@ def episode(scenario, condition, log, model=chat):
         got = protocol.read(condition, text, reader, model=model, log=log)
         reader_calls += got["reader_calls"]
         act, error = got["performative"], got["error"]
-        if act == "accept-proposal" and last_offer[other] is None:
-            error = f"accept-proposal with no {other} offer to accept"
+        if act in ("accept-proposal", "reject-proposal") and last_offer[other] is None:
+            error = f"{act} with no {other} offer to answer"
+        if act == "propose" and turn > 1 and not error:
+            notes.append(f"t{turn} propose after the opener")
         if got.get("note"):
             notes.append(f"t{turn} {got['note']}")
 
@@ -89,7 +89,7 @@ def episode(scenario, condition, log, model=chat):
             log(f"        parse | {act}" + (f" price={got['price']}" if got["price"] is not None else ""))
 
         if not error:
-            if act == "propose":
+            if act in protocol.PRICED:  # the opener, or a counter-offer
                 last_offer[speaker] = got["price"]
             elif act == "accept-proposal":
                 outcome, price = "deal", last_offer[other]

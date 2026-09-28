@@ -79,12 +79,13 @@ def fake_model(system, messages, meter, log=None):
         act, price = "accept-proposal", None
     elif mine >= 4:
         act, price = "refuse", None
-    else:
-        act, price = "propose", offer
+    else:  # the opener is a propose; every later offer is a reject + counter
+        act, price = ("propose" if mine == 0 and buyer else "reject-proposal"), offer
     if condition == "structured":
         return json.dumps({"performative": act, "content": {"price": price}})
     words = {"propose": f"propose ${price}", "accept-proposal": "accept, deal",
-             "reject-proposal": "reject that", "refuse": "refuse, goodbye"}[act]
+             "reject-proposal": f"reject that, counter ${price}",
+             "refuse": "refuse, goodbye"}[act]
     return f"({act}) {words}" if condition == "tagged" else words.capitalize() + "."
 
 
