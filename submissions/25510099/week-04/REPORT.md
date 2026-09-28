@@ -1,20 +1,26 @@
 # REPORT.md — 화행 실습: 자유·태그·구조화 형식의 가격 협상 비교
 
-구매자와 판매자 LLM 두 에이전트가 같은 여섯 시나리오에서 가격을 협상하는 실험을
-메시지 형식만 바꾸어 세 번 반복하였습니다. FIPA-ACL이 필수 필드로 두었던 performative를
-명시하지 않을 때(free), 괄호 태그로 붙일 때(tagged), JSON 필드로 넣을 때(structured)
-결과의 정확도, 한도 위반, 턴 수, 파싱 실패, 리더 호출 수가 어떻게 달라지는지 측정하였습니다.
+구매자와 판매자 LLM 두 에이전트가 같은 여섯 시나리오에서 가격을 협상하는 실험을 메시지 형식만 바꾸어 세 번 반복하였습니다.
+
+- FIPA-ACL이 필수 필드로 두었던 performative를 명시하지 않을 때(free)
+- 괄호 태그로 붙일 때(tagged)
+- JSON 필드로 넣을 때(structured)
+- 결과의 정확도
+- 한도 위반
+- 턴 수
+- 파싱 실패
+- 리더 호출 수
+
+위의 요소가 어떻게 달라지는지 측정하였습니다.
 
 ## 1. 설정
 
 ### 모델과 고정 변수
-- provider는 OpenAI이고 모델은 `gpt-4.1-mini` 입니다. 응답에 보고된 실제 모델은 `gpt-4.1-mini-2025-04-14` 입니다.
+- provider는 OpenAI이고 모델은 `gpt-4.1-mini` 를 사용하였습니다.
 - temperature는 0, 응답 토큰 상한은 256, 턴 제한은 메시지 10개입니다. 세 조건과 아홉 런에서 모두 같습니다.
-- 메시지를 읽는 리더 LLM도 에이전트와 같은 모델, 같은 temperature를 씁니다. 리더 호출은 에이전트 호출과 따로 셉니다.
-- 에이전트 호출 수는 조건별로 free 125, tagged 126, structured 117이고, 리더 호출을 더한 총 호출은 약 550회입니다.
+- 메시지를 읽는 리더 LLM도 에이전트와 같은 모델, 같은 temperature를 씁니다.
 
 ### 시나리오 (`scenarios.json`)
-- 실행 전에 커밋하였습니다. 거래 가능 네 개, 불가 두 개입니다.
 - 한도 위반과 오독이 드러나기 쉽도록 두 시나리오는 한도가 겹치는 폭을 좁게 두었습니다. ticket은 reserve와 budget이 80으로 같고, chair는 120 대 130입니다.
 
 | id | item | reserve (판매자 최저) | budget (구매자 최고) | 거래 가능 |
@@ -28,8 +34,8 @@
 
 ### 에이전트 시스템 프롬프트
 - 시스템 프롬프트는 역할 문단, 공통 문단, 형식 문단 셋을 빈 줄로 이어 만듭니다. 세 조건에서 형식 문단만 다릅니다.
-- 구매자는 협상 시작을 알리는 고정 문장 `The negotiation begins. Send your opening message.` 를 받고 첫 메시지를 냅니다. 이 문장은 협상 메시지가 아니며 턴으로 세지 않습니다.
-- 각 에이전트는 상대 메시지를 user 턴으로, 자기 메시지를 assistant 턴으로 쌓아 대화 전체를 봅니다.
+- 구매자는 협상 시작을 알리는 고정 문장 `The negotiation begins. Send your opening message.` 를 받고 첫 메시지를 냅니다. 그리고 이 문장은 협상 메시지가 아니며 턴으로 세지 않습니다.
+- 각 에이전트는 상대 메시지를 user 턴으로, 자기 메시지를 assistant 턴으로 쌓아 대화 전체를 보도록 구성하였습니다.
 
 역할 문단 (구매자 / 판매자, `{item}` `{budget}` `{reserve}` 는 시나리오 값으로 치환):
 
@@ -89,15 +95,13 @@ A speaker in a price negotiation is making an offer. Extract the price they prop
 
 ### 에피소드 규칙과 판정
 - 구매자가 열고 둘이 번갈아 말합니다. 리더가 읽은 결과가 진행을 결정하며, 에이전트는 상대의 원문만 봅니다.
-- accept-proposal이 읽히면 상대가 마지막으로 제안한 가격으로 거래가 성립합니다. 상대 제안가가 아직 없으면 프로토콜 오류로 note에 적고 에피소드는 계속합니다. 이것은 파싱 실패가 아니므로 format_errors에 넣지 않았습니다.
-- refuse가 읽히면 no_deal, 메시지 10개가 지나면 open입니다. 파싱 실패 메시지는 format_errors에 세고 에피소드는 계속합니다.
+- accept-proposal이 읽히면 상대가 마지막으로 제안한 가격으로 거래가 성립합니다. 상대 제안가가 아직 없으면 프로토콜 오류로 note에 적은 후 이어서 진행합니다.
+- refuse가 읽히면 no_deal, 메시지 10개가 지나면 open입니다. 파싱 실패 메시지는 format_errors에 세고 이어서 진행합니다.
 - correct는 거래 가능 시나리오에서 양쪽 한도 안의 가격으로 deal이 났을 때, 불가 시나리오에서 no_deal이 났을 때 1입니다. open은 항상 0입니다.
 - violation은 deal 가격이 reserve 아래이거나 budget 위일 때 1입니다. 프로토콜 층이 기록한 가격을 기준으로 판정합니다.
 
 ### 실행 방법
 - 저장소 루트의 `.env` 또는 환경 변수에 `OPENAI_API_KEY`와 `AGENT_MODEL=gpt-4.1-mini`를 둡니다. `openai` 패키지가 필요합니다.
-- 한 런은 조건 하나, 반복 하나, 시나리오 여섯입니다. 런 번호는 free 1-3, tagged 4-6, structured 7-9로 고정됩니다.
-- 이미 기록된 (run, scenario) 쌍은 건너뛰므로 중단된 런은 같은 명령으로 이어집니다. 429는 10초부터 두 배씩 늘려 네 번 재시도합니다.
 
 ```bash
 python run.py --condition free --repeat all
@@ -111,21 +115,12 @@ python run.py --condition tagged --dry-run   # 규칙 기반 가짜 에이전트
 ## 2. 결과
 
 ### 조건별 집계
-- 54 에피소드 모두 크래시 없이 끝났고 파싱 실패는 세 조건 모두 0이었습니다.
 
 | condition | episodes | correct | violations | deal / no_deal / open | mean turns | format errors | reader calls |
 |---|---|---|---|---|---|---|---|
 | free | 18 | 17/18 | 0 | 12 / 5 / 1 | 6.9 | 0 | 125 |
 | tagged | 18 | 9/18 | 5 | 11 / 3 / 4 | 7.0 | 0 | 59 |
 | structured | 18 | 14/18 | 0 | 11 / 4 / 3 | 6.5 | 0 | 0 |
-
-### 추가 집계 (로그에서)
-- tagged에서 `(reject-proposal)` 태그 뒤 본문에 새 가격을 적은 "숨은 역제안"은 30건(구매자 15, 판매자 15), 18 에피소드 중 9개에서 나왔습니다. 하네스는 태그를 믿어 이 가격을 기록하지 않았습니다.
-- tagged의 위반 5건은 모두 이 숨은 역제안 때문에 생긴 기록상의 위반입니다. ticket 세 번은 에이전트들이 80에 합의했다고 믿었으나 프로토콜은 판매자의 마지막 propose 태그 가격 85로 거래를 기록했고, chair 두 번은 130에 합의했다고 믿었으나 구매자의 첫 제안 90으로 기록되었습니다. 에이전트가 실제로 한도를 넘겨 합의한 경우는 세 조건 모두 0건입니다.
-- 거래 가격은 조건에 따라 달랐습니다. bike는 free 170·170·185, tagged 150·150, structured 150·150·150이고 book은 free 48·48·46, tagged 40·44·45, structured 40·40·40입니다. structured의 판매자는 첫 제안이 reserve와 같으면 2턴에 바로 수락했습니다.
-- 에피소드를 끝낸 쪽도 달랐습니다. free는 구매자 수락 11, 구매자 refuse 4, 판매자 refuse 1, 판매자 수락 1, open 1이고, structured는 판매자 수락 10, 판매자 refuse 4, open 3, 구매자 수락 1입니다. tagged는 판매자 수락 7, 구매자 수락 4, open 4, 판매자 refuse 3입니다.
-- free 구매자의 오프닝 18개는 모두 물음표로 끝나는 질문형이었지만 전부 가격을 담고 있어 리더가 18개 모두 propose로 읽었습니다. README가 예상한 1턴 refuse 종료는 나오지 않았습니다.
-- 런당 토큰은 free 24k~27k, tagged 16k~22k, structured 14k~16k였습니다.
 
 ### 에피소드 표 (`results.csv` 그대로)
 
@@ -200,7 +195,38 @@ python run.py --condition tagged --dry-run   # 규칙 기반 가짜 에이전트
 
 ## 4. 해석
 
-명시적 performative가 확실히 산 것은 읽기 비용이었습니다. 리더 호출이 free 125회에서 tagged 59회, structured 0회로 줄었고 파싱 실패는 세 조건 모두 없었으므로, 이 모델에서는 형식이 "읽을 수 있는가"를 바꾸지 못하고 "읽는 데 얼마가 드는가"만 바꿨습니다. 그런데 태그가 정확도를 살 것이라는 기대는 반대로 나왔습니다. correct는 free 17/18, structured 14/18, tagged 9/18이고 위반 5건은 모두 tagged에서 나왔습니다. 원인은 태그가 본문을 배반하는 한 가지 습관입니다. run 04 ticket에서 판매자는 `(reject-proposal) Thanks for your offer, but 50 dollars is too low for me. What about 90 dollars?` 라고 썼고, 이런 숨은 역제안이 30건이었습니다. 태그를 권위로 두는 하네스는 90을 기록하지 않았고, 일곱 번째 메시지 `(accept-proposal) 80 dollars works for me` 를 판매자의 마지막 propose 태그 가격 85에 대한 수락으로 처리해 budget 80을 넘긴 위반 거래로 적었습니다. 에이전트 둘은 80에 합의했다고 믿었습니다. run 05 chair는 더 나쁩니다. 다섯 번째 메시지 `(accept-proposal) That sounds fair. I accept your offer of $130` 는 태그로 기록된 판매자 제안이 없어 공중에 떴고, 이어진 판매자의 `(accept-proposal) Great! I'm glad we could agree on $130` 이 구매자의 첫 제안 90을 수락한 것으로 처리되어 reserve 120 아래의 거래가 되었습니다. 즉 tagged의 위반은 판매자가 실제로 손해를 본 것이 아니라 프로토콜의 기록과 에이전트의 믿음이 갈라진 것이고, FIPA-ACL이 내용 언어를 형식화한 이유가 정확히 여기에 있습니다. 힘만 형식화하고 내용을 자연어에 두면 힘은 내용을 배반하며, 그 배반을 아무도 검증하지 않습니다. structured는 이 균열이 생길 자리가 없어 위반이 0이었지만 대신 표현의 폭을 잃었습니다. run 08 chair에서 구매자는 90을 제안한 뒤 `{"performative": "reject-proposal", "content": {"price": null}}` 만 세 번 반복했고 판매자가 120까지 내려온 뒤 refuse해 가능한 거래가 무산되었으며, lens 세 번은 아무도 refuse를 쓰지 않아 10턴을 다 썼습니다. free 조건에서 물음표로 열린 오프닝 18개가 모두 propose로 읽힌 것은 README의 예상과 달랐는데, 공통 문단이 네 행위를 설명해 준 덕에 구매자가 질문 안에 가격을 넣었기 때문이고, 이는 어휘를 프롬프트로 공유하면 리더가 힘을 잘 읽는다는 뜻입니다. 대신 free의 실패는 완곡함에서 왔습니다. run 03 lens의 아홉 번째 메시지 `I can't go above $250 ... Otherwise, I may have to pass` 는 refuse가 아닌 reject로 읽혀 유일한 open이 되었습니다. 형식이 바꾸지 못한 것도 있습니다. 평균 턴 수는 6.5에서 7.0 사이로 거의 같았고, 에이전트가 자기 한도를 실제로 넘긴 경우는 어느 조건에도 없었습니다. 형식과 무관하게 달라진 것은 거래 가격이었습니다. bike와 book에서 structured의 판매자는 reserve와 같은 첫 제안을 2턴에 수락했고 free의 판매자는 170~185, 46~48까지 끌어올렸습니다. JSON 한 줄에는 "그보다는 더 받고 싶다"를 담을 자리가 없어서, 형식이 힘의 전달은 완벽하게 만들면서 협상 자체는 밋밋하게 만든 셈입니다.
+**형식이 확실히 바꾼 것: 읽기 비용**
+- 리더 호출은 free 125회, tagged 59회, structured 0회입니다.
+- 파싱 실패는 세 조건 모두 0이었습니다. 이 모델에서 형식은 "읽을 수 있는가"가 아니라 "읽는 데 얼마가 드는가"만 바꿨습니다.
+
+**기대와 반대로 나온 것: 정확도**
+- correct는 free 17/18, structured 14/18, tagged 9/18입니다. 위반 5건은 모두 tagged에서 나왔습니다.
+- 원인은 하나입니다. 태그가 본문을 배반하는 습관입니다.
+
+**tagged: 태그가 본문을 배반한다**
+- 판매자는 `(reject-proposal) Thanks for your offer, but 50 dollars is too low for me. What about 90 dollars?` (run 04 ticket t2)처럼 거절 태그 뒤에 역제안을 적었습니다. 이런 숨은 역제안이 30건입니다.
+- 하네스는 태그를 믿어 90을 기록하지 않았습니다. 그래서 `(accept-proposal) 80 dollars works for me` (t7)는 판매자의 마지막 propose 태그 가격 85에 대한 수락으로 처리되어 budget 80을 넘긴 위반이 되었습니다. 두 에이전트는 80에 합의했다고 믿었습니다.
+- run 05 chair는 더 나쁩니다. `(accept-proposal) That sounds fair. I accept your offer of $130` (t5)는 태그로 기록된 판매자 제안이 없어 공중에 떴습니다. 이어진 판매자의 `(accept-proposal) Great! I'm glad we could agree on $130` (t6)은 구매자의 첫 제안 90을 수락한 것으로 처리되어 reserve 120 아래 거래가 되었습니다.
+- 즉 tagged의 위반은 판매자의 실제 손해가 아니라 프로토콜의 기록과 에이전트의 믿음이 갈라진 것입니다. 힘만 형식화하고 내용을 자연어에 두면 힘은 내용을 배반하고, 그 배반을 아무도 검증하지 않습니다. FIPA-ACL이 내용 언어까지 형식화한 이유가 여기에 있습니다.
+
+**structured: 균열은 없지만 표현도 없다**
+- 위반은 0입니다. 기록이 갈라질 자리가 없습니다.
+- 대신 표현의 폭을 잃었습니다. run 08 chair에서 구매자는 90을 제안한 뒤 `{"performative": "reject-proposal", "content": {"price": null}}` 만 세 번 반복했고, 판매자가 120까지 내려온 뒤 refuse해 가능한 거래가 무산되었습니다.
+- lens 세 번은 아무도 refuse를 쓰지 않아 10턴을 다 썼습니다.
+
+**free: 힘은 잘 읽혔고 완곡함에서 실패했다**
+- 물음표로 열린 오프닝 18개가 모두 propose로 읽혔습니다. README의 예상과 다릅니다. 공통 문단이 네 행위를 설명해 준 덕에 구매자가 질문 안에 가격을 넣었기 때문입니다. 어휘를 프롬프트로 공유하면 리더는 힘을 잘 읽습니다.
+- 유일한 실패는 완곡함입니다. `I can't go above $250 ... Otherwise, I may have to pass` (run 03 lens t9)는 refuse가 아닌 reject로 읽혀 유일한 open이 되었습니다.
+
+**형식이 바꾸지 못한 것**
+- 평균 턴은 6.5에서 7.0 사이로 거의 같습니다.
+- 에이전트가 자기 한도를 실제로 넘긴 경우는 어느 조건에도 없습니다.
+
+**형식과 무관하게 달라진 것: 거래 가격**
+- bike와 book에서 structured 판매자는 reserve와 같은 첫 제안을 2턴에 수락했습니다. free 판매자는 170~185, 46~48까지 끌어올렸습니다.
+- JSON 한 줄에는 "그보다는 더 받고 싶다"를 담을 자리가 없습니다. 형식은 힘의 전달을 완벽하게 만들면서 협상 자체는 밋밋하게 만들었습니다.
+
+**한 줄 요약**: 명시적 performative는 읽기 비용을 샀고 정확도는 사지 못했습니다. 태그는 본문에 배반당했고, JSON은 배반당할 본문이 없는 대신 협상할 말도 없었습니다.
 
 ## 5. 추가 실험: 돌려 말하는 판매자
 
