@@ -1,7 +1,10 @@
 """The Luna shotgun series with DeepSeek V4.1 Flash: same protocol, prompts, tool and designs.
 
 Only the model settings differ (config.json: DeepInfra FP8, reasoning low, temperature 1.0, top_p 0.95).
-One design per process, because the armed speaking rule is a module-level setting:
+One design per process, because the armed speaking rule is a module-level setting.
+The task unit is one episode, so up to 100 episodes of a design run at once; each episode has its own
+log pair logs/<run>-s<scenario>.jsonl/.txt. The first attempt (run-level tasks, jobs=2) was stopped at
+77 episodes and is kept under the suite names without "-ep-".
 
 control           nobody holds anything                                   36 episodes
 shotgun-auto      the armed side gets the shotgun tool, uses it at will   72
@@ -45,6 +48,7 @@ DESIGNS = {  # sides, tool offered, holder sentence, speaking rule
 }
 SCHEDULE_SEED = 20260928
 PROBE_SCENARIO = 2
+MAX_JOBS = 100
 
 
 def speak_forced(role, other, messages, call, emit, turn, stats):
@@ -64,7 +68,7 @@ def configure(design):
 
 
 def suite_name(design, probe=False):
-    return f"deepseek-{design}-{'probe-' if probe else ''}20260928"
+    return f"deepseek-{design}-{'probe-' if probe else ''}ep-20260928"
 
 
 def prepare_suite(design, suite, jobs, tasks, scenarios, config):
@@ -75,7 +79,8 @@ def prepare_suite(design, suite, jobs, tasks, scenarios, config):
     manifest = {"suite": suite, "design": design, "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
                 "inputs": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
                 "config": config, "scenarios": scenarios, "max_turns": base_lab.MAX_TURNS, "repeats": 3, "jobs": jobs,
-                "schedule_seed": SCHEDULE_SEED, "tasks": tasks, "armed": list(spec["sides"]),
+                "schedule_seed": SCHEDULE_SEED, "task_unit": "episode", "log_layout": "logs/<run>-s<scenario>.jsonl",
+                "tasks": tasks, "armed": list(spec["sides"]),
                 "tool": armed.TOOL if spec["tool"] else None,
                 "tool_result": armed.TOOL_RESULT if spec["tool"] else None,
                 "narration": armed.NARRATION if spec["tool"] else None,
@@ -120,21 +125,21 @@ def prepare_suite(design, suite, jobs, tasks, scenarios, config):
     return manifest, csv_path, done
 
 
-def run_task(design, suite, side, condition, repeat, *, scenarios, config, key, manifest, csv_path, done, lock):
-    """run_holding.run_task generalized: side "none" arms nobody; the holder sentence follows the design."""
+def run_episode(design, suite, side, condition, repeat, sid, *, scenarios, config, key, manifest, csv_path, done, lock):
+    """One episode with its own client and log pair; the holder sentence follows the design."""
     run_id = f"{suite}-{side}-{condition}-{repeat:02d}"
-    todo = [s for s in scenarios if (run_id, str(s["id"])) not in done]
-    if not todo:
+    if (run_id, str(sid)) in done:
         return
+    s = next(x for x in scenarios if x["id"] == sid)
     spec, armed_role = DESIGNS[design], (None if side == "none" else side)
     client = armed.OpenRouterClient(key, config)
-    with (ROOT / "logs" / f"{run_id}.jsonl").open("a") as events, (ROOT / "logs" / f"{run_id}.txt").open("a") as console:
-        active_scenario, meter = None, None
+    stem = ROOT / "logs" / f"{run_id}-s{sid}"
+    with stem.with_suffix(".jsonl").open("a") as events, stem.with_suffix(".txt").open("a") as console:
+        meter = luna.UsageMeter()
         def emit(event, **fields):
-            if meter is not None:
-                meter.observe(event, fields)
+            meter.observe(event, fields)
             record = {"time": datetime.now(timezone.utc).isoformat(), "run": run_id,
-                      "scenario": active_scenario, "event": event, **fields}
+                      "scenario": sid, "event": event, **fields}
             line = base_lab.redact(json.dumps(record, ensure_ascii=False, allow_nan=False), key)
             events.write(line + "\n"); events.flush()
             if event not in ("request", "response", "usage"):
@@ -143,51 +148,52 @@ def run_task(design, suite, side, condition, repeat, *, scenarios, config, key, 
                 with lock:
                     print(line, flush=True)
         emit("setup", manifest=manifest, design=design, armed_role=side, condition=condition, repeat=repeat)
-        for s in todo:
-            active_scenario, meter = s["id"], luna.UsageMeter()
-            episode = {**s, "holder": armed_role} if spec["holding"] else s
-            row = dict.fromkeys(armed.HEADER, "")
-            row.update(run=run_id, condition=condition, scenario=s["id"], deal_possible=int(s["reserve"] <= s["budget"]),
-                       armed_role=side, reasoning_effort=armed.EFFORT)
-            emit("episode_start", systems={r: armed.lab.system_prompt(r, episode, condition) for r in ("buyer", "seller")},
-                 tools={armed_role: [manifest["tool"]]} if manifest["tool"] else {})
-            def call(role, messages, response_format, **tool_args):
-                return client.complete(messages, emit, s["id"], role, response_format=response_format, **tool_args)
-            started = time.monotonic()
-            try:
-                armed.negotiate(episode, condition, armed_role, call, emit, row)
-            except Exception as exc:
-                row.update(outcome="", price="", correct="", violation="",
-                           note=f"crashed: {type(exc).__name__}: {base_lab.redact(str(exc), key)}")
-                emit("crash", error=row["note"])
-            row.update(status=luna.status_of(row), elapsed_seconds=round(time.monotonic() - started, 3), **meter.row())
-            emit("episode_result", result=row)
-            with lock:
-                with csv_path.open("a", newline="") as f:
-                    csv.DictWriter(f, fieldnames=armed.HEADER, lineterminator="\n").writerow(row)
-                done.add((run_id, str(s["id"])))
+        episode = {**s, "holder": armed_role} if spec["holding"] else s
+        row = dict.fromkeys(armed.HEADER, "")
+        row.update(run=run_id, condition=condition, scenario=sid, deal_possible=int(s["reserve"] <= s["budget"]),
+                   armed_role=side, reasoning_effort=armed.EFFORT)
+        emit("episode_start", systems={r: armed.lab.system_prompt(r, episode, condition) for r in ("buyer", "seller")},
+             tools={armed_role: [manifest["tool"]]} if manifest["tool"] else {})
+        def call(role, messages, response_format, **tool_args):
+            return client.complete(messages, emit, sid, role, response_format=response_format, **tool_args)
+        started = time.monotonic()
+        try:
+            armed.negotiate(episode, condition, armed_role, call, emit, row)
+        except Exception as exc:
+            row.update(outcome="", price="", correct="", violation="",
+                       note=f"crashed: {type(exc).__name__}: {base_lab.redact(str(exc), key)}")
+            emit("crash", error=row["note"])
+        row.update(status=luna.status_of(row), elapsed_seconds=round(time.monotonic() - started, 3), **meter.row())
+        emit("episode_result", result=row)
+        with lock:
+            with csv_path.open("a", newline="") as f:
+                csv.DictWriter(f, fieldnames=armed.HEADER, lineterminator="\n").writerow(row)
+            done.add((run_id, str(sid)))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--design", choices=DESIGNS, required=True)
     parser.add_argument("--env-file", type=Path)
-    parser.add_argument("--jobs", type=int, choices=(1, 2, 3), default=3)
+    parser.add_argument("--jobs", type=int, default=20, help=f"concurrent episodes, 1..{MAX_JOBS}")
     parser.add_argument("--probe", action="store_true", help="lamp only, free condition, first repeat")
     args = parser.parse_args()
+    if not 1 <= args.jobs <= MAX_JOBS:
+        parser.error(f"--jobs must be between 1 and {MAX_JOBS}")
     configure(args.design)
     config = json.loads((HERE / "config.json").read_text())
     scenarios = json.loads((ROOT / "scenarios.json").read_text())
-    tasks = [(side, c, r) for side in DESIGNS[args.design]["sides"] for c in base_lab.CONDITIONS for r in range(1, 4)]
+    tasks = [(side, c, r, s["id"]) for side in DESIGNS[args.design]["sides"] for c in base_lab.CONDITIONS
+             for r in range(1, 4) for s in scenarios]
     random.Random(SCHEDULE_SEED).shuffle(tasks)
     if args.probe:
         scenarios = [s for s in scenarios if s["id"] == PROBE_SCENARIO]
-        tasks = [(side, "free", 1) for side in DESIGNS[args.design]["sides"]]
+        tasks = [(side, "free", 1, PROBE_SCENARIO) for side in DESIGNS[args.design]["sides"]]
     suite = suite_name(args.design, args.probe)
     manifest, csv_path, done = prepare_suite(args.design, suite, args.jobs, tasks, scenarios, config)
     key, lock = base_lab.read_key(args.env_file), threading.Lock()
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        futures = [pool.submit(run_task, args.design, suite, *task, scenarios=scenarios, config=config, key=key,
+        futures = [pool.submit(run_episode, args.design, suite, *task, scenarios=scenarios, config=config, key=key,
                                manifest=manifest, csv_path=csv_path, done=done, lock=lock) for task in tasks]
         for future in futures:
             future.result()

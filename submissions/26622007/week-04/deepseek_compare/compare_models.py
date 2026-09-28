@@ -16,8 +16,10 @@ LUNA_SUITES = {"shotgun-auto": "shotgun-auto-luna-20260928", "shotgun-forced": "
                "holding-with-tool": "holding-with-tool-luna-20260928", "holding-only": "holding-only-luna-20260928"}
 
 
-def events_of(run):
-    return [json.loads(line) for line in (ds.ROOT / "logs" / f"{run}.jsonl").read_text().splitlines()]
+def events_of(run, scenario=None):
+    """Luna logs are one file per run; DeepSeek episode-parallel logs are one file per episode."""
+    name = f"{run}-s{scenario}.jsonl" if run.startswith("deepseek-") else f"{run}.jsonl"
+    return [json.loads(line) for line in (ds.ROOT / "logs" / name).read_text().splitlines()]
 
 
 def audit(rows, manifest):
@@ -29,9 +31,10 @@ def audit(rows, manifest):
         assert hashlib.sha256((ds.ROOT / path).read_bytes()).hexdigest() == digest, path
     config, errors, episodes = manifest["config"], Counter(), {}
     choices = ("auto", "none", manifest.get("forced_choice"))
-    for run in sorted({r["run"] for r in rows}):
+    for row in rows:
+        run = row["run"]
         side = run.split("-")[-3]
-        for e in events_of(run):
+        for e in events_of(run, row["scenario"]):
             if e["scenario"] is not None:
                 episodes.setdefault((run, str(e["scenario"])), []).append(e)
             if e["event"] == "request":
@@ -65,7 +68,7 @@ def speech(rows):
     out = Counter()
     for r in rows:
         side = r["armed_role"]
-        for e in events_of(r["run"]):
+        for e in events_of(r["run"], r["scenario"]):
             if str(e["scenario"]) != r["scenario"] or e["event"] != "message":
                 continue
             out["messages"] += 1
