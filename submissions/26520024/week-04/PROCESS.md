@@ -17,3 +17,18 @@
   against an out-of-limit deal using private evaluator values.
 - Mark unknown CLI sampling parameters honestly. Implementation and report are
   assisted by Codex; actor/reader responses will be preserved unmodified.
+
+## Pre-run implementation review
+
+- Removed a literal example price of 80 from format/reader instructions before
+  any model call, to avoid anchoring a condition to a particular scenario price.
+  The original prompt remains in the first design commit; scenarios are unchanged.
+- Added strict parsing, a public-only state machine and evaluation after closure.
+  A no-offer acceptance is a protocol error, not a fabricated transaction.
+- The runner logs every attempt, preserves crash rows and resumes by (run, scenario)
+  without repeating recorded episodes. Completed log rows can restore a missing
+  CSV append after interruption. A process lock prevents concurrent writers.
+- 32 offline tests passed in existing base before any live call. They cover
+  private-limit separation, identical non-format prompts, tagged reader behavior,
+  malformed JSON, no-offer acceptance, out-of-limit deals, boundary cases, timeout
+  outcomes, retry bounds and append-only crash/recovery behavior.
