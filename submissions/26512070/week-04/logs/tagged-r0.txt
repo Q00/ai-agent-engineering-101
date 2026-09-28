@@ -1,0 +1,28 @@
+=== run tagged-r0 | condition=tagged | model=nvidia/nemotron-3-super-120b-a12b:free | temperature=0.7 | turn_limit=10 | base_url=https://openrouter.ai/api/v1 | started 2026-09-28T18:21:07
+--- bike (a used road bicycle) reserve=120 budget=200
+  [llm] attempt 1/4 failed (TypeError: 'NoneType' object is not subscriptable); retrying in 4s
+  [llm] attempt 1/4 failed (TypeError: 'NoneType' object is not subscriptable); retrying in 4s
+  t01 buyer | (propose) $100
+        reader| {"performative": "propose", "price": 100}
+        parse | propose price=100
+  t02 seller| (reject-proposal) $100 is too low. I can offer $140.
+        reader| {"performative": "reject-proposal", "price": 140}
+        parse | reject-proposal price=140
+  [llm] attempt 1/4 failed (TypeError: 'NoneType' object is not subscriptable); retrying in 4s
+  t03 buyer | (reject-proposal) $140 is more than I can afford. I can offer $120.
+        reader| {"performative": "reject-proposal", "price": 120}
+        parse | reject-proposal price=120
+  t04 seller| (reject-proposal) $120 is still below what I need. I can offer $135.
+        reader| {"performative": "reject-proposal", "price": 135}
+        parse | reject-proposal price=135
+  t05 buyer | (reject-proposal) $135 is still too high. I can offer $125.
+        reader| {"performative": "reject-proposal", "price": 125}
+        parse | reject-proposal price=125
+  t06 seller| (reject-proposal) $125 is still below my minimum. I can offer $130.
+        reader| {"performative": "reject-proposal", "price": 130}
+        parse | reject-proposal price=130
+  t07 buyer | (accept-proposal) $130 is acceptable. I'll take it.
+        parse | accept-proposal
+  RESULT outcome=deal price=130 correct=1 violation=0 turns=7 format_errors=0 reader_calls=6 agent_calls=8 tokens=6145
+=== end tagged-r0 2026-09-28T18:21:35
+
