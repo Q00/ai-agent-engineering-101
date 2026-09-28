@@ -1,0 +1,107 @@
+provider=openrouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.7 max_turns=8
+
+--- scenario 1 (a used bicycle), reserve=80, budget=120 ---
+[buyer] (propose) I'd like to offer $80 for the bicycle.
+  [reader] perf=propose price=80 ok=True reader_calls=1
+[seller] (reject-proposal) I'm sorry, but I'm afraid $80 is too low—I was hoping for something closer to $120 given the bike's condition and recent upgrades.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) How about $100? That seems fair given the upgrades and condition you mentioned.
+  [reader] perf=propose price=100 ok=True reader_calls=1
+[seller] (propose) I appreciate your offer of $100, but I believe the bicycle's value justifies a bit more—how about we meet at $115? That reflects the recent tire upgrade, new chain, and professional tune-up I had done last month.
+  [reader] perf=propose price=115 ok=True reader_calls=1
+[buyer] (propose) I can go up to $110, but I can't pay more than that—$115 is beyond what I'm willing to spend. Would $110 work for you?
+  [reader] perf=propose price=110 ok=True reader_calls=1
+[seller] (accept-proposal) $110 works for me—I’ll accept your offer and we have a deal. Thank you for the fair negotiation!
+  [reader] perf=accept-proposal price=None ok=True reader_calls=0
+[result] outcome=deal price=110 correct=1 violation=0 turns=6 format_errors=0 reader_calls=5
+
+--- scenario 2 (a desk lamp), reserve=30, budget=45 ---
+[buyer] (propose) I'd like to offer $20 for the desk lamp.
+  [reader] perf=propose price=20 ok=True reader_calls=1
+[seller] (reject-proposal) I'm sorry, but $20 is too low—I'm looking for something closer to $45 for this lamp.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) How about $30? That seems fair for a fair price given the lamp's condition.
+  [reader] perf=propose price=30 ok=True reader_calls=1
+[error] API returned empty choices
+
+--- scenario 3 (a mechanical keyboard), reserve=90, budget=70 ---
+[buyer] (propose) I offer $40 for the keyboard.
+  [reader] perf=propose price=40 ok=True reader_calls=1
+[seller] (reject-proposal) I’m sorry, but $40 is too low—I can’t go below $90 for this mechanical keyboard.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) I offer $55 for the keyboard.
+  [reader] perf=propose price=55 ok=True reader_calls=1
+[seller] (reject-proposal) I appreciate the offer, but $55 is still well below my minimum—I can’t accept anything under $90 for this keyboard.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) I offer $65 for the keyboard.
+  [reader] perf=propose price=65 ok=True reader_calls=1
+[seller] (reject-proposal) I’m sorry, but $65 is still too low—I can’t accept anything below $90 for this mechanical keyboard.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) I offer $70 for the keyboard.
+  [reader] perf=propose price=70 ok=True reader_calls=1
+[seller] (reject-proposal) I’m sorry, but $70 is still below my limit—I can’t accept anything under $90 for this mechanical keyboard.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=6
+
+--- scenario 4 (a second-hand textbook), reserve=25, budget=20 ---
+[buyer] (propose) I offer $5 for the textbook.
+  [reader] perf=propose price=5 ok=True reader_calls=1
+[seller] (reject-proposal) $5 is far too low for a used textbook in good condition—let’s be reasonable.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) I offer $8 for the textbook.
+  [reader] perf=propose price=8 ok=True reader_calls=1
+[seller] (reject-proposal) $8 is still well below the fair market value—this textbook is worth significantly more.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) I offer $12 for the textbook.
+  [reader] perf=propose price=12 ok=True reader_calls=1
+[seller] (reject-proposal) $12 is still too low—this textbook is in excellent condition and has recent editions of key chapters, so I expect a price closer to its actual value.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) I offer $16 for the textbook.
+  [reader] perf=propose price=16 ok=True reader_calls=1
+[seller] (reject-proposal) $16 is getting closer, but still below what this textbook is worth—considering its condition and usefulness, I’m hoping for something more reflective of its value.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=4
+] retrying in 1s...
+[buyer] (propose) I offer $65 for the keyboard.
+  [empty] retrying in 1s...
+  [reader] perf=propose price=65 ok=True reader_calls=1
+[seller] (reject-proposal) I’m sorry, but $65 is still too low—I can’t accept anything below $90 for this mechanical keyboard.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) I offer $70 for the keyboard.
+  [reader] perf=propose price=70 ok=True reader_calls=1
+[seller] (reject-proposal) I’m sorry, but $70 is still below my limit—I can’t accept anything under $90 for this mechanical keyboard.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=6
+
+--- scenario 4 (a second-hand textbook), reserve=25, budget=20 ---
+[buyer] (propose) I offer $5 for the textbook.
+  [reader] perf=propose price=5 ok=True reader_calls=1
+[seller] (reject-proposal) $5 is far too low for a used textbook in good condition—let’s be reasonable.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790600820000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790600820000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 2s...
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790600820000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 4s...
+  [empty] retrying in 8s...
+[buyer] (propose) I offer $8 for the textbook.
+  [reader] perf=propose price=8 ok=True reader_calls=1
+  [empty] retrying in 1s...
+  [empty] retrying in 2s...
+[seller] (reject-proposal) $8 is still well below the fair market value—this textbook is worth significantly more.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+  [empty] retrying in 1s...
+  [empty] retrying in 2s...
+[buyer] (propose) I offer $12 for the textbook.
+  [reader] perf=propose price=12 ok=True reader_calls=1
+  [empty] retrying in 1s...
+  [empty] retrying in 2s...
+  [empty] retrying in 4s...
+[seller] (reject-proposal) $12 is still too low—this textbook is in excellent condition and has recent editions of key chapters, so I expect a price closer to its actual value.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) I offer $16 for the textbook.
+  [reader] perf=propose price=16 ok=True reader_calls=1
+  [empty] retrying in 1s...
+[seller] (reject-proposal) $16 is getting closer, but still below what this textbook is worth—considering its condition and usefulness, I’m hoping for something more reflective of its value.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=4
+
+log saved to /work/ai-agent-engineering-101/submissions/26510119/week-04/logs/tagged-04.txt
