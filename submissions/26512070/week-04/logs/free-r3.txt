@@ -1,0 +1,169 @@
+=== run free-r3 | condition=free | model=nvidia/nemotron-3-super-120b-a12b:free | temperature=0.7 | turn_limit=10 | base_url=https://openrouter.ai/api/v1 | started 2026-09-28T19:04:36
+--- bike (a used road bicycle) reserve=120 budget=200
+  t01 buyer | I offer $120 for the bicycle.
+        reader| {"performative": "propose", "price": 120}
+        parse | propose price=120
+  t02 seller| I accept your offer of $120.
+        reader| {"performative": "accept-proposal", "price": null}
+        parse | accept-proposal
+  RESULT outcome=deal price=120 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2 agent_calls=2 tokens=1602
+--- laptop (a two-year-old laptop) reserve=540 budget=560
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  t01 buyer | $300
+        reader| {"performative": "propose", "price": 300}
+        parse | propose price=300
+  t02 seller| I'm afraid $300 is too low for this laptop. I can let it go for $700.
+        reader| {"performative": "reject-proposal", "price": 700}
+        parse | reject-proposal price=700
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 8s
+  t03 buyer | $300 is too low, and I cannot accept $700. I offer $400.
+        reader| {"performative": "reject-proposal", "price": 400}
+        parse | reject-proposal price=400
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t04 seller| I appreciate the offer, but $400 is still below what I can accept. I’m willing to sell for $600.
+        reader| {"performative": "reject-proposal", "price": 600}
+        parse | reject-proposal price=600
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 8s
+  t05 buyer | I cannot accept $600, as it exceeds my budget. I offer $500.
+        reader| {"performative": "reject-proposal", "price": 500}
+        parse | reject-proposal price=500
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  t06 seller| I understand your budget, but $500 is still too low. I can come down to $550—this is very close to my lowest acceptable price.
+        reader| {"performative": "reject-proposal", "price": 550}
+        parse | reject-proposal price=550
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  [llm] attempt 2/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 8s
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  t07 buyer | I cannot accept $550, as it exceeds my budget. I offer $560.
+        reader| {"performative": "reject-proposal", "price": 560}
+        parse | reject-proposal price=560
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  t08 seller| I appreciate you coming up to $560, but I need at least $550 to make this work—and since you're offering $560, I’m happy to accept your offer. We have a deal at $560.
+        reader| {"performative": "accept-proposal", "price": null}
+        parse | accept-proposal
+  RESULT outcome=deal price=560 correct=1 violation=0 turns=8 format_errors=0 reader_calls=8 agent_calls=8 tokens=7942
+--- camera (a mirrorless camera body) reserve=300 budget=300
+  t01 buyer | $180
+        reader| {"performative": "propose", "price": 180}
+        parse | propose price=180
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  [llm] attempt 2/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 8s
+  t02 seller| I cannot accept $180 for the mirrorless camera body. I’m asking $450.
+        reader| {"performative": "reject-proposal", "price": 450}
+        parse | reject-proposal price=450
+  t03 buyer | $180 is my final offer; if you cannot meet it, I will have to walk away.
+        reader| {"performative": "refuse", "price": null}
+        parse | refuse
+  RESULT outcome=no_deal price=- correct=0 violation=0 turns=3 format_errors=0 reader_calls=3 agent_calls=3 tokens=2490
+--- guitar (an acoustic guitar) reserve=410 budget=390
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  t01 buyer | I offer $200 for the acoustic guitar.
+        reader| {"performative": "propose", "price": 200}
+        parse | propose price=200
+  t02 seller| I decline your offer of $200. I am asking $650 for the acoustic guitar.
+        reader| {"performative": "reject-proposal", "price": 650}
+        parse | reject-proposal price=650
+  t03 buyer | I cannot accept $650. I offer $250.
+        reader| {"performative": "reject-proposal", "price": 250}
+        parse | reject-proposal price=250
+  t04 seller| I decline your offer of $250. I am asking $600 for the acoustic guitar.
+        reader| {"performative": "reject-proposal", "price": 600}
+        parse | reject-proposal price=600
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 8s
+  t05 buyer | I decline $600.600. I offer $300.
+        reader| {"performative": "reject-proposal", "price": 300}
+        parse | reject-proposal price=300
+  t06 seller| I decline your offer of $300. I am asking $550 for the acoustic guitar.
+        reader| {"performative": "reject-proposal", "price": 550}
+        parse | reject-proposal price=550
+  t07 buyer | I cannot accept $550. I offer $350.
+        reader| {"performative": "reject-proposal", "price": 350}
+        parse | reject-proposal price=350
+  t08 seller| I decline your offer of $350. I am asking $500 for the acoustic guitar.
+        reader| {"performative": "reject-proposal", "price": 500}
+        parse | reject-proposal price=500
+  t09 buyer | I decline $500. I offer $390.
+        reader| {"performative": "reject-proposal", "price": 390}
+        parse | reject-proposal price=390
+  t10 seller| I decline your offer of $390. I am asking $450 for the acoustic guitar.
+        reader| {"performative": "reject-proposal", "price": 450}
+        parse | reject-proposal price=450
+  RESULT outcome=open price=- correct=1 violation=0 turns=10 format_errors=0 reader_calls=10 agent_calls=10 tokens=9995
+--- sofa (a leather three-seat sofa) reserve=800 budget=450
+  t01 buyer | I propose $200.
+        reader| {"performative": "propose", "price": 200}
+        parse | propose price=200
+  t02 seller| I'm sorry, but $200 is far too low for a quality leather three-seat sofa. I must reject your offer and counter with $1,400.
+        reader| {"performative": "reject-proposal", "price": 1400}
+        parse | reject-proposal price=1400
+  t03 buyer | I reject $1,400 and counter with $250.
+        reader| {"performative": "reject-proposal", "price": 250}
+        parse | reject-proposal price=250
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  t04 seller| I appreciate your interest, but $250 is still far below what this sofa is worth. I cannot accept that price and must reject your offer. My counter is $1,200.
+        reader| {"performative": "reject-proposal", "price": 1200}
+        parse | reject-proposal price=1200
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t05 buyer | I reject $1,200 and counter with $300.
+        reader| {"performative": "reject-proposal", "price": 300}
+        parse | reject-proposal price=300
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t06 seller| I understand you're working within a budget, but $300 is simply not feasible for a genuine leather three-seat sofa of this quality. I must reject your offer and stand firm at $1,000. This is a fair price given the craftsmanship and materials.
+        reader| {"performative": "reject-proposal", "price": 1000}
+        parse | reject-proposal price=1000
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t07 buyer | I reject $1,000 and counter with $350. This is my third counter-offer, and the seller has not moved significantly from their position despite my reasonable increases. I will not continue negotiating further. I refuse to proceed without a deal.
+        reader| {"performative": "refuse", "price": null}
+        parse | refuse
+  RESULT outcome=no_deal price=- correct=1 violation=0 turns=7 format_errors=0 reader_calls=7 agent_calls=7 tokens=7015
+--- lamp (a vintage brass desk lamp) reserve=95 budget=80
+  t01 buyer | I offer $45 for the vintage brass desk lamp.
+        reader| {"performative": "propose", "price": 45}
+        parse | propose price=45
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t02 seller| I'm sorry, but $45 is too low. I can let it go for $150.
+        reader| {"performative": "reject-proposal", "price": 150}
+        parse | reject-proposal price=150
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t03 buyer | I cannot accept $150. I offer $55.
+        reader| {"performative": "reject-proposal", "price": 55}
+        parse | reject-proposal price=55
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t04 seller| I appreciate your offer, but $55 is still far too low. I can sell it for $140.
+        reader| {"performative": "reject-proposal", "price": 140}
+        parse | reject-proposal price=140
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t05 buyer | I cannot accept $140. I offer $65.
+        reader| {"performative": "reject-proposal", "price": 65}
+        parse | reject-proposal price=65
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t06 seller| I understand your position, but $65 doesn't reflect the lamp's value. I can accept $130.
+        reader| {"performative": "reject-proposal", "price": 130}
+        parse | reject-proposal price=130
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t07 buyer | I cannot accept $130. I offer $75.
+        reader| {"performative": "reject-proposal", "price": 75}
+        parse | reject-proposal price=75
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t08 seller| I’ve come down significantly already, and $75 is still too low. I can meet you at $120.
+        reader| {"performative": "reject-proposal", "price": 120}
+        parse | reject-proposal price=120
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 8s
+  t09 buyer | I cannot accept $120. I offer $80.
+        reader| {"performative": "reject-proposal", "price": 80}
+        parse | reject-proposal price=80
+  t10 seller| I’ve lowered my price three times now, and $80 is still below what I can accept. I’m firm at $110. If that doesn’t work for you, I’ll have to decline.
+        reader| {"performative": "reject-proposal", "price": 110}
+        parse | reject-proposal price=110
+  RESULT outcome=open price=- correct=1 violation=0 turns=10 format_errors=0 reader_calls=10 agent_calls=10 tokens=10106
+=== end free-r3 2026-09-28T19:08:23
+
