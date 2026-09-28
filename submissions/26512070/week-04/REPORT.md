@@ -287,4 +287,19 @@ python summarize.py                                   # 아래 2부 표
 
 ## 4. 해석
 
-<!-- TODO(26512070) -->
+**명시적 performative가 도움이 된 곳은 읽기 비용이다.** structured는 판독기를 한 번도 호출하지 않았고, 메시지당 토큰이 약 525로 free(약 966)의 54%였다. act 판정에 LLM이 끼어들 여지도 없었다. 반면 tagged는 기대만큼 싸지 않았다. "거절에는 항상 역제안 가격을 붙인다"는 규칙 때문에 메시지의 88%(124/141)에서 가격을 읽으려고 판독기를 불렀고, 메시지당 토큰(약 928)이 free와 거의 같았다. 태그가 act는 싸게 전달했지만, 이 프로토콜에서는 비용의 대부분이 act가 아니라 가격을 읽는 데 들었다.
+
+**비용을 치른 곳은 실패의 종류이며, 조건마다 달랐다.**
+- **free:** 판독기가 의도를 잘못 읽었다. "$180 is my final offer; if you cannot meet it, I will have to walk away."(free-r3 camera t03)라는 조건부 위협이 `refuse`로 판정되어 3턴 만에 무산됐다. 네 act 어휘에는 위협이나 최종 제안을 담을 자리가 없다.
+- **tagged:** 판독기 경로가 남아 있어서 판독기 자체가 실패했다. 형식 오류 5건 중 2건은 에이전트의 메시지가 올바른데도 판독기가 `{"performative": "performative": ...}`처럼 깨진 JSON을 돌려준 경우다. free의 형식 오류 1건도 같은 원인이다. 또 한 메시지에 태그 두 개를 쓴 경우가 있었다(tagged-r3 lamp t08, `(reject-proposal) …` 다음에 `(refuse) …`). 정규식이 첫 태그만 읽는 바람에, 두 에이전트는 "The seller has refused, ending the negotiation"이라고 믿었지만 결과는 `open`으로 기록됐다.
+- **structured:** 한 글자 실수로 발화 전체가 무효가 됐다. 가격 없는 `reject-proposal`이 2건 있었다. 시험 실행(structured-r0 bike t06)에서는 판매자의 수락이 `{"performative": "performative": "accept-proposal", ...}`로 깨졌다. 협상 상태가 바뀌지 않은 채 구매자가 수락했고, 판매자가 동의하려던 $120이 아니라 이전 제안인 $150으로 거래됐다.
+- **공통:** 이 과제의 네 act에는 `not-understood`가 없다. 그래서 세 조건 모두에서 실패는 상대에게 알려지지 않았고, 협상 상태와 에이전트의 믿음이 어긋난 채로 진행됐다.
+
+**어떤 형식도 바꾸지 못한 것은 성실성, 종료 규칙, 그리고 어려운 시나리오다.**
+- **성실성:** 유일한 한계 위반(tagged-r3 guitar)에서 구매자는 "$480 exceeds my budget"라고 한 뒤 "(accept-proposal) $420 is acceptable."이라고 썼다(budget $390). 태그는 정확히 읽혔다.
+- **거짓 한계 주장:** 거래 가능한데 무산된 bike 2건(tagged-r1, r2)은 모두 에이전트가 자기 한계를 거짓으로 말한 결과였다. tagged-r1에서 budget $200인 구매자는 "$130 is above my budget"라고 했고, reserve $120인 판매자는 "$120 is my absolute lowest… I must hold at $130"이라고 했다. FIPA처럼 성실성은 가정될 뿐이며, 어떤 형식도 그것을 검증하지 않았다.
+- **종료 규칙:** `refuse` 26건 중 20건이 "역제안을 3번 보낸 뒤"라는 규칙보다 일렀다(free 7/8, tagged 5/8, structured 8/10). 구매자는 대부분 첫 propose를 세 번 중 한 번으로 세고 t07에 떠났다. 파서, 정규식, 판독기는 act의 형식만 보고 대화 규칙은 보지 않는다.
+- **camera(reserve = budget = $300):** 세 조건 모두에서 가장 어려웠다. 9번 중 3번만 성사됐고(free 1, tagged 2, structured 0), 성사된 3건은 모두 정확히 $300이었다. 거래 가능한데 실패한 9건 중 6건이 camera였다.
+- **거래 불가능한 시나리오:** 세 조건 모두 거의 다 맞혔다(9/9, 8/9, 9/9). `open` 9건은 모두 이 시나리오에서 나왔다.
+
+**표본의 한계.** 조건마다 18 에피소드이고 거래 가능한 시나리오는 9개다. 정답 수의 차이(free 16, tagged 14, structured 14)는 2 에피소드이므로 이 표본으로 조건의 우열을 말할 수는 없다. 이 실험에서 형식이 확실히 바꾼 것은 **읽기 비용**과 **실패가 일어나는 지점**이다.
