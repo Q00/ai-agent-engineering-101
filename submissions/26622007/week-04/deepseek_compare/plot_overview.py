@@ -28,9 +28,9 @@ plt.rcParams.update({"font.family": "Pretendard", "axes.unicode_minus": False, "
 SURFACE, INK, INK2, MUTED, GRID, BASE = "#fcfcfb", "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7"
 MODELS = {"luna": ("GPT-6 Luna", "#2a78d6"), "deepseek": ("DeepSeek V4.1 Flash", "#eb6834")}
 # Luna's first design (the_great_communicator) has no DeepSeek counterpart and is left out of the overview.
-DESIGNS = [("shotgun-auto", "샷건 툴 · 자율"), ("shotgun-forced", "샷건 툴 · 강제"),
+DESIGNS = [("shotgun-auto", "툴 · 자율"), ("shotgun-forced", "툴 · 강제"),
            ("holding-with-tool", "소지 문장 + 툴"), ("holding-only", "소지 문장만")]
-SIDES = [("buyer", "buyer 무장"), ("seller", "seller 무장")]
+SIDES = [("buyer", "buyer 보유"), ("seller", "seller 보유")]
 SCENARIOS = {str(s["id"]): s for s in json.loads((ROOT / "scenarios.json").read_text())}
 
 
@@ -103,7 +103,7 @@ def main():
     left.set_yticks(range(len(DESIGNS)), [d[1] for d in reversed(DESIGNS)], fontsize=10, color=INK)
     left.set_xlim(0, 30)
     left.set_xticks([0, 10, 20, 30], ["0%", "10%", "20%", "30%"], color=MUTED, fontsize=9)
-    left.set_title("무장한 쪽이 총으로 위협한 에피소드", loc="left", fontsize=12.5, color=INK, pad=12, fontweight="semibold")
+    left.set_title("보유한 쪽이 상대를 위협한 에피소드", loc="left", fontsize=12.5, color=INK, pad=12, fontweight="semibold")
 
     # Right: armed side's share against the unarmed control.
     labels, y = [], 0
@@ -125,9 +125,9 @@ def main():
     right.set_yticks([p for p, _ in labels], [t for _, t in labels], fontsize=9.5, color=INK)
     right.set_xlim(-0.75, 0.75)
     right.set_xticks([-0.6, -0.3, 0, 0.3, 0.6], ["−0.6", "−0.3", "0", "+0.3", "+0.6"], color=MUTED, fontsize=9)
-    right.set_title("무장한 쪽이 가져간 몫의 변화 (대조군 대비)", loc="left", fontsize=12.5, color=INK, pad=12,
+    right.set_title("보유한 쪽이 가져간 몫의 변화 (대조군 대비)", loc="left", fontsize=12.5, color=INK, pad=12,
                     fontweight="semibold")
-    right.text(0.74, -len(labels) + 0.35, "무장한 쪽에 유리 →", ha="right", fontsize=9, color=MUTED)
+    right.text(0.74, -len(labels) + 0.35, "보유한 쪽에 유리 →", ha="right", fontsize=9, color=MUTED)
     right.text(-0.74, -len(labels) + 0.35, "← 불리", ha="left", fontsize=9, color=MUTED)
 
     for ax in (left, right):
@@ -139,19 +139,19 @@ def main():
     left.set_ylim(-0.7, len(DESIGNS) - 0.3)
     right.set_ylim(-len(labels) + 0.1, 0.6)
 
-    fig.text(0.035, 0.94, "샷건을 쥐여 줘도 협상은 쉬워지지 않았다", fontsize=19, color=INK, fontweight="semibold")
-    fig.text(0.035, 0.895, "한쪽 협상자만 무장 · 추론 low · 30턴 · 묶음마다 무장 에피소드 72개(buyer 36 + seller 36) · "
-             "DeepSeek은 총을 꺼냈고 Luna는 거의 꺼내지 않았다. 가격 변화는 어느 쪽도 통계적으로 유의미하지 않았다",
+    fig.text(0.035, 0.94, "'훌륭한 대화수단'을 쥐여 줘도 협상은 쉬워지지 않았다", fontsize=19, color=INK, fontweight="semibold")
+    fig.text(0.035, 0.895, "한쪽 협상자만 툴 보유 · 추론 low · 30턴 · 묶음마다 72개(buyer 보유 36 + seller 보유 36) · "
+             "DeepSeek은 이 툴로 위협했고 Luna는 거의 쓰지 않았다. 가격 변화는 어느 쪽도 통계적으로 유의미하지 않았다",
              fontsize=10, color=INK2)
     handles = [Line2D([], [], marker="o", ls="", ms=8, color=c, mec=SURFACE, mew=2, label=n) for n, c in MODELS.values()]
     fig.legend(handles=handles, loc="upper right", bbox_to_anchor=(0.97, 0.955), ncol=2, frameon=False, fontsize=10,
                labelcolor=INK, handletextpad=0.3, columnspacing=1.4)
     fig.text(0.035, 0.088, "위협 30건 뒤 상대가 자기 한도 밖으로 양보한 경우 0건 · 거래 불가능한 키보드에서 위협한 10건은 모두 결렬 · "
-             "위협 여부는 무장 에피소드의 툴 인자와 발언을 모두 읽은 수작업 표시(threat_labels.csv)",
+             "위협 여부는 보유 에피소드의 툴 인자와 발언을 모두 읽은 수작업 표시(threat_labels.csv)",
              fontsize=9, color=INK2)
-    fig.text(0.035, 0.060, "몫: 자전거·탁상등 거래에서 협상 구간(budget − reserve) 중 무장한 쪽 몫, 같은 모델의 무장 없는 대조군 36회와의 차이. "
+    fig.text(0.035, 0.060, "몫: 자전거·탁상등 거래에서 협상 구간(budget − reserve) 중 보유한 쪽 몫, 같은 모델의 툴 없는 대조군 36회와의 차이. "
              "선은 95% 부트스트랩 구간(5,000회).", fontsize=9, color=MUTED)
-    fig.text(0.035, 0.032, "순열 검정 16개 모두 p ≥ 0.05(최소 0.057, DeepSeek 샷건 강제·buyer). 이 구간만 보정 없이 0을 살짝 벗어나지만(+0.28), "
+    fig.text(0.035, 0.032, "순열 검정 16개 모두 p ≥ 0.05(최소 0.057, DeepSeek 툴 강제·buyer 보유). 이 구간만 보정 없이 0을 살짝 벗어나지만(+0.28), "
              "16개 비교를 보정하면 유의하지 않다.", fontsize=9, color=MUTED)
     out = HERE / "shotgun_overview.png"
     fig.savefig(out, facecolor=SURFACE)
