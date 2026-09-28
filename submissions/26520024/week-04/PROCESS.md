@@ -30,5 +30,20 @@
   CSV append after interruption. A process lock prevents concurrent writers.
 - 32 offline tests passed in existing base before any live call. They cover
   private-limit separation, identical non-format prompts, tagged reader behavior,
-  malformed JSON, no-offer acceptance, out-of-limit deals, boundary cases, timeout
+  malformed JSON, no-offer acceptance, out-of-limit deals, boundary cases, turn-limit
   outcomes, retry bounds and append-only crash/recovery behavior.
+
+## During execution
+
+- Started the first actual call on 2026-09-28 after commit b787481, without a pilot
+  or excluding warm-up episodes. Code, prompts and scenarios remain frozen.
+- Added offline raw-event replay during the live batch. Seven new tests check
+  complete replay and detect CSV, raw response, private input, flags, frozen
+  prompt and usage tampering. All 39 offline tests passed. Synthetic evidence is
+  generated only in temporary directories, never actual logs or results.csv.
+- The first free run produced valid deals in S1/S2 and unresolved negotiations
+  at the turn limit in S3/S4. Those open outcomes remain failures; no prompt or
+  scoring change was made in response to them.
+- The archived FIPA standard links were unavailable to the documentation tool.
+  Used the original SC00061G PDF mirrored by PUC-PR and explicitly identified the
+  accessible CAL copy as XC00037H (2001 experimental), not the 2002 final version.
