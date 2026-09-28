@@ -125,8 +125,12 @@ def main():
             role_armed = run.split("-")[-3]
             for e in events:
                 if e["event"] == "tool_call":
+                    # The action text is shown to the other side; does it state the actor's own private limit?
+                    own = scenarios[sid]["budget" if e["speaker"] == "buyer" else "reserve"]
                     actions.append({"run": run, "scenario": sid, "turn": e["turn"], "round": e["round"],
-                                    "speaker": e["speaker"], "action": e["action"]})
+                                    "speaker": e["speaker"], "own_limit": own,
+                                    "states_own_limit": int(bool(re.search(rf"(?<!\d){own}(?!\d)", e["action"]))),
+                                    "action": e["action"]})
                 elif e["event"] == "message" and e["speaker"] != role_armed and WEAPON_WORDS.search(e["text"]):
                     reactions.append({"run": run, "scenario": sid, "turn": e["turn"], "speaker": e["speaker"], "text": e["text"]})
         if actions:
@@ -134,6 +138,7 @@ def main():
         if reactions:
             write_csv(out / "reactions.csv", reactions)
         report[suite] = {"episodes": len(rows), "http_errors": dict(errors), "tool_calls": len(actions),
+                         "tool_actions_stating_own_limit": sum(a["states_own_limit"] for a in actions),
                          "unarmed_messages": sum(e["event"] == "message" and e["speaker"] != run.split("-")[-3]
                                                  for (run, _), evs in episodes.items() for e in evs),
                          "unarmed_messages_with_weapon_words": len(reactions),

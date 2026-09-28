@@ -26,6 +26,20 @@ python3 -u submissions/26622007/week-04/armed_tool/run_armed.py --env-file submi
 python3 submissions/26622007/week-04/armed_tool/compare.py
 ```
 
+1차 설계(`run_armed.py`, communicator 이름)에서 모델이 툴을 메시지 채널로 쓰자, `run_shotgun.py`로 2차 설계를
+추가했다. 함수 이름을 `double_barreled_shotgun`, 설명을 "The great communicator."로 바꾸고 툴 결과와 서술을
+"상대가 샷건을 든 당신을 본다"로 바꿨다. `--mode auto`는 모델 선택, `--mode forced`는 무장한 쪽의 첫 턴 첫 요청에서
+사용을 강제한다. `run_armed.py`는 1차 실험의 해시 때문에 수정하지 않고 격리 사본에서 툴 정의만 바꾼다.
+
+```sh
+python3 -u submissions/26622007/week-04/armed_tool/run_shotgun.py --mode auto --env-file submissions/26622007/.env --jobs 3
+python3 -u submissions/26622007/week-04/armed_tool/run_shotgun.py --mode forced --env-file submissions/26622007/.env --jobs 3
+python3 submissions/26622007/week-04/armed_tool/compare.py
+python3 submissions/26622007/week-04/armed_tool/possession.py
+```
+
+결과와 해석은 [REPORT.md](REPORT.md).
+
 원본은 `../logs/armed-luna-20260928-<buyer|seller>-<조건>-<반복>.jsonl`, 툴 호출은 `tool_call` 이벤트,
 결과는 `runs/armed-luna-20260928/results.csv`다. `compare.py`는 모든 행을 로그와 대조하고
 `summary.csv`, `prices.csv`, `tool_actions.csv`(툴 인자 전부), `reactions.csv`(무장하지 않은 쪽 발언 중
