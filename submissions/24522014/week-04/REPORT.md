@@ -124,23 +124,40 @@ rerun results.
 
 ## 4. Interpretation
 
-The explicit performative chiefly moved **reading cost and ambiguity**, not
-sincerity: free spent 72 reader calls and sometimes changed the force of clear
-English—for example `logs/free-03.txt` lines 31–32 records *“$35 is still too
-low ... I can't accept”* as `propose(35)`, and lines 58–59 reads *“decline and
-look elsewhere”* as `reject-proposal` rather than `refuse`; tagged reduced the
-reader total to 29 because lines such as `logs/tagged-03.txt` 27–28 let regex
-read `(reject-proposal)` without a model, while structured reduced it to zero.
-That saving was not a correctness ranking: free and tagged each produced 9
-correct rows and structured 8, because the dominant outcome error came from
-negotiation behaviour—structured repeatedly reached `open` on possible
-scenario 2—rather than from act parsing. Explicit structure also introduced
-its own surface failure: `logs/structured-03.txt` lines 46–47 contains only
-`{"performative":""}`, which the schema parser rejected and counted as the
-sole format error. No completed condition produced a private-limit violation,
-so neither tags nor JSON improved the observed sincerity metric; all three
-still relied on prompts and post-hoc checking. Finally, the 1/2/1 crashed rows
-for free/tagged/structured came from repeated empty OpenRouter responses and
-are transport failures shared across formats, so they should not be credited
-to a protocol condition even though they lower the all-attempt correct
-fractions.
+Most of the difference between conditions came from scenario 2 (the
+textbook): tagged was correct in 3/3 attempts, free in 1/3, and structured in
+0/3. The immediate cause was whether a seller leaked a useful price while
+rejecting an offer. Tagged sellers said things such as *"I need at least 40"*
+(`logs/tagged-01.txt` lines 29-30), which gave the buyer a target and led to an
+agreement, whereas the structured schema required a rejection to carry
+`"price": null`; it communicated the refusal but no counterprice, so all three
+structured S2 episodes reached the eight-turn limit. Scenarios 3 and 4 had
+little discriminatory power because they had no zone of possible agreement:
+as long as the agents avoided a deal, the harness awarded `correct=1`. The one
+tagged S1 failure was also behavioural rather than a parsing failure: although
+the seller's true reserve was 120, it claimed *"I need at least 150"* and the
+buyer, whose true budget was also 150, gave up (`logs/tagged-01.txt` lines
+3-17). The explicit performative chiefly moved reading cost and ambiguity, not
+sincerity. Reader calls followed the order guaranteed by the harness design,
+free (every utterance, 72) > tagged (only proposals, 29) > structured (0), so
+this cost ordering is not itself a surprising empirical result. Free's
+`format_errors=0` is misleading if read as semantic accuracy: the reader
+returned syntactically valid JSON with `ok: true` even when it classified
+*"$35 is still too low ... I can't accept"* as `propose(35)`
+(`logs/free-03.txt` lines 31-32), and it read *"decline and look elsewhere"*
+as `reject-proposal` instead of `refuse` (lines 58-59). In other words,
+`format_errors` measures parseability, not whether an LLM label is correct.
+Structured avoided that hidden reader ambiguity but exposed a schema-surface
+failure: `logs/structured-03.txt` lines 46-47 contain only
+`{"performative":""}`, which the parser rejected as the sole recorded format
+error. No completed condition produced a private-limit violation, so tags and
+JSON did not change the observed sincerity metric; all conditions still
+relied on prompt obedience and post-hoc checks. The four crashes (free 1,
+tagged 2, structured 1) appear to be condition-independent transport failures
+caused by repeated empty OpenRouter responses ending as a `NoneType` error.
+They give the conditions different completed denominators and their retry
+backoff also distorts elapsed time, so neither crash count nor wall-clock time
+should be treated as a protocol effect. Finally, outputs differed across runs
+despite temperature 0--for example tagged S1 failed once and succeeded twice--
+so three repeats are too few to cleanly separate endpoint/model noise from a
+true condition effect.
