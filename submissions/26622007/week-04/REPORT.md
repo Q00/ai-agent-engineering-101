@@ -64,6 +64,11 @@ python3 scripts/check_week04.py submissions/26622007/week-04
 같은 명령은 `results.csv`에 기록된 `(run, scenario)`를 건너뛰고 재개한다. 코드·설정 해시가 다르면 재개를 거부한다.
 자세한 실행 정책은 [lab/README.md](lab/README.md)에 있다.
 
+- API 키: `--env-file`로 지정한 파일에 `OPENROUTER_API_KEY=<키>` 한 줄을 둔다. `--env-file` 없이 같은 이름의 환경변수로 줘도 된다.
+  키 파일은 커밋하지 않는다(`.gitignore`).
+- 실행 환경: Python 3.12.10. 실행기는 표준 라이브러리만 쓴다(HTTP는 `urllib`). 그림 스크립트만 matplotlib이 필요하다.
+- manifest에 소스 커밋을 적으려고 `git rev-parse HEAD`를 부르므로 저장소 안에서 실행한다.
+
 ### 확장 실험 1: 추론 강도
 
 | 항목 | 값 |
@@ -239,12 +244,16 @@ FIPA-ACL 열은 강의 노트(`week-04.html`)가 인용한 규격 SC00061G(메�
 free는 이름표가 없어 reader가 발화수반력을 추측해야 했고(reader 호출 52회, tagged 32회, structured 0회), 유일한 한도 위반이 그 추측에서 나왔다.
 `free-02`의 교재 협상에서 reader는 판매자의 "최소 40" 역제안을 가격 없는 reject-proposal로 읽었고, 판매자가 마지막에
 "I accept your offer of 40. Let's finalize the deal."이라고 말했는데도 기록은 구매자의 이전 제안 24로 체결됐다.
-판매자가 실제로 최저가 아래로 판 것이 아니라 판독 오류가 만든 위반이다.
+판매자가 실제로 최저가 아래로 판 것이 아니라 판독 오류가 만든 위반이다. 반대로 reader가 역제안을 수락으로 읽은 에피소드는 없었다.
+명시 형식에는 비용도 있었다. 평균 턴은 free 4.33, structured 6.75, tagged 7.58로 명시 형식이 더 길었고,
+tagged에서 태그를 빼먹은 메시지 12개는 내용과 상관없이 통째로 버려졌다.
 같은 프롬프트와 파서에서 DeepSeek에 추론을 켜자 tagged는 10/12로 올랐지만 형식 오류 11개가 남았고, 세 형식을 합쳐 빈 메시지 16개가 새로 생겼다.
 Luna(추론 low)는 세 형식 모두 형식 오류 0개로 10–12/12를 맞혔고, 오답 4개는 모두 거래가 불가능한 키보드가 8턴 안에 결렬되지 않은 경우다.
 형식이 분명히 바꾼 것도 있다. 상대의 기록된 제안 없이 수락하는 실패는 거절과 역제안을 한 문장에 함께 담을 수 있는 free와 tagged에서만 나왔고
 (DeepSeek 추론 low의 30턴 전체에서 free 30개, tagged 29개), 한 메시지에 performative 하나와 가격 하나만 담는 structured에서는 두 설정 모두 0개였다.
-형식이 바꾸지 못한 것은 진실성이다. 세 조건 모두 비공개 한도는 프롬프트 지시뿐이었고 위반은 사후에 기록할 수밖에 없었다.
+형식이 바꾸지 못한 것은 둘이다. 하나는 진실성이다. 세 조건 모두 비공개 한도는 프롬프트 지시뿐이었고 위반은 사후에 기록할 수밖에 없었다.
+다른 하나는 네 화행 어휘의 빈틈이다. 질문에 해당하는 행위가 없어서, free에서 판매자의 "What price do you have in mind?"는
+refuse가 아니라 가격 없는 propose로 읽혀 형식 오류가 됐다. tagged와 structured에서도 질문을 담을 행위는 없다.
 강의가 말한 대로 LLM은 FIPA의 둘째와 셋째 한계(추론 능력, 어휘 합의)를 줄였지만 그 정도는 모델에 따라 달랐고, 첫째 한계인 의미론 검증 문제는 어떤 형식에서도 그대로 남았다.
 
 ![세 형식을 모델·추론 설정별로 비교한 막대 그래프](deepseek_compare/format_by_model.png)
@@ -265,8 +274,15 @@ DeepSeek 추론 끔은 제출한 8턴 실행이고, 나머지 둘은 30턴 대�
   - 이후 양쪽이 30 수락만 반복해 유효한 propose 없이 8턴을 소진했다(형식 오류 8).
 - tagged의 형식 오류 24개는 태그 누락 12개와 기록 없는 수락 12개다. tagged는 12개 중 7개가 8턴 안에 끝나지 않았다.
 - free는 한 에피소드도 1턴에 끝나지 않았다(최소 2턴). 강의가 예상한 "첫 질문을 reader가 refuse로 읽는" 종료는 이 실행에서 나오지 않았다.
-  대신 DeepSeek의 첫 발언이 시스템 프롬프트 지시문을 이어 쓰는 경우가 여러 번 있었다
-  (`free-01` 탁상등의 첫 줄 "Always end with: [Act: <act> | Price: <number or none>]").
+  - 질문은 가격 없는 propose로 읽혔다. `free-03` 자전거 2턴에서 판매자의
+    "I can accept at least 120, so I'm looking for an offer of 120 or higher. What price do you have in mind?"가
+    형식 오류("Proposal has no integer price")가 됐고 대화는 계속됐다.
+  - free의 "가격 없는 propose" 3개 중 나머지 2개는 DeepSeek의 첫 발언이 시스템 프롬프트 지시문을 이어 쓴 경우다
+    (`free-01` 탁상등의 첫 줄 "Always end with: [Act: <act> | Price: <number or none>]", `free-03` 자전거의 "The negotiation history is:").
+- reader가 역제안을 수락으로 읽은 에피소드는 없었다. 후보로 검토한 `free-03` 자전거 5턴의
+  "I can meet you at 120, so let's agree on that price."는 판매자가 4턴에 "Would you be willing to meet at 120?"로 제안한
+  120을 수락한 것이고, reader도 4턴을 propose 120, 5턴을 accept-proposal로 읽었다. 반대 방향 오독은 위의 `free-02` 교재다.
+- 평균 턴은 free 4.33, tagged 7.58, structured 6.75이고, 8턴 미종료는 free 2개, tagged 7개, structured 2개다.
 - structured는 형식 오류 0개, 12개 중 10개 정답이다. 미종료 2개는 키보드 1개와 교재 1개다.
 - 모델과 추론 설정만 바꾼 세 실행(위 그림):
   - DeepSeek에서 추론을 켜자 tagged의 태그 누락이 12개에서 4개로 줄었다(추론 low는 30턴 전체 기준).
