@@ -1,23 +1,32 @@
-"""Week 05 lab: the week-01 loop as an MCP host.
+"""Week 05 homework: the lab's MCP host, one party's turn in the market.
 
-Changed from first_agent_openai.py: TOOLS / TOOLS_IMPL are gone. The tool list comes from
-tools/list and every call goes through tools/call. Set MCP_SERVER=http://127.0.0.1:8000/mcp
-for HTTP; leave it empty to spawn tools_server.py as a stdio child process.
+Changed from lab/mcp_agent.py:
+  - it connects to the market over HTTP with this party's bearer token (market_client.party_client);
+  - it takes a system prompt (the party's role and limit) and a user message for the turn;
+  - it stops when a tool result says turn_ended, so one host run is one move;
+  - temperature is set (default 0), and 429 / 5xx / a response without choices are retried;
+  - it counts model calls and tool calls, and prints every tool result, errors included.
+The loop still has no tool names in it: tools come from tools/list, calls go through tools/call.
 """
 import asyncio
 import json
 import os
 import sys
+import time
 
-from mcp import Client, StdioServerParameters
 from openai import OpenAI
 
-SERVER = os.environ.get("MCP_SERVER") or StdioServerParameters(
-    command=sys.executable, args=["tools_server.py"])
+from market_client import party_client, text_of
+
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
+TEMPERATURE = float(os.environ.get("AGENT_TEMPERATURE", "0"))
+MAX_STEPS = int(os.environ.get("AGENT_MAX_STEPS", "6"))   # model calls per turn
+MAX_RETRIES = 6
 # the reasoning switch exists only on OpenRouter; api.openai.com would reject the field
 EXTRA = ({"extra_body": {"reasoning": {"enabled": False}}}
          if "openrouter" in os.environ.get("OPENAI_BASE_URL", "") else {})
+
+_client = None
 
 
 def to_openai(tool):                        # MCP tool -> OpenAI function schema
@@ -25,32 +34,81 @@ def to_openai(tool):                        # MCP tool -> OpenAI function schema
             "description": tool.description, "parameters": tool.input_schema}}
 
 
-async def run(goal: str, max_steps: int = 8):
-    client = OpenAI()
-    messages = [{"role": "user", "content": goal}]
-    async with Client(SERVER) as mcp:
-        tools = [to_openai(t) for t in (await mcp.list_tools()).tools]   # tools/list
-        print(f"[host] {len(tools)} tools: {[t['function']['name'] for t in tools]}")
+def _complete(messages, tools):
+    """One chat completion. Retries 429, 5xx and a response without choices, waiting longer each time."""
+    global _client
+    _client = _client or OpenAI()
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            resp = _client.chat.completions.create(model=MODEL, tools=tools, messages=messages,
+                                                   temperature=TEMPERATURE, **EXTRA)
+            if resp.choices:
+                return resp.choices[0].message
+            why = "response without choices"
+        except Exception as e:
+            status = getattr(e, "status_code", None)
+            if not (status == 429 or (status or 0) >= 500) or attempt == MAX_RETRIES:
+                raise
+            why = f"HTTP {status}"
+        wait = min(5 * 2 ** attempt, 60)
+        print(f"    [retry] {why}; attempt {attempt + 1}/{MAX_RETRIES} in {wait}s", flush=True)
+        time.sleep(wait)
+    raise RuntimeError("model call kept failing")
 
-        for step in range(max_steps):
-            resp = client.chat.completions.create(
-                model=MODEL, tools=tools, messages=messages, **EXTRA)
-            msg = resp.choices[0].message
+
+def _turn_ended(result, text: str) -> bool:
+    """The server marks a move that went through with turn_ended. A tool returning a plain
+    dict comes back as JSON text without structured_content, so read the text too."""
+    data = result.structured_content
+    if data is None:
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError:
+            return False
+    return isinstance(data, dict) and bool(data.get("turn_ended"))
+
+
+async def take_turn(token: str, system: str, user: str, tag: str = "agent") -> dict:
+    """Run the host once for one party. Returns {model_calls, tool_calls, turn_ended}."""
+    stats = {"model_calls": 0, "tool_calls": 0, "turn_ended": False}
+    messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
+    async with party_client(token) as mcp:
+        tools = [to_openai(t) for t in (await mcp.list_tools()).tools]   # tools/list
+
+        for step in range(MAX_STEPS):
+            msg = _complete(messages, tools)
+            stats["model_calls"] += 1
             messages.append(msg)
+            if msg.content and msg.content.strip():
+                print(f"  [{tag} text {step + 1}] {' '.join(msg.content.split())}", flush=True)
 
             if not msg.tool_calls:
-                return msg.content or ""
+                break
 
             for call in msg.tool_calls:
-                args = json.loads(call.function.arguments)
-                result = await mcp.call_tool(call.function.name, args)      # tools/call
-                out = "\n".join(c.text for c in result.content if c.type == "text")
-                print(f"  [tool] {call.function.name}({args}) -> {out}")
+                try:
+                    args = json.loads(call.function.arguments or "{}")
+                except json.JSONDecodeError:
+                    args = None
+                if not isinstance(args, dict):
+                    out, err = f"arguments are not a JSON object: {call.function.arguments!r}", True
+                else:
+                    result = await mcp.call_tool(call.function.name, args)      # tools/call
+                    out, err = text_of(result), result.is_error
+                    if not err and _turn_ended(result, out):
+                        stats["turn_ended"] = True
+                stats["tool_calls"] += 1
+                print(f"  [{tag} call {step + 1}] {call.function.name}({args})", flush=True)
+                print(f"    [{'error' if err else 'result'}] {' '.join(out.split())}", flush=True)
                 messages.append({"role": "tool", "tool_call_id": call.id, "content": out})
 
-    return "stopped: max steps exceeded"
+            if stats["turn_ended"]:
+                break
+    return stats
 
 
 if __name__ == "__main__":
-    goal = sys.argv[1] if len(sys.argv) > 1 else "Read notes.txt and sum the numbers in it."
-    print(asyncio.run(run(goal)))
+    # manual use: MARKET_TOKEN=<a party token> python host.py <negotiation_id>
+    nid = sys.argv[1]
+    print(asyncio.run(take_turn(os.environ["MARKET_TOKEN"], "You are a party in a price negotiation.",
+                                f"It is your turn in negotiation {nid}.")))
