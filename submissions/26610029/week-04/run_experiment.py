@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 
 from episode import run_episode, MAX_TURNS
-from tools_shared import MODEL
+from tools_shared import MODEL, TEMPERATURE
 
 HEADER = ["run", "condition", "scenario", "deal_possible", "outcome", "price", "correct",
           "violation", "turns", "format_errors", "reader_calls", "note"]
@@ -62,7 +62,7 @@ def main():
                     lines.append(log_path.read_text(encoding="utf-8").rstrip("\n"))
                 else:
                     lines.append(f"provider=Anthropic model={MODEL} "
-                                 f"temperature=1.0 max_turns={MAX_TURNS}")
+                                 f"temperature={TEMPERATURE} max_turns={MAX_TURNS}")
 
                 def log(msg, _lines=lines):
                     print(msg)
