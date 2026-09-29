@@ -5,6 +5,7 @@ import operator
 from pathlib import Path
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
 mcp = MCPServer("week01-tools")
@@ -29,7 +30,10 @@ def _ev(node):
 @mcp.tool(annotations=READ_ONLY)
 def calculator(expression: str) -> str:
     """Evaluate arithmetic such as '3 * (4 + 5)'. Numbers and + - * / ** only."""
-    return str(_ev(ast.parse(expression, mode="eval").body))
+    try:
+        return str(_ev(ast.parse(expression, mode="eval").body))
+    except (SyntaxError, ValueError, ArithmeticError) as exc:
+        raise ToolError(f"invalid arithmetic expression: {exc}") from exc
 
 
 @mcp.tool(annotations=READ_ONLY)
@@ -37,9 +41,12 @@ def read_file(path: str) -> str:
     """Read a UTF-8 text file inside the server's root directory (default: the lab folder). Return at most 4000 characters."""
     full = (ROOT / path).resolve()
     if not full.is_relative_to(ROOT):
-        raise ValueError("denied: path outside the server root directory")
-    with full.open(encoding="utf-8") as f:
-        return f.read(4000)
+        raise ToolError("denied: path outside the server root directory")
+    try:
+        with full.open(encoding="utf-8") as f:
+            return f.read(4000)
+    except (OSError, UnicodeError) as exc:
+        raise ToolError("cannot read requested file as UTF-8 text") from exc
 
 
 if __name__ == "__main__":

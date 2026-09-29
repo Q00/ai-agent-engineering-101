@@ -63,7 +63,7 @@ def check_file_boundary():
             assert tools_server.read_file("long.txt") == "가" * 4000
             try:
                 tools_server.read_file("escape.txt")
-            except ValueError as exc:
+            except tools_server.ToolError as exc:
                 assert "denied" in str(exc)
             else:
                 raise AssertionError("symlink escaped the server root")
