@@ -1,4 +1,4 @@
-"""Week 01's two tools, served over MCP stdio or Streamable HTTP."""
+"""Week 01's three tools, served over MCP stdio or Streamable HTTP."""
 import argparse
 import ast
 import operator
@@ -49,11 +49,26 @@ def read_file(path: str) -> str:
         raise ToolError("cannot read requested file as UTF-8 text") from exc
 
 
+@mcp.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False,
+                                     idempotent_hint=False, open_world_hint=False))
+def write_note(path: str, content: str) -> str:
+    """Append one line of text to a UTF-8 file inside the server's root directory (default: the lab folder), creating the file if needed. Preserve existing content; never overwrite. Reject paths outside the server root."""
+    full = (ROOT / path).resolve()
+    if not full.is_relative_to(ROOT):
+        raise ToolError("denied: path outside the server root directory")
+    try:
+        with full.open("a", encoding="utf-8") as f:
+            f.write(content + "\n")
+    except (OSError, UnicodeError) as exc:
+        raise ToolError("cannot append to requested file as UTF-8 text") from exc
+    return f"appended {len(content)} chars to {path}"
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--http", action="store_true", help="serve http://127.0.0.1:8000/mcp")
     parser.add_argument("--port", type=int, default=8000)
-    parser.add_argument("--root", type=Path, default=ROOT, help="directory readable by the tools")
+    parser.add_argument("--root", type=Path, default=ROOT, help="directory accessible to the tools")
     args = parser.parse_args()
     ROOT = args.root.resolve(strict=True)
     if not ROOT.is_dir():
