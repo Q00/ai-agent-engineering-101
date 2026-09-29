@@ -67,7 +67,8 @@ class Stage2HTTPTests(unittest.TestCase):
             response = error
         with response:
             raw = response.read().decode("utf-8")
-            return response.status, dict(response.headers), json.loads(raw) if raw else None
+            # HTTP header names are case-insensitive. A plain dict loses that rule.
+            return response.status, response.headers, json.loads(raw) if raw else None
 
     def create(self, condition="server_inject", scenario=None):
         payload = {"condition": condition, "scenario": scenario or {
