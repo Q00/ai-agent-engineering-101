@@ -1,0 +1,15 @@
+== (1) tools/list, all headers ==
+{"jsonrpc":"2.0","id":2,"result":{"cacheScope":"private","resultType":"complete","tools":[{"description":"Evaluate an arithmetic expression such as '3 * (4 + 5)'. Numbers and + - * / ** only.","inputSchema":{"type":"object","properties":{"expression":{"title":"Expression","type":"string"}},"required":["expression"],"title":"calculatorArguments"},"name":"calculator","outputSchema":{"properties":{"result":{"title":"Result","type":"string"}},"required":["result"],"title":"calculatorOutput","type":"object"}},{"description":"Read a text file inside the server's working directory. Returns at most 4000 characters.","inputSchema":{"type":"object","properties":{"path":{"title":"Path","type":"string"}},"required":["path"],"title":"read_fileArguments"},"name":"read_file","outputSchema":{"properties":{"result":{"title":"Result","type":"string"}},"required":["result"],"title":"read_fileOutput","type":"object"}}],"ttlMs":0,"_meta":{"io.modelcontextprotocol/serverInfo":{"name":"week01-tools","version":""}}}}
+HTTP 200
+
+== (2) tools/list, no Mcp-Method header ==
+{"jsonrpc":"2.0","id":2,"error":{"code":-32020,"message":"mcp-method header does not match the request body's method"}}
+HTTP 400
+
+== (3) tools/list, no clientCapabilities in _meta ==
+{"jsonrpc":"2.0","id":3,"error":{"code":-32602,"message":"params._meta is missing the required envelope key(s): io.modelcontextprotocol/clientCapabilities"}}
+HTTP 400
+
+== (4) tools/call calculator ==
+{"jsonrpc":"2.0","id":4,"result":{"content":[{"text":"57500","type":"text"}],"isError":false,"resultType":"complete","structuredContent":{"result":"57500"},"_meta":{"io.modelcontextprotocol/serverInfo":{"name":"week01-tools","version":""}}}}
+HTTP 200
