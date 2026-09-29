@@ -1,0 +1,8 @@
+[condition] provider=openai model=nvidia/nemotron-3.5-lightning:free
+[condition] task=In app.log, which hour (HH:00) has the most ERROR lines? Answer with the hour in HH:00 form.
+[condition] system_prompts=["You solve tasks with the tools you are given. Before every tool call, write one line that starts with 'Thought:' saying what you know and what you will do next. When the task is complete, reply with a line that starts with 'Answer:' and make no tool call."]
+[condition] tools=[{'name': 'read_file', 'description': 'Read a text file in the working directory (first 4000 characters).', 'parameters': {'type': 'object', 'properties': {'path': {'type': 'string'}}, 'required': ['path']}}, {'name': 'count_pattern', 'description': 'Count the lines of a text file that match a regular expression.', 'parameters': {'type': 'object', 'properties': {'path': {'type': 'string'}, 'pattern': {'type': 'string'}}, 'required': ['path', 'pattern']}}]
+[condition] limits={'max_steps': 8}
+crash: APIConnectionError: Connection error.
+[final] 
+[judge] expected='14:00' -> X (1.3s)
