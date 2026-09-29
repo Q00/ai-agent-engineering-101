@@ -39,6 +39,8 @@ switch ($Step) {
         Write-Host "`nsetup done. Next: set the key, then run step 'run'."
     }
     "run" {
+        Commit "$D/runner.py" "week-05: runner stops on LLM errors (bad key, quota) instead of recording crash rows"
+        Commit "$D/run_week05.ps1" "week-05: helper commits runner fixes before running"
         python "$D/auth_checks.py"
         Commit "$D/auth_checks.txt" "week-05: auth_checks.txt from the running server"
         python "$D/runner.py" --conditions prompt_inject server_inject --repeats 3
