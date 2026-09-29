@@ -11,7 +11,7 @@ Results and interpretation are in [REPORT.md](REPORT.md).
 | `market_server.py` (401, binding, turn order, token limit, injection) | Runs. `auth_checks.txt` is its real output. |
 | `run_market.py` + `market_host.py` | Ran with `gpt-4.1-mini`, 8-move limit, all four conditions. |
 | `results.csv`, `logs/*-retry*.txt` | 72 episodes, 18 per condition, one model. The first 72 rows are a crashed run (wrong key), kept as a record. |
-| `REPORT.md` | Setup, results, week-04 comparison, interpretation, deviations from the spec, failed attempts. |
+| `REPORT.md` | Setup, results, week-04 comparison, interpretation, failed attempts. |
 | `scripts/check_week05.py` | Passes on the committed files. |
 | `server.py` + `host.py` (week-01 tools over MCP, stdio and `--http`) | Lab part. Checked with a scripted model only. |
 
