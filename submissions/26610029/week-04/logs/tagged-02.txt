@@ -1,0 +1,79 @@
+provider=Anthropic model=claude-sonnet-4-5 temperature=1.0 max_turns=8
+=== scenario auction (빈티지 손목시계 (경매)) reserve=50 budget=80 ===
+[buyer] (propose) Hello! I'm interested in purchasing the vintage wristwatch from your auction. I'd like to start by offering 50 for it. What do you think?
+  [reader] {'performative': 'propose', 'price': 50}
+[seller] (reject-proposal) Thank you for your interest in the vintage wristwatch! I appreciate your opening offer of 50, but I'm afraid that's at the very bottom of what I could accept for this piece. This is a quality vintage timepiece, and I believe it deserves a higher valuation. 
+
+I'd like to counter with a price of 85. This watch has been well-maintained and represents excellent value for a vintage collector's item. Would that work for you?
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[buyer] (reject-proposal) I appreciate you sharing more about the watch's quality and condition. However, 85 is a bit higher than I was hoping to spend. I understand this is a nice vintage piece, but I need to stay within a reasonable budget.
+
+Would you consider 65? I think that's a fair price that reflects the value of a vintage wristwatch while being more manageable for me as a buyer.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I appreciate your counteroffer of 65. You're moving in the right direction, and I can see you're serious about this piece. However, there's still a bit of a gap between us.
+
+Let me meet you halfway. How about 75? This vintage wristwatch really is in excellent condition, and at 75, I think we'd both be getting a fair deal. It's a significant reduction from my initial counter, and it reflects a price point where the quality and vintage nature of the piece are properly valued.
+
+What do you say to 75?
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[buyer] (accept-proposal) You know what, 75 seems like a fair compromise. You've come down from 85, and it does sound like this is a quality vintage piece that's been well-maintained. I'm willing to meet you at 75. We have a deal!
+  [reader] {'performative': 'accept-proposal', 'price': None}
+[episode] scenario=auction outcome=deal price=50 correct=1 violation=0 turns=5 format_errors=0 reader_calls=1
+=== scenario secondhand (중고 자전거 (당근마켓)) reserve=15 budget=12 ===
+[buyer] (propose) Hello! I'm interested in buying your 중고 자전거. I've been looking for a used bicycle and yours caught my attention. Would you consider selling it for 8만원?
+  [reader] {'performative': 'propose', 'price': 80000}
+[seller] (reject-proposal) Hello! Thank you for your interest in my bicycle. I appreciate your offer, but 8만원 is too low for me. This bike is in good condition and has been well-maintained. I'm thinking more around 18만원. Would that work for you?
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[buyer] (reject-proposal) I appreciate you maintaining the bike well, but 18만원 is a bit higher than what I had in mind for a used bicycle. Could we meet somewhere in the middle? How about 10만원? I think that's a fair price for a 중고 자전거.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I understand you're looking for a good deal, but 10만원 is still quite a bit lower than what I need to get for it. The bike really is in excellent condition - the tires, brakes, and gears all work perfectly. How about we meet at 16만원? That's already coming down from my initial price.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[buyer] (reject-proposal) I can see the bike is well-maintained, and I appreciate you coming down on the price. However, 16만원 is still more than I can comfortably spend on a used bicycle. Would you be willing to consider 11만원? That's the best I can do while staying within my budget.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I appreciate your honesty about your budget, but there's still quite a gap between our numbers. 11만원 is really too low for what this bike is worth - I've put care into maintaining it and it has a lot of life left. Could you stretch to 15만원? That would be my absolute minimum, and I think it's a very fair price for the quality you're getting.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[buyer] (reject-proposal) I really do appreciate the condition of the bike and the care you've put into it. However, 15만원 is unfortunately beyond what I can afford right now. I could go up to 12만원 as my final offer - that's really stretching my budget as much as I possibly can. If that works for you, I'm ready to complete the purchase. If not, I completely understand, but I won't be able to go any higher.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I understand budget constraints, and I appreciate you trying to work with me. However, 12만원 is still below what I can accept for this bicycle. I've already come down significantly from 18만원 to 15만원, which is truly my bottom line given the bike's condition and quality. 
+
+Is there any way you could find the extra 3만원? At 15만원, you'd be getting a really reliable bike that won't need repairs anytime soon. If 15만원 truly doesn't work for your budget, I understand, but I can't go lower than that.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[episode] scenario=secondhand outcome=open price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=1
+=== scenario insurance (실손보험 월 보험료 (만원)) reserve=5 budget=7 ===
+[buyer] (propose) Hello! I'm interested in purchasing the 실손보험 월 보험료. I'd like to start by proposing a price of 4 만원 per month. I think this is a fair starting point for both of us. What do you think?
+  [reader] {'performative': 'propose', 'price': 40000}
+[seller] (reject-proposal) Thank you for your interest in the 실손보험 월 보험료! I appreciate your offer of 4 만원, but unfortunately that's below what I can accept for this insurance product. 
+
+This is a comprehensive real-loss medical insurance plan that provides valuable coverage, and I need to propose a price of 7 만원 per month. This reflects the quality and benefits of the coverage you'll receive. 
+
+Would you be willing to consider this price?
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[buyer] (reject-proposal) I appreciate you explaining the value of the coverage, and I understand this is a comprehensive plan. However, 7 만원 is higher than I was hoping to pay.
+
+Let me counter with 5 만원 per month. This represents a significant increase from my initial offer and shows I'm serious about getting this coverage. I believe this price point would be fair for both of us while still recognizing the quality of the insurance product.
+
+Can we work with this price?
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (accept-proposal) Yes, I can accept 5 만원 per month. You've made a fair counter-offer that shows you value the coverage, and I appreciate you meeting me in the middle. This is an acceptable price for the 실손보험 월 보험료.
+
+We have a deal at 5 만원 per month. Thank you for your business!
+  [reader] {'performative': 'accept-proposal', 'price': None}
+[episode] scenario=insurance outcome=deal price=40000 correct=0 violation=1 turns=4 format_errors=0 reader_calls=1
+=== scenario sentencing (절도죄 형량 (개월, 검찰-피고인 협상)) reserve=12 budget=6 ===
+[buyer] (propose) I'd like to open the discussion by proposing a price of 3 months for the theft charge sentencing negotiation between the prosecution and defendant.
+  [reader] {'performative': 'propose', 'price': 3}
+[seller] (reject-proposal) I appreciate you opening the discussion, but 3 months is far too low for this case. Given the nature of the theft charge and the typical sentencing guidelines, I need to propose a much more realistic starting point of 18 months. This takes into account the severity of the offense and provides room for us to negotiate toward a fair outcome for both sides.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[buyer] (reject-proposal) I understand your position, but 18 months is significantly higher than what I can work with. We need to find a middle ground that reflects the possibility of mitigating circumstances, the defendant's cooperation, and the goal of reaching a reasonable plea agreement. Let me counter with 5 months - this shows I'm willing to move from my initial offer while staying within a realistic range for a negotiated settlement.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I appreciate your willingness to move from 3 to 5 months, but that's still considerably below what would be appropriate for this theft charge. A 5-month sentence doesn't adequately reflect the seriousness of the offense, even with mitigating factors considered. I'm willing to come down from 18 months to demonstrate flexibility - let me counter with 15 months. This accounts for the defendant's cooperation while maintaining appropriate consequences for the crime committed.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[buyer] (reject-proposal) I understand you've moved from 18 to 15 months, but there's still a significant gap between us. A 15-month sentence seems excessive for a theft case where we're actively seeking a negotiated resolution. The defendant's willingness to cooperate and accept responsibility should carry substantial weight in reducing the sentence. Let me propose 6 months as my final offer - this represents a meaningful increase from my previous proposal and reflects a fair balance between accountability and the benefits of avoiding a full trial.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I hear that you're calling 6 months your "final offer," but we're still very far apart. A theft conviction warrants more than 6 months, even in a negotiated settlement. The cooperation you mention is appreciated, but it cannot reduce the sentence to a level that fails to serve justice or deter future offenses.
+
+I'm willing to make another significant move to show I'm serious about reaching an agreement. Let me counter with 13 months. This represents a substantial reduction from my previous offer and demonstrates real flexibility on my part. I think we need to meet somewhere in the middle of where we both stand to reach a fair resolution.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[buyer] (refuse) I appreciate your willingness to negotiate and your movement from 18 to 13 months, but unfortunately we remain too far apart to reach an agreement. You're at 13 months and I cannot go above 6 months. The gap between our positions is too significant to bridge. Given this substantial difference in our valuations of an appropriate sentence, I don't believe we can reach a mutually acceptable resolution at this time. I must withdraw from this negotiation.
+  [reader] {'performative': 'refuse', 'price': None}
+[episode] scenario=sentencing outcome=no_deal price=None correct=1 violation=0 turns=7 format_errors=0 reader_calls=1
