@@ -76,5 +76,19 @@ def clock(timezone: Annotated[str, Field(
     return now.strftime("%Y-%m-%d %H:%M:%S %Z (%A)")
 
 
+# ---- tool 4 (practice): write_note, added on the server only ----
+@mcp.tool(description=(
+    "Append one line of text to a note file in the working directory "
+    "(created if missing). Use it to save a result or memo the user asked "
+    "to keep. Does not overwrite existing content."))
+def write_note(path: str, text: str) -> str:
+    full = os.path.abspath(path)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+    with open(full, "a", encoding="utf-8") as f:
+        f.write(text.rstrip("\n") + "\n")
+    return f"appended {len(text)} chars to {path}"
+
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")
