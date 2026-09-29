@@ -14,9 +14,11 @@ import json
 import os
 import sys
 
+from dotenv import load_dotenv
 from mcp import Client, StdioServerParameters
 from openai import OpenAI
 
+load_dotenv()  # finds .env in this folder or a parent (the repo root)
 sys.stdout.reconfigure(encoding="utf-8")  # Windows console defaults to cp949
 
 HERE = os.path.dirname(os.path.abspath(__file__))
