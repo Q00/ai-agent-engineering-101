@@ -31,13 +31,21 @@ def call_model(system, messages, meter, max_retries=5):
     full = [{"role": "system", "content": system}] + messages
     for attempt in range(max_retries):
         try:
-            resp = client.chat.completions.create(
+            kwargs = dict(
                 model=MODEL,
                 messages=full,
                 temperature=TEMPERATURE,
                 max_tokens=256,
-                extra_body={"reasoning": {"enabled": False}},
             )
+            try:
+                resp = client.chat.completions.create(
+                    **kwargs, extra_body={"reasoning": {"enabled": False}},
+                )
+            except Exception as reasoning_err:
+                if "Reasoning" in str(reasoning_err) or "reasoning" in str(reasoning_err):
+                    resp = client.chat.completions.create(**kwargs)
+                else:
+                    raise
             meter.add()
             if not resp.choices:
                 if attempt < max_retries - 1:

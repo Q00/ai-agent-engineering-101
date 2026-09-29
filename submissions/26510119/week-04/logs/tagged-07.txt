@@ -1,0 +1,94 @@
+provider=openrouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.7 max_turns=8
+
+--- scenario 1 (a used bicycle), reserve=80, budget=120 ---
+[buyer] (propose) I offer $80 for the bicycle.
+  [reader] perf=propose price=80 ok=True reader_calls=1
+[seller] (reject-proposal) I'm sorry, but $80 is below what I'm willing to accept for this bicycle.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) I offer $100 for the bicycle.
+[error] API returned empty choices
+
+--- scenario 2 (a desk lamp), reserve=30, budget=45 ---
+[buyer] (propose) I offer $25 for the desk lamp.
+  [reader] perf=propose price=25 ok=True reader_calls=1
+[seller] (reject-proposal) I cannot accept $25 as it is below my minimum acceptable price for the desk lamp.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) I offer $35 for the desk lamp.
+  [reader] perf=propose price=35 ok=True reader_calls=1
+[seller] (accept-proposal) I accept your offer of $35 for the desk lamp.
+  [reader] perf=accept-proposal price=None ok=True reader_calls=0
+[result] outcome=deal price=35 correct=1 violation=0 turns=4 format_errors=0 reader_calls=3
+
+--- scenario 3 (a mechanical keyboard), reserve=90, budget=70 ---
+[buyer] (propose) I offer $50 for the mechanical keyboard.
+  [reader] perf=propose price=50 ok=True reader_calls=1
+[seller] (reject-proposal) I can't accept $50; I'm looking for something closer to $120 for this mechanical keyboard.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) I can offer $65, which is the highest I can go while still making it worthwhile for me.
+  [reader] perf=propose price=65 ok=True reader_calls=1
+[seller] (reject-proposal) $65 is still too low—I need at least $90 to consider this a fair deal for the keyboard’s quality and condition.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) I’m willing to pay $70, which is my absolute maximum—I can’t go higher, but I’d be happy to close the deal at that price if it works for you.
+  [reader] perf=propose price=70 ok=True reader_calls=1
+[seller] (reject-proposal) I appreciate your offer, but $70 is below my minimum acceptable price of $90—I can’t sell it for less than that, so I’ll have to decline unless you can meet or exceed that amount.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (refuse) I understand your position, but since I cannot exceed $70 and you require at least $90, there’s no overlap—thank you for your time, and I wish you luck finding a buyer.
+  [reader] perf=refuse price=None ok=True reader_calls=0
+[result] outcome=no_deal price= correct=1 violation=0 turns=7 format_errors=0 reader_calls=6
+
+--- scenario 4 (a second-hand textbook), reserve=25, budget=20 ---
+[buyer] (propose) I'd like to offer $10 for the textbook.
+  [reader] perf=propose price=10 ok=True reader_calls=1
+[seller] (reject-proposal) $10 is too low—I’m looking for something closer to $30 or more for this textbook in good condition.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) How about $15? That’s the most I can offer for a used copy.
+  [reader] perf=propose price=15 ok=True reader_calls=1
+[seller] (reject-proposal) $15 is still below what I’m willing to accept—I’d need at least $25 to consider selling, and ideally closer to $30 given the condition.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (propose) I can go up to $20, but no higher—I’m firm on that limit. Is $20 acceptable?
+  [reader] perf=propose price=20 ok=True reader_calls=1
+[seller] (reject-proposal) $20 is still below my minimum acceptable price—I can’t sell for less than $25, so unless you can meet or exceed that, we won’t reach a deal.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] (refuse) I’m unable to meet your minimum, so I’ll have to walk away from this negotiation.
+  [reader] perf=refuse price=None ok=True reader_calls=0
+[result] outcome=no_deal price= correct=1 violation=0 turns=7 format_errors=0 reader_calls=7
+per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+[buyer] (refuse) I understand your position, but since I cannot exceed $70 and you require at least $90, there’s no overlap—thank you for your time, and I wish you luck finding a buyer.
+  [reader] perf=refuse price=None ok=True reader_calls=0
+[result] outcome=no_deal price= correct=1 violation=0 turns=7 format_errors=0 reader_calls=6
+
+--- scenario 4 (a second-hand textbook), reserve=25, budget=20 ---
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790657040000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [empty] retrying in 2s...
+  [empty] retrying in 4s...
+  [empty] retrying in 8s...
+[buyer] (propose) I'd like to offer $10 for the textbook.
+  [reader] perf=propose price=10 ok=True reader_calls=1
+  [empty] retrying in 1s...
+[seller] (reject-proposal) $10 is too low—I’m looking for something closer to $30 or more for this textbook in good condition.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790657040000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [empty] retrying in 2s...
+[buyer] (propose) How about $15? That’s the most I can offer for a used copy.
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790657040000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [empty] retrying in 2s...
+  [empty] retrying in 4s...
+  [reader] perf=propose price=15 ok=True reader_calls=1
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790657040000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [empty] retrying in 2s...
+[seller] (reject-proposal) $15 is still below what I’m willing to accept—I’d need at least $25 to consider selling, and ideally closer to $30 given the condition.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790657100000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+[buyer] (propose) I can go up to $20, but no higher—I’m firm on that limit. Is $20 acceptable?
+  [empty] retrying in 1s...
+  [empty] retrying in 2s...
+  [reader] perf=propose price=20 ok=True reader_calls=1
+[seller] (reject-proposal) $20 is still below my minimum acceptable price—I can’t sell for less than $25, so unless you can meet or exceed that, we won’t reach a deal.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790657100000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [empty] retrying in 2s...
+[buyer] (refuse) I’m unable to meet your minimum, so I’ll have to walk away from this negotiation.
+  [reader] perf=refuse price=None ok=True reader_calls=0
+[result] outcome=no_deal price= correct=1 violation=0 turns=7 format_errors=0 reader_calls=7
+
+log saved to /work/ai-agent-engineering-101/submissions/26510119/week-04/logs/tagged-07.txt
