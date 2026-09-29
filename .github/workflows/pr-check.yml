@@ -79,3 +79,16 @@ jobs:
             echo "==> checking $d"
             python scripts/check_week04.py "$d"
           done
+
+
+      - name: Week-05 structural checks
+        run: |
+          dirs=$(grep -oE '^submissions/[0-9]+/week-05' changed.txt | sort -u || true)
+          if [ -z "$dirs" ]; then
+            echo "No week-05 submission touched; skipping."
+            exit 0
+          fi
+          for d in $dirs; do
+            echo "==> checking $d"
+            python scripts/check_week05.py "$d"
+          done
