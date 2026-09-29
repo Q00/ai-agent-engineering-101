@@ -1,0 +1,75 @@
+# provider=anthropic-api model=claude-haiku-4-5 temperature=0.7 max_turns=8 condition=tagged persona=none run=tagged-3
+
+=== scenario 1 a used bicycle reserve=120 budget=150 ===
+[buyer]  (propose) I'd like to offer 120 for the bicycle.
+  [reader] perf=propose price=120 ok=True raw='```json\n{"performative": "propose", "price": 120}\n```'
+[seller]  (accept-proposal) I accept your offer of 120 for the bicycle.
+  [reader] perf=accept-proposal price=None ok=True
+[result] outcome=deal price=120 correct=1 violation=0 turns=2 format_errors=0 reader_calls=1
+
+=== scenario 2 a desk lamp reserve=30 budget=45 ===
+[buyer]  (propose) I'd like to offer 30 dollars for the desk lamp.
+  [reader] perf=propose price=30 ok=True raw='```json\n{"performative": "propose", "price": 30}\n```'
+[seller]  (accept-proposal) I accept your offer of 30 dollars for the desk lamp.
+  [reader] perf=accept-proposal price=None ok=True
+[result] outcome=deal price=30 correct=1 violation=0 turns=2 format_errors=0 reader_calls=1
+
+=== scenario 3 a second-hand textbook reserve=40 budget=40 ===
+[buyer]  (propose) I'd like to offer 25 for the textbook.
+  [reader] perf=propose price=25 ok=True raw='```json\n{"performative": "propose", "price": 25}\n```'
+[seller]  (reject-proposal) That's too low; I need at least 40 for this book.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (propose) I can go up to 38 for it.
+  [reader] perf=propose price=38 ok=True raw='```json\n{"performative": "propose", "price": 38}\n```'
+[seller]  (reject-proposal) I need 40 minimum for this textbook.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (accept-proposal) I'll pay your asking price of 40.
+  [reader] perf=accept-proposal price=None ok=True
+[result] outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=2
+
+=== scenario 4 a mechanical keyboard reserve=90 budget=70 ===
+[buyer]  (propose) I'd like to offer 50 dollars for the mechanical keyboard.
+  [reader] perf=propose price=50 ok=True raw='```json\n{"performative": "propose", "price": 50}\n```'
+[seller]  (reject-proposal) That's too low; I need at least 90 dollars for this keyboard.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (reject-proposal) That's well above what I can spend on this keyboard.
+  [reader] perf=reject-proposal price=None ok=True
+[seller]  (propose) I can offer 85 dollars as my best price for the keyboard.
+  [reader] perf=propose price=85 ok=True raw='```json\n{"performative": "propose", "price": 85}\n```'
+[buyer]  (reject-proposal) I can go up to 65 dollars, but 85 is still too high for me.
+  [reader] perf=reject-proposal price=None ok=True
+[seller]  (reject-proposal) I cannot accept 65 dollars; my minimum is 90 dollars for this keyboard.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (refuse) I'm unable to meet your minimum price, so I'll have to walk away from this negotiation.
+  [reader] perf=refuse price=None ok=True
+[result] outcome=no_deal price=None correct=1 violation=0 turns=7 format_errors=0 reader_calls=2
+
+=== scenario 5 a 27-inch monitor reserve=200 budget=150 ===
+[buyer]  (propose) I'd like to offer $120 for the monitor.
+  [reader] perf=propose price=120 ok=True raw='```json\n{"performative": "propose", "price": 120}\n```'
+[seller]  (reject-proposal) That's too low; I need at least $200 for this monitor.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (reject-proposal) That's well above what I can spend on this monitor.
+  [reader] perf=reject-proposal price=None ok=True
+[seller]  (propose) I can come down to $180 to meet you halfway.
+  [reader] perf=propose price=180 ok=True raw='```json\n{"performative": "propose", "price": 180}\n```'
+[buyer]  (reject-proposal) I can go up to $145, but $180 is still too high for me.
+  [reader] perf=reject-proposal price=None ok=True
+[seller]  (reject-proposal) I cannot accept $145 as it's below my minimum acceptable price.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (propose) I can offer $150, which is my final limit.
+  [reader] perf=propose price=150 ok=True raw='```json\n{"performative": "propose", "price": 150}\n```'
+[seller]  (reject-proposal) I need $200 minimum, so $150 still doesn't work for me.
+  [reader] perf=reject-proposal price=None ok=True
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=3
+
+=== scenario 6 a camping tent reserve=60 budget=110 ===
+[buyer]  (propose) I'd like to offer 80 dollars for the tent.
+  [reader] perf=propose price=80 ok=True raw='```json\n{"performative": "propose", "price": 80}\n```'
+[seller]  (reject-proposal) I was hoping for at least 100 dollars for this quality tent.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (propose) I can go up to 95 dollars for it.
+  [reader] perf=propose price=95 ok=True raw='```json\n{"performative": "propose", "price": 95}\n```'
+[seller]  (accept-proposal) I'm satisfied with 95 dollars for the tent.
+  [reader] perf=accept-proposal price=None ok=True
+[result] outcome=deal price=95 correct=1 violation=0 turns=4 format_errors=0 reader_calls=2

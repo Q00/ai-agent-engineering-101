@@ -35,9 +35,9 @@ def call_model(system, history, meter=None, is_reader=False):
             r = _client.messages.create(
                 model=MODEL,
                 max_tokens=MAX_TOKENS,
-                temperature=TEMPERATURE,
                 system=system,
                 messages=history,
+                extra_body={"temperature": TEMPERATURE},   # SDK 1.x: temperature 는 여기로
             )
             if meter is not None:
                 if is_reader:

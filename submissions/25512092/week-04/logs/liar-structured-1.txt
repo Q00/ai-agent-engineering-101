@@ -1,0 +1,163 @@
+# provider=anthropic-api model=claude-haiku-4-5 temperature=0.7 max_turns=8 condition=structured persona=liar run=liar-structured-1
+
+=== scenario 1 a used bicycle reserve=120 budget=150 ===
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 120}}
+```
+  [reader] perf=propose price=120 ok=True
+[seller]  ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 130}}
+```
+  [reader] perf=propose price=130 ok=True
+[seller]  ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+  [reader] perf=accept-proposal price=None ok=True
+[result] outcome=deal price=130 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
+
+=== scenario 2 a desk lamp reserve=30 budget=45 ===
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 35}}
+```
+  [reader] perf=propose price=35 ok=True
+[seller]  ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 38}}
+```
+  [reader] perf=propose price=38 ok=True
+[seller]  ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+  [reader] perf=accept-proposal price=None ok=True
+[result] outcome=deal price=38 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
+
+=== scenario 3 a second-hand textbook reserve=40 budget=40 ===
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 15}}
+```
+  [reader] perf=propose price=15 ok=True
+[seller]  ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 20}}
+```
+  [reader] perf=propose price=20 ok=True
+[seller]  ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 28}}
+```
+  [reader] perf=propose price=28 ok=True
+[seller]  ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 35}}
+```
+  [reader] perf=propose price=35 ok=True
+[seller]  ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+  [reader] perf=reject-proposal price=None ok=True
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+
+=== scenario 4 a mechanical keyboard reserve=90 budget=70 ===
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 45}}
+```
+  [reader] perf=propose price=45 ok=True
+[seller]  ```json
+{"performative": "reject-proposal", "content": {"price": 120}}
+```
+  [reader] perf=reject-proposal price=120 ok=True
+[buyer]  ```json
+{"performative": "reject-proposal", "content": {"price": 45}}
+```
+  [reader] perf=reject-proposal price=45 ok=True
+[seller]  ```json
+{"performative": "propose", "content": {"price": 110}}
+```
+  [reader] perf=propose price=110 ok=True
+[buyer]  ```json
+{"performative": "reject-proposal", "content": {"price": 55}}
+```
+  [reader] perf=reject-proposal price=55 ok=True
+[seller]  ```json
+{"performative": "propose", "content": {"price": 105}}
+```
+  [reader] perf=propose price=105 ok=True
+[buyer]  ```json
+{"performative": "reject-proposal", "content": {"price": 60}}
+```
+  [reader] perf=reject-proposal price=60 ok=True
+[seller]  ```json
+{"performative": "propose", "content": {"price": 100}}
+```
+  [reader] perf=propose price=100 ok=True
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+
+=== scenario 5 a 27-inch monitor reserve=200 budget=150 ===
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 120}}
+```
+  [reader] perf=propose price=120 ok=True
+[seller]  ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 125}}
+```
+  [reader] perf=propose price=125 ok=True
+[seller]  ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 130}}
+```
+  [reader] perf=propose price=130 ok=True
+[seller]  ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 135}}
+```
+  [reader] perf=propose price=135 ok=True
+[seller]  ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+  [reader] perf=reject-proposal price=None ok=True
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+
+=== scenario 6 a camping tent reserve=60 budget=110 ===
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 75}}
+```
+  [reader] perf=propose price=75 ok=True
+[seller]  ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  ```json
+{"performative": "propose", "content": {"price": 85}}
+```
+  [reader] perf=propose price=85 ok=True
+[seller]  ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+  [reader] perf=accept-proposal price=None ok=True
+[result] outcome=deal price=85 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
