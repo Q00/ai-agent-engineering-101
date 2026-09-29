@@ -159,7 +159,8 @@ def get_negotiation(negotiation_id: str) -> dict:
 
 @mcp.tool()
 def propose(negotiation_id: str, price: int, note: str = "") -> dict:
-    """Offer a whole-number price for the item. Ends your turn."""
+    """Offer a whole-number price for the item. This is also how you answer the other
+    party's price with a counter-offer. Ends your turn."""
     n, grant = _party(negotiation_id)
     role = grant["role"]
     _check_turn(n, role, "propose")
@@ -198,7 +199,8 @@ def accept_proposal(negotiation_id: str, note: str = "") -> dict:
 
 @mcp.tool()
 def reject_proposal(negotiation_id: str, note: str = "") -> dict:
-    """Decline the other party's last proposal and keep negotiating. Ends your turn."""
+    """Decline the other party's last proposal without offering a price of your own, and keep
+    negotiating. To counter with a price, use propose instead. Ends your turn."""
     n, grant = _party(negotiation_id)
     role = grant["role"]
     _check_turn(n, role, "reject_proposal")
