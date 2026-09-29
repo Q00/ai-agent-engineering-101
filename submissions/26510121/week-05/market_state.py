@@ -1,7 +1,7 @@
 """Server-owned negotiation state and opaque token grants.
 
 The handle selects a record; the token authorizes access to that record.
-No agent-supplied role is accepted. Action transitions are added in stage 3.
+No agent-supplied role is accepted. Checks and transitions share one lock.
 """
 
 from copy import deepcopy
@@ -36,9 +36,11 @@ class Negotiation:
     reserve: int
     budget: int
     condition: Condition
-    turn: Role = "buyer"
+    turn: Role | None = "buyer"
     status: Literal["open", "deal", "no_deal"] = "open"
     moves: list[dict] = field(default_factory=list)
+    proposal: dict | None = None
+    deal_price: int | None = None
 
 
 class Market:
@@ -100,7 +102,7 @@ class Market:
             }
 
     def require_turn(self, token: str, negotiation_id: str) -> PartyGrant:
-        """Stage-3 actions must call this inside the same lock as their mutation."""
+        """Actions call this inside the same lock as their mutation."""
         with self.lock:
             negotiation, grant = self._party(token, negotiation_id)
             if negotiation.status != "open":
@@ -108,3 +110,26 @@ class Market:
             if negotiation.turn != grant.role:
                 raise MarketError("It is not your turn")
             return grant
+
+    @staticmethod
+    def _check_limit(grant: PartyGrant, price: int):
+        # Prompt conditions have no token limit; all identity/turn checks remain.
+        if grant.limit is None:
+            return
+        if grant.role == "buyer" and price > grant.limit:
+            raise MarketError(f"refused by the market: {price} is above the maximum your token allows")
+        if grant.role == "seller" and price < grant.limit:
+            raise MarketError(f"refused by the market: {price} is below the minimum your token allows")
+
+    def propose(self, token: str, negotiation_id: str, price: int) -> dict:
+        with self.lock:
+            grant = self.require_turn(token, negotiation_id)
+            negotiation, _ = self._party(token, negotiation_id)
+            if type(price) is not int or price < 0:
+                raise MarketError("Price must be a nonnegative whole number")
+            self._check_limit(grant, price)
+            move = {"role": grant.role, "act": "propose", "price": price}
+            negotiation.moves.append(move)
+            negotiation.proposal = move
+            negotiation.turn = "seller" if grant.role == "buyer" else "buyer"
+            return self.view(token, negotiation_id)

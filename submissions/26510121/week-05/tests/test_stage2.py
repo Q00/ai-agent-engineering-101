@@ -157,8 +157,8 @@ class Stage2HTTPTests(unittest.TestCase):
         status, _, body = self.rpc("tools/list", grant["tokens"]["buyer"])
         self.assertEqual(status, 200)
         tools = body["result"]["tools"]
-        self.assertEqual([t["name"] for t in tools], ["get_negotiation"])
-        self.assertEqual(set(tools[0]["inputSchema"]["properties"]), {"negotiation_id"})
+        read_tool = next(t for t in tools if t["name"] == "get_negotiation")
+        self.assertEqual(set(read_tool["inputSchema"]["properties"]), {"negotiation_id"})
 
     def test_other_negotiation_is_tool_error_without_state_change(self):
         first, second = self.create(), self.create()

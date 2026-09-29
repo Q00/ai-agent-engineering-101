@@ -1,7 +1,7 @@
-"""Authenticated Streamable HTTP market, stage 2.
+"""Authenticated Streamable HTTP negotiation market.
 
 Run with MARKET_ADMIN_TOKEN in the environment. Tokens and state are in memory.
-No model is called here. Negotiation actions are added in stage 3.
+No model is called here. Identity, turn, and price checks run on the server.
 """
 
 import argparse
@@ -63,16 +63,24 @@ def create_app(*, base_url: str, admin_token: str, market: Market | None = None)
                     auth=AuthSettings(issuer_url=base_url, resource_server_url=resource,
                                       required_scopes=["negotiate"], validate_token_resource=True))
 
-    @mcp.tool()
-    def get_negotiation(negotiation_id: str) -> dict:
-        """Read the item, your role, the current turn, status, and moves so far."""
+    def party_call(operation, negotiation_id: str, *args) -> dict:
         access = get_access_token()
         if access is None:
             raise ToolError("Party authentication required")
         try:
-            return market.view(access.token, negotiation_id)
+            return operation(access.token, negotiation_id, *args)
         except MarketError as error:
             raise ToolError(str(error)) from error
+
+    @mcp.tool()
+    def get_negotiation(negotiation_id: str) -> dict:
+        """Read the item, your role, the current turn, status, and moves so far."""
+        return party_call(market.view, negotiation_id)
+
+    @mcp.tool()
+    def propose(negotiation_id: str, price: StrictInt) -> dict:
+        """Offer a nonnegative whole-number price for the item. Ends your turn."""
+        return party_call(market.propose, negotiation_id, price)
 
     @mcp.custom_route("/health", methods=["GET"])
     async def health(request: Request):
