@@ -315,8 +315,12 @@ class HTTPTests(unittest.TestCase):
         created = self.create()
         for token in ("", created["buyer_token"], created["seller_token"]):
             response = self.client.get("/admin/negotiations/" + created["negotiation_id"],
-                                       headers={"Authorization": f"Bearer {token}"})
+                                       headers={"Authorization": f"Bearer {token}"} if token else {})
             self.assertEqual(response.status_code, 401)
+        # Malformed non-ASCII headers are invalid tokens, not server exceptions.
+        response = self.client.get("/admin/negotiations/" + created["negotiation_id"],
+                                   headers={b"Authorization": b"Bearer \xff"})
+        self.assertEqual(response.status_code, 401)
         response = self.rpc(created["buyer_token"], "tools/list")
         tools = response.json()["result"]["tools"]
         self.assertEqual({tool["name"] for tool in tools},
@@ -344,12 +348,12 @@ class HTTPTests(unittest.TestCase):
 
     def test_sdk_invalid_arguments_are_counted_and_audited(self):
         created = self.create()
-        for price in (True, "60", 60.5, -1):
+        for price in (True, "60", 60.0, 60.5, -1):
             self.assertTrue(self.tool(created, "buyer", "propose", price=price)["isError"])
         self.assertTrue(self.tool(created, "buyer", "propose")["isError"])
         self.assertTrue(self.tool(created, "buyer", "missing_tool")["isError"])
         snapshot = self.snapshot(created)
-        self.assertEqual(snapshot["metrics"]["tool_calls"], 6)
+        self.assertEqual(snapshot["metrics"]["tool_calls"], 7)
         self.assertEqual(snapshot["metrics"]["turns"], 0)
         self.assertTrue(all(event["completed"] and event["error"] and not event["executed"]
                             for event in snapshot["audit"]))

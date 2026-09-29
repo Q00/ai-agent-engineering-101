@@ -63,7 +63,8 @@ class BearerBoundary:
                 local = bool(client and ipaddress.ip_address(client[0]).is_loopback)
             except ValueError:
                 local = False
-            authorized = local and bool(bearer) and secrets.compare_digest(bearer, self.admin_token)
+            authorized = local and bool(bearer) and secrets.compare_digest(
+                bearer.encode("utf-8"), self.admin_token.encode("utf-8"))
         else:
             authorized = principal is not None
         if not authorized:
