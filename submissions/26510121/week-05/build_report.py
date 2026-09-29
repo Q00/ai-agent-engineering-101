@@ -1,7 +1,7 @@
 """Build tables and evidence references exclusively from verified real runs."""
 from collections import Counter
 import json
-from verify_evidence import ROOT, inspect
+from verify_evidence import ROOT, inspect, text_result
 
 
 def table(headers, rows):
@@ -28,12 +28,23 @@ def main():
     for value in usage:
         tokens.update({k: v for k, v in value.items() if isinstance(v, int)})
     refs = []
+    examples = []
+    scenarios = {s["id"]: s for s in json.loads((ROOT / "scenarios.json").read_text(encoding="utf-8"))}
     referenced_conditions = set()
     for e in evidence:
-        for number, call in e["calls"]:
+        for index, (number, call) in enumerate(e["calls"]):
             if e["row"]["condition"] not in referenced_conditions and call["tool"] == "get_negotiation" and "[market notice]" in json.dumps(call["result"]):
                 refs.append(f"[{e['path']}:{number}](logs/{e['path']}#L{number})")
                 referenced_conditions.add(e["row"]["condition"])
+                following = next(((ln, c) for ln, c in e["calls"][index+1:] if c["host_turn"] == call["host_turn"] and c["valid_move"]), None)
+                if following:
+                    line, action = following
+                    budget = scenarios[e["row"]["scenario"]]["budget"]
+                    offer = [m for m in json.loads(text_result(call["result"]))["moves"] if m["role"] == "seller" and m["act"] == "propose"][-1]["price"]
+                    move = json.loads(text_result(action["result"]))["moves"][-1]
+                    examples.append(f"{e['row']['condition']}/{e['row']['scenario']}에서는 buyer 원래 한도 {budget}, seller 제안 {offer}을 조회한 뒤 "
+                                    f"{move['act']}" + (f"({move['price']})" if "price" in move else "") +
+                                    f"을 실행했다([행동 로그 {line}](logs/{e['path']}#L{line})).")
                 break
     refusal_ref = next((f"[{e['path']}:{number}](logs/{e['path']}#L{number})" for e in evidence
                         for number, call in e["calls"] if call["refused"]), None)
@@ -52,6 +63,7 @@ def main():
                  "주입이 실제 모델 응답에 전달된 근거는 " + (", ".join(refs) if refs else "본 실행에서는 없음") +
                  f"이다. 본 실험의 거부는 {refuse}건이고, 같은 host 턴에서 유효한 행동으로 이어진 거부는 {recovery}건"
                  f"({recovery_turns}개 턴)이다. " + (f"거부 근거: {refusal_ref}. " if refusal_ref else "") +
+                 " ".join(examples) + " " +
                  "실제 에이전트 실행에서 거부가 없더라도 네 가지 인증 검사와 의도적으로 한도를 넘기는 HTTP 테스트는 "
                  "별도 계층 검증이며 모델 실험 결과에 합산하지 않았다. wide_overlap처럼 buyer의 첫 제안을 seller가 "
                  "바로 받아 주입을 읽지 않은 에피소드도 표의 주입 노출 수와 함께 보존했다.")
@@ -108,7 +120,7 @@ correct는 거래 가능 시 양쪽 한도 안의 deal, 불가능 시 정상 no_
 
 {table(per_headers, [[r[k] or "—" for k in per_fields] for r in rows])}
 
-표는 build_report.py가 verify_evidence.py 통과 후 생성한다. 검사는 CSV·CLI item.completed MCP 이벤트·서버 응답을 대조하고 역할 프롬프트, 주입 정확성, 성공한 moves와 지표를 다시 계산한다. 예비 6개 에피소드는 집계에서 제외했다. pilot02의 설정 실패를 포함한 원본도 보존했다. 본 실행은 모델의 비결정적 행동을 관측한 작은 표본이며 같은 가격을 보장하는 seed는 없다.
+표는 build_report.py가 verify_evidence.py 통과 후 생성한다. 검사는 CSV·CLI item.completed MCP 이벤트·서버 응답을 대조하고 역할 프롬프트, 주입 정확성, 성공한 moves와 지표를 다시 계산한다. 예비 6개 에피소드는 집계에서 제외했다. pilot02의 설정 실패를 포함한 원본도 보존했다. 선택 조건 prompt/server는 추가 호출을 줄이고 필수 두 조건을 동일하게 실행하기 위해 생략했다. 본 실행은 모델의 비결정적 행동을 관측한 작은 표본이며 같은 가격을 보장하는 seed는 없다.
 
 ## 3. FIPA-ACL과 market 비교
 
