@@ -65,6 +65,11 @@ def call_claude(prompt: str, system: str) -> str:
     payload = json.loads(proc.stdout)
     if payload.get("is_error"):
         raise RuntimeError(f"claude -p error: {str(payload.get('result'))[:300]}")
+    # With no built-in tools one call is one model turn. More turns means Claude Code
+    # ran a tool of its own and the answer did not come through our server.
+    if payload.get("num_turns") != 1:
+        raise RuntimeError(f"claude -p took {payload.get('num_turns')} turns: "
+                           f"a built-in tool leaked past --tools \"\"")
     return payload.get("result") or ""
 
 
