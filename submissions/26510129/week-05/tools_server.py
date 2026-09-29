@@ -44,6 +44,17 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
+@mcp.tool()
+def write_note(path: str, text: str) -> str:
+    """Write a note to a text file in the working directory."""   # description as in my week-01 TOOLS.md
+    full = os.path.abspath(path)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+    with open(full, "w", encoding="utf-8") as f:
+        f.write(text + "\n")
+    return "written"
+
+
 if __name__ == "__main__":
     if "--http" in sys.argv:   # PORT overrides 8000 when something else already holds it
         mcp.run("streamable-http", port=int(os.environ.get("PORT", "8000")))
