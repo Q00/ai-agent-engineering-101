@@ -28,5 +28,6 @@ CSV turns는 서버 moves 수다. 정상 종료했지만 유효한 행동이 없
 - pilot02: Code Mode host를 끄면 내부 라우터가 도구를 실행하지 못했다. prompt 조건은 유효한 호출 없이 8 host 턴을 지나 open/0 calls, server 조건은 반복 오류의 자식 프로세스를 중단하여 ERROR 행으로 남겼다. 이 결과를 성공한 본 실험으로 합산하지 않는다.
 - pilot03: Code Mode host를 유지한 최종 설정으로 두 조건 모두 실제 거래를 완료했다. 본 실험 전 커밋 68421f9에 원본과 결과를 보존했다.
 - 본 실험은 logs/, results.csv에 별도로 남긴다. verify_evidence.py는 CSV·CLI MCP 이벤트·서버 응답을 독립적으로 대조하고 상태 전이에서 지표를 재계산한다.
+- 별도 probe_refusal.py는 한도 10의 token으로 11을 제안하도록 의도적으로 지시한 다음, 오류를 받고 10 제안으로 같은 host 턴에서 회복하는 실제 Codex 경로를 검증한다. checks/cli-refusal-probe.jsonl에 남기며 본 실험 지표에 합산하지 않는다. 새 캡처 이름으로 재실행: `python probe_refusal.py --capture cli-refusal-probe-rerun.jsonl`.
 
 각 파일은 작은 책임을 가진다: market_state=원자적 권한/상태 전이, market_server=HTTP/MCP 인터페이스, audit=runner 관측, host=Codex 실행, runner=일정/결과 저장. 핵심은 모델의 올바른 판단과 서버의 강제 검사를 따로 확인하는 것이다.

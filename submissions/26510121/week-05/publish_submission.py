@@ -58,7 +58,7 @@ def main():
     body = ("Implements the Week 05 authenticated Streamable HTTP negotiation market and isolated Codex CLI host. "
             "The runner records actual tool calls, responses and per-episode metrics for both required injection conditions.\n\n"
             f"Validation: 38 live HTTP tests; {len(rows)} real gpt-6-luna episodes (4 scenarios × 3 repeats × 2 conditions); "
-            "four authorization checks; independent CSV/CLI/server evidence reconciliation; official week05 structural checker passed.\n\n"
+            "four authorization checks; separate real CLI refusal/recovery probe; independent CSV/CLI/server evidence reconciliation; official week05 structural checker passed.\n\n"
             "Failed pilot settings, corrections and raw logs are retained in separate commits. "
             "Report, settings and reproduction commands: submissions/26510121/week-05/REPORT.md.\n")
     file = ROOT / ".runtime/pr-body.md"
