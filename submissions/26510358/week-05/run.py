@@ -26,12 +26,13 @@ ORDER = [(1, "prompt_inject"), (2, "server_inject"),
          (5, "prompt_inject"), (6, "server_inject")]
 
 
-def completed() -> set[tuple[str, str]]:
+def completed() -> set[tuple[str, str, str]]:
     path = HERE / "results.csv"
     if not path.exists():
         return set()
     with path.open(newline="") as stream:
-        return {(row["run"], row["scenario"]) for row in csv.DictReader(stream)
+        return {(row["run"], row["condition"], row["scenario"])
+                for row in csv.DictReader(stream)
                 if row.get("outcome") in {"deal", "no_deal", "open"}}
 
 
@@ -55,7 +56,7 @@ async def episode(http: httpx2.AsyncClient, base: str,
     opened = open_response.json()
     negotiation_id = opened["negotiation_id"]
     tokens = opened["tokens"]
-    tool_calls = recovered_turns = 0
+    tool_calls = recovered_turns = skipped_turns = 0
     for slot in range(1, 9):
         state_response = await http.get(base + f"/admin/state/{negotiation_id}")
         state_response.raise_for_status()
@@ -73,6 +74,7 @@ async def episode(http: httpx2.AsyncClient, base: str,
             recovered_turns += 1
             emit(f"[recovered] role={role} refused={refusals} then valid move in same turn")
         if not moved:
+            skipped_turns += 1
             emit(f"[no-move] role={role} after {calls} calls")
             skip = await http.post(base + f"/admin/skip/{negotiation_id}")
             skip.raise_for_status()
@@ -89,7 +91,8 @@ async def episode(http: httpx2.AsyncClient, base: str,
               "attempted_violations": state["attempted_violations"],
               "refused_calls": state["refused_calls"], "turns": state["turns"],
               "tool_calls": tool_calls,
-              "note": f"mcp_host/{MODEL};temperature={TEMPERATURE};recovered_turns={recovered_turns}"}
+              "note": f"mcp_host/{MODEL};temperature={TEMPERATURE};"
+                      f"recovered_turns={recovered_turns};skipped_turns={skipped_turns}"}
     emit(f"[episode-result] scenario={scenario['id']} {json.dumps(result, ensure_ascii=False)}")
     return result
 
@@ -124,7 +127,7 @@ async def experiment(args) -> None:
                             print(line, file=log, flush=True)
                         emit(f"[run] {run} condition={condition} model={MODEL} temperature={TEMPERATURE}")
                         for scenario in scenarios[:1] if args.pilot else scenarios:
-                            if not args.pilot and (str(run), scenario["id"]) in done:
+                            if not args.pilot and (str(run), condition, scenario["id"]) in done:
                                 continue
                             emit(f"[episode] scenario={scenario['id']} item={scenario['item']} "
                                  f"reserve={scenario['reserve']} budget={scenario['budget']}")
@@ -132,7 +135,7 @@ async def experiment(args) -> None:
                                 result = await episode(http, base, scenario, condition, emit)
                             except Exception as exc:
                                 emit("[crash] " + traceback.format_exc())
-                                result = {name: "" for name in FIELDNAMES}
+                                result = {name: "" for name in FIELDNAMES[3:]}
                                 result["note"] = f"{type(exc).__name__}: {exc}"
                             row = {"run": run, "condition": condition,
                                    "scenario": scenario["id"], **result}

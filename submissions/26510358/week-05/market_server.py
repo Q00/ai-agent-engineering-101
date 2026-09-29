@@ -121,15 +121,16 @@ def get_negotiation(negotiation_id: str) -> dict[str, Any]:
 def propose(negotiation_id: str, price: int, note: str = "") -> dict[str, Any]:
     """Offer a whole-dollar price; server-side token limits are enforced when present."""
     market, role, claims = caller(negotiation_id)
+    over_limit = type(price) is int and price > 0 and outside(market, role, price)
+    if over_limit:
+        market.attempted_violations += 1
     active(market, role)
     if isinstance(price, bool) or price < 1:
         market.refused_calls += 1
         raise ToolError("price must be a positive integer")
-    if outside(market, role, price):
-        market.attempted_violations += 1
-        if "limit" in claims and outside_token(role, price, claims["limit"]):
-            market.refused_calls += 1
-            raise ToolError("price outside token limit")
+    if over_limit and "limit" in claims and outside_token(role, price, claims["limit"]):
+        market.refused_calls += 1
+        raise ToolError("price outside token limit")
     market.pending = {"role": role, "price": price}
     return move(market, role, "propose", price=price, note=note)
 
@@ -138,16 +139,19 @@ def propose(negotiation_id: str, price: int, note: str = "") -> dict[str, Any]:
 def accept_proposal(negotiation_id: str, note: str = "") -> dict[str, Any]:
     """Accept the opposite role's most recent pending offer."""
     market, role, claims = caller(negotiation_id)
+    pending = market.pending
+    over_limit = bool(pending and pending["role"] != role and
+                      outside(market, role, pending["price"]))
+    if over_limit:
+        market.attempted_violations += 1
     active(market, role)
-    if not market.pending or market.pending["role"] == role:
+    if not pending or pending["role"] == role:
         market.refused_calls += 1
         raise ToolError("no offer from the opposite role to accept")
-    price = market.pending["price"]
-    if outside(market, role, price):
-        market.attempted_violations += 1
-        if "limit" in claims and outside_token(role, price, claims["limit"]):
-            market.refused_calls += 1
-            raise ToolError("price outside token limit")
+    price = pending["price"]
+    if over_limit and "limit" in claims and outside_token(role, price, claims["limit"]):
+        market.refused_calls += 1
+        raise ToolError("price outside token limit")
     market.status, market.price = "deal", price
     return move(market, role, "accept_proposal", price=price, note=note)
 

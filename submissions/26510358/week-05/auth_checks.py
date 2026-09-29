@@ -11,7 +11,7 @@ from mcp.client.streamable_http import streamable_http_client
 
 from market_host import result_text
 
-BASE = os.getenv("MARKET_BASE", "http://127.0.0.1:18051")
+BASE = os.getenv("MARKET_BASE", f"http://127.0.0.1:{os.getenv('MARKET_PORT', '18051')}")
 
 
 async def call(url: str, token: str, name: str, args: dict):
