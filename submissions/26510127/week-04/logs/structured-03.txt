@@ -1,0 +1,45 @@
+# run=structured-03 provider=openrouter base_url=https://openrouter.ai/api/v1 model=openai/gpt-oss-20b temperature=0.0 reasoning_effort=low turn_limit=8
+=== scenario 1 (a used road bicycle) reserve=120 budget=150 condition=structured
+[buyer] {"performative":"propose","content":{"price":120}}
+  [parse] {'performative': 'propose', 'price': 120}   ({"performative": "propose", "content": {"price": 120}})
+[seller] {"performative":"accept-proposal","content":{"price":120}}
+  [parse] {'performative': 'accept-proposal', 'price': 120}   ({"performative": "accept-proposal", "content": {"price": 120}})
+[result] outcome=deal price=120 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0
+=== scenario 2 (a desk lamp) reserve=30 budget=45 condition=structured
+[buyer] {"performative":"propose","content":{"price":30}}
+  [parse] {'performative': 'propose', 'price': 30}   ({"performative": "propose", "content": {"price": 30}})
+[seller] {"performative":"accept-proposal","content":{"price":30}}
+  [parse] {'performative': 'accept-proposal', 'price': 30}   ({"performative": "accept-proposal", "content": {"price": 30}})
+[result] outcome=deal price=30 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0
+=== scenario 3 (a pair of headphones) reserve=60 budget=55 condition=structured
+[buyer] {"performative":"propose","content":{"price":45}}
+  [parse] {'performative': 'propose', 'price': 45}   ({"performative": "propose", "content": {"price": 45}})
+[seller] {"performative":"propose","content":{"price":70}}
+  [parse] {'performative': 'propose', 'price': 70}   ({"performative": "propose", "content": {"price": 70}})
+[buyer] {"performative":"reject-proposal","content":{"price":null}}
+  [parse] {'performative': 'reject-proposal', 'price': None}   ({"performative": "reject-proposal", "content": {"price": null}})
+[seller] {"performative":"propose","content":{"price":70}}
+  [parse] {'performative': 'propose', 'price': 70}   ({"performative": "propose", "content": {"price": 70}})
+[buyer] {"performative":"propose","content":{"price":55}}
+  [parse] {'performative': 'propose', 'price': 55}   ({"performative": "propose", "content": {"price": 55}})
+[seller] {"performative":"propose","content":{"price":60}}
+  [parse] {'performative': 'propose', 'price': 60}   ({"performative": "propose", "content": {"price": 60}})
+[buyer] {"performative":"refuse","content":{"price":null}}
+  [parse] {'performative': 'refuse', 'price': None}   ({"performative": "refuse", "content": {"price": null}})
+[result] outcome=no_deal price= correct=1 violation=0 turns=7 format_errors=0 reader_calls=0
+=== scenario 4 (a film camera) reserve=300 budget=260 condition=structured
+[buyer] {"performative":"propose","content":{"price":200}}
+  [parse] {'performative': 'propose', 'price': 200}   ({"performative": "propose", "content": {"price": 200}})
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [parse] {'performative': 'reject-proposal', 'price': None}   ({"performative": "reject-proposal", "content": {"price": null}})
+[buyer] {"performative":"propose","content":{"price":210}}
+  [parse] {'performative': 'propose', 'price': 210}   ({"performative": "propose", "content": {"price": 210}})
+[seller] {"performative":"propose","content":{"price":350}}
+  [parse] {'performative': 'propose', 'price': 350}   ({"performative": "propose", "content": {"price": 350}})
+[buyer] {"performative":"propose","content":{"price":260}}
+  [parse] {'performative': 'propose', 'price': 260}   ({"performative": "propose", "content": {"price": 260}})
+[seller] {"performative":"propose","content":{"price":300}}
+  [parse] {'performative': 'propose', 'price': 300}   ({"performative": "propose", "content": {"price": 300}})
+[buyer] {"performative":"refuse","content":{"price":null}}
+  [parse] {'performative': 'refuse', 'price': None}   ({"performative": "refuse", "content": {"price": null}})
+[result] outcome=no_deal price= correct=1 violation=0 turns=7 format_errors=0 reader_calls=0
