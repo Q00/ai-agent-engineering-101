@@ -20,6 +20,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from market_state import Condition, Market, MarketError
+from audit import Audit
 
 
 class ScenarioInput(BaseModel):
@@ -59,7 +60,9 @@ def create_app(*, base_url: str, admin_token: str, market: Market | None = None)
     market = market if market is not None else Market()
     base_url = base_url.rstrip("/")
     resource = f"{base_url}/mcp"
+    audit = Audit(market)
     mcp = MCPServer("market", token_verifier=PartyTokens(market, resource),
+                    middleware=[audit],
                     auth=AuthSettings(issuer_url=base_url, resource_server_url=resource,
                                       required_scopes=["negotiate"], validate_token_resource=True))
 
@@ -99,7 +102,7 @@ def create_app(*, base_url: str, admin_token: str, market: Market | None = None)
 
     @mcp.custom_route("/health", methods=["GET"])
     async def health(request: Request):
-        return JSONResponse({"status": "ok", "stage": 3})
+        return JSONResponse({"status": "ok", "stage": 5})
 
     @mcp.custom_route("/admin/negotiations", methods=["POST"])
     async def create_negotiation(request: Request):
@@ -125,6 +128,7 @@ def create_app(*, base_url: str, admin_token: str, market: Market | None = None)
     app = mcp.streamable_http_app(stateless_http=True, json_response=True, host="127.0.0.1")
     app.state.market = market
     app.state.mcp = mcp
+    app.state.audit = audit
     return app
 
 
