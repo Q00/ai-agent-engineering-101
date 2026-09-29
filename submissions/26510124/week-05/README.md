@@ -43,6 +43,12 @@ sequenceDiagram
 | `REPORT.md` | 설정, 결과, FIPA-ACL 비교, 로그에 근거한 해석 |
 | `lab/` | 먼저 수행한 1주차 도구 이전 실습 |
 
+제출 브랜치 `week-05-submit`에는 Week05 커밋만 원래 순서로 복사했고, 각 커밋의
+`cherry picked from`에 원본 해시를 남겼다. 실험 당시 원본 이력은 포크의
+[`week-05` 브랜치](https://github.com/dyishappy/ai-agent-engineering-101/tree/week-05)에
+그대로 보존했다. 시나리오 사전 커밋 `f305212`와 `experiment.json`의 실행 소스 커밋
+`6dbbc0b`는 이 원본 이력을 가리킨다. 실험 코드·CSV·원본 로그는 변경하지 않았다.
+
 ## 실행 환경
 
 Python 3.12, MCP SDK 2.2.0, OpenAI SDK 3.20.0. 모든 패키지 버전은

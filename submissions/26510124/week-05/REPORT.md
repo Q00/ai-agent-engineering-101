@@ -207,7 +207,7 @@ no_deal은 한 건도 없었다. 따라서 거래 불가능 시나리오 12판�
 ## 3. FIPA-ACL / week-04와의 비교
 
 FIPA 설명은 [week-04 강의](../../../week-04.html)와
-[이전 보고서](../week-04/REPORT.md)의 비교를 따른다. week-04 구현은 네 행위 이름을
+[이전 보고서](https://github.com/dyishappy/ai-agent-engineering-101/blob/22f60c77ac536e02bd3e9c2458f85c78c16acb1a/submissions/26510124/week-04/REPORT.md)의 비교를 따른다. week-04 구현은 네 행위 이름을
 빌린 축소 프로토콜이므로 FIPA 전체 규격 구현과 구분한다.
 
 | 비교 항목 | FIPA-ACL / week-04 구현 | 이번 MCP market |
