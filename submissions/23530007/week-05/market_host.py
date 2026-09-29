@@ -64,7 +64,9 @@ def _openai_complete():
     """Same interface as the Anthropic call: takes and returns Anthropic-shaped content, so
     play_turn does not change. Only this function knows the OpenAI format."""
     import openai
-    client = openai.OpenAI()
+    # timeout: a request that hangs (e.g. the laptop slept mid-run) fails after 90 s and is
+    # retried below instead of blocking the batch forever.
+    client = openai.OpenAI(timeout=90.0, max_retries=0)
 
     def to_openai_messages(system, messages):
         out = [{"role": "system", "content": system}]
@@ -123,7 +125,7 @@ def _openai_complete():
 
 def _anthropic_complete():
     import anthropic
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(timeout=90.0, max_retries=0)
 
     def complete(system, tools, messages):
         kwargs = dict(model=MODEL, max_tokens=MAX_TOKENS, system=system, tools=tools, messages=messages)
