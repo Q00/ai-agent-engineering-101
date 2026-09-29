@@ -99,19 +99,28 @@ flowchart TD
 | 1 | react | O | 114,103 | 4,471 | 3 | 0 |  |
 | 2 | react | O | 75,376 | 2,288 | 2 | 0 |  |
 | 3 | react | O | 114,140 | 4,508 | 3 | 0 |  |
-| 4 | plan_exec | X | 524,627 | 50,387 | 13 | 0 | replans=1 |
-| 5 | plan_exec | X | 910,242 | 107,682 | 22 | 0 | replans=1 |
-| 6 | plan_exec | X | 523,769 | 49,529 | 13 | 0 | replans=1 |
+| 4 | plan_exec | X | 524,627 | 49,953 | 13 | 0 | replans=1 |
+| 5 | plan_exec | X | 910,242 | 106,447 | 22 | 0 | replans=1 |
+| 6 | plan_exec | X | 523,769 | 49,095 | 13 | 0 | replans=1 |
 
 Every column but `adj. tokens` is `results.csv` verbatim. That one is derived,
-because `tokens` cannot be read as it stands: `claude -p` loads Claude Code's own
-system prompt and built-in tool definitions on every call — a fixed 36,480
-tokens, measured per harness with `probe_overhead.py` — so most of each raw
-figure is a constant rather than conversation. `adj. tokens` subtracts it
-(`tokens − iters × 36,480`), averaging 3,756 for ReAct against 69,199 for
-Plan-then-Execute: an **18.4× gap the raw numbers hide**, where raw they show
-6.5×, which merely restates the 6.0× iteration ratio and conceals that
-Plan-then-Execute also spends 3× more per call.
+because `claude -p` loads Claude Code's own system prompt and built-in tool
+definitions on every call, so most of each raw `tokens` figure is a fixed
+per-call cost rather than conversation. `probe_overhead.py` measures that cost
+for each system prompt — 36,544 for ReAct's `SYSTEM`, 36,328 for `SYSTEM_PLAN`,
+36,569 for `SYSTEM_EXEC` — and each call is charged the value of the prompt it
+actually used:
+
+- **ReAct:** every call uses `SYSTEM`, so `adj = tokens − iters × 36,544`.
+- **Plan-then-Execute:** each run makes 2 planner calls (plan + one replan),
+  1 `ask_final` call, and `iters − 3` executor calls, as counted in the logs, so
+  `adj = tokens − 3 × 36,328 − (iters − 3) × 36,569`. `ask_final`'s short prompt
+  was not probed and is charged the `SYSTEM_PLAN` value.
+
+Adjusted, ReAct averages 3,756 against 68,498 for Plan-then-Execute: an **18.2×
+gap the raw numbers hide**, where raw they show 6.5×, which merely restates the
+6.0× iteration ratio and conceals that Plan-then-Execute also spends 3× more per
+call.
 
 Variance is the asymmetric part. ReAct lands within 2–3 iterations every time,
 while Plan-then-Execute spreads over 13, 22, 13. Run 05 is the outlier: its
@@ -130,7 +139,7 @@ matches `app.log` exactly, while the surviving first 200 characters contain only
 ## 3. Interpretation
 
 ReAct won on every metric that moved — 3/3 against 0/3, 6.0× fewer iterations,
-18.4× fewer adjusted tokens — but the cause is not element 3 by itself: it is
+18.2× fewer adjusted tokens — but the cause is not element 3 by itself: it is
 **whether element 1 left element 3's ceiling reachable.** At 3,022 bytes
 `app.log` fits `read_file`'s 4,000-character cap, so ReAct's single `transcript`
 keeps all 60 lines and runs 02 and 03 never called `count_pattern` at all
