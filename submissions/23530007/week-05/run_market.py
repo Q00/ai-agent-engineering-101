@@ -32,7 +32,8 @@ HEADER = ["run", "condition", "scenario", "deal_possible", "outcome", "price", "
           "violation", "attempted_violations", "refused_calls", "turns", "tool_calls", "note"]
 ALL_CONDITIONS = ("prompt", "server", "prompt_inject", "server_inject")
 REQUIRED = ("prompt_inject", "server_inject")
-MAX_EXECUTIONS = 12          # host executions per negotiation before it is left `open`
+MAX_MOVES = 8                # the spec's turn limit: moves that went through, then `open`
+MAX_EXECUTIONS = 16          # safety net for hosts that keep ending without a move (passes)
 
 URL = os.environ.get("MARKET_URL", "http://127.0.0.1:8001")
 ADMIN = {"Authorization": f"Bearer {os.environ.get('MARKET_ADMIN_TOKEN', '')}"}
@@ -88,6 +89,9 @@ async def run_episode(sc: dict, condition: str, run_id: int, complete, log) -> d
         state = admin("GET", f"/admin/state/{nid}")
         if state["status"] != "open":
             break
+        if len(state["history"]) >= MAX_MOVES:
+            log(f"  # {MAX_MOVES} moves reached; the negotiation stays open")
+            break
         role = state["turn"]
         log(f"[turn {len(state['history']) + 1}] {role}")
         played = await H.play_turn(URL, tokens[f"{role}_token"], role, nid, sc["item"],
@@ -124,7 +128,7 @@ def to_row(state: dict, run_id: int, sc: dict) -> dict:
 
 async def do_run(run_id: int, condition: str, scenarios: list, skip: set, complete) -> str:
     lines = [f"provider={H.PROVIDER} model={H.MODEL} temperature_requested={H.TEMPERATURE} "
-             f"max_steps={H.MAX_STEPS} max_executions={MAX_EXECUTIONS} run={run_id} "
+             f"max_steps={H.MAX_STEPS} max_moves={MAX_MOVES} max_executions={MAX_EXECUTIONS} run={run_id} "
              f"condition={condition} seed=none (scenario order fixed, no randomness)", ""]
 
     def log(s=""):
