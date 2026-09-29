@@ -21,6 +21,7 @@ import time
 from pathlib import Path
 
 import httpx2
+import openai
 
 if hasattr(sys.stdout, "reconfigure"):          # Windows console (cp949) safety
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -130,6 +131,22 @@ async def episode(run: str, cond: str, sc: dict, llm, admin_tok: str, log) -> di
     return row
 
 
+def _leaves(e):
+    if isinstance(e, BaseExceptionGroup):
+        for x in e.exceptions:
+            yield from _leaves(x)
+    else:
+        yield e
+
+
+def _llm_error(e):
+    return next((x for x in _leaves(e) if isinstance(x, (openai.APIError, RuntimeError))), None)
+
+
+def _leaf(e):
+    return next(_leaves(e))
+
+
 def load_done(path: Path) -> set:
     if not path.exists():
         return set()
@@ -172,7 +189,14 @@ async def main():
                         sc = {**sc, "id": str(sc["id"])}
                         try:
                             row = await episode(run, cond, sc, llm, admin_tok, log)
-                        except Exception as e:           # crashed episode stays, blank fields
+                        except Exception as e:
+                            llm_err = _llm_error(e)
+                            if llm_err is not None:
+                                # key / model / quota problem: stop instead of filling results.csv with crash
+                                # rows; rerunning continues from the first missing row
+                                log(f"[episode] ABORT (LLM error, not recorded) {type(llm_err).__name__}: {llm_err}")
+                                raise SystemExit(f"LLM error: {type(llm_err).__name__}: {llm_err}")
+                            e = _leaf(e)                 # crashed episode stays, blank fields
                             log(f"[episode] CRASH {type(e).__name__}: {e}")
                             row = {k: "" for k in HEADER}
                             row.update(run=run, condition=cond, scenario=sc["id"],
