@@ -85,7 +85,6 @@ You read one message from a price negotiation. The speaker is proposing a price.
 cd submissions/26520057/week-04
 pip install openai
 export OPENAI_API_KEY=...
-python dry_test.py        # API 없이 가짜 모델로 protocol layer 확인 (파일 쓰지 않음)
 python run.py             # run 1-9, results.csv에 에피소드마다 한 줄 + logs/runNN-<condition>.txt
 python summarize.py       # 아래 2절의 표 출력
 ```
