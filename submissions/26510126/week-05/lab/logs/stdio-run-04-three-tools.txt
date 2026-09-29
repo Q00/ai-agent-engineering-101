@@ -1,0 +1,14 @@
+  [host] stdio, 3 tools: ['calculator', 'read_file', 'write_note']
+  [tool] read_file({'path': 'notes.txt'}) -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+  [retry] no choices: {'error': {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_overloaded'}}} -> waiting 5s
+  [tool] calculator({'expression': '4 + 48000 + 9500 + 12000'}) -> 69504
+  [tool] write_note({'path': 'notes.txt', 'text': '69504'}) -> appended 1 line; notes.txt now has 9 lines and nothing was removed
+I’ve read `notes.txt`, extracted the numbers (4, 48000, 9500, 12000), summed them to get **69504**, and appended that total as a new line at the end of the file. The file now contains the original content plus the sum line.
