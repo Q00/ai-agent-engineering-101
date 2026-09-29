@@ -9,6 +9,7 @@ import ast
 import operator
 import os
 import sys
+from datetime import datetime, timezone
 
 from mcp.server.mcpserver import MCPServer   # v1: from mcp.server.fastmcp import FastMCP
 
@@ -45,6 +46,13 @@ def read_file(path: str) -> str:
         return "denied: path outside the working directory"
     with open(full, encoding="utf-8") as f:
         return f.read()[:4000]
+
+
+# ---- tool 3: clock (no arguments) -- the week-01 assignment tool, moved here ----
+@mcp.tool()
+def clock() -> str:
+    """Get the current date and time in UTC, as an ISO 8601 string. Takes no arguments. Use this whenever the user's request depends on 'now' (e.g. today's date, how long until/since something) rather than guessing or relying on training data."""
+    return datetime.now(timezone.utc).isoformat()
 
 
 if __name__ == "__main__":
