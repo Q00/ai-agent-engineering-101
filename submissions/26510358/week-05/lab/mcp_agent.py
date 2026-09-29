@@ -11,7 +11,8 @@ from mcp import Client, StdioServerParameters
 from openai import AsyncOpenAI
 
 SERVER = Path(__file__).with_name("tools_server.py")
-DEFAULT_GOAL = "Read notes.txt and sum the numbers in it."
+DEFAULT_GOAL = ("Read notes.txt and sum the attendee count, pizza budget, "
+                "drinks, and reimbursement. Exclude the date.")
 
 
 def to_openai(tool):
