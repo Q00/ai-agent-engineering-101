@@ -138,8 +138,13 @@ class Market:
                 expected = {"negotiation_id", "price"} if tool == "propose" else {"negotiation_id"}
                 if tool not in MOVES | {"get_negotiation"}:
                     raise MarketError("unknown tool")
-                if not isinstance(args, dict) or set(args) != expected:
+                # SDK argument parsing may silently drop unknown fields. Check
+                # the actual authenticated request, preserved before SDK parsing,
+                # so execution and the independently replayable audit agree.
+                raw_args = event["args"]
+                if not isinstance(raw_args, dict) or set(raw_args) != expected:
                     raise MarketError("tool arguments do not match its schema")
+                args = raw_args
                 if args["negotiation_id"] != principal.negotiation_id:
                     raise MarketError("token is not authorized for this negotiation")
                 if tool == "get_negotiation":

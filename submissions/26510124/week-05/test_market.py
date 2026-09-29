@@ -364,6 +364,29 @@ class HTTPTests(unittest.TestCase):
             response = self.rpc(created["buyer_token"], "tools/list", omit=omitted)
             self.assertEqual(response.status_code, 400)
 
+    def test_unknown_arguments_cannot_be_silently_stripped_by_sdk(self):
+        messages = []
+        for condition in ("prompt_inject", "server_inject"):
+            created = self.create(condition)
+            for name in ("get_negotiation", "propose"):
+                for extra in ({"sender": "seller"}, {"note": "arbitrary text"}):
+                    args = {"price": 60} if name == "propose" else {}
+                    result = self.tool(created, "buyer", name, **args, **extra)
+                    self.assertTrue(result["isError"])
+                    text = result["content"][0]["text"]
+                    self.assertIn("arguments do not match", text)
+                    self.assertNotIn(condition, text)
+                    messages.append(text)
+            snapshot = self.snapshot(created)
+            self.assertEqual(snapshot["moves"], [])
+            self.assertEqual(snapshot["metrics"]["tool_calls"], 4)
+            self.assertEqual(snapshot["metrics"]["turns"], 0)
+            self.assertEqual(snapshot["metrics"]["attempted_violations"], 0)
+            self.assertEqual(snapshot["metrics"]["refused_calls"], 0)
+            self.assertTrue(all(event["completed"] and event["error"] and not event["executed"]
+                                for event in snapshot["audit"]))
+        self.assertEqual(messages[:4], messages[4:])
+
     def test_admin_finish_turn_allows_next_party_after_one_move(self):
         created = self.create()
         self.assertFalse(self.tool(created, "buyer", "propose", price=60)["isError"])
