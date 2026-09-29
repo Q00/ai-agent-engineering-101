@@ -38,10 +38,14 @@ async def smoke(url: str | None) -> None:
         print(f"[host] {len(listed.tools)} tools: {[tool.name for tool in listed.tools]}")
         read = await client.call_tool("read_file", {"path": "notes.txt"})
         print(f"[tool] read_file -> {output(read)}")
-        calculated = await client.call_tool(
-            "calculator", {"expression": "48000 + 9500 + 12000"}
+        total = await client.call_tool(
+            "calculator", {"expression": "48000 + 9500"}
         )
-        print(f"[tool] calculator -> {output(calculated)}")
+        print(f"[tool] calculator(total expenses) -> {output(total)}")
+        remaining = await client.call_tool(
+            "calculator", {"expression": f"{output(total)} - 12000"}
+        )
+        print(f"[tool] calculator(remaining) -> {output(remaining)}")
 
 
 def main() -> None:
