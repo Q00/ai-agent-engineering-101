@@ -1,6 +1,6 @@
-# 구성과 데이터 경계 초안
+# 구성과 데이터 경계
 
-이 문서는 설계 초안이다. 현재 실행되는 MCP 서버는 없다.
+실제 Streamable HTTP 서버, 격리된 Codex host와 재개 가능한 runner를 구현했다.
 
 ## 호출 흐름
 
@@ -9,7 +9,7 @@ runner -- 관리 경로 --> market_server: 협상 생성, 토큰 발급
 runner -- buyer 또는 seller 토큰 --> host
 host -- MCP HTTP client --> market_server: tools/list, tools/call
 market_server -- 상태 또는 tool error --> host -- 모델 --> 다음 행동
-runner -- 실측 결과 --> results.csv + logs/<condition>-<repeat>.txt
+runner -- 실측 결과 --> results.csv + logs/<tag>-<condition>-<repeat>.jsonl
 ```
 
 ## 책임
@@ -22,7 +22,7 @@ runner -- 실측 결과 --> results.csv + logs/<condition>-<repeat>.txt
 | scenarios.json | 실행 전 고정하는 상품과 reserve / budget | 1 |
 | tests/ | 모델 없이 인증·상태·한도 강제를 검증 | 2·3·5 |
 
-토큰에는 역할과 협상 연결을 담고, server 계열 조건에서는 가격 한도도 담는다. 토큰은 서버 내부 조회용 opaque 값으로 구성할 수 있으며 구체적인 발급 방식은 단계 2에서 결정한다. 협상 ID만 안다는 사실은 권한이 아니다. 실제 토큰·키를 모델이나 제출 로그에 넣지 않는다.
+토큰은 secrets.token_urlsafe(32)로 생성한 opaque 값이다. 서버 grant가 역할·협상 ID와 server 계열의 자신의 가격 한도를 가진다. 협상 ID만 안다는 사실은 권한이 아니다. 실제 토큰·키를 모델이나 제출 로그에 넣지 않는다. audit.py가 서버 측 실제 호출을 관측하며 verify_evidence.py가 CLI 결과와 대조한다.
 
 ## 실험 조건
 

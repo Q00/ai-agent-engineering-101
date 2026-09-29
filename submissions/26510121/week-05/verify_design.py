@@ -77,7 +77,7 @@ def main():
     require(version("mcp") == "2.2.0", "SDK version differs from requirements.txt")
     require(Client is not None and MCPServer is not None, "SDK import failed")
     print("PASS SDK: mcp==2.2.0, Client and MCPServer import")
-    print("Stage-1 inputs validated. Server behavior, CLI login/model access, and experiments remain unverified.")
+    print("Design inputs validated. Use HTTP tests and verify_evidence.py for behavioral and experiment evidence.")
 
 
 if __name__ == "__main__":

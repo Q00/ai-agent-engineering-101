@@ -21,7 +21,7 @@
 - [x] 8회 host 실행 제한, 무효/없는 행동의 차례 전환, 거부 후 같은 턴 재시도 규칙 확정.
 - [x] correct 및 open 처리 기준을 4주차 기준과 대조; attempts / refusals / accepted moves / host turns를 구분.
 
-로그인과 모델 접근 확인은 실행 전 검증으로 남는다. 현재 CLI가 Not logged in이므로 실제 모델 실행은 하지 않았다. 설계 입력 검사는 verify_design.py로 수행하며 결과를 checks/에 보존한다.
+Existing ChatGPT login and actual gpt-6-luna MCP calls were verified in the normal user environment. Sandbox-only authentication output was corrected; see ENVIRONMENT.md and STAGE4-5.md.
 
 완료 기준: 실험 조건과 데이터 정의를 설명할 수 있고, 시나리오 커밋이 본 실행보다 앞선다.
 
@@ -53,22 +53,22 @@
 
 ## 단계 4 — host와 runner
 
-- [ ] tools/list로 목록 조회, tools/call로 실행; 호출자 토큰을 HTTP 헤더에 전달.
-- [ ] 토큰과 관리자 자격 증명을 모델 입력·콘솔 로그에 노출하지 않기.
-- [ ] 에이전트가 상태 조회 후 행동하도록 구성; 거부 결과를 모델에 전달.
-- [ ] 협상 생성, 차례 제어, 종료 및 8 moves 제한 구현.
-- [ ] 이미 기록된 (run, condition, scenario) 건너뛰기 및 중단 후 재개 구현.
-- [ ] 원본 콘솔 캡처, 에피소드 CSV 저장, 오류 에피소드 보존 구현.
+- [x] tools/list로 목록 조회, tools/call로 실행; 호출자 토큰을 HTTP 헤더에 전달.
+- [x] 토큰과 관리자 자격 증명을 모델 입력·콘솔 로그에 노출하지 않기.
+- [x] 에이전트가 상태 조회 후 행동하도록 구성; 거부 결과를 모델에 전달.
+- [x] 협상 생성, 차례 제어, 종료 및 8 moves 제한 구현.
+- [x] 이미 기록된 (run, condition, scenario) 건너뛰기 및 중단 후 재개 구현.
+- [x] 원본 콘솔 캡처, 에피소드 CSV 저장, 오류 에피소드 보존 구현.
 
 완료 기준: 예비 에피소드의 상태·CSV·로그가 서로 일치한다.
 
 ## 단계 5 — 주입과 실측 검증
 
-- [ ] buyer의 seller 제안 조회 결과에 지정 문장을 정확히 삽입.
-- [ ] raised = max(reserve, budget) + 30 확인; seller에게 주입 숨김.
-- [ ] 조건 간 같은 시나리오·host·모델·역할 프롬프트·턴 제한 확인.
-- [ ] 실제 서버 대상 인증 검사 네 가지를 실행하고 auth_checks.txt에 기록.
-- [ ] 작은 예비 실행으로 집계·로그·재개 기능 확인; 수정과 실패를 별도 커밋.
+- [x] buyer의 seller 제안 조회 결과에 지정 문장을 정확히 삽입.
+- [x] raised = max(reserve, budget) + 30 확인; seller에게 주입 숨김.
+- [x] 조건 간 같은 시나리오·host·모델·역할 프롬프트·턴 제한 확인.
+- [x] 실제 서버 대상 인증 검사 네 가지를 실행하고 auth_checks.txt에 기록.
+- [x] 작은 예비 실행으로 집계·로그·재개 기능 확인; 수정과 실패를 별도 커밋.
 
 완료 기준: 요구된 네 검사 결과와 예비 실행 근거가 존재한다.
 

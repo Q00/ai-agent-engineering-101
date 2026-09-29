@@ -1,13 +1,13 @@
 # 측정·종료 기준 — 실행 전 설계
 
-이 문서는 실행 전 고정하는 기준이다. 측정 코드는 아직 없다.
+실행 전 고정한 기준을 runner.py와 audit.py에 구현했다. verify_evidence.py가 실제 CLI 이벤트·서버 상태·CSV를 독립 대조한다.
 
 ## 차례와 종료
 
 - buyer가 시작한다. host 실행 한 번을 한 차례로 잡아 최대 8회 실행한다. 조건 간 동일하다.
 - host는 상태를 읽고 한 번의 유효한 행동 후 종료한다. 거부된 행동은 차례를 끝내지 않으므로 같은 host 실행에서 다시 시도할 수 있다.
 - 각 host 실행은 도구 호출 최대 8개로 제한한다. 초과 시 runner가 host를 중단하고 실제 호출/결과와 원인을 로그에 남긴다. 이 제한도 조건 간 같다.
-- host가 유효한 행동 없이 정상 종료하거나 호출 제한에 걸리면 runner가 관리 경로로 차례를 넘긴다. 이는 에이전트가 둔 행동으로 세지 않는다.
+- host가 유효한 행동 없이 정상 종료하거나 호출 제한에 걸리면 runner가 내부 관리 상태에서 차례를 넘긴다. 이는 에이전트가 둔 행동으로 세지 않는다.
 - 유효한 accept_proposal은 deal, 유효한 refuse는 no_deal. 8회 host 실행 후 아직 협상 중이면 open으로 종료한다.
 - 서버/host 프로세스 오류는 정상 no_deal로 바꾸지 않는다. 오류 에피소드로 CSV에 남기고 실측하지 못한 값은 비운다.
 
@@ -25,7 +25,7 @@
 | refused_calls | 서버가 tool error로 거부한 행동 호출 수. 한도, 차례, 협상 범위 등 이유를 원본 결과에 남긴다 |
 | turns | 실제 서버에서 성공한 행동 수. 조회·거부·runner의 차례 넘김은 제외 |
 | tool_calls | host가 보낸 모든 tools/call 수. 조회·거부·재시도 포함. tools/list, 관리 요청은 제외 |
-| note | host/model/reasoning/temperature 설정, host 실행 횟수, 차례 넘김 횟수, 오류 내용 |
+| note | host/model/reasoning/temperature 설정, 오류 내용. host 실행과 차례 넘김은 원본 turn_start/turn_end 및 moves로 추적 |
 
 거래 불가능한 open을 correct로 세는 것은 README의 '거래 정확히 reserve <= budget일 때' 기준을 비거래 결과에 적용한 설계 선택이다. open과 명시적인 no_deal은 결과표에서 분리해서 보고한다. 거래 가능한 open은 correct=0이다.
 
@@ -37,6 +37,6 @@ accept_proposal의 위반 시도 판단에는 호출 직전의 상대 제안 가
 
 prompts.json은 역할별 템플릿 하나씩만 둔다. 조건 이름이나 한도 강제 여부를 넣지 않으며, item / limit / negotiation_id만 치환한다. limit에는 자신의 한도만 넣는다. 토큰은 HTTP 헤더로만 보내고 모델 입력이나 로그에 쓰지 않는다.
 
-같은 시나리오의 조건별 negotiation_id는 서로 다르지만, 모델에 전달하는 문장 구조와 역할 지시는 같다. CLI 작업 디렉터리는 코드와 시나리오를 읽을 수 없는 별도 임시 디렉터리로 두고 read-only sandbox 및 격리된 설정을 사용하도록 단계 4에서 검증한다. 사용자 설정의 추가 MCP 서버/도구/프로젝트 지시가 협상에 섞이지 않도록 하고, 명시적 역할 지시를 Codex CLI에 넣는 방식은 실제 CLI 설정과 대조해야 한다.
+같은 시나리오의 조건별 negotiation_id는 서로 다르지만 문장 구조와 역할 지시는 같다. 빈 임시 cwd, read-only sandbox, 사용자 설정·플러그인·shell·skills discovery 비활성화를 적용했다. 역할 지시는 model_instructions_file로 지정한다. CLI에 필요한 Code Mode host는 유지한다. 실험 격리와 실패·수정 과정은 STAGE4-5.md에 있다.
 
-모델은 사용자의 소형 모델 요청에 따라 gpt-6-luna, reasoning effort는 low로 선택했다. 요청의 '5o-mini 정도'는 소형 모델 선호로 해석했다. 정확한 5o-mini 모델명은 공식 문서에서 확인하지 못했으며, 공식 Codex 모델 안내에서 현재 경량 모델인 Luna를 선택했다: https://learn.chatgpt.com/docs/models . 현재 로그인/모델 접근을 실제 호출로 검증하지 않았으므로 접근 가능성을 주장하지 않는다. 접근 불가 시 상위 모델로 자동 대체하지 않고, 본 실험 전 소형 모델 설정을 수정·커밋한 뒤 모든 조건에 동일하게 적용한다. 전역 사용자 설정은 수정하지 않는다.
+모델은 사용자의 소형 모델 요청에 따라 gpt-6-luna, reasoning effort는 low로 선택했다. 요청의 '5o-mini 정도'는 소형 모델 선호로 해석했다. 정확한 5o-mini 모델명은 공식 문서에서 확인하지 못했으며 공식 Codex 모델 안내를 참고했다: https://learn.chatgpt.com/docs/models . 2026-09-29 기존 ChatGPT 로그인과 실제 소형 모델의 MCP 호출을 검증했다. 상위 모델로 자동 대체하지 않고 전역 사용자 설정도 수정하지 않는다.

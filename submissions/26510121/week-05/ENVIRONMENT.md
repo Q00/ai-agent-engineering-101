@@ -1,18 +1,18 @@
 # 실행 환경 확인 기록
 
-2026-09-29, Windows PowerShell에서 확인했다. 모델 요청은 실행하지 않았다.
+2026-09-29, Windows PowerShell에서 확인했다. 아래 표는 실제 예비 실행 이후 상태다.
 
 | 항목 | 실제 확인 결과 |
 |---|---|
 | Python | C:/Users/MASTER/anaconda3/python.exe, Python 3.12.4 |
 | 작업 전용 환경 | submissions/26510121/week-05/.venv (Git 제외) |
 | Codex CLI | 0.156.1 |
-| CLI 로그인 상태 | codex login status: Not logged in |
-| 선택 host | codex exec, ChatGPT 로그인 사용 예정 |
-| 선택 모델 / reasoning | gpt-6-luna / low; 계정 접근은 미검증 |
+| CLI 로그인 상태 | 정상 사용자 환경: Logged in using ChatGPT; sandbox 내부에서는 인증 저장소 접근 제한으로 Not logged in 출력 |
+| 선택 host | codex exec, 기존 ChatGPT 로그인 사용 |
+| 선택 모델 / reasoning | gpt-6-luna / low; 실제 MCP 조회·협상으로 접근 확인 |
 | temperature | CLI help에 temperature 옵션 없음; 미지정 |
 | MCP SDK | mcp 2.2.0 |
-| 모델 호출 / 예비 실행 / 본 실험 | 모두 0회 |
+| 모델 실행 | 예비 실행 6개 (설정 실패 포함), 본 실행은 results.csv와 logs/에 기록 |
 
 초기 점검에서는 PATH에 python이 없고 py launcher에 Python이 등록되지 않아 환경이 없다고 판단했다. 이후 Anaconda의 Python 3.12.4를 발견해 이 기록을 정정한다.
 
@@ -35,4 +35,4 @@ SDK 선택 근거: 공식 Python SDK 저장소는 v2를 2026-07-28 규격을 지
 & ./submissions/26510121/week-05/.venv/Scripts/python.exe -X utf8 submissions/26510121/week-05/verify_design.py
 ```
 
-향후 모델 실행 전 사용자가 codex login으로 ChatGPT 계정 로그인을 완료하고, codex login status로 확인해야 한다. 설치되었다는 사실과 로그인되었다는 사실은 다르다. 이 점검에서는 API 키를 발급하거나 저장하지 않았고, CLI 모델 요청도 보내지 않았다.
+새 컴퓨터에서는 codex login으로 로그인하고 계정의 모델 접근을 확인한다. 현재 컴퓨터는 이미 ChatGPT로 로그인돼 있었으며 sandbox 출력만으로 미로그인이라 판단한 초기 기록을 정정했다. API 키를 발급하거나 저장하지 않았다. 예비 실행의 실패·복구는 STAGE4-5.md와 원본 checks/에 남겼다.
