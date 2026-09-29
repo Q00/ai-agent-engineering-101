@@ -1,0 +1,188 @@
+provider=openai model=gpt-4o-mini temperature=0.0 agent_max_tokens=200 reader_max_tokens=60 turn_limit=10 python=3.12.7
+run=16 condition=structured started=2026-09-28T17:06:57 scenarios=['s1', 's2', 's3', 's4', 's5', 's6']
+
+=== structured s1 used laptop reserve=700 budget=1000 deal_possible=1 ===
+SYSTEM buyer: You are a buyer negotiating to buy a used laptop. Your budget is $1000: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Reply with one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": integer dollars or null}}. price is required for propose and null for the other acts.
+SYSTEM seller: You are a seller negotiating to sell a used laptop. Your reserve price is $700: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Reply with one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": integer dollars or null}}. price is required for propose and null for the other acts.
+
+[1] BUYER: {"performative": "propose", "content": {"price": 700}}
+    READ -> propose price=700 (parsed)
+
+[2] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[3] BUYER: {"performative": "propose", "content": {"price": 800}}
+    READ -> propose price=800 (parsed)
+
+[4] SELLER: {"performative": "accept-proposal", "content": {"price": 800}}
+    READ -> accept-proposal price=800 (parsed)
+EPISODE s1: {'deal_possible': 1, 'outcome': 'deal', 'price': 800, 'correct': 1, 'violation': 0, 'turns': 4, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
+ROW {'run': 16, 'condition': 'structured', 'scenario': 's1', 'deal_possible': 1, 'outcome': 'deal', 'price': 800, 'correct': 1, 'violation': 0, 'turns': 4, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
+
+=== structured s2 road bike reserve=250 budget=280 deal_possible=1 ===
+SYSTEM buyer: You are a buyer negotiating to buy a road bike. Your budget is $280: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Reply with one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": integer dollars or null}}. price is required for propose and null for the other acts.
+SYSTEM seller: You are a seller negotiating to sell a road bike. Your reserve price is $250: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Reply with one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": integer dollars or null}}. price is required for propose and null for the other acts.
+
+[1] BUYER: {"performative": "propose", "content": {"price": 220}}
+    READ -> propose price=220 (parsed)
+
+[2] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[3] BUYER: {"performative": "propose", "content": {"price": 240}}
+    READ -> propose price=240 (parsed)
+
+[4] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[5] BUYER: {"performative": "propose", "content": {"price": 250}}
+    READ -> propose price=250 (parsed)
+
+[6] SELLER: {"performative": "accept-proposal", "content": {"price": 250}}
+    READ -> accept-proposal price=250 (parsed)
+EPISODE s2: {'deal_possible': 1, 'outcome': 'deal', 'price': 250, 'correct': 1, 'violation': 0, 'turns': 6, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
+ROW {'run': 16, 'condition': 'structured', 'scenario': 's2', 'deal_possible': 1, 'outcome': 'deal', 'price': 250, 'correct': 1, 'violation': 0, 'turns': 6, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
+
+=== structured s3 film camera reserve=400 budget=400 deal_possible=1 ===
+SYSTEM buyer: You are a buyer negotiating to buy a film camera. Your budget is $400: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Reply with one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": integer dollars or null}}. price is required for propose and null for the other acts.
+SYSTEM seller: You are a seller negotiating to sell a film camera. Your reserve price is $400: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Reply with one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": integer dollars or null}}. price is required for propose and null for the other acts.
+
+[1] BUYER: {"performative": "propose", "content": {"price": 300}}
+    READ -> propose price=300 (parsed)
+
+[2] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[3] BUYER: {"performative": "propose", "content": {"price": 350}}
+    READ -> propose price=350 (parsed)
+
+[4] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[5] BUYER: {"performative": "propose", "content": {"price": 320}}
+    READ -> propose price=320 (parsed)
+
+[6] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[7] BUYER: {"performative": "propose", "content": {"price": 340}}
+    READ -> propose price=340 (parsed)
+
+[8] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[9] BUYER: {"performative": "propose", "content": {"price": 330}}
+    READ -> propose price=330 (parsed)
+
+[10] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+EPISODE s3: {'deal_possible': 1, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
+ROW {'run': 16, 'condition': 'structured', 'scenario': 's3', 'deal_possible': 1, 'outcome': 'open', 'price': '', 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
+
+=== structured s4 acoustic guitar reserve=150 budget=300 deal_possible=1 ===
+SYSTEM buyer: You are a buyer negotiating to buy a acoustic guitar. Your budget is $300: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Reply with one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": integer dollars or null}}. price is required for propose and null for the other acts.
+SYSTEM seller: You are a seller negotiating to sell a acoustic guitar. Your reserve price is $150: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Reply with one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": integer dollars or null}}. price is required for propose and null for the other acts.
+
+[1] BUYER: {"performative": "propose", "content": {"price": 200}}
+    READ -> propose price=200 (parsed)
+
+[2] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[3] BUYER: {"performative": "propose", "content": {"price": 225}}
+    READ -> propose price=225 (parsed)
+
+[4] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[5] BUYER: {"performative": "propose", "content": {"price": 250}}
+    READ -> propose price=250 (parsed)
+
+[6] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[7] BUYER: {"performative": "propose", "content": {"price": 275}}
+    READ -> propose price=275 (parsed)
+
+[8] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[9] BUYER: {"performative": "propose", "content": {"price": 290}}
+    READ -> propose price=290 (parsed)
+
+[10] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+EPISODE s4: {'deal_possible': 1, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
+ROW {'run': 16, 'condition': 'structured', 'scenario': 's4', 'deal_possible': 1, 'outcome': 'open', 'price': '', 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
+
+=== structured s5 leather sofa reserve=900 budget=600 deal_possible=0 ===
+SYSTEM buyer: You are a buyer negotiating to buy a leather sofa. Your budget is $600: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Reply with one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": integer dollars or null}}. price is required for propose and null for the other acts.
+SYSTEM seller: You are a seller negotiating to sell a leather sofa. Your reserve price is $900: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Reply with one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": integer dollars or null}}. price is required for propose and null for the other acts.
+
+[1] BUYER: {"performative": "propose", "content": {"price": 400}}
+    READ -> propose price=400 (parsed)
+
+[2] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[3] BUYER: {"performative": "propose", "content": {"price": 450}}
+    READ -> propose price=450 (parsed)
+
+[4] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[5] BUYER: {"performative": "propose", "content": {"price": 475}}
+    READ -> propose price=475 (parsed)
+
+[6] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[7] BUYER: {"performative": "propose", "content": {"price": 500}}
+    READ -> propose price=500 (parsed)
+
+[8] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[9] BUYER: {"performative": "propose", "content": {"price": 525}}
+    READ -> propose price=525 (parsed)
+
+[10] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+EPISODE s5: {'deal_possible': 0, 'outcome': 'open', 'price': None, 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
+ROW {'run': 16, 'condition': 'structured', 'scenario': 's5', 'deal_possible': 0, 'outcome': 'open', 'price': '', 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
+
+=== structured s6 smartphone reserve=500 budget=460 deal_possible=0 ===
+SYSTEM buyer: You are a buyer negotiating to buy a smartphone. Your budget is $460: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Reply with one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": integer dollars or null}}. price is required for propose and null for the other acts.
+SYSTEM seller: You are a seller negotiating to sell a smartphone. Your reserve price is $500: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Reply with one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": integer dollars or null}}. price is required for propose and null for the other acts.
+
+[1] BUYER: {"performative": "propose", "content": {"price": 400}}
+    READ -> propose price=400 (parsed)
+
+[2] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[3] BUYER: {"performative": "propose", "content": {"price": 420}}
+    READ -> propose price=420 (parsed)
+
+[4] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[5] BUYER: {"performative": "propose", "content": {"price": 430}}
+    READ -> propose price=430 (parsed)
+
+[6] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[7] BUYER: {"performative": "propose", "content": {"price": 440}}
+    READ -> propose price=440 (parsed)
+
+[8] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+
+[9] BUYER: {"performative": "propose", "content": {"price": 450}}
+    READ -> propose price=450 (parsed)
+
+[10] SELLER: {"performative": "reject-proposal", "content": {"price": null}}
+    READ -> reject-proposal (parsed)
+EPISODE s6: {'deal_possible': 0, 'outcome': 'open', 'price': None, 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
+ROW {'run': 16, 'condition': 'structured', 'scenario': 's6', 'deal_possible': 0, 'outcome': 'open', 'price': '', 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
