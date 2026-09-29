@@ -27,13 +27,15 @@
 
 ## 단계 2 — 인증과 협상 상태
 
-- [ ] 관리 경로에서 negotiation_id와 buyer/seller 토큰 발급.
-- [ ] 토큰에서 역할과 협상 권한 결정; 에이전트 인자로 신원을 받지 않기.
-- [ ] Streamable HTTP, 무효 토큰 HTTP 401 및 WWW-Authenticate 검증.
-- [ ] 다른 협상 ID와 차례 밖 행동을 tool error로 거부.
-- [ ] get_negotiation 구현·확인·커밋.
+- [x] 보호된 관리 경로에서 negotiation_id와 buyer/seller 토큰 발급.
+- [x] 토큰에서 역할과 협상 권한 결정; 에이전트 인자로 신원을 받지 않기.
+- [x] Streamable HTTP, 무효 토큰 HTTP 401 및 WWW-Authenticate 검증.
+- [x] 다른 협상 ID를 tool error로 거부; 차례 검사는 require_turn으로 구현·직접 검증.
+- [x] get_negotiation 구현·확인·커밋 (9267804).
 
-완료 기준: 실제 요청으로 신원·협상 범위·차례 제한을 증명한다.
+14개 검사가 실제 HTTP 서버/상태 검사에 통과했다. require_turn을 행동 도구에 연결해 실제 차례 밖 행동을 tool error로 거부하는 검증은 단계 3에서 한다. 상태·인증·조회 구현 및 실행 설명은 STAGE2.md, 실패/성공 원본 출력은 checks/에 있다.
+
+완료 기준: 실제 HTTP 요청으로 신원·협상 범위를, 상태 검사로 차례 제한을 증명한다. 실제 행동 tool의 차례 검사는 단계 3과 연계한다.
 
 ## 단계 3 — 행동 도구와 한도 강제
 
