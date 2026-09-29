@@ -2,7 +2,7 @@
 
 ## 1. 설정
 
-이번 보고서는 명세 차이를 수정한 harness의 실험 결과를 다룬다. 기존 실행 결과는 보존하기 위해 `results.csv`와 `logs/`에 남겨 두었고, 수정 후 실행 결과는 `results_corrected.csv`와 `logs_corrected/`에 저장했다. 아래 결과표와 해석은 모두 corrected 결과를 기준으로 한다.
+이번 보고서는 명세 차이를 수정한 harness의 실험 결과를 다룬다. 수정 후 실행 결과는 제출 규격에 맞춰 `results.csv`와 `logs/`에 저장했고, 기존 실행 결과는 `results_pre_fix.csv`와 `logs_pre_fix/`에 보존했다. 아래 결과표와 해석은 모두 수정 후 결과를 기준으로 한다.
 
 buyer 1명과 seller 1명이 네 가지 물건의 가격을 협상한다. buyer는 최대 지불액(`budget`), seller는 최저 수용가(`reserve`)를 비공개로 가진다. buyer가 먼저 말하고, 양쪽이 번갈아 최대 8개의 메시지를 주고받는다. `accept-proposal`은 상대방의 마지막 `propose` 가격으로 거래를 끝내며, `refuse`는 결렬로 끝난다. 8턴까지 끝나지 않으면 `open`이다.
 
@@ -36,11 +36,7 @@ proposes one. Return exactly one JSON object and nothing else:
 수정된 실행 명령은 다음과 같다.
 
 ```bash
-python3 run_experiment.py \
-  --runs 3 \
-  --turn-limit 8 \
-  --results results_corrected.csv \
-  --log-dir logs_corrected
+python3 run_experiment.py --runs 3 --turn-limit 8
 ```
 
 각 agent는 별도의 Chat history를 가진다. 자기 메시지는 `assistant`, 상대 메시지는 `user`로 기록하며, free reader에는 누적 대화와 마지막 메시지를 전달한다. 읽지 못한 메시지도 history에 남기고 다음 턴으로 진행한다.
@@ -92,4 +88,4 @@ python3 run_experiment.py \
 
 ## 4. 해석
 
-수정 후 실험에서는 free가 10/12 correct로 가장 높았고, structured는 6/12, tagged는 5/12였다. 이는 이번 모델과 네 시나리오에서는 자연어 reader가 proposal과 refusal을 충분히 해석해 준 반면, 명시적 형식이 자동으로 협상 전략까지 개선하지는 않았다는 뜻이다. free의 `logs_corrected/free-01.jsonl:21-45`에서는 coffee-maker의 reserve 120과 buyer budget 100이 맞지 않자 seller가 마지막에 `refuse`를 내고, 8턴에 correct no-deal로 끝났다. 반면 `free-02.jsonl:21-45`에서는 양쪽이 100과 120 사이의 제안을 반복해 8턴 `open`이 됐다. tagged에서는 performative tag가 행위 판독을 안정화했지만 본문 가격과 tag가 충돌할 수 있었다. `logs_corrected/tagged-01.jsonl:2-12`에서 buyer는 먼저 70을 제안하고 이후 `(reject-proposal) ... offer $80`을 보냈는데, seller의 `(accept-proposal)`을 harness는 상대의 마지막 `propose`인 70에 대한 동의로 해석했다. seller reserve는 80이므로 기록된 거래 가격 70은 violation이 되었고, correct도 0이 되었다. 이 사례는 tag가 illocutionary force를 명확히 하는 대신, tag 뒤 자연어에 적힌 counter-offer를 protocol 내용으로 인정하지 않을 때 비용이 생긴다는 증거다. structured는 `logs_corrected/structured-01.jsonl:2-8`에서 세 개의 JSON 메시지만으로 headphones를 100에 거래했고 reader 호출은 0회였다. 그러나 `structured-01.jsonl:9-25`의 coffee-maker처럼 JSON이 모두 유효해도 seller는 8턴 동안 계속 propose만 하며 `refuse`하지 않을 수 있다. 따라서 structured는 파싱 비용과 형식 오류를 제거하지만, 불가능한 협상을 감지하고 종료하는 전략까지 보장하지 않는다. 이번 36회에서는 format error가 0회였으므로 수정한 “읽지 못한 메시지를 history에 남기고 계속 진행” 경로는 실행 로그에서는 사용되지 않았지만, 단위 테스트로 그 동작을 검증했다. 전체적으로 명시적 performative는 act 해석의 위치를 분명히 했고 reader 비용을 줄였지만, 가격 내용과 협상 종료 정책까지 자동으로 보장하지는 않았다.
+수정 후 실험에서는 free가 10/12 correct로 가장 높았고, structured는 6/12, tagged는 5/12였다. 이는 이번 모델과 네 시나리오에서는 자연어 reader가 proposal과 refusal을 충분히 해석해 준 반면, 명시적 형식이 자동으로 협상 전략까지 개선하지는 않았다는 뜻이다. free의 `logs/free-01.jsonl:21-45`에서는 coffee-maker의 reserve 120과 buyer budget 100이 맞지 않자 seller가 마지막에 `refuse`를 내고, 8턴에 correct no-deal로 끝났다. 반면 `free-02.jsonl:21-45`에서는 양쪽이 100과 120 사이의 제안을 반복해 8턴 `open`이 됐다. tagged에서는 performative tag가 행위 판독을 안정화했지만 본문 가격과 tag가 충돌할 수 있었다. `logs/tagged-01.jsonl:2-12`에서 buyer는 먼저 70을 제안하고 이후 `(reject-proposal) ... offer $80`을 보냈는데, seller의 `(accept-proposal)`을 harness는 상대의 마지막 `propose`인 70에 대한 동의로 해석했다. seller reserve는 80이므로 기록된 거래 가격 70은 violation이 되었고, correct도 0이 되었다. 이 사례는 tag가 illocutionary force를 명확히 하는 대신, tag 뒤 자연어에 적힌 counter-offer를 protocol 내용으로 인정하지 않을 때 비용이 생긴다는 증거다. structured는 `logs/structured-01.jsonl:2-8`에서 세 개의 JSON 메시지만으로 headphones를 100에 거래했고 reader 호출은 0회였다. 그러나 `structured-01.jsonl:9-25`의 coffee-maker처럼 JSON이 모두 유효해도 seller는 8턴 동안 계속 propose만 하며 `refuse`하지 않을 수 있다. 따라서 structured는 파싱 비용과 형식 오류를 제거하지만, 불가능한 협상을 감지하고 종료하는 전략까지 보장하지 않는다. 이번 36회에서는 format error가 0회였으므로 수정한 “읽지 못한 메시지를 history에 남기고 계속 진행” 경로는 실행 로그에서는 사용되지 않았지만, 단위 테스트로 그 동작을 검증했다. 전체적으로 명시적 performative는 act 해석의 위치를 분명히 했고 reader 비용을 줄였지만, 가격 내용과 협상 종료 정책까지 자동으로 보장하지는 않았다.

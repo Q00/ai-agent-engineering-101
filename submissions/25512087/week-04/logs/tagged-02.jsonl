@@ -1,99 +1,75 @@
 {"condition": "tagged", "event": "meta", "model": "gpt-5.6-luna", "provider": "https://api.openai.com/v1", "repeat": 2, "temperature": 0, "turn_limit": 8}
-{"event": "message", "raw": "(propose) I can offer $70 for the headphones.", "role": "buyer", "turn": 1}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":70}}", "text": "I can offer $70 for the headphones."}
+{"event": "message", "raw": "(propose) I can offer $70 for the noise-cancelling headphones.", "role": "buyer", "turn": 1}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":70}", "text": "I can offer $70 for the noise-cancelling headphones."}
 {"event": "parsed", "performative": "propose", "price": 70, "turn": 1}
-{"event": "message", "raw": "(propose) I can offer the headphones for $100.", "role": "seller", "turn": 2}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":100}}", "text": "I can offer the headphones for $100."}
-{"event": "parsed", "performative": "propose", "price": 100, "turn": 2}
+{"event": "message", "raw": "(propose) I can offer them for $95.", "role": "seller", "turn": 2}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":95}", "text": "I can offer them for $95."}
+{"event": "parsed", "performative": "propose", "price": 95, "turn": 2}
 {"event": "message", "raw": "(propose) I can raise my offer to $80.", "role": "buyer", "turn": 3}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":80}}", "text": "I can raise my offer to $80."}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":80}", "text": "I can raise my offer to $80."}
 {"event": "parsed", "performative": "propose", "price": 80, "turn": 3}
-{"event": "message", "raw": "(propose) I can offer the headphones for $90.", "role": "seller", "turn": 4}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":90}}", "text": "I can offer the headphones for $90."}
+{"event": "message", "raw": "(propose) I can lower my price to $90.", "role": "seller", "turn": 4}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":90}", "text": "I can lower my price to $90."}
 {"event": "parsed", "performative": "propose", "price": 90, "turn": 4}
-{"event": "message", "raw": "(propose) I can offer $85 for the headphones.", "role": "buyer", "turn": 5}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":85}}", "text": "I can offer $85 for the headphones."}
+{"event": "message", "raw": "(propose) I can offer $85.", "role": "buyer", "turn": 5}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":85}", "text": "I can offer $85."}
 {"event": "parsed", "performative": "propose", "price": 85, "turn": 5}
-{"event": "message", "raw": "(propose) I can offer the headphones for $88.", "role": "seller", "turn": 6}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":88}}", "text": "I can offer the headphones for $88."}
+{"event": "message", "raw": "(propose) I can meet you at $88.", "role": "seller", "turn": 6}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":88}", "text": "I can meet you at $88."}
 {"event": "parsed", "performative": "propose", "price": 88, "turn": 6}
-{"event": "message", "raw": "(propose) I can offer $86 for the headphones.", "role": "buyer", "turn": 7}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":86}}", "text": "I can offer $86 for the headphones."}
-{"event": "parsed", "performative": "propose", "price": 86, "turn": 7}
-{"event": "message", "raw": "(propose) I can offer the headphones for $87.", "role": "seller", "turn": 8}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":87}}", "text": "I can offer the headphones for $87."}
-{"event": "parsed", "performative": "propose", "price": 87, "turn": 8}
-{"correct": 0, "event": "episode_result", "format_errors": 0, "outcome": "open", "price": null, "reader_calls": 8, "turns": 8, "violation": 0}
+{"event": "message", "raw": "(accept-proposal) Agreed—$88.", "role": "buyer", "turn": 7}
+{"event": "parsed", "performative": "accept-proposal", "price": null, "turn": 7}
+{"correct": 1, "event": "episode_result", "format_errors": 0, "outcome": "deal", "price": 88, "reader_calls": 6, "turns": 7, "violation": 0}
 {"event": "message", "raw": "(propose) I can offer $70 for the espresso coffee maker.", "role": "buyer", "turn": 1}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":70}}", "text": "I can offer $70 for the espresso coffee maker."}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":70}", "text": "I can offer $70 for the espresso coffee maker."}
 {"event": "parsed", "performative": "propose", "price": 70, "turn": 1}
-{"event": "message", "raw": "(propose) I can offer it for $160.", "role": "seller", "turn": 2}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":160}}", "text": "I can offer it for $160."}
-{"event": "parsed", "performative": "propose", "price": 160, "turn": 2}
-{"event": "message", "raw": "(propose) I can offer $80.", "role": "buyer", "turn": 3}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":80}}", "text": "I can offer $80."}
-{"event": "parsed", "performative": "propose", "price": 80, "turn": 3}
-{"event": "message", "raw": "(propose) I can offer it for $150.", "role": "seller", "turn": 4}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":150}}", "text": "I can offer it for $150."}
-{"event": "parsed", "performative": "propose", "price": 150, "turn": 4}
-{"event": "message", "raw": "(propose) I can offer $90.", "role": "buyer", "turn": 5}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":90}}", "text": "I can offer $90."}
-{"event": "parsed", "performative": "propose", "price": 90, "turn": 5}
-{"event": "message", "raw": "(propose) I can offer it for $140.", "role": "seller", "turn": 6}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":140}}", "text": "I can offer it for $140."}
-{"event": "parsed", "performative": "propose", "price": 140, "turn": 6}
-{"event": "message", "raw": "(propose) I can offer $95.", "role": "buyer", "turn": 7}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":95}}", "text": "I can offer $95."}
-{"event": "parsed", "performative": "propose", "price": 95, "turn": 7}
-{"event": "message", "raw": "(propose) I can offer it for $130.", "role": "seller", "turn": 8}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":130}}", "text": "I can offer it for $130."}
-{"event": "parsed", "performative": "propose", "price": 130, "turn": 8}
-{"correct": 0, "event": "episode_result", "format_errors": 0, "outcome": "open", "price": null, "reader_calls": 8, "turns": 8, "violation": 0}
-{"event": "message", "raw": "(propose) I can offer $35 for the textbook.", "role": "buyer", "turn": 1}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":35}}", "text": "I can offer $35 for the textbook."}
-{"event": "parsed", "performative": "propose", "price": 35, "turn": 1}
-{"event": "message", "raw": "(propose) I can sell it for $45.", "role": "seller", "turn": 2}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":45}}", "text": "I can sell it for $45."}
-{"event": "parsed", "performative": "propose", "price": 45, "turn": 2}
-{"event": "message", "raw": "(reject-proposal) I can offer $40.", "role": "buyer", "turn": 3}
+{"event": "message", "raw": "(propose) I can offer it for $150.", "role": "seller", "turn": 2}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":150}", "text": "I can offer it for $150."}
+{"event": "parsed", "performative": "propose", "price": 150, "turn": 2}
+{"event": "message", "raw": "(reject-proposal) I can’t meet $150. I can offer $80.", "role": "buyer", "turn": 3}
 {"event": "parsed", "performative": "reject-proposal", "price": null, "turn": 3}
-{"event": "message", "raw": "(propose) I can sell it for $43.", "role": "seller", "turn": 4}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":43}}", "text": "I can sell it for $43."}
-{"event": "parsed", "performative": "propose", "price": 43, "turn": 4}
-{"event": "message", "raw": "(propose) I can offer $41.", "role": "buyer", "turn": 5}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":41}}", "text": "I can offer $41."}
-{"event": "parsed", "performative": "propose", "price": 41, "turn": 5}
-{"event": "message", "raw": "(propose) I can sell it for $42.", "role": "seller", "turn": 6}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":42}}", "text": "I can sell it for $42."}
-{"event": "parsed", "performative": "propose", "price": 42, "turn": 6}
-{"event": "message", "raw": "(propose) I can offer $41.50.", "role": "buyer", "turn": 7}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":41}}", "text": "I can offer $41.50."}
-{"event": "parsed", "performative": "propose", "price": 41, "turn": 7}
-{"event": "message", "raw": "(propose) I can sell it for $41.75.", "role": "seller", "turn": 8}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":41}}", "text": "I can sell it for $41.75."}
-{"event": "parsed", "performative": "propose", "price": 41, "turn": 8}
-{"correct": 0, "event": "episode_result", "format_errors": 0, "outcome": "open", "price": null, "reader_calls": 7, "turns": 8, "violation": 0}
+{"event": "message", "raw": "(propose) I can lower the price to $140.", "role": "seller", "turn": 4}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":140}", "text": "I can lower the price to $140."}
+{"event": "parsed", "performative": "propose", "price": 140, "turn": 4}
+{"event": "message", "raw": "(reject-proposal) $140 is still beyond my budget. I can offer $90.", "role": "buyer", "turn": 5}
+{"event": "parsed", "performative": "reject-proposal", "price": null, "turn": 5}
+{"event": "message", "raw": "(propose) I can offer it for $130.", "role": "seller", "turn": 6}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":130}", "text": "I can offer it for $130."}
+{"event": "parsed", "performative": "propose", "price": 130, "turn": 6}
+{"event": "message", "raw": "(reject-proposal) I can’t do $130. My best offer is $100.", "role": "buyer", "turn": 7}
+{"event": "parsed", "performative": "reject-proposal", "price": null, "turn": 7}
+{"event": "message", "raw": "(propose) I can meet you at $120.", "role": "seller", "turn": 8}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":120}", "text": "I can meet you at $120."}
+{"event": "parsed", "performative": "propose", "price": 120, "turn": 8}
+{"correct": 0, "event": "episode_result", "format_errors": 0, "outcome": "open", "price": null, "reader_calls": 5, "turns": 8, "violation": 0}
+{"event": "message", "raw": "(propose) I can offer $30 for the textbook.", "role": "buyer", "turn": 1}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":30}", "text": "I can offer $30 for the textbook."}
+{"event": "parsed", "performative": "propose", "price": 30, "turn": 1}
+{"event": "message", "raw": "(accept-proposal) Agreed.", "role": "seller", "turn": 2}
+{"event": "parsed", "performative": "accept-proposal", "price": null, "turn": 2}
+{"correct": 1, "event": "episode_result", "format_errors": 0, "outcome": "deal", "price": 30, "reader_calls": 1, "turns": 2, "violation": 0}
 {"event": "message", "raw": "(propose) I can offer $35 for the adjustable desk lamp.", "role": "buyer", "turn": 1}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":35}}", "text": "I can offer $35 for the adjustable desk lamp."}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":35}", "text": "I can offer $35 for the adjustable desk lamp."}
 {"event": "parsed", "performative": "propose", "price": 35, "turn": 1}
-{"event": "message", "raw": "(propose) I can offer the adjustable desk lamp for $90.", "role": "seller", "turn": 2}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":90}}", "text": "I can offer the adjustable desk lamp for $90."}
-{"event": "parsed", "performative": "propose", "price": 90, "turn": 2}
-{"event": "message", "raw": "(reject-proposal) I can offer $40.", "role": "buyer", "turn": 3}
-{"event": "parsed", "performative": "reject-proposal", "price": null, "turn": 3}
-{"event": "message", "raw": "(propose) I can offer the adjustable desk lamp for $85.", "role": "seller", "turn": 4}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":85}}", "text": "I can offer the adjustable desk lamp for $85."}
-{"event": "parsed", "performative": "propose", "price": 85, "turn": 4}
-{"event": "message", "raw": "(propose) I can offer $45 for the adjustable desk lamp.", "role": "buyer", "turn": 5}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":45}}", "text": "I can offer $45 for the adjustable desk lamp."}
+{"event": "message", "raw": "(propose) I can offer it for $85.", "role": "seller", "turn": 2}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":85}", "text": "I can offer it for $85."}
+{"event": "parsed", "performative": "propose", "price": 85, "turn": 2}
+{"event": "message", "raw": "(propose) I can raise my offer to $40.", "role": "buyer", "turn": 3}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":40}", "text": "I can raise my offer to $40."}
+{"event": "parsed", "performative": "propose", "price": 40, "turn": 3}
+{"event": "message", "raw": "(propose) I can lower my price to $80.", "role": "seller", "turn": 4}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":80}", "text": "I can lower my price to $80."}
+{"event": "parsed", "performative": "propose", "price": 80, "turn": 4}
+{"event": "message", "raw": "(propose) My best offer is $45.", "role": "buyer", "turn": 5}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":45}", "text": "My best offer is $45."}
 {"event": "parsed", "performative": "propose", "price": 45, "turn": 5}
-{"event": "message", "raw": "(propose) I can offer the adjustable desk lamp for $80.", "role": "seller", "turn": 6}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":80}}", "text": "I can offer the adjustable desk lamp for $80."}
-{"event": "parsed", "performative": "propose", "price": 80, "turn": 6}
-{"event": "message", "raw": "(propose) I can offer $50 for the adjustable desk lamp.", "role": "buyer", "turn": 7}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":50}}", "text": "I can offer $50 for the adjustable desk lamp."}
+{"event": "message", "raw": "(propose) I can meet you at $75.", "role": "seller", "turn": 6}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":75}", "text": "I can meet you at $75."}
+{"event": "parsed", "performative": "propose", "price": 75, "turn": 6}
+{"event": "message", "raw": "(propose) I can offer $50.", "role": "buyer", "turn": 7}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":50}", "text": "I can offer $50."}
 {"event": "parsed", "performative": "propose", "price": 50, "turn": 7}
-{"event": "message", "raw": "(propose) I can offer the adjustable desk lamp for $75.", "role": "seller", "turn": 8}
-{"event": "reader", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":75}}", "text": "I can offer the adjustable desk lamp for $75."}
-{"event": "parsed", "performative": "propose", "price": 75, "turn": 8}
-{"correct": 0, "event": "episode_result", "format_errors": 0, "outcome": "open", "price": null, "reader_calls": 7, "turns": 8, "violation": 0}
+{"event": "message", "raw": "(propose) I can offer it for $72.", "role": "seller", "turn": 8}
+{"event": "reader", "raw": "{\"performative\":\"propose\",\"price\":72}", "text": "I can offer it for $72."}
+{"event": "parsed", "performative": "propose", "price": 72, "turn": 8}
+{"correct": 0, "event": "episode_result", "format_errors": 0, "outcome": "open", "price": null, "reader_calls": 8, "turns": 8, "violation": 0}
