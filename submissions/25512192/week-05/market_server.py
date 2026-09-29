@@ -218,6 +218,18 @@ async def admin_open(request: Request) -> JSONResponse:
                          "seller_token": minted["seller"]})
 
 
+@mcp.custom_route("/admin/pass/{nid}", methods=["POST"])
+async def admin_pass(request: Request) -> JSONResponse:
+    """The host ended a turn without a valid move: the runner passes the turn (counts toward the limit)."""
+    if not _admin_ok(request):
+        return JSONResponse({"error": "forbidden"}, status_code=403)
+    n = NEGOTIATIONS.get(request.path_params["nid"])
+    if n is None or _turn(n) is None:
+        return JSONResponse({"error": "nothing to pass"}, status_code=409)
+    _record(n, _turn(n), "pass", None, "")
+    return JSONResponse({"ok": True})
+
+
 @mcp.custom_route("/admin/result/{nid}", methods=["GET"])
 async def admin_result(request: Request) -> JSONResponse:
     if not _admin_ok(request):
@@ -227,7 +239,9 @@ async def admin_result(request: Request) -> JSONResponse:
         return JSONResponse({"error": "unknown negotiation"}, status_code=404)
     return JSONResponse({k: n[k] for k in ("id", "item", "reserve", "budget", "status", "deal_price",
                                            "attempted_violations", "refused_calls", "moves", "events")}
-                        | {"turns": len(n["moves"])})
+                        | {"turns": sum(m["act"] != "pass" for m in n["moves"]),
+                           "passes": sum(m["act"] == "pass" for m in n["moves"]),
+                           "whose_turn": _turn(n)})
 
 
 if __name__ == "__main__":
