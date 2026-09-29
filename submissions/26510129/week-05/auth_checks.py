@@ -41,10 +41,13 @@ async def main():
         lines.append(f"(2) buyer token of {a['negotiation_id']} calls get_negotiation"
                      f"({b['negotiation_id']}) -> isError={res.is_error}: {one_line(text_of(res))}")
 
-    async with party_client(a["tokens"]["seller"]) as seller_a:
-        res = await seller_a.call_tool("propose", {"negotiation_id": a["negotiation_id"], "price": 36})
-        lines.append(f"(3) seller proposes 36 in {a['negotiation_id']} while it is the buyer's turn "
-                     f"-> isError={res.is_error}: {one_line(text_of(res))}")
+    async with party_client(a["tokens"]["buyer"]) as buyer_a:
+        res = await buyer_a.call_tool("propose", {"negotiation_id": a["negotiation_id"], "price": 32})
+        lines.append(f"(3) buyer proposes 32 in {a['negotiation_id']} while it is the seller's turn "
+                     f"(the seller opens) -> isError={res.is_error}: {one_line(text_of(res))}")
+
+    async with party_client(a["tokens"]["seller"]) as seller_a:   # setup, not a check: hand the turn over
+        await seller_a.call_tool("propose", {"negotiation_id": a["negotiation_id"], "price": 36})
 
     async with party_client(a["tokens"]["buyer"]) as buyer_a:
         res = await buyer_a.call_tool("propose", {"negotiation_id": a["negotiation_id"], "price": 45})

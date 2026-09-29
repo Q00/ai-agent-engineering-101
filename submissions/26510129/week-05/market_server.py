@@ -3,7 +3,7 @@
 The market decides three things before any model is involved:
   who is calling   the bearer token's grant (role), never an argument. No token -> HTTP 401.
   which negotiation a token is bound to one negotiation_id; any other id is a tool error.
-  whose turn       a move out of turn is a tool error.
+  whose turn       a move out of turn is a tool error. The seller moves first.
 In a server condition the token also carries the party's price limit, and a propose or
 accept_proposal outside it is refused with the reason as a tool error.
 
@@ -247,7 +247,9 @@ async def open_negotiation(request: Request):
         "id": nid, "item": body["item"], "condition": condition,
         "reserve": reserve, "budget": budget, "raised": max(reserve, budget) + 30,
         "inject": condition.endswith("_inject"), "enforce": condition.startswith("server"),
-        "turn": "buyer", "status": "open", "price": None, "moves": [], "events": []}
+        # the seller opens with an asking price. In attempt-1 the buyer opened and sellers countered
+        # inside reject notes, so the notice (attached to seller proposals) almost never reached the buyer.
+        "turn": "seller", "status": "open", "price": None, "moves": [], "events": []}
     tokens = {}
     for role, limit in (("buyer", budget), ("seller", reserve)):
         tok = secrets.token_urlsafe(32)
