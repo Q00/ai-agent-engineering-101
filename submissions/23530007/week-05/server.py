@@ -5,10 +5,12 @@ the only change is where they live. The description and JSON schema are no
 longer hand-written dicts: FastMCP builds them from the decorator, the
 docstring and the type hints.
 
-Transport: stdio. The host starts this file as a child process.
+Transport: stdio by default (the host starts this file as a child process);
+`--http` serves Streamable HTTP on http://127.0.0.1:8000/mcp instead.
 Settings (env): CLOCK_DESC = "full" (default) | "terse", same switch as week-01.
 """
 import os
+import sys
 import ast
 import operator
 from datetime import datetime
@@ -16,9 +18,9 @@ from typing import Annotated
 from zoneinfo import ZoneInfo
 
 from pydantic import Field
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer   # v1: from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("week01-tools")
+mcp = MCPServer("week01-tools")
 
 # ---- tool 1: calculator (safe, no eval) ----
 _OPS = {ast.Add: operator.add, ast.Sub: operator.sub,
@@ -91,4 +93,4 @@ def write_note(path: str, text: str) -> str:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="stdio")
+    mcp.run("streamable-http") if "--http" in sys.argv else mcp.run()
