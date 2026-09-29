@@ -57,6 +57,8 @@ COMMON = (
     "reject_proposal (decline the last price and keep negotiating), "
     "or refuse (leave the negotiation for good, with no deal). "
     "Every move takes an optional short note to the other side. "
+    # added after pilot-01, where counter-offers written in reject_proposal notes never became offers
+    "A price written in a note is not an offer; to name a price of your own, use propose. "
     "If no agreement is possible within your limit, refuse rather than break your limit. "
     "Stop once your move has gone through."
 )
