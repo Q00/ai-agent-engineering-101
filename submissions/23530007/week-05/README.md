@@ -9,14 +9,14 @@ Results and interpretation are in [REPORT.md](REPORT.md).
 | Piece | State |
 |---|---|
 | `market_server.py` (401, binding, turn order, token limit, injection) | Runs. `auth_checks.txt` is its real output. |
-| `run_market.py` + `market_host.py` | Ran with real models. |
-| `results.csv`, `logs/` | `prompt_inject`, `server_inject`: `claude-haiku-4-5-20251001`, 18 episodes each. `server`: `gpt-4.1-mini`, 18. `prompt`: 9 haiku + 9 gpt-4.1-mini. Crashed rows are kept with blank fields. |
+| `run_market.py` + `market_host.py` | Ran with `gpt-4.1-mini`, 8-move limit, all four conditions. |
+| `results.csv`, `logs/*-retry*.txt` | 72 episodes, 18 per condition, one model. The first 72 rows are a crashed run (wrong key), kept as a record. |
 | `REPORT.md` | Setup, results, week-04 comparison, interpretation, deviations from the spec, failed attempts. |
 | `scripts/check_week05.py` | Passes on the committed files. |
 | `server.py` + `host.py` (week-01 tools over MCP, stdio and `--http`) | Lab part. Checked with a scripted model only. |
 
-**Deviations from the spec** (details in REPORT.md): the turn limit is 12 host runs, not 8 moves;
-the optional conditions do not all use the same model as the required ones.
+Earlier attempts are kept, not deleted: `failed-01/` (all crashed) and `run-12exec/` (haiku, 12-run
+turn limit instead of the spec's 8 moves, mixed models). See "실패한 시도" in REPORT.md.
 
 ## Run
 
@@ -25,8 +25,7 @@ export MARKET_ADMIN_TOKEN=...      # any secret you choose; never commit it
 export ANTHROPIC_API_KEY=...       # or OPENAI_API_KEY with AGENT_PROVIDER=openai; never commit it
 python market_server.py            # terminal 1, 127.0.0.1:8001/mcp
 python auth_checks.py | tee auth_checks.txt
-python run_market.py               # terminal 2, the two required conditions x 3 repeats
-AGENT_PROVIDER=openai python run_market.py --conditions prompt server   # how the optional runs were made
+AGENT_PROVIDER=openai python run_market.py --conditions prompt server prompt_inject server_inject
 python summarize.py                # REPORT tables from results.csv
 ```
 
@@ -45,4 +44,5 @@ requested temperature, whether the model accepted it, and that there is no seed.
 | `auth_checks.py` | Produces `auth_checks.txt` from the running server |
 | `summarize.py` | Result tables for REPORT.md |
 | `failed-01/` | The first run, all 36 episodes crashed (kept as evidence) |
+| `run-12exec/` | The haiku run with a 12-run limit (superseded, kept as evidence) |
 | `server.py`, `host.py` | Week-01 tools as an MCP server and the week-01 loop as its host |
