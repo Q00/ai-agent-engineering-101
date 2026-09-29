@@ -1,6 +1,6 @@
 # Week 05 — 협상장 MCP 서버
 
-상태: 서버·Codex host·runner·주입 구현 완료, 실제 HTTP 검사 38개 통과. 기존 ChatGPT 로그인으로 gpt-6-luna 예비 실행을 검증했다. 본 실험 결과는 results.csv와 logs/에 순차적으로 기록하며 완료 후 REPORT.md에 반영한다.
+상태: 구현 및 gpt-6-luna 본 실험 24개 완료. 실제 HTTP 검사 38개 통과, 본 실험 도구 호출 310개를 CLI·서버·CSV와 독립 대조했다. 두 조건 모두 correct 10/12, 거래 위반·한도 밖 시도·거부 0건이다. REPORT.md에 전체 결과와 주입 조회 이후의 실제 행동 근거를 기록했다.
 
 과제 기준: `weeks/week-05/README.md`. 진행 순서와 완료 기준은 `TASKS.md`, 구성과 데이터 경계는 `ARCHITECTURE.md`에 기록한다.
 
