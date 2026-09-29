@@ -9,20 +9,26 @@ The system prompt is the same in all four conditions, character for character ex
 role, item and limit. The only thing that tells the agent which condition it is in is the
 market's refusal message.
 
-Settings (env): ANTHROPIC_API_KEY (never committed), AGENT_MODEL (default claude-haiku-4-5-20251001),
-AGENT_TEMPERATURE (default 0; "" to omit).
+Settings (env; keys are never committed):
+  AGENT_PROVIDER     "anthropic" (default) or "openai"
+  ANTHROPIC_API_KEY / OPENAI_API_KEY   the key for that provider
+  AGENT_MODEL        default claude-haiku-4-5-20251001 (anthropic) / gpt-4.1-mini (openai)
+  AGENT_TEMPERATURE  default 0; "" to omit
 """
 import os
+import json
 import time
+from types import SimpleNamespace as NS
 
-import anthropic
 import httpx2
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
 
-PROVIDER = "Anthropic Messages API"
+PROVIDER_KEY = os.environ.get("AGENT_PROVIDER", "anthropic")
+PROVIDER = {"anthropic": "Anthropic Messages API", "openai": "OpenAI Chat Completions API"}[PROVIDER_KEY]
 HOST_NAME = "custom loop (week-01 loop over MCP Streamable HTTP)"
-MODEL = os.environ.get("AGENT_MODEL", "claude-haiku-4-5-20251001")
+MODEL = os.environ.get("AGENT_MODEL", {"anthropic": "claude-haiku-4-5-20251001",
+                                       "openai": "gpt-4.1-mini"}[PROVIDER_KEY])
 MAX_TOKENS = 512
 MAX_STEPS = 6
 MOVES = ("propose", "accept_proposal", "reject_proposal", "refuse")
@@ -51,6 +57,72 @@ def system_prompt(role: str, item: str, limit: int, nid: str) -> str:
 
 def make_complete():
     """The real model call. Tests pass their own `complete` to play_turn instead."""
+    return _openai_complete() if PROVIDER_KEY == "openai" else _anthropic_complete()
+
+
+def _openai_complete():
+    """Same interface as the Anthropic call: takes and returns Anthropic-shaped content, so
+    play_turn does not change. Only this function knows the OpenAI format."""
+    import openai
+    client = openai.OpenAI()
+
+    def to_openai_messages(system, messages):
+        out = [{"role": "system", "content": system}]
+        for m in messages:
+            if isinstance(m["content"], str):
+                out.append({"role": m["role"], "content": m["content"]})
+            elif m["role"] == "assistant":
+                text = "".join(b.text for b in m["content"] if b.type == "text")
+                calls = [{"id": b.id, "type": "function",
+                          "function": {"name": b.name, "arguments": json.dumps(b.input)}}
+                         for b in m["content"] if b.type == "tool_use"]
+                out.append({"role": "assistant", "content": text or None,
+                            **({"tool_calls": calls} if calls else {})})
+            else:                                   # a list of tool_result blocks
+                for r in m["content"]:
+                    out.append({"role": "tool", "tool_call_id": r["tool_use_id"],
+                                "content": ("[error] " if r["is_error"] else "") + r["content"]})
+        return out
+
+    def complete(system, tools, messages):
+        kwargs = dict(model=MODEL, max_completion_tokens=MAX_TOKENS,
+                      messages=to_openai_messages(system, messages),
+                      tools=[{"type": "function", "function": {
+                          "name": t["name"], "description": t["description"],
+                          "parameters": t["input_schema"]}} for t in tools])
+        if TEMPERATURE is not None and TEMPERATURE_STATE["accepted"] is not False:
+            kwargs["temperature"] = TEMPERATURE
+        delay = 2.0
+        for attempt in range(6):
+            try:
+                resp = client.chat.completions.create(**kwargs)
+                if "temperature" in kwargs and TEMPERATURE_STATE["accepted"] is None:
+                    TEMPERATURE_STATE["accepted"] = True
+                break
+            except openai.BadRequestError as e:
+                if "temperature" in kwargs and "temperature" in str(e).lower():
+                    TEMPERATURE_STATE["accepted"] = False   # e.g. reasoning models; note it
+                    kwargs.pop("temperature")
+                    continue
+                raise
+            except (openai.RateLimitError, openai.InternalServerError, openai.APIConnectionError) as e:
+                if "insufficient_quota" in str(e) or attempt == 5:
+                    raise
+                time.sleep(delay)
+                delay *= 2
+        msg = resp.choices[0].message
+        blocks = ([NS(type="text", text=msg.content)] if msg.content else []) + [
+            NS(type="tool_use", id=c.id, name=c.function.name,
+               input=json.loads(c.function.arguments or "{}")) for c in (msg.tool_calls or [])]
+        stop = "tool_use" if msg.tool_calls else "end_turn"
+        return NS(content=blocks, stop_reason=stop,
+                  usage=NS(input_tokens=resp.usage.prompt_tokens,
+                           output_tokens=resp.usage.completion_tokens))
+    return complete
+
+
+def _anthropic_complete():
+    import anthropic
     client = anthropic.Anthropic()
 
     def complete(system, tools, messages):

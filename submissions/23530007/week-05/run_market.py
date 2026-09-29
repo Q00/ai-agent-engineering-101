@@ -144,7 +144,7 @@ async def do_run(run_id: int, condition: str, scenarios: list, skip: set, comple
             log("")
             append(row)
         except Exception as e:      # a crashed episode is kept, not deleted
-            if "credit balance is too low" in str(e):
+            if "credit balance is too low" in str(e) or "insufficient_quota" in str(e):
                 log(f"[stop] scenario {sc['id']}: API credit exhausted; stopping the batch")
                 write_log(condition, run_id, lines)
                 raise SystemExit("API credit exhausted. Add credit, then rerun the same command.")
