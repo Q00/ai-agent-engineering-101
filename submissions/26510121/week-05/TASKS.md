@@ -8,18 +8,20 @@
 - [x] 과제 README, 강의, CI 검사 코드 확인.
 - [x] 서버·host·runner 책임과 작업 순서 초안 작성.
 - [x] 결과 CSV 헤더 및 보고서 틀 작성.
-- [x] Python 실행 환경이 없음을 확인하고 기록.
+- [x] PATH/py launcher 미등록을 확인; 후속 점검에서 Anaconda Python 3.12.4를 발견해 기록 정정.
 - 골격 커밋은 `git log -- submissions/26510121/week-05`에서 확인한다.
 
 ## 단계 1 — 시나리오·환경·측정 설계
 
-- [ ] Python 실행 환경 확보 및 버전 기록.
-- [ ] host·모델·temperature 설정 확정; SDK 선택 및 버전 기록.
-- [ ] 최소 4개 시나리오 작성: 거래 가능, 경계값(reserve = budget), 거래 불가능 사례 포함.
-- [ ] scenarios.json의 id 고유성, 필수 필드, 정수 가격 확인 후 실행 전에 커밋.
-- [ ] 역할별 system prompt 초안 작성; 조건별로 동일한 역할 프롬프트 사용.
-- [ ] 8 moves 제한, host가 유효한 수 없이 끝났을 때 차례 전환, 거부 후 같은 턴 재시도 규칙 확정.
-- [ ] correct 및 open 처리 기준을 4주차 기준과 대조; attempts / refusals / accepted moves / host turns를 구분.
+- [x] Python 3.12.4 실행 환경 확보 및 버전 기록.
+- [x] Codex CLI / gpt-6-luna / low reasoning / temperature 미지정; MCP 2.2.0 설치 및 import 확인.
+- [x] 최소 4개 시나리오 작성: 거래 가능, 경계값(reserve = budget), 거래 불가능 사례 포함.
+- [x] scenarios.json의 id 고유성, 필수 필드, 정수 가격 확인; 실험 전 커밋 7e8eb8a.
+- [x] 역할별 system prompt 초안 작성; 조건별로 동일한 역할 프롬프트 사용.
+- [x] 8회 host 실행 제한, 무효/없는 행동의 차례 전환, 거부 후 같은 턴 재시도 규칙 확정.
+- [x] correct 및 open 처리 기준을 4주차 기준과 대조; attempts / refusals / accepted moves / host turns를 구분.
+
+로그인과 모델 접근 확인은 실행 전 검증으로 남는다. 현재 CLI가 Not logged in이므로 실제 모델 실행은 하지 않았다. 설계 입력 검사는 verify_design.py로 수행하며 결과를 checks/에 보존한다.
 
 완료 기준: 실험 조건과 데이터 정의를 설명할 수 있고, 시나리오 커밋이 본 실행보다 앞선다.
 

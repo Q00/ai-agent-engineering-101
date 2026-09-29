@@ -1,20 +1,21 @@
 # Week 05 보고서 — 미실행 초안
 
-현재는 작업 구조만 준비했다. 아래 표에는 실제 실험 결과가 없다. 구현·실행 후 로그에서 확인한 값만 기록한다.
+현재는 작업 구조와 단계 1의 시나리오·설정을 준비했다. 아래 표에는 실제 실험 결과가 없다. 구현·실행 후 로그에서 확인한 값만 기록한다.
 
 ## 1. 설정과 재현 방법
 
 | 항목 | 설정 |
 |---|---|
-| host / 모델 / temperature | 미정 |
-| Python / MCP SDK / 의존성 버전 | 미정; 현재 Python 실행 환경 없음 |
+| host / 모델 / temperature | Codex CLI 0.156.1, codex exec / gpt-6-luna, reasoning low / 미지정 (CLI 옵션 미노출) |
+| Python / MCP SDK / 의존성 버전 | Python 3.12.4 / mcp 2.2.0 / requirements-lock.txt |
+| 로그인 / 모델 접근 | 현재 CLI Not logged in; 실제 모델 접근 미검증 |
 | 토큰 발급 방식 및 내용 | 단계 2에서 구현 후 기록 |
 | 서버·host·runner 실행 명령 | 실제 실행 검증 후 기록 |
-| 턴 제한 / 반복 수 | 과제 요구: 8 moves / 조건별 시나리오당 최소 3회 |
+| 턴 제한 / 반복 수 | 8회 host 실행, 통과한 행동을 turns로 별도 집계 / 필수 조건별 시나리오당 3회 |
 | 중단 후 재개 방식 | 구현 후 기록 |
-| 시나리오 커밋 | 단계 1 완료 후 해시 기록 |
+| 시나리오 커밋 | 7e8eb8a; 실험 전에 4개 시나리오 고정 |
 
-API 키, bearer token, 관리자 토큰 값은 기록하지 않는다. 역할별 system prompt와 실험 설정은 구현 후 재현 가능한 형태로 첨부한다.
+API 키, bearer token, 관리자 토큰 값은 기록하지 않는다. 역할별 system prompt는 prompts.json, 실험 설정은 experiment.json, 측정 기준은 MEASUREMENT.md에 있다. Codex CLI에 역할 지시를 적용하는 방식과 MCP 연결은 단계 4에서 구현·검증한다.
 
 ## 2. 결과
 
