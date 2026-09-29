@@ -105,7 +105,7 @@ try:
 
     print("\nepisode: turn limit -> open")
     acl.call_model = script(['{"performative":"propose","content":{"price":%d}}' % p
-                             for p in (310, 490, 320, 480, 330, 470)])
+                             for p in range(310, 310 + acl.MAX_TURNS)])
     ep = negotiate.run_episode(SCEN_OK, "structured", acl.Meter(), quiet)
     check("outcome", ep.outcome, "open")
     check("turns == MAX_TURNS", ep.turns, acl.MAX_TURNS)

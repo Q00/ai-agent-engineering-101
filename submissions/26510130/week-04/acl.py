@@ -16,13 +16,14 @@ Provider notes that belong in the report:
     the negotiation.
 """
 import json
+import os
 import re
 import shutil
 import subprocess
 import time
 
 MODEL = "haiku"                    # alias -> claude-haiku-4-5-20251001
-MAX_TURNS = 6                      # messages per episode before the outcome is `open`
+MAX_TURNS = int(os.environ.get("AGENT_MAX_TURNS", "12"))   # messages before `open`
 CALL_TIMEOUT = 180
 MAX_RETRIES = 3
 

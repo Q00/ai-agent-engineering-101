@@ -34,6 +34,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--repeats", type=int, default=3)
     ap.add_argument("--conditions", default=",".join(CONDITIONS))
+    # The first pass ran at max_turns=6 and ended 31 of 36 episodes at the
+    # limit. Re-run at a higher limit keeps those rows and adds to them, so the
+    # offset keeps run numbers from colliding and the note keeps the two passes
+    # tellable apart.
+    ap.add_argument("--max-turns", type=int, default=acl.MAX_TURNS)
+    ap.add_argument("--run-offset", type=int, default=0)
     args = ap.parse_args()
 
     conditions = [c.strip() for c in args.conditions.split(",") if c.strip()]
@@ -41,6 +47,7 @@ def main():
         if c not in CONDITIONS:
             raise SystemExit(f"unknown condition: {c}")
 
+    acl.MAX_TURNS = args.max_turns
     scenarios = json.loads(Path("scenarios.json").read_text(encoding="utf-8"))
     Path("logs").mkdir(exist_ok=True)
     already = done_pairs()
@@ -53,7 +60,7 @@ def main():
         for condition in conditions:
             ci = CONDITIONS.index(condition)
             for repeat in range(args.repeats):
-                run_no = ci * args.repeats + repeat + 1
+                run_no = args.run_offset + ci * args.repeats + repeat + 1
                 lines = []
 
                 def log(msg, _l=lines):
@@ -82,6 +89,7 @@ def main():
                                ep.price if ep.price is not None else "",
                                correct, violation, ep.turns, ep.format_errors,
                                meter.reader_calls,
+                               f"max_turns={acl.MAX_TURNS} "
                                f"agent_calls={meter.agent_calls} "
                                f"tokens={meter.tokens} "
                                f"cli_overhead_tokens={meter.cli_overhead_tokens}"]
@@ -90,12 +98,12 @@ def main():
                         row = [run_no, condition, s["id"],
                                int(s["reserve"] <= s["budget"]),
                                "", "", "", "", "", "", "",
-                               f"crash: {type(e).__name__}: {e}"]
+                               f"max_turns={acl.MAX_TURNS} crash: {type(e).__name__}: {e}"]
                     w.writerow(row)
                     f.flush()
 
                 log(f"[run {run_no}] done in {time.time() - t0:.1f}s")
-                path = Path("logs", f"{condition}-r{repeat + 1}.txt")
+                path = Path("logs", f"t{acl.MAX_TURNS}-{condition}-r{repeat + 1}.txt")
                 with path.open("a", encoding="utf-8") as lf:   # append: a resumed
                     lf.write("\n".join(lines) + "\n")          # run adds to its file
 
