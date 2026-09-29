@@ -21,8 +21,10 @@ import anthropic
 PROVIDER = "Anthropic Messages API"
 MODEL = os.environ.get("AGENT_MODEL", "claude-haiku-4-5-20251001")
 MAX_TOKENS = 512
-MAX_TURNS = 8
+MAX_TURNS = 16          # 발화 순서가 buyer_1, buyer_2, buyer_3, seller이므로 4명 × 4라운드
 ACTS = ("propose", "accept-proposal", "reject-proposal", "refuse")
+BUYERS = ("buyer_1", "buyer_2", "buyer_3")
+ROLES = BUYERS + ("seller",)    # 발화 순서이기도 하다
 
 # temperature는 환경변수로 준다. 모델이 거부하면 TEMPERATURE_STATE에 기록만 하고
 # 파라미터 없이 다시 부른다. 3주차에서 claude-opus-5가 이 파라미터를 400으로
@@ -86,22 +88,26 @@ def call_model(system: str, messages: list[dict], meter: Meter, *, reader: bool 
 # ─── 프롬프트 ────────────────────────────────────────────────────────────────
 # 역할 문단. 조건과 무관하게 같다.
 ROLE = {
-    "buyer": ("You are the buyer of {item}, negotiating the price with the seller. "
+    "buyer": ("You are {name}, one of three buyers (buyer_1, buyer_2, buyer_3) competing to buy "
+              "{item} from one seller. Every message is public: all four parties read it. "
               "Your private limit: you can pay at most {limit}. Never agree to a price "
               "above {limit}. Pay as little as you can, but a deal within your limit is "
               "better than no deal."),
-    "seller": ("You are the seller of {item}, negotiating the price with the buyer. "
+    "seller": ("You are the seller of {item}, negotiating with three buyers (buyer_1, buyer_2, "
+               "buyer_3) at once. Every message is public: all four parties read it. "
                "Your private limit: you can accept at least {limit}. Never agree to a price "
                "below {limit}. Get as much as you can, but a deal at or above your limit is "
                "better than no deal."),
 }
 
-# 네 행위의 뜻. 조건과 무관하게 같다.
-COMMON = (" Four acts are available: propose (offer a price), accept-proposal (agree to the "
-          "other side's last price, which ends the negotiation with a deal), reject-proposal "
-          "(decline the last price and keep negotiating), refuse (leave the negotiation for "
-          "good, no deal). Every message you send is exactly one of these four acts. "
-          "Keep it to one or two short sentences.")
+# 행위의 뜻. 조건과 무관하게 같다. 상대가 셋이라 "누구에게 하는 말인가"가 필요해졌다.
+COMMON = (" Four acts are available. propose: a buyer offers a price to the seller; the seller "
+          "states an asking price to everyone. accept-proposal: a buyer agrees to the seller's "
+          "last asking price; the seller agrees to one named buyer's last offer. Either ends "
+          "the negotiation with a deal, and the seller must say which buyer. reject-proposal: "
+          "decline the last price and keep negotiating. refuse: a buyer leaves for good; if the "
+          "seller refuses, the negotiation ends with no deal. Every message you send is exactly "
+          "one of these four acts. Keep it to one or two short sentences.")
 
 # 형식 문단. 세 조건의 유일한 차이다.
 FORMAT = {
@@ -111,19 +117,30 @@ FORMAT = {
                "plain English sentence."),
     "structured": (' Reply with exactly one JSON object and nothing else: '
                    '{"performative": "propose" | "accept-proposal" | "reject-proposal" | '
-                   '"refuse", "content": {"price": <whole number or null>}}.'),
+                   '"refuse", "content": {"price": <whole number or null>, "buyer": '
+                   '"buyer_1" | "buyer_2" | "buyer_3" | null}}. "buyer" is required only when '
+                   "the seller sends accept-proposal; otherwise use null."),
 }
+# free와 tagged에서 seller가 accept할 때는 문장에 buyer 이름을 적게 하는 한 줄.
+NAME_HINT = (" When you accept as the seller, name the buyer (buyer_1, buyer_2 or buyer_3) "
+             "in your message.")
 
 # reader 프롬프트. free와 tagged가 같은 것을 쓴다 — 조건에 따라 바뀌지 않는다.
-READER_SYSTEM = ("You are an observer reading a price negotiation between a buyer and a seller. "
-                 "Label the LAST message only. Reply with exactly one JSON object and nothing "
-                 'else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | '
-                 '"refuse", "price": <whole number or null>}. price is the number the last '
-                 "message puts on the table, or null if it names no price.")
+READER_SYSTEM = ("You are an observer reading a public price negotiation between three buyers "
+                 "(buyer_1, buyer_2, buyer_3) and one seller. Each line starts with the speaker "
+                 "in brackets. Label the LAST message only. Reply with exactly one JSON object "
+                 'and nothing else: {"performative": "propose" | "accept-proposal" | '
+                 '"reject-proposal" | "refuse", "price": <whole number or null>, "buyer": '
+                 '"buyer_1" | "buyer_2" | "buyer_3" | null}. price is the number the last '
+                 "message puts on the table, or null if it names no price. buyer is the buyer "
+                 "the last message accepts, only when the seller accepts; otherwise null.")
 
 
 def system_prompt(role: str, item: str, limit: int, condition: str) -> str:
-    return ROLE[role].format(item=item, limit=limit) + COMMON + FORMAT[condition]
+    """role은 buyer_1..3 또는 seller."""
+    kind = "seller" if role == "seller" else "buyer"
+    text = ROLE[kind].format(item=item, limit=limit, name=role) + COMMON + FORMAT[condition]
+    return text if condition == "structured" else text + NAME_HINT
 
 
 # ─── 프로토콜 계층 ───────────────────────────────────────────────────────────
@@ -141,64 +158,83 @@ def _as_price(v) -> int | None:
     return None
 
 
-def _read_json_reply(text: str) -> tuple[str | None, int | None]:
+def _as_buyer(v) -> str | None:
+    return v if v in BUYERS else None
+
+
+def _read_json_reply(text: str) -> tuple[str | None, int | None, str | None]:
     """reader의 답을 읽는다. 전체가 JSON 객체여야 한다."""
     try:
         obj = json.loads(_FENCE.sub("", text.strip()))
     except json.JSONDecodeError:
-        return None, None
+        return None, None, None
     if not isinstance(obj, dict):
-        return None, None
+        return None, None, None
     perf = obj.get("performative")
-    return (perf if perf in ACTS else None), _as_price(obj.get("price"))
+    return (perf if perf in ACTS else None), _as_price(obj.get("price")), _as_buyer(obj.get("buyer"))
 
 
-def _reader_label(transcript: list[str], meter: Meter) -> tuple[str | None, int | None]:
+def _reader_label(transcript: list[str], meter: Meter) -> tuple[str | None, int | None, str | None]:
     """대화 전체를 보여 주고 마지막 메시지 하나를 라벨링하게 한다."""
     convo = "\n".join(transcript)
     raw = call_model(READER_SYSTEM, [{"role": "user", "content": convo}], meter, reader=True)
     return _read_json_reply(raw)
 
 
-def read_message(condition: str, text: str, transcript: list[str], meter: Meter):
-    """(performative, price, ok, label) — ok=False면 format_errors에 센다.
+def read_message(condition: str, speaker: str, text: str, transcript: list[str], meter: Meter):
+    """(performative, price, target, ok, label) — ok=False면 format_errors에 센다.
 
-    읽지 못해도 메시지는 그대로 상대에게 간다. label은 로그에 적을 문자열이다.
+    target은 seller가 accept할 때 고른 buyer다. 읽지 못해도 메시지는 그대로 모두에게 간다.
+    label은 로그에 적을 문자열이다.
     """
+    seller_accept_needs_target = speaker == "seller"
+
     if condition == "structured":
         # 모델 호출 없음. JSON만 읽는다.
         try:
             obj = json.loads(_FENCE.sub("", text.strip()))
         except json.JSONDecodeError:
-            return None, None, False, "parse error (not one JSON object)"
+            return None, None, None, False, "parse error (not one JSON object)"
         if not isinstance(obj, dict):
-            return None, None, False, "parse error (not an object)"
+            return None, None, None, False, "parse error (not an object)"
         perf = obj.get("performative")
         if perf not in ACTS:
-            return None, None, False, f"parse error (performative={perf!r})"
+            return None, None, None, False, f"parse error (performative={perf!r})"
         content = obj.get("content")
         price = _as_price(content.get("price")) if isinstance(content, dict) else None
+        target = _as_buyer(content.get("buyer")) if isinstance(content, dict) else None
         if perf == "propose" and price is None:
-            return None, None, False, "parse error (propose without a price)"
-        return perf, price, True, f"parse {{'performative': {perf!r}, 'price': {price!r}}}"
+            return None, None, None, False, "parse error (propose without a price)"
+        if perf == "accept-proposal" and seller_accept_needs_target and target is None:
+            return None, None, None, False, "parse error (seller accept without a buyer)"
+        return perf, price, target, True, (
+            f"parse {{'performative': {perf!r}, 'price': {price!r}, 'buyer': {target!r}}}")
 
     if condition == "tagged":
-        # 태그는 정규식이 읽고, propose의 가격만 reader가 읽는다.
+        # 태그는 정규식이 읽고, propose의 가격과 seller accept의 대상만 reader가 읽는다.
         m = _TAG.match(text)
         if not m:
-            return None, None, False, "no leading tag"
+            return None, None, None, False, "no leading tag"
         perf = m.group(1).lower()
-        if perf != "propose":
-            return perf, None, True, f"tag {perf!r}"
-        _, price = _reader_label(transcript, meter)
-        if price is None:
-            return None, None, False, f"tag 'propose' but reader found no price"
-        return perf, price, True, f"tag 'propose' + reader price={price!r}"
+        if perf == "propose":
+            _, price, _ = _reader_label(transcript, meter)
+            if price is None:
+                return None, None, None, False, "tag 'propose' but reader found no price"
+            return perf, price, None, True, f"tag 'propose' + reader price={price!r}"
+        if perf == "accept-proposal" and seller_accept_needs_target:
+            _, _, target = _reader_label(transcript, meter)
+            if target is None:
+                return None, None, None, False, "tag 'accept-proposal' but reader found no buyer"
+            return perf, None, target, True, f"tag 'accept-proposal' + reader buyer={target!r}"
+        return perf, None, None, True, f"tag {perf!r}"
 
     # free — 프로그램이 읽을 수 있는 것이 없다. 메시지마다 reader를 부른다.
-    perf, price = _reader_label(transcript, meter)
+    perf, price, target = _reader_label(transcript, meter)
     if perf is None:
-        return None, None, False, "reader None"
+        return None, None, None, False, "reader None"
     if perf == "propose" and price is None:
-        return None, None, False, "reader 'propose' without a price"
-    return perf, price, True, f"reader {{'performative': {perf!r}, 'price': {price!r}}}"
+        return None, None, None, False, "reader 'propose' without a price"
+    if perf == "accept-proposal" and seller_accept_needs_target and target is None:
+        return None, None, None, False, "reader 'accept-proposal' without a buyer"
+    return perf, price, target, True, (
+        f"reader {{'performative': {perf!r}, 'price': {price!r}, 'buyer': {target!r}}}")
