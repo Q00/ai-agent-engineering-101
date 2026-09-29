@@ -41,8 +41,9 @@ week-04의 가격 협상을 MCP 서버로 옮겼다. buyer와 seller는 자기 �
 `secrets.token_urlsafe(32)` bearer token을 발급한다. 토큰은 JWT가 아닌 임의의 불투명
 문자열이며, 서버 메모리의 불변 권한 레코드가 `{negotiation_id, role, price_limit}`을
 보관한다. `prompt` 계열은 price_limit이 없고, `server` 계열은 buyer의 budget 또는
-seller의 reserve를 갖는다. 조건과 양쪽 한도는 측정용 서버 상태에 존재하지만
-모델에게 전달하지 않는다. 각 host의 HTTP Authorization 헤더에는 자기 토큰만 넣는다.
+seller의 reserve를 갖는다. 조건과 양쪽 한도는 측정용 서버 상태에 존재한다.
+모델에는 조건과 상대 한도를 전달하지 않고, 자기 한도만 system prompt에 넣는다.
+각 host의 HTTP Authorization 헤더에는 자기 토큰만 넣는다.
 토큰과 API 키는 로그·CSV·프롬프트에 기록하지 않는다.
 
 인증되지 않은 MCP 요청은 HTTP 401과 `WWW-Authenticate`로 거절한다.
@@ -277,3 +278,5 @@ Codex를 사용해 구현·실험 실행·독립 검증·보고서 작성을 진
 모두 건너뛰어 추가 모델 호출 없이 종료했고, CSV·설정·12개 로그의 해시가 유지됐다.
 [비밀값 검사](verification/secrets-check-01.json)는 가상환경·캐시를 제외한 제출 파일을
 크기 제한 없이 검사했으며 환경변수의 비밀값과 일치하는 내용은 없었다.
+레포의 원본 [공식 구조 검사 결과](verification/official-check-01.txt)도 모두 통과했다.
+검사는 로컬 가상환경을 제외한 커밋된 제출물의 `git archive`에 대해 실행했다.
