@@ -1,6 +1,6 @@
 # Week 05 보고서 — 미실행 초안
 
-단계 2의 인증·협상 생성·상태 조회를 구현하고 모델 없이 14개 검사를 통과했다. 행동 도구와 host/runner는 아직 없다. 아래 결과표에는 에이전트 실험 결과가 없다.
+단계 3까지 인증·협상 생성·조회·행동 도구와 토큰 한도 검사를 구현하고 모델 없이 32개 검사를 통과했다. host/runner와 주입은 아직 없다. 아래 결과표에는 에이전트 실험 결과가 없다.
 
 ## 1. 설정과 재현 방법
 
@@ -10,7 +10,7 @@
 | Python / MCP SDK / 의존성 버전 | Python 3.12.4 / mcp 2.2.0 / requirements-lock.txt |
 | 로그인 / 모델 접근 | 현재 CLI Not logged in; 실제 모델 접근 미검증 |
 | 토큰 발급 방식 및 내용 | 보호된 POST /admin/negotiations에서 opaque random token 발급; grant는 역할·협상 ID와 server 조건의 자신의 한도. MCP resource/scope도 SDK에서 검증 |
-| 서버·host·runner 실행 명령 | 서버 실행/검사는 STAGE2.md. host/runner는 미구현 |
+| 서버·host·runner 실행 명령 | 서버 실행은 STAGE2.md, 전체 HTTP 검사는 STAGE3.md. host/runner는 미구현 |
 | 턴 제한 / 반복 수 | 8회 host 실행, 통과한 행동을 turns로 별도 집계 / 필수 조건별 시나리오당 3회 |
 | 중단 후 재개 방식 | 구현 후 기록 |
 | 시나리오 커밋 | 7e8eb8a; 실험 전에 4개 시나리오 고정 |

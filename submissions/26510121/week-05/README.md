@@ -1,6 +1,6 @@
 # Week 05 — 협상장 MCP 서버
 
-상태: 단계 2의 인증·협상 생성·상태 조회 구현 및 14개 검사 통과. 행동 도구·host·runner 및 실험은 아직 미구현/미실행이다. Codex CLI 로그인은 미완료다.
+상태: 단계 3까지 서버 인증·상태 조회·행동 도구 4개·토큰 가격 한도 검사 구현, 32개 검사 통과. host·runner는 미구현이고 주입·모델 실행·실험은 아직 수행하지 않았다. Codex CLI 로그인은 미완료다.
 
 과제 기준: `weeks/week-05/README.md`. 진행 순서와 완료 기준은 `TASKS.md`, 구성과 데이터 경계는 `ARCHITECTURE.md`에 기록한다.
 
@@ -18,9 +18,10 @@ week-05/
 ├── verify_design.py     단계 1의 입력·구문·SDK import 검사
 ├── requirements.txt     MCP SDK 버전
 ├── requirements-lock.txt 실제 설치한 Windows 의존성
-├── market_server.py     인증·관리 HTTP 경로 및 get_negotiation
+├── market_server.py     인증·관리 HTTP 경로 및 MCP 도구 5개
 ├── market_state.py      서버 상태·토큰 grant·차례 검사
 ├── STAGE2.md            인증 구조와 서버 실행 안내
+├── STAGE3.md            행동 상태 전이·가격 한도·검증 설명
 ├── host.py              MCP host 구현 위치 (현재 미구현)
 ├── runner.py            실험 runner 구현 위치 (현재 미구현)
 ├── results.csv          정확한 제출 헤더만 작성; 실행 결과 없음
@@ -29,10 +30,10 @@ week-05/
 ├── SCENARIOS.md         시나리오별 목적과 가격 구간
 ├── auth_checks.txt      실제 서버 검사 후 네 줄 작성
 ├── logs/                실제 run의 원본 콘솔 로그
-└── tests/test_stage2.py  실제 HTTP 인증·접근 및 상태 검사
+└── tests/               stage2 인증 14개 + stage3 행동 18개 검사
 ```
 
-`auth_checks.txt`와 실제 실험 로그는 아직 작성하지 않았다. 현재 제출물은 최종 CI 통과 상태가 아니다. `checks/`의 설계·서버 검사 출력은 에이전트 실험 로그로 세지 않는다. 서버 실행과 검증 방법은 `STAGE2.md`에 있다.
+`auth_checks.txt`와 실제 실험 로그는 아직 작성하지 않았다. 현재 제출물은 최종 CI 통과 상태가 아니다. `checks/`의 설계·서버 검사 출력은 에이전트 실험 로그로 세지 않는다. 서버 실행은 `STAGE2.md`, 전체 검증 방법은 `STAGE3.md`에 있다.
 
 ## 환경과 실행
 
