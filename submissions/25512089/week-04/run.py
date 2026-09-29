@@ -92,7 +92,7 @@ def model_call(messages: list[dict[str, str]], max_tokens: int = 160) -> str:
                 messages=messages,
                 temperature=TEMPERATURE,
                 max_tokens=max_tokens,
-                extra_body={"reasoning": {"enabled": False}},
+                reasoning_effort="low",
             )
 
             choices = getattr(response, "choices", None)
