@@ -34,25 +34,11 @@ def judge(answer: str, expected: str) -> bool:
     criterion in TASK.md before running; do not loosen it afterwards."""
     return expected.lower() in (answer or "").lower()
 
-EXPERIMENTS = (
-    (
-        "a",
-        (
-            ("react", run_react, False),
-            ("plan_exec", run_plan_execute, True),
-        ),
-    ),
-    (
-        "b",
-        (
-            ("react", run_react, False),
-            (
-                "plan_exec_edited",
-                run_plan_execute_version_edited,
-                True,
-            ),
-        ),
-    ),
+
+# for script test
+RUNNERS = (
+    ("react", run_react, False),
+    ("plan_exec", run_plan_execute, True),
 )
 
 
@@ -91,85 +77,78 @@ def main():
     run_no = get_last_run_no(results_path)
 
     with results_path.open("a", newline="", encoding="utf-8") as file:
-        writer = csv.writer(file)
+        writer = csv.writer(file, lineterminator="\n")
         if new_file:
             writer.writerow(HEADER)
 
-        # Interleave the four runners within each trial. This avoids running all
-        # samples of one method first and makes temporal comparisons fairer.
+        # Alternate harnesses within each trial for temporal comparison.
         for _trial in range(1, args.runs + 1):
-            for group, runners in EXPERIMENTS:
-                for method, fn, reports_replans in runners:
-                    run_no += 1
-                    result_name = f"{group}_{method}"
-                    lines: list[str] = []
+            for method, fn, reports_replans in RUNNERS:
+                run_no += 1
+                result_name = method
+                lines: list[str] = []
 
-                    def log(message, _lines=lines):
-                        print(message)
-                        _lines.append(str(message))
+                def log(message, _lines=lines):
+                    print(message)
+                    _lines.append(str(message))
 
-                    started_at = time.perf_counter()
-                    note = ""
+                started_at = time.perf_counter()
+                note = ""
 
-                    try:
-                        output = fn(task, log=log)
-                        answer, meter = output[0], output[1]
+                try:
+                    output = fn(task, log=log)
+                    answer, meter = output[0], output[1]
 
-                        if reports_replans:
-                            if len(output) < 3:
-                                raise ValueError(
-                                    f"{fn.__name__} must return "
-                                    "(answer, meter, replans)"
-                                )
-                            note = f"replans={output[2]}"
+                    if reports_replans:
+                        if len(output) < 3:
+                            raise ValueError(
+                                f"{fn.__name__} must return "
+                                "(answer, meter, replans)"
+                            )
+                        note = f"replans={output[2]}"
 
-                    except Exception as error:
-                        answer = ""
-                        meter = None
-                        note = (
-                            f"crash: {type(error).__name__}: {error}"
-                        )
-                        log(note)
+                except Exception as error:
+                    answer = ""
+                    meter = None
+                    note = f"crash: {type(error).__name__}: {error}"
+                    log(note)
 
-                    elapsed = time.perf_counter() - started_at
-                    success = judge(answer, expected)
-                    log(f"[final] {answer.strip()[:300]}")
-                    log(
-                        f"[judge] expected={expected!r} -> "
-                        f"{'O' if success else 'X'} ({elapsed:.1f}s)"
-                    )
+                elapsed = time.perf_counter() - started_at
+                success = judge(answer, expected)
+                log(f"[final] {answer.strip()[:300]}")
+                log(
+                    f"[judge] expected={expected!r} -> "
+                    f"{'O' if success else 'X'} ({elapsed:.1f}s)"
+                )
 
-                    log_file = logs_path / f"{result_name}-{run_no:02d}.txt"
-                    log_file.write_text(
-                        "\n".join(lines) + "\n",
-                        encoding="utf-8",
-                    )
+                log_file = logs_path / f"{result_name}-{run_no:02d}.txt"
+                log_file.write_text(
+                    "\n".join(lines) + "\n",
+                    encoding="utf-8",
+                )
 
-                    writer.writerow(
-                        [
-                            run_no,
-                            result_name,
-                            "O" if success else "X",
-                            meter.tokens if meter is not None else "",
-                            meter.iters if meter is not None else "",
-                            (
-                                meter.interventions
-                                if meter is not None
-                                else ""
-                            ),
-                            note,
-                        ]
-                    )
-                    file.flush()
+                writer.writerow(
+                    [
+                        run_no,
+                        result_name,
+                        "O" if success else "X",
+                        meter.tokens if meter is not None else "",
+                        meter.iters if meter is not None else "",
+                        (
+                            meter.interventions
+                            if meter is not None
+                            else ""
+                        ),
+                        note,
+                    ]
+                )
+                file.flush()
 
-    total_runs = args.runs * sum(
-        len(runners) for _, runners in EXPERIMENTS
-    )
+    total_runs = args.runs * len(RUNNERS)
     print(
-        f"\nresults.csv updated with {total_runs} runs; "
+        f"\n{results_path} updated with {total_runs} runs; "
         f"{os.path.abspath(results_path)}"
     )
-
 
 
 if __name__ == "__main__":
