@@ -133,3 +133,24 @@ class Market:
             negotiation.proposal = move
             negotiation.turn = "seller" if grant.role == "buyer" else "buyer"
             return self.view(token, negotiation_id)
+
+    @staticmethod
+    def _other_proposal(negotiation: Negotiation, grant: PartyGrant) -> dict:
+        proposal = negotiation.proposal
+        if proposal is None or proposal["role"] == grant.role:
+            raise MarketError("There is no active proposal from the other party")
+        return proposal
+
+    def accept_proposal(self, token: str, negotiation_id: str) -> dict:
+        with self.lock:
+            grant = self.require_turn(token, negotiation_id)
+            negotiation, _ = self._party(token, negotiation_id)
+            proposal = self._other_proposal(negotiation, grant)
+            price = proposal["price"]
+            self._check_limit(grant, price)
+            negotiation.moves.append({"role": grant.role, "act": "accept_proposal", "price": price})
+            negotiation.deal_price = price
+            negotiation.status = "deal"
+            negotiation.turn = None
+            negotiation.proposal = None
+            return self.view(token, negotiation_id)

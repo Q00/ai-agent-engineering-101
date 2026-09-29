@@ -82,6 +82,11 @@ def create_app(*, base_url: str, admin_token: str, market: Market | None = None)
         """Offer a nonnegative whole-number price for the item. Ends your turn."""
         return party_call(market.propose, negotiation_id, price)
 
+    @mcp.tool()
+    def accept_proposal(negotiation_id: str) -> dict:
+        """Accept the other party's active proposal at its price. Closes with a deal."""
+        return party_call(market.accept_proposal, negotiation_id)
+
     @mcp.custom_route("/health", methods=["GET"])
     async def health(request: Request):
         return JSONResponse({"status": "ok", "stage": 2})
