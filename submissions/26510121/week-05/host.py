@@ -42,8 +42,10 @@ def run_turn(*, config, prompt, token, mcp_url, root, emit, budget_used, timeout
     settings["features.skip_host_skill_discovery"] = True
     for feature in ("apps", "plugins", "skill_search", "multi_agent", "browser_use",
                     "browser_use_external", "computer_use", "image_generation", "view_image",
-                    "code_mode_host", "goals", "sleep_tool", "hooks", "shell_snapshot"):
+                    "goals", "sleep_tool", "hooks", "shell_snapshot"):
         settings["features." + feature] = False
+    # Native CLI routes some tools through Code Mode even when code_mode=false.
+    # Keep its host enabled; individual non-market capabilities stay disabled.
     command = [codex_executable(), "exec", "--json", "--ephemeral", "--ignore-user-config",
                "--sandbox", "read-only", "--skip-git-repo-check", "-C", str(work), "-m", config["model"]]
     for key, value in settings.items():
