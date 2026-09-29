@@ -13,11 +13,13 @@ import uvicorn
 from mcp.server import MCPServer
 from mcp.server.auth.provider import AccessToken
 from mcp.server.auth.settings import AuthSettings
+from mcp.server.auth.middleware.auth_context import get_access_token
+from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, ValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from market_state import Condition, Market
+from market_state import Condition, Market, MarketError
 
 
 class ScenarioInput(BaseModel):
@@ -60,6 +62,17 @@ def create_app(*, base_url: str, admin_token: str, market: Market | None = None)
     mcp = MCPServer("market", token_verifier=PartyTokens(market, resource),
                     auth=AuthSettings(issuer_url=base_url, resource_server_url=resource,
                                       required_scopes=["negotiate"], validate_token_resource=True))
+
+    @mcp.tool()
+    def get_negotiation(negotiation_id: str) -> dict:
+        """Read the item, your role, the current turn, status, and moves so far."""
+        access = get_access_token()
+        if access is None:
+            raise ToolError("Party authentication required")
+        try:
+            return market.view(access.token, negotiation_id)
+        except MarketError as error:
+            raise ToolError(str(error)) from error
 
     @mcp.custom_route("/health", methods=["GET"])
     async def health(request: Request):
