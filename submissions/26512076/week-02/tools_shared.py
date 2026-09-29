@@ -3,12 +3,10 @@
 Both harnesses import from here. Same tools and same model for both is what
 makes the A/B a harness comparison and not a tool comparison.
 
-Provider is picked from the environment:
-  ANTHROPIC_API_KEY set          -> Anthropic SDK (pip install anthropic)
-  otherwise                      -> OpenAI-compatible (pip install openai)
-                                    OPENAI_API_KEY, optional OPENAI_BASE_URL
-                                    (https://openrouter.ai/api/v1 for OpenRouter)
-  AGENT_MODEL                    optional model override for either provider
+Provider: Groq via the OpenAI-compatible SDK (pip install openai)
+API key: GROQ_API_KEY environment variable
+Base URL: https://api.groq.com/openai/v1
+Model: openai/gpt-oss-20b (fixed for both harnesses)
 """
 import json
 import os
@@ -86,10 +84,8 @@ class Reply:
     tool_calls: list = field(default_factory=list)
 
 
-PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
-MODEL = os.environ.get(
-    "AGENT_MODEL",
-    "claude-sonnet-4-5" if PROVIDER == "anthropic" else "gpt-4o-mini")
+PROVIDER = "openai"
+MODEL = "openai/gpt-oss-20b"
 
 _client = None
 
@@ -97,12 +93,11 @@ _client = None
 def _get_client():
     global _client
     if _client is None:
-        if PROVIDER == "anthropic":
-            import anthropic
-            _client = anthropic.Anthropic()
-        else:
-            from openai import OpenAI
-            _client = OpenAI()
+        from openai import OpenAI
+        _client = OpenAI(
+            api_key=os.environ["GROQ_API_KEY"],
+            base_url="https://api.groq.com/openai/v1",
+        )
     return _client
 
 

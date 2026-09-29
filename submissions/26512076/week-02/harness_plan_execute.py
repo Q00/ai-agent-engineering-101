@@ -11,16 +11,19 @@ import sys
 from tools_shared import Chat, Meter, Reply
 
 SYSTEM_PLAN = (
-    "You are a planner. Reply with a JSON list of short strings, one per step, "
-    "and nothing else. No prose, no code fences."
-)
-SYSTEM_EXEC = (
-    "You execute one step of a plan at a time with the tools you are given. "
-    "If the step cannot be done as planned, reply with a line that starts with "
-    "'OFF_PLAN:' and explain why. When asked for the final answer, reply with a "
-    "line that starts with 'Answer:'."
+    "You are a planner. In this planning phase you cannot call tools. "
+    "Describe actions for a later executor. Reply with a JSON list of "
+    "short step strings and nothing else. No prose, no code fences."
 )
 
+SYSTEM_EXEC = (
+    "You execute exactly the current step of a plan using the provided tools. "
+    "Do not perform later steps or give the final answer during a step. "
+    "After completing the current step, report its result briefly. "
+    "If the current step cannot be done, start your reply with 'OFF_PLAN:' "
+    "and explain why. Only when explicitly asked for the final answer, "
+    "start your reply with 'Answer:'."
+)
 
 def parse_plan(text: str):
     """Return a list of step strings, or None if the model did not give JSON."""
@@ -40,8 +43,11 @@ def run_plan_execute(task: str, max_replan: int = 1,
 
     # 1) PLAN: the whole plan in one call, no tools
     planner = Chat(SYSTEM_PLAN, meter, tools=False)
-    planner.add_user(f"Task: {task}\nAvailable tools: read_file(path), "
-                     f"count_pattern(path, pattern).")
+    planner.add_user(
+       f"Task: {task}\n"
+       "The later executor can read text files and count lines matching "
+       "a regular expression. Describe the steps; do not perform them."
+    )
     raw = planner.send().text
     plan = parse_plan(raw)
     if plan is None:                              # a parse failure is one failure mode
@@ -55,7 +61,10 @@ def run_plan_execute(task: str, max_replan: int = 1,
     replans = 0
     i = 0
     while i < len(plan):
-        executor.add_user(f"Execute step {i + 1}: {plan[i]}")
+        executor.add_user(
+            f"Execute only step {i + 1}: {plan[i]}. "
+            "Use no more tools than needed, then briefly report this step's result."
+        )
         reply = executor.send()
         rounds = 0
         while reply.tool_calls:                   # tool calls inside one step

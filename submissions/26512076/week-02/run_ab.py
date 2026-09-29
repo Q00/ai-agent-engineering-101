@@ -7,6 +7,8 @@ Reads the task and the success criterion from TASK.md, runs each harness
 and saves each run's console output under logs/. Failed runs are kept:
 they are data.
 """
+
+from tools_shared import MODEL
 import argparse
 import csv
 import os
@@ -60,7 +62,9 @@ def main():
                 def log(msg, _lines=lines):
                     print(msg)
                     _lines.append(str(msg))
-
+                      
+                
+                log(f"[model] {MODEL}")
                 t0 = time.time()
                 note = ""
                 try:
