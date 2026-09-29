@@ -43,3 +43,19 @@ BUYER: propose 30
 PARSED: performative=propose price=30 format_error=0 reader_calls+=1
 SELLER: I'm sorry, but $30 is still too low. I can offer $55 for the USB-C hub.
 INTERRUPTED: daily rate limit: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790640000000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iiulu8CXiG7DSzt2tgDoGz2exH'}
+
+RUN 1 condition=free repeat=1 model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0 turn_limit=4
+[skip] scenario=s1 already complete
+[skip] scenario=s2 already complete
+[skip] scenario=s3 already complete
+
+=== scenario=s4 item=USB-C hub reserve=55 budget=40 ===
+BUYER: I'd like to propose a price of $25 for the USB-C hub.
+PARSED: performative=propose price=25 format_error=0 reader_calls+=1
+SELLER: I'm sorry, but $25 is too low. I can't accept that price. I'd be willing to consider $55 for the USB-C hub.
+PARSED: performative=propose price=55 format_error=0 reader_calls+=1
+BUYER: propose 30
+PARSED: performative=propose price=30 format_error=0 reader_calls+=1
+SELLER: I'm sorry, but $30 is still too low. I can't accept that price. I'd be willing to consider $55 for the USB-C hub.
+PARSED: performative=propose price=55 format_error=0 reader_calls+=1
+RESULT: outcome=open price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
