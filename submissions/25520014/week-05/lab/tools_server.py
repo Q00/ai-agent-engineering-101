@@ -51,5 +51,18 @@ def read_file(path: str) -> str:
         return f.read()[:4000]
 
 
+@mcp.tool()
+def write_file(path: str, content: str) -> str:
+    """Write a text file in the working directory with the given content."""
+    full = os.path.abspath(path)
+    if not full.startswith(os.getcwd()):
+        return "denied: path outside the working directory"
+    if not os.path.isfile(full):
+        return "denied: no such file; this tool only edits files that already exist"
+    with open(full, "w", encoding="utf-8") as f:
+        f.write(content)
+    return f"wrote {len(content)} chars to {path}"
+
+
 if __name__ == "__main__":
     mcp.run("streamable-http") if "--http" in sys.argv else mcp.run()
