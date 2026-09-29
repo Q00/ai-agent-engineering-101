@@ -4,7 +4,8 @@
   python tools_server.py --http   # Streamable HTTP on http://127.0.0.1:8000/mcp
 
 The docstring of each tool becomes its description, the type hints its inputSchema.
-The bodies are the week-01 implementations unchanged.
+Bodies and descriptions are my week-01 ones unchanged (first_agent.py on the week-01
+branch): the docstring here is the `description` the week-01 TOOLS list gave the model.
 """
 import ast
 import operator
@@ -36,13 +37,13 @@ def _ev(node):
 
 @mcp.tool()
 def calculator(expression: str) -> str:
-    """Evaluate an arithmetic expression such as '3 * (4 + 5)'. Numbers and + - * / ** only."""
+    """Evaluate an arithmetic expression."""
     return str(_ev(ast.parse(expression, mode="eval").body))
 
 
 @mcp.tool()
 def read_file(path: str) -> str:
-    """Read a text file inside the server's working directory. Returns at most 4000 characters."""
+    """Read a text file in the working directory."""
     full = os.path.abspath(path)
     if not full.startswith(os.getcwd()):
         return "denied: path outside the working directory"
