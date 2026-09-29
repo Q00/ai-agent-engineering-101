@@ -1,0 +1,45 @@
+# run=free-03 provider=openrouter base_url=https://openrouter.ai/api/v1 model=openai/gpt-oss-20b temperature=0.0 reasoning_effort=low turn_limit=8
+=== scenario 1 (a used road bicycle) reserve=120 budget=150 condition=free
+[buyer] Propose: I can offer you $90 for the bicycle.
+  [reader] {'performative': 'propose', 'price': 90}   ({"performative":"propose","price":90})
+[seller] Propose: I can offer you $120 for the bicycle.
+  [reader] {'performative': 'propose', 'price': 120}   ({"performative":"propose","price":120})
+[buyer] Propose: How about $110?
+  [reader] {'performative': 'propose', 'price': 110}   ({"performative":"propose","price":110})
+[seller] Refuse.
+  [reader] {'performative': 'refuse', 'price': None}   ({"performative":"refuse","price":null})
+[result] outcome=no_deal price= correct=0 violation=0 turns=4 format_errors=0 reader_calls=4
+=== scenario 2 (a desk lamp) reserve=30 budget=45 condition=free
+[buyer] Propose: I can offer $35 for the desk lamp.
+  [reader] {'performative': 'propose', 'price': 35}   ({"performative":"propose","price":35})
+[seller] Propose: I can offer $45 for the desk lamp.
+  [reader] {'performative': 'propose', 'price': 45}   ({"performative":"propose","price":45})
+[buyer] Accept-proposal: I agree to your $45 offer.
+  [reader] {'performative': 'accept-proposal', 'price': 45}   ({"performative":"accept-proposal","price":45})
+[result] outcome=deal price=45 correct=1 violation=0 turns=3 format_errors=0 reader_calls=3
+=== scenario 3 (a pair of headphones) reserve=60 budget=55 condition=free
+[buyer] Propose: I can offer $45 for the headphones.
+  [reader] {'performative': 'propose', 'price': 45}   ({"performative":"propose","price":45})
+[seller] Propose: I can offer $70 for the headphones.
+  [reader] {'performative': 'propose', 'price': 70}   ({"performative":"propose","price":70})
+[buyer] 
+  [reader] {'performative': 'reject-proposal', 'price': None}   ({"performative":"reject-proposal","price":null})
+[seller] Propose: I can offer $70 for the headphones.
+  [reader] {'performative': 'propose', 'price': 70}   ({"performative":"propose","price":70})
+[buyer] Reject-proposal. I’m not willing to pay $70. Could you lower it to $50?
+  [reader] {'performative': 'reject-proposal', 'price': 50}   ({"performative":"reject-proposal","price":50})
+[seller] Propose: I can offer $80 for the headphones.
+  [reader] {'performative': 'propose', 'price': 80}   ({"performative":"propose","price":80})
+[buyer] Propose: I can offer $48 for the headphones.
+  [reader] {'performative': 'propose', 'price': 48}   ({"performative":"propose","price":48})
+[seller] Propose: I can offer $90 for the headphones.
+  [reader] {'performative': 'propose', 'price': 90}   ({"performative":"propose","price":90})
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+=== scenario 4 (a film camera) reserve=300 budget=260 condition=free
+[buyer] Propose: 200.
+  [reader] {'performative': 'propose', 'price': 200}   ({"performative":"propose","price":200})
+[seller] Propose: 350.
+  [reader] {'performative': 'propose', 'price': 350}   ({"performative":"propose","price":350})
+[buyer] Accept-proposal.
+  [reader] {'performative': 'accept-proposal', 'price': None}   ({"performative":"accept-proposal","price":null})
+[result] outcome=deal price=350 correct=0 violation=1 turns=3 format_errors=0 reader_calls=3
