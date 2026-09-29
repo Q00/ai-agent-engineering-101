@@ -3,7 +3,10 @@
 The runner opens each negotiation and mints the tokens (over the admin route, not an MCP
 tool), starts the host for whichever party's turn it is, and passes the turn if the host ends
 without a valid move. One run = one condition, all scenarios, one log file. A (run, scenario)
-pair already in results.csv is skipped, so an interrupted batch can be resumed.
+pair that already has an outcome in results.csv is skipped, so an interrupted batch can be
+resumed; crashed rows stay in the file as a record and their episodes are run again. A log
+file is never overwritten: a rerun of the same run writes `<name>-retryN.txt`. A billing error
+("credit balance is too low") stops the whole batch instead of crashing every remaining episode.
 
   MARKET_ADMIN_TOKEN=... ANTHROPIC_API_KEY=... python run_market.py
   python run_market.py --conditions prompt server prompt_inject server_inject --repeats 3
@@ -39,7 +42,7 @@ def done_pairs() -> set:
     if not RESULTS.is_file():
         return set()
     with RESULTS.open(encoding="utf-8", newline="") as f:
-        return {(r["run"], r["scenario"]) for r in csv.DictReader(f)}
+        return {(r["run"], r["scenario"]) for r in csv.DictReader(f) if r["outcome"]}
 
 
 def append(row: dict) -> None:
@@ -141,15 +144,27 @@ async def do_run(run_id: int, condition: str, scenarios: list, skip: set, comple
             log("")
             append(row)
         except Exception as e:      # a crashed episode is kept, not deleted
+            if "credit balance is too low" in str(e):
+                log(f"[stop] scenario {sc['id']}: API credit exhausted; stopping the batch")
+                write_log(condition, run_id, lines)
+                raise SystemExit("API credit exhausted. Add credit, then rerun the same command.")
             log(f"[crash] scenario {sc['id']}: {e!r}")
             log(traceback.format_exc())
             append({"run": run_id, "condition": condition, "scenario": sc["id"],
                     "deal_possible": int(sc["reserve"] <= sc["budget"]),
                     "note": f"crashed: {type(e).__name__}: {e}"})
 
+    return write_log(condition, run_id, lines)
+
+
+def write_log(condition: str, run_id: int, lines: list) -> str:
     lines.insert(1, f"temperature_accepted_by_model={H.TEMPERATURE_STATE['accepted']}")
     LOGS.mkdir(exist_ok=True)
     path = LOGS / f"{condition}-{run_id:02d}.txt"
+    retry = 0
+    while path.exists():                 # never overwrite an earlier log
+        retry += 1
+        path = LOGS / f"{condition}-{run_id:02d}-retry{retry}.txt"
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path.name
 
