@@ -1,5 +1,6 @@
 """Independently reconcile CSV, CLI tool events and server responses."""
 from collections import Counter
+import argparse
 import csv
 import json
 from pathlib import Path
@@ -11,7 +12,7 @@ def text_result(result):
     return "\n".join(c.get("text", "") for c in (result or {}).get("content", []) if c.get("type") == "text")
 
 
-def inspect():
+def inspect(require_complete=True):
     config = json.loads((ROOT / "experiment.json").read_text(encoding="utf-8"))
     scenarios = {s["id"]: s for s in json.loads((ROOT / "scenarios.json").read_text(encoding="utf-8"))}
     prompts = json.loads((ROOT / "prompts.json").read_text(encoding="utf-8"))
@@ -136,11 +137,14 @@ def inspect():
                          "recovered_turns": len(recovered_turns), "host_turns": len(ep["starts"])})
     assert set(episodes) == seen, "Unrecorded completed episodes in logs"
     repeats = Counter((r["condition"], r["scenario"]) for r in rows)
-    assert all(repeats[(c, s)] >= 3 for c in config["conditions"] for s in scenarios), "Required repeats incomplete"
+    if require_complete:
+        assert all(repeats[(c, s)] >= 3 for c in config["conditions"] for s in scenarios), "Required repeats incomplete"
     print(f"PASS: {len(rows)} CSV episodes independently match CLI calls and server state")
     print(f"PASS: {sum(int(r['tool_calls']) for r in rows)} tool calls; prompts, injection, limits, recovery and metrics checked")
     return rows, evidence, uses
 
 
 if __name__ == "__main__":
-    inspect()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--partial", action="store_true", help="Reconcile completed rows during an ongoing run; does not certify required repeats")
+    inspect(require_complete=not parser.parse_args().partial)
