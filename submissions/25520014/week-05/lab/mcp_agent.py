@@ -2,6 +2,7 @@
 
   python mcp_agent.py                                       # spawns tools_server.py over stdio
   MCP_SERVER=http://127.0.0.1:8000/mcp python mcp_agent.py  # attaches over Streamable HTTP
+  python mcp_agent.py "<goal>"                              # any other goal
 
 What changed from week-01 first_agent.py:
   - no TOOLS / TOOLS_IMPL in this file. The tool list comes from tools/list and every
@@ -126,6 +127,7 @@ async def run(goal, max_steps=8):
 
 
 if __name__ == "__main__":
+    goal = sys.argv[1] if len(sys.argv) > 1 else GOAL   # same as week-01 first_agent.py
     print(f"  [host] server={SERVER if isinstance(SERVER, str) else 'stdio'} model={MODEL}")
-    print(f"  [goal] {GOAL}")
-    print(f"  [answer] {asyncio.run(run(GOAL))}")
+    print(f"  [goal] {goal}")
+    print(f"  [answer] {asyncio.run(run(goal))}")
