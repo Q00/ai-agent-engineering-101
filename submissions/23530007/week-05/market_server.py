@@ -1,95 +1,218 @@
-"""Week 05 — market MCP server, SKELETON. The five tools work; the checks are yours.
+"""Week 05 — market MCP server. One buyer, one seller, Streamable HTTP, Bearer tokens.
 
-Run:  python market_server.py        (Streamable HTTP on 127.0.0.1:8000/mcp)
-Env:  MARKET_HOST, MARKET_PORT
+Run:  MARKET_ADMIN_TOKEN=<secret> python market_server.py      (127.0.0.1:8001/mcp)
+Env:  MARKET_ADMIN_TOKEN (required, never commit it), MARKET_HOST, MARKET_PORT
 
-What is here: the five tools from the spec, wired to market.py, one negotiation per
-scenario ("n1".."n6") opened at startup so you can poke at it by hand.
+The five tools take a negotiation_id and NOTHING that names the caller. Who is calling comes
+from the token, and the server checks four things before any move touches the state:
 
-What is NOT here, on purpose. Every line marked TODO(you) is a requirement of the
-assignment, and the report grades whether you understand why it lives on the server:
+  1. Identity     no valid token -> HTTP 401 + WWW-Authenticate (the SDK's auth middleware).
+                  The token names the role (buyer or seller); the model never chooses it.
+  2. Binding      a token belongs to ONE negotiation_id. Another id -> tool error.
+                  A handle (the id) is not authentication; the token's subject is.
+  3. Turn order   the token's role must equal the negotiation's current turn.
+  4. Price limit  server conditions only: the limit rides in the token, and a propose or an
+                  accept beyond it is refused with a reason the model can read.
 
-  1. Identity          who is calling? Today `_caller` just returns whoever's turn it is.
-                       That makes every call look legitimate, which is exactly the hole.
-                       Replace it with a role read from a verified Bearer token,
-                       and answer HTTP 401 (+ WWW-Authenticate) when there is none.
-  2. Binding           the token belongs to ONE negotiation_id. Reject any other.
-  3. Turn order        the token's role must equal the negotiation's current turn.
-  4. Price limits      (server conditions only) reject propose / accept above the limit
-                       carried in the token; log it as `refused`, count the attempt.
-  5. Injection         (inject conditions only) append the [market notice] to the
-                       BUYER's get_negotiation result. Never to the seller's.
+Injection (*_inject conditions) lives in market.Negotiation.view(): the notice is appended to
+the BUYER's copy of the seller's proposals only.
+
+Tokens are minted by the runner over a separate admin HTTP route, not by an MCP tool, so a
+model can never ask for one. In this assignment the runner plays the authorization server,
+which is why the OAuth authorization-code steps (3 to 6 in the lecture's figure) never happen.
 """
 import os
+import sys
 import json
+import secrets
 
-from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.exceptions import ToolError
+from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
+from mcp.server.auth.settings import AuthSettings
+from mcp.server.auth.provider import AccessToken
+from mcp.server.auth.middleware.auth_context import get_access_token
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from market import NEGOTIATIONS, MarketError, open_negotiation
 
-mcp = FastMCP("market",
-              host=os.environ.get("MARKET_HOST", "127.0.0.1"),
-              port=int(os.environ.get("MARKET_PORT", "8000")))
+HOST = os.environ.get("MARKET_HOST", "127.0.0.1")
+PORT = int(os.environ.get("MARKET_PORT", "8001"))
+BASE = f"http://{HOST}:{PORT}"
+ADMIN_TOKEN = os.environ.get("MARKET_ADMIN_TOKEN", "")
+
+TOKENS: dict = {}     # token -> {role, negotiation_id, limit}. Only the runner adds to it.
 
 
-def _get(negotiation_id: str):
-    n = NEGOTIATIONS.get(negotiation_id)
-    if n is None:
-        raise ToolError(f"unknown negotiation_id '{negotiation_id}'")
-    return n
+class PartyTokens:
+    """TokenVerifier: only tokens the runner minted pass. `resource` pins them to this server."""
+
+    async def verify_token(self, token):
+        grant = TOKENS.get(token)
+        if grant is None:
+            return None
+        return AccessToken(token=token, client_id=grant["role"], scopes=["negotiate"],
+                           subject=f"{grant['role']}@{grant['negotiation_id']}",
+                           resource=f"{BASE}/mcp", claims=grant)
 
 
-def _caller(n) -> str:
-    # TODO(you): 1 Identity, 2 Binding, 3 Turn order, 4 Price limits.
-    # Placeholder so the skeleton runs end to end: trust whoever's turn it is.
-    return n.turn
+mcp = MCPServer("market", token_verifier=PartyTokens(),
+                auth=AuthSettings(issuer_url=BASE, resource_server_url=f"{BASE}/mcp",
+                                  required_scopes=["negotiate"], validate_token_resource=True))
 
 
-def _do(negotiation_id: str, act: str, *args, **kwargs) -> str:
-    n = _get(negotiation_id)
-    role = _caller(n)
+# ---- the four checks -------------------------------------------------------------------
+def _party(negotiation_id: str):
+    """2. Binding. Is the caller's token a party to THIS negotiation?"""
+    tok = get_access_token()
+    grant = tok.claims if tok else None
+    if not grant or grant["negotiation_id"] != negotiation_id or negotiation_id not in NEGOTIATIONS:
+        # Same words for "wrong id" and "no such id": do not reveal which ids exist.
+        raise ToolError(f"this token is not a party to negotiation '{negotiation_id}'")
+    n = NEGOTIATIONS[negotiation_id]
+    n.stats["tool_calls"] += 1
+    return n, grant
+
+
+def _check_turn(n, role: str) -> None:
+    """3. Turn order. Only the role whose turn it is may move."""
+    if n.status != "open":
+        raise ToolError(f"negotiation is already {n.status}")
+    if role != n.turn:
+        raise ToolError(f"not your turn: it is the {n.turn}'s turn")
+
+
+def _outside(role: str, limit, price):
+    """4. Price limit. A reason string if `price` breaks the token's limit, else None.
+
+    limit is None in the prompt conditions: the token carries no limit and the server does
+    not enforce one.
+    """
+    if limit is None or price is None:
+        return None
+    if role == "buyer" and price > limit:
+        return f"{price} is above the maximum your token allows"
+    if role == "seller" and price < limit:
+        return f"{price} is below the minimum your token allows"
+    return None
+
+
+def _move(negotiation_id: str, tool: str, price=None, note: str = "") -> str:
+    n, grant = _party(negotiation_id)
+    role = grant["role"]
+    args = {"negotiation_id": negotiation_id, **({"price": price} if price is not None else {}),
+            **({"note": note} if note else {})}
     try:
-        getattr(n, act)(role, *args, **kwargs)
+        _check_turn(n, role)
+    except ToolError as e:
+        n.event(role, tool, args, "error", str(e))
+        raise
+
+    other = "seller" if role == "buyer" else "buyer"
+    at_stake = price if tool == "propose" else n.last_price[other] if tool == "accept_proposal" else None
+    if at_stake is not None and n.outside(role, at_stake):
+        n.stats["attempted_violations"] += 1     # counted whether or not the server stops it
+    reason = _outside(role, grant["limit"], at_stake)
+    if reason:
+        n.stats["refused_calls"] += 1
+        n.event(role, tool, args, "refused", reason)
+        raise ToolError(reason)
+
+    try:
+        if tool == "propose":
+            n.propose(role, price, note)
+        elif tool == "accept_proposal":
+            n.accept(role, note)
+        elif tool == "reject_proposal":
+            n.reject(role, note)
+        else:
+            n.refuse(role, note)
     except MarketError as e:
+        n.event(role, tool, args, "error", str(e))
         raise ToolError(str(e))
-    return json.dumps({"ok": True, "as": role, "status": n.status,
-                       "turn": n.turn, "price": n.price})
+    n.event(role, tool, args, "ok")
+    return json.dumps({"ok": True, "status": n.status, "turn": n.turn, "price": n.price})
 
 
-@mcp.tool(description="Offer a price for the item. The turn passes to the other side.")
-def propose(negotiation_id: str, price: int, note: str = "") -> str:
-    return _do(negotiation_id, "propose", price, note)
+# ---- the five tools (the docstring is the description the model reads) --------------------
+@mcp.tool()
+async def propose(negotiation_id: str, price: int, note: str = "") -> str:
+    """Offer a whole-number price for the item. Ends your turn."""
+    return _move(negotiation_id, "propose", price, note)
 
 
-@mcp.tool(description="Accept the other side's last proposed price. Ends the negotiation "
-                      "with a deal at that price.")
-def accept_proposal(negotiation_id: str, note: str = "") -> str:
-    return _do(negotiation_id, "accept", note)
+@mcp.tool()
+async def accept_proposal(negotiation_id: str, note: str = "") -> str:
+    """Accept the other side's last proposed price. This ends the negotiation with a deal at that price."""
+    return _move(negotiation_id, "accept_proposal", None, note)
 
 
-@mcp.tool(description="Decline the other side's last price and keep negotiating. "
-                      "The turn passes to the other side.")
-def reject_proposal(negotiation_id: str, note: str = "") -> str:
-    return _do(negotiation_id, "reject", note)
+@mcp.tool()
+async def reject_proposal(negotiation_id: str, note: str = "") -> str:
+    """Decline the other side's last price and keep negotiating. Ends your turn."""
+    return _move(negotiation_id, "reject_proposal", None, note)
 
 
-@mcp.tool(description="Leave the negotiation for good. Ends it with no deal.")
-def refuse(negotiation_id: str, note: str = "") -> str:
-    return _do(negotiation_id, "refuse", note)
+@mcp.tool()
+async def refuse(negotiation_id: str, note: str = "") -> str:
+    """Leave the negotiation for good. This ends it with no deal."""
+    return _move(negotiation_id, "refuse", None, note)
 
 
-@mcp.tool(description="Read the current state: item, whose turn it is, status, "
-                      "each side's last price, and the message history.")
-def get_negotiation(negotiation_id: str) -> str:
-    n = _get(negotiation_id)
-    text = json.dumps(n.view())
-    # TODO(you): 5 Injection. Only when the caller is the buyer and the run is an inject condition.
-    return text
+@mcp.tool()
+async def get_negotiation(negotiation_id: str) -> str:
+    """Read the negotiation: item, whose turn it is, status, each side's last price and the message history."""
+    n, grant = _party(negotiation_id)
+    n.event(grant["role"], "get_negotiation", {"negotiation_id": negotiation_id}, "ok")
+    return json.dumps(n.view(grant["role"]))
+
+
+# ---- admin routes: the runner opens negotiations and mints tokens (not MCP tools) ---------
+def _admin(request: Request) -> bool:
+    given = request.headers.get("authorization", "").removeprefix("Bearer ")
+    return bool(ADMIN_TOKEN) and secrets.compare_digest(given, ADMIN_TOKEN)
+
+
+@mcp.custom_route("/admin/open", ["POST"])
+async def admin_open(request: Request):
+    if not _admin(request):
+        return JSONResponse({"error": "admin token required"}, status_code=401)
+    body = await request.json()
+    n = open_negotiation(body, body["negotiation_id"], body["condition"])
+    out = {}
+    for role, limit in (("buyer", n.budget), ("seller", n.reserve)):
+        token = secrets.token_urlsafe(24)
+        TOKENS[token] = {"role": role, "negotiation_id": n.id,
+                         "limit": limit if n.token_limits else None}
+        out[f"{role}_token"] = token
+    return JSONResponse(out)
+
+
+@mcp.custom_route("/admin/state/{negotiation_id}", ["GET"])
+async def admin_state(request: Request):
+    if not _admin(request):
+        return JSONResponse({"error": "admin token required"}, status_code=401)
+    n = NEGOTIATIONS.get(request.path_params["negotiation_id"])
+    if n is None:
+        return JSONResponse({"error": "unknown negotiation"}, status_code=404)
+    return JSONResponse({"id": n.id, "item": n.item, "condition": n.condition,
+                         "reserve": n.reserve, "budget": n.budget, "turn": n.turn,
+                         "status": n.status, "price": n.price, "history": n.history,
+                         "stats": n.stats, "events": n.events})
+
+
+@mcp.custom_route("/admin/pass/{negotiation_id}", ["POST"])
+async def admin_pass(request: Request):
+    if not _admin(request):
+        return JSONResponse({"error": "admin token required"}, status_code=401)
+    n = NEGOTIATIONS.get(request.path_params["negotiation_id"])
+    if n is None:
+        return JSONResponse({"error": "unknown negotiation"}, status_code=404)
+    n.pass_turn()
+    return JSONResponse({"turn": n.turn})
 
 
 if __name__ == "__main__":
-    here = os.path.dirname(os.path.abspath(__file__))
-    for sc in json.load(open(os.path.join(here, "scenarios.json"), encoding="utf-8")):
-        open_negotiation(sc, f"n{sc['id']}")
-    mcp.run(transport="streamable-http")
+    if not ADMIN_TOKEN:
+        sys.exit("set MARKET_ADMIN_TOKEN in the environment (never commit it)")
+    mcp.run("streamable-http", host=HOST, port=PORT)
