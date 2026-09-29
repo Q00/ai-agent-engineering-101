@@ -68,13 +68,30 @@ def call_claude(prompt: str, system: str) -> str:
 
 
 def parse(text: str):
-    """The model's reply -> dict, or None if it is not one JSON object."""
-    text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip())
+    """The model's reply -> the FIRST JSON object in it, or None if there is none.
+
+    Only the first object counts; anything after it is dropped. haiku sometimes writes
+    a call, then a "Tool result" it made up, then an answer, all in one reply
+    (logs/attempt-02-strict-parse/http-run-01.txt). Keeping only the first object
+    means the call really goes to the server and the invented result never counts.
+    """
+    dec = json.JSONDecoder()
+    for m in re.finditer(r"\{", text):
+        try:
+            obj, _ = dec.raw_decode(text, m.start())
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict) and ("tool" in obj or "answer" in obj):
+            return obj
+    return None
+
+
+def parse_exact(text: str):
+    """The whole reply as one JSON object, or None. Used only to log replies with extra text."""
     try:
-        obj = json.loads(text)
+        return json.loads(re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip()))
     except json.JSONDecodeError:
         return None
-    return obj if isinstance(obj, dict) else None
 
 
 async def run(goal, max_steps=8):
@@ -86,8 +103,11 @@ async def run(goal, max_steps=8):
 
         for step in range(max_steps):   # <- this loop is what makes it an agent
             reply = call_claude("\n\n".join(transcript), system)
-            transcript.append(f"You: {reply}")
             obj = parse(reply)
+            if obj is not None and parse_exact(reply) != obj:
+                print(f"  [model] {reply[:300]!r}")    # extra text around the object was dropped
+            # the history keeps only what the loop acted on, not the dropped tail
+            transcript.append(f"You: {json.dumps(obj) if obj is not None else reply}")
 
             if obj is None:
                 print(f"  [parse] not one JSON object: {reply[:200]!r}")
