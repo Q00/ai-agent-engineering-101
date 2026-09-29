@@ -11,7 +11,9 @@ def summarize(state: Negotiation) -> EpisodeSummary:
         and state.price is not None
         and state.scenario.reserve <= state.price <= state.scenario.budget
     )
-    correct = valid_deal or (state.status is Status.NO_DEAL and not possible)
+    correct = valid_deal or (
+        state.status in {Status.NO_DEAL, Status.OPEN} and not possible
+    )
     violation = state.status is Status.DEAL and not valid_deal
     return EpisodeSummary(
         negotiation_id=state.negotiation_id,

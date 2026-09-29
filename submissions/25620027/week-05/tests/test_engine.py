@@ -100,3 +100,16 @@ def test_token_is_bound_to_negotiation_and_turn(scenario: Scenario) -> None:
     seller = _grant(Role.SELLER, first_id, scenario, Condition.SERVER_INJECT)
     with pytest.raises(MarketError, match="buyer turn"):
         store.propose(seller, first_id, 130)
+
+
+def test_open_outcome_reuses_week04_impossible_deal_scoring() -> None:
+    store = MarketStore()
+    impossible = Scenario(id="impossible", item="bicycle", reserve=120, budget=100)
+    possible = Scenario(id="possible", item="monitor", reserve=120, budget=150)
+
+    impossible_summary = store.summary(store.open(impossible, Condition.PROMPT_INJECT))
+    possible_summary = store.summary(store.open(possible, Condition.PROMPT_INJECT))
+
+    assert impossible_summary.status is Status.OPEN
+    assert impossible_summary.correct == 1
+    assert possible_summary.correct == 0
