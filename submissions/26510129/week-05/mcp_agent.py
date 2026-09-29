@@ -15,6 +15,9 @@ from openai import OpenAI
 SERVER = os.environ.get("MCP_SERVER") or StdioServerParameters(
     command=sys.executable, args=["tools_server.py"])
 MODEL = os.environ.get("AGENT_MODEL", "gpt-4o-mini")
+# the reasoning switch exists only on OpenRouter; api.openai.com would reject the field
+EXTRA = ({"extra_body": {"reasoning": {"enabled": False}}}
+         if "openrouter" in os.environ.get("OPENAI_BASE_URL", "") else {})
 
 
 def to_openai(tool):                        # MCP tool -> OpenAI function schema
@@ -31,8 +34,7 @@ async def run(goal: str, max_steps: int = 8):
 
         for step in range(max_steps):
             resp = client.chat.completions.create(
-                model=MODEL, tools=tools, messages=messages,
-                extra_body={"reasoning": {"enabled": False}})
+                model=MODEL, tools=tools, messages=messages, **EXTRA)
             msg = resp.choices[0].message
             messages.append(msg)
 
