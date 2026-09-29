@@ -2,10 +2,6 @@
 
 26510130 Hyunsik Wang.
 
-> **Draft.** Parts 1 and 3 are final. Parts 2 and 4 are filled from
-> `results.csv` once the runs finish; the placeholders say what goes in them.
-> This note goes when they do.
-
 ## 1. Setup
 
 A buyer and a seller, each one LLM with its own system prompt, negotiating a
@@ -113,7 +109,75 @@ spent. Every row in `results.csv` came from `run_neg.py` against the real CLI.
 
 ## 2. Results
 
-> *Pending the runs.*
+72 episodes: 36 at a turn limit of 6 (runs 1-9, the first pass) and 36 at a
+limit of 12 (runs 10-18). Both are in `results.csv`; the 12-turn pass is the
+result, the 6-turn pass is kept because it is what made the limit visible (§5).
+No crashes. **No format errors in any of the 72 episodes** — every agent
+produced the format its condition asked for, every time.
+
+### By condition, turn limit 12
+
+| condition | n | correct | violations | deal | no_deal | open | mean turns | format errors | reader calls |
+|---|---|---|---|---|---|---|---|---|---|
+| `free` | 12 | 9 | 1 | 6 | 4 | 2 | 9.0 | 0 | **108** |
+| `tagged` | 12 | **10** | **2** | 6 | 6 | 0 | 9.5 | 0 | 0 |
+| `structured` | 12 | 7 | **0** | 5 | 2 | 5 | 8.8 | 0 | 0 |
+
+### By condition, turn limit 6 (the first pass)
+
+| condition | n | correct | violations | deal | no_deal | open | mean turns | reader calls |
+|---|---|---|---|---|---|---|---|---|
+| `free` | 12 | 2 | 0 | 2 | 0 | 10 | 5.7 | 68 |
+| `tagged` | 12 | 0 | 0 | 0 | 0 | 12 | 6.0 | 1 |
+| `structured` | 12 | 1 | 0 | 1 | 0 | 11 | 6.0 | 0 |
+
+Six turns is three messages each. No episode in any condition ever reached a
+`refuse`, and 33 of 36 ran out of turns. The limit, not the format, decided
+every one of those episodes.
+
+### Every episode at turn limit 12
+
+| run | condition | scenario | deal possible | outcome | price | correct | violation | turns | format errors | reader calls |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 10 | `free` | S1 | 1 | deal | 374000 | 1 | 0 | 9 | 0 | 9 |
+| 10 | `free` | S2 | 1 | deal | 200000 | 1 | 0 | 8 | 0 | 8 |
+| 10 | `free` | S3 | 0 | no_deal | — | 1 | 0 | 9 | 0 | 9 |
+| 10 | `free` | S4 | 0 | open | — | 0 | 0 | 12 | 0 | 12 |
+| 11 | `free` | S1 | 1 | deal | 325000 | 1 | 0 | 6 | 0 | 6 |
+| 11 | `free` | S2 | 1 | deal | 230000 | 0 | 1 | 12 | 0 | 12 |
+| 11 | `free` | S3 | 0 | no_deal | — | 1 | 0 | 7 | 0 | 7 |
+| 11 | `free` | S4 | 0 | open | — | 0 | 0 | 12 | 0 | 12 |
+| 12 | `free` | S1 | 1 | deal | 390000 | 1 | 0 | 6 | 0 | 6 |
+| 12 | `free` | S2 | 1 | deal | 200000 | 1 | 0 | 6 | 0 | 6 |
+| 12 | `free` | S3 | 0 | no_deal | — | 1 | 0 | 12 | 0 | 12 |
+| 12 | `free` | S4 | 0 | no_deal | — | 1 | 0 | 9 | 0 | 9 |
+| 13 | `tagged` | S1 | 1 | deal | 10000 | 0 | 1 | 7 | 0 | 0 |
+| 13 | `tagged` | S2 | 1 | deal | 200000 | 1 | 0 | 6 | 0 | 0 |
+| 13 | `tagged` | S3 | 0 | no_deal | — | 1 | 0 | 12 | 0 | 0 |
+| 13 | `tagged` | S4 | 0 | no_deal | — | 1 | 0 | 10 | 0 | 0 |
+| 14 | `tagged` | S1 | 1 | deal | 1000 | 0 | 1 | 10 | 0 | 0 |
+| 14 | `tagged` | S2 | 1 | deal | 190000 | 1 | 0 | 8 | 0 | 0 |
+| 14 | `tagged` | S3 | 0 | no_deal | — | 1 | 0 | 11 | 0 | 0 |
+| 14 | `tagged` | S4 | 0 | no_deal | — | 1 | 0 | 12 | 0 | 0 |
+| 15 | `tagged` | S1 | 1 | deal | 320000 | 1 | 0 | 4 | 0 | 0 |
+| 15 | `tagged` | S2 | 1 | deal | 193000 | 1 | 0 | 10 | 0 | 0 |
+| 15 | `tagged` | S3 | 0 | no_deal | — | 1 | 0 | 12 | 0 | 0 |
+| 15 | `tagged` | S4 | 0 | no_deal | — | 1 | 0 | 12 | 0 | 0 |
+| 16 | `structured` | S1 | 1 | deal | 371000 | 1 | 0 | 8 | 0 | 0 |
+| 16 | `structured` | S2 | 1 | deal | 180000 | 1 | 0 | 6 | 0 | 0 |
+| 16 | `structured` | S3 | 0 | no_deal | — | 1 | 0 | 10 | 0 | 0 |
+| 16 | `structured` | S4 | 0 | open | — | 0 | 0 | 12 | 0 | 0 |
+| 17 | `structured` | S1 | 1 | deal | 350000 | 1 | 0 | 2 | 0 | 0 |
+| 17 | `structured` | S2 | 1 | deal | 200000 | 1 | 0 | 7 | 0 | 0 |
+| 17 | `structured` | S3 | 0 | no_deal | — | 1 | 0 | 11 | 0 | 0 |
+| 17 | `structured` | S4 | 0 | open | — | 0 | 0 | 12 | 0 | 0 |
+| 18 | `structured` | S1 | 1 | deal | 300000 | 1 | 0 | 2 | 0 | 0 |
+| 18 | `structured` | S2 | 1 | open | — | 0 | 0 | 12 | 0 | 0 |
+| 18 | `structured` | S3 | 0 | open | — | 0 | 0 | 12 | 0 | 0 |
+| 18 | `structured` | S4 | 0 | open | — | 0 | 0 | 12 | 0 | 0 |
+
+Scenarios: S1 reserve 300,000 / budget 450,000; S2 180,000 / 200,000;
+S3 520,000 / 400,000; S4 900,000 / 350,000.
 
 ## 3. FIPA-ACL against the three conditions
 
@@ -152,7 +216,83 @@ error rate that the declaration does not. That relocation is what §2's
 
 ## 4. Interpretation
 
-> *Pending the runs.*
+**The tag bought reading cost and nothing else — 108 reader calls against 0 —
+and the saving is where the damage came from.** `free` spends one model call
+per message to recover the performative the sender never declared; `tagged` and
+`structured` spend none. That is the whole of the measured benefit, and it is
+exactly what §3 predicted: the envelope buys parseability, not sincerity.
+
+**But `tagged` bought the *force* cheaply and left the *content* in prose, and
+that is where it broke.** Both of its violations are the same failure, and
+neither is the agents' fault. Run 14, S1, seller reserve 300,000:
+
+```
+[buyer] (propose) ...We're so close now—just 1,000 apart. What if we split
+                  that final difference and settle...
+  [parse] tag=propose price=1000
+[seller] (accept-proposal) ...337,500 is a fair price for this bike...
+  [outcome] deal at 1000
+```
+
+The two agents had converged on about 337,500 — a perfectly good deal inside
+both limits. The harness recorded a sale at 1,000, a three-hundredth of the
+seller's reserve, because `tagged` takes the price from the prose with a regex
+and the regex takes the first number it finds. In a negotiation the first
+number in a sentence is very often *not* the offer: it is the other side's last
+figure, or the gap between them. The same log shows the error running
+throughout, not just at the end — the buyer offers 325,000 and the parse
+records 360,000, the number the seller had quoted a message earlier.
+
+So the tag did its job: `tagged` had **zero** format errors, the regex found
+every performative, and the force was never in doubt. What it could not do is
+tell the harness which of several numbers in an English sentence was the offer.
+That is precisely the content language that FIPA put underneath the
+performative and that this condition drops.
+
+**`free`'s single violation has the opposite cause, and only the logs separate
+them.** Run 11, S2, buyer budget 200,000:
+
+```
+[buyer]  I appreciate the effort—how about 230000 and we close this out?
+  [reader] propose price=230000
+[seller] You've got yourself a deal at 230000—let's make this official.
+  [reader] accept-proposal price=230000
+```
+
+The reader was right on every message. The buyer, told in its own prompt never
+to pay more than 200,000, offered 230,000 and closed. This is the agent
+breaking its own constraint, not the protocol misreading it — and it is the
+case §3's sincerity row describes: no message format makes a private limit
+enforceable, because the limit lives in the sender's prompt and the protocol
+has no access to it. `violation` is a measured column for that reason, and the
+two conditions' identical-looking counts come from opposite places: `tagged`
+misread honest agents, `free` read a dishonest one correctly.
+
+**`structured` had no violations and the worst `correct`, and both come from
+the same property.** Zero violations because the price is a field: there is no
+number to pick wrongly. Seven correct against `tagged`'s ten because five of
+its twelve episodes ran to the turn limit, against `tagged`'s zero. Its
+episodes are also the shortest when they do close — run 17 S1 and run 18 S1
+both closed in **2 turns**, one proposal and one acceptance, where the prose
+conditions averaged nine. Stripping the negotiation to a performative and an
+integer removes the rhetoric that moves the other side: there is no "the
+components are top quality", no "I appreciate you meeting me halfway", so an
+agent that will not move has nothing to be moved by, and the episode stalls.
+The format that is safest to read is also the one that gives the agents the
+least to work with.
+
+**What no format changed.** Format compliance, entirely: 72 episodes, 0 format
+errors. The failure mode the assignment expected from `tagged` — a missing or
+misspelled tag — never happened once on this model. Neither did any unparseable
+JSON in `structured`. The question "can the agent follow the format" turned out
+not to be the question; "can the harness recover the content" was.
+
+**And the turn limit outranked all three.** At six turns the conditions score 2,
+0 and 1 correct out of twelve; at twelve they score 9, 10 and 7. Between those
+two tables the format is constant and only the harness's patience changes, and
+it moves `correct` further than the choice between English, tags and JSON does.
+Reading the first pass as "no format works" would have been wrong, and it was
+the first thing the data appeared to say.
 
 ## 5. What I discarded, and what I would change
 
