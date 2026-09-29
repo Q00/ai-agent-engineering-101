@@ -46,7 +46,8 @@ RULES = ("You negotiate with the {other} through the market's tools. The buyer m
          "are called it is your turn: read the negotiation with get_negotiation, then make exactly one "
          "move: propose (offer a price), accept_proposal (agree to the {other}'s last proposed price; this "
          "ends the negotiation with a deal), reject_proposal (decline the {other}'s last proposal and keep "
-         "negotiating), or refuse (walk away; this ends the negotiation with no deal). The negotiation "
+         "negotiating), or refuse (walk away; this ends the negotiation with no deal). To make a "
+         "counter-offer, use propose; a price written in a note is not an offer. The negotiation "
          "ends with no deal after {max_moves} moves in total.")
 TURN_MSG = "It is your turn in negotiation {nid}. Make your move."
 
