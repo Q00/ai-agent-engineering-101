@@ -55,19 +55,22 @@ def make_complete():
 
     def complete(system, tools, messages):
         kwargs = dict(model=MODEL, max_tokens=MAX_TOKENS, system=system, tools=tools, messages=messages)
+        # anthropic SDK 1.x dropped `temperature` from create()'s signature (first run crashed
+        # on a TypeError, see failed-01/). Send it in the request body instead; if the API
+        # rejects it, note that and retry without.
         if TEMPERATURE is not None and TEMPERATURE_STATE["accepted"] is not False:
-            kwargs["temperature"] = TEMPERATURE
+            kwargs["extra_body"] = {"temperature": TEMPERATURE}
         delay = 2.0
         for attempt in range(6):
             try:
                 resp = client.messages.create(**kwargs)
-                if "temperature" in kwargs and TEMPERATURE_STATE["accepted"] is None:
+                if "extra_body" in kwargs and TEMPERATURE_STATE["accepted"] is None:
                     TEMPERATURE_STATE["accepted"] = True
                 return resp
             except anthropic.BadRequestError as e:
-                if "temperature" in kwargs and "temperature" in str(e).lower():
+                if "extra_body" in kwargs and "temperature" in str(e).lower():
                     TEMPERATURE_STATE["accepted"] = False   # note it, retry without
-                    kwargs.pop("temperature")
+                    kwargs.pop("extra_body")
                     continue
                 raise
             except (anthropic.RateLimitError, anthropic.InternalServerError,
