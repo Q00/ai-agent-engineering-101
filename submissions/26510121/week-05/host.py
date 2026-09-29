@@ -37,6 +37,13 @@ def run_turn(*, config, prompt, token, mcp_url, root, emit, budget_used, timeout
         "mcp_servers.market.default_tools_approval_mode": "approve",
         "mcp_servers.market.enabled_tools": ["get_negotiation", "propose", "accept_proposal", "reject_proposal", "refuse"],
     }
+    # The CLI exposes these feature switches (codex features list). Avoid
+    # unrelated tool catalogs, plugins, skills and side-effect capabilities.
+    settings["features.skip_host_skill_discovery"] = True
+    for feature in ("apps", "plugins", "skill_search", "multi_agent", "browser_use",
+                    "browser_use_external", "computer_use", "image_generation", "view_image",
+                    "code_mode_host", "goals", "sleep_tool", "hooks", "shell_snapshot"):
+        settings["features." + feature] = False
     command = [codex_executable(), "exec", "--json", "--ephemeral", "--ignore-user-config",
                "--sandbox", "read-only", "--skip-git-repo-check", "-C", str(work), "-m", config["model"]]
     for key, value in settings.items():
