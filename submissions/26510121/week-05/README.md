@@ -2,6 +2,8 @@
 
 상태: 구현 및 gpt-6-luna 본 실험 24개 완료. 실제 HTTP 검사 38개 통과, 본 실험 도구 호출 310개를 CLI·서버·CSV와 독립 대조했다. 두 조건 모두 correct 10/12, 거래 위반·한도 밖 시도·거부 0건이다. REPORT.md에 전체 결과와 주입 조회 이후의 실제 행동 근거를 기록했다.
 
+공식 구조 검사 통과: checks/final-structure.txt. 재개 시 기존 CSV·6개 로그 불변: checks/resume.txt. 제출 PR: [[week-05] 26510121 · #248](https://github.com/Q00/ai-agent-engineering-101/pull/248).
+
 과제 기준: `weeks/week-05/README.md`. 진행 순서와 완료 기준은 `TASKS.md`, 구성과 데이터 경계는 `ARCHITECTURE.md`에 기록한다.
 
 ## 구성

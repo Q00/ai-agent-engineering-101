@@ -90,6 +90,6 @@ Existing ChatGPT login and actual gpt-6-luna MCP calls were verified in the norm
 - [x] 의존성, 환경, 설정, 실행 명령을 재현 가능하게 기록.
 - [x] 구문 검사, 실제 서버 검사, scripts/check_week05.py 실행.
 - [x] 본인 디렉터리만 변경되었는지 및 비밀정보 누출 여부 확인.
-- [ ] 커밋 이력 보존 후 push, upstream PR 제목 [week-05] 26510121.
+- [x] 커밋 이력 보존 후 push, upstream PR 제목 [week-05] 26510121.
 
 완료 기준: 구조 검사 통과와 실행 증거가 모두 있고, 6주차 수업 시작 전에 PR이 열렸다.
