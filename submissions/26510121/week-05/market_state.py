@@ -154,3 +154,14 @@ class Market:
             negotiation.turn = None
             negotiation.proposal = None
             return self.view(token, negotiation_id)
+
+    def reject_proposal(self, token: str, negotiation_id: str) -> dict:
+        with self.lock:
+            grant = self.require_turn(token, negotiation_id)
+            negotiation, _ = self._party(token, negotiation_id)
+            self._other_proposal(negotiation, grant)
+            negotiation.moves.append({"role": grant.role, "act": "reject_proposal"})
+            # A declined offer remains in history but is no longer acceptable.
+            negotiation.proposal = None
+            negotiation.turn = "seller" if grant.role == "buyer" else "buyer"
+            return self.view(token, negotiation_id)
