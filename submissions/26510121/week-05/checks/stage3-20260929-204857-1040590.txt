@@ -1,0 +1,132 @@
+StreamableHTTP session manager started
+test_admin_rejects_boolean_float_and_unknown_fields (test_stage2.Stage2HTTPTests.test_admin_rejects_boolean_float_and_unknown_fields) ... ok
+test_admin_route_requires_admin_not_party (test_stage2.Stage2HTTPTests.test_admin_route_requires_admin_not_party) ... ERROR
+test_admin_token_cannot_call_mcp (test_stage2.Stage2HTTPTests.test_admin_token_cannot_call_mcp) ... ok
+test_fabricated_handle_is_also_tool_error (test_stage2.Stage2HTTPTests.test_fabricated_handle_is_also_tool_error) ... Tool 'get_negotiation' failed: 'Error executing tool get_negotiation: Token is not authorized for this negotiation'
+ok
+test_header_name_mismatch_is_rejected (test_stage2.Stage2HTTPTests.test_header_name_mismatch_is_rejected) ... ok
+test_no_token_returns_401_and_challenge (test_stage2.Stage2HTTPTests.test_no_token_returns_401_and_challenge) ... ok
+test_other_negotiation_is_tool_error_without_state_change (test_stage2.Stage2HTTPTests.test_other_negotiation_is_tool_error_without_state_change) ... Tool 'get_negotiation' failed: 'Error executing tool get_negotiation: Token is not authorized for this negotiation'
+ok
+test_restart_invalidates_party_tokens (test_stage2.Stage2HTTPTests.test_restart_invalidates_party_tokens) ... ok
+test_role_comes_from_token_and_private_data_is_hidden (test_stage2.Stage2HTTPTests.test_role_comes_from_token_and_private_data_is_hidden) ... ok
+test_token_claims_have_own_limit_only_in_server_conditions (test_stage2.Stage2HTTPTests.test_token_claims_have_own_limit_only_in_server_conditions) ... ok
+test_tools_schema_does_not_accept_caller_role (test_stage2.Stage2HTTPTests.test_tools_schema_does_not_accept_caller_role) ... ok
+test_turn_guard_allows_buyer_refuses_seller_preserves_state (test_stage2.Stage2HTTPTests.test_turn_guard_allows_buyer_refuses_seller_preserves_state) ... ok
+test_unrecognized_party_token_returns_401 (test_stage2.Stage2HTTPTests.test_unrecognized_party_token_returns_401) ... ok
+test_view_cannot_mutate_server_history (test_stage2.Stage2HTTPTests.test_view_cannot_mutate_server_history) ... ok
+StreamableHTTP session manager shutting down
+StreamableHTTP session manager started
+test_accept_and_reject_require_active_counterpart_offer (test_stage3.Stage3HTTPTests.test_accept_and_reject_require_active_counterpart_offer) ... Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: There is no active proposal from the other party'
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: There is no active proposal from the other party'
+ok
+test_all_five_tools_have_no_caller_argument (test_stage3.Stage3HTTPTests.test_all_five_tools_have_no_caller_argument) ... ok
+test_buyer_acceptance_above_budget_refused_with_valid_recovery (test_stage3.Stage3HTTPTests.test_buyer_acceptance_above_budget_refused_with_valid_recovery) ... Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: refused by the market: 71 is above the maximum your token allows'
+Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: refused by the market: 71 is above the maximum your token allows'
+ok
+test_buyer_over_budget_offer_refused_and_retry_keeps_turn (test_stage3.Stage3HTTPTests.test_buyer_over_budget_offer_refused_and_retry_keeps_turn) ... Tool 'propose' failed: 'Error executing tool propose: refused by the market: 71 is above the maximum your token allows'
+Tool 'propose' failed: 'Error executing tool propose: refused by the market: 71 is above the maximum your token allows'
+ok
+test_closed_deal_and_no_deal_reject_all_further_actions (test_stage3.Stage3HTTPTests.test_closed_deal_and_no_deal_reject_all_further_actions) ... Tool 'propose' failed: 'Error executing tool propose: Negotiation is already closed'
+Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: Negotiation is already closed'
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: Negotiation is already closed'
+Tool 'refuse' failed: 'Error executing tool refuse: Negotiation is already closed'
+Tool 'propose' failed: 'Error executing tool propose: Negotiation is already closed'
+Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: Negotiation is already closed'
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: Negotiation is already closed'
+Tool 'refuse' failed: 'Error executing tool refuse: Negotiation is already closed'
+Tool 'propose' failed: 'Error executing tool propose: Negotiation is already closed'
+Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: Negotiation is already closed'
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: Negotiation is already closed'
+Tool 'refuse' failed: 'Error executing tool refuse: Negotiation is already closed'
+Tool 'propose' failed: 'Error executing tool propose: Negotiation is already closed'
+Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: Negotiation is already closed'
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: Negotiation is already closed'
+Tool 'refuse' failed: 'Error executing tool refuse: Negotiation is already closed'
+ok
+test_concurrent_same_party_moves_only_one_succeeds (test_stage3.Stage3HTTPTests.test_concurrent_same_party_moves_only_one_succeeds) ... Tool 'propose' failed: 'Error executing tool propose: It is not your turn'
+ok
+test_counteroffer_replaces_price_used_for_acceptance (test_stage3.Stage3HTTPTests.test_counteroffer_replaces_price_used_for_acceptance) ... ok
+test_cross_negotiation_actions_are_errors_without_mutation (test_stage3.Stage3HTTPTests.test_cross_negotiation_actions_are_errors_without_mutation) ... Tool 'propose' failed: 'Error executing tool propose: Token is not authorized for this negotiation'
+Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: Token is not authorized for this negotiation'
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: Token is not authorized for this negotiation'
+Tool 'refuse' failed: 'Error executing tool refuse: Token is not authorized for this negotiation'
+ok
+test_equal_limits_allow_exact_boundary_price (test_stage3.Stage3HTTPTests.test_equal_limits_allow_exact_boundary_price) ... ok
+test_invalid_prices_do_not_change_state (test_stage3.Stage3HTTPTests.test_invalid_prices_do_not_change_state) ... Tool 'propose' rejected arguments: ['price']
+Tool 'propose' rejected arguments: ['price']
+Tool 'propose' rejected arguments: ['price']
+Tool 'propose' rejected arguments: ['price']
+Tool 'propose' rejected arguments: ['price']
+Tool 'propose' rejected arguments: ['price']
+Tool 'propose' failed: 'Error executing tool propose: Price must be a nonnegative whole number'
+ok
+test_nonoverlapping_limits_cannot_close_deal (test_stage3.Stage3HTTPTests.test_nonoverlapping_limits_cannot_close_deal) ... Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: refused by the market: 55 is below the minimum your token allows'
+Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: refused by the market: 60 is above the maximum your token allows'
+Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: refused by the market: 55 is below the minimum your token allows'
+Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: refused by the market: 60 is above the maximum your token allows'
+ok
+test_offer_and_accept_form_deal_in_all_conditions (test_stage3.Stage3HTTPTests.test_offer_and_accept_form_deal_in_all_conditions) ... ok
+test_out_of_turn_actions_are_errors_without_mutation (test_stage3.Stage3HTTPTests.test_out_of_turn_actions_are_errors_without_mutation) ... Tool 'propose' failed: 'Error executing tool propose: It is not your turn'
+Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: It is not your turn'
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: It is not your turn'
+Tool 'refuse' failed: 'Error executing tool refuse: It is not your turn'
+ok
+test_prompt_conditions_allow_limit_violation_for_comparison (test_stage3.Stage3HTTPTests.test_prompt_conditions_allow_limit_violation_for_comparison) ... ok
+test_reject_invalidates_offer_and_has_no_price (test_stage3.Stage3HTTPTests.test_reject_invalidates_offer_and_has_no_price) ... Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: There is no active proposal from the other party'
+ok
+test_seller_acceptance_below_reserve_refused_with_valid_recovery (test_stage3.Stage3HTTPTests.test_seller_acceptance_below_reserve_refused_with_valid_recovery) ... Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: refused by the market: 39 is below the minimum your token allows'
+Tool 'accept_proposal' failed: 'Error executing tool accept_proposal: refused by the market: 39 is below the minimum your token allows'
+ok
+test_seller_below_reserve_offer_refused_and_retry_keeps_turn (test_stage3.Stage3HTTPTests.test_seller_below_reserve_offer_refused_and_retry_keeps_turn) ... Tool 'propose' failed: 'Error executing tool propose: refused by the market: 39 is below the minimum your token allows'
+Tool 'propose' failed: 'Error executing tool propose: refused by the market: 39 is below the minimum your token allows'
+ok
+test_zero_is_a_valid_whole_number (test_stage3.Stage3HTTPTests.test_zero_is_a_valid_whole_number) ... ok
+StreamableHTTP session manager shutting down
+System.Management.Automation.RemoteException
+======================================================================
+ERROR: test_admin_route_requires_admin_not_party (test_stage2.Stage2HTTPTests.test_admin_route_requires_admin_not_party)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 123, in test_admin_route_requires_admin_not_party
+    status, _, _ = self.request("/admin/negotiations", payload, grant["tokens"]["buyer"])
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 65, in request
+    response = urlopen(request, timeout=5)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MASTER\anaconda3\Lib\urllib\request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MASTER\anaconda3\Lib\urllib\request.py", line 515, in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MASTER\anaconda3\Lib\urllib\request.py", line 532, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MASTER\anaconda3\Lib\urllib\request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "C:\Users\MASTER\anaconda3\Lib\urllib\request.py", line 1373, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MASTER\anaconda3\Lib\urllib\request.py", line 1348, in do_open
+    r = h.getresponse()
+        ^^^^^^^^^^^^^^^
+  File "C:\Users\MASTER\anaconda3\Lib\http\client.py", line 1428, in getresponse
+    response.begin()
+  File "C:\Users\MASTER\anaconda3\Lib\http\client.py", line 331, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MASTER\anaconda3\Lib\http\client.py", line 292, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MASTER\anaconda3\Lib\socket.py", line 708, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] 현재 연결은 원격 호스트에 의해 강제로 끊겼습니다
+System.Management.Automation.RemoteException
+----------------------------------------------------------------------
+Ran 32 tests in 3.000s
+System.Management.Automation.RemoteException
+FAILED (errors=1)
+exit_code=1
