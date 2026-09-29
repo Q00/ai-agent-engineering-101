@@ -1,7 +1,8 @@
 # Week 05 실습: 1주차 도구를 MCP 서버로 옮기기
 
 `weeks/week-01/starter/first_agent_openai.py`의 `calculator`와 `read_file`을
-MCP 서버로 옮겼다. 이 폴더는 강의의 도구 이전 실습이며, 협상 시장 과제의 제출물은 아니다.
+MCP 서버로 옮기고, 1주차 제출물의 세 번째 도구 `write_note`도 서버에 추가했다.
+이 폴더는 강의의 도구 이전 실습이며, 협상 시장 과제의 제출물은 아니다.
 
 ## 무엇이 달라졌나
 
@@ -13,7 +14,7 @@ MCP 서버로 옮겼다. 이 폴더는 강의의 도구 이전 실습이며, 협
 | 루프 | 모델 호출 → 도구 실행 → 결과 추가 → 다시 모델 호출 | 동일. MCP/모델 I/O에 `async`/`await`만 적용 |
 | 종료 | 최종 답변 또는 최대 8단계 | 동일 |
 
-`mcp_agent.py`에는 두 도구의 이름이나 구현이 없다. 서버 함수의 docstring과
+`mcp_agent.py`에는 세 도구의 이름이나 구현이 없다. 서버 함수의 docstring과
 타입 힌트가 도구 설명과 입력 스키마가 된다. 모델이 이름과 인자를 선택하면
 호스트는 이를 서버에 전달하고, 서버의 텍스트 응답을 다음 모델 호출에 넣는다.
 MCP의 `isError`도 모델이 볼 수 있는 `tool error:` 관찰로 전달한다.
@@ -23,6 +24,10 @@ MCP의 `isError`도 모델이 볼 수 있는 `tool error:` 관찰로 전달한�
 starter의 문자열 접두사 검사 대신 실제 경로를 해석한 후 경계를 검사하여
 `..`, 비슷한 이름의 이웃 디렉터리, 외부를 가리키는 심볼릭 링크를 차단한다.
 최대 4000문자만 읽고, 계산기는 `eval` 없이 숫자와 산술 AST만 처리한다.
+`write_note`도 같은 기준 디렉터리와 경로 검사를 적용한다. UTF-8 파일이 없으면
+생성하고, 있으면 `content + "\n"`을 추가하여 기존 내용을 보존한다.
+쓰기 도구이므로 `readOnlyHint=false`, 반복 호출하면 줄이 중복되므로
+`idempotentHint=false`로 선언했다.
 
 ## 준비
 
@@ -50,6 +55,8 @@ unset MCP_SERVER
 .venv/bin/python mcp_agent.py
 # 또는 직접 목표를 전달한다
 .venv/bin/python mcp_agent.py "Read notes.txt and sum the numbers in it."
+# 세 번째 도구까지 쓰는 목표 (재실행하면 기존 파일에 한 줄 더 추가한다)
+.venv/bin/python mcp_agent.py "Read notes.txt, use the calculator to sum the four numeric fields excluding the date, and append the total to memo-demo.txt."
 ```
 
 ### Streamable HTTP
@@ -87,6 +94,16 @@ curl -sS http://127.0.0.1:8000/mcp \
 `tools/call`은 `Mcp-Method: tools/call`, `Mcp-Name: calculator` 헤더와
 `params.name`, `params.arguments`를 사용한다. SDK 클라이언트가 이 처리를 담당하므로
 호스트 루프에서 직접 HTTP 요청을 만들 필요는 없다.
+
+실제 curl로 정상 요청과 두 가지 누락 요청을 한꺼번에 확인하려면:
+
+```bash
+bash check_http_curl.sh
+# 다른 포트라면 URL을 전달한다
+bash check_http_curl.sh http://127.0.0.1:8001/mcp
+```
+
+실제 실행 기록 `logs/curl-check-01.txt`에는 `200`, `400`, `400`이 순서대로 남아 있다.
 
 ## Codex에 같은 서버 연결
 
@@ -132,6 +149,11 @@ HTTP의 정상 요청은 200, `Mcp-Method` 또는 `clientCapabilities` 누락은
 | `logs/check-lab-02.txt` | 두 transport 각각 10개 도구 호출, 스키마, 경로 경계, HTTP 검증 통과 |
 | `logs/codex-run-01.jsonl` | 기존 CLI와 기본 모델의 버전 불일치로 모델 호출 실패 |
 | `logs/codex-run-02.jsonl` | Codex(`gpt-5.6-sol`)가 등록된 MCP 도구 두 개를 실제 호출하고 69,504 반환 |
+| `logs/check-lab-03.txt` | 세 도구의 스키마·설명, 두 transport 각각 15개 호출, 파일 생성·추가 기록·경로 차단 검증 통과 |
+| `logs/curl-check-01.txt` | 실제 curl 요청: 정상 200, `Mcp-Method` 누락 400, `clientCapabilities` 누락 400 |
+| `logs/stdio-three-tools-01.txt` | `[host] 3 tools`, 세 도구 호출, `memo-stdio.txt`에 `Total: 69504` 기록 |
+| `logs/http-three-tools-01.txt` | 같은 host로 세 도구 호출, `memo-http.txt`에 `Total: 69504` 기록 |
+| `logs/checkpoint-final-01.txt` | host 원본 일치, 도구 이름 하드코딩 없음, 두 실행의 호출 순서·파일 내용 대조 |
 
 샘플 `notes.txt`는 공개 starter를 그대로 복사했다. 날짜를 제외한 네 항목의 합은
 `4 + 48000 + 9500 + 12000 = 69504`다. 실제 모델 실행 원본 로그를 수정하지 않았다.
@@ -141,11 +163,25 @@ HTTP의 정상 요청은 200, `Mcp-Method` 또는 `clientCapabilities` 누락은
 수정한 뒤 `check-lab-02.txt`에서 재검증했다. 실패 기록도 보존했다.
 `http-server-01.txt`는 샌드박스의 포트 바인딩 거절 기록이며,
 `http-server-02.txt`, `http-server-03.txt`는 승인 후 실행한 서버 기록이다.
+`http-server-04.txt`는 세 번째 도구 추가 후 HTTP 서버 기록이다.
 Codex 시연은 `--ephemeral --sandbox read-only -m gpt-5.6-sol`로 실행했고,
 해당 실행에만 `-c 'mcp_servers.week01-tools.default_tools_approval_mode="approve"'`를
 적용했다. 두 도구의 호출 성공은 JSONL의 `mcp_tool_call` 이벤트로 확인할 수 있다.
 Codex stderr에는 별도 MCP 클라이언트의 종료 시 초기화 경고도 남아 있지만,
 `week01-tools` 두 호출과 최종 응답은 모두 완료되었다.
+
+## 최종 체크포인트
+
+- [x] `tools/list`의 세 도구 description이 서버 함수의 docstring과 일치한다.
+- [x] host 코드에 도구 이름을 하드코딩하지 않았다.
+- [x] stdio와 HTTP 모두 `read_file → calculator → write_note`를 호출했다.
+- [x] 두 번째 client인 Codex에서도 같은 서버의 도구를 실제 호출했다.
+- [x] 세 번째 도구를 서버에만 등록했고, host 수정 없이 조회·호출했다.
+
+세 번째 도구 추가 전후 `mcp_agent.py`의 Git blob 해시는 모두
+`0c2cf0afa56d4dd83b11441c32d78274fc4f3c42`다. 두 live 실행은 같은 모델과
+같은 목표를 사용하되 원본 출력을 각각 보존하기 위해 출력 파일명만 다르게 했다.
+두 결과 파일은 모델이 도구로 직접 생성한 것이며, 내용을 사후 수정하지 않았다.
 
 ## 참고
 
