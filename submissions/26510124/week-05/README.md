@@ -76,6 +76,8 @@ python3 -m venv /tmp/week05-26510124-venv
 ## 실제 실험 재현
 
 원본 결과와 분리된 출력 디렉터리에 새 실험을 만든다. API 사용량이 발생한다.
+런타임 소스와 시나리오는 Git HEAD에 커밋된 상태여야 한다. 러너는 모델을 호출하기
+전에 이를 확인하므로, 내려받은 커밋을 그대로 실행하거나 변경을 먼저 커밋한다.
 
 ```bash
 /tmp/week05-26510124-venv/bin/python run_experiment.py \
