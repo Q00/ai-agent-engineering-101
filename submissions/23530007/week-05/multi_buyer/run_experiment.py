@@ -1,4 +1,4 @@
-"""러너 — 세 형식 × 3회 × 시나리오 전체.
+"""러너 — 세 형식 × 3회 (buyer 3명 + seller 1명) × 시나리오 전체.
 
 run 하나는 "형식 하나로 시나리오 전체를 한 번"이고 로그 파일 하나에 대응한다.
 results.csv에 이미 있는 (run, scenario) 쌍은 건너뛰므로 중단된 실행을 이어서 돌릴 수 있다.
@@ -24,7 +24,7 @@ from negotiate import run_episode
 HERE = Path(__file__).resolve().parent
 RESULTS = HERE / "results.csv"
 LOGS = HERE / "logs"
-HEADER = ["run", "condition", "scenario", "deal_possible", "outcome", "price", "correct",
+HEADER = ["run", "condition", "scenario", "deal_possible", "outcome", "price", "winner", "correct",
           "violation", "turns", "format_errors", "reader_calls", "note"]
 CONDITIONS = ("free", "tagged", "structured")
 _lock = threading.Lock()
@@ -69,7 +69,8 @@ def do_run(run_id: int, condition: str, scenarios: list[dict], skip: set):
                     + (f" unresolved_accepts={ep.unresolved_accepts}" if ep.unresolved_accepts else ""))
             append({"run": run_id, "condition": condition, "scenario": sc["id"],
                     "deal_possible": ep.deal_possible, "outcome": ep.outcome,
-                    "price": "" if ep.price is None else ep.price, "correct": ep.correct,
+                    "price": "" if ep.price is None else ep.price, "winner": ep.winner,
+                    "correct": ep.correct,
                     "violation": ep.violation, "turns": ep.turns,
                     "format_errors": ep.format_errors, "reader_calls": ep.reader_calls,
                     "note": note})
@@ -77,8 +78,8 @@ def do_run(run_id: int, condition: str, scenarios: list[dict], skip: set):
             log(f"[crash] scenario {sc['id']}: {e!r}")
             log(traceback.format_exc())
             append({"run": run_id, "condition": condition, "scenario": sc["id"],
-                    "deal_possible": int(sc["reserve"] <= sc["budget"]), "outcome": "",
-                    "price": "", "correct": "", "violation": "", "turns": "",
+                    "deal_possible": int(sc["reserve"] <= max(sc["budgets"])), "outcome": "",
+                    "price": "", "winner": "", "correct": "", "violation": "", "turns": "",
                     "format_errors": "", "reader_calls": "",
                     "note": f"crashed: {type(e).__name__}: {e}"})
 
