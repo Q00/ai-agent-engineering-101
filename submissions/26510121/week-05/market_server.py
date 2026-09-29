@@ -92,9 +92,14 @@ def create_app(*, base_url: str, admin_token: str, market: Market | None = None)
         """Decline the other party's active proposal and continue. Ends your turn."""
         return party_call(market.reject_proposal, negotiation_id)
 
+    @mcp.tool()
+    def refuse(negotiation_id: str) -> dict:
+        """Leave the negotiation on your turn. Closes with no deal."""
+        return party_call(market.refuse, negotiation_id)
+
     @mcp.custom_route("/health", methods=["GET"])
     async def health(request: Request):
-        return JSONResponse({"status": "ok", "stage": 2})
+        return JSONResponse({"status": "ok", "stage": 3})
 
     @mcp.custom_route("/admin/negotiations", methods=["POST"])
     async def create_negotiation(request: Request):
