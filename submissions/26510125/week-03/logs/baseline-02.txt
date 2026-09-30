@@ -1,0 +1,31 @@
+[announce] task t1: 'Write a two-sentence changelog entry announcing that dark mode was added to the '
+  [bid] writer: bid=True confidence=95 reason='Changelog entries align directly with technical writing fundamentals.'
+  [bid] coder: bid=True confidence=90 reason='It’s a routine software documentation task within my role.'
+  [bid] analyst: bid=False confidence=95 reason='Changelog writing falls outside my data analysis expertise.'
+[award] task t1: -> writer (confidence=95)
+[announce] task t2: 'Write a short, friendly apology email to users about a delayed shipment.'
+  [bid] writer: bid=True confidence=95 reason='Apology emails about shipping delays align directly with technical writing expertise in user communication.'
+  [bid] coder: bid=False confidence=95 reason='Email composition is not within my software engineering expertise.'
+  [bid] analyst: bid=False confidence=98 reason='Writing apology emails is a communication task, not numerical or statistical analysis.'
+[award] task t2: -> writer (confidence=95)
+[announce] task t3: 'This loop has an off-by-one bug: for i in range(len(items)): print(items[i+1]). '
+  [bid] writer: bid=False confidence=95 reason='This is code debugging, outside my technical writing expertise.'
+  [bid] coder: bid=True confidence=95 reason='Simple programming tasks like this are routine for me.'
+  [bid] analyst: bid=True confidence=95 reason='Off-by-one indexing errors are routine data analysis tasks.'
+[award] task t3: -> coder (confidence=95)
+[announce] task t4: 'Refactor this into early returns: if x:\n    if y:\n        return 1\n    else:\n   '
+  [bid] writer: bid=False confidence=95 reason='Code refactoring falls outside my technical writing specialty.'
+  [bid] coder: bid=True confidence=98 reason='Code refactoring aligns with typical software engineering tasks.'
+  [bid] analyst: bid=False confidence=95 reason='Code refactoring is not my primary data analysis expertise.'
+[award] task t4: -> coder (confidence=98)
+[announce] task t5: 'Given the numbers [12, 15, 9, 22, 18], compute the mean and the standard deviati'
+  [bid] writer: bid=False confidence=95 reason='This is a statistical computation, not technical writing or prose.'
+  [bid] coder: bid=True confidence=95 reason='Basic statistical computation is well within my capabilities.'
+  [bid] analyst: bid=True confidence=95 reason='It is a core statistical computation task.'
+[award] task t5: -> coder (confidence=95)
+[announce] task t6: 'Given two paired lists of values, explain how to compute their Pearson correlati'
+  [bid] writer: bid=False confidence=90 reason='The task requires statistical computation outside my technical writing expertise.'
+  [bid] coder: bid=True confidence=95 reason='It blends statistical analysis with algorithmic computation, core to data engineering.'
+  [bid] analyst: bid=True confidence=95 reason='Pearson correlation is core statistical analysis within my expertise.'
+[award] task t6: -> coder (confidence=95)
+[run 2] condition=baseline done in 750.2s
