@@ -1,0 +1,72 @@
+{
+  "fingerprint": "aef5e47a15f6b5504c5de18906443548771a681863127c9af99a1553148d6b1c",
+  "configuration": {
+    "backend": {
+      "provider": "openai",
+      "base_url": "https://api.openai.com/v1",
+      "model": "gpt-5.4-mini",
+      "temperature": 0.2,
+      "reasoning_effort": "none",
+      "max_completion_tokens": 500,
+      "request_timeout": 90.0,
+      "max_retries": 4,
+      "backoff_base": 1.0,
+      "sdk_retries": 0,
+      "seed": null
+    },
+    "extra": {},
+    "max_turns": 8,
+    "scenarios": [
+      {
+        "id": "bicycle-wide",
+        "item": "a used bicycle",
+        "reserve": 120,
+        "budget": 150
+      },
+      {
+        "id": "lamp-narrow",
+        "item": "a desk lamp",
+        "reserve": 35,
+        "budget": 45
+      },
+      {
+        "id": "textbook-boundary",
+        "item": "a second-hand textbook",
+        "reserve": 40,
+        "budget": 40
+      },
+      {
+        "id": "keyboard-impossible",
+        "item": "a mechanical keyboard",
+        "reserve": 90,
+        "budget": 70
+      }
+    ],
+    "prompts": {
+      "ROLE": {
+        "buyer": "You are the buyer of {item}, negotiating the price with the seller. Your private limit: you can pay at most {limit}. Never agree to a price above {limit}.",
+        "seller": "You are the seller of {item}, negotiating the price with the buyer. Your private limit: you can accept at least {limit}. Never agree to a price below {limit}."
+      },
+      "COMMON": " Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), and refuse (leave the negotiation for good, no deal).",
+      "FORMAT": {
+        "free": " Write your message as one or two plain English sentences.",
+        "tagged": " Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.",
+        "structured": " Reply with exactly one JSON object and nothing else: {\"performative\": \"propose\" | \"accept-proposal\" | \"reject-proposal\" | \"refuse\", \"content\": {\"price\": <whole number or null>}}."
+      },
+      "READER_SYSTEM": "You are an observer reading a price negotiation between a buyer and a seller. Label the LAST message only. Reply with exactly one JSON object and nothing else: {\"performative\": \"propose\" | \"accept-proposal\" | \"reject-proposal\" | \"refuse\", \"price\": <whole number or null>}.",
+      "OPENING_CUE": "The negotiation begins now. Send the buyer's opening message."
+    },
+    "source_sha256": {
+      "model_client.py": "9caa4f9c8c5d3ae7dedcde03144f609f7976701bce3aba152cadc6caac52953b",
+      "prompts.py": "87d1fa2aa4a0adf8305dc082d44fd0ee67e6a720d7fc72219e50d4357e41d62a",
+      "protocol.py": "d5330f950dc2c4e72f8811fac394d800572480834df8d816649daadb93b5d4dd",
+      "negotiation.py": "a0bfe7d08394514a0210b074aa15b73bffea7733745d009c8ce83e178cdd0f88",
+      "run_experiment.py": "df6375f63b7164933b9ebac7c26c81e2745bba06c7972a2ff1c5c7aa6f2d84bf"
+    },
+    "protocol_policy": "nonnegative_integer;structured_leading_object;reader_strict_json"
+  },
+  "created_at": "2026-09-22T12:05:06.094755+00:00",
+  "git_commit": "287ca7cf567635f5ded2f68a26fac3276aa4ec9d",
+  "python": "3.12.6",
+  "openai": "3.14.0"
+}
