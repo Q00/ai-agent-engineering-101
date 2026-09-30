@@ -1,0 +1,19 @@
+flowchart TD
+    R["envelope arrives"] --> DUP{"seen this mid?"}
+    DUP -->|"yes"| DROP["dropped · idempotent"]
+    DUP -->|"no"| Q["hold-back queue"]
+    Q --> TEST{"vc[sender] == local[sender] + 1<br/>and vc[k] <= local[k] for k != sender"}
+    TEST -->|"no"| WAIT["stays held<br/>until its predecessors arrive"]
+    WAIT --> TEST
+    TEST -->|"yes"| CLK["clock: elementwise max<br/>(never ticks our own entry)"]
+    CLK --> VIS{"are we an addressee?"}
+    VIS -->|"yes"| READ["appended to the conversation<br/>readable by the guard"]
+    VIS -->|"no"| OBS["counted for causality only<br/>content stays private"]
+    READ --> APPEND["append-only, so the cached<br/>prefix is never rewritten"]
+
+    classDef ok fill:#b2f2bb,stroke:#2f9e44,stroke-width:2px,color:#1e1e1e
+    classDef mid fill:#ffec99,stroke:#f08c00,stroke-width:2px,color:#1e1e1e
+    classDef no fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    class READ,APPEND,CLK ok
+    class WAIT,OBS mid
+    class DROP no

@@ -1,0 +1,50 @@
+classDiagram
+    class VectorClock {
+      +members
+      +tick(who) sent
+      +observe(other) received, max only
+      +leq(other) happens-before
+    }
+    class CausalMailbox {
+      +clock
+      +held out of order
+      +observed every envelope
+      +delivered addressed to us only
+      +receive(msg, visible)
+    }
+    class Endpoint {
+      +roles task to role
+      +sent task to messages
+      +committed one contract owed
+      +managing auctions running
+      +subtasks parent to children
+      +orphans written off
+      +violations refused sends
+      +can_send(type, task, to)
+      +decision_cut()
+    }
+    class Journal {
+      +write(msg) JSONL, seq
+      +note_usage(usage) cache
+      +cache_stats()
+    }
+    class Agent {
+      +manifest tools held
+      +persistent conversation kept
+      +allow_trajectory condition
+      +system_prompt() invariant
+      +tool_specs() invariant
+      +act(role, block)
+    }
+    class TaskResult {
+      +feasible award inside capable
+      +optimal award equals gold
+      +solved report answers it
+      +partial a piece was orphaned
+      +failures countable modes
+    }
+    Endpoint --> CausalMailbox
+    CausalMailbox --> VectorClock
+    Endpoint --> Journal
+    Agent --> Journal
+    TaskResult ..> Endpoint : built by phases

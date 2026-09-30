@@ -1,0 +1,119 @@
+{
+  "log": "app.log",
+  "judge": "the last line beginning with 'Answer:' in the winner's report must contain the task's answer, compared with whitespace removed and case folded",
+  "roles": "manager for task n is CANDIDATES[(n-1) % 4]; the rest are contractors",
+  "manifests": {
+    "P1": [
+      "count_by_hour",
+      "count_level"
+    ],
+    "P2": [
+      "grep_message"
+    ],
+    "P3": [
+      "read_log"
+    ],
+    "P4": [
+      "count_by_hour",
+      "grep_message",
+      "read_log"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "1",
+      "grain": "aggregate",
+      "desc": "Which hour of the day has the most ERROR lines? Answer as HH:00.",
+      "requires": [
+        "count_by_hour"
+      ],
+      "capable": [
+        "P1",
+        "P4"
+      ],
+      "gold": "P1",
+      "answer": "14:00"
+    },
+    {
+      "id": "2",
+      "grain": "aggregate",
+      "desc": "How many WARN lines are in the log? Answer the integer.",
+      "requires": [
+        "count_level"
+      ],
+      "capable": [
+        "P1"
+      ],
+      "gold": "P1",
+      "answer": "11"
+    },
+    {
+      "id": "3",
+      "grain": "search",
+      "desc": "How many log lines mention QuizService? Answer the integer.",
+      "requires": [
+        "grep_message"
+      ],
+      "capable": [
+        "P2",
+        "P4"
+      ],
+      "gold": "P2",
+      "answer": "7"
+    },
+    {
+      "id": "4",
+      "grain": "verbatim",
+      "desc": "What is the message on line 35 of the log, exactly as written? Give the message text only, without the timestamp or level.",
+      "requires": [
+        "read_log"
+      ],
+      "capable": [
+        "P3",
+        "P4"
+      ],
+      "gold": "P3",
+      "answer": "upstream timeout after 5000ms"
+    },
+    {
+      "id": "5",
+      "grain": "compound",
+      "desc": "Find the hour with the most ERROR lines, then give the message of the first ERROR line in that hour. Answer as HH:00 / message.",
+      "requires": [
+        "count_by_hour",
+        "read_log"
+      ],
+      "capable": [
+        "P4"
+      ],
+      "gold": "P4",
+      "answer": "14:00 / NullReference in QuizService.score"
+    },
+    {
+      "id": "6",
+      "grain": "compound",
+      "desc": "Give two integers separated by a slash: how many WARN lines there are in total, and how many lines mention 'db connection refused'.",
+      "requires": [
+        "count_level",
+        "grep_message"
+      ],
+      "capable": [],
+      "gold": null,
+      "answer": "11/4"
+    },
+    {
+      "id": "7",
+      "grain": "generate",
+      "desc": "Which ERROR message occurs most often in the log? Answer the message text.",
+      "requires": [
+        "read_log"
+      ],
+      "capable": [
+        "P3",
+        "P4"
+      ],
+      "gold": "P3",
+      "answer": "NullReference in QuizService.score"
+    }
+  ]
+}

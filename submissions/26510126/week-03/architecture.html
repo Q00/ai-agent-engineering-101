@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contract Net 아키텍처</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@300;400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --board:#fbfbf9; --card:#fff; --ink:#1e1e1e; --ink-2:#43464d; --ink-3:#7c8089;
+    --grid:#e6e6e2; --red:#c92a2a; --amber:#f08c00; --amber-f:#ffec99;
+    --hand:"Gaegu","Nanum Pen Script","Apple SD Gothic Neo",cursive;
+    --body:"IBM Plex Sans","Apple SD Gothic Neo",-apple-system,system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background-color:var(--board);color:var(--ink);
+    background-image:radial-gradient(var(--grid) 1.1px,transparent 1.1px);
+    background-size:22px 22px;font-family:var(--body);font-size:16px;line-height:1.74}
+  .wrap{max-width:1060px;margin:0 auto;padding-block:52px 108px;padding-left:20px;padding-right:20px}
+  .col{max-width:660px}
+  code{font-family:var(--mono);font-size:13px;background:#f1f0eb;border:1px solid #e2e0d8;
+    padding:0 5px;border-radius:4px}
+  .slug{font-family:var(--hand);font-size:21px;color:var(--red)}
+  h1{font-family:var(--hand);font-size:46px;line-height:1.1;margin:4px 0 12px;font-weight:700;
+    position:relative;display:inline-block}
+  h1::after{content:"";position:absolute;left:-4px;right:-8px;bottom:2px;height:12px;
+    background:var(--amber-f);z-index:-1;transform:rotate(-.6deg);border-radius:40% 60% 50% 45%}
+  .standfirst{font-size:17px;color:var(--ink-2);margin:0;max-width:640px}
+  .gen{font-family:var(--mono);font-size:12px;color:var(--ink-3);margin-top:18px;
+    padding-top:12px;border-top:2px dashed var(--grid)}
+  section{margin-top:52px}
+  h2{font-family:var(--hand);font-size:32px;margin:0 0 4px;font-weight:700}
+  h2 .n{font-size:20px;color:var(--red);margin-right:10px}
+  .why{font-size:15px;color:var(--ink-2);margin:0 0 16px;max-width:680px}
+  figure{margin:0;background:var(--card);border:2px solid var(--ink);
+    border-radius:18px 10px 20px 10px;box-shadow:3px 4px 0 rgba(30,30,30,.07)}
+  figure .plate{overflow-x:auto;padding:24px 20px}
+  pre.mermaid{min-width:min-content;margin:0}
+  figcaption{border-top:2px dashed var(--grid);padding:10px 18px;font-family:var(--mono);
+    font-size:12px;color:var(--ink-3);background:#fcfcfa}
+  footer{margin-top:72px;padding-top:16px;border-top:2px dashed var(--grid);
+    font-family:var(--mono);font-size:12px;color:var(--ink-3);line-height:1.8}
+  @media (max-width:560px){h1{font-size:32px}h2{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="slug">Week 03 확장 · 구현된 시스템</div>
+  <h1>Contract Net 아키텍처</h1>
+  <p class="standfirst">이 문서는 손으로 그린 것이 아니다. <code>diagrams.py</code> 가
+  코드와 실행 저널에서 생성하며, <code>--check</code> 가 코드와 어긋난 그림을 잡는다.
+  설계안이 아니라 지금 돌아가는 것이다.</p>
+  <div class="gen">생성 2026-09-16 00:37 · 다이어그램 15개 · <code>python diagrams.py --html architecture.html</code></div>
+</header>
+
+<section>
+  <h2><span class="n">01</span>모듈 구조</h2>
+  <p class="why">무엇이 무엇에 의존하는가. 점선은 검증 경로.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+flowchart TB
+    TL["tools.py<br/>4 work tools · manifests<br/>capable_for · gold_for · judge"]
+    PR2["protocol.py<br/>VectorClock · CausalMailbox<br/>Endpoint · Journal · trajectory"]
+    AG["agents.py<br/>identity · cache boundary<br/>3 role states"]
+    PH["phases.py<br/>announce / bid+select / execute<br/>recursion · orphans"]
+    RN["run_ext.py<br/>6 conditions · rounds"]
+    OUT2["results_ext.csv<br/>tasks_ext_detail.csv<br/>logs_ext/*.jsonl"]
+    AN["analyze.py"]
+    TO["test_offline.py<br/>no key, no model"]
+    DG["diagrams.py<br/>this file"]
+
+    TL --> AG
+    TL --> PH
+    PR2 --> AG
+    PR2 --> PH
+    AG --> PH
+    PH --> RN
+    RN --> OUT2
+    OUT2 --> AN
+    OUT2 --> DG
+    TL --> DG
+    PR2 --> DG
+    AG --> DG
+    TO -.-> TL
+    TO -.-> PR2
+    TO -.-> AG
+    TO -.-> PH
+
+    classDef core fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    classDef data fill:#bac8ff,stroke:#4263eb,stroke-width:2px,color:#1e1e1e
+    classDef aux fill:#b2f2bb,stroke:#2f9e44,stroke-width:2px,color:#1e1e1e
+    class TL,PR2,AG,PH,RN core
+    class OUT2 data
+    class AN,TO,DG aux
+</pre>
+    </div>
+    <figcaption>diagrams/modules.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">02</span>타입 구조</h2>
+  <p class="why">설계 판단을 담고 있는 필드만 적었다. Endpoint 의 committed 와 managing 이 갈라져 있는 것이 depth 를 가능하게 한다.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+classDiagram
+    class VectorClock {
+      +members
+      +tick(who) sent
+      +observe(other) received, max only
+      +leq(other) happens-before
+    }
+    class CausalMailbox {
+      +clock
+      +held out of order
+      +observed every envelope
+      +delivered addressed to us only
+      +receive(msg, visible)
+    }
+    class Endpoint {
+      +roles task to role
+      +sent task to messages
+      +committed one contract owed
+      +managing auctions running
+      +subtasks parent to children
+      +orphans written off
+      +violations refused sends
+      +can_send(type, task, to)
+      +decision_cut()
+    }
+    class Journal {
+      +write(msg) JSONL, seq
+      +note_usage(usage) cache
+      +cache_stats()
+    }
+    class Agent {
+      +manifest tools held
+      +persistent conversation kept
+      +allow_trajectory condition
+      +system_prompt() invariant
+      +tool_specs() invariant
+      +act(role, block)
+    }
+    class TaskResult {
+      +feasible award inside capable
+      +optimal award equals gold
+      +solved report answers it
+      +partial a piece was orphaned
+      +failures countable modes
+    }
+    Endpoint --> CausalMailbox
+    CausalMailbox --> VectorClock
+    Endpoint --> Journal
+    Agent --> Journal
+    TaskResult ..> Endpoint : built by phases
+</pre>
+    </div>
+    <figcaption>diagrams/classes.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">03</span>캐시 경계</h2>
+  <p class="why">역할이 tools 나 system 에 들어가면 프리픽스가 가장 앞 바이트에서 깨진다. 그래서 역할은 경계 뒤 messages 로 간다.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+flowchart TB
+    subgraph PREFIX["cached prefix · byte-identical across turns and roles"]
+      direction TB
+      TL["tools<br/>4 protocol tools, fixed order<br/>+ this candidate's work tools, sorted"]
+      SY["system<br/>identity · manifest · protocol rules"]
+      TL --> SY
+    end
+    BOUND["cache_control boundary"]
+    subgraph TAIL["after the boundary · append-only"]
+      direction TB
+      RO["ROLE for this turn"]
+      TK["task, announcement, bids so far"]
+      RO --> TK
+    end
+    SY --> BOUND --> RO
+    NOTE["a role in tools or system would break<br/>the prefix at its earliest byte"]
+    BOUND -.-> NOTE
+
+    classDef keep fill:#b2f2bb,stroke:#2f9e44,stroke-width:2px,color:#1e1e1e
+    classDef line fill:#bac8ff,stroke:#4263eb,stroke-width:2px,color:#1e1e1e
+    classDef warn fill:#ffec99,stroke:#f08c00,stroke-width:2px,color:#1e1e1e
+    class TL,SY keep
+    class RO,TK line
+    class NOTE warn
+</pre>
+    </div>
+    <figcaption>diagrams/cache-boundary.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">04</span>메시지 문법</h2>
+  <p class="why">Smith 1980 의 문법 중 이 시스템이 실제로 보내는 것, 그리고 페이즈 대응.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+flowchart LR
+    subgraph ANNOUNCE["phase · announce"]
+      direction TB
+      TASK_ANNOUNCEMENT["TASK-ANNOUNCEMENT"]
+    end
+    subgraph BID["phase · bid"]
+      direction TB
+      BID["BID"]
+    end
+    ANNOUNCE --> BID
+    subgraph SELECT["phase · select"]
+      direction TB
+      REFUSAL["REFUSAL"]
+      ANNOUNCED_AWARD["ANNOUNCED-AWARD"]
+      ACCEPTANCE["ACCEPTANCE"]
+    end
+    BID --> SELECT
+    subgraph EXECUTE["phase · execute"]
+      direction TB
+      FINAL_REPORT["FINAL-REPORT"]
+    end
+    SELECT --> EXECUTE
+    classDef msg fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    class TASK_ANNOUNCEMENT,BID,REFUSAL,ANNOUNCED_AWARD,ACCEPTANCE,FINAL_REPORT msg
+</pre>
+    </div>
+    <figcaption>diagrams/message-types.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">05</span>인과 배달</h2>
+  <p class="why">봉투는 전원에게, 내용은 수신자에게만. 보류 큐가 정확성과 캐시를 동시에 준다 — 소급 삽입이 없으니 대화가 append-only 로 남는다.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+flowchart TD
+    R["envelope arrives"] --> DUP{"seen this mid?"}
+    DUP -->|"yes"| DROP["dropped · idempotent"]
+    DUP -->|"no"| Q["hold-back queue"]
+    Q --> TEST{"vc[sender] == local[sender] + 1<br/>and vc[k] <= local[k] for k != sender"}
+    TEST -->|"no"| WAIT["stays held<br/>until its predecessors arrive"]
+    WAIT --> TEST
+    TEST -->|"yes"| CLK["clock: elementwise max<br/>(never ticks our own entry)"]
+    CLK --> VIS{"are we an addressee?"}
+    VIS -->|"yes"| READ["appended to the conversation<br/>readable by the guard"]
+    VIS -->|"no"| OBS["counted for causality only<br/>content stays private"]
+    READ --> APPEND["append-only, so the cached<br/>prefix is never rewritten"]
+
+    classDef ok fill:#b2f2bb,stroke:#2f9e44,stroke-width:2px,color:#1e1e1e
+    classDef mid fill:#ffec99,stroke:#f08c00,stroke-width:2px,color:#1e1e1e
+    classDef no fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    class READ,APPEND,CLK ok
+    class WAIT,OBS mid
+    class DROP no
+</pre>
+    </div>
+    <figcaption>diagrams/causal-delivery.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">06</span>송신 가드</h2>
+  <p class="why">메일박스는 도착 순서를 고친다. 생성 순서는 이 트리가 막는다. 판단은 로컬 지식만 쓴다.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+flowchart TD
+    S["an agent wants to send"] --> K{"which type"}
+    K -->|"TASK-ANNOUNCEMENT"| A1{"depth"}
+    A1 -->|"1"| A2{"is this endpoint<br/>the manager?"}
+    A1 -->|"2"| A3{"did it accept<br/>the parent?"}
+    A1 -->|"> 2"| X1["refused<br/>max depth"]
+    A2 -->|"no"| X2["refused"]
+    A2 -->|"yes"| OK1["sent"]
+    A3 -->|"no"| X3["refused<br/>not committed to parent"]
+    A3 -->|"yes"| OK2["sent · becomes manager of the piece"]
+    K -->|"BID"| B1{"announcement<br/>delivered here?"}
+    B1 -->|"no"| X4["refused"]
+    B1 -->|"yes"| OK3["sent"]
+    K -->|"ANNOUNCED-AWARD"| C1{"did this endpoint<br/>announce it?"}
+    C1 -->|"no"| X5["refused"]
+    C1 -->|"yes"| C2{"did the target bid?"}
+    C2 -->|"no"| X6["refused · invalid_award<br/>retried once"]
+    C2 -->|"yes"| C3{"award outstanding?"}
+    C3 -->|"yes, unanswered"| X7["refused"]
+    C3 -->|"no, or refused"| OK4["sent"]
+    K -->|"ACCEPTANCE"| D1{"already committed<br/>elsewhere?"}
+    D1 -->|"yes"| X8["refused · send REFUSAL instead"]
+    D1 -->|"no"| OK5["sent"]
+    K -->|"FINAL-REPORT"| E1{"any piece still<br/>open?"}
+    E1 -->|"yes"| X9["refused"]
+    E1 -->|"no"| OK6["sent"]
+
+    classDef ok fill:#b2f2bb,stroke:#2f9e44,stroke-width:2px,color:#1e1e1e
+    classDef no fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    class OK1,OK2,OK3,OK4,OK5,OK6 ok
+    class X1,X2,X3,X4,X5,X6,X7,X8,X9 no
+</pre>
+    </div>
+    <figcaption>diagrams/send-guard.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">07</span>후보 생애주기</h2>
+  <p class="why">capacity 가 둘로 갈린 이유. 하나면 분해자가 자기 조각을 공고할 수 없다.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+stateDiagram-v2
+    direction LR
+    [*] --> idle
+    idle --> bidding : announcement delivered
+    bidding --> idle : not awarded
+    bidding --> committed : awarded and ACCEPTANCE
+    bidding --> idle : awarded and REFUSAL<br/>(capacity is 1 contract)
+    committed --> working : runs its own tools
+    working --> managing : announces a piece<br/>(depth < 2)
+    managing --> working : piece reported or orphaned
+    working --> idle : FINAL-REPORT
+    note right of managing
+      committed and managing at once.
+      One counter would deadlock here:
+      the winner would be busy and
+      unable to announce its own piece.
+    end note
+</pre>
+    </div>
+    <figcaption>diagrams/candidate-states.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">08</span>태스크 생애주기</h2>
+  <p class="why">짧게 끝나는 모든 경로를 포함한다 — 유찰, 거절 후 재낙찰, orphan 후 부분 보고.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+stateDiagram-v2
+    [*] --> announced : manager writes 2 of Smith's 4 fields
+    announced --> unassigned : no bid
+    announced --> bids_in : at least one BID
+    bids_in --> awarded : ANNOUNCED-AWARD
+    bids_in --> unassigned : no award call
+    awarded --> refused : winner already committed
+    refused --> awarded : manager falls to the next bid
+    refused --> unassigned : nobody left
+    awarded --> accepted : ACCEPTANCE
+    accepted --> reported : FINAL-REPORT
+    accepted --> partial : a piece was orphaned
+    partial --> reported
+    reported --> [*]
+    unassigned --> [*]
+</pre>
+    </div>
+    <figcaption>diagrams/task-states.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">09</span>역할과 도구</h2>
+  <p class="why">winner 가 manager 의 도구를 갖는다. 조각을 내주면 그 조각의 manager 이니까.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+flowchart LR
+    manager["manager"]
+    contractor["contractor"]
+    winner["winner"]
+    announce(["announce"])
+    bidding(["bidding"])
+    get_trajectory(["get_trajectory"])
+    award(["award"])
+    manager --> announce
+    manager --> get_trajectory
+    manager --> award
+    contractor --> bidding
+    winner --> announce
+    winner --> get_trajectory
+    winner --> award
+    classDef role fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    classDef tool fill:#bac8ff,stroke:#4263eb,stroke-width:2px,color:#1e1e1e
+    class manager,contractor,winner role
+    class announce,bidding,get_trajectory,award tool
+</pre>
+    </div>
+    <figcaption>diagrams/role-tools.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">10</span>후보와 작업 도구</h2>
+  <p class="why">노란 도구는 둘 이상이 나눠 갖는다. 그 겹침이 manager 의 판단에 여지를 만든다.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+flowchart LR
+    P1["P1"]
+    P2["P2"]
+    P3["P3"]
+    P4["P4"]
+    count_by_hour(["count_by_hour"])
+    count_level(["count_level"])
+    grep_message(["grep_message"])
+    read_log(["read_log"])
+    P1 --> count_by_hour
+    P1 --> count_level
+    P2 --> grep_message
+    P3 --> read_log
+    P4 --> count_by_hour
+    P4 --> grep_message
+    P4 --> read_log
+    classDef cand fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    classDef tool fill:#bac8ff,stroke:#4263eb,stroke-width:2px,color:#1e1e1e
+    classDef shared fill:#ffec99,stroke:#f08c00,stroke-width:2px,color:#1e1e1e
+    class P1,P2,P3,P4 cand
+    class count_level tool
+    class count_by_hour,grep_message,read_log shared
+</pre>
+    </div>
+    <figcaption>diagrams/manifests.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">11</span>판정</h2>
+  <p class="why">feasible · optimal · solved 는 갈라진다. capable 은 하한이므로 그 밖에서 나온 solved 는 모순이 아니라 발견이다.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+flowchart TD
+    AW{"award made?"} -->|"no"| UN["unassigned"]
+    AW -->|"yes"| F{"inside capable?"}
+    F -->|"no"| IF["not feasible<br/>(capable is a lower bound —<br/>a solve from here is a finding)"]
+    F -->|"yes"| FE["feasible"]
+    FE --> O{"equals gold?"}
+    O -->|"yes"| OP["optimal"]
+    O -->|"no"| SU["second best"]
+    IF --> S{"last Answer: line<br/>contains the answer?"}
+    OP --> S
+    SU --> S
+    S -->|"yes"| SO["solved"]
+    S -->|"no"| NS["not solved"]
+
+    classDef ok fill:#b2f2bb,stroke:#2f9e44,stroke-width:2px,color:#1e1e1e
+    classDef mid fill:#ffec99,stroke:#f08c00,stroke-width:2px,color:#1e1e1e
+    classDef no fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    class FE,OP,SO ok
+    class SU,IF mid
+    class UN,NS no
+</pre>
+    </div>
+    <figcaption>diagrams/judgement.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">12</span>실제 실행 · 태스크 하나</h2>
+  <p class="why">손으로 그린 이상화가 아니라 저널에서 생성한 것. 대괄호 안이 실제 벡터 시계.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+sequenceDiagram
+    participant P1
+    participant P2
+    participant P3
+    participant P4
+    Note over P1,P4: phase · announce
+    P1->>P2: TASK-ANNOUNCEMENT c1-1 [P1:1]
+    P1->>P3: TASK-ANNOUNCEMENT c1-1
+    P1->>P4: TASK-ANNOUNCEMENT c1-1
+    Note over P1,P4: phase · bid
+    P2-->>P1: BID c1-1 [P1:1,P2:1]
+    P3-->>P1: BID c1-1 [P1:1,P2:1,P3:1]
+    P4-->>P1: BID c1-1 [P1:1,P2:1,P3:1,P4:1]
+    Note over P1,P4: phase · select
+    P1->>P4: ANNOUNCED-AWARD c1-1 [P1:2,P2:1,P3:1,P4:1]
+    P4-->>P1: ACCEPTANCE c1-1 [P1:2,P2:1,P3:1,P4:2]
+    Note over P1,P4: phase · execute
+    P4-->>P1: FINAL-REPORT c1-1 [P1:2,P2:1,P3:1,P4:3]
+</pre>
+    </div>
+    <figcaption>diagrams/sequence-task1.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">13</span>실제 실행 · 라운드 앞부분</h2>
+  <p class="why">같은 저널에서. 페이즈 전환이 주석으로 들어간다.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+sequenceDiagram
+    participant P1
+    participant P2
+    participant P3
+    participant P4
+    Note over P1,P4: phase · announce
+    P1->>P2: TASK-ANNOUNCEMENT c1-1 [P1:1]
+    P1->>P3: TASK-ANNOUNCEMENT c1-1
+    P1->>P4: TASK-ANNOUNCEMENT c1-1
+    Note over P1,P4: phase · bid
+    P2-->>P1: BID c1-1 [P1:1,P2:1]
+    P3-->>P1: BID c1-1 [P1:1,P2:1,P3:1]
+    P4-->>P1: BID c1-1 [P1:1,P2:1,P3:1,P4:1]
+    Note over P1,P4: phase · select
+    P1->>P4: ANNOUNCED-AWARD c1-1 [P1:2,P2:1,P3:1,P4:1]
+    P4-->>P1: ACCEPTANCE c1-1 [P1:2,P2:1,P3:1,P4:2]
+    Note over P1,P4: phase · execute
+    P4-->>P1: FINAL-REPORT c1-1 [P1:2,P2:1,P3:1,P4:3]
+    Note over P1,P4: phase · announce
+    P2->>P1: TASK-ANNOUNCEMENT c1-2 [P1:2,P2:2,P3:1,P4:3]
+    P2->>P3: TASK-ANNOUNCEMENT c1-2
+    P2->>P4: TASK-ANNOUNCEMENT c1-2
+    Note over P1,P4: phase · bid
+    P1-->>P2: BID c1-2 [P1:3,P2:2,P3:1,P4:3]
+    P3-->>P2: BID c1-2 [P1:3,P2:2,P3:2,P4:3]
+    P4-->>P2: BID c1-2 [P1:3,P2:2,P3:2,P4:4]
+    Note over P1,P4: phase · select
+    P2->>P1: ANNOUNCED-AWARD c1-2 [P1:3,P2:3,P3:2,P4:4]
+    P1-->>P2: ACCEPTANCE c1-2 [P1:4,P2:3,P3:2,P4:4]
+    Note over P1,P4: phase · execute
+    P1-->>P2: FINAL-REPORT c1-2 [P1:5,P2:3,P3:2,P4:4]
+    Note over P1,P4: phase · announce
+    P3->>P1: TASK-ANNOUNCEMENT c1-3 [P1:5,P2:3,P3:3,P4:4]
+    P3->>P2: TASK-ANNOUNCEMENT c1-3
+    P3->>P4: TASK-ANNOUNCEMENT c1-3
+    Note over P1,P4: phase · bid
+    P1-->>P3: BID c1-3 [P1:6,P2:3,P3:3,P4:4]
+    P2-->>P3: BID c1-3 [P1:6,P2:4,P3:3,P4:4]
+    P4-->>P3: BID c1-3 [P1:6,P2:4,P3:3,P4:5]
+    Note over P1,P4: phase · select
+    P3->>P2: ANNOUNCED-AWARD c1-3 [P1:6,P2:4,P3:4,P4:5]
+    P2-->>P3: ACCEPTANCE c1-3 [P1:6,P2:5,P3:4,P4:5]
+    Note over P1,P4: phase · execute
+    P2-->>P3: FINAL-REPORT c1-3 [P1:6,P2:6,P3:4,P4:5]
+    Note over P1,P4: phase · announce
+    P4->>P1: TASK-ANNOUNCEMENT c1-4 [P1:6,P2:6,P3:4,P4:6]
+    P4->>P2: TASK-ANNOUNCEMENT c1-4
+    P4->>P3: TASK-ANNOUNCEMENT c1-4
+    Note over P1,P4: phase · bid
+    P1-->>P4: BID c1-4 [P1:7,P2:6,P3:4,P4:6]
+    P2-->>P4: BID c1-4 [P1:7,P2:7,P3:4,P4:6]
+    P3-->>P4: BID c1-4 [P1:7,P2:7,P3:5,P4:6]
+    Note over P1,P4: phase · select
+    P4->>P3: ANNOUNCED-AWARD c1-4 [P1:7,P2:7,P3:5,P4:7]
+    P3-->>P4: ACCEPTANCE c1-4 [P1:7,P2:7,P3:6,P4:7]
+    Note over P1,P4: phase · execute
+    P3-->>P4: FINAL-REPORT c1-4 [P1:7,P2:7,P3:7,P4:7]
+    Note over P1,P4: phase · announce
+    P1->>P2: TASK-ANNOUNCEMENT c1-5 [P1:8,P2:7,P3:7,P4:7]
+    P1->>P3: TASK-ANNOUNCEMENT c1-5
+    P1->>P4: TASK-ANNOUNCEMENT c1-5
+    Note over P1,P4: phase · bid
+    P2-->>P1: BID c1-5 [P1:8,P2:8,P3:7,P4:7]
+    P3-->>P1: BID c1-5 [P1:8,P2:8,P3:8,P4:7]
+    P4-->>P1: BID c1-5 [P1:8,P2:8,P3:8,P4:8]
+    Note over P1,P4: phase · select
+    P1->>P4: ANNOUNCED-AWARD c1-5 [P1:9,P2:8,P3:8,P4:8]
+    P4-->>P1: ACCEPTANCE c1-5 [P1:9,P2:8,P3:8,P4:9]
+    Note over P1,P4: phase · execute
+    P4-->>P1: FINAL-REPORT c1-5 [P1:9,P2:8,P3:8,P4:10]
+    Note over P1,P4: phase · announce
+    P2->>P1: TASK-ANNOUNCEMENT c1-6 [P1:9,P2:9,P3:8,P4:10]
+    P2->>P3: TASK-ANNOUNCEMENT c1-6
+    P2->>P4: TASK-ANNOUNCEMENT c1-6
+    Note over P1,P4: phase · bid
+    P1-->>P2: BID c1-6 [P1:10,P2:9,P3:8,P4:10]
+    P3-->>P2: BID c1-6 [P1:10,P2:9,P3:9,P4:10]
+    P4-->>P2: BID c1-6 [P1:10,P2:9,P3:9,P4:11]
+    Note over P1,P4: phase · select
+    P2->>P4: ANNOUNCED-AWARD c1-6 [P1:10,P2:10,P3:9,P4:11]
+</pre>
+    </div>
+    <figcaption>diagrams/sequence-run.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">14</span>시나리오 · 동시성 (실제 실행 아님)</h2>
+  <p class="why">채점 실행의 저널에는 REFUSAL 이 0건이다. 러너가 태스크를 순차 처리하니 한 후보가 두 계약에 동시에 묶일 상황이 만들어지지 않는다. capacity-1 과 Smith 의 ACCEPTANCE | REFUSAL 쌍은 구현·검증됐으나 측정에는 부하를 지지 않는다. 이 그림은 그 경로를 관통하는 오프라인 시나리오에서 생성했다 — scenarios.concurrency, 테스트가 단정하는 바로 그 시나리오.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+sequenceDiagram
+    participant P1
+    participant P2
+    participant P3
+    participant P4
+    Note over P1,P4: phase · announce
+    P1->>P2: TASK-ANNOUNCEMENT c1 [P1:1]
+    P1->>P3: TASK-ANNOUNCEMENT c1
+    P1->>P4: TASK-ANNOUNCEMENT c1
+    P4->>P1: TASK-ANNOUNCEMENT c2 [P1:1,P4:1]
+    P4->>P2: TASK-ANNOUNCEMENT c2
+    P4->>P3: TASK-ANNOUNCEMENT c2
+    Note over P1,P4: phase · bid
+    P2-->>P1: BID c1 [P1:1,P2:1,P4:1]
+    P2-->>P4: BID c2 [P1:1,P2:2,P4:1]
+    P3-->>P1: BID c1 [P1:1,P2:2,P3:1,P4:1]
+    P3-->>P4: BID c2 [P1:1,P2:2,P3:2,P4:1]
+    Note over P1,P4: phase · select
+    P1->>P2: ANNOUNCED-AWARD c1 [P1:2,P2:2,P3:2,P4:1]
+    P2-->>P1: ACCEPTANCE c1 [P1:2,P2:3,P3:2,P4:1]
+    P4->>P2: ANNOUNCED-AWARD c2 [P1:2,P2:3,P3:2,P4:2]
+    P2-->>P4: REFUSAL c2 [P1:2,P2:4,P3:2,P4:2]
+    P4->>P3: ANNOUNCED-AWARD c2 [P1:2,P2:4,P3:2,P4:3]
+    P3-->>P4: ACCEPTANCE c2 [P1:2,P2:4,P3:3,P4:3]
+    Note over P1,P4: phase · execute
+    P2-->>P1: FINAL-REPORT c1 [P1:2,P2:5,P3:3,P4:3]
+    P3-->>P4: FINAL-REPORT c2 [P1:2,P2:5,P3:4,P4:3]
+</pre>
+    </div>
+    <figcaption>diagrams/scenario-concurrency.mmd</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">15</span>시나리오 · 재귀 (실제 실행 아님)</h2>
+  <p class="why">분해도 실제 실행에서 한 번도 일어나지 않았다. 기본 읽기 상한에서는 60줄 파일 전체를 세 번 읽어 훑을 수 있으니 대체가 분해보다 싸다. 부록 ext_tight_reads 가 진짜 분해를 만들면 그 저널이 더 나은 출처이고 이 그림은 그것으로 바꿔야 한다.</p>
+  <figure>
+    <div class="plate">
+<pre class="mermaid">
+sequenceDiagram
+    participant P1
+    participant P2
+    participant P3
+    participant P4
+    Note over P1,P4: phase · announce
+    P2->>P1: TASK-ANNOUNCEMENT c1-6 [P2:1]
+    P2->>P3: TASK-ANNOUNCEMENT c1-6
+    P2->>P4: TASK-ANNOUNCEMENT c1-6
+    Note over P1,P4: phase · bid
+    P1-->>P2: BID c1-6 [P1:1,P2:1]
+    P3-->>P2: BID c1-6 [P1:1,P2:1,P3:1]
+    P4-->>P2: BID c1-6 [P1:1,P2:1,P3:1,P4:1]
+    Note over P1,P4: phase · select
+    P2->>P4: ANNOUNCED-AWARD c1-6 [P1:1,P2:2,P3:1,P4:1]
+    P4-->>P2: ACCEPTANCE c1-6 [P1:1,P2:2,P3:1,P4:2]
+    Note over P1,P4: phase · announce
+    P4->>P1: TASK-ANNOUNCEMENT c1-6.1 [P1:1,P2:2,P3:1,P4:3]
+    P4->>P2: TASK-ANNOUNCEMENT c1-6.1
+    P4->>P3: TASK-ANNOUNCEMENT c1-6.1
+    Note over P1,P4: phase · bid
+    P1-->>P4: BID c1-6.1 [P1:2,P2:2,P3:1,P4:3]
+    P2-->>P4: BID c1-6.1 [P1:2,P2:3,P3:1,P4:3]
+    P3-->>P4: BID c1-6.1 [P1:2,P2:3,P3:2,P4:3]
+    Note over P1,P4: phase · select
+    P4->>P1: ANNOUNCED-AWARD c1-6.1 [P1:2,P2:3,P3:2,P4:4]
+    P1-->>P4: ACCEPTANCE c1-6.1 [P1:3,P2:3,P3:2,P4:4]
+</pre>
+    </div>
+    <figcaption>diagrams/scenario-depth.mmd</figcaption>
+  </figure>
+</section>
+
+<footer>
+  Contract Net 아키텍처 · Week 03 확장 · Agentic AI, SeoulTech 2026 Fall<br>
+  코드 유래 11개는 protocol.py · agents.py · phases.py · tools.py 에서, 시퀀스 2개는
+  logs_ext/*.jsonl 에서 생성된다. 손으로 고치면 다음 커밋에 어긋나므로 고치지 말 것 —
+  <code>python diagrams.py</code> 로 다시 만든다.<br>
+  화이트보드 한 세계로 커밋했다. 다이어그램은 mermaid 의 handDrawn 렌더.
+</footer>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+  if (window.mermaid) {
+    window.mermaid.initialize({
+      startOnLoad: true, look: "handDrawn", handDrawnSeed: 7, theme: "base",
+      fontFamily: '"Gaegu","Nanum Pen Script","Apple SD Gothic Neo",cursive',
+      flowchart: { curve: "basis", nodeSpacing: 46, rankSpacing: 54, padding: 14 },
+      themeVariables: {
+        background: "#ffffff", fontSize: "18px",
+        primaryColor: "#ffc9c9", primaryBorderColor: "#c92a2a", primaryTextColor: "#1e1e1e",
+        secondaryColor: "#bac8ff", secondaryBorderColor: "#4263eb",
+        tertiaryColor: "#ffec99", tertiaryBorderColor: "#f08c00",
+        lineColor: "#1e1e1e", textColor: "#1e1e1e",
+        clusterBkg: "#f7f6f1", clusterBorder: "#1e1e1e",
+        edgeLabelBackground: "#ffffff"
+      }
+    });
+  } else {
+    document.querySelectorAll("pre.mermaid").forEach(function (el) {
+      el.style.whiteSpace = "pre";
+      el.style.fontFamily = "ui-monospace, Menlo, monospace";
+      el.style.fontSize = "12px";
+      el.insertAdjacentHTML("beforebegin",
+        "<p style='margin:0 0 8px;font-size:14px;color:#c92a2a'>mermaid 를 불러올 수 없어 원본 정의를 표시합니다.</p>");
+    });
+  }
+</script>
+</body>
+</html>

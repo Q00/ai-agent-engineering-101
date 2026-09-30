@@ -1,0 +1,31 @@
+flowchart TD
+    S["an agent wants to send"] --> K{"which type"}
+    K -->|"TASK-ANNOUNCEMENT"| A1{"depth"}
+    A1 -->|"1"| A2{"is this endpoint<br/>the manager?"}
+    A1 -->|"2"| A3{"did it accept<br/>the parent?"}
+    A1 -->|"> 2"| X1["refused<br/>max depth"]
+    A2 -->|"no"| X2["refused"]
+    A2 -->|"yes"| OK1["sent"]
+    A3 -->|"no"| X3["refused<br/>not committed to parent"]
+    A3 -->|"yes"| OK2["sent · becomes manager of the piece"]
+    K -->|"BID"| B1{"announcement<br/>delivered here?"}
+    B1 -->|"no"| X4["refused"]
+    B1 -->|"yes"| OK3["sent"]
+    K -->|"ANNOUNCED-AWARD"| C1{"did this endpoint<br/>announce it?"}
+    C1 -->|"no"| X5["refused"]
+    C1 -->|"yes"| C2{"did the target bid?"}
+    C2 -->|"no"| X6["refused · invalid_award<br/>retried once"]
+    C2 -->|"yes"| C3{"award outstanding?"}
+    C3 -->|"yes, unanswered"| X7["refused"]
+    C3 -->|"no, or refused"| OK4["sent"]
+    K -->|"ACCEPTANCE"| D1{"already committed<br/>elsewhere?"}
+    D1 -->|"yes"| X8["refused · send REFUSAL instead"]
+    D1 -->|"no"| OK5["sent"]
+    K -->|"FINAL-REPORT"| E1{"any piece still<br/>open?"}
+    E1 -->|"yes"| X9["refused"]
+    E1 -->|"no"| OK6["sent"]
+
+    classDef ok fill:#b2f2bb,stroke:#2f9e44,stroke-width:2px,color:#1e1e1e
+    classDef no fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    class OK1,OK2,OK3,OK4,OK5,OK6 ok
+    class X1,X2,X3,X4,X5,X6,X7,X8,X9 no

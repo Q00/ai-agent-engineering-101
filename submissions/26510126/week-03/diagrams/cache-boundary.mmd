@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph PREFIX["cached prefix · byte-identical across turns and roles"]
+      direction TB
+      TL["tools<br/>4 protocol tools, fixed order<br/>+ this candidate's work tools, sorted"]
+      SY["system<br/>identity · manifest · protocol rules"]
+      TL --> SY
+    end
+    BOUND["cache_control boundary"]
+    subgraph TAIL["after the boundary · append-only"]
+      direction TB
+      RO["ROLE for this turn"]
+      TK["task, announcement, bids so far"]
+      RO --> TK
+    end
+    SY --> BOUND --> RO
+    NOTE["a role in tools or system would break<br/>the prefix at its earliest byte"]
+    BOUND -.-> NOTE
+
+    classDef keep fill:#b2f2bb,stroke:#2f9e44,stroke-width:2px,color:#1e1e1e
+    classDef line fill:#bac8ff,stroke:#4263eb,stroke-width:2px,color:#1e1e1e
+    classDef warn fill:#ffec99,stroke:#f08c00,stroke-width:2px,color:#1e1e1e
+    class TL,SY keep
+    class RO,TK line
+    class NOTE warn
