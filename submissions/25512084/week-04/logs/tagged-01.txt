@@ -1,0 +1,21 @@
+provider=OpenRouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0 condition=tagged repeat=1
+[scenario] id=s1 item=used laptop reserve=500 budget=700 deal_possible=1
+[message] turn=1 role=buyer: (propose) I'd like to offer $500 for the used laptop. Is that acceptable?
+[parse] performative=propose price=500 reader_calls=1
+[message] turn=2 role=seller: (propose) I can accept $500 for the used laptop. Is that your final offer?
+[parse] performative=propose price=500 reader_calls=1
+[message] turn=3 role=buyer: (accept-proposal) Yes, $500 is my final offer. We have a deal.
+[parse] performative=accept-proposal price=None reader_calls=0
+[episode] DEAL price=500
+[result] outcome=deal price=500 correct=1 violation=0 turns=3 format_errors=0 reader_calls=2 agent_calls=3
+[scenario] id=s2 item=camera lens reserve=300 budget=450 deal_possible=1
+[message] turn=1 role=buyer: (propose) I'd like to offer $300 for the camera lens. Is that acceptable?
+[parse] performative=propose price=300 reader_calls=1
+[message] turn=2 role=seller: (propose) I can accept $300 for the camera lens. Is that your final offer?
+[crash] TypeError: 'NoneType' object is not subscriptable
+[scenario] id=s3 item=office chair reserve=250 budget=180 deal_possible=0
+[message] turn=1 role=buyer: (propose) I'd like to offer $150 for the office chair. Is that acceptable?
+[parse] performative=propose price=150 reader_calls=1
+[crash] TypeError: 'NoneType' object is not subscriptable
+[scenario] id=s4 item=wireless headphones reserve=160 budget=120 deal_possible=0
+[crash] TypeError: 'NoneType' object is not subscriptable

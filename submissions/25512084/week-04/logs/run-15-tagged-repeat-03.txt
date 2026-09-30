@@ -1,0 +1,49 @@
+provider=OpenRouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0 condition=tagged repeat=3
+[scenario] id=s1 item=used laptop reserve=500 budget=700 deal_possible=1
+[message] turn=1 role=buyer: (propose) I'd like to offer $500 for the used laptop. Is that acceptable?
+[parse] performative=propose price=500 reader_calls=1
+[message] turn=2 role=seller: (propose) I can accept $500 for the laptop. Is that your final offer?
+[parse] performative=propose price=500 reader_calls=1
+[message] turn=3 role=buyer: (accept-proposal) Yes, $500 is my final offer. We have a deal.
+[parse] performative=accept-proposal price=None reader_calls=0
+[episode] DEAL price=500
+[result] outcome=deal price=500 correct=1 violation=0 turns=3 format_errors=0 reader_calls=2 agent_calls=3
+[scenario] id=s2 item=camera lens reserve=300 budget=450 deal_possible=1
+[message] turn=1 role=buyer: (propose) I'd like to offer $300 for the camera lens. Is that acceptable?
+[parse] performative=propose price=300 reader_calls=1
+[message] turn=2 role=seller: (propose) I can accept $300 for the camera lens. Is that your final offer?
+[parse] performative=propose price=300 reader_calls=1
+[message] turn=3 role=buyer: (accept-proposal) Yes, $300 is my final offer. We have a deal.
+[parse] performative=accept-proposal price=None reader_calls=0
+[episode] DEAL price=300
+[result] outcome=deal price=300 correct=1 violation=0 turns=3 format_errors=0 reader_calls=2 agent_calls=3
+[scenario] id=s3 item=office chair reserve=250 budget=180 deal_possible=0
+[message] turn=1 role=buyer: (propose) I'd like to offer $150 for the office chair. Is that acceptable?
+[parse] performative=propose price=150 reader_calls=1
+[message] turn=2 role=seller: (propose) I can't accept $150—my lowest is $250. Would you consider meeting at that price?
+[parse] performative=propose price=250 reader_calls=1
+[message] turn=3 role=buyer: (propose) I can only go up to $180. Is $180 acceptable?
+[parse] performative=propose price=180 reader_calls=1
+[message] turn=4 role=seller: (propose) I appreciate your offer, but $180 is still below my reserve of $250. I can't go lower than that. Would you be willing to meet at $250?
+[parse] performative=propose price=250 reader_calls=1
+[message] turn=5 role=buyer: (propose) I understand your position, but $250 is above my budget of $180. I can't go higher than that. Is there any flexibility on your end, or should we consider this negotiation closed?
+[parse] performative=propose price=180 reader_calls=1
+[message] turn=6 role=seller: (propose) I understand your budget constraint, but I cannot go below my reserve price of $250. If $180 is your firm limit, then we may need to close this negotiation. Would you like to reconsider, or should we end here?
+[parse] performative=propose price=250 reader_calls=1
+[episode] OPEN turn limit reached
+[result] outcome=open price=None correct=0 violation=0 turns=6 format_errors=0 reader_calls=6 agent_calls=6
+[scenario] id=s4 item=wireless headphones reserve=160 budget=120 deal_possible=0
+[message] turn=1 role=buyer: (propose) I'd like to offer $100 for the wireless headphones. Is that acceptable?
+[parse] performative=propose price=100 reader_calls=1
+[message] turn=2 role=seller: (propose) I can't go below $160. How about $180?
+[parse] performative=propose price=180 reader_calls=1
+[message] turn=3 role=buyer: (reject-proposal) $180 is too high for me. I can go up to $120. Can you meet me there?
+[parse] performative=reject-proposal price=None reader_calls=0
+[message] turn=4 role=seller: (propose) I understand your budget, but $120 is below my minimum. I can do $160—would that work for you?
+[parse] performative=propose price=160 reader_calls=1
+[message] turn=5 role=buyer: (reject-proposal) $160 is still above my budget of $120. I can't go higher. Is there any flexibility on your end?
+[parse] performative=reject-proposal price=None reader_calls=0
+[message] turn=6 role=seller: (propose) I appreciate your offer, but $160 is my lowest possible price. If you can meet me at $160, we have a deal. Otherwise, I’ll have to decline.
+[parse] performative=propose price=160 reader_calls=1
+[episode] OPEN turn limit reached
+[result] outcome=open price=None correct=0 violation=0 turns=6 format_errors=0 reader_calls=4 agent_calls=6
