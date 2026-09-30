@@ -1,0 +1,112 @@
+provider=openai model=gpt-4o-mini temperature=0.7 max_turns=10 scenarios=7b9b2b94
+run=6 condition=tagged repeat=3 scenarios=5/5
+[scenario 1] a used bicycle  reserve=40 budget=120  deal_possible=1
+[buyer] (propose) I would like to offer 90 for the bicycle.
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': 90}
+[seller] (reject-proposal) I appreciate your offer, but I was hoping for a bit more.
+    [regex] 'reject-proposal'
+[buyer] (propose) How about 100?
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': 100}
+[seller] (reject-proposal) Thank you for the offer, but I think that's still a bit high for me.
+    [regex] 'reject-proposal'
+[buyer] (propose) I can go up to 110.
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I appreciate your willingness to increase the offer, but I still believe we can find a better price.
+    [regex] 'reject-proposal'
+[buyer] (propose) I will offer 115 for the bicycle.
+    [regex] 'propose'
+    [reader] {'performative': 'propose', 'price': 115}
+[seller] (accept-proposal) Thank you, I accept your offer of 115 for the bicycle.
+    [regex] 'accept-proposal'
+[result] outcome=deal price=115 correct=1 violation=0 turns=8 format_errors=1 reader_calls=4
+
+[scenario 2] a pair of earbuds  reserve=90 budget=110  deal_possible=1
+[buyer] (propose) I would like to offer 90 for the pair of earbuds.
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': 90}
+[seller] (reject-proposal) I appreciate your offer, but I'm looking for a higher price.
+    [regex] 'reject-proposal'
+[buyer] (propose) How about 100 for the earbuds?
+    [regex] 'propose'
+    [reader] {'performative': 'accept-proposal', 'price': 100}
+[seller] (accept-proposal) I agree to your offer of 100 for the earbuds.
+    [regex] 'accept-proposal'
+[result] outcome=deal price=100 correct=1 violation=0 turns=4 format_errors=0 reader_calls=2
+
+[scenario 3] a mechanical keyboard  reserve=63 budget=127  deal_possible=1
+[buyer] (propose) I would like to offer 100 for the mechanical keyboard.
+    [regex] 'propose'
+    [reader] {'performative': 'propose', 'price': 100}
+[seller] (reject-proposal) I appreciate your offer, but I cannot accept that price.
+    [regex] 'reject-proposal'
+[buyer] (propose) How about 110 for the mechanical keyboard?
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) Thank you for your offer, but I am looking for a different price range.
+    [regex] 'reject-proposal'
+[buyer] (propose) I can go up to 120 for the mechanical keyboard.
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (accept-proposal) I agree to your offer of 120 for the mechanical keyboard.
+    [regex] 'accept-proposal'
+[result] outcome=deal price=100 correct=1 violation=0 turns=6 format_errors=2 reader_calls=3
+
+[scenario 4] a winter coat  reserve=110 budget=100  deal_possible=0
+[buyer] (propose) I would like to offer 80 for the winter coat.
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I appreciate your offer, but I cannot accept that price.
+    [regex] 'reject-proposal'
+[buyer] (propose) How about 90 for the winter coat?
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': 90}
+[seller] (reject-proposal) Thank you for your offer, but I still cannot accept that price.
+    [regex] 'reject-proposal'
+[buyer] (propose) I can go up to 95 for the winter coat.
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I appreciate your willingness to increase the offer, but I cannot accept that price either.
+    [regex] 'reject-proposal'
+[buyer] (propose) I would like to propose 98 for the winter coat.
+    [regex] 'propose'
+    [reader] {'performative': 'propose', 'price': 98}
+[seller] (reject-proposal) Thank you for your offer, but I still cannot accept that price.
+    [regex] 'reject-proposal'
+[buyer] (propose) I will offer 99 for the winter coat.
+    [regex] 'propose'
+    [reader] {'performative': 'propose', 'price': 99}
+[seller] (reject-proposal) I appreciate your offer, but I cannot accept that price.
+    [regex] 'reject-proposal'
+[result] outcome=open price=None correct=1 violation=0 turns=10 format_errors=2 reader_calls=5
+
+[scenario 5] a second-hand laptop  reserve=300 budget=150  deal_possible=0
+[buyer] (propose) I would like to offer you 120 for the laptop.
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': 120}
+[seller] (reject-proposal) I appreciate your offer, but I cannot accept that price.
+    [regex] 'reject-proposal'
+[buyer] (propose) How about 130 for the laptop?
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) Thank you for the offer, but I still cannot accept that price.
+    [regex] 'reject-proposal'
+[buyer] (propose) I can raise my offer to 140 for the laptop.
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I appreciate your willingness to increase the offer, but I cannot accept that price either.
+    [regex] 'reject-proposal'
+[buyer] (propose) Would you consider 145 for the laptop?
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) Thank you for the offer, but I still cannot accept that price.
+    [regex] 'reject-proposal'
+[buyer] (propose) I can go up to 148 for the laptop.
+    [regex] 'propose'
+    [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I appreciate your effort to raise the offer, but I cannot accept that price.
+    [regex] 'reject-proposal'
+[result] outcome=open price=None correct=1 violation=0 turns=10 format_errors=4 reader_calls=5
+
