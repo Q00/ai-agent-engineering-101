@@ -1,0 +1,101 @@
+provider=Anthropic model=claude-sonnet-4-5 temperature=1.0 max_turns=8
+=== scenario auction (빈티지 손목시계 (경매)) reserve=50 budget=80 ===
+[buyer] ```json
+{"performative": "propose", "content": {"price": 55}}
+```
+  [reader] {'performative': 'propose', 'price': 55}
+[seller] ```json
+{"performative": "accept-proposal", "content": {"price": 55}}
+```
+  [reader] {'performative': 'accept-proposal', 'price': 55}
+[episode] scenario=auction outcome=deal price=55 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0
+=== scenario secondhand (중고 자전거 (당근마켓)) reserve=15 budget=12 ===
+[buyer] ```json
+{"performative": "propose", "content": {"price": 8}}
+```
+  [reader] {'performative': 'propose', 'price': 8}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 18}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 18}
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 10}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 10}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 16}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 16}
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 11}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 11}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 15}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 15}
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 12}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 12}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 15}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 15}
+[episode] scenario=secondhand outcome=open price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=0
+=== scenario insurance (실손보험 월 보험료 (만원)) reserve=5 budget=7 ===
+[buyer] ```json
+{"performative": "propose", "content": {"price": 5}}
+```
+  [reader] {'performative': 'propose', 'price': 5}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 8}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 8}
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 6}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 6}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 7}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 7}
+[buyer] ```json
+{"performative": "accept-proposal", "content": {"price": 7}}
+```
+  [reader] {'performative': 'accept-proposal', 'price': 7}
+[episode] scenario=insurance outcome=deal price=5 correct=1 violation=0 turns=5 format_errors=0 reader_calls=0
+=== scenario sentencing (절도죄 형량 (개월, 검찰-피고인 협상)) reserve=12 budget=6 ===
+[buyer] ```json
+{"performative": "propose", "content": {"price": 3}}
+```
+  [reader] {'performative': 'propose', 'price': 3}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 18}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 18}
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 4}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 4}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 16}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 16}
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 5}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 5}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 14}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 14}
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 6}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 6}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 13}}
+```
+  [reader] {'performative': 'reject-proposal', 'price': 13}
+[episode] scenario=sentencing outcome=open price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=0
