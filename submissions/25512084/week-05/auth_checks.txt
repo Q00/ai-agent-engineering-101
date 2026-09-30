@@ -1,0 +1,4 @@
+1. no token: HTTP 401 Unauthorized; WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required"
+2. party token for another negotiation: tool error; this token is not valid for the requested negotiation
+3. move out of turn: tool error; it is seller's turn, not buyer's turn
+4. server condition outside token limit: tool error; refused by the market: 151 is above the maximum your token allows
