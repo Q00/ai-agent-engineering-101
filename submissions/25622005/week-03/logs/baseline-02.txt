@@ -1,0 +1,59 @@
+provider=anthropic base_url=https://factchat-cloud.mindlogic.ai/v1/gateway/claude model=claude-sonnet-5 temperature=provider-default max_tokens=512 tasks=6 condition=baseline run=2
+  [team] A: skill='arithmetic and numeric computation' overconfident=False
+  [team] B: skill='writing and rewriting prose for a given audience' overconfident=False
+  [team] C: skill='writing, debugging and fixing code' overconfident=False
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Compute 137 * 249 and return the number.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=100 reason=This is a straightforward arithmetic multiplication task within my computational skill.
+  [bid] B: bid=False confidence=5 reason=This is a math computation task, not prose writing/rewriting for an audience.
+  [bid] C: bid=False confidence=20 reason=This is a simple arithmetic calculation, not a coding/debugging task within my skill.
+  [award] A (gold A) confidence=100
+TASK-ANNOUNCEMENT contract 2
+task-abstraction: Our three servers handled 1284, 977 and 2310 requests last night. What share of the total did the busiest one take?
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=98 reason=This is a straightforward arithmetic/percentage calculation within my numeric computation skill (bus…
+  [bid] B: bid=False confidence=95 reason=This is a numerical calculation task, not prose writing or rewriting.
+  [bid] C: bid=False confidence=10 reason=This is a simple arithmetic calculation, not a coding or debugging task.
+  [award] A (gold A) confidence=98
+TASK-ANNOUNCEMENT contract 3
+task-abstraction: Rewrite this sentence in plain English for a 10-year-old: 'Latency degradation was observed subsequent to the deployment.'
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=False confidence=0 reason=This is a language simplification task, not arithmetic or numeric computation.
+  [bid] B: bid=True confidence=95 reason=Rewriting sentences for a target audience is exactly my skill.
+  [bid] C: bid=False confidence=10 reason=This is a plain-language rewriting task, not code writing or debugging.
+  [award] B (gold B) confidence=95
+TASK-ANNOUNCEMENT contract 4
+task-abstraction: This release note reads like an internal memo. Make it something a customer would understand.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=False confidence=0 reason=This is a writing/editing task, not arithmetic or numeric computation.
+  [bid] B: bid=True confidence=90 reason=Rewriting internal-sounding release notes for customer clarity fits my prose rewriting skill for tar…
+  [bid] C: bid=False confidence=10 reason=This is a writing/editing task for customer communications, not a coding task within my skill set.
+  [award] B (gold B) confidence=90
+TASK-ANNOUNCEMENT contract 5
+task-abstraction: Write a Python function that returns the reversed copy of a list.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=False confidence=10 reason=This is a programming/list-manipulation task, not arithmetic or numeric computation.
+  [bid] B: bid=False confidence=0 reason=This is a coding task, not prose writing/rewriting for an audience.
+  [bid] C: bid=True confidence=98 reason=This is a simple coding task well within my skill of writing Python functions.
+  [award] C (gold C) confidence=98
+TASK-ANNOUNCEMENT contract 6
+task-abstraction: Design a ERD for a simple customer management system.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=False confidence=5 reason=This is a database design task, not arithmetic or numeric computation.
+  [bid] B: bid=False confidence=5 reason=Designing an ERD is a database/data-modeling task, not prose writing/rewriting for an audience.
+  [bid] C: bid=True confidence=65 reason=ERD design is related to data modeling which overlaps with coding/database skills, though not strict…
+  [award] C (gold C) confidence=65
+[result] correct=6/6 messages=30 unassigned=0 misawards=0 parse_fails=0 tokens=5355 calls=18
