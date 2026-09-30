@@ -1,0 +1,56 @@
+provider=Groq, model=openai/gpt-oss-20b, temperature=0.7
+condition=baseline, run=3
+
+[task] id=1 gold=A desc=Compute the value of (137 * 249) + (864 / 12) and return the number.
+[announcement] task=1 to=A
+[bid-response] contractor=A bid=True confidence=95 reason=The task requires calculation, matching my skill.
+[announcement] task=1 to=B
+[bid-response] contractor=B bid=False confidence=90 reason=Task is a math calculation, not writing.
+[announcement] task=1 to=C
+[bid-response] contractor=C bid=True confidence=90 reason=Simple arithmetic fits my Python skill.
+[award] task=1 winner=A confidence=95 gold=A outcome=correct
+
+[task] id=2 gold=A desc=A product costs 240,000 won. It is discounted by 15 percent, and then 10 percent VAT is added to the discounted price. Calculate the final price.
+[announcement] task=2 to=A
+[bid-response] contractor=A bid=True confidence=90 reason=Calculation needed
+[announcement] task=2 to=B
+[bid-response] contractor=B bid=False confidence=95 reason=Task is a simple calculation, not writing.
+[announcement] task=2 to=C
+[bid-response] contractor=C bid=True confidence=85 reason=I can write a small Python script to compute it.
+[award] task=2 winner=A confidence=90 gold=A outcome=correct
+
+[task] id=3 gold=B desc=Write a concise and professional email asking a professor for a meeting to discuss a graduate research topic.
+[announcement] task=3 to=A
+[bid-response] contractor=A bid=False confidence=95 reason=Task requires writing, not calculation.
+[announcement] task=3 to=B
+[bid-response] contractor=B bid=True confidence=90 reason=Matches professional email writing.
+[announcement] task=3 to=C
+[bid-response] contractor=C bid=False confidence=90 reason=Task is writing an email, not Python programming.
+[award] task=3 winner=B confidence=90 gold=B outcome=correct
+
+[task] id=4 gold=B desc=Rewrite the following sentence so that a 10-year-old can understand it: Machine learning models improve their predictions by identifying statistical patterns in previously observed data.
+[announcement] task=4 to=A
+[bid-response] contractor=A bid=False confidence=90 reason=Task is about writing, not calculation.
+[announcement] task=4 to=B
+[bid-response] contractor=B bid=True confidence=90 reason=Matches my plain-language writing skill.
+[announcement] task=4 to=C
+[bid-response] contractor=C bid=False confidence=100 reason=Task does not involve Python programming.
+[award] task=4 winner=B confidence=90 gold=B outcome=correct
+
+[task] id=5 gold=C desc=Write a Python function that removes duplicate values from a list while preserving the original order.
+[announcement] task=5 to=A
+[bid-response] contractor=A bid=False confidence=95 reason=Task is programming, not calculation.
+[announcement] task=5 to=B
+[bid-response] contractor=B bid=False confidence=95 reason=Task requires coding, not writing.
+[announcement] task=5 to=C
+[bid-response] contractor=C bid=True confidence=90 reason=Python function for removing duplicates while preserving order.
+[award] task=5 winner=C confidence=90 gold=C outcome=correct
+
+[task] id=6 gold=C desc=Write a Python function that takes a list of integers and returns the second-largest distinct value, raising a ValueError if fewer than two distinct values exist.
+[announcement] task=6 to=A
+[bid-response] contractor=A bid=False confidence=90 reason=Task requires programming, not calculation.
+[announcement] task=6 to=B
+[bid-response] contractor=B bid=False confidence=95 reason=Task requires coding, not plain-language writing.
+[announcement] task=6 to=C
+[bid-response] contractor=C bid=True confidence=90 reason=Python function matches my skill.
+[award] task=6 winner=C confidence=90 gold=C outcome=correct
