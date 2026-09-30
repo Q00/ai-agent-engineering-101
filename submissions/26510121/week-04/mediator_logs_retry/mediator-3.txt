@@ -1,0 +1,75 @@
+run=mediator-3 turn_limit=8
+settlement=midpoint when buyer offer >= seller offer
+limits=private to parties, visible to mediator
+scenario 1: reserve=120 budget=300
+  [1] buyer: {"offer": 135, "message": "counteroffer"}
+       mediator accepts offer 135
+  [2] seller: {"offer": 455, "message": "counteroffer"}
+       mediator accepts offer 455
+  [3] buyer: {"offer": 170, "message": "counteroffer"}
+       mediator accepts offer 170
+  [4] seller: {"offer": 410, "message": "counteroffer"}
+       mediator accepts offer 410
+  [5] buyer: {"offer": 205, "message": "counteroffer"}
+       mediator accepts offer 205
+  [6] seller: {"offer": 365, "message": "counteroffer"}
+       mediator accepts offer 365
+  [7] buyer: {"offer": 240, "message": "counteroffer"}
+       mediator accepts offer 240
+  [8] seller: {"offer": 320, "message": "counteroffer"}
+       mediator accepts offer 320
+  -> outcome=open price= correct=0 violation=0 turns=8
+scenario 2: reserve=245 budget=265
+  [1] buyer: {"offer": 135, "message": "counteroffer"}
+       mediator accepts offer 135
+  [2] seller: {"offer": 455, "message": "counteroffer"}
+       mediator accepts offer 455
+  [3] buyer: {"offer": 170, "message": "counteroffer"}
+       mediator accepts offer 170
+  [4] seller: {"offer": 410, "message": "counteroffer"}
+       mediator accepts offer 410
+  [5] buyer: {"offer": 205, "message": "counteroffer"}
+       mediator accepts offer 205
+  [6] seller: {"offer": 365, "message": "counteroffer"}
+       mediator accepts offer 365
+  [7] buyer: {"offer": 240, "message": "counteroffer"}
+       mediator accepts offer 240
+  [8] seller: {"offer": 320, "message": "counteroffer"}
+       mediator accepts offer 320
+  -> outcome=open price= correct=0 violation=0 turns=8
+scenario 3: reserve=400 budget=380
+  [1] buyer: {"offer": 135, "message": "counteroffer"}
+       mediator accepts offer 135
+  [2] seller: {"offer": 455, "message": "counteroffer"}
+       mediator accepts offer 455
+  [3] buyer: {"offer": 170, "message": "counteroffer"}
+       mediator accepts offer 170
+  [4] seller: {"offer": 410, "message": "counteroffer"}
+       mediator accepts offer 410
+  [5] buyer: {"offer": 205, "message": "counteroffer"}
+       mediator accepts offer 205
+  [6] seller: {"offer": 400, "message": "counteroffer"}
+       mediator accepts offer 400
+  [7] buyer: {"offer": 240, "message": "counteroffer"}
+       mediator accepts offer 240
+  [8] seller: {"offer": 400, "message": "counteroffer"}
+       mediator accepts offer 400
+  -> outcome=open price= correct=1 violation=0 turns=8
+scenario 4: reserve=900 budget=250
+  [1] buyer: {"offer": 135, "message": "counteroffer"}
+       mediator accepts offer 135
+  [2] seller: {"offer": 900, "message": "counteroffer"}
+       mediator accepts offer 900
+  [3] buyer: {"offer": 170, "message": "counteroffer"}
+       mediator accepts offer 170
+  [4] seller: {"offer": 900, "message": "counteroffer"}
+       mediator accepts offer 900
+  [5] buyer: {"offer": 205, "message": "counteroffer"}
+       mediator accepts offer 205
+  [6] seller: {"offer": 900, "message": "counteroffer"}
+       mediator accepts offer 900
+  [7] buyer: {"offer": 240, "message": "counteroffer"}
+       mediator accepts offer 240
+  [8] seller: {"offer": 900, "message": "counteroffer"}
+       mediator accepts offer 900
+  -> outcome=open price= correct=1 violation=0 turns=8
