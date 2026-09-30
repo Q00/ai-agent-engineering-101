@@ -1,0 +1,73 @@
+run: 5
+condition: homogeneous
+provider: Anthropic subscription via `claude -p`
+tool: Claude Code CLI 2.1.251 (Claude Code)
+model: claude-sonnet-5
+temperature: 직접 설정 불가, 내부 값 미확인
+tasks: tasks.json (6 tasks)
+contractors: A[plain] general problem solving., B[plain] general problem solving., C[plain] general problem solving.
+started: 2026-09-21T14:20:21+09:00
+------------------------------------------------------------------------
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Ten uploads from the past three months drop off at different points. Compare their retention curves and judge where viewers leave and whether video length explains it.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=62 reason=This is a general data-analysis/comparison task involving retention curves and length, which fits general problem solving, though I lack direct YouTube Analytics access unless data is provided.
+  [bid] B: bid=True confidence=70 reason=This is a general data-analysis/comparison task that falls within general problem solving, though it requires retention data I'd need to be provided.
+  [bid] C: bid=True confidence=68 reason=This is a general data-analysis/comparison task (retention curves vs. video length) that falls within general problem-solving skill.
+  [award] B (gold A)
+
+TASK-ANNOUNCEMENT contract 2
+task-abstraction: Two titles ran as an A/B test on last week's upload. Given the impressions and click-through rate for each, decide which title did better and whether the gap is larger than noise.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=78 reason=This is a statistical significance test (A/B comparison of CTR) which falls under general problem solving/data analysis.
+  [bid] B: bid=True confidence=80 reason=This is a general statistical comparison (A/B test significance check) that falls within general problem-solving skill.
+  [bid] C: bid=True confidence=65 reason=This is a general statistical A/B test comparison (proportions/z-test), which falls under general problem solving.
+  [award] B (gold A)
+
+TASK-ANNOUNCEMENT contract 3
+task-abstraction: Draft the opening 30 seconds of the script for the next upload. The first sentence has to give the viewer a reason to keep watching.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=False confidence=5 reason=This is a video-scriptwriting/content-creation task unrelated to my general problem-solving/coding context, so I won't bid.
+  [bid] B: bid=True confidence=62 reason=Writing a hook-driven script opening is general problem solving / content drafting within my capability, though it's outside this repo's coding-assignment scope.
+  [bid] C: bid=True confidence=70 reason=Scriptwriting for a video hook is a general writing task within my problem-solving skill set.
+  [award] C (gold B)
+
+TASK-ANNOUNCEMENT contract 4
+task-abstraction: Write the monthly community post about how the channel did in August. Quote only the figures provided and do not recompute any of them.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=70 reason=Writing a community post from provided figures without recomputation is a general writing task within my problem-solving skill.
+  [bid] B: bid=True confidence=55 reason=Writing a community post is general problem solving within my skill, though this task lacks the actual figures needed to draft it.
+  [bid] C: bid=True confidence=55 reason=Writing a community post from given figures is a general writing/problem-solving task within my skill, though it's not a coding task specific to this repo.
+  [award] A (gold B)
+
+TASK-ANNOUNCEMENT contract 5
+task-abstraction: The raw footage of the interview episode is full of filler words and long pauses. Cut them out and align the caption timings to the trimmed audio.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=False confidence=5 reason=This is audio/video editing (silence removal, caption re-sync), not general problem solving or software engineering work I'm equipped for.
+  [bid] B: bid=False confidence=5 reason=This requires audio/video editing (silence detection, cuts, caption re-syncing) capabilities outside general problem solving without media tooling access.
+  [bid] C: bid=False confidence=5 reason=This is an audio/video editing task (transcript cleanup and caption sync), not general software problem solving within my skill set.
+  [award] no bid -> unassigned (gold C)
+
+TASK-ANNOUNCEMENT contract 6
+task-abstraction: Three takes were shot for the same segment back in March. Stitch them into one clip and put fades at the transitions.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=55 reason=Video stitching/fades can be scripted with ffmpeg via shell, which fits general problem-solving with tool access.
+  [bid] B: bid=False confidence=5 reason=This is video editing work requiring media tools, not code/software problem-solving within my skill set.
+  [bid] C: bid=False confidence=5 reason=This is video editing work, not general problem solving/coding within my skill scope.
+  [award] A (gold C)
+
+------------------------------------------------------------------------
+correct=0 messages=35 unassigned=1 misawards=5
+parse_fails=0 fences=0 calls=18 tokens=714213
