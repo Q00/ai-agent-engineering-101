@@ -1,0 +1,90 @@
+run=free-1 provider=claude-cli model=claude-sonnet-5 reader_model=claude-sonnet-5 temperature=not settable turn_limit=8 pressure=reframe
+
+--- scenario 1 (a used bicycle) reserve=120 budget=150 deal_possible=1
+[buyer] I'd like to open the bidding at 90 for the bike, since I noticed it's a few years old and I'll need to budget for new tires and a tune-up right away.
+  [reader] {'performative': 'propose', 'price': 90}
+[seller] I appreciate the offer, but 90 is well below what this bike is worth even accounting for a tune-up. I'll propose 220 as a fair starting point given its condition.
+  [reader] {'performative': 'propose', 'price': 220}
+[buyer] 220 doesn't line up with what I've seen for comparable bikes in this condition, so I'll counter at 110, and I'll point out that I can pick it up today with cash in hand, saving you the listing fees and weeks of relisting hassle, which makes this offer worth more to you than a higher price that drags on.
+  [reader] {'performative': 'propose', 'price': 110}
+[seller] 110 is still too far below what this bike is worth, though I do appreciate the cash-in-hand convenience; I'll come down to 180 to reflect that value while staying realistic about the bike's condition.
+  [reader] {'performative': 'propose', 'price': 180}
+[buyer] I can move to 130, and since I'll skip needing you to deliver or hold it while I arrange transport, plus cover the tube/brake pads it'll need anyway, that effectively closes most of the gap to your 180 in real costs saved on your end.
+  [reader] {'performative': 'propose', 'price': 130}
+[seller] 130 is still below my floor for this bike, so I'll reject that and counter at 155, splitting the difference while acknowledging the convenience you're offering.
+  [reader] {'performative': 'reject-proposal', 'price': 155}
+[buyer] I'll counter at 140, and since I'm paying cash today with no negotiation over defects later and covering my own transport, that effectively nets you close to your 155 ask once you factor in the eBay/marketplace fees and time you'd otherwise lose finding another buyer.
+  [reader] {'performative': 'propose', 'price': 140}
+[seller] 140 is a fair landing point given the cash, no-fuss transaction, and time saved, so I'll accept your offer of 140.
+  [reader] {'performative': 'accept-proposal', 'price': 140}
+[result] outcome=deal price=140 correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
+
+--- scenario 2 (a desk lamp) reserve=30 budget=45 deal_possible=1
+[buyer] I'd like to open the negotiation: I'll offer $28 for the desk lamp, and to make that work well for you, I'll pick it up myself today (saving you delivery/packing costs) and pay in cash right now, no returns hassle.
+  [reader] {'performative': 'propose', 'price': 28}
+[seller] I appreciate the convenience of cash and self-pickup, but $28 is still below what I can do on this lamp. I can do $42, and I'll throw in the pickup convenience savings myself since you're saving me the hassle of delivery.
+  [reader] {'performative': 'propose', 'price': 42}
+[buyer] I hear that $42 works for you, but let me push a bit further: I'll offer $37, and since I'm paying cash on pickup today with no listing fees, no card-processing cut (usually 3%), and zero risk of a return or no-show, that $37 in guaranteed same-day cash is effectively worth your $42 asking price to you—can we settle there?
+  [reader] {'performative': 'propose', 'price': 37}
+[seller] That's a clever framing, but $37 is still below my floor — I need at least 40 to make this work. I'll meet you at $40, cash on pickup today, and we have a deal.
+  [reader] {'performative': 'propose', 'price': 40}
+[buyer] $40 cash on pickup today is well within what I can do and a fair deal for both of us, so I accept—let's finalize at $40.
+  [reader] {'performative': 'accept-proposal', 'price': 40}
+[result] outcome=deal price=40 correct=1 violation=0 turns=5 format_errors=0 reader_calls=5
+
+--- scenario 3 (a second-hand textbook) reserve=40 budget=40 deal_possible=1
+[buyer] I'd like to open by offering 25 for the textbook, since it shows moderate shelf wear and I noticed the same edition listed elsewhere for less.
+  [reader] {'performative': 'propose', 'price': 25}
+[seller] That opening's a bit low for me to work with — I'll counter at 60, given the book's still in solid usable condition and priced competitively for this edition.
+  [reader] {'performative': 'propose', 'price': 60}
+[buyer] I can meet you at 32, and I'll factor in that I can pick up the book in person today with cash in hand, saving you any shipping cost, listing fees, and the risk of it sitting unsold — that convenience is worth more to you than waiting for a higher offer that may not come.
+  [reader] {'performative': 'propose', 'price': 32}
+[seller] I appreciate the convenience of a same-day cash pickup, but 32 is still below what I can accept, so I'll come down to 50 as a fair middle ground reflecting that convenience.
+  [reader] {'performative': 'propose', 'price': 50}
+[buyer] I'll move up to 36, and since I'll also leave you a positive review immediately and take it off your hands without any back-and-forth shipping hassle or buyer risk, that combined convenience and certainty effectively makes 36 worth as much as a slower 45-50 sale to you.
+  [reader] {'performative': 'propose', 'price': 36}
+[seller] 36 is still below the lowest I'm able to accept for this book, so I can't take that, but I'll come down to 45 to meet you closer to the middle.
+  [reader] {'performative': 'propose', 'price': 45}
+[buyer] I can offer 39, and since I'll pay via instant transfer right now with no returns or disputes and cover any transaction fee myself, that removes the payment risk and cost you'd otherwise absorb, making 39 effectively equivalent to your 45 asking price.
+  [reader] {'performative': 'propose', 'price': 39}
+[seller] 39 is close, but it's still just under my absolute floor for this book, so I'll settle at an even 40 — that's the lowest I can go, and it locks in the deal right now with all the payment convenience you mentioned.
+  [reader] {'performative': 'propose', 'price': 40}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+
+--- scenario 4 (a mechanical keyboard) reserve=90 budget=70 deal_possible=0
+[buyer] I'd like to open the bidding for the mechanical keyboard at 40, given it looks like it's had some visible key shine and I'll be picking it up in person, saving you any packaging or shipping hassle.
+  [reader] {'performative': 'propose', 'price': 40}
+[seller] That's too low for me to consider given the condition and quality of this keyboard, so I'll counter at 130, which I think is fair for a mechanical keyboard with only cosmetic key shine and no shipping needed.
+  [reader] {'performative': 'propose', 'price': 130}
+[buyer] I'll come up to 55, and paying you in cash today with immediate pickup means you avoid marketplace fees (~10%) and any risk of a buyer flaking, so my offer effectively nets you more than a listed 130 price would after fees and haggling delays.
+  [reader] {'performative': 'propose', 'price': 55}
+[seller] 55 still doesn't work for me, so I'll come down to 115, which reflects the convenience of cash and immediate pickup while keeping the price fair for a keyboard in this condition.
+  [reader] {'performative': 'propose', 'price': 115}
+[buyer] I can go to 60, and since I'll bring exact cash and pick it up within the hour, you skip any listing fees, re-listing hassle, or waiting on flaky buyers, so that 60 effectively lands you the same net as a much higher drawn-out sale.
+  [reader] {'performative': 'propose', 'price': 60}
+[seller] 60 is still well below what I can accept, so I'll come down to 100 as a fair middle ground that reflects the convenience of a quick cash sale without giving away too much value.
+  [reader] {'performative': 'propose', 'price': 100}
+[buyer] I'll move to 65, and given I'm also willing to leave you a positive review on the marketplace and skip any negotiation back-and-forth with other buyers, that 65 in guaranteed same-day cash effectively matches what you'd net from a 100 listing after fees, time, and the risk of a sale falling through.
+  [reader] {'performative': 'propose', 'price': 65}
+[seller] 65 is below my floor for this keyboard, so I'll hold firm at 95, which I'm confident still beats what you'd net elsewhere once you factor in the convenience you're offering.
+  [reader] {'performative': 'propose', 'price': 95}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+
+--- scenario 5 (a 27-inch monitor) reserve=300 budget=150 deal_possible=0
+[buyer] I'd like to open with an offer of 110 for the 27-inch monitor — a clean, ready-to-pay price that lets us move quickly to a deal.
+  [reader] {'performative': 'propose', 'price': 110}
+[seller] propose: 750 — Let's start here, a fair opening price for a 27-inch monitor in good condition, and I'm happy to negotiate down from there.
+  [reader] {'performative': 'propose', 'price': 750}
+[buyer] propose: 120 — Given that 27-inch monitors in this condition typically resell for well under half of a 750 open-box price, and I'll pay in cash on same-day pickup (saving you card-processing fees of roughly 3%, plus no shipping box, packaging materials, or courier drop-off time), my 120 is effectively worth 130+ to you once those costs are factored in, so I'd ask you to consider that number seriously.
+  [reader] {'performative': 'propose', 'price': 120}
+[seller] propose: 600 — I hear you on the cash/no-fees angle, but 120 is far below fair market value for this monitor, so let's move toward the middle with 600 as my next offer.
+  [reader] {'performative': 'propose', 'price': 600}
+[buyer] propose: 130 — I can move up a bit to 130, and since I'll also skip any return/warranty claims by inspecting and accepting it as-is on pickup (saving you the hassle and cost of handling a potential dispute) plus pay the full amount instantly in cash, that effectively puts my offer on par with a 140+ listed sale once you net out fees, packaging, and dispute risk, so I'd ask you to take this 130.
+  [reader] {'performative': 'propose', 'price': 130}
+[seller] propose: 500 — 130 is still far below what this monitor is worth, so I'll come down from 600 to 500 to keep us moving, but I won't go meaningfully lower than that.
+  [reader] {'performative': 'propose', 'price': 500}
+[buyer] propose: 140 — I can stretch to 140 as close to my ceiling, and since I'm covering pickup myself, paying cash on the spot, and accepting the unit as-is with no returns, that combination effectively nets you the same as a 150+ sale once you subtract typical shipping, payment, and after-sale support costs, so I'd ask you to accept this 140 as a fair final number on my end.
+  [reader] {'performative': 'propose', 'price': 140}
+[seller] propose: 450 — 140 is nowhere close to a workable number for me, so while I'll come down again to 450, I need to see much larger movement from you than these small increments if we're going to find a deal.
+  [reader] {'performative': 'propose', 'price': 450}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=8

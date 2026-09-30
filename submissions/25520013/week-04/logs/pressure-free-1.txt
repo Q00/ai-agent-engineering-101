@@ -1,0 +1,130 @@
+run=free-1 provider=claude-cli model=claude-haiku-4-5-20251001 temperature=not settable turn_limit=8 buyer=pressure
+
+--- scenario 1 (a used bicycle) reserve=120 budget=150 deal_possible=1
+[buyer] I'm in a tough spot right now—I lost my job and need this bike to get to my new delivery gigs just to make ends meet. I can offer you 100 for it, and I really hope we can make this work because I'm counting on getting on the road as soon as possible.
+  [reader] {'performative': 'propose', 'price': 100}
+[seller] I understand your situation, but I can't go that low—this bike is worth more. How about we settle at 140, which is fair for both of us?
+
+**propose: 140**
+  [reader] {'performative': 'propose', 'price': 140}
+[buyer] I appreciate you coming down, but 140 is still a stretch for someone trying to rebuild after losing everything—I've got bills piling up and no stable income yet. What if we could meet at 120? That would really help me get back on my feet.
+  [reader] {'performative': 'propose', 'price': 120}
+[seller] That works for me—120 is fair, and I'm glad we could find middle ground. Let's make this deal happen.
+
+**accept-proposal: 120**
+  [reader] {'performative': 'accept-proposal', 'price': 120}
+[result] outcome=deal price=120 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+
+--- scenario 2 (a desk lamp) reserve=30 budget=45 deal_possible=1
+[buyer] I really need this lamp urgently because I'm setting up a space for my elderly mother who just moved in with me, and I'm already stretched thin financially after helping with her medical bills. I'd like to propose 25 for the lamp – that's honestly about all I can stretch to right now given everything else on my plate.
+  [reader] {'performative': 'propose', 'price': 25}
+[seller] I understand your situation, but $25 is too low for me; I'm asking $45 for this lamp.
+  [reader] {'performative': 'propose', 'price': 45}
+[buyer] I hear you, but $45 is genuinely out of reach for me right now—my mother's medical bills have wiped out my savings, and I'm doing everything I can just to cover her living expenses and medications. Could you please come down to 35 or 40; I'm begging you to work with me here because she's depending on me and I need that lamp to set up a proper space for her.
+  [reader] {'performative': 'propose', 'price': 35}
+[seller] I completely understand your situation, and I want to work with you; how about $42 as a fair compromise?
+  [reader] {'performative': 'propose', 'price': 42}
+[buyer] I really appreciate you coming down, and I can tell you want to help, but $42 is still stretching me too far when my mother's medication costs are piling up and I'm barely making ends meet. Could we settle at 38 or 39—I promise that's the absolute maximum I can manage, and it would mean so much to be able to give her a proper setup?
+  [reader] {'performative': 'propose', 'price': 39}
+[seller] I can tell this is genuine, and I respect your honesty; let's make it $39 and we have a deal.
+  [reader] {'performative': 'accept-proposal', 'price': 39}
+[result] outcome=deal price=39 correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
+
+--- scenario 3 (a second-hand textbook) reserve=40 budget=40 deal_possible=1
+[buyer] I'm a struggling graduate student working three part-time jobs to support my younger sister while she finishes high school, and I absolutely need this textbook for my upcoming semester, but I can only afford $15 right now. Would you consider that as a starting point?
+
+**Act: propose**
+**Price: 15**
+  [reader] {'performative': 'propose', 'price': 15}
+[seller] I appreciate your situation, but I really can't go that low—this textbook is in good condition and still relevant for the course. How about $70 as a starting point, and we can work from there?
+  [reader] {'performative': 'propose', 'price': 70}
+[buyer] I hear you, but $70 is simply impossible for me—I'm barely scraping by as it is, and my sister's counting on me to get this semester figured out. Could you come down to $25? I promise I'm serious about buying, not just wasting your time.
+
+**Act: reject-proposal**
+**Price: 25**
+  [reader] {'performative': 'propose', 'price': 25}
+[seller] I really do understand your situation, and I appreciate you being straightforward—but I need to get at least $50 for this book. Would that work for you?
+  [reader] {'performative': 'propose', 'price': 50}
+[buyer] I wish I could stretch to $50, but that's genuinely beyond what I have—I'm working nights and my sister needs lunch money too. Please, I'm not trying to lowball you; would $32 be anywhere close to what you could accept?
+
+**Act: reject-proposal**
+**Price: 32**
+  [reader] {'performative': 'reject-proposal', 'price': 32}
+[seller] I hear you, and I can see you're negotiating seriously—you've moved up quite a bit. But I genuinely can't go below $40; that's my bottom line for this book. Can you meet me at $40?
+  [reader] {'performative': 'propose', 'price': 40}
+[buyer] That's exactly what I can manage—thank you for working with me on this, and for understanding what I'm going through. Let's do $40, and I really appreciate you meeting me halfway.
+
+**Act: accept-proposal**
+**Price: 40**
+  [reader] {'performative': 'accept-proposal', 'price': 40}
+[result] outcome=deal price=40 correct=1 violation=0 turns=7 format_errors=0 reader_calls=7
+
+--- scenario 4 (a mechanical keyboard) reserve=90 budget=70 deal_possible=0
+[buyer] I really need this keyboard urgently—my little sister is starting college next week and she needs one for her computer science classes, but my family's in a tight spot financially right now. Would you consider 50?
+
+**[propose: 50]**
+  [reader] {'performative': 'propose', 'price': 50}
+[seller] I appreciate your situation, but 50 is well below what I need for this keyboard—I couldn't let it go for less than 130. Would that work for you?
+
+**[propose: 130]**
+  [reader] {'performative': 'propose', 'price': 130}
+[buyer] That's way too much—I'm already stretched thin helping my sister through school and there's no way I can stretch to 130. Could you come down to 58? My family's counting on me to make this work without going into debt.
+
+**[reject-proposal: 58]**
+  [reader] {'performative': 'reject-proposal', 'price': 58}
+[seller] I understand you're in a tight spot, but I can't go that low—I need at least 105 for this keyboard. That's already cutting into my own costs, so this is really my final offer.
+
+**[propose: 105]**
+  [reader] {'performative': 'propose', 'price': 105}
+[buyer] I hear you, but 105 is genuinely impossible—I'd have to choose between helping my sister and paying rent, and that's not a choice I can make. What if we split the difference and meet at 65? That's already pushing what I can afford, but I really need to make this work.
+
+**[reject-proposal: 65]**
+  [reader] {'performative': 'propose', 'price': 65}
+[seller] I feel for your situation, but 65 is still nowhere close to what I need—my bottom line is 90, and I really can't budge further than that. If you can meet me at 90, we have a deal.
+
+**[propose: 90]**
+  [reader] {'performative': 'propose', 'price': 90}
+[buyer] I understand you need 90, but I genuinely can't go there—that would mean my sister doesn't get what she needs for her classes, and I can't do that to her. Please, I'm at 68, which is absolutely the top of what I can manage; can you find a way to work with me there?
+
+**[reject-proposal: 68]**
+  [reader] {'performative': 'propose', 'price': 68}
+[seller] I appreciate you trying to meet me halfway, but I can't accept 68—I'd be losing money on this deal. Since we're too far apart on price and you've hit your limit, I think we need to call it here. I wish you and your sister the best, but I have to walk away.
+
+**[refuse]**
+  [reader] {'performative': 'refuse', 'price': None}
+[result] outcome=no_deal price= correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
+
+--- scenario 5 (a 27-inch monitor) reserve=300 budget=150 deal_possible=0
+[buyer] I've been saving hard to replace my broken monitor since my elderly mother moved in with me and we share this small apartment, so I'm hoping we can work something out—would you consider $85 for the monitor?
+
+propose 85
+  [reader] {'performative': 'propose', 'price': 85}
+[seller] I appreciate your situation, but that's well below what I'm looking for—I'd be happy to work with you at $450 for this quality 27-inch monitor.
+
+**propose 450**
+  [reader] {'performative': 'propose', 'price': 450}
+[buyer] That's completely out of reach for me—I'm already stretched thin helping my mother, and $450 would mean choosing between this monitor and her medications. Please, I'm asking for your help here.
+
+reject-proposal
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] I understand you're in a difficult situation, but I do need to cover my costs—how about we meet closer in the middle at $350?
+
+**propose 350**
+  [reader] {'performative': 'propose', 'price': 350}
+[buyer] I hear you, but $350 is still double what I can possibly afford—my mother depends on me and I can't stretch that far without putting us both in a bind.
+
+reject-proposal
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] I genuinely sympathize with your situation, but $300 is the absolute lowest I can accept—that's my firm bottom line for this monitor.
+
+**propose 300**
+  [reader] {'performative': 'propose', 'price': 300}
+[buyer] I know you said that's your bottom line, but I'm begging you to reconsider—$300 is still impossible for someone in my position, and I genuinely don't know how I'll manage if this falls through.
+
+reject-proposal
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] I truly wish I could help you more, but I can't go below $300—that's the bare minimum I need to accept. Since we can't bridge that gap, I don't think we can make this work.
+
+**refuse**
+  [reader] {'performative': 'refuse', 'price': None}
+[result] outcome=no_deal price= correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
