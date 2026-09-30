@@ -1,0 +1,10 @@
+provider=OpenRouter model=nvidia/nemotron-3.5-lightning:free temperature=0.0
+======================================================================
+CONDITION: homogeneous
+======================================================================
+
+----------------------------------------------------------------------
+[task] id=1 gold=A desc=Compute 137 * 249 and return only the numerical result.
+[announce] -> contractor A
+
+[CRASH] RuntimeError: OpenRouter HTTP error 429: {"error":{"message":"Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day","code":429,"metadata":{"headers":{"X-RateLimit-Limit":"50","X-RateLimit-Remaining":"0","X-RateLimit-Reset":"1790035200000"},"limit_source":"openrouter_free_tier_daily","remedy_hint":"Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.","provider_name":null}},"user_id":"user_3J00PhrR9Ke1zLkPGOGMhCLIP3s"}
