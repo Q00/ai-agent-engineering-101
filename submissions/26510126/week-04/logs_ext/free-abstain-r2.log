@@ -1,0 +1,74 @@
+provider=anthropic base_url=https://api.anthropic.com model=claude-haiku-4-5-20251001 temperature=0.0 max_tokens=300 turn_limit=8 anthropic-version=2023-06-01 transport=stdlib-urllib python=3.14.7
+run=free-abstain-r2 condition=free vocab=4 abstain=1 scenarios=['s1', 's2', 's3', 's4']
+
+  scenario s1: a used road bicycle (reserve=60 budget=140)
+    [1] buyer: I'm interested in the bike—what's your asking price?
+        no label (reader: unclear)
+    [2] seller: I'm looking to get $120 for it, but I'm open to negotiation if you're a serious buyer.
+        read as propose @ 120  [reader: propose @ 120]
+    [3] buyer: That's a fair starting point. How about we meet at $110?
+        read as propose @ 110  [reader: propose @ 110]
+    [4] seller: I appreciate the offer, but I'd need to stay closer to $115 to make this work for me.
+        read as propose @ 115  [reader: propose @ 115]
+    [5] buyer: I can do $115—that works for me.
+        read as accept-proposal  [reader: accept-proposal]
+        DEAL at 115 (last seller proposal)
+    result: outcome=deal price=115 correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 unclear_reads=1 (reserve=60 budget=140)
+
+  scenario s2: an espresso machine (reserve=95 budget=105)
+    [1] buyer: I'm interested in this espresso machine—what's your asking price?
+        no label (reader: unclear)
+    [2] seller: I'm looking to get $150 for it, but I'm open to negotiation if you're a serious buyer.
+        read as propose @ 150  [reader: propose @ 150]
+    [3] buyer: That's higher than I was hoping to spend. How about we start at $85 and see if we can meet somewhere in the middle?
+        read as propose @ 85  [reader: propose @ 85]
+    [4] seller: I appreciate the offer, but $85 is too low for me. How about $130—that's a fair price for a quality machine like this one.
+        read as propose @ 130  [reader: propose @ 130]
+    [5] buyer: I appreciate the quality, but $130 is still more than I can stretch to. What if we split the difference and go with $107?
+        read as propose @ 107  [reader: propose @ 107]
+    [6] seller: I can work with that. $107 sounds reasonable, and I appreciate you meeting me closer to my asking price.
+        read as accept-proposal  [reader: accept-proposal]
+        DEAL at 107 (last buyer proposal)
+    result: outcome=deal price=107 correct=0 violation=1 turns=6 format_errors=0 reader_calls=6 unclear_reads=1 (reserve=95 budget=105)
+
+  scenario s3: a film camera (reserve=130 budget=120)
+    [1] buyer: I'm interested in this camera—what's your asking price?
+        no label (reader: unclear)
+    [2] seller: I'm looking to get $180 for it, but I'm open to negotiation if you're a serious buyer.
+        read as propose @ 180  [reader: propose @ 180]
+    [3] buyer: That's higher than I was hoping to spend. How about $95 to start us off?
+        read as propose @ 95  [reader: propose @ 95]
+    [4] seller: I appreciate the offer, but that's too low for me. How about we meet somewhere in the middle at $155?
+        read as propose @ 155  [reader: propose @ 155]
+    [5] buyer: I appreciate you coming down, but $155 is still more than I can stretch to. Would you consider $110?
+        read as propose @ 110  [reader: propose @ 110]
+    [6] seller: I can't go that low, I'm afraid. How about $140—that's a fair price for a camera in this condition.
+        read as propose @ 140  [reader: propose @ 140]
+    [7] buyer: I understand, but $140 is still beyond what I'm comfortable with. What if we split the difference and say $125?
+        read as propose @ 125  [reader: propose @ 125]
+    [8] seller: I appreciate you trying to meet me halfway, but I can't go below $130. That's my bottom line on this one.
+        read as propose @ 130  [reader: propose @ 130]
+        OPEN, hit the 8-message limit
+    result: outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8 unclear_reads=1 (reserve=130 budget=120)
+
+  scenario s4: an electric guitar (reserve=200 budget=80)
+    [1] buyer: I'm interested in this guitar—what's your asking price?
+        no label (reader: unclear)
+    [2] seller: I'm looking to get $350 for it, but I'm open to negotiation if you're a serious buyer.
+        read as propose @ 350  [reader: propose @ 350]
+    [3] buyer: That's quite a bit higher than what I was hoping to spend. How about we start at $50 and see if we can find some middle ground?
+        read as propose @ 50  [reader: propose @ 50]
+    [4] seller: I appreciate the offer, but $50 is way too low for a guitar in this condition. How about $280 as a starting point for us to work from?
+        read as propose @ 280  [reader: propose @ 280]
+    [5] buyer: I appreciate you coming down, but $280 is still more than I can stretch to. Would you consider $70? That's what I'm really comfortable spending right now.
+        read as propose @ 70  [reader: propose @ 70]
+    [6] seller: I can't go that low—this is a quality instrument and $70 doesn't reflect that. What if we split the difference and you come up to $240?
+        read as propose @ 240  [reader: propose @ 240]
+    [7] buyer: I hear you, but $240 is still way beyond what I'm working with. Let me be straight with you—my absolute maximum is $80, and that's really pushing it for my budget.
+        read as propose @ 80  [reader: propose @ 80]
+    [8] seller: I appreciate your honesty, but I can't meet you at $80—that's just too far apart from where I need to be. I'm going to have to walk away from this one. Good luck finding another guitar in your price range.
+        read as refuse  [reader: refuse]
+        NO DEAL, walked away
+    result: outcome=no_deal price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=8 unclear_reads=1 (reserve=200 budget=80)
+
+  calls so far: agent=54 reader=54 total=108 tokens=34761
