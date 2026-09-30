@@ -1,0 +1,29 @@
+$ /home/uichan/miniconda3/bin/python scripts/check_week03.py submissions/26520024/week-03
+ok    6 .py file(s) parse
+ok    tasks.json has 6 tasks across 3 gold contractors
+ok    results.csv has 3 run(s) for baseline
+ok    results.csv has 3 run(s) for homogeneous
+ok    results.csv has 3 run(s) for overconfident
+ok    logs/ contains 9 file(s)
+ok    REPORT.md present with a table
+
+all checks passed
+$ /home/uichan/miniconda3/bin/python submissions/26520024/week-03/validate_results.py
+001 baseline verified: {'tasks': 6, 'correct': 6, 'messages': 30, 'unassigned': 0, 'misawards': 0}
+002 homogeneous verified: {'tasks': 6, 'correct': 2, 'messages': 42, 'unassigned': 0, 'misawards': 4}
+003 overconfident verified: {'tasks': 6, 'correct': 6, 'messages': 34, 'unassigned': 0, 'misawards': 0}
+004 baseline verified: {'tasks': 6, 'correct': 6, 'messages': 30, 'unassigned': 0, 'misawards': 0}
+005 homogeneous verified: {'tasks': 6, 'correct': 2, 'messages': 42, 'unassigned': 0, 'misawards': 4}
+006 overconfident verified: {'tasks': 6, 'correct': 6, 'messages': 34, 'unassigned': 0, 'misawards': 0}
+007 baseline verified: {'tasks': 6, 'correct': 6, 'messages': 30, 'unassigned': 0, 'misawards': 0}
+008 homogeneous verified: {'tasks': 6, 'correct': 2, 'messages': 42, 'unassigned': 0, 'misawards': 4}
+009 overconfident verified: {'tasks': 6, 'correct': 6, 'messages': 34, 'unassigned': 0, 'misawards': 0}
+PASS: 9 completed runs, 162 live model calls; raw events, prompts, gold-blind awards and CSV match.
+$ /home/uichan/miniconda3/bin/python submissions/26520024/week-03/run_experiment.py --repetitions 3
+Requested completed runs already exist; nothing overwritten.
+No-op rerun preserved all nine original log hashes.
+ownership check passed for @leeuichann (27 file(s))
+Common credential-pattern scan passed; no credential values printed.
+$ git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check
+All nine report-table rows match results.csv; no draft placeholders.
+FINAL REVIEW PASSED. No push or PR performed.
