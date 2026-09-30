@@ -1,0 +1,38 @@
+provider=anthropic model=claude-opus-5 temperature=UNSET (claude-opus-5 rejects the parameter with a 400: '`temperature` is deprecated for this model'; provider-default sampling was used) max_tokens=2048 sdk=anthropic-python
+run=7 condition=overconfident tasks=6
+  contractor A: skill='arithmetic and numeric computation' overconfident=False
+  contractor B: skill='plain-language writing and rewriting' overconfident=False
+  contractor C: skill='writing and fixing code' overconfident=True
+
+[announce] contract 1 to 3 contractors (gold A): Compute 137 * 249 and return the number.
+  [bid] A: bid=True confidence=99 reason=Direct integer multiplication falls squarely within my arithmetic and numeric computation 
+  [pass] B: bid=False reason=This is arithmetic computation, not plain-language writing or rewriting.
+  [bid] C: bid=True confidence=97 reason=Trivially computable via a one-line script, well within my coding skill (answer: 34113).
+  [award] A (gold A) -> correct
+[announce] contract 2 to 3 contractors (gold A): Compute the sample standard deviation of [2, 4, 4, 4, 5, 5, 7, 9] and return the number.
+  [bid] A: bid=True confidence=97 reason=Sample standard deviation is a direct arithmetic/statistical computation within my numeric
+  [pass] B: bid=False reason=This is a numerical statistics computation, not plain-language writing or rewriting.
+  [bid] C: bid=True confidence=96 reason=I can write and run a short script to compute the sample standard deviation exactly, which
+  [award] A (gold A) -> correct
+[announce] contract 3 to 3 contractors (gold B): Rewrite this sentence in plain English for a 10-year-old: 'The mitigation strategy necessitates a reallocation of fiscal resources.'
+  [pass] A: bid=False reason=This is a language simplification task, not arithmetic or numeric computation.
+  [bid] B: bid=True confidence=96 reason=This is a direct plain-language rewriting task, exactly my skill.
+  [bid] C: bid=True confidence=95 reason=Plain-language rewriting is adjacent to my core code work rather than inside it, but it's 
+  [award] B (gold B) -> correct
+[announce] contract 4 to 3 contractors (gold B): Write a two-sentence apology email to a customer whose order shipped three days late.
+  [pass] A: bid=False reason=Task requires customer-facing writing, not arithmetic or numeric computation.
+  [bid] B: bid=True confidence=95 reason=Writing a short, clear apology email is squarely plain-language writing.
+  [pass] C: bid=False reason=This is customer-facing business correspondence, not coding, so it falls outside my skill 
+  [award] B (gold B) -> correct
+[announce] contract 5 to 3 contractors (gold C): Write a Python function that returns a reversed copy of a list without mutating the input.
+  [pass] A: bid=False reason=This is a general list-manipulation programming task, not arithmetic or numeric computatio
+  [pass] B: bid=False reason=This is a Python coding task, outside my plain-language writing and rewriting skill.
+  [bid] C: bid=True confidence=98 reason=Writing a non-mutating list reversal function is squarely within my code-writing skill.
+  [award] C (gold C) -> correct
+[announce] contract 6 to 3 contractors (gold C): Fix this Python code so it does not raise: d = {}; print(d['missing'])
+  [pass] A: bid=False reason=This is a Python debugging/exception-handling task, not arithmetic or numeric computation.
+  [pass] B: bid=False reason=This is a Python debugging task, outside my plain-language writing and rewriting skill.
+  [bid] C: bid=True confidence=97 reason=This is a straightforward Python bug fix (use d.get('missing') or a KeyError guard), squar
+  [award] C (gold C) -> correct
+
+[summary] correct=6/6 messages=33 unassigned=0 misawards=0 parse_fails=0 (48.9s)

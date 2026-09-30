@@ -1,0 +1,38 @@
+provider=anthropic model=claude-opus-5 temperature=UNSET (claude-opus-5 rejects the parameter with a 400: '`temperature` is deprecated for this model'; provider-default sampling was used) max_tokens=2048 sdk=anthropic-python
+run=4 condition=homogeneous tasks=6
+  contractor A: skill='general problem solving' overconfident=False
+  contractor B: skill='general problem solving' overconfident=False
+  contractor C: skill='general problem solving' overconfident=False
+
+[announce] contract 1 to 3 contractors (gold A): Compute 137 * 249 and return the number.
+  [bid] A: bid=True confidence=95 reason=Simple arithmetic falls within general problem solving; 137 * 249 = 34113.
+  [bid] B: bid=True confidence=95 reason=Simple arithmetic falls within general problem solving; answer is 34113.
+  [bid] C: bid=True confidence=95 reason=Simple arithmetic falls within general problem solving; 137 * 249 = 34113.
+  [award] A (gold A) -> correct
+[announce] contract 2 to 3 contractors (gold A): Compute the sample standard deviation of [2, 4, 4, 4, 5, 5, 7, 9] and return the number.
+  [bid] A: bid=True confidence=92 reason=Basic statistical computation falls within general problem solving; sample SD = sqrt(32/7)
+  [bid] B: bid=True confidence=92 reason=Basic statistical computation falls within general problem solving; sample SD = sqrt(32/7)
+  [bid] C: bid=True confidence=92 reason=Straightforward arithmetic/statistics computation well within general problem solving (ans
+  [award] A (gold A) -> correct
+[announce] contract 3 to 3 contractors (gold B): Rewrite this sentence in plain English for a 10-year-old: 'The mitigation strategy necessitates a reallocation of fiscal resources.'
+  [bid] A: bid=True confidence=90 reason=Plain-language rewriting is a general problem-solving/text task within my skill.
+  [bid] B: bid=True confidence=88 reason=Plain-language rewriting is a straightforward general problem-solving and communication ta
+  [bid] C: bid=True confidence=88 reason=Plain-language rewriting is a straightforward general problem-solving and communication ta
+  [award] A (gold B) -> MISAWARD
+[announce] contract 4 to 3 contractors (gold B): Write a two-sentence apology email to a customer whose order shipped three days late.
+  [bid] A: bid=True confidence=88 reason=Drafting a short apology email is a straightforward general problem-solving/writing task w
+  [bid] B: bid=True confidence=88 reason=Drafting a short apology email is a straightforward general problem-solving/writing task w
+  [bid] C: bid=True confidence=85 reason=Drafting a short apology email is a straightforward general problem-solving/writing task w
+  [award] A (gold B) -> MISAWARD
+[announce] contract 5 to 3 contractors (gold C): Write a Python function that returns a reversed copy of a list without mutating the input.
+  [bid] A: bid=True confidence=92 reason=Simple, well-specified programming task well within general problem solving.
+  [bid] B: bid=True confidence=85 reason=Writing a simple non-mutating list-reversal function is a straightforward general problem-
+  [bid] C: bid=True confidence=92 reason=Simple algorithmic coding task well within general problem solving.
+  [award] A (gold C) -> MISAWARD
+[announce] contract 6 to 3 contractors (gold C): Fix this Python code so it does not raise: d = {}; print(d['missing'])
+  [bid] A: bid=True confidence=85 reason=Fixing a KeyError by using d.get('missing') or a default is a simple, self-contained probl
+  [bid] B: bid=True confidence=90 reason=Fixing a KeyError by using d.get('missing') or a default is straightforward general proble
+  [bid] C: bid=True confidence=88 reason=Simple general problem solving: replace direct key access with d.get('missing') or a KeyEr
+  [award] B (gold C) -> MISAWARD
+
+[summary] correct=2/6 messages=42 unassigned=0 misawards=4 parse_fails=0 (40.3s)

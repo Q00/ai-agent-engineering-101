@@ -1,0 +1,38 @@
+provider=anthropic model=claude-opus-5 temperature=UNSET (claude-opus-5 rejects the parameter with a 400: '`temperature` is deprecated for this model'; provider-default sampling was used) max_tokens=2048 sdk=anthropic-python
+run=3 condition=baseline tasks=6
+  contractor A: skill='arithmetic and numeric computation' overconfident=False
+  contractor B: skill='plain-language writing and rewriting' overconfident=False
+  contractor C: skill='writing and fixing code' overconfident=False
+
+[announce] contract 1 to 3 contractors (gold A): Compute 137 * 249 and return the number.
+  [bid] A: bid=True confidence=99 reason=Pure arithmetic multiplication, squarely within my numeric computation skill (137 * 249 = 
+  [pass] B: bid=False reason=This is an arithmetic computation task, not plain-language writing or rewriting.
+  [pass] C: bid=False reason=This is a plain arithmetic computation, not a code writing or debugging task.
+  [award] A (gold A) -> correct
+[announce] contract 2 to 3 contractors (gold A): Compute the sample standard deviation of [2, 4, 4, 4, 5, 5, 7, 9] and return the number.
+  [bid] A: bid=True confidence=97 reason=This is a straightforward numeric computation (sample standard deviation ≈ 2.138) squarely
+  [pass] B: bid=False reason=This is a numerical statistics computation, not plain-language writing or rewriting.
+  [pass] C: bid=False reason=This is a pure numeric/statistics computation with no code to write or fix, so it falls ou
+  [award] A (gold A) -> correct
+[announce] contract 3 to 3 contractors (gold B): Rewrite this sentence in plain English for a 10-year-old: 'The mitigation strategy necessitates a reallocation of fiscal resources.'
+  [pass] A: bid=False reason=This is a language simplification task, not arithmetic or numeric computation.
+  [bid] B: bid=True confidence=96 reason=This is a plain-language rewriting task, exactly my skill.
+  [pass] C: bid=False reason=This is a plain-language writing/simplification task, not code writing or debugging.
+  [award] B (gold B) -> correct
+[announce] contract 4 to 3 contractors (gold B): Write a two-sentence apology email to a customer whose order shipped three days late.
+  [pass] A: bid=False reason=This is a natural-language writing task with no arithmetic or numeric computation involved
+  [bid] B: bid=True confidence=95 reason=Writing a short, clear apology email is squarely plain-language writing.
+  [pass] C: bid=False reason=Writing a customer apology email is business correspondence, not code writing or fixing.
+  [award] B (gold B) -> correct
+[announce] contract 5 to 3 contractors (gold C): Write a Python function that returns a reversed copy of a list without mutating the input.
+  [pass] A: bid=False reason=This is a general list-manipulation coding task, not arithmetic or numeric computation, so
+  [pass] B: bid=False reason=This is a code-writing task, not plain-language writing or rewriting.
+  [bid] C: bid=True confidence=96 reason=Writing a small Python function is squarely within my code-writing skill.
+  [award] C (gold C) -> correct
+[announce] contract 6 to 3 contractors (gold C): Fix this Python code so it does not raise: d = {}; print(d['missing'])
+  [pass] A: bid=False reason=This is a Python exception-handling/debugging task, not arithmetic or numeric computation.
+  [pass] B: bid=False reason=This is a Python debugging task, not plain-language writing or rewriting.
+  [bid] C: bid=True confidence=97 reason=This is a straightforward Python bug fix (KeyError), squarely within my code writing and f
+  [award] C (gold C) -> correct
+
+[summary] correct=6/6 messages=30 unassigned=0 misawards=0 parse_fails=0 (41.2s)
