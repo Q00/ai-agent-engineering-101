@@ -1,0 +1,30 @@
+provider=OpenRouter model=nvidia/nemotron-3.5-lightning:free temperature=0.0
+======================================================================
+CONDITION: baseline
+======================================================================
+
+----------------------------------------------------------------------
+[task] id=1 gold=A desc=Compute 137 * 249 and return only the numerical result.
+[announce] -> contractor A
+[raw] A: {"bid": true, "confidence": 100, "reason": "Arithmetic calculation task within skill set."}
+[bid] A: bid=True confidence=100.0 reason=Arithmetic calculation task within skill set.
+[announce] -> contractor B
+[raw] B: {"bid": false, "confidence": 0, "reason": "Task requires arithmetic computation, not writing or language skills."}
+[bid] B: bid=False confidence=0.0 reason=Task requires arithmetic computation, not writing or language skills.
+[announce] -> contractor C
+[raw] C: {"bid": true, "confidence": 100, "reason": "Simple arithmetic computation within Python programming skills."}
+[bid] C: bid=True confidence=100.0 reason=Simple arithmetic computation within Python programming skills.
+[award] contractor A confidence=100.0 (gold=A)
+[result] correct
+
+----------------------------------------------------------------------
+[task] id=2 gold=B desc=Rewrite this sentence in clear and polite English: Send me the report now.
+[announce] -> contractor A
+[raw] A: {"bid": true, "confidence": 95, "reason": "Task involves rewriting a sentence in clear and polite English, which falls within my capabilities."}
+[bid] A: bid=True confidence=95.0 reason=Task involves rewriting a sentence in clear and polite English, which falls within my capabilities.
+[announce] -> contractor B
+[raw] B: {"bid": true, "confidence": 95, "reason": "Task requires rewriting a sentence in clear and polite English: fits my core skill."}
+[bid] B: bid=True confidence=95.0 reason=Task requires rewriting a sentence in clear and polite English: fits my core skill.
+[announce] -> contractor C
+
+[CRASH] TimeoutError: The read operation timed out
