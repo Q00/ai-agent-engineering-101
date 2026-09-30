@@ -1,0 +1,54 @@
+[RUN] free-01 model=qwen3:4b-instruct temperature=0.2 turn_limit=6 max_tokens=350
+[SCENARIO] headphones-compatible item=used studio headphones reserve=60 budget=90
+[MESSAGE 1] buyer: 'propose 60'
+[READER free] performative=propose price=60 calls=1
+[MESSAGE 2] seller: 'accept-proposal'
+[READER free] performative=accept-proposal price=None calls=1
+[END] acceptance of buyer's offer at 60
+[RESULT] run=free-01 scenario=headphones-compatible outcome=deal price=60 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2
+[RUN] free-01 model=qwen3:4b-instruct temperature=0.2 turn_limit=6 max_tokens=350
+[SCENARIO] monitor-incompatible item=27-inch display reserve=110 budget=95
+[MESSAGE 1] buyer: 'propose 90'
+[READER free] performative=propose price=90 calls=1
+[MESSAGE 2] seller: 'propose 110'
+[READER free] performative=propose price=110 calls=1
+[MESSAGE 3] buyer: 'reject-proposal'
+[READER free] performative=reject-proposal price=None calls=1
+[MESSAGE 4] seller: 'propose 115'
+[READER free] performative=propose price=115 calls=1
+[MESSAGE 5] buyer: 'reject-proposal'
+[READER free] performative=reject-proposal price=None calls=1
+[MESSAGE 6] seller: 'propose 120'
+[READER free] performative=propose price=120 calls=1
+[END] turn limit 6; open
+[RESULT] run=free-01 scenario=monitor-incompatible outcome=open price=None correct=0 violation=0 turns=6 format_errors=0 reader_calls=6
+[SCENARIO] keyboard-compatible item=mechanical keyboard reserve=45 budget=70
+[MESSAGE 1] buyer: 'propose 50'
+[READER free] performative=propose price=50 calls=1
+[MESSAGE 2] seller: 'propose 46'
+[READER free] performative=propose price=46 calls=1
+[MESSAGE 3] buyer: 'reject-proposal'
+[READER free] performative=reject-proposal price=None calls=1
+[MESSAGE 4] seller: 'propose 47'
+[READER free] performative=propose price=47 calls=1
+[MESSAGE 5] buyer: 'reject-proposal'
+[READER free] performative=reject-proposal price=None calls=1
+[MESSAGE 6] seller: 'propose 48'
+[READER free] performative=propose price=48 calls=1
+[END] turn limit 6; open
+[RESULT] run=free-01 scenario=keyboard-compatible outcome=open price=None correct=0 violation=0 turns=6 format_errors=0 reader_calls=6
+[SCENARIO] camera-incompatible item=compact camera reserve=125 budget=100
+[MESSAGE 1] buyer: 'propose 60'
+[READER free] performative=propose price=60 calls=1
+[MESSAGE 2] seller: 'propose 120'
+[READER free] performative=propose price=120 calls=1
+[MESSAGE 3] buyer: 'reject-proposal'
+[READER free] performative=reject-proposal price=None calls=1
+[MESSAGE 4] seller: 'propose 125'
+[READER free] performative=propose price=125 calls=1
+[MESSAGE 5] buyer: 'reject-proposal'
+[READER free] performative=reject-proposal price=None calls=1
+[MESSAGE 6] seller: 'propose 125'
+[READER free] performative=propose price=125 calls=1
+[END] turn limit 6; open
+[RESULT] run=free-01 scenario=camera-incompatible outcome=open price=None correct=0 violation=0 turns=6 format_errors=0 reader_calls=6
