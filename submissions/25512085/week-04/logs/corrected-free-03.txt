@@ -1,0 +1,61 @@
+provider=LM Studio native API server=http://127.0.0.1:1234 model=qwen/qwen3.8-27b temperature=0.2 max_turns=8 condition=free run=corrected-free-03
+[start] scenario=S01
+[buyer] I'm interested in the keyboard, but I can only offer $80 for it.
+[protocol] performative=propose price=80 parsed=True reader_calls=1
+[seller] I appreciate your offer, but I can't go that low. I can do $90 for you, which is a fair price for this quality keyboard.
+[protocol] performative=propose price=90 parsed=True reader_calls=2
+[buyer] I appreciate the counter-offer, but I can only go up to $85.
+[protocol] performative=propose price=85 parsed=True reader_calls=3
+[seller] I can't accept $85, but I'm willing to meet you halfway at $80.
+[protocol] performative=propose price=80 parsed=True reader_calls=4
+[buyer] Since you are willing to meet me at $80, I am happy to accept that price.
+[protocol] performative=accept-proposal price=None parsed=True reader_calls=5
+[episode] scenario=S01 outcome=deal price=80 correct=1 violation=0 turns=5 format_errors=0 reader_calls=5
+[start] scenario=S02
+[buyer] I'd like to start by offering you $50 for the headphones.
+[protocol] performative=propose price=50 parsed=True reader_calls=1
+[seller] I appreciate your offer, but I can't accept $50. I'm willing to sell them to you for $60.
+[protocol] performative=propose price=60 parsed=True reader_calls=2
+[buyer] I appreciate your counter-offer, but $60 is a bit higher than I was expecting. How about we meet in the middle at $55?
+[protocol] performative=propose price=55 parsed=True reader_calls=3
+[seller] I can't accept $55, but I am willing to meet you at $50.
+[protocol] performative=propose price=50 parsed=True reader_calls=4
+[buyer] I can accept your offer of $50.
+[protocol] performative=accept-proposal price=None parsed=True reader_calls=5
+[episode] scenario=S02 outcome=deal price=50 correct=1 violation=0 turns=5 format_errors=0 reader_calls=5
+[start] scenario=S03
+[buyer] I'd like to start by offering $100 for the monitor.
+[protocol] performative=propose price=100 parsed=True reader_calls=1
+[seller] I'm afraid $100 is too low for this monitor, so I'll have to decline that offer. Let's start with a proposal of $180 instead.
+[protocol] performative=propose price=180 parsed=True reader_calls=2
+[buyer] I can't go that high, so I'll bump my offer up to $110.
+[protocol] performative=propose price=110 parsed=True reader_calls=3
+[seller] I'm afraid $110 is still well below my minimum, so I have to decline. Let's try a price of $160 instead.
+[protocol] performative=propose price=160 parsed=True reader_calls=4
+[buyer] I can't accept $160, so I'll increase my offer to $120.
+[protocol] performative=propose price=120 parsed=True reader_calls=5
+[seller] I'm sorry, but $120 is still too low for me to accept. Let's try a price of $155 instead.
+[protocol] performative=propose price=155 parsed=True reader_calls=6
+[buyer] I cannot pay $155, so I will have to decline that offer.
+[protocol] performative=reject-proposal price=None parsed=True reader_calls=7
+[seller] I'm sorry to hear that, but I can't accept $120 as it's below my limit. Let's settle on a final price of $150.
+[protocol] performative=propose price=150 parsed=True reader_calls=8
+[episode] scenario=S03 outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+[start] scenario=S04
+[buyer] I'd like to start by offering $50 for the desk lamp.
+[protocol] performative=propose price=50 parsed=True reader_calls=1
+[seller] I'm afraid $50 is too low for this quality lamp, so I'll have to reject that offer. Let's start with a price of $120 instead.
+[protocol] performative=propose price=120 parsed=True reader_calls=2
+[buyer] I understand your position, but $120 is well above my budget for this item. Let's meet in the middle with a firm offer of $75.
+[protocol] performative=propose price=75 parsed=True reader_calls=3
+[seller] I appreciate your offer, but $75 is still below my minimum acceptable price for this lamp. I can accept a deal at $90 if you are willing to meet me there.
+[protocol] performative=propose price=90 parsed=True reader_calls=4
+[buyer] I cannot accept $90 as it exceeds my maximum budget, so I must reject that proposal. Let's close the deal at my firm offer of $75.
+[protocol] performative=propose price=75 parsed=True reader_calls=5
+[seller] I am afraid I cannot accept $75, as it is below my minimum threshold. I must reject your proposal and hold firm at $90.
+[protocol] performative=reject-proposal price=None parsed=True reader_calls=6
+[buyer] I am afraid I cannot accept $90 as it exceeds my maximum budget, so I must reject that proposal. Let's close the deal at my firm offer of $75.
+[protocol] performative=propose price=75 parsed=True reader_calls=7
+[seller] I am sorry, but I cannot accept $75 as it is below my minimum price. I must refuse to continue the negotiation.
+[protocol] performative=refuse price=None parsed=True reader_calls=8
+[episode] scenario=S04 outcome=no_deal price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=8

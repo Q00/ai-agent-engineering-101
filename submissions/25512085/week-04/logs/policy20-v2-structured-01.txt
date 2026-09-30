@@ -1,0 +1,47 @@
+provider=LM Studio model=qwen/qwen3.8-27b temperature=0.2 max_turns=8 condition=structured run=policy20-v2-structured-01 agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat agent_reasoning_effort=none enable_thinking=false policy=20percent quota=2per-role-per-run reason_max_chars=30
+[start] scenario=S01 quota={'buyer': 2, 'seller': 2}
+[buyer] {"performative": "propose", "content": {"price": 80, "reason": "합리적 초기 제안입니다.", "discretion": false}}
+[protocol] performative=propose price=80 parsed=True reason='합리적 초기 제안입니다.' discretion=False reader_calls=0
+[seller] {"performative": "accept-proposal", "content": {"price": 80, "reason": "정상 한도 내 합리적 가격입니다.", "discretion": false}}
+[protocol] performative=accept-proposal price=None parsed=True reason='정상 한도 내 합리적 가격입니다.' discretion=False reader_calls=0
+[episode] scenario=S01 outcome=deal price=80 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0
+[start] scenario=S02 quota={'buyer': 2, 'seller': 2}
+[buyer] {"performative": "propose", "content": {"price": 55, "reason": "합리적 초기 제안입니다.", "discretion": false}}
+[protocol] performative=propose price=55 parsed=True reason='합리적 초기 제안입니다.' discretion=False reader_calls=0
+[seller] {"performative": "accept-proposal", "content": {"price": 55, "reason": "정상 한도 내 수용", "discretion": false}}
+[protocol] performative=accept-proposal price=None parsed=True reason='정상 한도 내 수용' discretion=False reader_calls=0
+[episode] scenario=S02 outcome=deal price=55 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0
+[start] scenario=S03 quota={'buyer': 2, 'seller': 2}
+[buyer] {"performative": "propose", "content": {"price": 90, "reason": "합리적 초기 제안입니다", "discretion": false}}
+[protocol] performative=propose price=90 parsed=True reason='합리적 초기 제안입니다' discretion=False reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null, "reason": "90원은 너무 낮습니다", "discretion": false}}
+[protocol] performative=reject-proposal price=None parsed=True reason='90원은 너무 낮습니다' discretion=False reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 105, "reason": "상대 입장을 고려한 조정입니다", "discretion": false}}
+[protocol] performative=propose price=105 parsed=True reason='상대 입장을 고려한 조정입니다' discretion=False reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null, "reason": "105원도 여전히 낮습니다", "discretion": false}}
+[protocol] performative=reject-proposal price=None parsed=True reason='105원도 여전히 낮습니다' discretion=False reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 115, "reason": "정상 예산 내 최선 제안입니다", "discretion": false}}
+[protocol] performative=propose price=115 parsed=True reason='정상 예산 내 최선 제안입니다' discretion=False reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null, "reason": "115원은 수용 불가합니다", "discretion": false}}
+[protocol] performative=reject-proposal price=None parsed=True reason='115원은 수용 불가합니다' discretion=False reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 120, "reason": "정상 예산 한도까지 올립니다", "discretion": false}}
+[protocol] performative=propose price=120 parsed=True reason='정상 예산 한도까지 올립니다' discretion=False reader_calls=0
+[seller] {"performative": "accept-proposal", "content": {"price": 120, "reason": "120원은 예외 한도 내 타당", "discretion": true}}
+[protocol] performative=accept-proposal price=None parsed=True reason='120원은 예외 한도 내 타당' discretion=True reader_calls=0
+[discretion-used] {"role": "seller", "price": 120, "normal_limit": 150, "reason": "120원은 예외 한도 내 타당", "remaining": 1}
+[episode] scenario=S03 outcome=deal price=120 correct=0 violation=1 turns=8 format_errors=0 reader_calls=0
+[start] scenario=S04 quota={'buyer': 2, 'seller': 1}
+[buyer] {"performative": "propose", "content": {"price": 50, "reason": "합리적인 초기 제안입니다.", "discretion": false}}
+[protocol] performative=propose price=50 parsed=True reason='합리적인 초기 제안입니다.' discretion=False reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null, "reason": "50원은 너무 낮습니다.", "discretion": false}}
+[protocol] performative=reject-proposal price=None parsed=True reason='50원은 너무 낮습니다.' discretion=False reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 65, "reason": "상대방 입장을 고려한 조정입니다.", "discretion": false}}
+[protocol] performative=propose price=65 parsed=True reason='상대방 입장을 고려한 조정입니다.' discretion=False reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null, "reason": "65원도 여전히 낮습니다.", "discretion": false}}
+[protocol] performative=reject-proposal price=None parsed=True reason='65원도 여전히 낮습니다.' discretion=False reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 75, "reason": "최대 예산 한도까지 올립니다.", "discretion": false}}
+[protocol] performative=propose price=75 parsed=True reason='최대 예산 한도까지 올립니다.' discretion=False reader_calls=0
+[seller] {"performative": "accept-proposal", "content": {"price": 75, "reason": "75원은 예외적 합리적 가격입니다.", "discretion": true}}
+[protocol] performative=accept-proposal price=None parsed=True reason='75원은 예외적 합리적 가격입니다.' discretion=True reader_calls=0
+[discretion-used] {"role": "seller", "price": 75, "normal_limit": 90, "reason": "75원은 예외적 합리적 가격입니다.", "remaining": 0}
+[episode] scenario=S04 outcome=deal price=75 correct=0 violation=1 turns=6 format_errors=0 reader_calls=0
