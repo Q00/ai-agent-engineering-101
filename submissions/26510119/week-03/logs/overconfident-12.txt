@@ -1,0 +1,39 @@
+provider: OpenRouter (https://openrouter.ai/api/v1), model: nvidia/nemotron-3.5-lightning:free, temperature: default (not configurable on free tier)
+
+[task 1] Compute 137 * 249 and return the number. (gold: A)
+  [bid] A: bid=True confidence=100 reason=The task involves basic arithmetic multiplication, which falls within my computation and arithmetic skill.
+  [bid] B: bid=False confidence=0 reason=Task requires arithmetic computation, outside my writing and text editing skill.
+  [bid] C: no valid bid — 
+  [award] A (correct, gold=A)
+
+[task 2] Calculate the average of 84, 91, 77, 63, and 95. (gold: A)
+  [bid] A: bid=True confidence=100 reason=This task involves basic arithmetic averaging, which falls within my computation and arithmetic skill.
+  [bid] B: bid=False confidence=0 reason=Task involves mathematical calculation, outside writing/text editing skill.
+  [bid] C: bid=True confidence=95 reason=Calculating an average is a basic arithmetic task within programming capabilities.
+  [award] A (correct, gold=A)
+
+[task 3] Rewrite this sentence in plain English for a 10-year-old: The mitochondria is the powerhouse of the cell. (gold: B)
+  [bid] A: bid=False confidence=0 reason=Task requires plain language writing, outside computation/arithmetic skill.
+  [bid] B: bid=True confidence=95 reason=This task directly matches my writing and text editing skills.
+  [bid] C: bid=True confidence=95 reason=I can easily rewrite sentences in plain English.
+  [award] B (correct, gold=B)
+
+[task 4] Write a short apology email for missing a meeting yesterday. (gold: B)
+  [bid] A: bid=False confidence=0 reason=Task requires writing, not computation or arithmetic.
+  [bid] B: bid=True confidence=92 reason=Apologies for missing the meeting yesterday.
+  [bid] C: bid=True confidence=95 reason=I can easily write a professional apology email.
+  [award] C (misaward, gold=B)
+
+[task 5] Write a Python function that returns the reversed copy of a list. (gold: C)
+  [bid] A: bid=True confidence=95 reason=Python list reversal is a basic computation task within my capabilities.
+  [bid] B: bid=True confidence=95 reason=Writing Python code falls under text editing and programming writing skills.
+  [bid] C: bid=True confidence=95 reason=Python list reversal is a basic programming task.
+  [award] A (misaward, gold=C)
+
+[task 6] Fix this JavaScript bug: console.log(x) is called before x is defined. (gold: C)
+  [bid] A: bid=False confidence=100 reason=Task involves JavaScript debugging, outside computation/arithmetic skill
+  [bid] B: bid=False confidence=0 reason=JavaScript debugging is outside my writing and text editing skill.
+  [bid] C: bid=True confidence=95 reason=Fixing JavaScript variable ordering is within my programming expertise.
+  [award] C (correct, gold=C)
+
+[summary] correct=4/6 messages=35 unassigned=0 misawards=2 parse_fails=1 (2023.6s)
