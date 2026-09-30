@@ -1,0 +1,73 @@
+provider=ollama-local model=qwen2.5:7b-instruct temperature=0 max_messages=8 condition=tagged run=1
+[scenario] id=S1 item=desk lamp reserve=40 budget=55
+[buyer] propose I'm interested in the desk lamp. Let's start with a price of 45.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] accept-proposal Thank you for your offer. I accept the price of 45.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[buyer] accept-proposal That's great! I'm happy to agree to the price of 45. Thank you.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] refuse To ensure the quality matches the price, let's consider 50 instead.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[buyer] reject-proposal While 50 is better, I'm afraid that's still a bit high for my budget. Can we discuss 48?
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] propose Considering the quality, how about we settle at 47?
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[buyer] reject-proposal 47 is closer but still a bit high. How about we agree on 46?
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] propose That's a fair point. Let's finalize the price at 46 then.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=8 reader_calls=0 note=-
+[scenario] id=S2 item=mechanical keyboard reserve=80 budget=105
+[buyer] propose I'm interested in your mechanical keyboard. Let's start with a price of 90.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] propose Given the quality, I believe 100 is a fair starting price for the mechanical keyboard.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[buyer] reject-proposal While 100 is reasonable, could we perhaps find a middle ground closer to 90?
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] propose Considering your feedback, how about we set the price at 95? This reflects the quality while remaining competitive.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[buyer] accept-proposal The price of 95 sounds reasonable. I'll proceed with this offer. Looking forward to receiving the keyboard.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] accept-proposal Great, I'll proceed with the sale at 95. Shipping and any additional details will be arranged next.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[buyer] accept-proposal That works for me. Shipping and additional details can be discussed next. Thanks!
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] accept-proposal Perfect, let's discuss the shipping options and any additional details next. I'll get those details ready for you.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=8 reader_calls=0 note=-
+[scenario] id=S3 item=coffee table reserve=55 budget=40
+[buyer] propose I would like to start with a price of 35 for the coffee table.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] reject-proposal I'm sorry, but I need to start at a higher price. Can we discuss a price closer to 55?
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[buyer] reject-proposal I understand, but let's try to find a middle ground. How about we start at 30 for the coffee table?
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] reject-proposal While I understand your position, I need to ensure the price reflects the value of the coffee table. Let's aim for at least 50.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[buyer] propose Let's try 32 then. It's a bit lower than 35 but still reflects the quality of the coffee table.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] reject-proposal I appreciate your offer, but I need to stay above 50 to make this worthwhile. Can we discuss a price closer to that range?
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[buyer] propose How about 35? It's a fair starting point that values the quality while staying within a reasonable range.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] reject-proposal I understand your point, but I need to ensure the price is at least 50 to cover the quality and materials. Let's discuss from there.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=8 reader_calls=0 note=-
+[scenario] id=S4 item=computer monitor reserve=105 budget=80
+[buyer] propose I'm interested in your monitor. Let's start with a price of 75.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] reject-proposal I'm considering selling my monitor but need a higher starting price. How about 120?
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[buyer] reject-proposal I see. How about we start at 85? That seems more reasonable given the current market.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] propose Considering the market, let's aim a bit higher. How about 110 for the monitor?
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[buyer] reject-proposal I appreciate your offer, but let's keep it closer to my budget. How about 80? That's my maximum.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] propose While I understand your position, I need to cover my costs. How about we meet at 100?
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[buyer] reject-proposal I'll have to stick to my budget. How about we try 85? That's my final offer.
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[seller] propose Given the value of the monitor, I believe 105 is a fair price. Can we agree on this?
+[protocol] ok=0 performative=None price=None reader_calls=0 error=missing or invalid leading tag reader_raw=-
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=8 reader_calls=0 note=-
