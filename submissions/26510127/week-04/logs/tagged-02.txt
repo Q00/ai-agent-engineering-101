@@ -1,0 +1,73 @@
+# run=tagged-02 provider=openrouter base_url=https://openrouter.ai/api/v1 model=openai/gpt-oss-20b temperature=0.0 reasoning_effort=low turn_limit=8
+=== scenario 1 (a used road bicycle) reserve=120 budget=150 condition=tagged
+[buyer] (propose) I can offer you 90 euros for the bicycle.
+  [tag] {'performative': 'propose', 'price': 90}   (tag=propose reader={"price": 90})
+[seller] (propose) I can offer you 120 euros for the bicycle.
+  [tag] {'performative': 'propose', 'price': 120}   (tag=propose reader={"price": 120})
+[buyer] (propose) I can offer you 80 euros for the bicycle.
+  [tag] {'performative': 'propose', 'price': 80}   (tag=propose reader={"price": 80})
+[seller] 
+  [tag] None   (no tag)
+[buyer] 
+  [tag] None   (no tag)
+[seller] (propose) I can offer you 120 euros for the bicycle.
+  [tag] {'performative': 'propose', 'price': 120}   (tag=propose reader={"price": 120})
+[buyer] (propose) I can offer you 110 euros for the bicycle.
+  [tag] {'performative': 'propose', 'price': 110}   (tag=propose reader={"price": 110})
+[seller] (reject-proposal) I’m sorry, but 110 euros is still below my minimum acceptable price.
+  [tag] {'performative': 'reject-proposal', 'price': None}   (tag=reject-proposal)
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=2 reader_calls=5
+=== scenario 2 (a desk lamp) reserve=30 budget=45 condition=tagged
+[buyer] (propose) I would be willing to pay $35 for the desk lamp.
+  [tag] {'performative': 'propose', 'price': 35}   (tag=propose reader={"price": 35})
+[seller] (propose) I can offer the desk lamp for $45.
+  [tag] {'performative': 'propose', 'price': 45}   (tag=propose reader={"price": 45})
+[buyer] (propose) How about $30 for the lamp?
+  [tag] {'performative': 'propose', 'price': 30}   (tag=propose reader={"price": 30})
+[seller] 
+  [tag] None   (no tag)
+[buyer] 
+  [tag] None   (no tag)
+[seller] 
+  [tag] None   (no tag)
+[buyer] 
+  [tag] None   (no tag)
+[seller] 
+  [tag] None   (no tag)
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=5 reader_calls=3
+=== scenario 3 (a pair of headphones) reserve=60 budget=55 condition=tagged
+[buyer] (propose) I would be willing to pay $45 for the headphones.
+  [tag] {'performative': 'propose', 'price': 45}   (tag=propose reader={"price": 45})
+[seller] (propose) I can offer you the headphones for $70.
+  [tag] {'performative': 'propose', 'price': 70}   (tag=propose reader={"price": 70})
+[buyer] 
+  [tag] None   (no tag)
+[seller] 
+  [tag] None   (no tag)
+[buyer] (propose) I can offer $50 for the headphones.
+  [tag] {'performative': 'propose', 'price': 50}   (tag=propose reader={"price": 50})
+[seller] (propose) I can lower the price to $65 for the headphones.
+  [tag] {'performative': 'propose', 'price': 65}   (tag=propose reader={"price": 65})
+[buyer] (propose) I can offer $55 for the headphones.
+  [tag] {'performative': 'propose', 'price': 55}   (tag=propose reader={"price": 55})
+[seller] (propose) I can offer the headphones for $60.
+  [tag] {'performative': 'propose', 'price': 60}   (tag=propose reader={"price": 60})
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=2 reader_calls=6
+=== scenario 4 (a film camera) reserve=300 budget=260 condition=tagged
+[buyer] (propose) I would be willing to pay $200 for the camera.
+  [tag] {'performative': 'propose', 'price': 200}   (tag=propose reader={"price": 200})
+[seller] (propose) I can offer you the camera for $350.
+  [tag] {'performative': 'propose', 'price': 350}   (tag=propose reader={"price": 350})
+[buyer] 
+  [tag] None   (no tag)
+[seller] 
+  [tag] None   (no tag)
+[buyer] 
+  [tag] None   (no tag)
+[seller] 
+  [tag] None   (no tag)
+[buyer] (reject-proposal) I’m sorry, but $350 is above my budget.
+  [tag] {'performative': 'reject-proposal', 'price': None}   (tag=reject-proposal)
+[seller] (propose) I understand your budget concerns; how about we settle at $320?
+  [tag] {'performative': 'propose', 'price': 320}   (tag=propose reader={"price": 320})
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=4 reader_calls=3
