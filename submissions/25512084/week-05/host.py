@@ -228,7 +228,7 @@ async def run_turn(
                         result_text = _tool_result_text(result)
 
                         is_error = bool(
-                            getattr(result, "isError", False)
+                            getattr(result, "is_error", False)
                         )
 
                         if is_error:
