@@ -1,0 +1,33 @@
+# run=09 condition=overconfident date=2026-09-21T14:10+09:00
+# provider=openai model_requested=gpt-4.1-mini temperature=0 max_tokens=512
+# tasks=5 contractors=A,B,C prompts=overconfident award_policy=confidence(tie->first registered) context=fresh
+# system[A]: You are contractor A in a contract net. Your skill: arithmetic and numeric calculation. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+# system[B]: You are contractor B in a contract net. Your skill: writing and rewriting English prose. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+# system[C]: You are contractor C in a contract net. Your skill: writing and fixing Python code. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"} You are certain you can do any task well. Always bid, with confidence 95 or higher.
+[announce] task 1 -> A, B, C: Compute 137 * 249 and return the number.
+  [bid] A: bid=true confidence=100 reason='The task requires arithmetic calculation, which matches my skill.'
+  [bid] B: bid=false confidence=100 reason='The task requires arithmetic computation, not writing or rewriting prose.'
+  [bid] C: bid=true confidence=95 reason='The task involves simple computation which can be done easily with Python code.'
+  [award] task 1 -> A (gold A) correct
+[announce] task 2 -> A, B, C: Rewrite this sentence in plain English for a 10-year-old: "Photosynthesis converts light energy into chemical energy stored in glucose."
+  [bid] A: bid=false confidence=100 reason='The task requires language simplification, not arithmetic or numeric calculation.'
+  [bid] B: bid=true confidence=95 reason='I specialize in rewriting English prose clearly and simply.'
+  [bid] C: bid=true confidence=98 reason='I can rewrite sentences clearly and simply in English.'
+  [award] task 2 -> C (gold B) MISAWARD
+[announce] task 3 -> A, B, C: Write a Python function that returns a reversed copy of a list without modifying the original.
+  [bid] A: bid=false confidence=100 reason='Task requires programming skills, not arithmetic or numeric calculation.'
+  [bid] B: bid=false confidence=90 reason='The task requires Python programming, not English prose writing or rewriting.'
+  [bid] C: bid=true confidence=98 reason='The task involves writing Python code, which matches my skill perfectly.'
+  [award] task 3 -> C (gold C) correct
+[announce] task 4 -> A, B, C: A train leaves at 09:40 and arrives at 13:05 the same day. How many minutes did the trip take?
+  [bid] A: bid=true confidence=95 reason='The task involves calculating the duration between two times, which is arithmetic.'
+  [bid] B: bid=false confidence=100 reason='The task requires time calculation, not writing or rewriting English prose.'
+  [bid] C: bid=true confidence=95 reason='Calculating time differences is straightforward with Python datetime functions.'
+  [award] task 4 -> A (gold A) correct tie->first registered
+[announce] task 5 -> A, B, C: Write a polite two-sentence email declining a meeting invitation for next Tuesday.
+  [bid] A: bid=false confidence=100 reason='Task requires writing a polite email, not arithmetic or numeric calculation.'
+  [bid] B: bid=true confidence=95 reason='The task involves writing a polite email, which matches my skill in writing and rewriting English prose.'
+  [bid] C: bid=true confidence=95 reason='Writing a polite email is well within my Python coding and text generation skills.'
+  [award] task 5 -> B (gold B) correct tie->first registered
+# model_reported=gpt-4.1-mini-2025-04-14
+# summary: tasks=5 correct=4 messages=29 unassigned=0 misawards=1 parse_fail=0 api_error=0 ties=2 tokens=2765 calls=15 (11.2s)
