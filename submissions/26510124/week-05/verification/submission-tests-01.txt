@@ -1,0 +1,47 @@
+test_accept_requires_other_party_proposal_and_rejection_preserves_last_price (test_market.DomainTests.test_accept_requires_other_party_proposal_and_rejection_preserves_last_price) ... ok
+test_attempt_out_of_turn_is_counted_without_price_refusal (test_market.DomainTests.test_attempt_out_of_turn_is_counted_without_price_refusal) ... ok
+test_concurrent_moves_can_execute_only_once (test_market.DomainTests.test_concurrent_moves_can_execute_only_once) ... ok
+test_exhaustion_stays_open_and_never_correct (test_market.DomainTests.test_exhaustion_stays_open_and_never_correct) ... ok
+test_inclusive_limit_edges_make_safe_deals (test_market.DomainTests.test_inclusive_limit_edges_make_safe_deals) ... ok
+test_injection_only_in_buyer_get_seller_proposal_notes (test_market.DomainTests.test_injection_only_in_buyer_get_seller_proposal_notes) ... ok
+test_injection_raised_uses_larger_reserve_when_deal_impossible (test_market.DomainTests.test_injection_raised_uses_larger_reserve_when_deal_impossible) ... ok
+test_invalid_prices_never_mutate_state (test_market.DomainTests.test_invalid_prices_never_mutate_state) ... ok
+test_no_move_turn_advances_and_success_cannot_be_double_spent (test_market.DomainTests.test_no_move_turn_advances_and_success_cannot_be_double_spent) ... ok
+test_prompt_records_outside_limit_moves_and_real_deal_violation (test_market.DomainTests.test_prompt_records_outside_limit_moves_and_real_deal_violation) ... ok
+test_refusal_scoring_and_terminal_state (test_market.DomainTests.test_refusal_scoring_and_terminal_state) ... ok
+test_refused_attempts_recover_only_within_same_host_turn (test_market.DomainTests.test_refused_attempts_recover_only_within_same_host_turn) ... ok
+test_sender_cannot_override_token_role (test_market.DomainTests.test_sender_cannot_override_token_role) ... ok
+test_server_blocks_both_parties_propose_and_accept (test_market.DomainTests.test_server_blocks_both_parties_propose_and_accept) ... ok
+test_tokens_identify_party_and_bind_one_negotiation (test_market.DomainTests.test_tokens_identify_party_and_bind_one_negotiation) ... ok
+test_admin_finish_turn_allows_next_party_after_one_move (test_market.HTTPTests.test_admin_finish_turn_allows_next_party_after_one_move) ... ok
+test_admin_is_separate_from_party_identity (test_market.HTTPTests.test_admin_is_separate_from_party_identity) ... ok
+test_every_mcp_request_requires_valid_party_token (test_market.HTTPTests.test_every_mcp_request_requires_valid_party_token) ... ok
+test_mcp_metadata_checks_remain_active_behind_auth (test_market.HTTPTests.test_mcp_metadata_checks_remain_active_behind_auth) ... ok
+test_sdk_invalid_arguments_are_counted_and_audited (test_market.HTTPTests.test_sdk_invalid_arguments_are_counted_and_audited) ... ok
+test_unknown_arguments_cannot_be_silently_stripped_by_sdk (test_market.HTTPTests.test_unknown_arguments_cannot_be_silently_stripped_by_sdk) ... ok
+test_wrong_negotiation_turn_and_bound_are_tool_errors (test_market.HTTPTests.test_wrong_negotiation_turn_and_bound_are_tool_errors) ... ok
+test_permanent_error_has_no_provider_body (test_host.BackendTests.test_permanent_error_has_no_provider_body) ... ok
+test_retries_429_and_missing_choices_with_increasing_wait (test_host.BackendTests.test_retries_429_and_missing_choices_with_increasing_wait) ... ok
+test_bad_json_is_local_error_not_a_server_tool_call (test_host.HostTests.test_bad_json_is_local_error_not_a_server_tool_call) ... ok
+test_discovers_tools_retries_refusal_and_stops_after_move (test_host.HostTests.test_discovers_tools_retries_refusal_and_stops_after_move) ... Tool 'custom_move' failed: 'Error executing tool custom_move: buyer price limit is 70; same turn'
+ok
+test_final_answer_without_move_returns_control_to_runner (test_host.HostTests.test_final_answer_without_move_returns_control_to_runner) ... ok
+test_round_budget_returns_without_inventing_move (test_host.HostTests.test_round_budget_returns_without_inventing_move) ... Tool 'move' failed: 'Error executing tool move: refused'
+Tool 'move' failed: 'Error executing tool move: refused'
+ok
+test_crash_retained_and_rerun_makes_no_new_calls (test_runner.BatchResumeTests.test_crash_retained_and_rerun_makes_no_new_calls)
+Use a fake admin/host only; never contact a model provider. ... ok
+test_changed_configuration_rejected (test_runner.DurableResultTests.test_changed_configuration_rejected) ... ok
+test_completed_log_result_recovers_csv_once (test_runner.DurableResultTests.test_completed_log_result_recovers_csv_once) ... ok
+test_condition_rotation_preserves_every_condition (test_runner.DurableResultTests.test_condition_rotation_preserves_every_condition) ... ok
+test_corrupt_middle_log_is_not_ignored (test_runner.DurableResultTests.test_corrupt_middle_log_is_not_ignored) ... ok
+test_csv_log_conflict_rejected (test_runner.DurableResultTests.test_csv_log_conflict_rejected) ... ok
+test_exclusive_writer (test_runner.DurableResultTests.test_exclusive_writer) ... ok
+test_interrupted_episode_retains_logs_and_blank_crash_row (test_runner.DurableResultTests.test_interrupted_episode_retains_logs_and_blank_crash_row) ... ok
+test_provider_configuration_failure_stops_but_transient_failure_does_not (test_runner.DurableResultTests.test_provider_configuration_failure_stops_but_transient_failure_does_not) ... ok
+test_redaction_applies_to_nested_events (test_runner.DurableResultTests.test_redaction_applies_to_nested_events) ... ok
+
+----------------------------------------------------------------------
+Ran 38 tests in 0.894s
+
+OK

@@ -1,0 +1,4 @@
+1. no token: HTTP 401; WWW-Authenticate: Bearer realm="negotiation-market"
+2. wrong negotiation: isError=true; Error executing tool get_negotiation: token is not authorized for this negotiation
+3. out of turn: isError=true; Error executing tool propose: it is not your turn
+4. outside token limit: isError=true; Error executing tool propose: price limit refused: buyer may propose only at most 70; requested price 100. Your turn remains open.
