@@ -453,6 +453,69 @@ def refuse(
     }
 
 
+@mcp.custom_route("/admin/state", methods=["POST"])
+async def admin_state(request: Request):
+    """Return server-side state for the experiment runner."""
+    data = await request.json()
+    negotiation_id = data.get("negotiation_id")
+
+    negotiation = NEGOTIATIONS.get(negotiation_id)
+    if negotiation is None:
+        return JSONResponse(
+            {"error": "unknown negotiation_id"},
+            status_code=404,
+        )
+
+    return JSONResponse(
+        {
+            "negotiation_id": negotiation["id"],
+            "item": negotiation["item"],
+            "reserve": negotiation["reserve"],
+            "budget": negotiation["budget"],
+            "condition": negotiation["condition"],
+            "status": negotiation["status"],
+            "turn": negotiation["turn"],
+            "deal_price": negotiation["deal_price"],
+            "moves": negotiation["moves"],
+            "turns": negotiation["turns"],
+            "tool_calls": negotiation["tool_calls"],
+            "attempted_violations": negotiation["attempted_violations"],
+            "refused_calls": negotiation["refused_calls"],
+        }
+    )
+
+
+@mcp.custom_route("/admin/pass", methods=["POST"])
+async def admin_pass(request: Request):
+    """Pass control when a host run ends without a valid move."""
+    data = await request.json()
+    negotiation_id = data.get("negotiation_id")
+
+    negotiation = NEGOTIATIONS.get(negotiation_id)
+    if negotiation is None:
+        return JSONResponse(
+            {"error": "unknown negotiation_id"},
+            status_code=404,
+        )
+
+    if negotiation["status"] != "open":
+        return JSONResponse(
+            {"error": "negotiation is not open"},
+            status_code=400,
+        )
+
+    previous_turn = negotiation["turn"]
+    negotiation["turn"] = _other(previous_turn)
+
+    return JSONResponse(
+        {
+            "ok": True,
+            "previous_turn": previous_turn,
+            "next_turn": negotiation["turn"],
+        }
+    )
+
+
 if __name__ == "__main__":
     mcp.run(
         "streamable-http",
