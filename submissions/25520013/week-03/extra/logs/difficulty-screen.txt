@@ -1,0 +1,67 @@
+Bare-handed difficulty screen, captured 2026-09-17.
+Two providers, the same candidates, no tools in either. Candidate wording is
+in difficulty.py; the numbers below are what those runs printed.
+
+Not every candidate below survived into tasks_ext.json — the screen is what
+decided which ones did.
+
+=========================================================================
+model=nvidia/nemotron-3.5-lightning:free   (OpenRouter free tier)
+=========================================================================
+first pass, samples=2
+
+  calc 1-term (48317*7629)   2/2   too easy
+  calc 7x7 digits            2/2   too easy
+  calc 2-term                1/2   in band
+  write 2 sentences x10w     2/2   too easy
+  write 4 sentences x6w      2/2   too easy
+  write 5 sentences x5w      2/2   too easy
+  code median                2/2   too easy
+  code chunk                 2/2   too easy
+  code rle                   2/2   too easy
+
+calls=18 failures=0
+
+second pass, samples=3
+
+  calc 3-term                3/3   too easy
+  calc 4-term                3/3   too easy
+  write 30 words             3/3   too easy
+  write 24 words             1/3   in band
+  code top_k                 2/3   in band
+  code parse_range           0/3   too hard
+
+calls=18 failures=3        <- three HTTP failures, counted as FAIL above,
+                              so the free-tier numbers are pessimistic
+
+=========================================================================
+model=claude-haiku-4-5-20251001            (claude -p, the stage 1 model)
+=========================================================================
+samples=3, the same six candidates as the second pass above
+
+  calc 3-term                2/3   in band
+  calc 4-term                3/3   too easy
+  write 30 words             3/3   too easy
+  write 24 words             3/3   too easy
+  code top_k                 3/3   too easy
+  code parse_range           3/3   too easy
+
+calls=18 failures=0
+
+=========================================================================
+What this decided
+=========================================================================
+haiku answers 17 of 18 bare-handed. A tool can therefore buy it about six
+percentage points, which over ten graded elements is an expected difference of
+0.6 elements — below what this run can resolve. Only three-term arithmetic sits
+in the band.
+
+The free model is genuinely weaker where it matters (parse_range 0/3 against
+haiku's 3/3), so the asymmetry would have been measurable there. It was not
+usable: the free tier caps at 50 calls a day, this screen and the probes spent
+61, and a full three-arm run needs several hundred. Wall clock was 80-180s per
+call against haiku's 6s, with 3 of 18 calls failing outright.
+
+So the arms run on haiku with the arithmetic elements in band and the write and
+code elements known in advance to be too easy for the tool to matter. That is
+stated as a limit rather than discovered afterwards.
