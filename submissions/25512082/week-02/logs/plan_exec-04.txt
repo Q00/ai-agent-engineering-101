@@ -1,0 +1,10 @@
+[condition] provider=openai model=nvidia/nemotron-3.5-lightning:free
+[condition] max_output_tokens=provider-default
+[condition] task=In app.log, which hour (HH:00) has the most ERROR lines? Answer with the hour in HH:00 form.
+[condition] system_prompts=['You are a planner. Reply with a JSON list of short strings, one per step, and nothing else. No prose, no code fences.', "You execute one step of a plan at a time with the tools you are given. If the step cannot be done as planned, reply with a line that starts with 'OFF_PLAN:' and explain why. During a numbered step, perform only that step and reply with 'STEP_DONE:' after any tool calls; do not give the final answer. Only when explicitly asked for the final answer, reply with a line that starts with 'Answer:' and make no tool call."]
+[condition] tools=[{'name': 'read_file', 'description': 'Read a text file in the working directory (first 4000 characters).', 'parameters': {'type': 'object', 'properties': {'path': {'type': 'string'}}, 'required': ['path']}}, {'name': 'count_pattern', 'description': 'Count the lines of a text file that match a regular expression.', 'parameters': {'type': 'object', 'properties': {'path': {'type': 'string'}, 'pattern': {'type': 'string'}}, 'required': ['path', 'pattern']}}]
+[condition] limits={'max_replan': 1, 'max_tool_rounds': 3, 'max_steps': 16}
+[plan] ['Read app.log to access log data', 'Identify lines containing ERROR', 'Extract hour (HH) from timestamps of ERROR lines', 'Count occurrences of ERROR per hour', 'Determine the hour with maximum ERROR count', 'Output the hour in HH:00 format']
+crash: RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1789430400000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': '[REDACTED]'}
+[final] 
+[judge] expected='14:00' -> X (51.4s)

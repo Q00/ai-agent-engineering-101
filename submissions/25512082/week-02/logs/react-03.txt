@@ -1,0 +1,14 @@
+[condition] provider=openai model=nvidia/nemotron-3.5-lightning:free
+[condition] max_output_tokens=provider-default
+[condition] task=In app.log, which hour (HH:00) has the most ERROR lines? Answer with the hour in HH:00 form.
+[condition] system_prompts=["You solve tasks with the tools you are given. Before every tool call, write one line that starts with 'Thought:' saying what you know and what you will do next. When the task is complete, reply with a line that starts with 'Answer:' and make no tool call."]
+[condition] tools=[{'name': 'read_file', 'description': 'Read a text file in the working directory (first 4000 characters).', 'parameters': {'type': 'object', 'properties': {'path': {'type': 'string'}}, 'required': ['path']}}, {'name': 'count_pattern', 'description': 'Count the lines of a text file that match a regular expression.', 'parameters': {'type': 'object', 'properties': {'path': {'type': 'string'}, 'pattern': {'type': 'string'}}, 'required': ['path', 'pattern']}}]
+[condition] limits={'max_steps': 8}
+  [tool] read_file({'path': 'app.log'}) -> 2026-09-01 09:07:27 INFO  job finished in 320ms | 2026-09-01 09:11:56 ERROR NullReference in QuizService.score | 2026-09-01 09:13:14 INFO  health check ok | 2026-09-01 09:26:45 INFO  health check ok | 2026-09
+[step 2] Thought: I have read the log file and identified all ERROR lines with their timestamps. Counting errors per hour shows hour 14 has the most (6 errors: 14:04, 14:07, 14:15, 14:30, 14:47, 14:54). No other hour reaches this count.
+
+Answer: 14:00
+[final] Thought: I have read the log file and identified all ERROR lines with their timestamps. Counting errors per hour shows hour 14 has the most (6 errors: 14:04, 14:07, 14:15, 14:30, 14:47, 14:54). No other hour reaches this count.
+
+Answer: 14:00
+[judge] expected='14:00' -> O (18.4s)
