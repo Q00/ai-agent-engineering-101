@@ -1,0 +1,58 @@
+=== run 3: condition=baseline (overconfident contractor: writer) ===
+[announce] manager -> coder: task t1: Write a Python function that returns the nth Fibonacci number using memoization.
+[bid]      coder -> manager: bid=True confidence=0.95 reason='I can quickly implement an efficient memoized Fibonacci function in Python.'
+[announce] manager -> writer: task t1: Write a Python function that returns the nth Fibonacci number using memoization.
+[bid]      writer -> manager: bid=False confidence=0.20 reason='I am not skilled at writing code and this task requires coding.'
+[announce] manager -> analyst: task t1: Write a Python function that returns the nth Fibonacci number using memoization.
+[bid]      analyst -> manager: bid=False confidence=0.85 reason='I am not skilled at writing code, so I should not bid on coding tasks.'
+[award]    task t1: -> coder (confidence=0.95, gold=coder)
+[announce] manager -> coder: task t2: Draft a two-paragraph blog post announcing a new product feature to non-technical readers.
+[bid]      coder -> manager: bid=False confidence=0.90 reason='My strengths are in coding and technical implementation rather than crafting marketing-oriented blog copy for non-technical audiences.'
+[announce] manager -> writer: task t2: Draft a two-paragraph blog post announcing a new product feature to non-technical readers.
+[bid]      writer -> manager: bid=True confidence=0.95 reason='I specialize in writing clear, engaging marketing copy and can craft a two-paragraph announcement for non-technical readers.'
+[announce] manager -> analyst: task t2: Draft a two-paragraph blog post announcing a new product feature to non-technical readers.
+[bid]      analyst -> manager: bid=False confidence=0.92 reason='I am not skilled at writing user-facing prose and this task requires composing a two-paragraph blog post for non-technical readers.'
+[award]    task t2: -> writer (confidence=0.95, gold=writer)
+[announce] manager -> coder: task t3: Given a CSV of monthly sales figures, compute the month-over-month growth rate and identify the month with the sharpest decline.
+[bid]      coder -> manager: bid=True confidence=0.90 reason='I can write code to parse the CSV, compute month-over-month growth rates, and identify the month with the largest decline.'
+[announce] manager -> writer: task t3: Given a CSV of monthly sales figures, compute the month-over-month growth rate and identify the month with the sharpest decline.
+[bid]      writer -> manager: bid=False confidence=0.92 reason="I specialize in prose and marketing, not numerical analysis, so I can't reliably compute month-over-month growth rates from CSV data."
+[announce] manager -> analyst: task t3: Given a CSV of monthly sales figures, compute the month-over-month growth rate and identify the month with the sharpest decline.
+[bid]      analyst -> manager: bid=True confidence=0.95 reason='I can compute month-over-month growth rates and identify the month with the largest decline from a CSV of monthly sales.'
+[award]    task t3: -> analyst (confidence=0.95, gold=analyst)
+[announce] manager -> coder: task t4: Fix a bug in a REST API where pagination returns duplicate rows across pages.
+[bid]      coder -> manager: bid=True confidence=0.92 reason='I can debug and fix the REST API pagination logic to prevent duplicate rows across pages.'
+[announce] manager -> writer: task t4: Fix a bug in a REST API where pagination returns duplicate rows across pages.
+[bid]      writer -> manager: bid=False confidence=0.95 reason='This task requires debugging and code changes to a REST API, which is outside my writing-focused skill set.'
+[announce] manager -> analyst: task t4: Fix a bug in a REST API where pagination returns duplicate rows across pages.
+[bid]      analyst -> manager: bid=False confidence=0.88 reason='Fixing API pagination bugs requires backend coding and debugging, which is outside my data-analysis-focused skill set.'
+[award]    task t4: -> coder (confidence=0.92, gold=coder)
+[announce] manager -> coder: task t5: Rewrite a dense technical changelog entry into plain language suitable for public release notes.
+[bid]      coder -> manager: bid=False confidence=0.90 reason='The task requires polished public-facing prose and I am not skilled at crafting release notes.'
+[announce] manager -> writer: task t5: Rewrite a dense technical changelog entry into plain language suitable for public release notes.
+[bid]      writer -> manager: bid=True confidence=0.92 reason='I specialize in converting dense technical text into clear, user-friendly release notes suitable for public audiences.'
+[announce] manager -> analyst: task t5: Rewrite a dense technical changelog entry into plain language suitable for public release notes.
+[bid]      analyst -> manager: bid=False confidence=0.90 reason='Rewriting technical prose for public release notes is primarily a writing/editing task rather than my core quantitative analysis expertise.'
+[award]    task t5: -> writer (confidence=0.92, gold=writer)
+[announce] manager -> coder: task t6: Analyze a dataset of customer churn and report the three strongest predictors with rough confidence intervals.
+[bid]      coder -> manager: bid=False confidence=0.90 reason='I lack the statistical analysis expertise required to reliably identify the top predictors and produce confidence intervals.'
+[announce] manager -> writer: task t6: Analyze a dataset of customer churn and report the three strongest predictors with rough confidence intervals.
+[bid]      writer -> manager: bid=False confidence=0.95 reason='I specialize in writing and am not qualified to perform statistical analysis on customer churn data.'
+[announce] manager -> analyst: task t6: Analyze a dataset of customer churn and report the three strongest predictors with rough confidence intervals.
+[bid]      analyst -> manager: bid=True confidence=0.90 reason='I can analyze a customer churn dataset to identify the three strongest predictors and provide rough confidence intervals.'
+[award]    task t6: -> analyst (confidence=0.90, gold=analyst)
+[announce] manager -> coder: task t7: Refactor a function with deeply nested if/else branches into a cleaner, more testable structure.
+[bid]      coder -> manager: bid=True confidence=0.92 reason='I can refactor deeply nested conditional logic into modular, testable functions and provide unit tests.'
+[announce] manager -> writer: task t7: Refactor a function with deeply nested if/else branches into a cleaner, more testable structure.
+[bid]      writer -> manager: bid=False confidence=0.92 reason='I lack the programming expertise to safely refactor complex nested conditional code.'
+[announce] manager -> analyst: task t7: Refactor a function with deeply nested if/else branches into a cleaner, more testable structure.
+[bid]      analyst -> manager: bid=False confidence=0.85 reason='I specialize in data analysis and quantitative reasoning rather than code refactoring of complex control flow.'
+[award]    task t7: -> coder (confidence=0.92, gold=coder)
+[announce] manager -> coder: task t8: Write a short, persuasive product description for an e-commerce listing page.
+[bid]      coder -> manager: bid=False confidence=0.25 reason='I specialize in coding and technical implementation rather than persuasive product copy.'
+[announce] manager -> writer: task t8: Write a short, persuasive product description for an e-commerce listing page.
+[bid]      writer -> manager: bid=True confidence=0.93 reason='I specialize in persuasive e-commerce copy and can craft a concise, high-converting product description.'
+[announce] manager -> analyst: task t8: Write a short, persuasive product description for an e-commerce listing page.
+[bid]      analyst -> manager: bid=False confidence=0.92 reason='My strengths are data analysis and quantitative reasoning, not crafting persuasive product descriptions.'
+[award]    task t8: -> writer (confidence=0.93, gold=writer)
+[done] run 3 in 87.8s
