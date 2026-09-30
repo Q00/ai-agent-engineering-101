@@ -1,0 +1,212 @@
+provider=openai model=gpt-4o-mini temperature=0.0 agent_max_tokens=200 reader_max_tokens=60 turn_limit=10 python=3.12.7
+run=14 condition=tagged started=2026-09-28T17:05:00 scenarios=['s1', 's2', 's3', 's4', 's5', 's6']
+
+=== tagged s1 used laptop reserve=700 budget=1000 deal_possible=1 ===
+SYSTEM buyer: You are a buyer negotiating to buy a used laptop. Your budget is $1000: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Start your message with exactly one tag in parentheses: (propose), (accept-proposal), (reject-proposal), or (refuse). After the tag, write the rest in plain English. When you propose, state the price in the text.
+SYSTEM seller: You are a seller negotiating to sell a used laptop. Your reserve price is $700: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Start your message with exactly one tag in parentheses: (propose), (accept-proposal), (reject-proposal), or (refuse). After the tag, write the rest in plain English. When you propose, state the price in the text.
+
+[1] BUYER: (propose) I'm interested in the laptop, and I would like to offer $700 for it. What do you think?
+    READ -> propose price=700 (tag: propose, price reader: '700')
+
+[2] SELLER: (reject-proposal) I appreciate your interest, but I’m looking for a bit more than $700. How about we start at $800?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[3] BUYER: (propose) I understand your position, but I can go up to $750. Would that work for you?
+    READ -> propose price=750 (tag: propose, price reader: '750')
+
+[4] SELLER: (reject-proposal) Thank you for your offer, but I can't accept $750. I can go down to $780. What do you think?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[5] BUYER: (propose) I appreciate your flexibility, but I can only offer $760. Is that acceptable?
+    READ -> propose price=760 (tag: propose, price reader: '760')
+
+[6] SELLER: (reject-proposal) I appreciate your offer, but I can't accept $760. How about we meet in the middle at $770?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[7] BUYER: (propose) Thank you for the counteroffer. I can agree to $765. How does that sound?
+    READ -> propose price=765 (tag: propose, price reader: '765')
+
+[8] SELLER: (reject-proposal) I appreciate your willingness to negotiate, but I can't accept $765. My lowest price is $770. Would you consider that?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[9] BUYER: (accept-proposal) Alright, I can accept $770. Let's make the deal!
+    READ -> FORMAT-ERROR (accept-proposal with no seller proposal to accept; tag: accept-proposal)
+
+[10] SELLER: (accept-proposal) Great! I'm glad we could come to an agreement. Let's finalize the details for the sale.
+    READ -> accept-proposal (tag: accept-proposal)
+EPISODE s1: {'deal_possible': 1, 'outcome': 'deal', 'price': 765, 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 1, 'reader_calls': 4, 'note': ''}
+ROW {'run': 14, 'condition': 'tagged', 'scenario': 's1', 'deal_possible': 1, 'outcome': 'deal', 'price': 765, 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 1, 'reader_calls': 4, 'note': ''}
+
+=== tagged s2 road bike reserve=250 budget=280 deal_possible=1 ===
+SYSTEM buyer: You are a buyer negotiating to buy a road bike. Your budget is $280: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Start your message with exactly one tag in parentheses: (propose), (accept-proposal), (reject-proposal), or (refuse). After the tag, write the rest in plain English. When you propose, state the price in the text.
+SYSTEM seller: You are a seller negotiating to sell a road bike. Your reserve price is $250: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Start your message with exactly one tag in parentheses: (propose), (accept-proposal), (reject-proposal), or (refuse). After the tag, write the rest in plain English. When you propose, state the price in the text.
+
+[1] BUYER: (propose) I'm interested in the road bike, and I'd like to offer $200 for it. What do you think?
+    READ -> propose price=200 (tag: propose, price reader: '200')
+
+[2] SELLER: (reject-proposal) I appreciate your interest, but $200 is a bit too low for me. How about we start at $300?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[3] BUYER: (propose) I understand, but $300 is above my budget. How about we meet in the middle at $250?
+    READ -> propose price=250 (tag: propose, price reader: '250')
+
+[4] SELLER: (reject-proposal) I understand your position, but I can't accept $250. How about we settle at $275?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[5] BUYER: (propose) I appreciate your flexibility, but $275 is still a bit high for me. Would you consider $240?
+    READ -> propose price=240 (tag: propose, price reader: '240')
+
+[6] SELLER: (reject-proposal) I appreciate your offer, but $240 is still below what I'm willing to accept. How about we try $260?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[7] BUYER: (propose) Thank you for your counteroffer. How about we settle at $250?
+    READ -> propose price=250 (tag: propose, price reader: '250')
+
+[8] SELLER: (reject-proposal) I understand your offer, but I can't go down to $250. Let's meet at $255.
+    READ -> reject-proposal (tag: reject-proposal)
+
+[9] BUYER: (propose) I appreciate your willingness to negotiate. Would you be able to accept $245?
+    READ -> propose price=245 (tag: propose, price reader: '245')
+
+[10] SELLER: (reject-proposal) I appreciate your offer, but $245 is still too low for me. How about we agree on $250?
+    READ -> reject-proposal (tag: reject-proposal)
+EPISODE s2: {'deal_possible': 1, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 5, 'note': ''}
+ROW {'run': 14, 'condition': 'tagged', 'scenario': 's2', 'deal_possible': 1, 'outcome': 'open', 'price': '', 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 5, 'note': ''}
+
+=== tagged s3 film camera reserve=400 budget=400 deal_possible=1 ===
+SYSTEM buyer: You are a buyer negotiating to buy a film camera. Your budget is $400: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Start your message with exactly one tag in parentheses: (propose), (accept-proposal), (reject-proposal), or (refuse). After the tag, write the rest in plain English. When you propose, state the price in the text.
+SYSTEM seller: You are a seller negotiating to sell a film camera. Your reserve price is $400: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Start your message with exactly one tag in parentheses: (propose), (accept-proposal), (reject-proposal), or (refuse). After the tag, write the rest in plain English. When you propose, state the price in the text.
+
+[1] BUYER: (propose) I'm interested in the film camera you have for sale. Would you be willing to sell it for $300?
+    READ -> propose price=300 (tag: propose, price reader: '300')
+
+[2] SELLER: (reject-proposal) I appreciate your interest, but $300 is too low for the camera. How about we start at $450?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[3] BUYER: (propose) I understand your position, but $450 is still a bit high for me. How about we meet in the middle at $375?
+    READ -> propose price=375 (tag: propose, price reader: '375')
+
+[4] SELLER: (reject-proposal) I appreciate your offer, but $375 is still below what I'm willing to accept. How about $425?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[5] BUYER: (propose) I see where you're coming from, but $425 is still outside my range. Would you consider $350?
+    READ -> propose price=350 (tag: propose, price reader: '350')
+
+[6] SELLER: (reject-proposal) I understand your budget concerns, but $350 is too low for me. I can go down to $400.
+    READ -> reject-proposal (tag: reject-proposal)
+
+[7] BUYER: (accept-proposal) $400 works for me. Let's finalize the deal!
+    READ -> FORMAT-ERROR (accept-proposal with no seller proposal to accept; tag: accept-proposal)
+
+[8] SELLER: (accept-proposal) Great! I'm glad we could agree on $400. Let's finalize the details for the sale.
+    READ -> accept-proposal (tag: accept-proposal)
+EPISODE s3: {'deal_possible': 1, 'outcome': 'deal', 'price': 350, 'correct': 0, 'violation': 1, 'turns': 8, 'format_errors': 1, 'reader_calls': 3, 'note': ''}
+ROW {'run': 14, 'condition': 'tagged', 'scenario': 's3', 'deal_possible': 1, 'outcome': 'deal', 'price': 350, 'correct': 0, 'violation': 1, 'turns': 8, 'format_errors': 1, 'reader_calls': 3, 'note': ''}
+
+=== tagged s4 acoustic guitar reserve=150 budget=300 deal_possible=1 ===
+SYSTEM buyer: You are a buyer negotiating to buy a acoustic guitar. Your budget is $300: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Start your message with exactly one tag in parentheses: (propose), (accept-proposal), (reject-proposal), or (refuse). After the tag, write the rest in plain English. When you propose, state the price in the text.
+SYSTEM seller: You are a seller negotiating to sell a acoustic guitar. Your reserve price is $150: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Start your message with exactly one tag in parentheses: (propose), (accept-proposal), (reject-proposal), or (refuse). After the tag, write the rest in plain English. When you propose, state the price in the text.
+
+[1] BUYER: (propose) I'm interested in the acoustic guitar you have for sale. Would you be willing to sell it for $250?
+    READ -> propose price=250 (tag: propose, price reader: '250')
+
+[2] SELLER: (reject-proposal) I appreciate your interest, but I can't sell it for $250. How about we consider a price of $300?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[3] BUYER: (reject-proposal) Thank you for your response, but $300 is a bit too high for me. Would you be willing to consider $275?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[4] SELLER: (reject-proposal) I understand your position, but I can't accept $275. How about we meet in the middle at $290?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[5] BUYER: (reject-proposal) I appreciate your offer, but $290 is still above my range. How about $260?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[6] SELLER: (reject-proposal) I see where you're coming from, but I can't go as low as $260. Would you be willing to consider $280?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[7] BUYER: (reject-proposal) Thank you for your flexibility, but $280 is still a bit more than I'm comfortable with. How about we settle at $270?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[8] SELLER: (reject-proposal) I appreciate your offer, but I can't accept $270. My best price would be $275. Would you consider that?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[9] BUYER: (reject-proposal) I understand your position, but $275 is still above my limit. I can offer $265. Would you be open to that?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[10] SELLER: (reject-proposal) I appreciate your offer, but I can't go down to $265. My final offer is $270. Can we agree on that?
+    READ -> reject-proposal (tag: reject-proposal)
+EPISODE s4: {'deal_possible': 1, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 1, 'note': ''}
+ROW {'run': 14, 'condition': 'tagged', 'scenario': 's4', 'deal_possible': 1, 'outcome': 'open', 'price': '', 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 1, 'note': ''}
+
+=== tagged s5 leather sofa reserve=900 budget=600 deal_possible=0 ===
+SYSTEM buyer: You are a buyer negotiating to buy a leather sofa. Your budget is $600: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Start your message with exactly one tag in parentheses: (propose), (accept-proposal), (reject-proposal), or (refuse). After the tag, write the rest in plain English. When you propose, state the price in the text.
+SYSTEM seller: You are a seller negotiating to sell a leather sofa. Your reserve price is $900: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Start your message with exactly one tag in parentheses: (propose), (accept-proposal), (reject-proposal), or (refuse). After the tag, write the rest in plain English. When you propose, state the price in the text.
+
+[1] BUYER: (propose) I'm interested in the leather sofa, and I would like to offer $450 for it.
+    READ -> propose price=450 (tag: propose, price reader: '450')
+
+[2] SELLER: (reject-proposal) Thank you for your interest, but I cannot accept $450 for the leather sofa. How about we start at $1,200?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[3] BUYER: (reject-proposal) I appreciate your response, but $1,200 is too high for me. How about we meet in the middle at $600?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[4] SELLER: (reject-proposal) I understand your position, but $600 is still too low for the leather sofa. I can offer it for $1,000.
+    READ -> reject-proposal (tag: reject-proposal)
+
+[5] BUYER: (reject-proposal) Thank you for your offer, but $1,000 is still beyond my budget. Would you consider $500 instead?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[6] SELLER: (reject-proposal) I appreciate your offer, but $500 is too low for the leather sofa. I can lower my price to $900.
+    READ -> reject-proposal (tag: reject-proposal)
+
+[7] BUYER: (reject-proposal) I understand, but $900 is still too high for me. How about $550?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[8] SELLER: (reject-proposal) I appreciate your offer, but I cannot accept $550 for the leather sofa. My best price is $900.
+    READ -> reject-proposal (tag: reject-proposal)
+
+[9] BUYER: (reject-proposal) Thank you for your response, but $900 is still out of my range. Would you be willing to consider $575?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[10] SELLER: (reject-proposal) I understand your budget constraints, but I cannot accept $575 for the leather sofa. My final offer remains at $900.
+    READ -> reject-proposal (tag: reject-proposal)
+EPISODE s5: {'deal_possible': 0, 'outcome': 'open', 'price': None, 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 1, 'note': ''}
+ROW {'run': 14, 'condition': 'tagged', 'scenario': 's5', 'deal_possible': 0, 'outcome': 'open', 'price': '', 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 1, 'note': ''}
+
+=== tagged s6 smartphone reserve=500 budget=460 deal_possible=0 ===
+SYSTEM buyer: You are a buyer negotiating to buy a smartphone. Your budget is $460: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Start your message with exactly one tag in parentheses: (propose), (accept-proposal), (reject-proposal), or (refuse). After the tag, write the rest in plain English. When you propose, state the price in the text.
+SYSTEM seller: You are a seller negotiating to sell a smartphone. Your reserve price is $500: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Start your message with exactly one tag in parentheses: (propose), (accept-proposal), (reject-proposal), or (refuse). After the tag, write the rest in plain English. When you propose, state the price in the text.
+
+[1] BUYER: (propose) I'm interested in buying the smartphone, and I would like to offer $400 for it.
+    READ -> propose price=400 (tag: propose, price reader: '400')
+
+[2] SELLER: (reject-proposal) Thank you for your interest, but I cannot accept $400. How about we start at $600?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[3] BUYER: (propose) I appreciate your response, but $600 is too high for me. How about $420?
+    READ -> propose price=420 (tag: propose, price reader: '420')
+
+[4] SELLER: (reject-proposal) I understand your position, but $420 is still too low. Let's meet in the middle at $550.
+    READ -> reject-proposal (tag: reject-proposal)
+
+[5] BUYER: (propose) I appreciate your offer, but $550 is still beyond my budget. How about we settle at $450?
+    READ -> propose price=450 (tag: propose, price reader: '450')
+
+[6] SELLER: (reject-proposal) I appreciate your offer, but $450 is still below what I can accept. How about we try $525?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[7] BUYER: (propose) Thank you for your flexibility, but $525 is still too high for me. I can go up to $440.
+    READ -> propose price=440 (tag: propose, price reader: '440')
+
+[8] SELLER: (reject-proposal) I understand your budget constraints, but $440 is still too low for me. How about we settle at $500?
+    READ -> reject-proposal (tag: reject-proposal)
+
+[9] BUYER: (propose) I appreciate your willingness to negotiate, but $500 is still out of my range. Would you consider $460?
+    READ -> propose price=460 (tag: propose, price reader: '460')
+
+[10] SELLER: (reject-proposal) I appreciate your offer, but I cannot accept $460. My final offer is $500.
+    READ -> reject-proposal (tag: reject-proposal)
+EPISODE s6: {'deal_possible': 0, 'outcome': 'open', 'price': None, 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 5, 'note': ''}
+ROW {'run': 14, 'condition': 'tagged', 'scenario': 's6', 'deal_possible': 0, 'outcome': 'open', 'price': '', 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 5, 'note': ''}

@@ -1,0 +1,218 @@
+provider=openai model=gpt-4o-mini temperature=0.0 agent_max_tokens=200 reader_max_tokens=60 turn_limit=10 python=3.12.7
+run=12 condition=free started=2026-09-28T17:02:12 scenarios=['s1', 's2', 's3', 's4', 's5', 's6']
+
+=== free s1 used laptop reserve=700 budget=1000 deal_possible=1 ===
+SYSTEM buyer: You are a buyer negotiating to buy a used laptop. Your budget is $1000: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Write your message in plain English, as you would to a person. Do not use tags, labels, or JSON.
+SYSTEM seller: You are a seller negotiating to sell a used laptop. Your reserve price is $700: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Write your message in plain English, as you would to a person. Do not use tags, labels, or JSON.
+
+[1] BUYER: Hi there! I'm interested in the laptop you're selling. Can you tell me more about its condition and what price you're asking for?
+    READ -> reject-proposal (reader: {"performative":"reject-proposal","price":null})
+
+[2] SELLER: Hi! Thanks for your interest. The laptop is in great condition, with only minor signs of use. It has a fast processor, plenty of storage, and the battery life is still good. I'm looking to sell it for around $900. What do you think?
+    READ -> propose price=900 (reader: {"performative":"propose","price":900})
+
+[3] BUYER: Thanks for the details! I appreciate the condition of the laptop, but $900 is a bit higher than I was hoping to spend. Would you consider $750?
+    READ -> propose price=750 (reader: {"performative":"propose","price":750})
+
+[4] SELLER: I appreciate your offer, but $750 is a bit too low for me. How about we meet in the middle at $850?
+    READ -> reject-proposal price=850 (reader: {"performative":"reject-proposal","price":850})
+
+[5] BUYER: I understand where you're coming from, but $850 is still a bit more than I can manage. Would you be willing to go down to $800?
+    READ -> propose price=800 (reader: {"performative":"propose","price":800})
+
+[6] SELLER: I appreciate your offer, but I can't go down to $800. How about we settle at $825?
+    READ -> propose price=825 (reader: {"performative":"propose","price":825})
+
+[7] BUYER: I see your point, but $825 is still a bit out of my range. Would you be open to $800 as a final offer?
+    READ -> propose price=800 (reader: {"performative": "propose", "price": 800})
+
+[8] SELLER: I understand your position, but I can't accept $800. I really think $825 is a fair price for the laptop. Let me know if you can meet that.
+    READ -> reject-proposal price=825 (reader: {"performative":"reject-proposal","price":825})
+
+[9] BUYER: I appreciate your willingness to negotiate, but I still can't go up to $825. My best offer is $800. If that doesn't work for you, I may have to walk away.
+    READ -> reject-proposal price=800 (reader: {"performative": "reject-proposal", "price": 800})
+
+[10] SELLER: I understand, but I really can't accept $800. I believe $825 is a fair price for the laptop. If that doesn't work for you, I may have to consider other options as well.
+    READ -> reject-proposal price=825 (reader: {"performative":"reject-proposal","price":825})
+EPISODE s1: {'deal_possible': 1, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 10, 'note': ''}
+ROW {'run': 12, 'condition': 'free', 'scenario': 's1', 'deal_possible': 1, 'outcome': 'open', 'price': '', 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 10, 'note': ''}
+
+=== free s2 road bike reserve=250 budget=280 deal_possible=1 ===
+SYSTEM buyer: You are a buyer negotiating to buy a road bike. Your budget is $280: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Write your message in plain English, as you would to a person. Do not use tags, labels, or JSON.
+SYSTEM seller: You are a seller negotiating to sell a road bike. Your reserve price is $250: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Write your message in plain English, as you would to a person. Do not use tags, labels, or JSON.
+
+[1] BUYER: I'm really interested in the road bike you have. Would you be willing to sell it for $250?
+    READ -> propose price=250 (reader: {"performative": "propose", "price": 250})
+
+[2] SELLER: I appreciate your interest in the road bike, but I’m looking for a bit more than that. How about we start at $300?
+    READ -> propose price=300 (reader: {"performative": "propose", "price": 300})
+
+[3] BUYER: I understand where you're coming from, but $300 is a bit out of my range. How about we meet in the middle at $275?
+    READ -> propose price=275 (reader: {"performative": "propose", "price": 275})
+
+[4] SELLER: I appreciate your offer, but I can't go that low. How about $290?
+    READ -> propose price=290 (reader: {"performative":"propose","price":290})
+
+[5] BUYER: I see your point, but $290 is still a bit high for me. Would you consider $260?
+    READ -> propose price=260 (reader: {"performative": "propose", "price": 260})
+
+[6] SELLER: I understand your position, but I can't accept $260. How about we settle at $280?
+    READ -> propose price=280 (reader: {"performative":"propose","price":280})
+
+[7] BUYER: $280 is still a bit more than I was hoping to spend. Would you be willing to go down to $270?
+    READ -> propose price=270 (reader: {"performative":"propose","price":270})
+
+[8] SELLER: I appreciate your offer, but I can't go down to $270. My best price is $275.
+    READ -> reject-proposal price=275 (reader: {"performative":"reject-proposal","price":275})
+
+[9] BUYER: I understand, but $275 is still a bit more than I can manage. I can offer you $265.
+    READ -> propose price=265 (reader: {"performative": "propose", "price": 265})
+
+[10] SELLER: I appreciate your offer, but I can't accept $265. My final offer is $275.
+    READ -> reject-proposal price=275 (reader: {"performative":"reject-proposal","price":275})
+EPISODE s2: {'deal_possible': 1, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 10, 'note': ''}
+ROW {'run': 12, 'condition': 'free', 'scenario': 's2', 'deal_possible': 1, 'outcome': 'open', 'price': '', 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 0, 'reader_calls': 10, 'note': ''}
+
+=== free s3 film camera reserve=400 budget=400 deal_possible=1 ===
+SYSTEM buyer: You are a buyer negotiating to buy a film camera. Your budget is $400: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Write your message in plain English, as you would to a person. Do not use tags, labels, or JSON.
+SYSTEM seller: You are a seller negotiating to sell a film camera. Your reserve price is $400: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Write your message in plain English, as you would to a person. Do not use tags, labels, or JSON.
+
+[1] BUYER: Hi there! I'm really interested in the film camera you have for sale. What’s the asking price?
+    READ -> FORMAT-ERROR (propose without a readable price; reader: {"performative":"propose","price":null})
+
+[2] SELLER: Hi! I'm glad to hear you're interested in the camera. I'm looking for $600 for it. What do you think?
+    READ -> propose price=600 (reader: {"performative":"propose","price":600})
+
+[3] BUYER: Thanks for sharing the price! $600 is a bit higher than I was hoping to spend. Would you consider $350?
+    READ -> propose price=350 (reader: {"performative":"propose","price":350})
+
+[4] SELLER: I appreciate your offer, but $350 is too low for me. How about we meet in the middle at $500?
+    READ -> reject-proposal price=500 (reader: {"performative":"reject-proposal","price":500})
+
+[5] BUYER: I understand where you're coming from, but $500 is still outside my budget. How about $375?
+    READ -> propose price=375 (reader: {"performative": "propose", "price": 375})
+
+[6] SELLER: I appreciate your willingness to negotiate, but $375 is still below what I can accept. Would you be able to go up to $450?
+    READ -> propose price=450 (reader: {"performative":"propose","price":450})
+
+[7] BUYER: I see your point, but $450 is still a bit too high for me. Would you be willing to accept $400?
+    READ -> propose price=400 (reader: {"performative": "propose", "price": 400})
+
+[8] SELLER: I understand your position, but I can't go that low. How about we settle at $425?
+    READ -> propose price=425 (reader: {"performative": "propose", "price": 425})
+
+[9] BUYER: I appreciate your offer, but $425 is still more than I can manage. I can offer $400, which is my final offer.
+    READ -> propose price=400 (reader: {"performative": "propose", "price": 400})
+
+[10] SELLER: I understand your situation, but I can't accept $400. Thank you for your interest, but I have to walk away from this deal.
+    READ -> refuse (reader: {"performative": "refuse", "price": null})
+EPISODE s3: {'deal_possible': 1, 'outcome': 'no_deal', 'price': None, 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 1, 'reader_calls': 10, 'note': 'seller refused at turn 10'}
+ROW {'run': 12, 'condition': 'free', 'scenario': 's3', 'deal_possible': 1, 'outcome': 'no_deal', 'price': '', 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 1, 'reader_calls': 10, 'note': 'seller refused at turn 10'}
+
+=== free s4 acoustic guitar reserve=150 budget=300 deal_possible=1 ===
+SYSTEM buyer: You are a buyer negotiating to buy a acoustic guitar. Your budget is $300: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Write your message in plain English, as you would to a person. Do not use tags, labels, or JSON.
+SYSTEM seller: You are a seller negotiating to sell a acoustic guitar. Your reserve price is $150: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Write your message in plain English, as you would to a person. Do not use tags, labels, or JSON.
+
+[1] BUYER: Hi there! I'm really interested in the acoustic guitar you have for sale. What’s the asking price?
+    READ -> FORMAT-ERROR (propose without a readable price; reader: {"performative":"propose","price":null})
+
+[2] SELLER: Hi! I'm glad to hear you're interested in the guitar. I'm looking to sell it for $250. What do you think?
+    READ -> propose price=250 (reader: {"performative":"propose","price":250})
+
+[3] BUYER: Thanks for sharing the price! I appreciate it. Would you be willing to let it go for $200?
+    READ -> propose price=200 (reader: {"performative":"propose","price":200})
+
+[4] SELLER: I appreciate your offer, but I can't go that low. How about we meet in the middle at $225?
+    READ -> propose price=225 (reader: {"performative":"propose","price":225})
+
+[5] BUYER: I understand where you're coming from, but I was hoping to stay closer to $200. Would you consider $210?
+    READ -> propose price=210 (reader: {"performative":"propose","price":210})
+
+[6] SELLER: I appreciate your flexibility, but I can't accept $210. How about we settle at $220?
+    READ -> propose price=220 (reader: {"performative":"propose", "price":220})
+
+[7] BUYER: Thanks for your offer, but I really need to stick to my budget. Would you be willing to accept $215?
+    READ -> propose price=215 (reader: {"performative": "propose", "price": 215})
+
+[8] SELLER: I understand your budget constraints, but I can't go that low. My best offer is $220. Would you consider that?
+    READ -> propose price=220 (reader: {"performative":"propose","price":220})
+
+[9] BUYER: I appreciate your willingness to negotiate, but I still can't go that high. I can offer you $215 as my final offer.
+    READ -> propose price=215 (reader: {"performative": "propose", "price": 215})
+
+[10] SELLER: I appreciate your final offer, but I can't accept $215. Thank you for your interest, but I have to walk away from this deal.
+    READ -> refuse (reader: {"performative": "refuse", "price": null})
+EPISODE s4: {'deal_possible': 1, 'outcome': 'no_deal', 'price': None, 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 1, 'reader_calls': 10, 'note': 'seller refused at turn 10'}
+ROW {'run': 12, 'condition': 'free', 'scenario': 's4', 'deal_possible': 1, 'outcome': 'no_deal', 'price': '', 'correct': 0, 'violation': 0, 'turns': 10, 'format_errors': 1, 'reader_calls': 10, 'note': 'seller refused at turn 10'}
+
+=== free s5 leather sofa reserve=900 budget=600 deal_possible=0 ===
+SYSTEM buyer: You are a buyer negotiating to buy a leather sofa. Your budget is $600: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Write your message in plain English, as you would to a person. Do not use tags, labels, or JSON.
+SYSTEM seller: You are a seller negotiating to sell a leather sofa. Your reserve price is $900: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Write your message in plain English, as you would to a person. Do not use tags, labels, or JSON.
+
+[1] BUYER: I'm interested in the leather sofa you have. What's the best price you can offer?
+    READ -> FORMAT-ERROR (propose without a readable price; reader: {"performative":"propose","price":null})
+
+[2] SELLER: I'm glad to hear you're interested! The best price I can offer for the leather sofa is $1,200. What do you think?
+    READ -> propose price=1200 (reader: {"performative":"propose","price":1200})
+
+[3] BUYER: Thank you for your offer, but that's quite a bit higher than I was hoping to spend. Would you be willing to consider $500?
+    READ -> propose price=500 (reader: {"performative":"propose","price":500})
+
+[4] SELLER: I appreciate your interest, but $500 is too low for the leather sofa. How about we meet in the middle at $1,000?
+    READ -> propose price=1000 (reader: {"performative":"propose","price":1000})
+
+[5] BUYER: I understand where you're coming from, but $1,000 is still outside my budget. How about $600?
+    READ -> propose price=600 (reader: {"performative": "propose", "price": 600})
+
+[6] SELLER: I appreciate your offer, but $600 is still too low for the sofa. Would you be willing to go up to $900?
+    READ -> reject-proposal price=900 (reader: {"performative":"reject-proposal","price":900})
+
+[7] BUYER: I appreciate your flexibility, but $900 is still more than I can manage. I can offer $650. Would you consider that?
+    READ -> propose price=650 (reader: {"performative": "propose", "price": 650})
+
+[8] SELLER: I understand your position, but $650 is still below what I can accept. How about we settle at $850?
+    READ -> propose price=850 (reader: {"performative":"propose","price":850})
+
+[9] BUYER: I appreciate your willingness to negotiate, but $850 is still too high for me. I can go up to $700. Would you be open to that?
+    READ -> propose price=700 (reader: {"performative": "propose", "price": 700})
+
+[10] SELLER: I appreciate your offer, but $700 is still too low for the sofa. The best I can do is $800. What do you think?
+    READ -> propose price=800 (reader: {"performative":"propose","price":800})
+EPISODE s5: {'deal_possible': 0, 'outcome': 'open', 'price': None, 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 1, 'reader_calls': 10, 'note': ''}
+ROW {'run': 12, 'condition': 'free', 'scenario': 's5', 'deal_possible': 0, 'outcome': 'open', 'price': '', 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 1, 'reader_calls': 10, 'note': ''}
+
+=== free s6 smartphone reserve=500 budget=460 deal_possible=0 ===
+SYSTEM buyer: You are a buyer negotiating to buy a smartphone. Your budget is $460: you must never pay more than that. The budget is private; do not reveal it. Try to pay as little as possible. You are talking to the seller. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the seller's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the seller's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Write your message in plain English, as you would to a person. Do not use tags, labels, or JSON.
+SYSTEM seller: You are a seller negotiating to sell a smartphone. Your reserve price is $500: you must never sell for less than that. The reserve is private; do not reveal it. Try to sell for as much as possible. You are talking to the buyer. The buyer speaks first. Every message you send performs exactly one of four acts: propose (offer a price), accept-proposal (agree to the buyer's last proposed price; this ends the negotiation with a deal), reject-proposal (decline the buyer's last proposal and keep negotiating), refuse (walk away; this ends the negotiation with no deal). The negotiation also ends with no deal after 10 messages in total. Write your message in plain English, as you would to a person. Do not use tags, labels, or JSON.
+
+[1] BUYER: I'm interested in buying the smartphone. What’s the best price you can offer?
+    READ -> FORMAT-ERROR (propose without a readable price; reader: {"performative":"propose","price":null})
+
+[2] SELLER: I can offer you the smartphone for $700. It's a great device with excellent features! What do you think?
+    READ -> propose price=700 (reader: {"performative":"propose","price":700})
+
+[3] BUYER: That price is a bit high for me. How about we start at $400?
+    READ -> propose price=400 (reader: {"performative": "propose", "price": 400})
+
+[4] SELLER: I appreciate your offer, but $400 is too low for this smartphone. How about we meet in the middle at $600?
+    READ -> reject-proposal price=600 (reader: {"performative":"reject-proposal","price":600})
+
+[5] BUYER: $600 is still above my budget. How about $450?
+    READ -> propose price=450 (reader: {"performative":"propose","price":450})
+
+[6] SELLER: I understand your budget concerns, but $450 is still too low for me. How about we settle at $550?
+    READ -> propose price=550 (reader: {"performative":"propose","price":550})
+
+[7] BUYER: $550 is still more than I can spend. I can go up to $425. What do you think?
+    READ -> propose price=425 (reader: {"performative":"propose","price":425})
+
+[8] SELLER: I appreciate your offer, but $425 is still below what I can accept. How about we try $525?
+    READ -> propose price=525 (reader: {"performative":"propose","price":525})
+
+[9] BUYER: $525 is still out of my range. I can offer $450, but that’s my final offer.
+    READ -> propose price=450 (reader: {"performative": "propose", "price": 450})
+
+[10] SELLER: I understand your position, but I can't accept $450. My best offer remains at $525. Would you consider that?
+    READ -> reject-proposal price=525 (reader: {"performative":"reject-proposal", "price":525})
+EPISODE s6: {'deal_possible': 0, 'outcome': 'open', 'price': None, 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 1, 'reader_calls': 10, 'note': ''}
+ROW {'run': 12, 'condition': 'free', 'scenario': 's6', 'deal_possible': 0, 'outcome': 'open', 'price': '', 'correct': 1, 'violation': 0, 'turns': 10, 'format_errors': 1, 'reader_calls': 10, 'note': ''}
