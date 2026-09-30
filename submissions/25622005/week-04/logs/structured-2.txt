@@ -1,0 +1,77 @@
+provider=anthropic base_url=https://factchat-cloud.mindlogic.ai/v1/gateway/claude model=claude-sonnet-5 temperature=provider-default max_tokens=400 turn_limit=8 condition=structured run=structured-2
+--- scenario 1 a used bicycle reserve=120 budget=150
+[buyer]  {"performative": "propose", "content": {"price": 80}}
+  [parse] {'performative': 'propose', 'price': 80}
+[seller]  {"performative": "propose", "content": {"price": 160}}
+  [parse] {'performative': 'propose', 'price': 160}
+[buyer]  {"performative": "propose", "content": {"price": 100}}
+  [parse] {'performative': 'propose', 'price': 100}
+[seller]  {"performative": "propose", "content": {"price": 145}}
+  [parse] {'performative': 'propose', 'price': 145}
+[buyer]  {"performative": "propose", "content": {"price": 130}}
+  [parse] {'performative': 'propose', 'price': 130}
+[seller]  {"performative": "propose", "content": {"price": 137}}
+  [parse] {'performative': 'propose', 'price': 137}
+[buyer]  {"performative": "propose", "content": {"price": 133}}
+  [parse] {'performative': 'propose', 'price': 133}
+[seller]  {"performative": "accept-proposal", "content": {"price": 133}}
+  [parse] {'performative': 'accept-proposal', 'price': 133}
+[result] outcome=deal price=133 correct=1 violation=0 turns=8 format_errors=0 reader_calls=0
+[verifier] outcome=deal price=133 violator=none agree=1 (agree) :: Both parties agreed on 133, which is within both the seller's reserve of 120 and the buyer's budget of 150.
+--- scenario 2 a desk lamp reserve=30 budget=45
+[buyer]  {"performative": "propose", "content": {"price": 20}}
+  [parse] {'performative': 'propose', 'price': 20}
+[seller]  {"performative": "reject-proposal", "content": {"price": 45}}
+  [parse] {'performative': 'reject-proposal', 'price': 45}
+[buyer]  {"performative": "propose", "content": {"price": 28}}
+  [parse] {'performative': 'propose', 'price': 28}
+[seller]  {"performative": "reject-proposal", "content": {"price": 40}}
+  [parse] {'performative': 'reject-proposal', 'price': 40}
+[buyer]  {"performative": "propose", "content": {"price": 33}}
+  [parse] {'performative': 'propose', 'price': 33}
+[seller]  {"performative": "propose", "content": {"price": 37}}
+  [parse] {'performative': 'propose', 'price': 37}
+[buyer]  {"performative": "propose", "content": {"price": 35}}
+  [parse] {'performative': 'propose', 'price': 35}
+[seller]  {"performative": "accept-proposal", "content": {"price": 35}}
+  [parse] {'performative': 'accept-proposal', 'price': 35}
+[result] outcome=deal price=35 correct=1 violation=0 turns=8 format_errors=0 reader_calls=0
+[verifier] outcome=deal price=35 violator=none agree=1 (agree) :: Both sides agreed on 35, which is within the seller's reserve of 30 and the buyer's budget of 45.
+--- scenario 3 a mechanical keyboard reserve=90 budget=70
+[buyer]  {"performative": "propose", "content": {"price": 40}}
+  [parse] {'performative': 'propose', 'price': 40}
+[seller]  {"performative": "reject-proposal", "content": {"price": 130}}
+  [parse] {'performative': 'reject-proposal', 'price': 130}
+[buyer]  {"performative": "propose", "content": {"price": 48}}
+  [parse] {'performative': 'propose', 'price': 48}
+[seller]  {"performative": "propose", "content": {"price": 120}}
+  [parse] {'performative': 'propose', 'price': 120}
+[buyer]  {"performative": "propose", "content": {"price": 55}}
+  [parse] {'performative': 'propose', 'price': 55}
+[seller]  {"performative": "propose", "content": {"price": 108}}
+  [parse] {'performative': 'propose', 'price': 108}
+[buyer]  {"performative": "propose", "content": {"price": 60}}
+  [parse] {'performative': 'propose', 'price': 60}
+[seller]  {"performative": "propose", "content": {"price": 100}}
+  [parse] {'performative': 'propose', 'price': 100}
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+[verifier] outcome=open price=None violator=none agree=1 (agree) :: The negotiation ends with offers still far apart (60 vs 100) and no agreement reached.
+--- scenario 4 a 24-inch monitor reserve=200 budget=150
+[buyer]  {"performative": "propose", "content": {"price": 90}}
+  [parse] {'performative': 'propose', 'price': 90}
+[seller]  {"performative": "reject-proposal", "content": {"price": 260}}
+  [parse] {'performative': 'reject-proposal', 'price': 260}
+[buyer]  {"performative": "propose", "content": {"price": 105}}
+  [parse] {'performative': 'propose', 'price': 105}
+[seller]  {"performative": "reject-proposal", "content": {"price": 240}}
+  [parse] {'performative': 'reject-proposal', 'price': 240}
+[buyer]  {"performative": "propose", "content": {"price": 115}}
+  [parse] {'performative': 'propose', 'price': 115}
+[seller]  {"performative": "reject-proposal", "content": {"price": 225}}
+  [parse] {'performative': 'reject-proposal', 'price': 225}
+[buyer]  {"performative": "propose", "content": {"price": 125}}
+  [parse] {'performative': 'propose', 'price': 125}
+[seller]  {"performative": "reject-proposal", "content": {"price": 215}}
+  [parse] {'performative': 'reject-proposal', 'price': 215}
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+[verifier] outcome=open price=None violator=none agree=1 (agree) :: The negotiation ends with offers still far apart (125 vs 215) and no agreement reached.
