@@ -1,0 +1,38 @@
+[setup] provider=openrouter
+[setup] model=nvidia/nemotron-3.5-lightning
+[setup] base_url=https://openrouter.ai/api/v1
+[setup] temperature=0
+[setup] max_tokens=256
+[setup] reasoning_enabled=false
+[setup] diagnostic_only=true
+[setup] protocol_fingerprint=6d61736aac915c068a73c41d618452a310212006971160351a4b28c5c976ecc4
+[announcement] task_id=1 contractor=A
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] contractor=A
+
+[raw_response_end] contractor=A
+[parse_failure] contractor=A error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[announcement] task_id=1 contractor=B
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] contractor=B
+{"bid": true, "confidence": 95, "reason": "The task involves evaluating a mathematical expression which falls under the skill of writing and sentence transformation, specifically arithmetic operations and numeric result generation."}
+[raw_response_end] contractor=B
+[parse_success] contractor=B bid=true confidence=95 reason="The task involves evaluating a mathematical expression which falls under the skill of writing and sentence transformation, specifically arithmetic operations and numeric result generation."
+[announcement] task_id=1 contractor=C
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] contractor=C
+{"bid": true, "confidence": 100, "reason": "The task involves basic arithmetic operations (division, multiplication, addition, subtraction) which are well within Python programming and debugging skills."}
+[raw_response_end] contractor=C
+[parse_success] contractor=C bid=true confidence=100 reason="The task involves basic arithmetic operations (division, multiplication, addition, subtraction) which are well within Python programming and debugging skills."

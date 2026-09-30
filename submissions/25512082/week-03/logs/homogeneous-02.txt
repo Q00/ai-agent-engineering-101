@@ -1,0 +1,18 @@
+[setup] provider=openrouter
+[setup] model=nvidia/nemotron-3.5-lightning:free
+[setup] temperature=0
+[setup] max_tokens=256
+[setup] condition=homogeneous
+[setup] run=5
+[setup] contractor_order=A,B,C
+[setup] award_rule=highest confidence; ties use response order
+[setup] contractor=A system_prompt=You are contractor A in a contract net. Your skill: general problem solving. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else, using exactly these keys: {"bid": true/false, "confidence": 0-100, "reason": "..."}
+[setup] contractor=B system_prompt=You are contractor B in a contract net. Your skill: general problem solving. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else, using exactly these keys: {"bid": true/false, "confidence": 0-100, "reason": "..."}
+[setup] contractor=C system_prompt=You are contractor C in a contract net. Your skill: general problem solving. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else, using exactly these keys: {"bid": true/false, "confidence": 0-100, "reason": "..."}
+[announcement] task_id=1 contractor=A
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[crash] crash: AuthenticationError: Error code: 401 - {'error': {'message': 'Missing Authentication header', 'code': 401}}

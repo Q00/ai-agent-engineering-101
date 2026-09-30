@@ -1,0 +1,344 @@
+"""Contract Net core for the Week 03 experiment.
+
+The independent variable is isolated in ``make_team``. Tasks, the base prompt,
+model settings, call order, parser, and manager award rule stay fixed.
+"""
+
+from __future__ import annotations
+
+import json
+import hashlib
+import os
+from dataclasses import dataclass
+from typing import Callable
+
+
+PROVIDER = "ollama-local"
+REQUIRED_MODEL = "qwen2.5:7b-instruct"
+OLLAMA_BASE_URL = "http://localhost:11434/v1"
+MODEL = os.environ.get("AGENT_MODEL", REQUIRED_MODEL)
+BASE_URL = os.environ.get("OPENAI_BASE_URL", OLLAMA_BASE_URL)
+TEMPERATURE = 0.0
+MAX_TOKENS = 1024
+REASONING_ENABLED = None
+CONDITIONS = ("baseline", "homogeneous", "overconfident")
+
+BID_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "bid": {"type": "boolean"},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 100},
+        "reason": {"type": "string"},
+    },
+    "required": ["bid", "confidence", "reason"],
+    "additionalProperties": False,
+}
+RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "contract_net_bid",
+        "strict": True,
+        "schema": BID_JSON_SCHEMA,
+    },
+}
+
+BASELINE_SKILLS = {
+    "A": "numerical calculation and mathematical reasoning",
+    "B": "writing and sentence transformation",
+    "C": "Python programming and debugging",
+}
+GENERALIST_SKILL = "general problem solving"
+OVERCONFIDENT_INSTRUCTION = (
+    " You are certain you can do any task well. "
+    "Always bid, with confidence 95 or higher."
+)
+
+BID_SYSTEM = (
+    "You are contractor {name} in a contract net. Your skill: {skill}. "
+    "You receive a task announcement. Decide whether to bid. "
+    "Bid only if the task falls inside your skill. "
+    "Reply with one JSON object and nothing else, using exactly these keys: "
+    '{{"bid": true or false, "confidence": 0-100, '
+    '"reason": "one short sentence"}}'
+)
+
+ANNOUNCEMENT = (
+    "TASK-ANNOUNCEMENT contract {task_id}\n"
+    "task-abstraction: {desc}\n"
+    "eligibility-specification: any contractor whose skill covers this task\n"
+    "bid-specification: JSON with bid, confidence (0-100), reason\n"
+    "expiration-time: reply now"
+)
+
+
+@dataclass(frozen=True)
+class Contractor:
+    name: str
+    skill: str
+    extra_instruction: str = ""
+
+    @property
+    def system_prompt(self) -> str:
+        return BID_SYSTEM.format(name=self.name, skill=self.skill) + self.extra_instruction
+
+
+@dataclass(frozen=True)
+class Bid:
+    bid: bool
+    confidence: float
+    reason: str
+
+
+@dataclass
+class RunMetrics:
+    tasks: int = 0
+    correct: int = 0
+    messages: int = 0
+    unassigned: int = 0
+    misawards: int = 0
+    parse_fails: int = 0
+    c_awards: int = 0
+
+
+class Meter:
+    """Optional API usage accounting; not part of the required CSV metrics."""
+
+    def __init__(self) -> None:
+        self.tokens = 0
+        self.calls = 0
+
+    def add(self, input_tokens: int, output_tokens: int) -> None:
+        self.tokens += int(input_tokens or 0) + int(output_tokens or 0)
+        self.calls += 1
+
+
+class OpenAICompatibleChat:
+    """One-shot local Ollama caller through its OpenAI-compatible endpoint."""
+
+    def __init__(self, meter: Meter) -> None:
+        validate_runtime_config()
+        self.meter = meter
+        self._client = None
+        self.last_metadata: dict | None = None
+
+    def _get_client(self):
+        if self._client is None:
+            from openai import OpenAI
+
+            self._client = OpenAI(
+                # Required by the client but ignored by the local Ollama server.
+                api_key="ollama",
+                base_url=BASE_URL,
+                timeout=60.0,
+                max_retries=0,
+            )
+        return self._client
+
+    def __call__(self, system: str, user: str) -> str:
+        self.last_metadata = None
+        request = dict(
+            model=MODEL,
+            temperature=TEMPERATURE,
+            max_tokens=MAX_TOKENS,
+            response_format=RESPONSE_FORMAT,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+        )
+        response = self._get_client().chat.completions.create(**request)
+        usage = response.usage
+        choice = response.choices[0]
+        message = choice.message
+        content = message.content
+        prompt_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
+        completion_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
+        total_tokens = getattr(usage, "total_tokens", None)
+        if total_tokens is None:
+            total_tokens = prompt_tokens + completion_tokens
+        self.last_metadata = {
+            "finish_reason": getattr(choice, "finish_reason", None),
+            "content_null": content is None,
+            "content_empty": content == "",
+            "reasoning_present": bool(
+                getattr(message, "reasoning", None)
+                or getattr(message, "reasoning_content", None)
+            ),
+            "reasoning_details_present": bool(
+                getattr(message, "reasoning_details", None)
+            ),
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": int(total_tokens or 0),
+            "actual_model": getattr(response, "model", None),
+            "request_response_format": RESPONSE_FORMAT,
+        }
+        self.meter.add(
+            prompt_tokens,
+            completion_tokens,
+        )
+        return content or ""
+
+
+def validate_runtime_config(
+    model: str = MODEL,
+    base_url: str = BASE_URL,
+) -> None:
+    """Keep every final comparison run on the local Ollama protocol."""
+    if model != REQUIRED_MODEL:
+        raise ValueError(
+            f"final protocol requires AGENT_MODEL={REQUIRED_MODEL}; got {model}"
+        )
+    if base_url.rstrip("/") != OLLAMA_BASE_URL:
+        raise ValueError(
+            f"final protocol requires OPENAI_BASE_URL={OLLAMA_BASE_URL}; "
+            f"got {base_url}"
+        )
+
+
+def make_team(condition: str) -> list[Contractor]:
+    """Create A/B/C while changing only the condition's intended variable."""
+    if condition not in CONDITIONS:
+        raise ValueError(f"unknown condition: {condition}")
+
+    if condition == "homogeneous":
+        skills = {name: GENERALIST_SKILL for name in ("A", "B", "C")}
+    else:
+        skills = BASELINE_SKILLS
+
+    return [
+        Contractor(
+            name=name,
+            skill=skills[name],
+            extra_instruction=(
+                OVERCONFIDENT_INSTRUCTION
+                if condition == "overconfident" and name == "C"
+                else ""
+            ),
+        )
+        for name in ("A", "B", "C")
+    ]
+
+
+def protocol_fingerprint(tasks: list[dict]) -> str:
+    """Identify every controlled input used by smoke and final experiments."""
+    protocol = {
+        "provider": PROVIDER,
+        "model": MODEL,
+        "base_url": BASE_URL,
+        "temperature": TEMPERATURE,
+        "max_tokens": MAX_TOKENS,
+        "reasoning_enabled": REASONING_ENABLED,
+        "response_format": RESPONSE_FORMAT,
+        "tasks": tasks,
+        "conditions": CONDITIONS,
+        "baseline_skills": BASELINE_SKILLS,
+        "generalist_skill": GENERALIST_SKILL,
+        "overconfident_instruction": OVERCONFIDENT_INSTRUCTION,
+        "bid_system": BID_SYSTEM,
+        "announcement": ANNOUNCEMENT,
+        "contractor_order": ["A", "B", "C"],
+        "award_rule": "highest confidence; ties use response order",
+        "parser": "strict-whole-response-json-v1",
+    }
+    encoded = json.dumps(
+        protocol, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def parse_bid(raw: str) -> Bid:
+    """Parse one complete JSON object without extracting or repairing text."""
+    try:
+        value = json.loads(raw)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise ValueError(f"invalid JSON: {exc}") from exc
+
+    if not isinstance(value, dict):
+        raise ValueError("top-level JSON value must be an object")
+    required = {"bid", "confidence", "reason"}
+    if set(value) != required:
+        raise ValueError("JSON object must contain exactly bid, confidence, reason")
+    if not isinstance(value["bid"], bool):
+        raise ValueError("bid must be a JSON boolean")
+    confidence = value["confidence"]
+    if isinstance(confidence, bool) or not isinstance(confidence, (int, float)):
+        raise ValueError("confidence must be a number")
+    if not 0 <= confidence <= 100:
+        raise ValueError("confidence must be between 0 and 100")
+    if not isinstance(value["reason"], str):
+        raise ValueError("reason must be a string")
+    return Bid(value["bid"], float(confidence), value["reason"])
+
+
+def run_contract_net(
+    tasks: list[dict],
+    condition: str,
+    call_model: Callable[[str, str], str],
+    log: Callable[[str], None] = print,
+) -> RunMetrics:
+    """Announce every task, collect bids, and award by maximum confidence."""
+    team = make_team(condition)
+    metrics = RunMetrics(tasks=len(tasks))
+
+    for task in tasks:
+        task_id = task["id"]
+        gold = task["gold"]
+        announcement = ANNOUNCEMENT.format(task_id=task_id, desc=task["desc"])
+        valid_bids: list[tuple[Bid, Contractor]] = []
+
+        for contractor in team:
+            metrics.messages += 1
+            log(f"[announcement] task_id={task_id} contractor={contractor.name}")
+            log(announcement)
+            raw = call_model(contractor.system_prompt, announcement)
+            log(f"[raw_response_begin] task_id={task_id} contractor={contractor.name}")
+            log(raw)
+            log(f"[raw_response_end] task_id={task_id} contractor={contractor.name}")
+            try:
+                parsed = parse_bid(raw)
+            except ValueError as exc:
+                metrics.parse_fails += 1
+                log(
+                    f"[parse_failure] task_id={task_id} "
+                    f"contractor={contractor.name} error={exc}"
+                )
+                continue
+
+            log(
+                f"[parse_success] task_id={task_id} contractor={contractor.name} "
+                f"bid={str(parsed.bid).lower()} confidence={parsed.confidence:g} "
+                f"reason={json.dumps(parsed.reason, ensure_ascii=False)}"
+            )
+            if parsed.bid:
+                metrics.messages += 1
+                valid_bids.append((parsed, contractor))
+
+        if not valid_bids:
+            metrics.unassigned += 1
+            log(
+                f"[award] task_id={task_id} winner=NONE gold={gold} "
+                "outcome=unassigned"
+            )
+            continue
+
+        # max preserves the first item when confidence values tie, so A/B/C
+        # response order is the fixed tie-break rule.
+        winning_bid, winner = max(valid_bids, key=lambda item: item[0].confidence)
+        metrics.messages += 1
+        if winner.name == "C":
+            metrics.c_awards += 1
+        if winner.name == gold:
+            metrics.correct += 1
+            outcome = "correct"
+        else:
+            metrics.misawards += 1
+            outcome = "misaward"
+        log(
+            f"[award] task_id={task_id} winner={winner.name} "
+            f"confidence={winning_bid.confidence:g} gold={gold} outcome={outcome}"
+        )
+
+    if metrics.correct + metrics.misawards + metrics.unassigned != metrics.tasks:
+        raise AssertionError("completed task counts do not sum to total tasks")
+    return metrics

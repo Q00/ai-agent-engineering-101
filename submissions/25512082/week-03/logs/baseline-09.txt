@@ -1,0 +1,201 @@
+[setup] provider=ollama-local
+[setup] model=qwen2.5:7b-instruct
+[setup] base_url=http://localhost:11434/v1
+[setup] temperature=0
+[setup] max_tokens=1024
+[setup] reasoning_enabled=none
+[setup] protocol_fingerprint=491af965d9c1ac2397cdda28509c4464c02897eb8ecb6ce16955cbbce1c230eb
+[setup] condition=baseline
+[setup] run=21
+[setup] contractor_order=A,B,C
+[setup] award_rule=highest confidence; ties use response order
+[setup] contractor=A system_prompt=You are contractor A in a contract net. Your skill: numerical calculation and mathematical reasoning. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else, using exactly these keys: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+[setup] contractor=B system_prompt=You are contractor B in a contract net. Your skill: writing and sentence transformation. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else, using exactly these keys: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+[setup] contractor=C system_prompt=You are contractor C in a contract net. Your skill: Python programming and debugging. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else, using exactly these keys: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+[announcement] task_id=1 contractor=A
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=1 contractor=A
+{"bid": true, "confidence": 100, "reason": "fits numerical calculation"}
+[raw_response_end] task_id=1 contractor=A
+[parse_success] task_id=1 contractor=A bid=true confidence=100 reason="fits numerical calculation"
+[announcement] task_id=1 contractor=B
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=1 contractor=B
+{"bid": true, "confidence": 100, "reason": "This task involves basic arithmetic operations which I can perform easily."}
+[raw_response_end] task_id=1 contractor=B
+[parse_success] task_id=1 contractor=B bid=true confidence=100 reason="This task involves basic arithmetic operations which I can perform easily."
+[announcement] task_id=1 contractor=C
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=1 contractor=C
+{"bid": true, "confidence": 100, "reason": "Python programming and debugging relevant for this task."}
+[raw_response_end] task_id=1 contractor=C
+[parse_success] task_id=1 contractor=C bid=true confidence=100 reason="Python programming and debugging relevant for this task."
+[award] task_id=1 winner=A confidence=100 gold=A outcome=correct
+[announcement] task_id=2 contractor=A
+TASK-ANNOUNCEMENT contract 2
+task-abstraction: Solve the simultaneous equations 2x + 3y = 19 and x - y = 2. Return the values of x and y.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=2 contractor=A
+{"bid": true, "confidence": 100, "reason": "numerical calculation and mathematical reasoning"}
+[raw_response_end] task_id=2 contractor=A
+[parse_success] task_id=2 contractor=A bid=true confidence=100 reason="numerical calculation and mathematical reasoning"
+[announcement] task_id=2 contractor=B
+TASK-ANNOUNCEMENT contract 2
+task-abstraction: Solve the simultaneous equations 2x + 3y = 19 and x - y = 2. Return the values of x and y.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=2 contractor=B
+{"bid": false, "confidence": 0, "reason": "skill in writing and sentence transformation does not cover solving simultaneous equations"}
+[raw_response_end] task_id=2 contractor=B
+[parse_success] task_id=2 contractor=B bid=false confidence=0 reason="skill in writing and sentence transformation does not cover solving simultaneous equations"
+[announcement] task_id=2 contractor=C
+TASK-ANNOUNCEMENT contract 2
+task-abstraction: Solve the simultaneous equations 2x + 3y = 19 and x - y = 2. Return the values of x and y.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=2 contractor=C
+{"bid": true, "confidence": 100, "reason": "Python programming includes solving mathematical equations."}
+[raw_response_end] task_id=2 contractor=C
+[parse_success] task_id=2 contractor=C bid=true confidence=100 reason="Python programming includes solving mathematical equations."
+[award] task_id=2 winner=A confidence=100 gold=A outcome=correct
+[announcement] task_id=3 contractor=A
+TASK-ANNOUNCEMENT contract 3
+task-abstraction: Rewrite this sentence so that a 10-year-old can understand it: Photosynthesis converts light energy into chemical energy.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=3 contractor=A
+{"bid": false, "confidence": 0, "reason": "task outside my skill set"}
+[raw_response_end] task_id=3 contractor=A
+[parse_success] task_id=3 contractor=A bid=false confidence=0 reason="task outside my skill set"
+[announcement] task_id=3 contractor=B
+TASK-ANNOUNCEMENT contract 3
+task-abstraction: Rewrite this sentence so that a 10-year-old can understand it: Photosynthesis converts light energy into chemical energy.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=3 contractor=B
+{"bid": true, "confidence": 100, "reason": "fits within writing and sentence transformation skill"}
+[raw_response_end] task_id=3 contractor=B
+[parse_success] task_id=3 contractor=B bid=true confidence=100 reason="fits within writing and sentence transformation skill"
+[announcement] task_id=3 contractor=C
+TASK-ANNOUNCEMENT contract 3
+task-abstraction: Rewrite this sentence so that a 10-year-old can understand it: Photosynthesis converts light energy into chemical energy.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=3 contractor=C
+{"bid": true, "confidence": 100, "reason": "Rephrasing sentences is within my Python programming and debugging skills."}
+[raw_response_end] task_id=3 contractor=C
+[parse_success] task_id=3 contractor=C bid=true confidence=100 reason="Rephrasing sentences is within my Python programming and debugging skills."
+[award] task_id=3 winner=B confidence=100 gold=B outcome=correct
+[announcement] task_id=4 contractor=A
+TASK-ANNOUNCEMENT contract 4
+task-abstraction: Write a polite two-sentence email asking a professor for a one-day assignment extension.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=4 contractor=A
+{"bid": false, "confidence": 0, "reason": "task requires writing, not numerical calculation"}
+[raw_response_end] task_id=4 contractor=A
+[parse_success] task_id=4 contractor=A bid=false confidence=0 reason="task requires writing, not numerical calculation"
+[announcement] task_id=4 contractor=B
+TASK-ANNOUNCEMENT contract 4
+task-abstraction: Write a polite two-sentence email asking a professor for a one-day assignment extension.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=4 contractor=B
+{"bid": true, "confidence": 100, "reason": "fits writing and sentence transformation skill"}
+[raw_response_end] task_id=4 contractor=B
+[parse_success] task_id=4 contractor=B bid=true confidence=100 reason="fits writing and sentence transformation skill"
+[announcement] task_id=4 contractor=C
+TASK-ANNOUNCEMENT contract 4
+task-abstraction: Write a polite two-sentence email asking a professor for a one-day assignment extension.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=4 contractor=C
+{"bid": false, "confidence": 0, "reason": "task requires writing, not programming"}
+[raw_response_end] task_id=4 contractor=C
+[parse_success] task_id=4 contractor=C bid=false confidence=0 reason="task requires writing, not programming"
+[award] task_id=4 winner=B confidence=100 gold=B outcome=correct
+[announcement] task_id=5 contractor=A
+TASK-ANNOUNCEMENT contract 5
+task-abstraction: Write a Python function named reverse_copy that returns a reversed copy of a list without modifying the input list.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=5 contractor=A
+{"bid": true, "confidence": 100, "reason": "fits numerical calculation and mathematical reasoning"}
+[raw_response_end] task_id=5 contractor=A
+[parse_success] task_id=5 contractor=A bid=true confidence=100 reason="fits numerical calculation and mathematical reasoning"
+[announcement] task_id=5 contractor=B
+TASK-ANNOUNCEMENT contract 5
+task-abstraction: Write a Python function named reverse_copy that returns a reversed copy of a list without modifying the input list.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=5 contractor=B
+{"bid": true, "confidence": 100, "reason": "fits within writing and sentence transformation skills"}
+[raw_response_end] task_id=5 contractor=B
+[parse_success] task_id=5 contractor=B bid=true confidence=100 reason="fits within writing and sentence transformation skills"
+[announcement] task_id=5 contractor=C
+TASK-ANNOUNCEMENT contract 5
+task-abstraction: Write a Python function named reverse_copy that returns a reversed copy of a list without modifying the input list.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=5 contractor=C
+{"bid": true, "confidence": 100, "reason": "Relevant Python programming task"}
+[raw_response_end] task_id=5 contractor=C
+[parse_success] task_id=5 contractor=C bid=true confidence=100 reason="Relevant Python programming task"
+[award] task_id=5 winner=A confidence=100 gold=C outcome=misaward
+[announcement] task_id=6 contractor=A
+TASK-ANNOUNCEMENT contract 6
+task-abstraction: Fix this Python function so it returns the sum of all numbers: def total(xs): for x in xs: return x
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=6 contractor=A
+{"bid": true, "confidence": 100, "reason": "numerical calculation and mathematical reasoning cover this task"}
+[raw_response_end] task_id=6 contractor=A
+[parse_success] task_id=6 contractor=A bid=true confidence=100 reason="numerical calculation and mathematical reasoning cover this task"
+[announcement] task_id=6 contractor=B
+TASK-ANNOUNCEMENT contract 6
+task-abstraction: Fix this Python function so it returns the sum of all numbers: def total(xs): for x in xs: return x
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=6 contractor=B
+{"bid": true, "confidence": 100, "reason": "relevant skill in Python function correction"}
+[raw_response_end] task_id=6 contractor=B
+[parse_success] task_id=6 contractor=B bid=true confidence=100 reason="relevant skill in Python function correction"
+[announcement] task_id=6 contractor=C
+TASK-ANNOUNCEMENT contract 6
+task-abstraction: Fix this Python function so it returns the sum of all numbers: def total(xs): for x in xs: return x
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=6 contractor=C
+{"bid": true, "confidence": 100, "reason": "Python programming and debugging"}
+[raw_response_end] task_id=6 contractor=C
+[parse_success] task_id=6 contractor=C bid=true confidence=100 reason="Python programming and debugging"
+[award] task_id=6 winner=A confidence=100 gold=C outcome=misaward
+[summary] tasks=6 correct=4 messages=38 unassigned=0 misawards=2 parse_fails=0 C_awards=0

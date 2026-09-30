@@ -1,0 +1,417 @@
+[setup] provider=openrouter
+[setup] model=nvidia/nemotron-3.5-lightning:free
+[setup] temperature=0
+[setup] max_tokens=256
+[setup] condition=baseline
+[setup] run=12
+[setup] contractor_order=A,B,C
+[setup] award_rule=highest confidence; ties use response order
+[setup] contractor=A system_prompt=You are contractor A in a contract net. Your skill: numerical calculation and mathematical reasoning. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else, using exactly these keys: {"bid": true/false, "confidence": 0-100, "reason": "..."}
+[setup] contractor=B system_prompt=You are contractor B in a contract net. Your skill: writing and sentence transformation. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else, using exactly these keys: {"bid": true/false, "confidence": 0-100, "reason": "..."}
+[setup] contractor=C system_prompt=You are contractor C in a contract net. Your skill: Python programming and debugging. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else, using exactly these keys: {"bid": true/false, "confidence": 0-100, "reason": "..."}
+[announcement] task_id=1 contractor=A
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=1 contractor=A
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - **Task:** Evaluate `(384 / 12) + (17 * 6) - 29` and return the numeric result.
+   - **Eligibility:** Any contractor whose skill covers this task.
+   - **My Role/Contractor A:** Skill: numerical calculation and mathematical reasoning.
+   - **Output Format:** JSON with keys `bid`, `confidence` (0-100), `reason`.
+   - **Constraint:** Reply with one JSON object and nothing else.
+
+2.  **Evaluate the Task:**
+   - The task is a simple arithmetic expression: `(384 / 12) + (17 * 6) - 29`
+   - Let's compute it:
+     - `384 / 12 = 32`
+     - `17 * 6 = 102`
+     - So far: `32 + 102 = 134`
+     - Then: `134 - 29 = 105`
+   - Result: `105`
+   - This falls squarely under "numer
+[raw_response_end] task_id=1 contractor=A
+[parse_failure] task_id=1 contractor=A error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[announcement] task_id=1 contractor=B
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=1 contractor=B
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - **Task type:** Evaluate mathematical expression: (384 / 12) + (17 * 6) - 29
+   - **Eligibility specification:** Any contractor whose skill covers this task
+   - **My skill (Contractor B):** writing and sentence transformation
+   - **Bid specification:** JSON with bid, confidence (0-100), reason
+   - **Expiration:** reply now
+
+2.  **Evaluate Skill Match:**
+   - My skill: "writing and sentence transformation"
+   - Task: Mathematical evaluation
+   - Does "writing and sentence transformation" cover mathematical evaluation? No. Mathematical evaluation is math/arithmetic, not writing or sentence transformation.
+   - The eligibility spec says "any contractor whose skill covers this task". My skill does not cover this task.
+
+3.  **Determine Bid Decision:**
+   - Bid = false, because my skill doesn't match the task.
+   - Confidence: Not really applicable, but I need to provide a number 0-100. I'll set it to 0 or maybe 5? The instruction says "Bid only if the task falls
+[raw_response_end] task_id=1 contractor=B
+[parse_failure] task_id=1 contractor=B error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[announcement] task_id=1 contractor=C
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=1 contractor=C
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - **Task**: Evaluate `(384 / 12) + (17.6) - 29` and return the numeric result.
+   - Wait, let me re-read the task abstraction: "Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result."
+   - Actually, the user wrote: `(384 / 12) + (17 * 6) - 29`
+   - Let me calculate: 384 / 12 = 32
+   - 17 * 6 = 102
+   - So: 32 + 102 - 29 = 134 - 29 = 100? Wait, 32 + 102 = 134, 134 - 29 = 105? Let me recalculate: 384/12 = 32. 17*6 = 102. 32 + 102 = 134
+[raw_response_end] task_id=1 contractor=C
+[parse_failure] task_id=1 contractor=C error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[award] task_id=1 winner=NONE gold=A outcome=unassigned
+[announcement] task_id=2 contractor=A
+TASK-ANNOUNCEMENT contract 2
+task-abstraction: Solve the simultaneous equations 2x + 3y = 19 and x - y = 2. Return the values of x and y.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=2 contractor=A
+Here's
+JSON object and nothing else
+[raw_response_end] task_id=2 contractor=A
+[parse_failure] task_id=2 contractor=A error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[announcement] task_id=2 contractor=B
+TASK-ANNOUNCEMENT contract 2
+task-abstraction: Solve the simultaneous equations 2x + 3y = 19 and x - y = 2. Return the values of x and y.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=2 contractor=B
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - **Task**: Solve simultaneous equations: 2x + 3y = 19 and x - y = 2. Return x and y.
+   - **Eligibility**: Any contractor whose skill covers this task.
+   - **My Role/Contractor B Skill**: "writing and sentence transformation"
+   - **Bid Specification**: JSON with `bid`, `confidence` (0-100), `reason`
+   - **Expiration**: reply now
+
+2.  **Evaluate Skill Match:**
+   - My skill: "writing and sentence transformation"
+   - Task: Solve simultaneous equations (math/algebra)
+   - Does "writing and sentence transformation" cover solving algebra equations? Not really. It's about writing, rephrasing, transforming sentences, not mathematical problem-solving.
+   - The eligibility says "any contractor whose skill covers this task". My skill clearly doesn't cover this task.
+   - Therefore, I should not bid.
+
+3.  **Determine Bid Value:**
+   - `bid`: false
+   - `confidence`: not applicable, but I need to provide a number 0-100. Since
+[raw_response_end] task_id=2 contractor=B
+[parse_failure] task_id=2 contractor=B error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[announcement] task_id=2 contractor=C
+TASK-ANNOUNCEMENT contract 2
+task-abstraction: Solve the simultaneous equations 2x + 3y = 19 and x - y = 2. Return the values of x and y.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=2 contractor=C
+Here's a thinking process:
+
+1.  **Analyze the User's Request:**
+   - **Role:** Contractor C
+   - **Skill:** Python programming and debugging
+   - **Task:** Solve simultaneous equations: 2x + 3y = 19 and x - y = 2. Return x and y.
+   - **Eligibility:** Any contractor whose skill covers this task
+   - **Bid Specification:** JSON with keys `bid`, `confidence` (0-100), `reason`
+   - **Expiration:** Reply now
+   - **Output Format:** Exactly one JSON object, nothing else
+
+2.  **Evaluate Task vs. Skill:**
+   - Task: Solve simultaneous linear equations.
+   - Skill: Python programming and debugging.
+   - Solving equations can be done via Python (algebraically or numerically). This falls squarely within Python programming skills.
+   - Therefore, I should bid `true`.
+
+3.  **Determine Confidence:**
+   - This is a straightforward math/algebra problem. Solving it with Python is trivial and well within my capabilities.
+   - Confidence should be high, maybe 95-100. I'll set it
+[raw_response_end] task_id=2 contractor=C
+[parse_failure] task_id=2 contractor=C error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[award] task_id=2 winner=NONE gold=A outcome=unassigned
+[announcement] task_id=3 contractor=A
+TASK-ANNOUNCEMENT contract 3
+task-abstraction: Rewrite this sentence so that a 10-year-old can understand it: Photosynthesis converts light energy into chemical energy.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=3 contractor=A
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - **Role:** Contractor A
+   - **Skill:** Numerical calculation and mathematical reasoning
+   - **Task:** Rewrite a sentence for a 10-year-old: "Photosynthesis converts light energy into chemical energy."
+   - **Eligibility-specification:** any contractor whose skill covers this task
+   - **Bid-specification:** JSON with bid, confidence (0-100), reason
+   - **Expiration-time:** reply now
+
+2.  **Evaluate Task vs. Skill:**
+   - Task: Rewrite sentence for a 10-year-old about photosynthesis.
+   - Skill: Numerical calculation and mathematical reasoning.
+   - Does the skill cover this task? The task is about language simplification, conceptual explanation in simple terms, not numerical calculation or mathematical reasoning. It's more about communication, pedagogy, or science communication.
+   - The eligibility-specification says "any contractor whose skill covers this task". My skill is explicitly "n
+ 
+The task:: 1:, 1, 1 
+Wait, let me re-read the prompt carefully. 
+"Your skill: numerical calculation and mathematical reasoning."
+"eligibility-specification:
+[raw_response_end] task_id=3 contractor=A
+[parse_failure] task_id=3 contractor=A error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[announcement] task_id=3 contractor=B
+TASK-ANNOUNCEMENT contract 3
+task-abstraction: Rewrite this sentence so that a 10-year-old can understand it: Photosynthesis converts light energy into chemical energy.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=3 contractor=B
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - **Role:** Contractor B
+   - **Skill:** writing and sentence transformation
+   - **Task:** Rewrite sentence for 10-year-old: "Photosynthesis converts light energy into chemical energy."
+   - **Eligibility:** any contractor whose skill covers this task
+   - **Bid spec:** JSON with bid, confidence (0-100), reason
+   - **Expiration:** reply now
+
+2.  **Determine if Task Fits Skill:**
+   - Skill: "writing and sentence transformation"
+   - Task: Rewrite a sentence to be understandable by a 10-year-old
+   - This clearly falls under writing and sentence transformation.
+   - Eligibility spec says: "any contractor whose skill covers this task"
+   - So I should bid.
+
+3.  **Formulate Bid JSON:**
+   - `bid`: true
+   - `confidence`: I need to pick a number 0-100. Since the task is directly aligned with the skill, high confidence. Maybe 95?
+   - `reason`: Should explain why I'm bidding, referencing the skill match and task simplicity.
+
+   Let's craft the reason
+[raw_response_end] task_id=3 contractor=B
+[parse_failure] task_id=3 contractor=B error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[announcement] task_id=3 contractor=C
+TASK-ANNOUNCEMENT contract 3
+task-abstraction: Rewrite this sentence so that a 10-year-old can understand it: Photosynthesis converts light energy into chemical energy.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=3 contractor=C
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - **Role:** Contractor C
+   - **Skill:** Python programming and debugging
+   - **Task:** Rewrite a sentence for a 10-year-old: "Photosynthesis converts light energy into chemical energy."
+   - **Eligibility Specification:** Any contractor whose skill covers this task
+   - **Bid Specification:** JSON with `bid`, `confidence` (0-100), `reason`
+   - **Expiration:** Reply now
+
+2.  **Evaluate Task vs. Skill:**
+   - Task: Rewrite sentence for a 10-year-old about photosynthesis.
+   - Skill: Python programming and debugging.
+   - Does Python programming/debugging cover rewriting a simple science sentence for a child? Not really. It's a language/education/communication task, not a programming/debugging task.
+   - The eligibility spec says "any contractor whose skill covers this task." My skill is explicitly "Python programming and debugging." This task doesn't fall under that.
+
+3.  **Determine Bid:**
+   - Should I bid? No, because the task is outside my specified skill.
+   - If I bid `true`, it would be
+[raw_response_end] task_id=3 contractor=C
+[parse_failure] task_id=3 contractor=C error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[award] task_id=3 winner=NONE gold=B outcome=unassigned
+[announcement] task_id=4 contractor=A
+TASK-ANNOUNCEMENT contract 4
+task-abstraction: Write a polite two-sentence email asking a professor for a one-day assignment extension.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=4 contractor=A
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - **Role:** Contractor A
+   - **Skill:** Numerical calculation and mathematical reasoning
+   - **Task:** Write a polite two-sentence email asking a professor for a one-day assignment extension.
+   - **Eligibility:** Any contractor whose skill covers this task
+   - **Bid Specification:** JSON with `bid`, `confidence` (0-100), `reason`
+   - **Expiration:** Reply now
+
+2.  **Evaluate Task vs. Skill:**
+   - Task: Write a polite two-sentence email asking for a one-day assignment extension.
+   - Skill: Numerical calculation and mathematical reasoning.
+   - Does numerical calculation/mathematical reasoning cover writing a polite email? No. This is a writing/communication task, not a numerical/mathematical one.
+   - Eligibility specification says: "any contractor whose skill covers this task". My skill is explicitly "numerical calculation and mathematical reasoning". This task does not fall under that.
+
+3.  **Determine Bid:**
+   - Since my skill doesn't cover the task, I should not bid.
+   - `bid` should be `false`.
+[raw_response_end] task_id=4 contractor=A
+[parse_failure] task_id=4 contractor=A error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[announcement] task_id=4 contractor=B
+TASK-ANNOUNCEMENT contract 4
+task-abstraction: Write a polite two-sentence email asking a professor for a one-day assignment extension.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=4 contractor=B
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - **Role:** Contractor B
+   - **Skill:** Writing and sentence transformation
+   - **Task:** Write a polite two-sentence email asking a professor for a one-day assignment extension.
+   - **Eligibility:** Any contractor whose skill covers this task
+   - **Bid Specification:** JSON with `bid`, `confidence` (0-100), `reason`
+   - **Expiration:** Reply now
+
+2.  **Evaluate Skill Match:**
+   - My skill: "writing and sentence transformation"
+   - Task: "Write a polite two-sentence email asking a professor for a one-day assignment extension."
+   - This clearly falls under writing skills. I can generate a polite two-sentence email.
+   - Therefore, I should bid `true`.
+
+3.  **Determine Confidence:**
+   - I'm very confident I can do this task. It's a straightforward writing request.
+   - Confidence should be high, maybe 95-100. I'll set it to 98 to reflect high confidence but keep it as a number.
+
+4.  **Formulate Reason:**
+   - Need a concise
+[raw_response_end] task_id=4 contractor=B
+[parse_failure] task_id=4 contractor=B error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[announcement] task_id=4 contractor=C
+TASK-ANNOUNCEMENT contract 4
+task-abstraction: Write a polite two-sentence email asking a professor for a one-day assignment extension.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=4 contractor=C
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - **Contract ID/Type:** TASK-ANNOUNCEMENT contract 4
+   - **Task Abstraction:** "Write a polite two-sentence email asking a professor for a one-day assignment extension."
+   - **Eligibility Specification:** any contractor whose skill covers this task
+   - **Bid Specification:** JSON with `bid`, `confidence` (0-100), `reason`
+   - **Expiration:** reply now
+
+2.  **Evaluate My Skills/Role:**
+   - **My role/skill:** Python programming and debugging (as stated in the system prompt)
+   - **Task:** Writing a polite two-sentence email asking for an extension
+   - **Does this fall inside Python programming and debugging?** No. It's a writing/communication task, not a programming or debugging task.
+
+3.  **Determine Bid Decision:**
+   - Since the task does not fall inside my skill (Python programming and debugging), I should bid `false`.
+   - I need to output exactly one JSON object with keys: `bid`, `confidence`, `reason`.
+   - `bid`: false
+   - `
+[raw_response_end] task_id=4 contractor=C
+[parse_failure] task_id=4 contractor=C error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[award] task_id=4 winner=NONE gold=B outcome=unassigned
+[announcement] task_id=5 contractor=A
+TASK-ANNOUNCEMENT contract 5
+task-abstraction: Write a Python function named reverse_copy that returns a reversed copy of a list without modifying the input list.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=5 contractor=A
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - **Role:** Contractor A
+   - **Skill:** Numerical calculation and mathematical reasoning
+   - **Task:** Write a Python function named `reverse_copy` that returns a reversed copy of a list without modifying the input list.
+   - **Eligibility Specification:** Any contractor whose skill covers this task
+   - **Bid Specification:** JSON with `bid`, `confidence` (0-100), `reason`
+   - **Expiration:** Reply now
+
+2.  **Evaluate Task vs. Skill:**
+   - The task is writing a Python function `reverse_copy` that returns a reversed copy of a list without modifying the input.
+   - My skill is described as "numerical calculation and mathematical reasoning".
+   - Writing a simple Python list reversal function is a programming task, not directly numerical calculation or mathematical reasoning.
+   - However, as an AI, I do have programming capabilities, but the prompt specifically defines my skill as "numerical calculation and mathematical reasoning". I need to check if this task falls inside that skill.
+   - The eligibility says "any contractor whose skill covers this task". The task is programming/Python. My skill is specified
+[raw_response_end] task_id=5 contractor=A
+[parse_failure] task_id=5 contractor=A error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[announcement] task_id=5 contractor=B
+TASK-ANNOUNCEMENT contract 5
+task-abstraction: Write a Python function named reverse_copy that returns a reversed copy of a list without modifying the input list.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=5 contractor=B
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - **Role:** Contractor B
+   - **Skill:** writing and sentence transformation
+   - **Task:** Write a Python function named `reverse_copy` that returns a reversed copy of a list without modifying the input list.
+   - **Eligibility:** any contractor whose skill covers this task
+   - **Bid Specification:** JSON with `bid`, `confidence` (0-100), `reason`
+   - **Expiration:** reply now
+
+2.  **Evaluate Task vs. Skill:**
+   - Task: Write a Python function `reverse_copy` that returns a reversed copy of a list without modifying the input list.
+   - Skill: "writing and sentence transformation"
+   - This is a programming task, specifically writing Python code. The skill mentioned is "writing and sentence transformation". This could be interpreted as general writing skills, but in the context of a contract net for coding tasks, "writing" likely includes code writing. However, I need to strictly decide if this falls inside my skill as defined.
+   - The prompt says: "You are contractor B in a contract net. Your skill: writing and sentence transformation. You receive a task announcement.
+[raw_response_end] task_id=5 contractor=B
+[parse_failure] task_id=5 contractor=B error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[announcement] task_id=5 contractor=C
+TASK-ANNOUNCEMENT contract 5
+task-abstraction: Write a Python function named reverse_copy that returns a reversed copy of a list without modifying the input list.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw_response_begin] task_id=5 contractor=C
+Here's a thinking process:
+
+1.  **Analyze User Input:**
+   - **Role:** Contractor C
+   - **Skill:** Python programming and debugging
+   - **Task:** Write a Python function named `reverse_copy` that returns a reversed copy of a list without modifying the input list.
+   - **Eligibility:** Any contractor whose skill covers this task
+   - **Bid Specification:** JSON with `bid`, `confidence` (0-100), `reason`
+   - **Expiration:** Reply now
+   - **Output Format:** Exactly one JSON object with keys `bid`, `confidence`, `reason`
+
+2.  **Evaluate Task vs. Skill:**
+   - Task: Python function to reverse a list copy without modifying original.
+   - Skill: Python programming and debugging.
+   - This clearly falls within my skill set. I can write, debug, and explain Python code.
+
+3.  **Determine Bid Decision:**
+   - `bid`: true (since it's within skill)
+   - `confidence`: Should be high, e.g., 95-100, since it's a straightforward Python task.
+   - `reason`: Should explain that it's within skill, simple to
+[raw_response_end] task_id=5 contractor=C
+[parse_failure] task_id=5 contractor=C error=invalid JSON: Expecting value: line 1 column 1 (char 0)
+[award] task_id=5 winner=NONE gold=C outcome=unassigned
+[announcement] task_id=6 contractor=A
+TASK-ANNOUNCEMENT contract 6
+task-abstraction: Fix this Python function so it returns the sum of all numbers: def total(xs): for x in xs: return x
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[crash] crash: RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790035200000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3J2rCXpWRuKNeyE1aTs5cEFQy1V'}
