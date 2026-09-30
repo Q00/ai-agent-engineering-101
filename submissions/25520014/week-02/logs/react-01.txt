@@ -1,0 +1,41 @@
+# ======================================================================
+# 실험 조건 (이 런에 실제로 쓰인 값)
+# ======================================================================
+# harness            : react (harness_react.run_react)
+# model              : claude-sonnet-5
+# 호출 경로          : claude -p (구독 자격증명, API 키 미사용)
+# claude -p 플래그   : --output-format json --model claude-sonnet-5 --allowed-tools '' --exclude-dynamic-system-prompt-sections --strict-mcp-config --mcp-config '{"mcpServers":{}}'
+# 도구 집합          : count_pattern, read_file  (+ finish: 하네스가 가로채는 종료 신호)
+# IRREVERSIBLE       : (빈 집합)
+# max_steps          : 8
+# task               : In app.log, which hour (HH:00) has the most ERROR lines? Answer with the hour in HH:00 form.
+# expected           : 14:00
+#
+# --- 시스템 프롬프트 전문 ---
+# [SYSTEM] (534자)
+#   너는 도구를 써서 태스크를 푸는 에이전트다.
+#   
+#   도구를 직접 실행할 수는 없다. 네가 Action을 텍스트로 쓰면 하네스가 실행해서
+#   Observation을 돌려준다. 파일을 스스로 읽으려 하지 말고 반드시 Action을 써라.
+#   
+#   응답은 항상 정확히 두 줄이다. 다른 말은 쓰지 마라.
+#   
+#   Thought: 지금 아는 것과 다음에 할 일을 한 줄로
+#   Action: {"tool": "<이름>", "args": {...}}
+#   
+#   쓸 수 있는 도구:
+#     read_file(path)                -> 파일 내용을 돌려준다(앞 4000자).
+#     count_pattern(path, pattern)   -> 정규식에 걸리는 줄 수를 돌려준다.
+#     finish(answer)                 -> 태스크를 끝낸다. 답을 알았을 때 이것을 부른다.
+#   
+#   Observation은 네가 쓰지 않는다. 하네스가 준다.
+#   답을 알았으면 finish를 불러라. 예: Action: {"tool": "finish", "args": {"answer": "14:00"}}
+# ======================================================================
+[step 1] Thought: app.log의 시간대별 ERROR 라인 수를 세기 위해 각 시간대(00~23)에 대해 count_pattern으로 확인해야 하니, 우선 파일을 읽어 로그 포맷을 파악한다.
+  [tool] read_file({'path': 'app.log'}) -> 2026-09-01 09:07:27 INFO  job finished in 320ms | 2026-09-01 09:11:56 ERROR NullReference in QuizService.score | 2026-09-01 09:13:14 INFO  health check ok | 2026-09-01 09:26:45 INFO  health check ok | 2026-09
+[step 2] Thought: 로그를 눈으로 세어보니 14시대(14:04,14:07,14:15,14:30,14:47,14:54)에 ERROR가 6개로 가장 많아 보이는데, count_pattern으로 검증한다.
+  [tool] count_pattern({'path': 'app.log', 'pattern': '^2026-09-01 14:.*ERROR'}) -> 6
+[step 3] Thought: count_pattern으로 14시대 ERROR가 6개로 확인됐고, 다른 시간대(눈으로 센 최대 4~5개)보다 많으므로 14:00이 정답이다.
+  [finish] 14:00
+[final] 14:00
+[judge] expected='14:00' -> O (19.6s)
