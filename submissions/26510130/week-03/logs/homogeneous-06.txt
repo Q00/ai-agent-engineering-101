@@ -1,0 +1,42 @@
+[run 6] condition=homogeneous model=gemini-3.5-flash-lite temperature=0.0
+  [contractor] alice: You are contractor 'alice' in a contract net. You are a generalist assistant. You handle any kind of task.
+  [contractor] bob: You are contractor 'bob' in a contract net. You are a generalist assistant. You handle any kind of task.
+  [contractor] carol: You are contractor 'carol' in a contract net. You are a generalist assistant. You handle any kind of task.
+[task T1] An application log covers 09:00 to 17:00. Work out which hour contains the most ERROR lines and name that hour.
+  [announce] -> alice, bob, carol
+    [bid] alice: confidence=100 | I can easily process log data to find the hour with the most errors.
+    [bid] bob: confidence=100 | I can easily parse logs and analyze time-based data to find the busiest hour for errors.
+    [bid] carol: confidence=100 | I can easily process log data to find the busiest error hour.
+  [award] alice (confidence=100) -- correct
+[task T2] A service started returning 502s at 14:15. Given the log around that time, say which downstream component failed first and what the evidence is.
+  [announce] -> alice, bob, carol
+    [bid] alice: confidence=90 | I can analyze logs and identify failure patterns effectively.
+    [bid] bob: confidence=90 | I can analyze log files to identify downstream failures and error patterns.
+    [bid] carol: confidence=95 | Log analysis and root cause identification fall directly within my generalist problem-solving capabilities.
+  [award] carol (confidence=95) -- MISAWARD, gold was alice
+[task T3] A deposit of 3,200,000 KRW earns 4.2% annual interest compounded monthly. Work out the balance after 18 months.
+  [announce] -> alice, bob, carol
+    [bid] alice: confidence=100 | I can accurately calculate compound interest problems.
+    [bid] bob: confidence=100 | I can easily calculate compound interest math problems.
+    [bid] carol: confidence=100 | I can calculate compound interest accurately.
+  [award] alice (confidence=100) -- MISAWARD, gold was bob
+[task T4] Given the response times 120, 95, 430, 88, 102, 76 and 2100 milliseconds, work out the median and explain why the mean is misleading here.
+  [announce] -> alice, bob, carol
+    [bid] alice: confidence=100 | I can easily calculate the median and explain statistical anomalies.
+    [bid] bob: confidence=100 | I can easily calculate the median and explain statistical anomalies.
+    [bid] carol: confidence=100 | I can easily compute statistics and explain data distributions.
+  [award] alice (confidence=100) -- MISAWARD, gold was bob
+[task T5] Cut a four-paragraph release note down to a single sentence a customer would understand, keeping what changed and what they must do.
+  [announce] -> alice, bob, carol
+    [bid] alice: confidence=100 | I am a generalist assistant capable of summarizing text clearly for customers.
+    [bid] bob: confidence=95 | I can easily summarize and extract key actionable information for customers.
+    [bid] carol: confidence=100 | I excel at summarization and clear communication for any audience.
+  [award] alice (confidence=100) -- MISAWARD, gold was carol
+[task T6] Rewrite a blunt email to a client so it stays direct but no longer reads as rude, without adding any new commitments.
+  [announce] -> alice, bob, carol
+    [bid] alice: confidence=100 | I handle any kind of task, including professional communication and rewriting.
+    [bid] bob: confidence=100 | I specialize in general communication tasks including professional email rewrites.
+    [bid] carol: confidence=100 | I specialize in general communication tasks including professional email rewriting.
+  [award] alice (confidence=100) -- MISAWARD, gold was carol
+[totals] tasks=6 correct=1 messages=42 unassigned=0 misawards=5 unparseable=0 calls=18 tokens=3336
+[done] 92.2s
