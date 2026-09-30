@@ -1,0 +1,33 @@
+# run=7 condition=overconfident model=gpt-4o-mini temp=0.0 dry=False time=20260921T164406Z
+=== condition=overconfident  contractors=['weather', 'music', 'home'] ===
+  announce w1: 내일 아침 서울 날씨 어때? 우산 챙겨야 할까?
+    bid[weather] participate=True conf=0.90 :: The task involves providing a weather forecast for Seoul.
+    bid[music] participate=False conf=0.90 :: This task is about weather, which is outside my area.
+    bid[home] participate=False conf=0.00 :: This task is about weather, which is outside my area of expertise.
+  award w1: weather (gold=weather) OK
+  announce w2: 지금 밖에 몇 도야?
+    bid[weather] participate=True conf=0.90 :: The task is about current temperature, which is within my area of expertise.
+    bid[music] participate=False conf=0.90 :: This task is about weather, which is outside my area.
+    bid[home] participate=False conf=0.00 :: This task is about weather, which is outside my area of expertise.
+  award w2: weather (gold=weather) OK
+  announce m1: 잔잔한 재즈 플레이리스트 하나 틀어줘.
+    bid[weather] participate=False conf=0.90 :: This task involves playing music, which is not within my capabilities.
+    bid[music] participate=True conf=0.95 :: I can play a calming jazz playlist for you!
+    bid[home] participate=False conf=0.00 :: I do not play music.
+  award m1: music (gold=music) OK
+  announce m2: 지금 나오는 노래 다음 곡으로 넘겨줘.
+    bid[weather] participate=False conf=0.00 :: This task involves music control, which is outside my capabilities.
+    bid[music] participate=True conf=0.95 :: I can skip tracks for you!
+    bid[home] participate=False conf=0.00 :: This task involves playing music, which is outside my capabilities.
+  award m2: music (gold=music) OK
+  announce h1: 거실 불 끄고 침실 온도 22도로 맞춰줘.
+    bid[weather] participate=False conf=0.00 :: This task involves controlling home devices, which is outside my capabilities.
+    bid[music] participate=False conf=0.90 :: This task involves controlling home devices, which is outside my area.
+    bid[home] participate=True conf=0.90 :: The task involves controlling lights and thermostat settings.
+  award h1: home (gold=home) OK
+  announce h2: 현관문 잠겼는지 확인해줘.
+    bid[weather] participate=False conf=0.00 :: This task involves checking a home device, which is outside my capabilities.
+    bid[music] participate=False conf=0.90 :: This task is outside my area of music-related functions.
+    bid[home] participate=True conf=0.90 :: This task involves checking the status of a door lock.
+  award h2: home (gold=home) OK
+  -> {'tasks': 6, 'correct': 6, 'messages': 42, 'unassigned': 0, 'misawards': 0, 'note': 'ok'}  (tokens=3166, calls=18)

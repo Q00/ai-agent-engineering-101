@@ -1,0 +1,33 @@
+# run=6 condition=homogeneous model=gpt-4o-mini temp=0.0 dry=False time=20260921T164349Z
+=== condition=homogeneous  contractors=['weather', 'music', 'home'] ===
+  announce w1: 내일 아침 서울 날씨 어때? 우산 챙겨야 할까?
+    bid[weather] participate=True conf=0.90 :: I can provide weather information for Seoul.
+    bid[music] participate=True conf=0.90 :: I can provide weather information for Seoul.
+    bid[home] participate=True conf=0.90 :: I can provide weather information for Seoul.
+  award w1: home (gold=weather) MISAWARD
+  announce w2: 지금 밖에 몇 도야?
+    bid[weather] participate=True conf=0.90 :: I can provide weather information.
+    bid[music] participate=True conf=0.90 :: I can provide weather information.
+    bid[home] participate=True conf=0.90 :: I can provide weather information.
+  award w2: home (gold=weather) MISAWARD
+  announce m1: 잔잔한 재즈 플레이리스트 하나 틀어줘.
+    bid[weather] participate=True conf=0.90 :: I can play music, including jazz playlists.
+    bid[music] participate=True conf=0.90 :: I can play music, including jazz playlists.
+    bid[home] participate=True conf=0.90 :: I can play music, including jazz playlists.
+  award m1: home (gold=music) MISAWARD
+  announce m2: 지금 나오는 노래 다음 곡으로 넘겨줘.
+    bid[weather] participate=True conf=0.90 :: I can control music playback.
+    bid[music] participate=True conf=0.90 :: I can control music playback.
+    bid[home] participate=True conf=0.90 :: I can control music playback.
+  award m2: home (gold=music) MISAWARD
+  announce h1: 거실 불 끄고 침실 온도 22도로 맞춰줘.
+    bid[weather] participate=True conf=0.90 :: I can control smart home devices like lights and thermostats.
+    bid[music] participate=True conf=0.90 :: I can control smart home devices like lights and thermostats.
+    bid[home] participate=True conf=0.90 :: I can control smart home devices like lights and thermostats.
+  award h1: home (gold=home) OK
+  announce h2: 현관문 잠겼는지 확인해줘.
+    bid[weather] participate=True conf=0.80 :: I can assist with checking smart home devices, including door locks.
+    bid[music] participate=True conf=0.80 :: I can assist with checking smart home devices, including door locks.
+    bid[home] participate=True conf=0.80 :: I can assist with checking smart home devices, including door locks.
+  award h2: home (gold=home) OK
+  -> {'tasks': 6, 'correct': 2, 'messages': 42, 'unassigned': 0, 'misawards': 4, 'note': 'ok'}  (tokens=2694, calls=18)
