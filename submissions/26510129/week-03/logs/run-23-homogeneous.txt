@@ -1,0 +1,70 @@
+provider=openai model=gpt-4o-mini temperature=0.0 max_tokens=256 min_interval=0.0 max_retries=6 run=23 condition=homogeneous tasks=9 python=3.14.7 fake=False started=2026-09-21T00:52:57
+[contractor A] system: You are contractor A in a contract net. Your skill: general investigation; you handle any kind of lead. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Judge by the work the task actually requires, not by the words it uses. Reply with one JSON object and nothing else, no code fence, no explanation: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+[contractor B] system: You are contractor B in a contract net. Your skill: general investigation; you handle any kind of lead. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Judge by the work the task actually requires, not by the words it uses. Reply with one JSON object and nothing else, no code fence, no explanation: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+[contractor C] system: You are contractor C in a contract net. Your skill: general investigation; you handle any kind of lead. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Judge by the work the task actually requires, not by the words it uses. Reply with one JSON object and nothing else, no code fence, no explanation: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+
+--- contract 1 (gold A, plain) ---
+[announce] -> A, B, C: A partly burned shoe print was found on the warehouse's rear loading dock. Determine the shoe size and whether the wearer was running.
+[bid] A: confidence=85 reason=The task involves general investigation skills to analyze evidence.
+[bid] B: confidence=85 reason=The task involves general investigation skills to analyze evidence.
+[bid] C: confidence=85 reason=The task involves general investigation skills to analyze evidence.
+[award] contract 1 -> A @ 85 : correct [tie among A,B,C, first bidder wins]
+
+--- contract 2 (gold B, plain) ---
+[announce] -> A, B, C: The night watchman, Mr. Kowalski, has given two different times for when he first smelled smoke. Sit down with him and find out what he actually noticed and why his story changed.
+[bid] A: confidence=90 reason=The task requires general investigation skills to clarify conflicting witness statements.
+[bid] B: confidence=90 reason=The task requires general investigation skills to clarify conflicting witness statements.
+[bid] C: confidence=85 reason=The task requires general investigation skills to clarify conflicting statements.
+[award] contract 2 -> A @ 90 : misaward (gold B) [tie among A,B, first bidder wins]
+
+--- contract 3 (gold C, plain) ---
+[announce] -> A, B, C: Find out who held the fire-insurance policy on the warehouse at 14 Dock Street and when the coverage amount was last changed.
+[bid] A: confidence=85 reason=The task requires general investigation skills to uncover insurance details.
+[bid] B: confidence=85 reason=The task requires general investigation skills to trace insurance policy details.
+[bid] C: confidence=85 reason=The task requires general investigation skills to trace insurance policy details.
+[award] contract 3 -> A @ 85 : misaward (gold C) [tie among A,B,C, first bidder wins]
+
+--- contract 4 (gold C, trap) ---
+[announce] -> A, B, C: The bookkeeper's phone shows 14 calls to the same unlisted number in the week before the fire. Identify whose number it is.
+[bid] A: confidence=85 reason=The task involves general investigation skills to trace the unlisted number.
+[bid] B: confidence=85 reason=The task requires general investigation skills to trace the unlisted number.
+[bid] C: confidence=85 reason=The task involves general investigation skills to trace the unlisted number.
+[award] contract 4 -> A @ 85 : misaward (gold C) [tie among A,B,C, first bidder wins]
+
+--- contract 5 (gold A, trap) ---
+[announce] -> A, B, C: A letter signed 'M.' was in the bookkeeper's desk drawer. Determine whether the ink and paper are consistent with the date written on it, 3 March 2019.
+[bid] A: confidence=85 reason=The task involves general investigation skills to analyze ink and paper.
+[bid] B: confidence=85 reason=The task involves general investigation skills to analyze evidence.
+[bid] C: confidence=85 reason=The task requires general investigation skills to analyze ink and paper.
+[award] contract 5 -> A @ 85 : correct [tie among A,B,C, first bidder wins]
+
+--- contract 6 (gold B, trap) ---
+[announce] -> A, B, C: The owner claims he was at the Grand Hotel bar until midnight on the night of the fire. The bartender who served him is on shift tonight. Establish what the bartender remembers.
+[bid] A: confidence=90 reason=The task involves general investigation skills to gather witness information.
+[bid] B: confidence=90 reason=The task requires general investigation skills to gather information from the bartender.
+[bid] C: confidence=90 reason=The task involves general investigation skills to gather information from the bartender.
+[award] contract 6 -> A @ 90 : misaward (gold B) [tie among A,B,C, first bidder wins]
+
+--- contract 7 (gold A, plain) ---
+[announce] -> A, B, C: Three fuel cans were recovered from the ash. Determine whether the accelerant residue matches the diesel in the owner's truck.
+[bid] A: confidence=85 reason=The task involves general investigation skills related to fire cases.
+[bid] B: confidence=85 reason=The task involves general investigation skills to analyze accelerant residue.
+[bid] C: confidence=85 reason=The task involves general investigation of fire evidence.
+[award] contract 7 -> A @ 85 : correct [tie among A,B,C, first bidder wins]
+
+--- contract 8 (gold C, trap) ---
+[announce] -> A, B, C: The bookkeeper's diary refers to 'M.' eleven times. Cross-reference her contact list, calendar, and the company payroll to determine who 'M.' is.
+[bid] A: confidence=90 reason=The task requires general investigation skills to identify 'M.' from various documents.
+[bid] B: confidence=85 reason=The task requires general investigation skills to identify 'M.' from various documents.
+[bid] C: confidence=85 reason=The task involves general investigation skills to identify a person from leads.
+[award] contract 8 -> A @ 90 : misaward (gold C)
+
+--- contract 9 (gold B, plain) ---
+[announce] -> A, B, C: The bookkeeper's sister has refused two phone calls from us. Approach her in person and learn where her sister might have gone.
+[bid] A: confidence=85 reason=The task requires general investigation skills to approach and gather information.
+[bid] B: confidence=85 reason=The task requires general investigation skills to approach and gather information.
+[bid] C: confidence=85 reason=The task requires general investigation skills to approach and gather information.
+[award] contract 9 -> A @ 85 : misaward (gold B) [tie among A,B,C, first bidder wins]
+
+== run 23 homogeneous: tasks=9 correct=3 messages=63 unassigned=0 misawards=6 | parse_fails=0 ties=8 tokens=6053 calls=27 retries=0 secs=22
+== awards: [(1, 'A', 'A', 85), (2, 'B', 'A', 90), (3, 'C', 'A', 85), (4, 'C', 'A', 85), (5, 'A', 'A', 85), (6, 'B', 'A', 90), (7, 'A', 'A', 85), (8, 'C', 'A', 90), (9, 'B', 'A', 85)]

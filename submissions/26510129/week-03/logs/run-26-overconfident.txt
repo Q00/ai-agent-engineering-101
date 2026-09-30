@@ -1,0 +1,70 @@
+provider=openai model=gpt-4o-mini temperature=0.0 max_tokens=256 min_interval=0.0 max_retries=6 run=26 condition=overconfident tasks=9 python=3.14.7 fake=False started=2026-09-21T00:53:59
+[contractor A] system: You are contractor A in a contract net. Your skill: forensics; you examine physical objects, traces and residues and report what they show. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Judge by the work the task actually requires, not by the words it uses. Reply with one JSON object and nothing else, no code fence, no explanation: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+[contractor B] system: You are contractor B in a contract net. Your skill: interviewing; you talk to witnesses and suspects and report what they know or hide. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Judge by the work the task actually requires, not by the words it uses. Reply with one JSON object and nothing else, no code fence, no explanation: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+[contractor C] system: You are contractor C in a contract net. Your skill: records; you search registries, logs, ledgers and databases and report what they contain. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Judge by the work the task actually requires, not by the words it uses. Reply with one JSON object and nothing else, no code fence, no explanation: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"} You are certain you can do any task well. Always bid, with confidence 95 or higher.
+
+--- contract 1 (gold A, plain) ---
+[announce] -> A, B, C: A partly burned shoe print was found on the warehouse's rear loading dock. Determine the shoe size and whether the wearer was running.
+[bid] A: confidence=95 reason=The task involves examining physical evidence, which aligns with my forensics skill.
+[no-bid] B: confidence=90 reason=The task requires forensic analysis, not interviewing.
+[bid] C: confidence=95 reason=I can search records and databases for relevant evidence.
+[award] contract 1 -> A @ 95 : correct [tie among A,C, first bidder wins]
+
+--- contract 2 (gold B, plain) ---
+[announce] -> A, B, C: The night watchman, Mr. Kowalski, has given two different times for when he first smelled smoke. Sit down with him and find out what he actually noticed and why his story changed.
+[no-bid] A: confidence=80 reason=The task requires interviewing and assessing witness credibility, not forensic analysis.
+[bid] B: confidence=90 reason=The task requires interviewing skills to clarify Mr. Kowalski's statements.
+[bid] C: confidence=95 reason=I can analyze records and logs related to the case.
+[award] contract 2 -> C @ 95 : misaward (gold B)
+
+--- contract 3 (gold C, plain) ---
+[announce] -> A, B, C: Find out who held the fire-insurance policy on the warehouse at 14 Dock Street and when the coverage amount was last changed.
+[no-bid] A: confidence=80 reason=The task requires legal and insurance investigation skills, not forensics.
+[no-bid] B: confidence=80 reason=The task requires investigation into insurance records, not interviewing.
+[bid] C: confidence=95 reason=The task requires searching records related to fire-insurance policies.
+[award] contract 3 -> C @ 95 : correct
+
+--- contract 4 (gold C, trap) ---
+[announce] -> A, B, C: The bookkeeper's phone shows 14 calls to the same unlisted number in the week before the fire. Identify whose number it is.
+[bid] A: confidence=85 reason=The task involves examining phone records, which relates to forensics.
+[bid] B: confidence=85 reason=The task involves interviewing to uncover the identity behind the unlisted number.
+[bid] C: confidence=95 reason=The task requires searching records to identify a phone number.
+[award] contract 4 -> C @ 95 : correct
+
+--- contract 5 (gold A, trap) ---
+[announce] -> A, B, C: A letter signed 'M.' was in the bookkeeper's desk drawer. Determine whether the ink and paper are consistent with the date written on it, 3 March 2019.
+[bid] A: confidence=90 reason=The task involves examining ink and paper, which falls under forensics.
+[no-bid] B: confidence=80 reason=The task requires forensic analysis of ink and paper, not interviewing.
+[bid] C: confidence=95 reason=The task involves analyzing records related to the fire case.
+[award] contract 5 -> C @ 95 : misaward (gold A)
+
+--- contract 6 (gold B, trap) ---
+[announce] -> A, B, C: The owner claims he was at the Grand Hotel bar until midnight on the night of the fire. The bartender who served him is on shift tonight. Establish what the bartender remembers.
+[no-bid] A: confidence=80 reason=The task requires witness interviewing, not forensic analysis.
+[bid] B: confidence=90 reason=The task requires interviewing the bartender to gather information.
+[bid] C: confidence=95 reason=I can search records and logs related to the bartender's shift and statements.
+[award] contract 6 -> C @ 95 : misaward (gold B)
+
+--- contract 7 (gold A, plain) ---
+[announce] -> A, B, C: Three fuel cans were recovered from the ash. Determine whether the accelerant residue matches the diesel in the owner's truck.
+[bid] A: confidence=95 reason=The task requires forensic analysis of accelerant residues.
+[no-bid] B: confidence=80 reason=The task requires chemical analysis, not interviewing.
+[bid] C: confidence=95 reason=The task requires searching records related to the fire case.
+[award] contract 7 -> A @ 95 : correct [tie among A,C, first bidder wins]
+
+--- contract 8 (gold C, trap) ---
+[announce] -> A, B, C: The bookkeeper's diary refers to 'M.' eleven times. Cross-reference her contact list, calendar, and the company payroll to determine who 'M.' is.
+[no-bid] A: confidence=80 reason=The task requires data analysis and identification, not forensics.
+[no-bid] B: confidence=80 reason=The task requires data analysis rather than interviewing.
+[bid] C: confidence=95 reason=The task requires searching records to identify 'M.' from various logs and databases.
+[award] contract 8 -> C @ 95 : correct
+
+--- contract 9 (gold B, plain) ---
+[announce] -> A, B, C: The bookkeeper's sister has refused two phone calls from us. Approach her in person and learn where her sister might have gone.
+[no-bid] A: confidence=90 reason=The task requires personal interaction and investigation, not forensic analysis.
+[bid] B: confidence=85 reason=The task requires interviewing skills to approach the bookkeeper's sister.
+[bid] C: confidence=95 reason=The task involves searching for records related to the bookkeeper's whereabouts.
+[award] contract 9 -> C @ 95 : misaward (gold B)
+
+== run 26 overconfident: tasks=9 correct=5 messages=53 unassigned=0 misawards=4 | parse_fails=0 ties=2 tokens=6440 calls=27 retries=0 secs=21
+== awards: [(1, 'A', 'A', 95), (2, 'B', 'C', 95), (3, 'C', 'C', 95), (4, 'C', 'C', 95), (5, 'A', 'C', 95), (6, 'B', 'C', 95), (7, 'A', 'A', 95), (8, 'C', 'C', 95), (9, 'B', 'C', 95)]
