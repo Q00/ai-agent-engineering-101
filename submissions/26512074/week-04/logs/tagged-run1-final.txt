@@ -1,0 +1,73 @@
+provider=openrouter base_url=https://openrouter.ai/api/v1 model=deepseek/deepseek-v4.1-flash temperature=0.3 max_turns=8
+condition=tagged repeat=1
+
+scenarios=4
+[episode] run=1 condition=tagged scenario=1 item='a used bicycle' reserve=120 budget=150
+[buyer] (propose) I'd like to offer 90 for the bicycle.
+[reader] raw='{"performative": "propose", "price": 90}' performative(from tag)='propose' price=90 ok=True
+[state] last_price[buyer]=90
+[seller] (reject-proposal) I can't accept 90, but I'm willing to negotiate if you can come up.
+[regex] performative='reject-proposal' ok=True
+[buyer] (propose) I can come up to 110 for the bicycle.
+[reader] raw='{"performative": "propose", "price": 110}' performative(from tag)='propose' price=110 ok=True
+[state] last_price[buyer]=110
+[seller] (reject-proposal) 110 is still too low for me, but I'm open to hearing a higher offer.
+[regex] performative='reject-proposal' ok=True
+[buyer] (propose) I could go up to 130 for the bicycle.
+[reader] raw='{"performative": "propose", "price": 130}' performative(from tag)='propose' price=130 ok=True
+[state] last_price[buyer]=130
+[seller] (accept-proposal) I accept your offer of 130 for the bicycle.
+[regex] performative='accept-proposal' ok=True
+[result] deal price=130
+[saved] scenario=1 outcome=deal price=130 correct=1 violation=0 turns=6 format_errors=0 reader_calls=3
+[episode] run=1 condition=tagged scenario=2 item='a desk lamp' reserve=30 budget=45
+[buyer] (propose) I can offer 30 for the desk lamp.
+[reader] raw='{"performative": "propose", "price": 30}' performative(from tag)='propose' price=30 ok=True
+[state] last_price[buyer]=30
+[seller] (propose) I can offer 75 for the desk lamp.
+[reader] raw='{"performative": "propose", "price": 75}' performative(from tag)='propose' price=75 ok=True
+[state] last_price[seller]=75
+[buyer] (reject-proposal) That is too high for me; can you come down to 35?
+[regex] performative='reject-proposal' ok=True
+[seller] (propose) I can meet you at 60 for the desk lamp.
+[reader] raw='{"performative": "propose", "price": 60}' performative(from tag)='propose' price=60 ok=True
+[state] last_price[seller]=60
+[buyer] (reject-proposal) 60 is still too high; I can go up to 40.
+[regex] performative='reject-proposal' ok=True
+[seller] (propose) I can come down to 50 for the desk lamp.
+[reader] raw='{"performative": "propose", "price": 50}' performative(from tag)='propose' price=50 ok=True
+[state] last_price[seller]=50
+[buyer] (reject-proposal) 50 is above what I can pay; my best is 45.
+[regex] performative='reject-proposal' ok=True
+[seller] (accept-proposal) I accept your offer of 45 for the desk lamp.
+[regex] performative='accept-proposal' ok=True
+[result] deal price=30
+[saved] scenario=2 outcome=deal price=30 correct=1 violation=0 turns=8 format_errors=0 reader_calls=4
+[episode] run=1 condition=tagged scenario=3 item='a second-hand textbook' reserve=40 budget=40
+[buyer] (propose) I can offer 40 for the textbook.
+[reader] raw='{"performative": "propose", "price": 40}' performative(from tag)='propose' price=40 ok=True
+[state] last_price[buyer]=40
+[seller] (accept-proposal) I accept your offer of 40 for the textbook.
+[regex] performative='accept-proposal' ok=True
+[result] deal price=40
+[saved] scenario=3 outcome=deal price=40 correct=1 violation=0 turns=2 format_errors=0 reader_calls=1
+[episode] run=1 condition=tagged scenario=4 item='a mechanical keyboard' reserve=90 budget=70
+[buyer] (propose) I'd like to offer $50 for this mechanical keyboard.
+[reader] raw='{"performative": "propose", "price": 50}' performative(from tag)='propose' price=50 ok=True
+[state] last_price[buyer]=50
+[seller] (reject-proposal) That's too far below what I can accept, so I can't agree to $50.
+[regex] performative='reject-proposal' ok=True
+[buyer] (propose) I can come up to $58 for the keyboard.
+[reader] raw='{"performative": "propose", "price": 58}' performative(from tag)='propose' price=58 ok=True
+[state] last_price[buyer]=58
+[seller] (reject-proposal) $58 is still too low for me to consider.
+[regex] performative='reject-proposal' ok=True
+[buyer] (propose) My best offer is $65 for the keyboard.
+[reader] raw='{"performative": "propose", "price": 65}' performative(from tag)='propose' price=65 ok=True
+[state] last_price[buyer]=65
+[seller] (refuse) I'm not willing to continue at this price level, so I'm ending the negotiation.
+[regex] performative='refuse' ok=True
+[result] no_deal via refuse
+[saved] scenario=4 outcome=no_deal price=None correct=1 violation=0 turns=6 format_errors=0 reader_calls=3
+
+[done] 2026-09-28T23:24:26

@@ -1,0 +1,46 @@
+provider=openrouter base_url=https://openrouter.ai/api/v1 model=deepseek/deepseek-v4.1-flash temperature=0.3 max_turns=8
+condition=free repeat=1
+
+scenarios=4
+[episode] run=1 condition=free scenario=1 item='a used bicycle' reserve=120 budget=150
+[buyer] I’m interested in the bicycle, and I’d like to start at 100. Would you be willing to sell it for that price?
+[reader] raw='{"performative": "propose", "price": 100}' performative='propose' price=100 ok=True
+[state] last_price[buyer]=100
+[seller] I can’t accept 100 for the bicycle. I’d be willing to sell it for 140.
+[reader] raw='{"performative": "propose", "price": 140}' performative='propose' price=140 ok=True
+[state] last_price[seller]=140
+[buyer] That’s a bit higher than I was hoping for. Could you meet me at 120?
+[reader] raw='{"performative": "propose", "price": 120}' performative='propose' price=120 ok=True
+[state] last_price[buyer]=120
+[seller] I can accept 120. Let’s make the deal at that price.
+[reader] raw='{"performative": "accept-proposal", "price": 120}' performative='accept-proposal' price=120 ok=True
+[result] deal price=120
+[saved] scenario=1 outcome=deal price=120 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+[episode] run=1 condition=free scenario=2 item='a desk lamp' reserve=30 budget=45
+[buyer] I can offer $30 for the desk lamp. If that works for you, let’s make a deal.
+[reader] raw='{"performative": "propose", "price": 30}' performative='propose' price=30 ok=True
+[state] last_price[buyer]=30
+[seller] I can accept $30. Let's make a deal.
+[reader] raw='{"performative": "accept-proposal", "price": 30}' performative='accept-proposal' price=30 ok=True
+[result] deal price=30
+[saved] scenario=2 outcome=deal price=30 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2
+[episode] run=1 condition=free scenario=3 item='a second-hand textbook' reserve=40 budget=40
+[buyer] I can offer 40 for the textbook.
+[reader] raw='{"performative": "propose", "price": 40}' performative='propose' price=40 ok=True
+[state] last_price[buyer]=40
+[seller] accept-proposal
+[reader] raw='{"performative": "accept-proposal", "price": null}' performative='accept-proposal' price=None ok=True
+[result] deal price=40
+[saved] scenario=3 outcome=deal price=40 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2
+[episode] run=1 condition=free scenario=4 item='a mechanical keyboard' reserve=90 budget=70
+[buyer] I'd like to buy this mechanical keyboard, and I can offer $55 for it.
+[reader] raw='{"performative": "propose", "price": 55}' performative='propose' price=55 ok=True
+[state] last_price[buyer]=55
+[seller] That offer is far too low for me, so I can't accept it. I'm looking for something much closer to a fair price for this keyboard.
+[reader] raw='{"performative": "reject-proposal", "price": null}' performative='reject-proposal' price=None ok=True
+[buyer] I understand, but $55 is a solid offer from my side. Could you tell me what price you have in mind?
+[reader] raw='{"performative": "refuse", "price": null}' performative='refuse' price=None ok=True
+[result] no_deal via refuse
+[saved] scenario=4 outcome=no_deal price=None correct=1 violation=0 turns=3 format_errors=0 reader_calls=3
+
+[done] 2026-09-28T23:31:04
