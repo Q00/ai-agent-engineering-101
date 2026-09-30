@@ -1,0 +1,118 @@
+{
+  "suite": "luna-probe-20260928",
+  "source_commit": "1a8823ba7a953a88d3c701a46a7d3ac588248df2",
+  "inputs": {
+    "reasoning_effort/run_luna.py": "ff90b0c4f1f54545889c8644635be051d8ce95d66d5bf982ac0bb513339155cc",
+    "reasoning_effort/config.json": "546ad092b799d979cb1d6f6237a9436ffdb284f933ba61ec714f4ee95cbf7f19",
+    "lab/experiment.py": "3e0b889b32d6cc53dc33ef5f139e197c040c325e809ec316ffd03c88e005c93e",
+    "pilot/transport.py": "f214a217b7f62389faecdcbaa0161fe03de31094c0b334037bdb4a3b03f61590",
+    "scenarios.json": "dc1718c6e378b6831fcba80831bd37d03df327add03115a17682a4855d053e68"
+  },
+  "configs": {
+    "low": {
+      "model": "openai/gpt-6-luna",
+      "temperature": null,
+      "top_p": null,
+      "reasoning": {
+        "effort": "low"
+      },
+      "provider": {
+        "only": [
+          "openai"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true,
+        "max_price": {
+          "prompt": 0.1,
+          "completion": 0.5
+        }
+      },
+      "timeout_seconds": 300,
+      "response_deadline_seconds": 600,
+      "max_attempts": 2,
+      "retry_delay_seconds": 2,
+      "rate_limit_retry": {
+        "max_attempts": 4,
+        "initial_delay_seconds": 5,
+        "max_delay_seconds": 30,
+        "max_wait_seconds": 120
+      },
+      "max_http_requests": 400
+    },
+    "max": {
+      "model": "openai/gpt-6-luna",
+      "temperature": null,
+      "top_p": null,
+      "reasoning": {
+        "effort": "max"
+      },
+      "provider": {
+        "only": [
+          "openai"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true,
+        "max_price": {
+          "prompt": 0.1,
+          "completion": 0.5
+        }
+      },
+      "timeout_seconds": 300,
+      "response_deadline_seconds": 600,
+      "max_attempts": 2,
+      "retry_delay_seconds": 2,
+      "rate_limit_retry": {
+        "max_attempts": 4,
+        "initial_delay_seconds": 5,
+        "max_delay_seconds": 30,
+        "max_wait_seconds": 120
+      },
+      "max_http_requests": 400
+    }
+  },
+  "scenarios": [
+    {
+      "id": 2,
+      "item": "a desk lamp",
+      "reserve": 30,
+      "budget": 45
+    }
+  ],
+  "max_turns": 30,
+  "repeats": 3,
+  "efforts": [
+    "low",
+    "max"
+  ],
+  "jobs": 2,
+  "schedule_seed": 20260928,
+  "tasks": [
+    [
+      "low",
+      "free",
+      1
+    ],
+    [
+      "max",
+      "free",
+      1
+    ]
+  ],
+  "unsettable": {
+    "temperature": "not supported by the model; sent as null",
+    "top_p": "not supported by the model; sent as null",
+    "seed": "not sent"
+  },
+  "reader": "same model and effort as the negotiators",
+  "format": {
+    "free": " Write your message as one or two plain English sentences.",
+    "tagged": " Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.",
+    "structured": " Reply with exactly one JSON object and nothing else: {\"performative\": \"propose\" | \"accept-proposal\" | \"reject-proposal\" | \"refuse\", \"content\": {\"price\": <whole number or null>}}."
+  },
+  "roles": {
+    "buyer": "You are the buyer of {item}, negotiating the price with the seller. Your private limit: you can pay at most {limit}. Never agree to a price above {limit}.",
+    "seller": "You are the seller of {item}. You can accept at least {limit}. Never agree to a price below {limit}."
+  },
+  "common": " Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal).",
+  "reader_system": "You are an observer reading a price negotiation between a buyer and a seller. Label the LAST message only. Reply with exactly one JSON object and nothing else: {\"performative\": \"propose\" | \"accept-proposal\" | \"reject-proposal\" | \"refuse\", \"price\": <whole number or null>}."
+}

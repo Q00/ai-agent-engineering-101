@@ -1,0 +1,73 @@
+(ask-one
+  :sender    buyer
+  :receiver  seller
+  :content   (price bicycle ?x)
+  :language  KIF
+  :ontology  used-goods
+  :reply-with q1)
+
+[buyer]  I'm interested in buying your desk lamp—would you be willing to start at 30?
+  [reader] None
+           # 네 행위 중 하나를 고르지 못함, format_errors 1
+[seller] I appreciate your interest, but I'm looking to get 50 for this lamp.
+         Does that work for you?
+  [reader] {'performative': 'propose', 'price': 50}
+[buyer]  I appreciate you sharing your asking price, but 50 is above my budget—
+         I can go up to 40 if that works for you.
+  [reader] {'performative': 'propose', 'price': 50}
+           # 오독: 문장의 두 숫자 가운데 상대 가격을 골랐다
+[seller] I can work with 40—that's a fair price for a quality desk lamp,
+         and we have a deal.  **Action: accept-proposal**
+  [reader] {'performative': 'accept-proposal', 'price': 40}
+[result] outcome=deal price=50 correct=0 violation=1 turns=4
+         format_errors=1 reader_calls=4
+
+[
+  {"id": 1, "item": "a used bicycle", "reserve": 120, "budget": 150},
+  {"id": 3, "item": "a second-hand textbook", "reserve": 40, "budget": 40},
+  {"id": 4, "item": "a mechanical keyboard", "reserve": 90, "budget": 70}
+]
+
+# 역할 문단은 공통, 형식 문단만 조건에 따라 바뀐다
+ROLE = {"buyer": "You are the buyer of {item}, negotiating the price with the seller. "
+                 "Your private limit: you can pay at most {limit}. Never agree to a price above {limit}. ...",
+        "seller": "You are the seller of {item} ... you can accept at least {limit}. Never agree to a price below {limit}. ..."}
+COMMON = (" Four acts are available: propose (offer a price), accept-proposal (agree to the other side's "
+          "last price, which ends the negotiation with a deal), reject-proposal (decline the last price and "
+          "keep negotiating), refuse (leave the negotiation for good, no deal). ...")
+FORMAT = {
+    "free":       " Write your message as one or two plain English sentences.",
+    "tagged":     " Start your message with exactly one performative tag in parentheses, one of (propose), "
+                  "(accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.",
+    "structured": ' Reply with exactly one JSON object and nothing else: {"performative": "propose" | '
+                  '"accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <whole number or null>}}.'}
+
+def system_prompt(role, item, limit, condition):
+    return ROLE[role].format(item=item, limit=limit) + COMMON + FORMAT[condition]
+
+READER_SYSTEM = ("You are an observer reading a price negotiation between a buyer and a seller. "
+                 "Label the LAST message only. Reply with exactly one JSON object and nothing else: "
+                 '{"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "price": <whole number or null>}. ...')
+
+# 에피소드 하나: buyer 먼저, 번갈아 말하고, 조건의 프로토콜 계층이 메시지를 읽는다
+for _ in range(MAX_TURNS):                       # MAX_TURNS = 8
+    text = call_model(systems[role], history[role], meter)
+    history[role].append({"role": "assistant", "content": text})
+    history[other].append({"role": "user", "content": text})
+    perf, price, ok = read(condition, text, transcript, meter)   # parser, regex, or reader
+    if not ok:
+        ep.format_errors += 1                        # 읽지 못해도 메시지는 상대에게 간다
+    elif perf == "propose":
+        last_price[role] = price
+    elif perf == "accept-proposal":
+        ep.outcome, ep.price = "deal", last_price[other]; break
+    elif perf == "refuse":
+        ep.outcome = "no_deal"; break
+    role, other = other, role
+if ep.outcome == "deal":
+    ep.violation = int(ep.price < sc["reserve"] or ep.price > sc["budget"])
+    ep.correct = int(ep.deal_possible and not ep.violation)
+
+run,condition,scenario,deal_possible,outcome,price,correct,violation,turns,format_errors,reader_calls,note
+# condition: free | tagged | structured / outcome: deal | no_deal | open / 시나리오마다 조건당 3줄 이상
+# price는 정수 또는 빈칸, 나머지 수치는 정수 / note: 토큰, 호출 수, 크래시 사유
