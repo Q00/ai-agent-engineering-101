@@ -1,0 +1,68 @@
+provider=openrouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.7 max_turns=8
+
+--- scenario 1 (a used bicycle), reserve=80, budget=120 ---
+[buyer] (propose) I offer $80 for the bicycle.
+  [reader] perf=propose price=80 ok=True reader_calls=1
+[seller] (propose) I'll pay $100 for the bicycle.
+  [reader] perf=propose price=100 ok=True reader_calls=1
+[buyer] (reject-proposal) $100 is too high; I can go no higher than $100, so let’s meet at $90.) Wait — I must not reveal my limit of $120, but I also cannot agree above $120. Since $100 is below my limit, I can counter — but I must use only one performative tag and one sentence.
+
+Let me correct: I must reject and propose a new price in one sentence? No — the acts are exclusive: only one tag per message.
+
+I rejected the $100 offer. Now I must make a new proposal.
+
+So: (propose) I offer $90 for the bicycle. — This is valid: I’m proposing $90, which is below my $120 limit, and I’m not revealing it.
+
+But wait — the seller said $100. I’m countering with $90. That’s acceptable.
+
+Final answer: (propose) I offer $90 for the bicycle.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[seller] (propose) I offer $90 for the bicycle.
+  [reader] perf=propose price=90 ok=True reader_calls=1
+[buyer] (propose) I offer $85 for the bicycle.
+  [reader] perf=propose price=85 ok=True reader_calls=1
+[seller] (propose) I offer $95 for the bicycle.
+  [reader] perf=propose price=95 ok=True reader_calls=1
+[buyer] (reject-proposal) $95 is still too high; I can’t go above $90, so let’s settle at $90 or I’ll walk away. — Wait, I cannot say “I can’t go above $90” because that implies my limit is $90, which is false — my real limit is $120, but I’m trying to get lower. I must never reveal my limit, and I must never agree above $120 — but I can imply I won’t pay more than a certain amount *as part of negotiation*, as long as I don’t state my private limit.
+
+Actually, the instruction says: “Never reveal your limit.” So I cannot say “I can’t go above $90” if that’s not my true limit — but $90 is below my true limit of $120, so saying I won’t go above $90 is a negotiation tactic, not a revelation of my limit. It’s acceptable — I’m not saying my limit is $90; I’m saying I won’t pay more than $90 *in this deal*, which is a position, not my private ceiling.
+
+But to be safe and strictly compliant: I should avoid stating
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[seller] (propose) I offer $90 for the bicycle.
+  [reader] perf=propose price=90 ok=True reader_calls=1
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=7
+
+--- scenario 2 (a desk lamp), reserve=30, budget=45 ---
+[buyer] (propose) I offer $30 for the desk lamp.
+  [reader] perf=propose price=30 ok=True reader_calls=1
+[seller] (propose) I offer $45 for the desk lamp.
+  [reader] perf=propose price=45 ok=True reader_calls=1
+[buyer] (reject-proposal) I'm sorry, but $45 is too high for me—can you go lower?
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[seller] (propose) I can meet you at $38 for the desk lamp.
+[error] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'}
+
+--- scenario 3 (a mechanical keyboard), reserve=90, budget=70 ---
+[error] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'}
+
+--- scenario 4 (a second-hand textbook), reserve=25, budget=20 ---
+[error] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'}
+y_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 8s...
+[error] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'}
+
+--- scenario 3 (a mechanical keyboard), reserve=90, budget=70 ---
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 2s...
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 4s...
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 8s...
+[error] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'}
+
+--- scenario 4 (a second-hand textbook), reserve=25, budget=20 ---
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 2s...
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 4s...
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 8s...
+[error] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790553600000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'}
+
+log saved to /work/ai-agent-engineering-101/submissions/26510119/week-04/logs/tagged-03.txt
