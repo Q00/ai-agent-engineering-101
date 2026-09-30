@@ -28,7 +28,7 @@ def _openai_tools(mcp_tools):
                 "function": {
                     "name": tool.name,
                     "description": tool.description or "",
-                    "parameters": tool.inputSchema,
+                    "parameters": tool.input_schema,
                 },
             }
         )
