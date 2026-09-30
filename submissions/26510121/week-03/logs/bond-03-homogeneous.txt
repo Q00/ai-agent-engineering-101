@@ -1,0 +1,54 @@
+provider=openai base_url=https://api.openai.com/v1 model=gpt-4o-mini temperature=0.0 max_tokens=300
+=== bond round 3 condition=homogeneous budget=40 challenge_top=2
+[ledger] reliability carried in: A=0.457 B=0.457 C=0.457
+
+[announce] contract 1 -> A, B, C
+  task-abstraction: Compute 137 * 249 and return only the resulting number.
+  [propose] A: confidence=90 stake=20 left=20 evidence=I have strong mathematical problem-solving skills.; I can perform multiplication accurately. failure_condition=if I miscalculate the multiplication
+  [propose] B: confidence=90 stake=20 left=20 evidence=I can perform arithmetic calculations.; The task requires basic multiplication. failure_condition=if I fail to compute the multiplication correctly
+  [propose] C: confidence=90 stake=20 left=20 evidence=I have strong mathematical problem-solving skills.; I can perform multiplication accurately. failure_condition=if I miscalculate the multiplication
+  [challenge] A: 90 -> 70 (drop 20) risk=The task may require specialized knowledge outside my general problem-solving skills.
+  [challenge] B: 90 -> 70 (drop 20) risk=Unexpected complexities in the problem may arise.
+  [award] C at score 41.1 (revised 90 x reliability 0.457), gold A -> MISAWARD
+
+[announce] contract 2 -> A, B, C
+  task-abstraction: A shop sold 1,284 units in March and 1,617 units in April. Compute the percentage increase, rounded to one decimal place.
+  [propose] A: confidence=90 stake=20 left=0 evidence=The task involves basic arithmetic operations.; Calculating percentage increase is a common problem-solving skill. failure_condition=If the calculation is incorrect.
+  [propose] B: confidence=90 stake=20 left=0 evidence=The task involves basic arithmetic and percentage calculation.; I have experience in general problem solving. failure_condition=if I miscalculate the percentage increase
+  [propose] C: confidence=90 stake=20 left=0 evidence=The task involves basic arithmetic operations.; I have experience in computing percentage increases. failure_condition=If I miscalculate the percentage increase.
+  [challenge] A: 90 -> 70 (drop 20) risk=The task may require specialized knowledge outside my general problem-solving skills.
+  [challenge] B: 90 -> 70 (drop 20) risk=The task may require specialized knowledge outside my general problem-solving skills.
+  [award] C at score 41.1 (revised 90 x reliability 0.457), gold A -> MISAWARD
+
+[announce] contract 3 -> A, B, C
+  task-abstraction: Rewrite this sentence in plain English for a 10-year-old: 'The committee deferred the motion pending further deliberation.'
+  [reject] A: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [reject] B: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [reject] C: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [unassigned] contract 3 drew no valid proposal (gold B)
+
+[announce] contract 4 -> A, B, C
+  task-abstraction: Write a two-sentence apology email to a customer whose order shipped four days late.
+  [reject] A: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [reject] B: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [reject] C: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [unassigned] contract 4 drew no valid proposal (gold B)
+
+[announce] contract 5 -> A, B, C
+  task-abstraction: Write a Python function that returns a reversed copy of a list without modifying the original.
+  [reject] A: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [reject] B: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [reject] C: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [unassigned] contract 5 drew no valid proposal (gold C)
+
+[announce] contract 6 -> A, B, C
+  task-abstraction: This Python snippet raises IndexError: 'for i in range(len(xs) + 1): print(xs[i])'. Fix the bug and explain the fix in one line.
+  [reject] A: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [reject] B: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [reject] C: confidence 90 needs stake >= 20 with 0 left, offered 20
+  [unassigned] contract 6 drew no valid proposal (gold C)
+
+[settle] stake moved this round: A=+0 B=+0 C=-40
+[settle] reliability after the round: A=0.457 B=0.457 C=0.457
+
+[result] correct=0/6 messages=62 unassigned=4 misawards=2 invalid_bids=12 parse_fails=0

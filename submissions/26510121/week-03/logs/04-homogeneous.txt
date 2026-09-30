@@ -1,0 +1,46 @@
+provider=openai base_url=https://api.openai.com/v1 model=gpt-4o-mini temperature=0.0 max_tokens=300
+=== run 4 condition=homogeneous team=[('A', 'general problem solving'), ('B', 'general problem solving'), ('C', 'general problem solving')]
+
+[announce] contract 1 -> A, B, C
+  task-abstraction: Compute 137 * 249 and return only the resulting number.
+  [bid] A: bid=True confidence=90 reason=I can solve mathematical problems.
+  [bid] B: bid=True confidence=90 reason=I can solve mathematical problems.
+  [bid] C: bid=True confidence=90 reason=I can solve mathematical problems.
+  [award] A at confidence 90 (gold A) -> correct
+
+[announce] contract 2 -> A, B, C
+  task-abstraction: A shop sold 1,284 units in March and 1,617 units in April. Compute the percentage increase, rounded to one decimal place.
+  [bid] A: bid=True confidence=90 reason=I can solve percentage increase problems.
+  [bid] B: bid=True confidence=90 reason=I can solve percentage increase problems.
+  [bid] C: bid=True confidence=90 reason=I can solve percentage increase problems.
+  [award] A at confidence 90 (gold A) -> correct
+
+[announce] contract 3 -> A, B, C
+  task-abstraction: Rewrite this sentence in plain English for a 10-year-old: 'The committee deferred the motion pending further deliberation.'
+  [bid] A: bid=True confidence=90 reason=I can simplify complex sentences for better understanding.
+  [bid] B: bid=True confidence=90 reason=I can simplify complex sentences for better understanding.
+  [bid] C: bid=True confidence=90 reason=I can simplify complex sentences for better understanding.
+  [award] A at confidence 90 (gold B) -> MISAWARD
+
+[announce] contract 4 -> A, B, C
+  task-abstraction: Write a two-sentence apology email to a customer whose order shipped four days late.
+  [bid] A: bid=True confidence=90 reason=I can effectively craft concise and appropriate apology emails.
+  [bid] B: bid=True confidence=90 reason=I can effectively craft concise and appropriate apology emails.
+  [bid] C: bid=True confidence=90 reason=I can effectively craft concise and appropriate communication.
+  [award] A at confidence 90 (gold B) -> MISAWARD
+
+[announce] contract 5 -> A, B, C
+  task-abstraction: Write a Python function that returns a reversed copy of a list without modifying the original.
+  [bid] A: bid=True confidence=85 reason=I can solve general programming problems including list manipulation.
+  [bid] B: bid=True confidence=85 reason=I can solve programming problems including Python functions.
+  [bid] C: bid=True confidence=85 reason=I can solve programming problems including writing functions.
+  [award] A at confidence 85 (gold C) -> MISAWARD
+
+[announce] contract 6 -> A, B, C
+  task-abstraction: This Python snippet raises IndexError: 'for i in range(len(xs) + 1): print(xs[i])'. Fix the bug and explain the fix in one line.
+  [bid] A: bid=True confidence=90 reason=I can solve general programming problems and explain fixes.
+  [bid] B: bid=True confidence=90 reason=I can solve general programming issues and explain fixes.
+  [bid] C: bid=True confidence=90 reason=I can solve general programming problems and explain fixes.
+  [award] A at confidence 90 (gold C) -> MISAWARD
+
+[result] correct=2/6 messages=42 unassigned=0 misawards=4 parse_fails=0 fence_or_prose=0 tokens=3379 calls=18
