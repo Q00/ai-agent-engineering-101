@@ -1,0 +1,65 @@
+provider=openrouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.7 max_turns=8
+
+--- scenario 1 (a used bicycle), reserve=80, budget=120 ---
+[buyer] {"performative": "propose", "content": {"price": 80}}
+  [reader] perf=propose price=80 ok=True reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 90}}
+  [reader] perf=propose price=90 ok=True reader_calls=0
+[seller] {"performative": "accept-proposal", "content": {"price": null}}
+  [reader] perf=accept-proposal price=None ok=True reader_calls=0
+[result] outcome=deal price=90 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
+
+--- scenario 2 (a desk lamp), reserve=30, budget=45 ---
+[buyer] {"performative": "propose", "content": {"price": 20}}
+  [reader] perf=propose price=20 ok=True reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 25}
+  [reader] perf=None price=None ok=False reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 30}}
+  [reader] perf=propose price=30 ok=True reader_calls=0
+[seller] {"performative": "accept-proposal", "content": {"price": null}}
+  [reader] perf=accept-proposal price=None ok=True reader_calls=0
+[result] outcome=deal price=30 correct=1 violation=0 turns=6 format_errors=1 reader_calls=0
+
+--- scenario 3 (a mechanical keyboard), reserve=90, budget=70 ---
+[buyer] {"performative": "propose", "content": {"price": 30}}
+  [reader] perf=propose price=30 ok=True reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 40}}
+  [reader] perf=propose price=40 ok=True reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 50}}
+  [reader] perf=propose price=50 ok=True reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 60}}
+  [reader] perf=propose price=60 ok=True reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+
+--- scenario 4 (a second-hand textbook), reserve=25, budget=20 ---
+[buyer] {"performative": "propose", "content": {"price": 10}}
+  [reader] perf=propose price=10 ok=True reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 15}}
+  [reader] perf=propose price=15 ok=True reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 18}}
+  [reader] perf=propose price=18 ok=True reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[buyer] {"performative": "propose", "content": {"price": 19}}
+  [reader] perf=propose price=19 ok=True reader_calls=0
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [reader] perf=reject-proposal price=None ok=True reader_calls=0
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
