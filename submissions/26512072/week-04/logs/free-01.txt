@@ -1,0 +1,106 @@
+provider=vllm(openai-compatible) base_url=http://127.0.0.1:8011/v1 model=Qwen/Qwen3.8-27B temperature=0.2 max_tokens=200 enable_thinking=false max_turns=8 run=free-01 condition=free
+=== scenario 1: a used bicycle, reserve 120, budget 150, deal_possible=1, condition=free
+[system buyer] You are the buyer of a used bicycle, negotiating the price with the seller. Your private limit: you can pay at most 150 dollars. Never agree to a price above 150. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Write your message as one or two plain English sentences.
+[system seller] You are the seller of a used bicycle, negotiating the price with the buyer. Your private limit: you can accept at least 120 dollars. Never agree to a price below 120. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Write your message as one or two plain English sentences.
+[buyer] I'm interested in your bike, but I can only offer $80 for it.
+    [read] reader: {'performative': 'propose', 'price': 80}
+[seller] I appreciate your interest, but $80 is far below what this bike is worth. I can do $150 if you're serious about buying it today.
+    [read] reader: {'performative': 'propose', 'price': 150}
+[buyer] $150 is too high for me, so I have to reject that offer. Let's meet in the middle at $110.
+    [read] reader: {'performative': 'propose', 'price': 110}
+[seller] $110 is still too low for me to accept. How about we settle on $130?
+    [read] reader: {'performative': 'propose', 'price': 130}
+[buyer] I can't go up to $130, but I can meet you at $120.
+    [read] reader: {'performative': 'propose', 'price': 120}
+[seller] I can accept $120.
+    [read] reader: {'performative': 'accept-proposal', 'price': 120}
+[result] outcome=deal price=120 correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
+=== scenario 2: a desk lamp, reserve 30, budget 45, deal_possible=1, condition=free
+[system buyer] You are the buyer of a desk lamp, negotiating the price with the seller. Your private limit: you can pay at most 45 dollars. Never agree to a price above 45. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Write your message as one or two plain English sentences.
+[system seller] You are the seller of a desk lamp, negotiating the price with the buyer. Your private limit: you can accept at least 30 dollars. Never agree to a price below 30. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Write your message as one or two plain English sentences.
+[buyer] I'm interested in the lamp, but I can only offer $25 for it.
+    [read] reader: {'performative': 'propose', 'price': 25}
+[seller] I appreciate your interest, but $25 is below my minimum, so I cannot accept that offer.
+    [read] reader: {'performative': 'reject-proposal', 'price': None}
+[buyer] I understand, but I can only go up to $30.
+    [read] reader: {'performative': 'propose', 'price': 30}
+[seller] I can accept your offer of $30.
+    [read] reader: {'performative': 'accept-proposal', 'price': 30}
+[result] outcome=deal price=30 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+=== scenario 3: a second-hand textbook, reserve 40, budget 40, deal_possible=1, condition=free
+[system buyer] You are the buyer of a second-hand textbook, negotiating the price with the seller. Your private limit: you can pay at most 40 dollars. Never agree to a price above 40. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Write your message as one or two plain English sentences.
+[system seller] You are the seller of a second-hand textbook, negotiating the price with the buyer. Your private limit: you can accept at least 40 dollars. Never agree to a price below 40. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Write your message as one or two plain English sentences.
+[buyer] I'm looking to pick up this textbook, but I can only offer $20 for it.
+    [read] reader: {'performative': 'propose', 'price': 20}
+[seller] I'm afraid $20 is far too low for this textbook, so I cannot accept that offer. How about we meet in the middle at $60?
+    [read] reader: {'performative': 'propose', 'price': 60}
+[buyer] $60 is way above what I'm willing to spend. I can go up to $30, but that's my best offer.
+    [read] reader: {'performative': 'propose', 'price': 30}
+[seller] I appreciate the increase, but $30 is still well below the value of this book. Let's try $50 instead.
+    [read] reader: {'performative': 'propose', 'price': 50}
+[buyer] I can't go that high, but I can meet you at $40.
+    [read] reader: {'performative': 'propose', 'price': 40}
+[seller] I can accept your offer of $40.
+    [read] reader: {'performative': 'accept-proposal', 'price': 40}
+[result] outcome=deal price=40 correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
+=== scenario 4: a mechanical keyboard, reserve 90, budget 70, deal_possible=0, condition=free
+[system buyer] You are the buyer of a mechanical keyboard, negotiating the price with the seller. Your private limit: you can pay at most 70 dollars. Never agree to a price above 70. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Write your message as one or two plain English sentences.
+[system seller] You are the seller of a mechanical keyboard, negotiating the price with the buyer. Your private limit: you can accept at least 90 dollars. Never agree to a price below 90. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Write your message as one or two plain English sentences.
+[buyer] I'm interested in your keyboard, but I can only offer $40 for it.
+    [read] reader: {'performative': 'propose', 'price': 40}
+[seller] I appreciate your interest, but $40 is far below the value of this high-quality mechanical keyboard. I would be willing to sell it to you for $150.
+    [read] reader: {'performative': 'propose', 'price': 150}
+[buyer] $150 is way too high for me. How about we meet in the middle at $60?
+    [read] reader: {'performative': 'propose', 'price': 60}
+[seller] $60 is still too low for me to consider. How about I meet you at $120?
+    [read] reader: {'performative': 'propose', 'price': 120}
+[buyer] I can't go that high, but I can bump my offer up to $65.
+    [read] reader: {'performative': 'propose', 'price': 65}
+[seller] I can't accept $65, but I can offer you a final price of $100.
+    [read] reader: {'performative': 'propose', 'price': 100}
+[buyer] I can't go up to $100, but I can meet you at $70.
+    [read] reader: {'performative': 'propose', 'price': 70}
+[seller] I can't accept $70, but I can offer you $95.
+    [read] reader: {'performative': 'propose', 'price': 95}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+=== scenario 5: a 27-inch monitor, reserve 220, budget 150, deal_possible=0, condition=free
+[system buyer] You are the buyer of a 27-inch monitor, negotiating the price with the seller. Your private limit: you can pay at most 150 dollars. Never agree to a price above 150. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Write your message as one or two plain English sentences.
+[system seller] You are the seller of a 27-inch monitor, negotiating the price with the buyer. Your private limit: you can accept at least 220 dollars. Never agree to a price below 220. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Write your message as one or two plain English sentences.
+[buyer] I'm looking to pick up a 27-inch monitor, but my budget is quite tight, so I can only offer $100.
+    [read] reader: {'performative': 'propose', 'price': 100}
+[seller] I appreciate your interest, but $100 is far below the value of this high-quality 27-inch monitor. I can offer it to you for $280, which is a fair price for its features.
+    [read] reader: {'performative': 'propose', 'price': 280}
+[buyer] $280 is way over my budget, so I have to reject that offer. Let's meet in the middle at $125.
+    [read] reader: {'performative': 'propose', 'price': 125}
+[seller] I cannot accept $125 as it is too low for this monitor. Let's try $250 instead.
+    [read] reader: {'performative': 'propose', 'price': 250}
+[buyer] I can't go that high, so I have to reject $250. How about we settle on $140?
+    [read] reader: {'performative': 'propose', 'price': 140}
+[seller] I'm sorry, but $140 is not a price I can accept. I can do $230 if you can meet me there.
+    [read] reader: {'performative': 'propose', 'price': 230}
+[buyer] I can't stretch my budget to $230, so I have to reject that. I can do $145 if you want to close the deal.
+    [read] reader: {'performative': 'propose', 'price': 145}
+[seller] I can't go as low as $145, but I can meet you at $220 to close the deal.
+    [read] reader: {'performative': 'propose', 'price': 220}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+=== scenario 6: a film camera, reserve 260, budget 200, deal_possible=0, condition=free
+[system buyer] You are the buyer of a film camera, negotiating the price with the seller. Your private limit: you can pay at most 200 dollars. Never agree to a price above 200. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Write your message as one or two plain English sentences.
+[system seller] You are the seller of a film camera, negotiating the price with the buyer. Your private limit: you can accept at least 260 dollars. Never agree to a price below 260. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Write your message as one or two plain English sentences.
+[buyer] I'm interested in the camera, but I can only offer $100 for it.
+    [read] reader: {'performative': 'propose', 'price': 100}
+[seller] I appreciate your interest, but $100 is far too low for this high-quality film camera. I would be willing to sell it to you for $350.
+    [read] reader: {'performative': 'propose', 'price': 350}
+[buyer] $350 is way above what I can spend, so I have to reject that offer. How about we meet in the middle at $150?
+    [read] reader: {'performative': 'propose', 'price': 150}
+[seller] I cannot accept $150 as it is significantly below the camera's value. Let's try $300 instead.
+    [read] reader: {'performative': 'propose', 'price': 300}
+[buyer] I can't go that high, so I have to reject $300. Let's settle on $175.
+    [read] reader: {'performative': 'propose', 'price': 175}
+[seller] I can't accept $175, but I can meet you at $280.
+    [read] reader: {'performative': 'propose', 'price': 280}
+[buyer] I can't go that high, so I have to reject $280. Let's settle on $190.
+    [read] reader: {'performative': 'propose', 'price': 190}
+[seller] I can't go down to $190, but I can offer you $270 as a final deal.
+    [read] reader: {'performative': 'propose', 'price': 270}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+[run] free-01 agent_calls=40 reader_calls=40 tokens=24168
