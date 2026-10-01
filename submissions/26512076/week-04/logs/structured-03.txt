@@ -1,0 +1,62 @@
+condition=structured
+run=3
+[buyer] {"performative":"propose","content":{"price":40}}
+  [parsed] {'performative': 'propose', 'price': 40, 'format_error': 0, 'reader_calls': 0}
+[seller] {"performative":"accept-proposal","content":null}
+  [parsed] {'performative': None, 'price': None, 'format_error': 1, 'reader_calls': 0}
+[buyer] {"performative":"accept-proposal","content":{"price":null}}
+  [parsed] {'performative': 'accept-proposal', 'price': None, 'format_error': 0, 'reader_calls': 0}
+[seller] {"performative":"accept-proposal","content":null}
+  [parsed] {'performative': None, 'price': None, 'format_error': 1, 'reader_calls': 0}
+[buyer] 
+  [parsed] {'performative': None, 'price': None, 'format_error': 1, 'reader_calls': 0}
+[seller] {"performative":"accept-proposal","content":null}
+  [parsed] {'performative': None, 'price': None, 'format_error': 1, 'reader_calls': 0}
+[buyer] {"performative":"reject-proposal","content":{"price":null}}
+  [parsed] {'performative': 'reject-proposal', 'price': None, 'format_error': 0, 'reader_calls': 0}
+[seller] 
+  [parsed] {'performative': None, 'price': None, 'format_error': 1, 'reader_calls': 0}
+[result] {'scenario': 1, 'deal_possible': 1, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 8, 'format_errors': 5, 'reader_calls': 0, 'note': ''}
+[buyer] {"performative":"propose","content":{"price":40}}
+  [parsed] {'performative': 'propose', 'price': 40, 'format_error': 0, 'reader_calls': 0}
+[seller] {"performative":"propose","content":{"price":70}}
+  [parsed] {'performative': 'propose', 'price': 70, 'format_error': 0, 'reader_calls': 0}
+[buyer] {"performative":"propose","content":{"price":60}}
+  [parsed] {'performative': 'propose', 'price': 60, 'format_error': 0, 'reader_calls': 0}
+[seller] {"performative":"accept-proposal","content":{"price":60}}
+  [parsed] {'performative': 'accept-proposal', 'price': 60, 'format_error': 0, 'reader_calls': 0}
+[result] {'scenario': 2, 'deal_possible': 1, 'outcome': 'deal', 'price': 60, 'correct': 1, 'violation': 0, 'turns': 4, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
+[buyer] {"performative":"propose","content":{"price":40}}
+  [parsed] {'performative': 'propose', 'price': 40, 'format_error': 0, 'reader_calls': 0}
+[seller] {"performative":"propose","content":{"price":90}}
+  [parsed] {'performative': 'propose', 'price': 90, 'format_error': 0, 'reader_calls': 0}
+[buyer] {"performative":"propose","content":{"price":60}}
+  [parsed] {'performative': 'propose', 'price': 60, 'format_error': 0, 'reader_calls': 0}
+[seller] {"performative":"propose","content":{"price":90}}
+  [parsed] {'performative': 'propose', 'price': 90, 'format_error': 0, 'reader_calls': 0}
+[buyer] {"performative":"propose","content":{"price":70}}
+  [parsed] {'performative': 'propose', 'price': 70, 'format_error': 0, 'reader_calls': 0}
+[seller] {"performative":"propose","content":{"price":90}}
+  [parsed] {'performative': 'propose', 'price': 90, 'format_error': 0, 'reader_calls': 0}
+[buyer] {"performative":"propose","content":{"price":70}}
+  [parsed] {'performative': 'propose', 'price': 70, 'format_error': 0, 'reader_calls': 0}
+[seller] 
+  [parsed] {'performative': None, 'price': None, 'format_error': 1, 'reader_calls': 0}
+[result] {'scenario': 3, 'deal_possible': 0, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 8, 'format_errors': 1, 'reader_calls': 0, 'note': ''}
+[buyer] {"performative":"propose","content":{"price":40}}
+  [parsed] {'performative': 'propose', 'price': 40, 'format_error': 0, 'reader_calls': 0}
+[seller] {"performative":"propose","content":{"price":280}}
+  [parsed] {'performative': 'propose', 'price': 280, 'format_error': 0, 'reader_calls': 0}
+[buyer] {"performative":"reject-proposal","content":{"price":null}}
+  [parsed] {'performative': 'reject-proposal', 'price': None, 'format_error': 0, 'reader_calls': 0}
+[seller] {"performative":"propose","content":{"price":280}}
+  [parsed] {'performative': 'propose', 'price': 280, 'format_error': 0, 'reader_calls': 0}
+[buyer] {"performative":"propose","content":{"price":120}}
+  [parsed] {'performative': 'propose', 'price': 120, 'format_error': 0, 'reader_calls': 0}
+[seller] {"performative":"propose","content":{"price":280}}
+  [parsed] {'performative': 'propose', 'price': 280, 'format_error': 0, 'reader_calls': 0}
+[buyer] {"performative":"propose","content":{"price":140}}
+  [parsed] {'performative': 'propose', 'price': 140, 'format_error': 0, 'reader_calls': 0}
+[seller] {"performative":"propose","content":{"price":280}}
+  [parsed] {'performative': 'propose', 'price': 280, 'format_error': 0, 'reader_calls': 0}
+[result] {'scenario': 4, 'deal_possible': 0, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 8, 'format_errors': 0, 'reader_calls': 0, 'note': ''}
