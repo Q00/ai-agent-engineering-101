@@ -51,7 +51,7 @@ def system_prompt(role, scenario, nid):
 _last_call = [0.0]
 
 
-def chat(client, **kw):
+def chat(client, out=print, **kw):
     """One model call, spaced MIN_INTERVAL apart. OpenRouter free models answer 200
     with no choices (an upstream 503 inside) or 429/5xx; retry those with a growing wait."""
     for attempt in range(6):
@@ -70,7 +70,7 @@ def chat(client, **kw):
                 openai.APIConnectionError, openai.APITimeoutError) as e:
             why = f"{type(e).__name__}: {str(e)[:160]}"
         backoff = 5 * 2 ** attempt
-        print(f"    [retry] {why} -> waiting {backoff}s", flush=True)
+        out(f"    [retry] {why} -> waiting {backoff}s")
         time.sleep(backoff)
     raise RuntimeError("model call failed 6 times")
 
@@ -133,7 +133,7 @@ async def run_turn(url, token, role, scenario, nid, out=print):
             if MODEL == "fake":
                 resp = fake_chat(role, scenario, messages)
             else:
-                resp = chat(client, tools=tools, messages=messages)
+                resp = chat(client, out, tools=tools, messages=messages)
             stats["model_calls"] += 1
             msg = resp.choices[0].message
             messages.append(msg if MODEL != "fake" else
