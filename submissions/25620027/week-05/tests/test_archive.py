@@ -62,3 +62,12 @@ def test_archive_is_resume_safe_and_preserves_evidence(tmp_path: Path) -> None:
     assert '"event":"CALL_REFUSED"' in (
         tmp_path / "extension" / "shadow_events.jsonl"
     ).read_text(encoding="utf-8")
+
+
+def test_archive_can_keep_follow_up_evidence_in_its_own_root(tmp_path: Path) -> None:
+    ResultArchive(tmp_path, extension_root=tmp_path)
+
+    assert (tmp_path / "results.csv").exists()
+    assert (tmp_path / "shadow_events.jsonl").exists()
+    assert (tmp_path / "injection_trace.csv").exists()
+    assert not (tmp_path / "extension").exists()

@@ -46,6 +46,13 @@ class Condition(StrEnum):
         return self in {Condition.PROMPT_INJECT, Condition.SERVER_INJECT}
 
 
+class HostPolicy(StrEnum):
+    """Model-side move policy held constant within an experiment matrix."""
+
+    BASELINE = "baseline-v1"
+    CLOSURE_AWARE = "closure-aware-v2"
+
+
 class Status(StrEnum):
     """Negotiation terminal state."""
 

@@ -29,8 +29,9 @@ from openai import AsyncOpenAI
 from market.admin_client import AdminClient
 from market.archive import ResultArchive
 from market.auth_checks import capture_auth_checks
+from market.experiment_plan import ExperimentPlan, select_experiment_plan
 from market.http_client import create_async_client
-from market.models import Condition
+from market.models import HostPolicy
 from market.runner import ExperimentRunner, RunnerContext
 from market.settings import load_config, load_scenarios
 
@@ -38,13 +39,6 @@ ROOT: Final = Path(__file__).resolve().parent
 SERVER_PORT: Final = 8001
 SERVER_BASE: Final = f"http://127.0.0.1:{SERVER_PORT}"
 HTTP_OK: Final = 200
-REQUIRED_CONDITIONS: Final = (Condition.PROMPT_INJECT, Condition.SERVER_INJECT)
-ALL_CONDITIONS: Final = (
-    Condition.PROMPT,
-    Condition.SERVER,
-    Condition.PROMPT_INJECT,
-    Condition.SERVER_INJECT,
-)
 app = typer.Typer(add_completion=False, no_args_is_help=False)
 
 
@@ -75,9 +69,8 @@ def _read_api_key(env_file: Path | None) -> str:
     return ""
 
 
-async def _run(output: Path, all_conditions: bool, env_file: Path | None) -> None:
+async def _run(output: Path, plan: ExperimentPlan, env_file: Path | None) -> None:
     config = load_config(ROOT / "config.json")
-    scenarios = load_scenarios(ROOT / "scenarios.json")
     api_key = _read_api_key(env_file)
     if not api_key:
         message = "OPENAI_API_KEY is not set; source the existing private env file"
@@ -95,23 +88,36 @@ async def _run(output: Path, all_conditions: bool, env_file: Path | None) -> Non
         ) as model:
             context = RunnerContext(
                 config=config,
-                scenarios=scenarios,
+                scenarios=plan.scenarios,
                 admin=admin,
                 model=model,
-                archive=ResultArchive(output),
+                archive=ResultArchive(
+                    output,
+                    extension_root=(
+                        output
+                        if plan.host_policy is HostPolicy.CLOSURE_AWARE
+                        else None
+                    ),
+                ),
                 server_base=SERVER_BASE,
+                host_policy=plan.host_policy,
             )
-            conditions = ALL_CONDITIONS if all_conditions else REQUIRED_CONDITIONS
-            await ExperimentRunner(context).run(conditions)
+            await ExperimentRunner(context).run(plan.conditions)
 
 
 @app.command()
-def main(
+def main(  # noqa: PLR0913, PLR0917 - Typer exposes one parameter per CLI option.
     output: Annotated[Path, typer.Option(help="Evidence directory.")] = ROOT,
     all_conditions: Annotated[
         bool,
         typer.Option(
             help="Run prompt and server controls in addition to required injection cells."
+        ),
+    ] = False,
+    liveness_extension: Annotated[
+        bool,
+        typer.Option(
+            help="Run the isolated 18-episode closure-aware follow-up study."
         ),
     ] = False,
     allow_paid: Annotated[
@@ -127,15 +133,24 @@ def main(
         typer.Option(help="Validate the matrix without starting a server or calling a model."),
     ] = False,
 ) -> None:
-    """Run 36 required episodes, or 72 episodes with both controls."""
+    """Run the required matrix, controls, or the isolated liveness follow-up."""
     config = load_config(ROOT / "config.json")
     scenarios = load_scenarios(ROOT / "scenarios.json")
-    cells = len(ALL_CONDITIONS if all_conditions else REQUIRED_CONDITIONS)
-    episodes = cells * len(scenarios) * config.repetitions
+    try:
+        plan = select_experiment_plan(
+            scenarios,
+            all_conditions=all_conditions,
+            liveness_extension=liveness_extension,
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    cells = len(plan.conditions)
+    episodes = cells * len(plan.scenarios) * config.repetitions
     if dry_run:
         parts = [
-            f"validated: {len(scenarios)} scenarios x {cells} conditions x",
-            f"{config.repetitions} repeats = {episodes} episodes",
+            f"validated: {len(plan.scenarios)} scenarios x {cells} conditions x",
+            f"{config.repetitions} repeats = {episodes} episodes;",
+            f"host_policy={plan.host_policy.value}",
         ]
         summary = " ".join(parts)
         typer.echo(summary)
@@ -143,6 +158,8 @@ def main(
     if not config.model.endswith(":free") and not allow_paid:
         message = "configured model is paid; rerun with --allow-paid"
         raise typer.BadParameter(message)
+    if liveness_extension and output == ROOT:
+        output = ROOT / "extension" / "liveness"
     output.mkdir(parents=True, exist_ok=True)
     lock = output / ".run.lock"
     try:
@@ -172,7 +189,7 @@ def main(
         )
         try:
             anyio.run(_wait_for_server)
-            anyio.run(_run, output, all_conditions, env_file)
+            anyio.run(_run, output, plan, env_file)
         finally:
             process.terminate()
             try:

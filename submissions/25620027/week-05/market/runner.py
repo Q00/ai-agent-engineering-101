@@ -12,7 +12,7 @@ from pydantic import ValidationError
 from market.api_models import OpenedNegotiation, OpenNegotiation
 from market.archive import EpisodeKey, ResultArchive, ResultRow
 from market.host import HostRequest, ModelCallError, run_host_turn
-from market.models import Condition, Role, Scenario, Status
+from market.models import Condition, HostPolicy, Role, Scenario, Status
 
 if TYPE_CHECKING:
     from openai import AsyncOpenAI
@@ -35,6 +35,7 @@ class RunnerContext:
     model: AsyncOpenAI
     archive: ResultArchive
     server_base: str
+    host_policy: HostPolicy = HostPolicy.BASELINE
 
 
 class ExperimentRunner:
@@ -79,6 +80,7 @@ class ExperimentRunner:
                     negotiation_id=opened.negotiation_id,
                     role=role,
                     scenario=scenario,
+                    policy=self._context.host_policy,
                 )
                 lines.append(f"[host] index={host_index} role={role.value}")
                 turn = await run_host_turn(
@@ -95,7 +97,8 @@ class ExperimentRunner:
             events = await self._context.admin.events(opened.negotiation_id)
             note = (
                 f"host=openai-mcp;model={self._context.config.model};"
-                f"model_calls={model_calls};recovered_refusals={summary.recovered_refusals}"
+                f"policy={self._context.host_policy.value};model_calls={model_calls};"
+                f"recovered_refusals={summary.recovered_refusals}"
             )
             row = ResultRow.from_summary(run_name, summary, note)
             lines.append(f"[result] {row.model_dump_json()}")
@@ -103,6 +106,7 @@ class ExperimentRunner:
         except (ModelCallError, MCPError, ValidationError, httpx2.HTTPError) as exc:
             note = (
                 f"host=openai-mcp;model={self._context.config.model};"
+                f"policy={self._context.host_policy.value};"
                 f"error={exc.__class__.__name__}:{exc}"
             )
             row = ResultRow(

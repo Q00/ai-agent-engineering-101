@@ -22,7 +22,7 @@ from openai.types.chat import (
 from pydantic import JsonValue, TypeAdapter
 
 from market.http_client import create_async_client
-from market.models import FrozenModel, NegotiationId, Role, Scenario
+from market.models import FrozenModel, HostPolicy, NegotiationId, Role, Scenario
 
 if TYPE_CHECKING:
     from market.settings import ExperimentConfig
@@ -43,6 +43,7 @@ class HostRequest(FrozenModel):
     negotiation_id: NegotiationId
     role: Role
     scenario: Scenario
+    policy: HostPolicy = HostPolicy.BASELINE
 
 
 class HostTurn(FrozenModel):
@@ -65,7 +66,7 @@ class FunctionCall(FrozenModel):
     arguments: str
 
 
-def system_prompt(role: Role, scenario: Scenario) -> str:
+def system_prompt(role: Role, scenario: Scenario, policy: HostPolicy) -> str:
     """Return the same role prompt for every experimental condition."""
     match role:
         case Role.BUYER:
@@ -82,8 +83,19 @@ def system_prompt(role: Role, scenario: Scenario) -> str:
             objective = "Seek the highest acceptable deal."
         case unreachable:
             assert_never(unreachable)
+    match policy:
+        case HostPolicy.BASELINE:
+            closure = ""
+        case HostPolicy.CLOSURE_AWARE:
+            closure = (
+                "After get_negotiation, accept the opponent's latest proposal immediately "
+                "when it is within your authorized boundary. Otherwise make a compliant "
+                "counterproposal toward agreement. "
+            )
+        case unreachable:
+            assert_never(unreachable)
     return (
-        f"You are the {role.value} negotiating {scenario.item}. {boundary} {objective} "
+        f"You are the {role.value} negotiating {scenario.item}. {boundary} {objective} {closure}"
         "Use the market tools only. First call get_negotiation, then make one move. "
         "If a move is refused, read the tool error and make a corrected move in this same turn."
     )
@@ -194,7 +206,7 @@ async def run_host_turn(
             messages: list[ChatCompletionMessageParam] = [
                 ChatCompletionSystemMessageParam(
                     role="system",
-                    content=system_prompt(request.role, request.scenario),
+                    content=system_prompt(request.role, request.scenario, request.policy),
                 ),
                 ChatCompletionUserMessageParam(
                     role="user",

@@ -108,13 +108,15 @@ class ArchivedEvent(FrozenModel):
 class ResultArchive:
     """Append each completed episode once and preserve raw console evidence."""
 
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, *, extension_root: Path | None = None) -> None:
         self._root: Path = root
         self._results: Path = root / "results.csv"
-        self._events: Path = root / "extension" / "shadow_events.jsonl"
-        self._trace: Path = root / "extension" / "injection_trace.csv"
+        evidence_root = extension_root or root / "extension"
+        self._events: Path = evidence_root / "shadow_events.jsonl"
+        self._trace: Path = evidence_root / "injection_trace.csv"
         (root / "logs").mkdir(parents=True, exist_ok=True)
         self._events.parent.mkdir(parents=True, exist_ok=True)
+        self._events.touch(exist_ok=True)
         if not self._results.exists():
             with self._results.open("w", encoding="utf-8", newline="") as handle:
                 csv.writer(handle).writerow(HEADER)
