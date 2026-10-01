@@ -1,0 +1,51 @@
+=== run 1 (baseline), 2026-09-17T02:15:57.277973 ===
+task task-1: Fix a null pointer exception in this Python function that crashes when the input list is empty.
+  [announce] -> alex: task task-1
+  [bid] alex: bid=True confidence=95 tokens=177 (in=131 out=46) reason='This is a straightforward software engineering task involving debugging and fixing a null pointer exception in Python code, which is core to my expertise.'
+  [announce] -> brooke: task task-1
+  [bid] brooke: bid=False confidence=15 tokens=167 (in=129 out=38) reason='This is a programming/debugging task requiring code fixes, not prose writing which is my specialty.'
+  [announce] -> casey: task task-1
+  [bid] casey: bid=False confidence=95 tokens=174 (in=129 out=45) reason='This task requires debugging and fixing code, which is software development work, not research (finding, summarizing, and citing information).'
+  [award] task-1 -> alex (gold=alex) CORRECT
+task task-2: Write a 200-word product description for a wireless keyboard aimed at gamers.
+  [announce] -> alex: task task-2
+  [bid] alex: bid=False confidence=15 tokens=172 (in=130 out=42) reason='This is a marketing copywriting task, not software engineering work involving writing, fixing, or refactoring code.'
+  [announce] -> brooke: task task-2
+  [bid] brooke: bid=True confidence=95 tokens=164 (in=128 out=36) reason='This is a straightforward marketing copy writing task that perfectly matches my prose writing expertise.'
+  [announce] -> casey: task task-2
+  [bid] casey: bid=False confidence=15 tokens=167 (in=128 out=39) reason='This task requires creative writing and marketing content creation, not research, summarizing, or citing information.'
+  [award] task-2 -> brooke (gold=brooke) CORRECT
+task task-3: Summarize the key findings of three papers on transformer attention mechanisms.
+  [announce] -> alex: task task-3
+  [bid] alex: bid=False confidence=15 tokens=170 (in=127 out=43) reason='This is a research paper summarization task, not software engineering work involving writing, fixing, or refactoring code.'
+  [announce] -> brooke: task task-3
+  [bid] brooke: bid=False confidence=15 tokens=173 (in=125 out=48) reason='This requires technical research analysis and academic summarization, not the marketing copy, emails, or documentation writing that matches my expertise as a prose contractor.'
+  [announce] -> casey: task task-3
+  [bid] casey: bid=True confidence=90 tokens=172 (in=125 out=47) reason='This is a research task requiring finding, summarizing, and citing academic papers on a specific technical topic, which matches my core skills perfectly.'
+  [award] task-3 -> casey (gold=casey) CORRECT
+task task-4: Refactor a recursive Fibonacci function to use memoization for better performance.
+  [announce] -> alex: task task-4
+  [bid] alex: bid=True confidence=95 tokens=178 (in=130 out=48) reason='Refactoring a recursive Fibonacci function to add memoization is a straightforward code optimization task that directly matches my software engineering expertise.'
+  [announce] -> brooke: task task-4
+  [bid] brooke: bid=False confidence=5 tokens=180 (in=128 out=52) reason='This task requires writing and refactoring code, which is programming work, not the prose writing (marketing copy, emails, documentation) that I specialize in.'
+  [announce] -> casey: task task-4
+  [bid] casey: bid=False confidence=85 tokens=180 (in=128 out=52) reason='This task requires writing/refactoring code rather than research, which is outside my role as a contractor who only finds, summarizes, and cites information.'
+  [award] task-4 -> alex (gold=alex) CORRECT
+task task-5: Draft a friendly onboarding email for new users of a SaaS product.
+  [announce] -> alex: task task-5
+  [bid] alex: bid=False confidence=15 tokens=165 (in=130 out=35) reason='This is a copywriting and marketing task, not software engineering work involving code.'
+  [announce] -> brooke: task task-5
+  [bid] brooke: bid=True confidence=95 tokens=166 (in=128 out=38) reason='Writing friendly onboarding emails is core marketing copy work that matches my prose writing expertise perfectly.'
+  [announce] -> casey: task task-5
+  [bid] casey: bid=False confidence=15 tokens=168 (in=128 out=40) reason='This task requires creative writing and marketing copywriting skills, not research, summarizing, or citing information.'
+  [award] task-5 -> brooke (gold=brooke) CORRECT
+task task-6: Compile a list of the top five causes of TCP connection timeouts, with sources.
+  [announce] -> alex: task task-6
+  [bid] alex: bid=False confidence=15 tokens=174 (in=131 out=43) reason='This is a research and documentation task requiring sourcing technical information, not writing, fixing, or refactoring code.'
+  [announce] -> brooke: task task-6
+  [bid] brooke: bid=False confidence=15 tokens=180 (in=129 out=51) reason='This task requires technical research and compilation of networking information with sources, which is outside my expertise as a prose writer focused on marketing copy, emails, and documentation.'
+  [announce] -> casey: task task-6
+  [bid] casey: bid=True confidence=85 tokens=180 (in=129 out=51) reason='This is a research task requiring me to find, summarize, and cite information about TCP connection timeouts, which matches my core capability as a research contractor.'
+  [award] task-6 -> casey (gold=casey) CORRECT
+  [meter] tokens=3107 calls=18
+=== summary: tasks=6 correct=6 messages=42 unassigned=0 misawards=0 ===
