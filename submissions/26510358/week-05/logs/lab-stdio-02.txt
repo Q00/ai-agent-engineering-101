@@ -1,0 +1,15 @@
+[host] transport=stdio tools=['calculator', 'read_file', 'write_note']
+[model] step=1 text=None calls=1
+[tool] read_file({'path': 'notes.txt'}) error=False -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+[model] step=2 text=None calls=1
+[tool] calculator({'expression': '4 + 48000 + 9500 + 12000'}) error=False -> 69504
+[model] step=3 text='69,504' calls=0
+[final] 69,504

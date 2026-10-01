@@ -1,0 +1,18 @@
+[host] transport=stdio tools=['calculator', 'read_file', 'write_note']
+[model] step=1 text=None calls=1
+[tool] read_file({'path': 'notes.txt'}) error=False -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+[model] step=2 text=None calls=1
+Tool 'calculator' failed: 'Error executing tool calculator: Invalid arithmetic expression: leading zeros in decimal integer literals are not permitted; use an 0o prefix for octal integers (<unknown>, line 1)'
+[tool] calculator({'expression': '2026-09-01 + 4 + 48000 + 9500 + 12000'}) error=True -> Error executing tool calculator: Invalid arithmetic expression: leading zeros in decimal integer literals are not permitted; use an 0o prefix for octal integers (<unknown>, line 1)
+[model] step=3 text=None calls=1
+[tool] calculator({'expression': '2026 - 9 - 1 + 4 + 48000 + 9500 + 12000'}) error=False -> 71520
+[model] step=4 text='71520' calls=0
+[final] 71520
