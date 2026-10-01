@@ -31,4 +31,13 @@ The command starts a local Streamable HTTP MCP server, captures the four authori
 ./run.py --allow-paid --all-conditions --env-file /absolute/path/to/private.env
 ```
 
+## Run the separate 18-episode liveness follow-up
+
+```bash
+./run.py --liveness-extension --dry-run
+./run.py --liveness-extension --allow-paid --env-file /absolute/path/to/private.env
+```
+
+This mode selects only deal-possible scenarios and writes all results, events, authorization checks, and logs under `extension/liveness/`. It never resumes from or overwrites the required `results.csv`. Both `OPENAI_API_KEY=...` and `export OPENAI_API_KEY=...` private env-file syntax are accepted.
+
 Runtime secrets are generated per process. The MCP host holds each bearer token in an HTTP header; tokens are not written to logs or passed to the model.
