@@ -5,6 +5,7 @@ from contextvars import ContextVar
 import uvicorn
 from starlette.responses import JSONResponse
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 
 
 mcp = MCPServer("negotiation-market")
@@ -127,17 +128,17 @@ async def admin_state(request):
 def get_party(negotiation_id):
     party = caller.get()
     if party is None:
-        raise ValueError("Missing authenticated caller.")
+        raise ToolError("Missing authenticated caller.")
 
     if party["negotiation_id"] != negotiation_id:
-        raise ValueError("Token cannot access this negotiation.")
+        raise ToolError("Token cannot access this negotiation.")
 
     return party, markets[negotiation_id]
 
 
 def refuse_call(state, reason):
     state["refused_calls"] += 1
-    raise ValueError(reason)
+    raise ToolError(reason)
 
 
 @mcp.tool()
