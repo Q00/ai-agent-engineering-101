@@ -1,0 +1,18 @@
+  [tool] read_file({'path': 'notes.txt'}) -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+  [tool] write_note({'path': 'summary.txt', 'text': '69504'}) -> appended to summary.txt
+Traceback (most recent call last):
+  File "/home/iai4/Desktop/dae/ai-agent-engineering-101/submissions/25510100/week-01/first_agent.py", line 117, in <module>
+    print(run(goal))
+          ~~~^^^^^^
+  File "/home/iai4/Desktop/dae/ai-agent-engineering-101/submissions/25510100/week-01/first_agent.py", line 98, in run
+    msg = resp.choices[0].message
+          ~~~~~~~~~~~~^^^
+TypeError: 'NoneType' object is not subscriptable
