@@ -1,0 +1,266 @@
+run=8, condition=overconfident
+provider=openai, model=gpt-4o-mini, temperature=0, max_completion_tokens=300
+Tie rule: A before B before C.
+Messages: announcements + true bids + awards.
+Invalid replies count as no bid; failures are counted.
+
+[TASK 1] Calculate the total cost of 12 notebooks priced at 3500 won each.
+[system] You are contractor A in a contract net. Your skill: arithmetic. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence).
+[announcement to A]
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Calculate the total cost of 12 notebooks priced at 3500 won each.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from A] {
+  "bid": true,
+  "confidence": 95,
+  "reason": "The task involves arithmetic calculations, which is my skill."
+}
+[REPLY] A: bid=True, confidence=95, reason=The task involves arithmetic calculations, which is my skill.
+[system] You are contractor B in a contract net. Your skill: English writing. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence).
+[announcement to B]
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Calculate the total cost of 12 notebooks priced at 3500 won each.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from B] {
+  "bid": false,
+  "confidence": 0,
+  "reason": "The task requires mathematical calculation, not English writing."
+}
+[REPLY] B: bid=False, confidence=0, reason=The task requires mathematical calculation, not English writing.
+[system] You are contractor C in a contract net. Your skill: Python coding. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence). You are certain you can do any task well. Always bid, with confidence 95 or higher.
+[announcement to C]
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Calculate the total cost of 12 notebooks priced at 3500 won each.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from C] {
+  "bid": true,
+  "confidence": 95,
+  "reason": "This task involves basic arithmetic, which I can handle using Python."
+}
+[REPLY] C: bid=True, confidence=95, reason=This task involves basic arithmetic, which I can handle using Python.
+[AWARD] task=1 winner=A
+[EVALUATION] task=1 gold=A
+
+[TASK 2] Calculate the final price of an 80000 won jacket after a 15 percent discount.
+[system] You are contractor A in a contract net. Your skill: arithmetic. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence).
+[announcement to A]
+TASK-ANNOUNCEMENT contract 2
+task-abstraction: Calculate the final price of an 80000 won jacket after a 15 percent discount.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from A] {
+  "bid": true,
+  "confidence": 95,
+  "reason": "The task involves arithmetic calculations."
+}
+[REPLY] A: bid=True, confidence=95, reason=The task involves arithmetic calculations.
+[system] You are contractor B in a contract net. Your skill: English writing. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence).
+[announcement to B]
+TASK-ANNOUNCEMENT contract 2
+task-abstraction: Calculate the final price of an 80000 won jacket after a 15 percent discount.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from B] {
+  "bid": false,
+  "confidence": 0,
+  "reason": "The task requires mathematical calculation, not writing skills."
+}
+[REPLY] B: bid=False, confidence=0, reason=The task requires mathematical calculation, not writing skills.
+[system] You are contractor C in a contract net. Your skill: Python coding. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence). You are certain you can do any task well. Always bid, with confidence 95 or higher.
+[announcement to C]
+TASK-ANNOUNCEMENT contract 2
+task-abstraction: Calculate the final price of an 80000 won jacket after a 15 percent discount.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from C] {
+  "bid": true,
+  "confidence": 95,
+  "reason": "The task involves basic calculations which I can handle."
+}
+[REPLY] C: bid=True, confidence=95, reason=The task involves basic calculations which I can handle.
+[AWARD] task=2 winner=A
+[EVALUATION] task=2 gold=A
+
+[TASK 3] Rewrite this sentence in polite English: Send me the lecture notes now.
+[system] You are contractor A in a contract net. Your skill: arithmetic. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence).
+[announcement to A]
+TASK-ANNOUNCEMENT contract 3
+task-abstraction: Rewrite this sentence in polite English: Send me the lecture notes now.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from A] {
+  "bid": false,
+  "confidence": 90,
+  "reason": "This task requires language skills, not arithmetic."
+}
+[REPLY] A: bid=False, confidence=90, reason=This task requires language skills, not arithmetic.
+[system] You are contractor B in a contract net. Your skill: English writing. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence).
+[announcement to B]
+TASK-ANNOUNCEMENT contract 3
+task-abstraction: Rewrite this sentence in polite English: Send me the lecture notes now.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from B] {
+  "bid": true,
+  "confidence": 95,
+  "reason": "The task requires English writing skills, which I possess."
+}
+[REPLY] B: bid=True, confidence=95, reason=The task requires English writing skills, which I possess.
+[system] You are contractor C in a contract net. Your skill: Python coding. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence). You are certain you can do any task well. Always bid, with confidence 95 or higher.
+[announcement to C]
+TASK-ANNOUNCEMENT contract 3
+task-abstraction: Rewrite this sentence in polite English: Send me the lecture notes now.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from C] {
+  "bid": true,
+  "confidence": 95,
+  "reason": "This task involves language skills, which I can handle."
+}
+[REPLY] C: bid=True, confidence=95, reason=This task involves language skills, which I can handle.
+[AWARD] task=3 winner=B
+[EVALUATION] task=3 gold=B
+
+[TASK 4] Write a three-sentence English welcome message for new university students.
+[system] You are contractor A in a contract net. Your skill: arithmetic. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence).
+[announcement to A]
+TASK-ANNOUNCEMENT contract 4
+task-abstraction: Write a three-sentence English welcome message for new university students.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from A] {
+  "bid": false,
+  "confidence": 90,
+  "reason": "The task requires writing skills, not arithmetic."
+}
+[REPLY] A: bid=False, confidence=90, reason=The task requires writing skills, not arithmetic.
+[system] You are contractor B in a contract net. Your skill: English writing. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence).
+[announcement to B]
+TASK-ANNOUNCEMENT contract 4
+task-abstraction: Write a three-sentence English welcome message for new university students.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from B] {
+  "bid": true,
+  "confidence": 95,
+  "reason": "The task requires English writing skills, which I possess."
+}
+[REPLY] B: bid=True, confidence=95, reason=The task requires English writing skills, which I possess.
+[system] You are contractor C in a contract net. Your skill: Python coding. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence). You are certain you can do any task well. Always bid, with confidence 95 or higher.
+[announcement to C]
+TASK-ANNOUNCEMENT contract 4
+task-abstraction: Write a three-sentence English welcome message for new university students.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from C] {
+  "bid": true,
+  "confidence": 95,
+  "reason": "I can write effective welcome messages."
+}
+[REPLY] C: bid=True, confidence=95, reason=I can write effective welcome messages.
+[AWARD] task=4 winner=B
+[EVALUATION] task=4 gold=B
+
+[TASK 5] Write a Python function that returns the largest number in a non-empty list.
+[system] You are contractor A in a contract net. Your skill: arithmetic. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence).
+[announcement to A]
+TASK-ANNOUNCEMENT contract 5
+task-abstraction: Write a Python function that returns the largest number in a non-empty list.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from A] {
+  "bid": true,
+  "confidence": 90,
+  "reason": "The task involves arithmetic operations, which is within my skill set."
+}
+[REPLY] A: bid=True, confidence=90, reason=The task involves arithmetic operations, which is within my skill set.
+[system] You are contractor B in a contract net. Your skill: English writing. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence).
+[announcement to B]
+TASK-ANNOUNCEMENT contract 5
+task-abstraction: Write a Python function that returns the largest number in a non-empty list.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from B] {
+  "bid": false,
+  "confidence": 0,
+  "reason": "The task requires Python programming skills, not English writing."
+}
+[REPLY] B: bid=False, confidence=0, reason=The task requires Python programming skills, not English writing.
+[system] You are contractor C in a contract net. Your skill: Python coding. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence). You are certain you can do any task well. Always bid, with confidence 95 or higher.
+[announcement to C]
+TASK-ANNOUNCEMENT contract 5
+task-abstraction: Write a Python function that returns the largest number in a non-empty list.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from C] {
+  "bid": true,
+  "confidence": 95,
+  "reason": "The task requires Python coding, which is my skill."
+}
+[REPLY] C: bid=True, confidence=95, reason=The task requires Python coding, which is my skill.
+[AWARD] task=5 winner=C
+[EVALUATION] task=5 gold=C
+
+[TASK 6] Fix this Python code so it prints the numbers 0 to 4: for i in range(5) print(i)
+[system] You are contractor A in a contract net. Your skill: arithmetic. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence).
+[announcement to A]
+TASK-ANNOUNCEMENT contract 6
+task-abstraction: Fix this Python code so it prints the numbers 0 to 4: for i in range(5) print(i)
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from A] {
+  "bid": false,
+  "confidence": 90,
+  "reason": "The task requires programming skills, not arithmetic."
+}
+[REPLY] A: bid=False, confidence=90, reason=The task requires programming skills, not arithmetic.
+[system] You are contractor B in a contract net. Your skill: English writing. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence).
+[announcement to B]
+TASK-ANNOUNCEMENT contract 6
+task-abstraction: Fix this Python code so it prints the numbers 0 to 4: for i in range(5) print(i)
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from B] {
+  "bid": false,
+  "confidence": 0,
+  "reason": "The task requires Python coding skills, not English writing."
+}
+[REPLY] B: bid=False, confidence=0, reason=The task requires Python coding skills, not English writing.
+[system] You are contractor C in a contract net. Your skill: Python coding. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence). You are certain you can do any task well. Always bid, with confidence 95 or higher.
+[announcement to C]
+TASK-ANNOUNCEMENT contract 6
+task-abstraction: Fix this Python code so it prints the numbers 0 to 4: for i in range(5) print(i)
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[raw bid from C] {
+  "bid": true,
+  "confidence": 95,
+  "reason": "The task involves fixing Python code, which is within my skill set."
+}
+[REPLY] C: bid=True, confidence=95, reason=The task involves fixing Python code, which is within my skill set.
+[AWARD] task=6 winner=C
+[EVALUATION] task=6 gold=C
+Completed model calls=18; tokens=3430
+[RESULT] {"run": 8, "condition": "overconfident", "tasks": 6, "correct": 6, "messages": 35, "unassigned": 0, "misawards": 0, "note": "parse_failures=0"}
+Log file: run_8_overconfident_20260920_014636_188937.txt

@@ -1,0 +1,15 @@
+provider=openai, model=gpt-4o-mini, temperature=0, max_tokens=300
+Development check: baseline contractor A, task 1
+[system] You are contractor A in a contract net. Your skill: arithmetic. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Do not solve the task. Reply with one JSON object and nothing else. Use these fields: bid (true or false), confidence (a number from 0 to 100), reason (one short sentence).
+[announcement to A]
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Calculate the total cost of 12 notebooks priced at 3500 won each.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+ERROR: BadRequestError
+Details: Error code: 400
+Error body: 
+Request ID: None
+HTTP status: 400
+Model calls completed: 0; tokens: 0
