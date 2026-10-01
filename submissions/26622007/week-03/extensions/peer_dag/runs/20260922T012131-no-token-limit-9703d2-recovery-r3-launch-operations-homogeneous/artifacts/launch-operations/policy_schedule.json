@@ -1,0 +1,52 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "확정 정책('상담 접수 후 영업일 2일 안에 처리 시작', 완료·PG 반영 미보장)과 광고 초안 '즉시 자동 환불'의 모순을 식별하고, 단일 기준 문서·변경 전달/승인 흐름·담당·기한·선행조건이 연결된 운영 일정·확정/미확인 사항표를 설계했다. 실제 구현·테스트·외부 연락은 수행하지 않았고 모두 설계 제안이다.\n\n[1] 모순 식별\n- 확정 정책: '상담 접수 후 영업일 2일 안에 처리 시작'. 처리 완료 시간과 PG 반영 시간은 보장하지 않음.\n- 광고 초안: '즉시 자동 환불'.\n- 판정: immediate_refund_promised=false. '즉시'는 접수 즉시 처리를, '자동 환불'은 완료·PG 반영 보장을 함의하므로 확정 정책(2영업일 내 '시작', 완료·PG 미보장)과 직접 모순. 광고 문구는 수정/보류 대상이며, 확정 정책을 광고에 맞춰 바꾸는 것은 금지(제품 정책 신규 결정 금지).\n\n[2] 단일 기준 문서(설계 제안)\n- 문서명: 환불 처리 기준 문서 v1.0. 구성: (a) 정책 원문(영업일 2일 내 처리 시작, 완료·PG 반영 미보장), (b) 허용 표현: '영업일 2일 내 처리 시작', '처리 시작 후 완료까지 추가 시간 소요 가능', 'PG 반영은 카드사/결제사에 따라 지연될 수 있음', (c) 금지 표현: '즉시', '자동 환불', '당일 환불 보장', '완료 시각 보장', 'PG 즉시 반영', (d) 적용 채널: 광고·상담 스크립트·랜딩·FAQ.\n- 단일 출처 원칙: 모든 채널 문구는 이 문서의 허용 표현만 인용. 문서 개정은 기준문서 담당 승인 후에만 유효.\n\n[3] 변경 전달·승인 흐름(설계 제안)\n- 흐름: 제품팀(목 14:00 확정 사양·알려진 제한 전달) → 기준문서 담당(14:00~14:30 정책 원문을 허용/금지 표현으로 반영, v1.0 확정) → 광고(15:00 마감 전 반영), 상담 교육(17:00 전 스크립트·분류 기준 반영), 랜딩(18:00 전 반영).\n- 승인자: 기준문서 담당(문구 적합성 최종 승인), 제품팀(정책 원문 일치 확인). 미승인 문구는 게시 금지.\n- 기한: 광고 15:00, 상담 교육 17:00, 랜딩 18:00. 각 채널 담당은 반영 후 기준문서 담당에게 승인 요청.\n\n[4] 운영 일정(담당·기한·선행조건)\n- 목 14:00 제품 사양·제한 전달 | 담당: 제품팀 | 선행: 없음.\n- 목 14:00~14:30 기준문서 v1.0 확정 | 담당: 기준문서 담당 | 선행: 제품팀 전달.\n- 목 15:00 광고 문구 마감·수정 반영 | 담당: 광고 담당 | 선행: 기준문서 v1.0 승인.\n- 목 17:00 상담 교육(스크립트·분류 기준) | 담당: 상담 운영 담당 | 선행: 기준문서 v1.0.\n- 목 18:00 랜딩 수정 마감 | 담당: 랜딩 담당 | 선행: 기준문서 v1.0.\n- 금 10:00 출시 | 담당: 출시 총괄 | 선행: 기술 배포 승인(미제공), 결제 검증(미제공), 위 3채널 반영 완료.\n\n[5] 확정/미확인 사항표(텍스트)\n- 확정: 정책 원문(2영업일 내 시작, 완료·PG 미보장), 채널 마감 시각(15/17/18시), 제품팀 전달 시각(14시), 초대 800명, 첫 4시간 문의율 20%, 상담원 4명·시간당 5건.\n- 미확인: 기술 배포 승인 여부, 결제 검증 결과, 인원 충원 승인 여부, 실제 문의율(가정치).\n- 금지: 미승인 충원·환불·배포를 완료로 표기하지 않음. 제품 정책 신규 결정 없음.\n\n[6] 용량 계산(참고, 가정 기반)\n- expected_contacts = 800 × 0.20 = 160건.\n- four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건.\n- backlog_without_hiring = 160 − 80 = 80건.\n- required_total_agents = 160 ÷ (5 × 4) = 8명.\n- additional_agents = 8 − 4 = 4명.\n- support_window_hours = 4, launch_hour = 10.\n- 충원 미승인 시 대안(설계 제안): 대기열 우선순위(결제 오류·중복 청구 우선), 예상 대기 안내 문구, FAQ로 셀프서비스 유도, 추가 인원은 승인 전제로만 계획.\n\n[7] 비상 계획(설계 제안)\n- 광고 지연: 기준문서 허용 표현만으로 임시 문구 게시, '즉시 자동 환불' 삭제 확인.\n- 기술 승인 지연: 출시 시각 연기 또는 기능 제한 출시, 고객 안내문에 미확인 사항 명시.\n- 문의 급증: 우선순위 큐·안내문·FAQ 강화, 충원은 승인 시에만 실행.\n\n[8] 출시 직전 확인표(설계 제안)\n- 기준문서 v1.0 승인 여부, 3채널 금지 표현 제거 여부, 기술 배포 승인·결제 검증 확보 여부, 상담 인력 계획(승인 상태) 확인.\n\n실제 구현/테스트/외부 연락은 수행하지 않았으며 위는 모두 설계 제안이다.",
+    "facts": {
+      "immediate_refund_promised": false,
+      "policy_processing_start_business_days": 2,
+      "completion_time_guaranteed": false,
+      "pg_reflection_guaranteed": false,
+      "ad_copy_deadline_hour": 15,
+      "support_training_deadline_hour": 17,
+      "landing_deadline_hour": 18,
+      "product_spec_delivery_hour": 14,
+      "launch_hour": 10,
+      "invited_users": 800,
+      "first_4h_inquiry_rate": 0.2,
+      "cases_per_agent_per_hour": 5,
+      "agents_available": 4,
+      "expected_contacts": 160,
+      "four_hour_capacity": 80,
+      "backlog_without_hiring": 80,
+      "required_total_agents": 8,
+      "additional_agents": 4,
+      "support_window_hours": 4,
+      "tech_deploy_approval_provided": false,
+      "payment_verification_provided": false,
+      "hiring_approved": false,
+      "single_source_doc_defined": true,
+      "approval_flow_defined": true,
+      "schedule_defined": true,
+      "confirmed_unconfirmed_table_defined": true,
+      "actual_implementation_performed": false,
+      "actual_testing_performed": false,
+      "external_contact_performed": false
+    },
+    "evidence": [
+      "확정 정책 원문: '상담 접수 후 영업일 2일 안에 처리 시작', 처리 완료·PG 반영 시간 미보장 (제공 자료)",
+      "광고 초안 '즉시 자동 환불'은 확정 정책과 모순 → immediate_refund_promised=false",
+      "expected_contacts = 800 × 0.20 = 160건 (초대 800명, 첫 4시간 문의율 20% 가정)",
+      "four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건",
+      "backlog_without_hiring = 160 − 80 = 80건",
+      "required_total_agents = 160 ÷ (5 × 4) = 8명",
+      "additional_agents = 8 − 4 = 4명",
+      "support_window_hours = 4, launch_hour = 10 (제공 자료 가정)",
+      "마감 시각: 광고 목 15시, 상담 교육 목 17시, 랜딩 목 18시, 제품 사양 전달 목 14시 (제공 자료)",
+      "미제공: 기술 배포 승인, 결제 검증 결과, 인원 충원 승인 (제공 자료에 없음) → 모두 미확인으로 표시",
+      "실제 구현·테스트·외부 연락은 수행하지 않음(미검증), 모든 산출물은 설계 제안"
+    ]
+  },
+  "error": ""
+}

@@ -1,0 +1,34 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "## pgvector vs 자체 호스팅 Qdrant — 폐쇄망·백업·복구 적합성 독립 조사\n\n### 이전 대비 변경점\n- 배포 환경이 **폐쇄망**으로 변경되어 외부 관리형 SaaS(예: 관리형 벡터 DB) 사용 불가. `external_saas_allowed=false`.\n- PostgreSQL은 이미 운영 중이며, 신규 stateful 저장소 운영 인력 증원 불가 → 운영 인력 부담이 핵심 평가 축.\n- 이전 실행의 장기 메모리(personal_memory/handoff_memory)가 **비어 있어** 내부 결정 ID·PostgreSQL 백업 담당 팀·기존 규모/품질 목표는 확인 불가 → `unknown`/확인 필요로 반환. 추측하지 않음.\n\n### 조사 결과 요약\n\n| 항목 | pgvector (PostgreSQL 확장) | 자체 호스팅 Qdrant |\n|---|---|---|\n| 폐쇄망 적합성 | 기존 운영 PostgreSQL에 확장 설치 → 신규 인프라·신규 포트·신규 인증체계 불필요. 오프라인 설치 시 확장 바이너리/패키지를 내부 미러로 반입 | 별도 서비스·컨테이너·스토리지·REST/gRPC 포트 운영 필요. 이미지·바이너리를 내부 레지스트리로 반입 |\n| 백업 방식 | PostgreSQL 표준 도구 그대로 사용: `pg_dump`(논리, 선택적/병렬 복원, custom·directory 포맷) 및 `pg_basebackup`(클러스터 전체 물리 백업, PITR·복제 기반) | Qdrant 자체 스냅샷 API/스토리지 스냅샷 절차에 의존(공식 문서 재확인 필요, 이번 조사에서 검색 한도로 미확보) |\n| 복구 절차 | 기존 DBA 런북 재사용. 단, 확장 의존성 때문에 복구 시 `CREATE EXTENSION vector` 및 **벡터 인덱스 재생성**이 필요할 수 있음(인덱스는 dump에 포함되지 않는 경우가 있어 재빌드 비용 발생) | 스냅샷 복원 후 컬렉션 재로드·재색인 절차 필요. 별도 런북 신규 작성 필요 |\n| 운영 인력 부담 | 기존 PostgreSQL 운영 체계·모니터링·백업 스케줄에 편입 → 추가 인력 없이 흡수 가능 | 신규 stateful 서비스 운영(업그레이드, 스냅샷 스케줄, 디스크/메모리 튜닝, 장애 대응) 인력 필요 → 증원 불가 제약과 충돌 |\n| tenant 필터/검색 품질 | SQL WHERE 절 기반 tenant 필터, 기존 품질 검증 파이프라인 재사용 가능 | payload 필터 기반 tenant 격리, 별도 품질 검증 필요 |\n\n### 최종 판단(잠정)\n폐쇄망 + 기존 PostgreSQL 운영 + 인력 증원 불가라는 새 제약에서는 **pgvector를 권장**(`recommended_storage=pgvector`). 근거는 (1) 백업/복구가 PostgreSQL 표준 도구로 이미 확립되어 있고, (2) 신규 stateful 저장소 운영 부담이 없다는 점. 단, 이는 문서 기반 판단이며 실제 복구 리허설·성능 측정은 수행하지 않았으므로 `measured_latency=not_measured`.\n\n### 배포/복구 체크리스트(초안)\n- [ ] 폐쇄망 내 PostgreSQL 확장 패키지 반입 경로 및 버전 고정 확인\n- [ ] `pg_dump -Fc`/`-Fd` 정기 백업 + `pg_basebackup` 기반 PITR 정책 문서화\n- [ ] 복구 리허설 시 `CREATE EXTENSION vector` 및 벡터 인덱스 재생성 절차 검증(미실행)\n- [ ] tenant 필터 정확성·검색 품질 검증 계획 수립(미실행)\n- [ ] Qdrant 대안 검토 시 스냅샷/복원 공식 문서 재확보 필요\n\n### 미해결 항목\n- Qdrant 공식 스냅샷/복원 문서 URL 미확보(검색 한도 도달) → 재조사 필요\n- 내부 결정 ID, 백업 담당 팀, 기존 규모/품질 목표: 메모리 부재로 unknown\n- 실제 복구 테스트·지연 측정 미수행",
+    "facts": {
+      "recommended_storage": "pgvector",
+      "internal_decision_id": "unknown",
+      "backup_owner": "unknown",
+      "measured_latency": "not_measured",
+      "unresolved": "Qdrant 공식 스냅샷/복원 문서 URL 미확보(검색 한도 도달); 내부 결정 ID·백업 담당 팀·기존 규모/품질 목표 메모리 부재로 unknown; 실제 복구 리허설 및 지연 측정 미수행",
+      "memory_refs": "none",
+      "external_saas_allowed": false,
+      "pgvector_backup_tool_pg_dump": "supported",
+      "pgvector_backup_tool_pg_basebackup": "supported",
+      "pgvector_pitr_supported": true,
+      "pgvector_requires_index_rebuild_on_restore": "likely",
+      "qdrant_official_backup_url_obtained": false,
+      "qdrant_self_hosted_required": true,
+      "new_stateful_store_ops_headcount_available": false,
+      "recovery_test_executed": false,
+      "benchmark_executed": false,
+      "tenant_filter_validation_executed": false
+    },
+    "evidence": [
+      "https://www.postgresql.org/docs/current/app-pgbasebackup.html — pg_basebackup은 실행 중 클러스터 전체의 물리 백업을 만들며 PITR 및 로그 전송/스트리밍 복제 스탠바이의 시작점으로 사용 가능. 개별 DB/객체 단위 백업은 불가하여 선택적 백업에는 pg_dump 필요 → pgvector 데이터도 클러스터 단위 백업/PITR로 보호 가능.",
+      "https://www.postgresql.org/docs/18/app-pgdump.html — pg_dump는 custom(-Fc)·directory(-Fd) 아카이브 포맷으로 선택적·병렬 복원과 재정렬을 지원하고 아키텍처 간 이식 가능 → 폐쇄망 내 백업 파일 반입/반출 및 부분 복구에 유리.",
+      "https://www.postgresql.org/docs/18/backup-dump.html — 텍스트 덤프는 psql로, 비텍스트 덤프는 pg_restore로 복원하며 복원 전 template0 기반 DB 생성이 필요 → 기존 DBA 런북 재사용 근거.",
+      "memory:none — personal_memory 및 handoff_memory가 비어 있어 내부 결정 ID·백업 담당 팀·기존 규모/품질 목표를 확인할 수 없었고, 추측하지 않고 unknown으로 반환함.",
+      "Qdrant 공식 문서 검색은 이번 실행에서 검색 한도(max_uses) 도달로 결과를 확보하지 못했으므로 Qdrant 관련 백업/복구 세부 절차는 미검증이며 재조사가 필요함(성공 주장하지 않음)."
+    ]
+  },
+  "error": ""
+}

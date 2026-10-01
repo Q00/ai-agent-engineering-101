@@ -1,0 +1,284 @@
+{
+  "case_id": "growth-roadmap",
+  "condition": "overconfident",
+  "block": 3,
+  "run_id": "20260921T113158-suite-ab4e67-r3-growth-roadmap-overconfident",
+  "exit_code": 1,
+  "timed_out": false,
+  "wall_seconds": 65.177,
+  "status": "failed",
+  "passed": false,
+  "checks_passed": 0,
+  "checks_total": 16,
+  "wrong_or_missing": [
+    "s_margin",
+    "e_margin",
+    "s_profit",
+    "e_profit",
+    "s_break_even",
+    "e_break_even",
+    "s_low_profit",
+    "e_low_profit",
+    "s_high_profit",
+    "e_high_profit",
+    "common_dev_hours",
+    "s_total_dev_hours",
+    "e_total_dev_hours",
+    "e_budget_shortfall_hours",
+    "s_fits_budget",
+    "e_fits_budget"
+  ],
+  "calls": 19,
+  "http_requests": 19,
+  "http_responses": 19,
+  "http_429": 0,
+  "http_errors": {},
+  "retries": 0,
+  "transport_errors": 0,
+  "tasks": 4,
+  "max_depth": 1,
+  "awards": {
+    "A": 1,
+    "C": 3
+  },
+  "root_award": "A",
+  "c_proposals": 4,
+  "c_high_bids": 4,
+  "proposal_rejections": [],
+  "task_failures": [
+    {
+      "task_id": "growth-roadmap/ops_readiness",
+      "error": "JSONDecodeError: Unterminated string starting at: line 1 column 3482 (char 3481)"
+    },
+    {
+      "task_id": "growth-roadmap",
+      "error": "ValueError: child failed or blocked; partial results retained"
+    }
+  ],
+  "reported_cost_usd": 0.013452604,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 65.0035,
+  "canonical_facts": null,
+  "artifact_sha": null,
+  "root_plan_sha": "3b8cfa36f2894c68efb29043f19c1af54b281821ec79978607ed895b14618a42",
+  "award_sha": "dd7d7db1eddd4a9d310c865167176308ae3483011d87593fb6591539c785b00b",
+  "controls_sha": "091aa5a218d54220ddba4cd472b77b48ff4b339776e0e397f0ad605fe4f2e921",
+  "root_plan": {
+    "mode": "delegate",
+    "actions": [
+      "손익·예산 계산과 기술 설계·일정, 운영 준비를 독립적으로 분해한다.",
+      "B에게 고객군별 손익·손익분기·불확실성 분석을, A(본인)에게 개발 범위·코드/데이터 변경·일정·예산 적합성 분석을, C에게 영업/지원 준비·출시 중단 기준을 맡긴다.",
+      "세 결과를 통합해 비교표, 선택 근거, 반증 가설, MVP 포함/제외, 단계별 일정, 모순·미확인 사항을 정리한다."
+    ],
+    "steps": [
+      {
+        "id": "financial_analysis",
+        "goal": "S/E안의 기준·저·고 고객 수 시나리오별 공헌이익, 월이익, 손익분기 고객수를 계산하고 고객 집중·수요 불확실성을 분석한다.",
+        "acceptance": "facts에 s_margin, e_margin, s_profit, e_profit, s_break_even, e_break_even, s_low_profit, e_low_profit, s_high_profit, e_high_profit을 숫자로 반환하고, evidence에 계산식과 저/고 시나리오 산출 근거를 제시한다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "financial_analysis"
+        ]
+      },
+      {
+        "id": "tech_scope_schedule",
+        "goal": "공통 필수 160시간과 S안 추가 64시간, E안 추가 96시간을 반영해 총 개발시간, 240시간 예산 적합성, E안 부족분과 분기 밖 이연 범위를 산정하고 도메인·API·데이터 변경 개요와 선후 관계 일정을 설계한다.",
+        "acceptance": "facts에 common_dev_hours, s_total_dev_hours, e_total_dev_hours, e_budget_shortfall_hours, s_fits_budget, e_fits_budget을 반환하고, summary/evidence에 코드·데이터 변경 개요와 단계별 일정, 실제 구현/테스트 미수행을 명시한다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "tech_scope_schedule"
+        ]
+      },
+      {
+        "id": "ops_readiness",
+        "goal": "영업/지원팀 준비 사항과 출시 중단 기준을 정리한다.",
+        "acceptance": "summary/evidence에 확정 사실과 정책에 근거한 안내·상담 절차, 담당·일정, 출시 중단 기준을 제시하고 자료에 없는 인터뷰·조사를 수행했다고 쓰지 않는다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "ops_readiness"
+        ]
+      },
+      {
+        "id": "integration",
+        "goal": "세 분석을 통합해 비교표, 선택 근거와 반증 가설, MVP 포함/제외 범위, 모순·미확인 사항을 포함한 경영진 보고를 작성한다.",
+        "acceptance": "summary와 evidence에 요구 문서·표·코드 구조를 간결한 텍스트로 제시하고, 기능 설계·시간표·사업 권고 간 일치 여부와 모순·미확인 사항을 명시하며, facts에 요구된 모든 숫자·boolean 키를 포함한다.",
+        "depends_on": [
+          "financial_analysis",
+          "tech_scope_schedule",
+          "ops_readiness"
+        ],
+        "reads": [
+          "financial_analysis",
+          "tech_scope_schedule",
+          "ops_readiness"
+        ],
+        "writes": [
+          "growth_roadmap_report"
+        ]
+      }
+    ]
+  },
+  "intervals": [
+    {
+      "task_id": "growth-roadmap/financial_analysis",
+      "worker": "C",
+      "start": "2026-09-21T12:18:25.593027+00:00",
+      "end": "2026-09-21T12:18:38.502757+00:00"
+    },
+    {
+      "task_id": "growth-roadmap/tech_scope_schedule",
+      "worker": "C",
+      "start": "2026-09-21T12:18:27.774734+00:00",
+      "end": "2026-09-21T12:18:46.177536+00:00"
+    },
+    {
+      "task_id": "growth-roadmap/ops_readiness",
+      "worker": "C",
+      "start": "2026-09-21T12:18:26.107105+00:00",
+      "end": "2026-09-21T12:18:51.069072+00:00"
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "growth-roadmap/financial_analysis",
+      "right": "growth-roadmap/tech_scope_schedule",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 10.728023,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "growth-roadmap/financial_analysis",
+      "right": "growth-roadmap/ops_readiness",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 12.395652,
+      "both_tasks_succeeded": false
+    },
+    {
+      "left": "growth-roadmap/tech_scope_schedule",
+      "right": "growth-roadmap/ops_readiness",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 18.402802,
+      "both_tasks_succeeded": false
+    }
+  ],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 3,
+    "peak_calls_by_worker": {
+      "A": 2,
+      "B": 1,
+      "C": 3
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 0,
+      "B": 0,
+      "C": 3
+    },
+    "calls_by_phase": {
+      "propose": 12,
+      "review": 4,
+      "execute": 3
+    },
+    "task_statuses": {
+      "growth-roadmap/financial_analysis": "succeeded",
+      "growth-roadmap/tech_scope_schedule": "succeeded",
+      "growth-roadmap/ops_readiness": "failed",
+      "growth-roadmap/integration": "blocked",
+      "growth-roadmap": "failed"
+    },
+    "awards": {
+      "growth-roadmap": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "delegate",
+        "dependencies": {
+          "financial_analysis": [],
+          "tech_scope_schedule": [],
+          "ops_readiness": [],
+          "integration": [
+            "financial_analysis",
+            "tech_scope_schedule",
+            "ops_readiness"
+          ]
+        }
+      },
+      "growth-roadmap/financial_analysis": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "growth-roadmap/ops_readiness": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "growth-roadmap/tech_scope_schedule": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 19
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 19
+    },
+    "evaluation": {
+      "passed": false,
+      "checks": {
+        "s_margin": false,
+        "e_margin": false,
+        "s_profit": false,
+        "e_profit": false,
+        "s_break_even": false,
+        "e_break_even": false,
+        "s_low_profit": false,
+        "e_low_profit": false,
+        "s_high_profit": false,
+        "e_high_profit": false,
+        "common_dev_hours": false,
+        "s_total_dev_hours": false,
+        "e_total_dev_hours": false,
+        "e_budget_shortfall_hours": false,
+        "s_fits_budget": false,
+        "e_fits_budget": false
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": false,
+  "verification_errors": [
+    {
+      "kind": "response_decode",
+      "key": [
+        "growth-roadmap/ops_readiness",
+        "C",
+        "execute",
+        1
+      ],
+      "message": "Unterminated string starting at: line 1 column 3482 (char 3481)"
+    }
+  ],
+  "error": "ValueError: child failed or blocked; partial results retained",
+  "recorded_case_condition_match": true
+}

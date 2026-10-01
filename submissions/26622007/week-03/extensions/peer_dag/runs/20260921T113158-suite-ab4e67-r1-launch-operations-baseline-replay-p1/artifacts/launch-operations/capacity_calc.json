@@ -1,0 +1,42 @@
+{
+  "status": "succeeded",
+  "worker": "B",
+  "artifact": {
+    "summary": "용량 계산: 초대 800명 × 20% = 160건 문의, 상담원 4명 × 5건/시간 × 4시간 = 80건 처리, 미처리 80건. 전량 처리를 위해서는 총 8명(160/(5×4)) 필요, 추가 4명 충원 필요. 충원 미승인 전제에서는 4시간 내 80건만 처리 가능하므로 나머지 80건은 대기열로 이관된다. 대기열 운영안: (1) 접수 순서 원칙이되 긴급도 우선순위 적용 — P1 결제 오류·중복 청구·이중 결제(즉시 상담원 연결), P2 서비스 이용 장애, P3 일반 문의·정책 안내. (2) 예상 대기 안내: 접수 시 순번과 예상 시작 시각을 고지하고, 4시간 창 종료 시점에 미처리분에 대해 '영업일 2일 내 처리 시작' 정책을 재고지. (3) 자동 환불은 보장되지 않음을 명시(immediate_refund_promised=false). (4) 콜백/비동기 접수 채널로 대기열 폭주 완화. 모든 수치는 가정 기반 추정이며 실제 문의율은 출시 후 실측으로 보정 필요.",
+    "facts": {
+      "expected_contacts": 160,
+      "four_hour_capacity": 80,
+      "backlog_without_hiring": 80,
+      "required_total_agents": 8,
+      "additional_agents": 4,
+      "support_window_hours": 4,
+      "launch_hour": 10,
+      "immediate_refund_promised": false,
+      "agents_on_hand": 4,
+      "per_agent_hourly_rate": 5,
+      "invite_target": 800,
+      "contact_rate": 0.2,
+      "backlog_ratio": 0.5,
+      "hiring_approved": false,
+      "priority_p1": "결제 오류·중복 청구",
+      "priority_p2": "서비스 이용 장애",
+      "priority_p3": "일반 문의·정책 안내",
+      "sla_policy": "상담 접수 후 영업일 2일 내 처리 시작",
+      "completion_time_guaranteed": false,
+      "pg_reflection_time_guaranteed": false
+    },
+    "evidence": [
+      "expected_contacts = 800 × 0.20 = 160건",
+      "four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건",
+      "backlog_without_hiring = 160 - 80 = 80건",
+      "required_total_agents = 160 / (5 × 4) = 8명",
+      "additional_agents = 8 - 4 = 4명",
+      "support_window_hours = 4 (출시 후 첫 4시간 가정)",
+      "launch_hour = 10 (금요일 10시 출시)",
+      "확정 정책: '상담 접수 후 영업일 2일 안에 처리 시작', 처리 완료·PG 반영 시간 미보장 → immediate_refund_promised=false",
+      "인원 충원 미승인 상태이므로 추가 4명 확보를 전제로 한 처리량 보장 불가, 대기열·우선순위 운영으로 대응",
+      "미검증: 실제 문의율 20%는 가정치로 실측 데이터 없음, 상담원 시간당 5건 처리율도 가정치"
+    ]
+  },
+  "error": ""
+}

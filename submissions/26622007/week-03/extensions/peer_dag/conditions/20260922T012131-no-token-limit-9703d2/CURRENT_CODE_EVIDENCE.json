@@ -1,0 +1,2705 @@
+{
+  "scope": "Current peer DAG only. Primary 45 and selected recovery 16 remain separate.",
+  "definitions": {
+    "root_gold_match": "Initial assignee equals predeclared responsibility ID; not output quality.",
+    "cross_worker_completed_runs": "At least one non-root task awarded to a worker different from its requester, with execute/synthesize call start/end and succeeded task_end.",
+    "facts_passed": "Existing expected.json checks; not proof of complete document quality.",
+    "causality": "Observational records do not establish that delegation caused a pass."
+  },
+  "primary": {
+    "conditions": {
+      "baseline": {
+        "runs": 15,
+        "root_gold_matches": 6,
+        "root_gold_mismatches": 4,
+        "root_unawarded": 5,
+        "delegate_roots": 6,
+        "cross_worker_assignment_runs": 6,
+        "cross_worker_completed_runs": 6,
+        "facts_passed": 10,
+        "mismatch_but_facts_passed": 4,
+        "mismatch_with_completed_cross_worker_and_facts_passed": 4
+      },
+      "homogeneous": {
+        "runs": 15,
+        "root_gold_matches": 5,
+        "root_gold_mismatches": 5,
+        "root_unawarded": 5,
+        "delegate_roots": 4,
+        "cross_worker_assignment_runs": 4,
+        "cross_worker_completed_runs": 4,
+        "facts_passed": 10,
+        "mismatch_but_facts_passed": 5,
+        "mismatch_with_completed_cross_worker_and_facts_passed": 3
+      },
+      "overconfident": {
+        "runs": 15,
+        "root_gold_matches": 1,
+        "root_gold_mismatches": 9,
+        "root_unawarded": 5,
+        "delegate_roots": 9,
+        "cross_worker_assignment_runs": 5,
+        "cross_worker_completed_runs": 5,
+        "facts_passed": 9,
+        "mismatch_but_facts_passed": 8,
+        "mismatch_with_completed_cross_worker_and_facts_passed": 5
+      }
+    },
+    "runs": [
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-release-review-baseline",
+        "condition": "baseline",
+        "case_id": "release-review",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-release-review-baseline.jsonl",
+        "gold": "B",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "release-review/profitability",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 69,
+            "completed": true,
+            "task_end_line": 99,
+            "execution_call_lines": [
+              71,
+              97
+            ]
+          },
+          {
+            "task_id": "release-review/tech_risk",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 90,
+            "completed": true,
+            "task_end_line": 106,
+            "execution_call_lines": [
+              92,
+              104
+            ]
+          },
+          {
+            "task_id": "release-review/release_recommendation",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 135,
+            "completed": true,
+            "task_end_line": 144,
+            "execution_call_lines": [
+              137,
+              142
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-release-review-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "release-review",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-release-review-homogeneous.jsonl",
+        "gold": "B",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "release-review/profitability_review",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 82,
+            "completed": true,
+            "task_end_line": 99,
+            "execution_call_lines": [
+              84,
+              97
+            ]
+          },
+          {
+            "task_id": "release-review/tech_risk_review",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 90,
+            "completed": true,
+            "task_end_line": 106,
+            "execution_call_lines": [
+              92,
+              104
+            ]
+          },
+          {
+            "task_id": "release-review/release_recommendation",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 135,
+            "completed": true,
+            "task_end_line": 144,
+            "execution_call_lines": [
+              137,
+              142
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-release-review-overconfident",
+        "condition": "overconfident",
+        "case_id": "release-review",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-release-review-overconfident.jsonl",
+        "gold": "B",
+        "root_worker": "C",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "release-review/profitability",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 82,
+            "completed": true,
+            "task_end_line": 106,
+            "execution_call_lines": [
+              84,
+              104
+            ]
+          },
+          {
+            "task_id": "release-review/tech_risk",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 90,
+            "completed": true,
+            "task_end_line": 99,
+            "execution_call_lines": [
+              92,
+              97
+            ]
+          },
+          {
+            "task_id": "release-review/release_recommendation",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 135,
+            "completed": true,
+            "task_end_line": 144,
+            "execution_call_lines": [
+              137,
+              142
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-baseline",
+        "condition": "baseline",
+        "case_id": "game-design-architecture",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-baseline.jsonl",
+        "gold": "A",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "execute",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "game-design-architecture",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-homogeneous.jsonl",
+        "gold": "A",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "execute",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-overconfident",
+        "condition": "overconfident",
+        "case_id": "game-design-architecture",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-overconfident.jsonl",
+        "gold": "A",
+        "root_worker": "C",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "game-design-architecture/budget_schedule",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 75,
+            "completed": true,
+            "task_end_line": 99,
+            "execution_call_lines": [
+              77,
+              97
+            ]
+          },
+          {
+            "task_id": "game-design-architecture/tech_design",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 90,
+            "completed": true,
+            "task_end_line": 106,
+            "execution_call_lines": [
+              92,
+              104
+            ]
+          },
+          {
+            "task_id": "game-design-architecture/integration",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 135,
+            "completed": true,
+            "task_end_line": 144,
+            "execution_call_lines": [
+              137,
+              142
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-payment-redesign-baseline",
+        "condition": "baseline",
+        "case_id": "payment-redesign",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-baseline.jsonl",
+        "gold": "A",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "execute",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-payment-redesign-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "payment-redesign",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-homogeneous.jsonl",
+        "gold": "A",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "execute",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-payment-redesign-overconfident",
+        "condition": "overconfident",
+        "case_id": "payment-redesign",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-overconfident.jsonl",
+        "gold": "A",
+        "root_worker": "C",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "payment-redesign/migration_math",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 75,
+            "completed": true,
+            "task_end_line": 99,
+            "execution_call_lines": [
+              77,
+              97
+            ]
+          },
+          {
+            "task_id": "payment-redesign/tech_design",
+            "requester": "C",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 90,
+            "completed": true,
+            "task_end_line": 106,
+            "execution_call_lines": [
+              92,
+              104
+            ]
+          },
+          {
+            "task_id": "payment-redesign/ops_comm",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 135,
+            "completed": true,
+            "task_end_line": 144,
+            "execution_call_lines": [
+              137,
+              142
+            ]
+          },
+          {
+            "task_id": "payment-redesign/final_report",
+            "requester": "C",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 173,
+            "completed": true,
+            "task_end_line": 182,
+            "execution_call_lines": [
+              175,
+              180
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-baseline",
+        "condition": "baseline",
+        "case_id": "growth-roadmap",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-baseline.jsonl",
+        "gold": "B",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "growth-roadmap",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-homogeneous.jsonl",
+        "gold": "B",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-overconfident",
+        "condition": "overconfident",
+        "case_id": "growth-roadmap",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-overconfident.jsonl",
+        "gold": "B",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-launch-operations-baseline",
+        "condition": "baseline",
+        "case_id": "launch-operations",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-launch-operations-baseline.jsonl",
+        "gold": "C",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-launch-operations-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "launch-operations",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-launch-operations-homogeneous.jsonl",
+        "gold": "C",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r1-launch-operations-overconfident",
+        "condition": "overconfident",
+        "case_id": "launch-operations",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-launch-operations-overconfident.jsonl",
+        "gold": "C",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "game-design-architecture",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-homogeneous.jsonl",
+        "gold": "A",
+        "root_worker": "A",
+        "root_award_line": 57,
+        "root_mode": "execute",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-overconfident",
+        "condition": "overconfident",
+        "case_id": "game-design-architecture",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-overconfident.jsonl",
+        "gold": "A",
+        "root_worker": "C",
+        "root_award_line": 39,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "game-design-architecture/budget_schedule",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 91,
+            "completed": true,
+            "task_end_line": 108,
+            "execution_call_lines": [
+              93,
+              106
+            ]
+          },
+          {
+            "task_id": "game-design-architecture/design_draft",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 99,
+            "completed": true,
+            "task_end_line": 115,
+            "execution_call_lines": [
+              101,
+              113
+            ]
+          },
+          {
+            "task_id": "game-design-architecture/integration_review",
+            "requester": "C",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 144,
+            "completed": true,
+            "task_end_line": 153,
+            "execution_call_lines": [
+              146,
+              151
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-baseline",
+        "condition": "baseline",
+        "case_id": "game-design-architecture",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-baseline.jsonl",
+        "gold": "A",
+        "root_worker": "A",
+        "root_award_line": 42,
+        "root_mode": "execute",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-payment-redesign-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "payment-redesign",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-homogeneous.jsonl",
+        "gold": "A",
+        "root_worker": "A",
+        "root_award_line": 33,
+        "root_mode": "execute",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-payment-redesign-overconfident",
+        "condition": "overconfident",
+        "case_id": "payment-redesign",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-overconfident.jsonl",
+        "gold": "A",
+        "root_worker": "C",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "payment-redesign/ops_plan",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 69,
+            "completed": true,
+            "task_end_line": 99,
+            "execution_call_lines": [
+              71,
+              97
+            ]
+          },
+          {
+            "task_id": "payment-redesign/tech_design",
+            "requester": "C",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 90,
+            "completed": true,
+            "task_end_line": 106,
+            "execution_call_lines": [
+              92,
+              104
+            ]
+          },
+          {
+            "task_id": "payment-redesign/integrate",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 153,
+            "completed": true,
+            "task_end_line": 162,
+            "execution_call_lines": [
+              155,
+              160
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-payment-redesign-baseline",
+        "condition": "baseline",
+        "case_id": "payment-redesign",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-baseline.jsonl",
+        "gold": "A",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "payment-redesign/support_comm",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 69,
+            "completed": true,
+            "task_end_line": 112,
+            "execution_call_lines": [
+              71,
+              110
+            ]
+          },
+          {
+            "task_id": "payment-redesign/tech_design",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 93,
+            "completed": true,
+            "task_end_line": 102,
+            "execution_call_lines": [
+              95,
+              100
+            ]
+          },
+          {
+            "task_id": "payment-redesign/integrate",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 141,
+            "completed": true,
+            "task_end_line": 150,
+            "execution_call_lines": [
+              143,
+              148
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "growth-roadmap",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-homogeneous.jsonl",
+        "gold": "B",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "execute",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-overconfident",
+        "condition": "overconfident",
+        "case_id": "growth-roadmap",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-overconfident.jsonl",
+        "gold": "B",
+        "root_worker": "C",
+        "root_award_line": 39,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "growth-roadmap/business_analysis",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 78,
+            "completed": true,
+            "task_end_line": 108,
+            "execution_call_lines": [
+              80,
+              106
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/technical_analysis",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 99,
+            "completed": true,
+            "task_end_line": 115,
+            "execution_call_lines": [
+              101,
+              113
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/integration",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 144,
+            "completed": true,
+            "task_end_line": 153,
+            "execution_call_lines": [
+              146,
+              151
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-baseline",
+        "condition": "baseline",
+        "case_id": "growth-roadmap",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-baseline.jsonl",
+        "gold": "B",
+        "root_worker": "A",
+        "root_award_line": 39,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "growth-roadmap/economics",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 68,
+            "completed": true,
+            "task_end_line": 77,
+            "execution_call_lines": [
+              70,
+              75
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/design",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 106,
+            "completed": true,
+            "task_end_line": 118,
+            "execution_call_lines": [
+              108,
+              116
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/integrate",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 150,
+            "completed": true,
+            "task_end_line": 162,
+            "execution_call_lines": [
+              152,
+              160
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-launch-operations-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "launch-operations",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-homogeneous.jsonl",
+        "gold": "C",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "execute",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-launch-operations-overconfident",
+        "condition": "overconfident",
+        "case_id": "launch-operations",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-overconfident.jsonl",
+        "gold": "C",
+        "root_worker": "C",
+        "root_award_line": 36,
+        "root_mode": "execute",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-launch-operations-baseline",
+        "condition": "baseline",
+        "case_id": "launch-operations",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-baseline.jsonl",
+        "gold": "C",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "launch-operations/capacity_and_policy",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 78,
+            "completed": true,
+            "task_end_line": 90,
+            "execution_call_lines": [
+              80,
+              88
+            ]
+          },
+          {
+            "task_id": "launch-operations/customer_comms",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 109,
+            "completed": true,
+            "task_end_line": 118,
+            "execution_call_lines": [
+              111,
+              116
+            ]
+          },
+          {
+            "task_id": "launch-operations/integrate",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 147,
+            "completed": true,
+            "task_end_line": 156,
+            "execution_call_lines": [
+              149,
+              154
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-release-review-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "release-review",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-release-review-homogeneous.jsonl",
+        "gold": "B",
+        "root_worker": "A",
+        "root_award_line": 42,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "release-review/profitability_review",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 94,
+            "completed": true,
+            "task_end_line": 111,
+            "execution_call_lines": [
+              96,
+              109
+            ]
+          },
+          {
+            "task_id": "release-review/tech_risk_review",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 102,
+            "completed": true,
+            "task_end_line": 118,
+            "execution_call_lines": [
+              104,
+              116
+            ]
+          },
+          {
+            "task_id": "release-review/release_recommendation",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 147,
+            "completed": true,
+            "task_end_line": 156,
+            "execution_call_lines": [
+              149,
+              154
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-release-review-overconfident",
+        "condition": "overconfident",
+        "case_id": "release-review",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-release-review-overconfident.jsonl",
+        "gold": "B",
+        "root_worker": "C",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "release-review/profitability",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 82,
+            "completed": true,
+            "task_end_line": 99,
+            "execution_call_lines": [
+              84,
+              97
+            ]
+          },
+          {
+            "task_id": "release-review/tech_risk",
+            "requester": "C",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 90,
+            "completed": true,
+            "task_end_line": 106,
+            "execution_call_lines": [
+              92,
+              104
+            ]
+          },
+          {
+            "task_id": "release-review/release_recommendation",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 135,
+            "completed": true,
+            "task_end_line": 144,
+            "execution_call_lines": [
+              137,
+              142
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r2-release-review-baseline",
+        "condition": "baseline",
+        "case_id": "release-review",
+        "block": 2,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r2-release-review-baseline.jsonl",
+        "gold": "B",
+        "root_worker": "B",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "release-review/profitability",
+            "requester": "B",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 75,
+            "completed": true,
+            "task_end_line": 99,
+            "execution_call_lines": [
+              77,
+              97
+            ]
+          },
+          {
+            "task_id": "release-review/tech_risk",
+            "requester": "B",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 90,
+            "completed": true,
+            "task_end_line": 106,
+            "execution_call_lines": [
+              92,
+              104
+            ]
+          },
+          {
+            "task_id": "release-review/recommendation",
+            "requester": "B",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 135,
+            "completed": true,
+            "task_end_line": 144,
+            "execution_call_lines": [
+              137,
+              142
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-payment-redesign-overconfident",
+        "condition": "overconfident",
+        "case_id": "payment-redesign",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-overconfident.jsonl",
+        "gold": "A",
+        "root_worker": "C",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": [
+          {
+            "task_id": "payment-redesign/design_analysis",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 75,
+            "completed": true,
+            "task_end_line": 106,
+            "execution_call_lines": [
+              77,
+              104
+            ]
+          },
+          {
+            "task_id": "payment-redesign/migration_ops",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 90,
+            "completed": true,
+            "task_end_line": 99,
+            "execution_call_lines": [
+              92,
+              97
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-payment-redesign-baseline",
+        "condition": "baseline",
+        "case_id": "payment-redesign",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-baseline.jsonl",
+        "gold": "A",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-payment-redesign-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "payment-redesign",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-payment-redesign-homogeneous.jsonl",
+        "gold": "A",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-overconfident",
+        "condition": "overconfident",
+        "case_id": "growth-roadmap",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-overconfident.jsonl",
+        "gold": "B",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-baseline",
+        "condition": "baseline",
+        "case_id": "growth-roadmap",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-baseline.jsonl",
+        "gold": "B",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "growth-roadmap",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-growth-roadmap-homogeneous.jsonl",
+        "gold": "B",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-launch-operations-overconfident",
+        "condition": "overconfident",
+        "case_id": "launch-operations",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-launch-operations-overconfident.jsonl",
+        "gold": "C",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-launch-operations-baseline",
+        "condition": "baseline",
+        "case_id": "launch-operations",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-launch-operations-baseline.jsonl",
+        "gold": "C",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-launch-operations-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "launch-operations",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-launch-operations-homogeneous.jsonl",
+        "gold": "C",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-release-review-overconfident",
+        "condition": "overconfident",
+        "case_id": "release-review",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-release-review-overconfident.jsonl",
+        "gold": "B",
+        "root_worker": null,
+        "root_award_line": null,
+        "root_mode": null,
+        "root_gold_match": null,
+        "status": "failed",
+        "facts_passed": false,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-release-review-baseline",
+        "condition": "baseline",
+        "case_id": "release-review",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-release-review-baseline.jsonl",
+        "gold": "B",
+        "root_worker": "A",
+        "root_award_line": 75,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "release-review/profitability",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 127,
+            "completed": true,
+            "task_end_line": 151,
+            "execution_call_lines": [
+              129,
+              149
+            ]
+          },
+          {
+            "task_id": "release-review/tech_risk",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 135,
+            "completed": true,
+            "task_end_line": 144,
+            "execution_call_lines": [
+              137,
+              142
+            ]
+          },
+          {
+            "task_id": "release-review/release_recommendation",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 180,
+            "completed": true,
+            "task_end_line": 189,
+            "execution_call_lines": [
+              182,
+              187
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-release-review-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "release-review",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-release-review-homogeneous.jsonl",
+        "gold": "B",
+        "root_worker": "A",
+        "root_award_line": 36,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "release-review/tech_risk",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 75,
+            "completed": true,
+            "task_end_line": 84,
+            "execution_call_lines": [
+              77,
+              82
+            ]
+          },
+          {
+            "task_id": "release-review/profitability",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 109,
+            "completed": true,
+            "task_end_line": 118,
+            "execution_call_lines": [
+              111,
+              116
+            ]
+          },
+          {
+            "task_id": "release-review/release_recommendation",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 147,
+            "completed": true,
+            "task_end_line": 156,
+            "execution_call_lines": [
+              149,
+              154
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-overconfident",
+        "condition": "overconfident",
+        "case_id": "game-design-architecture",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-overconfident.jsonl",
+        "gold": "A",
+        "root_worker": "C",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "game-design-architecture/architecture",
+            "requester": "C",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 109,
+            "completed": true,
+            "task_end_line": 162,
+            "execution_call_lines": [
+              118,
+              160
+            ]
+          },
+          {
+            "task_id": "game-design-architecture/budget_scope",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 131,
+            "completed": true,
+            "task_end_line": 148,
+            "execution_call_lines": [
+              133,
+              146
+            ]
+          },
+          {
+            "task_id": "game-design-architecture/game_design",
+            "requester": "C",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 139,
+            "completed": true,
+            "task_end_line": 155,
+            "execution_call_lines": [
+              141,
+              153
+            ]
+          },
+          {
+            "task_id": "game-design-architecture/integration",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 191,
+            "completed": true,
+            "task_end_line": 200,
+            "execution_call_lines": [
+              193,
+              198
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-baseline",
+        "condition": "baseline",
+        "case_id": "game-design-architecture",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-baseline.jsonl",
+        "gold": "A",
+        "root_worker": "A",
+        "root_award_line": 42,
+        "root_mode": "execute",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "game-design-architecture",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous.jsonl",
+        "gold": "A",
+        "root_worker": "A",
+        "root_award_line": 36,
+        "root_mode": "delegate",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "game-design-architecture/budget_facts",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 97,
+            "completed": true,
+            "task_end_line": 121,
+            "execution_call_lines": [
+              99,
+              119
+            ]
+          },
+          {
+            "task_id": "game-design-architecture/game_design",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 112,
+            "completed": true,
+            "task_end_line": 146,
+            "execution_call_lines": [
+              114,
+              144
+            ]
+          },
+          {
+            "task_id": "game-design-architecture/code_architecture",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 137,
+            "completed": true,
+            "task_end_line": 153,
+            "execution_call_lines": [
+              139,
+              151
+            ]
+          },
+          {
+            "task_id": "game-design-architecture/integration_report",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 200,
+            "completed": true,
+            "task_end_line": 209,
+            "execution_call_lines": [
+              202,
+              207
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "recovery": {
+    "conditions": {
+      "baseline": {
+        "runs": 5,
+        "root_gold_matches": 1,
+        "root_gold_mismatches": 4,
+        "root_unawarded": 0,
+        "delegate_roots": 4,
+        "cross_worker_assignment_runs": 4,
+        "cross_worker_completed_runs": 4,
+        "facts_passed": 4,
+        "mismatch_but_facts_passed": 3,
+        "mismatch_with_completed_cross_worker_and_facts_passed": 3
+      },
+      "homogeneous": {
+        "runs": 5,
+        "root_gold_matches": 1,
+        "root_gold_mismatches": 4,
+        "root_unawarded": 0,
+        "delegate_roots": 2,
+        "cross_worker_assignment_runs": 2,
+        "cross_worker_completed_runs": 2,
+        "facts_passed": 5,
+        "mismatch_but_facts_passed": 4,
+        "mismatch_with_completed_cross_worker_and_facts_passed": 2
+      },
+      "overconfident": {
+        "runs": 6,
+        "root_gold_matches": 3,
+        "root_gold_mismatches": 3,
+        "root_unawarded": 0,
+        "delegate_roots": 6,
+        "cross_worker_assignment_runs": 5,
+        "cross_worker_completed_runs": 5,
+        "facts_passed": 6,
+        "mismatch_but_facts_passed": 3,
+        "mismatch_with_completed_cross_worker_and_facts_passed": 3
+      }
+    },
+    "runs": [
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline",
+        "condition": "baseline",
+        "case_id": "growth-roadmap",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline.jsonl",
+        "gold": "B",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": false,
+        "subtask_assignments": [
+          {
+            "task_id": "growth-roadmap/biz_analysis",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 91,
+            "completed": true,
+            "task_end_line": 107,
+            "execution_call_lines": [
+              100,
+              105
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/ops_readiness",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 119,
+            "completed": true,
+            "task_end_line": 149,
+            "execution_call_lines": [
+              121,
+              147
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/tech_design",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 140,
+            "completed": true,
+            "task_end_line": 156,
+            "execution_call_lines": [
+              142,
+              154
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/integrate",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 185,
+            "completed": true,
+            "task_end_line": 194,
+            "execution_call_lines": [
+              187,
+              192
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "growth-roadmap",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-homogeneous.jsonl",
+        "gold": "B",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "execute",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-overconfident",
+        "condition": "overconfident",
+        "case_id": "growth-roadmap",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-overconfident.jsonl",
+        "gold": "B",
+        "root_worker": "A",
+        "root_award_line": 36,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "growth-roadmap/ops_readiness",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 97,
+            "completed": true,
+            "task_end_line": 150,
+            "execution_call_lines": [
+              106,
+              148
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/tech_design",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 119,
+            "completed": true,
+            "task_end_line": 143,
+            "execution_call_lines": [
+              121,
+              141
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/profit_analysis",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 127,
+            "completed": true,
+            "task_end_line": 136,
+            "execution_call_lines": [
+              129,
+              134
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/integration",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 179,
+            "completed": true,
+            "task_end_line": 188,
+            "execution_call_lines": [
+              181,
+              186
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline",
+        "condition": "baseline",
+        "case_id": "launch-operations",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline.jsonl",
+        "gold": "C",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "launch-operations/capacity_and_policy",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 69,
+            "completed": true,
+            "task_end_line": 116,
+            "execution_call_lines": [
+              71,
+              114
+            ]
+          },
+          {
+            "task_id": "launch-operations/customer_comms",
+            "requester": "A",
+            "worker": "B",
+            "mode": "delegate",
+            "different_worker": true,
+            "award_line": 90,
+            "completed": true,
+            "task_end_line": 258,
+            "execution_call_lines": [
+              251,
+              256
+            ]
+          },
+          {
+            "task_id": "launch-operations/customer_comms/capacity_analysis",
+            "requester": "B",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 158,
+            "completed": true,
+            "task_end_line": 197,
+            "execution_call_lines": [
+              168,
+              195
+            ]
+          },
+          {
+            "task_id": "launch-operations/customer_comms/comms_pack",
+            "requester": "B",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 166,
+            "completed": true,
+            "task_end_line": 204,
+            "execution_call_lines": [
+              175,
+              202
+            ]
+          },
+          {
+            "task_id": "launch-operations/customer_comms/single_source",
+            "requester": "B",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 188,
+            "completed": true,
+            "task_end_line": 211,
+            "execution_call_lines": [
+              190,
+              209
+            ]
+          },
+          {
+            "task_id": "launch-operations/customer_comms/ops_schedule",
+            "requester": "B",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 240,
+            "completed": true,
+            "task_end_line": 249,
+            "execution_call_lines": [
+              242,
+              247
+            ]
+          },
+          {
+            "task_id": "launch-operations/integrate_report",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 287,
+            "completed": true,
+            "task_end_line": 296,
+            "execution_call_lines": [
+              289,
+              294
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "launch-operations",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous.jsonl",
+        "gold": "C",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "launch-operations/capacity_calc",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 98,
+            "completed": true,
+            "task_end_line": 138,
+            "execution_call_lines": [
+              100,
+              136
+            ]
+          },
+          {
+            "task_id": "launch-operations/policy_comms",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 106,
+            "completed": true,
+            "task_end_line": 189,
+            "execution_call_lines": [
+              108,
+              187
+            ]
+          },
+          {
+            "task_id": "launch-operations/schedule_contingency",
+            "requester": "A",
+            "worker": "B",
+            "mode": "delegate",
+            "different_worker": true,
+            "award_line": 121,
+            "completed": true,
+            "task_end_line": 258,
+            "execution_call_lines": [
+              251,
+              256
+            ]
+          },
+          {
+            "task_id": "launch-operations/schedule_contingency/capacity_calc",
+            "requester": "B",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 180,
+            "completed": true,
+            "task_end_line": 204,
+            "execution_call_lines": [
+              182,
+              202
+            ]
+          },
+          {
+            "task_id": "launch-operations/schedule_contingency/schedule_table",
+            "requester": "B",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 195,
+            "completed": true,
+            "task_end_line": 214,
+            "execution_call_lines": [
+              197,
+              212
+            ]
+          },
+          {
+            "task_id": "launch-operations/schedule_contingency/contingency_plan",
+            "requester": "B",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 240,
+            "completed": true,
+            "task_end_line": 249,
+            "execution_call_lines": [
+              242,
+              247
+            ]
+          },
+          {
+            "task_id": "launch-operations/integrate",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 293,
+            "completed": true,
+            "task_end_line": 302,
+            "execution_call_lines": [
+              295,
+              300
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident",
+        "condition": "overconfident",
+        "case_id": "launch-operations",
+        "block": 1,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident.jsonl",
+        "gold": "C",
+        "root_worker": "C",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "launch-operations/capacity_and_facts",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 91,
+            "completed": true,
+            "task_end_line": 138,
+            "execution_call_lines": [
+              100,
+              136
+            ]
+          },
+          {
+            "task_id": "launch-operations/staffing_alternatives",
+            "requester": "C",
+            "worker": "C",
+            "mode": "delegate",
+            "different_worker": false,
+            "award_line": 106,
+            "completed": true,
+            "task_end_line": 296,
+            "execution_call_lines": [
+              289,
+              294
+            ]
+          },
+          {
+            "task_id": "launch-operations/tech_dependency",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 180,
+            "completed": true,
+            "task_end_line": 235,
+            "execution_call_lines": [
+              197,
+              233
+            ]
+          },
+          {
+            "task_id": "launch-operations/staffing_alternatives/cost_effect",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 188,
+            "completed": true,
+            "task_end_line": 227,
+            "execution_call_lines": [
+              204,
+              225
+            ]
+          },
+          {
+            "task_id": "launch-operations/staffing_alternatives/customer_messaging",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 210,
+            "completed": true,
+            "task_end_line": 242,
+            "execution_call_lines": [
+              220,
+              240
+            ]
+          },
+          {
+            "task_id": "launch-operations/staffing_alternatives/queue_policy",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 218,
+            "completed": true,
+            "task_end_line": 249,
+            "execution_call_lines": [
+              228,
+              247
+            ]
+          },
+          {
+            "task_id": "launch-operations/staffing_alternatives/staffing_alternatives",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 278,
+            "completed": true,
+            "task_end_line": 287,
+            "execution_call_lines": [
+              280,
+              285
+            ]
+          },
+          {
+            "task_id": "launch-operations/integrated_package",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 334,
+            "completed": true,
+            "task_end_line": 343,
+            "execution_call_lines": [
+              336,
+              341
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident",
+        "condition": "overconfident",
+        "case_id": "payment-redesign",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident.jsonl",
+        "gold": "A",
+        "root_worker": "A",
+        "root_award_line": 36,
+        "root_mode": "delegate",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "payment-redesign/migration_calc",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 104,
+            "completed": true,
+            "task_end_line": 136,
+            "execution_call_lines": [
+              106,
+              134
+            ]
+          },
+          {
+            "task_id": "payment-redesign/support_comms",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 112,
+            "completed": true,
+            "task_end_line": 143,
+            "execution_call_lines": [
+              114,
+              141
+            ]
+          },
+          {
+            "task_id": "payment-redesign/tech_design",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 127,
+            "completed": true,
+            "task_end_line": 150,
+            "execution_call_lines": [
+              129,
+              148
+            ]
+          },
+          {
+            "task_id": "payment-redesign/integrate",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 185,
+            "completed": true,
+            "task_end_line": 194,
+            "execution_call_lines": [
+              187,
+              192
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-baseline",
+        "condition": "baseline",
+        "case_id": "payment-redesign",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-baseline.jsonl",
+        "gold": "A",
+        "root_worker": "A",
+        "root_award_line": 45,
+        "root_mode": "execute",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "payment-redesign",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-homogeneous.jsonl",
+        "gold": "A",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "execute",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-overconfident",
+        "condition": "overconfident",
+        "case_id": "growth-roadmap",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-overconfident.jsonl",
+        "gold": "B",
+        "root_worker": "C",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "growth-roadmap/biz_analysis",
+            "requester": "C",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 69,
+            "completed": true,
+            "task_end_line": 99,
+            "execution_call_lines": [
+              71,
+              97
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/tech_plan",
+            "requester": "C",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 90,
+            "completed": true,
+            "task_end_line": 106,
+            "execution_call_lines": [
+              92,
+              104
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/ops_integration",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 135,
+            "completed": true,
+            "task_end_line": 144,
+            "execution_call_lines": [
+              137,
+              142
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline",
+        "condition": "baseline",
+        "case_id": "growth-roadmap",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline.jsonl",
+        "gold": "B",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "growth-roadmap/profit_analysis",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 59,
+            "completed": true,
+            "task_end_line": 68,
+            "execution_call_lines": [
+              61,
+              66
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/business_recommendation",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 129,
+            "completed": true,
+            "task_end_line": 175,
+            "execution_call_lines": [
+              138,
+              173
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/ops_readiness",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 144,
+            "completed": true,
+            "task_end_line": 183,
+            "execution_call_lines": [
+              146,
+              181
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/tech_design",
+            "requester": "A",
+            "worker": "C",
+            "mode": "delegate",
+            "different_worker": true,
+            "award_line": 159,
+            "completed": true,
+            "task_end_line": 258,
+            "execution_call_lines": [
+              251,
+              256
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/tech_design/tech_change_design",
+            "requester": "C",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 202,
+            "completed": true,
+            "task_end_line": 211,
+            "execution_call_lines": [
+              204,
+              209
+            ]
+          },
+          {
+            "task_id": "growth-roadmap/tech_design/ops_rollout_plan",
+            "requester": "C",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 240,
+            "completed": true,
+            "task_end_line": 249,
+            "execution_call_lines": [
+              242,
+              247
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "growth-roadmap",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-homogeneous.jsonl",
+        "gold": "B",
+        "root_worker": "A",
+        "root_award_line": 30,
+        "root_mode": "execute",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": []
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-overconfident",
+        "condition": "overconfident",
+        "case_id": "launch-operations",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-overconfident.jsonl",
+        "gold": "C",
+        "root_worker": "C",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": true,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "launch-operations/capacity_analysis",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 75,
+            "completed": true,
+            "task_end_line": 84,
+            "execution_call_lines": [
+              77,
+              82
+            ]
+          },
+          {
+            "task_id": "launch-operations/tech_status",
+            "requester": "C",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 115,
+            "completed": true,
+            "task_end_line": 124,
+            "execution_call_lines": [
+              117,
+              122
+            ]
+          },
+          {
+            "task_id": "launch-operations/ops_package",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 153,
+            "completed": true,
+            "task_end_line": 162,
+            "execution_call_lines": [
+              155,
+              160
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-baseline",
+        "condition": "baseline",
+        "case_id": "launch-operations",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-baseline.jsonl",
+        "gold": "C",
+        "root_worker": "A",
+        "root_award_line": 36,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "launch-operations/capacity_and_risk",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 81,
+            "completed": true,
+            "task_end_line": 105,
+            "execution_call_lines": [
+              83,
+              103
+            ]
+          },
+          {
+            "task_id": "launch-operations/customer_comms",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 96,
+            "completed": true,
+            "task_end_line": 112,
+            "execution_call_lines": [
+              98,
+              110
+            ]
+          },
+          {
+            "task_id": "launch-operations/integration",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 141,
+            "completed": true,
+            "task_end_line": 150,
+            "execution_call_lines": [
+              143,
+              148
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous",
+        "condition": "homogeneous",
+        "case_id": "launch-operations",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous.jsonl",
+        "gold": "C",
+        "root_worker": "A",
+        "root_award_line": 48,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "launch-operations/capacity_calc",
+            "requester": "A",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 93,
+            "completed": true,
+            "task_end_line": 119,
+            "execution_call_lines": [
+              95,
+              117
+            ]
+          },
+          {
+            "task_id": "launch-operations/policy_schedule",
+            "requester": "A",
+            "worker": "C",
+            "mode": "delegate",
+            "different_worker": true,
+            "award_line": 108,
+            "completed": true,
+            "task_end_line": 276,
+            "execution_call_lines": [
+              269,
+              274
+            ]
+          },
+          {
+            "task_id": "launch-operations/policy_schedule/capacity_plan",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 160,
+            "completed": true,
+            "task_end_line": 184,
+            "execution_call_lines": [
+              162,
+              182
+            ]
+          },
+          {
+            "task_id": "launch-operations/policy_schedule/policy_schedule",
+            "requester": "C",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 175,
+            "completed": true,
+            "task_end_line": 191,
+            "execution_call_lines": [
+              177,
+              189
+            ]
+          },
+          {
+            "task_id": "launch-operations/policy_schedule/contingency_checklist",
+            "requester": "C",
+            "worker": "B",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 236,
+            "completed": true,
+            "task_end_line": 260,
+            "execution_call_lines": [
+              238,
+              258
+            ]
+          },
+          {
+            "task_id": "launch-operations/policy_schedule/customer_comms",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 251,
+            "completed": true,
+            "task_end_line": 267,
+            "execution_call_lines": [
+              253,
+              265
+            ]
+          },
+          {
+            "task_id": "launch-operations/contingency_checklist",
+            "requester": "A",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 339,
+            "completed": true,
+            "task_end_line": 363,
+            "execution_call_lines": [
+              341,
+              361
+            ]
+          },
+          {
+            "task_id": "launch-operations/customer_comms",
+            "requester": "A",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 354,
+            "completed": true,
+            "task_end_line": 370,
+            "execution_call_lines": [
+              356,
+              368
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r3-release-review-overconfident",
+        "condition": "overconfident",
+        "case_id": "release-review",
+        "block": 3,
+        "trace": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-recovery-r3-release-review-overconfident.jsonl",
+        "gold": "B",
+        "root_worker": "C",
+        "root_award_line": 30,
+        "root_mode": "delegate",
+        "root_gold_match": false,
+        "status": "succeeded",
+        "facts_passed": true,
+        "subtask_assignments": [
+          {
+            "task_id": "release-review/profitability_review",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 75,
+            "completed": true,
+            "task_end_line": 99,
+            "execution_call_lines": [
+              77,
+              97
+            ]
+          },
+          {
+            "task_id": "release-review/tech_risk_review",
+            "requester": "C",
+            "worker": "A",
+            "mode": "execute",
+            "different_worker": true,
+            "award_line": 90,
+            "completed": true,
+            "task_end_line": 106,
+            "execution_call_lines": [
+              92,
+              104
+            ]
+          },
+          {
+            "task_id": "release-review/release_recommendation",
+            "requester": "C",
+            "worker": "C",
+            "mode": "execute",
+            "different_worker": false,
+            "award_line": 135,
+            "completed": true,
+            "task_end_line": 144,
+            "execution_call_lines": [
+              137,
+              142
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

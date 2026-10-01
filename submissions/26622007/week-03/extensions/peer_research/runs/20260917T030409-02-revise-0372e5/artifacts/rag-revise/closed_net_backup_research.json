@@ -1,0 +1,44 @@
+{
+  "status": "succeeded",
+  "worker": "B",
+  "artifact": {
+    "summary": "## 폐쇄망 배포 제약에서의 백업·복구·운영 부담 조사 (closed_net_backup_research)\n\n가정: 100만×1536차원 벡터, 30 tenant, tenant 필터 top-10, 일 1% 갱신(약 1만 벡터/일), 기존 PostgreSQL 운영 인력 2명·증원 불가, **외부 관리형 SaaS 사용 불가(폐쇄망)**. 내부 결정 ID **ADR-RAG-7429**, 기존 PostgreSQL 백업 책임 **플랫폼팀**(handoff_memory에서 확인). 실제 latency/복구 벤치마크는 수행하지 않았으므로 성능·복구 성공 수치는 `not_measured`다.\n\n### 1. 이전 대비 변경점\n\n| 항목 | 이전 실행 | 이번 실행(폐망) |\n|---|---|---|\n| 배포 형태 | 관리형 SaaS 검토 가능 | **외부 관리형 SaaS 불가**, 자체 호스팅만 |\n| Qdrant 근거 | 공식 URL 미확보(unresolved) | **공식 문서 확보**(snapshots, multitenancy) |\n| 추천 | pgvector 1순위, Qdrant 2순위(근거 부족) | pgvector 우위 유지, 단 Qdrant 자체 호스팅 부담을 정량적 근거로 재평가 |\n| 백업 책임 | 플랫폼(기존 PostgreSQL) | 동일, Qdrant는 **신규 책임 주체 필요** |\n\n### 2. 백업·복구 비교 표\n\n| 항목 | pgvector (기존 PostgreSQL 재사용) | 자체 호스팅 Qdrant |\n|---|---|---|\n| 백업 방식 | 파일시스템 백업 + WAL 아카이빙(PITR), `pg_dump`/`pg_restore` 논리 덤프 | 렉션 단위 `tar` 스냅(노드별 개별 생성) |\n| PITR | 지원. 특정 시점 복구 가능(문서상 고신뢰 상황의 선호 기법) | **PITR 개념 없음**. 스냅샷 시점으로만 복구 |\n| 복구 범위 | 연속 아카이빙은 **전체 클러스터 복원만**, 부분집합 복원 불가 | 컬렉션/샤드 단위 복구 가능(부분 복구 유연) |\n| 논리 백업 | `pg_dump`는 논리 덤프로 WAL 리플레이 불가 → PITR 대체 불가, 보조 수단 | 스냅샷이 사실상 유일한 백업 수단 |\n| 버전 제약 | PostgreSQL 메이저 버전 정책 | 스냅샷은 **동일 minor 또는 다음 minor 버전** 클러스터로만 복원 가능 |\n| 다중 노드 | 클러스터 단위 관리 | 분산 시 **노드별 스냅샷 개별 생성** 필요, 시작 시 복구는 단일 노드 전용 |\n| 기존 파이프라인 재사용 | **가능**(플랫팀 기존 백업 체계) | 불가, 신규 백업 파이프라인 구축 필요 |\n\n### 3. 운영 인력 2명·증원 불가 가정의 정성적 부담\n\n- **pgvector**: 기존 PostgreSQL 백업·복구 체계(플랫폼 책임)를 그대로 재사용한다. 신규 stateful 스택이 늘지 않으므로 2명 인력의 런북·온콜·모니터링 대상이 증가하지 않는다. 단점은 PITR 복구가 전체 클러스터 단위라 tenant 단위 부분 복구가 불가하다는 점이다.\n- **자체 호스팅 Qdrant**: 별도 stateful 서비스의 설치·업그레이드·스냅샷 스케줄·스토리지 관리·버전 호환성(스냅샷 minor 버전 제약) 관리가 추가된다. 분산 구성 시 노드별 스냅샷을 개별 관리해야 하며, PITR이 없어 RPO는 마지막 스냅 시점에 종속된다. 인력 증원이 불가하므로 **운영 부담은 pgvector 대비 명확히 증가**한다.\n- 결론: 폐쇄망 제약은 관리형 SaaS 이점을 제거하므로, 기존 PostgreSQL을 이미 운영하는 조직에서는 pgvector의 상대적 우위가 이전보다 **강화**된다.\n\n### 4. 배포/복구 체크리스트\n\n- [ ] pgvector: WAL 아카이빙 + 파일시스템 백업 구성, PITR 리허설(전체 클러스터 복원) 계획 수립 — **미실행, 검증 필요**\n- [ ] pgvector: `pg_dump`는 보조 수단으로만 사용, PITR 대체 불가 명시\n- [ ] Qdrant 채택 시: 스냅샷 스케줄·보관·복원 런북, 노드별 스냅샷 절차, minor 버전 호환 정책 문서화\n- [ ] Qdrant 채택 시: 신규 백업 파이프라인 담당 주체 지정(현재 미지정)\n- [ ] 두 대안 모두 실제 복구 시간(RTO)·데이터 손실(RPO) 측정 — **not_measured**\n- [ ] tenant 필터 검색 품질(recall) 검증은 별도 조사(index_tenant_research) 결과와 연계\n\n### 5. 미해결 항목\n\n- 실제 PITR 복구 시간·Qdrant 스냅샷 복구 시간 미측정(not_measured)\n- Qdrant 자체 호스팅 스토리지 요구량·비용 수치 미확보(비용 수치 임의 생성 금지)\n- Qdrant 스냅의 폐망 내 오프사이트 보관 전략 미정\n- 최종 저장소 권고는 index_tenant_research 및 decision_synthesis와 통합 후 확정",
+    "facts": {
+      "backup_owner": "플랫폼팀",
+      "internal_decision_id": "ADR-RAG-7429",
+      "measured_latency": "not_measured",
+      "external_saas_allowed": false,
+      "memory_refs": "mem-65823fff470a3d74, mem-4a1df38327a7d1de, mem-228e3524f75d90b1, mem-32d20f79baea194f",
+      "pgvector_pitr_supported": true,
+      "pgvector_pitr_restore_scope": "전체 클러스터 단위(부분집합 복원 불가)",
+      "pg_dump_is_logical_not_pitr": true,
+      "qdrant_snapshot_format": "tar archive (collection/node 단위)",
+      "qdrant_pitr_supported": false,
+      "qdrant_snapshot_version_constraint": "동일 minor 또는 다음 minor 버전 클러스터로만 복원 가능",
+      "qdrant_multinode_snapshot": "노드별 개별 생성 필요, 시작 시 복구는 단일 노드 전용",
+      "qdrant_multitenancy_approach": "단일 컬렉션 + payload 필터(is_tenant), user-defined sharding, tiered multitenancy",
+      "qdrant_official_evidence_obtained": true,
+      "ops_headcount": 2,
+      "headcount_increase_allowed": false,
+      "recommended_storage": "pgvector(기존 PostgreSQL 백업 체계 재사용) 우위 유지, Qdrant 자체 호스팅은 신규 stateful 운영 부담 증가로 2순위",
+      "unresolved": "실제 PITR/스냅샷 복구 시간·RTO·RPO 미측정; Qdrant 자체 호스팅 스토리지·비용 수치 미확보; 폐쇄망 오프사이트 스냅샷 보관 전략 미정; 최종 저장소는 index_tenant_research·decision_synthesis 통합 후 확정",
+      "cost_figures_fabricated": false,
+      "benchmark_executed": false
+    },
+    "evidence": [
+      "memory:mem-65823fff470a3d74 — backup_owner=플랫폼팀, internal_decision_id=ADR-RAG-7429, measured_latency=not_measured, pgvector PITR 지원 및 전체 클러스터 복원 한계, Qdrant 공식 근거 미확보(unresolved) 확인",
+      "memory:mem-4a1df38327a7d1de — 규모 가정(100만×1536, 30 tenant, 일 1% 갱신), pgvector HNSW/IVFFlat 기본 파라미터, Qdrant 공식 URL 미확보",
+      "memory:mem-228e3524f75d90b1 — 통합 결정 문서의 비교 표·미해결 항목, 성능 수치 not_measured 유지",
+      "memory:mem-32d20f79baea194f — pgvector post-filter/iterative scan, tenant 파티셔닝 권고",
+      "https://www.postgresql.org/docs/current/continuous-archiving.html — WAL 아카이빙+파일시스템 백업 결합 PITR, 전체 클러스터 복원만 지원(부분집합 복원 불가)",
+      "https://www.postgresql.org/docs/current/backup.html — pg_dump/pg_dumpall은 논리 덤프이며 WAL 리플레이에 사용 불가, PITR 대체 불가",
+      "https://www.postgresql.org/docs/18/app-pgrestore.html — pg_restore는 비-plain 아카이브에서 선택적/재정렬 복원 가능, large object 선택 복원 불가",
+      "https://qdrant.tech/documentation/snapshots/ — 스냅샷은 컬렉션/노드 단위 tar 아카이브, 분산 시 노드별 개별 생성, 동일 minor 또는 다음 minor 버전으로만 복원, 시작 시 복구는 단일 노드 전용, Qdrant Cloud는 별도 Backups 사용",
+      "https://qdrant.tech/documentation/manage-data/multitenancy/ — 단일 컬렉션 + payload 필터(is_tenant, v1.11.0+), user-defined sharding, tiered multitenancy로 tenant 분리",
+      "https://qdrant.tech/documentation/manage-data/indexing/ — tenant 인덱싱으로 동일 tenant 벡터 co-location 최적화",
+      "https://api.qdrant.tech/api-reference/snapshots/recover-from-snapshot.mdx — 스냅샷 복구 API가 노드의 컬렉션 데이터를 덮어(부분 복구 시 주의)",
+      "검증 미실행: 실제 PITR 복구 리허설, Qdrant 스샷 복구 테스트, latency/recall 벤치마크는 수행하지 않았으므로 not_measured로 표기"
+    ]
+  },
+  "error": ""
+}

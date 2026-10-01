@@ -1,0 +1,129 @@
+{
+  "case_id": "launch-operations",
+  "condition": "overconfident",
+  "block": 3,
+  "run_id": "20260921T113158-suite-ab4e67-r3-launch-operations-overconfident",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 29.5781,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 8,
+  "checks_total": 8,
+  "wrong_or_missing": [],
+  "calls": 5,
+  "http_requests": 5,
+  "http_responses": 5,
+  "http_429": 0,
+  "http_errors": {},
+  "retries": 0,
+  "transport_errors": 0,
+  "tasks": 1,
+  "max_depth": 0,
+  "awards": {
+    "C": 1
+  },
+  "root_award": "C",
+  "c_proposals": 1,
+  "c_high_bids": 1,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.004551786,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 29.4095,
+  "canonical_facts": {
+    "additional_agents": 4.0,
+    "backlog_without_hiring": 80.0,
+    "expected_contacts": 160.0,
+    "four_hour_capacity": 80.0,
+    "immediate_refund_promised": false,
+    "launch_hour": 10.0,
+    "required_total_agents": 8.0,
+    "support_window_hours": 4.0
+  },
+  "artifact_sha": "5d34771412c58aefc20841582176cc1d80f57132725ade2d90ad3bd39c379df0",
+  "root_plan_sha": "f1f9f2fadc90cc584a186a2760ec7afed8285ca3d75fec4f036f11ca39697cab",
+  "award_sha": "2bf98070fcf67fd4d219393d6224c88a0305cc41e0f60ed4b494870d76426425",
+  "controls_sha": "0bd8edc9a75b1410910b7c17efe0735ee6db615777048c7f3b4e950bb2e72d0b",
+  "root_plan": {
+    "mode": "execute",
+    "actions": [
+      "용량 계산: expected_contacts=800*0.20=160, four_hour_capacity=4명*5건/시간*4시간=80, backlog_without_hiring=160-80=80, required_total_agents=160/(5*4)=8, additional_agents=8-4=4, support_window_hours=4, launch_hour=10, immediate_refund_promised=false(광고 초안 문구는 확정 정책과 불일치)를 산출하고 계산식을 evidence에 기록",
+      "확정/미확인 사항표 작성: 확정(2영업일 내 처리 시작, 완료·PG 반영 미보장, 마감 시각들, 목14시 제품팀 전달)과 미확인(기술 배포 승인, 결제 검증, 인원 충원 승인)을 구분하고, 광고 '즉시 자동 환불'과 확정 정책 간 모순을 명시",
+      "단일 기준 문서 및 변경 전달·승인 흐름 설계: 광고/상담/랜딩이 동일 문구를 쓰도록 기준 문서 1개, 변경 요청→검토→승인→배포 순서와 담당·기한(목15시 광고, 목17시 상담 교육, 목18시 랜딩) 연결",
+      "고객 안내문·FAQ·상담 분류 기준 작성: 2영업일 내 처리 시작, 완료·PG 반영 미보장, 환불은 정책 범위 내 접수·심사임을 명시하고 분류 코드(환불/결제/기술/일반) 정의",
+      "인력 대안: 충원 불가 시 대기열 우선순위(결제 오류·중복 결제 우선), 예상 대기 안내, 셀프서비스/FAQ 우회, 문의 급증 시 추가 대응(비상 계획) 제시. 충원은 미승인으로 표기",
+      "비상 계획: 광고 지연(문구 미확정 시 광고 보류 또는 확정 문구만 게재), 기술 승인 지연(출시 연기 또는 기능 제한 출시), 문의 급증(우선순위·안내문 템플릿·에스컬레이션) 시나리오별 트리거·담당·행동",
+      "출시 직전 확인표: 목14시 제품팀 사양 수신, 목15/17/18시 마감, 기술 배포 승인·결제 검증 확인, 기준 문서 일치 확인, 상담 인력 배치 확인 항목과 체크 시각·담당",
+      "통합 보고서 작성: summary/evidence에 문서·표·코드 구조를 텍스트로 제시하고 실제 구현/테스트와 설계 제안을 구분, facts에 요구 숫자·boolean 키 포함"
+    ],
+    "steps": []
+  },
+  "intervals": [
+    {
+      "task_id": "launch-operations",
+      "worker": "C",
+      "start": "2026-09-21T12:22:27.534701+00:00",
+      "end": "2026-09-21T12:22:42.397166+00:00"
+    }
+  ],
+  "overlaps": [],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 1,
+    "peak_calls_by_worker": {
+      "A": 1,
+      "B": 1,
+      "C": 1
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 0,
+      "B": 0,
+      "C": 1
+    },
+    "calls_by_phase": {
+      "propose": 3,
+      "review": 1,
+      "execute": 1
+    },
+    "task_statuses": {
+      "launch-operations": "succeeded"
+    },
+    "awards": {
+      "launch-operations": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 5
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 5
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "expected_contacts": true,
+        "four_hour_capacity": true,
+        "backlog_without_hiring": true,
+        "required_total_agents": true,
+        "additional_agents": true,
+        "support_window_hours": true,
+        "immediate_refund_promised": true,
+        "launch_hour": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

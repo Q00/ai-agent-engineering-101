@@ -1,0 +1,36 @@
+{
+  "status": "succeeded",
+  "worker": "B",
+  "artifact": {
+    "summary": "제공된 수치로 첫 4시간 용량·인력 계산을 완료하고, 확정 정책과 광고 초안의 모순 및 미확인 사항을 정리했다. 초대 800명 × 20% = 160건 문의 예상, 상담원 4명 × 5건/시 × 4시간 = 80건 처리 가능, 미처리 80건 발생. 전량 처리를 위해서는 총 8명(160÷20) 필요, 추가 4명 충원 필요. 충원 미승인 상태이므로 대기열·우선순위·고객 안내 대안과 비상 계획 초안을 제시한다. 확정 정책은 '영업일 2일 내 처리 시작'이며 처리 완료·PG 반영 시간은 미보장이므로 광고 초안의 '즉시 자동 환불'은 정책 위반 소지가 있어 immediate_refund_promised=false로 표기한다. 기술 배포 승인, 결제 검증 결과, 인원 충원 승인은 모두 미제공 상태다. 실제 구현·테스트·외부 연락은 수행하지 않았다.\n\n[용량 계산]\n- expected_contacts = 800 × 0.20 = 160건\n- four_hour_capacity = 4명 × 5건/시 × 4시간 = 80건\n- backlog_without_hiring = 160 - 80 = 80건\n- required_total_agents = 160 ÷ (5 × 4) = 8명\n- additional_agents = 8 - 4 = 4명\n- support_window_hours = 4, launch_hour = 10\n\n[정책-광고 모순]\n- 확정 정책: 접수 후 영업일 2일 내 '처리 시작'. 완료 시점·PG 반영 시점 미보장.\n- 광고 초안: '즉시 자동 환불' → 정책과 불일치. 광고 문구 수정 또는 정책 재승인 필요. 담당자 임의 결정 금지.\n- 단일 기준 문서(SSOT) 필요: 광고/상담/랜딩이 동일 문구 사용. 변경 시 제품팀→운영 리드→광고/상담/랜딩 순 전달·승인 흐름.\n\n[미확인 사항]\n- 기술 배포 승인: 미제공 (목요일 14시 제품팀 사양 전달 예정)\n- 결제 검증(PG) 결과: 미제공\n- 인원 충원 승인: 미승인\n\n[충원 불가 시 대안]\n- 대기열: 접수 순 + 우선순위(결제 오류 > 환불 문의 > 일반 문의)\n- 우선순위: 결제 실패/중복결제 최우선, 환불 정책 문의 차순위, 일반 FAQ 자동응답\n- 고객 안내: '영업일 2일 내 처리 시작' 명시, 완료·PG 반영 시점 미보장 고지, 자동응답·FAQ로 1차 필터\n- 비상 계획: (a) 광고 지연 → 랜딩·상담 교육 일정 순연, (b) 기술 승인 지연 → 출시 연기 또는 제한 기능 출시, (c) 문의 급증 → 임시 인력·FAQ 강화·SLA 재공지\n\n[미검증]\n- 실제 상담 처리율, PG 반영 시간, 배포 승인 여부는 검증되지 않음(제공 자료 없음).",
+    "facts": {
+      "expected_contacts": 160,
+      "four_hour_capacity": 80,
+      "backlog_without_hiring": 80,
+      "required_total_agents": 8,
+      "additional_agents": 4,
+      "support_window_hours": 4,
+      "launch_hour": 10,
+      "immediate_refund_promised": false,
+      "policy_conflict_present": true,
+      "deployment_approval_provided": false,
+      "payment_verification_provided": false,
+      "hiring_approval_provided": false,
+      "actual_implementation_performed": false,
+      "actual_testing_performed": false,
+      "external_contact_performed": false
+    },
+    "evidence": [
+      "expected_contacts = 800 × 0.20 = 160건 (초대 800명, 첫 4시간 문의율 20%)",
+      "four_hour_capacity = 4명 × 5건/시 × 4시간 = 80건 (상담원 4명, 시간당 5건)",
+      "backlog_without_hiring = 160 - 80 = 80건",
+      "required_total_agents = 160 ÷ (5 × 4) = 8명",
+      "additional_agents = 8 - 4 = 4명",
+      "support_window_hours = 4, launch_hour = 10 (금요일 10시 출시, 첫 4시간)",
+      "확정 정책 '영업일 2일 내 처리 시작' vs 광고 초안 '즉시 자동 환불' → immediate_refund_promised=false, 정책-광고 모순 존재",
+      "기술 배포 승인·결제 검증·충원 승인 모두 제공 자료에 없음 → 미확인으로 표기",
+      "실제 구현·테스트·외부 연락은 수행하지 않음(제공 자료만 사용)"
+    ]
+  },
+  "error": ""
+}

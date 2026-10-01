@@ -1,0 +1,50 @@
+# game-design-architecture / homogeneous / 1회
+
+상태: succeeded. 필수 facts: 10/10.
+모델 원본의 열람용 사본이다. 실제 구현/실행 검증을 뜻하지 않는다.
+
+## game-design-architecture.json
+
+Worker: A; 상태: succeeded
+[원본 JSON](../../../runs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-homogeneous/artifacts/game-design-architecture.json)
+
+'유적의 열두 밤' 개발 착수 자료(설계 제안, 실제 구현/테스트 미수행). (1) 게임 기획: 6×6 보드, 최대 12턴. 핵심 루프 탐험→전투→보상(3택1)→탈출. 승리=탈출 지점 도달, 패배=체력 0 또는 12턴 초과. 난이도 3단계(쉬움/보통/어려움)는 적 밀도·피해량·보상 수치로 조정. 전투는 공격/방어/회피 3행동, 각 1턴 소모, 재미 가설: 제한 턴에서의 위험-보상 트레이드오프가 긴장과 선택의 재미를 만든다. 튜토리얼 3단계(이동→전투→보상/탈출). 접근성: 키보드 전용 조작, 색맹 대비 팔레트+아이콘, 텍스트 크기 조절, 스크린리더 라벨. (2) 아키텍처: src/domain(순수 규칙: turn/map/combat/reward), src/app(오케스트레이션), src/infra(Rng/SaveCodec/Clock 구현), src/render(Canvas), src/ui(입력·접근성), tests/. 의존 방향 render/ui→app→domain, infra는 domain 인터페이스 구현(의존성 역전). (3) 시그니처 초안: interface Rng{next():number; fork(label:string):Rng} interface Clock{now():number} interface SaveCodec{encode(s:GameState):string; decode(raw:string):GameState; schemaVersion:number} type Command = {t:'move',dir}|{t:'attack'}|{t:'defend'}|{t:'dodge'}|{t:'pickReward',index}|{t:'wait'}; GameState{seed,turn,board,player,enemies,phase,commandLog,stateHash}. 턴 처리 의사코드: 입력→Command 검증→도메인 리듀서(순수)→Event[] 생성→상태 커밋(turn++, commandLog append)→렌더. (4) 규칙→모듈→테스트: 이동/턴→domain/turn.ts→turn.spec, seed 맵→domain/map.ts→map.determinism.spec, 전투→domain/combat.ts→combat.spec, 저장/복원→infra/saveCodec.ts→save.roundtrip.spec, 화면→render/→render.smoke.spec, 접근성→ui/a11y.ts→a11y.spec. (5) 저장 스키마: schemaVersion=1, seed+commandLog+stateHash 저장. 재현 테스트: 동일 seed·동일 명령 시퀀스 재실행 시 stateHash 일치, 저장→로드→재개 시 동일 결과. 수용 기준: 결정론 테스트 통과, 라운드트립 무손실. (6) 일정: 4주×2개발자(주 20h)=160h, QA 1명×주10h×4주=40h. 주별 마일스톤: 1주 도메인+맵, 2주 전투+턴, 3주 저장+화면, 4주 접근성+통합+QA(2주차부터 병행). 제외 범위: 서버·로그인·결제·온라인 협동. 예산: 기본 범위 합계 24+24+32+24+20+24+12=160h로 개발자 160h에 정확히 일치, QA 40h는 별도이므로 총 200h 내 충족. 협동 포함 160+80=240h>200h로 초과, 병렬화해도 인적 시간은 감소하지 않음. 모순/미확인: 12턴 초과 시 패배 처리와 보상 선택 타이밍(전투 후 즉시 vs 턴 종료 시) 미확정, 협동 예산 초과로 기본 범위 확정 필요. 실제 코드 실행·게임 구현·테스트 수행은 하지 않았음(설계 제안 단계).
+
+### Facts
+
+```json
+{
+  "board_width": 6,
+  "board_height": 6,
+  "max_turns": 12,
+  "developer_hours": 160,
+  "qa_hours": 40,
+  "core_scope_hours": 160,
+  "with_coop_hours": 240,
+  "coop_fits_budget": false,
+  "seeded_replay_required": true,
+  "offline_required": true
+}
+```
+
+### Evidence
+
+**1.** 개발자 예산: 2명×20h×4주=160h. QA 예산: 1명×10h×4주=40h. 총 가용=200h.
+
+**2.** 기본 범위 합계: 이동/턴 24 + seed 맵 24 + 전투 32 + 저장/복원 24 + 화면 20 + 자동 테스트 24 + 접근성 12 = 160h.
+
+**3.** 기본 범위 160h ≤ 개발자 160h이므로 개발 예산에 정확히 부합, QA 40h는 별도 트랙으로 총 200h 내 충족.
+
+**4.** 협동 포함: 160h + 80h = 240h > 200h(개발+QA) 및 > 160h(개발)이므로 예산 초과. 병렬화는 벽시계 시간만 줄이고 인적 시간 합계는 불변.
+
+**5.** 보드 6×6, 최대 12턴은 source goal의 '기본 보드는 6×6, 한 판은 최대 12턴'에서 확정.
+
+**6.** 재현 요구: '같은 seed와 같은 입력 순서에는 같은 시뮬레이션 결과', '저장 후 불러와도 재현' → seeded_replay_required=true.
+
+**7.** 오프라인 요구: '브라우저에서 오프라인으로 동작하는 1인용' → offline_required=true.
+
+**8.** 제외 범위: 서버·로그인·결제·온라인 협동은 기본 범위에 없음(source 명시).
+
+**9.** 미확인: 12턴 초과 패배 처리 시점과 보상 선택 타이밍이 기획-코드 대조에서 미확정으로 남음.
+
+**10.** 실제 코드 실행/게임 구현/테스트 수행은 하지 않음(설계 제안만 제시).

@@ -1,0 +1,38 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "## 변경 ADR: 벡터 검색 저장소 선정 (폐쇄망 전환 반영) — 통합 최종\n\n### 1. 이전 대비 변경점\n- **배포 환경이 폐쇄망으로 변경**되어 외부 관리형 SaaS 사용 불가(`external_saas_allowed=false`). 외부 웹 조사는 설계 검토 환경에서만 허용되며 실제 배포 서비스는 외부 호출에 의존하지 않는다.\n- **PostgreSQL은 이미 운영 중**이고, **신규 stateful 저장소 운영 인력 증원 불가**.\n- 이전 실행의 장기 메모리(personal_memory, handoff_memory)가 **비어 있어** 내부 결정 ID·PostgreSQL 백업 담당 팀·기존 규모/품질 목표는 확인 불가 → `unknown`으로 반환(추측하지 않음).\n- 이전 추천을 무조건 유지하지 않고 새 제약(폐쇄망·인력 고정)을 최우선 조건으로 재평가했다.\n\n### 2. 비교 표\n\n| 항목 | pgvector (PostgreSQL 확장) | 자체 호스팅 Qdrant |\n|---|---|---|\n| 폐쇄망 적합성 | 높음. 기존 PostgreSQL 인스턴스에 확장 설치, 별도 저장소/서비스 불필요 | 중간. 별도 stateful 서비스 신규 운영 필요(인력 증원 불가 제약과 충돌) |\n| 백업 방식 | 기존 체계 편입: 물리 백업(`pg_basebackup`/pgBackRest) 또는 논리 백업(`pg_dump`/`pg_restore`) | 스냅샷 API/CLI 기반 자체 백업 절차 필요(공식 문서 재확인 필요) |\n| 복구 리스크 | 논리 복원 시 HNSW/IVFFlat 인덱스 재생성 필요, 빌드 메모리 부족 시 OOM 위험 | 스냅샷 복원 절차·버전 호환성 별도 검증 필요 |\n| tenant 격리 | `WHERE tenant_id = $1` + 부분 인덱스(partial index), 필요 시 파티셔닝 | payload의 tenant 필드 + payload index, filter(match) 조건 |\n| 필터-검색 결합 | 플래너가 인덱스 스캔과 필터 결합, iterative index scan으로 recall 보정 | filterable index 여부에 따라 pre/post-filter, 조건에 따라 HNSW 탐색 제약 |\n| 운영 부담 | 낮음(기존 DBA/운영 절차 재사용) | 높음(신규 저장소 운영·모니터링·업그레이드) |\n| 외부 호출 의존 | 없음(로컬 확장) | 없음(자체 호스팅 전제) |\n| 품질 검증 | recall@k, 필터 조건별 비교, EXPLAIN으로 인덱스 사용 확인 | recall@k, filter 조건별 비교, payload index 적용 확인 |\n\n### 3. 최종 판단\n폐쇄망 + 기존 PostgreSQL 운영 + 인력 증원 불가 제약에서는 **pgvector가 백업·복구·운영 부담 측면에서 우세**하다. 두 독립 조사(closed_net_backup, tenant_quality)의 결론이 상충하지 않으며, tenant 필터링·검색 품질 검증도 pgvector에서 기존 PostgreSQL 도구(EXPLAIN, 부분 인덱스, iterative scan)로 수행 가능하다. 단, 이는 공식 문서 근거에 기반한 잠정 판단이며 실제 복구 리허설·벤치마크는 수행하지 않았다.\n\n### 4. 배포/복구 체크리스트\n- [ ] pgvector 확장을 폐쇄망 내 패키지/소스 빌드로 설치 가능한지 확인\n- [ ] 물리 백업(`pg_basebackup`/pgBackRest) + WAL 아카이빙으로 PITR 구성\n- [ ] 논리 복원 경로 사용 시 HNSW 인덱스 재생성 메모리 한도 사전 산정(OOM 방지)\n- [ ] Qdrant 채택 시 스냅샷 생성/복원 절차 및 버전 호환성 문서 확보(공식 문서 재조사 필요)\n- [ ] tenant 필터·recall@k 검증 계획 수립: 고정 쿼리셋 + ground truth, 필터 적용/미적용·선택도 조건 비교\n- [ ] 폐쇄망 내부에서만 검증 실행, 외부 SaaS 호출 없음 확인\n\n### 5. 미해결 항목\n- 내부 결정 ID, PostgreSQL 백업 담당 팀, 기존 규모/품질 목표: 메모리 부재로 `unknown`\n- Qdrant 공식 문서 백업·복구 절차: 이전 조사에서 검색 한도로 미완료 → 재조사 필요\n- 실제 벤치마크·복구 리허설 미실행(`measured_latency=not_measured`)\n\n**체크리스트**: (1) 두 선행 조사 검토 완료, (2) 변경 ADR 작성 완료, (3) 배포/복구 체크리스트 작성 완료, (4) 공식 URL 보존 완료, (5) 실제 벤치마크·복구 미실행(not_measured), (6) 내부 결정 ID/백업 담당 팀 unknown.",
+    "facts": {
+      "recommended_storage": "pgvector",
+      "internal_decision_id": "unknown",
+      "backup_owner": "unknown",
+      "measured_latency": "not_measured",
+      "unresolved": "내부 결정 ID unknown; PostgreSQL 백업 담당 팀 unknown; 기존 규모/품질 목표 unknown; Qdrant 공식 문서 백업·복구 절차 재조사 필요; 실제 벤치마크·복구 리허설 미실행",
+      "memory_refs": "none",
+      "external_saas_allowed": false,
+      "closed_net_fit": "pgvector 우세(기존 PostgreSQL 운영·인력 제약 하 운영 부담 낮음), Qdrant는 신규 stateful 저장소 운영 부담 존재",
+      "pgvector_backup_approach": "PostgreSQL 기존 백업 체계 편입: 물리 백업(pg_basebackup/pgBackRest) 또는 논리 백업(pg_dump/pg_restore). 논리 복원 시 HNSW/IVFFlat 인덱스 재생성 필요, 빌드 메모리 부족 시 OOM 위험",
+      "qdrant_backup_approach": "자체 호스팅 스냅샷 API/CLI 기반 백업·복구 절차 필요(공식 문서 재확인 필요, 미검증)",
+      "qdrant_backup_doc_verified": false,
+      "pgvector_tenant_filter": "PostgreSQL WHERE 조건(tenant_id = $1)으로 행을 제한하고, tenant별 부분 인덱스(partial index) 또는 파티셔닝으로 검색 공간을 축소. 필터 선택도가 높을 때는 iterative index scan으로 필터 통과 행을 충분히 확보",
+      "qdrant_tenant_filter": "payload에 tenant 식별자를 저장하고 payload index를 생성한 뒤 filter(match 조건)로 검색을 제한. 필터 조건이 인덱싱되어 있으면 HNSW 탐색에 반영되고, 그렇지 않으면 post-filter로 처리되어 recall이 낮아질 수 있음",
+      "quality_validation_plan": "고정 쿼리셋과 정답 라벨(ground truth)로 recall@k, nDCG@k 측정. tenant 필터 적용/미적용, 필터 선택도(고/저) 조건을 나눠 비교하고, pgvector는 EXPLAIN으로 인덱스 사용 여부를, Qdrant는 payload index 적용 여부를 확인. 폐쇄망 내부에서만 실행하며 외부 SaaS 호출은 사용하지 않음",
+      "benchmark_executed": false,
+      "recovery_test_executed": false,
+      "adr_written": true,
+      "deploy_checklist_written": true
+    },
+    "evidence": [
+      "https://github.com/pgvector/pgvector/issues/647 — pg_dump는 진정한 백업 도구가 아니며 물리 백업(pg_basebackup, pgBackRest)이 권장됨. 논리 복원 시 HNSW 인덱스 빌드가 메모리를 초과하면 OOM killer가 프로세스를 종료할 수 있음. PITR을 위해서는 WAL을 백업과 함께 보관해야 함.",
+      "https://github.com/pgvector/pgvector/ — pgvector는 PostgreSQL 확장으로 HNSW/IVFFlat 인덱스를 제공하며, HNSW는 IVFFlat 대비 빌드가 느리고 메모리를 더 사용함(복구 시 인덱스 재생성 비용 근거).",
+      "https://github.com/pgvector/pgvector/blob/master/README.md — pgvector 공식 README: HNSW 인덱스 빌드 시간 특성 및 인덱스 생성 방식 근거.",
+      "https://github.com/pgvector/pgvector#filtering — WHERE 조건과 부분 인덱스(partial index)로 tenant별 검색 공간을 제한하는 방식 근거.",
+      "https://qdrant.tech/documentation/concepts/filtering/ — payload 기반 filter 조건과 match 연산으로 tenant를 격리하는 방식 근거.",
+      "https://qdrant.tech/documentation/concepts/indexing/ — payload index 생성과 필터 가능 조건이 검색 성능/recall에 미치는 영향 근거.",
+      "memory:none — personal_memory와 handoff_memory가 비어 있어 참고한 메모리 ID 없음. 내부 결정 ID와 백업 담당 팀은 추측하지 않고 unknown으로 반환.",
+      "실제 벤치마크·복구 테스트 미실행: measured_latency=not_measured, benchmark_executed=false, recovery_test_executed=false로 명시."
+    ]
+  },
+  "error": ""
+}

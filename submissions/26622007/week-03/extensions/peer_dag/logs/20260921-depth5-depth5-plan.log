@@ -1,0 +1,34 @@
+$ python3 submissions/26622007/week-03/extensions/peer_dag/cli.py plan
+{
+  "limits": {
+    "max_depth": 5,
+    "max_tasks": 12,
+    "max_steps": 4,
+    "max_calls": 64,
+    "max_parallel": 3
+  },
+  "transport": {
+    "model": "deepseek/deepseek-v4.1-flash",
+    "temperature": 0,
+    "max_tokens": 2200,
+    "reasoning": {
+      "enabled": false
+    },
+    "provider": {
+      "allow_fallbacks": true,
+      "require_parameters": true,
+      "max_price": {
+        "prompt": 0.3,
+        "completion": 1.2
+      }
+    },
+    "timeout_seconds": 30,
+    "max_attempts": 2,
+    "retry_delay_seconds": 2,
+    "max_http_requests": 2
+  },
+  "max_http_requests": 128,
+  "live_execution": "provided-data analysis artifacts only"
+}
+
+exit_code=0

@@ -1,0 +1,20 @@
+{
+  "https://www.postgresql.org/docs/current/app-pgbasebackup.html": {
+    "url": "https://www.postgresql.org/docs/current/app-pgbasebackup.html",
+    "title": "Documentation: 18: pg_basebackup - PostgreSQL",
+    "excerpt": "pg_basebackup is used to take a base backup of a running PostgreSQL database cluster. The backup is taken without affecting other clients of the database, and can be used both for point-in-time recovery (see Section 25.3) and as the starting point for a log-shipping or streaming-replication standby server (see Section 26.2).\n\n...\n\nIn any mode, pg_basebackup makes sure the server is put into and out of backup mode automatically. Backups are always taken of the entire database cluster; it is not possible to back up individual databases or database objects. For selective backups, another tool such as pg_dump must be used.",
+    "retrieved_at": "2026-09-17T02:48:29.543303+00:00"
+  },
+  "https://www.postgresql.org/docs/18/app-pgdump.html": {
+    "url": "https://www.postgresql.org/docs/18/app-pgdump.html",
+    "title": "PostgreSQL: Documentation: 18: pg_dump",
+    "excerpt": "The alternative archive file formats must be used with pg_restore to rebuild the database. They allow pg_restore to be selective about what is restored, or even to reorder the items prior to being restored. The archive file formats are designed to be portable across architectures.\n\n...\n\nWhen used with one of the archive file formats and combined with pg_restore, pg_dump provides a flexible archival and transfer mechanism. pg_dump can be used to export an entire database, then pg_restore can be used to examine the archive and/or select which parts of the database are to be restored. The most flexible output file formats are the “ custom” format (`-Fc`) and the “ directory” format (`-Fd`). The",
+    "retrieved_at": "2026-09-17T02:48:29.543324+00:00"
+  },
+  "https://www.postgresql.org/docs/18/backup-dump.html": {
+    "url": "https://www.postgresql.org/docs/18/backup-dump.html",
+    "title": "PostgreSQL: Documentation: 18: 25.1. SQL Dump",
+    "excerpt": "Text files created by pg_dump are intended to be read by the psql program using its default settings. The general command form to restore a text dump is\n\n...\n\nwhere `dumpfile` is the file output by the pg_dump command. The database `dbname` will not be created by this command, so you must create it yourself from `template0` before executing psql (e.g., with `createdb -T template0 dbname`). To ensure psql runs with its default settings, use the `-X` (`--no-psqlrc`) option. psql supports options similar to pg_dump for specifying the database server to connect to and the user name to use. See the psql reference page for more\n\n...\n\nNon-text file dumps should be restored using the pg_restore util",
+    "retrieved_at": "2026-09-17T02:48:29.543338+00:00"
+  }
+}

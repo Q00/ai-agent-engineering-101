@@ -1,0 +1,53 @@
+# payment-redesign / homogeneous — 429 복구
+
+상태: succeeded. facts: 8/8.
+모델 원본의 열람용 사본이며 실제 구현/실행 검증이 아니다.
+
+## payment-redesign.json
+
+Worker: A; 상태: succeeded
+[원본 JSON](../../../../runs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-homogeneous/artifacts/payment-redesign.json)
+
+결제 중복 사고를 재현 가능한 설계 문제로 분석했다. 원인 가설: 두 요청 모두 idempotency_key가 비어 있어 서버가 재시도를 별개 결제로 취급했고, 첫 요청은 PG에서 승인됐으나 504로 클라이언트에 실패가 전달되어 2초 뒤 재시도가 두 번째 승인을 만들었다. PG 승인 2건 vs 주문 DB 완료 1건은 이 가설과 일치한다. 확인 필요 증거: PG 승인 로그의 동일 order_id 2건과 각 승인 시각/금액, 첫 요청의 실제 PG 처리 여부(타임아웃이 승인 전/후인지), 주문 DB 결제 이벤트 로그, 웹훅 수신/처리 로그의 중복·순서, idempotency_key가 빈 값으로 저장된 흔적. 설계(제안, 미구현): PaymentCommand는 order_id+idempotency_key를 필수로 받아 IdempotencyStore에 (key) 유니크 제약으로 선점(INSERT ... ON CONFLICT) 후 GatewayPort.approve를 호출하고 결과를 상태로 기록한다. IdempotencyStore는 key, order_id, request_hash, status(IN_PROGRESS/APPROVED/DECLINED/UNKNOWN), gateway_txn_id, updated_at을 저장하며 key 유니크 제약을 갖는다. GatewayPort는 approve/cancel/query를 노출하고 타임아웃 시 UNKNOWN으로 남겨 query로 확정한다. WebhookHandler는 (gateway_txn_id, event_type) 유니크 제약으로 중복을 흡수하고, 이벤트의 발생 시각/버전으로 순서 역전을 판정해 오래된 이벤트는 무시한다. ReconciliationJob은 PG 승인 목록과 주문 DB 결제를 order_id 기준 대사하여 PG만 승인(중복 청구)은 자동 취소/환불 후보, DB만 완료는 승인 누락으로 분류한다. 경쟁 요청: 동일 key 두 요청이 동시에 들어오면 유니크 제약으로 하나만 IN_PROGRESS가 되고 나머지는 기존 결과를 반환한다. 순서 역전: 취소 웹훅이 승인 웹훅보다 먼저 도착하면 이벤트 시각 비교로 승인 후 취소 상태를 재구성한다. 상태 전이표(제안): INITIATED->IN_PROGRESS->APPROVED->CANCEL_REQUESTED->CANCELLED, IN_PROGRESS->UNKNOWN->(query)->APPROVED/DECLINED, APPROVED->REFUNDED(대사 후). 코드 디렉터리(제안): src/payment/{command.py, idempotency_store.py, gateway_port.py, webhook_handler.py, reconciliation_job.py, state_machine.py}, migrations/{001_idempotency_key_unique.sql, 002_backfill_idempotency.sql}. 핵심 의사코드(제안): handle(cmd): row=store.claim(cmd.key, cmd.order_id, hash); if row.status in (APPROVED,DECLINED): return row; if row.status==IN_PROGRESS: return 409/기존결과; try: r=gateway.approve(...); store.mark(APPROVED, r.txn_id) except Timeout: store.mark(UNKNOWN); return 202. 마이그레이션: backfill_batches=1200000/5000=240, serial=240*15=3600초, two_worker=3600/2=1800초, downtime_budget=20*60=1200초, offline_backfill_fits=(1800<=1200)=false. coexistence_hours=72. can_release=false(롤백·재시도·취소 검증 미완료). unverified_release_checks=3. 데이터 전환 순서(제안): (1) 온라인 준비 - idempotency_key 컬럼/유니크 인덱스 추가, 신버전 앱이 key를 채우도록 배포, 구버전 앱은 서버가 key를 생성/보정, 72시간 공존 동안 이중 기록. (2) 최종 전환 - 백필 완료 후 읽기 경로를 새 제약으로 전환, 구버전 트래픽 0 확인 후 구 경로 제거. 테스트 행렬(제안, 미실행): 중복 요청 동시 2건, 순서 역전 웹훅, 부분 실패(승인 후 DB 기록 실패), 타임아웃 후 query 확정, 대사 잡 중복 청구 탐지. 배포·롤백·중단 조건(제안): 카나리 배포, 중복 청구율/대사 불일치 임계 초과 시 롤백, 백필 실패 시 중단. 지원팀 전달 사실: PG 승인 2건, DB 완료 1건, 두 요청 key 공백, 504 후 2초 재시도. 미확인: 실제 PG/DB 조회, 환불, 배포, 롤백·재시도·취소 검증 3건 모두 미완료. 실제 구현/테스트는 수행하지 않았고 위 설계는 제안이다.
+
+### Facts
+
+```json
+{
+  "backfill_batches": 240,
+  "serial_backfill_seconds": 3600,
+  "two_worker_backfill_seconds": 1800,
+  "downtime_budget_seconds": 1200,
+  "coexistence_hours": 72,
+  "unverified_release_checks": 3,
+  "offline_backfill_fits": false,
+  "can_release": false,
+  "pg_approvals": 2,
+  "db_completed": 1,
+  "retry_delay_seconds": 2,
+  "first_request_status": 504,
+  "retry_request_status": 200,
+  "idempotency_key_empty": true,
+  "migration_rows": 1200000,
+  "batch_size": 5000,
+  "batch_seconds": 15,
+  "max_workers": 2,
+  "downtime_budget_minutes": 20,
+  "design_proposed_not_implemented": true,
+  "tests_executed": false
+}
+```
+
+### Evidence
+
+1. 제공 기록: 같은 order_id에 첫 결제 요청 504, 2초 뒤 재시도 200, 두 요청 모두 idempotency_key 비어 있음.
+2. 제공 기록: PG 승인 2건, 주문 DB 완료 1건 -> 중복 청구 가설과 일치.
+3. backfill_batches = 1200000 / 5000 = 240.
+4. serial_backfill_seconds = 240 * 15 = 3600.
+5. two_worker_backfill_seconds = 3600 / 2 = 1800.
+6. downtime_budget_seconds = 20 * 60 = 1200.
+7. offline_backfill_fits = (1800 <= 1200) = false.
+8. coexistence_hours = 72 (요구사항: 구버전/신버전 앱 72시간 공존).
+9. unverified_release_checks = 3 (롤백·재시도 결제·취소 결제 검증 모두 미완료).
+10. can_release = false (검증 3건 미완료, 오프라인 백필이 중단 허용 시간 초과).
+11. 실제 PG·DB 조회, 환불, 배포, 테스트는 수행하지 않았으며 설계는 제안임.

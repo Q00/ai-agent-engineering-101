@@ -1,0 +1,23 @@
+$ python3 submissions/26622007/week-03/submission_results.py --check
+{"passed": true, "mode": "check", "csv_rows": 61, "completed_rows": 45, "error_rows_with_blank_counts": 16, "byte_identical_console_copies": 61, "report_groups": 9}
+
+exit_code=0
+$ python3 submissions/26622007/week-03/submission/compare_results.py --check
+{"scope": "Observational, post-hoc comparison; final slots include 429 recovery. Not a randomized single-agent ablation.", "character_measure": "Python len(summary), including spaces; excludes facts/evidence and JSON serialization. Repeated content is not deduplicated.", "allocation": {"baseline": {"basic": {"tasks": 15, "correct": 9, "misawards": 6, "messages": 102}, "peer_final": {"tasks": 15, "correct": 7, "misawards": 8, "messages": 371}}, "homogeneous": {"basic": {"tasks": 15, "correct": 5, "misawards": 10, "messages": 105}, "peer_final": {"tasks": 15, "correct": 6, "misawards": 9, "messages": 301}}, "overconfident": {"basic": {"tasks": 15, "correct": 3, "misawards": 12, "messages": 101}, "peer_final": {"tasks": 15, "correct": 4, "misawards": 11, "messages": 462}}}, "depth_counts": {"0": 15, "1": 25, "2": 5}, "execution_peak_counts": {"1": 19, "2": 21, "3": 5}, "all_phase_peak_counts": {"3": 45}, "mode_counts": {"delegate": 30, "execute": 15}, "documents": 162, "root_documents": 45, "subtask_documents": 117, "max_tasks": 9, "max_calls": 45, "case_groups": [{"case": "game-design-architecture", "mode": "execute", "n": 5, "facts_passed": 5, "documents": 1, "root_summary_chars": 2447.4, "all_summary_chars": 2447.4, "calls": 5}, {"case": "game-design-architecture", "mode": "delegate", "n": 4, "facts_passed": 4, "documents": 4.5, "root_summary_chars": 2830, "all_summary_chars": 9975.5, "calls": 22.5}, {"case": "growth-roadmap", "mode": "execute", "n": 3, "facts_passed": 3, "documents": 1, "root_summary_chars": 2653, "all_summary_chars": 2653, "calls": 5}, {"case": "growth-roadmap", "mode": "delegate", "n": 6, "facts_passed": 5, "documents": 4.83, "root_summary_chars": 2732.83, "all_summary_chars": 9361, "calls": 24.17}, {"case": "launch-operations", "mode": "execute", "n": 2, "facts_passed": 2, "documents": 1, "root_summary_chars": 2343.5, "all_summary_chars": 2343.5, "calls": 5}, {"case": "launch-operations", "mode": "delegate", "n": 7, "facts_passed": 7, "documents": 6.57, "root_summary_chars": 2093.43, "all_summary_chars": 11396.86, "calls": 32.86}, {"case": "payment-redesign", "mode": "execute", "n": 5, "facts_passed": 5, "documents": 1, "root_summary_chars": 3841.4, "all_summary_chars": 3841.4, "calls": 5}, {"case": "payment-redesign", "mode": "delegate", "n": 4, "facts_passed": 4, "documents": 4.5, "root_summary_chars": 3053.25, "all_summary_chars": 12043, "calls": 22.5}, {"case": "release-review", "mode": "delegate", "n": 9, "facts_passed": 9, "documents": 4, "root_summary_chars": 658.44, "all_summary_chars": 2006.89, "calls": 20}]}
+
+exit_code=0
+$ python3 scripts/check_week03.py submissions/26622007/week-03
+ok    53 .py file(s) parse
+ok    tasks.json has 5 tasks across 3 gold contractors
+ok    results.csv has 20 run(s) for baseline
+ok    results.csv has 20 run(s) for homogeneous
+ok    results.csv has 21 run(s) for overconfident
+ok    logs/ contains 102 file(s)
+ok    REPORT.md present with a table
+
+all checks passed
+
+exit_code=0
+$ git diff --check
+
+exit_code=0

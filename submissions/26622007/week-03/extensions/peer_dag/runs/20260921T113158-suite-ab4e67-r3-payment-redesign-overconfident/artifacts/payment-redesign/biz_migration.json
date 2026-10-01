@@ -1,0 +1,28 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "1,200,000행을 5,000행 배치로 나누면 240배치다. 배치당 15초 기준 직렬(작업자 1개) 처리 시간은 3,600초(60분), 작업자 2개 병렬(병목·오버헤드 없음 가정)은 1,800초(30분)다. 서비스 중단 허용 시간 20분(1,200초)과 비교하면 직렬 3,600초 > 1,200초, 2작업자 1,800초 > 1,200초이므로 오프라인 일괄 백필은 허용 시간 내 불가(offline_backfill_fits=false)다. 따라서 온라인 준비(이중 쓰기, 백그라운드 백필, 대사)와 최종 전환(컷오버)을 분리해야 한다. 온라인 준비는 중단 예산을 소모하지 않고 진행하고, 최종 전환만 짧은 중단 창을 사용하는 시나리오로 재판정해야 한다. 구버전·신버전 앱 공존 요구는 72시간(coexistence_hours=72)이다. 새 버전 데이터의 롤백·재시도 결제·취소 결제 검증이 모두 미완료이므로 unverified_release_checks=3이며, 이를 통과로 바꾸지 않으므로 can_release=false다. 사업 우선순위는 대사·이중쓰기 선행, 컷오버는 검증 완료 후로 지연 권고다.",
+    "facts": {
+      "backfill_batches": 240,
+      "serial_backfill_seconds": 3600,
+      "two_worker_backfill_seconds": 1800,
+      "downtime_budget_seconds": 1200,
+      "coexistence_hours": 72,
+      "unverified_release_checks": 3,
+      "offline_backfill_fits": false,
+      "can_release": false
+    },
+    "evidence": [
+      "배치 수: 1,200,000 / 5,000 = 240배치",
+      "직렬 처리 시간: 240 × 15초 = 3,600초 = 60분",
+      "2작업자 처리 시간: 240/2 = 120배치 × 15초 = 1,800초 = 30분(병목·오버헤드 없음 가정)",
+      "중단 예산: 20분 = 1,200초",
+      "비교: 직렬 3,600초 > 1,200초, 2작업자 1,800초 > 1,200초 → offline_backfill_fits=false",
+      "공존 요구: 구버전·신버전 앱 72시간 공존 → coexistence_hours=72",
+      "미검증 항목: 롤백, 재시도 결제, 취소 결제 검증 미완료 → unverified_release_checks=3, can_release=false",
+      "온라인 준비(이중 쓰기/백필/대사)와 최종 전환(컷오버) 분리: 온라인 준비는 중단 예산 미소모, 최종 전환만 중단 창 사용 시나리오로 재판정 필요"
+    ]
+  },
+  "error": ""
+}

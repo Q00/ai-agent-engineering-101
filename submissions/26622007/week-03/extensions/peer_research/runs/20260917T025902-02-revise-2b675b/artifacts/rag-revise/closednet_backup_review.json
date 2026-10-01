@@ -1,0 +1,27 @@
+{
+  "status": "succeeded",
+  "worker": "B",
+  "artifact": {
+    "summary": "## 폐쇄망·백업·복구 적합성 독립 비교 (closednet_backup_review)\n\n**변경점**: 이전 메모리(mem-32d20f79baea194f)는 인덱스·필터·tenant 분리 중심이었고 Qdrant 공식 출처가 공백이었다. 이번 조사로 Qdrant 스냅샷 공식 문서를 확보해 출처 공백을 해소했고, 판단 기준을 '폐쇄망 + 백업/복구 + 운영 인력'으로 전환했다. 이전 추천(pgvector 1순위)은 새 제약과 충돌하지 않아 유지 가능하나, 근거는 백업·운영 부담 쪽으로 보강되었다.\n\n| 항목 | pgvector (기존 운영 PostgreSQL 확장) | 자체 호스팅 Qdrant |\n|---|---|---|\n| 폐쇄망 배포 | 기존 PostgreSQL에 확장 설치만 하면 됨. 신규 stateful 컴포넌트·외부 호출 없음 | 단일 노드 바이너리/Docker로 내부 배포 가능. 외부 SaaS 불필요 |\n| 백업 방식 | SQL 덤프(pg_dump, 단일 DB), 파일시스템 수준 백업, 연속 아카이빙(PITR) 3가지. 클러스터 전체는 pg_basebackup | 컬렉션/전체 스냅샷 생성 후 로컬 파일 또는 URL로 보관 |\n| 복구 절차 | 텍스트 덤프는 psql, 비텍스트는 pg_restore. `-1/--single-transaction`으로 전량 롤백 가능. 역할/소유자 사전 존재 필요 | 스냅샷 복구 3방식: URL/로컬 파일, 업로드 파일, 단일 노드 기동 시 `--snapshot` 인자. 대상 컬렉션 부재 필요 |\n| 버전 제약 | PostgreSQL 메이저 버전 정책에 따름 | 스냅샷은 동일 minor 또는 다음 minor 버전 클러스터로만 복구 가능 |\n| 운영 인력 부담 | 기존 DBA/운영 절차 재사용, 추가 인력 불필요 | 신규 stateful 저장소 운영·스냅샷 스케줄·버전 관리 필요 → 증원 불가 조건에서 부담 |\n\n**최종 판단**: 폐쇄망 + 운영 인력 증원 불가 조건에서는 기존 PostgreSQL을 쓰는 pgvector가 백업·복구·운영 측면에서 우위다. Qdrant는 기술적으로 자체 호스팅 가능하나 스냅샷 버전 제약과 신규 운영 부담이 추가된다. 단, 이는 문서 기반 정성 판단이며 실제 복구 리허설은 수행하지 않았다.\n\n**배포/복구 체크리스트**\n- [ ] pgvector: pg_dump 정기 덤프 + WAL 아카이빙(PITR) 조합, 복구 리허설 미실행\n- [ ] pgvector: 복구 시 역할/소유자 사전 생성, `-1` 단일 트랜잭션 옵션 검토\n- [ ] Qdrant(2순위): 스냅샷 스케줄러, 복구 대상 버전 minor 일치 확인, 단일 노드 기동 복구 경로 문서화\n- [ ] 양쪽 모두 실제 latency·recall·복구 시간 측정 필요(not_measured)\n\n**미해결**: 실제 복구 테스트 미실행, RTO/RPO 수치 미확정, Qdrant 다중 노드 스냅샷 복구 제약의 폐쇄망 적용성 미검증, 관리형 비용 비교 불가.",
+    "facts": {
+      "pgvector_backup_notes": "PostgreSQL 공식 문서상 백업은 SQL 덤프(pg_dump, 단일 DB), 파일시스템 수준 백업, 연속 아카이빙 3가지. 클러스터 전체는 pg_basebackup(개별 DB/객체 선택 불가). 복구는 텍스트 덤프 psql, 비텍스트 pg_restore, -1/--single-transaction으로 전량 롤백 가능. 복구 전 역할/소유자 사전 존재 필요.",
+      "qdrant_backup_notes": "Qdrant 공식 문서상 스냅샷으로 백업/복구. 복구 3방식: URL/로컬 파일, 업로드 파일, 단일 노드 기동 시 --snapshot 인자. 스냅샷은 동일 minor 또는 다음 minor 버전 클러스터로만 복구 가능. 기동 복구는 대상 컬렉션 부재 필요, 다중 노드/클라우드에서는 사용 불가.",
+      "offline_notes": "양 제품 모두 자체 호스팅으로 폐쇄망 배포 가능하며 외부 관리형 SaaS 의존 불필요. pgvector는 기존 운영 PostgreSQL 확장이라 신규 stateful 컴포넌트가 없고 기존 백업 절차를 재사용. Qdrant는 신규 stateful 저장소로 스냅샷 스케줄·버전 관리 등 추가 운영 부담 발생(인력 증원 불가 조건에서 불리).",
+      "measured_latency": "not_measured",
+      "unresolved": "실제 복구 리허설 미실행(RTO/RPO 미확정), Qdrant 다중 노드 스냅샷 복구 제약의 폐쇄망 적용성 미검증, 관리형 비용 비교 불가, pgvector 파티션별 인덱스 재구축 주기 미검증",
+      "memory_refs": "mem-32d20f79baea194f",
+      "internal_decision_id": "ADR-RAG-7429",
+      "backup_owner": "플랫폼팀",
+      "external_saas_allowed": false
+    },
+    "evidence": [
+      "https://www.postgresql.org/docs/current/backup.html — PostgreSQL 백업 3방식(SQL 덤프, 파일시스템 수준, 연속 아카이빙) 근거",
+      "https://www.postgresql.org/docs/current/app-pgbasebackup.html — pg_basebackup은 클러스터 전체 백업, 개별 DB 선택 불가 근거",
+      "https://www.postgresql.org/docs/current/backup-dump.html — pg_dump/psql/pg_restore 복구 절차, -1 단일 트랜잭션, 역할 사전 생성 필요 근거",
+      "https://qdrant.tech/documentation/snapshots/ — Qdrant 스냅샷 복구 3방식, minor 버전 제약, 단일 노드 기동 복구 제약 근거",
+      "https://qdrant.tech/documentation/tutorials-operations/create-snapshot/ — 스냅샷 생성/복구 실습 절차 및 priority=snapshot 근거",
+      "memory:mem-32d20f79baea194f — 이전 조사(pgvector 1순위 추천, Qdrant 출처 공백, internal_decision_id=ADR-RAG-7429, backup_owner=플랫폼팀, measured_latency=not_measured) 참조"
+    ]
+  },
+  "error": ""
+}

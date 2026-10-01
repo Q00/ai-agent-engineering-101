@@ -1,0 +1,143 @@
+{
+  "case_id": "growth-roadmap",
+  "condition": "homogeneous",
+  "block": 1,
+  "source_run_id": "20260922T012131-no-token-limit-9703d2-r1-growth-roadmap-homogeneous",
+  "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-homogeneous",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 16.2078,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 16,
+  "checks_total": 16,
+  "wrong_or_missing": [],
+  "calls": 5,
+  "http_requests": 5,
+  "http_responses": 5,
+  "http_429": 0,
+  "http_errors": {},
+  "retries": 0,
+  "transport_errors": 0,
+  "tasks": 1,
+  "max_depth": 0,
+  "awards": {
+    "A": 1
+  },
+  "root_award": "A",
+  "c_proposals": 1,
+  "c_high_bids": 0,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.004711298,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 16.0267,
+  "canonical_facts": {
+    "common_dev_hours": 160.0,
+    "e_break_even": 9.0,
+    "e_budget_shortfall_hours": 16.0,
+    "e_fits_budget": false,
+    "e_high_profit": 3520000.0,
+    "e_low_profit": 880000.0,
+    "e_margin": 240000.0,
+    "e_profit": 2320000.0,
+    "e_total_dev_hours": 256.0,
+    "s_break_even": 42.0,
+    "s_fits_budget": true,
+    "s_high_profit": 4240000.0,
+    "s_low_profit": 1360000.0,
+    "s_margin": 48000.0,
+    "s_profit": 2800000.0,
+    "s_total_dev_hours": 224.0
+  },
+  "artifact_sha": "98ab947548fb864e941c99f2ed723275a954ba02e1dc1b823bff2743b4a9c116",
+  "root_plan_sha": "636ed863022dbc183ee3226c8cee319aff5e32c4fcd33e5a916722da9c2bc3ac",
+  "award_sha": "7c9ee5772b0cc130ed5c869af20172bc01b86d91269105aef7b3526f4fe01e51",
+  "controls_sha": "29251f9726b71c9303976526c2d4fd7c12bab2f211f8ecfc2f3263a02f638588",
+  "root_plan": {
+    "mode": "execute",
+    "actions": [
+      "제공된 요금·변동비·고정비로 S/E안의 공헌이익, 기준/저/고 월이익, 손익분기 고객수를 계산하고 저/고 고객수는 기준의 70%/130% 내림 정수로 산출한다.",
+      "공통 160시간과 S 추가 64시간, E 추가 96시간을 합산해 총 개발시간과 240시간 예산 대비 부족분을 계산하고, E안 부족 시 분기 밖으로 미룰 범위를 명시한다.",
+      "도메인·API·데이터 변경 개요와 측정 지표를 설계하고, MVP 포함/제외 범위를 개발 시간 제약과 연결한다.",
+      "비교표, 선택 근거와 반증 가설, 선후 관계 일정, 영업/지원 준비, 출시 중단 기준을 작성하고 기능·시간표·권고 간 모순 및 미확인 사항을 대조한다.",
+      "facts에 요구된 모든 숫자 키와 boolean 키를 정확히 채우고, evidence에 계산식과 제공 자료 근거를 제시한다."
+    ],
+    "steps": []
+  },
+  "intervals": [
+    {
+      "task_id": "growth-roadmap",
+      "worker": "A",
+      "start": "2026-09-22T03:19:31.036682+00:00",
+      "end": "2026-09-22T03:19:42.896473+00:00"
+    }
+  ],
+  "overlaps": [],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 1,
+    "peak_calls_by_worker": {
+      "A": 1,
+      "B": 1,
+      "C": 1
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 0,
+      "C": 0
+    },
+    "calls_by_phase": {
+      "propose": 3,
+      "review": 1,
+      "execute": 1
+    },
+    "task_statuses": {
+      "growth-roadmap": "succeeded"
+    },
+    "awards": {
+      "growth-roadmap": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 5
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 5
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "s_margin": true,
+        "e_margin": true,
+        "s_profit": true,
+        "e_profit": true,
+        "s_break_even": true,
+        "e_break_even": true,
+        "s_low_profit": true,
+        "e_low_profit": true,
+        "s_high_profit": true,
+        "e_high_profit": true,
+        "common_dev_hours": true,
+        "s_total_dev_hours": true,
+        "e_total_dev_hours": true,
+        "e_budget_shortfall_hours": true,
+        "s_fits_budget": true,
+        "e_fits_budget": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

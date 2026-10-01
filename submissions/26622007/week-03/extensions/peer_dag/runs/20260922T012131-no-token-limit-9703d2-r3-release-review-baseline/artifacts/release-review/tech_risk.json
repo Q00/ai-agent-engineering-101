@@ -1,0 +1,26 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "제공된 기술 자료만으로 출시 전제조건과 미검증 위험을 정리했다. 새 앱은 price_version을 필요로 하므로 DB 마이그레이션이 앱 배포의 선행 조건이다(migration_before_app=true). 구버전 앱은 마이그레이션 후 읽기가 가능하다. 출시 가능 조건은 새 앱이 쓴 데이터의 롤백, 재시도 결제, 취소 결제 세 검증이 모두 완료되는 것이며, 현재 세 항목 모두 미검증이므로 can_release=false다. 출시 권고: 세 검증 완료 전에는 출시를 보류하고, 마이그레이션을 먼저 적용한 뒤 검증을 마치고 배포해야 한다. 미확인 사항: 롤백·재시도 결제·취소 결제 테스트 미완료. 제공 자료에 없는 로그나 테스트 실행 결과는 생성하지 않았다.",
+    "facts": {
+      "migration_before_app": true,
+      "can_release": false,
+      "price_version_required": true,
+      "old_app_read_after_migration": true,
+      "rollback_test_verified": false,
+      "retry_payment_test_verified": false,
+      "cancel_payment_test_verified": false,
+      "unverified_count": 3,
+      "release_blocker": "세 검증(롤백, 재시도 결제, 취소 결제) 미완료"
+    },
+    "evidence": [
+      "제공 자료: '새 앱은 price_version이 필요해 DB 마이그레이션 뒤 배포해야 한다' → price_version 의존성으로 마이그레이션이 앱 배포의 선행 조건이므로 migration_before_app=true.",
+      "제공 자료: '구버전 앱의 마이그레이션 후 읽기는 가능하다' → old_app_read_after_migration=true.",
+      "제공 자료: '새 앱이 쓴 데이터의 롤백, 재시도 결제, 취소 결제 테스트는 아직 미검증이다' → 세 검증 모두 미완료(unverified_count=3).",
+      "제공 자료: '이번 검토에서는 이 세 검증이 끝나야 출시 가능하다' → 세 검증 완료가 출시 조건이므로 현재 미검증 상태에서 can_release=false.",
+      "없는 로그·테스트 실행 결과는 생성하지 않았으며, 판정은 제공 자료 문장에만 근거함."
+    ]
+  },
+  "error": ""
+}

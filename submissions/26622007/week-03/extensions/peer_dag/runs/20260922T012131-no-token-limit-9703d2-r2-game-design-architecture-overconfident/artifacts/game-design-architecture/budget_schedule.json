@@ -1,0 +1,50 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "확정 추정치로 예산·일정을 계산하고 제외 범위를 정리했다. 기본 범위는 이동/턴 24h + seed 기반 맵 24h + 전투 32h + 저장/복원 24h + 화면 20h + 자동 테스트 24h + 접근성 12h = 160h로, 개발 예산 160h(2명×20h×4주)에 정확히 맞는다. QA 예산 40h(1명×10h×4주)는 별도로 자동 테스트·재현·접근성 검증에 배분한다. 온라인 협동 포함 시 160h+80h=240h로 개발 예산 160h를 80h 초과하므로 coop_fits_budget=false다. 병렬화해도 사람 시간 합계는 줄지 않으므로 240h는 160h 개발 예산에 들어가지 않는다. QA 40h 배분: 자동 테스트 보강/실행 16h, seed 재현·저장/복원 회귀 12h, 접근성 검증 8h, 통합 대조·리포트 4h. 4주 일정: 1주차 도메인·RNG·맵, 2주차 전투·턴 처리, 3주차 저장/복원·화면, 4주차 접근성·자동 테스트·통합 대조. QA는 각 주차 산출물에 맞춰 병행 검증한다. 제외 범위: 서버, 로그인, 결제, 온라인 협동(80h 추가로 예산 초과), 실시간 멀티플레이, 클라우드 저장. 본 작업은 예산·일정 산정이며 실제 구현/테스트는 수행하지 않았다.",
+    "facts": {
+      "board_width": 6,
+      "board_height": 6,
+      "max_turns": 12,
+      "developer_hours": 160,
+      "qa_hours": 40,
+      "core_scope_hours": 160,
+      "with_coop_hours": 240,
+      "coop_fits_budget": false,
+      "seeded_replay_required": true,
+      "offline_required": true,
+      "total_budget_hours": 200,
+      "coop_extra_hours": 80,
+      "core_fits_developer_budget": true,
+      "qa_autotest_hours": 16,
+      "qa_replay_regression_hours": 12,
+      "qa_accessibility_hours": 8,
+      "qa_integration_report_hours": 4,
+      "schedule_weeks": 4,
+      "excluded_server": true,
+      "excluded_login": true,
+      "excluded_payment": true,
+      "excluded_online_coop": true,
+      "excluded_realtime_multiplayer": true,
+      "excluded_cloud_save": true,
+      "implementation_performed": false,
+      "tests_performed": false
+    },
+    "evidence": [
+      "개발 예산: 2명×20h×4주=160h",
+      "QA 예산: 1명×10h×4주=40h",
+      "총 예산: 160h+40h=200h",
+      "기본 범위: 24(이동/턴)+24(seed 기반 맵)+32(전투)+24(저장/복원)+20(화면)+24(자동 테스트)+12(접근성)=160h",
+      "기본 범위 판정: 160h ≤ 개발 160h이므로 개발 예산에 정확히 맞음(core_fits_developer_budget=true)",
+      "협동 포함: 160h+80h=240h",
+      "협동 판정: 240h > 개발 160h이므로 coop_fits_budget=false, 초과 80h",
+      "병렬화해도 사람 시간 합계는 줄지 않으므로 240h는 160h 개발 예산에 들어가지 않음",
+      "QA 40h 배분: 자동 테스트 보강/실행 16h + seed 재현·저장/복원 회귀 12h + 접근성 검증 8h + 통합 대조·리포트 4h = 40h",
+      "4주 일정: 1주차 도메인·RNG·맵, 2주차 전투·턴 처리, 3주차 저장/복원·화면, 4주차 접근성·자동 테스트·통합 대조. QA는 각 주차 산출물에 맞춰 병행 검증",
+      "제외 범위: 서버, 로그인, 결제, 온라인 협동(80h 추가로 예산 초과), 실시간 멀티플레이, 클라우드 저장",
+      "보드 6×6, 최대 12턴, 같은 seed·같은 입력 순서 재현 및 저장/복원 재현 요구는 source의 확정 사양이며 본 작업은 예산·일정 산정만 수행"
+    ]
+  },
+  "error": ""
+}

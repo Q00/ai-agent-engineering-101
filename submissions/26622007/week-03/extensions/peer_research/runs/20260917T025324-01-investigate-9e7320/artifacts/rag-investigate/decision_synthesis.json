@@ -1,0 +1,43 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "## 벡터 저장소 선정: pgvector vs Qdrant 통합 결정 문서 (ADR-RAG-7429)\n\n가정: 100만 × 1536차원 벡터, 30 tenant, tenant 필터 top-10 검색, 일 1% 갱신(약 1만 벡터/일), 기존 PostgreSQL 운영 인력 2명. 내부 결정 ID **ADR-RAG-7429**, 기존 PostgreSQL 백업 책임 **플랫폼팀**. 실제 latency/recall 벤치마크는 수행하지 않았으므로 모든 성능 수치는 `not_measured`다.\n\n### 1. 비교 표\n\n| 항목 | pgvector (PostgreSQL 확장) | Qdrant |\n|---|---|---|\n| 인덱스 | HNSW(m=16, ef_construction=64 기본), IVFFlat(lists=100, probes=1 기본) | HNSW 기반(m, ef_construct 등) — 공식 문서 미확보 |\n| 필터 적용 | 근사 인덱스는 **post-filter**: 인덱스 스캔 후 필터. 10% 선택도 + ef_search=40이면 평균 4행만 매칭 | payload 필터 1급 지원(공식 근거 미확보) |\n| 필터 보완 | 0.8.0+ **iterative index scan**(hnsw.max_scan_tuples, ivfflat.max_probes) | 미확인 |\n| 다중 tenant | 값 종류 많으면 **PARTITION BY LIST** 권장 | 컬렉션 분리/multitenancy 전략(공식 근거 미확보) |\n| 튜닝 지침 | lists ≈ rows/1000(≤1M), >1M은 sqrt(rows); probes ≈ sqrt(lists) | 미확인 |\n| 백업/PITR | `pg_wal/` WAL + 파일시스템 백업 결합 PITR. pg_dump는 논리 덤프로 PITR 대체 불가. 연속 아카이빙은 **전체 클러스터 단위 복원만** 지원 | 스냅샷/관리형 백업 옵션 존재 가능하나 공식 근거 미확보 |\n| 운영 부담(2명) | 기존 플랫폼팀 PostgreSQL 백업·런북 상속 → 신규 학습 적음. 단 WAL 저장공간·인덱스 재구축 부담 추가 | 자체 운영 시 신규 백업·복구 런북 필요(검증 필요) |\n\n### 2. 선택 근거\n\n- **1순위 후보: pgvector + tenant LIST 파티셔닝 + HNSW, iterative scan 활성화.** 기존 PostgreSQL 운영 인력 2명과 플랫폼팀 백업 책임을 그대로 상속하므로 신규 도구 도입·학습 비용이 가장 낮다. 30 tenant는 LIST 파티셔닝이 현실적인 규모이며, 파티션별 HNSW 인덱스로 tenant 필터를 인덱스 레벨로 밀어내 post-filter 손실을 줄일 수 있다.\n- **2순위 후보: Qdrant.** payload 필터·multitenancy를 1급 기능으로 제공하는 것으로 알려져 있으나, 이번 실행에서도 공식 문서 URL을 확보하지 못해 우위 주장을 채택하지 않는다.\n- 관리형 서비스는 비용 수치를 제공받지 못해 정량 비교 불가.\n\n### 3. 위험\n\n1. **tenant 필터 post-filter 손실(최대 리스크).** 30 tenant 중 하나는 ≈3.3% 선택도로, ef_search=40에서 평균 1~2행만 매칭될 수 있다. iterative scan 또는 파티셔닝 없이는 recall@10이 급락할 수 있다.\n2. **복구 범위 제약.** 연속 아카이빙은 전체 클러스터 복원만 지원하고 부분집합 복원이 불가하다. tenant 단위 복구 요구가 생기면 별도 설계가 필요하다.\n3. **WAL/백업 저장공간 부담.** base backup + WAL 아카이브 저장공간이 상당히 필요하다.\n4. **인덱스 재구축 비용 미검증.** HNSW는 ef_construction 상향 시 빌드/삽입 비용이 증가하며, 파티션별 재구축 주기·시간이 측정되지 않았다.\n5. **Qdrant 근거 공백.** 공식 문서 미확보로 Qdrant 관련 서술은 사실 주장으로 채택하지 않는다.\n\n### 4. 테스트 계획(미실행)\n\n1. 100만×1536, 30 tenant 분포에서 tenant 필터 top-10 recall@10 및 p95 latency 측정(ef_search, probes, 파티션 유무별).\n2. 일 1만 벡터 삽입 30일 시뮬레이션으로 인덱스 크기·삽입 지연·재구축 필요성 확인.\n3. 스테이징 PITR 복구 리허설(백업 시점→복구 완료 시간, WAL 저장량) 및 파티션 단위 복구 가능성 확인.\n4. HNSW/IVFFlat 인덱스 재구축 소요 시간과 복구 후 recall 영향 측정.\n5. Qdrant 공식 문서 재검색 후 스냅샷 복구 리허설 및 관리형 백업 옵션 확인.\n\n### 5. 미해결 항목\n\n- Qdrant 공식 문서(HNSW 파라미터, payload 필터, multitenancy, 스냅샷/복구) URL 미확보.\n- 실제 latency/recall 수치 전부 미측정(`not_measured`).\n- 관리형 서비스 비용 비교 불가.\n- pgvector 파티션별 인덱스 재구축 주기 미검증.\n- 최종 저장소 확정은 위 테스트 결과 이후로 보류.\n\n### 체크리스트\n- [x] pgvector/PostgreSQL 공식 백업·인덱스 문서 근거 확보\n- [ ] Qdrant 공식 문서 근거 확보 (미완)\n- [x] internal_decision_id=ADR-RAG-7429, backup_owner=플랫폼팀 기록\n- [x] measured_latency=not_measured 명시\n- [x] 비용·성능 수치 창작 금지 준수\n- [x] memory_refs=none (personal_memory/handoff_memory 비어 있음)",
+    "facts": {
+      "recommended_storage": "pgvector (tenant LIST 파티셔닝 + HNSW, iterative scan) 1순위 후보, Qdrant 2순위 후보(공식 근거 미확보)",
+      "internal_decision_id": "ADR-RAG-7429",
+      "backup_owner": "플랫폼팀",
+      "measured_latency": "not_measured",
+      "unresolved": "Qdrant 공식 문서(HNSW 파라미터/payload 필터/multitenancy/스냅샷·복구) URL 미확보; 실제 latency·recall 미측정; 관리형 비용 비교 불가; pgvector 파티션별 인덱스 재구축 주기 미검증; 최종 저장소 확정 보류",
+      "memory_refs": "none",
+      "vector_count": 1000000,
+      "dimension": 1536,
+      "tenant_count": 30,
+      "daily_update_vectors": 10000,
+      "pgvector_hnsw_default_m": 16,
+      "pgvector_hnsw_default_ef_construction": 64,
+      "pgvector_hnsw_default_ef_search": 40,
+      "pgvector_ivfflat_default_lists": 100,
+      "pgvector_ivfflat_default_probes": 1,
+      "pgvector_filter_mode": "post-filter (approximate index), iterative scan since 0.8.0",
+      "pgvector_partitioning_recommended": true,
+      "pgvector_pitr_supported": true,
+      "pgvector_pitr_restore_scope": "전체 클러스터 단위(부분집합 복원 불가)",
+      "pg_dump_is_logical_not_pitr": true,
+      "qdrant_official_evidence_obtained": false,
+      "benchmark_executed": false,
+      "cost_figures_fabricated": false
+    },
+    "evidence": [
+      "https://github.com/pgvector/pgvector?tab=readme-ov-file — HNSW 파라미터 m(기본 16), ef_construction(기본 64), ef_construction 상향 시 recall↑·빌드/삽입 비용↑; IVFFlat은 lists로 분할하고 근접 리스트만 검색, 빌드 빠르고 메모리 적지만 속도-recall 트레이드오프 열위; lists 권장 rows/1000(≤1M)·sqrt(rows)(>1M), probes 권장 sqrt(lists); 근사 인덱스는 필터를 인덱스 스캔 후 적용(post-filter)하여 10% 선택도·ef_search=40이면 평균 4행만 매칭; 값 종류가 많으면 파티셔닝 권장(PARTITION BY LIST); 0.8.0+ iterative index scan으로 hnsw.max_scan_tuples/ivfflat.max_probes까지 추가 스캔",
+      "https://github.com/pgvector/pgvector/blob/master/src/hnsw.h — HNSW_DEFAULT_EF_CONSTRUCTION 64, 최소 4·최대 1000, m은 연결 수 옵션 필드로 확인",
+      "https://github.com/pgvector/pgvector/blob/master/src/ivfflat.h — IVFFLAT_DEFAULT_LISTS 100, 최소 1·최대 32768, IVFFLAT_DEFAULT_PROBES 1",
+      "https://www.postgresql.org/docs/current/continuous-archiving.html — PostgreSQL은 pg_wal/에 WAL을 유지하고 파일시스템 백업+WAL 아카이빙 결합으로 PITR 가능, 높은 신뢰성이 필요한 상황에서 선호되는 백업 기법; pg_dump/pg_dumpall은 논리 덤프로 WAL 리플레이에 사용할 수 없음; 연속 아카이빙은 전체 클러스터 복원만 지원하고 상당한 아카이브 저장공간이 필요",
+      "https://www.postgresql.org/docs/current/backup.html — 백업 방식 분류: SQL dump, 파일시스템 수준 백업, 연속 아카이빙(PITR)",
+      "https://www.postgresql.org/docs/18/app-pgrestore.html — pg_restore는 pg_dump 비-plain 아카이브에서 선택적/재정렬 복원 가능하나 large object는 선택 복원 불가",
+      "memory:none — personal_memory/handoff_memory가 비어 있어 과거 내부 결정·담당 팀 정보는 참고하지 않았고, source에 명시된 backup_owner=플랫폼팀, internal_decision_id=ADR-RAG-7429만 사용",
+      "Qdrant 공식 문서 검색은 이번 실행에서도 공식 URL 근거를 확보하지 못했으며, 해당 항목은 unresolved로 표기(비용·성능 수치 창작 없음)"
+    ]
+  },
+  "error": ""
+}

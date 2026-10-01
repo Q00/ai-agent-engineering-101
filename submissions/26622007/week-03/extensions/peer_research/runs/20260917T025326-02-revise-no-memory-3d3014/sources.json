@@ -1,0 +1,42 @@
+{
+  "https://github.com/pgvector/pgvector": {
+    "url": "https://github.com/pgvector/pgvector/",
+    "title": "pgvector/pgvector",
+    "excerpt": "## HNSW\n...\nindex creates a multilayer graph. It has better query performance than IVFFlat (in terms of speed-recall tradeoff), but has slower build\n...\nmore memory. Also,\n...\ntraining step like IVFFlat",
+    "retrieved_at": "2026-09-17T02:56:09.880347+00:00"
+  },
+  "https://github.com/pgvector/pgvector/issues/647": {
+    "url": "https://github.com/pgvector/pgvector/issues/647",
+    "title": "Restoring a backup suddenly breaks with CREATE INDEX ... USING hnsw",
+    "excerpt": "> @itinance Thanks. So a few things here:\n> \n> 1. `pg_dump` is not a backup utility (more on this in a second) - for true backup/restore you'll want to use something like `pg_basebackup` or a utility like pgBackRest (there are a variety of tools available here). Effectively these tools take a snapshot of the binary representation of your data, so you can restore it to a similar physical environment. They'll be much more efficient than `pg_dump`/`pg_restore`, which is just recreating the SQL commands used to build your environment.\n> \n> 2. For cases where you do need to use `pg_dump` (e.g. transferring data between non-binary compatible systems), what's likely happening is that your HNSW inde",
+    "retrieved_at": "2026-09-17T02:56:09.880391+00:00"
+  },
+  "https://github.com/pgvector/pgvector/blob/master/README.md": {
+    "url": "https://github.com/pgvector/pgvector/blob/master/README.md",
+    "title": "README.md",
+    "excerpt": "## HNSW\n...\nNSW index creates a multilayer graph. It has better query performance than\n...\nFFlat (in\n...\nof speed-recall tradeoff), but has slower build times and\n...\nAlso, an index can be created\n...\ntraining step like IVFFlat\n...\n### Index Build Time",
+    "retrieved_at": "2026-09-17T02:56:09.880410+00:00"
+  },
+  "https://qdrant.tech/documentation/concepts/indexing": {
+    "url": "https://qdrant.tech/documentation/concepts/indexing",
+    "resolved_url": "https://qdrant.tech/documentation/manage-data/indexing/",
+    "title": "Indexing - Qdrant",
+    "excerpt": "Indexing - Qdrant Develop Deploy Ecosystem Learn API Reference Search Log in Start Free Search Develop Deploy Ecosystem Learn API Reference Getting Started Overview What is Qdrant? Understanding Vector Search in Qdrant Local Quickstart Cloud Quickstart User Manual Manage Data Points Vectors Payload Collections Storage Indexing Quantization Multitenancy Bulk Upload Search Search Filtering Hybrid Queries Explore Search Relevance Low-Latency Search Text Search Text Filtering Full-Text Search Hybrid Search Inference Inference API BM25 Cloud Inference External Providers Matryoshka Models Qdrant Edge Edge API Shard Lifecycle Configuration Updating Data Reading Data Snapshots Quickstart On-Device E",
+    "retrieved_at": "2026-09-17T02:56:21.475761+00:00",
+    "retrieval_method": "official_http_get",
+    "sha256": "fbb4a5aac819340bf1686576cdd39b8d53f88642b6dc873f5e8c9ebcbfad04fa",
+    "bytes": 435491,
+    "status": 200
+  },
+  "https://qdrant.tech/documentation/concepts/filtering": {
+    "url": "https://qdrant.tech/documentation/concepts/filtering",
+    "resolved_url": "https://qdrant.tech/documentation/search/filtering/",
+    "title": "Filtering - Qdrant",
+    "excerpt": "Filtering - Qdrant Develop Deploy Ecosystem Learn API Reference Search Log in Start Free Search Develop Deploy Ecosystem Learn API Reference Getting Started Overview What is Qdrant? Understanding Vector Search in Qdrant Local Quickstart Cloud Quickstart User Manual Manage Data Points Vectors Payload Collections Storage Indexing Quantization Multitenancy Bulk Upload Search Search Filtering Hybrid Queries Explore Search Relevance Low-Latency Search Text Search Text Filtering Full-Text Search Hybrid Search Inference Inference API BM25 Cloud Inference External Providers Matryoshka Models Qdrant Edge Edge API Shard Lifecycle Configuration Updating Data Reading Data Snapshots Quickstart On-Device ",
+    "retrieved_at": "2026-09-17T02:56:22.373765+00:00",
+    "retrieval_method": "official_http_get",
+    "sha256": "a8027f10a27de7721e0f0d42244a02d732d86e064d71a17db921e78c80d7fc7f",
+    "bytes": 518669,
+    "status": 200
+  }
+}
