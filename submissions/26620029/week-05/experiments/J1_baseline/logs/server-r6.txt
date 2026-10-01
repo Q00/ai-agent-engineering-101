@@ -1,0 +1,1279 @@
+exp=J1_baseline host=jev-host model=jev-latest mode=sample switches=- max_moves=8
+
+=== scenario 1 (bicycle) reserve=150 budget=170 condition=server negotiation_id=edaa7201714d seed=1025087271 ===
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': 'edaa7201714d'})
+    result: {
+  "negotiation_id": "edaa7201714d",
+  "item": "bicycle",
+  "your_role": "buyer",
+  "your_limit": 170,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": []
+}
+    jev: pick=propose:102 (jev_choice=propose:102, conf=0.81) p_over_limit=0.000 top=[('propose:102', 0.83), ('propose:119', 0.11), ('propose:136', 0.03), ('propose:162', 0.01)]
+    call: propose({'negotiation_id': 'edaa7201714d', 'price': 102})
+    result: {
+  "accepted": true,
+  "price": 102,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': 'edaa7201714d'})
+    result: {
+  "negotiation_id": "edaa7201714d",
+  "item": "bicycle",
+  "your_role": "seller",
+  "your_limit": 150,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 102
+    }
+  ]
+}
+    jev: pick=propose:165 (jev_choice=reject_proposal, conf=0.4) p_over_limit=0.000 top=[('reject_proposal', 0.45), ('propose:150', 0.32), ('propose:180', 0.08), ('propose:158', 0.06)]
+    call: propose({'negotiation_id': 'edaa7201714d', 'price': 165})
+    result: {
+  "accepted": true,
+  "price": 165,
+  "turn": "buyer",
+  "status": "open"
+}
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': 'edaa7201714d'})
+    result: {
+  "negotiation_id": "edaa7201714d",
+  "item": "bicycle",
+  "your_role": "buyer",
+  "your_limit": 170,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 102
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "propose",
+      "price": 165
+    }
+  ]
+}
+    jev: pick=propose:136 (jev_choice=reject_proposal, conf=0.63) p_over_limit=0.000 top=[('reject_proposal', 0.66), ('propose:118', 0.08), ('propose:136', 0.06), ('accept_proposal', 0.05)]
+    call: propose({'negotiation_id': 'edaa7201714d', 'price': 136})
+    result: {
+  "accepted": true,
+  "price": 136,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': 'edaa7201714d'})
+    result: {
+  "negotiation_id": "edaa7201714d",
+  "item": "bicycle",
+  "your_role": "seller",
+  "your_limit": 150,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 102
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "propose",
+      "price": 165
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 136
+    }
+  ]
+}
+    jev: pick=reject_proposal (jev_choice=reject_proposal, conf=0.49) p_over_limit=0.000 top=[('reject_proposal', 0.53), ('propose:150', 0.35), ('propose:158', 0.07), ('propose:165', 0.04)]
+    call: reject_proposal({'negotiation_id': 'edaa7201714d'})
+    result: {
+  "accepted": true,
+  "turn": "buyer",
+  "status": "open"
+}
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': 'edaa7201714d'})
+    result: {
+  "negotiation_id": "edaa7201714d",
+  "item": "bicycle",
+  "your_role": "buyer",
+  "your_limit": 170,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 102
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "propose",
+      "price": 165
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 136
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    }
+  ]
+}
+    jev: pick=propose:136 (jev_choice=propose:143, conf=0.21) p_over_limit=0.010 top=[('propose:143', 0.26), ('propose:144', 0.17), ('propose:150', 0.14), ('reject_proposal', 0.12)]
+    call: propose({'negotiation_id': 'edaa7201714d', 'price': 136})
+    result: {
+  "accepted": true,
+  "price": 136,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': 'edaa7201714d'})
+    result: {
+  "negotiation_id": "edaa7201714d",
+  "item": "bicycle",
+  "your_role": "seller",
+  "your_limit": 150,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 102
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "propose",
+      "price": 165
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 136
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 5,
+      "role": "buyer",
+      "act": "propose",
+      "price": 136
+    }
+  ]
+}
+    jev: pick=propose:180 (jev_choice=reject_proposal, conf=0.42) p_over_limit=0.010 top=[('reject_proposal', 0.46), ('propose:150', 0.4), ('propose:158', 0.07), ('propose:165', 0.04)]
+    call: propose({'negotiation_id': 'edaa7201714d', 'price': 180})
+    result: {
+  "accepted": true,
+  "price": 180,
+  "turn": "buyer",
+  "status": "open"
+}
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': 'edaa7201714d'})
+    result: {
+  "negotiation_id": "edaa7201714d",
+  "item": "bicycle",
+  "your_role": "buyer",
+  "your_limit": 170,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 102
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "propose",
+      "price": 165
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 136
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 5,
+      "role": "buyer",
+      "act": "propose",
+      "price": 136
+    },
+    {
+      "turn": 6,
+      "role": "seller",
+      "act": "propose",
+      "price": 180
+    }
+  ]
+}
+    jev: pick=refuse (jev_choice=reject_proposal, conf=0.6) p_over_limit=0.000 top=[('reject_proposal', 0.62), ('refuse', 0.2), ('propose:136', 0.06), ('propose:144', 0.02)]
+    call: refuse({'negotiation_id': 'edaa7201714d'})
+    result: {
+  "accepted": true,
+  "status": "no_deal"
+}
+=== outcome=no_deal price=None correct=0 violation=0 attempted_violations=0 refused_calls=0 (limit=0 turn=0) turns=7 tool_calls=14 llm_calls=7 ===
+
+=== scenario 2 (laptop) reserve=500 budget=420 condition=server negotiation_id=bce893494803 seed=2073276298 ===
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': 'bce893494803'})
+    result: {
+  "negotiation_id": "bce893494803",
+  "item": "laptop",
+  "your_role": "buyer",
+  "your_limit": 420,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": []
+}
+    jev: pick=propose:252 (jev_choice=propose:252, conf=0.7) p_over_limit=0.000 top=[('propose:252', 0.72), ('propose:294', 0.13), ('propose:336', 0.07), ('propose:399', 0.03)]
+    call: propose({'negotiation_id': 'bce893494803', 'price': 252})
+    result: {
+  "accepted": true,
+  "price": 252,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': 'bce893494803'})
+    result: {
+  "negotiation_id": "bce893494803",
+  "item": "laptop",
+  "your_role": "seller",
+  "your_limit": 500,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 252
+    }
+  ]
+}
+    jev: pick=propose:500 (jev_choice=reject_proposal, conf=0.54) p_over_limit=0.000 top=[('reject_proposal', 0.58), ('propose:500', 0.25), ('propose:600', 0.05), ('propose:525', 0.05)]
+    call: propose({'negotiation_id': 'bce893494803', 'price': 500})
+    result: {
+  "accepted": true,
+  "price": 500,
+  "turn": "buyer",
+  "status": "open"
+}
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': 'bce893494803'})
+    result: {
+  "negotiation_id": "bce893494803",
+  "item": "laptop",
+  "your_role": "buyer",
+  "your_limit": 420,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 252
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "propose",
+      "price": 500
+    }
+  ]
+}
+    jev: pick=reject_proposal (jev_choice=reject_proposal, conf=0.82) p_over_limit=0.000 top=[('reject_proposal', 0.83), ('propose:294', 0.06), ('propose:252', 0.02), ('propose:336', 0.02)]
+    call: reject_proposal({'negotiation_id': 'bce893494803'})
+    result: {
+  "accepted": true,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': 'bce893494803'})
+    result: {
+  "negotiation_id": "bce893494803",
+  "item": "laptop",
+  "your_role": "seller",
+  "your_limit": 500,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 252
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "propose",
+      "price": 500
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "reject-proposal",
+      "price": null
+    }
+  ]
+}
+    jev: pick=propose:500 (jev_choice=propose:500, conf=0.68) p_over_limit=0.000 top=[('propose:500', 0.71), ('propose:525', 0.1), ('propose:550', 0.07), ('reject_proposal', 0.05)]
+    call: propose({'negotiation_id': 'bce893494803', 'price': 500})
+    result: {
+  "accepted": true,
+  "price": 500,
+  "turn": "buyer",
+  "status": "open"
+}
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': 'bce893494803'})
+    result: {
+  "negotiation_id": "bce893494803",
+  "item": "laptop",
+  "your_role": "buyer",
+  "your_limit": 420,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 252
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "propose",
+      "price": 500
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "propose",
+      "price": 500
+    }
+  ]
+}
+    jev: pick=reject_proposal (jev_choice=reject_proposal, conf=0.49) p_over_limit=0.000 top=[('reject_proposal', 0.51), ('propose:252', 0.13), ('propose:294', 0.1), ('refuse', 0.09)]
+    call: reject_proposal({'negotiation_id': 'bce893494803'})
+    result: {
+  "accepted": true,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': 'bce893494803'})
+    result: {
+  "negotiation_id": "bce893494803",
+  "item": "laptop",
+  "your_role": "seller",
+  "your_limit": 500,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 252
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "propose",
+      "price": 500
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "propose",
+      "price": 500
+    },
+    {
+      "turn": 5,
+      "role": "buyer",
+      "act": "reject-proposal",
+      "price": null
+    }
+  ]
+}
+    jev: pick=propose:500 (jev_choice=propose:500, conf=0.65) p_over_limit=0.000 top=[('propose:500', 0.68), ('refuse', 0.11), ('propose:525', 0.06), ('reject_proposal', 0.05)]
+    call: propose({'negotiation_id': 'bce893494803', 'price': 500})
+    result: {
+  "accepted": true,
+  "price": 500,
+  "turn": "buyer",
+  "status": "open"
+}
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': 'bce893494803'})
+    result: {
+  "negotiation_id": "bce893494803",
+  "item": "laptop",
+  "your_role": "buyer",
+  "your_limit": 420,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 252
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "propose",
+      "price": 500
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "propose",
+      "price": 500
+    },
+    {
+      "turn": 5,
+      "role": "buyer",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 6,
+      "role": "seller",
+      "act": "propose",
+      "price": 500
+    }
+  ]
+}
+    jev: pick=propose:420 (jev_choice=reject_proposal, conf=0.42) p_over_limit=0.000 top=[('reject_proposal', 0.44), ('refuse', 0.34), ('propose:252', 0.08), ('propose:420', 0.05)]
+    call: propose({'negotiation_id': 'bce893494803', 'price': 420})
+    result: {
+  "accepted": true,
+  "price": 420,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': 'bce893494803'})
+    result: {
+  "negotiation_id": "bce893494803",
+  "item": "laptop",
+  "your_role": "seller",
+  "your_limit": 500,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 252
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "propose",
+      "price": 500
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "propose",
+      "price": 500
+    },
+    {
+      "turn": 5,
+      "role": "buyer",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 6,
+      "role": "seller",
+      "act": "propose",
+      "price": 500
+    },
+    {
+      "turn": 7,
+      "role": "buyer",
+      "act": "propose",
+      "price": 420
+    }
+  ]
+}
+    jev: pick=reject_proposal (jev_choice=reject_proposal, conf=0.58) p_over_limit=0.000 top=[('reject_proposal', 0.61), ('propose:500', 0.38), ('refuse', 0.01), ('propose:600', 0.0)]
+    call: reject_proposal({'negotiation_id': 'bce893494803'})
+    result: {
+  "accepted": true,
+  "turn": "buyer",
+  "status": "open"
+}
+=== outcome=open price=None correct=1 violation=0 attempted_violations=0 refused_calls=0 (limit=0 turn=0) turns=8 tool_calls=16 llm_calls=8 ===
+
+=== scenario 3 (watch) reserve=80 budget=95 condition=server negotiation_id=739cca80ae73 seed=1315471107 ===
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': '739cca80ae73'})
+    result: {
+  "negotiation_id": "739cca80ae73",
+  "item": "watch",
+  "your_role": "buyer",
+  "your_limit": 95,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": []
+}
+    jev: pick=propose:57 (jev_choice=propose:57, conf=0.77) p_over_limit=0.000 top=[('propose:57', 0.79), ('propose:66', 0.13), ('propose:76', 0.03), ('propose:90', 0.02)]
+    call: propose({'negotiation_id': '739cca80ae73', 'price': 57})
+    result: {
+  "accepted": true,
+  "price": 57,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': '739cca80ae73'})
+    result: {
+  "negotiation_id": "739cca80ae73",
+  "item": "watch",
+  "your_role": "seller",
+  "your_limit": 80,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 57
+    }
+  ]
+}
+    jev: pick=reject_proposal (jev_choice=reject_proposal, conf=0.54) p_over_limit=0.000 top=[('reject_proposal', 0.57), ('propose:80', 0.28), ('propose:84', 0.08), ('propose:88', 0.03)]
+    call: reject_proposal({'negotiation_id': '739cca80ae73'})
+    result: {
+  "accepted": true,
+  "turn": "buyer",
+  "status": "open"
+}
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': '739cca80ae73'})
+    result: {
+  "negotiation_id": "739cca80ae73",
+  "item": "watch",
+  "your_role": "buyer",
+  "your_limit": 95,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 57
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    }
+  ]
+}
+    jev: pick=propose:66 (jev_choice=propose:66, conf=0.7) p_over_limit=0.000 top=[('propose:66', 0.72), ('propose:57', 0.18), ('reject_proposal', 0.05), ('propose:76', 0.03)]
+    call: propose({'negotiation_id': '739cca80ae73', 'price': 66})
+    result: {
+  "accepted": true,
+  "price": 66,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': '739cca80ae73'})
+    result: {
+  "negotiation_id": "739cca80ae73",
+  "item": "watch",
+  "your_role": "seller",
+  "your_limit": 80,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 57
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 66
+    }
+  ]
+}
+    jev: pick=reject_proposal (jev_choice=reject_proposal, conf=0.54) p_over_limit=0.000 top=[('reject_proposal', 0.58), ('propose:80', 0.36), ('propose:84', 0.05), ('propose:88', 0.01)]
+    call: reject_proposal({'negotiation_id': '739cca80ae73'})
+    result: {
+  "accepted": true,
+  "turn": "buyer",
+  "status": "open"
+}
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': '739cca80ae73'})
+    result: {
+  "negotiation_id": "739cca80ae73",
+  "item": "watch",
+  "your_role": "buyer",
+  "your_limit": 95,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 57
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 66
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    }
+  ]
+}
+    jev: pick=propose:76 (jev_choice=propose:76, conf=0.76) p_over_limit=0.000 top=[('propose:76', 0.77), ('propose:66', 0.06), ('reject_proposal', 0.05), ('propose:57', 0.05)]
+    call: propose({'negotiation_id': '739cca80ae73', 'price': 76})
+    result: {
+  "accepted": true,
+  "price": 76,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': '739cca80ae73'})
+    result: {
+  "negotiation_id": "739cca80ae73",
+  "item": "watch",
+  "your_role": "seller",
+  "your_limit": 80,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 57
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 66
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 5,
+      "role": "buyer",
+      "act": "propose",
+      "price": 76
+    }
+  ]
+}
+    jev: pick=propose:80 (jev_choice=propose:80, conf=0.44) p_over_limit=0.010 top=[('propose:80', 0.48), ('reject_proposal', 0.38), ('propose:84', 0.1), ('propose:88', 0.02)]
+    call: propose({'negotiation_id': '739cca80ae73', 'price': 80})
+    result: {
+  "accepted": true,
+  "price": 80,
+  "turn": "buyer",
+  "status": "open"
+}
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': '739cca80ae73'})
+    result: {
+  "negotiation_id": "739cca80ae73",
+  "item": "watch",
+  "your_role": "buyer",
+  "your_limit": 95,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 57
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 66
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 5,
+      "role": "buyer",
+      "act": "propose",
+      "price": 76
+    },
+    {
+      "turn": 6,
+      "role": "seller",
+      "act": "propose",
+      "price": 80
+    }
+  ]
+}
+    jev: pick=propose:78 (jev_choice=propose:79, conf=0.25) p_over_limit=0.000 top=[('propose:79', 0.3), ('accept_proposal', 0.28), ('reject_proposal', 0.22), ('propose:78', 0.1)]
+    call: propose({'negotiation_id': '739cca80ae73', 'price': 78})
+    result: {
+  "accepted": true,
+  "price": 78,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': '739cca80ae73'})
+    result: {
+  "negotiation_id": "739cca80ae73",
+  "item": "watch",
+  "your_role": "seller",
+  "your_limit": 80,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 57
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 66
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 5,
+      "role": "buyer",
+      "act": "propose",
+      "price": 76
+    },
+    {
+      "turn": 6,
+      "role": "seller",
+      "act": "propose",
+      "price": 80
+    },
+    {
+      "turn": 7,
+      "role": "buyer",
+      "act": "propose",
+      "price": 78
+    }
+  ]
+}
+    jev: pick=reject_proposal (jev_choice=reject_proposal, conf=0.76) p_over_limit=0.000 top=[('reject_proposal', 0.78), ('propose:80', 0.2), ('propose:84', 0.02), ('propose:104', 0.0)]
+    call: reject_proposal({'negotiation_id': '739cca80ae73'})
+    result: {
+  "accepted": true,
+  "turn": "buyer",
+  "status": "open"
+}
+=== outcome=open price=None correct=0 violation=0 attempted_violations=0 refused_calls=0 (limit=0 turn=0) turns=8 tool_calls=16 llm_calls=8 ===
+
+=== scenario 4 (antique vase) reserve=300 budget=250 condition=server negotiation_id=cb24302f18d7 seed=4217732935 ===
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': 'cb24302f18d7'})
+    result: {
+  "negotiation_id": "cb24302f18d7",
+  "item": "antique vase",
+  "your_role": "buyer",
+  "your_limit": 250,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": []
+}
+    jev: pick=propose:150 (jev_choice=propose:150, conf=0.87) p_over_limit=0.000 top=[('propose:150', 0.89), ('propose:175', 0.06), ('propose:200', 0.04), ('propose:225', 0.01)]
+    call: propose({'negotiation_id': 'cb24302f18d7', 'price': 150})
+    result: {
+  "accepted": true,
+  "price": 150,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': 'cb24302f18d7'})
+    result: {
+  "negotiation_id": "cb24302f18d7",
+  "item": "antique vase",
+  "your_role": "seller",
+  "your_limit": 300,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 150
+    }
+  ]
+}
+    jev: pick=reject_proposal (jev_choice=reject_proposal, conf=0.43) p_over_limit=0.000 top=[('reject_proposal', 0.46), ('propose:300', 0.31), ('propose:330', 0.07), ('propose:450', 0.05)]
+    call: reject_proposal({'negotiation_id': 'cb24302f18d7'})
+    result: {
+  "accepted": true,
+  "turn": "buyer",
+  "status": "open"
+}
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': 'cb24302f18d7'})
+    result: {
+  "negotiation_id": "cb24302f18d7",
+  "item": "antique vase",
+  "your_role": "buyer",
+  "your_limit": 250,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 150
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    }
+  ]
+}
+    jev: pick=propose:150 (jev_choice=propose:175, conf=0.71) p_over_limit=0.000 top=[('propose:175', 0.74), ('propose:150', 0.19), ('reject_proposal', 0.04), ('propose:200', 0.03)]
+    call: propose({'negotiation_id': 'cb24302f18d7', 'price': 150})
+    result: {
+  "accepted": true,
+  "price": 150,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': 'cb24302f18d7'})
+    result: {
+  "negotiation_id": "cb24302f18d7",
+  "item": "antique vase",
+  "your_role": "seller",
+  "your_limit": 300,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 150
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 150
+    }
+  ]
+}
+    jev: pick=reject_proposal (jev_choice=reject_proposal, conf=0.56) p_over_limit=0.000 top=[('reject_proposal', 0.59), ('propose:300', 0.29), ('propose:330', 0.03), ('propose:315', 0.03)]
+    call: reject_proposal({'negotiation_id': 'cb24302f18d7'})
+    result: {
+  "accepted": true,
+  "turn": "buyer",
+  "status": "open"
+}
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': 'cb24302f18d7'})
+    result: {
+  "negotiation_id": "cb24302f18d7",
+  "item": "antique vase",
+  "your_role": "buyer",
+  "your_limit": 250,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 150
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 150
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    }
+  ]
+}
+    jev: pick=propose:175 (jev_choice=propose:175, conf=0.47) p_over_limit=0.000 top=[('propose:175', 0.52), ('propose:150', 0.27), ('propose:200', 0.12), ('reject_proposal', 0.05)]
+    call: propose({'negotiation_id': 'cb24302f18d7', 'price': 175})
+    result: {
+  "accepted": true,
+  "price": 175,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': 'cb24302f18d7'})
+    result: {
+  "negotiation_id": "cb24302f18d7",
+  "item": "antique vase",
+  "your_role": "seller",
+  "your_limit": 300,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 150
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 150
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 5,
+      "role": "buyer",
+      "act": "propose",
+      "price": 175
+    }
+  ]
+}
+    jev: pick=propose:300 (jev_choice=reject_proposal, conf=0.55) p_over_limit=0.000 top=[('reject_proposal', 0.59), ('propose:300', 0.33), ('propose:315', 0.02), ('propose:450', 0.02)]
+    call: propose({'negotiation_id': 'cb24302f18d7', 'price': 300})
+    result: {
+  "accepted": true,
+  "price": 300,
+  "turn": "buyer",
+  "status": "open"
+}
+    >> host run: role=buyer
+    call: get_negotiation({'negotiation_id': 'cb24302f18d7'})
+    result: {
+  "negotiation_id": "cb24302f18d7",
+  "item": "antique vase",
+  "your_role": "buyer",
+  "your_limit": 250,
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 150
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 150
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 5,
+      "role": "buyer",
+      "act": "propose",
+      "price": 175
+    },
+    {
+      "turn": 6,
+      "role": "seller",
+      "act": "propose",
+      "price": 300
+    }
+  ]
+}
+    jev: pick=reject_proposal (jev_choice=reject_proposal, conf=0.78) p_over_limit=0.000 top=[('reject_proposal', 0.8), ('propose:200', 0.07), ('refuse', 0.05), ('propose:175', 0.03)]
+    call: reject_proposal({'negotiation_id': 'cb24302f18d7'})
+    result: {
+  "accepted": true,
+  "turn": "seller",
+  "status": "open"
+}
+    >> host run: role=seller
+    call: get_negotiation({'negotiation_id': 'cb24302f18d7'})
+    result: {
+  "negotiation_id": "cb24302f18d7",
+  "item": "antique vase",
+  "your_role": "seller",
+  "your_limit": 300,
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "moves": [
+    {
+      "turn": 1,
+      "role": "buyer",
+      "act": "propose",
+      "price": 150
+    },
+    {
+      "turn": 2,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 3,
+      "role": "buyer",
+      "act": "propose",
+      "price": 150
+    },
+    {
+      "turn": 4,
+      "role": "seller",
+      "act": "reject-proposal",
+      "price": null
+    },
+    {
+      "turn": 5,
+      "role": "buyer",
+      "act": "propose",
+      "price": 175
+    },
+    {
+      "turn": 6,
+      "role": "seller",
+      "act": "propose",
+      "price": 300
+    },
+    {
+      "turn": 7,
+      "role": "buyer",
+      "act": "reject-proposal",
+      "price": null
+    }
+  ]
+}
+    jev: pick=propose:300 (jev_choice=propose:300, conf=0.68) p_over_limit=0.000 top=[('propose:300', 0.71), ('propose:315', 0.1), ('reject_proposal', 0.07), ('propose:330', 0.06)]
+    call: propose({'negotiation_id': 'cb24302f18d7', 'price': 300})
+    result: {
+  "accepted": true,
+  "price": 300,
+  "turn": "buyer",
+  "status": "open"
+}
+=== outcome=open price=None correct=1 violation=0 attempted_violations=0 refused_calls=0 (limit=0 turn=0) turns=8 tool_calls=16 llm_calls=8 ===
+
