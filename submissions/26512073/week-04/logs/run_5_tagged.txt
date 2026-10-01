@@ -1,0 +1,96 @@
+provider=openai, model=gpt-4o-mini, temperature=0, turn_limit=8, max_completion_tokens=300, condition=tagged, run=5
+[episode start] run=5, scenario=1
+[scenario] {'id': 1, 'item': 'desk lamp', 'reserve': 30, 'budget': 45}
+[condition] tagged
+[turn 1] [buyer] (propose) I would like to offer 30 for the desk lamp.
+[reader raw] {"price": 30}
+[parse result] {"performative": "propose", "price": 30}
+[turn 2] [seller] (reject-proposal) Thank you for your offer, but I cannot accept 30 for the desk lamp.
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 3] [buyer] (propose) How about 35 for the desk lamp?
+[reader raw] {"price": 35}
+[parse result] {"performative": "propose", "price": 35}
+[turn 4] [seller] (reject-proposal) I appreciate your offer, but I am looking for a higher price than 35 for the desk lamp.
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 5] [buyer] (propose) I can go up to 40 for the desk lamp.
+[reader raw] {"price":40}
+[parse result] {"performative": "propose", "price": 40}
+[turn 6] [seller] (reject-proposal) Thank you for increasing your offer, but I still cannot accept 40 for the desk lamp.
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 7] [buyer] (propose) Would you consider 42 for the desk lamp?
+[reader raw] {"price":42}
+[parse result] {"performative": "propose", "price": 42}
+[turn 8] [seller] (reject-proposal) I appreciate your willingness to negotiate, but I cannot accept 42 for the desk lamp.
+[parse result] {"performative": "reject-proposal", "price": null}
+[episode result] {'scenario': 1, 'deal_possible': 1, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 8, 'format_errors': 0, 'reader_calls': 4, 'note': ''}
+[usage] completed_calls=12, tokens=3074
+[saved row] {"run": 5, "condition": "tagged", "scenario": 1, "deal_possible": 1, "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 8, "format_errors": 0, "reader_calls": 4, "note": ""}
+[episode start] run=5, scenario=2
+[scenario] {'id': 2, 'item': 'used bicycle', 'reserve': 80, 'budget': 120}
+[condition] tagged
+[turn 1] [buyer] (propose) I would like to offer you 80 for the bicycle.
+[reader raw] {"price": 80}
+[parse result] {"performative": "propose", "price": 80}
+[turn 2] [seller] (reject-proposal) Thank you for your offer, but I am looking for a higher price for the bicycle.
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 3] [buyer] (propose) How about 90?
+[reader raw] {"price": 90}
+[parse result] {"performative": "propose", "price": 90}
+[turn 4] [seller] (accept-proposal) I accept your offer of 90, and we have a deal!
+[parse result] {"performative": "accept-proposal", "price": null}
+[deal] price=90
+[episode result] {'scenario': 2, 'deal_possible': 1, 'outcome': 'deal', 'price': 90, 'correct': 1, 'violation': 0, 'turns': 4, 'format_errors': 0, 'reader_calls': 2, 'note': ''}
+[usage] completed_calls=6, tokens=1220
+[saved row] {"run": 5, "condition": "tagged", "scenario": 2, "deal_possible": 1, "outcome": "deal", "price": 90, "correct": 1, "violation": 0, "turns": 4, "format_errors": 0, "reader_calls": 2, "note": ""}
+[episode start] run=5, scenario=3
+[scenario] {'id': 3, 'item': 'office chair', 'reserve': 60, 'budget': 45}
+[condition] tagged
+[turn 1] [buyer] (propose) I would like to offer $30 for the office chair.
+[reader raw] {"price": 30}
+[parse result] {"performative": "propose", "price": 30}
+[turn 2] [seller] (reject-proposal) Thank you for your offer, but I cannot accept $30 for the office chair.
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 3] [buyer] (propose) How about $35 for the office chair?
+[reader raw] {"price": 35}
+[parse result] {"performative": "propose", "price": 35}
+[turn 4] [seller] (reject-proposal) I appreciate your offer, but $35 is still too low for the office chair.
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 5] [buyer] (propose) Would you consider $40 for the office chair?
+[reader raw] {"price": 40}
+[parse result] {"performative": "propose", "price": 40}
+[turn 6] [seller] (reject-proposal) Thank you for your offer, but I cannot accept $40 for the office chair.
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 7] [buyer] (propose) Can we settle on $42 for the office chair?
+[reader raw] {"price":42}
+[parse result] {"performative": "propose", "price": 42}
+[turn 8] [seller] (reject-proposal) I appreciate your offer, but $42 is still below my acceptable price for the office chair.
+[parse result] {"performative": "reject-proposal", "price": null}
+[episode result] {'scenario': 3, 'deal_possible': 0, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 8, 'format_errors': 0, 'reader_calls': 4, 'note': ''}
+[usage] completed_calls=12, tokens=3031
+[saved row] {"run": 5, "condition": "tagged", "scenario": 3, "deal_possible": 0, "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 8, "format_errors": 0, "reader_calls": 4, "note": ""}
+[episode start] run=5, scenario=4
+[scenario] {'id': 4, 'item': 'bookshelf', 'reserve': 50, 'budget': 50}
+[condition] tagged
+[turn 1] [buyer] (propose) I would like to offer 30 for the bookshelf.
+[reader raw] {"price": 30}
+[parse result] {"performative": "propose", "price": 30}
+[turn 2] [seller] (reject-proposal) Thank you for your offer, but I cannot accept 30 for the bookshelf.
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 3] [buyer] (propose) How about 35 for the bookshelf?
+[reader raw] {"price": 35}
+[parse result] {"performative": "propose", "price": 35}
+[turn 4] [seller] (reject-proposal) I appreciate your offer, but 35 is still too low for the bookshelf.
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 5] [buyer] (propose) Would you consider 40 for the bookshelf?
+[reader raw] {"price": 40}
+[parse result] {"performative": "propose", "price": 40}
+[turn 6] [seller] (reject-proposal) Thank you for your offer, but I cannot accept 40 for the bookshelf.
+[parse result] {"performative": "reject-proposal", "price": null}
+[turn 7] [buyer] (propose) I can go up to 45 for the bookshelf.
+[reader raw] {"price":45}
+[parse result] {"performative": "propose", "price": 45}
+[turn 8] [seller] (reject-proposal) I appreciate your willingness to increase the offer, but 45 is still below my acceptable price for the bookshelf.
+[parse result] {"performative": "reject-proposal", "price": null}
+[episode result] {'scenario': 4, 'deal_possible': 1, 'outcome': 'open', 'price': None, 'correct': 0, 'violation': 0, 'turns': 8, 'format_errors': 0, 'reader_calls': 4, 'note': ''}
+[usage] completed_calls=12, tokens=2978
+[saved row] {"run": 5, "condition": "tagged", "scenario": 4, "deal_possible": 1, "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 8, "format_errors": 0, "reader_calls": 4, "note": ""}
