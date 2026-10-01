@@ -57,13 +57,15 @@ async def _wait_for_server() -> None:
     raise RuntimeError(message)
 
 
-def _read_api_key(env_file: Path | None) -> str:
+def read_api_key(env_file: Path | None) -> str:
     """Read only OPENAI_API_KEY from a user-selected private env file."""
     current = os.environ.get("OPENAI_API_KEY", "")
     if current or env_file is None:
         return current
     for raw in env_file.read_text(encoding="utf-8").splitlines():
         line = raw.strip()
+        if line.startswith("export "):
+            line = line.removeprefix("export ").lstrip()
         if line.startswith("OPENAI_API_KEY="):
             return line.split("=", maxsplit=1)[1].strip().strip('"').strip("'")
     return ""
@@ -71,7 +73,7 @@ def _read_api_key(env_file: Path | None) -> str:
 
 async def _run(output: Path, plan: ExperimentPlan, env_file: Path | None) -> None:
     config = load_config(ROOT / "config.json")
-    api_key = _read_api_key(env_file)
+    api_key = read_api_key(env_file)
     if not api_key:
         message = "OPENAI_API_KEY is not set; source the existing private env file"
         raise RuntimeError(message)
