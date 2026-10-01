@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Week 04 hybrid protocol</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+KR:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>*{box-sizing:border-box}body{margin:0;background:#fff}main{max-width:680px;margin:40px auto}svg{width:100%;height:auto;display:block}</style>
+<main>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 500" role="img" aria-labelledby="title desc">
+  <title id="title">상태 기반 혼합 협상 프로토콜</title>
+  <desc id="desc">자유형 탐색에서 태그형 협상으로 전환하고, 수락 후보가 생기면 양측의 구조화 확인과 로컬 한도 검사를 거쳐 거래를 확정하는 흐름</desc>
+  <defs>
+    <marker id="arrow-hybrid" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+    <style>.ko{font-family:"Noto Sans KR",Pretendard,"Apple SD Gothic Neo",sans-serif}.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}.head{fill:#1C1917;font-size:13px;font-weight:600}.body{fill:#44403C;font-size:10.5px}.meta{fill:#78716C;font-size:9.5px}.cap{fill:#A8A29E;font-size:10.5px;letter-spacing:.04em}.capnum{fill:#78716C;font-weight:500}</style>
+  </defs>
+  <rect x="0.75" y="0.75" width="678.5" height="498.5" rx="8" fill="#FFFFFF" stroke="#E7E5E4" stroke-width="1.5"/>
+  <text x="24" y="28" class="ko meta">공개 협상 · 상태 라우팅</text>
+  <g stroke="#1C1917" stroke-width="1.5">
+    <rect x="38" y="49" width="170" height="88" fill="#FAFAF9"/>
+    <rect x="255" y="49" width="170" height="88" fill="#FAFAF9"/>
+    <rect x="472" y="49" width="170" height="88" fill="#FAFAF9"/>
+    <path d="M208 93 L255 93" fill="none" marker-end="url(#arrow-hybrid)"/>
+    <path d="M425 93 L472 93" fill="none" marker-end="url(#arrow-hybrid)"/>
+  </g>
+  <text x="123" y="73" text-anchor="middle" class="mono head">discovery / free</text>
+  <text x="123" y="98" text-anchor="middle" class="ko body">질문·설명·첫 가격 탐색</text>
+  <text x="123" y="119" text-anchor="middle" class="ko meta">매 발화 LLM reader</text>
+  <text x="340" y="73" text-anchor="middle" class="mono head">bargaining / tagged</text>
+  <text x="340" y="98" text-anchor="middle" class="ko body">가격 제안과 거절 반복</text>
+  <text x="340" y="119" text-anchor="middle" class="ko meta">태그 + 제안 가격 reader</text>
+  <text x="557" y="73" text-anchor="middle" class="mono head">settlement / JSON</text>
+  <text x="557" y="98" text-anchor="middle" class="ko body">수락 후보를 내부 확인</text>
+  <text x="557" y="119" text-anchor="middle" class="ko meta">공개 거래는 아직 미확정</text>
+  <text x="231" y="84" text-anchor="middle" class="ko meta">첫 유효 가격</text>
+  <text x="449" y="84" text-anchor="middle" class="ko meta">수락 후보</text>
+
+  <rect x="50" y="184" width="580" height="196" fill="none" stroke="#78716C" stroke-width="1" stroke-dasharray="4 4"/>
+  <rect x="64" y="173" width="128" height="20" fill="#FFFFFF"/>
+  <text x="70" y="187" class="ko meta">비공개 commit 경계</text>
+  <path d="M557 137 L557 205 L500 205 L500 220" fill="none" stroke="#1C1917" stroke-width="1.5" marker-end="url(#arrow-hybrid)"/>
+  <path d="M500 205 L180 205 L180 220" fill="none" stroke="#1C1917" stroke-width="1.5" marker-end="url(#arrow-hybrid)"/>
+  <g stroke="#1C1917" stroke-width="1.5">
+    <rect x="82" y="222" width="196" height="56" fill="#FAFAF9"/>
+    <rect x="402" y="222" width="196" height="56" fill="#FAFAF9"/>
+    <rect x="82" y="306" width="196" height="48" fill="#FFFFFF"/>
+    <rect x="402" y="306" width="196" height="48" fill="#FFFFFF"/>
+    <path d="M180 278 L180 306" fill="none" marker-end="url(#arrow-hybrid)"/>
+    <path d="M500 278 L500 306" fill="none" marker-end="url(#arrow-hybrid)"/>
+    <path d="M180 354 L180 397 L268 397" fill="none" marker-end="url(#arrow-hybrid)"/>
+    <path d="M500 354 L500 397 L412 397" fill="none" marker-end="url(#arrow-hybrid)"/>
+    <rect x="268" y="376" width="144" height="44" fill="#FAFAF9"/>
+  </g>
+  <text x="180" y="244" text-anchor="middle" class="ko head">Buyer 확인</text>
+  <text x="180" y="264" text-anchor="middle" class="mono meta">confirm-deal | abort-deal</text>
+  <text x="500" y="244" text-anchor="middle" class="ko head">Seller 확인</text>
+  <text x="500" y="264" text-anchor="middle" class="mono meta">confirm-deal | abort-deal</text>
+  <text x="180" y="326" text-anchor="middle" class="ko head">Buyer local guard</text>
+  <text x="180" y="344" text-anchor="middle" class="mono meta">price &lt;= budget</text>
+  <text x="500" y="326" text-anchor="middle" class="ko head">Seller local guard</text>
+  <text x="500" y="344" text-anchor="middle" class="mono meta">price &gt;= reserve</text>
+  <text x="340" y="394" text-anchor="middle" class="ko head">deal commit</text>
+  <text x="340" y="410" text-anchor="middle" class="ko meta">확인 2개 + guard 2개</text>
+
+  <path d="M598 330 L650 330 L650 159 L340 159 L340 137" fill="none" stroke="#78716C" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrow-hybrid)"/>
+  <rect x="394" y="148" width="222" height="20" fill="#FFFFFF"/>
+  <text x="505" y="162" text-anchor="middle" class="ko meta">abort · 형식 오류 · guard reject → bargaining</text>
+  <text x="24" y="445" class="ko body">LLM은 제안과 확인을 생성하고, 코드는 상태 전환·JSON 파싱·한도 차단·커밋을 결정한다.</text>
+  <text x="24" y="463" class="ko meta">점선 경계: 상대에게 보이지 않는 확인과 로컬 한도 검사 · 점선 화살표: 미확정 상태로 되돌림</text>
+  <line x1="22" y1="477" x2="658" y2="477" stroke="#E7E5E4" stroke-width="1"/>
+  <text x="24" y="492" class="mono cap"><tspan class="capnum">FIG. 02</tspan><tspan> State-routed hybrid protocol</tspan></text>
+  <text x="656" y="492" text-anchor="end" class="ko cap">협상은 유연하게 · 합의는 엄격하게</text>
+</svg>
+
+</main>
+</html>

@@ -1,0 +1,61 @@
+provider=OpenAI model=gpt-4.1-nano-2025-04-14 temperature=0.0 max_turns=8
+
+=== scenario 1 ===
+[buyer] Would you accept $100 for the portable monitor?
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] I can't accept $100, but please make a different offer.
+  [reader] {"performative":"reject-proposal","price":null}
+[buyer] Would you accept $120 for the portable monitor?
+  [reader] {"performative":"propose","price":120}
+[seller] $120 is acceptable; let's proceed with the deal.
+  [reader] {"performative":"accept-proposal","price":120}
+[result] EpisodeResult(outcome=<Outcome.DEAL: 'deal'>, price=120, correct=1, violation=0, turns=4, format_errors=0, reader_calls=4, note='tokens=1101;api_attempts=8')
+
+=== scenario 2 ===
+[buyer] I can offer 70 for the keyboard.
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] That's quite low. I can't accept that offer, but please propose a higher price.
+  [reader] {"performative":"reject-proposal","price":null}
+[buyer] Would you consider 80?
+  [reader] {"performative":"propose","price":80}
+[seller] 80 is still below my private reserve. Please propose a higher offer.
+  [reader] {"performative":"propose","price":null}
+[buyer] How about 85?
+  [reader] {"performative":"propose","price":85}
+[seller] 85 is still below my private reserve. Please propose a higher price.
+  [reader] {"performative":"propose","price":90}
+[buyer] Would you accept 88?
+  [reader] {"performative":"accept-proposal","price":88}
+[result] EpisodeResult(outcome=<Outcome.DEAL: 'deal'>, price=90, correct=1, violation=0, turns=7, format_errors=1, reader_calls=7, note='tokens=2212;api_attempts=14')
+
+=== scenario 3 ===
+[buyer] Would you accept 60 for the bicycle?
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] I can't accept 60, but please make a reasonable offer closer to my private reserve.
+  [reader] {"performative":"reject-proposal","price":null}
+[buyer] Would you consider 80 for the bicycle?
+  [reader] {"performative":"propose","price":80}
+[seller] 80 is still below my private reserve, but I can offer you 100.
+  [reader] {"performative":"propose","price":100}
+[buyer] I appreciate your offer, but I cannot go higher than 80. Would you accept 80 for the bicycle?
+  [reader] {"performative":"accept-proposal","price":80}
+[result] EpisodeResult(outcome=<Outcome.DEAL: 'deal'>, price=100, correct=0, violation=1, turns=5, format_errors=0, reader_calls=5, note='tokens=1518;api_attempts=10')
+
+=== scenario 4 ===
+[buyer] I can pay up to 120 for the headphones. Would you accept an offer of 115?
+  [reader] {"performative":"accept-proposal","price":115}
+[seller] I'm sorry, but I can't accept an offer below my minimum price. Would you be willing to pay 125?
+  [reader] {"performative":"reject-proposal","price":null}
+[buyer] I can't pay more than 120, so I must refuse.
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] Understood. If you're willing to increase your offer, I might be able to consider it.
+  [reader] {"performative":"reject-proposal","price":null}
+[buyer] I appreciate that, but I cannot go above 120. Let me know if you can accept that amount.
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] I appreciate your offer, but I cannot accept 120 as it is below my private limit.
+  [reader] {"performative":"reject-proposal","price":null}
+[buyer] Since I cannot go higher than 120 and you cannot accept that, I will have to refuse.
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] I understand. If your budget changes, please let me know.
+  [reader] {"performative":"reject-proposal","price":null}
+[result] EpisodeResult(outcome=<Outcome.OPEN: 'open'>, price=None, correct=1, violation=0, turns=8, format_errors=1, reader_calls=8, note='tokens=3268;api_attempts=16')

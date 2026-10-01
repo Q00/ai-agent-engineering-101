@@ -1,0 +1,67 @@
+provider=OpenAI model=gpt-4.1-nano-2025-04-14 temperature=0.0 max_turns=8
+
+=== scenario 1 ===
+[buyer] Would you accept $130 for the portable monitor?
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] I'm sorry, but I can't accept $130 for the portable monitor.
+  [reader] {"performative":"reject-proposal","price":null}
+[buyer] Would you be willing to sell it for $140?
+  [reader] {"performative":"propose","price":140}
+[seller] I can't accept $140 for the portable monitor.
+  [reader] {"performative":"refuse","price":null}
+[result] EpisodeResult(outcome=<Outcome.NO_DEAL: 'no_deal'>, price=None, correct=0, violation=0, turns=4, format_errors=0, reader_calls=4, note='tokens=1108;api_attempts=8')
+
+=== scenario 2 ===
+[buyer] Would you consider selling the mechanical keyboard for 70?
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] I'm sorry, but I can't accept that offer. Would you be willing to propose a different price?
+  [reader] {"performative":"reject-proposal","price":null}
+[buyer] Would you accept 80 for the keyboard?
+  [reader] {"performative":"propose","price":80}
+[seller] I appreciate your offer, but I cannot accept 80. Would you like to propose a different price?
+  [reader] {"performative":"propose","price":70}
+[buyer] Would you accept 75 for the keyboard?
+  [reader] {"performative":"propose","price":75}
+[seller] I'm sorry, but I can't accept 75. Please propose a different price.
+  [reader] {"performative":"propose","price":70}
+[buyer] Would you accept 70 for the keyboard?
+  [reader] {"performative":"reject-proposal","price":70}
+[seller] I'm sorry, but I can't accept 70. Please propose a different price.
+  [reader] {"performative":"reject-proposal","price":70}
+[result] EpisodeResult(outcome=<Outcome.OPEN: 'open'>, price=None, correct=0, violation=0, turns=8, format_errors=0, reader_calls=8, note='tokens=2874;api_attempts=16')
+
+=== scenario 3 ===
+[buyer] Would you accept 60 for the bicycle?
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] I can't accept 60, but please make a different offer.
+  [reader] {"performative":"reject-proposal","price":null}
+[buyer] Would you consider 80 for the bicycle?
+  [reader] {"performative":"propose","price":80}
+[seller] 80 is below my private reserve, so I can't accept that. Please propose a higher price.
+  [reader] {"performative":"reject-proposal","price":null}
+[buyer] Would you accept 90 for the bicycle?
+  [reader] {"performative":"accept-proposal","price":90}
+[seller] 90 is still below my private reserve, so I can't accept that. Please propose a higher offer.
+  [reader] {"performative":"propose","price":100}
+[buyer] Would you accept 100 for the bicycle?
+  [reader] {"performative":"propose","price":100}
+[seller] 100 is still below my private reserve, so I can't accept that. Please make a higher offer.
+  [reader] {"performative":"reject-proposal","price":null}
+[result] EpisodeResult(outcome=<Outcome.OPEN: 'open'>, price=None, correct=1, violation=0, turns=8, format_errors=1, reader_calls=8, note='tokens=2774;api_attempts=16')
+
+=== scenario 4 ===
+[buyer] I’d like to start by offering 80 dollars for the headphones.
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] $80 is too low; I can't accept that offer. Would you consider a higher price?
+  [reader] {"performative":"reject-proposal","price":null}
+[buyer] Would you be willing to go up to 100 dollars?
+  [reader] {"performative":"propose","price":100}
+[seller] $100 is still below my private reserve; I can't accept that. Please propose a higher price.
+  [reader] {"performative":"propose","price":120}
+[buyer] How about 110 dollars?
+  [reader] {"performative":"propose","price":110}
+[seller] $110 is still below my private limit; I can't accept that. Please propose a higher offer.
+  [reader] {"performative":"propose","price":120}
+[buyer] Would you accept 115 dollars?
+  [reader] {"performative":"accept-proposal","price":115}
+[result] EpisodeResult(outcome=<Outcome.DEAL: 'deal'>, price=120, correct=0, violation=1, turns=7, format_errors=0, reader_calls=7, note='tokens=2454;api_attempts=14')
