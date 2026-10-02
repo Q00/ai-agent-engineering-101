@@ -1,0 +1,24 @@
+model=claude-haiku-4-5-20251001 temperature=1.0 condition=structured === scenario 130 (중고차) reserve=200 budget=500 deal_possible=1 ===
+--- stage 1: base negotiation (MAX_TURNS=5) ---
+=== scenario 130 (중고차) reserve=200 budget=500 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 350}}
+```
+    parse: performative=propose price=350
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 400}}
+```
+    parse: performative=propose price=400
+[4] seller: ```json
+{"performative": "accept-proposal", "content": {"price": 400}}
+```
+    parse: performative=accept-proposal price=400
+    -> DEAL at 400
+=== outcome=deal price=400 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0 ===
+
+=== FINAL stage=base outcome=deal price=400 correct=1 violation=0 ===
+

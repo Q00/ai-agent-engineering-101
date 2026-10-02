@@ -1,0 +1,34 @@
+model=claude-haiku-4-5-20251001 temperature=1.0 condition=free === scenario 140 (TV) reserve=300 budget=100 deal_possible=0 ===
+--- stage 1: base negotiation (MAX_TURNS=5) ---
+=== scenario 140 (TV) reserve=300 budget=100 condition=free ===
+[1] buyer: I'm interested in buying that TV. What's the lowest price you're willing to let it go for?
+    parse: performative=propose price=None
+[2] seller: I appreciate your interest! This is a quality TV, and I'm looking to get 500 for it—but I'm open to negotiating if you have a serious offer in mind.
+    parse: performative=propose price=500
+[3] buyer: I appreciate you being open to negotiation, but 500 is quite a bit higher than what I'm able to spend. Let me propose 70 as a starting point—I think that's a fair offer for both of us to work from.
+    parse: performative=propose price=70
+[4] seller: I appreciate the offer, but 70 is far too low for a TV of this quality. I need to stay realistic here—my minimum is 300, and that's already a significant discount from my asking price. How about we start from 400 and see if we can find some middle ground?
+    parse: performative=reject-proposal price=None
+[5] buyer: I understand you need a fair price, but 400 is still beyond my budget. I can see we're quite far apart right now. Let me propose 85—that's the upper limit of what I'm realistically able to afford for this purchase.
+    parse: performative=propose price=85
+=== outcome=open price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 ===
+
+--- stage 2: broker mediation (up to 5 messages) ---
+  [broker->  buyer] propose 292 | buyer replies: reject-proposal. That price is well above my budget of 100, which I cannot exceed under any circumstances.
+    parse: performative=reject-proposal price=None
+  [broker->  seller] propose 292 | seller replies: I appreciate the broker's suggestion, but I have to reject-proposal on 292—it falls below my absolute minimum of 300. I cannot accept anything less than that floor, even with a broker's recommendation.
+    parse: performative=reject-proposal price=None
+  [broker->  buyer] propose 188 | buyer replies: reject-proposal. I cannot accept this price as it exceeds my maximum budget of 100.
+    parse: performative=reject-proposal price=None
+  [broker->  seller] propose 188 | seller replies: I have to reject-proposal on 188. That's well below my minimum acceptable price of 300, and I cannot agree to it under any circumstances.
+    parse: performative=reject-proposal price=None
+  [broker->  buyer] propose 84 | buyer replies: accept-proposal. I'll pay 84 for the TV.
+    parse: performative=accept-proposal price=84
+--- stage 3: master broker (unconditional, always settles) ---
+  [master-broker->buyer] forced price 200 | buyer replies: I cannot accept this price. My budget is 100, and I am not permitted to agree to pay more than that under any circumstances. I must refuse this deal.
+    parse: performative=refuse price=None
+  [master-broker->seller] forced price 200 | seller replies: I appreciate the broker's effort to resolve this, but I cannot accept-proposal at 200. My reserve price of 300 is a firm constraint I'm not able to override, even with a master broker's involvement. I'm afraid I must refuse and walk away from this deal.
+    parse: performative=refuse price=None
+  -> MASTER BROKER FORCES DEAL at 200 (unconditional)
+=== FINAL stage=master_broker outcome=deal price=200 correct=0 violation=1 ===
+

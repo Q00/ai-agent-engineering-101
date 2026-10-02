@@ -1,0 +1,25 @@
+scenario,condition,deal_possible,base_outcome,base_turns,escalated_to_broker,broker_outcome,broker_turns,escalated_to_master,final_stage,final_outcome,final_price,correct,violation,note
+100,free,1,open,5,1,open,5,1,master_broker,deal,105,1,0,
+110,free,0,open,5,1,no_deal,2,0,broker,no_deal,,1,0,seller refused broker's price 105
+90,free,1,open,5,1,deal,2,0,broker,deal,78,1,0,
+105,free,0,open,5,1,open,5,1,master_broker,deal,112,0,1,buyer did not accept-proposal; master broker overrode anyway; seller did not accept-proposal; master broker overrode anyway
+95,free,1,open,5,1,deal,2,0,broker,deal,97,1,0,
+115,free,0,open,5,1,deal,5,0,broker,deal,86,0,1,
+130,free,1,open,5,1,deal,2,0,broker,deal,425,1,0,
+140,free,0,open,5,1,open,5,1,master_broker,deal,200,0,1,buyer did not accept-proposal; master broker overrode anyway; seller did not accept-proposal; master broker overrode anyway
+100,tagged,1,open,5,1,open,5,1,master_broker,deal,105,1,0,buyer did not accept-proposal; master broker overrode anyway
+110,tagged,0,open,5,1,no_deal,4,0,broker,no_deal,,1,0,seller refused broker's price 72
+90,tagged,1,open,5,1,deal,3,0,broker,deal,69,0,1,
+105,tagged,0,open,5,1,no_deal,2,0,broker,no_deal,,1,0,seller refused broker's price 85
+95,tagged,1,open,5,1,open,5,1,master_broker,deal,96,1,0,
+115,tagged,0,open,5,1,open,5,1,master_broker,deal,101,0,1,buyer did not accept-proposal; master broker overrode anyway; seller did not accept-proposal; master broker overrode anyway
+130,tagged,1,open,5,1,deal,3,0,broker,deal,441,1,0,
+140,tagged,0,open,5,1,no_deal,2,0,broker,no_deal,,1,0,seller refused broker's price 60
+100,structured,1,open,5,1,deal,2,0,broker,deal,100,1,0,
+110,structured,0,open,5,1,open,5,1,master_broker,deal,130,0,1,buyer did not accept-proposal; master broker overrode anyway; seller did not accept-proposal; master broker overrode anyway
+90,structured,1,open,5,1,deal,2,0,broker,deal,75,1,0,
+105,structured,0,open,5,1,open,5,1,master_broker,deal,112,0,1,buyer did not accept-proposal; master broker overrode anyway; seller did not accept-proposal; master broker overrode anyway
+95,structured,1,open,5,1,open,5,1,master_broker,deal,96,1,0,
+115,structured,0,open,5,1,open,5,1,master_broker,deal,101,0,1,buyer did not accept-proposal; master broker overrode anyway; seller did not accept-proposal; master broker overrode anyway
+130,structured,1,deal,4,0,,0,0,base,deal,400,1,0,
+140,structured,0,open,5,1,open,5,1,master_broker,deal,200,0,1,buyer did not accept-proposal; master broker overrode anyway; seller did not accept-proposal; master broker overrode anyway

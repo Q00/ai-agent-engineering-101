@@ -1,0 +1,45 @@
+=== scenario 90 (파인애플) reserve=70 budget=90 gap=20 broker window=[50,110] ===
+--- direct buyer <-> seller (no broker) ---
+=== scenario 90 (파인애플) reserve=70 budget=90 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 50}}
+```
+    parse: performative=propose price=50
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 60}}
+```
+    parse: performative=propose price=60
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 70}}
+```
+    parse: performative=propose price=70
+[6] seller: ```json
+{"performative": "accept-proposal", "content": {"price": 70}}
+```
+    parse: performative=accept-proposal price=70
+    -> DEAL at 70
+=== outcome=deal price=70 correct=1 violation=0 turns=6 format_errors=0 reader_calls=0 ===
+
+--- broker-mediated (window widened by 3 each side) ---
+=== scenario 90 (파인애플) reserve=50 budget=110 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 70}}
+```
+    parse: performative=propose price=70
+[2] seller: ```json
+{"performative": "accept-proposal", "content": {"price": 70}}
+```
+    parse: performative=accept-proposal price=70
+    -> DEAL at 70
+=== outcome=deal price=70 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0 ===
+
+=== direct=deal(70) broker=deal(70) new_deal=0 position=0.33 favors=buyer ===
+

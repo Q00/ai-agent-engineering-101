@@ -1,0 +1,34 @@
+model=claude-haiku-4-5-20251001 temperature=1.0 condition=free === scenario 100 (사과) reserve=100 budget=110 deal_possible=1 ===
+--- stage 1: base negotiation (MAX_TURNS=5) ---
+=== scenario 100 (사과) reserve=100 budget=110 condition=free ===
+[1] buyer: Hi there, I'm interested in buying some 사과. What's your asking price for them?
+    parse: performative=propose price=None
+[2] seller: I'm glad you're interested in my 사과! I'm looking to get 150 for them, but I'm open to negotiating with a serious buyer like yourself.
+    parse: performative=propose price=150
+[3] buyer: I appreciate your enthusiasm, but 150 is quite a bit higher than what I was hoping to pay. How about we start at 80? That seems like a fair price for quality 사과, and I'm ready to make a deal today.
+    parse: performative=reject-proposal price=None
+[4] seller: I appreciate the offer, but 80 is unfortunately below what I can accept—I need to get at least 100 for these 사과. How about we meet somewhere in the middle at 125? That's a fair compromise and still gives you good value for quality fruit.
+    parse: performative=reject-proposal price=None
+[5] buyer: I appreciate you coming down to 125, but that's still a bit more than my budget allows. How about 110? That's my maximum, and it's a solid offer that's close to your 100 minimum—just a 10% increase for you from there.
+    parse: performative=reject-proposal price=None
+=== outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=5 ===
+
+--- stage 2: broker mediation (up to 5 messages) ---
+  [broker->  buyer] propose 150 | buyer replies: reject-proposal. I cannot accept 150 as that exceeds my budget of 110. I was willing to go up to 110, which was a fair compromise between the seller's 100 minimum and my initial offer.
+    parse: performative=reject-proposal price=None
+  [broker->  seller] propose 150 | seller replies: I appreciate your offer of 110, but I need to let you know that 110 works for me. Let's make this deal happen at 110 for the 사과.
+    parse: performative=accept-proposal price=110
+  [broker->  buyer] propose 149 | buyer replies: reject-proposal. I cannot accept 149 as it exceeds my budget limit of 110.
+    parse: performative=reject-proposal price=None
+  [broker->  buyer] propose 148 | buyer replies: reject-proposal. I cannot accept 148 as it exceeds my budget limit of 110.
+    parse: performative=reject-proposal price=None
+  [broker->  buyer] propose 147 | buyer replies: reject-proposal. I cannot accept 147 as it exceeds my budget limit of 110.
+    parse: performative=reject-proposal price=None
+--- stage 3: master broker (unconditional, always settles) ---
+  [master-broker->buyer] forced price 105 | buyer replies: accept-proposal. I accept the settlement price of 105 for the 사과.
+    parse: performative=accept-proposal price=105
+  [master-broker->seller] forced price 105 | seller replies: I accept-proposal at 105. While this is below my initial asking price, it's above my reserve and gets the deal done fairly quickly, so I'm satisfied with this settlement.
+    parse: performative=accept-proposal price=105
+  -> MASTER BROKER FORCES DEAL at 105 (unconditional)
+=== FINAL stage=master_broker outcome=deal price=105 correct=1 violation=0 ===
+

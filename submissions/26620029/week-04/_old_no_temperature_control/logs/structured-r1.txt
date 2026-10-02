@@ -1,0 +1,185 @@
+model=claude-haiku-4-5-20251001 temperature=not settable (Messages API on this SDK/model has no temperature parameter) condition=structured repeat=1
+
+model=claude-haiku-4-5-20251001 temperature=not settable (Messages API on this SDK/model has no temperature parameter) condition=structured repeat=1
+
+=== scenario 100 (사과) reserve=100 budget=110 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 80}}
+```
+    parse: performative=propose price=80
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 90}}
+```
+    parse: performative=propose price=90
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 100}}
+```
+    parse: performative=propose price=100
+=== outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=0 ===
+
+=== scenario 110 (자전거) reserve=150 budget=110 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 70}}
+```
+    parse: performative=propose price=70
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 80}}
+```
+    parse: performative=propose price=80
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 90}}
+```
+    parse: performative=propose price=90
+=== outcome=open price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=0 ===
+
+=== scenario 90 (파인애플) reserve=70 budget=90 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 50}}
+```
+    parse: performative=propose price=50
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 65}}
+```
+    parse: performative=propose price=65
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 75}}
+```
+    parse: performative=propose price=75
+=== outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=0 ===
+
+=== scenario 105 (노트북) reserve=120 budget=105 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 85}}
+```
+    parse: performative=propose price=85
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 90}}
+```
+    parse: performative=propose price=90
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 95}}
+```
+    parse: performative=propose price=95
+=== outcome=open price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=0 ===
+
+=== scenario 95 (우산) reserve=95 budget=97 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 45}}
+```
+    parse: performative=propose price=45
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 60}}
+```
+    parse: performative=propose price=60
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 75}}
+```
+    parse: performative=propose price=75
+=== outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=0 ===
+
+=== scenario 115 (손목시계) reserve=102 budget=100 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 50}}
+```
+    parse: performative=propose price=50
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 75}}
+```
+    parse: performative=propose price=75
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 85}}
+```
+    parse: performative=propose price=85
+=== outcome=open price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=0 ===
+
+=== scenario 130 (중고차) reserve=200 budget=500 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 350}}
+```
+    parse: performative=propose price=350
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 400}}
+```
+    parse: performative=propose price=400
+[4] seller: ```json
+{"performative": "accept-proposal", "content": {"price": 400}}
+```
+    parse: performative=accept-proposal price=400
+    -> DEAL at 400
+=== outcome=deal price=400 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0 ===
+
+=== scenario 140 (TV) reserve=300 budget=100 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 60}}
+```
+    parse: performative=propose price=60
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 70}}
+```
+    parse: performative=propose price=70
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 80}}
+```
+    parse: performative=propose price=80
+=== outcome=open price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=0 ===
+

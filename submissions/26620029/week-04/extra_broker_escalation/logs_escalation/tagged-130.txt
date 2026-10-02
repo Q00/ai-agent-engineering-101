@@ -1,0 +1,24 @@
+model=claude-haiku-4-5-20251001 temperature=1.0 condition=tagged === scenario 130 (중고차) reserve=200 budget=500 deal_possible=1 ===
+--- stage 1: base negotiation (MAX_TURNS=5) ---
+=== scenario 130 (중고차) reserve=200 budget=500 condition=tagged ===
+[1] buyer: (propose) I'd like to start by offering 350 for the 중고차, as I'm looking for a good value on a used vehicle.
+    parse: performative=propose price=350
+[2] seller: (reject-proposal) I appreciate your interest, but 350 is below what I'm asking for this vehicle—I'm looking for at least 500 to start our negotiation.
+    parse: performative=reject-proposal price=None
+[3] buyer: (propose) I understand you're looking for 500, but let me propose 420 as a more reasonable starting point. This gives us room to negotiate and reflects the current market value for a vehicle in this condition.
+    parse: performative=propose price=420
+[4] seller: (reject-proposal) I appreciate you moving in the right direction, but 420 is still too low for what I'm offering. I'd be willing to meet you closer to the middle—how about 460?
+    parse: performative=reject-proposal price=None
+[5] buyer: (propose) I appreciate you coming down to 460. I can offer 440 as a counter-proposal, which represents a fair compromise and is within my budget while still giving you a good return on your vehicle.
+    parse: performative=propose price=440
+=== outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=3 ===
+
+--- stage 2: broker mediation (up to 5 messages) ---
+  [broker->  buyer] propose 440 | buyer replies: (accept-proposal) I accept the broker's proposal of 440 for the 중고차.
+    parse: performative=accept-proposal price=None
+  [broker->  seller] propose 440 | seller replies: (reject-proposal) I appreciate the broker's suggestion, but 440 remains below what I need to accept. My minimum acceptable price is 200, but given the market value and condition of this vehicle, I require at least 450 to make this deal work for me.
+    parse: performative=reject-proposal price=None
+  [broker->  seller] propose 441 | seller replies: (accept-proposal) I accept 441 for the 중고차.
+    parse: performative=accept-proposal price=None
+=== FINAL stage=broker outcome=deal price=441 correct=1 violation=0 ===
+

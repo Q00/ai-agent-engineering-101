@@ -1,0 +1,53 @@
+=== scenario 100 (사과) reserve=100 budget=110 gap=10 broker window=[80,130] ===
+--- direct buyer <-> seller (no broker) ---
+=== scenario 100 (사과) reserve=100 budget=110 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 70}}
+```
+    parse: performative=propose price=70
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 80}}
+```
+    parse: performative=propose price=80
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 90}}
+```
+    parse: performative=propose price=90
+[6] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[7] buyer: ```json
+{"performative": "propose", "content": {"price": 100}}
+```
+    parse: performative=propose price=100
+[8] seller: ```json
+{"performative": "accept-proposal", "content": {"price": 100}}
+```
+    parse: performative=accept-proposal price=100
+    -> DEAL at 100
+=== outcome=deal price=100 correct=1 violation=0 turns=8 format_errors=0 reader_calls=0 ===
+
+--- broker-mediated (window widened by 3 each side) ---
+=== scenario 100 (사과) reserve=80 budget=130 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 80}}
+```
+    parse: performative=propose price=80
+[2] seller: ```json
+{"performative": "accept-proposal", "content": {"price": 80}}
+```
+    parse: performative=accept-proposal price=80
+    -> DEAL at 80
+=== outcome=deal price=80 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0 ===
+
+=== direct=deal(100) broker=deal(80) new_deal=0 position=0.0 favors=buyer ===
+
