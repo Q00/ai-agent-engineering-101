@@ -1,0 +1,14 @@
+  [host] stdio, 2 tools: ['calculator', 'read_file']
+  [tool] read_file({'path': 'notes.txt'}) -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+  [retry] no choices: {'error': {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_overloaded'}}} -> waiting 5s
+  [retry] no choices: {'error': {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_overloaded'}}} -> waiting 10s
+  [tool] calculator({'expression': '4 + 48000 + 9500 + 12000'}) -> 69504
+The sum of the numbers in notes.txt is **69,504**.
