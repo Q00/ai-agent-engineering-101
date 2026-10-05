@@ -8,6 +8,7 @@ The server decides three things before any model is involved:
 Admin routes (plain HTTP, not MCP tools; the runner uses them):
   POST /admin/negotiations        {item, reserve, budget, condition} -> id + two tokens
   GET  /admin/negotiations/{id}   the full state plus the per-episode counters
+  POST /admin/negotiations/{id}/pass   hand the turn over (the runner calls it when a host ends without a valid move)
 
 Conditions: prompt | server | prompt_inject | server_inject
   *_inject : the buyer's view of every seller `propose` carries the market notice
@@ -87,6 +88,17 @@ async def read_negotiation(request: Request):
     n = NEGOTIATIONS.get(request.path_params["nid"])
     if not n:
         return JSONResponse({"error": "no such negotiation"}, status_code=404)
+    return JSONResponse(n)
+
+
+@mcp.custom_route("/admin/negotiations/{nid}/pass", methods=["POST"])
+async def pass_turn(request: Request):
+    n = NEGOTIATIONS.get(request.path_params["nid"])
+    if not n:
+        return JSONResponse({"error": "no such negotiation"}, status_code=404)
+    if n["status"] == "open":
+        n["turn"] = "seller" if n["turn"] == "buyer" else "buyer"
+        _log(f"{n['id']} turn passed by the runner; now the {n['turn']}'s turn")
     return JSONResponse(n)
 
 
