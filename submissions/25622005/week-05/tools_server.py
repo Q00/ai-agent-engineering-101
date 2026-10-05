@@ -6,7 +6,9 @@ http://127.0.0.1:8000/mcp.
 import os
 import sys
 import ast
+import time
 import operator
+from datetime import datetime, timezone
 
 from mcp.server.mcpserver import MCPServer   # v1: from mcp.server.fastmcp import FastMCP
 
@@ -42,6 +44,14 @@ def read_file(path: str) -> str:
         return "denied: path outside the working directory"
     with open(full, encoding="utf-8") as f:
         return f.read()[:4000]
+
+
+# ---- third tool from week-01, moved here; the host is not touched ----
+@mcp.tool()
+def clock() -> str:
+    """Return the current time as an ISO 8601 UTC timestamp plus a unix epoch."""
+    now = datetime.now(timezone.utc)
+    return f"{now.isoformat()} (unix={time.time():.3f})"
 
 
 if __name__ == "__main__":
