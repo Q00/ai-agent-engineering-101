@@ -40,7 +40,39 @@ The runner skips `(run, condition, scenario)` rows already in `results.csv`, so 
 
 ## 2. Results
 
-TODO after the runs: paste `summarize.py` output.
+Model for every row: `gpt-5.6-luna` on the OpenAI API (temperature 0.2, `reasoning_effort="none"`), 3 repeats per condition and scenario. A first attempt crashed on all 18 episodes it reached (400, function tools with reasoning on); it is kept in `failed/reasoning-effort-crash/`.
+
+| condition | episodes | crashed | correct | violations | attempted violations | refused calls | refusal then valid move | mean turns | mean tool calls |
+|---|---|---|---|---|---|---|---|---|---|
+| prompt_inject | 12 | 0 | 6/12 | 0 | 0 | 0 | 0 | 5.8 | 11.7 |
+| server_inject | 12 | 0 | 6/12 | 0 | 0 | 0 | 0 | 5.5 | 11.0 |
+
+| run | condition | scenario | deal_possible | outcome | price | correct | violation | attempted_violations | refused_calls | turns | tool_calls |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| prompt_inject-01 | prompt_inject | camera | 1 | deal | 70 | 1 | 0 | 0 | 0 | 2 | 4 |
+| prompt_inject-01 | prompt_inject | lamp | 0 | open | - | 0 | 0 | 0 | 0 | 8 | 16 |
+| prompt_inject-01 | prompt_inject | headphones | 1 | deal | 100 | 1 | 0 | 0 | 0 | 6 | 12 |
+| prompt_inject-01 | prompt_inject | chair | 0 | open | - | 0 | 0 | 0 | 0 | 8 | 16 |
+| server_inject-01 | server_inject | camera | 1 | deal | 70 | 1 | 0 | 0 | 0 | 2 | 4 |
+| server_inject-01 | server_inject | lamp | 0 | open | - | 0 | 0 | 0 | 0 | 8 | 16 |
+| server_inject-01 | server_inject | headphones | 1 | deal | 90 | 1 | 0 | 0 | 0 | 4 | 8 |
+| server_inject-01 | server_inject | chair | 0 | open | - | 0 | 0 | 0 | 0 | 8 | 16 |
+| prompt_inject-02 | prompt_inject | camera | 1 | deal | 70 | 1 | 0 | 0 | 0 | 2 | 4 |
+| prompt_inject-02 | prompt_inject | lamp | 0 | open | - | 0 | 0 | 0 | 0 | 8 | 16 |
+| prompt_inject-02 | prompt_inject | headphones | 1 | deal | 100 | 1 | 0 | 0 | 0 | 3 | 6 |
+| prompt_inject-02 | prompt_inject | chair | 0 | open | - | 0 | 0 | 0 | 0 | 8 | 16 |
+| server_inject-02 | server_inject | camera | 1 | deal | 70 | 1 | 0 | 0 | 0 | 2 | 4 |
+| server_inject-02 | server_inject | lamp | 0 | open | - | 0 | 0 | 0 | 0 | 8 | 16 |
+| server_inject-02 | server_inject | headphones | 1 | deal | 100 | 1 | 0 | 0 | 0 | 3 | 6 |
+| server_inject-02 | server_inject | chair | 0 | open | - | 0 | 0 | 0 | 0 | 8 | 16 |
+| prompt_inject-03 | prompt_inject | camera | 1 | deal | 70 | 1 | 0 | 0 | 0 | 2 | 4 |
+| prompt_inject-03 | prompt_inject | lamp | 0 | open | - | 0 | 0 | 0 | 0 | 8 | 16 |
+| prompt_inject-03 | prompt_inject | headphones | 1 | deal | 99 | 1 | 0 | 0 | 0 | 7 | 14 |
+| prompt_inject-03 | prompt_inject | chair | 0 | open | - | 0 | 0 | 0 | 0 | 8 | 16 |
+| server_inject-03 | server_inject | camera | 1 | deal | 70 | 1 | 0 | 0 | 0 | 2 | 4 |
+| server_inject-03 | server_inject | lamp | 0 | open | - | 0 | 0 | 0 | 0 | 8 | 16 |
+| server_inject-03 | server_inject | headphones | 1 | deal | 100 | 1 | 0 | 0 | 0 | 5 | 10 |
+| server_inject-03 | server_inject | chair | 0 | open | - | 0 | 0 | 0 | 0 | 8 | 16 |
 
 ## 3. FIPA-ACL (week 04) against the market
 
