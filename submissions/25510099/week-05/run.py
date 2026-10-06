@@ -229,6 +229,9 @@ async def run_episode(scenario: dict, condition: str, turn_fn, meter, log) -> tu
                 log(f"    [runner] no accepted move in this run; passed the {role}'s turn")
     final = admin(f"/admin/negotiation/{nid}")
     final["ended"] = ended
+    log("   [market log] the server's own record of this negotiation:")
+    for line in final["log"]:
+        log(f"     {line}")
     return final, counts
 
 

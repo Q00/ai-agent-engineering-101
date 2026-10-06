@@ -153,7 +153,7 @@ async def run_turn(server_url: str, token: str, role: str, system: str, user: st
                             if REFUSED in out:
                                 res.refused += 1
                         else:
-                            log(f"  [{role} call] {name}({shown})\n    [result] {out[:600]}")
+                            log(f"  [{role} call] {name}({shown})\n    [result] {out}")
                             if name in MOVE_TOOLS:
                                 res.moved = True
                                 res.move = (name, args.get("price"))
