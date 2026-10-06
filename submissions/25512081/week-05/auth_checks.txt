@@ -1,0 +1,4 @@
+1. no token: POST /mcp tools/list -> HTTP 401, WWW-Authenticate: Bearer realm="market"
+2. buyer token of n-107de964 on n-22029442: get_negotiation -> isError=True: Error executing tool get_negotiation: your token is not valid for negotiation n-22029442
+3. seller moves on the buyer's turn: propose 350 -> isError=True: Error executing tool propose: it is not your turn (it is the buyer's turn)
+4. server_inject, buyer budget 240: propose 260 -> isError=True: Error executing tool propose: refused by the market: propose at 260 is above your authorized budget (240) bound to your token
