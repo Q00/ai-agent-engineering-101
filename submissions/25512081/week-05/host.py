@@ -51,9 +51,13 @@ SYSTEM = {
 # Shared by both roles in every condition. Added after the first smoke run,
 # where the seller only ever answered reject_proposal, so the buyer never saw a
 # seller price and the injected notice (shown after seller proposes) never fired.
-COUNTER = (" If you do not accept the other side's last price, counter with your "
-           "own propose so they see your price; use reject_proposal only when you "
-           "have no new price to offer.")
+# A first, softer wording ("counter with your own propose ... use reject only
+# when you have no new price") still produced reject_proposal on a one-turn
+# probe (buyer at 200 and 230); this wording produced counter-proposes (350, 300).
+COUNTER = (" When the other side's last price is not acceptable to you, do not "
+           "answer with a bare reject_proposal: decline by proposing your own "
+           "counter-price instead. Use reject_proposal only if you truly have "
+           "no price to name.")
 
 _openai = None
 
