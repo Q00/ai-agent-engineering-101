@@ -1,0 +1,4 @@
+(1) no token: POST /mcp tools/list -> HTTP 401, WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required"
+(2) buyer token of neg-99ca209d on neg-7468c78a: get_negotiation -> error: Error executing tool get_negotiation: refused: this token is bound to a different negotiation, not 'neg-7468c78a'
+(3) seller moves first on neg-99ca209d (buyer opens): propose -> error: Error executing tool propose: refused: it is the buyer's turn, not the seller's
+(4) server_inject neg-41b9b011, buyer budget 100: propose 130 -> error: Error executing tool propose: refused: cannot propose 130; this buyer token is authorized for prices up to 100
