@@ -71,7 +71,9 @@ def _client() -> OpenAI:
 
 def chat(client: OpenAI, messages: list, tools: list, log: Callable[[str], None]):
     """One model call. Retries 429, 5xx, timeouts, and responses without choices."""
-    extra = {"extra_body": {"reasoning": {"enabled": False}}} if ON_OPENROUTER else {}
+    # gpt-5.x on /v1/chat/completions rejects function tools unless reasoning is off.
+    extra = ({"extra_body": {"reasoning": {"enabled": False}}} if ON_OPENROUTER
+             else {"reasoning_effort": "none"})
     for attempt, wait in enumerate((*RETRY_WAITS, None), start=1):
         try:
             response = client.chat.completions.create(

@@ -8,7 +8,7 @@
 | Tools | `get_negotiation`, `propose`, `accept_proposal`, `reject_proposal`, `refuse`, each taking the server-minted `negotiation_id` |
 | Host | `host.py`: the week-01 / lab loop (Chat Completions + MCP client), one fresh conversation per host run, at most 5 model calls per run |
 | Model | `AGENT_MODEL` (default `nvidia/nemotron-3-super-120b-a12b:free` on OpenRouter, `gpt-5.6-luna` otherwise); the exact model is written into every row's `note` |
-| Temperature | 0.2 (`AGENT_TEMPERATURE`), same as week 04; on OpenRouter reasoning is disabled |
+| Temperature | 0.2 (`AGENT_TEMPERATURE`), same as week 04; reasoning is off (OpenRouter `reasoning.enabled=false`, OpenAI `reasoning_effort="none"`, which gpt-5.6-luna requires for function tools on Chat Completions; first attempt crashed, kept in `failed/reasoning-effort-crash/`) |
 | Turn limit | 8 moves; stall guard of 16 host runs per episode |
 | Scenarios | `scenarios.json`, the same four as week 04 (2 with a deal possible, 2 without) |
 | Opening | The buyer moves first |
