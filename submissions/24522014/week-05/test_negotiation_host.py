@@ -32,7 +32,7 @@ class ScriptedModel:
         }]}
 
 
-class HostHTTPTests(unittest.IsolatedAsyncioTestCase):
+class MarketFixture:
     async def asyncSetUp(self):
         self.admin = secrets.token_urlsafe(32)
         self.app = create_app(self.admin)
@@ -64,6 +64,8 @@ class HostHTTPTests(unittest.IsolatedAsyncioTestCase):
             150 if role == "buyer" else 120, model, self.logs.append,
         )
 
+
+class HostHTTPTests(MarketFixture, unittest.IsolatedAsyncioTestCase):
     async def test_distinct_party_tokens_read_and_make_one_move(self):
         model = ScriptedModel([("propose", {"price": 130}), ("accept_proposal", {})])
         async with connect_party("http://127.0.0.1:8001/mcp", self.episode["tokens"]["buyer"], self.transport) as buyer:
