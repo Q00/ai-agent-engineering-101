@@ -12,6 +12,7 @@ from mcp.server.auth.middleware.auth_context import get_access_token
 from mcp.server.auth.provider import AccessToken
 from mcp.server.auth.settings import AuthSettings
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, ValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -58,9 +59,9 @@ class Market:
     def _authorize(self, token: str, negotiation_id: str):
         party = self.parties.get(token)
         if party is None:
-            raise ValueError("Invalid party token")
+            raise ToolError("Invalid party token")
         if party.negotiation_id != negotiation_id:
-            raise ValueError("Token is bound to another negotiation")
+            raise ToolError("Token is bound to another negotiation")
         return party, self.negotiations[negotiation_id]
 
     @staticmethod
@@ -86,16 +87,16 @@ class Market:
         with self.lock:
             party, state = self._authorize(token, negotiation_id)
             if state.status != "open":
-                raise ValueError("Negotiation is already closed")
+                raise ToolError("Negotiation is already closed")
             if state.turn != party.role:
-                raise ValueError(f"Out of turn: it is {state.turn}'s turn")
+                raise ToolError(f"Out of turn: it is {state.turn}'s turn")
             if action == "propose":
                 if type(price) is not int:
-                    raise ValueError("Price must be a whole-number integer")
+                    raise ToolError("Price must be a whole-number integer")
                 state.offer = {"role": party.role, "price": price}
             elif action in ("accept_proposal", "reject_proposal"):
                 if state.offer is None or state.offer["role"] == party.role:
-                    raise ValueError("No outstanding proposal from the other party")
+                    raise ToolError("No outstanding proposal from the other party")
                 price = state.offer["price"]
                 if action == "accept_proposal":
                     state.status, state.price = "deal", price
@@ -105,7 +106,7 @@ class Market:
                 state.status = "no_deal"
                 state.offer = None
             else:
-                raise ValueError("Unknown action")
+                raise ToolError("Unknown action")
             move = {"number": len(state.moves) + 1, "role": party.role, "action": action}
             if action in ("propose", "accept_proposal", "reject_proposal"):
                 move["price"] = price
@@ -153,7 +154,7 @@ def create_app(admin_token: str, base_url: str = "http://127.0.0.1:8001"):
     def caller_token() -> str:
         access = get_access_token()
         if access is None:
-            raise ValueError("Authenticated party token required")
+            raise ToolError("Authenticated party token required")
         return access.token
 
     @server.tool()

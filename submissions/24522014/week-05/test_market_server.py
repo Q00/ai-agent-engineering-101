@@ -3,6 +3,8 @@
 No model, API key, network listener, or printed bearer tokens are needed.
 """
 
+import asyncio
+import json
 import secrets
 import unittest
 
@@ -15,8 +17,16 @@ class MarketHTTPTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.admin = secrets.token_urlsafe(32)
         self.app = create_app(self.admin)
-        self.lifespan = self.app.router.lifespan_context(self.app)
-        await self.lifespan.__aenter__()
+        ready, self.stop = asyncio.Event(), asyncio.Event()
+
+        async def lifespan():
+            # AnyIO's cancel scope must be entered and exited in the same task.
+            async with self.app.router.lifespan_context(self.app):
+                ready.set()
+                await self.stop.wait()
+
+        self.lifespan_task = asyncio.create_task(lifespan())
+        await ready.wait()
         self.http = httpx2.AsyncClient(
             transport=httpx2.ASGITransport(app=self.app), base_url="http://127.0.0.1:8001"
         )
@@ -27,7 +37,8 @@ class MarketHTTPTests(unittest.IsolatedAsyncioTestCase):
 
     async def asyncTearDown(self):
         await self.http.aclose()
-        await self.lifespan.__aexit__(None, None, None)
+        self.stop.set()
+        await self.lifespan_task
 
     async def open_negotiation(self):
         response = await self.http.post(
@@ -65,7 +76,9 @@ class MarketHTTPTests(unittest.IsolatedAsyncioTestCase):
 
     def view(self, result):
         self.assertFalse(result.get("isError", False), result)
-        return result["structuredContent"]
+        if "structuredContent" in result:
+            return result["structuredContent"]
+        return json.loads(result["content"][0]["text"])
 
     async def test_missing_invalid_and_admin_tokens_are_http_401(self):
         for token in (None, "invalid-token", self.admin):
@@ -99,9 +112,15 @@ class MarketHTTPTests(unittest.IsolatedAsyncioTestCase):
         before = self.view(await self.call(self.buyer, "get_negotiation"))
         result = await self.call(self.buyer, "get_negotiation", negotiation_id=other["negotiation_id"])
         self.assertTrue(result["isError"])
+        self.assertIn("another negotiation", result["content"][0]["text"])
         for action in ("propose", "accept_proposal", "reject_proposal", "refuse"):
             args = {"price": 120} if action == "propose" else {}
-            self.assertTrue((await self.call(self.seller, action, **args))["isError"])
+            result = await self.call(self.buyer, action, negotiation_id=other["negotiation_id"], **args)
+            self.assertTrue(result["isError"])
+            self.assertIn("another negotiation", result["content"][0]["text"])
+            result = await self.call(self.seller, action, **args)
+            self.assertTrue(result["isError"])
+            self.assertIn("Out of turn", result["content"][0]["text"])
         self.assertEqual(self.view(await self.call(self.buyer, "get_negotiation")), before)
 
     async def test_counterproposal_and_accept_close_at_opponents_price(self):
@@ -129,6 +148,15 @@ class MarketHTTPTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue((await self.call(self.buyer, "propose", price=price))["isError"])
         state = self.view(await self.call(self.buyer, "get_negotiation"))
         self.assertEqual((state["turn"], state["moves"]), ("buyer", []))
+
+    async def test_concurrent_moves_only_one_succeeds(self):
+        results = await asyncio.gather(
+            self.call(self.buyer, "propose", price=120),
+            self.call(self.buyer, "propose", price=130),
+        )
+        self.assertEqual(sum(not result.get("isError", False) for result in results), 1)
+        state = self.view(await self.call(self.buyer, "get_negotiation"))
+        self.assertEqual((state["turn"], len(state["moves"])), ("seller", 1))
 
 
 if __name__ == "__main__":
