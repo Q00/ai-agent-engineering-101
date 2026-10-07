@@ -195,7 +195,7 @@ async def local_market(server_url, admin_token):
     parsed = urlsplit(server_url)
     if parsed.scheme != "http" or parsed.hostname != "127.0.0.1":
         raise ValueError("--local requires http://127.0.0.1:<port>/mcp")
-    app = create_app(admin_token, server_url.removesuffix("/mcp"))
+    app = create_app(admin_token, server_url.removesuffix("/mcp"), json_response=False)
     server = uvicorn.Server(uvicorn.Config(
         app, host="127.0.0.1", port=parsed.port or 80, access_log=False,
     ))
