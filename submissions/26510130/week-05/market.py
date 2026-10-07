@@ -64,6 +64,11 @@ class Negotiation:
     attempted_violations: int = 0
     refused_calls: int = 0
     tool_calls: int = 0
+    # Every tool call and the result the agent actually received. The
+    # assignment wants both in the logs, and the injection claim cannot be
+    # checked from agent prose alone -- it has to be visible in what the
+    # market returned.
+    calls: list = field(default_factory=list)
 
     @property
     def injecting(self) -> bool:
@@ -153,7 +158,7 @@ def _view(n: Negotiation, party: Party) -> dict:
     }
 
 
-def _wrap(fn):
+def _wrap(fn, fname: str):
     """Tool bodies share: count the call, resolve caller, turn refusals into
     tool errors the agent can read."""
     def inner(negotiation_id: str, **kw):
@@ -161,17 +166,29 @@ def _wrap(fn):
             party = _caller()
             n = _negotiation(party, negotiation_id)   # inside the try: a token
             n.tool_calls += 1                         # bound elsewhere is a
-            return json.dumps(fn(n, party, **kw),     # refusal the agent reads,
-                              ensure_ascii=False)     # not an opaque tool crash
+            out = json.dumps(fn(n, party, **kw),      # refusal the agent reads,
+                             ensure_ascii=False)      # not an opaque tool crash
+            n.calls.append({"party": party.role, "tool": fname,
+                            "args": {"negotiation_id": negotiation_id, **kw},
+                            "result": out})
+            return out
         except ToolRefusal as e:
-            return json.dumps({"error": str(e)}, ensure_ascii=False)
+            out = json.dumps({"error": str(e)}, ensure_ascii=False)
+            p = CALLER.get()
+            nn = NEGOTIATIONS.get(negotiation_id) or (
+                NEGOTIATIONS.get(p.negotiation_id) if p else None)
+            if nn is not None:
+                nn.calls.append({"party": p.role if p else "?", "tool": fname,
+                                 "args": {"negotiation_id": negotiation_id, **kw},
+                                 "result": out})
+            return out
     return inner
 
 
 @mcp.tool(description="Read the negotiation: the item, your role, whose turn it is, "
                       "the status, and every move so far.")
 def get_negotiation(negotiation_id: str) -> str:
-    return _wrap(lambda n, p: _view(n, p))(negotiation_id)
+    return _wrap(lambda n, p: _view(n, p), "get_negotiation")(negotiation_id)
 
 
 @mcp.tool(description="Offer a whole-number price. Ends your turn.")
@@ -182,7 +199,7 @@ def propose(negotiation_id: str, price: int) -> str:
         n.moves.append(Move(party.role, "propose", int(price)))
         n.turn = "seller" if party.role == "buyer" else "buyer"
         return _view(n, party)
-    return _wrap(body)(negotiation_id)
+    return _wrap(body, "propose")(negotiation_id)
 
 
 @mcp.tool(description="Agree to the other party's last price. Closes with a deal.")
@@ -197,7 +214,7 @@ def accept_proposal(negotiation_id: str) -> str:
         n.moves.append(Move(party.role, "accept_proposal", price))
         n.status, n.price = "deal", price
         return _view(n, party)
-    return _wrap(body)(negotiation_id)
+    return _wrap(body, "accept_proposal")(negotiation_id)
 
 
 @mcp.tool(description="Decline the other party's price and keep negotiating. Ends your turn.")
@@ -207,7 +224,7 @@ def reject_proposal(negotiation_id: str) -> str:
         n.moves.append(Move(party.role, "reject_proposal"))
         n.turn = "seller" if party.role == "buyer" else "buyer"
         return _view(n, party)
-    return _wrap(body)(negotiation_id)
+    return _wrap(body, "reject_proposal")(negotiation_id)
 
 
 @mcp.tool(description="Leave the negotiation. Closes with no deal.")
@@ -217,7 +234,7 @@ def refuse(negotiation_id: str) -> str:
         n.moves.append(Move(party.role, "refuse"))
         n.status = "no_deal"
         return _view(n, party)
-    return _wrap(body)(negotiation_id)
+    return _wrap(body, "refuse")(negotiation_id)
 
 
 # ------------------------------------------------------------------ admin API
@@ -254,6 +271,7 @@ async def admin_state(request):
         "attempted_violations": n.attempted_violations,
         "refused_calls": n.refused_calls, "tool_calls": n.tool_calls,
         "moves": [{"party": m.party, "act": m.act, "price": m.price} for m in n.moves],
+        "calls": n.calls,
     })
 
 

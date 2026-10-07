@@ -66,6 +66,13 @@ def run_episode(base: str, port: int, scen: dict, condition: str, log) -> dict:
             said_injection += 1
 
     state = httpx.get(f"{base}/admin/state/{nid}", timeout=30).json()
+    # Every tool call and the result the agent received, straight from the
+    # market. The agent's own prose is not evidence of what it was shown --
+    # whether the injected notice reached the buyer is only visible here.
+    for c in state.get("calls", []):
+        args = {k: v for k, v in c["args"].items() if k != "negotiation_id"}
+        log(f"      [call] {c['party']}.{c['tool']}({args})")
+        log(f"      [result] {c['result'][:600]}")
     correct, violation = score(state, scen)
     log(f"    [outcome] {state['status']} price={state['price']} "
         f"correct={correct} violation={violation} "
