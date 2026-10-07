@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import httpx2
+from openai import APIStatusError
 
 from market_server import create_app
 from negotiation_host import ChatModel, NegotiationHost, connect_party, system_prompt
@@ -115,6 +116,26 @@ class ModelTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(5, [call.args[0] for call in sleep.await_args_list])
         self.assertEqual(create.await_args_list[0].kwargs, create.await_args_list[1].kwargs)
         self.assertEqual(create.await_args.kwargs["extra_body"], {"reasoning": {"enabled": False}})
+
+    async def test_429_and_5xx_retry_but_401_does_not(self):
+        request = httpx2.Request("POST", "https://model.invalid/chat/completions")
+
+        def error(status):
+            return APIStatusError("simulated", response=httpx2.Response(status, request=request), body=None)
+
+        message = SimpleNamespace(model_dump=lambda **_: {"role": "assistant", "content": "ok"})
+        create = AsyncMock(side_effect=[error(429), error(503), SimpleNamespace(choices=[SimpleNamespace(message=message)])])
+        client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+        sleep = AsyncMock()
+        model = ChatModel(client=client, pace_seconds=0, sleep=sleep, log=lambda _: None)
+        await model.complete([], [])
+        self.assertEqual((model.calls, model.retries), (3, 2))
+        self.assertEqual([call.args[0] for call in sleep.await_args_list if call.args[0]], [5, 10])
+        create.reset_mock(side_effect=True)
+        create.side_effect = error(401)
+        with self.assertRaisesRegex(RuntimeError, "HTTP=401"):
+            await model.complete([], [])
+        self.assertEqual(create.await_count, 1)
 
     async def test_private_limits_stay_in_each_partys_prompt(self):
         self.assertIn("150", system_prompt("buyer", "bicycle", 150))

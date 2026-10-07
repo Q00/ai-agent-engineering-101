@@ -82,6 +82,12 @@ class RunLog:
         self.handle.close()
 
 
+def error_detail(exc):
+    if isinstance(exc, BaseExceptionGroup):
+        return "; ".join(error_detail(child) for child in exc.exceptions)
+    return f"{type(exc).__name__}: {exc}"
+
+
 async def run_episode(scenario, server_url, admin_token, model, log, transport=None):
     """Only this runner sees both party tokens and both private price limits."""
     base_url = server_url.removesuffix("/mcp")
@@ -166,7 +172,8 @@ async def run_batch(scenarios, condition, repeat, server_url, admin_token, resul
                     row["note"] = note
                 except Exception as exc:
                     failures += 1
-                    row["note"] = log.clean(f"{note}; crash: {type(exc).__name__}: {str(exc)[:500]}")
+                    details = log.clean(error_detail(exc))[:500]
+                    row["note"] = f"{note}; crash: {details}"
                     log(f"[crash] {row['note']}")
                 row["note"] += f" model_calls={getattr(model, 'calls', 0) - before_calls} retries={getattr(model, 'retries', 0) - before_retries}"
                 writer.writerow(row)
