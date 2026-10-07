@@ -1,18 +1,18 @@
 # 최종 제출 검증 — 2026-10-07
 
-**week-05 제출 파일 검증은 통과했다. 현재 브랜치는 공용 HTML 4개의 충돌로 upstream에 병합할 수 없다.**
+**week-05 제출 검사와 PR 소유권 검사가 통과했다. 공용 HTML 4개의 충돌을 해결했으며 upstream 병합 시뮬레이션도 통과했다.**
 
 | 검증 항목 | 결과 | 기록 |
 |---|---|---|
-| 최신 upstream의 공식 week-05 구조 검사 | PASS: 14개 Python 소스, 시나리오 4개, 조건별 12개 결과, 로그, 인증 기록, 보고서 | [공식 검사](logs/final-official-check-03.txt) |
+| 최신 upstream의 공식 week-05 구조 검사 | PASS: 14개 Python 소스, 시나리오 4개, 조건별 12개 결과, 로그, 인증 기록, 보고서 | [병합 후 공식 검사](logs/pr-submission-check-02.txt) |
 | 서버·host·runner 및 실제 TCP | PASS: 27개 테스트 | [실행 검사](logs/final-runtime-check-01.txt) |
 | 실험 데이터와 원본 도구 로그 | PASS: 24개 고유 에피소드, 두 조건 모두 각 시나리오 3회, 모든 측정값 일치 | [실험 대조](logs/final-experiment-check-01.txt) |
 | 보고서·인증 기록·재현 환경 | PASS: 보고서 4부·24행·로컬 링크, 실제 인증 결과 4줄, 설치 버전 6개 일치 | [무결성 검사](logs/final-integrity-check-01.txt) |
 | CI의 Python 3.12 문법 | PASS: 14개 소스를 Python 3.12 문법으로 파싱 | [무결성 검사](logs/final-integrity-check-01.txt) |
 | 자격 증명 패턴 | PASS: UTF-16 로그를 포함한 현재 파일 및 과거 week-05 blob 106개에서 완전한 키/긴 bearer 값 패턴 미발견 | [무결성 검사](logs/final-integrity-check-01.txt) |
 | 시나리오 선행 커밋 | PASS: `b77100e`가 첫 실험 결과 커밋의 조상이며 현재 시나리오와 동일 | [무결성 검사](logs/final-integrity-check-01.txt) |
-| week-05 작업 커밋의 소유권 | PASS: `7a5ee59..c278a7f`의 76개 파일 모두 본인 week-05 경로 | [무결성 검사](logs/final-integrity-check-01.txt) |
-| 전체 브랜치의 PR 병합 | FAIL: 공용 HTML 4개 충돌. PR 병합 후 전체 변경에 대한 CI 소유권 판정은 아직 완료할 수 없음 | [병합 시뮬레이션](logs/final-pr-merge-01.txt) |
+| 전체 PR 변경의 소유권 | PASS: `upstream/main...HEAD`의 모든 변경이 본인 week-05 경로이며 공식 소유권 검사 통과 | [PR 검사](logs/pr-submission-check-02.txt) |
+| 전체 브랜치의 PR 병합 | PASS: upstream을 이력 보존 방식으로 병합하고 공용 HTML을 upstream 원문으로 해결. 남은 충돌 없음 | [해결 기록](logs/pr-conflict-resolution-01.txt), [병합 재검사](logs/pr-submission-check-02.txt) |
 
 이번 검증에서는 모델 API를 호출하지 않았다. 27개 테스트의 모델 응답은 scripted 응답이며,
 제출용 24개 실제 모델 결과와 원본 실험 로그는 그대로 보존했다.
@@ -29,14 +29,16 @@ SHA-256은 다음과 같다.
 f30658dad828fd324e2ab2dc1ac505131b52de5dd8dd0ed4be53ea5bb45871d1
 ```
 
-작업 트리의 `scripts/check_week05.py`는 없지만 공식 소스는 Git 객체에 있다.
-[run_official_check.py](run_official_check.py)가 그 원문을 읽어 메모리에서 그대로 실행한다.
-공식 검사 코드를 수정하거나 학생 폴더 안에 복사하지 않았다.
-검사의 `all checks passed`와 종료 코드 0을 확인했다.
+최초 검증에서는 [run_official_check.py](run_official_check.py)가 Git 객체의 원문을
+읽어 메모리에서 그대로 실행했다. upstream 병합 후에는 작업 트리에 생긴
+공식 `scripts/check_week05.py`를 직접 실행했고 `all checks passed`와 종료 코드 0을 확인했다.
+공식 검사 코드는 수정하지 않았다.
 
 ```powershell
-Set-Location C:\Submissions\ai_agent_engineering\submissions\24522014\week-05
-& C:\venvs\submissions\Scripts\python.exe -B .\run_official_check.py
+Set-Location C:\Submissions\ai_agent_engineering
+$env:PYTHONUTF8 = '1'
+& C:\venvs\submissions\Scripts\python.exe -B .\scripts\check_week05.py .\submissions\24522014\week-05
+Set-Location .\submissions\24522014\week-05
 & C:\venvs\submissions\Scripts\python.exe -B .\validate_experiment.py
 & C:\venvs\submissions\Scripts\python.exe -B -m unittest -v `
   test_market_server test_market_conditions test_negotiation_host `
@@ -57,9 +59,9 @@ Set-Location C:\Submissions\ai_agent_engineering\submissions\24522014\week-05
    [실험 로그 대조](logs/final-experiment-check-01.txt)가 통과했다.
    별도의 무결성 검사에서도 UTF-16 파일과 과거 blob을 디코딩해 실제 키 형태를 검사했다.
 
-## 현재 PR 병합을 막는 항목
+## 최초 PR 병합 실패와 해결 이력
 
-현재 `week-05`는 이전 4주차 브랜치의 공용 파일 변경을 상속했다.
+최초 검증 당시 `week-05`는 이전 4주차 브랜치의 공용 파일 변경을 상속했다.
 공식 CI는 PR을 현재 upstream에 병합한 뒤 그 병합 결과와 base의 차이를 검사하므로,
 이력을 읽어 작업 범위를 확인하는 검사와 실제 PR 병합 검사를 구분했다.
 
@@ -80,7 +82,22 @@ git merge-tree --write-tree 48d1d0b29c41675b49a7ac0b871a58303ff63e9e HEAD
 | `week-04-en.html` | add/add |
 | `week-04.html` | add/add |
 
-공용 파일은 `AGENTS.md`의 읽기 전용 영역이며 이력 재작성도 금지돼 있다.
-이번 단계는 학생 디렉터리의 검증 수정과 결과 기록까지 수행했다.
-**제출 전에는 기존 실패·실험 커밋을 보존하면서 브랜치의 공용 파일 충돌을 해결해야 한다.**
-현재 결과를 전체 PR 통과로 판정하지 않았다.
+최초 검증은 `AGENTS.md`의 공용 영역 읽기 전용 규칙 때문에 이 실패를 기록하고 종료했다.
+이후 사용자가 충돌 해결과 PR 진행을 요청하여 다음 작업을 수행했다.
+
+1. `backup/week-05-before-upstream-7010558`에 기존 head를 보존했다.
+2. `65411c3`에서 upstream을 병합하고 네 공용 HTML에 upstream 버전을 채택했다.
+   기존 실패·실험 커밋은 그대로 조상으로 남는다. 공용 파일의 최종 내용은 upstream과 같다.
+3. `d611530`에서 PR 범위를 5주차로 정리했다. 4주차 파일은 로컬에 남겨 두고,
+   기존 `week-04` 브랜치와 커밋도 보존했다. 보고서 비교 근거는 이전 제출의 고정 링크로 바꿨다.
+4. [첫 재검사](logs/pr-submission-check-01.txt)의 공식 검사와 소유권 검사는 통과했지만,
+   병합 시뮬레이션은 sandbox의 `.git/objects` 쓰기 제한으로 종료 코드 128을 반환했다.
+   권한을 갖춰 [다시 실행](logs/pr-submission-check-02.txt)하자 모든 검사가 통과했다.
+5. [실험 재대조](logs/pr-experiment-check-01.txt)에서 24개 결과와 원본 로그의 일치를
+   확인했다. 서버·host·runner, 시나리오, 결과 CSV, 인증 기록은 이전 최종 검증과 동일하다.
+
+병합과 겹치는 미추적 파일 27개는 upstream과 줄바꿈 정규화 후 일치했다.
+원본 바이트는 제출 폴더 밖의 본인 디렉터리 `submissions/24522014/.local-pr-work-7010558/`
+아래 Git 무시 백업에 보존했다. 이전 실패 로그는 편집하지 않았다.
+
+위 표는 로컬 검증 결과다. GitHub PR의 CI 결과는 PR 페이지에서 별도로 확인한다.
