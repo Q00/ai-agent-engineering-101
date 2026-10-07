@@ -83,7 +83,7 @@ $env:AGENT_TEMPERATURE = '0'
 - `logs/host-runner-step3-tests-02.txt`: 해당 문제 수정 후 서버·host·runner 20개 테스트 통과.
 - `test_local_runner.py`: 실제 localhost 포트에 서버를 띄우고 SDK 클라이언트로 연결하는 검사.
 
-### 남아 있는 localhost 검증 실패
+### localhost 검증 실패와 해결
 
 Codex 실행 환경의 실제 TCP 검사에서는 `tools/list` 응답을 읽다가
 `RemoteProtocolError: peer unexpectedly closed connection`으로 실패했다.
@@ -95,12 +95,30 @@ Codex 실행 환경의 실제 TCP 검사에서는 `tools/list` 응답을 읽다�
 - TCP에서 받은 응답: `Transfer-Encoding: chunked`, 본문은 청크 길이 없이
   `{"jsonrpc":...`로 바로 시작했다. HTTP 청크 프레이밍과 맞지 않는다.
 
-어느 계층에서 헤더/본문이 달라졌는지는 확인하지 못했다.
-SSE 설정 변경 시도도 해결하지 못해 원래 JSON 설정으로 복원했고,
+첫 조사에서는 어느 계층에서 헤더/본문이 달라졌는지 확인하지 못했다.
+SSE 설정 변경 시도도 해결하지 못해 JSON 설정으로 복원했고,
 실패한 시도는 `logs/host-runner-local-http-step3-01.txt`부터 `03-sse.txt`에 남겼다.
-이 오류를 성공으로 처리하거나 인증 검사를 생략하지 않는다.
-20개 ASGI 테스트는 통과했지만 실제 TCP 연결과 실제 모델 실행은 성공 확인이 남아 있다.
-사용자 PowerShell에서 먼저 `test_local_runner.py`를 실행하면 API 비용 없이 같은 경로를 확인할 수 있다.
+
+추가 진단 `diagnose_local_http.py`에서 Uvicorn이 소켓에 쓰는 바이트까지 관측했다.
+서버가 `Content-Length`를 정상 전송한 뒤 수신 측에서 헤더가 바뀌었으며,
+MCP 헤더/본문이 있는 일반 JSON 응답에서도 재현됐다. 반면 서버가 처음부터
+정상 청크 형식으로 보낸 응답은 수신 바이트도 정상 청크였다.
+구체적으로 어떤 중간 구성요소가 헤더를 바꾸는지는 단정하지 않았다.
+관측 기록은 `logs/localhost-fix-diagnostic-01.txt`부터 `03.txt`에 보존했다.
+
+해결: `market_server.py`의 ASGI 미들웨어가 `/mcp`의 HTTP/1.1 응답에서
+`Content-Length`를 생략한다. Uvicorn이 올바른 청크 길이와 종료 청크를 생성한다.
+JSON 본문, 상태 코드, `WWW-Authenticate`와 토큰 검사는 그대로 적용한다.
+`Transfer-Encoding`을 앱에서 임의로 붙이거나 클라이언트의 HTTP 검증을 끄지 않는다.
+관리자 경로는 기존처럼 Content-Length 응답을 사용한다.
+
+`logs/localhost-fix-tests-01.txt`: 실제 TCP에서 buyer 제안 130 → seller 수락,
+`deal`, 행동 2회, 도구 호출 4회로 완료했다. 모델은 미리 정해진 테스트 응답이며
+모델 API 호출은 0회다. 과제 실험용 `results.csv`는 생성하지 않았다.
+`logs/localhost-fix-tests-02.txt`: ASGI와 실제 TCP를 포함한 전체 21개 테스트 통과.
+실제 TCP에서 토큰 누락·무효·관리자 토큰에 대해 401, `WWW-Authenticate`,
+정상적으로 파싱되는 청크 JSON 응답까지 확인했다.
+API 비용 없는 포트 연결 확인 명령은 위의 `test_local_runner.py` 실행이다.
 
 테스트의 모델 응답은 미리 정해진 가짜 응답이다. 모델 API를 호출하지 않으며,
 임시 CSV는 검증 후 제거한다. 루트의 실제 `results.csv`나 과제 실험 결과로 사용하지 않는다.

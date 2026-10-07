@@ -6,6 +6,8 @@
 ## 동작
 
 - Streamable HTTP: `http://127.0.0.1:8001/mcp`.
+  HTTP/1.1의 MCP 응답은 Uvicorn이 정상 청크 형식으로 전송한다.
+  로컬 전송 중 Content-Length 헤더가 바뀌는 문제와 해결 기록은 [RUNNER.md](RUNNER.md)에 있다.
 - 관리자 전용 `POST /admin/negotiations`가 UUID 협상 ID와 구매자/판매자 토큰을 발급한다.
   JSON 입력은 `item`, 선택적으로 `first_role` (`buyer` 기본값 또는 `seller`)이다.
   응답은 `negotiation_id`, `tokens.buyer`, `tokens.seller`다.

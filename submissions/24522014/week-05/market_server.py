@@ -21,6 +21,34 @@ from starlette.responses import JSONResponse
 Role = Literal["buyer", "seller"]
 
 
+class ChunkedMCPResponses:
+    """Let the HTTP server frame MCP JSON as valid HTTP/1.1 chunks.
+
+    The local transport rewrites some Content-Length responses to chunked
+    without encoding the body. Starting with real chunks avoids that mismatch.
+    ASGI must not set Transfer-Encoding itself; Uvicorn supplies the framing.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if (scope["type"] != "http" or scope.get("path") != "/mcp"
+                or scope.get("http_version") != "1.1" or scope.get("method") == "HEAD"):
+            await self.app(scope, receive, send)
+            return
+
+        async def send_response(message):
+            if message["type"] == "http.response.start" and message["status"] not in (204, 304):
+                message = {**message, "headers": [
+                    (name, value) for name, value in message.get("headers", [])
+                    if name.lower() != b"content-length"
+                ]}
+            await send(message)
+
+        await self.app(scope, receive, send_response)
+
+
 @dataclass(frozen=True)
 class Party:
     negotiation_id: str
@@ -196,6 +224,7 @@ def create_app(admin_token: str, base_url: str = "http://127.0.0.1:8001"):
                             headers={"Cache-Control": "no-store"})
 
     app = server.streamable_http_app(stateless_http=True, json_response=True)
+    app.add_middleware(ChunkedMCPResponses)
     app.state.market = market
     return app
 

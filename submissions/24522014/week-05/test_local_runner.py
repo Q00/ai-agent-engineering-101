@@ -62,6 +62,16 @@ class LocalRunnerTests(unittest.IsolatedAsyncioTestCase):
                                          root / "results.csv", root / "logs", lambda _: model)
                 if failed:
                     await self.diagnose_framing(app, port)
+                async with httpx2.AsyncClient(trust_env=False) as http:
+                    for token in (None, "invalid-token", admin):
+                        headers = {"Authorization": f"Bearer {token}"} if token else {}
+                        response = await http.post(server_url, headers=headers,
+                                                   json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
+                        self.assertEqual(response.status_code, 401)
+                        self.assertIn("Bearer", response.headers["www-authenticate"])
+                        self.assertEqual(response.headers.get("transfer-encoding"), "chunked")
+                        self.assertEqual(response.json()["error"], "invalid_token")
+                    print("[TCP auth] missing, invalid and admin tokens: HTTP 401 + WWW-Authenticate; valid chunked JSON")
             self.assertEqual(failed, 0)
             with (root / "results.csv").open(encoding="utf-8", newline="") as handle:
                 row = next(csv.DictReader(handle))
