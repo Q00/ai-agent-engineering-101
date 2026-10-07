@@ -137,7 +137,7 @@ class OpenNegotiation(BaseModel):
     first_role: Role = "buyer"
 
 
-def create_app(admin_token: str, base_url: str = "http://127.0.0.1:8001", *, json_response: bool = True):
+def create_app(admin_token: str, base_url: str = "http://127.0.0.1:8001"):
     if not admin_token:
         raise ValueError("MARKET_ADMIN_TOKEN is required")
     market = Market()
@@ -195,7 +195,7 @@ def create_app(admin_token: str, base_url: str = "http://127.0.0.1:8001", *, jso
         return JSONResponse(market.create(data.item, data.first_role), status_code=201,
                             headers={"Cache-Control": "no-store"})
 
-    app = server.streamable_http_app(stateless_http=True, json_response=json_response)
+    app = server.streamable_http_app(stateless_http=True, json_response=True)
     app.state.market = market
     return app
 

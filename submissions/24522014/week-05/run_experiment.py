@@ -10,6 +10,7 @@ import csv
 import json
 import os
 import secrets
+import sys
 from contextlib import AsyncExitStack, asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -195,7 +196,7 @@ async def local_market(server_url, admin_token):
     parsed = urlsplit(server_url)
     if parsed.scheme != "http" or parsed.hostname != "127.0.0.1":
         raise ValueError("--local requires http://127.0.0.1:<port>/mcp")
-    app = create_app(admin_token, server_url.removesuffix("/mcp"), json_response=False)
+    app = create_app(admin_token, server_url.removesuffix("/mcp"))
     server = uvicorn.Server(uvicorn.Config(
         app, host="127.0.0.1", port=parsed.port or 80, access_log=False,
     ))
@@ -207,7 +208,7 @@ async def local_market(server_url, admin_token):
                     await task
                     raise RuntimeError("Local market failed to start")
                 await asyncio.sleep(0.05)
-        yield
+        yield app
     finally:
         server.should_exit = True
         await task
@@ -220,12 +221,22 @@ def own_path(value):
     return path
 
 
+def positive_repeat(value):
+    repeat = int(value)
+    if repeat < 1:
+        raise argparse.ArgumentTypeError("Repeat must be a positive integer")
+    return repeat
+
+
 async def main():
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--server", default="http://127.0.0.1:8001/mcp")
     parser.add_argument("--local", action="store_true", help="Start and stop a local market automatically")
     parser.add_argument("--condition", choices=CONDITIONS, default="prompt")
-    parser.add_argument("--repeat", type=int, choices=(1, 2, 3), default=1)
+    parser.add_argument("--repeat", type=positive_repeat, default=1)
     parser.add_argument("--scenario", nargs="+", help="Only these scenario IDs")
     parser.add_argument("--results", default=str(BASE / "results.csv"))
     parser.add_argument("--logs", default=str(BASE / "logs"))
