@@ -17,6 +17,9 @@ UPSTREAM_COMMIT = "48d1d0b29c41675b49a7ac0b871a58303ff63e9e"
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--revision", default=UPSTREAM_COMMIT)
     args = parser.parse_args()
