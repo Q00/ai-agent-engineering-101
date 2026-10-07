@@ -120,6 +120,13 @@ JSON 본문, 상태 코드, `WWW-Authenticate`와 토큰 검사는 그대로 적
 정상적으로 파싱되는 청크 JSON 응답까지 확인했다.
 API 비용 없는 포트 연결 확인 명령은 위의 `test_local_runner.py` 실행이다.
 
+### 실제 모델 실행 확인
+
+localhost 수정 후 `prompt` 조건의 시나리오 1을 실제 Nemotron 모델로 실행했다.
+buyer 100 제안 → seller 거절 → buyer 120 제안 → seller 수락으로 종료했다.
+`deal`, 가격 120, 행동 4회, 도구/모델 호출 각각 8회, 위반·오류·재시도 0회다.
+설정과 실제 결과/로그는 [verification/step3/README.md](verification/step3/README.md)에 있다.
+
 테스트의 모델 응답은 미리 정해진 가짜 응답이다. 모델 API를 호출하지 않으며,
 임시 CSV는 검증 후 제거한다. 루트의 실제 `results.csv`나 과제 실험 결과로 사용하지 않는다.
 
