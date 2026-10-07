@@ -80,6 +80,7 @@ $env:AGENT_TEMPERATURE = '0'
 `--scenario`를 빼면 네 개 시나리오를 모두 실행한다.
 `--all`은 두 필수 조건을 각각 1–3회 실행한다. 이미 기록된 에피소드는 건너뛴다.
 선택 조건의 연결 확인 결과는 `verification/step3/`에 별도로 보관했다.
+24개 실제 모델 에피소드의 설정·집계·원본 로그는 [EXPERIMENT.md](EXPERIMENT.md)에 있다.
 
 현재 환경은 Python 3.14다. 새 환경에서는 `requirements.txt`의 버전을 설치한다.
 출력 파일 경로는 학생의 `week-05` 디렉터리 안으로 제한한다.
