@@ -560,6 +560,53 @@ footer .o{color:var(--muted)}
 
     <p>LLM은 이 가운데 둘째와 셋째를 크게 줄였다. 모델은 &ldquo;120에 맞춰 드릴게요&rdquo;가 accept인지 propose인지 태그 없이 읽고, price와 가격과 값을 사전 정렬 없이 같은 것으로 다룬다. Samuele Marro 등이 2024년 Agora 논문에서 정리한 <span class="nb">agent communication trilemma</span>가 이 상태를 설명한다. 자연어는 어떤 상황이든 다루지만 읽을 때마다 모델 호출이 들고, 고정 프로토콜은 싸지만 정해진 상황만 다룬다. 실습의 세 조건이 이 축 위에 있다. free는 자연어 쪽 끝이라 메시지마다 reader 호출이 들고, structured는 고정 프로토콜 쪽 끝이라 price 하나만 나르고 그 밖의 말은 버려지며, tagged는 그 사이에서 행위만 고정하고 내용은 자연어로 둔다. 첫째는 그대로 남았고, LLM에서는 더 자주 드러난다. LLM은 믿지 않는 것을 inform할 수 있고(환각), 자기 한도 밖 가격을 accept할 수 있다. sincerity를 메시지 밖에서 확인할 방법이 없다는 점은 1997년과 같다. Federico Bianchi 등의 2024년 NegotiationArena는 LLM 협상자가 급한 척하는 전략으로 GPT-4 상대에게서 20% 높은 payoff를 얻었다고 보고했다.</p>
 
+    <p>trilemma의 세 번째 축을 다르게 겨냥한 시도도 있다. TypeSafe AI가 낸 Jev는 텍스트를 생성하지 않고, 상태(state)와 질문을 받아 확률만 돌려주는 분류기다. 실습의 reader가 메시지마다 하던 일, 곧 propose인지 accept-proposal인지와 가격을 판정하는 일을 같은 자연어 메시지 위에서 계속하되, 풀 LLM 호출 대신 전용으로 훈련한 값싼 판정 한 번으로 바꾸자는 제안이다. TypeSafe AI는 분류 작업에서 최대 200배 빠르고 400배 싸다고 보고했다. 이 방식이 줄이려는 것은 free 조건이 치른 비용(reader_calls)의 크기다. 반환값도 believes나 intends가 아니라 보정된 확률이라는 점에서, 내부 상태 대신 관찰 가능한 텍스트에 확률을 매기자는 Singh(1998)의 사회적 약속 쪽에 가깝다.</p>
+
+    <div class="fig" id="fig5">
+      <svg viewBox="0 0 680 300" role="img" aria-label="Where Jev fits in the lab's protocol layer: a free-form message goes either to a full LLM reader call that classifies performative and price, or to a Jev classifier that returns a calibrated probability from a state and a set of questions; both feed the protocol layer's decision of the next act">
+        <defs>
+          <marker id="f5-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <rect x="140" y="20" width="400" height="50" fill="#FAFAF9"/>
+          <rect x="30" y="120" width="290" height="94"/>
+          <rect x="360" y="120" width="290" height="94"/>
+          <rect x="90" y="248" width="500" height="50"/>
+          <path d="M340 70 L175 119" marker-end="url(#f5-ah)"/>
+          <path d="M340 70 L505 119" marker-end="url(#f5-ah)"/>
+          <path d="M175 214 L280 247" marker-end="url(#f5-ah)"/>
+          <path d="M505 214 L400 247" marker-end="url(#f5-ah)"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="13" font-weight="600">
+          <text x="340" y="41">buyer or seller turn</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="10">
+          <text x="340" y="58">free-form text, no tag</text>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="12" font-weight="600">
+          <text x="175" y="146">before: reader</text>
+          <text x="505" y="146">with Jev</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="9.5">
+          <text x="175" y="164">a full LLM call classifies</text>
+          <text x="175" y="177">performative and price</text>
+          <text x="175" y="200">cost: one model call</text>
+          <text x="175" y="212">per message (reader_calls)</text>
+          <text x="505" y="164">state + questions to a</text>
+          <text x="505" y="177">classifier (RLCD-trained)</text>
+          <text x="505" y="200">cost: one specialized call</text>
+          <text x="505" y="212">200x faster, 400x cheaper (reported)</text>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="12" font-weight="600">
+          <text x="340" y="270">protocol layer decides the next act</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="9.5">
+          <text x="340" y="286">performative and price, from a call or a probability</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 05</b> Where Jev sits in the reader step</span><span>same free-form message, cheaper classification</span></div>
+    </div>
+
     <div class="define">
       <p>재현 실험에서는 협상 절차와 참여자를 그대로 두고 메시지 형식만 바꿔, performative 태그가 있을 때 outcome, violation, turns, reader_calls가 어떻게 달라지는지 잰다.</p>
       <p class="sub">FIPA는 illocutionary force를 메시지 표면의 필수 필드로 두었다. 실습의 tagged와 structured 조건이 그 필드다.</p>
@@ -742,6 +789,62 @@ READER_SYSTEM = (<span class="st">"You are an observer reading a price negotiati
       <div><span class="k">태그 뒤의 역제안</span><span class="v">모델이 reject-proposal 뒤에 새 가격을 적었다(&ldquo;(reject-proposal) ... let me counter at 45 dollars&rdquo;). 태그와 JSON만 읽는 계층에는 거절로만 보이므로 상대의 마지막 propose 가격이 갱신되지 않았다. 두 조건의 open 19건 가운데 13건은 이 상태로 8턴을 채운 것이고, 6건은 상대가 accept-proposal을 보냈지만 프로그램에 기록된 상대 가격이 없어 거래로 잡지 못한 것이다.</span></div>
       <div><span class="k">structured, JSON 뒤의 문장</span><span class="v">structured 메시지 115개 중 26개는 JSON 뒤에 문장이 붙었고, 실제 제안은 그 문장에 있었다(<code class="inline">"price": null</code> 뒤에 &ldquo;I need at least $50&rdquo;). 파서는 JSON만 읽으므로 이 가격은 기록되지 않는다.</span></div>
       <div><span class="k">실제 한도 위반</span><span class="v">violation 5건 중 4건은 에이전트가 낸 것이다. reserve 90인 키보드의 seller는 &ldquo;68 is below my absolute minimum of 90&rdquo;이라고 적고 accept-proposal을 보냈고, budget 150인 모니터의 buyer는 280 제안을 accept했다.</span></div>
+    </div>
+
+    <p>REFERENCE RUN 표의 수치로 Jev가 무엇을 바꾸고 무엇을 안 바꾸는지 그려보면 이렇다. Jev는 free 조건의 reader 호출 횟수(38회)는 그대로 두고, 호출 한 번의 비용만 바꾼다. TypeSafe AI의 주장대로 분류 한 번이 풀 LLM 호출의 약 1/400이면, free의 비용은 38유닛에서 약 0.1유닛으로 준다. correct는 11/18 그대로다. Jev는 reader 자리에만 들어가고 buyer와 seller를 바꾸지 않으므로, 위 다섯 실패 가운데 reader가 낸 첫 턴 오독과 가격 오독만 고쳐질 후보고, 태그 뒤 역제안과 JSON 뒤 문장과 진짜 한도 위반은 그대로 남는다. structured의 비용 0은 reader 호출 자체가 없는 진짜 0이고, free + Jev의 &asymp;0.1은 38번을 여전히 부르되 한 번의 값만 싸진 것이라 같은 0이 아니다. 아래 행의 free + Jev는 측정값이 아니라 이 가정 위의 추정이다.</p>
+
+    <div class="fig" id="fig6">
+      <svg viewBox="0 0 680 300" role="img" aria-label="Reader cost against outcome correctness for free, tagged, structured, and a projected free-with-Jev condition, using the REFERENCE RUN numbers: cost in units of one full LLM reader call, and correct out of 18. free is 38 units and 11 correct, tagged is 31 units and 6 correct, structured is 0 units and 4 correct, and free with Jev is projected at about 0.1 units, still 11 correct, unchanged from free">
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1" text-anchor="middle">
+          <text x="212" y="18">READER COST, EQUIV. FULL LLM CALLS</text>
+          <text x="520" y="18">CORRECT, OUT OF 18</text>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1">
+          <path d="M112 30 L112 260"/>
+          <path d="M420 30 L420 260"/>
+        </g>
+        <g text-anchor="end" fill="#1C1917" font-size="11" font-weight="600">
+          <text x="104" y="54">free</text>
+          <text x="104" y="116">tagged</text>
+          <text x="104" y="178">structured</text>
+          <text x="104" y="236">free + Jev</text>
+        </g>
+        <g text-anchor="end" fill="#A8A29E" font-size="9">
+          <text x="104" y="248">(projected)</text>
+        </g>
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5">
+          <rect x="112" y="37" width="195.0" height="26"/>
+          <rect x="112" y="99" width="159.1" height="26"/>
+        </g>
+        <g fill="#FAFAF9" stroke="#A8A29E" stroke-width="1.5" stroke-dasharray="4 4">
+          <rect x="112" y="223" width="3" height="26"/>
+        </g>
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5">
+          <rect x="420" y="37" width="119.2" height="26"/>
+          <rect x="420" y="99" width="65.0" height="26"/>
+          <rect x="420" y="161" width="43.3" height="26"/>
+        </g>
+        <g fill="#FAFAF9" stroke="#A8A29E" stroke-width="1.5" stroke-dasharray="4 4">
+          <rect x="420" y="223" width="119.2" height="26"/>
+        </g>
+        <g fill="#78716C" font-size="11">
+          <text x="316" y="54">38</text>
+          <text x="280" y="116">31</text>
+          <text x="120" y="178">0</text>
+          <text x="124" y="240">&asymp;0.1</text>
+          <text x="547" y="54">11 / 18</text>
+          <text x="493" y="116">6 / 18</text>
+          <text x="471" y="178">4 / 18</text>
+          <text x="547" y="240">11 / 18</text>
+        </g>
+        <path d="M10 205 L650 205" stroke="#A8A29E" stroke-width="1" stroke-dasharray="2 3"/>
+        <text x="10" y="200" fill="#A8A29E" font-size="9" letter-spacing="1">MEASURED ABOVE, PROJECTED BELOW</text>
+        <g fill="#78716C" font-size="9.5">
+          <text x="10" y="275">free + Jev still makes 38 reader calls; only the cost of each call changes.</text>
+          <text x="10" y="288">structured's 0 is a true zero, no reader call at all.</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 06</b> What Jev changes: cost collapses, correctness doesn't move</span><span>free + Jev row is a projection, not a measurement</span></div>
     </div>
 
     <div class="check">
