@@ -251,11 +251,13 @@ free/tagged/structured 실험이다. 가격 한도 검사와 인증에 관한 �
 | 외부에서 무엇을 확인할 수 있는가? | 메시지 필드와 규약의 일치를 확인할 수 있다. 필드만으로 사적인 믿음이나 가격 권한을 확인할 수는 없다. | 로그에서 문장·reader 라벨·파싱 결과·최종 가격을 확인한다. 올바른 JSON 라벨도 원문의 의미와 다를 수 있다. | HTTP 401·인증 challenge, 도구 오류, 성공 응답과 누적 행동 기록을 확인한다. `auth_checks.txt`가 협상·차례·가격 한도 거절을 재현한다. |
 | 어떤 실패를 관측했는가? | 인식하지 못하는 매개변수에 `not-understood`로 응답하는 규칙이 있다. 이번 실험에서 FIPA 서버를 실행한 것은 아니다. | 거절 문장을 제안으로 읽은 사례, 잘못된 structured 객체 1개, 모델 응답 실패에 따른 4개 crash가 기록됐다. | 24개에서 한도 밖 제안 7회, server 조건의 거절 2회, 거래 가능한 협상 2개의 제한 내 미합의가 관측됐다. 토큰·협상·차례 위반은 별도 의도적 HTTP 검사에서 거절됐다. |
 
-4주차 구현 근거는 [negotiate.py](../week-04/negotiate.py),
-[protocol.py](../week-04/protocol.py), [REPORT.md](../week-04/REPORT.md)다.
+4주차 비교는 이전 제출 커밋 `7a5ee59`의 고정된 소스와 로그를 참조한다.
+이번 PR에는 5주차 파일만 포함하며, 4주차 파일은 기존 브랜치와 커밋에 보존했다.
+4주차 구현 근거는 [negotiate.py](https://github.com/kcwarni/ai-agent-engineering-101/blob/7a5ee59c2d39e065cfe711f8369a9b211f2c2d21/submissions/24522014/week-04/negotiate.py),
+[protocol.py](https://github.com/kcwarni/ai-agent-engineering-101/blob/7a5ee59c2d39e065cfe711f8369a9b211f2c2d21/submissions/24522014/week-04/protocol.py), [REPORT.md](https://github.com/kcwarni/ai-agent-engineering-101/blob/7a5ee59c2d39e065cfe711f8369a9b211f2c2d21/submissions/24522014/week-04/REPORT.md)다.
 거절 문장을 제안으로 읽은 실제 예는
-[free-03.txt](../week-04/logs/free-03.txt) 31–32행이며,
-잘못된 structured 객체는 [structured-03.txt](../week-04/logs/structured-03.txt) 46–47행이다.
+[free-03.txt](https://github.com/kcwarni/ai-agent-engineering-101/blob/7a5ee59c2d39e065cfe711f8369a9b211f2c2d21/submissions/24522014/week-04/logs/free-03.txt#L31-L32) 31–32행이며,
+잘못된 structured 객체는 [structured-03.txt](https://github.com/kcwarni/ai-agent-engineering-101/blob/7a5ee59c2d39e065cfe711f8369a9b211f2c2d21/submissions/24522014/week-04/logs/structured-03.txt#L46-L47) 46–47행이다.
 5주차의 `tool_calls`와 4주차의 `reader_calls`는 다른 측정값이다.
 5주차에서 별도 reader 모델은 사용하지 않았고, 298회는 행동을 선택하는 host 모델의 요청 수다.
 
