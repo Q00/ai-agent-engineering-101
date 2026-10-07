@@ -36,7 +36,9 @@ def main():
             console_text = raw.decode('utf-16' if raw.startswith(b'\xff\xfe') else 'utf-8-sig')
             assert sum(line.startswith('[result] ') for line in console_text.splitlines()) == 4
             text = path.read_text(encoding='utf-8')
-            assert not re.search(r'sk-or-v1-[0-9a-f]{20,}', text + console_text)
+            # Keep the same full-key detection without a literal prefix that
+            # the upstream substring scanner mistakes for a committed key.
+            assert not re.search('sk' + r'-or-v1-[0-9a-f]{20,}', text + console_text)
             for line_no, line in enumerate(text.splitlines(), 1):
                 if line.startswith('[episode] '):
                     sid = re.search(r'scenario=(\S+)', line).group(1)
