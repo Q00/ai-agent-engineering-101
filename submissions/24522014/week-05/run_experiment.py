@@ -1,6 +1,6 @@
 """Run token-isolated buyer/seller hosts; append results after each episode.
 
-Step 3 supports the prompt condition. Injection/server limits are a later step.
+Use --all for both required conditions and three repeats (24 episodes).
 Use --dry-run to inspect the plan, or --local to start the market in this process.
 """
 
@@ -22,7 +22,8 @@ from negotiation_host import ChatModel, DEFAULT_MODEL, NegotiationHost, connect_
 
 BASE = Path(__file__).resolve().parent
 HEADER = "run,condition,scenario,deal_possible,outcome,price,correct,violation,attempted_violations,refused_calls,turns,tool_calls,note".split(",")
-CONDITIONS = ("prompt",)
+CONDITIONS = ("prompt", "server", "prompt_inject", "server_inject")
+REQUIRED_CONDITIONS = ("prompt_inject", "server_inject")
 MAX_MOVES = 8
 
 
@@ -89,14 +90,15 @@ def error_detail(exc):
     return f"{type(exc).__name__}: {exc}"
 
 
-async def run_episode(scenario, server_url, admin_token, model, log, transport=None):
+async def run_episode(scenario, server_url, admin_token, model, log, transport=None, condition="prompt"):
     """Only this runner sees both party tokens and both private price limits."""
     base_url = server_url.removesuffix("/mcp")
     async with httpx2.AsyncClient(transport=transport, timeout=30, trust_env=False) as http:
         response = await http.post(
             base_url + "/admin/negotiations",
             headers={"Authorization": f"Bearer {admin_token}"},
-            json={"item": scenario["item"], "first_role": "buyer"},
+            json={"item": scenario["item"], "first_role": "buyer", "condition": condition,
+                  "reserve": scenario["reserve"], "budget": scenario["budget"]},
         )
         response.raise_for_status()
         episode = response.json()
@@ -139,7 +141,7 @@ async def run_episode(scenario, server_url, admin_token, model, log, transport=N
 async def run_batch(scenarios, condition, repeat, server_url, admin_token, results_path,
                     logs_dir, model_factory=None, transport=None):
     if condition not in CONDITIONS:
-        raise ValueError("Step 3 supports prompt only; server/injection conditions are not implemented")
+        raise ValueError("Unknown condition")
     completed = completed_rows(results_path)
     run = repeat
     pending = [s for s in scenarios if (str(run), condition, str(s["id"])) not in completed]
@@ -169,7 +171,7 @@ async def run_batch(scenarios, condition, repeat, server_url, admin_token, resul
                 row.update(run=run, condition=condition, scenario=scenario["id"],
                            deal_possible=int(scenario["reserve"] <= scenario["budget"]))
                 try:
-                    row.update(await run_episode(scenario, server_url, admin_token, model, log, transport))
+                    row.update(await run_episode(scenario, server_url, admin_token, model, log, transport, condition))
                     row["note"] = note
                 except Exception as exc:
                     failures += 1
@@ -235,13 +237,16 @@ async def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--server", default="http://127.0.0.1:8001/mcp")
     parser.add_argument("--local", action="store_true", help="Start and stop a local market automatically")
-    parser.add_argument("--condition", choices=CONDITIONS, default="prompt")
-    parser.add_argument("--repeat", type=positive_repeat, default=1)
+    parser.add_argument("--condition", choices=CONDITIONS)
+    parser.add_argument("--repeat", type=positive_repeat)
+    parser.add_argument("--all", action="store_true", help="Both injection conditions, three repeats each")
     parser.add_argument("--scenario", nargs="+", help="Only these scenario IDs")
     parser.add_argument("--results", default=str(BASE / "results.csv"))
     parser.add_argument("--logs", default=str(BASE / "logs"))
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+    if args.all and (args.condition is not None or args.repeat is not None):
+        parser.error("--all cannot be combined with --condition or --repeat")
     parsed = urlsplit(args.server)
     if parsed.scheme not in ("http", "https") or parsed.path != "/mcp" or parsed.query or parsed.fragment or parsed.username or parsed.password:
         parser.error("--server must be an HTTP(S) URL ending in /mcp without credentials/query")
@@ -253,9 +258,16 @@ async def main():
         scenarios = [s for s in scenarios if str(s["id"]) in args.scenario]
     results, logs = own_path(args.results), own_path(args.logs)
     completed = completed_rows(results)
-    pending = [s for s in scenarios if (str(args.repeat), args.condition, str(s["id"])) not in completed]
-    print(f"[plan] condition={args.condition} repeat={args.repeat} pending={[s['id'] for s in pending]} model={os.environ.get('AGENT_MODEL', DEFAULT_MODEL)} max_moves={MAX_MOVES}")
-    if args.dry_run or not pending:
+    conditions = REQUIRED_CONDITIONS if args.all else (args.condition or "prompt",)
+    repeats = (1, 2, 3) if args.all else (args.repeat or 1,)
+    plans = [(condition, repeat) for condition in conditions for repeat in repeats]
+    pending_count = 0
+    for condition, repeat in plans:
+        pending = [s for s in scenarios if (str(repeat), condition, str(s["id"])) not in completed]
+        pending_count += len(pending)
+        print(f"[plan] condition={condition} repeat={repeat} pending={[s['id'] for s in pending]} model={os.environ.get('AGENT_MODEL', DEFAULT_MODEL)} max_moves={MAX_MOVES}")
+    print(f"[plan total] pending_episodes={pending_count}")
+    if args.dry_run or not pending_count:
         return 0
     if not os.environ.get("OPENAI_API_KEY"):
         parser.error("OPENAI_API_KEY is missing; configure it in your environment")
@@ -265,7 +277,9 @@ async def main():
     async with AsyncExitStack() as stack:
         if args.local:
             await stack.enter_async_context(local_market(args.server, admin))
-        failures = await run_batch(scenarios, args.condition, args.repeat, args.server, admin, results, logs)
+        failures = 0
+        for condition, repeat in plans:
+            failures += await run_batch(scenarios, condition, repeat, args.server, admin, results, logs)
     return int(failures > 0)
 
 

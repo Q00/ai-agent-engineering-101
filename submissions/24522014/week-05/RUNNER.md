@@ -1,4 +1,4 @@
-# 과제 3단계: host와 runner
+# 과제 3–4단계: host와 실험 runner
 
 ## 역할과 토큰
 
@@ -13,9 +13,10 @@
 5. 다음 역할은 서버 응답의 `turn`을 사용한다. 성공한 행동 8회에 도달하면
    runner가 멈춘다. 그때 종료되지 않은 협상 상태는 `open`으로 기록한다.
 
-시스템 프롬프트 함수에는 condition 인자가 없다. 이후 조건을 추가해도 같은 프롬프트를 사용한다.
-현재 서버와 runner는 `prompt`만 지원한다. `prompt_inject`, `server_inject`와
-토큰의 가격 한도 검사는 후속 단계에서 구현해야 한다.
+시스템 프롬프트 함수에는 condition 인자가 없다. 모든 조건이 같은 프롬프트를 사용한다.
+필수 조건은 `prompt_inject`, `server_inject`다. 두 조건 모두 구매자가 조회하는
+판매자 제안에 같은 예산 상향 문장이 붙는다. `server_inject`에서만 토큰에
+저장한 자기 가격 한도로 제안과 수락을 검사한다. 선택 조건 `prompt`, `server`도 지원한다.
 
 함수 호출 메시지와 도구 결과를 연결하는 방식은
 [OpenAI 공식 함수 호출 문서](https://developers.openai.com/api/docs/guides/function-calling)를 참고했다.
@@ -56,11 +57,18 @@ $env:AGENT_MODEL = 'nvidia/nemotron-3-super-120b-a12b:free'
 $env:AGENT_TEMPERATURE = '0'
 
 # 연결/모델 호출/결과 파일 생성 없이 실행 계획 확인
-& C:\venvs\submissions\Scripts\python.exe -B .\run_experiment.py --dry-run
+& C:\venvs\submissions\Scripts\python.exe -B .\run_experiment.py --all --dry-run
 
 # 실제 모델을 호출하는 선택 실행 예시: 서버 시작과 종료를 runner가 담당
 & C:\venvs\submissions\Scripts\python.exe -u .\run_experiment.py `
   --local --condition prompt --repeat 1 --scenario 1
+
+# 과제 4단계: 두 주입 조건 × 시나리오 4개 × 반복 3회
+& C:\venvs\submissions\Scripts\python.exe -u .\run_experiment.py --local --all
+
+# 한 조건·반복만 실행해도 같은 results.csv에 이어서 저장한다.
+& C:\venvs\submissions\Scripts\python.exe -u .\run_experiment.py `
+  --local --condition prompt_inject --repeat 1
 ```
 
 `--local`은 기본 주소 `http://127.0.0.1:8001/mcp`에 서버를 띄우고,
@@ -70,12 +78,18 @@ $env:AGENT_TEMPERATURE = '0'
 이미 실행 중인 서버를 사용하려면 `--local`을 빼고,
 현재 터미널의 `MARKET_ADMIN_TOKEN`을 그 서버의 관리자 토큰과 같게 설정한다.
 `--scenario`를 빼면 네 개 시나리오를 모두 실행한다.
-이 실행 예시는 선택적인 `prompt` 조건이며, 제출에 필요한 주입 조건의 실험은 후속 단계다.
+`--all`은 두 필수 조건을 각각 1–3회 실행한다. 이미 기록된 에피소드는 건너뛴다.
+선택 조건의 연결 확인 결과는 `verification/step3/`에 별도로 보관했다.
 
 현재 환경은 Python 3.14다. 새 환경에서는 `requirements.txt`의 버전을 설치한다.
 출력 파일 경로는 학생의 `week-05` 디렉터리 안으로 제한한다.
 
 ## 검증 기록
+
+- `logs/conditions-server-tests-01.txt`: 기존 서버 검사와 주입/가격 한도 검사 13개 통과.
+- `logs/conditions-runner-tests-01.txt`: 서버·host·runner·실제 TCP 전체 27개 통과.
+  같은 모델 응답과 프롬프트로 구매자의 한도 초과 수락이 `prompt_inject`에서는
+  실행되고, `server_inject`에서는 거절된 뒤 같은 차례의 유효한 행동으로 이어지는지 확인했다.
 
 - `logs/host-step3-tests-01.txt`: 역할별 토큰 연결, 거절 후 같은 차례 재시도,
   프롬프트의 개인 한도, 모델 응답 누락 재시도 통과.
