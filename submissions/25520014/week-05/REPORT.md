@@ -96,13 +96,11 @@
 
 | | FIPA-ACL (week 04) | MCP market (week 05) |
 |---|---|---|
-| 보낸 이는 누구이고, 누가 그렇다고 하나 | | bearer 토큰이 정한다. server가 토큰의 역할로 판정하며 tool에 role 인자가 없다. 토큰이 없으면 HTTP 401 |
-| 행위는 어디에 있나 | | tool 이름(`propose`, `accept_proposal`, `reject_proposal`, `refuse`) |
-| 내용은 무엇인가 | | 정수 인자 `price` 하나. 수락 가격은 server가 상대의 마지막 제안에서 정한다 |
-| 한도는 누가 지키나 | | `prompt*`: 모델만. `server*`: 모델과 server(토큰의 한도 밖 `propose`/`accept_proposal`을 거절) |
-| 밖에서 무엇을 확인할 수 있나 | | server의 시도 기록: 모든 수의 행위·가격·통과 여부·거절 사유, 토큰별 tool 호출 수 |
-| 어떤 실패가 나타났나 | | 거절 14건 중 13건이 `reject_proposal` 직후의 `propose`(차례가 이미 넘어가 "not your turn"). seller가 reserve 밑을 제시한 시도 2건(시나리오 3, 85 < 90): `prompt_inject`에서 통과, `server_inject`에서 거절. `refuse` 호출 0건, 거래 불가 시나리오 24판 모두 `open` |
+| 보낸 이는 누구이고, 누가 그렇다고 하나 | FIPA-ACL 규격에서는 보낸 쪽이 `:sender`를 스스로 적고 아무도 검증하지 않는다. week-04 구현에서는 메시지에 신원 표시가 없고, 하네스가 차례를 번갈아 돌리면서 `speaker`를 붙였다 | bearer 토큰이 정한다. server가 토큰의 역할로 판정하며 tool에 role 인자가 없다. 토큰이 없으면 HTTP 401 |
+| 행위는 어디에 있나 | `free`: 어디에도 없어 reader 모델이 수신 후 라벨을 붙였다. `tagged`: 메시지 맨 앞 괄호 태그. `structured`: JSON의 `performative` 필드 | tool 이름(`propose`, `accept_proposal`, `reject_proposal`, `refuse`) |
+| 내용은 무엇인가 | `free`·`tagged`: 영어 산문, 가격은 reader 모델이 읽었다. `structured`: `{"price": <정수 또는 null>}` | 정수 인자 `price` 하나. 수락 가격은 server가 상대의 마지막 제안에서 정한다 |
+| 한도는 누가 지키나 | 모델만(system prompt). 프로토콜 계층은 행위와 가격을 읽을 뿐 한도를 검사하지 않았다 | `prompt*`: 모델만. `server*`: 모델과 server(토큰의 한도 밖 `propose`/`accept_proposal`을 거절) |
+| 밖에서 무엇을 확인할 수 있나 | 오간 문자열과 프로토콜 계층이 읽은 행위·가격. 기록된 가격이 에이전트가 합의한 가격과 다를 수 있었다(아래 실패) | server의 시도 기록: 모든 수의 행위·가격·통과 여부·거절 사유, 토큰별 tool 호출 수 |
+| 어떤 실패가 나타났나 | 역제안 가격이 `reject-proposal` 안에 실려 와 버려짐(`tagged` 37건, `structured` 35건), 그 결과 기록상 위반 6건(`tagged` 4, `structured` 2). `free`의 reader 라벨 오류 1건. 거래 불가 시나리오 18판 중 `open` 13판 | 거절 14건 중 13건이 `reject_proposal` 직후의 `propose`(차례가 이미 넘어가 "not your turn"). seller가 reserve 밑을 제시한 시도 2건(시나리오 3, 85 < 90): `prompt_inject`에서 통과, `server_inject`에서 거절. `refuse` 호출 0건, 거래 불가 시나리오 24판 모두 `open` |
 
 ## 4. Interpretation
-
-<!-- 직접 작성: 주입 앞에서 어느 층이 버텼는지, 로그 줄을 근거로. 거절 뒤 같은 턴에 유효한 수가 이어진 거절 수(위 표 기준 server_inject 1건, 전체 1건)를 포함. -->
