@@ -125,7 +125,9 @@ def move(negotiation_id: str, act: str, price: int | None = None) -> dict:
         refuse_move(neg, role, act, price, f"the negotiation is closed ({neg.status})")
     if role != neg.turn:
         refuse_move(neg, role, act, price, "it is not your turn")
-    if act in ("accept_proposal", "reject_proposal") and price is None:
+    # 상대의 마지막 제안이 있어야 수락도 거절도 할 수 있다. price가 아니라 offers를 본다:
+    # reject는 price를 채우지 않으므로 price로 보면 늘 거절된다(attempt-01-reject-bug).
+    if act in ("accept_proposal", "reject_proposal") and neg.offers[OTHER[role]] is None:
         refuse_move(neg, role, act, price, f"the {OTHER[role]} has not proposed a price yet")
     if act == "propose" and (not isinstance(price, int) or price <= 0):
         refuse_move(neg, role, act, price, "price must be a positive whole number")
