@@ -5,7 +5,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from host import HostError, run_turn
+from host import GatewayResult, HostError, run_turn
 from model_client import (
     CallMeter,
     ModelClient,
@@ -31,7 +31,7 @@ class FakeGateway:
 
     async def call_tool(self, name, arguments):
         self.calls.append((name, arguments))
-        return f'{name}:ok'
+        return GatewayResult(f'{name}:ok')
 
 
 class FakeModel:
@@ -65,6 +65,7 @@ class HostLoopTests(unittest.TestCase):
         result = asyncio.run(run_turn(model, gateway, "buyer prompt", "neg-1"))
 
         self.assertEqual((result.model_calls, result.tool_calls), (2, 2))
+        self.assertEqual(result.refused_calls, 0)
         self.assertEqual(result.action, "propose")
         self.assertEqual(
             gateway.calls,
@@ -97,11 +98,34 @@ class HostLoopTests(unittest.TestCase):
         )
         gateway = FakeGateway()
 
-        with self.assertRaisesRegex(HostError, "within two model calls"):
+        with self.assertRaisesRegex(HostError, "within the call limit"):
             asyncio.run(run_turn(model, gateway, "buyer prompt", "neg-1"))
 
         self.assertEqual(len(model.calls), 2)
         self.assertEqual(len(gateway.calls), 2)
+
+    def test_refused_move_can_be_followed_by_valid_move_in_same_turn(self):
+        model = FakeModel(
+            [
+                decision("get_negotiation", {"negotiation_id": "neg-1"}),
+                decision("propose", {"negotiation_id": "neg-1", "price": 70}, "call-2"),
+                decision("propose", {"negotiation_id": "neg-1", "price": 50}, "call-3"),
+            ]
+        )
+
+        class RefusingGateway(FakeGateway):
+            async def call_tool(self, name, arguments):
+                self.calls.append((name, arguments))
+                if arguments.get("price") == 70:
+                    return GatewayResult("outside authorized limit", is_error=True)
+                return GatewayResult(f"{name}:ok")
+
+        gateway = RefusingGateway()
+        result = asyncio.run(run_turn(model, gateway, "buyer prompt", "neg-1"))
+
+        self.assertEqual((result.model_calls, result.tool_calls), (3, 3))
+        self.assertEqual(result.refused_calls, 1)
+        self.assertEqual(result.action, "propose")
 
     def test_parallel_calls_and_wrong_negotiation_are_rejected_before_mcp(self):
         cases = [

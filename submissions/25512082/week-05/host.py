@@ -23,6 +23,7 @@ MOVE_TOOLS = {
 }
 MAX_MODEL_CALLS_PER_TURN = 2
 MAX_TOOL_CALLS_PER_TURN = 2
+MAX_RECOVERY_CALLS_PER_TURN = 2
 
 
 class HostError(RuntimeError):
@@ -32,7 +33,13 @@ class HostError(RuntimeError):
 class ToolGateway(Protocol):
     async def list_tools(self) -> list[dict]: ...
 
-    async def call_tool(self, name: str, arguments: dict) -> str: ...
+    async def call_tool(self, name: str, arguments: dict) -> "GatewayResult": ...
+
+
+@dataclass(frozen=True)
+class GatewayResult:
+    content: str
+    is_error: bool = False
 
 
 @dataclass(frozen=True)
@@ -41,6 +48,7 @@ class HostTurn:
     result: str
     model_calls: int
     tool_calls: int
+    refused_calls: int
 
 
 def _assistant_message(content: str | None, call: ToolCall) -> dict:
@@ -80,7 +88,9 @@ async def run_turn(
     ]
     tool_calls = 0
 
-    for model_call in range(1, MAX_MODEL_CALLS_PER_TURN + 1):
+    maximum_calls = MAX_MODEL_CALLS_PER_TURN + MAX_RECOVERY_CALLS_PER_TURN
+    refused_calls = 0
+    for model_call in range(1, maximum_calls + 1):
         decision = model.complete_with_tools(messages, tools)
         if len(decision.calls) != 1:
             raise HostError("the model must return exactly one tool call at a time")
@@ -89,20 +99,32 @@ async def run_turn(
             raise HostError(f"unsupported market tool: {call.name}")
         if call.arguments.get("negotiation_id") != negotiation_id:
             raise HostError("the model used a different negotiation_id")
-        if tool_calls >= MAX_TOOL_CALLS_PER_TURN:
+        if tool_calls >= MAX_TOOL_CALLS_PER_TURN + MAX_RECOVERY_CALLS_PER_TURN:
             raise HostError("tool-call limit reached")
 
         result = await gateway.call_tool(call.name, call.arguments)
         tool_calls += 1
         messages.append(_assistant_message(decision.content, call))
         messages.append(
-            {"role": "tool", "tool_call_id": call.id, "content": result}
+            {"role": "tool", "tool_call_id": call.id, "content": result.content}
         )
 
+        if result.is_error:
+            refused_calls += 1
+            continue
         if call.name in MOVE_TOOLS:
-            return HostTurn(call.name, result, model_call, tool_calls)
+            return HostTurn(
+                call.name,
+                result.content,
+                model_call,
+                tool_calls,
+                refused_calls,
+            )
 
-    raise HostError("the model did not make a move within two model calls")
+        if model_call >= MAX_MODEL_CALLS_PER_TURN and refused_calls == 0:
+            break
+
+    raise HostError("the model did not make a valid move within the call limit")
 
 
 class SessionGateway:
@@ -123,9 +145,9 @@ class SessionGateway:
             for tool in result.tools
         ]
 
-    async def call_tool(self, name: str, arguments: dict) -> str:
+    async def call_tool(self, name: str, arguments: dict) -> GatewayResult:
         result = await self.session.call_tool(name, arguments)
-        return result.model_dump_json()
+        return GatewayResult(result.model_dump_json(), result.is_error)
 
 
 @asynccontextmanager
