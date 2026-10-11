@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import json
 import time
 from dataclasses import dataclass
 from typing import Callable, Literal
@@ -18,6 +19,19 @@ class RateLimitError(RuntimeError):
 
 class ProviderResponseError(RuntimeError):
     """A successful HTTP response without a usable chat completion."""
+
+
+@dataclass(frozen=True)
+class ToolCall:
+    id: str
+    name: str
+    arguments: dict
+
+
+@dataclass(frozen=True)
+class ToolDecision:
+    content: str | None
+    calls: tuple[ToolCall, ...]
 
 
 def redact_secrets(value: object) -> str:
@@ -73,6 +87,14 @@ def is_rate_limit_error(exc: BaseException) -> bool:
     return getattr(response, "status_code", None) == 429
 
 
+def is_server_error(exc: BaseException) -> bool:
+    status_code = getattr(exc, "status_code", None)
+    if status_code is None:
+        response = getattr(exc, "response", None)
+        status_code = getattr(response, "status_code", None)
+    return isinstance(status_code, int) and 500 <= status_code <= 599
+
+
 def retry_after_seconds(exc: BaseException) -> float | None:
     """Return a non-negative numeric Retry-After value when one is available."""
     response = getattr(exc, "response", None)
@@ -121,7 +143,50 @@ class ModelClient:
         return self._client
 
     def complete(self, messages: list[dict[str, str]], purpose: Purpose) -> str:
-        """Call the model, retrying only HTTP 429 responses a bounded number of times."""
+        """Call the model and return a text response."""
+        message = self._completion(messages, purpose=purpose)
+        content = getattr(message, "content", None)
+        if not isinstance(content, str):
+            raise ProviderResponseError(
+                "provider response message has no text content"
+            )
+        return content
+
+    def complete_with_tools(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+    ) -> ToolDecision:
+        """Return a normalized tool decision for the Week 01-style host loop."""
+        message = self._completion(messages, purpose="agent", tools=tools)
+        calls = []
+        for call in getattr(message, "tool_calls", None) or []:
+            try:
+                arguments = json.loads(call.function.arguments)
+            except (json.JSONDecodeError, TypeError) as exc:
+                raise ProviderResponseError("tool call arguments are not valid JSON") from exc
+            if not isinstance(arguments, dict):
+                raise ProviderResponseError("tool call arguments must be a JSON object")
+            calls.append(
+                ToolCall(
+                    id=str(call.id),
+                    name=str(call.function.name),
+                    arguments=arguments,
+                )
+            )
+        content = getattr(message, "content", None)
+        if content is not None and not isinstance(content, str):
+            raise ProviderResponseError("provider response content has an invalid type")
+        return ToolDecision(content=content, calls=tuple(calls))
+
+    def _completion(
+        self,
+        messages: list[dict],
+        *,
+        purpose: Purpose,
+        tools: list[dict] | None = None,
+    ):
+        """Make one logical completion with bounded retries."""
         for attempt in range(self.config.max_retries + 1):
             self.meter.record(purpose)
             try:
@@ -135,15 +200,19 @@ class ModelClient:
                     temperature=self.config.temperature,
                     max_tokens=self.config.max_tokens,
                     messages=messages,
+                    **({"tools": tools} if tools is not None else {}),
                     **provider_options,
                 )
             except Exception as exc:
-                if not is_rate_limit_error(exc):
+                retryable = is_rate_limit_error(exc) or is_server_error(exc)
+                if not retryable:
                     raise
                 if attempt >= self.config.max_retries:
-                    raise RateLimitError(
-                        f"provider returned HTTP 429 after {attempt + 1} attempts"
-                    ) from exc
+                    if is_rate_limit_error(exc):
+                        raise RateLimitError(
+                            f"provider returned HTTP 429 after {attempt + 1} attempts"
+                        ) from exc
+                    raise
                 delay = retry_after_seconds(exc)
                 if delay is None:
                     delay = self.config.backoff_seconds * (attempt + 1)
@@ -152,18 +221,17 @@ class ModelClient:
                 continue
             choices = getattr(response, "choices", None)
             if not isinstance(choices, list) or not choices:
-                raise ProviderResponseError(
-                    "provider response has no completion choices"
-                )
+                error = ProviderResponseError("provider response has no completion choices")
+                if attempt >= self.config.max_retries:
+                    raise error
+                delay = self.config.backoff_seconds * (attempt + 1)
+                self._on_retry(attempt + 1, self.config.max_retries, delay)
+                self._sleep(delay)
+                continue
             message = getattr(choices[0], "message", None)
             if message is None:
                 raise ProviderResponseError(
                     "provider response choice has no message"
                 )
-            content = getattr(message, "content", None)
-            if not isinstance(content, str):
-                raise ProviderResponseError(
-                    "provider response message has no text content"
-                )
-            return content
+            return message
         raise AssertionError("retry loop exhausted unexpectedly")
