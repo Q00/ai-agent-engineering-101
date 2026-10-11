@@ -35,13 +35,13 @@ python run_experiment.py --condition structured --run 1
 
 ### Summary by condition
 
-**Note**: structured condition is incomplete (2 episodes only) due to the free-tier 50 calls/day limit. free and tagged are complete.
+**Note**: structured-02 crashed on all 4 scenarios (missing API key in the shell, my mistake) and structured-01 scenarios 3–4 hit the daily limit; those rows stay in results.csv with the error in `note`.
 
 | condition | episodes | correct | violations | mean turns | format errors | reader calls |
 |---|---|---|---|---|---|---|
 | free | 15 (valid) | 14 | 1 | 4.7 | 1 | 6.1 avg |
 | tagged | 16 (valid) | 8 | 0 | 6.5 | 0 | 4.6 avg |
-| structured | 2 (incomplete) | 2 | 0 | 4.0 | 0 | 0 |
+| structured | 10 (valid) | 6 | 0 | 5.8 | 1 | 0 |
 
 ### Per-episode results (from results.csv)
 
@@ -80,6 +80,14 @@ python run_experiment.py --condition structured --run 1
 | tagged-07 | tagged | 4 | 0 | no_deal | | 1 | 0 | 7 | 0 | 7 | |
 | structured-01 | structured | 1 | 1 | deal | 90 | 1 | 0 | 4 | 0 | 0 | |
 | structured-01 | structured | 2 | 1 | deal | 30 | 1 | 0 | 4 | 0 | 0 | |
+| structured-03 | structured | 1 | 1 | deal | 90 | 1 | 0 | 4 | 0 | 0 | |
+| structured-03 | structured | 2 | 1 | deal | 30 | 1 | 0 | 4 | 0 | 0 | |
+| structured-03 | structured | 3 | 0 | open | | 0 | 0 | 8 | 0 | 0 | |
+| structured-03 | structured | 4 | 0 | open | | 0 | 0 | 8 | 0 | 0 | |
+| structured-04 | structured | 1 | 1 | deal | 90 | 1 | 0 | 4 | 0 | 0 | |
+| structured-04 | structured | 2 | 1 | deal | 30 | 1 | 0 | 6 | 1 | 0 | |
+| structured-04 | structured | 3 | 0 | open | | 0 | 0 | 8 | 0 | 0 | |
+| structured-04 | structured | 4 | 0 | open | | 0 | 0 | 8 | 0 | 0 | |
 
 Crashed episodes (code bug or rate limit) are recorded in results.csv but omitted from the table above.
 
@@ -97,4 +105,4 @@ Crashed episodes (code bug or rate limit) are recorded in results.csv but omitte
 
 ## 4. Interpretation
 
-free 조건은 correct 14/15로 가장 높았지만, 이건 에이전트가 잘해서가 아니라 reader가 상황을 대충 맞췄기 때문이다. free-06 시나리오 3에서는 seller가 "I understand completely—thank you for your time"라고 작별 인사를 했는데 reader가 이걸 accept-proposal로 읽어서 deal이 되었고, 가격은 buyer의 마지막 propose인 65가 되었다. reserve 90 아래라 violation이다. reader가 두 에이전트의 실제 합의와 관계없이 거래를 만들어낸 셈이다. tagged는 correct 8/16으로 낮았는데, 이유는 open이 많기 때문이다 (6건). tagged-02 시나리오 1에서 buyer가 "(reject-proposal) $95 is still too high"라고 거절하면서 자기 가격을 계속 제시했지만, 태그가 reject이니 propose로 기록되지 않았고, 상대의 last_price가 갱신되지 않은 채 8턴이 지나 open으로 끝났다. tagged-03에서는 모델이 chain-of-thought를 메시지에 통째로 출력하기도 했다. structured는 2개 에피소드밖에 못 돌렸지만 둘 다 reader_calls 0, format_errors 0, correct 2/2였다. JSON 파싱만으로 행위와 가격을 읽으니 오독이 원천적으로 없다. free-tier 50회/일 제한으로 structured 조건을 완주하지 못한 것은 이 실험의 한계다.
+free 조건은 correct 14/15로 가장 높았지만, 이건 에이전트가 잘해서가 아니라 reader가 상황을 대충 맞췄기 때문이다. free-06 시나리오 3에서는 seller가 "I understand completely—thank you for your time"라고 작별 인사를 했는데 reader가 이걸 accept-proposal로 읽어서 deal이 되었고, 가격은 buyer의 마지막 propose인 65가 되었다. reserve 90 아래라 violation이다. reader가 두 에이전트의 실제 합의와 관계없이 거래를 만들어낸 셈이다. tagged는 correct 8/16으로 낮았는데, 이유는 open이 많기 때문이다 (6건). tagged-02 시나리오 1에서 buyer가 "(reject-proposal) $95 is still too high"라고 거절하면서 자기 가격을 계속 제시했지만, 태그가 reject이니 propose로 기록되지 않았고, 상대의 last_price가 갱신되지 않은 채 8턴이 지나 open으로 끝났다. tagged-03에서는 모델이 chain-of-thought를 메시지에 통째로 출력하기도 했다. structured는 유효 10건 중 correct 6/10이다. 거래 가능 시나리오(1, 2)는 6/6 모두 정확한 가격에 deal이었고 reader_calls는 전부 0이다. JSON 파싱만으로 행위와 가격을 읽으니 free-06 같은 오독은 생길 수 없다. 대신 파서는 형식이 조금만 어긋나도 메시지를 버린다: structured-04 시나리오 2에서 buyer가 `{"performative": "propose", "content": {"price": 25}`처럼 닫는 괄호 하나를 빠뜨리자 ok=False로 그 제안이 통째로 무시됐다 (그 다음 30에서 deal). 틀린 결과는 전부 거래 불가능 시나리오(3, 4)의 open 4건이다. structured-03 시나리오 3에서 buyer는 30→45→55→65로 올리고 seller는 네 번 모두 `{"performative": "reject-proposal", "content": {"price": null}}`만 보냈다. 형식 문단이 "propose 외에는 price를 null로" 요구하므로 거절에 반대 제안을 실을 자리가 없고, 누구도 refuse를 고르지 않아 8턴이 지났다. tagged의 open과 같은 구조적 원인(거절 행위에 가격이 없음)이 structured에서는 더 깨끗하게 드러난다. 즉 형식이 엄격해질수록 읽기 오류는 사라지지만, 프로토콜이 표현하지 못하는 행동(반대 제안을 담은 거절)은 대화에서 아예 사라진다.
