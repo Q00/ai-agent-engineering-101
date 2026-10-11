@@ -97,6 +97,10 @@ async def run_turn(
         if len(decision.calls) != 1:
             raise HostError("the model must return exactly one tool call at a time")
         call = decision.calls[0]
+        emit(
+            f"[model-tool] name={call.name} "
+            f"arguments={json.dumps(call.arguments, sort_keys=True)}"
+        )
         if call.name not in {STATE_TOOL, *MOVE_TOOLS}:
             raise HostError(f"unsupported market tool: {call.name}")
         if call.arguments.get("negotiation_id") != negotiation_id:
@@ -143,7 +147,7 @@ class SessionGateway:
                 "function": {
                     "name": tool.name,
                     "description": tool.description or "",
-                    "parameters": tool.inputSchema,
+                    "parameters": tool.input_schema,
                 },
             }
             for tool in result.tools

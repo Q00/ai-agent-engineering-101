@@ -5,7 +5,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from host import GatewayResult, HostError, run_turn
+from host import GatewayResult, HostError, SessionGateway, run_turn
 from model_client import (
     CallMeter,
     ModelClient,
@@ -146,6 +146,20 @@ class HostLoopTests(unittest.TestCase):
                         run_turn(FakeModel([bad_decision]), gateway, "prompt", "neg-1")
                     )
                 self.assertEqual(gateway.calls, [])
+
+    def test_session_gateway_uses_mcp_2_input_schema_attribute(self):
+        class Session:
+            async def list_tools(self):
+                tool = SimpleNamespace(
+                    name="propose",
+                    description="Offer a price",
+                    input_schema={"type": "object"},
+                )
+                return SimpleNamespace(tools=[tool])
+
+        tools = asyncio.run(SessionGateway(Session()).list_tools())
+
+        self.assertEqual(tools[0]["function"]["parameters"], {"type": "object"})
 
 
 def config(max_retries=2):

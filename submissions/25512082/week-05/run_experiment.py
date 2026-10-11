@@ -133,6 +133,15 @@ def parse_state(raw: str) -> dict:
     raise ValueError("MCP tool result does not contain negotiation state")
 
 
+def exception_summary(exc: BaseException) -> str:
+    """Render nested task-group failures without exposing configured secrets."""
+    parts = [f"{type(exc).__name__}: {exc}"]
+    nested = getattr(exc, "exceptions", ())
+    for child in nested:
+        parts.append(exception_summary(child))
+    return redact_secrets(" | ".join(parts))
+
+
 async def open_negotiation(server_url: str, scenario: dict, condition: str) -> dict:
     async with httpx2.AsyncClient(timeout=30.0) as client:
         response = await client.post(
@@ -299,7 +308,7 @@ async def run_all(base: Path, args) -> None:
                     stop = True
                     break
                 except (Exception, KeyboardInterrupt) as exc:
-                    note = f"crash: {type(exc).__name__}: {redact_secrets(exc)}"
+                    note = f"crash: {exception_summary(exc)}"
                     log(f"[crash] {note}")
                     row = [run, condition, scenario_id] + [""] * 9 + [note]
                     if isinstance(exc, KeyboardInterrupt):

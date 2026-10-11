@@ -14,6 +14,7 @@ from market_server import MarketService
 from model_client import ToolCall, ToolDecision
 from run_experiment import (
     HEADER,
+    exception_summary,
     load_completed,
     load_scenarios,
     parse_state,
@@ -65,6 +66,12 @@ class RunnerDataTests(unittest.TestCase):
         self.assertEqual(parse_state(json.dumps(state)), state)
         wrapped = {"structuredContent": state}
         self.assertEqual(parse_state(json.dumps(wrapped)), state)
+
+    def test_nested_exception_summary_keeps_root_cause(self):
+        error = ExceptionGroup("task failed", [ValueError("root cause")])
+        summary = exception_summary(error)
+        self.assertIn("ExceptionGroup: task failed", summary)
+        self.assertIn("ValueError: root cause", summary)
 
 
 class FakeModel:
