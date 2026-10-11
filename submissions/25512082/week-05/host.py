@@ -160,7 +160,7 @@ async def connect_market(url: str, bearer_token: str):
     headers = {"Authorization": f"Bearer {bearer_token}"}
     async with httpx2.AsyncClient(headers=headers, timeout=60.0) as http_client:
         async with streamable_http_client(url, http_client=http_client) as streams:
-            read_stream, write_stream, _ = streams
+            read_stream, write_stream = streams
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
                 yield SessionGateway(session)

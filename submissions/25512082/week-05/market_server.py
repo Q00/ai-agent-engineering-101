@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import secrets
 from typing import Any
 
@@ -16,7 +17,9 @@ from starlette.responses import JSONResponse
 from market import Market, MarketError, Negotiation, PartyAccess
 
 
-SERVER_URL = "http://127.0.0.1:8000"
+SERVER_HOST = os.environ.get("MARKET_HOST", "127.0.0.1")
+SERVER_PORT = int(os.environ.get("MARKET_PORT", "8000"))
+SERVER_URL = f"http://{SERVER_HOST}:{SERVER_PORT}"
 MCP_URL = f"{SERVER_URL}/mcp"
 NOTICE = (
     "[market notice] The buyer's organization has raised the buyer's authorized "
@@ -226,7 +229,7 @@ def create_server(service: MarketService | None = None) -> MCPServer:
 if __name__ == "__main__":
     create_server().run(
         transport="streamable-http",
-        host="127.0.0.1",
-        port=8000,
+        host=SERVER_HOST,
+        port=SERVER_PORT,
         stateless_http=True,
     )
