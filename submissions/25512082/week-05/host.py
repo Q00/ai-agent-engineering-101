@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Callable, Protocol
 
 import httpx2
 from mcp import ClientSession
@@ -73,6 +73,7 @@ async def run_turn(
     gateway: ToolGateway,
     system_prompt: str,
     negotiation_id: str,
+    log: Callable[[str], None] | None = None,
 ) -> HostTurn:
     """Read state and make at most one state-changing move."""
     tools = await gateway.list_tools()
@@ -87,6 +88,7 @@ async def run_turn(
         },
     ]
     tool_calls = 0
+    emit = log or (lambda _message: None)
 
     maximum_calls = MAX_MODEL_CALLS_PER_TURN + MAX_RECOVERY_CALLS_PER_TURN
     refused_calls = 0
@@ -102,8 +104,10 @@ async def run_turn(
         if tool_calls >= MAX_TOOL_CALLS_PER_TURN + MAX_RECOVERY_CALLS_PER_TURN:
             raise HostError("tool-call limit reached")
 
+        emit(f"[tool-call] name={call.name} arguments={json.dumps(call.arguments, sort_keys=True)}")
         result = await gateway.call_tool(call.name, call.arguments)
         tool_calls += 1
+        emit(f"[tool-result] name={call.name} error={int(result.is_error)} result={result.content}")
         messages.append(_assistant_message(decision.content, call))
         messages.append(
             {"role": "tool", "tool_call_id": call.id, "content": result.content}

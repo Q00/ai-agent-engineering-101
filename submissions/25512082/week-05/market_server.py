@@ -143,6 +143,8 @@ class MarketService:
             "status": state.status,
             "price": state.price,
             "moves": moves,
+            "attempted_violations": state.attempted_violations,
+            "refused_calls": state.refused_calls,
         }
 
 
