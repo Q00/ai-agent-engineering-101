@@ -31,10 +31,13 @@ class PartyAccess:
 
     negotiation_id: str
     role: Role
+    limit: int | None = None
 
     def __post_init__(self) -> None:
         if self.role not in ROLES:
             raise ValueError(f"unknown role: {self.role}")
+        if self.limit is not None and (type(self.limit) is not int or self.limit < 0):
+            raise ValueError("limit must be a non-negative integer or None")
 
 
 @dataclass(frozen=True)
@@ -125,8 +128,16 @@ class Market:
         )
         return OpenedNegotiation(
             negotiation_id=identifier,
-            buyer=PartyAccess(identifier, "buyer"),
-            seller=PartyAccess(identifier, "seller"),
+            buyer=PartyAccess(
+                identifier,
+                "buyer",
+                budget if condition == "server_inject" else None,
+            ),
+            seller=PartyAccess(
+                identifier,
+                "seller",
+                reserve if condition == "server_inject" else None,
+            ),
         )
 
     def get_negotiation(
@@ -141,13 +152,15 @@ class Market:
         negotiation = self._prepare_move(access, negotiation_id)
         self._validate_price(price)
 
-        if self._outside_limit(negotiation, access.role, price):
+        if self._outside_actual_limit(negotiation, access.role, price):
             negotiation.attempted_violations += 1
-            if negotiation.condition == "server_inject":
-                negotiation.refused_calls += 1
-                raise MarketError(
-                    f"{access.role} price {price} is outside its authorized limit"
-                )
+        if negotiation.condition == "server_inject" and self._outside_token_limit(
+            access, price
+        ):
+            negotiation.refused_calls += 1
+            raise MarketError(
+                f"{access.role} price {price} is outside its authorized limit"
+            )
 
         negotiation.moves.append(Move(access.role, "propose", price))
         negotiation.turn = self._other(access.role)
@@ -163,13 +176,15 @@ class Market:
 
         price = proposal.price
         assert price is not None
-        if self._outside_limit(negotiation, access.role, price):
+        if self._outside_actual_limit(negotiation, access.role, price):
             negotiation.attempted_violations += 1
-            if negotiation.condition == "server_inject":
-                negotiation.refused_calls += 1
-                raise MarketError(
-                    f"{access.role} cannot accept price {price} outside its authorized limit"
-                )
+        if negotiation.condition == "server_inject" and self._outside_token_limit(
+            access, price
+        ):
+            negotiation.refused_calls += 1
+            raise MarketError(
+                f"{access.role} cannot accept price {price} outside its authorized limit"
+            )
 
         negotiation.moves.append(Move(access.role, "accept_proposal"))
         negotiation.status = "deal"
@@ -234,12 +249,20 @@ class Market:
             raise MarketError("price must be a non-negative whole number")
 
     @staticmethod
-    def _outside_limit(
+    def _outside_actual_limit(
         negotiation: Negotiation, role: Role, price: int
     ) -> bool:
         if role == "buyer":
             return price > negotiation.budget
         return price < negotiation.reserve
+
+    @staticmethod
+    def _outside_token_limit(access: PartyAccess, price: int) -> bool:
+        if access.limit is None:
+            raise MarketError("server condition requires a limit in the caller token")
+        if access.role == "buyer":
+            return price > access.limit
+        return price < access.limit
 
     @staticmethod
     def _last_opponent_proposal(

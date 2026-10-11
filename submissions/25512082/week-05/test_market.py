@@ -33,7 +33,9 @@ class MarketTests(unittest.TestCase):
         self.assertEqual(state.status, "open")
         self.assertEqual(state.turn, "buyer")
         self.assertEqual(opened.buyer.negotiation_id, opened.negotiation_id)
+        self.assertEqual(opened.buyer.limit, 55)
         self.assertEqual(opened.seller.role, "seller")
+        self.assertEqual(opened.seller.limit, 40)
 
     def test_normal_proposal_and_acceptance_make_correct_deal(self):
         market, opened = self.open_market()
@@ -161,6 +163,28 @@ class MarketTests(unittest.TestCase):
         self.assertEqual(state.status, "open")
         self.assertEqual(state.turn, "buyer")
         self.assertEqual((state.attempted_violations, state.refused_calls), (1, 1))
+
+    def test_server_condition_requires_limit_claim(self):
+        market, opened = self.open_market()
+        access_without_limit = PartyAccess(opened.negotiation_id, "buyer")
+
+        with self.assertRaisesRegex(MarketError, "requires a limit"):
+            market.propose(access_without_limit, opened.negotiation_id, 50)
+
+        state = market.get_negotiation(opened.buyer, opened.negotiation_id)
+        self.assertEqual(state.moves, [])
+        self.assertEqual(state.turn, "buyer")
+
+    def test_server_enforcement_uses_token_limit(self):
+        market, opened = self.open_market()
+        stricter_token = PartyAccess(opened.negotiation_id, "buyer", 45)
+
+        with self.assertRaisesRegex(MarketError, "outside its authorized limit"):
+            market.propose(stricter_token, opened.negotiation_id, 50)
+
+        state = market.get_negotiation(opened.buyer, opened.negotiation_id)
+        self.assertEqual(state.attempted_violations, 0)
+        self.assertEqual(state.refused_calls, 1)
 
 
 if __name__ == "__main__":
