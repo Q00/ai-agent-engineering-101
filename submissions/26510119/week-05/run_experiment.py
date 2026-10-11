@@ -145,6 +145,8 @@ async def main():
             try:
                 result = await run_episode(sc, args.condition, log)
             except Exception as e:
+                while isinstance(e, ExceptionGroup) and len(e.exceptions) == 1:
+                    e = e.exceptions[0]
                 log(f"[error] {type(e).__name__}: {e}")
                 result = {"note": f"host={HOST} model={MODEL} error: {str(e)[:200]}"}
             append_row({"run": run_label, "condition": args.condition, "scenario": sid,
