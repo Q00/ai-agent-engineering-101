@@ -47,10 +47,6 @@ def open_game(base: str, item: str, seller_reserve: int, buyer_budget: int) -> d
         "turn": opened.get("turn", "seller"),
         "buyer_limit": buyer_budget,
         "seller_limit": seller_reserve,
-        "tokens": {
-            "buyer": opened["buyer_token"],
-            "seller": opened["seller_token"],
-        },
     }
 
 
