@@ -31,7 +31,8 @@ normalized.
 - Final result: 24 unique episode keys, 12 rows per condition, 0 crashes
 
 `attempt-01/` preserves an invalid initial V2 attempt. Two runner processes briefly
-overlapped, producing an interleaved log and a duplicate episode key. It was stopped,
-kept as failed-process evidence, and excluded from every comparison value above. The
-successful rerun started from a new empty scratch directory after confirming one
-market server and zero runners twice.
+overlapped, producing interleaved logs and duplicate episode keys for
+`prompt_inject` run 2 S3 and S4. The runners were stopped, and the unmodified failed
+artifacts were kept as process evidence and excluded from every comparison value
+above. The successful rerun started from a new empty scratch directory after
+confirming one market server and zero runners twice.
