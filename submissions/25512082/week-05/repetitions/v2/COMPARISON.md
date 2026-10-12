@@ -1,9 +1,9 @@
 # Week 05 V1-V2 comparison
 
 Both versions used the same four scenarios, required conditions, three repetitions,
-host implementation, `qwen2.5:7b-instruct` model, and temperature 0. V1 remains in
-the Week 05 top-level paths. V2 is an independent rerun whose result artifacts are
-stored in this directory.
+host implementation, `qwen2.5:7b-instruct` model, and temperature 0. V1 is preserved
+under `repetitions/v1/`. V2 was first stored independently in this directory and was
+later selected for the Week 05 top-level submission paths.
 
 | version | condition | rows | completed | crash | correct | violation | attempted | refused | mean turns | tool/model calls |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
