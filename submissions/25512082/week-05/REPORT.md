@@ -8,6 +8,10 @@
 
 ### Experiment setup
 
+- Runtime pinned for reproduction: CPython 3.11.16, Ollama 0.34.2, and
+  `qwen2.5:7b-instruct` image ID `845dbda0ea48`. Direct Python dependencies
+  are pinned in `requirements.txt`: `mcp==2.2.0`, `httpx2==2.12.0`,
+  `openai==3.8.0`, and `starlette==1.7.0`.
 - Host: the Week 01-style bounded tool loop in `host.py`, connected to the
   market through MCP Streamable HTTP. Each agent turn first calls
   `get_negotiation` and then makes one state-changing move. A refused move may
@@ -45,19 +49,43 @@ missing tokens are rejected by the MCP authentication layer, while a token
 bound to another negotiation, an out-of-turn move, or an out-of-limit server
 condition move becomes a tool error.
 
-### Commands
+### Evidence boundary
 
-The code exposes the following reproducible commands. The exact historical
-shell invocation was not captured in the logs, so these are the commands
-supported by the submitted CLI rather than a claim about shell history.
+The historical rows prove the model tag through each completed row's `note`,
+and the logs prove every model/tool decision and outcome. They do not embed
+the Python, package, Ollama, provider, or base-URL versions that were active at
+run time. The pinned environment below records the audited environment used to
+validate this submission; it is a reproducible target, not a retroactive claim
+that missing metadata existed in the historical logs. Crash rows and partial
+logs remain unchanged as evidence.
+
+### From-scratch reproduction
+
+Run from the repository root. Use a separate temporary copy so the submitted
+CSV and logs remain untouched. The removal commands below target only that
+new temporary copy.
 
 ```bash
-cd submissions/25512082/week-05
+# Terminal 0: prepare an isolated Python environment and scratch copy
+python3.11 -m venv /tmp/week05-venv
+source /tmp/week05-venv/bin/activate
+python -m pip install -r submissions/25512082/week-05/requirements.txt
 
-# Terminal 1
+ollama --version                 # expected: 0.34.2
+ollama list                      # expected model ID: 845dbda0ea48
+
+cp -a submissions/25512082/week-05 /tmp/week05-reproduction
+rm -f /tmp/week05-reproduction/results.csv
+rm -f /tmp/week05-reproduction/auth_checks.txt
+rm -rf /tmp/week05-reproduction/logs
+
+# Terminal 1: start the market in the scratch copy
+cd /tmp/week05-reproduction
 python market_server.py
 
-# Terminal 2: pin the local model environment used by this submission
+# Terminal 2: pin every model setting; `ollama` is a non-secret local placeholder
+source /tmp/week05-venv/bin/activate
+cd /tmp/week05-reproduction
 export AGENT_PROVIDER=ollama-local
 export OPENAI_BASE_URL=http://localhost:11434/v1
 export OPENAI_API_KEY=ollama
@@ -66,22 +94,34 @@ export AGENT_TEMPERATURE=0
 export AGENT_MAX_TOKENS=512
 export AGENT_MAX_RETRIES=3
 export AGENT_BACKOFF_SECONDS=2
+
+# Verify authentication behavior against the running server
+python auth_check.py
+
+# Confirm the fresh schedule without calling the model
+python run_experiment.py --estimate-only
+# Expected: pending_episodes=24 normal_model_calls_at_most=384
+
+# Run exactly the 24 required episode keys; resume uses existing CSV keys
 python run_experiment.py
 
-# Structural validation from the repository root; this makes no model call
-python scripts/check_week05.py submissions/25512082/week-05
+# Local tests in the scratch copy
+python -m unittest discover -s . -p 'test_*.py'
+
+# Terminal 0, from the original repository root: the same structural CI check
+python scripts/check_week05.py /tmp/week05-reproduction
 ```
 
 Targeted execution is supported with `--condition`, `--run`, and `--scenario`.
 `--estimate-only` calculates pending work without starting an episode. API
 keys are supplied only through `OPENAI_API_KEY` and are not stored here. Before
-a fresh reproduction, `ollama list` should show `qwen2.5:7b-instruct`; the
-runner resumes from existing CSV keys, so a from-scratch reproduction should
-run from a separate copy of the Week 05 directory with fresh outputs, never by
-deleting the submitted evidence. Across the 21
-completed episodes, the logs record 203 model calls (78 `prompt_inject` and
-125 `server_inject`), equal to the tool-call totals in the aggregate table.
-The interrupted partial S3 trace is excluded from that completed-episode cost.
+a fresh reproduction, `ollama list` should show both the tag and audited image
+ID above. A different image ID under the same mutable tag is an environment
+difference and must be reported rather than silently treated as identical.
+Across the 21 completed historical episodes, the logs record 203 model calls
+(78 `prompt_inject` and 125 `server_inject`), equal to the tool-call totals in
+the aggregate table. The interrupted partial S3 trace is excluded from that
+completed-episode cost.
 
 ## 2. Results
 
