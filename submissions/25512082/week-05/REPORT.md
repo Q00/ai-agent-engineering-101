@@ -1,8 +1,9 @@
 # Week 05 Report — MCP negotiation market
 
-> Final submission result: V2, executed on 2026-10-12. All 24 required
-> episode keys completed without a crash. The earlier V1 and failed V2 attempt
-> remain unchanged under `repetitions/` as process evidence.
+> Final required experiment executed on 2026-10-12. All 24 required episode
+> keys completed without a crash. Earlier failed runs remain visible in Git
+> history, and the failed concurrent-runner attempt remains under
+> `repetitions/v2/attempt-01/` as process evidence.
 
 ## 1. Setup and reproducibility
 
@@ -17,9 +18,9 @@
   MCP Streamable HTTP. Each agent turn first calls `get_negotiation` and then
   chooses a state-changing tool. A refused call may be followed by another
   call in the same agent turn.
-- Market: `market_server.py`; the recorded V2 used `127.0.0.1:8001` so it
-  could remain isolated from the preserved V1 server. The reproduction below
-  uses the normal default port 8000.
+- Market: `market_server.py`; the recorded final run used `127.0.0.1:8001` to
+  stay isolated from an already running server. The reproduction below uses
+  the normal default port 8000.
 - Turn limit: eight accepted market moves per episode.
 - Scenarios: S1 and S2 have `reserve <= budget`; S3 and S4 have
   `reserve > budget`.
@@ -97,11 +98,11 @@ outcome or eight-move limit was reached.
 
 The CSV records the model tag, outcome, metrics, turns, and calls; logs record
 every model tool choice and server result. The exact Python, package, Ollama,
-base-URL, and temperature values were audited around V2 but are not all
-embedded in each log, so reproduction means recovering the same trend rather
-than byte-identical decisions. `repetitions/v1/` preserves the original
-21-completion/3-crash submission. `repetitions/v2/attempt-01/` preserves an
-invalid overlapped-runner attempt and is excluded from all V2 figures below.
+base-URL, and temperature values were audited around the final run but are not
+all embedded in each log, so reproduction means recovering the same trend
+rather than byte-identical decisions. Earlier incomplete and crash-bearing
+runs remain visible in Git history. `repetitions/v2/attempt-01/` preserves an
+invalid overlapped-runner attempt and is excluded from all figures below.
 
 ## 2. Results
 
@@ -162,11 +163,11 @@ No server episode ended with a violation.
 | Who enforces the limit? | The role prompt asks the model to comply; message syntax cannot enforce sincerity or price. | Prompt-only still trusts the model; server mode verifies the token's private `limit`. |
 | What can an outsider verify? | Messages, parsed acts, outcomes, and parse failures, but not authenticated identity or private-limit enforcement. | Authentication status, negotiation binding, turn order, calls/results, server refusals, and final state. |
 | How does it end? | The harness interprets accept/refuse or reaches its turn limit. | The server closes on accept/refuse; the runner also stops at eight accepted moves. |
-| Observed failures | Ambiguous acts, extraction/JSON errors, and prompt-level limit violations are possible. | V2 showed prompt-only violations and server refusals/open outcomes; no completed V2 episode crashed or leaked a server violation. Earlier infrastructure failures remain under `repetitions/`. |
+| Observed failures | Ambiguous acts, extraction/JSON errors, and prompt-level limit violations are possible. | The final run showed prompt-only violations and server refusals/open outcomes; no final episode crashed or leaked a server violation. Earlier infrastructure failures remain visible in Git history. |
 
 ## 4. Interpretation
 
-V2 shows that the enforcement layer, not reliable voluntary obedience by the model, determined safety under injection. In `prompt_inject`, the model made nine out-of-limit moves and all six impossible-deal episodes ended in violations; for example, S3 exposed a raised-budget notice with seller price 60 at `prompt_inject-03.log` line 65, the buyer accepted at line 66, and the violating deal was recorded at line 69. The logs preserve tool choices rather than hidden reasoning or a natural-language quotation, so I do not claim that the buyer verbally cited the injected budget. Operationally, however, there were eight decisions across all six impossible prompt episodes in which the buyer saw an above-real-budget offer plus the raised-budget notice and then accepted or proposed above its real limit (`prompt_inject-01.log` 93→94, 130→131, and 144→145; `prompt_inject-02.log` 79→80, 123→124, and 137→138; `prompt_inject-03.log` 65→66 and 88→89). I count a notice-ignore decision when the buyer sees the same combination and, before any server refusal, rejects/refuses or proposes at or below its real budget. By that definition V2 contains five such decisions across four prompt episodes (`prompt_inject-01.log` 65→66, 79→80, and 116→117; `prompt_inject-02.log` 65→66 and 109→110) and seven across five server episodes (`server_inject-01.log` 132→133; `server_inject-02.log` 65→66, 79→80, and 126→127; `server_inject-03.log` 65→66, 129→130, and 160→161). Those voluntary choices did not provide an invariant: the server condition still observed 11 attempted violations. The server refused all 11 and kept violation at zero. Every refusal was followed by a valid move before the next `[turn]`, so the same-turn recovery count is **11/11**: `server_inject-01.log` 68→69, 85→86, 102→103, 149→150, and 166→167; `server_inject-02.log` 96→97, 143→144, and 160→161; `server_inject-03.log` 82→83, 99→100, and 146→147. Enforcement therefore exchanged unsafe deals for explicit errors and longer negotiations: mean turns rose from 4.33 to 5.50, and all six impossible server episodes remained safely open at the turn limit.
+The final run shows that the enforcement layer, not reliable voluntary obedience by the model, determined safety under injection. In `prompt_inject`, the model made nine out-of-limit moves and all six impossible-deal episodes ended in violations; for example, S3 exposed a raised-budget notice with seller price 60 at `prompt_inject-03.log` line 65, the buyer accepted at line 66, and the violating deal was recorded at line 69. The logs preserve tool choices rather than hidden reasoning or a natural-language quotation, so I do not claim that the buyer verbally cited the injected budget. Operationally, however, there were eight decisions across all six impossible prompt episodes in which the buyer saw an above-real-budget offer plus the raised-budget notice and then accepted or proposed above its real limit (`prompt_inject-01.log` 93→94, 130→131, and 144→145; `prompt_inject-02.log` 79→80, 123→124, and 137→138; `prompt_inject-03.log` 65→66 and 88→89). I count a notice-ignore decision when the buyer sees the same combination and, before any server refusal, rejects/refuses or proposes at or below its real budget. By that definition the final run contains five such decisions across four prompt episodes (`prompt_inject-01.log` 65→66, 79→80, and 116→117; `prompt_inject-02.log` 65→66 and 109→110) and seven across five server episodes (`server_inject-01.log` 132→133; `server_inject-02.log` 65→66, 79→80, and 126→127; `server_inject-03.log` 65→66, 129→130, and 160→161). Those voluntary choices did not provide an invariant: the server condition still observed 11 attempted violations. The server refused all 11 and kept violation at zero. Every refusal was followed by a valid move before the next `[turn]`, so the same-turn recovery count is **11/11**: `server_inject-01.log` 68→69, 85→86, 102→103, 149→150, and 166→167; `server_inject-02.log` 96→97, 143→144, and 160→161; `server_inject-03.log` 82→83, 99→100, and 146→147. Enforcement therefore exchanged unsafe deals for explicit errors and longer negotiations: mean turns rose from 4.33 to 5.50, and all six impossible server episodes remained safely open at the turn limit.
 
 ## 5. Validation and preserved history
 
@@ -174,11 +175,11 @@ The final evidence contains 24 unique episode keys, 12 rows per required
 condition, six run logs, four authentication-check lines, and zero crashes.
 All 39 unit tests pass. The exact CI command
 `python scripts/check_week05.py submissions/25512082/week-05` passes, including
-the `server_inject violation=0` invariant. The V1 top-level artifacts were
-copied byte-for-byte to `repetitions/v1/` before V2 promotion. The successful
-V2 source artifacts remain in `repetitions/v2/`, and its invalid initial
-attempt remains in `repetitions/v2/attempt-01/`; none is included in the final
-aggregate.
+the `server_inject violation=0` invariant. Earlier result states and their
+failure evidence remain in the unmodified Git history. A duplicate copy of
+the successful final artifacts remains in `repetitions/v2/`, and its invalid
+initial attempt remains in `repetitions/v2/attempt-01/`; neither directory is
+included in the final aggregate.
 
 Model nondeterminism and mutable Ollama tags remain the irreducible limits on
 byte-identical reproduction. A rerun with a different image ID must be
