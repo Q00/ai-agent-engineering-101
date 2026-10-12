@@ -263,3 +263,34 @@ needed nor appropriate. The two early `prompt_inject` crashes and the later
 `server_inject` S3 crash remain intentionally visible. Supplementing them with
 normal completions would require a new run-number policy; no existing row or
 log should be deleted or overwritten to do so.
+
+## 6. Final reproducibility audit
+
+This audit was repeated after the reproduction instructions were finalized.
+Commands that would create new LLM evidence were deliberately not rerun; their
+status is established from the preserved CSV and logs instead.
+
+| Step | Command or check | Expected result | Audited result | Status |
+|---|---|---|---|---|
+| Python | `python --version` | `Python 3.11.16` | Exact match | verified live |
+| Direct dependencies | `python -m pip install -r requirements.txt` | Four pinned packages install without version substitution | Two fresh venv checks resolved `mcp 2.2.0`, `httpx2 2.12.0`, `openai 3.8.0`, and `starlette 1.7.0`; `pip check` found no broken requirements | verified without download |
+| Ollama runtime | `ollama --version` | `0.34.2` | Exact match | verified live |
+| Model artifact | `ollama list` | `qwen2.5:7b-instruct`, ID `845dbda0ea48` | Exact tag and ID match | verified live |
+| Isolated outputs | copy Week 05 to `/tmp/week05-reproduction`, then remove only the copied `results.csv`, `auth_checks.txt`, and `logs/` | Submitted evidence remains unchanged | A separate scratch source tree was created under `/tmp`; submitted evidence hashes/content were not rewritten | verified |
+| Server startup | `python market_server.py` | Streamable HTTP market listens on `127.0.0.1:8000` | Running server answered the protocol checks on port 8000 | verified live |
+| Pinned model config | the eight `export` commands above | provider `ollama-local`, model `qwen2.5:7b-instruct`, base URL `http://localhost:11434/v1`, temperature 0, 512 tokens, 3 retries, 2-second backoff | `ModelConfig.from_env()` matched every value | verified without model call |
+| Authentication | `python auth_check.py` | four lines: 401 plus `WWW-Authenticate`, wrong negotiation error, out-of-turn error, outside-limit error | All four results reproduced in a temporary audit file | verified live, no LLM call |
+| Fresh schedule | `python run_experiment.py --estimate-only` in the scratch tree | `pending_episodes=24 normal_model_calls_at_most=384` | Exact match | verified without model call |
+| Resume schedule | the same estimate in the submitted directory | no pending episode keys | `pending_episodes=0 normal_model_calls_at_most=0` | verified without model call |
+| Required experiment | `python run_experiment.py` | 24 unique required keys and at least six run logs | Preserved evidence has 24 unique rows and six logs: 21 completed outcomes and 3 crash rows | verified from evidence; not rerun |
+| Safety invariant | inspect server-condition results | no executed deal outside a limit | `server_violations=0` | verified from CSV and logs |
+| Syntax | `python -m py_compile *.py` | all Python files compile | all 10 Python files compile | passed twice |
+| Unit tests | `python -m unittest discover -s . -p 'test_*.py'` | all tests pass | 39/39 passed in both fresh venv checks and final audit | passed |
+| Structural CI | `python scripts/check_week05.py submissions/25512082/week-05` | all checks pass | all checks passed repeatedly | passed |
+| Secret scan | search for `.env` and key-shaped strings | no stored API key or `.env` | none found; `OPENAI_API_KEY=ollama` is documented as a non-secret local placeholder | passed |
+
+The remaining irreducible limitation is model nondeterminism and the mutable
+nature of an Ollama tag. A reproduction with a different model image ID is not
+the same environment and must be reported. Reproduction means recovering the
+same trend—prompt-only enforcement can leak violations while authenticated
+server enforcement keeps `violation=0`—not byte-identical model decisions.
