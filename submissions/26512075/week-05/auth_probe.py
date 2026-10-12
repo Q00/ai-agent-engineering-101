@@ -50,12 +50,12 @@ def open_game(base: str, item: str, seller_reserve: int, buyer_budget: int) -> d
     }
 
 
-def prepare_state(base: str, state: Path) -> list[dict]:
+def prepare_state(base: str) -> list[dict]:
     games = [
         open_game(base, "probe-own", seller_reserve=70, buyer_budget=90),
         open_game(base, "probe-foreign", seller_reserve=10, buyer_budget=20),
     ]
-    state.write_text(json.dumps(games, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
     return games
 
 
@@ -155,11 +155,10 @@ def _text(result) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default="http://127.0.0.1:8001")
-    parser.add_argument("--state", type=Path, default=Path(__file__).with_name("auth_checks_probe.json"))
     parser.add_argument("--out", type=Path, default=Path(__file__).with_name("auth_checks_probe.txt"))
     args = parser.parse_args()
     base = args.base.rstrip("/")
-    games = prepare_state(base, args.state)
+    games = prepare_state(base)
     asyncio.run(probe(base + "/mcp", games, args.out))
     print(f"wrote {args.out}")
 
