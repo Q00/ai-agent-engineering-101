@@ -3,7 +3,7 @@
 > Final required experiment executed on 2026-10-12. All 24 required episode
 > keys completed without a crash. Earlier failed runs remain visible in Git
 > history, and the failed concurrent-runner attempt remains under
-> `repetitions/v2/attempt-01/` as process evidence.
+> `attempts/concurrent-runner-overlap/` as process evidence.
 
 ## 1. Setup and reproducibility
 
@@ -89,7 +89,7 @@ python scripts/check_week05.py submissions/25512082/week-05
 
 The runner also supports `--condition`, `--run`, and `--scenario`. Resume
 loads existing `(condition, run, scenario)` keys and skips them, preventing
-duplicate model calls. In this V2 run, 247 model calls were recorded: 104 for
+duplicate model calls. In this final run, 247 model calls were recorded: 104 for
 `prompt_inject` and 143 for `server_inject`. The initial upper estimate of 384
 was not a quota to consume; execution stopped each episode as soon as its
 outcome or eight-move limit was reached.
@@ -101,8 +101,10 @@ every model tool choice and server result. The exact Python, package, Ollama,
 base-URL, and temperature values were audited around the final run but are not
 all embedded in each log, so reproduction means recovering the same trend
 rather than byte-identical decisions. Earlier incomplete and crash-bearing
-runs remain visible in Git history. `repetitions/v2/attempt-01/` preserves an
-invalid overlapped-runner attempt and is excluded from all figures below.
+runs remain visible in Git history. `attempts/concurrent-runner-overlap/`
+preserves an invalid attempt in which two runners overlapped, producing
+interleaved negotiation IDs and duplicate run 2 keys for S3 and S4. Those
+unaltered failed artifacts are excluded from all figures below.
 
 ## 2. Results
 
@@ -176,10 +178,11 @@ condition, six run logs, four authentication-check lines, and zero crashes.
 All 39 unit tests pass. The exact CI command
 `python scripts/check_week05.py submissions/25512082/week-05` passes, including
 the `server_inject violation=0` invariant. Earlier result states and their
-failure evidence remain in the unmodified Git history. A duplicate copy of
-the successful final artifacts remains in `repetitions/v2/`, and its invalid
-initial attempt remains in `repetitions/v2/attempt-01/`; neither directory is
-included in the final aggregate.
+failure evidence remain in the unmodified Git history. A byte-identical copy
+of the successful final artifacts remains in `evidence/final-run/`, while the
+invalid concurrent-runner attempt remains in
+`attempts/concurrent-runner-overlap/`; neither directory is included in the
+final aggregate.
 
 Model nondeterminism and mutable Ollama tags remain the irreducible limits on
 byte-identical reproduction. A rerun with a different image ID must be
