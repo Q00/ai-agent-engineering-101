@@ -23,6 +23,10 @@
   three retries, and a two-second increasing backoff. The saved result rows
   confirm the model name but do not record the provider or base URL, so the
   historical provider cannot be asserted more strongly from the artifacts.
+  The reproduction command below pins every one of these environment settings
+  instead of relying on defaults. The OpenAI-compatible client requires a
+  nonempty `OPENAI_API_KEY` even though local Ollama does not authenticate it;
+  `ollama` is therefore a non-secret placeholder, not a stored credential.
 - Turn limit: eight accepted market moves per episode.
 - Scenarios: S1 and S2 have `reserve <= budget`; S3 and S4 have
   `reserve > budget`.
@@ -53,7 +57,15 @@ cd submissions/25512082/week-05
 # Terminal 1
 python market_server.py
 
-# Terminal 2, after setting the model environment and API key if required
+# Terminal 2: pin the local model environment used by this submission
+export AGENT_PROVIDER=ollama-local
+export OPENAI_BASE_URL=http://localhost:11434/v1
+export OPENAI_API_KEY=ollama
+export AGENT_MODEL=qwen2.5:7b-instruct
+export AGENT_TEMPERATURE=0
+export AGENT_MAX_TOKENS=512
+export AGENT_MAX_RETRIES=3
+export AGENT_BACKOFF_SECONDS=2
 python run_experiment.py
 
 # Structural validation from the repository root; this makes no model call
@@ -62,7 +74,14 @@ python scripts/check_week05.py submissions/25512082/week-05
 
 Targeted execution is supported with `--condition`, `--run`, and `--scenario`.
 `--estimate-only` calculates pending work without starting an episode. API
-keys are supplied only through `OPENAI_API_KEY` and are not stored here.
+keys are supplied only through `OPENAI_API_KEY` and are not stored here. Before
+a fresh reproduction, `ollama list` should show `qwen2.5:7b-instruct`; the
+runner resumes from existing CSV keys, so a from-scratch reproduction should
+run from a separate copy of the Week 05 directory with fresh outputs, never by
+deleting the submitted evidence. Across the 21
+completed episodes, the logs record 203 model calls (78 `prompt_inject` and
+125 `server_inject`), equal to the tool-call totals in the aggregate table.
+The interrupted partial S3 trace is excluded from that completed-episode cost.
 
 ## 2. Results
 
