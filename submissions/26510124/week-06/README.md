@@ -4,6 +4,10 @@
 `haiku`를 호출한다. 실제 가격과 수락·거절·포기는 모델이 정하고, Python은
 A2A 메시지와 task 상태, 응답 형식 및 가격 제한을 관리한다.
 
+추가 필수 Challenge 1·2는 `catalog_seller.py`와 `shopping_buyer.py`로 실행한다.
+기본 검사기의 세 품목과 고정 하한가는 기존 명령으로 재현하며, 확장 카탈로그의
+4,000개 SKU는 각각의 설명·속성·하한가를 가진 별도 합성 상품이다.
+
 ## 환경 준비
 
 이 디렉터리(`submissions/26510124/week-06`)에서 실행한다.
@@ -74,3 +78,50 @@ submissions/26510124/week-06/.venv/bin/python scripts/check_week06.py submission
 4. `seller_agent.py`: 판단을 input-required, completed, rejected 상태로 변환.
 5. `buyer_agent.py`: 카드 확인, 같은 task에서 협상, 영수증·예산 확인.
 6. `REPORT.md`: 실제 실패, 수정, 검증 결과와 이 구현의 한계.
+
+## 필수 Challenge 1·2 재현
+
+위 환경 준비 후 이 디렉터리에서 실행한다. 실제 Claude 구독 사용량을 소비하며,
+각 실행은 고유한 `logs/challenge-N/<실행 ID>/`에 입력·카드·통신·모델 원본·결과를
+저장한다. 이전 로그는 덮어쓰지 않는다. 서버 포트는 실행마다 자동 할당한다.
+
+```bash
+.venv/bin/python run_challenges.py --challenge 1
+.venv/bin/python run_challenges.py --challenge 2 --budget 450
+```
+
+첫 명령은 4,000개 상품 판매자를 띄우고, 상품명 없는 설명 3개와 충족 불가능한
+설명 1개를 검사한다. 조건에 맞는 상품·상품별 하한가·영수증의 일치를 검증한다.
+여기서 구매 상대는 검사기이며, 판매자의 상품 선택과 가격은 실제 하네스가 정한다.
+
+두 번째는 품목별 가게 5개씩 총 20개를 띄운다. 각 가게는 서로 다른 상품 200개와
+가격 설정을 가진다. 구매자는 Agent Card의 skills를 읽고 `data/shopping_list.json`의
+세 요구사항에 맞는 가게와 예산 배분을 정한 뒤 동시에 협상한다. 구매자와 판매자
+모두 실제 하네스를 호출한다. 20개 카드 조회, 다중 가게 동시 진행, 품목 누락·중복,
+총예산 및 각 가게의 하한가를 검증하고 실험용 서버를 종료한다.
+
+`result.json`의 `passed`와 `shopping-result.json`, `buyer.log`, 각 가게의
+`*-server.log`, `harness/`를 함께 확인한다. 로그의 URL·포트는 해당 실행에서만
+유효하므로, 재실행은 위 명령으로 새 서버와 디렉터리를 만든다.
+
+개별 확장 프로그램을 사용할 수도 있다.
+
+```bash
+.venv/bin/python catalog_seller.py --port 9100
+.venv/bin/python shopping_buyer.py --directory directory.json --list data/shopping_list.json --budget 450 --output new-result.json
+```
+
+`directory.json`은 `{"shops":[{"id":"shop-a","url":"http://127.0.0.1:9100"}]}`
+형식이다. 상품 요구사항은 `description`과 검증용 `constraints`를 함께 기록한다.
+가게 설정의 `categories`, `inventory_mod`, `inventory_remainder`, `reserve_offset`으로
+품목·재고·하한가를 바꿀 수 있다. 실행별 설정 예시는 챌린지 로그에 보존된다.
+
+`generate_catalog.py`는 네 종류의 품목에 재질·높이·폭·색·형태를 조합한 합성
+데이터를 재생성한다. 외부 상품을 수집하거나 모델로 데이터를 만든 것은 아니다.
+카탈로그 생성은 하한가 정의이며, 제시 가격이나 수락 판단은 항상 하네스가 정한다.
+
+확장 코드를 읽을 때는 `catalog.py`의 검색·선택, `catalog_seller.py`의 A2A 상태,
+`shopping_buyer.py`의 예산 원장·병렬 협상·요약 순서로 보면 된다. 요약은 최대
+800자, 최근 메시지는 2개이며 taskId·상품·현재 가격·예산은 별도 정확한 상태로 유지한다.
+최초 계획 후 가게 변경이나 남은 예산 재분배는 구현하지 않았다. 거래 실패는
+구매 완료로 처리하지 않고 미구매 품목과 함께 보고한다.
