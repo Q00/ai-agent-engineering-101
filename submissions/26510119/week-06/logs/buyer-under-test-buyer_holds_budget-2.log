@@ -1,21 +1,20 @@
-buyer: bookshelf, budget 230, seller http://127.0.0.1:49287, harness: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence
-card: 'Kit Shop', JSONRPC at http://127.0.0.1:49287/, skills ['negotiate']
+buyer: bookshelf, budget 230, seller http://127.0.0.1:38443, harness: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence, budget guard OFF
+card: 'Kit Shop', JSONRPC at http://127.0.0.1:38443/, skills ['negotiate']
   -> 'I want to buy a bookshelf'
   <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
-  [harness 5.3s] '{"action": "offer", "price": 180}'
-  -> '180' (taskId 73bd9726)
-  <- TASK_STATE_INPUT_REQUIRED | 180 is too low. Counteroffer: 260.
-  [harness 4.4s] '{"action": "offer", "price": 210}'
-  -> '210' (taskId 73bd9726)
-  <- TASK_STATE_INPUT_REQUIRED | 210 is too low. Counteroffer: 260.
-  [harness 4.3s] '{"action": "offer", "price": 230}'
-  -> '230' (taskId 73bd9726)
-  <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
-  [harness 6.9s] '{"action": "offer", "price": 225}'
-  -> '225' (taskId 73bd9726)
-  <- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
-  [harness 4.1s] '{"action": "offer", "price": 240}'
-[guard] offer at 240 is above the budget 230; offering 230
-  -> '230' (taskId 73bd9726)
-  <- TASK_STATE_REJECTED | No deal at 230.
+  [harness 4.6s] '{"action": "offer", "price": 200}'
+  -> '200' (taskId f9b80e3d)
+  <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 269.
+  [harness 5.4s] '{"action": "offer", "price": 220}'
+  -> '220' (taskId f9b80e3d)
+  <- TASK_STATE_INPUT_REQUIRED | 220 is too low. Counteroffer: 260.
+  [harness 4.4s] '{"action": "offer", "price": 240}'
+  -> '240' (taskId f9b80e3d)
+  <- TASK_STATE_INPUT_REQUIRED | 240 is too low. Counteroffer: 260.
+  [harness 4.2s] '{"action": "offer", "price": 245}'
+  -> '245' (taskId f9b80e3d)
+  <- TASK_STATE_INPUT_REQUIRED | 245 is too low. Counteroffer: 260.
+  [harness 6.0s] '{"action": "offer", "price": 225}'
+  -> '225' (taskId f9b80e3d)
+  <- TASK_STATE_REJECTED | No deal at 225.
 result: TASK_STATE_REJECTED, nothing bought, 25s
