@@ -4,7 +4,8 @@
 #   powershell -ExecutionPolicy Bypass -File submissions\26510127\week-05\rerun_week05.ps1 run
 #   powershell -ExecutionPolicy Bypass -File submissions\26510127\week-05\rerun_week05.ps1 check
 # The API key is read from the environment only ($env:OPENROUTER_API_KEY). Never commit it.
-param([Parameter(Mandatory = $true)][ValidateSet("prepare", "run", "check")][string]$Step)
+#   (after an aborted run)  ...\rerun_week05.ps1 restart   then   ...\rerun_week05.ps1 run
+param([Parameter(Mandatory = $true)][ValidateSet("prepare", "restart", "run", "check")][string]$Step)
 $ErrorActionPreference = "Stop"
 $D = "submissions/26510127/week-05"
 $U = "_week05_update"
@@ -45,9 +46,25 @@ switch ($Step) {
         Remove-Item -Recurse -Force $U
         Write-Host "`nprepare done. Next (same window, key set): $D\rerun_week05.ps1 run"
     }
+    "restart" {
+        # keep the aborted attempt (uncommitted results and logs) as a record, then commit the fixes
+        if (Test-Path "$D/results.csv") {
+            $P = "$D/previous/run2-aborted"
+            New-Item -ItemType Directory -Force $P | Out-Null
+            Move-Item "$D/results.csv" "$P/results.csv"
+            Move-Item "$D/logs" "$P/logs"
+            Commit $P "week-05: keep aborted second run under previous/run2-aborted (turns passed when the model stopped without a tool call; then an LLM error aborted the run)"
+        }
+        Commit "$D/host.py" "week-05: host reminds the model once when it stops without a tool call; a malformed tool call ends the turn instead of aborting the run"
+        Commit "$D/runner.py" "week-05: runner records reminders and malformed tool calls per episode"
+        Commit "$D/rerun_week05.ps1" "week-05: rerun helper gets a restart step"
+        Write-Host "`nrestart done. Next (key set): $D\rerun_week05.ps1 run"
+    }
     "run" {
-        python "$D/auth_checks.py"; Native "auth_checks.py"
-        Commit "$D/auth_checks.txt" "week-05: auth_checks.txt (buyer-first server)"
+        if (-not (Test-Path "$D/auth_checks.txt")) {
+            python "$D/auth_checks.py"; Native "auth_checks.py"
+            Commit "$D/auth_checks.txt" "week-05: auth_checks.txt (buyer-first server)"
+        }
         foreach ($c in @("prompt_inject", "server_inject", "prompt", "server")) {
             python "$D/runner.py" --conditions $c --repeats 3
             Native "runner.py ($c)"
