@@ -169,6 +169,7 @@ class Remote:
             url.rstrip("/") + "/.well-known/agent-card.json",
             headers={"A2A-Version": "1.0"},
         )
+        self.trace(reply)
         _ = reply.raise_for_status()
         self.emit("[A2A CARD] " + reply.text)
         return Card.model_validate_json(reply.text)
@@ -192,6 +193,7 @@ class Remote:
         reply = await self.client.post(
             endpoint, json=payload, headers={"A2A-Version": "1.0"}
         )
+        self.trace(reply)
         _ = reply.raise_for_status()
         self.emit("[A2A RESPONSE] " + reply.text)
         parsed = Response.model_validate_json(reply.text)
@@ -208,6 +210,19 @@ class Remote:
             msg = "A2A peer changed negotiation identity"
             raise HarnessError(msg)
         return received
+
+    def trace(self, reply: httpx2.Response) -> None:
+        """Observe the sent protocol version without exposing auth headers."""
+        self.emit(
+            "[A2A HTTP] "
+            + json.dumps(
+                {
+                    "method": reply.request.method,
+                    "url": str(reply.request.url),
+                    "version": reply.request.headers.get("A2A-Version"),
+                },
+            ),
+        )
 
 
 class Checkout(Wire):
