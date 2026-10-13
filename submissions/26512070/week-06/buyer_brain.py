@@ -7,7 +7,8 @@ buyer.py calls decide() once per seller reply that still waits for input.
 def decide(deal, wallet):
     """Decide the buyer's next move.
 
-    deal: {"item": "lamp", "budget": 120, "seller": card name, "skill": card skill description,
+    deal: {"item": "lamp", "budget": 120, "seller": card name, "seller_description": card description,
+           "skills": [{"name", "description", "examples"}, ...] from the seller's Agent Card,
            "ask": 130 (last number in the seller's latest message, or None),
            "history": [{"from": "buyer"|"seller", "text": ..., "price": ...}, ...]}
     wallet: wallet.Wallet -- tools you may hand to the model:

@@ -96,13 +96,20 @@ def main():
     t0 = time.time()
 
     card = httpx.get(args.url.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=30).json()
-    iface = card["supportedInterfaces"][0]
+    # The server lists its interfaces in order of preference; take the first one we can speak.
+    iface = next((i for i in card.get("supportedInterfaces", [])
+                  if i.get("protocolBinding") == "JSONRPC" and str(i.get("protocolVersion")) == "1.0"), None)
+    if iface is None:
+        raise RuntimeError(f"no JSONRPC 1.0 interface in the card: {card.get('supportedInterfaces')}")
     rpc_url = iface["url"]
     log(f"card: {card['name']!r} {iface['protocolBinding']} {iface['protocolVersion']} {rpc_url}")
 
     wallet = Wallet(args.budget)
+    # Skills have no argument schema: the brain reads their words and examples to decide what to send.
+    skills = [{"name": s.get("name", ""), "description": s.get("description", ""),
+               "examples": s.get("examples", [])} for s in card.get("skills", [])]
     deal = {"item": args.item, "budget": args.budget, "seller": card["name"],
-            "skill": (card.get("skills") or [{}])[0].get("description", ""), "ask": None, "history": []}
+            "seller_description": card.get("description", ""), "skills": skills, "ask": None, "history": []}
     opening = f"I want to buy a {args.item}"
     deal["history"].append({"from": "buyer", "text": opening, "price": None})
     t = send(rpc_url, opening)
