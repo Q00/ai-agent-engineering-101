@@ -17,9 +17,12 @@ def fake(*answers):
     """A model that returns the given answers in order, and records the prompts it saw."""
     seen = []
 
-    def model(prompt, system=None):
+    def model(prompt, system=None, timeout=None):
         seen.append(prompt)
-        return answers[len(seen) - 1]
+        answer = answers[len(seen) - 1]
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
     model.seen = seen
     return model
 
@@ -47,6 +50,9 @@ results = [
          "counter", 2, "REJECTED BY RULES: price is below 100"),
     case("unknown action, then valid", fake('{"action": "dance"}', '{"action": "counter", "args": {"price": 100}}'),
          "counter", 2, "unknown action"),
+    case("harness hangs once, retried next step",
+         fake(TimeoutError("claude hung"), '{"action": "counter", "args": {"price": 100}}'),
+         "counter", 2, "harness error"),
     case("never valid: stops at 3 steps", fake("x", "y", '{"action": "counter", "args": {"price": 1}}'),
          None, 3),
 ]

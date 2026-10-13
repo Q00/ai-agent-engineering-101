@@ -96,6 +96,10 @@ def guard(d, wallet):
     action = d.get("action") if isinstance(d, dict) else None
     if action == "walk_away":
         return d, None
+    if action == "brain_error":
+        return WALK, f"the brain failed: {d.get('error')}"
+    if action == "none":
+        return WALK, "the brain gave no valid decision within its steps"
     if action != "offer":
         return WALK, f"unknown decision {d!r}"
     try:

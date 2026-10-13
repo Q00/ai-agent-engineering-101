@@ -17,6 +17,8 @@ import time
 
 from model import call_model, log
 
+CALL_TIMEOUT = 30  # one harness call; usually 4-8 s, but a call can hang (seen once: >120 s)
+
 FORMAT = ('Answer with ONE JSON object and nothing else:\n'
           '{"thought": "<one short sentence>", "action": "<one action name>", "args": {...}}')
 
@@ -55,9 +57,10 @@ def run(system, situation, tools, finals, validate, max_steps=3, deadline=None, 
         if trace:
             prompt += "\nYour steps so far in this turn:\n" + "\n".join(
                 f"Step {t['step']}: {t['answer']}\nObservation: {t['observation']}" for t in trace) + "\n"
+        timeout = CALL_TIMEOUT if deadline is None else max(5, min(CALL_TIMEOUT, deadline - time.time() - 5))
         try:
-            answer = model(prompt, system=system)
-        except Exception as e:  # harness failure: one more try is the next step
+            answer = model(prompt, system=system, timeout=timeout)
+        except Exception as e:  # harness failure or hang: the next step is the retry
             trace.append({"step": step, "answer": "(no answer)", "observation": f"harness error: {e}"})
             continue
         try:

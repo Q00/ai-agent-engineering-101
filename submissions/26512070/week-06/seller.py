@@ -48,6 +48,10 @@ def guard(d, deal, inventory):
     hold = deal["ask"] if deal["ask"] is not None else deal["list_price"]  # both are >= reserve
     safe = {"action": "counter", "price": hold, "say": "That does not work for us."}
     action = d.get("action") if isinstance(d, dict) else None
+    if action == "brain_error":
+        return safe, f"the brain failed: {d.get('error')}"
+    if action == "none":
+        return safe, "the brain gave no valid decision within its steps"
     if deal["ask"] is None and action != "counter":
         return safe, f"the first reply must be a counter, not {action}"
     if action == "counter":
