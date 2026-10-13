@@ -77,6 +77,9 @@ def main():
             print("[buyer] walking away", flush=True)
             rpc(rpc_url, "CancelTask", {"id": tid})
             break
+        if d["price"] > a.budget:
+            print(f"[guard] harness offered {d['price']} above the budget {a.budget}; capped at the budget", flush=True)
+            d["price"] = a.budget
         t = send(rpc_url, str(d["price"]), tid)
         print(f"[buyer] <- {state(t)} | {status_text(t)}", flush=True)
         log += [("you", str(d["price"])), ("shop", status_text(t))]

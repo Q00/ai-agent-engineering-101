@@ -30,6 +30,14 @@ SYSTEM = (
 )
 
 
+def guard(item, price, what):
+    """Code-side floor: the harness is told the reserve, but attempt 1 showed it countering 255 on a bookshelf."""
+    if price < RESERVE[item]:
+        print(f"[guard] harness {what} {price} below the reserve {RESERVE[item]}; raised to the reserve", flush=True)
+        return RESERVE[item]
+    return price
+
+
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}  # task id -> {"item", "ask", "log": [(who, text), ...]}
@@ -54,8 +62,9 @@ class Seller(AgentExecutor):
             if d is None or d.get("action") != "ask" or "price" not in d:
                 await up.reject(say("Sorry, the shop could not price that right now."))
                 return
-            self.open[task.id] = {"item": item, "ask": d["price"], "log": [("buyer", text), ("shop", f"asking {d['price']}")]}
-            await up.requires_input(say(f"{item}: asking {d['price']}. Send your offer as a number."))
+            ask = guard(item, d["price"], "opening ask")
+            self.open[task.id] = {"item": item, "ask": ask, "log": [("buyer", text), ("shop", f"asking {ask}")]}
+            await up.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
             return
 
         m = re.search(r"\d+", text)
@@ -68,6 +77,9 @@ class Seller(AgentExecutor):
         d = harness.decide(SYSTEM, f"Item: {deal['item']}. Your current ask: {deal['ask']}. Transcript so far:\n{transcript}\n"
                                    f"The buyer just offered {offer}. Decide: accept, counter (with a price), or reject.")
         action = (d or {}).get("action")
+        if action == "accept" and offer < RESERVE[deal["item"]]:
+            print(f"[guard] harness accepted {offer} below the reserve {RESERVE[deal['item']]}; countering at the reserve", flush=True)
+            action, d = "counter", {"action": "counter", "price": RESERVE[deal["item"]]}
         if action == "accept":
             receipt = {"seller": NAME, "item": deal["item"], "price": offer}
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
@@ -77,7 +89,7 @@ class Seller(AgentExecutor):
             await up.reject(say(f"No deal at {offer}."))
             del self.open[task.id]
         elif action == "counter" and "price" in d:
-            deal["ask"] = d["price"]
+            deal["ask"] = guard(deal["item"], d["price"], "counter")
             deal["log"].append(("shop", f"counter {d['price']}"))
             await up.requires_input(say(f"{offer} is too low. Counteroffer: {deal['ask']}."))
         else:  # no usable answer: hold the current ask
