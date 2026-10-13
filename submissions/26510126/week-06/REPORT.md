@@ -249,9 +249,37 @@ in between (section 4).
 at 105, error on the finished task, cancel, reject an unknown item, `-32009` without
 the header), and my harness buyer bought a lamp at 105 on a budget of 120 and got
 no deal on a bookshelf at 230 (`deploy/logs/`). With the AI binding, `wrangler dev`
-refuses to start without a Cloudflare login, so the model version is untested
-locally so far.
+refuses to start without a Cloudflare login, and after the login its remote session
+for the binding failed behind my sandbox's proxy (below), so the model version was
+first tested on the deployed Worker.
 
-**Deployed.** TODO after `wrangler login` and `wrangler deploy`: the public URL, the
-lab scenarios and buyer runs against it, how often the guards fired with the 8B
-model compared with haiku, and anything that differed from `wrangler dev`.
+**Deployed** at `https://a2a-lamp-shop.thisjonghoon.workers.dev` (wrangler 4.40.0,
+59 KiB upload). The card there reports its own public origin as the JSON-RPC url,
+which is why the card is built from the request rather than from a config value.
+Against the public URL (`deploy/logs/cli-public-*`, server side in `deploy/logs/tail-*`):
+
+- The lab scenarios with the a2a CLI, using the kit buyer's ladder 60, 80, 100, 110:
+  Llama asked 180, then 150, 140, 130, and accepted 110. A message to the finished
+  task got `UNSUPPORTED_OPERATION` with exit code 1, cancel and an unknown item
+  worked, and a request without the header got `-32009`.
+- My harness buyer (haiku, local) against the deployed seller (Llama, Cloudflare):
+  the lamp closed at 120 after five offers (asks 180, 150, 130, 125, 122). On the
+  bookshelf, budget 230, Llama rejected the very first offer of 170, while its note
+  said the opposite: `"That's a bit low, let me check if I can do any better No
+  deal."` The haiku seller in the same spot held at 260 for up to eight rounds.
+- 14 model calls, all parsed on the first try, 1.5 s to 2.4 s each (haiku through
+  `claude -p` took 3.4 s to 6.1 s). No guard fired.
+
+Two things differed from local runs, neither in the Worker. Right after the deploy
+the first card request got a 404 for a few seconds while the edge caught up. And
+my machine's sandbox proxy re-signs TLS, which Go's certificate check in the a2a CLI
+and the remote session that `wrangler dev` opens for the AI binding both refused
+(`x509: OSStatus -26276`, `tls alert handshake failure`); curl went through, and
+the CLI runs above were made outside the sandbox.
+
+The 8B model kept the JSON format every time, so the guards had nothing to do; what
+it changed is the negotiation. It concedes faster and walks away sooner than haiku,
+and once its action and its words disagreed. The A2A layer carried both models'
+decisions without any change, which is the point of section 4 seen from the other
+side: the envelope held, and what the seller meant still had to be read from the
+action, not the sentence.
