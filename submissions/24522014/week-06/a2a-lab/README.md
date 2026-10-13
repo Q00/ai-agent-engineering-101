@@ -126,12 +126,18 @@ History:
   [user] hello A2A
 ```
 
-원본 로그:
+파일 내용까지 확인한 원본 로그 (재검증 실행):
 
-- `../logs/step2-send-20261013-195009.txt`
-- `../logs/step2-card-20261013-195009.txt`
-- `../logs/step2-server-20261013-195009.stderr.txt`
-- `../logs/step2-server-20261013-195009.stdout.txt`
+- `../logs/step2-send-20261013-195132.txt`
+- `../logs/step2-card-20261013-195132.txt`
+- `../logs/step2-server-20261013-195132.stderr.txt`
+- `../logs/step2-server-20261013-195132.stdout.txt`
+
+두 번째 시도의 `Tee-Object` 로그는 외부 프로그램
+출력을 담지 못해 비어 있었다. 화면의 성공 결과와 별개로 이 기록 문제를
+확인한 뒤 `Start-Process`의 표준 출력 파일 리디렉션으로 다시 실행했다.
+재검증 로그의 `completed`, `hello A2A`, `Echo Agent` 문자열까지 확인했다.
+빈 로그도 수정하지 않고 이전 시도의 증거로 보존했다.
 
 첫 시도는 서버를 띄웠지만 추가한 PowerShell `Invoke-WebRequest` 준비
 확인이 제한 시간 내 성공하지 못했다. `Echo server readiness timed out.`
