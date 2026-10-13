@@ -1,14 +1,14 @@
-"""A rule-based seller exposed as an A2A server (a2a-sdk 1.2.x, JSON-RPC binding).
+"""Opening-price checkpoint for an A2A seller (a2a-sdk 1.2.x, JSON-RPC binding).
 
     python seller_agent.py                       # lamp shop on :9999
     python seller_agent.py --config cards/b.json # another seller from a config file
 
-No model inside: the seller asks for an offer (INPUT_REQUIRED), counters, and
-either closes with a receipt artifact (COMPLETED) or walks away (REJECTED).
+Claude Code Haiku chooses the opening price. Follow-up counteroffers, accepting,
+and rejecting still use the lab rules: this is NOT the finished assignment.
 """
 import argparse
+import asyncio
 import json
-import math
 import re
 
 import uvicorn
@@ -21,6 +21,8 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+
+from harness import HarnessError, opening_price
 
 DEFAULT = {
     "name": "Lamp Shop",
@@ -52,11 +54,16 @@ class Seller(AgentExecutor):
             if item is None:
                 await up.reject(say("We only sell: " + ", ".join(self.cfg["reserve"]) + "."))
                 return
-            ask = math.ceil(self.cfg["reserve"][item] * 1.3)
+            try:
+                ask = await asyncio.to_thread(opening_price, item, self.cfg["reserve"][item], text)
+            except HarnessError as exc:
+                await up.failed(say(str(exc)))
+                return
             self.open[task.id] = {"item": item, "ask": ask, "rounds": 0}
             await up.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
             return
 
+        # Next learning checkpoint: move the following decisions to the harness.
         m = re.search(r"\d+", text)
         if m is None:
             await up.requires_input(say("Send your offer as a number."))
