@@ -1,0 +1,9 @@
+{
+  "harness": "Claude Code 2.1.287 with haiku (claude -p --model haiku); both buyer and seller",
+  "seller": {
+    "cmd": ".venv/bin/python seller_agent.py --port {port}"
+  },
+  "buyer": {
+    "cmd": ".venv/bin/python buyer_agent.py --url {url} --item {item} --budget {budget}"
+  }
+}
