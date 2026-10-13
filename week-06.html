@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Week 06: 현대 프로토콜 2: A2A</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;
+  --ink:#1C1917;
+  --body:#44403C;
+  --muted:#78716C;
+  --faint:#A8A29E;
+  --line:#E7E5E4;
+  --wash:#FAFAF9;
+  --link:#2563EB;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --sans:'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  --serif:Fraunces, 'Noto Serif KR', Georgia, serif;
+  --maxw:680px;
+  --r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--body);
+  font-family:var(--sans);
+  font-weight:400;
+  line-height:1.8;
+  font-size:15.5px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--ink);color:var(--paper)}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- layout ---------- */
+.sheet{max-width:1040px;margin:0 auto;padding:0 24px}
+.col{max-width:var(--maxw);margin:0 auto;position:relative}
+
+/* ---------- header ---------- */
+header.doc{padding:40px 0 0}
+.topnav{font-family:var(--mono);font-size:11px;letter-spacing:.04em;margin-bottom:56px;display:flex;justify-content:space-between;gap:16px}
+
+.masthead{padding-bottom:64px;border-bottom:1px solid var(--line)}
+.masthead .wk{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:16px;
+}
+h1.title{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(30px,4.6vw,44px);line-height:1.2;
+  letter-spacing:-0.01em;color:var(--ink);text-wrap:balance;
+}
+h1.title .en{display:block;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:.06em;margin-top:14px}
+.lede{
+  margin-top:26px;max-width:560px;font-size:16px;line-height:1.85;color:var(--muted);
+}
+.lede .q{font-weight:600;color:var(--ink)}
+
+/* ---------- section scaffolding ---------- */
+section{padding:56px 0 8px}
+.secmark{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:32px;
+  border-top:1px solid var(--line);padding-top:20px;
+}
+.secmark .no{
+  font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--faint);
+  letter-spacing:.12em;white-space:nowrap;text-transform:uppercase;
+}
+.secmark h2{font-family:var(--serif);font-weight:500;font-size:clamp(21px,2.8vw,26px);line-height:1.3;letter-spacing:-0.005em;color:var(--ink);text-wrap:balance}
+h3{font-family:var(--serif);font-weight:500;font-size:18px;margin:44px 0 14px;color:var(--ink)}
+h3 .tag{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.12em;display:block;margin-bottom:6px;font-weight:500}
+p{margin-bottom:20px}
+strong{font-weight:600;color:var(--ink)}
+em{font-style:normal;font-weight:600;color:var(--ink);box-shadow:inset 0 -0.35em 0 rgba(28,25,23,.07)}
+.small{font-size:13.5px;color:var(--muted)}
+.nb{white-space:nowrap}
+
+/* part banner */
+.part{
+  margin:72px 0 8px;border-top:2px solid var(--ink);
+  padding:24px 0 6px;
+}
+.part .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase}
+.part h2{font-family:var(--serif);font-weight:500;font-size:clamp(20px,2.6vw,25px);line-height:1.35;color:var(--ink)}
+.part .meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:10px;letter-spacing:.03em}
+
+/* marginalia */
+.note{
+  font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--faint);
+  border-left:2px solid var(--line);padding-left:12px;margin:26px 0;
+}
+@media(min-width:1120px){
+  .note{position:absolute;width:190px;left:calc(50% + var(--maxw)/2 + 36px);margin:0;transform:translateY(-100%)}
+}
+.note b{color:var(--muted);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.08em}
+
+/* pull quote */
+.pull{
+  margin:40px 0;padding:2px 0 2px 24px;border-left:2px solid var(--ink);
+  font-family:var(--serif);font-size:19px;line-height:1.65;font-weight:500;color:var(--ink);
+}
+.pull .src{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-top:10px;letter-spacing:.03em}
+
+/* definition */
+.define{margin:48px 0;background:var(--wash);border:1px solid var(--line);border-radius:var(--r);padding:32px 32px 26px;position:relative}
+.define::before{
+  content:"DEFINITION";position:absolute;top:14px;left:32px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);font-weight:500;
+}
+.define p{margin:16px 0 0;font-family:var(--serif);font-size:clamp(16px,2.1vw,19px);line-height:1.7;font-weight:500;color:var(--ink)}
+.define .sub{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted);margin-top:14px}
+.define ul{margin:14px 0 0 22px;padding:0}
+.define li{font-family:var(--serif);font-size:clamp(15px,2vw,17px);line-height:1.9;font-weight:500;color:var(--ink)}
+@media(max-width:640px){.define{padding:28px 20px 22px}.define::before{left:20px}}
+
+/* instructor */
+.bio{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 28px 20px}
+.bio{display:flex;gap:28px;align-items:flex-start}
+.bio .photo{flex:0 0 210px;width:210px;height:262px;object-fit:cover;object-position:38% 12%;border-radius:6px;display:block}
+.bio .info{flex:1 1 auto;min-width:0}
+.bio .name{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:2px}
+.bio .role{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase}
+.bio p{font-size:14px;line-height:1.85;color:var(--body);margin-bottom:12px}
+.bio .links{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+.bio .links a{white-space:nowrap}
+.bio .links span{color:var(--faint);margin:0 8px}
+@media(max-width:640px){.bio{flex-direction:column}.bio .photo{width:100%;height:200px;flex:none}.bio{padding:22px 18px 16px}}
+
+/* table */
+.tbl-wrap{margin:28px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.7}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-align:left;text-transform:uppercase;
+  border-bottom:1px solid var(--ink);
+  padding:10px 14px;font-weight:500;color:var(--muted);
+}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.stage{font-weight:600;color:var(--ink);white-space:nowrap;font-size:13px}
+td .m{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+/* figure */
+.fig{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 14px}
+.fig .cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+  margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.fig .cap b{color:var(--muted);font-weight:500}
+.fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block}
+svg text{font-family:var(--mono)}
+
+/* code */
+.code{
+  margin:28px 0;background:var(--wash);color:var(--ink);
+  font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  padding:20px 22px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+}
+.code .file{
+  display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:14px;font-weight:500;text-transform:uppercase;
+}
+.code pre{font-family:inherit;white-space:pre;margin:0}
+.code .cm{color:var(--faint)}
+.code .kw{color:#1D4ED8}
+.code .st{color:#15803D}
+code.inline{
+  font-family:var(--mono);font-size:.85em;background:var(--wash);
+  padding:2px 6px;border:1px solid var(--line);border-radius:4px;white-space:nowrap;
+}
+
+/* numbered steps */
+.pre{counter-reset:pre;margin:24px 0}
+.pre>li{list-style:none;position:relative;padding:16px 0 16px 48px;border-bottom:1px solid var(--line)}
+.pre>li:first-child{border-top:1px solid var(--line)}
+.pre>li::before{
+  counter-increment:pre;content:counter(pre);
+  position:absolute;left:4px;top:18px;width:24px;height:24px;
+  border:1px solid var(--faint);border-radius:50%;color:var(--muted);
+  font-family:var(--mono);font-weight:500;font-size:11.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.pre b.lead{font-weight:600;color:var(--ink)}
+
+/* discussion */
+.open{border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;margin:40px 0;background:var(--wash)}
+.open .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.open ol{margin-left:20px}
+.open li{margin-bottom:12px;line-height:1.8}
+@media(max-width:640px){.open{padding:20px 18px}}
+
+/* checkpoint */
+.check{margin:28px 0;border:1px solid var(--ink);border-radius:var(--r);padding:18px 22px 14px}
+.check .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--paper);background:var(--ink);border-radius:4px;display:inline-block;padding:3px 9px;font-weight:500;margin-bottom:12px}
+.check ul{margin-left:20px}
+.check li{margin-bottom:8px;line-height:1.75}
+
+/* recorder metrics */
+.recorder{margin:32px 0;border-top:1px solid var(--ink)}
+.recorder>div{display:flex;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+.recorder .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);font-weight:500;flex:0 0 120px;padding-top:3px;text-transform:uppercase}
+.recorder .v{font-size:13.5px;line-height:1.7;color:var(--body)}
+@media(max-width:640px){.recorder>div{flex-direction:column;gap:4px}}
+
+/* notice */
+.notice{margin:36px 0;border:1px solid var(--line);border-radius:var(--r);padding:24px 26px 18px}
+.notice .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.notice p{margin-bottom:13px;font-size:14px}
+.notice ul{margin:0 0 13px 22px}
+.notice li{margin-bottom:8px;font-size:13.5px;line-height:1.75}
+@media(max-width:640px){.notice{padding:20px 18px 14px}}
+
+/* homework */
+.hw{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.hw .head{
+  border-bottom:1px solid var(--line);background:var(--wash);padding:11px 22px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;font-weight:500;color:var(--muted);text-transform:uppercase;
+}
+.hw .body{padding:22px 24px 8px}
+.hw .due{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.05em;margin-bottom:13px;font-weight:500}
+
+/* readings */
+.readings{margin:24px 0}
+.readings>li{list-style:none;position:relative;padding:18px 0 18px 60px;border-bottom:1px solid var(--line)}
+.readings>li:first-child{border-top:1px solid var(--line)}
+.readings .badge{
+  position:absolute;left:0;top:20px;
+  font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.06em;
+  padding:3px 8px;border-radius:4px;
+}
+.readings .badge.req{background:var(--ink);color:var(--paper)}
+.readings .badge.opt{border:1px solid var(--faint);color:var(--faint)}
+.readings b.lead{font-weight:600;color:var(--ink)}
+.readings .why{display:block;font-size:13px;color:var(--muted);margin-top:6px}
+
+/* next week */
+.next{margin:64px 0 0;border-top:2px solid var(--ink);padding-top:22px}
+.next .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:12px;text-transform:uppercase}
+.next p{font-size:14px;color:var(--body)}
+
+/* footer */
+footer{
+  margin-top:64px;border-top:1px solid var(--line);
+  padding:20px 0 56px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.03em;
+}
+footer .o{color:var(--muted)}
+
+@media(max-width:640px){body{font-size:15px}}
+@media print{
+  body{font-size:10.5pt}
+  .topnav{display:none}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="doc">
+  <div class="col">
+    <div class="topnav"><a href="index.html">← COURSE HOME</a><a href="week-06-en.html">EN</a></div>
+    <div class="masthead">
+      <div class="wk">WEEK 06</div>
+      <h1 class="title">현대 프로토콜 2: A2A
+        <span class="en">Modern Protocols 2: Agent2Agent</span>
+      </h1>
+      <p class="lede"><span class="q">내 에이전트가 남의 에이전트에게 일을 맡기려면 무엇을 주고받아야 하는가?</span> 5주차 MCP에서 요청을 받는 쪽은 tool이었다. A2A(Agent2Agent)에서는 또 하나의 에이전트가 받는다. 상대가 어떤 모델과 도구를 쓰는지 모르는 채로, 상대가 직접 쓴 소개 문서(Agent Card)를 읽고 고른 뒤 일을 task로 넘기고 결과를 받는다. 과제에서는 자기가 쓰는 하네스로 가게와 buyer를 직접 만들고, 정해진 상대와 A2A로 거래하게 한다.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 구성 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">01</span><h2>오늘의 구성</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>구분</th><th>내용</th></tr>
+        <tr><td class="stage">A1</td><td>MCP와 A2A: tool 호출과 일 맡기기</td></tr>
+        <tr><td class="stage">A2</td><td>A2A의 현재: v1.0, AAIF, 공식 CLI</td></tr>
+        <tr><td class="stage">A3</td><td>Agent Card: 일을 맡길 에이전트 찾기</td></tr>
+        <tr><td class="stage">A4</td><td>Task: 맡긴 일의 상태와 결과물</td></tr>
+        <tr><td class="stage">A5</td><td>FIPA-ACL과 A2A</td></tr>
+        <tr><td class="stage">토론</td><td>Agent Card의 주장을 누가 확인하는가</td></tr>
+        <tr><td class="stage">LAB</td><td>A2A server를 띄우고 a2a CLI로 가게와 거래하기</td></tr>
+        <tr><td class="stage">HW</td><td>내 하네스로 만드는 buyer와 가게</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PART A ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART A: LECTURE</div>
+    <h2>Agent2Agent: 다른 에이전트에게 일을 넘기는 규격</h2>
+    <div class="meta">A1 MCP and A2A, A2 A2A today, A3 Agent Card, A4 task lifecycle, A5 FIPA-ACL and A2A, discussion</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A1</span><h2>MCP와 A2A: tool 호출과 일 맡기기</h2></div>
+    <p>5주차 MCP에서는 host의 모델이 server의 tool 목록을 보고, 어떤 tool을 어떤 인자로 부를지 정했다.</p>
+
+    <p>A2A에서 요청을 받는 쪽은 에이전트다. 가게 에이전트에게 &ldquo;램프를 사고 싶다&rdquo;고 보내면, 값을 얼마로 부를지, 무엇을 되물을지, 거래를 거절할지는 가게 에이전트가 정한다. 보내는 쪽은 상대가 어떤 모델을 쓰고 어떤 tool을 부르고 무엇을 기억하는지 모른다. 규격은 이런 상대를 opaque하다고 부르고, 에이전트들이 &ldquo;서로의 내부 상태, 메모리, tool에 접근하지 않고&rdquo; 함께 일하게 하는 것을 목표로 적는다.</p>
+
+    <div class="fig" id="fig1">
+      <svg viewBox="0 0 680 252" role="img" aria-label="A buyer agent delegates to a seller agent over A2A; each agent calls its own tools over MCP; the seller's inside is opaque to the buyer">
+        <defs>
+          <marker id="f1-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f1-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+        </defs>
+        <rect x="490" y="26" width="190" height="196" fill="#FAFAF9" stroke="#A8A29E" stroke-width="1" stroke-dasharray="4 4"/>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="16">CLIENT</text>
+          <text x="498" y="16">REMOTE AGENT, OPAQUE</text>
+        </g>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="0" y="56" width="170" height="64"/>
+          <rect x="510" y="56" width="150" height="64"/>
+          <rect x="0" y="172" width="170" height="40"/>
+          <rect x="510" y="172" width="150" height="40"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M170 78 L509 78" marker-end="url(#f1-ah)"/>
+          <path d="M85 120 L85 171" marker-end="url(#f1-ah)"/>
+          <path d="M585 120 L585 171" marker-end="url(#f1-ah)"/>
+        </g>
+        <path d="M510 100 L171 100" fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#f1-ahd)"/>
+        <g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">
+          <text x="85" y="84">buyer agent</text>
+          <text x="585" y="84">seller agent</text>
+          <text x="85" y="196">buyer's tools</text>
+          <text x="585" y="196">inventory, payments</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="9.5">
+          <text x="85" y="102">model + loop</text>
+          <text x="585" y="102">its own model + loop</text>
+        </g>
+        <g fill="#1C1917" font-size="10">
+          <text x="340" y="70" text-anchor="middle">A2A: SendMessage("I want a lamp")</text>
+          <text x="96" y="150">MCP: tools/call</text>
+          <text x="575" y="150" text-anchor="end">MCP: tools/call</text>
+        </g>
+        <text x="340" y="118" text-anchor="middle" fill="#78716C" font-size="10">task: state, messages, artifacts</text>
+        <text x="0" y="244" fill="#78716C" font-size="9.5">the buyer sees the seller's card, the task state, and the artifacts; never its model, prompt, or tools</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 01</b> A2A between agents, MCP inside each agent</span><span>delegation crosses the boundary; tool calls stay inside it</span></div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th></th><th>MCP (5주차)</th><th>A2A</th></tr>
+        <tr><td class="stage">요청을 받는 쪽</td><td>server의 tool. 이름, 설명, 인자 형식이 공개된다</td><td>원격 에이전트. 할 수 있는 일(skill)을 자연어로 소개한다</td></tr>
+        <tr><td class="stage">보내는 것</td><td>tool 이름과 인자 (<code class="inline">tools/call</code>)</td><td>메시지 (<code class="inline">SendMessage</code>). text, 파일, JSON 데이터</td></tr>
+        <tr><td class="stage">돌려받는 것</td><td>tool 결과</td><td>task(상태와 결과물), 또는 메시지 하나</td></tr>
+        <tr><td class="stage">방법을 정하는 쪽</td><td>host의 모델</td><td>일을 받은 원격 에이전트</td></tr>
+        <tr><td class="stage">도중에 되묻기</td><td>server가 <code class="inline">input_required</code> 결과로 되묻는다(5주차 A3)</td><td>task가 <code class="inline">TASK_STATE_INPUT_REQUIRED</code> 상태로 멈춘다</td></tr>
+      </table>
+    </div>
+
+    <p>되묻기는 두 규격에 다 있다. 두 규격은 한 시스템 안에서 같이 쓰인다. 가게 에이전트는 A2A로 주문을 받고, 재고를 확인할 때는 자기 MCP server의 tool을 부른다(FIG. 01).</p>
+
+    <div class="define">
+      <p>A2A는 서로의 내부를 모르는 에이전트들이 상대를 찾고(Agent Card), 일을 맡기고(task), 결과를 받는(artifact) 규격이다.</p>
+      <p class="sub">이 노트의 예시와 실습은 A2A v1.0 규격, Python SDK a2a-sdk 1.2.2, 공식 CLI a2a 0.3.0으로 확인했다.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A2</span><h2>A2A의 현재: v1.0, AAIF, 공식 CLI</h2></div>
+    <p>A2A는 Google이 2025년 4월 공개한 뒤 관리하는 곳과 규격 버전이 여러 번 바뀌었다(FIG. 02).</p>
+
+    <div class="fig" id="fig2">
+      <svg viewBox="0 0 680 262" role="img" aria-label="A2A timeline: announced by Google in April 2025, Linux Foundation project in June 2025, IBM's Agent Communication Protocol merged in August 2025, v1.0 in March 2026, joined the Agentic AI Foundation in August 2026, official CLI in September 2026">
+        <path d="M92 22 L92 236" stroke="#A8A29E" stroke-width="1"/>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <circle cx="92" cy="26" r="5"/><circle cx="92" cy="68" r="5"/><circle cx="92" cy="110" r="5"/>
+          <circle cx="92" cy="194" r="5"/><circle cx="92" cy="236" r="5"/>
+        </g>
+        <circle cx="92" cy="152" r="6" fill="#1C1917"/>
+        <g fill="#78716C" font-size="10" font-family="IBM Plex Mono, monospace">
+          <text x="0" y="30">2025-04</text><text x="0" y="72">2025-06</text><text x="0" y="114">2025-08</text>
+          <text x="0" y="156">2026-03</text><text x="0" y="198">2026-08</text><text x="0" y="240">2026-09</text>
+        </g>
+        <g fill="#1C1917" font-size="11.5" font-weight="600">
+          <text x="112" y="24">Google announces A2A</text>
+          <text x="112" y="66">becomes a Linux Foundation project</text>
+          <text x="112" y="108">IBM's Agent Communication Protocol merges into A2A</text>
+          <text x="112" y="150">v1.0, the first stable spec</text>
+          <text x="112" y="192">joins the Agentic AI Foundation (AAIF)</text>
+          <text x="112" y="234">official a2a CLI 0.3.0</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="112" y="39">more than 50 technology partners</text>
+          <text x="112" y="81">vendor-neutral governance</text>
+          <text x="112" y="123">not the Agent Client Protocol of week 08</text>
+          <text x="112" y="165">signed cards, multi-tenancy, version negotiation (A2A-Version)</text>
+          <text x="112" y="207">more than 150 organizations; MCP is an AAIF project too</text>
+          <text x="112" y="249">official SDKs in Python, Go, JavaScript, Java, .NET, Rust</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 02</b> A2A, from announcement to AAIF</span><span>sources: a2aproject on GitHub, aaif.io</span></div>
+    </div>
+
+    <p>2025년 8월에는 IBM이 만든 Agent Communication Protocol이 A2A에 합쳐졌다. 8주차에 다룰 Agent Client Protocol과는 약자만 같은 다른 규격이다.</p>
+
+    <p>2026년 3월에 나온 v1.0은 첫 안정 버전이다. 카드 서명, 주소 하나에 에이전트 여러 개를 두는 multi-tenancy, <code class="inline">A2A-Version</code> 헤더로 하는 버전 협상이 이때 들어갔다.</p>
+
+    <p>2026년 8월 A2A는 Linux Foundation 산하 Agentic AI Foundation(AAIF)의 프로젝트가 됐다. 5주차 MCP도 AAIF 프로젝트다. AAIF는 자기 프로젝트들을 맡는 층으로 나눠 소개하는데, MCP는 에이전트와 tool을 잇고 A2A는 에이전트와 에이전트를 잇는다(FIG. 03).</p>
+
+    <div class="fig" id="fig3">
+      <svg viewBox="0 0 680 246" role="img" aria-label="The layers AAIF assigns to its projects: AGENTS.md for instructions and context, goose for the agent runtime, MCP for agent to tool, agentgateway for traffic, A2A for agent to agent">
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="14" y="14">PROJECT</text><text x="170" y="14">LAYER</text><text x="530" y="14">IN THIS COURSE</text>
+        </g>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="0" y="24" width="680" height="38"/>
+          <rect x="0" y="68" width="680" height="38"/>
+          <rect x="0" y="112" width="680" height="38"/>
+          <rect x="0" y="156" width="680" height="38"/>
+        </g>
+        <rect x="0" y="200" width="680" height="38" fill="#FAFAF9" stroke="#1C1917" stroke-width="2.5"/>
+        <g fill="#1C1917" font-size="11.5" font-weight="600">
+          <text x="14" y="47">AGENTS.md</text>
+          <text x="14" y="91">goose</text>
+          <text x="14" y="135">MCP</text>
+          <text x="14" y="179">agentgateway</text>
+          <text x="14" y="223">A2A</text>
+        </g>
+        <g fill="#1C1917" font-size="10.5">
+          <text x="170" y="47">instructions and context for agents</text>
+          <text x="170" y="91">agent runtime: reasons, plans, calls capabilities</text>
+          <text x="170" y="135">agent to tool: tools, data sources, services</text>
+          <text x="170" y="179">traffic: routing, policy, observability</text>
+          <text x="170" y="223" font-weight="600">agent to agent: discover, delegate, exchange results</text>
+        </g>
+        <g fill="#78716C" font-size="10">
+          <text x="530" y="135">week 05</text>
+          <text x="530" y="223" fill="#1C1917" font-weight="600">week 06</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 03</b> Where A2A sits in the AAIF stack</span><span>layers as AAIF describes them, aaif.io</span></div>
+    </div>
+
+    <p>AAIF 발표에 따르면 A2A를 지원하는 조직은 150곳이 넘는다. 공개 때는 50곳 넘는 기술 파트너가 참여했다. 발표에 실린 사용처다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>분야</th><th>사례</th></tr>
+        <tr><td class="stage">모바일 OS</td><td>Huawei HarmonyOS의 비서 Celia가 앱 안의 에이전트에게 오래 걸리는 일을 넘기고, 앱 화면 조작과 추천을 요청한다. WeChat은 이 연결로 AI 비서가 거는 메시지, 음성 통화, 영상 통화를 받는다</td></tr>
+        <tr><td class="stage">클라우드</td><td>Google Cloud는 ADK, Agent Engine, Cloud Run, GKE로 A2A 에이전트를 만들고 배포한다. Microsoft Azure AI Foundry의 에이전트는 A2A endpoint를 공개하고 표준 discovery로 외부 에이전트를 찾는다. AWS Bedrock AgentCore는 A2A server를 호스팅하고 운영한다</td></tr>
+        <tr><td class="stage">결제</td><td>Google Cloud와 PayPal의 Agent Payments Protocol(AP2). 쇼핑 에이전트와 가게 에이전트가 A2A로 상품과 가격을 주고받고, AP2가 결제 승인을 맡는다</td></tr>
+        <tr><td class="stage">프레임워크</td><td>LangGraph, CrewAI, Pydantic AI, AG2, IBM BeeAI</td></tr>
+      </table>
+    </div>
+
+    <p>2026년 9월에는 공식 CLI <code class="inline">a2a</code>가 나왔다(0.3.0, 프로젝트 블로그 소개는 10월 1일). 터미널에서 카드를 받고, 메시지를 보내고, task를 조회하고 취소한다. 같은 저장소에는 Claude Code, Cursor, Codex 같은 coding agent가 이 CLI로 원격 A2A 에이전트에게 일을 넘기게 하는 skill도 들어 있다.</p>
+
+    <p>2026년 9월 15일에 고친 로드맵에는 이런 항목이 올라 있다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>항목</th><th>내용</th></tr>
+        <tr><td class="stage">v1.1</td><td>task 진행 기록 규격, 이벤트 필터, WORKING 상태에서 받은 메시지를 다루는 규칙</td></tr>
+        <tr><td class="stage">BiDi streaming</td><td>에이전트가 일하는 동안에도 메시지를 계속 주고받는다</td></tr>
+        <tr><td class="stage">CLI</td><td>coding agent가 CLI로 A2A 에이전트를 부르게 한다</td></tr>
+        <tr><td class="stage">협상과 elicitation</td><td>사람에게 구조화된 입력을 받는 방식, 여러 차례 오가는 협상 패턴. 협상 패턴은 통신 업계 사례에서 나왔다</td></tr>
+      </table>
+    </div>
+
+    <p>실습 가게의 흥정 규칙(처음 부르는 값, 역제안, 몇 번 만에 거절하는지)은 지금 규격에 없고 가게 코드에만 있다.</p>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A3</span><h2>Agent Card: 일을 맡길 에이전트 찾기</h2></div>
+    <p>A2A server는 Agent Card를 반드시 공개해야 한다(MUST). Agent Card는 에이전트의 이름, 설명, 요청을 받는 주소, 지원하는 기능, skill 목록을 담은 JSON 문서이고, 기본 위치는 <code class="inline">https://{도메인}/.well-known/agent-card.json</code>이다. 실습에서 띄울 가게 에이전트의 카드다.</p>
+
+    <div class="code"><span class="file">GET http://127.0.0.1:9999/.well-known/agent-card.json</span><pre>{
+  <span class="st">"name"</span>: <span class="st">"Lamp Shop"</span>,
+  <span class="st">"description"</span>: <span class="st">"Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer."</span>,
+  <span class="st">"supportedInterfaces"</span>: [
+    { <span class="st">"url"</span>: <span class="st">"http://127.0.0.1:9999/"</span>, <span class="st">"protocolBinding"</span>: <span class="st">"JSONRPC"</span>, <span class="st">"protocolVersion"</span>: <span class="st">"1.0"</span> }
+  ],
+  <span class="st">"version"</span>: <span class="st">"1.0.0"</span>,
+  <span class="st">"capabilities"</span>: { <span class="st">"streaming"</span>: true },
+  <span class="st">"defaultInputModes"</span>: [<span class="st">"text/plain"</span>],
+  <span class="st">"defaultOutputModes"</span>: [<span class="st">"application/json"</span>, <span class="st">"text/plain"</span>],
+  <span class="st">"skills"</span>: [
+    {
+      <span class="st">"id"</span>: <span class="st">"negotiate"</span>,
+      <span class="st">"name"</span>: <span class="st">"Negotiate a purchase"</span>,
+      <span class="st">"description"</span>: <span class="st">"Ask for an item, then send a price. The shop answers with a counteroffer or a receipt."</span>,
+      <span class="st">"tags"</span>: [<span class="st">"shopping"</span>, <span class="st">"negotiation"</span>],
+      <span class="st">"examples"</span>: [<span class="st">"I want to buy a lamp"</span>, <span class="st">"90"</span>]
+    }
+  ]
+}</pre></div>
+
+    <p><code class="inline">supportedInterfaces</code>는 요청을 받는 주소와 방식이다. v1.0에는 JSON-RPC, gRPC, HTTP+JSON(REST) binding이 정의돼 있고, server는 지원하는 것을 선호하는 순서대로 적는다. client는 이 목록에서 자기가 쓸 수 있는 첫 항목을 고른다. 실습 가게는 JSON-RPC만 지원한다.</p>
+
+    <p><code class="inline">skills</code>는 에이전트가 할 수 있는 일을 사람이 읽는 말로 적은 목록이다. 5주차 tool과 달리 인자 형식(JSON Schema)이 없다. client 쪽 모델이 설명과 예시(<code class="inline">examples</code>)를 읽고 무엇을 어떻게 보낼지 정한다.</p>
+
+    <div class="fig" id="fig4">
+      <svg viewBox="0 0 680 236" role="img" aria-label="Discovery sequence: the client fetches the agent card from the well-known path, picks the JSON-RPC interface, and sends SendMessage with the A2A-Version header">
+        <defs>
+          <marker id="f2-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f2-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="20" y="8" width="180" height="34"/>
+          <rect x="470" y="8" width="180" height="34"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">
+          <text x="110" y="29">buyer (A2A client)</text>
+          <text x="560" y="29">Lamp Shop (A2A server)</text>
+        </g>
+        <g stroke="#A8A29E" stroke-width="1" stroke-dasharray="3 4">
+          <path d="M110 42 L110 222"/><path d="M560 42 L560 222"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M110 78 L559 78" marker-end="url(#f2-ah)"/>
+          <path d="M110 172 L559 172" marker-end="url(#f2-ah)"/>
+        </g>
+        <g fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4">
+          <path d="M560 108 L111 108" marker-end="url(#f2-ahd)"/>
+          <path d="M560 204 L111 204" marker-end="url(#f2-ahd)"/>
+        </g>
+        <g fill="#A8A29E" font-size="9.5">
+          <text x="0" y="75">1</text><text x="0" y="105">2</text><text x="0" y="141">3</text><text x="0" y="169">4</text><text x="0" y="201">5</text>
+        </g>
+        <g fill="#1C1917" font-size="10">
+          <text x="124" y="72">GET /.well-known/agent-card.json</text>
+          <text x="124" y="102">Agent Card: skills, supportedInterfaces</text>
+          <text x="124" y="166">POST /   SendMessage   A2A-Version: 1.0</text>
+          <text x="124" y="198">task: TASK_STATE_INPUT_REQUIRED</text>
+        </g>
+        <text x="124" y="141" fill="#78716C" font-size="9.5">reads the skills, picks the first interface it supports (JSONRPC)</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 04</b> Discovery, then the first message</span><span>the card is a plain HTTP GET</span></div>
+    </div>
+
+    <p>client는 잘 알려진 주소(well-known URI) 말고도, 카드를 모아 둔 registry에서 찾거나 미리 설정해 둔 카드 주소를 쓸 수 있다.</p>
+
+    <h3><span class="tag">TRY IT</span>가게 카드 받아 보기</h3>
+    <p>LAB STEP 1 준비를 먼저 끝내고, STEP 4의 <code class="inline">seller_agent.py</code>를 파일로 저장해 둔다. 터미널 1에서 가게를 띄우고, 터미널 2에서 카드를 CLI와 curl로 한 번씩 받는다.</p>
+
+    <div class="code"><span class="file">터미널 1</span><pre>python seller_agent.py               <span class="cm"># http://127.0.0.1:9999</span></pre></div>
+    <div class="code"><span class="file">터미널 2</span><pre>a2a card get http://127.0.0.1:9999
+curl -s http://127.0.0.1:9999/.well-known/agent-card.json | python -m json.tool</pre></div>
+
+    <p>두 출력에서 <code class="inline">supportedInterfaces</code>와 <code class="inline">skills</code>를 찾는다. skill에는 인자 형식(JSON Schema)이 없다.</p>
+
+    <h3><span class="tag">FIPA</span>Directory Facilitator: FIPA의 에이전트 찾기</h3>
+    <p>FIPA 규격에서 에이전트는 에이전트 플랫폼(agent platform) 위에서 돌아간다. AMS(Agent Management System)는 플랫폼마다 하나씩 있고, 에이전트의 이름과 주소를 관리한다. 규격은 AMS를 white pages, DF(Directory Facilitator)를 yellow pages라고 부른다. 전화번호부의 인명편과 업종편을 가리키는 말로, AMS에서는 이름으로, DF에서는 서비스 종류로 상대를 찾는다.</p>
+
+    <p>에이전트는 DF에 register, deregister, modify, search를 요청할 수 있다. 요청은 4주차의 FIPA-ACL 메시지로 보내고, 절차는 fipa-request를 따른다. 램프 가게가 DF에 등록하는 메시지를 FIPA 형식으로 쓰면 이렇다.</p>
+
+    <div class="code"><span class="file">FIPA-ACL: DF에 가게 등록하기 (SC00023K 형식으로 쓴 예)</span><pre>(<span class="kw">request</span>
+  :sender   (agent-identifier :name lamp-shop@shop.example)
+  :receiver (set (agent-identifier :name df@platform.example))
+  :language fipa-sl0
+  :ontology FIPA-Agent-Management
+  :protocol fipa-request
+  :content
+    <span class="st">"((action (agent-identifier :name df@platform.example)
+        (register
+          (df-agent-description
+            :name (agent-identifier :name lamp-shop@shop.example)
+            :protocols (set fipa-request)
+            :languages (set fipa-sl0)
+            :services (set (service-description
+                             :name lamp-sale
+                             :type furniture-seller))))))"</span>)</pre></div>
+
+    <p>buyer는 같은 <code class="inline">df-agent-description</code> 형식에 찾는 조건(예: <code class="inline">:type furniture-seller</code>)만 적어 DF에 search를 보내고, 조건에 맞는 에이전트 목록을 받는다. 규격은 DF를 에이전트 목록을 맡는 믿을 만한 관리자로 정의하고, 목록을 정확하고 빠짐없이 최신으로 유지하려 애써야 한다고 적는다.</p>
+
+    <p>A2A에는 이런 중앙 목록이 필수가 아니다. 에이전트마다 자기 주소에 카드를 올리고, client가 카드를 직접 받는다. registry는 필요할 때 쓴다(FIG. 05). DF 등록 정보와 Agent Card는 하는 일이 같다. 서비스 이름과 종류는 skill로, 지원하는 protocol과 language는 <code class="inline">supportedInterfaces</code>와 입출력 형식(<code class="inline">defaultInputModes</code>)으로 옮겨 갔다.</p>
+
+    <div class="fig" id="fig5">
+      <svg viewBox="0 0 680 248" role="img" aria-label="FIPA: agents register with one Directory Facilitator and buyers search it. A2A: each agent serves its own card; the buyer fetches cards directly, a registry is optional">
+        <defs>
+          <marker id="f3-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f3-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="16">FIPA: ONE DIRECTORY PER PLATFORM</text>
+          <text x="370" y="16">A2A: EACH AGENT SERVES ITS OWN CARD</text>
+        </g>
+        <path d="M340 30 L340 220" stroke="#E7E5E4" stroke-width="1"/>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="0" y="40" width="90" height="30"/>
+          <rect x="0" y="107" width="90" height="30"/>
+          <rect x="0" y="174" width="90" height="30"/>
+          <rect x="370" y="104" width="100" height="36"/>
+          <rect x="540" y="36" width="140" height="44"/>
+          <rect x="540" y="110" width="140" height="44"/>
+        </g>
+        <rect x="180" y="96" width="120" height="52" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
+        <rect x="540" y="184" width="140" height="34" fill="#FFFFFF" stroke="#78716C" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M90 55 L179 108" marker-end="url(#f3-ah)"/>
+          <path d="M90 122 L179 122" marker-end="url(#f3-ah)"/>
+          <path d="M90 189 L179 136" marker-end="url(#f3-ah)"/>
+          <path d="M470 116 L539 64" marker-end="url(#f3-ah)"/>
+          <path d="M470 124 L539 130" marker-end="url(#f3-ah)"/>
+        </g>
+        <path d="M470 134 L539 196" fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#f3-ahd)"/>
+        <g text-anchor="middle" fill="#1C1917" font-size="11" font-weight="600">
+          <text x="45" y="59">seller 1</text><text x="45" y="126">seller 2</text><text x="45" y="193">buyer</text>
+          <text x="240" y="119">DF</text>
+          <text x="420" y="126">buyer</text>
+          <text x="610" y="55">North Shop</text><text x="610" y="129">South Shop</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="9.5">
+          <text x="240" y="136">yellow pages</text>
+          <text x="610" y="71">agent-card.json</text><text x="610" y="145">agent-card.json</text>
+          <text x="610" y="205">registry (optional)</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="96" y="94">register</text>
+          <text x="112" y="186">search</text>
+          <text x="372" y="158">GET card</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="0" y="240">sellers register; the buyer searches one place</text>
+          <text x="370" y="240">the buyer fetches each card from its agent</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 05</b> Directory Facilitator and Agent Card</span><span>the directory became optional</span></div>
+    </div>
+
+    <p>카드의 내용은 에이전트를 만든 쪽이 직접 쓴다. 3주차 Contract Net의 bid, 5주차의 tool 설명도 그랬다. v1.0에서는 카드에 JWS 서명을 붙일 수 있어서, 카드를 누가 냈는지와 중간에 바뀌지 않았는지는 확인할 수 있다. 카드에 적힌 문장이 사실인지 확인하는 절차는 규격에 없다.</p>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A4</span><h2>Task: 맡긴 일의 상태와 결과물</h2></div>
+    <p>client는 <code class="inline">SendMessage</code>로 메시지를 보낸다. server는 바로 답할 수 있는 질문이면 메시지 하나로 답하고, 시간이 걸리거나 말이 오가야 하는 일이면 task를 만들어 돌려준다. 실습 가게에 a2a CLI로 &ldquo;I want to buy a lamp&rdquo;를 보내면 task가 온다.</p>
+
+    <div class="code"><span class="file">lab/logs/lab-cli.txt</span><pre>$ a2a send -a http://127.0.0.1:9999 <span class="st">"I want to buy a lamp"</span>
+Task:     a7b1e3f3-9530-4eb2-b84c-cac830752ff3
+Context:  8718ea6a-4c6d-4ccc-a416-57ff708de2f2
+Status:   input-required (2026-10-13T05:21:00Z)
+  lamp: asking 130. Send your offer as a number.
+History:
+  [user] I want to buy a lamp
+
+Resume:     a2a send --task-id a7b1e3f3-9530-4eb2-b84c-cac830752ff3 <span class="st">"&lt;reply&gt;"</span></pre></div>
+
+    <p><code class="inline">Task</code>는 server가 만든 task 번호이고, 이 일에 대한 다음 메시지에는 이 번호를 붙인다. CLI에서는 <code class="inline">--task-id</code>로 붙이고, 마지막 줄 <code class="inline">Resume</code>이 그 명령을 보여 준다. <code class="inline">Context</code>는 관련된 task와 메시지를 한 대화로 묶는 번호다. <code class="inline">Status</code>에는 현재 상태와 가게가 한 말이, <code class="inline">History</code>에는 지금까지 오간 메시지가 들어 있다. 일이 끝나면 결과물이 <code class="inline">Artifacts</code>에 붙는다. <code class="inline">-o json</code>을 붙이면 같은 내용이 규격의 필드 이름(<code class="inline">id</code>, <code class="inline">contextId</code>, <code class="inline">status</code>, <code class="inline">history</code>, <code class="inline">artifacts</code>)으로 나온다(FIG. 06).</p>
+
+    <div class="fig" id="fig6">
+      <svg viewBox="0 0 680 270" role="img" aria-label="Task anatomy: a task has id, contextId, status, history of messages, and artifacts; messages and artifacts are made of parts; a part holds text, raw bytes, a url, or JSON data">
+        <defs>
+          <marker id="f4-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="0" y="24" width="330" height="170"/>
+          <rect x="390" y="24" width="290" height="84"/>
+          <rect x="390" y="122" width="290" height="72"/>
+        </g>
+        <rect x="390" y="208" width="290" height="52" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M330 144 L389 66" marker-end="url(#f4-ah)"/>
+          <path d="M330 168 L389 158" marker-end="url(#f4-ah)"/>
+          <path d="M390 96 L372 96 L372 234 L389 234" marker-end="url(#f4-ah)"/>
+          <path d="M390 182 L372 182"/>
+        </g>
+        <g fill="#1C1917" font-size="12" font-weight="600">
+          <text x="14" y="46">Task</text>
+          <text x="404" y="46">Message</text>
+          <text x="404" y="144">Artifact</text>
+          <text x="404" y="230">Part</text>
+        </g>
+        <g fill="#1C1917" font-size="10.5">
+          <text x="14" y="72">id</text>
+          <text x="14" y="96">contextId</text>
+          <text x="14" y="120">status</text>
+          <text x="14" y="144">history</text>
+          <text x="14" y="168">artifacts</text>
+          <text x="404" y="68">role</text>
+          <text x="404" y="98">parts</text>
+          <text x="404" y="168">name</text>
+          <text x="404" y="186">parts</text>
+        </g>
+        <g fill="#78716C" font-size="10">
+          <text x="100" y="72">made by the server, unique</text>
+          <text x="100" y="96">groups related tasks</text>
+          <text x="100" y="120">state, message, timestamp</text>
+          <text x="100" y="144">[ Message, ... ]</text>
+          <text x="100" y="168">[ Artifact, ... ]</text>
+          <text x="460" y="68">ROLE_USER or ROLE_AGENT</text>
+          <text x="404" y="82">messageId, taskId, contextId</text>
+          <text x="460" y="98">[ Part, ... ]</text>
+          <text x="460" y="168">"receipt"</text>
+          <text x="460" y="186">[ Part, ... ]</text>
+          <text x="404" y="249">one of text, raw, url, data; plus mediaType</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 06</b> What a task carries</span><span>talk goes in messages, results go in artifacts</span></div>
+    </div>
+
+    <p>가게의 말(&ldquo;80 is too low&rdquo;)은 status의 message로 오고, 거래 결과는 artifact로 온다. 규격은 결과물을 메시지에 담지 말고 artifact로 돌려주라고 적는다(SHOULD). 메시지와 artifact는 모두 Part로 이뤄진다. Part 하나에는 text, raw(파일 바이트), url(파일 주소), data(JSON 값) 가운데 하나가 들어가고, 내용의 형식은 <code class="inline">mediaType</code>에 적는다. 실습 가게의 영수증은 data Part라서 받는 쪽 코드가 <code class="inline">price</code>를 바로 꺼내 쓴다.</p>
+
+    <p>JSON에서 task 상태 값은 <code class="inline">TASK_STATE_INPUT_REQUIRED</code> 형태다. CLI 화면에는 <code class="inline">input-required</code>처럼 줄여서 나온다. 이 소문자 표기는 v0.3까지 규격의 실제 값이었으므로, 인터넷 예제 코드가 JSON에서 소문자 값을 비교하면 v0.3 기준이다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>상태</th><th>뜻</th><th>종류</th></tr>
+        <tr><td class="stage">SUBMITTED</td><td>접수됨</td><td><span class="m">active</span></td></tr>
+        <tr><td class="stage">WORKING</td><td>처리 중</td><td><span class="m">active</span></td></tr>
+        <tr><td class="stage">INPUT_REQUIRED</td><td>client의 입력을 기다리며 멈춤</td><td><span class="m">interrupted</span></td></tr>
+        <tr><td class="stage">AUTH_REQUIRED</td><td>인증을 기다리며 멈춤</td><td><span class="m">interrupted</span></td></tr>
+        <tr><td class="stage">COMPLETED</td><td>성공해서 끝남</td><td><span class="m">terminal</span></td></tr>
+        <tr><td class="stage">FAILED</td><td>오류로 끝남</td><td><span class="m">terminal</span></td></tr>
+        <tr><td class="stage">CANCELED</td><td>client가 취소해서 끝남</td><td><span class="m">terminal</span></td></tr>
+        <tr><td class="stage">REJECTED</td><td>에이전트가 일을 맡지 않기로 해서 끝남</td><td><span class="m">terminal</span></td></tr>
+      </table>
+    </div>
+
+    <p>interrupted 상태의 task는 client가 같은 <code class="inline">taskId</code>로 메시지를 보내면 다시 진행된다. terminal 상태의 task에는 메시지를 더 보낼 수 없고, 보내면 server가 오류를 돌려준다.</p>
+
+    <div class="fig" id="fig7">
+      <svg viewBox="0 0 680 304" role="img" aria-label="Task state machine: submitted to working; working to input-required or auth-required and back when the client answers; working to the terminal states completed, failed, canceled, rejected">
+        <defs>
+          <marker id="f5-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f5-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="0" y="124" width="140" height="36"/>
+          <rect x="200" y="124" width="140" height="36"/>
+          <rect x="190" y="28" width="160" height="36"/>
+          <rect x="190" y="220" width="160" height="36"/>
+        </g>
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5">
+          <rect x="480" y="20" width="200" height="40"/>
+          <rect x="480" y="86" width="200" height="40"/>
+          <rect x="480" y="152" width="200" height="40"/>
+          <rect x="480" y="218" width="200" height="40"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="0.8">
+          <rect x="483" y="23" width="194" height="34"/>
+          <rect x="483" y="89" width="194" height="34"/>
+          <rect x="483" y="155" width="194" height="34"/>
+          <rect x="483" y="221" width="194" height="34"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M140 142 L199 142" marker-end="url(#f5-ah)"/>
+          <path d="M255 124 L255 65" marker-end="url(#f5-ah)"/>
+          <path d="M255 160 L255 219" marker-end="url(#f5-ah)"/>
+          <path d="M340 136 L479 42" marker-end="url(#f5-ah)"/>
+          <path d="M340 140 L479 106" marker-end="url(#f5-ah)"/>
+          <path d="M340 144 L479 172" marker-end="url(#f5-ah)"/>
+          <path d="M340 148 L479 236" marker-end="url(#f5-ah)"/>
+        </g>
+        <g fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4">
+          <path d="M285 64 L285 123" marker-end="url(#f5-ahd)"/>
+          <path d="M285 220 L285 161" marker-end="url(#f5-ahd)"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="11" font-weight="600">
+          <text x="70" y="146">SUBMITTED</text>
+          <text x="270" y="146">WORKING</text>
+          <text x="270" y="50">INPUT_REQUIRED</text>
+          <text x="270" y="242">AUTH_REQUIRED</text>
+          <text x="580" y="38">COMPLETED</text>
+          <text x="580" y="104">FAILED</text>
+          <text x="580" y="170">CANCELED</text>
+          <text x="580" y="236">REJECTED</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="9">
+          <text x="580" y="51">done, with artifacts</text>
+          <text x="580" y="117">error</text>
+          <text x="580" y="183">client called CancelTask</text>
+          <text x="580" y="249">agent declined the work</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="248" y="98" text-anchor="end">agent asks</text>
+          <text x="292" y="98">client replies,</text>
+          <text x="292" y="110">same taskId</text>
+          <text x="248" y="194" text-anchor="end">needs credentials</text>
+          <text x="292" y="194">client authenticates</text>
+        </g>
+        <text x="0" y="282" fill="#78716C" font-size="9.5">values are TASK_STATE_* in v1.0; double border = terminal, no further messages</text>
+        <text x="0" y="297" fill="#78716C" font-size="9.5">a server may skip WORKING: the lab shop goes from a new task straight to INPUT_REQUIRED or REJECTED</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 07</b> Task lifecycle, A2A v1.0</span><span>interrupted states wait for the client</span></div>
+    </div>
+
+    <p>실습 가게와의 거래를 상태 변화로 그리면 FIG. 08이다. 가게는 값을 부르고 입력을 기다리며 멈추고(INPUT_REQUIRED), buyer가 같은 <code class="inline">taskId</code>로 80을 보내자 105로 역제안했다. 105를 보내자 거래를 끝내고(COMPLETED) 영수증 artifact를 붙였다. 끝난 task에 110을 다시 보내자 UnsupportedOperationError가 왔다. JSON-RPC 오류 코드는 <code class="inline">-32004</code>이고, CLI에는 <code class="inline">UNSUPPORTED_OPERATION</code>으로 나온다.</p>
+
+    <div class="fig" id="fig8">
+      <svg viewBox="0 0 680 330" role="img" aria-label="Lab run: the buyer asks for a lamp, the shop asks 130, the buyer offers 80, the shop counters 105, the buyer sends 105, the task completes with a receipt artifact; a later message to the completed task gets error -32004">
+        <defs>
+          <marker id="f6-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f6-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="10" y="6" width="160" height="30"/>
+          <rect x="510" y="6" width="160" height="30"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">
+          <text x="90" y="25">buyer (a2a CLI)</text>
+          <text x="590" y="25">Lamp Shop</text>
+        </g>
+        <g stroke="#A8A29E" stroke-width="1" stroke-dasharray="3 4">
+          <path d="M90 36 L90 320"/><path d="M590 36 L590 320"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M90 66 L589 66" marker-end="url(#f6-ah)"/>
+          <path d="M90 130 L589 130" marker-end="url(#f6-ah)"/>
+          <path d="M90 194 L589 194" marker-end="url(#f6-ah)"/>
+          <path d="M90 282 L589 282" marker-end="url(#f6-ah)"/>
+        </g>
+        <g fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4">
+          <path d="M590 96 L91 96" marker-end="url(#f6-ahd)"/>
+          <path d="M590 160 L91 160" marker-end="url(#f6-ahd)"/>
+          <path d="M590 224 L91 224" marker-end="url(#f6-ahd)"/>
+          <path d="M590 312 L91 312" marker-end="url(#f6-ahd)"/>
+        </g>
+        <g fill="#1C1917" font-size="10">
+          <text x="104" y="60">SendMessage  "I want to buy a lamp"</text>
+          <text x="104" y="124">SendMessage  taskId=a7b1e3f3...  "80"</text>
+          <text x="104" y="188">SendMessage  taskId=a7b1e3f3...  "105"</text>
+          <text x="104" y="276">SendMessage  taskId=a7b1e3f3...  "110"</text>
+        </g>
+        <g fill="#1C1917" font-size="10">
+          <text x="104" y="90"><tspan font-weight="600">INPUT_REQUIRED</tspan>  "lamp: asking 130. Send your offer as a number."</text>
+          <text x="104" y="154"><tspan font-weight="600">INPUT_REQUIRED</tspan>  "80 is too low. Counteroffer: 105."</text>
+          <text x="104" y="218"><tspan font-weight="600">COMPLETED</tspan>  "Deal: lamp at 105."</text>
+          <text x="104" y="306"><tspan font-weight="600">UNSUPPORTED_OPERATION (-32004)</tspan>  task is in terminal state</text>
+        </g>
+        <text x="104" y="242" fill="#78716C" font-size="9.5">artifact "receipt": {"item": "lamp", "price": 105, "seller": "Lamp Shop"}</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 08</b> One purchase, one task</span><span>lab/logs/lab-cli.txt</span></div>
+    </div>
+
+    <h3><span class="tag">TRY IT</span>램프 한 번 사 보기</h3>
+    <p>앞에서 띄운 가게에 터미널 2에서 차례로 보낸다. <code class="inline">&lt;id&gt;</code>에는 첫 출력 마지막 줄 <code class="inline">Resume</code>의 task id를 넣는다.</p>
+
+    <div class="code"><span class="file">터미널 2</span><pre>a2a send -a http://127.0.0.1:9999 <span class="st">"I want to buy a lamp"</span>     <span class="cm"># input-required, asking 130</span>
+a2a send -a http://127.0.0.1:9999 --task-id &lt;id&gt; 80          <span class="cm"># Counteroffer: 105</span>
+a2a send -a http://127.0.0.1:9999 --task-id &lt;id&gt; 105         <span class="cm"># completed + receipt</span>
+a2a task get -a http://127.0.0.1:9999 &lt;id&gt; -o json           <span class="cm"># TASK_STATE_COMPLETED</span>
+a2a send -a http://127.0.0.1:9999 --task-id &lt;id&gt; 110         <span class="cm"># 끝난 task: 오류</span></pre></div>
+
+    <p><code class="inline">-o json</code>을 붙인 출력에서는 상태가 <code class="inline">TASK_STATE_COMPLETED</code>로 나온다. CLI 화면의 completed와 같은 값이다.</p>
+
+    <p>task가 오래 걸리면 client는 결과를 기다리는 방법을 고른다. <code class="inline">GetTask</code>로 상태를 다시 물을 수 있고(polling), <code class="inline">SendStreamingMessage</code>로 연결을 열어 둔 채 Server-Sent Events로 상태 변화를 받을 수 있다. client가 webhook 주소를 등록해 두면 server가 상태가 바뀔 때 그 주소로 알림을 보낸다(push notification). server는 streaming과 push notification을 지원하는지 Agent Card의 <code class="inline">capabilities</code>에 적는다.</p>
+
+    <div class="fig" id="fig9">
+      <svg viewBox="0 0 680 236" role="img" aria-label="Three ways to follow a long task: polling with GetTask, streaming over Server-Sent Events, and push notifications to a client webhook">
+        <defs>
+          <marker id="f7-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f7-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="40">POLLING</text>
+          <text x="0" y="118">STREAMING</text>
+          <text x="0" y="196">PUSH</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="0" y="56">the client asks again</text>
+          <text x="0" y="134">one open connection</text>
+          <text x="0" y="212">the server calls back</text>
+        </g>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="150" y="22" width="110" height="44"/><rect x="560" y="22" width="120" height="44"/>
+          <rect x="150" y="100" width="110" height="44"/><rect x="560" y="100" width="120" height="44"/>
+          <rect x="150" y="178" width="110" height="44"/><rect x="560" y="178" width="120" height="44"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="11" font-weight="600">
+          <text x="205" y="48">client</text><text x="620" y="48">agent</text>
+          <text x="205" y="126">client</text><text x="620" y="126">agent</text>
+          <text x="205" y="196">client</text><text x="620" y="204">agent</text>
+        </g>
+        <text x="205" y="211" text-anchor="middle" fill="#78716C" font-size="9">+ webhook URL</text>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M260 36 L559 36" marker-end="url(#f7-ah)"/>
+          <path d="M260 114 L559 114" marker-end="url(#f7-ah)"/>
+          <path d="M260 192 L559 192" marker-end="url(#f7-ah)"/>
+        </g>
+        <g fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4">
+          <path d="M560 54 L261 54" marker-end="url(#f7-ahd)"/>
+          <path d="M560 126 L261 126" marker-end="url(#f7-ahd)"/>
+          <path d="M560 134 L261 134" marker-end="url(#f7-ahd)"/>
+          <path d="M560 210 L261 210" marker-end="url(#f7-ahd)"/>
+        </g>
+        <g fill="#1C1917" font-size="9.5">
+          <text x="272" y="31">GetTask(id), repeated</text>
+          <text x="272" y="109">SendStreamingMessage</text>
+          <text x="272" y="187">CreateTaskPushNotificationConfig(url)</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="272" y="66">current task</text>
+          <text x="272" y="148">SSE: statusUpdate, artifactUpdate, ...</text>
+          <text x="272" y="226">POST to the webhook when the task changes</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 09</b> Following a long task</span><span>capabilities.streaming, capabilities.pushNotifications</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A5</span><h2>FIPA-ACL과 A2A</h2></div>
+    <p>4주차 FIPA-ACL 메시지의 칸을 A2A v1.0에 하나씩 대응시켰다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>FIPA-ACL (2002)</th><th>A2A v1.0</th><th>바뀐 점</th></tr>
+        <tr><td class="stage">performative</td><td>메시지에 해당 칸이 없다. task 상태가 일의 진행을 알린다</td><td>역제안은 INPUT_REQUIRED, 거래 성사는 COMPLETED와 artifact로 나타난다. 메시지가 어떤 행위인지는 받는 쪽이 글을 읽고 판단한다</td></tr>
+        <tr><td class="stage">:sender, :receiver</td><td><code class="inline">role</code>(ROLE_USER, ROLE_AGENT)과 요청을 받은 주소</td><td>보낸 쪽이 누구인지는 HTTP 인증으로 정한다. 카드의 <code class="inline">securitySchemes</code>에 방식을 적는다</td></tr>
+        <tr><td class="stage">:content</td><td>Part (text, raw, url, data)</td><td>자연어, 파일, JSON을 한 메시지에 섞을 수 있다</td></tr>
+        <tr><td class="stage">:language, :ontology</td><td>없음. <code class="inline">mediaType</code>만 있다</td><td>내용을 읽는 규칙을 미리 맞추지 않고 모델이 읽는다</td></tr>
+        <tr><td class="stage">:conversation-id</td><td><code class="inline">contextId</code></td><td>관련된 task와 메시지를 묶는다</td></tr>
+        <tr><td class="stage">:reply-with, :in-reply-to</td><td><code class="inline">taskId</code>, <code class="inline">messageId</code>, <code class="inline">referenceTaskIds</code></td><td>응답을 메시지 하나에 묶는 대신 task 하나에 묶는다</td></tr>
+        <tr><td class="stage">상호작용 프로토콜</td><td>task lifecycle 하나</td><td>fipa-request, fipa-contract-net처럼 절차를 골라 이름 붙이지 않는다. 모든 위임이 같은 상태 기계를 쓴다</td></tr>
+        <tr><td class="stage">DF</td><td>Agent Card, registry</td><td>카드는 에이전트마다 따로 공개한다</td></tr>
+        <tr><td class="stage">FP, RE</td><td>없음</td><td>메시지의 뜻을 믿음과 의도로 정의하는 부분이 빠졌다</td></tr>
+      </table>
+    </div>
+
+    <p>같은 램프 거래를 두 형식으로 적으면 FIG. 10이다. FIPA-ACL에서는 메시지마다 행위 이름이 붙는다. A2A에서 buyer가 보내는 &ldquo;105&rdquo;는 그냥 text이고, 그것을 수락으로 읽을지는 가게 에이전트가 정한다. 거래가 어디까지 왔는지는 task 상태로 정해진다. 역제안 중이면 INPUT_REQUIRED, 거래가 끝나면 COMPLETED다.</p>
+
+    <div class="fig" id="fig10">
+      <svg viewBox="0 0 680 290" role="img" aria-label="The same lamp purchase written as FIPA-ACL messages with act names and as A2A SendMessage calls with task states">
+        <defs>
+          <marker id="f8-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="16">FIPA-ACL (WEEK 04)</text>
+          <text x="360" y="16">A2A v1.0 (THIS WEEK'S LAB)</text>
+        </g>
+        <path d="M340 28 L340 248" stroke="#E7E5E4" stroke-width="1"/>
+        <g stroke="#E7E5E4" stroke-width="1">
+          <path d="M0 64 L330 64"/><path d="M0 100 L330 100"/><path d="M0 136 L330 136"/><path d="M0 172 L330 172"/><path d="M0 208 L330 208"/>
+          <path d="M360 64 L680 64"/><path d="M360 100 L680 100"/><path d="M360 136 L680 136"/><path d="M360 172 L680 172"/><path d="M360 208 L680 208"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M0 46 L22 46" marker-end="url(#f8-ah)"/><path d="M360 46 L382 46" marker-end="url(#f8-ah)"/>
+          <path d="M22 82 L1 82" marker-end="url(#f8-ah)"/><path d="M382 82 L361 82" marker-end="url(#f8-ah)"/>
+          <path d="M0 118 L22 118" marker-end="url(#f8-ah)"/><path d="M360 118 L382 118" marker-end="url(#f8-ah)"/>
+          <path d="M22 154 L1 154" marker-end="url(#f8-ah)"/><path d="M382 154 L361 154" marker-end="url(#f8-ah)"/>
+          <path d="M0 190 L22 190" marker-end="url(#f8-ah)"/><path d="M360 190 L382 190" marker-end="url(#f8-ah)"/>
+          <path d="M22 226 L1 226" marker-end="url(#f8-ah)"/><path d="M382 226 L361 226" marker-end="url(#f8-ah)"/>
+        </g>
+        <g fill="#1C1917" font-size="10.5">
+          <text x="34" y="50">(<tspan font-weight="600">cfp</tspan> :content "lamp")</text>
+          <text x="34" y="86">(<tspan font-weight="600">propose</tspan> :content 130)</text>
+          <text x="34" y="122">(<tspan font-weight="600">propose</tspan> :content 80)</text>
+          <text x="34" y="158">(<tspan font-weight="600">propose</tspan> :content 105)</text>
+          <text x="34" y="194">(<tspan font-weight="600">accept-proposal</tspan> :content 105)</text>
+          <text x="34" y="230">(<tspan font-weight="600">inform</tspan> :content (done ...))</text>
+          <text x="394" y="50">SendMessage "I want to buy a lamp"</text>
+          <text x="394" y="86"><tspan font-weight="600">INPUT_REQUIRED</tspan> "asking 130"</text>
+          <text x="394" y="122">SendMessage "80"</text>
+          <text x="394" y="158"><tspan font-weight="600">INPUT_REQUIRED</tspan> "Counteroffer: 105"</text>
+          <text x="394" y="194">SendMessage "105"</text>
+          <text x="394" y="230"><tspan font-weight="600">COMPLETED</tspan> + artifact "receipt"</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="0" y="270">→ buyer to seller, ← seller to buyer</text>
+          <text x="360" y="270">the act name is gone; the task state tracks the deal</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 10</b> One deal, two protocols</span><span>bold = what says how far the deal got</span></div>
+    </div>
+
+    <p>4주차에 정리한 FIPA-ACL의 한계를 A2A와 나란히 놓았다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>한계</th><th>FIPA-ACL (2002)</th><th>A2A v1.0</th></tr>
+        <tr><td class="stage">의미론 검증</td><td>메시지의 뜻을 보내는 쪽의 믿음과 의도로 정의했다. 그 믿음을 밖에서 확인할 방법이 없었다</td><td>메시지의 뜻을 정의하지 않는다. Agent Card의 주장을 확인하는 절차도 없다. 카드 서명은 누가 냈는지만 보증한다</td></tr>
+        <tr><td class="stage">추론</td><td>구현은 performative 이름으로 분기하는 데 그쳤다</td><td>양쪽 모델이 자연어 메시지를 읽고 다음 행동을 정한다</td></tr>
+        <tr><td class="stage">ontology 합의</td><td><code class="inline">:language</code>와 <code class="inline">:ontology</code>를 미리 맞춰야 했다</td><td>mediaType만 적고, 내용은 모델이 읽는다</td></tr>
+        <tr><td class="stage">채택</td><td>이 규격을 쓸 에이전트가 생기기 전에 나왔다</td><td>150곳 넘는 조직과 주요 클라우드가 지원한다. npm 다운로드는 MCP SDK의 5.5%다(아래)</td></tr>
+      </table>
+    </div>
+
+    <div class="recorder">
+      <div><span class="k">@a2a-js/sdk</span><span class="v"><span class="m">14,375,741</span></span></div>
+      <div><span class="k">@modelcontextprotocol/sdk</span><span class="v"><span class="m">262,400,393</span></span></div>
+    </div>
+    <p class="small">npm 공개 다운로드 통계(api.npmjs.org), 2026년 9월 11일부터 10월 10일까지 30일. CI와 의존성 설치가 섞인 수치라 사용자 수와 같지 않다.</p>
+
+    <p>A2A는 위임의 조건을 적는 칸도 비워 두었다. 얼마까지 써도 되는지, 누구의 이름으로 사는지, 결과를 무엇으로 확인하는지를 task에 적을 곳이 없다. 과제의 buyer도 예산을 하네스 프롬프트나 자기 코드에만 들고 있다. 7주차에는 이 조건을 위임과 함께 넘기고 검증하는 계약을 만든다.</p>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="open">
+      <div class="lbl">DISCUSSION: Agent Card의 주장을 누가 확인하는가</div>
+      <ol>
+        <li>어떤 가게의 카드에 &ldquo;lowest prices in town&rdquo;이라고 적혀 있다. client의 모델, registry, 카드 서명, 거래 뒤에 쌓이는 평판 가운데 이 문장을 확인할 수 있는 것은 무엇인가. 3주차 overconfident contractor의 bid와 무엇이 같고 무엇이 다른가.</li>
+        <li>A2A에서 &ldquo;105&rdquo;를 수락으로 읽을지는 가게 에이전트가 정한다. FIPA처럼 accept-proposal을 붙여 보내는 편이 나은 경우는 언제인가. 4주차 tagged 조건의 결과로 답한다.</li>
+        <li>원격 에이전트는 opaque하다. 거래가 잘못됐을 때 client가 증거로 남길 수 있는 것은 task history와 artifact뿐이다. 이것으로 누가 잘못했는지 가릴 수 있는가. 더 필요한 것은 무엇인가.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PART B ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART B: LAB</div>
+    <h2>A2A server를 띄우고 가게와 거래한다</h2>
+    <div class="meta">GOAL: run the echo server, a hello agent, and a rule-based seller as A2A servers; take one purchase to COMPLETED with the a2a CLI and reach REJECTED and CANCELED once each</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">LAB</span><h2>A2A server 세 개를 차례로 띄운다</h2></div>
+    <p>코드 없이 띄우는 echo server, 30줄짜리 hello 에이전트, 흥정하는 가게 에이전트 순서로 A2A server를 띄우고, 공식 CLI <code class="inline">a2a</code>로 말을 건다. 모델을 부르지 않으므로 API 키가 필요 없다. 터미널 두 개를 쓴다. 터미널 1에서는 server를 띄워 두고, 터미널 2에서 CLI 명령을 보낸다.</p>
+
+    <h3><span class="tag">STEP 1</span>준비</h3>
+    <p>Python은 3.10 이상이어야 한다. <code class="inline">python3 --version</code>이 그보다 낮으면 python.org나 <code class="inline">brew install python@3.12</code>로 새로 설치한다. 참조 실행은 Python 3.12, a2a-sdk 1.2.2, uvicorn 0.54.0, a2a CLI 0.3.0이다.</p>
+
+    <div class="code"><span class="file">터미널 1</span><pre>python3 --version                    <span class="cm"># 3.10 이상</span>
+mkdir a2a-lab &amp;&amp; cd a2a-lab
+python3 -m venv .venv
+source .venv/bin/activate            <span class="cm"># Windows: .venv\Scripts\activate</span>
+pip install <span class="st">"a2a-sdk[http-server]"</span> uvicorn
+
+<span class="cm"># a2a CLI: macOS, Linux</span>
+brew tap a2aproject/a2a-cli https://github.com/a2aproject/a2a-cli
+brew trust --formula a2aproject/a2a-cli/a2a   <span class="cm"># Homebrew가 untrusted tap이라며 거절할 때</span>
+brew install a2a
+<span class="cm"># a2a CLI: Windows</span>
+winget install a2aproject.a2acli
+
+a2a version                          <span class="cm"># a2a 0.3.0</span></pre></div>
+
+    <h3><span class="tag">STEP 2</span>코드 없이 A2A server 띄우기</h3>
+    <p>CLI에는 받은 말을 그대로 돌려주는 echo server가 들어 있다. 터미널 1에서 띄우고, 터미널 2에서 메시지를 보낸다.</p>
+
+    <div class="code"><span class="file">터미널 1</span><pre>a2a server --echo --port 8080</pre></div>
+    <div class="code"><span class="file">터미널 2</span><pre>$ a2a send -a http://localhost:8080 <span class="st">"hello A2A"</span>
+Task:     01a133e9-a808-741a-9718-61d315e93f75
+Context:  01a133e9-a808-7501-949a-7f2576fb38af
+Status:   completed (2026-10-13T15:18:33+09:00)
+Artifacts:
+  [01a133e9-a808-75b8-81eb-2483cf7cfcc9] hello A2A
+History:
+  [user] hello A2A</pre></div>
+
+    <p>메시지 하나가 task 하나가 됐고, 보낸 말이 artifact로 돌아왔다. <code class="inline">a2a card get http://localhost:8080</code>으로 echo server의 카드도 받아 본다. 확인했으면 터미널 1에서 Ctrl+C로 끈다.</p>
+
+    <h3><span class="tag">STEP 3</span>가장 작은 A2A server 만들기</h3>
+    <p>a2a-sdk로 만든 hello 에이전트다. 어떤 메시지가 와도 &ldquo;Hello! You said: &hellip;&rdquo;로 답하고 task를 끝낸다. A2A server에 꼭 있어야 하는 것만 넣었다.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>부분</th><th>하는 일</th></tr>
+        <tr><td class="stage">Hello.execute</td><td>메시지가 올 때마다 불린다. task를 만들고, 답을 붙여 completed로 바꾼다</td></tr>
+        <tr><td class="stage">card</td><td>Agent Card. 이름, 설명, 주소, skill을 적는다</td></tr>
+        <tr><td class="stage">handler, app</td><td>카드 경로(<code class="inline">/.well-known/agent-card.json</code>)와 JSON-RPC 경로(<code class="inline">/</code>)를 만들고 9000번 포트로 띄운다</td></tr>
+      </table>
+    </div>
+
+    <div class="code"><span class="file">hello_agent.py</span><pre>import uvicorn
+from starlette.applications import Starlette
+
+from a2a.helpers import get_message_text, new_task_from_user_message, new_text_part
+from a2a.server.agent_execution import AgentExecutor
+from a2a.server.request_handlers import DefaultRequestHandler
+from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
+from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
+from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+
+
+class Hello(AgentExecutor):
+    async def execute(self, context, event_queue):
+        task = new_task_from_user_message(context.message)<span class="cm">  # every message starts a new task</span>
+        await event_queue.enqueue_event(task)
+        up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
+        text = get_message_text(context.message)
+        await up.complete(up.new_agent_message(parts=[new_text_part(f"Hello! You said: {text}")]))
+
+    async def cancel(self, context, event_queue):
+        pass
+
+
+card = AgentCard(
+    name="Hello Agent",
+    description="Says hello back.",
+    version="1.0.0",
+    default_input_modes=["text/plain"],
+    default_output_modes=["text/plain"],
+    capabilities=AgentCapabilities(),
+    supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", url="http://127.0.0.1:9000/", protocol_version="1.0")],
+    skills=[AgentSkill(id="hello", name="Say hello", description="Replies to any message.", tags=["demo"])],
+)
+handler = DefaultRequestHandler(agent_executor=Hello(), task_store=InMemoryTaskStore(), agent_card=card)
+app = Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=9000)</pre></div>
+
+    <div class="code"><span class="file">터미널 1</span><pre>python hello_agent.py</pre></div>
+    <div class="code"><span class="file">터미널 2</span><pre>$ a2a card get http://127.0.0.1:9000
+Name:         Hello Agent
+Description:  Says hello back.
+Version:      1.0.0
+Interfaces:
+  JSONRPC      http://127.0.0.1:9000/
+Streaming:    false
+Skills:
+  hello                Say hello
+
+$ a2a send -a http://127.0.0.1:9000 <span class="st">"hi there"</span>
+Task:     880a8f06-469f-47c8-95f8-f8d5cf439a40
+Context:  d2932be2-8312-473d-b3a1-11626bc564dd
+Status:   completed (2026-10-13T06:18:53Z)
+  Hello! You said: hi there
+History:
+  [user] hi there</pre></div>
+
+    <p>터미널 1의 server 로그를 보면, <code class="inline">a2a send</code> 한 번에 요청이 두 개 찍힌다. 먼저 <code class="inline">GET /.well-known/agent-card.json</code>으로 카드를 읽고, 카드에 적힌 주소로 <code class="inline">POST /</code>를 보낸다(FIG. 04의 순서).</p>
+
+    <div class="code"><span class="file">터미널 1: server 로그</span><pre>INFO:     127.0.0.1:57854 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57854 - "POST / HTTP/1.1" 200 OK</pre></div>
+
+    <h3><span class="tag">STEP 4</span>가게 에이전트 띄우기</h3>
+    <p><code class="inline">seller_agent.py</code>는 hello 에이전트의 뼈대에 흥정 규칙을 넣은 것이다. 가게는 처음에 하한가(reserve)의 1.3배를 부르고, reserve 이상의 값이 오면 영수증 artifact를 붙여 거래를 끝낸다. 낮은 값이 오면 역제안하고, 낮은 값을 세 번 받으면 거래를 거절한다. 거래 중인 task는 <code class="inline">self.open</code>에 task id로 기억한다. 과제의 가게도 이 파일에서 시작할 수 있다.</p>
+
+    <div class="code"><span class="file">seller_agent.py</span><pre>"""A rule-based seller exposed as an A2A server (a2a-sdk 1.2.x, JSON-RPC binding).
+
+    python seller_agent.py                     <span class="cm">  # lamp shop on :9999</span>
+    python seller_agent.py --config cards/b.json # another seller from a config file
+
+No model inside: the seller asks for an offer (INPUT_REQUIRED), counters, and
+either closes with a receipt artifact (COMPLETED) or walks away (REJECTED).
+"""
+import argparse
+import json
+import math
+import re
+
+import uvicorn
+from starlette.applications import Starlette
+
+from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
+from a2a.server.agent_execution import AgentExecutor, RequestContext
+from a2a.server.events import EventQueue
+from a2a.server.request_handlers import DefaultRequestHandler
+from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
+from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
+from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+
+DEFAULT = {
+    "name": "Lamp Shop",
+    "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+    "skill_description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
+    "port": 9999,
+    "reserve": {"lamp": 100, "chair": 180, "bookshelf": 260},
+    "max_rounds": 3,
+}
+
+
+class Seller(AgentExecutor):
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.open = {}<span class="cm">  # task id -&gt; {"item", "ask", "rounds"}</span>
+
+    async def execute(self, context: RequestContext, event_queue: EventQueue) -&gt; None:
+        task = context.current_task
+        if task is None:
+            task = new_task_from_user_message(context.message)
+            await event_queue.enqueue_event(task)
+        up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
+        say = lambda text: up.new_agent_message(parts=[new_text_part(text)])
+        text = get_message_text(context.message) or ""
+        deal = self.open.get(task.id)
+
+        if deal is None:<span class="cm">  # first message: which item?</span>
+            item = next((k for k in self.cfg["reserve"] if k in text.lower()), None)
+            if item is None:
+                await up.reject(say("We only sell: " + ", ".join(self.cfg["reserve"]) + "."))
+                return
+            ask = math.ceil(self.cfg["reserve"][item] * 1.3)
+            self.open[task.id] = {"item": item, "ask": ask, "rounds": 0}
+            await up.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
+            return
+
+        m = re.search(r"\d+", text)
+        if m is None:
+            await up.requires_input(say("Send your offer as a number."))
+            return
+        offer, reserve = int(m.group()), self.cfg["reserve"][deal["item"]]
+        if offer &gt;= reserve:
+            receipt = {"seller": self.cfg["name"], "item": deal["item"], "price": offer}
+            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+            await up.complete(say(f"Deal: {deal['item']} at {offer}."))
+            del self.open[task.id]
+            return
+        deal["rounds"] += 1
+        if deal["rounds"] &gt;= self.cfg["max_rounds"]:
+            await up.reject(say(f"No deal at {offer}."))
+            del self.open[task.id]
+            return
+        deal["ask"] = max(reserve, (offer + deal["ask"]) // 2)
+        await up.requires_input(say(f"{offer} is too low. Counteroffer: {deal['ask']}."))
+
+    async def cancel(self, context: RequestContext, event_queue: EventQueue) -&gt; None:
+        task = context.current_task
+        self.open.pop(task.id, None)
+        await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
+
+
+def build(cfg):
+    url = f"http://127.0.0.1:{cfg['port']}/"
+    card = AgentCard(
+        name=cfg["name"],
+        description=cfg["description"],
+        version="1.0.0",
+        default_input_modes=["text/plain"],
+        default_output_modes=["application/json", "text/plain"],
+        capabilities=AgentCapabilities(streaming=True),
+        supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", url=url, protocol_version="1.0")],
+        skills=[AgentSkill(
+            id="negotiate",
+            name="Negotiate a purchase",
+            description=cfg["skill_description"],
+            tags=["shopping", "negotiation"],
+            examples=["I want to buy a lamp", "90"],
+        )],
+    )
+    handler = DefaultRequestHandler(agent_executor=Seller(cfg), task_store=InMemoryTaskStore(), agent_card=card)
+    return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--config")
+    ap.add_argument("--port", type=int)
+    args = ap.parse_args()
+    cfg = dict(DEFAULT)
+    if args.config:
+        cfg.update(json.load(open(args.config)))
+    if args.port:
+        cfg["port"] = args.port
+    uvicorn.run(build(cfg), host="127.0.0.1", port=cfg["port"], log_level="warning")</pre></div>
+
+    <div class="code"><span class="file">터미널 1</span><pre>python seller_agent.py               <span class="cm"># http://127.0.0.1:9999</span></pre></div>
+
+    <h3><span class="tag">STEP 5</span>가게와 거래하기</h3>
+    <p>터미널 2에서 아래 순서대로 보낸다. 출력의 마지막 줄 <code class="inline">Resume</code>이 다음에 칠 명령을 보여 준다.</p>
+
+    <ol class="pre">
+      <li><b class="lead">카드를 받는다.</b> <code class="inline">a2a card get http://127.0.0.1:9999</code>. Interfaces가 <code class="inline">JSONRPC http://127.0.0.1:9999/</code>이고 skill이 <code class="inline">negotiate</code>다.</li>
+      <li><b class="lead">헤더 없이 보낸다.</b> CLI는 <code class="inline">A2A-Version</code> 헤더를 알아서 붙이므로, 헤더가 빠진 요청은 아래 curl 명령으로 한 번 보낸다. 규격상 헤더가 없으면 server는 0.3 요청으로 해석해야 하고, 1.0만 받는 실습 server는 <code class="inline">-32009</code>(VersionNotSupportedError)로 거절한다.</li>
+      <li><b class="lead">램프를 산다.</b> <code class="inline">a2a send</code>로 &ldquo;I want to buy a lamp&rdquo;를 보낸 뒤, <code class="inline">--task-id</code>를 붙여 80, 105를 차례로 보낸다. completed와 영수증 artifact가 온 뒤 <code class="inline">a2a task get</code>을 실행하면 History에 메시지 5개가 남아 있다.</li>
+      <li><b class="lead">끝난 task에 다시 보낸다.</b> 같은 <code class="inline">--task-id</code>로 110을 보내면 <code class="inline">UNSUPPORTED_OPERATION</code> 오류가 나고 exit code 1로 끝난다.</li>
+      <li><b class="lead">나머지 terminal 상태를 만든다.</b> 가게에 없는 sofa를 찾으면 rejected, chair에 100을 세 번 부르면 rejected, 거래 중인 bookshelf task에 <code class="inline">a2a task cancel</code>을 보내면 canceled가 된다.</li>
+    </ol>
+
+    <div class="code"><span class="file">터미널 2: 명령 모음</span><pre><span class="cm"># 첫 메시지: 새 task가 생긴다</span>
+a2a send -a http://127.0.0.1:9999 <span class="st">"I want to buy a lamp"</span>
+<span class="cm"># 같은 task에 이어 보내기</span>
+a2a send -a http://127.0.0.1:9999 --task-id &lt;task id&gt; 80
+<span class="cm"># 조회와 취소</span>
+a2a task get    -a http://127.0.0.1:9999 &lt;task id&gt;
+a2a task cancel -a http://127.0.0.1:9999 &lt;task id&gt;
+<span class="cm"># 어느 명령이든 -o json을 붙이면 규격의 JSON 그대로 나온다</span>
+
+<span class="cm"># 2번: A2A-Version 헤더 없이 보내기</span>
+curl -s http://127.0.0.1:9999/ -H <span class="st">'Content-Type: application/json'</span> -d <span class="st">'{
+  "jsonrpc": "2.0", "id": 1, "method": "SendMessage",
+  "params": {"message": {"role": "ROLE_USER", "messageId": "m0",
+                         "parts": [{"text": "I want to buy a lamp"}]}}}'</span></pre></div>
+
+    <p>STEP 5 전체를 한 번에 돌리는 <code class="inline">lab_cli.sh</code>의 참조 출력을 줄인 것이다.</p>
+
+    <div class="code"><span class="file">lab/logs/lab-cli.txt</span><pre>$ curl (SendMessage without the A2A-Version header)
+{"error":{"code":-32009,"message":"A2A version '0.3' is not supported by this handler. Expected version '1.0'.", ...}}
+
+$ a2a send -a http://127.0.0.1:9999 --task-id &lt;task&gt; 80
+Status:   input-required (2026-10-13T05:21:00Z)
+  80 is too low. Counteroffer: 105.
+
+$ a2a send -a http://127.0.0.1:9999 --task-id &lt;task&gt; 105
+Task:     a7b1e3f3-9530-4eb2-b84c-cac830752ff3
+Context:  8718ea6a-4c6d-4ccc-a416-57ff708de2f2
+Status:   completed (2026-10-13T05:21:00Z)
+  Deal: lamp at 105.
+Artifacts:
+  [receipt] {"item":"lamp","price":105,"seller":"Lamp Shop"}
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: asking 130. Send your offer as a number.
+  [user] 80
+  [agent] 80 is too low. Counteroffer: 105.
+  [user] 105
+
+$ a2a send -a http://127.0.0.1:9999 --task-id &lt;task&gt; 110 -o json
+{
+  "error": {
+    "code": "A2ACLI_ERR_PROTOCOL",
+    "message": "failed to send message: Task a7b1e3f3-... is in terminal state: TASK_STATE_COMPLETED",
+    "a2aCode": "UNSUPPORTED_OPERATION"
+  }
+}
+exit code 1
+
+$ a2a send -a http://127.0.0.1:9999 "I want to buy a sofa"
+Status:   rejected (2026-10-13T05:21:01Z)
+  We only sell: lamp, chair, bookshelf.
+
+$ a2a send ... "I want to buy a chair", then 100 three times
+  100 is too low. Counteroffer: 180.
+  100 is too low. Counteroffer: 180.
+Status:   rejected (2026-10-13T05:21:01Z)
+  No deal at 100.
+
+$ a2a send ... "I want to buy a bookshelf", then a2a task cancel
+Status:   canceled (2026-10-13T05:21:01Z)</pre></div>
+
+    <h3><span class="tag">STEP 6</span>하네스를 한 줄로 A2A server로 만들기</h3>
+    <p>CLI의 <code class="inline">--exec</code>는 표준 입력으로 메시지를 받아 표준 출력으로 답하는 프로그램을 A2A server로 감싼다. Claude Code를 감싸면 이렇다. 가게 server는 Ctrl+C로 끄고 시작한다.</p>
+
+    <div class="code"><span class="file">터미널 1</span><pre>a2a server --exec <span class="st">"claude -p --model haiku --system-prompt 'You are a furniture shop. You sell lamps. Answer in English, in one short sentence.'"</span> \
+  --name <span class="st">"Claude Shop"</span> --port 8090</pre></div>
+    <div class="code"><span class="file">터미널 2</span><pre>$ a2a send -a http://localhost:8090 <span class="st">"Do you sell lamps? How much?"</span>
+Task:     01a1341a-911a-7ba8-8341-deafdf73cdb8
+Context:  01a1341a-911a-7cdc-8f74-74d95c6145dc
+Status:   completed (2026-10-13T16:12:05+09:00)
+Artifacts:
+  [01a1341a-a9fd-76b6-a775-e1ba5074dbf3] Yes, we sell lamps, but I don't have their prices in front of me, so please check our current catalog or contact the shop for pricing.
+History:
+  [user] Do you sell lamps? How much?</pre></div>
+
+    <p>메시지마다 새 task가 생기고 바로 completed로 끝난다. 앞의 대화가 이어지지 않아서 흥정처럼 여러 번 주고받는 일에는 쓸 수 없다. 답의 내용은 실행할 때마다 다르다.</p>
+
+    <div class="check">
+      <div class="lbl">CHECKPOINT</div>
+      <ul>
+        <li>echo server에 보낸 &ldquo;hello A2A&rdquo;가 completed task의 artifact로 돌아온다.</li>
+        <li>hello 에이전트가 &ldquo;Hello! You said: hi there&rdquo;로 답하고, server 로그에 카드 GET과 POST가 차례로 찍힌다.</li>
+        <li><code class="inline">A2A-Version</code> 헤더가 없는 curl 요청에 <code class="inline">-32009</code>가 온다.</li>
+        <li>램프 거래가 input-required(asking 130), input-required(Counteroffer: 105), completed 순서로 가고, 영수증의 price가 105다.</li>
+        <li>끝난 task에 보낸 메시지가 <code class="inline">UNSUPPORTED_OPERATION</code>과 exit code 1로 끝난다.</li>
+        <li>sofa와 낮은 값 세 번은 rejected로, <code class="inline">a2a task cancel</code>은 canceled로 끝난다.</li>
+        <li>Claude Shop에 보낸 메시지가 completed task와 Claude의 답 artifact로 돌아온다.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 과제 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">HW</span><h2>내 하네스로 만드는 buyer와 가게</h2></div>
+    <p>지금 쓰는 하네스(Claude Code, Codex, omp, 1~2주차에 만든 루프 등)로 A2A 에이전트를 두 개 만든다. 값을 흥정하는 가게와 물건을 사는 buyer다. 코드는 A2A로 말하는 일만 맡고, 값을 얼마로 부를지, 받아들일지, 그만둘지는 하네스가 정한다. 둘 다 직접 만들고, 정해진 trade test를 통과하면 된다(FIG. 11).</p>
+
+    <div class="fig" id="fig11">
+      <svg viewBox="0 0 680 262" role="img" aria-label="The trade test: in the seller tests a fixed buyer from the kit trades with your seller; in the buyer tests your buyer trades with the kit's rule-based seller; inside your agents, your code speaks A2A and your harness decides">
+        <defs>
+          <marker id="f11-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="14">SELLER TESTS</text>
+          <text x="0" y="146">BUYER TESTS</text>
+        </g>
+        <g fill="#FAFAF9" stroke="#78716C" stroke-width="1.2" stroke-dasharray="4 3">
+          <rect x="0" y="26" width="200" height="86"/>
+          <rect x="480" y="158" width="200" height="86"/>
+        </g>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="2.5">
+          <rect x="430" y="26" width="250" height="86"/>
+          <rect x="0" y="158" width="250" height="86"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.2">
+          <path d="M440 70 L670 70"/>
+          <path d="M10 202 L240 202"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M200 60 L429 60" marker-end="url(#f11-ah)"/>
+          <path d="M250 192 L479 192" marker-end="url(#f11-ah)"/>
+        </g>
+        <g fill="#1C1917" font-size="11.5" font-weight="600">
+          <text x="12" y="48">kit buyer</text>
+          <text x="442" y="48">your seller</text>
+          <text x="12" y="180">your buyer</text>
+          <text x="492" y="180">kit seller</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="12" y="66">fixed offers: 60, 80, 100, ...</text>
+          <text x="12" y="82">lamp: budget 120</text>
+          <text x="12" y="98">bookshelf: budget 230</text>
+          <text x="492" y="198">the lab's rules</text>
+          <text x="492" y="214">reserve: lamp 100,</text>
+          <text x="492" y="230">bookshelf 260</text>
+        </g>
+        <g fill="#1C1917" font-size="10">
+          <text x="442" y="64">your code: speaks A2A</text>
+          <text x="442" y="88">your harness: price, accept,</text>
+          <text x="442" y="102">reject (claude, codex, omp, ...)</text>
+          <text x="12" y="196">your code: speaks A2A</text>
+          <text x="12" y="220">your harness: offer or walk away</text>
+        </g>
+        <g fill="#1C1917" font-size="10">
+          <text x="315" y="52" text-anchor="middle">A2A v1.0</text>
+          <text x="365" y="184" text-anchor="middle">A2A v1.0</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="0" y="128">pass: a lamp deal between 100 and 120; no ask or sale below the reserve</text>
+          <text x="0" y="258">pass: one lamp at 120 or less; no bookshelf; A2A-Version and taskId used</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 11</b> The trade test</span><span>bold = what you build; dashed = fixed by the test</span></div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>만들 것</th><th>지켜야 할 것</th></tr>
+        <tr><td class="stage">가게</td><td>A2A v1.0 server(JSON-RPC)와 Agent Card. lamp, chair, bookshelf를 팔고 하한가는 100, 180, 260이다. 첫 메시지에는 input-required와 숫자로 된 호가로 답한다. trade test는 input-required 메시지의 마지막 숫자를 호가로 읽는다. 거래가 되면 data Part에 숫자 <code class="inline">price</code>가 든 영수증 artifact를 붙여 completed로 끝낸다. 하한가 아래로는 부르지도 팔지도 않는다</td></tr>
+        <tr><td class="stage">buyer</td><td>trade test가 <code class="inline">{url}</code>, <code class="inline">{item}</code>, <code class="inline">{budget}</code>을 넣어 실행하는 프로그램. 카드를 읽고, 모든 요청에 <code class="inline">A2A-Version: 1.0</code>을 붙이고, <code class="inline">taskId</code>로 흥정을 이어 간다. 예산 안에서 사고, 예산으로 안 되면 그만둔다. 300초 안에 끝난다</td></tr>
+      </table>
+    </div>
+
+    <p>하네스는 코드에서 부를 수 있으면 무엇이든 된다. 프롬프트를 표준 입력으로 받는 비대화형 명령의 예다.</p>
+
+    <div class="code"><span class="file">하네스 비대화형 명령 (2026-10-13 확인)</span><pre>claude -p --model haiku --tools <span class="st">""</span> --setting-sources <span class="st">""</span> --no-session-persistence
+codex exec --skip-git-repo-check -</pre></div>
+
+    <p>다른 하네스는 각자의 비대화형 모드를 쓴다. 하네스는 빈 폴더에서 실행해야 프로젝트의 지시 파일을 읽지 않는다. 하네스에게 어떤 프롬프트를 주고 어떤 형식으로 답을 받을지, 하한가와 예산을 프롬프트에만 둘지 코드로도 막을지는 각자 정하고 보고서에 적는다.</p>
+
+    <h3><span class="tag">TRADE TEST</span>통과 기준</h3>
+    <div class="code"><span class="file">trade test 실행</span><pre>python scripts/trade_test_week06.py submissions/&lt;학번&gt;/week-06</pre></div>
+
+    <p>trade test는 <code class="inline">agent.json</code>에 적은 명령으로 가게와 buyer를 띄우고, 상대역을 직접 맡는다. 하네스는 매번 답이 달라서 판단이 들어가는 테스트는 세 번씩 돌린다. 모든 실행이 통과해야 한다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>테스트</th><th>상대역</th><th>통과 조건</th></tr>
+        <tr><td class="stage">seller_card, seller_opens</td><td>카드를 읽고 lamp를 찾는다</td><td>카드에 이름, skill, v1.0 JSON-RPC 주소가 있고, 첫 답이 input-required와 호가다</td></tr>
+        <tr><td class="stage">seller_deal ×3</td><td>lamp 예산 120. 60, 80, 100, 110, 120 순으로 부르고, 호가가 120 이하면 그 값을 보낸다</td><td>completed, 영수증 가격 100~120, 100 아래 호가 없음</td></tr>
+        <tr><td class="stage">seller_terminal</td><td>끝난 task에 메시지를 한 번 더 보낸다</td><td>오류가 온다</td></tr>
+        <tr><td class="stage">seller_holds_reserve ×3</td><td>bookshelf 예산 230(하한가 260)</td><td>260 아래로 부르지도 팔지도 않는다</td></tr>
+        <tr><td class="stage">buyer_deal ×3</td><td>실습 규칙 가게. lamp, 예산 120</td><td>거래 한 번, 120 이하</td></tr>
+        <tr><td class="stage">buyer_holds_budget ×3</td><td>같은 가게. bookshelf, 예산 230</td><td>거래하지 않는다</td></tr>
+        <tr><td class="stage">buyer_protocol ×6</td><td>가게가 요청을 기록한다</td><td>모든 요청에 <code class="inline">A2A-Version: 1.0</code>이 있고, buyer_deal에서 <code class="inline">taskId</code>로 이어 보낸다</td></tr>
+      </table>
+    </div>
+
+    <div class="check">
+      <div class="lbl">CHECKPOINT</div>
+      <ul>
+        <li><code class="inline">a2a card get</code>으로 내 가게의 카드를 받을 수 있고, <code class="inline">a2a send</code>로 lamp를 사 볼 수 있다.</li>
+        <li>내 buyer를 실습의 <code class="inline">seller_agent.py</code>에 붙여 lamp를 예산 120 안에서 사 온다.</li>
+        <li>trade test가 <code class="inline">21/21 passed -&gt; PASS</code>로 끝나고, <code class="inline">check_week06.py</code>도 통과한다.</li>
+      </ul>
+    </div>
+
+    <div class="hw">
+      <div class="head">ASSIGNMENT: WEEK 06</div>
+      <div class="body">
+        <p><strong>제출물</strong>: 가게와 buyer의 코드(언어와 파일 구성 자유), <code class="inline">agent.json</code>(쓴 하네스와 모델, 가게와 buyer의 실행 명령), trade test가 만든 <code class="inline">test-report.json</code>과 <code class="inline">logs/</code>, <code class="inline">REPORT.md</code>.</p>
+        <p><strong>REPORT.md</strong>: (1) 하네스, 모델, 실행 명령. (2) 가게와 buyer가 판단하는 방법: 프롬프트, 답 형식, 하한가와 예산을 지키는 곳(프롬프트만인지, 코드도인지). (3) 통과하기까지 실패한 것과 고친 것. 실패한 줄을 로그에서 인용한다. (4) 한 문단: A2A가 정해 준 것과, 가게와 buyer가 A2A 밖에서 따로 맞춰야 했던 것(가격을 쓰는 형식, 수락의 표현 등).</p>
+        <p><strong>선택</strong>: 다른 하네스로 만든 친구의 가게와 내 buyer로 거래해 보고, 로그를 <code class="inline">logs/cross/</code>에 넣고 보고서에 한 절을 더한다.</p>
+        <p><strong>형식</strong>: 포크의 <code class="inline">submissions/&lt;학번&gt;/week-06/</code>에 커밋하고 upstream으로 PR을 연다. CI는 하네스를 실행할 수 없어서 trade test를 직접 돌리지 않는다. 대신 <code class="inline">scripts/check_week06.py</code>로 제출된 <code class="inline">test-report.json</code>이 현재 trade test와 <code class="inline">agent.json</code>의 명령으로 만들어졌고 모두 통과했는지 확인한다. 강사가 <code class="inline">agent.json</code>으로 다시 돌려 볼 수 있다. 세부는 <code class="inline">weeks/week-06/README.md</code>에 있다.</p>
+        <p><strong>채점 기준</strong>: trade test 통과 여부, 그리고 보고서의 (3)과 (4).</p>
+      </div>
+    </div>
+
+    <p>제출 규칙은 3주차와 같다.</p>
+    <div class="recorder">
+      <div><span class="k">커밋</span><span class="v">squash 금지. 실패한 시도의 커밋도 채점 근거다.</span></div>
+      <div><span class="k">로그</span><span class="v">에이전트 실행 콘솔 출력을 <code class="inline">logs/</code>에 파일로 커밋한다.</span></div>
+      <div><span class="k">키</span><span class="v">API 키는 커밋 금지. 환경변수로만 쓴다.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 읽기자료 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">READ</span><h2>읽기자료</h2></div>
+    <ul class="readings">
+      <li><span class="badge req">필수</span><b class="lead">Agent2Agent (A2A) Protocol Specification v1.0</b><span class="why">3절 Operations, 4절 Data Model(Task, TaskState, Message, Part, Artifact), 8절 Agent Card. 실습 전에 3.1.1 Send Message와 3.4 Multi-Turn Interactions를 읽는다. <a href="https://a2a-protocol.org/v1.0.0/specification/">a2a-protocol.org/v1.0.0/specification</a></span></li>
+      <li><span class="badge req">필수</span><b class="lead">FIPA, &ldquo;ACL Message Structure Specification&rdquo; SC00061G (2002), 4주차 재참조</b><span class="why">A5 대응표의 왼쪽 열. 파라미터 정의를 다시 확인한다. <a href="https://web.archive.org/web/2023/http://www.fipa.org/specs/fipa00061/SC00061G.html">SC00061G</a></span></li>
+      <li><span class="badge req">필수</span><b class="lead">A2A Project, &ldquo;Meet the A2A CLI&rdquo; (2026)</b><span class="why">실습에서 쓰는 공식 CLI의 설치와 명령. 뒤쪽의 <code class="inline">a2a server --exec</code>는 아무 스크립트나 A2A server로 띄우는 방법이다. <a href="https://a2a-protocol.org/latest/blog/2026/10/01/introducing-a2a-cli/">a2a-protocol.org/latest/blog</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">AAIF, &ldquo;A2A joins AAIF&rsquo;s open agentic stack&rdquo; (2026)</b><span class="why">A2A가 AAIF로 옮긴 이유와 사용처. A2 FIG. 03의 층 구분이 이 글에서 나왔다. <a href="https://aaif.io/blog/a2a-joins-aaif">aaif.io/blog/a2a-joins-aaif</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">A2A protocol roadmap</b><span class="why">v1.1, BiDi streaming, 협상 패턴 등 다음 작업 목록. <a href="https://a2a-protocol.org/latest/roadmap/">a2a-protocol.org/latest/roadmap</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">What&rsquo;s New in A2A Protocol v1.0</b><span class="why">v0.3에서 바뀐 이름과 형식. 메서드 이름(<code class="inline">message/send</code>에서 <code class="inline">SendMessage</code>로), 상태 값 표기, 카드 구조. 인터넷의 v0.3 예제를 읽을 때 쓴다. <a href="https://a2a-protocol.org/latest/whats-new-v1/">a2a-protocol.org/latest/whats-new-v1</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">Google, &ldquo;Announcing the Agent2Agent Protocol (A2A)&rdquo; (2025)</b><span class="why">첫 공개 글. MCP와의 관계를 Google이 어떻게 설명했는지 본다. <a href="https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/">developers.googleblog.com</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">FIPA, &ldquo;Agent Management Specification&rdquo; SC00023K (2004)</b><span class="why">Directory Facilitator의 등록과 검색 절차. A3 FIG. 05의 왼쪽. <a href="http://web.archive.org/web/20240725175755/http://www.fipa.org/specs/fipa00023/SC00023K.html">SC00023K</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">a2a-samples, helloworld (Python)</b><span class="why">a2a-sdk 1.x로 만든 가장 작은 server와 client. 실습의 <code class="inline">seller_agent.py</code>가 이 구조를 따른다. <a href="https://github.com/a2aproject/a2a-samples/tree/main/samples/python/agents/helloworld">github.com/a2aproject/a2a-samples</a></span></li>
+    </ul>
+
+    <div class="next">
+      <div class="lbl">NEXT: WEEK 07</div>
+      <p><strong>에이전트 계약과 검증</strong>. 일을 맡길 때 한도(얼마까지, 누구 이름으로, 언제까지)를 함께 넘기고, 약속이 지켜졌는지 밖에서 확인할 수 있게 기록한다. 과제 buyer의 예산이 프롬프트 밖으로 나온다.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="sheet">
+  <span>AGENTIC AI: <span class="o">에이전트 시스템의 이론과 구축</span></span>
+  <span>SEOULTECH 2026 FALL, WEEK 06/15</span>
+</footer>
+
+</div>
+</body>
+</html>
