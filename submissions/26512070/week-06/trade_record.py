@@ -23,6 +23,7 @@ def build(side, deal, outcome, final_price=None, counterpart=""):
         "turns": [{"from": h["from"], "price": h.get("price"), "text": h.get("text", "")}
                   for h in deal["history"]],
         "guards": list(deal.get("guards", [])),   # times the last line of defense overrode the brain
+        "thoughts": list(deal.get("thoughts", [])),  # the ReAct steps behind each decision
     }
 
 
