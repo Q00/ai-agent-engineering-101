@@ -5,6 +5,7 @@ does not pick up any project's CLAUDE.md or settings.
 """
 import asyncio
 import json
+import os
 import re
 import sys
 import tempfile
@@ -13,6 +14,8 @@ import time
 HARNESS = ["claude", "-p", "--model", "haiku", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
 EMPTY_DIR = tempfile.mkdtemp(prefix="week06-harness-")
 TIMEOUT = 90  # seconds for one harness call
+# Without ANTHROPIC_API_KEY, claude -p uses the logged-in subscription instead of billing the API key.
+ENV = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
 
 
 def log(tag, text):
@@ -36,7 +39,7 @@ async def ask(prompt, tries=2):
         started = time.time()
         try:
             proc = await asyncio.create_subprocess_exec(
-                *HARNESS, cwd=EMPTY_DIR,
+                *HARNESS, cwd=EMPTY_DIR, env=ENV,
                 stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
             out, err = await asyncio.wait_for(proc.communicate(prompt.encode()), timeout=TIMEOUT)
         except asyncio.TimeoutError:
