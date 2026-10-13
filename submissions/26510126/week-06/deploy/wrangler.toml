@@ -11,3 +11,8 @@ class_name = "TaskObject"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["TaskObject"]
+
+# Workers AI stands in for the harness (claude -p cannot run in a Worker).
+# No API key: the binding authenticates through the Cloudflare account. Free plan: 10,000 Neurons/day.
+[ai]
+binding = "AI"

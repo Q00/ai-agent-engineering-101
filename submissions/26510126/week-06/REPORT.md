@@ -213,18 +213,23 @@ slip, not the thing that made the agents work.
 ## 6. Optional: the seller on Cloudflare Workers
 
 The instructor suggested deploying the week's work with Hono on a serverless
-platform. `deploy/` is a seller on Cloudflare Workers: Hono for the routes (the card
-at `/.well-known/agent-card.json`, JSON-RPC at `/`) and one Durable Object per task
-id for the state.
+platform. `deploy/` is `seller.py` ported to Cloudflare Workers: Hono for the routes
+(the card at `/.well-known/agent-card.json`, JSON-RPC at `/`), one Durable Object per
+task id for the state, and Workers AI (`@cf/meta/llama-3.1-8b-instruct-fp8`) for the
+decisions.
 
 **What did not carry over: the harness.** The submitted agents decide through
 Claude Code, a CLI that runs on my machine under my subscription login. A Worker
-has neither the CLI nor the login, so a deployed agent can only reach a model
-through a model API (Workers AI, or the Claude API with a key), which is a model
-call rather than a harness. The deployed seller therefore uses the kit seller's
-rules with no model at all. The harness stays in the local `seller.py` and
-`buyer.py`; a trade against the deployed shop is my harness-driven buyer against a
-rule-based seller across the network.
+has neither the CLI nor the login, so the deployed seller calls a model directly
+through the Workers AI binding: no API key, billed against the free plan's 10,000
+Neurons a day (about 7 per call at the listed token prices), and failing rather
+than charging when that runs out. That is a model call, not a harness, and the
+model is an 8B open model, not haiku. Everything around the call is kept: the
+prompts are byte-for-byte those of `seller.py` (checked by rendering both), and so
+are the JSON answer format and the code guards. The guards may matter more here
+than they did with haiku; a smaller model breaks the "one JSON object" format and
+the limits more often, and when the model fails entirely the code still opens at
+1.3 x reserve and holds its last ask.
 
 **What changed in the A2A layer.** The Python servers keep tasks in memory
 (`InMemoryTaskStore`). A Worker is stateless between requests, so each task lives
@@ -238,12 +243,15 @@ finished task). The receipt is the one visible difference: the Worker writes
 `"price": 105` where the Python shop wrote `105.0`, because no protobuf `Value` sits
 in between (section 4).
 
-**Local check.** Under `wrangler dev` the Worker passed the lab's scenarios with
-the a2a CLI (open at 130, counter 105 to an offer of 80, receipt at 105, error on
-the finished task, cancel, reject an unknown item, `-32009` without the header),
-and my harness buyer bought a lamp at 105 on a budget of 120 and got no deal on a
-bookshelf at 230 (`deploy/logs/`).
+**Local check, rule-based first.** Before the model went in, a rule-based version
+(the kit seller's rules, commit `b66aa6f`) passed the lab's scenarios under
+`wrangler dev` with the a2a CLI (open at 130, counter 105 to an offer of 80, receipt
+at 105, error on the finished task, cancel, reject an unknown item, `-32009` without
+the header), and my harness buyer bought a lamp at 105 on a budget of 120 and got
+no deal on a bookshelf at 230 (`deploy/logs/`). With the AI binding, `wrangler dev`
+refuses to start without a Cloudflare login, so the model version is untested
+locally so far.
 
 **Deployed.** TODO after `wrangler login` and `wrangler deploy`: the public URL, the
-same CLI scenarios and buyer runs against it, and anything that differed from
-`wrangler dev`.
+lab scenarios and buyer runs against it, how often the guards fired with the 8B
+model compared with haiku, and anything that differed from `wrangler dev`.
