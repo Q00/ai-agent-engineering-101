@@ -77,3 +77,65 @@ PATH에는 winget 패키지 경로가 등록되어 있고 해당 경로의 `a2a.
 
 STEP 1에는 모델 호출이나 API 키가 필요 없다. 제출용 seller/buyer를 아직
 작성하지 않았으므로 전체 과제 검사와 trade test는 실행하지 않았다.
+
+## STEP 2 — echo 서버 실행과 메시지 전송 완료
+
+직접 실습하려면 PowerShell 터미널 두 개를 열고 **각각 이 폴더로 이동**한다.
+CLI만 사용하므로 이 단계에는 Python 가상환경 활성화가 필요하지 않다.
+
+터미널 1:
+
+```powershell
+. .\use-a2a.ps1
+a2a server --echo --port 8080
+```
+
+`Listening on 127.0.0.1:8080`이 나오면 서버를 계속 실행해 둔다.
+명령 프롬프트가 돌아오지 않는 것은 서버가 실행 중이기 때문이다.
+
+터미널 2:
+
+```powershell
+. .\use-a2a.ps1
+a2a send -a http://localhost:8080 "hello A2A"
+a2a card get http://localhost:8080
+```
+
+직접 확인할 것:
+
+1. `Task`와 `Context`에 ID가 표시되는가? ID는 실행할 때마다 달라진다.
+2. `Status`가 `completed`인가?
+3. `Artifacts`에 보낸 문자열 `hello A2A`가 나타나는가?
+4. Agent Card에 `Echo Agent`와 인터페이스 주소가 표시되는가?
+5. 확인 후 **터미널 1에서 Ctrl+C**로 서버를 종료한다.
+
+메시지 하나로 task 하나가 만들어지고, echo 서버가 같은 문자열을
+artifact로 반환하면서 task를 완료했다. 카드는 서버 이름과 통신
+인터페이스를 알려 준다. 이 CLI의 echo 서버는 기본적으로 `HTTP+JSON`
+인터페이스를 제공한다.
+
+에이전트가 실제로 검증한 결과:
+
+```text
+Task:     01a134e2-569a-7711-91e0-ccb1d8ce0040
+Context:  01a134e2-569a-7712-94c6-18c5f47c5be0
+Status:   completed (2026-10-13T19:50:10+09:00)
+Artifacts:
+  [01a134e2-569a-7713-9984-4bedeb0ae448] hello A2A
+History:
+  [user] hello A2A
+```
+
+원본 로그:
+
+- `../logs/step2-send-20261013-195009.txt`
+- `../logs/step2-card-20261013-195009.txt`
+- `../logs/step2-server-20261013-195009.stderr.txt`
+- `../logs/step2-server-20261013-195009.stdout.txt`
+
+첫 시도는 서버를 띄웠지만 추가한 PowerShell `Invoke-WebRequest` 준비
+확인이 제한 시간 내 성공하지 못했다. `Echo server readiness timed out.`
+오류 후 서버를 종료했다. 원인은 확정하지 않았다. 두 번째 시도에서는
+이 사전 검사를 빼고 강의의 CLI 명령으로 직접 검증했고 성공했다.
+첫 서버 출력은 `step2-server-20261013-194848.*.txt`로 그대로 보존했다.
+검증 후 에이전트가 시작한 서버는 종료했으므로 직접 실습할 때 다시 켠다.
