@@ -22,6 +22,7 @@ def build(side, deal, outcome, final_price=None, counterpart=""):
         "final_price": final_price,
         "turns": [{"from": h["from"], "price": h.get("price"), "text": h.get("text", "")}
                   for h in deal["history"]],
+        "guards": list(deal.get("guards", [])),   # times the last line of defense overrode the brain
     }
 
 
@@ -30,6 +31,8 @@ def to_text(rec):
              + (f" at {rec['final_price']}" if rec["final_price"] is not None else "")]
     for i, t in enumerate(rec["turns"], 1):
         lines.append(f"{i}. {t['from']}: {t['price'] if t['price'] is not None else '-'} | {t['text']}")
+    for g in rec["guards"]:
+        lines.append(f"GUARD turn {g['turn']}: {g['reason']}")
     return "\n".join(lines)
 
 

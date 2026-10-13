@@ -6,8 +6,13 @@ This file only speaks A2A: it keeps one deal per task id, turns the buyer's text
 into an offer, asks seller_brain.decide() what to do, and turns the answer into
 a task state (INPUT_REQUIRED / COMPLETED with a receipt / REJECTED).
 Every finished task also gets a "trade-record" artifact with the whole negotiation.
-It does NOT check the reserve; that is the brain's job (inventory.check_ask is its tool).
-It does stop a sale when the item is out of stock.
+
+Keeping to the reserve is the brain's job (inventory.check_ask is its tool).
+guard() is the last line of defense behind it: an ask or a sale below the
+reserve, a first reply that is not a counter, a broken decision or a brain
+crash becomes "hold the current price" (a counter at the last ask, or the list
+price on the first reply). Every such case is logged as GUARD and kept in the
+trade record's "guards". A sale also stops when the item is out of stock.
 """
 import argparse
 import asyncio
@@ -30,11 +35,36 @@ from inventory import Inventory
 from model import log
 
 NAME = "26512070 Furniture Shop"
+REPLY_SECONDS = 150  # the kit buyer waits 200 s for each reply
 
 
 def last_number(text):
     nums = re.findall(r"\d+", text or "")
     return int(nums[-1]) if nums else None
+
+
+def guard(d, deal, inventory):
+    """Last line of defense. Returns (decision to carry out, reason it was replaced or None)."""
+    hold = deal["ask"] if deal["ask"] is not None else deal["list_price"]  # both are >= reserve
+    safe = {"action": "counter", "price": hold, "say": "That does not work for us."}
+    action = d.get("action") if isinstance(d, dict) else None
+    if deal["ask"] is None and action != "counter":
+        return safe, f"the first reply must be a counter, not {action}"
+    if action == "counter":
+        try:
+            price = int(d["price"])
+        except (KeyError, TypeError, ValueError):
+            return safe, f"counter without a usable price: {d.get('price')!r}"
+        ok, reason = inventory.check_ask(deal["item"], price)
+        return ({**d, "price": price}, None) if ok else (safe, reason)
+    if action == "accept":
+        if deal["last_offer"] is None:
+            return safe, "accept with no offer on the table"
+        ok, reason = inventory.check_ask(deal["item"], deal["last_offer"])
+        return (d, None) if ok else (safe, reason)
+    if action == "reject":
+        return d, None
+    return safe, f"unknown decision {d!r}"
 
 
 class Seller(AgentExecutor):
@@ -70,7 +100,8 @@ class Seller(AgentExecutor):
                 await up.reject(say(f"Sorry, {item} is out of stock."))
                 return
             deal = {"item": item, "reserve": info["reserve"], "list_price": info["list_price"],
-                    "stock": info["stock"], "ask": None, "last_offer": None, "history": []}
+                    "stock": info["stock"], "ask": None, "last_offer": None, "seconds_left": REPLY_SECONDS,
+                    "history": [], "guards": []}
             self.open[task.id] = deal
         else:
             deal["last_offer"] = last_number(text)
@@ -79,12 +110,14 @@ class Seller(AgentExecutor):
 
         log(f"\n=== task {task.id[:8]} {deal['item']}: buyer said {text!r}")
         try:
-            d = await asyncio.to_thread(seller_brain.decide, deal, text, self.inventory)
-        except Exception as e:  # the brain broke: end the deal rather than hang the buyer
-            log(f"brain error: {e!r}")
-            await self.finish(up, task.id, deal, "failed")
-            await up.failed(say(f"Shop error: {type(e).__name__}"))
-            return
+            raw = await asyncio.wait_for(asyncio.to_thread(seller_brain.decide, deal, text, self.inventory),
+                                         timeout=REPLY_SECONDS + 20)
+        except Exception as e:  # crash or timeout: guard() turns this into "hold the price"
+            raw = {"action": "brain_error", "error": repr(e)}
+        d, why = guard(raw, deal, self.inventory)
+        if why:
+            log(f"GUARD: {why} (brain said {raw!r}) -> {d}")
+            deal["guards"].append({"turn": len(deal["history"]), "reason": f"{why} (brain said {raw!r})", "used": d})
         log(f"decision: {d}")
 
         action, words = d.get("action"), (d.get("say") or "").strip()
@@ -94,7 +127,7 @@ class Seller(AgentExecutor):
             deal["history"].append({"from": "seller", "text": words, "price": price})
             # The trade test reads the LAST number of this message as our ask.
             await up.requires_input(say(f"{words} My price: {price}.".strip()))
-        elif action == "accept" and deal["last_offer"] is not None:
+        elif action == "accept":
             price = deal["last_offer"]
             try:
                 self.inventory.sell(deal["item"], price, buyer=task.context_id)
@@ -107,14 +140,10 @@ class Seller(AgentExecutor):
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")  # receipt first
             await self.finish(up, task.id, deal, "completed", price)
             await up.complete(say(f"Deal: {deal['item']} at {price}."))
-        elif action == "reject":
+        else:  # reject (guard() lets nothing else through)
             deal["history"].append({"from": "seller", "text": words or "reject", "price": None})
             await self.finish(up, task.id, deal, "rejected")
             await up.reject(say(words or "No deal."))
-        else:
-            log(f"unusable decision, rejecting: {d}")
-            await self.finish(up, task.id, deal, "rejected")
-            await up.reject(say("No deal."))
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
