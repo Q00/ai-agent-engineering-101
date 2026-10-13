@@ -1,0 +1,21 @@
+[20:55:06] CARD: 'Haiku Furniture Shop' at http://127.0.0.1:51814/, protocol 1.0
+[20:55:06] SEND: 'I want to buy a lamp'
+[20:55:10] RECV: TASK_STATE_INPUT_REQUIRED | "Thanks for your interest in our lamp! It's a beautifully crafted piece, and I can offer it to you for 180."
+[20:55:10] ASK: 180 (text)
+[20:55:13] HARNESS: try 1: 3.6 s, exit 0, answer '{"action": "offer", "price": 80}'
+[20:55:13] SEND: '80' taskId=86015bd8
+[20:55:18] RECV: TASK_STATE_INPUT_REQUIRED | "I can't go as low as 80, but I can meet you partway at 150 for this lamp. Would that work for you?"
+[20:55:18] ASK: 150 (text)
+[20:55:21] HARNESS: try 1: 3.4 s, exit 0, answer '{"action": "offer", "price": 100}'
+[20:55:21] SEND: '100' taskId=86015bd8
+[20:55:26] RECV: TASK_STATE_INPUT_REQUIRED | 'I appreciate the increase, but this lamp is a well-made piece, so I can come down to 125 and no further. If that works for you, we have a deal.'
+[20:55:26] ASK: 125 (text)
+[20:55:30] HARNESS: try 1: 3.8 s, exit 0, answer '{"action": "offer", "price": 115}'
+[20:55:30] SEND: '115' taskId=86015bd8
+[20:55:34] RECV: TASK_STATE_INPUT_REQUIRED | "I can't go as low as 115, but I can meet you partway at 120 for this lamp."
+[20:55:34] ASK: 120 (text)
+[20:55:39] HARNESS: try 1: 4.9 s, exit 0, answer '{"action": "offer", "price": 120}'
+[20:55:39] SEND: '120' taskId=86015bd8
+[20:55:39] RECV: TASK_STATE_COMPLETED | 'Agreed. Deal: lamp at 120.'
+[20:55:39] OUT: receipt {'price': 120.0, 'seller': 'Haiku Furniture Shop', 'item': 'lamp'}
+[20:55:39] OUT: finished: TASK_STATE_COMPLETED
