@@ -23,6 +23,8 @@
 
 ### 실제 카드 문구
 
+수업 중 추가 요청으로 공식 a2a CLI0.3.0을 설치하고 교재 LAB의 단계별 명령을 수행했다. 램프130→80→105역제안→105성사, History5개, 완료 작업 재요청 exit1, 상품 없음·저가3회 거절·취소를 실제 확인했다. 이 실습은 [lab/README.md](lab/README.md)와 별도 원문 로그에 보존했고 아래 24회 과제 CSV는 바꾸지 않았다. 교재의 생략된 서버 코드는 체크포인트를 기준으로 보완했다.
+
 Plain에서는 두 판매자가 같은 description과 skill description을 쓴다.
 
 > Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.

@@ -103,21 +103,21 @@ class Seller(AgentExecutor):
     @override
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         """Interpret natural-language item requests and numeric follow-up offers."""
-        if context.task_id is None or context.context_id is None:
-            raise InvalidParamsError(
-                message="Task and context identifiers are required."
-            )
-        if context.current_task is None:
-            await event_queue.enqueue_event(
-                Task(
-                    id=context.task_id,
-                    context_id=context.context_id,
-                    status=TaskStatus(state=TaskState.TASK_STATE_SUBMITTED),
-                    history=[context.message] if context.message is not None else [],
+        task = context.current_task
+        if task is None:
+            if context.task_id is None or context.context_id is None:
+                raise InvalidParamsError(
+                    message="Task and context identifiers are required."
                 )
+            task = Task(
+                id=context.task_id,
+                context_id=context.context_id,
+                status=TaskStatus(state=TaskState.TASK_STATE_SUBMITTED),
+                history=[context.message] if context.message is not None else [],
             )
-        task_id = TaskId(context.task_id)
-        updater = TaskUpdater(event_queue, context.task_id, context.context_id)
+            await event_queue.enqueue_event(task)
+        task_id = TaskId(task.id)
+        updater = TaskUpdater(event_queue, task.id, task.context_id)
         text = context.get_user_input().strip()
         deal = self.negotiations.get(task_id)
         if deal is None:
@@ -188,12 +188,11 @@ class Seller(AgentExecutor):
     @override
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         """Cancel an open task through the SDK task lifecycle."""
-        if context.task_id is None or context.context_id is None:
-            raise InvalidParamsError(
-                message="Task and context identifiers are required."
-            )
-        _ = self.negotiations.pop(TaskId(context.task_id), None)
-        await TaskUpdater(event_queue, context.task_id, context.context_id).cancel()
+        task = context.current_task
+        if task is None:
+            raise InvalidParamsError(message="Cancellation requires an existing task.")
+        _ = self.negotiations.pop(TaskId(task.id), None)
+        await TaskUpdater(event_queue, task.id, task.context_id).cancel()
 
 
 def create_app() -> FastAPI:
