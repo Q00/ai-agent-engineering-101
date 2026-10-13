@@ -16,11 +16,8 @@
 from __future__ import annotations
 
 import json
-import socket
-import subprocess
-from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Final
+from typing import Annotated, Final
 
 import anyio
 import httpx2
@@ -28,6 +25,7 @@ import typer
 from pydantic import TypeAdapter, ValidationError
 
 from http_client import create_client
+from market_a2a.challenge_runtime import free_port, owned, ready
 from market_a2a.challenges import (
     BuyerInput,
     Case,
@@ -42,70 +40,9 @@ from market_a2a.challenges import (
 from market_a2a.models import HarnessError, Product, ShopCard, ShoppingItem
 from market_a2a.remote import Card, Remote
 
-if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
-
-    from anyio.abc import Process
-
 MIN_CATALOG: Final = 1000
 ROOT: Final = Path(__file__).resolve().parent
 app = typer.Typer(add_completion=False)
-
-
-async def stop(process: Process) -> None:
-    """Terminate only the owned handle and bound graceful shutdown."""
-    with anyio.CancelScope(shield=True):
-        if process.returncode is None:
-            process.terminate()
-            with anyio.move_on_after(10) as scope:
-                _ = await process.wait()
-            if scope.cancel_called:
-                process.kill()
-                _ = await process.wait()
-        await process.aclose()
-
-
-@asynccontextmanager
-async def owned(command: list[str], log: Path) -> AsyncGenerator[Process]:
-    """Preserve raw stdout/stderr and clean up even when validation raises."""
-    with log.open("xb") as output:
-        process = await anyio.open_process(
-            command,
-            cwd=ROOT,
-            stdout=output,
-            stderr=subprocess.STDOUT,
-        )
-        try:
-            yield process
-        finally:
-            await stop(process)
-
-
-def free_port() -> int:
-    """Ask the OS for an available loopback port."""
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        return TypeAdapter(tuple[str, int]).validate_python(probe.getsockname())[1]
-
-
-async def ready(base: str, process: Process) -> None:
-    """Wait for an actual Agent Card, without invoking the model."""
-    async with create_client() as client:
-        with anyio.fail_after(60):
-            while True:
-                require(process.returncode is None, "Server exited before readiness")
-                try:
-                    response = await client.get(
-                        base + ".well-known/agent-card.json",
-                        headers={"A2A-Version": "1.0"},
-                    )
-                    if response.is_success:
-                        _ = Card.model_validate_json(response.text)
-                        return
-                except httpx2.TransportError:
-                    await anyio.sleep(0.25)
-                    continue
-                await anyio.sleep(0.25)
 
 
 async def catalog_challenge(base: str, directory: Path) -> Summary:
@@ -230,7 +167,7 @@ async def shopping_challenge(base: str, directory: Path) -> Summary:
         "--shopping-input",
         str(input_path),
     ]
-    async with owned(command, directory / "buyer.log") as buyer:
+    async with owned(command, directory / "buyer.log", ROOT) as buyer:
         with anyio.fail_after(900):
             result = await buyer.wait()
         require(result == 0, "Shopping buyer exited with failure; inspect buyer.log")
@@ -263,7 +200,7 @@ async def run(challenge: int, attempt: int) -> None:
         error="Attempt interrupted before validation",
     )
     try:
-        async with owned(command, directory / "server.log") as server:
+        async with owned(command, directory / "server.log", ROOT) as server:
             await ready(base if challenge == 1 else base + "shops/00/", server)
             with anyio.fail_after(1200):
                 summary = await (

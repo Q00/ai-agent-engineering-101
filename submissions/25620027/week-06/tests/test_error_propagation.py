@@ -11,11 +11,11 @@ from market_a2a.catalog import CatalogDataError, MissingProductError
 from market_a2a.models import HarnessError
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
 
 
 @contextmanager
-def managed() -> Iterator[None]:
+def managed() -> Generator[None]:
     """Exercise contextlib's traceback assignment during exception propagation."""
     yield
 
