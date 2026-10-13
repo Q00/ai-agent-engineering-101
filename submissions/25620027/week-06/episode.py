@@ -101,21 +101,22 @@ class EpisodeRunner:
         """Keep invalid choices and crashes without leaking API error bodies."""
         try:
             return await self._purchase()
+        except APIStatusError as exc:
+            return self._failure(f"{type(exc).__name__} HTTP {exc.status_code}")
+        except ExperimentError as exc:
+            return self._failure(f"{type(exc).__name__}: {exc}")
         except (
             APIError,
             httpx2.HTTPError,
             ValidationError,
-            ExperimentError,
             BuyerDecisionError,
             OSError,
         ) as exc:
-            detail = type(exc).__name__
-            if isinstance(exc, APIStatusError):
-                detail += f" HTTP {exc.status_code}"
-            elif isinstance(exc, ExperimentError):
-                detail += f": {exc}"
-            self.context.emit(f"[EPISODE ERROR] {detail}")
-            return self.result(None, error=detail)
+            return self._failure(type(exc).__name__)
+
+    def _failure(self, detail: str) -> Result:
+        self.context.emit(f"[EPISODE ERROR] {detail}")
+        return self.result(None, error=detail)
 
     def _terminal(self, task: Task) -> Result | None:
         state = task.status.state
