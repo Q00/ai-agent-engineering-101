@@ -5,6 +5,7 @@ Run the opening probe with: python harness.py --item lamp --reserve 100
 """
 import argparse
 import json
+import os
 from pathlib import Path
 import re
 import shlex
@@ -80,8 +81,11 @@ def parse_buyer(output, budget):
 def decide(prompt_name, context, validate, *, timeout=90, prefix="decision"):
     prompt = (ROOT / "prompts" / prompt_name).read_text(encoding="utf-8")
     prompt += "\n" + json.dumps(context, ensure_ascii=False)
-    logs = ROOT / "logs"
-    logs.mkdir(exist_ok=True)
+    # Each challenge run keeps its own original calls beside its wire logs.
+    logs = Path(os.environ.get("WEEK06_LOG_DIR", ROOT / "logs")).resolve()
+    if not logs.is_relative_to((ROOT / "logs").resolve()):
+        raise HarnessError("WEEK06_LOG_DIR must stay inside this submission's logs directory")
+    logs.mkdir(parents=True, exist_ok=True)
     deadline = time.monotonic() + timeout
     # One correction request is allowed for invalid output, within one deadline.
     # Authentication/process errors fail immediately; no substitute policy runs.
