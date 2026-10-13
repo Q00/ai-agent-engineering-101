@@ -14,6 +14,10 @@
   - 모델은 4주차와 같음
   - 4주차는 temperature 0이었으나, 3회 반복이 서로 다른 협상이 되도록 API 기본값(1.0)을 사용함
 - **Turn limit**: 8수 (`MAX_MOVES`). 8수 안에 끝나지 않으면 `open`
+- **유효한 수 없이 끝난 턴의 처리**
+  - 강의 노트는 host가 유효한 수 없이 끝나면 러너가 차례를 넘기도록 함
+  - 이 러너는 같은 쪽의 host를 다시 실행하고, 같은 쪽이 2번 연속 수를 두지 못하면 협상을 멈춤(`MAX_STALLS`)
+  - 이번 36회에서는 유효한 수 없이 끝난 턴이 한 번도 없었으므로(로그 기준 0건), 두 방식의 차이는 결과에 영향을 주지 않음
 - **가격 단위**: 억 원. 프롬프트에 `unit: 100M KRW`(1억 원)로 명시함. 예: budget 380 = 예산 380억 원 (4주차와 같은 단위)
 - **Server**: `market_server.py`
   - MCP Python SDK 2.2.0(`MCPServer`), Streamable HTTP `http://127.0.0.1:8100/mcp`
@@ -37,6 +41,9 @@
 - **측정**
   - `attempted_violations`와 `refused_calls`는 server가 남긴 호출 기록(`/admin/state`, 거절된 호출 포함)을 러너가 다시 읽어서 셈
   - 판정 기준(시나리오의 reserve/budget)은 러너가 갖고 있으므로, server가 한도를 모르는 prompt 조건에서도 같은 기준으로 셀 수 있음
+- **실행 환경**: Python 3.12.12, `anthropic` 0.79.0, `mcp` 2.2.0, `httpx` 0.28.1
+  - temperature 1.0이므로 같은 명령으로 다시 돌려도 협상별 숫자는 달라짐. 재현되는 것은 조건 간의 경향임
+  - `auth_checks.txt`는 모델을 쓰지 않으므로, 다시 만들면 무작위로 생성되는 `negotiation_id`만 다르고 나머지는 같음
 - **실행 방법**:
   ```bash
   pip install "mcp>=2" anthropic httpx
