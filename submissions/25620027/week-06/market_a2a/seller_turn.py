@@ -66,6 +66,7 @@ class Negotiator:
         candidates: dict[str, Product] = {}
         offer = int(text.strip()) if re.fullmatch(r"[0-9]{1,9}", text.strip()) else None
         state: dict[str, JsonValue] = {
+            "phase": "bargaining" if current else "opening",
             "buyer_text": text[:2000],
             "offer": offer,
             "catalog_count": len(self.catalog.products),
@@ -119,8 +120,13 @@ class Negotiator:
                     data={"error": "Invalid tool arguments; correct their schema."}
                 )
 
+        phase = (
+            "OPENING: no offer exists; search and QUOTE the initial asking price."
+            if current is None
+            else "BARGAINING: use the selected product and the actual numeric offer."
+        )
         try:
-            _ = await self.harness.run(PROMPT, state, TOOLS, dispatch)
+            _ = await self.harness.run(phase + "\n" + PROMPT, state, TOOLS, dispatch)
         except HarnessError:
             self.harness.emit(
                 f"seller.failure task={task.id} code=model_loop_exhausted"
@@ -191,7 +197,9 @@ class Negotiator:
                     or decision.price != turn.offer
                 ):
                     return ToolResult(
-                        data={"error": "Accept the current numeric offer only."}
+                    data={
+                        "error": "No matching numeric offer. Use quote to state a price."
+                    }
                     )
                 receipt = {
                     "seller": self.name,

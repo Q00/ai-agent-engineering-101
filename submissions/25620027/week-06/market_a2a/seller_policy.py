@@ -15,7 +15,11 @@ If a product is already selected in state, decide directly without searching aga
 For basic lamp/chair/bookshelf requests choose the basic catalog product.
 For descriptive requests honor every material, size and capacity constraint.
 Choose every price yourself through decide. Open near 1.3 times reserve.
-Accept actual numeric offers at or above reserve, including 100-120 for a lamp.
+OPENING PHASE: when selected is null, there is NO buyer price offer yet.
+Search then use action="quote" to SELECT the SKU and set an asking price.
+Never use action="accept" on the opening phase: nothing has been offered.
+BARGAINING PHASE: when selected exists, accept the actual numeric offer
+if it is at or above that product's reserve.
 A first low offer is bargaining, NOT grounds to end the negotiation.
 If the offer is below reserve, QUOTE a counteroffer at or above reserve, moving
 toward agreement. Keep negotiation open for at least five incoming offers.
