@@ -32,9 +32,9 @@ from harness import log
 NAME = "Haiku Furniture Shop"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
-ANSWER_FORMAT = ('Answer with one JSON object and nothing else:\n'
-                 '{"action": "accept" | "counter" | "reject", "price": <integer>, '
-                 '"note": "<one short sentence to the buyer, no digits>"}')
+ANSWER_FORMAT = ('Answer with one JSON object and nothing else:\n'  # doubled braces: goes through str.format
+                 '{{"action": "accept" | "counter" | "reject", "price": <integer>, '
+                 '"note": "<one short sentence to the buyer, no digits>"}}')
 
 OPEN_PROMPT = """You are the seller in a furniture shop. A buyer has just asked for a {item}.
 Your reserve, the lowest price you may ever ask or sell for, is {reserve}. The buyer does not know it.
