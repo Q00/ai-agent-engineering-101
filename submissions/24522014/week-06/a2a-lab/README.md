@@ -200,3 +200,58 @@ STEP 2는 echo 결과를 artifact로 반환했고 이 예제는 task의 완료 �
 
 API 키나 모델 호출은 필요 없다. 과제용 seller/buyer의 구현과 전체 과제
 검사는 아직 진행하지 않았다.
+
+## STEP 4 — 가게 서버 준비 완료
+
+`seller_agent.py`는 강의의 STEP 4 예제를 그대로 저장한 규칙 기반 가게다.
+모델을 호출하지 않으며, 과제에서 요구하는 하네스 기반 seller는 아니다.
+판매 품목과 하한가는 lamp 100, chair 180, bookshelf 260이다.
+첫 제시가는 하한가의 1.3배를 올림한 값이며 lamp는 130이다.
+같은 task의 거래 상태를 `self.open`에 기억한다. 낮은 가격에는 역제안하고,
+하한가 이상의 제안에는 영수증 artifact와 함께 완료한다.
+낮은 제안이 세 번 오면 거절하고, 취소 요청도 처리한다.
+실제로 이 상태들을 만들어 보는 거래 실습은 STEP 5에서 진행한다.
+
+직접 실습할 때 두 터미널 모두 `a2a-lab` 폴더로 이동한다.
+이전에 실행한 hello 서버는 해당 터미널에서 Ctrl+C로 종료해도 된다.
+
+터미널 1:
+
+```powershell
+.\.venv\Scripts\python.exe seller_agent.py
+```
+
+기본 주소는 `http://127.0.0.1:9999`다. 예제는 `log_level="warning"`으로
+실행하므로 시작 문구 없이 입력을 기다리는 모습이어도 정상일 수 있다.
+터미널 2에서 카드로 확인한다.
+
+```powershell
+. .\use-a2a.ps1
+a2a card get http://127.0.0.1:9999
+```
+
+확인할 값은 `Lamp Shop`, `JSONRPC http://127.0.0.1:9999/`,
+`Streaming: true`, `negotiate / Negotiate a purchase`다.
+STEP 5로 이어갈 때 서버를 켜 두고, 실습을 마칠 때 Ctrl+C로 종료한다.
+
+검증 중에는 9999번 포트가 이미 사용 중이었다. 기존 프로세스를 종료하지
+않고 예제의 `--port` 옵션을 사용해 10099번 포트에서 서버 시작과 카드
+조회를 확인했다. 직접 실습에서도 같은 충돌이 있으면 다음을 사용한다.
+
+```powershell
+# 터미널 1
+.\.venv\Scripts\python.exe seller_agent.py --port 10099
+# 터미널 2 (CLI 경로 등록 후)
+a2a card get http://127.0.0.1:10099
+```
+
+대체 포트를 사용하면 STEP 5의 모든 가게 URL도 같은 포트로 바꿔야 한다.
+문법 검사와 카드 검증이 성공했으며 검증용 10099 서버는 종료했다.
+원본 로그는 다음 파일에 보존했다.
+
+- `../logs/step4-syntax-20261013-204657.stdout.txt`와 `.stderr.txt` (성공 시 출력 없음)
+- `../logs/step4-port-conflict-20261013-204928.txt`
+- `../logs/step4-card-20261013-204928.txt`와 `.stderr.txt`
+- `../logs/step4-server-20261013-204928.stdout.txt`와 `.stderr.txt`
+
+STEP 4에서 거래 명령은 아직 보내지 않았다. API 키가 필요 없는 실습이다.
