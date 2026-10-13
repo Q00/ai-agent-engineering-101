@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar, Protocol
+from typing import ClassVar, Protocol, override
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, TypeAdapter
 
@@ -83,6 +83,7 @@ class HarnessError(RuntimeError):
 
     detail: str
 
+    @override
     def __str__(self) -> str:
         """Expose the reason without credentials."""
         return self.detail
