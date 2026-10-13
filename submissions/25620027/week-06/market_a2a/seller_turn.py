@@ -19,7 +19,6 @@ from market_a2a.models import (
     ToolResult,
     json_value,
 )
-
 from market_a2a.seller_policy import PROMPT, TOOLS, Decision, Search, rejection_feedback
 
 if TYPE_CHECKING:
