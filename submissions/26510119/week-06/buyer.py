@@ -7,6 +7,7 @@ sends every request with A2A-Version: 1.0, continues the task by taskId, and nev
 offers more than the budget. A2A has no "accept" act: accepting means sending the
 seller's own ask back as the offer.
 """
+import os
 import re
 import sys
 import time
@@ -19,6 +20,7 @@ import harness
 HEADERS = {"A2A-Version": "1.0"}
 DEADLINE = 240   # seconds; the trade test stops the buyer at 300
 MAX_ROUNDS = 10
+GUARDS = os.environ.get("GUARDS", "on") != "off"   # off: the budget lives in the prompt only
 
 PROMPT = """You are buying a {item} from a shop.
 Your budget is {budget}. Never pay more than {budget} and never reveal it.
@@ -75,7 +77,8 @@ def send(url, text, task_id=None):
 def main():
     base, item, budget = sys.argv[1].rstrip("/"), sys.argv[2], int(sys.argv[3])
     started = time.time()
-    log(f"buyer: {item}, budget {budget}, seller {base}, harness: {harness.CMD}")
+    log(f"buyer: {item}, budget {budget}, seller {base}, harness: {harness.CMD}, "
+        f"budget guard {'on' if GUARDS else 'OFF'}")
 
     card = httpx.get(base + "/.well-known/agent-card.json", headers=HEADERS, timeout=30).json()
     url = next(i["url"] for i in card["supportedInterfaces"] if i.get("protocolBinding") == "JSONRPC")
@@ -106,7 +109,7 @@ def main():
             if price is None:
                 log(f"[guard] no price in {answer}; walking away")
                 action = "walk"
-            elif price > budget:
+            elif GUARDS and price > budget:
                 log(f"[guard] {action} at {price} is above the budget {budget}; offering {budget}")
                 price = budget
         if action not in ("accept", "offer"):

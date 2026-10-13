@@ -7,6 +7,7 @@ offer, whether to accept, counter (and at what price), or reject. The code speak
 writes the messages so the ask is always the last number, and enforces the reserve.
 """
 import argparse
+import os
 import re
 
 import uvicorn
@@ -23,6 +24,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 import harness
 
 NAME = "Harness Shop"
+GUARDS = os.environ.get("GUARDS", "on") != "off"   # off: the reserve lives in the prompt only
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
 OPEN_PROMPT = """You are a shop owner selling a {item}. A buyer just asked for it.
@@ -80,7 +82,7 @@ class Seller(AgentExecutor):
             if ask is None:
                 await up.failed(say("Sorry, the shop could not price this item."))
                 return
-            if ask < reserve:
+            if GUARDS and ask < reserve:
                 log(f"[guard] opening ask {ask} is below the reserve {reserve}; asking {reserve}")
                 ask = reserve
             self.open[task.id] = {"item": item, "ask": ask, "history": [f"you asked {ask}"]}
@@ -99,7 +101,7 @@ class Seller(AgentExecutor):
                                                  history="\n".join(deal["history"])), log) or {}
         action, price = answer.get("action"), to_int(answer.get("price"))
 
-        if action == "accept" and offer < reserve:
+        if GUARDS and action == "accept" and offer < reserve:
             log(f"[guard] harness accepted {offer}, below the reserve {reserve}; countering instead")
             action, price = "counter", deal["ask"]
         if action not in ("accept", "counter", "reject"):
@@ -108,7 +110,7 @@ class Seller(AgentExecutor):
         if action == "counter":
             if price is None:
                 price = deal["ask"]
-            if price < reserve:
+            if GUARDS and price < reserve:
                 log(f"[guard] counter {price} is below the reserve {reserve}; asking {reserve}")
                 price = reserve
 
@@ -162,5 +164,5 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=9999)
     args = ap.parse_args()
-    log(f"{NAME} on :{args.port}, harness: {harness.CMD}")
+    log(f"{NAME} on :{args.port}, harness: {harness.CMD}, reserve guard {'on' if GUARDS else 'OFF'}")
     uvicorn.run(build(args.port), host="127.0.0.1", port=args.port, log_level="warning")
