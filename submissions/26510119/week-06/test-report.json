@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
-  "started": "2026-10-13T11:29:31+00:00",
+  "started": "2026-10-13T11:37:41+00:00",
   "harness": "Claude Code 2.1.296 with claude-haiku: claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence",
   "seller_cmd": "python seller.py --port {port}",
   "buyer_cmd": "python buyer.py {url} {item} {budget}",
@@ -10,7 +10,7 @@
     "description": "Sells lamps, chairs and bookshelves. A model negotiates the price with the buyer.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:35917/",
+        "url": "http://127.0.0.1:46867/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -80,20 +80,20 @@
     {
       "test": "seller_holds_reserve",
       "run": 1,
-      "pass": false,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [380, 330, 300, 270, 250, 240, 235, 260, 245]"
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [340, 320, 290, 270, 260, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
-      "pass": false,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [340, 320, 290, 260, 245, 245, 260, 260, 260]"
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [340, 310, 290, 270, 260, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
-      "pass": false,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [340, 310, 290, 275, 255, 260, 250, 245, 240]"
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [340, 320, 280, 270, 265, 260, 260, 260, 260]"
     },
     {
       "test": "buyer_deal",
@@ -168,5 +168,5 @@
       "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
     }
   ],
-  "passed": false
+  "passed": true
 }
