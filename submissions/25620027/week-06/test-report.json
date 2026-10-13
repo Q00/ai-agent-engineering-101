@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
-  "started": "2026-10-13T22:34:58+00:00",
+  "started": "2026-10-13T22:50:26+00:00",
   "harness": "Week05 custom Python function-tool loop; OpenAI gpt-4.1-nano-2025-04-14",
   "seller_cmd": "./run_harness.sh seller --port {port}",
   "buyer_cmd": "./run_harness.sh buyer --url {url} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Catalog shop: search and negotiate purchases.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:53449/",
+        "url": "http://127.0.0.1:54422/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -59,7 +59,7 @@
       "test": "seller_deal",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [130, 100]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [130, 130, 130]"
     },
     {
       "test": "seller_terminal",
@@ -71,7 +71,7 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [130, 130, 130, 130, 130]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [130, 130, 130]"
     },
     {
       "test": "seller_deal",
@@ -83,19 +83,19 @@
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [338, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [338, 260, 260, 260, 260, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [338, 260, 260, 260, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [338, 338, 338, 338, 338, 338, 338, 338, 338]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [338, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [338, 260, 260, 280, 280, 280, 280, 280, 280]"
     },
     {
       "test": "buyer_deal",
