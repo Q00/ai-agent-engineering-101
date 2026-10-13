@@ -1,0 +1,141 @@
+Name:         Lamp Shop
+Description:  Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.
+Version:      1.0.0
+Interfaces:
+  JSONRPC      http://127.0.0.1:9999/
+Streaming:    true
+Skills:
+  negotiate            Negotiate a purchase
+{"error":{"code":-32009,"message":"A2A version '0.3' is not supported by this handler. Expected version '1.0'.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"VERSION_NOT_SUPPORTED","domain":"a2a-protocol.org","metadata":{}}]},"id":1,"jsonrpc":"2.0"}Task:     113f6603-dcf1-46fd-995f-db5c487b3554
+Context:  701faea7-e46d-4ee3-aac4-638cec84453f
+Status:   input-required (2026-10-13T10:36:11Z)
+  lamp: asking 130. Send your offer as a number.
+History:
+  [user] I want to buy a lamp
+
+
+Resume:     a2a send --task-id 113f6603-dcf1-46fd-995f-db5c487b3554 "<reply>"
+{
+  "error": {
+    "code": "A2ACLI_ERR_USAGE",
+    "message": "provide a message as text, or via --text-part, --file-part, --data-part, or --request-payload",
+    "hint": "if you are an agent, your a2a skill may be out of date — run `a2a skill` for the current commands and update your local copy"
+  }
+}
+{
+  "error": {
+    "code": "A2ACLI_ERR_USAGE",
+    "message": "provide a message as text, or via --text-part, --file-part, --data-part, or --request-payload",
+    "hint": "if you are an agent, your a2a skill may be out of date — run `a2a skill` for the current commands and update your local copy"
+  }
+}
+exit code 2
+Task:     113f6603-dcf1-46fd-995f-db5c487b3554
+Context:  701faea7-e46d-4ee3-aac4-638cec84453f
+Status:   input-required (2026-10-13T10:40:54Z)
+  80 is too low. Counteroffer: 105.
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: asking 130. Send your offer as a number.
+  [user] 80
+
+
+Resume:     a2a send --task-id 113f6603-dcf1-46fd-995f-db5c487b3554 "<reply>"
+Task:     113f6603-dcf1-46fd-995f-db5c487b3554
+Context:  701faea7-e46d-4ee3-aac4-638cec84453f
+Status:   completed (2026-10-13T10:40:54Z)
+  Deal: lamp at 105.
+Artifacts:
+  [receipt] {"item":"lamp","price":105,"seller":"Lamp Shop"}
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: asking 130. Send your offer as a number.
+  [user] 80
+  [agent] 80 is too low. Counteroffer: 105.
+  [user] 105
+Task:     113f6603-dcf1-46fd-995f-db5c487b3554
+Context:  701faea7-e46d-4ee3-aac4-638cec84453f
+Status:   completed (2026-10-13T10:40:54Z)
+  Deal: lamp at 105.
+Artifacts:
+  [receipt] {"item":"lamp","price":105,"seller":"Lamp Shop"}
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: asking 130. Send your offer as a number.
+  [user] 80
+  [agent] 80 is too low. Counteroffer: 105.
+  [user] 105
+{
+  "error": {
+    "code": "A2ACLI_ERR_PROTOCOL",
+    "message": "failed to send message: Task 113f6603-dcf1-46fd-995f-db5c487b3554 is in terminal state: TASK_STATE_COMPLETED",
+    "a2aCode": "UNSUPPORTED_OPERATION"
+  }
+}
+exit code 1
+Task:     729a3d37-1710-4678-9f65-e9abf81cff9f
+Context:  0af9643e-3078-4fa0-9cff-e07c1eff93c0
+Status:   rejected (2026-10-13T10:46:37Z)
+  We only sell: lamp, chair, bookshelf.
+History:
+  [user] I want to buy a sofa
+Task:     dd0e7110-fa2d-49a0-b522-d04d1ee25f71
+Context:  7bbc5049-5056-4614-aae8-68dabc216d45
+Status:   input-required (2026-10-13T10:47:04Z)
+  chair: asking 234. Send your offer as a number.
+History:
+  [user] I want to buy a chair
+
+
+Resume:     a2a send --task-id dd0e7110-fa2d-49a0-b522-d04d1ee25f71 "<reply>"
+Task:     dd0e7110-fa2d-49a0-b522-d04d1ee25f71
+Context:  7bbc5049-5056-4614-aae8-68dabc216d45
+Status:   input-required (2026-10-13T10:50:47Z)
+  100 is too low. Counteroffer: 180.
+History:
+  [user] I want to buy a chair
+  [agent] chair: asking 234. Send your offer as a number.
+  [user] 100
+
+
+Resume:     a2a send --task-id dd0e7110-fa2d-49a0-b522-d04d1ee25f71 "<reply>"
+Task:     dd0e7110-fa2d-49a0-b522-d04d1ee25f71
+Context:  7bbc5049-5056-4614-aae8-68dabc216d45
+Status:   input-required (2026-10-13T10:50:47Z)
+  100 is too low. Counteroffer: 180.
+History:
+  [user] I want to buy a chair
+  [agent] chair: asking 234. Send your offer as a number.
+  [user] 100
+  [agent] 100 is too low. Counteroffer: 180.
+  [user] 100
+
+
+Resume:     a2a send --task-id dd0e7110-fa2d-49a0-b522-d04d1ee25f71 "<reply>"
+Task:     dd0e7110-fa2d-49a0-b522-d04d1ee25f71
+Context:  7bbc5049-5056-4614-aae8-68dabc216d45
+Status:   rejected (2026-10-13T10:50:47Z)
+  No deal at 100.
+History:
+  [user] I want to buy a chair
+  [agent] chair: asking 234. Send your offer as a number.
+  [user] 100
+  [agent] 100 is too low. Counteroffer: 180.
+  [user] 100
+  [agent] 100 is too low. Counteroffer: 180.
+  [user] 100
+Task:     f8d33a86-9d9a-4a2b-83c6-c44adb594d8e
+Context:  d750f39f-729d-4bd3-bf20-bdeabe0fcbdb
+Status:   input-required (2026-10-13T10:59:08Z)
+  bookshelf: asking 338. Send your offer as a number.
+History:
+  [user] I want to buy a bookshelf
+
+
+Resume:     a2a send --task-id f8d33a86-9d9a-4a2b-83c6-c44adb594d8e "<reply>"
+Task:     f8d33a86-9d9a-4a2b-83c6-c44adb594d8e
+Context:  d750f39f-729d-4bd3-bf20-bdeabe0fcbdb
+Status:   canceled (2026-10-13T10:59:24Z)
+History:
+  [user] I want to buy a bookshelf
+  [agent] bookshelf: asking 338. Send your offer as a number.
