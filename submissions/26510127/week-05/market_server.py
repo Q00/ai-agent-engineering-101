@@ -3,7 +3,7 @@
 The market decides three things before any model is involved:
   * who is calling      -> the bearer token (no sender argument on any tool; no token -> HTTP 401)
   * which negotiation   -> the token is bound to one negotiation_id (other ids -> tool error)
-  * whose turn          -> a move out of turn is a tool error
+  * whose turn          -> a move out of turn is a tool error (the buyer moves first, then they alternate)
 In the server conditions the token also carries the party's price limit and the market refuses
 a propose / accept_proposal outside it.
 
@@ -235,7 +235,7 @@ async def admin_open(request: Request):
     enforce = cond.startswith("server")
     NEGS[nid] = {"id": nid, "scenario": str(sc["id"]), "item": sc["item"], "condition": cond,
                  "inject": cond.endswith("_inject"), "raised": max(sc["reserve"], sc["budget"]) + 30,
-                 "limits": limits, "turn": "seller", "status": "open", "price": None,
+                 "limits": limits, "turn": "buyer", "status": "open", "price": None,
                  "exhausted": False, "moves": [], "events": [], "passes": 0}
     tokens = {}
     for role in ("seller", "buyer"):
