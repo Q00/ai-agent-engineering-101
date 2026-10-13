@@ -13,6 +13,7 @@ from google.protobuf.json_format import Parse
 from google.protobuf.struct_pb2 import Value
 from pydantic import JsonValue, TypeAdapter, ValidationError
 
+from market_a2a.catalog_constraints import compatible
 from market_a2a.models import (
     HarnessError,
     Product,
@@ -98,7 +99,11 @@ class Negotiator:
                 match tool:
                     case "search_catalog":
                         query = Search.model_validate_json(arguments)
-                        found = self.catalog.search(query.query)
+                        found = tuple(
+                            product
+                            for product in self.catalog.search(query.query)
+                            if current is not None or compatible(product, text)
+                        )
                         candidates.clear()
                         candidates.update((product.sku, product) for product in found)
                         self.harness.emit(
