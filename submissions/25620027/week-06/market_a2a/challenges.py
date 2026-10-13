@@ -9,6 +9,7 @@ from pydantic import Field, TypeAdapter
 
 from market_a2a.models import FrozenModel, HarnessError, Product, Purchase, ShoppingItem
 from market_a2a.remote import Task, Wire
+from market_a2a.shopping import Plan, Reservation
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -156,6 +157,63 @@ def receipt(task: Task, product: Product, shop: str) -> Purchase:
     )
 
 
+def audit_ledger(
+    log: str, fixture: ShoppingFixture, purchases: tuple[Purchase, ...]
+) -> tuple[Ledger, ...]:
+    """Replay reservations and releases, allowing retries only for unpaid items."""
+    expected = {
+        item.request_id: purchase
+        for item, purchase in zip(fixture.items, purchases, strict=True)
+    }
+    pending = set(expected)
+    reservations: dict[str, Reservation] = {}
+    ledger: list[Ledger] = []
+    spent = 0
+    for line in log.splitlines():
+        if "[SHOPPING PLAN] " in line:
+            plan = Plan.model_validate_json(line.split("[SHOPPING PLAN] ", 1)[1])
+            require(not reservations, "Replanned before releasing reservations")
+            reservations = {entry.request_id: entry for entry in plan.reservations}
+            require(
+                len(reservations) == len(plan.reservations)
+                and set(reservations) == pending
+                and bool(pending),
+                "Plan contains missing, duplicate or already purchased IDs",
+            )
+            require(
+                spent + sum(entry.cap for entry in reservations.values())
+                <= fixture.budget,
+                "Plan exceeds remaining budget",
+            )
+        if "[BUDGET LEDGER] " in line:
+            event = Ledger.model_validate_json(line.split("[BUDGET LEDGER] ", 1)[1])
+            reservation = reservations.pop(event.request_id, None)
+            if reservation is None:
+                message = "Ledger settlement lacks an active reservation"
+                raise HarnessError(message)
+            charge = event.spent - spent
+            require(
+                0 <= charge <= reservation.cap
+                and event.released == reservation.cap - charge
+                and event.reserved == sum(e.cap for e in reservations.values())
+                and event.total_budget == fixture.budget
+                and event.spent + event.reserved <= fixture.budget,
+                "Invalid ledger transition",
+            )
+            if charge:
+                bought = expected[event.request_id]
+                require(
+                    charge == bought.price and reservation.shop_url == bought.shop,
+                    "Ledger payment differs from receipt",
+                )
+                pending.remove(event.request_id)
+            spent = event.spent
+            ledger.append(event)
+    require(not pending and not reservations and bool(ledger), "Unsettled ledger")
+    require(spent == sum(p.price or 0 for p in purchases), "Ledger total differs")
+    return tuple(ledger)
+
+
 def shopping_summary(log: str, fixture: ShoppingFixture, root: Path) -> Summary:
     """Audit receipts, reservations, discovery and live task correlations."""
     raw_results = events(log, "SHOPPING_RESULT ")
@@ -188,22 +246,7 @@ def shopping_summary(log: str, fixture: ShoppingFixture, root: Path) -> Summary:
     require(len({p.shop for p in purchases}) >= MIN_SHOPS, "Expected several shops")
     total = sum(p.price or 0 for p in purchases)
     require(total <= fixture.budget, "Shopping exceeded total budget")
-    ledger = tuple(
-        Ledger.model_validate_json(raw) for raw in events(log, "[BUDGET LEDGER] ")
-    )
-    require(len(ledger) == len(purchases), "Missing budget transitions")
-    require(ledger[-1].reserved == 0 and ledger[-1].spent == total, "Unsettled ledger")
-    require(
-        {e.request_id for e in ledger} == {e.request_id for e in fixture.items},
-        "Ledger IDs differ",
-    )
-    require(
-        all(
-            e.spent + e.reserved <= fixture.budget and e.total_budget == fixture.budget
-            for e in ledger
-        ),
-        "Invalid ledger budget",
-    )
+    ledger = audit_ledger(log, fixture, purchases)
     requests = tuple(
         Request.model_validate_json(raw) for raw in events(log, "[A2A REQUEST] ")
     )
