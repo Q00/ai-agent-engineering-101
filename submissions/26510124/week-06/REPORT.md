@@ -136,7 +136,7 @@ VALIDATION ERROR: The harness response was not JSON
 
 마지막으로 `scripts/check_week06.py`에서 소스 문법, agent.json의 실행 설정,
 현재 공식 검사 파일과 일치하는 21개 통과 결과, 로그 및 보고서가 모두 통과했다.
-`scripts/check_pr_paths.py dyishappy`도 통과했다. PR은 생성하지 않았다.
+`scripts/check_pr_paths.py dyishappy`도 통과했다.
 
 ## 4. A2A가 해결한 것과 별도로 합의한 것
 
@@ -303,4 +303,3 @@ Challenge 3의 장문 속 가격 추출·공격 실험과 공개 서버 배포, 
 별도 브랜치다. 기존 `week-06` 작업 브랜치와 실패·수정 이력은 그대로 보존한다.
 이 보고서에서 인용한 커밋 ID는 원래 작업 브랜치의 ID이며, 제출용 브랜치에서도
 각 작업을 독립 커밋으로 유지한다. 이전 주차 변경은 제출용 비교에 포함하지 않는다.
-PR은 사용자 요청대로 생성하지 않았다.
