@@ -32,16 +32,18 @@ from harness import log
 NAME = "Haiku Furniture Shop"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
-ANSWER_FORMAT = ('Answer with one JSON object and nothing else:\n'  # doubled braces: goes through str.format
-                 '{{"action": "accept" | "counter" | "reject", "price": <integer>, '
-                 '"note": "<one short sentence to the buyer, no digits>"}}')
+ANSWER_FORMAT = ('Answer with one JSON object and nothing else:\n'  # filled into the prompt by str.format
+                 '{"action": "accept" | "counter" | "reject", "price": <integer>, '
+                 '"note": "<one short sentence to the buyer, no digits>"}')
 
 OPEN_PROMPT = """You are the seller in a furniture shop. A buyer has just asked for a {item}.
 Your reserve, the lowest price you may ever ask or sell for, is {reserve}. The buyer does not know it.
 Name your opening asking price. Leave room to come down, since the buyer will bargain.
 
-Answer with one JSON object and nothing else:
-{{"price": <integer>, "note": "<one short sentence to the buyer, no digits>"}}"""
+{open_format}"""
+
+OPEN_FORMAT = """Answer with one JSON object and nothing else:
+{"price": <integer>, "note": "<one short sentence to the buyer, no digits>"}"""
 
 COUNTER_PROMPT = """You are the seller in a furniture shop, negotiating the price of a {item} with a buyer.
 Your reserve, the lowest price you may ever ask or sell for, is {reserve}. The buyer does not know it.
@@ -57,7 +59,17 @@ Decide:
 A deal at or above your reserve is better than no deal. Concede step by step while the buyer keeps raising.
 Reject only when the buyer clearly will not reach your reserve.
 
-""" + ANSWER_FORMAT
+{answer_format}"""
+
+# Experiment 3 (experiments/): the harness writes the whole reply, price included, and the code sends it as is.
+FREE_OPEN_FORMAT = """Answer with one JSON object and nothing else:
+{"price": <integer>, "message": "<your reply to the buyer, one or two sentences, stating your price>"}"""
+FREE_ANSWER_FORMAT = ('Answer with one JSON object and nothing else:\n'
+                      '{"action": "accept" | "counter" | "reject", "price": <integer>, '
+                      '"message": "<your reply to the buyer, one or two sentences, stating your price>"}')
+
+# Experiment switches; the defaults are the submitted seller.
+OPTS = argparse.Namespace(free_text=False, data_part=False)
 
 
 def clean_note(note):
@@ -94,7 +106,8 @@ class Seller(AgentExecutor):
                 await up.reject(say("We only sell: " + ", ".join(RESERVE) + "."))
                 return
             reserve = RESERVE[item]
-            answer = await harness.ask(OPEN_PROMPT.format(item=item, reserve=reserve)) or {}
+            answer = await harness.ask(OPEN_PROMPT.format(
+                item=item, reserve=reserve, open_format=FREE_OPEN_FORMAT if OPTS.free_text else OPEN_FORMAT)) or {}
             ask = as_int(answer.get("price"))
             if ask is None:
                 ask = math.ceil(reserve * 1.3)
@@ -105,7 +118,8 @@ class Seller(AgentExecutor):
             note = clean_note(answer.get("note"))
             self.open[task.id] = {"item": item, "ask": ask, "history": [f"You asked {ask}."]}
             log("OUT", f"open {item} at {ask}")
-            await up.requires_input(say(f"{item}: {note + ' ' if note else ''}Asking {ask}. Send your offer as a number."))
+            text = f"{item}: {note + ' ' if note else ''}Asking {ask}. Send your offer as a number."
+            await up.requires_input(self.reply(up, text, answer, ask))
             return
 
         m = re.search(r"\d+(?:\.\d+)?", text)
@@ -122,7 +136,8 @@ class Seller(AgentExecutor):
             return
 
         answer = await harness.ask(COUNTER_PROMPT.format(
-            item=item, reserve=reserve, history="\n".join(deal["history"][:-1]), offer=offer, ask=ask)) or {}
+            item=item, reserve=reserve, history="\n".join(deal["history"][:-1]), offer=offer, ask=ask,
+            answer_format=FREE_ANSWER_FORMAT if OPTS.free_text else ANSWER_FORMAT)) or {}
         action, price, note = answer.get("action"), as_int(answer.get("price")), clean_note(answer.get("note"))
 
         if action == "accept":
@@ -152,7 +167,16 @@ class Seller(AgentExecutor):
         deal["ask"] = price
         deal["history"].append(f"You countered {price}.")
         log("OUT", f"counter {price} to offer {offer}")
-        await up.requires_input(say(f"{note} Counteroffer: {price}.".strip()))
+        await up.requires_input(self.reply(up, f"{note} Counteroffer: {price}.".strip(), answer, price))
+
+    def reply(self, up, text, answer, price):
+        """The input-required message: our template, or the harness's own words (--free-text), plus {"ask"} (--data-part)."""
+        if OPTS.free_text and answer.get("message"):
+            text = str(answer["message"])
+        parts = [new_text_part(text)]
+        if OPTS.data_part:
+            parts.append(new_data_part({"ask": price}))
+        return up.new_agent_message(parts=parts)
 
     async def close(self, up, say, task_id, item, price, note):
         receipt = {"seller": NAME, "item": item, "price": price}
@@ -193,5 +217,8 @@ def build(port):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=9999)
+    ap.add_argument("--free-text", action="store_true", help="experiment: send the harness's own reply text")
+    ap.add_argument("--data-part", action="store_true", help="experiment: add the ask as a data Part {\"ask\": N}")
     args = ap.parse_args()
+    OPTS = args
     uvicorn.run(build(args.port), host="127.0.0.1", port=args.port, log_level="warning")
