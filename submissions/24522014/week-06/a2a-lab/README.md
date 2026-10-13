@@ -255,3 +255,77 @@ a2a card get http://127.0.0.1:10099
 - `../logs/step4-server-20261013-204928.stdout.txt`와 `.stderr.txt`
 
 STEP 4에서 거래 명령은 아직 보내지 않았다. API 키가 필요 없는 실습이다.
+
+## STEP 5 — 사용자 요청으로 건너뜀
+
+흥정, 거래 완료, 거절, 취소와 헤더 검증 실습은 실행하지 않았다.
+
+## STEP 6 — Claude Code를 A2A 서버로 감싸기 완료
+
+Claude Code 2.1.296과 Haiku를 사용했다. CLI의 `--exec`가 받은 메시지를
+명령의 표준 입력으로 보내고, 명령의 표준 출력을 응답 artifact로 반환한다.
+Windows 실행을 위해 `start-claude-shop.ps1`을 만들었다. CLI 경로와 Claude
+경로를 현재 세션 PATH에 추가하며, 필요한 `sh.exe`는 Git for Windows의
+bin 폴더에서 찾는다. 영구 PATH는 변경하지 않는다.
+하네스는 프로젝트 지침을 읽지 않도록 `harness-work/` 빈 폴더에서 실행한다.
+
+실제 하네스 명령:
+
+```text
+claude -p --model haiku --system-prompt 'You are a furniture shop. You sell lamps. Answer in English, in one short sentence.'
+```
+
+직접 실습할 때는 먼저 이전 가게 서버를 해당 터미널에서 Ctrl+C로 종료한다.
+두 터미널 모두 `a2a-lab` 폴더로 이동하고 다음을 실행한다.
+
+터미널 1:
+
+```powershell
+.\start-claude-shop.ps1
+```
+
+터미널 2:
+
+```powershell
+. .\use-a2a.ps1
+a2a card get http://localhost:8090
+a2a --timeout 120s send -a http://localhost:8090 "Do you sell lamps? How much?"
+```
+
+사람이 확인할 것:
+
+1. 카드 이름이 `Claude Shop`인가?
+2. 결과 상태가 `completed`이고 `Artifacts`에 모델의 답이 있는가?
+3. 끝나면 터미널 1에서 Ctrl+C로 종료한다.
+
+이 단계에는 로그인된 Claude Code가 필요하며 구독 사용량이 소모된다.
+로그인이 필요하다는 오류가 나오면 별도 터미널에서 `claude`를 실행해
+화면의 로그인 안내를 직접 따른 후 서버를 다시 시작한다. API 키를 파일에
+넣을 필요는 없다. 응답 내용은 실행할 때마다 달라질 수 있다.
+
+첫 검증에서는 다음 오류로 task가 실패했다.
+
+```text
+Status:   failed
+exec: "sh": executable file not found in %PATH%
+```
+
+Git for Windows의 `sh`를 실행 세션 PATH에 추가해 해결했다.
+명령 문자열에는 `claude`를 사용하고 실행 파일 위치는 PATH로 전달한다.
+첫 실행의 원본 로그 `step6-*-20261013-210235*.txt`와 실패 커밋도 보존했다.
+
+재검증 결과는 `completed`였고 다음 모델 응답이 artifact에 저장됐다.
+
+```text
+Yes, we sell lamps, but I don't have current prices in front of me, so please check our catalog or ask our staff for exact pricing.
+```
+
+성공 로그:
+
+- `../logs/step6-card-20261013-211230.txt`와 `.stderr.txt`
+- `../logs/step6-send-20261013-211230.txt`와 `.stderr.txt`
+- `../logs/step6-server-20261013-211230.stdout.txt`와 `.stderr.txt`
+
+검증용 서버는 종료했다. 이 방식은 메시지마다 새 task를 만들어 완료한다.
+앞선 대화를 이어가는 흥정 상태를 제공하지 않으므로, STEP 4 가게의
+여러 턴 거래나 과제의 하네스 기반 buyer/seller 구현을 대신하지 않는다.
