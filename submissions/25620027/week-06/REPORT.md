@@ -19,6 +19,8 @@
 | 런타임 | Python 3.12.11, a2a-sdk 1.2.2, OpenAI SDK 3.8.0, httpx2 2.13.1; 나머지는 run.py.lock |
 | 명세 | upstream 98968bd0ab5d00fc27f93bdff634f5f60184f596의 weeks/week-06/README.md |
 
+교수 wpti.dev 6주차 웹강의에는 seller_agent.py 핵심 예제와 공식 A2A CLI 실습이 있으며, GitHub week-06에는 제출용 starter가 없다. 이 구현은 강의의 판매자 동작과 공식 과제 계약에 맞춰 작성했다. 교수 웹의 참조 buyer는 Claude Haiku이며, 아래 결과는 OpenAI GPT-4.1 nano로 실제 실행한 별도 결과다. 모델이 달라 참조 실행과 수치가 같아야 하는 재현으로 해석하지 않는다.
+
 ### 실제 카드 문구
 
 Plain에서는 두 판매자가 같은 description과 skill description을 쓴다.
