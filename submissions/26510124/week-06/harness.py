@@ -6,6 +6,7 @@ Follow-up negotiation and the buyer are later checkpoints.
 import argparse
 import json
 from pathlib import Path
+import re
 import shlex
 import subprocess
 import tempfile
@@ -26,6 +27,11 @@ class HarnessError(RuntimeError):
 
 def parse_opening(output, reserve):
     """Validation checks the model's decision; it never changes its price."""
+    # Some print-mode replies wrap otherwise valid JSON in one Markdown block.
+    # Only unwrap a complete block; do not guess JSON out of surrounding prose.
+    fenced = re.fullmatch(r"```(?:json)?[ \t]*\r?\n(.*?)\r?\n```", output.strip(), re.DOTALL | re.IGNORECASE)
+    if fenced:
+        output = fenced.group(1)
     try:
         decision = json.loads(output)
     except json.JSONDecodeError as exc:
