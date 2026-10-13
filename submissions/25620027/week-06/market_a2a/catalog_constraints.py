@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import re
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
-from market_a2a.models import Product
+if TYPE_CHECKING:
+    from market_a2a.models import Product
 
 FEATURES: Final = (
     "lockable",

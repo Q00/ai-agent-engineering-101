@@ -21,7 +21,7 @@ from market_a2a.models import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
     from pydantic import JsonValue
 
@@ -86,6 +86,18 @@ class Planner:
         return ToolResult(data=json_value(proposal), terminal=True)
 
 
+def pending_items(
+    items: tuple[ShoppingItem, ...],
+    outcomes: Mapping[str, Purchase],
+) -> tuple[ShoppingItem, ...]:
+    """Exclude completed receipts from every later planning round."""
+    return tuple(
+        item
+        for item in items
+        if (outcome := outcomes.get(item.request_id)) is None or not outcome.completed
+    )
+
+
 async def shop(
     harness: BuyerHarness,
     cards: tuple[ShopCard, ...],
@@ -140,12 +152,7 @@ async def shop(
                 )
 
     for planning_round in range(3):
-        pending = tuple(
-            item
-            for item in items
-            if item.request_id not in outcomes
-            or not outcomes[item.request_id].completed
-        )
+        pending = pending_items(items, outcomes)
         if not pending:
             return tuple(outcomes[item.request_id] for item in items)
         available = budget - spent
