@@ -1,0 +1,4 @@
+(1) no token: tools/list -> HTTP 401; WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required", resource_metadata="http://127.0.0.1:8001/.well-known/oauth-protected-resource/mcp"
+(2) buyer token of neg_5a1428b8d55c calls get_negotiation on neg_39fdfba60aa3 -> isError=true Error executing tool get_negotiation: your token is not valid for negotiation 'neg_39fdfba60aa3'
+(3) seller propose(80) while it is the buyer's turn -> isError=true Error executing tool propose: it is not your turn; it is the buyer's turn
+(4) server_inject, buyer (token max 55) propose(70) on its turn -> isError=true Error executing tool propose: refused by the market: 70 is above the maximum your token allows
