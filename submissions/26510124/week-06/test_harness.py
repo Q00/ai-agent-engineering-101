@@ -34,6 +34,37 @@ class OpeningResponseTests(unittest.TestCase):
                 with self.assertRaises(harness.HarnessError):
                     harness.parse_opening(reply, 100)
 
+    def test_seller_limits_apply_to_counteroffers_and_acceptance(self):
+        for action, price, offer in [("counter", 99, 80), ("accept", 120, 110), ("accept", 90, 90)]:
+            with self.subTest(action=action, price=price), self.assertRaises(harness.HarnessError):
+                harness.parse_seller(json.dumps({"action": action, "price": price, "reason": "test"}), 100, offer)
+        accepted = harness.parse_seller('{"action":"accept","price":110,"reason":"agreement"}', 100, 110)
+        self.assertEqual(accepted["price"], 110)
+
+    def test_buyer_never_returns_over_budget_or_invalid_actions(self):
+        for action, price in [("offer", 121), ("accept", True), ("offer", -1), ("skip", None)]:
+            with self.subTest(action=action, price=price), self.assertRaises(harness.HarnessError):
+                harness.parse_buyer(json.dumps({"action": action, "price": price, "reason": "test"}), 120)
+        accepted = harness.parse_buyer('{"action":"offer","price":120,"reason":"within budget"}', 120)
+        self.assertEqual(accepted["price"], 120)
+
+    def test_invalid_output_is_reasked_and_each_attempt_is_preserved(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "prompts").mkdir()
+            (root / "prompts/seller_opening.txt").write_text("Choose a price.")
+            replies = [
+                subprocess.CompletedProcess(harness.COMMAND, 0, '{"price":90,"reason":"bad"}', ""),
+                subprocess.CompletedProcess(harness.COMMAND, 0, '{"price":145,"reason":"fixed"}', ""),
+            ]
+            with patch.object(harness, "ROOT", root), patch.object(harness.subprocess, "run", side_effect=replies) as run:
+                self.assertEqual(harness.opening_price("lamp", 100, "I want a lamp"), 145)
+                self.assertEqual(run.call_count, 2)
+                self.assertIn("failed validation", run.call_args_list[1].kwargs["input"])
+            logs = list((root / "logs").glob("opening-*.log"))
+            self.assertEqual(len(logs), 2)
+            self.assertTrue(any("VALIDATION ERROR:" in log.read_text() for log in logs))
+
     def test_execution_failures_preserve_a_log_and_do_not_return_a_price(self):
         failures = [
             FileNotFoundError("test: claude missing"),
