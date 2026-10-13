@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
-  "started": "2026-10-13T11:50:32+00:00",
+  "started": "2026-10-13T12:03:59+00:00",
   "harness": "Claude Code 2.1.296 (claude -p --model haiku, built-in tools off) inside our own ReAct loop",
   "seller_cmd": "py seller.py --port {port}",
   "buyer_cmd": "py buyer.py --url {url} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Sells lamps, chairs and bookshelves. Negotiates the price with the buyer.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:60827/",
+        "url": "http://127.0.0.1:57706/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -95,7 +95,7 @@
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [338, 338, 299, 260, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [338, 299, 260, 260, 260, 260, 260, 260, 260]"
     },
     {
       "test": "buyer_deal",
