@@ -1,10 +1,9 @@
-"""Opening-price checkpoint for an A2A seller (a2a-sdk 1.2.x, JSON-RPC binding).
+"""A2A seller: Claude Code chooses all quotes and accept/reject decisions.
 
     python seller_agent.py                       # lamp shop on :9999
     python seller_agent.py --config cards/b.json # another seller from a config file
 
-Claude Code Haiku chooses the opening price. Follow-up counteroffers, accepting,
-and rejecting still use the lab rules: this is NOT the finished assignment.
+Python manages A2A state, checks price limits, and renders the model's decision.
 """
 import argparse
 import asyncio
@@ -22,7 +21,7 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from harness import HarnessError, opening_price
+from harness import HarnessError, opening_price, seller_decision
 
 DEFAULT = {
     "name": "Lamp Shop",
@@ -30,14 +29,15 @@ DEFAULT = {
     "skill_description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
     "port": 9999,
     "reserve": {"lamp": 100, "chair": 180, "bookshelf": 260},
-    "max_rounds": 3,
 }
 
 
 class Seller(AgentExecutor):
     def __init__(self, cfg):
         self.cfg = cfg
-        self.open = {}  # task id -> {"item", "ask", "rounds"}
+        self.open = {}  # task id -> item, latest ask, and explicit model context
+        self.pending = {}  # task id -> cancellation event during model inference
+        self.locks = {}  # serialize state publication with CancelTask
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -49,44 +49,78 @@ class Seller(AgentExecutor):
         text = get_message_text(context.message) or ""
         deal = self.open.get(task.id)
 
-        if deal is None:  # first message: which item?
+        if deal is None:  # first message: identify the catalog item
             item = next((k for k in self.cfg["reserve"] if k in text.lower()), None)
             if item is None:
                 await up.reject(say("We only sell: " + ", ".join(self.cfg["reserve"]) + "."))
                 return
-            try:
-                ask = await asyncio.to_thread(opening_price, item, self.cfg["reserve"][item], text)
-            except HarnessError as exc:
-                await up.failed(say(str(exc)))
+            history = [{"role": "buyer", "text": text}]
+        else:
+            item = deal["item"]
+            # Wire format is a nonnegative integer offer, not arbitrary prose.
+            if re.fullmatch(r"[0-9]+", text.strip()) is None:
+                await up.requires_input(say(f"Send an integer offer. Current asking price: {deal['ask']}"))
                 return
-            self.open[task.id] = {"item": item, "ask": ask, "rounds": 0}
-            await up.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
-            return
+            offer = int(text.strip())
+            history = deal["history"] + [{"role": "buyer", "text": text}]
 
-        # Next learning checkpoint: move the following decisions to the harness.
-        m = re.search(r"\d+", text)
-        if m is None:
-            await up.requires_input(say("Send your offer as a number."))
-            return
-        offer, reserve = int(m.group()), self.cfg["reserve"][deal["item"]]
-        if offer >= reserve:
-            receipt = {"seller": self.cfg["name"], "item": deal["item"], "price": offer}
-            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(say(f"Deal: {deal['item']} at {offer}."))
-            del self.open[task.id]
-            return
-        deal["rounds"] += 1
-        if deal["rounds"] >= self.cfg["max_rounds"]:
-            await up.reject(say(f"No deal at {offer}."))
-            del self.open[task.id]
-            return
-        deal["ask"] = max(reserve, (offer + deal["ask"]) // 2)
-        await up.requires_input(say(f"{offer} is too low. Counteroffer: {deal['ask']}."))
+        canceled = asyncio.Event()
+        self.pending[task.id] = canceled
+        lock = self.locks.setdefault(task.id, asyncio.Lock())
+        try:
+            try:
+                if deal is None:
+                    price = await asyncio.to_thread(opening_price, item, self.cfg["reserve"][item], text)
+                    decision = {"action": "counter", "price": price}
+                else:
+                    decision = await asyncio.to_thread(
+                        seller_decision, item=item, reserve=self.cfg["reserve"][item],
+                        offer=offer, history=history,
+                    )
+            except HarnessError as exc:
+                async with lock:
+                    if not canceled.is_set():
+                        self.open.pop(task.id, None)
+                        await up.failed(say(str(exc)))
+                return
+
+            async with lock:
+                # CancelTask can finish while a slow model is still running.
+                # Its late response must not reopen the canceled negotiation.
+                if canceled.is_set():
+                    return
+                action = decision["action"]
+                if action == "counter":
+                    price = decision["price"]
+                    reply = (f"{item}: asking {price}. Send your offer as a number."
+                             if deal is None else f"Counteroffer: {price}.")
+                    self.open[task.id] = {
+                        "item": item, "ask": price,
+                        "history": history + [{"role": "seller", "text": reply}],
+                    }
+                    await up.requires_input(say(reply))
+                elif action == "accept":
+                    price = decision["price"]
+                    receipt = {"seller": self.cfg["name"], "item": item, "price": price}
+                    await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+                    await up.complete(say(f"Deal: {item} at {price}."))
+                    self.open.pop(task.id, None)
+                else:
+                    await up.reject(say("No mutually acceptable deal. Negotiation ended."))
+                    self.open.pop(task.id, None)
+        finally:
+            if self.pending.get(task.id) is canceled:
+                self.pending.pop(task.id, None)
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
-        self.open.pop(task.id, None)
-        await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
+        lock = self.locks.setdefault(task.id, asyncio.Lock())
+        async with lock:
+            pending = self.pending.get(task.id)
+            if pending:
+                pending.set()
+            self.open.pop(task.id, None)
+            await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 
 def build(cfg):
