@@ -145,3 +145,58 @@ History:
 이 사전 검사를 빼고 강의의 CLI 명령으로 직접 검증했고 성공했다.
 첫 서버 출력은 `step2-server-20261013-194848.*.txt`로 그대로 보존했다.
 검증 후 에이전트가 시작한 서버는 종료했으므로 직접 실습할 때 다시 켠다.
+
+## STEP 3 — hello A2A 서버 완료
+
+`hello_agent.py`는 강의의 STEP 3 예제를 저장한 파일이다.
+`Hello.execute()`는 메시지를 읽고 task를 만든 다음
+`Hello! You said: ...`라는 응답을 붙여 task를 완료한다.
+Agent Card에는 `Hello Agent`, `Say hello` skill과 JSON-RPC 1.0 접속 주소를
+적었다. handler와 Starlette app은 카드 조회 경로와 JSON-RPC 경로를 연결한다.
+이 예제의 `cancel()`은 강의대로 빈 구현이므로 취소 동작을 검증하는 단계는 아니다.
+
+직접 실습하려면 터미널 두 개를 열고 각각 다음 폴더로 이동한다.
+코드 블록에는 프롬프트 표시인 `$`가 없으며, 큰따옴표는 양쪽 모두 입력한다.
+
+```powershell
+cd C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab
+```
+
+터미널 1에서 가상환경의 Python으로 서버를 실행한다.
+가상환경이 활성화되어 있지 않아도 이 명령은 같은 환경을 사용한다.
+
+```powershell
+.\.venv\Scripts\python.exe hello_agent.py
+```
+
+`Uvicorn running on http://127.0.0.1:9000`이 보이면 켜 둔다.
+터미널 2에서는 CLI 경로를 등록하고 카드 조회, 메시지 전송을 실행한다.
+
+```powershell
+. .\use-a2a.ps1
+a2a card get http://127.0.0.1:9000
+a2a send -a http://127.0.0.1:9000 "hi there"
+```
+
+직접 확인할 것:
+
+1. 카드 이름 `Hello Agent`, 인터페이스 `JSONRPC`, skill `Say hello`.
+2. 메시지 결과 `Status: completed`와 `Hello! You said: hi there`.
+3. 터미널 1 로그의 `GET /.well-known/agent-card.json` 다음 `POST /`.
+4. 다른 문자열을 보내서 `Hello! You said: ...`의 뒷부분이 바뀌는지 확인.
+5. 끝나면 터미널 1에서 Ctrl+C로 종료.
+
+STEP 2는 echo 결과를 artifact로 반환했고 이 예제는 task의 완료 메시지로
+인사말을 반환한다. 따라서 이 단계에서는 `Artifacts` 표시가 없어도 정상이다.
+
+실제 검증에서 문법 검사, 카드 조회, `hi there` 전송이 성공했고
+서버 로그의 GET과 POST 모두 200 OK였다. 저장된 로그 내용도 확인했다.
+검증 후 에이전트가 시작한 서버는 종료했다.
+
+- `../logs/step3-syntax-20261013-201128.stdout.txt`와 `.stderr.txt` (성공 시 출력 없음)
+- `../logs/step3-card-20261013-201128.txt`
+- `../logs/step3-send-20261013-201128.txt`
+- `../logs/step3-server-20261013-201128.stdout.txt`와 `.stderr.txt`
+
+API 키나 모델 호출은 필요 없다. 과제용 seller/buyer의 구현과 전체 과제
+검사는 아직 진행하지 않았다.
