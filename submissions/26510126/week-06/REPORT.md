@@ -118,6 +118,8 @@ seller repeated `Counteroffer: 260.` up to five times and the buyer could only
 infer from the repetition that it would not move. The skill in the card carries a
 sentence, not a schema, so the format had to go into the skill description as
 prose. Even the receipt, the one structured part, came back with `"price": 120.0`
-for an integer I put in, because a data Part goes through a protobuf Struct where
-every number is a double. A2A fixed the envelope; the price inside it still had to
+for an integer I put in. In a2a-sdk 1.2.2, `new_data_part` stores the dict as a
+`google.protobuf.Value` (`ParseDict`, `a2a/helpers/proto_helpers.py`), whose only
+numeric field is the double `number_value`, and the JSON-RPC dispatcher turns the
+task back into JSON with `MessageToDict`, which writes that double as `120.0`. A2A fixed the envelope; the price inside it still had to
 be agreed on by both sides out of band.
