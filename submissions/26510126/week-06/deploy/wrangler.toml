@@ -1,0 +1,13 @@
+name = "a2a-lamp-shop"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+# One Durable Object per A2A task holds the task and its negotiation state,
+# so every follow-up on the same taskId reaches the same state.
+[[durable_objects.bindings]]
+name = "TASKS"
+class_name = "TaskObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TaskObject"]
