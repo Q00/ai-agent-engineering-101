@@ -209,3 +209,41 @@ or in my seller's prompt (in free-text mode) makes it do so, and a model or a
 language that writes "120 instead of 125" would break it silently. The guards fired
 twice in 100 runs, both times correctly. They are cheap insurance against a rare
 slip, not the thing that made the agents work.
+
+## 6. Optional: the seller on Cloudflare Workers
+
+The instructor suggested deploying the week's work with Hono on a serverless
+platform. `deploy/` is a seller on Cloudflare Workers: Hono for the routes (the card
+at `/.well-known/agent-card.json`, JSON-RPC at `/`) and one Durable Object per task
+id for the state.
+
+**What did not carry over: the harness.** The submitted agents decide through
+Claude Code, a CLI that runs on my machine under my subscription login. A Worker
+has neither the CLI nor the login, so a deployed agent can only reach a model
+through a model API (Workers AI, or the Claude API with a key), which is a model
+call rather than a harness. The deployed seller therefore uses the kit seller's
+rules with no model at all. The harness stays in the local `seller.py` and
+`buyer.py`; a trade against the deployed shop is my harness-driven buyer against a
+rule-based seller across the network.
+
+**What changed in the A2A layer.** The Python servers keep tasks in memory
+(`InMemoryTaskStore`). A Worker is stateless between requests, so each task lives
+in a Durable Object found by its task id, and every follow-up with that `taskId`
+reaches the same state. There is no a2a-sdk here, so I captured the Python shop's
+JSON-RPC traffic (`deploy/wire/`) and matched it by hand: `SendMessage` wraps the
+task as `{"task": ...}` while `GetTask` and `CancelTask` return it bare, and the
+errors carry the same codes and `ErrorInfo` reasons (`-32009` without the
+`A2A-Version` header, `-32001` for an unknown task, `-32004` for a message to a
+finished task). The receipt is the one visible difference: the Worker writes
+`"price": 105` where the Python shop wrote `105.0`, because no protobuf `Value` sits
+in between (section 4).
+
+**Local check.** Under `wrangler dev` the Worker passed the lab's scenarios with
+the a2a CLI (open at 130, counter 105 to an offer of 80, receipt at 105, error on
+the finished task, cancel, reject an unknown item, `-32009` without the header),
+and my harness buyer bought a lamp at 105 on a budget of 120 and got no deal on a
+bookshelf at 230 (`deploy/logs/`).
+
+**Deployed.** TODO after `wrangler login` and `wrangler deploy`: the public URL, the
+same CLI scenarios and buyer runs against it, and anything that differed from
+`wrangler dev`.
