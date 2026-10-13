@@ -1,5 +1,4 @@
 # Copyright (c) 2026 25620027
-# ruff: noqa: INP001 -- tests are collected by pytest, not imported as a package.
 """Exercise the real OpenAI SDK against deterministic HTTP responses."""
 
 import json

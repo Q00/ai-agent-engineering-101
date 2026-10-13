@@ -1,29 +1,48 @@
-"""Paired card-order schedule and append-only captures for the required matrix."""
+"""Paired discovery order and append-only captures for the required matrix."""
 
 from __future__ import annotations
 
+import json
 import random
-from collections.abc import Sequence
 from contextlib import redirect_stdout
-from pathlib import Path
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Final
 
-import httpx2
 import typer
-from openai import AsyncOpenAI
 
-from archive import Archive
 from episode import Context, Episode, EpisodeRunner
 from models import Condition, Config, ExperimentError, Scenario, Shop
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    import httpx2
+    from openai import AsyncOpenAI
+
+    from archive import Archive
+
+MIN_SCENARIOS: Final = 4
+
+
+@dataclass(frozen=True, slots=True)
+class Resources:
+    """Reuse runner-owned handles while every episode gets a fresh conversation."""
+
+    http: httpx2.AsyncClient
+    model: AsyncOpenAI
+    archive: Archive
+
 
 def schedule(
-    config: Config, scenarios: Sequence[Scenario],
+    config: Config,
+    scenarios: Sequence[Scenario],
 ) -> tuple[Episode, ...]:
-    """Randomize order once per pair so only the card text differs across conditions."""
+    """Draw order once per pair; condition never changes order or private state."""
     rng = random.Random(config.card_order_seed)
     orders = {
         (run, scenario.id): (
-            (Shop.CHEAP, Shop.PRICEY) if rng.getrandbits(1)
+            (Shop.CHEAP, Shop.PRICEY)
+            if rng.getrandbits(1)
             else (Shop.PRICEY, Shop.CHEAP)
         )
         for run in range(1, config.repetitions + 1)
@@ -38,8 +57,10 @@ def schedule(
 
 
 def validate_scenarios(scenarios: Sequence[Scenario]) -> None:
-    """Reject a matrix without both eligible-shop cases before any model call."""
-    if len(scenarios) < 4 or len({s.id for s in scenarios}) != len(scenarios):
+    """Check eligibility cases before any network or paid model call."""
+    if len(scenarios) < MIN_SCENARIOS or len({s.id for s in scenarios}) != len(
+        scenarios
+    ):
         raise ExperimentError("scenarios", "need four or more unique IDs")
     if not all(s.cheap_reserve < s.pricey_reserve for s in scenarios):
         raise ExperimentError("scenarios", "cheap must be cheaper for every item")
@@ -50,18 +71,23 @@ def validate_scenarios(scenarios: Sequence[Scenario]) -> None:
 
 
 async def run_condition(
-    condition: Condition, config: Config, scenarios: Sequence[Scenario],
-    http: httpx2.AsyncClient, model: AsyncOpenAI, archive: Archive,
+    condition: Condition,
+    config: Config,
+    scenarios: Sequence[Scenario],
+    resources: Resources,
 ) -> None:
-    """Write one console file per condition/repeat and preserve each completed cell."""
+    """Capture one file per run and persist each cell immediately for resume."""
+    archive = resources.archive
     recorded = archive.completed()
     directory = archive.root / "logs"
     directory.mkdir(exist_ok=True)
     for run in range(1, config.repetitions + 1):
         path = directory / f"{condition.value}-{run:02d}.txt"
         cells = [
-            cell for cell in schedule(config, scenarios)
-            if cell.condition is condition and cell.run == run
+            cell
+            for cell in schedule(config, scenarios)
+            if cell.condition is condition
+            and cell.run == run
             and (run, condition, cell.scenario.id) not in recorded
         ]
         if not cells:
@@ -71,38 +97,50 @@ async def run_condition(
             for cell in cells:
                 with redirect_stdout(console):
                     print(
-                        f"[EPISODE] run={run} condition={condition.value} "
-                        f"scenario={cell.scenario.id} "
-                        f"card_order={'/'.join(s.value for s in cell.order)}"
+                        " ".join(
+                            (
+                                f"[EPISODE] run={run} condition={condition.value}",
+                                f"scenario={cell.scenario.id}",
+                                f"card_order={'/'.join(s.value for s in cell.order)}",
+                            )
+                        )
                     )
-                    context = Context(config, model, http, archive, print)
+                    context = Context(
+                        config,
+                        resources.model,
+                        resources.http,
+                        archive,
+                        print,
+                    )
                     result = await EpisodeRunner(context, cell).run()
                     archive.append(result)
                     print(f"[RESULT] {result.csv_record()}")
                     console.flush()
                 typer.echo(
-                    f"{condition.value}-{run:02d}/{cell.scenario.id}: "
-                    f"{result.chosen or '-'} {result.outcome or 'CRASH'} "
-                    f"price={result.price} offers={result.turns} "
-                    f"llm_calls={result.llm_calls}"
+                    " ".join(
+                        (
+                            f"{condition.value}-{run:02d}/{cell.scenario.id}:",
+                            f"{result.chosen or '-'} {result.outcome or 'CRASH'}",
+                            f"price={result.price} offers={result.turns}",
+                            f"llm_calls={result.llm_calls}",
+                        )
+                    )
                 )
                 if result.outcome is None:
                     raise ExperimentError(
-                        "experiment stopped", "crashed episode retained in results.csv",
+                        "experiment stopped",
+                        "crashed episode retained in results.csv",
                     )
 
 
 def reserve_argument(scenarios: Sequence[Scenario], shop: Shop) -> str:
-    """Send reserve data only to the seller process, never to the model prompt."""
-    import json
-
+    """Provide evaluator reserve data only to the server process."""
     prices: dict[str, int] = {}
     for scenario in scenarios:
         amount = (
             scenario.cheap_reserve if shop is Shop.CHEAP else scenario.pricey_reserve
         )
-        old = prices.setdefault(scenario.item, amount)
-        if old != amount:
-            raise ExperimentError("scenarios", "one item's reserve differs across rows")
+        previous = prices.setdefault(scenario.item, amount)
+        if previous != amount:
+            raise ExperimentError("scenarios", "one item's reserves differ across rows")
     return json.dumps(prices, sort_keys=True)
-

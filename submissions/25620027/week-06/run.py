@@ -19,10 +19,9 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-from collections.abc import AsyncIterator
 from contextlib import ExitStack, asynccontextmanager
 from pathlib import Path
-from typing import Annotated, Final
+from typing import TYPE_CHECKING, Annotated, Final
 
 import anyio
 import httpx2
@@ -31,9 +30,18 @@ from openai import AsyncOpenAI
 from pydantic import TypeAdapter
 
 from archive import Archive
-from batches import reserve_argument, run_condition, schedule, validate_scenarios
+from batches import (
+    Resources,
+    reserve_argument,
+    run_condition,
+    schedule,
+    validate_scenarios,
+)
 from http_client import create_client
 from models import Condition, Config, ExperimentError, Scenario, Shop
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 ROOT: Final = Path(__file__).resolve().parent
 app = typer.Typer(add_completion=False)
@@ -56,12 +64,16 @@ async def wait_ready(client: httpx2.AsyncClient, port: int) -> None:
 
 @asynccontextmanager
 async def sellers(
-    condition: Condition, config: Config, scenarios: tuple[Scenario, ...],
-    output: Path, http: httpx2.AsyncClient,
-) -> AsyncIterator[None]:
+    condition: Condition,
+    config: Config,
+    scenarios: tuple[Scenario, ...],
+    output: Path,
+    http: httpx2.AsyncClient,
+) -> AsyncGenerator[None]:
     """Start and terminate only the two process handles owned by this invocation."""
     process_env = {
-        key: value for key, value in os.environ.items()
+        key: value
+        for key, value in os.environ.items()
         if key not in {"OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY"}
     }
     processes: list[subprocess.Popen[bytes]] = []
@@ -73,20 +85,30 @@ async def sellers(
                 (Shop.PRICEY, config.pricey_name, config.pricey_port),
             ):
                 log = stack.enter_context(
-                    (output / "logs" / f"server-{condition.value}-{shop.value}.txt")
-                    .open("ab"),
+                    (
+                        output / "logs" / f"server-{condition.value}-{shop.value}.txt"
+                    ).open("ab"),
                 )
                 command = [
-                    sys.executable, str(ROOT / "seller.py"),
-                    "--name", name, "--port", str(port),
-                    "--reserve-json", reserve_argument(scenarios, shop),
-                    "--low-offer-limit", str(config.low_offer_limit),
+                    sys.executable,
+                    str(ROOT / "seller.py"),
+                    "--name",
+                    name,
+                    "--port",
+                    str(port),
+                    "--reserve-json",
+                    reserve_argument(scenarios, shop),
+                    "--low-offer-limit",
+                    str(config.low_offer_limit),
                 ]
                 if condition is Condition.INFLATED and shop is Shop.PRICEY:
                     command.append("--inflated")
                 process = await anyio.to_thread.run_sync(
-                    lambda: subprocess.Popen(
-                        command, cwd=ROOT, env=process_env, stdout=log,
+                    lambda command=command, log=log: subprocess.Popen(
+                        command,
+                        cwd=ROOT,
+                        env=process_env,
+                        stdout=log,
                         stderr=subprocess.STDOUT,
                     ),
                 )
@@ -107,14 +129,17 @@ async def sellers(
 
 
 async def execute(
-    config: Config, scenarios: tuple[Scenario, ...], output: Path,
+    config: Config,
+    scenarios: tuple[Scenario, ...],
+    output: Path,
 ) -> None:
     """Avoid requiring a credential when every cell has already been archived."""
     archive = Archive(output)
     expected = schedule(config, scenarios)
     recorded = archive.completed()
     pending = [
-        cell for cell in expected
+        cell
+        for cell in expected
         if (cell.run, cell.condition, cell.scenario.id) not in recorded
     ]
     if not pending:
@@ -122,16 +147,27 @@ async def execute(
         return
     if not os.environ.get("OPENAI_API_KEY"):
         raise ExperimentError("credentials", "OPENAI_API_KEY is not set")
-    async with create_client() as http, create_client(model=True) as model_http:
-        async with AsyncOpenAI(
-            api_key=os.environ["OPENAI_API_KEY"], base_url=config.base_url,
-            http_client=model_http, max_retries=0, timeout=90,
-        ) as model:
-            for condition in Condition:
-                if not any(cell.condition is condition for cell in pending):
-                    continue
-                async with sellers(condition, config, scenarios, output, http):
-                    await run_condition(condition, config, scenarios, http, model, archive)
+    async with (
+        create_client() as http,
+        create_client(model=True) as model_http,
+        AsyncOpenAI(
+            api_key=os.environ["OPENAI_API_KEY"],
+            base_url=config.base_url,
+            http_client=model_http,
+            max_retries=0,
+            timeout=90,
+        ) as model,
+    ):
+        for condition in Condition:
+            if not any(cell.condition is condition for cell in pending):
+                continue
+            async with sellers(condition, config, scenarios, output, http):
+                await run_condition(
+                    condition,
+                    config,
+                    scenarios,
+                    Resources(http, model, archive),
+                )
 
 
 @app.command()
@@ -151,10 +187,12 @@ def main(
     )
     validate_scenarios(scenarios)
     if dry_run:
-        message = (
-            f"validated: {len(scenarios)} scenarios x 2 conditions x "
-            + f"{config.repetitions} repeats = "
-            + f"{len(schedule(config, scenarios))} episodes"
+        message = " ".join(
+            (
+                f"validated: {len(scenarios)} scenarios x 2 conditions x",
+                f"{config.repetitions} repeats =",
+                f"{len(schedule(config, scenarios))} episodes",
+            )
         )
         typer.echo(message)
         return
@@ -167,4 +205,3 @@ def main(
 
 if __name__ == "__main__":
     app()
-

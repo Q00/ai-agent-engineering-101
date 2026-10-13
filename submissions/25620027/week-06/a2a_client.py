@@ -46,6 +46,7 @@ class Message(TypedDict, total=False):
     messageId: str
     parts: list[TextPart]
     taskId: str
+    contextId: str
 
 
 class SendParams(TypedDict):
@@ -90,6 +91,7 @@ class A2AClient:
         self.http: httpx2.AsyncClient = http
         self.emit: Callable[[str], None] = emit
         self._request_id: int = 0
+        self._contexts: dict[str, str] = {}
 
     async def card(self, url: str) -> Card:
         """Fetch the exact discovery document before the buyer chooses."""
@@ -109,7 +111,7 @@ class A2AClient:
         return Card(parsed.name, response.text, routes[0].url)
 
     async def send(self, card: Card, text: str, task_id: str | None = None) -> Task:
-        """Send one message and carry the same taskId after a re-question."""
+        """Continue with the taskId and contextId returned by this server."""
         self._request_id += 1
         message: Message = {
             "role": "ROLE_USER",
@@ -117,7 +119,11 @@ class A2AClient:
             "parts": [{"text": text}],
         }
         if task_id is not None:
+            context_id = self._contexts.get(task_id)
+            if context_id is None:
+                raise ExperimentError("SendMessage", "task was not created here")
             message["taskId"] = task_id
+            message["contextId"] = context_id
         payload: SendRequest = {
             "jsonrpc": "2.0",
             "id": self._request_id,
@@ -141,6 +147,7 @@ class A2AClient:
         if result.result is None or result.result.task is None:
             raise ExperimentError("SendMessage", "response contains no task")
         task = result.result.task
+        self._contexts[task.id] = task.context_id
         self.emit(f"[TASK] {task.id} {task.status.state}")
         for artifact in task.artifacts:
             self.emit("[ARTIFACT] " + artifact.model_dump_json())
