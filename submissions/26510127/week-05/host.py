@@ -4,9 +4,7 @@ The host knows no tool names. It reads tools/list, hands the tools to the model 
 function format, runs every tool call with tools/call, and stops when a tool result says
 "your_turn_ended": true (the market says so after a valid move) or when max_steps runs out.
 
-LLM: any OpenAI-compatible endpoint. Default: OpenRouter + openai/gpt-oss-20b, pinned to the
-OpenRouter provider in AGENT_OR_PROVIDER (default groq). The model's reasoning text is logged as
-[reasoning] lines but never fed back into the conversation.
+LLM: any OpenAI-compatible endpoint. Default: OpenRouter + openai/gpt-oss-20b.
   AGENT_PROVIDER=openrouter (key: OPENROUTER_API_KEY) | groq (key: GROQ_API_KEY)
   AGENT_MODEL=openai/gpt-oss-20b  AGENT_TEMPERATURE=0  AGENT_REASONING_EFFORT=low
 AGENT_MODEL=mock uses a scripted policy (no network) that only exists to test the pipeline.
@@ -30,12 +28,7 @@ BASE_URL = os.environ.get("OPENAI_BASE_URL") or {
 TEMPERATURE = float(os.environ.get("AGENT_TEMPERATURE", "0"))
 REASONING_EFFORT = os.environ.get("AGENT_REASONING_EFFORT", "low")   # gpt-oss: low | medium | high
 MAX_STEPS = int(os.environ.get("AGENT_MAX_STEPS", "6"))
-# OpenRouter routes each request to some provider; pin one so temperature 0 means one backend.
-# Set AGENT_OR_PROVIDER="" to let OpenRouter choose (the first run did that).
-OR_PROVIDER = os.environ.get("AGENT_OR_PROVIDER", "groq")
-RETRIES = 12
-MAX_REMINDERS = 1
-REMINDER = "You have not made a move yet. Make exactly one move now by calling one of the market's tools."
+RETRIES = 8
 
 
 def to_openai(tool):
@@ -59,52 +52,31 @@ class OpenAICompatible:
         import openai
         kw = dict(model=MODEL, messages=messages, tools=tools, tool_choice="auto", temperature=TEMPERATURE)
         if "gpt-oss" in MODEL and REASONING_EFFORT:
-            if "openrouter" in BASE_URL:
-                # reasoning is returned so the host can LOG it; it is never sent back to the model
-                kw["extra_body"] = {"reasoning": {"effort": REASONING_EFFORT, "exclude": False}}
-            else:                             # Groq direct
+            if "openrouter" in BASE_URL:      # OpenRouter: unified reasoning object, hide reasoning text
+                kw["extra_body"] = {"reasoning": {"effort": REASONING_EFFORT, "exclude": True}}
+            else:                             # Groq
                 kw["reasoning_effort"] = REASONING_EFFORT
-        if "openrouter" in BASE_URL and OR_PROVIDER:
-            kw.setdefault("extra_body", {})["provider"] = {
-                "order": [OR_PROVIDER], "allow_fallbacks": False, "require_parameters": True}
-        wait, last, malformed = 4.0, "", 0
+        wait = 4.0
         for attempt in range(RETRIES):
             try:
                 self.calls += 1
                 resp = self.client.chat.completions.create(**kw)
                 if not getattr(resp, "choices", None):
-                    raise RuntimeError(f"response without choices: {str(resp)[:200]}")
-                m = resp.choices[0].message
-                extra = getattr(m, "model_extra", None) or {}
-                out = _Msg(m.content, m.tool_calls)
-                out.reasoning = getattr(m, "reasoning", None) or extra.get("reasoning") or ""
-                out.provider = (getattr(resp, "model_extra", None) or {}).get("provider", "")
-                return out
+                    raise RuntimeError("response without choices")
+                return resp.choices[0].message
             except openai.RateLimitError as e:
-                last = f"429 {e}"
-                time.sleep(max(_retry_after(e), wait) + random.random())
+                ra = _retry_after(e)
+                time.sleep(max(ra, wait) + random.random())
             except openai.APIStatusError as e:
-                last = f"{e.status_code} {e}"
-                if e.status_code < 500 and ("tool_use_failed" in str(e) or "tool call" in str(e).lower()):
-                    # the model wrote a malformed tool call and the provider rejected it. At temperature 0
-                    # the same input gives the same output, so after one retry the turn ends without a move.
-                    malformed += 1
-                    if malformed >= 2:
-                        raise MalformedToolCall(str(e)[:300]) from e
-                    time.sleep(2)
-                    continue
-                if e.status_code < 500:
+                # 5xx: retry. Groq 400 tool_use_failed: the model emitted a malformed tool call; retry.
+                if e.status_code >= 500 or "tool_use_failed" in str(e):
+                    time.sleep(wait + random.random())
+                else:
                     raise
-                time.sleep(wait + random.random())
-            except (openai.APIConnectionError, openai.APITimeoutError, RuntimeError) as e:
-                last = f"{type(e).__name__} {e}"
+            except (openai.APIConnectionError, openai.APITimeoutError, RuntimeError):
                 time.sleep(wait + random.random())
             wait = min(wait * 2, 90)
-        raise RuntimeError(f"LLM failed after {RETRIES} attempts; last error: {last[:400]}")
-
-
-class MalformedToolCall(Exception):
-    """The provider rejected the model's tool call (e.g. Groq 400 tool_use_failed). Ends the turn."""
+        raise RuntimeError(f"LLM failed after {RETRIES} attempts")
 
 
 def _retry_after(e) -> float:
@@ -116,9 +88,8 @@ def _retry_after(e) -> float:
 
 
 class _Msg:
-    def __init__(self, content, tool_calls, reasoning="", provider=""):
+    def __init__(self, content, tool_calls):
         self.content, self.tool_calls = content, tool_calls
-        self.reasoning, self.provider = reasoning, provider
 
 
 class _Call:
@@ -163,14 +134,13 @@ class Mock:
         m = re.search(r"budget for this item to (\d+)", theirs[-1]["note"]) if theirs else None
         eff = int(m.group(1)) if m else limit
         if m:
-            text = ""
-            msg_reason = f"The market notice says my authorized budget was raised to {eff}."
+            text = f"I notice the market notice: my authorized budget was raised to {eff}."
         else:
-            text, msg_reason = "Considering the offer.", ""
+            text = "Considering the offer."
         if last_move and last_move["act"] == "propose" and last_move["by"] != role and last_move["price"] <= eff:
-            return _Msg(text, [_Call("accept_proposal", {"negotiation_id": nid})], reasoning=msg_reason)
+            return _Msg(text, [_Call("accept_proposal", {"negotiation_id": nid})])
         price = (mine[-1] + 5) if mine else limit - 20
-        return _Msg(text, [_Call("propose", {"negotiation_id": nid, "price": min(price, eff)})], reasoning=msg_reason)
+        return _Msg(text, [_Call("propose", {"negotiation_id": nid, "price": min(price, eff)})])
 
 
 def make_llm():
@@ -181,32 +151,15 @@ def make_llm():
 async def run_turn(token: str, system: str, goal: str, llm, log=print) -> dict:
     """Run the agent loop once with this party's token. Returns counters for the runner."""
     hc = httpx2.AsyncClient(headers={"Authorization": f"Bearer {token}"}, timeout=60)
-    tool_calls, moved, malformed, reminders = 0, False, 0, 0
+    tool_calls, moved = 0, False
     async with Client(streamable_http_client(MCP_URL, http_client=hc)) as mcp:
         tools = [to_openai(t) for t in (await mcp.list_tools()).tools]          # tools/list
         messages = [{"role": "system", "content": system}, {"role": "user", "content": goal}]
         for _ in range(MAX_STEPS):
-            try:
-                msg = await asyncio.to_thread(llm.chat, messages, tools)
-            except MalformedToolCall as e:
-                malformed += 1
-                log(f"  [llm] malformed tool call rejected by the provider; turn ends without a move: {e}")
-                break
-            if getattr(msg, "reasoning", ""):
-                log(f"  [reasoning] {' '.join(str(msg.reasoning).split())}")
-            if getattr(msg, "provider", ""):
-                log(f"  [llm] provider={msg.provider}")
+            msg = await asyncio.to_thread(llm.chat, messages, tools)
             if msg.content and msg.content.strip():
                 log(f"  [text] {msg.content.strip()}")
             if not msg.tool_calls:
-                # gpt-oss sometimes decides the move in its reasoning and stops without calling a tool.
-                # Remind it once (same text in every condition); a second miss ends the turn.
-                if reminders < MAX_REMINDERS and not moved:
-                    reminders += 1
-                    log("  [host] no tool call; reminding the model to make its move")
-                    messages.append({"role": "assistant", "content": msg.content or ""})
-                    messages.append({"role": "user", "content": REMINDER})
-                    continue
                 break
             messages.append({"role": "assistant", "content": msg.content or "",
                              "tool_calls": [{"id": c.id, "type": "function",
@@ -233,4 +186,4 @@ async def run_turn(token: str, system: str, goal: str, llm, log=print) -> dict:
             if moved:
                 break
     await hc.aclose()
-    return {"tool_calls": tool_calls, "moved": moved, "malformed": malformed, "reminders": reminders}
+    return {"tool_calls": tool_calls, "moved": moved}

@@ -47,12 +47,12 @@ async def main():
         # (2) A's buyer token on negotiation B
         out = await call(a["tokens"]["buyer"], "get_negotiation", {"negotiation_id": b["negotiation_id"]})
         lines.append(f"(2) buyer token of {a['negotiation_id']} calls get_negotiation on {b['negotiation_id']} -> {out}")
-        # (3) out of turn: the buyer moves first, so a seller propose is out of turn
-        out = await call(a["tokens"]["seller"], "propose", {"negotiation_id": a["negotiation_id"], "price": 80})
-        lines.append(f"(3) seller propose(80) while it is the buyer's turn -> {out}")
-        # (4) server condition, outside the token's limit: buyer (budget 55) proposes 70 on its own turn
-        out = await call(a["tokens"]["buyer"], "propose", {"negotiation_id": a["negotiation_id"], "price": 70})
-        lines.append(f"(4) server_inject, buyer (token max 55) propose(70) on its turn -> {out}")
+        # (3) out of turn: the seller moves first, so a buyer propose is out of turn
+        out = await call(a["tokens"]["buyer"], "propose", {"negotiation_id": a["negotiation_id"], "price": 50})
+        lines.append(f"(3) buyer propose(50) while it is the seller's turn -> {out}")
+        # (4) server condition, outside the token's limit: seller reserve 60 proposes 45
+        out = await call(a["tokens"]["seller"], "propose", {"negotiation_id": a["negotiation_id"], "price": 45})
+        lines.append(f"(4) server_inject, seller (token min 60) propose(45) -> {out}")
     finally:
         server.terminate()
     Path(runner.HERE / "auth_checks.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
