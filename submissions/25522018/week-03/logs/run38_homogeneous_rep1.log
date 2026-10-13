@@ -1,0 +1,38 @@
+provider=OpenRouter model=nvidia/nemotron-3.5-lightning:free temperature=0.0
+======================================================================
+CONDITION: homogeneous
+======================================================================
+
+----------------------------------------------------------------------
+[task] id=1 gold=A desc=Compute 137 * 249 and return only the numerical result.
+[announce] -> contractor A
+[raw] A: {"bid": true, "confidence": 100, "reason": "Multiplication of two integers is within general problem solving skills."}
+[bid] A: bid=True confidence=100.0 reason=Multiplication of two integers is within general problem solving skills.
+[announce] -> contractor B
+[raw] B: {"bid": true, "confidence": 100, "reason": "General problem solving includes arithmetic computation."}
+[bid] B: bid=True confidence=100.0 reason=General problem solving includes arithmetic computation.
+[announce] -> contractor C
+[raw] C: {"bid": true, "confidence": 100, "reason": "General problem solving skill covers arithmetic computation."}
+[bid] C: bid=True confidence=100.0 reason=General problem solving skill covers arithmetic computation.
+[award] contractor A confidence=100.0 (gold=A)
+[result] correct
+
+----------------------------------------------------------------------
+[task] id=2 gold=B desc=Rewrite this sentence in clear and polite English: Send me the report now.
+[announce] -> contractor A
+[raw] A: {"bid": true, "confidence": 95, "reason": "Task involves rewriting a sentence in clear and polite English, which falls under general problem solving."}
+[bid] A: bid=True confidence=95.0 reason=Task involves rewriting a sentence in clear and polite English, which falls under general problem solving.
+[announce] -> contractor B
+[raw] B: {"bid": true, "confidence": 95, "reason": "Task involves rewriting a sentence in clear and polite English, which falls under general problem solving."}
+[bid] B: bid=True confidence=95.0 reason=Task involves rewriting a sentence in clear and polite English, which falls under general problem solving.
+[announce] -> contractor C
+[raw] C: {"reason\n\n ( ( and,  and and [ and subt (, opt selective. subt and\n\n selectivelyus and and subt\nlyish and and and subt selective.y "Rewrite thising. " and subtlyly. optstly and formerst andsoishsososolylymishlyst subt "asentence in clear and polite English: Send me the report now." is a task that falls under general problem solving. I have the capability to fulfill this request. Confidence: 100. Reason: The task is a standard request for rewriting, which is within my capabilities as a general problem-solving assistant. I can rewrite any sentence into clear and polite English. Confidence: 100. Reason: The input sentence "Send me the report now" is a direct command, and my task is to rewrite it into a clear and polite version while maintaining the original meaning. The rewritten sentence is "Please send me the report
+[parse-fail] contractor C
+[award] contractor A confidence=95.0 (gold=B)
+[result] misaward: winner=A, gold=B
+
+----------------------------------------------------------------------
+[task] id=3 gold=C desc=Write a Python function that returns the reversed copy of a list.
+[announce] -> contractor A
+
+[CRASH] RuntimeError: OpenRouter HTTP error 429: {"error":{"message":"Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day","code":429,"metadata":{"headers":{"X-RateLimit-Limit":"50","X-RateLimit-Remaining":"0","X-RateLimit-Reset":"1790035200000"},"limit_source":"openrouter_free_tier_daily","remedy_hint":"Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.","provider_name":null}},"user_id":"user_3J00PhrR9Ke1zLkPGOGMhCLIP3s"}
