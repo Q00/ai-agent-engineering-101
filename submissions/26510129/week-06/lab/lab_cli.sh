@@ -3,7 +3,7 @@
 #   bash lab_cli.sh 2>&1 | tee logs/lab-cli.txt
 A=http://127.0.0.1:9999
 run() { echo; echo "\$ $*"; "$@"; echo "exit code $?"; }
-tid() { python -c "import sys,json; print(json.load(sys.stdin)['id'])"; }
+tid() { python -c "import sys,json; print(json.load(sys.stdin)['task']['id'])"; }
 
 echo "### 1. card"
 run a2a card get $A
