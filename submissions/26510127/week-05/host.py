@@ -33,7 +33,9 @@ MAX_STEPS = int(os.environ.get("AGENT_MAX_STEPS", "6"))
 # OpenRouter routes each request to some provider; pin one so temperature 0 means one backend.
 # Set AGENT_OR_PROVIDER="" to let OpenRouter choose (the first run did that).
 OR_PROVIDER = os.environ.get("AGENT_OR_PROVIDER", "groq")
-RETRIES = 8
+RETRIES = 12
+MAX_REMINDERS = 1
+REMINDER = "You have not made a move yet. Make exactly one move now by calling one of the market's tools."
 
 
 def to_openai(tool):
@@ -65,13 +67,13 @@ class OpenAICompatible:
         if "openrouter" in BASE_URL and OR_PROVIDER:
             kw.setdefault("extra_body", {})["provider"] = {
                 "order": [OR_PROVIDER], "allow_fallbacks": False, "require_parameters": True}
-        wait = 4.0
+        wait, last, malformed = 4.0, "", 0
         for attempt in range(RETRIES):
             try:
                 self.calls += 1
                 resp = self.client.chat.completions.create(**kw)
                 if not getattr(resp, "choices", None):
-                    raise RuntimeError("response without choices")
+                    raise RuntimeError(f"response without choices: {str(resp)[:200]}")
                 m = resp.choices[0].message
                 extra = getattr(m, "model_extra", None) or {}
                 out = _Msg(m.content, m.tool_calls)
@@ -79,18 +81,30 @@ class OpenAICompatible:
                 out.provider = (getattr(resp, "model_extra", None) or {}).get("provider", "")
                 return out
             except openai.RateLimitError as e:
-                ra = _retry_after(e)
-                time.sleep(max(ra, wait) + random.random())
+                last = f"429 {e}"
+                time.sleep(max(_retry_after(e), wait) + random.random())
             except openai.APIStatusError as e:
-                # 5xx: retry. Groq 400 tool_use_failed: the model emitted a malformed tool call; retry.
-                if e.status_code >= 500 or "tool_use_failed" in str(e):
-                    time.sleep(wait + random.random())
-                else:
+                last = f"{e.status_code} {e}"
+                if e.status_code < 500 and ("tool_use_failed" in str(e) or "tool call" in str(e).lower()):
+                    # the model wrote a malformed tool call and the provider rejected it. At temperature 0
+                    # the same input gives the same output, so after one retry the turn ends without a move.
+                    malformed += 1
+                    if malformed >= 2:
+                        raise MalformedToolCall(str(e)[:300]) from e
+                    time.sleep(2)
+                    continue
+                if e.status_code < 500:
                     raise
-            except (openai.APIConnectionError, openai.APITimeoutError, RuntimeError):
+                time.sleep(wait + random.random())
+            except (openai.APIConnectionError, openai.APITimeoutError, RuntimeError) as e:
+                last = f"{type(e).__name__} {e}"
                 time.sleep(wait + random.random())
             wait = min(wait * 2, 90)
-        raise RuntimeError(f"LLM failed after {RETRIES} attempts")
+        raise RuntimeError(f"LLM failed after {RETRIES} attempts; last error: {last[:400]}")
+
+
+class MalformedToolCall(Exception):
+    """The provider rejected the model's tool call (e.g. Groq 400 tool_use_failed). Ends the turn."""
 
 
 def _retry_after(e) -> float:
@@ -167,12 +181,17 @@ def make_llm():
 async def run_turn(token: str, system: str, goal: str, llm, log=print) -> dict:
     """Run the agent loop once with this party's token. Returns counters for the runner."""
     hc = httpx2.AsyncClient(headers={"Authorization": f"Bearer {token}"}, timeout=60)
-    tool_calls, moved = 0, False
+    tool_calls, moved, malformed, reminders = 0, False, 0, 0
     async with Client(streamable_http_client(MCP_URL, http_client=hc)) as mcp:
         tools = [to_openai(t) for t in (await mcp.list_tools()).tools]          # tools/list
         messages = [{"role": "system", "content": system}, {"role": "user", "content": goal}]
         for _ in range(MAX_STEPS):
-            msg = await asyncio.to_thread(llm.chat, messages, tools)
+            try:
+                msg = await asyncio.to_thread(llm.chat, messages, tools)
+            except MalformedToolCall as e:
+                malformed += 1
+                log(f"  [llm] malformed tool call rejected by the provider; turn ends without a move: {e}")
+                break
             if getattr(msg, "reasoning", ""):
                 log(f"  [reasoning] {' '.join(str(msg.reasoning).split())}")
             if getattr(msg, "provider", ""):
@@ -180,6 +199,14 @@ async def run_turn(token: str, system: str, goal: str, llm, log=print) -> dict:
             if msg.content and msg.content.strip():
                 log(f"  [text] {msg.content.strip()}")
             if not msg.tool_calls:
+                # gpt-oss sometimes decides the move in its reasoning and stops without calling a tool.
+                # Remind it once (same text in every condition); a second miss ends the turn.
+                if reminders < MAX_REMINDERS and not moved:
+                    reminders += 1
+                    log("  [host] no tool call; reminding the model to make its move")
+                    messages.append({"role": "assistant", "content": msg.content or ""})
+                    messages.append({"role": "user", "content": REMINDER})
+                    continue
                 break
             messages.append({"role": "assistant", "content": msg.content or "",
                              "tool_calls": [{"id": c.id, "type": "function",
@@ -206,4 +233,4 @@ async def run_turn(token: str, system: str, goal: str, llm, log=print) -> dict:
             if moved:
                 break
     await hc.aclose()
-    return {"tool_calls": tool_calls, "moved": moved}
+    return {"tool_calls": tool_calls, "moved": moved, "malformed": malformed, "reminders": reminders}
