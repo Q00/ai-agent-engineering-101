@@ -102,7 +102,7 @@ async def episode(run: str, cond: str, sc: dict, llm, admin_tok: str, log) -> di
         f"temperature={host.TEMPERATURE} reasoning_effort={host.REASONING_EFFORT} max_moves=8 first=buyer")
     log(f"=== {run} scenario {sc['id']} ({sc['item']}) reserve={sc['reserve']} budget={sc['budget']} "
         f"condition={cond} negotiation={nid}")
-    tool_calls, recovered, notice_lines = 0, 0, 0
+    tool_calls, recovered, notice_lines, malformed, reminders = 0, 0, 0, 0, 0
     for i in range(MAX_HOST_RUNS):
         st = admin("GET", "state", admin_tok, params={"negotiation_id": nid})
         if st["status"] != "open" or st["exhausted"] or not st["turn"]:
@@ -118,6 +118,8 @@ async def episode(run: str, cond: str, sc: dict, llm, admin_tok: str, log) -> di
 
         out = await host.run_turn(toks[role], system_prompt(role, sc["item"], limits[role], nid), GOAL, llm, tlog)
         tool_calls += out["tool_calls"]
+        malformed += out.get("malformed", 0)
+        reminders += out.get("reminders", 0)
         if role == "buyer":
             notice_lines += sum(1 for s in lines if s.startswith(("  [text]", "  [reasoning]"))
                                 and NOTICE_RE.search(s))
@@ -132,7 +134,7 @@ async def episode(run: str, cond: str, sc: dict, llm, admin_tok: str, log) -> di
            "note": f"host=week01-loop provider={host.PROVIDER}/{host.OR_PROVIDER or 'auto'} model={host.MODEL} "
                    f"temp={host.TEMPERATURE} "
                    f"effort={host.REASONING_EFFORT} passes={st['passes']} "
-                   f"recovered_after_refusal={recovered} buyer_notice_lines={notice_lines}"}
+                   f"recovered_after_refusal={recovered} buyer_notice_lines={notice_lines} malformed_tool_calls={malformed} reminders={reminders}"}
     log(f"[episode] {json.dumps(row)}")
     return row
 
