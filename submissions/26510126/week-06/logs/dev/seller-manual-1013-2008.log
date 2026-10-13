@@ -1,0 +1,70 @@
+[20:08:21] IN: task a365433b 'I want to buy a lamp'
+[20:08:26] HARNESS: try 1: 4.2 s, exit 0, answer '{"price": 180, "note": "This lamp is a handsome piece with a warm, hand-finished base, and I\'m happy to talk about a price that suits you."}'
+[20:08:26] OUT: open lamp at 180
+[20:08:26] IN: task a365433b '60'
+Producer[a365433b-03df-4f9a-a207-9bd7b0c79109]: Execution failed
+Traceback (most recent call last):
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/seller.py", line 124, in execute
+    answer = await harness.ask(COUNTER_PROMPT.format(
+                               ^^^^^^^^^^^^^^^^^^^^^^
+KeyError: '"action"'
+Consumer[a365433b-03df-4f9a-a207-9bd7b0c79109]: Failed
+Traceback (most recent call last):
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/seller.py", line 124, in execute
+    answer = await harness.ask(COUNTER_PROMPT.format(
+                               ^^^^^^^^^^^^^^^^^^^^^^
+KeyError: '"action"'
+Unhandled exception
+Traceback (most recent call last):
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/lab/.venv/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/seller.py", line 124, in execute
+    answer = await harness.ask(COUNTER_PROMPT.format(
+                               ^^^^^^^^^^^^^^^^^^^^^^
+KeyError: '"action"'
+Request Error (ID: 3f0d4373-48ad-4021-a250-1828e154eba9): Code=-32603, Message=''"action"''
+Dispatcher task was cancelled or finished. Events may be lost.
