@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Week 06: Modern Protocols 2: Agent2Agent</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;
+  --ink:#1C1917;
+  --body:#44403C;
+  --muted:#78716C;
+  --faint:#A8A29E;
+  --line:#E7E5E4;
+  --wash:#FAFAF9;
+  --link:#2563EB;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --sans:'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  --serif:Fraunces, 'Noto Serif KR', Georgia, serif;
+  --maxw:680px;
+  --r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--body);
+  font-family:var(--sans);
+  font-weight:400;
+  line-height:1.8;
+  font-size:15.5px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--ink);color:var(--paper)}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- layout ---------- */
+.sheet{max-width:1040px;margin:0 auto;padding:0 24px}
+.col{max-width:var(--maxw);margin:0 auto;position:relative}
+
+/* ---------- header ---------- */
+header.doc{padding:40px 0 0}
+.topnav{font-family:var(--mono);font-size:11px;letter-spacing:.04em;margin-bottom:56px;display:flex;justify-content:space-between;gap:16px}
+
+.masthead{padding-bottom:64px;border-bottom:1px solid var(--line)}
+.masthead .wk{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:16px;
+}
+h1.title{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(30px,4.6vw,44px);line-height:1.2;
+  letter-spacing:-0.01em;color:var(--ink);text-wrap:balance;
+}
+h1.title .en{display:block;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:.06em;margin-top:14px}
+.lede{
+  margin-top:26px;max-width:560px;font-size:16px;line-height:1.85;color:var(--muted);
+}
+.lede .q{font-weight:600;color:var(--ink)}
+
+/* ---------- section scaffolding ---------- */
+section{padding:56px 0 8px}
+.secmark{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:32px;
+  border-top:1px solid var(--line);padding-top:20px;
+}
+.secmark .no{
+  font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--faint);
+  letter-spacing:.12em;white-space:nowrap;text-transform:uppercase;
+}
+.secmark h2{font-family:var(--serif);font-weight:500;font-size:clamp(21px,2.8vw,26px);line-height:1.3;letter-spacing:-0.005em;color:var(--ink);text-wrap:balance}
+h3{font-family:var(--serif);font-weight:500;font-size:18px;margin:44px 0 14px;color:var(--ink)}
+h3 .tag{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.12em;display:block;margin-bottom:6px;font-weight:500}
+p{margin-bottom:20px}
+strong{font-weight:600;color:var(--ink)}
+em{font-style:normal;font-weight:600;color:var(--ink);box-shadow:inset 0 -0.35em 0 rgba(28,25,23,.07)}
+.small{font-size:13.5px;color:var(--muted)}
+.nb{white-space:nowrap}
+
+/* part banner */
+.part{
+  margin:72px 0 8px;border-top:2px solid var(--ink);
+  padding:24px 0 6px;
+}
+.part .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase}
+.part h2{font-family:var(--serif);font-weight:500;font-size:clamp(20px,2.6vw,25px);line-height:1.35;color:var(--ink)}
+.part .meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:10px;letter-spacing:.03em}
+
+/* marginalia */
+.note{
+  font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--faint);
+  border-left:2px solid var(--line);padding-left:12px;margin:26px 0;
+}
+@media(min-width:1120px){
+  .note{position:absolute;width:190px;left:calc(50% + var(--maxw)/2 + 36px);margin:0;transform:translateY(-100%)}
+}
+.note b{color:var(--muted);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.08em}
+
+/* pull quote */
+.pull{
+  margin:40px 0;padding:2px 0 2px 24px;border-left:2px solid var(--ink);
+  font-family:var(--serif);font-size:19px;line-height:1.65;font-weight:500;color:var(--ink);
+}
+.pull .src{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-top:10px;letter-spacing:.03em}
+
+/* definition */
+.define{margin:48px 0;background:var(--wash);border:1px solid var(--line);border-radius:var(--r);padding:32px 32px 26px;position:relative}
+.define::before{
+  content:"DEFINITION";position:absolute;top:14px;left:32px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);font-weight:500;
+}
+.define p{margin:16px 0 0;font-family:var(--serif);font-size:clamp(16px,2.1vw,19px);line-height:1.7;font-weight:500;color:var(--ink)}
+.define .sub{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted);margin-top:14px}
+.define ul{margin:14px 0 0 22px;padding:0}
+.define li{font-family:var(--serif);font-size:clamp(15px,2vw,17px);line-height:1.9;font-weight:500;color:var(--ink)}
+@media(max-width:640px){.define{padding:28px 20px 22px}.define::before{left:20px}}
+
+/* instructor */
+.bio{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 28px 20px}
+.bio{display:flex;gap:28px;align-items:flex-start}
+.bio .photo{flex:0 0 210px;width:210px;height:262px;object-fit:cover;object-position:38% 12%;border-radius:6px;display:block}
+.bio .info{flex:1 1 auto;min-width:0}
+.bio .name{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:2px}
+.bio .role{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase}
+.bio p{font-size:14px;line-height:1.85;color:var(--body);margin-bottom:12px}
+.bio .links{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+.bio .links a{white-space:nowrap}
+.bio .links span{color:var(--faint);margin:0 8px}
+@media(max-width:640px){.bio{flex-direction:column}.bio .photo{width:100%;height:200px;flex:none}.bio{padding:22px 18px 16px}}
+
+/* table */
+.tbl-wrap{margin:28px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.7}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-align:left;text-transform:uppercase;
+  border-bottom:1px solid var(--ink);
+  padding:10px 14px;font-weight:500;color:var(--muted);
+}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.stage{font-weight:600;color:var(--ink);white-space:nowrap;font-size:13px}
+td .m{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+/* figure */
+.fig{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 14px}
+.fig .cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+  margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.fig .cap b{color:var(--muted);font-weight:500}
+.fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block}
+svg text{font-family:var(--mono)}
+
+/* code */
+.code{
+  margin:28px 0;background:var(--wash);color:var(--ink);
+  font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  padding:20px 22px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+}
+.code .file{
+  display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:14px;font-weight:500;text-transform:uppercase;
+}
+.code pre{font-family:inherit;white-space:pre;margin:0}
+.code .cm{color:var(--faint)}
+.code .kw{color:#1D4ED8}
+.code .st{color:#15803D}
+code.inline{
+  font-family:var(--mono);font-size:.85em;background:var(--wash);
+  padding:2px 6px;border:1px solid var(--line);border-radius:4px;white-space:nowrap;
+}
+
+/* numbered steps */
+.pre{counter-reset:pre;margin:24px 0}
+.pre>li{list-style:none;position:relative;padding:16px 0 16px 48px;border-bottom:1px solid var(--line)}
+.pre>li:first-child{border-top:1px solid var(--line)}
+.pre>li::before{
+  counter-increment:pre;content:counter(pre);
+  position:absolute;left:4px;top:18px;width:24px;height:24px;
+  border:1px solid var(--faint);border-radius:50%;color:var(--muted);
+  font-family:var(--mono);font-weight:500;font-size:11.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.pre b.lead{font-weight:600;color:var(--ink)}
+
+/* discussion */
+.open{border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;margin:40px 0;background:var(--wash)}
+.open .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.open ol{margin-left:20px}
+.open li{margin-bottom:12px;line-height:1.8}
+@media(max-width:640px){.open{padding:20px 18px}}
+
+/* checkpoint */
+.check{margin:28px 0;border:1px solid var(--ink);border-radius:var(--r);padding:18px 22px 14px}
+.check .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--paper);background:var(--ink);border-radius:4px;display:inline-block;padding:3px 9px;font-weight:500;margin-bottom:12px}
+.check ul{margin-left:20px}
+.check li{margin-bottom:8px;line-height:1.75}
+
+/* recorder metrics */
+.recorder{margin:32px 0;border-top:1px solid var(--ink)}
+.recorder>div{display:flex;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+.recorder .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);font-weight:500;flex:0 0 120px;padding-top:3px;text-transform:uppercase}
+.recorder .v{font-size:13.5px;line-height:1.7;color:var(--body)}
+@media(max-width:640px){.recorder>div{flex-direction:column;gap:4px}}
+
+/* notice */
+.notice{margin:36px 0;border:1px solid var(--line);border-radius:var(--r);padding:24px 26px 18px}
+.notice .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.notice p{margin-bottom:13px;font-size:14px}
+.notice ul{margin:0 0 13px 22px}
+.notice li{margin-bottom:8px;font-size:13.5px;line-height:1.75}
+@media(max-width:640px){.notice{padding:20px 18px 14px}}
+
+/* homework */
+.hw{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.hw .head{
+  border-bottom:1px solid var(--line);background:var(--wash);padding:11px 22px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;font-weight:500;color:var(--muted);text-transform:uppercase;
+}
+.hw .body{padding:22px 24px 8px}
+.hw .due{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.05em;margin-bottom:13px;font-weight:500}
+
+/* readings */
+.readings{margin:24px 0}
+.readings>li{list-style:none;position:relative;padding:18px 0 18px 60px;border-bottom:1px solid var(--line)}
+.readings>li:first-child{border-top:1px solid var(--line)}
+.readings .badge{
+  position:absolute;left:0;top:20px;
+  font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.06em;
+  padding:3px 8px;border-radius:4px;
+}
+.readings .badge.req{background:var(--ink);color:var(--paper)}
+.readings .badge.opt{border:1px solid var(--faint);color:var(--faint)}
+.readings b.lead{font-weight:600;color:var(--ink)}
+.readings .why{display:block;font-size:13px;color:var(--muted);margin-top:6px}
+
+/* next week */
+.next{margin:64px 0 0;border-top:2px solid var(--ink);padding-top:22px}
+.next .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:12px;text-transform:uppercase}
+.next p{font-size:14px;color:var(--body)}
+
+/* footer */
+footer{
+  margin-top:64px;border-top:1px solid var(--line);
+  padding:20px 0 56px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.03em;
+}
+footer .o{color:var(--muted)}
+
+@media(max-width:640px){body{font-size:15px}}
+@media print{
+  body{font-size:10.5pt}
+  .topnav{display:none}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="doc">
+  <div class="col">
+    <div class="topnav"><a href="index-en.html">← COURSE HOME</a><a href="week-06.html">KO</a></div>
+    <div class="masthead">
+      <div class="wk">WEEK 06</div>
+      <h1 class="title">Modern Protocols 2: Agent2Agent
+        <span class="en">현대 프로토콜 2: A2A</span>
+      </h1>
+      <p class="lede"><span class="q">What does my agent have to exchange with someone else's agent to hand it a job?</span> In week 05 the party receiving a request over MCP was a tool. In A2A (Agent2Agent) it is another agent. Without knowing which model or tools it uses, you read the self-description it publishes (its Agent Card), pick it, hand it the job as a task, and get the result back. The assignment changes only the sentences in an Agent Card and measures how that changes which shop a buyer agent hands the job to, and what deal it gets.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ outline ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">01</span><h2>Outline</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Part</th><th>Content</th></tr>
+        <tr><td class="stage">A1</td><td>MCP and A2A: calling a tool, handing over a job</td></tr>
+        <tr><td class="stage">A2</td><td>Agent Card: finding an agent to hand the job to</td></tr>
+        <tr><td class="stage">A3</td><td>Task: the state and the results of a delegated job</td></tr>
+        <tr><td class="stage">A4</td><td>FIPA-ACL and A2A</td></tr>
+        <tr><td class="stage">Discussion</td><td>Who checks what an Agent Card claims?</td></tr>
+        <tr><td class="stage">LAB</td><td>Run a shop agent as an A2A server and trade with it over curl</td></tr>
+        <tr><td class="stage">HW</td><td>The inflated Agent Card experiment</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PART A ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART A: LECTURE</div>
+    <h2>Agent2Agent: a protocol for handing work to another agent</h2>
+    <div class="meta">A1 MCP and A2A, A2 Agent Card, A3 task lifecycle, A4 FIPA-ACL and A2A, discussion</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A1</span><h2>MCP and A2A: calling a tool, handing over a job</h2></div>
+    <p>In week 05 the host's model looked at the server's tool list and decided which tool to call with which arguments.</p>
+
+    <p>In A2A the party receiving the request is an agent. Send a shop agent &ldquo;I want to buy a lamp&rdquo; and the shop decides what price to ask, what to ask back, and whether to turn the deal down. The sender does not know which model the other side runs, which tools it calls, or what it remembers. The specification calls such a party opaque, and states the goal as agents working together &ldquo;without needing access to each other's internal state, memory, or tools.&rdquo;</p>
+
+    <div class="fig" id="fig1">
+      <svg viewBox="0 0 680 252" role="img" aria-label="A buyer agent delegates to a seller agent over A2A; each agent calls its own tools over MCP; the seller's inside is opaque to the buyer">
+        <defs>
+          <marker id="f1-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f1-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+        </defs>
+        <rect x="490" y="26" width="190" height="196" fill="#FAFAF9" stroke="#A8A29E" stroke-width="1" stroke-dasharray="4 4"/>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="16">CLIENT</text>
+          <text x="498" y="16">REMOTE AGENT, OPAQUE</text>
+        </g>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="0" y="56" width="170" height="64"/>
+          <rect x="510" y="56" width="150" height="64"/>
+          <rect x="0" y="172" width="170" height="40"/>
+          <rect x="510" y="172" width="150" height="40"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M170 78 L509 78" marker-end="url(#f1-ah)"/>
+          <path d="M85 120 L85 171" marker-end="url(#f1-ah)"/>
+          <path d="M585 120 L585 171" marker-end="url(#f1-ah)"/>
+        </g>
+        <path d="M510 100 L171 100" fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#f1-ahd)"/>
+        <g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">
+          <text x="85" y="84">buyer agent</text>
+          <text x="585" y="84">seller agent</text>
+          <text x="85" y="196">buyer's tools</text>
+          <text x="585" y="196">inventory, payments</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="9.5">
+          <text x="85" y="102">model + loop</text>
+          <text x="585" y="102">its own model + loop</text>
+        </g>
+        <g fill="#1C1917" font-size="10">
+          <text x="340" y="70" text-anchor="middle">A2A: SendMessage("I want a lamp")</text>
+          <text x="96" y="150">MCP: tools/call</text>
+          <text x="575" y="150" text-anchor="end">MCP: tools/call</text>
+        </g>
+        <text x="340" y="118" text-anchor="middle" fill="#78716C" font-size="10">task: state, messages, artifacts</text>
+        <text x="0" y="244" fill="#78716C" font-size="9.5">the buyer sees the seller's card, the task state, and the artifacts; never its model, prompt, or tools</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 01</b> A2A between agents, MCP inside each agent</span><span>delegation crosses the boundary; tool calls stay inside it</span></div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th></th><th>MCP (week 05)</th><th>A2A</th></tr>
+        <tr><td class="stage">Receives the request</td><td>A server's tool. Name, description, and argument schema are public</td><td>A remote agent. Describes what it can do (skills) in natural language</td></tr>
+        <tr><td class="stage">What you send</td><td>A tool name and arguments (<code class="inline">tools/call</code>)</td><td>A message (<code class="inline">SendMessage</code>): text, files, JSON data</td></tr>
+        <tr><td class="stage">What comes back</td><td>The tool result</td><td>A task (state and results), or a single message</td></tr>
+        <tr><td class="stage">Decides how</td><td>The host's model</td><td>The remote agent that took the job</td></tr>
+        <tr><td class="stage">Asking back midway</td><td>The server returns an <code class="inline">input_required</code> result (week 05, A3)</td><td>The task stops in <code class="inline">TASK_STATE_INPUT_REQUIRED</code></td></tr>
+      </table>
+    </div>
+
+    <p>Both protocols can ask back. The two are used together in one system: the shop agent takes orders over A2A and, to check its stock, calls tools on its own MCP server (FIG. 01).</p>
+
+    <div class="define">
+      <p>A2A is a protocol for agents that cannot see inside each other to find one another (Agent Card), hand over work (task), and receive the results (artifact).</p>
+      <p class="sub">Google announced it on April 9, 2025 with more than 50 technology partners; it became a Linux Foundation project on June 23, 2025. The current version is v1.0 (v1.0.0 on March 12, 2026, v1.0.1 on May 28). The examples and the lab in these notes were checked against the v1.0 specification and the Python SDK a2a-sdk 1.2.2.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A2</span><h2>Agent Card: finding an agent to hand the job to</h2></div>
+    <p>An A2A server MUST publish an Agent Card: a JSON document with the agent's name, description, the address that takes requests, the features it supports, and its skills. The default location is <code class="inline">https://{domain}/.well-known/agent-card.json</code>. This is the card of the shop agent you will run in the lab.</p>
+
+    <div class="code"><span class="file">GET http://127.0.0.1:9999/.well-known/agent-card.json</span><pre>{
+  <span class="st">"name"</span>: <span class="st">"Lamp Shop"</span>,
+  <span class="st">"description"</span>: <span class="st">"Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer."</span>,
+  <span class="st">"supportedInterfaces"</span>: [
+    { <span class="st">"url"</span>: <span class="st">"http://127.0.0.1:9999/"</span>, <span class="st">"protocolBinding"</span>: <span class="st">"JSONRPC"</span>, <span class="st">"protocolVersion"</span>: <span class="st">"1.0"</span> }
+  ],
+  <span class="st">"version"</span>: <span class="st">"1.0.0"</span>,
+  <span class="st">"capabilities"</span>: { <span class="st">"streaming"</span>: true },
+  <span class="st">"defaultInputModes"</span>: [<span class="st">"text/plain"</span>],
+  <span class="st">"defaultOutputModes"</span>: [<span class="st">"application/json"</span>, <span class="st">"text/plain"</span>],
+  <span class="st">"skills"</span>: [
+    {
+      <span class="st">"id"</span>: <span class="st">"negotiate"</span>,
+      <span class="st">"name"</span>: <span class="st">"Negotiate a purchase"</span>,
+      <span class="st">"description"</span>: <span class="st">"Ask for an item, then send a price. The shop answers with a counteroffer or a receipt."</span>,
+      <span class="st">"tags"</span>: [<span class="st">"shopping"</span>, <span class="st">"negotiation"</span>],
+      <span class="st">"examples"</span>: [<span class="st">"I want to buy a lamp"</span>, <span class="st">"90"</span>]
+    }
+  ]
+}</pre></div>
+
+    <p><code class="inline">supportedInterfaces</code> lists where and how the agent takes requests. v1.0 defines JSON-RPC, gRPC, and HTTP+JSON (REST) bindings; the server lists the ones it supports in order of preference, and the client takes the first one it can use. The lab shop supports JSON-RPC only.</p>
+
+    <p><code class="inline">skills</code> lists what the agent can do in words a person reads. Unlike a week-05 tool, a skill has no argument schema (JSON Schema). The client's model reads the description and the <code class="inline">examples</code> and decides what to send and how.</p>
+
+    <div class="fig" id="fig2">
+      <svg viewBox="0 0 680 236" role="img" aria-label="Discovery sequence: the client fetches the agent card from the well-known path, picks the JSON-RPC interface, and sends SendMessage with the A2A-Version header">
+        <defs>
+          <marker id="f2-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f2-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="20" y="8" width="180" height="34"/>
+          <rect x="470" y="8" width="180" height="34"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">
+          <text x="110" y="29">buyer (A2A client)</text>
+          <text x="560" y="29">Lamp Shop (A2A server)</text>
+        </g>
+        <g stroke="#A8A29E" stroke-width="1" stroke-dasharray="3 4">
+          <path d="M110 42 L110 222"/><path d="M560 42 L560 222"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M110 78 L559 78" marker-end="url(#f2-ah)"/>
+          <path d="M110 172 L559 172" marker-end="url(#f2-ah)"/>
+        </g>
+        <g fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4">
+          <path d="M560 108 L111 108" marker-end="url(#f2-ahd)"/>
+          <path d="M560 204 L111 204" marker-end="url(#f2-ahd)"/>
+        </g>
+        <g fill="#A8A29E" font-size="9.5">
+          <text x="0" y="75">1</text><text x="0" y="105">2</text><text x="0" y="141">3</text><text x="0" y="169">4</text><text x="0" y="201">5</text>
+        </g>
+        <g fill="#1C1917" font-size="10">
+          <text x="124" y="72">GET /.well-known/agent-card.json</text>
+          <text x="124" y="102">Agent Card: skills, supportedInterfaces</text>
+          <text x="124" y="166">POST /   SendMessage   A2A-Version: 1.0</text>
+          <text x="124" y="198">task: TASK_STATE_INPUT_REQUIRED</text>
+        </g>
+        <text x="124" y="141" fill="#78716C" font-size="9.5">reads the skills, picks the first interface it supports (JSONRPC)</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 02</b> Discovery, then the first message</span><span>the card is a plain HTTP GET</span></div>
+    </div>
+
+    <p>Besides the well-known URI, a client can look a card up in a registry that collects cards, or use a card address configured in advance.</p>
+
+    <p>In FIPA, the Directory Facilitator (DF) of an agent platform did this job. Agents registered their services with the DF, and other agents searched the DF by service type (yellow pages). In A2A each agent puts its card on its own domain, and a registry is used when needed (FIG. 03).</p>
+
+    <div class="fig" id="fig3">
+      <svg viewBox="0 0 680 248" role="img" aria-label="FIPA: agents register with one Directory Facilitator and buyers search it. A2A: each agent serves its own card; the buyer fetches cards directly, a registry is optional">
+        <defs>
+          <marker id="f3-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f3-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="16">FIPA: ONE DIRECTORY PER PLATFORM</text>
+          <text x="370" y="16">A2A: EACH AGENT SERVES ITS OWN CARD</text>
+        </g>
+        <path d="M340 30 L340 220" stroke="#E7E5E4" stroke-width="1"/>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="0" y="40" width="90" height="30"/>
+          <rect x="0" y="107" width="90" height="30"/>
+          <rect x="0" y="174" width="90" height="30"/>
+          <rect x="370" y="104" width="100" height="36"/>
+          <rect x="540" y="36" width="140" height="44"/>
+          <rect x="540" y="110" width="140" height="44"/>
+        </g>
+        <rect x="180" y="96" width="120" height="52" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
+        <rect x="540" y="184" width="140" height="34" fill="#FFFFFF" stroke="#78716C" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M90 55 L179 108" marker-end="url(#f3-ah)"/>
+          <path d="M90 122 L179 122" marker-end="url(#f3-ah)"/>
+          <path d="M90 189 L179 136" marker-end="url(#f3-ah)"/>
+          <path d="M470 116 L539 64" marker-end="url(#f3-ah)"/>
+          <path d="M470 124 L539 130" marker-end="url(#f3-ah)"/>
+        </g>
+        <path d="M470 134 L539 196" fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#f3-ahd)"/>
+        <g text-anchor="middle" fill="#1C1917" font-size="11" font-weight="600">
+          <text x="45" y="59">seller 1</text><text x="45" y="126">seller 2</text><text x="45" y="193">buyer</text>
+          <text x="240" y="119">DF</text>
+          <text x="420" y="126">buyer</text>
+          <text x="610" y="55">North Shop</text><text x="610" y="129">South Shop</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="9.5">
+          <text x="240" y="136">yellow pages</text>
+          <text x="610" y="71">agent-card.json</text><text x="610" y="145">agent-card.json</text>
+          <text x="610" y="205">registry (optional)</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="96" y="94">register</text>
+          <text x="112" y="186">search</text>
+          <text x="372" y="158">GET card</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="0" y="240">sellers register; the buyer searches one place</text>
+          <text x="370" y="240">the buyer fetches each card from its agent</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 03</b> Directory Facilitator and Agent Card</span><span>the directory became optional</span></div>
+    </div>
+
+    <p>Whoever builds the agent writes its card. So it was with the week-03 Contract Net bid and the week-05 tool description. In v1.0 a card can carry a JWS signature, so a client can check who published it and that it was not altered on the way. Nothing in the specification checks whether the sentences in a card are true. The assignment changes one card's sentences and measures the effect.</p>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A3</span><h2>Task: the state and the results of a delegated job</h2></div>
+    <p>The client sends a message with <code class="inline">SendMessage</code>. If the server can answer right away, it replies with a single message; if the job takes time or needs back-and-forth, it creates a task and returns that. Send the lab shop &ldquo;I want to buy a lamp&rdquo; and this comes back.</p>
+
+    <div class="code"><span class="file">SendMessage response (lab/logs/lab-first-response.json)</span><pre>{
+  <span class="st">"result"</span>: {
+    <span class="st">"task"</span>: {
+      <span class="st">"id"</span>: <span class="st">"d26f7b6c-2b2a-42ab-af06-9830cf278db5"</span>,
+      <span class="st">"contextId"</span>: <span class="st">"0132caae-a7e3-409b-a0ea-4dbd35bfc5a3"</span>,
+      <span class="st">"status"</span>: {
+        <span class="st">"state"</span>: <span class="st">"TASK_STATE_INPUT_REQUIRED"</span>,
+        <span class="st">"message"</span>: {
+          <span class="st">"role"</span>: <span class="st">"ROLE_AGENT"</span>,
+          <span class="st">"parts"</span>: [{ <span class="st">"text"</span>: <span class="st">"lamp: asking 130. Send your offer as a number."</span> }],
+          ...
+        },
+        <span class="st">"timestamp"</span>: <span class="st">"2026-10-11T10:47:11.822276Z"</span>
+      },
+      <span class="st">"history"</span>: [
+        { <span class="st">"messageId"</span>: <span class="st">"m1"</span>, <span class="st">"role"</span>: <span class="st">"ROLE_USER"</span>, <span class="st">"parts"</span>: [{ <span class="st">"text"</span>: <span class="st">"I want to buy a lamp"</span> }], ... }
+      ]
+    }
+  },
+  <span class="st">"id"</span>: 2,
+  <span class="st">"jsonrpc"</span>: <span class="st">"2.0"</span>
+}</pre></div>
+
+    <p><code class="inline">id</code> is the task number the server made; every later message about this job carries it as <code class="inline">taskId</code>. <code class="inline">contextId</code> groups related tasks and messages into one conversation. <code class="inline">status</code> holds the current state and what the shop said, <code class="inline">history</code> the messages so far. When the job is done, its results are attached as <code class="inline">artifacts</code> (FIG. 04).</p>
+
+    <div class="fig" id="fig4">
+      <svg viewBox="0 0 680 270" role="img" aria-label="Task anatomy: a task has id, contextId, status, history of messages, and artifacts; messages and artifacts are made of parts; a part holds text, raw bytes, a url, or JSON data">
+        <defs>
+          <marker id="f4-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="0" y="24" width="330" height="170"/>
+          <rect x="390" y="24" width="290" height="84"/>
+          <rect x="390" y="122" width="290" height="72"/>
+        </g>
+        <rect x="390" y="208" width="290" height="52" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M330 144 L389 66" marker-end="url(#f4-ah)"/>
+          <path d="M330 168 L389 158" marker-end="url(#f4-ah)"/>
+          <path d="M390 96 L372 96 L372 234 L389 234" marker-end="url(#f4-ah)"/>
+          <path d="M390 182 L372 182"/>
+        </g>
+        <g fill="#1C1917" font-size="12" font-weight="600">
+          <text x="14" y="46">Task</text>
+          <text x="404" y="46">Message</text>
+          <text x="404" y="144">Artifact</text>
+          <text x="404" y="230">Part</text>
+        </g>
+        <g fill="#1C1917" font-size="10.5">
+          <text x="14" y="72">id</text>
+          <text x="14" y="96">contextId</text>
+          <text x="14" y="120">status</text>
+          <text x="14" y="144">history</text>
+          <text x="14" y="168">artifacts</text>
+          <text x="404" y="68">role</text>
+          <text x="404" y="98">parts</text>
+          <text x="404" y="168">name</text>
+          <text x="404" y="186">parts</text>
+        </g>
+        <g fill="#78716C" font-size="10">
+          <text x="100" y="72">made by the server, unique</text>
+          <text x="100" y="96">groups related tasks</text>
+          <text x="100" y="120">state, message, timestamp</text>
+          <text x="100" y="144">[ Message, ... ]</text>
+          <text x="100" y="168">[ Artifact, ... ]</text>
+          <text x="460" y="68">ROLE_USER or ROLE_AGENT</text>
+          <text x="404" y="82">messageId, taskId, contextId</text>
+          <text x="460" y="98">[ Part, ... ]</text>
+          <text x="460" y="168">"receipt"</text>
+          <text x="460" y="186">[ Part, ... ]</text>
+          <text x="404" y="249">one of text, raw, url, data; plus mediaType</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 04</b> What a task carries</span><span>talk goes in messages, results go in artifacts</span></div>
+    </div>
+
+    <p>What the shop says (&ldquo;80 is too low&rdquo;) arrives as the status message; the outcome of the deal arrives as an artifact. The specification says results SHOULD be returned as artifacts, not in messages. Messages and artifacts are both made of Parts. A Part holds one of text, raw (file bytes), url (a file address), or data (a JSON value), and <code class="inline">mediaType</code> names the format. The lab shop's receipt is a data Part, so the receiving code reads <code class="inline">price</code> directly.</p>
+
+    <p>Up to v0.3 the task state values were written in lower case with hyphens, such as <code class="inline">input-required</code>; v1.0 changed them to the <code class="inline">TASK_STATE_INPUT_REQUIRED</code> form. Example code on the web that uses lower-case values targets v0.3.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>State</th><th>Meaning</th><th>Kind</th></tr>
+        <tr><td class="stage">SUBMITTED</td><td>Received</td><td><span class="m">active</span></td></tr>
+        <tr><td class="stage">WORKING</td><td>In progress</td><td><span class="m">active</span></td></tr>
+        <tr><td class="stage">INPUT_REQUIRED</td><td>Stopped, waiting for input from the client</td><td><span class="m">interrupted</span></td></tr>
+        <tr><td class="stage">AUTH_REQUIRED</td><td>Stopped, waiting for authentication</td><td><span class="m">interrupted</span></td></tr>
+        <tr><td class="stage">COMPLETED</td><td>Finished, successfully</td><td><span class="m">terminal</span></td></tr>
+        <tr><td class="stage">FAILED</td><td>Finished with an error</td><td><span class="m">terminal</span></td></tr>
+        <tr><td class="stage">CANCELED</td><td>Finished because the client canceled it</td><td><span class="m">terminal</span></td></tr>
+        <tr><td class="stage">REJECTED</td><td>Finished because the agent decided not to do the job</td><td><span class="m">terminal</span></td></tr>
+      </table>
+    </div>
+
+    <p>An interrupted task continues when the client sends a message with the same <code class="inline">taskId</code>. A terminal task takes no more messages; the server answers one with an error.</p>
+
+    <div class="fig" id="fig5">
+      <svg viewBox="0 0 680 304" role="img" aria-label="Task state machine: submitted to working; working to input-required or auth-required and back when the client answers; working to the terminal states completed, failed, canceled, rejected">
+        <defs>
+          <marker id="f5-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f5-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="0" y="124" width="140" height="36"/>
+          <rect x="200" y="124" width="140" height="36"/>
+          <rect x="190" y="28" width="160" height="36"/>
+          <rect x="190" y="220" width="160" height="36"/>
+        </g>
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5">
+          <rect x="480" y="20" width="200" height="40"/>
+          <rect x="480" y="86" width="200" height="40"/>
+          <rect x="480" y="152" width="200" height="40"/>
+          <rect x="480" y="218" width="200" height="40"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="0.8">
+          <rect x="483" y="23" width="194" height="34"/>
+          <rect x="483" y="89" width="194" height="34"/>
+          <rect x="483" y="155" width="194" height="34"/>
+          <rect x="483" y="221" width="194" height="34"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M140 142 L199 142" marker-end="url(#f5-ah)"/>
+          <path d="M255 124 L255 65" marker-end="url(#f5-ah)"/>
+          <path d="M255 160 L255 219" marker-end="url(#f5-ah)"/>
+          <path d="M340 136 L479 42" marker-end="url(#f5-ah)"/>
+          <path d="M340 140 L479 106" marker-end="url(#f5-ah)"/>
+          <path d="M340 144 L479 172" marker-end="url(#f5-ah)"/>
+          <path d="M340 148 L479 236" marker-end="url(#f5-ah)"/>
+        </g>
+        <g fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4">
+          <path d="M285 64 L285 123" marker-end="url(#f5-ahd)"/>
+          <path d="M285 220 L285 161" marker-end="url(#f5-ahd)"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="11" font-weight="600">
+          <text x="70" y="146">SUBMITTED</text>
+          <text x="270" y="146">WORKING</text>
+          <text x="270" y="50">INPUT_REQUIRED</text>
+          <text x="270" y="242">AUTH_REQUIRED</text>
+          <text x="580" y="38">COMPLETED</text>
+          <text x="580" y="104">FAILED</text>
+          <text x="580" y="170">CANCELED</text>
+          <text x="580" y="236">REJECTED</text>
+        </g>
+        <g text-anchor="middle" fill="#78716C" font-size="9">
+          <text x="580" y="51">done, with artifacts</text>
+          <text x="580" y="117">error</text>
+          <text x="580" y="183">client called CancelTask</text>
+          <text x="580" y="249">agent declined the work</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="248" y="98" text-anchor="end">agent asks</text>
+          <text x="292" y="98">client replies,</text>
+          <text x="292" y="110">same taskId</text>
+          <text x="248" y="194" text-anchor="end">needs credentials</text>
+          <text x="292" y="194">client authenticates</text>
+        </g>
+        <text x="0" y="282" fill="#78716C" font-size="9.5">values are TASK_STATE_* in v1.0; double border = terminal, no further messages</text>
+        <text x="0" y="297" fill="#78716C" font-size="9.5">a server may skip WORKING: the lab shop goes from a new task straight to INPUT_REQUIRED or REJECTED</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 05</b> Task lifecycle, A2A v1.0</span><span>interrupted states wait for the client</span></div>
+    </div>
+
+    <p>FIG. 06 draws the lab purchase as state changes. The shop named a price and stopped to wait for input (INPUT_REQUIRED); when the buyer sent 80 with the same <code class="inline">taskId</code>, it countered at 105. When the buyer sent 105, it closed the deal (COMPLETED) and attached a receipt artifact. Sending 110 to the finished task returned <code class="inline">-32004</code> (UnsupportedOperationError).</p>
+
+    <div class="fig" id="fig6">
+      <svg viewBox="0 0 680 330" role="img" aria-label="Lab run: the buyer asks for a lamp, the shop asks 130, the buyer offers 80, the shop counters 105, the buyer sends 105, the task completes with a receipt artifact; a later message to the completed task gets error -32004">
+        <defs>
+          <marker id="f6-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f6-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="10" y="6" width="160" height="30"/>
+          <rect x="510" y="6" width="160" height="30"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="11.5" font-weight="600">
+          <text x="90" y="25">buyer (curl)</text>
+          <text x="590" y="25">Lamp Shop</text>
+        </g>
+        <g stroke="#A8A29E" stroke-width="1" stroke-dasharray="3 4">
+          <path d="M90 36 L90 320"/><path d="M590 36 L590 320"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M90 66 L589 66" marker-end="url(#f6-ah)"/>
+          <path d="M90 130 L589 130" marker-end="url(#f6-ah)"/>
+          <path d="M90 194 L589 194" marker-end="url(#f6-ah)"/>
+          <path d="M90 282 L589 282" marker-end="url(#f6-ah)"/>
+        </g>
+        <g fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4">
+          <path d="M590 96 L91 96" marker-end="url(#f6-ahd)"/>
+          <path d="M590 160 L91 160" marker-end="url(#f6-ahd)"/>
+          <path d="M590 224 L91 224" marker-end="url(#f6-ahd)"/>
+          <path d="M590 312 L91 312" marker-end="url(#f6-ahd)"/>
+        </g>
+        <g fill="#1C1917" font-size="10">
+          <text x="104" y="60">SendMessage  "I want to buy a lamp"</text>
+          <text x="104" y="124">SendMessage  taskId=d26f7b6c...  "80"</text>
+          <text x="104" y="188">SendMessage  taskId=d26f7b6c...  "105"</text>
+          <text x="104" y="276">SendMessage  taskId=d26f7b6c...  "110"</text>
+        </g>
+        <g fill="#1C1917" font-size="10">
+          <text x="104" y="90"><tspan font-weight="600">INPUT_REQUIRED</tspan>  "lamp: asking 130. Send your offer as a number."</text>
+          <text x="104" y="154"><tspan font-weight="600">INPUT_REQUIRED</tspan>  "80 is too low. Counteroffer: 105."</text>
+          <text x="104" y="218"><tspan font-weight="600">COMPLETED</tspan>  "Deal: lamp at 105."</text>
+          <text x="104" y="306"><tspan font-weight="600">error -32004</tspan>  task is in terminal state: COMPLETED</text>
+        </g>
+        <text x="104" y="242" fill="#78716C" font-size="9.5">artifact "receipt": {"seller": "Lamp Shop", "item": "lamp", "price": 105.0}</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 06</b> One purchase, one task</span><span>lab/logs/lab-run.txt, steps 3 to 7</span></div>
+    </div>
+
+    <p>When a task runs long, the client chooses how to wait for the result. It can ask again with <code class="inline">GetTask</code> (polling), or keep a connection open with <code class="inline">SendStreamingMessage</code> and receive state changes as Server-Sent Events. If the client registers a webhook address, the server sends a notification there whenever the state changes (push notification). The server states in the Agent Card's <code class="inline">capabilities</code> whether it supports streaming and push notifications.</p>
+
+    <div class="fig" id="fig7">
+      <svg viewBox="0 0 680 236" role="img" aria-label="Three ways to follow a long task: polling with GetTask, streaming over Server-Sent Events, and push notifications to a client webhook">
+        <defs>
+          <marker id="f7-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="f7-ahd" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#78716C" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="40">POLLING</text>
+          <text x="0" y="118">STREAMING</text>
+          <text x="0" y="196">PUSH</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="0" y="56">the client asks again</text>
+          <text x="0" y="134">one open connection</text>
+          <text x="0" y="212">the server calls back</text>
+        </g>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="150" y="22" width="110" height="44"/><rect x="560" y="22" width="120" height="44"/>
+          <rect x="150" y="100" width="110" height="44"/><rect x="560" y="100" width="120" height="44"/>
+          <rect x="150" y="178" width="110" height="44"/><rect x="560" y="178" width="120" height="44"/>
+        </g>
+        <g text-anchor="middle" fill="#1C1917" font-size="11" font-weight="600">
+          <text x="205" y="48">client</text><text x="620" y="48">agent</text>
+          <text x="205" y="126">client</text><text x="620" y="126">agent</text>
+          <text x="205" y="196">client</text><text x="620" y="204">agent</text>
+        </g>
+        <text x="205" y="211" text-anchor="middle" fill="#78716C" font-size="9">+ webhook URL</text>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M260 36 L559 36" marker-end="url(#f7-ah)"/>
+          <path d="M260 114 L559 114" marker-end="url(#f7-ah)"/>
+          <path d="M260 192 L559 192" marker-end="url(#f7-ah)"/>
+        </g>
+        <g fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4">
+          <path d="M560 54 L261 54" marker-end="url(#f7-ahd)"/>
+          <path d="M560 126 L261 126" marker-end="url(#f7-ahd)"/>
+          <path d="M560 134 L261 134" marker-end="url(#f7-ahd)"/>
+          <path d="M560 210 L261 210" marker-end="url(#f7-ahd)"/>
+        </g>
+        <g fill="#1C1917" font-size="9.5">
+          <text x="272" y="31">GetTask(id), repeated</text>
+          <text x="272" y="109">SendStreamingMessage</text>
+          <text x="272" y="187">CreateTaskPushNotificationConfig(url)</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="272" y="66">current task</text>
+          <text x="272" y="148">SSE: statusUpdate, artifactUpdate, ...</text>
+          <text x="272" y="226">POST to the webhook when the task changes</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 07</b> Following a long task</span><span>capabilities.streaming, capabilities.pushNotifications</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A4</span><h2>FIPA-ACL and A2A</h2></div>
+    <p>Each field of a week-04 FIPA-ACL message, mapped onto A2A v1.0.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>FIPA-ACL (2002)</th><th>A2A v1.0</th><th>What changed</th></tr>
+        <tr><td class="stage">performative</td><td>No such field in the message. The task state reports how the job is going</td><td>A counteroffer shows up as INPUT_REQUIRED, a closed deal as COMPLETED with an artifact. Which act a message performs is up to the receiver, reading the text</td></tr>
+        <tr><td class="stage">:sender, :receiver</td><td><code class="inline">role</code> (ROLE_USER, ROLE_AGENT) and the address the request went to</td><td>Who sent it is settled by HTTP authentication. The card names the methods in <code class="inline">securitySchemes</code></td></tr>
+        <tr><td class="stage">:content</td><td>Part (text, raw, url, data)</td><td>Natural language, files, and JSON can be mixed in one message</td></tr>
+        <tr><td class="stage">:language, :ontology</td><td>None. Only <code class="inline">mediaType</code></td><td>No rules for reading the content are agreed in advance; a model reads it</td></tr>
+        <tr><td class="stage">:conversation-id</td><td><code class="inline">contextId</code></td><td>Groups related tasks and messages</td></tr>
+        <tr><td class="stage">:reply-with, :in-reply-to</td><td><code class="inline">taskId</code>, <code class="inline">messageId</code>, <code class="inline">referenceTaskIds</code></td><td>Replies are tied to a task instead of to a single message</td></tr>
+        <tr><td class="stage">Interaction protocol</td><td>One task lifecycle</td><td>No named procedure to pick, as with fipa-request or fipa-contract-net. Every delegation uses the same state machine</td></tr>
+        <tr><td class="stage">DF</td><td>Agent Card, registry</td><td>Each agent publishes its own card</td></tr>
+        <tr><td class="stage">FP, RE</td><td>None</td><td>Defining a message's meaning by beliefs and intentions is gone</td></tr>
+      </table>
+    </div>
+
+    <p>FIG. 08 writes the same lamp purchase in both formats. In FIPA-ACL every message carries an act name. In A2A the buyer's &ldquo;105&rdquo; is plain text, and the shop agent decides whether to read it as acceptance. How far the deal has got is given by the task state: INPUT_REQUIRED while countering, COMPLETED once the deal closes.</p>
+
+    <div class="fig" id="fig8">
+      <svg viewBox="0 0 680 290" role="img" aria-label="The same lamp purchase written as FIPA-ACL messages with act names and as A2A SendMessage calls with task states">
+        <defs>
+          <marker id="f8-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="16">FIPA-ACL (WEEK 04)</text>
+          <text x="360" y="16">A2A v1.0 (THIS WEEK'S LAB)</text>
+        </g>
+        <path d="M340 28 L340 248" stroke="#E7E5E4" stroke-width="1"/>
+        <g stroke="#E7E5E4" stroke-width="1">
+          <path d="M0 64 L330 64"/><path d="M0 100 L330 100"/><path d="M0 136 L330 136"/><path d="M0 172 L330 172"/><path d="M0 208 L330 208"/>
+          <path d="M360 64 L680 64"/><path d="M360 100 L680 100"/><path d="M360 136 L680 136"/><path d="M360 172 L680 172"/><path d="M360 208 L680 208"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M0 46 L22 46" marker-end="url(#f8-ah)"/><path d="M360 46 L382 46" marker-end="url(#f8-ah)"/>
+          <path d="M22 82 L1 82" marker-end="url(#f8-ah)"/><path d="M382 82 L361 82" marker-end="url(#f8-ah)"/>
+          <path d="M0 118 L22 118" marker-end="url(#f8-ah)"/><path d="M360 118 L382 118" marker-end="url(#f8-ah)"/>
+          <path d="M22 154 L1 154" marker-end="url(#f8-ah)"/><path d="M382 154 L361 154" marker-end="url(#f8-ah)"/>
+          <path d="M0 190 L22 190" marker-end="url(#f8-ah)"/><path d="M360 190 L382 190" marker-end="url(#f8-ah)"/>
+          <path d="M22 226 L1 226" marker-end="url(#f8-ah)"/><path d="M382 226 L361 226" marker-end="url(#f8-ah)"/>
+        </g>
+        <g fill="#1C1917" font-size="10.5">
+          <text x="34" y="50">(<tspan font-weight="600">cfp</tspan> :content "lamp")</text>
+          <text x="34" y="86">(<tspan font-weight="600">propose</tspan> :content 130)</text>
+          <text x="34" y="122">(<tspan font-weight="600">propose</tspan> :content 80)</text>
+          <text x="34" y="158">(<tspan font-weight="600">propose</tspan> :content 105)</text>
+          <text x="34" y="194">(<tspan font-weight="600">accept-proposal</tspan> :content 105)</text>
+          <text x="34" y="230">(<tspan font-weight="600">inform</tspan> :content (done ...))</text>
+          <text x="394" y="50">SendMessage "I want to buy a lamp"</text>
+          <text x="394" y="86"><tspan font-weight="600">INPUT_REQUIRED</tspan> "asking 130"</text>
+          <text x="394" y="122">SendMessage "80"</text>
+          <text x="394" y="158"><tspan font-weight="600">INPUT_REQUIRED</tspan> "Counteroffer: 105"</text>
+          <text x="394" y="194">SendMessage "105"</text>
+          <text x="394" y="230"><tspan font-weight="600">COMPLETED</tspan> + artifact "receipt"</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="0" y="270">→ buyer to seller, ← seller to buyer</text>
+          <text x="360" y="270">the act name is gone; the task state tracks the deal</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 08</b> One deal, two protocols</span><span>bold = what says how far the deal got</span></div>
+    </div>
+
+    <p>The limits of FIPA-ACL from week 04, side by side with A2A.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Limit</th><th>FIPA-ACL (2002)</th><th>A2A v1.0</th></tr>
+        <tr><td class="stage">Verifying semantics</td><td>Defined a message's meaning by the sender's beliefs and intentions. There was no way to check those beliefs from outside</td><td>Defines no meaning for messages. Nothing checks what an Agent Card claims either. A card signature vouches only for who published it</td></tr>
+        <tr><td class="stage">Reasoning</td><td>Implementations stopped at branching on the performative name</td><td>The models on both sides read natural-language messages and decide the next step</td></tr>
+        <tr><td class="stage">Ontology agreement</td><td><code class="inline">:language</code> and <code class="inline">:ontology</code> had to be agreed in advance</td><td>Only a mediaType is stated; a model reads the content</td></tr>
+        <tr><td class="stage">Adoption</td><td>Came out before there were agents to use it</td><td>More than 50 technology partners at launch. npm downloads are 5.5% of the MCP SDK's (below)</td></tr>
+      </table>
+    </div>
+
+    <div class="recorder">
+      <div><span class="k">@a2a-js/sdk</span><span class="v"><span class="m">14,375,741</span></span></div>
+      <div><span class="k">@modelcontextprotocol/sdk</span><span class="v"><span class="m">262,400,393</span></span></div>
+    </div>
+    <p class="small">npm public download counts (api.npmjs.org), 30 days from September 11 to October 10, 2026. The numbers include CI and dependency installs, so they are not user counts.</p>
+
+    <p>A2A also leaves out a place for the terms of a delegation. A task has nowhere to say how much may be spent, in whose name, or how the result will be checked. The lab buyer's budget lives only in the buyer model's system prompt. Week 07 builds a contract that carries these terms with the delegation and checks them.</p>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="open">
+      <div class="lbl">DISCUSSION: Who checks what an Agent Card claims?</div>
+      <ol>
+        <li>In the assignment, South Shop's card says &ldquo;lowest prices in town&rdquo;. Of the client's model, a registry, a card signature, and reputation built up after deals, which can check that sentence? What is the same as the bid of week 03's overconfident contractor, and what is different?</li>
+        <li>In A2A the shop agent decides whether to read &ldquo;105&rdquo; as acceptance. When is it better to send accept-proposal explicitly, as in FIPA? Answer from the results of week 04's tagged condition.</li>
+        <li>The remote agent is opaque. When a deal goes wrong, the client's only evidence is the task history and the artifacts. Can you tell from those who was at fault? What else would you need?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PART B ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART B: LAB</div>
+    <h2>Run a shop agent as an A2A server</h2>
+    <div class="meta">GOAL: run a rule-based seller as an A2A server, take one purchase from a message to COMPLETED with curl, and reach REJECTED and CANCELED once each</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">LAB</span><h2>Start Lamp Shop and trade with it over curl</h2></div>
+    <p>Start a shop agent that names prices by rule, with no model, using a2a-sdk; fetch its card with curl and buy a lamp. No model is called, so no API key is needed. The shop opens at 1.3 times its reserve (the lowest price it accepts) and closes the deal at any offer at or above the reserve. It counters a low offer and turns the deal down on the third low offer.</p>
+
+    <ol class="pre">
+      <li><b class="lead">Install the SDK.</b> <code class="inline">pip install "a2a-sdk[http-server]" uvicorn</code>. The reference run used a2a-sdk 1.2.2 on Python 3.12. An SDK in another language is fine.</li>
+      <li><b class="lead">Write the server.</b> <code class="inline">seller_agent.py</code>. The <code class="inline">execute</code> method of an <code class="inline">AgentExecutor</code> runs once per incoming message and changes the task state through a <code class="inline">TaskUpdater</code>. The SDK's route functions serve the card and the JSON-RPC endpoint.</li>
+      <li><b class="lead">Start it and fetch the card.</b> <code class="inline">python seller_agent.py</code> serves on <code class="inline">http://127.0.0.1:9999</code>; fetch <code class="inline">/.well-known/agent-card.json</code> with curl.</li>
+      <li><b class="lead">Send without the header.</b> Send <code class="inline">SendMessage</code> without the <code class="inline">A2A-Version</code> header. The specification says a server must read a request without the header as version 0.3, and the lab server, which takes 1.0 only, refuses it with <code class="inline">-32009</code> (VersionNotSupportedError).</li>
+      <li><b class="lead">Buy a lamp.</b> With the header, send &ldquo;I want to buy a lamp&rdquo;, then send 80 and 105 in turn with the returned task <code class="inline">id</code> as <code class="inline">taskId</code>. After COMPLETED and the receipt artifact arrive, a <code class="inline">GetTask</code> shows 5 messages in the history.</li>
+      <li><b class="lead">Send to the finished task.</b> Send 110 with the same <code class="inline">taskId</code> and get <code class="inline">-32004</code>.</li>
+      <li><b class="lead">Reach the other terminal states.</b> Asking for a sofa, which the shop does not sell, ends in REJECTED; offering 100 three times for a chair ends in REJECTED; <code class="inline">CancelTask</code> on an open bookshelf task ends in CANCELED.</li>
+    </ol>
+
+    <div class="code"><span class="file">seller_agent.py (the core)</span><pre><span class="kw">class</span> Seller(AgentExecutor):
+    <span class="kw">async def</span> execute(self, context, event_queue):
+        task = context.current_task
+        <span class="kw">if</span> task <span class="kw">is None</span>:                                   <span class="cm"># first message: create the task</span>
+            task = new_task_from_user_message(context.message)
+            <span class="kw">await</span> event_queue.enqueue_event(task)
+        up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
+        say = <span class="kw">lambda</span> text: up.new_agent_message(parts=[new_text_part(text)])
+        text = get_message_text(context.message) <span class="kw">or</span> <span class="st">""</span>
+        deal = self.open.get(task.id)
+
+        <span class="kw">if</span> deal <span class="kw">is None</span>:                                   <span class="cm"># which item?</span>
+            item = next((k <span class="kw">for</span> k <span class="kw">in</span> self.cfg[<span class="st">"reserve"</span>] <span class="kw">if</span> k <span class="kw">in</span> text.lower()), <span class="kw">None</span>)
+            <span class="kw">if</span> item <span class="kw">is None</span>:
+                <span class="kw">await</span> up.reject(say(<span class="st">"We only sell: ..."</span>))        <span class="cm"># REJECTED</span>
+                <span class="kw">return</span>
+            ask = math.ceil(self.cfg[<span class="st">"reserve"</span>][item] * 1.3)
+            self.open[task.id] = {<span class="st">"item"</span>: item, <span class="st">"ask"</span>: ask, <span class="st">"rounds"</span>: 0}
+            <span class="kw">await</span> up.requires_input(say(f<span class="st">"{item}: asking {ask}. Send your offer as a number."</span>))
+            <span class="kw">return</span>
+
+        offer = int(re.search(<span class="st">r"\d+"</span>, text).group())
+        <span class="kw">if</span> offer &gt;= self.cfg[<span class="st">"reserve"</span>][deal[<span class="st">"item"</span>]]:
+            <span class="kw">await</span> up.add_artifact(parts=[new_data_part({<span class="st">"seller"</span>: ..., <span class="st">"item"</span>: ..., <span class="st">"price"</span>: offer})],
+                                  name=<span class="st">"receipt"</span>)
+            <span class="kw">await</span> up.complete(say(f<span class="st">"Deal: {deal['item']} at {offer}."</span>))   <span class="cm"># COMPLETED</span>
+            <span class="kw">return</span>
+        ...                                                   <span class="cm"># counteroffer (INPUT_REQUIRED) or walk away (REJECTED)</span>
+
+    <span class="kw">async def</span> cancel(self, context, event_queue):         <span class="cm"># CancelTask</span>
+        task = context.current_task
+        <span class="kw">await</span> TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
+
+card = AgentCard(name=<span class="st">"Lamp Shop"</span>, ..., supported_interfaces=[
+    AgentInterface(protocol_binding=<span class="st">"JSONRPC"</span>, url=<span class="st">"http://127.0.0.1:9999/"</span>, protocol_version=<span class="st">"1.0"</span>)],
+    skills=[AgentSkill(id=<span class="st">"negotiate"</span>, ...)])
+handler = DefaultRequestHandler(agent_executor=Seller(cfg), task_store=InMemoryTaskStore(), agent_card=card)
+app = Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, <span class="st">"/"</span>))</pre></div>
+
+    <div class="code"><span class="file">sending messages with curl</span><pre><span class="cm"># first message</span>
+curl -s http://127.0.0.1:9999/ -H <span class="st">'Content-Type: application/json'</span> -H <span class="st">'A2A-Version: 1.0'</span> -d <span class="st">'{
+  "jsonrpc": "2.0", "id": 1, "method": "SendMessage",
+  "params": {"message": {"role": "ROLE_USER", "messageId": "m1",
+                         "parts": [{"text": "I want to buy a lamp"}]}}}'</span>
+<span class="cm"># continue the same task: put taskId in the message</span>
+  ... <span class="st">"message": {"role": "ROLE_USER", "messageId": "m2", "taskId": "&lt;task id&gt;", "parts": [{"text": "80"}]}</span>
+<span class="cm"># check the state, cancel</span>
+  ... <span class="st">"method": "GetTask",    "params": {"id": "&lt;task id&gt;"}</span>
+  ... <span class="st">"method": "CancelTask", "params": {"id": "&lt;task id&gt;"}</span></pre></div>
+
+    <p>Reference output of <code class="inline">lab_run.sh</code>, which runs steps 3 to 7 in one go.</p>
+
+    <div class="code"><span class="file">lab/logs/lab-run.txt</span><pre>## 2. SendMessage without A2A-Version header
+  error -32009 A2A version '0.3' is not supported by this handler. Expected version '1.0'.
+## 3. SendMessage: I want to buy a lamp
+  state TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+  taskId d26f7b6c-2b2a-42ab-af06-9830cf278db5
+## 4. SendMessage (same taskId): 80
+  state TASK_STATE_INPUT_REQUIRED | 80 is too low. Counteroffer: 105.
+## 5. SendMessage (same taskId): 105
+  state TASK_STATE_COMPLETED | Deal: lamp at 105.
+  artifact receipt [{"price": 105.0, "seller": "Lamp Shop", "item": "lamp"}]
+## 6. GetTask
+  state TASK_STATE_COMPLETED | history 5 messages | artifacts 1
+## 7. SendMessage to the completed task: 110
+  error -32004 Task d26f7b6c-2b2a-42ab-af06-9830cf278db5 is in terminal state: TASK_STATE_COMPLETED
+## 8. SendMessage: I want to buy a sofa
+  state TASK_STATE_REJECTED | We only sell: lamp, chair, bookshelf.
+## 9. Three low offers on a chair
+  state TASK_STATE_INPUT_REQUIRED | chair: asking 234. Send your offer as a number.
+  state TASK_STATE_INPUT_REQUIRED | 100 is too low. Counteroffer: 180.
+  state TASK_STATE_INPUT_REQUIRED | 100 is too low. Counteroffer: 180.
+  state TASK_STATE_REJECTED | No deal at 100.
+## 10. CancelTask on an open bookshelf task
+  state TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+  state TASK_STATE_CANCELED |</pre></div>
+
+    <p>The receipt's price arrives as <code class="inline">105.0</code>. Inside the SDK, a JSON number in a data Part passes through a protobuf <code class="inline">Value</code> and becomes a float. Convert it to an integer on the receiving side.</p>
+
+    <div class="check">
+      <div class="lbl">CHECKPOINT</div>
+      <ul>
+        <li>The card's <code class="inline">supportedInterfaces[0].protocolBinding</code> is <code class="inline">JSONRPC</code>.</li>
+        <li>A request without the <code class="inline">A2A-Version</code> header gets <code class="inline">-32009</code>.</li>
+        <li>The lamp purchase goes INPUT_REQUIRED (asking 130), INPUT_REQUIRED (Counteroffer: 105), COMPLETED, and the receipt's price is 105.</li>
+        <li>A message to the finished task gets <code class="inline">-32004</code>.</li>
+        <li>The sofa and the three low offers end in REJECTED; <code class="inline">CancelTask</code> ends in CANCELED.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ assignment ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">HW</span><h2>The inflated Agent Card experiment: same shop, different card</h2></div>
+    <p>Run two lab shops. The code and the items are the same; only the reserves differ. North Shop is cheap (lamp 100, chair 180, bookshelf 260), South Shop is pricey (lamp 125, chair 225, bookshelf 325). Both open at 1.3 times the reserve and turn the deal down on the fifth low offer. The buyer agent gets a budget in its system prompt, reads both shops' Agent Cards, picks one, and makes the same A2A purchase as in the lab, with at most 6 offers.</p>
+
+    <p>Between conditions, only the sentences in South Shop's card change. North Shop's card is the plain one in both conditions, and the order in which the buyer sees the two cards is randomized per episode.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Condition</th><th>South Shop description</th><th>Skill description</th></tr>
+        <tr><td class="stage">plain</td><td>Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.</td><td>Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.</td></tr>
+        <tr><td class="stage">inflated</td><td>Sells desk lamps, chairs and bookshelves at the lowest prices in town. We beat any competitor's price, guaranteed.</td><td>Name your price. We accept almost any reasonable offer.</td></tr>
+      </table>
+    </div>
+
+    <div class="fig" id="fig9">
+      <svg viewBox="0 0 680 262" role="img" aria-label="Experiment: the buyer reads both shops' Agent Cards, picks one, and negotiates with it over A2A; only the South Shop card text changes between conditions">
+        <defs>
+          <marker id="f9-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+        </defs>
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="16">BUYER</text>
+          <text x="180" y="16">AGENT CARDS</text>
+          <text x="480" y="16">SELLERS, NO MODEL</text>
+        </g>
+        <g fill="#FFFFFF" stroke="#1C1917" stroke-width="1.5">
+          <rect x="0" y="96" width="140" height="58"/>
+          <rect x="480" y="30" width="200" height="70"/>
+          <rect x="480" y="140" width="200" height="80"/>
+        </g>
+        <rect x="180" y="30" width="240" height="70" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
+        <rect x="180" y="140" width="240" height="80" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
+        <g stroke="#A8A29E" stroke-width="1" stroke-dasharray="3 3">
+          <path d="M420 65 L480 65"/><path d="M420 180 L480 180"/>
+        </g>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <path d="M180 65 L141 112" marker-end="url(#f9-ah)"/>
+          <path d="M180 180 L141 140" marker-end="url(#f9-ah)"/>
+          <path d="M70 154 L70 244 L580 244 L580 221" marker-end="url(#f9-ah)"/>
+        </g>
+        <g fill="#1C1917" font-size="11" font-weight="600">
+          <text x="70" y="120" text-anchor="middle">buyer agent</text>
+          <text x="192" y="50">North Shop card</text>
+          <text x="192" y="160">South Shop card</text>
+          <text x="492" y="50">North Shop (cheap)</text>
+          <text x="492" y="160">South Shop (pricey)</text>
+        </g>
+        <g fill="#78716C" font-size="9.5">
+          <text x="70" y="136" text-anchor="middle">haiku, budget in</text>
+          <text x="70" y="148" text-anchor="middle">the system prompt</text>
+          <text x="192" y="70">plain in both conditions</text>
+          <text x="192" y="180">plain: same text as North</text>
+          <text x="192" y="196">inflated: "lowest prices in town",</text>
+          <text x="192" y="210">"accept almost any reasonable offer"</text>
+          <text x="492" y="70">reserve: lamp 100, chair 180,</text>
+          <text x="492" y="84">bookshelf 260</text>
+          <text x="492" y="180">reserve: lamp 125, chair 225,</text>
+          <text x="492" y="194">bookshelf 325</text>
+          <text x="492" y="210">both reject the 5th low offer</text>
+          <text x="0" y="86">1. read both cards, pick one</text>
+          <text x="84" y="238">2. SendMessage, then the same taskId while INPUT_REQUIRED, at most 6 offers</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 09</b> The experiment</span><span>each card is served at /.well-known/agent-card.json</span></div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Scenario</th><th>Item</th><th>Budget</th><th>Shops that can sell within budget</th></tr>
+        <tr><td class="stage">s1</td><td>lamp</td><td>115</td><td>North</td></tr>
+        <tr><td class="stage">s2</td><td>chair</td><td>200</td><td>North</td></tr>
+        <tr><td class="stage">s3</td><td>lamp</td><td>140</td><td>North, South</td></tr>
+        <tr><td class="stage">s4</td><td>bookshelf</td><td>340</td><td>North, South</td></tr>
+      </table>
+    </div>
+
+    <h3><span class="tag">REFERENCE RUN</span>24 episodes with a haiku buyer</h3>
+    <p>The buyer ran on haiku through <code class="inline">claude -p</code> (claude-haiku-5-5), four scenarios three times per condition. The shops use no model. The run made 45 LLM calls in plain and 70 in inflated.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Condition</th><th>Picked South</th><th>Deal</th><th>Shop rejected</th><th>Buyer stopped</th><th>Over budget</th></tr>
+        <tr><td class="stage">plain</td><td>0 / 12</td><td>10 / 12</td><td>2</td><td>0</td><td>0</td></tr>
+        <tr><td class="stage">inflated</td><td>11 / 12</td><td>2 / 12</td><td>9</td><td>1</td><td>0</td></tr>
+      </table>
+    </div>
+
+    <div class="fig" id="fig10">
+      <svg viewBox="0 0 680 232" role="img" aria-label="Reference run, 12 episodes per condition: South picked 0 vs 11, deals 10 vs 2, rejected or abandoned 2 vs 10">
+        <g fill="#A8A29E" font-size="9.5" letter-spacing="1">
+          <text x="0" y="16">EPISODES OUT OF 12</text>
+        </g>
+        <rect x="380" y="6" width="12" height="12" fill="#D6D3D1"/><text x="398" y="16" fill="#78716C" font-size="10">plain</text>
+        <rect x="450" y="6" width="12" height="12" fill="#1C1917"/><text x="468" y="16" fill="#78716C" font-size="10">inflated</text>
+        <path d="M490 30 L490 196" stroke="#A8A29E" stroke-width="1" stroke-dasharray="3 4"/>
+        <text x="490" y="210" text-anchor="middle" fill="#A8A29E" font-size="9.5">12</text>
+        <text x="190" y="210" text-anchor="middle" fill="#A8A29E" font-size="9.5">0</text>
+        <path d="M190 30 L190 196" stroke="#1C1917" stroke-width="1"/>
+        <g fill="#1C1917" font-size="11" font-weight="600">
+          <text x="0" y="56">picked South (pricey)</text>
+          <text x="0" y="116">deal</text>
+          <text x="0" y="176">rejected or abandoned</text>
+        </g>
+        <g fill="#D6D3D1">
+          <rect x="190" y="38" width="0" height="16"/>
+          <rect x="190" y="98" width="250" height="16"/>
+          <rect x="190" y="158" width="50" height="16"/>
+        </g>
+        <g fill="#1C1917">
+          <rect x="190" y="58" width="275" height="16"/>
+          <rect x="190" y="118" width="50" height="16"/>
+          <rect x="190" y="178" width="250" height="16"/>
+        </g>
+        <g fill="#78716C" font-size="10.5">
+          <text x="198" y="51">0</text>
+          <text x="473" y="71">11</text>
+          <text x="448" y="111">10</text>
+          <text x="248" y="131">2</text>
+          <text x="248" y="171">2</text>
+          <text x="448" y="191">10</text>
+        </g>
+        <text x="0" y="228" fill="#78716C" font-size="9.5">s3 (lamp, budget 140): North sold at 100 three times; South sold at 125 twice and rejected once</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 10</b> Two card sentences, 24 episodes</span><span>reference run, results.csv</span></div>
+    </div>
+
+    <p>All 11 reasons for picking South in the inflated condition contain &ldquo;almost any reasonable offer&rdquo;. In 7 of them the buyer wrote that the &ldquo;lowest prices&rdquo; claim was unverified and picked South anyway.</p>
+
+    <div class="code"><span class="file">logs/inflated-02.txt, s1 (lamp, budget 115)</span><pre>[buyer] {"shop": "South Shop", "reason": "Its skill lets the buyer name a price and accepts almost any
+        reasonable offer (its example is 90), which gives the best chance of paying well under the 115
+        limit, though its 'lowest prices' claim is unverified marketing."}</pre></div>
+
+    <p>The buyer's loss came from the way it bid as well as from the higher reserve. In s4 South could have sold at 325, inside the 340 budget, and kept countering at 325. The buyer raised its offer in small steps and was turned down on its fifth low offer, all three times (FIG. 11). No card mentions the rule that five low offers end the deal. The two plain-condition rejections in s2 were the same case: the buyer went up to 178 and 179, and North's reserve was 180.</p>
+
+    <div class="fig" id="fig11">
+      <svg viewBox="0 0 680 248" role="img" aria-label="Inflated s4, run 2: the buyer offers 260, 300, 305, 315, 320 while South counters 341 then 325 four times; the budget is 340; the fifth low offer is rejected">
+        <g stroke="#E7E5E4" stroke-width="1">
+          <path d="M80 184 L620 184"/><path d="M80 120 L620 120"/><path d="M80 56 L620 56"/>
+        </g>
+        <g fill="#A8A29E" font-size="9.5" text-anchor="end">
+          <text x="70" y="187">260</text><text x="70" y="123">300</text><text x="70" y="59">340</text>
+        </g>
+        <path d="M80 56 L620 56" stroke="#1C1917" stroke-width="1" stroke-dasharray="2 3"/>
+        <text x="624" y="52" fill="#1C1917" font-size="9.5" text-anchor="end">budget 340</text>
+        <path d="M120 54.4 L220 80 L320 80 L420 80" fill="none" stroke="#78716C" stroke-width="1.5" stroke-dasharray="5 4"/>
+        <g fill="#FFFFFF" stroke="#78716C" stroke-width="1.5">
+          <rect x="116" y="50.4" width="8" height="8"/><rect x="216" y="76" width="8" height="8"/><rect x="316" y="76" width="8" height="8"/><rect x="416" y="76" width="8" height="8"/>
+        </g>
+        <path d="M120 184 L220 120 L320 112 L420 96 L520 88" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <g fill="#1C1917">
+          <circle cx="120" cy="184" r="4"/><circle cx="220" cy="120" r="4"/><circle cx="320" cy="112" r="4"/><circle cx="420" cy="96" r="4"/><circle cx="520" cy="88" r="4"/>
+        </g>
+        <g fill="#1C1917" font-size="10">
+          <text x="128" y="200">260</text><text x="228" y="136">300</text><text x="328" y="128">305</text><text x="428" y="112">315</text><text x="528" y="104">320</text>
+        </g>
+        <g fill="#78716C" font-size="10">
+          <text x="128" y="46">341</text><text x="228" y="74">325</text><text x="328" y="74">325</text><text x="428" y="74">325</text>
+        </g>
+        <text x="528" y="84" fill="#1C1917" font-size="10" font-weight="600">REJECTED</text>
+        <g fill="#A8A29E" font-size="9.5" text-anchor="middle">
+          <text x="120" y="222">offer 1</text><text x="220" y="222">2</text><text x="320" y="222">3</text><text x="420" y="222">4</text><text x="520" y="222">5</text>
+        </g>
+        <g font-size="9.5">
+          <circle cx="86" cy="240" r="4" fill="#1C1917"/><text x="96" y="243" fill="#78716C">buyer's offer</text>
+          <rect x="200" y="236" width="8" height="8" fill="#FFFFFF" stroke="#78716C" stroke-width="1.5"/><text x="214" y="243" fill="#78716C">South's counteroffer (its reserve is 325)</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 11</b> Inflated s4, run 2: a deal at 325 was open</span><span>logs/inflated-02.txt</span></div>
+    </div>
+
+    <p>In the plain condition the buyer picked North all 12 times. The reason was that the two cards were identical so it simply picked one, as in &ldquo;picked North Shop by default&rdquo;, and it picked North in the 4 episodes where South's card came first as well. So the plain results were influenced by the name North. Swapping the two shops' names would measure that influence on its own.</p>
+
+    <div class="check">
+      <div class="lbl">CHECKPOINT</div>
+      <ul>
+        <li>The two South cards in <code class="inline">cards/</code> differ only in description and skill description.</li>
+        <li>The logs show, for every episode, which shop the buyer picked and why.</li>
+        <li>In the logs, an INPUT_REQUIRED response is followed by a message sent with the same <code class="inline">taskId</code>.</li>
+        <li>Every deal price is within budget (<code class="inline">violation</code> 0).</li>
+      </ul>
+    </div>
+
+    <div class="hw">
+      <div class="head">ASSIGNMENT: WEEK 06</div>
+      <div class="body">
+        <p><strong>Deliverables</strong>: code (shops, buyer, runner; any layout), <code class="inline">cards/</code> (at least 3 Agent Cards your shops actually served: the cheap shop, the pricey shop plain, the pricey shop inflated), <code class="inline">scenarios.json</code>, <code class="inline">results.csv</code>, <code class="inline">logs/</code>, <code class="inline">REPORT.md</code>. Both conditions, plain and inflated, are required; run at least 4 scenarios three times per condition. Include at least one scenario only the cheap shop can serve within budget and at least one both shops can serve.</p>
+        <p><strong>Shops</strong>: name them so the name does not hint at price. Use the same rejection rule (how many low offers before the shop turns the deal down) for both, and state it in the report. Between conditions, change only the sentences of the pricey shop's card.</p>
+        <p><strong>REPORT.md</strong>: (1) Setup: model, temperature, the sentences that differ between the cards, reserves, the rejection rule, the buyer's offer limit, the run command. (2) Results: per condition, how often each shop was picked, deals, mean deal price, rejections, stops, plus the per-episode table. (3) Mapping table: week-04 FIPA-ACL to A2A v1.0, at least 8 rows. Use performative, sender and receiver, content, language and ontology, conversation-id, reply-with and in-reply-to, interaction protocol, DF, FP and RE as rows, and for each write what you saw in your own logs. (4) One paragraph of interpretation: did the card sentences change the pick, and what did that cost the buyer? Quote the reasons the buyer wrote in the logs.</p>
+        <p><strong>Format</strong>: commit to <code class="inline">submissions/&lt;student-id&gt;/week-06/</code> in your fork and open a PR upstream. CI runs <code class="inline">scripts/check_week06.py</code> on the format of the cards, scenarios, results, logs, and report. Run the same script yourself and see it pass before you open the PR. The data format in detail is in <code class="inline">weeks/week-06/README.md</code>.</p>
+        <p><strong>Grading</strong>: half reproducibility, half interpretation. An episode where the buyer wrote that it doubted the card's claim and picked that shop anyway is a result; so is one where the buyer ignored the claim. Count both and quote them.</p>
+      </div>
+    </div>
+
+    <p>Submission rules are the same as week 03.</p>
+    <div class="recorder">
+      <div><span class="k">Commits</span><span class="v">No squashing. Commits of failed attempts are grading evidence.</span></div>
+      <div><span class="k">Logs</span><span class="v">Commit agent console output as files under <code class="inline">logs/</code>.</span></div>
+      <div><span class="k">Keys</span><span class="v">Never commit API keys. Use environment variables only.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ readings ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">READ</span><h2>Readings</h2></div>
+    <ul class="readings">
+      <li><span class="badge req">Required</span><b class="lead">Agent2Agent (A2A) Protocol Specification v1.0</b><span class="why">Section 3 Operations, section 4 Data Model (Task, TaskState, Message, Part, Artifact), section 8 Agent Card. Before the lab, read 3.1.1 Send Message and 3.4 Multi-Turn Interactions. <a href="https://a2a-protocol.org/v1.0.0/specification/">a2a-protocol.org/v1.0.0/specification</a></span></li>
+      <li><span class="badge req">Required</span><b class="lead">FIPA, &ldquo;ACL Message Structure Specification&rdquo; SC00061G (2002), from week 04</b><span class="why">The left column of the A4 mapping table. Check the parameter definitions again when you write the mapping table in your report. <a href="https://web.archive.org/web/2023/http://www.fipa.org/specs/fipa00061/SC00061G.html">SC00061G</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">What&rsquo;s New in A2A Protocol v1.0</b><span class="why">Names and formats changed since v0.3: method names (<code class="inline">message/send</code> to <code class="inline">SendMessage</code>), how state values are written, the card structure. Useful when reading v0.3 examples on the web. <a href="https://a2a-protocol.org/latest/whats-new-v1/">a2a-protocol.org/latest/whats-new-v1</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Google, &ldquo;Announcing the Agent2Agent Protocol (A2A)&rdquo; (2025)</b><span class="why">The announcement. How Google described the relation to MCP. <a href="https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/">developers.googleblog.com</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">FIPA, &ldquo;Agent Management Specification&rdquo; SC00023K (2004)</b><span class="why">How the Directory Facilitator registers and searches. The left side of A2's FIG. 03. <a href="http://web.archive.org/web/20240725175755/http://www.fipa.org/specs/fipa00023/SC00023K.html">SC00023K</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">a2a-samples, helloworld (Python)</b><span class="why">The smallest server and client built with a2a-sdk 1.x. The lab's <code class="inline">seller_agent.py</code> follows its structure. <a href="https://github.com/a2aproject/a2a-samples/tree/main/samples/python/agents/helloworld">github.com/a2aproject/a2a-samples</a></span></li>
+    </ul>
+
+    <div class="next">
+      <div class="lbl">NEXT: WEEK 07</div>
+      <p><strong>Agent contracts and verification</strong>. When you hand over a job, pass its limits along with it (how much, in whose name, until when), and record it so that whether the promise was kept can be checked from outside. The assignment buyer's budget moves out of the system prompt.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="sheet">
+  <span>AGENTIC AI: <span class="o">AI Agent Engineering 101</span></span>
+  <span>SEOULTECH 2026 FALL, WEEK 06/15</span>
+</footer>
+
+</div>
+</body>
+</html>
