@@ -5,7 +5,9 @@
 This file only speaks A2A: it keeps one deal per task id, turns the buyer's text
 into an offer, asks seller_brain.decide() what to do, and turns the answer into
 a task state (INPUT_REQUIRED / COMPLETED with a receipt / REJECTED).
-It does NOT check the reserve; that is the brain's job (and its tools').
+Every finished task also gets a "trade-record" artifact with the whole negotiation.
+It does NOT check the reserve; that is the brain's job (inventory.check_ask is its tool).
+It does stop a sale when the item is out of stock.
 """
 import argparse
 import asyncio
@@ -23,10 +25,11 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 import seller_brain
+import trade_record
+from inventory import Inventory
 from model import log
 
 NAME = "26512070 Furniture Shop"
-RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
 
 def last_number(text):
@@ -36,7 +39,16 @@ def last_number(text):
 
 class Seller(AgentExecutor):
     def __init__(self):
+        self.inventory = Inventory()
         self.open = {}  # task id -> deal (see seller_brain.decide for its fields)
+
+    async def finish(self, up, task_id, deal, outcome, final_price=None):
+        """Attach the trade-record artifact and save it to trades/seller.jsonl."""
+        rec = trade_record.build("seller", deal, outcome, final_price)
+        await up.add_artifact(parts=[new_data_part(rec), new_text_part(trade_record.to_text(rec))],
+                              name="trade-record")
+        trade_record.save(rec)
+        self.open.pop(task_id, None)
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -49,23 +61,29 @@ class Seller(AgentExecutor):
         deal = self.open.get(task.id)
 
         if deal is None:  # first message: which item?
-            item = next((k for k in RESERVE if k in text.lower()), None)
+            item = next((k for k in self.inventory.names() if k in text.lower()), None)
             if item is None:
-                await up.reject(say("We only sell: " + ", ".join(RESERVE) + "."))
+                await up.reject(say("We only sell: " + ", ".join(self.inventory.names()) + "."))
                 return
-            deal = {"item": item, "reserve": RESERVE[item], "ask": None, "last_offer": None, "history": []}
+            info = self.inventory.get(item)
+            if info["stock"] <= 0:
+                await up.reject(say(f"Sorry, {item} is out of stock."))
+                return
+            deal = {"item": item, "reserve": info["reserve"], "list_price": info["list_price"],
+                    "stock": info["stock"], "ask": None, "last_offer": None, "history": []}
             self.open[task.id] = deal
         else:
             deal["last_offer"] = last_number(text)
+            deal["stock"] = self.inventory.get(deal["item"])["stock"]
         deal["history"].append({"from": "buyer", "text": text, "price": deal["last_offer"]})
 
         log(f"\n=== task {task.id[:8]} {deal['item']}: buyer said {text!r}")
         try:
-            d = await asyncio.to_thread(seller_brain.decide, deal, text)
+            d = await asyncio.to_thread(seller_brain.decide, deal, text, self.inventory)
         except Exception as e:  # the brain broke: end the deal rather than hang the buyer
             log(f"brain error: {e!r}")
+            await self.finish(up, task.id, deal, "failed")
             await up.failed(say(f"Shop error: {type(e).__name__}"))
-            self.open.pop(task.id, None)
             return
         log(f"decision: {d}")
 
@@ -77,22 +95,35 @@ class Seller(AgentExecutor):
             # The trade test reads the LAST number of this message as our ask.
             await up.requires_input(say(f"{words} My price: {price}.".strip()))
         elif action == "accept" and deal["last_offer"] is not None:
-            receipt = {"seller": NAME, "item": deal["item"], "price": deal["last_offer"]}
-            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(say(f"Deal: {deal['item']} at {deal['last_offer']}."))
-            del self.open[task.id]
+            price = deal["last_offer"]
+            try:
+                self.inventory.sell(deal["item"], price, buyer=task.context_id)
+            except ValueError as e:
+                await self.finish(up, task.id, deal, "rejected")
+                await up.reject(say(f"Sorry, {e}."))
+                return
+            deal["history"].append({"from": "seller", "text": words or "accept", "price": price})
+            receipt = {"seller": NAME, "item": deal["item"], "price": price}
+            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")  # receipt first
+            await self.finish(up, task.id, deal, "completed", price)
+            await up.complete(say(f"Deal: {deal['item']} at {price}."))
         elif action == "reject":
+            deal["history"].append({"from": "seller", "text": words or "reject", "price": None})
+            await self.finish(up, task.id, deal, "rejected")
             await up.reject(say(words or "No deal."))
-            del self.open[task.id]
         else:
             log(f"unusable decision, rejecting: {d}")
+            await self.finish(up, task.id, deal, "rejected")
             await up.reject(say("No deal."))
-            del self.open[task.id]
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
-        self.open.pop(task.id, None)
-        await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
+        up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
+        deal = self.open.get(task.id)
+        if deal is not None:
+            deal["history"].append({"from": "buyer", "text": "(canceled the task)", "price": None})
+            await self.finish(up, task.id, deal, "canceled")
+        await up.cancel()
 
 
 def build(port):
@@ -109,7 +140,8 @@ def build(port):
             id="negotiate",
             name="Negotiate a purchase",
             description="Name an item (lamp, chair, bookshelf), then send offers as numbers. "
-                        "The shop answers with a counteroffer, a receipt, or a refusal.",
+                        "The shop answers with a counteroffer, a receipt, or a refusal. "
+                        "Every finished negotiation carries a trade-record artifact.",
             tags=["shopping", "negotiation"],
             examples=["I want to buy a lamp", "90"],
         )],

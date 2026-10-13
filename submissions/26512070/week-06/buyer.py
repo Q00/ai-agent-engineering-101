@@ -5,7 +5,11 @@
 This file only speaks A2A: it reads the Agent Card, sends every request with
 A2A-Version: 1.0, keeps the negotiation on one taskId, and asks
 buyer_brain.decide() what to send next. It does NOT check the budget; that is
-the brain's job (and its tools').
+the brain's job (wallet.check_offer is its tool).
+
+A buyer cannot emit A2A artifacts (only the agent working the task can), so the
+buyer keeps its own trade record in trades/buyer.jsonl, with the seller's
+receipt and trade-record artifacts attached when the seller sent them.
 """
 import argparse
 import json
@@ -17,7 +21,9 @@ import uuid
 import httpx
 
 import buyer_brain
+import trade_record
 from model import log
+from wallet import Wallet
 
 HEADERS = {"A2A-Version": "1.0"}
 DEADLINE = 280   # the trade test kills us at 300 s
@@ -66,6 +72,19 @@ def receipt(t):
     return None
 
 
+def artifact_data(t, name):
+    for a in t.get("artifacts", []):
+        if a.get("name") == name:
+            for p in a.get("parts", []):
+                if isinstance(p.get("data"), dict):
+                    return p["data"]
+    return None
+
+
+OUTCOMES = {"TASK_STATE_COMPLETED": "completed", "TASK_STATE_REJECTED": "rejected",
+            "TASK_STATE_CANCELED": "canceled", "TASK_STATE_FAILED": "failed"}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", required=True)
@@ -81,9 +100,12 @@ def main():
     rpc_url = iface["url"]
     log(f"card: {card['name']!r} {iface['protocolBinding']} {iface['protocolVersion']} {rpc_url}")
 
+    wallet = Wallet(args.budget)
     deal = {"item": args.item, "budget": args.budget, "seller": card["name"],
             "skill": (card.get("skills") or [{}])[0].get("description", ""), "ask": None, "history": []}
-    t = send(rpc_url, f"I want to buy a {args.item}")
+    opening = f"I want to buy a {args.item}"
+    deal["history"].append({"from": "buyer", "text": opening, "price": None})
+    t = send(rpc_url, opening)
     task_id = t["id"]
 
     for _ in range(MAX_TURNS):
@@ -96,18 +118,31 @@ def main():
             log("out of time, walking away")
             d = {"action": "walk_away"}
         else:
-            d = buyer_brain.decide(deal)
+            d = buyer_brain.decide(deal, wallet)
         log(f"decision: {d}")
         if d.get("action") == "offer":
             price = d["price"]
+            wallet.record_offer(price)
             deal["history"].append({"from": "buyer", "text": str(price), "price": price})
             t = send(rpc_url, str(price), task_id)
         else:
-            rpc(rpc_url, "CancelTask", {"id": task_id})
-            log("walked away (CancelTask)")
+            deal["history"].append({"from": "buyer", "text": "(walked away)", "price": None})
+            t = rpc(rpc_url, "CancelTask", {"id": task_id})
+            log(f"walked away (CancelTask) -> {state(t)}")
             break
 
+    if state(t) != "TASK_STATE_INPUT_REQUIRED" and status_text(t):
+        deal["history"].append({"from": "seller", "text": status_text(t), "price": last_number(status_text(t))})
     r = receipt(t)
+    if r is not None:
+        wallet.record_purchase(args.item, r["price"], card["name"])
+    rec = trade_record.build("buyer", deal, OUTCOMES.get(state(t), "open"),
+                             r["price"] if r else None, counterpart=card["name"])
+    rec["wallet"] = wallet.snapshot()
+    rec["seller_receipt"] = r
+    rec["seller_record"] = artifact_data(t, "trade-record")
+    trade_record.save(rec)
+    log("\n" + trade_record.to_text(rec))
     print(json.dumps({"item": args.item, "budget": args.budget, "final_state": state(t),
                       "receipt": r, "seconds": round(time.time() - t0, 1)}))
 
