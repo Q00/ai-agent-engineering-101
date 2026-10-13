@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import ClassVar, Protocol, override
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, TypeAdapter
@@ -77,11 +76,13 @@ class ShoppingItem(FrozenModel):
     description: str
 
 
-@dataclass(frozen=True, slots=True)
 class HarnessError(RuntimeError):
-    """A bounded model loop could not commit a valid action."""
+    """Typed runtime error whose traceback remains mutable for contextlib."""
 
-    detail: str
+    def __init__(self, detail: str) -> None:
+        """Store the typed reason while retaining Python exception semantics."""
+        self.detail: str = detail
+        super().__init__(detail)
 
     @override
     def __str__(self) -> str:

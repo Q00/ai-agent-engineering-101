@@ -20,6 +20,9 @@ Search then use action="quote" to SELECT the SKU and set an asking price.
 Never use action="accept" on the opening phase: nothing has been offered.
 BARGAINING PHASE: when selected exists, accept the actual numeric offer
 if it is at or above that product's reserve.
+The state's offer_meets_reserve is a trusted arithmetic fact.
+If it is true, ACCEPT using price equal to offer and SKU equal to selected.sku.
+Do not claim that an offer satisfying this flag is below reserve.
 A first low offer is bargaining, NOT grounds to end the negotiation.
 If the offer is below reserve, QUOTE a counteroffer at or above reserve, moving
 toward agreement. Keep negotiation open for at least five incoming offers.

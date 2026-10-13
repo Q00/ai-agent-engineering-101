@@ -151,9 +151,16 @@ async def catalog_challenge(base: str, directory: Path) -> Summary:
                 )
                 quotes.append(quote(task, product))
                 task = await remote.send(card.endpoint(), str(product.reserve), task)
+                offered = product.reserve
+                for _round in range(6):
+                    if task.status.state == "TASK_STATE_COMPLETED":
+                        break
+                    offered = quote(task, product)
+                    quotes.append(offered)
+                    task = await remote.send(card.endpoint(), str(offered), task)
                 sold = receipt(task, product, base)
                 require(
-                    sold.price == product.reserve, "Receipt differs from offered price"
+                    sold.price == offered, "Receipt differs from actual offered price"
                 )
                 result = CaseResult(
                     case_id=case.case_id,

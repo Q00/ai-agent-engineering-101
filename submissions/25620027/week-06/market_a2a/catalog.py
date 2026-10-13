@@ -87,11 +87,13 @@ MATERIALS: Final = frozenset(("wood", "steel", "bamboo", "aluminum", "plastic"))
 KINDS: Final = ("lamp", "chair", "bookshelf", "storage", "desk")
 
 
-@dataclass(frozen=True, slots=True)
 class MissingProductError(LookupError):
     """A requested SKU is absent from this shop's catalog."""
 
-    sku: str
+    def __init__(self, sku: str) -> None:
+        """Keep traceback mutation available when a context manager propagates."""
+        self.sku: str = sku
+        super().__init__(sku)
 
     @override
     def __str__(self) -> str:
@@ -99,11 +101,13 @@ class MissingProductError(LookupError):
         return f"Unknown product SKU: {self.sku}"
 
 
-@dataclass(frozen=True, slots=True)
 class CatalogDataError(ValueError):
     """Catalog data cannot safely identify or price a product."""
 
-    detail: str
+    def __init__(self, detail: str) -> None:
+        """Retain the reason and the standard exception traceback behavior."""
+        self.detail: str = detail
+        super().__init__(detail)
 
     @override
     def __str__(self) -> str:

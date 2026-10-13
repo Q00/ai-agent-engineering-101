@@ -69,6 +69,11 @@ class Negotiator:
             "phase": "bargaining" if current else "opening",
             "buyer_text": text[:2000],
             "offer": offer,
+            "offer_meets_reserve": (
+                offer is not None
+                and current is not None
+                and offer >= current.product.reserve
+            ),
             "catalog_count": len(self.catalog.products),
             "task_id": task.id,
             "selected": json_value(current.product) if current else None,
@@ -197,9 +202,9 @@ class Negotiator:
                     or decision.price != turn.offer
                 ):
                     return ToolResult(
-                    data={
-                        "error": "No matching numeric offer. Use quote to state a price."
-                    }
+                        data={
+                            "error": "No matching offer. Use quote to state a price."
+                        },
                     )
                 receipt = {
                     "seller": self.name,
