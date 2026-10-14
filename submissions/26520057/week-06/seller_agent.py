@@ -60,7 +60,8 @@ class Seller(AgentExecutor):
         try:
             raw = await asyncio.to_thread(ask_harness, prompt)
             d = json.loads(re.search(r"\{.*\}", raw, re.S).group())
-            action, price = str(d["action"]), int(d["price"])
+            action = str(d["action"])
+            price = deal["ask"] if d.get("price") is None else int(d["price"])  # a reject may come without a price
         except Exception as e:
             print(f"[harness] {situation} -> unreadable: {e!r}", flush=True)
             return None
