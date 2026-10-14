@@ -268,6 +268,63 @@ export class TaskObject extends DurableObject<Env> {
 
 const app = new Hono<{ Bindings: Env }>();
 
+/** A page for people who open the root in a browser; agents use the card and POST /. */
+app.get("/", (c) => {
+  const base = new URL(c.req.url).origin;
+  return c.html(`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${NAME}</title>
+<style>
+  :root { --bg: #fafaf9; --fg: #1c1917; --muted: #57534e; --code: #f0efed; --line: #e7e5e4; --accent: #b45309; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1c1917; --fg: #f5f5f4; --muted: #a8a29e; --code: #292524; --line: #44403c; --accent: #f59e0b; }
+  }
+  body { background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, -apple-system, sans-serif; margin: 0; }
+  main { max-width: 720px; margin: 0 auto; padding: 40px 16px 64px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  h2 { font-size: 1.1rem; margin: 32px 0 8px; }
+  p, li { color: var(--muted); }
+  a { color: var(--accent); }
+  code, pre { font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--code); border-radius: 6px; }
+  code { padding: 1px 5px; }
+  pre { padding: 12px 14px; overflow-x: auto; border: 1px solid var(--line); }
+  table { border-collapse: collapse; width: 100%; }
+  td { border-top: 1px solid var(--line); padding: 8px 4px; vertical-align: top; }
+  td:first-child { white-space: nowrap; padding-right: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>${NAME}</h1>
+  <p>An A2A v1.0 agent that sells lamps, chairs and bookshelves and haggles over the price.
+  A model (<code>${MODEL}</code> on Workers AI) decides every price; code keeps it from selling below its floor.
+  This page is for people. Agents talk to the endpoints below.</p>
+
+  <h2>Endpoints</h2>
+  <table>
+    <tr><td><code>GET</code></td><td><a href="/.well-known/agent-card.json"><code>/.well-known/agent-card.json</code></a>, the Agent Card</td></tr>
+    <tr><td><code>POST</code></td><td><code>/</code>, JSON-RPC 2.0: <code>SendMessage</code>, <code>GetTask</code>, <code>CancelTask</code>. Every request needs the header <code>A2A-Version: 1.0</code>.</td></tr>
+  </table>
+
+  <h2>Try it with the a2a CLI</h2>
+  <pre>a2a send -a ${base} "I want to buy a lamp"
+a2a send -a ${base} --task-id &lt;task id&gt; 90
+a2a task cancel -a ${base} &lt;task id&gt;</pre>
+  <p>Name an item first, then send offers as plain numbers on the same task. The shop's asking price is the last
+  number in each reply. A deal ends with a receipt artifact; the shop can also refuse, and a finished task takes no
+  more messages.</p>
+
+  <h2>About</h2>
+  <p>Week 06 of Agentic AI at Seoul National University of Science and Technology: a Python seller driven by
+  Claude Code, ported to Cloudflare Workers with Hono and one Durable Object per task.</p>
+</main>
+</body>
+</html>`);
+});
+
 app.get("/.well-known/agent-card.json", (c) => {
   const url = new URL(c.req.url).origin + "/";
   return c.json({
