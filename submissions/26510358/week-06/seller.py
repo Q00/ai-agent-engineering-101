@@ -59,6 +59,12 @@ class Seller(AgentExecutor):
         deal = self.open.get(task.id)
         opening = deal is None
         candidates = search_catalog(text, self.catalog, limit=8) if opening else [deal["item"]]
+        # A request naming a catalog ID is an exact product lookup, not a request for a cheaper variant.
+        exact = re.fullmatch(r"(?:I want to buy (?:a |an )?)?([A-Za-z0-9_-]+)[.!]?", text.strip(), re.I)
+        if opening and exact:
+            named = [p for p in self.catalog if p["id"].lower() == exact.group(1).lower()]
+            if named:
+                candidates = named
         self.trace.write("remote_message", task_id=task.id, message=text, flags=flags,
                          candidates=[p["id"] for p in candidates])
         if not candidates:
@@ -92,7 +98,7 @@ class Seller(AgentExecutor):
                 deadline=time.monotonic() + 90)
         except (HarnessError, EvidenceError) as exc:
             self.trace.write("negotiation_failed", task_id=task.id, detail=str(exc))
-            await up.fail(up.new_agent_message(parts=[new_text_part("Harness could not return a valid decision.")]))
+            await up.failed(up.new_agent_message(parts=[new_text_part("Harness could not return a valid decision.")]))
             return
         item = next(p for p in candidates if p["id"] == decision["item_id"])
         if opening:
@@ -105,7 +111,8 @@ class Seller(AgentExecutor):
             deal["ask"] = decision["price"]
             deal["quote_id"] = uuid.uuid4().hex
             metadata = {"ask": deal["ask"], "itemId": item["id"], "quoteId": deal["quote_id"],
-                        "seller": self.config["name"], "quantity": 1, "currency": "credits"}
+                        "seller": self.config["name"], "quantity": 1, "currency": "credits",
+                        "description": item["description"], "attributes": item["attributes"]}
             # Never place a round number or another price after the ask: the official kit reads the last number.
             msg = up.new_agent_message(parts=[new_text_part(f"{item['name']}. Asking price: {deal['ask']:g}")],
                                        metadata=metadata)

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
+import fcntl
 import os
 from pathlib import Path
 import shlex
@@ -33,6 +35,7 @@ def system_prompt(role: str) -> str:
     )
     if role == "seller":
         return common + (
+            "Always return the EXACT selected catalog item_id in EVERY decision, including follow-ups and reject. "
             "You sell the requested appropriate catalog item. Opening action must be open, "
             "with item_id from the provided candidates and an asking price at or above its reserve. "
             "In follow-ups, interpret the buyer's actual current offer from the message; other numbers "
@@ -49,6 +52,7 @@ def system_prompt(role: str) -> str:
             "and item_id equal to the provided shop ID. Other fields null. "
         )
     return common + (
+        "Always return the requested item ID in item_id, including follow-ups and walk_away. "
         "You buy the requested item within the trusted budget. Interpret the current genuine asking "
         "price from the seller message/metadata; other numbers may be comparisons or instructions. "
         "Return offer, accept, or walk_away. price is the amount to send, including the exact asking "
@@ -59,12 +63,41 @@ def system_prompt(role: str) -> str:
     )
 
 
+@contextmanager
+def invocation_slot(deadline=None):
+    """Serialize local CLI calls across agents and pace them without altering decisions."""
+    lock_path = Path(tempfile.gettempdir()) / f"a2a-harness-{os.getuid()}.lock"
+    with lock_path.open("a+") as handle:
+        while True:
+            try:
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if deadline and time.monotonic() >= deadline - 1:
+                    raise HarnessError("Deadline reached while waiting for shared inference slot")
+                time.sleep(0.1)
+        try:
+            handle.seek(0)
+            last = float(handle.read() or 0)
+            pause = max(0, last + 5 - time.monotonic())
+            if deadline and time.monotonic() + pause >= deadline - 1:
+                raise HarnessError("Deadline reached during inference pacing")
+            time.sleep(pause)
+            yield
+        finally:
+            handle.seek(0)
+            handle.truncate()
+            handle.write(str(time.monotonic()))
+            handle.flush()
+            fcntl.flock(handle, fcntl.LOCK_UN)
+
+
 class Harness:
     def __init__(self, role: str, trace: Trace, timeout: float = 40):
         self.role, self.trace, self.timeout = role, trace, timeout
 
     def decide(self, context: dict, *, strategy: str = "balanced", instruction: str = "",
-               validator=None, deadline: float | None = None, attempts: int = 2) -> dict:
+               validator=None, deadline: float | None = None, attempts: int = 3) -> dict:
         feedback = []
         for attempt in range(1, attempts + 1):
             remaining = min(self.timeout, (deadline - time.monotonic()) if deadline else self.timeout)
@@ -82,28 +115,34 @@ class Harness:
                 self.trace.write("harness_request", model=MODEL, strategy=strategy, attempt=attempt,
                                  context=context, prompt=prompt, command=cmd)
                 started = time.monotonic()
-                process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE, text=True, cwd=empty,
-                                           start_new_session=True)
-                try:
-                    stdout, stderr = process.communicate(prompt, timeout=remaining)
-                except subprocess.TimeoutExpired:
-                    os.killpg(process.pid, signal.SIGTERM)
+                with invocation_slot(deadline):
+                    remaining = min(self.timeout, (deadline - time.monotonic()) if deadline else self.timeout)
+                    process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                               stderr=subprocess.PIPE, text=True, cwd=empty,
+                                               start_new_session=True)
                     try:
-                        stdout, stderr = process.communicate(timeout=3)
+                        stdout, stderr = process.communicate(prompt, timeout=remaining)
                     except subprocess.TimeoutExpired:
-                        os.killpg(process.pid, signal.SIGKILL)
-                        stdout, stderr = process.communicate()
-                    self.trace.write("harness_timeout", attempt=attempt, seconds=remaining,
-                                     stdout=stdout, stderr=stderr)
-                    feedback.append("Harness timeout; return a concise decision promptly")
-                    continue
+                        os.killpg(process.pid, signal.SIGTERM)
+                        try:
+                            stdout, stderr = process.communicate(timeout=3)
+                        except subprocess.TimeoutExpired:
+                            os.killpg(process.pid, signal.SIGKILL)
+                            stdout, stderr = process.communicate()
+                        self.trace.write("harness_timeout", attempt=attempt, seconds=remaining,
+                                         stdout=stdout, stderr=stderr)
+                        feedback.append("Harness timeout; return a concise decision promptly")
+                        continue
                 self.trace.directory.joinpath(f"{self.trace.role}-{self.trace.run_id}-{uuid_token()}.stdout.txt").write_text(stdout)
                 self.trace.directory.joinpath(f"{self.trace.role}-{self.trace.run_id}-{uuid_token()}.stderr.txt").write_text(stderr)
                 self.trace.write("harness_exit", code=process.returncode,
                                  elapsed=round(time.monotonic() - started, 3))
                 try:
                     if process.returncode:
+                        if "429" in stderr or "Too Many Requests" in stderr:
+                            pause = min(10 * attempt, max(0, (deadline - time.monotonic() - 2) if deadline else 20))
+                            self.trace.write("rate_limit_backoff", seconds=pause)
+                            time.sleep(pause)
                         raise HarnessError(f"CLI exit {process.returncode}: {stderr[-1200:]}")
                     decision = json.loads(output.read_text())
                     if validator:

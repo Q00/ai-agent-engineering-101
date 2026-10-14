@@ -22,4 +22,5 @@ class Trace:
                   "role": self.role, "event": event, **fields}
         with self.lock, self.path.open("a", encoding="utf-8") as stream:
             stream.write(json.dumps(record, ensure_ascii=False, allow_nan=False) + "\n")
-        print(json.dumps({"event": event, **fields}, ensure_ascii=False, default=str), flush=True)
+        summary = {k: v for k, v in fields.items() if k not in {"prompt", "context", "card", "request", "response", "command"}}
+        print(json.dumps({"event": event, **summary}, ensure_ascii=False, default=str), flush=True)
