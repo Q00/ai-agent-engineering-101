@@ -15,7 +15,7 @@ import time
 from tracing import Trace
 
 ROOT = Path(__file__).resolve().parent
-MODEL = os.environ.get("A2A_MODEL", "gpt-6.1-sol")
+MODEL = os.environ.get("A2A_MODEL", "gpt-6-sol")
 COMMAND = ["codex", "exec", "--skip-git-repo-check", "--ephemeral", "--ignore-user-config",
            "--sandbox", "read-only", "--color", "never", "--model", MODEL,
            "-c", 'model_reasoning_effort="low"', "--output-schema", str(ROOT / "decision.schema.json")]
