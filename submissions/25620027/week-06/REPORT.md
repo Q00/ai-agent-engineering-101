@@ -1,8 +1,8 @@
 # Week 06 — 5주차 하네스를 구매자·판매자 A2A 에이전트로 연결
 
-학번 25620027 · 2026-10-14 실제 실행 · 로컬 검증 완료, PR 제출 전
+학번 25620027 · 2026-10-14 실제 실행 · 기본·필수 챌린지 검증 완료, PR 제출 전
 
-5주차에 사용한 Python 하네스의 모델→function tool→실행 결과→재판단 루프를 구매자와 판매자 양쪽에 연결했다. 현행 공식 기본 검사는 **21/21 통과**했고, 필수 챌린지 1은 설명 요청 **6/6건**, 필수 챌린지 2는 **20개 가게에서 5개 품목을 총 1,692/2,200에 구매**하여 통과했다. 금액은 모두 가상의 같은 단위다.
+5주차에 사용한 Python 하네스의 모델→function tool→실행 결과→재판단 루프를 구매자와 판매자 양쪽에 연결했다. 보완 후 공식 기본 재검사는 **21/21 통과**했고, 필수 챌린지 1의 고정 설명 요청은 **6/6건** 통과했다. 최신 일반 챌린지 2는 **20개 가게·5품목·1,757/2,200 구매**로 통과했다. 추가 가격 실패 유도 실험도 **1,686/2,200**으로 전 품목 구매에 성공했다. 두 최신 실행 모두 실제 미체결 후 예약 해제·재계획·구매 성공을 관찰했다. 앞선 일반 쇼핑 실패와 재계획 실패 2회, 기존 1,692 구매 성공 기록은 함께 보존했다. 금액은 모두 가상의 같은 단위다.
 
 공식 기준은 upstream [3defe07be2f0f5d78e11a839aa5210f633e82700의 과제 README](https://github.com/Q00/ai-agent-engineering-101/blob/3defe07be2f0f5d78e11a839aa5210f633e82700/weeks/week-06/README.md)다. [test-report.json](test-report.json)의 kit SHA-256은 `8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120`이며, 현행 스크립트가 [agent.json](agent.json)의 명령으로 직접 생성했다.
 
@@ -49,10 +49,15 @@ python scripts/check_week06.py submissions/25620027/week-06
 
 # submissions/25620027/week-06
 uv run --frozen --python 3.12.11 --script challenge_run.py challenge-1 --attempt 4
-uv run --frozen --python 3.12.11 --script challenge_run.py challenge-2 --attempt 5
+uv run --frozen --python 3.12.11 --script challenge_run.py challenge-2 --attempt 7
 ```
 
-실제 최종 기본 검사는 Python 3.12.11 개발 환경에서 첫 번째 공식 명령과 같은 스크립트를 실행했다. 이전 기본 검사 원문은 `logs/attempt-01/`부터 `attempt-04/`까지 보존했다. 필수 챌린지의 최종 근거는 [challenge-1/attempt-3](logs/challenge-1/attempt-3/)와 [challenge-2/attempt-4](logs/challenge-2/attempt-4/)다.
+실제 기본 재검사는 Python 3.12.11 개발 환경에서 첫 번째 공식 명령과 같은 스크립트를 실행했다. 이전 기본 검사 원문은 `logs/attempt-01/`부터 `attempt-04/`까지, 보완 직전 공식 원문은 `logs/pre-followup-basic-20261014/`에 보존했다. 필수 챌린지의 근거는 [challenge-1/attempt-3](logs/challenge-1/attempt-3/)와 최신 일반 [challenge-2/attempt-6](logs/challenge-2/attempt-6/)이다. 기존 성공 [attempt-4](logs/challenge-2/attempt-4/)와 후속 실패 [attempt-5](logs/challenge-2/attempt-5/)도 보존했다. 위 `uv run --frozen`은 같은 코드를 새 attempt로 실행하는 재현 명령이다. 최신 두 실행은 Python 3.12.11 개발 환경에서 아래 명령으로 수행했으며, 생성된 attempt 폴더는 다시 사용하지 않는다.
+
+```bash
+python challenge_run.py challenge-2 --attempt 3 --replanning
+python challenge_run.py challenge-2 --attempt 6
+```
 
 ## 2. 각 에이전트의 판단과 제한
 
@@ -84,9 +89,13 @@ A2A 작업마다 선택 상품·최근 제안·호가·라운드 수를 별도�
 
 모델은 `offer(price, reason)` 또는 `walk_away(reason)`를 선택한다. 코드는 예산 초과 제안을 전송하지 않고 수정 피드백을 반환한다. 실제 영수증 가격은 마지막으로 허가된 제안과 같아야 하며, 선택 상품과도 일치해야 한다. 이번 구현은 포기 시 추가 구매 요청을 보내지 않고 종료한다.
 
+보완 전 공식 `buyer_holds_budget` 3회에서 `Offer exceeds immutable budget` 가드가 각각 **4회, 총 12회** 작동했고, 자발적인 `[BUYER WALK]`는 **0회**였다([1회차](logs/pre-followup-basic-20261014/buyer-under-test-buyer_holds_budget-1.log), [2회차](logs/pre-followup-basic-20261014/buyer-under-test-buyer_holds_budget-2.log), [3회차](logs/pre-followup-basic-20261014/buyer-under-test-buyer_holds_budget-3.log)). 이 수치는 보완 전 원문을 보존한 실행의 값이다. 예산 초과 거래가 없다는 통과 결과는 유효하지만, 모델 단독의 예산 준수나 효율적인 협상 중단을 입증한 결과는 아니다. 공식 명세가 허용하는 코드 가드가 실제 안전성을 보장했다.
+
 쇼핑 목록에서는 모델이 20개 카드의 공개 skills를 보고 `plan_purchases`로 가게와 품목별 한도를 배분한다. 코드가 전체 요청 ID의 누락·중복, 디렉터리 밖 URL, 총예산을 넘는 한도 합계를 거부한다. 승인된 한도는 먼저 예약하고, 여러 협상을 동시에 시작한다. 각 완료 시 lock 안에서 실지출과 예약 해제를 기록하므로 병렬 거래가 같은 잔액을 중복 사용하지 않는다.
 
-미구매 항목이 있으면 최대 세 번까지 남은 예산으로 재계획한다. 이미 완료된 receipt는 다음 계획에서 제외한다. 가격을 깎는 최적화보다 구매 목표 달성과 예산·중복 제약을 우선한 정책이므로, 아래 총액을 최저가라고 주장하지 않는다.
+미구매 항목이 있으면 남은 예산으로 재계획하며, 최초 계획을 포함해 최대 3회 계획한다. 이미 완료된 receipt는 다음 계획에서 제외한다. 가격을 깎는 최적화보다 구매 목표 달성과 예산·중복 제약을 우선한 정책이므로, 아래 총액을 최저가라고 주장하지 않는다.
+
+후속 보완에서는 `failed_attempts`에 미체결 품목의 가게·배정 한도·공개 실패 관찰을 넣어 다음 계획에 전달했다. 동일 품목이 이미 실패한 가게에서 같거나 낮은 한도로 반복 계획되면 도구가 거부하고, 모델이 다른 가게 또는 더 높은 한도를 선택하도록 한다. 이 제약은 코드가 강제하므로, 이후 재계획 성과도 모델 단독 성과로 해석하지 않는다. 통신 오류나 체결 여부가 불명인 예외를 자동 미구매로 바꾸지 않으며, 그런 오류의 격리·원격 체결 확인·복구는 이번 검증 범위에 포함하지 않는다.
 
 ## 3. 실패한 과정과 수정
 
@@ -128,9 +137,21 @@ TOOL_RESULT plan_purchases "Reserved caps exceed total budget; revise all alloca
 
 모델이 과한 예산 배분을 했을 때 코드가 이를 자르거나 그대로 실행하지 않고 재계획을 요구했다.
 
-마지막 코드 검토에서는 재시도 원장 수를 최종 영수증 수와 같게 요구하던 평가기 오류도 확인했다. 실패한 시도는 예약 해제 기록을 남기므로 정상 재시도에는 원장 행이 더 많을 수 있다. 실패→해제→재계획→구매 성공을 별도 회귀 시나리오로 검증하고, 최종 지출·예약금·중복 구매를 기준으로 평가하도록 고쳤다. 최종 실제 쇼핑은 첫 계획에서 모두 성공했으므로 이 재계획 경로의 근거는 회귀 테스트이고, 실제 모델 재시도 성공으로 주장하지 않는다.
+마지막 코드 검토에서는 재시도 원장 수를 최종 영수증 수와 같게 요구하던 평가기 오류도 확인했다. 실패한 시도는 예약 해제 기록을 남기므로 정상 재시도에는 원장 행이 더 많을 수 있다. [test_challenge_replanning.py](tests/test_challenge_replanning.py)는 실패→해제→재계획→구매 성공 형태의 합성 로그를 `shopping_summary()`에 전달하여, 최종 지출·예약금·중복 구매를 올바르게 평가하는지 검사한다. **이 테스트는 실제 `shop()` 실행이나 실패 후 모델 재계획을 검증하지 않는다.** 기존 챌린지 2 `attempt-4`도 첫 계획에서 모두 성공했으므로, 그 로그를 실제 실패 복구의 증거로 사용하지 않는다.
 
-최종 공식 실행은 [test-report.json](test-report.json)과 [trade-test.log](logs/trade-test.log)에 **21개 모두 pass**로 기록됐다. 판매자 lamp 거래는 100, 구매자가 공식 판매자에서 산 lamp는 120이었다. bookshelf 예산 230은 reserve 260보다 낮아 거래하지 않았다. 버전 헤더와 후속 taskId도 6개 프로토콜 검사 모두 통과했다. 기존 실험 테스트와 새 도구·상태·원장 회귀 테스트를 포함한 **84개 테스트**, Ruff ALL·format, strict basedpyright와 공식 제출 형식 검사도 통과했다.
+**실패 정보를 전달해도 같은 계획을 반복했다.** 후속 실제 실행에서는 첫 가게의 reserve에 5,000을 더해 원래 예산으로 구매할 수 없게 했다. [replanning-attempt-1/buyer.log](logs/challenge-2/replanning-attempt-1/buyer.log)에서 모델은 계획 3회 동안 독서등을 shop-00·cap 400, 수납장을 shop-04·cap 200으로 반복 배정했다. 다른 세 품목은 합계 1,198에 구매했고 최종 예약금은 0이었지만, 두 품목이 남아 다음 오류로 종료했다.
+
+```text
+HarnessError: Shopping ended with unpurchased items after bounded replanning
+```
+
+이 실패는 관찰을 프롬프트에 추가하는 것만으로 계획이 바뀐다는 가정이 틀렸음을 보여준다. 이후 동일 가게·동일 이하 한도의 실패 계획을 도구에서 거부하도록 보완했다. 최초 실패의 summary와 거래 로그는 그대로 보존했다.
+
+**반복 방지 가드를 추가해도 복구에 실패했다.** [replanning-attempt-2/buyer.log](logs/challenge-2/replanning-attempt-2/buyer.log)에서는 네 품목을 합계 1,536에 구매했지만, 독서등은 shop-00·cap 300에서 실패한 뒤 shop-10·cap 150, shop-16·cap 150으로 이동했다. shop-10의 reserve 170보다 한도가 낮았고, shop-16은 chair 가게여서 최종 공개 관찰이 `TASK_STATE_FAILED: Unable to choose a valid action.`이었다. 예약금을 모두 해제하고 같은 미구매 종료 오류를 냈다. 가드는 동일 실패 계획의 반복을 막았으나, 모델의 적절한 가게·한도 선택과 전 품목 복구 성공까지 보장하지 못했다.
+
+보완 후 공식 재실행(2026-10-14 09:41 KST 시작)은 [test-report.json](test-report.json)과 [trade-test.log](logs/trade-test.log)에 **21개 모두 pass**로 기록됐다. bookshelf 예산 230은 reserve 260보다 낮아 거래하지 않았고, 버전 헤더와 후속 taskId도 6개 프로토콜 검사를 통과했다. 보완 전 **84개 테스트**, Ruff ALL·format, strict basedpyright와 공식 제출 형식 검사 결과는 `logs/current-*-final.log`에 보존했다.
+
+2026-10-14 후속 오프라인 검증은 **89개 테스트 통과**, Ruff ALL 통과, Python 파일 36개 format 확인, strict 타입 검사 오류·경고 0건이었다([검증 명령·출력](.omo/evidence/week06-report-followup-20261014/VALIDATION.md)). 실제 `shop()`을 구동하는 새 회귀 테스트는 모델·외부 거래를 대역으로 제어해 실패 관찰 전달·완료 품목 제외·예약 회계를 검사한다. 이 통과를 실제 모델의 전 품목 복구 성공으로 해석하지 않는다.
 
 ## 4. A2A가 해결한 것과 별도로 합의한 것
 
@@ -152,6 +173,8 @@ MODEL_TOOL round=1 search_catalog {"query":"small black reading lamp flexible ne
 
 도구 관찰의 후보는 `lamp-nocturne / Nocturne Mini / height_cm 30 / reserve 120`이었고, 첫 호출 상태는 `CONTEXT chars=301 tools=2`였다. 이것은 상태 JSON 길이이며 프롬프트·도구 스키마까지 합한 전체 입력 길이는 아니다.
 
+설명 **6건 모두** 코드 필터 후 후보가 1개였다. [catalog_constraints.py](market_a2a/catalog_constraints.py)의 특징 표현 9개(`lockable`, `flexible`, `dimmable`, `rounded`, `mesh`, `lumbar`, `armrests`, `cable tray`, `dual monitor`)는 각각 카탈로그의 상품 하나에만 나타나며, 해당 상품은 시험용 5개 SKU에 한정된다. 따라서 6/6은 이 검색·필터·모델·A2A 파이프라인이 정해진 사례를 처리한 결과다. 공식 명세는 코드 검색으로 후보를 좁히는 방법을 허용하지만, 이 구성으로 모델의 **복수 후보 판별 능력**을 입증하지는 못했다. 이를 측정하려면 특징을 공유하는 경쟁 상품과 이번 평가에 사용하지 않은 설명이 필요하다.
+
 | 설명 요청 | 선택 SKU | reserve | 실제 판매가 |
 |---|---|---:|---:|
 | 35cm 이하, 유연한 목·밝기 조절의 작은 독서등 | lamp-nocturne | 120 | 120 |
@@ -164,6 +187,8 @@ MODEL_TOOL round=1 search_catalog {"query":"small black reading lamp flexible ne
 [summary.json](logs/challenge-1/attempt-3/summary.json)과 [wire.log](logs/challenge-1/attempt-3/wire.log)를 대조했다. **6/6 올바른 상품**을 판매했으며, 각 사례에서 reserve−1을 먼저 제안했지만 모든 호가와 영수증은 해당 reserve 이상이었다. 최종 거래 가격은 실제 보낸 제안과 같았다. 상대는 평가용 고정 구매자이고, 판매자 검색·선택·가격·수락은 실제 모델이 결정했다.
 
 ### 챌린지 2 — 20개 카드, 5개 목록, 하나의 예산
+
+아래 1,692 결과는 보완 전 `attempt-4`의 성공 기록이다. 이후 `attempt-5`의 실패와 최신 일반 `attempt-6`의 성공은 별도로 뒤에 기술한다.
 
 `directory-server`는 가게 20개를 서로 다른 URL·Agent Card·catalog·TaskStore로 실행한다. 상품군은 lamp/chair/bookshelf/desk/storage로 나누고 각 가게 reserve에는 index×5를 더한다. 로컬 한 서버 프로세스 안에 독립 A2A 앱 20개를 mount한 구성이다. 실제 카드 20개를 HTTP로 조회한 원문은 [cards](logs/challenge-2/attempt-4/cards/)에, 모델에 전달한 공개 디렉터리는 [directory.json](logs/challenge-2/attempt-4/directory.json)에 보존했다.
 
@@ -186,12 +211,42 @@ MODEL_TOOL round=1 search_catalog {"query":"small black reading lamp flexible ne
 [BUDGET LEDGER] {"request_id": "computer-desk", "spent": 1692, "released": 112, "reserved": 0, "total_budget": 2200}
 ```
 
-[최종 summary](logs/challenge-2/attempt-4/summary.json)는 모든 품목 구매, 예산 이내, 중복 구매 0, 미정산 예약금 0을 확인했다. 잔액은 **508**이다. 구매자 모델 호출은 6회, 입력 2,984·출력 364토큰이었다. 이는 판매자 호출을 제외한 구매자 usage이며 실제 청구액은 조회하지 않았다.
+[당시 summary](logs/challenge-2/attempt-4/summary.json)는 모든 품목 구매, 예산 이내, 중복 구매 0, 미정산 예약금 0을 확인했다. 잔액은 **508**이다. 구매자 모델 호출은 6회, 입력 2,984·출력 364토큰이었다. 이는 판매자 호출을 제외한 구매자 usage이며 실제 청구액은 조회하지 않았다.
+
+이 실행의 `[SHOPPING PLAN]`은 **1회**이고, 다섯 품목 모두 판매자의 **첫 호가를 그대로 제안해 구매**했다. 또한 디렉터리의 카드 순서와 `index×5` 가격 증가 순서가 같으므로, 저렴한 가게를 선택한 효과와 앞쪽 카드 선택 효과를 분리할 수 없다. 전 품목 구매·총예산 준수·중복 방지라는 필수 조건은 충족했으나, 가격 탐색·적극적인 가격 협상·실패 후 재계획 능력은 이 실행에서 측정하지 않았다.
+
+**일반 재실행 attempt-5는 실패했다.** 추가 가격 인상 없이 기본 목록·총예산 2,200으로 실행한 [attempt-5/buyer.log](logs/challenge-2/attempt-5/buyer.log)는 4품목·지출 1,506·최종 예약금 0을 기록했다. 수납장은 shop-14·cap 200에서 실패한 뒤 shop-19·cap 150에서도 구매하지 못했다. 세 번째 계획 판단에서 도구 수정 6회 한도를 소진해 `HarnessError: Six model rounds ended without an authorized action`으로 종료했다. [summary.json](logs/challenge-2/attempt-5/summary.json)은 `pass=false`로 보존했다. 이후 프롬프트에 한도는 지불 가격이 아니라 최대 승인액이라는 설명, 같은 상품군 가게 선택, 한 품목만 남으면 잔여예산을 한도로 배정하라는 지침을 추가했다.
+
+**최신 일반 재실행 attempt-6는 복구 후 통과했다.** [buyer.log](logs/challenge-2/attempt-6/buyer.log)에서 수납장 shop-04·cap 200은 미체결로 끝나 예약금 200을 해제했다. 이미 구매한 네 품목의 지출 1,354를 유지하고, 두 번째 계획에서 수납장만 shop-14·cap 846으로 배정해 403에 구매했다. [summary.json](logs/challenge-2/attempt-6/summary.json)은 **5/5품목·1,757/2,200·계획 2회·중복 구매 0·최종 예약금 0**을 기록한다. 잔액은 443이며, 구매자 usage는 22회 호출·입력 11,509·출력 1,010토큰이다. 영수증 taskId 5개가 고유하고, 실패 task를 포함한 후속 요청과 버전 헤더 관찰 29개도 검사했다.
+
+### 추가 검증 — 실제 실패 후 재계획
+
+이 시나리오는 공식 필수 챌린지의 추가 합격 조건이 아니라, 첫 계획 성공 로그에서 확인하지 못한 복구 경로를 검증하기 위한 후속 실험이다. 실제 `shop()`과 OpenAI 구매자·판매자 모델, 20개 A2A 가게를 사용했다. 첫 가게에만 reserve 5,000을 추가했고, 모델에는 공개 카드와 실제 협상 관찰을 전달했다. 기존 로그를 덮어쓰지 않고 재현하려면 제출 폴더에서 새 attempt 번호로 실행한다.
+
+```bash
+uv run --frozen --python 3.12.11 --script challenge_run.py challenge-2 --attempt 4 --replanning
+```
+
+| 실제 실행 | 보완 상태 | 계획 수 | 구매 결과 | 최종 예약금 | 판정 |
+|---|---|---:|---|---:|---|
+| [replanning-attempt-1](logs/challenge-2/replanning-attempt-1/) | 실패 가게·한도·관찰 전달 | 3 | 3/5품목, 1,198/2,200 | 0 | 미구매 2품목, 실패 |
+| [replanning-attempt-2](logs/challenge-2/replanning-attempt-2/) | 같은 가게의 동일 이하 한도 반복 거부 추가 | 3 | 4/5품목, 1,536/2,200 | 0 | 미구매 1품목, 실패 |
+| [replanning-attempt-3](logs/challenge-2/replanning-attempt-3/) | 한도·상품군·잔여예산의 의미를 프롬프트에 보강 | 2 | 5/5품목, 1,686/2,200 | 0 | 실패 후 재계획·구매 성공 |
+
+각 폴더의 `invocation.json`은 서버 명령·시나리오·소스 SHA-256을, `buyer.log`의 `[CHECKOUT ATTEMPT]`와 `[BUDGET LEDGER]`는 실제 결과와 예약 해제를 보존한다. 앞선 두 실패의 `summary.json`은 `pass=false`를 유지하며 부분 구매 수·금액은 종료 오류 앞의 실제 원장에서 확인했다. 최신 일반 `attempt-6`과 가격 실패 유도 `replanning-attempt-3`의 기록된 소스 해시는 모두 보완 커밋 `8bb9fc7`의 해당 파일과 일치했다.
+
+최신 가격 실패 유도 실행의 [buyer.log](logs/challenge-2/replanning-attempt-3/buyer.log)는 독서등 shop-00·cap 150의 미체결 후 150을 해제한 다음, 이미 구매한 네 품목·지출 1,536을 제외한 두 번째 계획을 기록한다. 모델은 독서등만 shop-05·cap 150으로 옮겨 150에 구매했다. 최종 원장은 다음과 같다.
+
+```text
+[BUDGET LEDGER] {"request_id": "reading-light", "spent": 1686, "released": 0, "reserved": 0, "total_budget": 2200}
+```
+
+영수증은 고유 taskId 5개, 원장은 실패 예약 해제를 포함한 6행이며, 버전 헤더 관찰 29개를 검사했다. 구매자 usage는 19회 호출·입력 9,120·출력 794토큰이다. 이 실행에서 모델은 한 품목이 남으면 잔여예산 전체를 한도로 배정하라는 지침을 따르지 않고 cap 150을 유지했다. shop-05의 reserve 145 이상인 150에 실제 협상이 성사했으므로, 지침을 항상 준수했다거나 잔여예산 지침 하나가 성공 원인이라고 단정하지 않는다. **최신 두 실행에서는 실제 실패→예약 해제→재계획→구매 성공을 확인했지만, 반복 실행의 안정성이나 일반적인 복구 성공률은 측정하지 않았다.**
 
 ### 검증 범위와 한계
 
-기본 검사는 공식 고정 상대와의 교차 거래이고, 필수 챌린지는 자체 생성 카탈로그·고정 설명 6건·자체 20가게 목록 1건을 검증한 결과다. 수천 개 전체의 모든 자연어 요청에 대한 정확도를 측정한 것은 아니다. 검색은 영어 단어와 제한된 속성 표현을 지원하고, “내 책상보다 낮게”는 높이 75cm라는 실험 가정으로 처리한다. 다양하게 표현된 사용자 요구에는 추가 검증이 필요하다.
+기본 검사는 공식 고정 상대와의 교차 거래이고, 챌린지의 범위는 자체 생성 카탈로그·고정 설명 6건·자체 20가게의 고정 쇼핑 목록이다. 일반 쇼핑과 가격 실패 유도 실험의 실패·수정·후속 성공을 각각 기록했다. 같은 목록에서도 계획·가게·한도 선택이 달라졌으므로 모델 행동의 변동성이 남는다. 최신 성공 2건은 다회 성능 평가나 모델 단독 복구 능력의 입증이 아니다. 수천 개 전체의 모든 자연어 요청에 대한 정확도를 측정한 것은 아니다. 검색은 영어 단어와 제한된 속성 표현을 지원하고, “내 책상보다 낮게”는 높이 75cm라는 실험 가정으로 처리한다. 다양하게 표현된 사용자 요구에는 추가 검증이 필요하다.
 
-실제 receipt와 task·헤더·예산 원장을 검증했다. 정적 검사·타입 검사·회귀 결과는 `logs/current-*-final.log`에 남겼다. 보조 AST 검사에서 하네스의 두 match는 마지막 패턴이 아니라 분기 뒤 assert_never를 사용해 형식 경고가 남는다. 모든 분기는 continue 또는 raise로 끝나며 strict 타입 검사는 누락 변형이 없음을 확인한다. 진단을 끄는 지시는 추가하지 않았다.
+실제 receipt와 task·헤더·예산 원장을 검증했다. 보완 전 정적 검사·타입 검사·회귀 결과는 `logs/current-*-final.log`에, 후속 검증 명령·출력은 앞서 연결한 `VALIDATION.md`에 남겼다. 보조 AST 검사에서 하네스의 두 match는 마지막 패턴이 아니라 분기 뒤 assert_never를 사용해 형식 경고가 남는다. 모든 분기는 continue 또는 raise로 끝나며 strict 타입 검사는 누락 변형이 없음을 확인한다. 진단을 끄는 지시는 추가하지 않았다.
 
-선택 챌린지 3·공개 배포·다른 학생의 가게 거래는 수행하지 않았다. GitHub PR도 아직 생성하지 않았으므로 현재 상태는 **로컬 과제 수행·검증 완료**다. 제출 시점은 교수 명세대로 7주차 수업 시작 전 PR 생성 시간으로 판단된다.
+선택 챌린지 3·공개 배포·다른 학생의 가게 거래는 수행하지 않았다. **공식 기본 21/21·챌린지 1 고정 설명 6/6·최신 일반 챌린지 2 전 품목 구매를 확인했고, 최신 두 실행에서 실제 미체결 후 복구 성공을 관찰했다.** 통신 오류·체결 여부 불명 상황의 복구는 미검증이다. 현재 상태는 로컬 검증 완료이며 GitHub PR은 아직 생성하지 않았다. 제출 시점은 교수 명세대로 7주차 수업 시작 전 PR 생성 시간으로 판단된다.
