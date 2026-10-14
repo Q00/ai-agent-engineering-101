@@ -1,0 +1,45 @@
+# run=109 condition=memory date=2026-09-21T14:13+09:00
+# provider=openai model_requested=gpt-4.1-mini temperature=0 max_tokens=512
+# tasks=5 contractors=A,B,C prompts=overconfident award_policy=confidence(tie->first registered) context=memory
+# system[A]: You are contractor A in a contract net. Your skill: arithmetic and numeric calculation. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+# system[B]: You are contractor B in a contract net. Your skill: writing and rewriting English prose. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+# system[C]: You are contractor C in a contract net. Your skill: writing and fixing Python code. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"} You are certain you can do any task well. Always bid, with confidence 95 or higher.
+[announce] task 1 -> A, B, C: Compute 137 * 249 and return the number.
+  [bid] A: bid=true confidence=100 reason='The task requires arithmetic calculation, which matches my skill.'
+  [bid] B: bid=false confidence=100 reason='The task requires arithmetic computation, not writing or rewriting prose.'
+  [bid] C: bid=true confidence=95 reason='The task involves simple computation which can be done easily using Python.'
+  [award] task 1 -> A (gold A) correct
+[announce] task 2 -> A, B, C: Rewrite this sentence in plain English for a 10-year-old: "Photosynthesis converts light energy into chemical energy stored in glucose."
+  [memory] A: 1 entry; last: task 1: you bid with confidence 100; awarded to you.
+  [bid] A: bid=false confidence=0 reason='Task requires language simplification, not arithmetic or numeric calculation.'
+  [memory] B: 1 entry; last: task 1: you did not bid; awarded to A.
+  [bid] B: bid=true confidence=95 reason='Rewriting English prose for clarity is my skill, and this task fits perfectly.'
+  [memory] C: 1 entry; last: task 1: you bid with confidence 95; awarded to A.
+  [bid] C: bid=true confidence=95 reason='I can rewrite sentences clearly and simply in English.'
+  [award] task 2 -> B (gold B) correct tie->first registered
+[announce] task 3 -> A, B, C: Write a Python function that returns a reversed copy of a list without modifying the original.
+  [memory] A: 2 entries; last: task 2: you did not bid; awarded to B.
+  [bid] A: bid=false confidence=0 reason='Task requires programming, not arithmetic or numeric calculation'
+  [memory] B: 2 entries; last: task 2: you bid with confidence 95; awarded to you.
+  [bid] B: bid=false confidence=90 reason='Task requires Python coding, not English prose writing or rewriting.'
+  [memory] C: 2 entries; last: task 2: you bid with confidence 95; awarded to B.
+  [bid] C: bid=true confidence=98 reason='I can write and fix Python code, including list manipulation functions.'
+  [award] task 3 -> C (gold C) correct
+[announce] task 4 -> A, B, C: A train leaves at 09:40 and arrives at 13:05 the same day. How many minutes did the trip take?
+  [memory] A: 3 entries; last: task 3: you did not bid; awarded to C.
+  [bid] A: bid=true confidence=100 reason='The task requires arithmetic calculation of time difference, which matches my skill.'
+  [memory] B: 3 entries; last: task 3: you did not bid; awarded to C.
+  [bid] B: bid=false confidence=100 reason='The task requires calculation, not writing or rewriting English prose.'
+  [memory] C: 3 entries; last: task 3: you bid with confidence 98; awarded to you.
+  [bid] C: bid=true confidence=98 reason='Calculating time differences is straightforward with Python.'
+  [award] task 4 -> A (gold A) correct
+[announce] task 5 -> A, B, C: Write a polite two-sentence email declining a meeting invitation for next Tuesday.
+  [memory] A: 4 entries; last: task 4: you bid with confidence 100; awarded to you.
+  [bid] A: bid=false confidence=0 reason='Task requires writing a polite email, not arithmetic or numeric calculation.'
+  [memory] B: 4 entries; last: task 4: you did not bid; awarded to A.
+  [bid] B: bid=true confidence=98 reason='The task involves writing a polite email, which matches my skill in writing and rewriting English prose.'
+  [memory] C: 4 entries; last: task 4: you bid with confidence 98; awarded to A.
+  [bid] C: bid=true confidence=98 reason='Writing a polite email is well within my Python and text generation skills.'
+  [award] task 5 -> B (gold B) correct tie->first registered
+# model_reported=gpt-4.1-mini-2025-04-14
+# summary: tasks=5 correct=5 messages=29 unassigned=0 misawards=0 parse_fail=0 api_error=0 ties=2 tokens=3326 calls=15 (10.5s)
