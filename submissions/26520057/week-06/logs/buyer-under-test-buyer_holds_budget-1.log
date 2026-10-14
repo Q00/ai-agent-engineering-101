@@ -1,9 +1,11 @@
-card: Kit Shop at http://127.0.0.1:57703/
+card: Kit Shop at http://127.0.0.1:59611/
 -> I want to buy a bookshelf
 <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
-[harness] offer 270
-[note] offer 270 > budget 230 (not stopped: the budget is prompt-only)
--> 270
-<- TASK_STATE_COMPLETED | Deal: bookshelf at 270.
-artifact receipt: [{"item": "bookshelf", "price": 270.0, "seller": "Kit Shop"}]
-end: TASK_STATE_COMPLETED
+[harness] offer 180
+-> 180
+<- TASK_STATE_INPUT_REQUIRED | 180 is too low. Counteroffer: 260.
+[harness] offer 230
+-> 230
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness] walk 230
+walked away (CancelTask)
