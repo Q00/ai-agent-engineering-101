@@ -98,6 +98,30 @@ class LocalShops:
         _write_json(self.directory / "processes.json", self.configs)
         return list(self.urls)
 
+    def active_catalog_size(self, index: int) -> int:
+        """Read the effective seller catalog from its own startup trace.
+
+        Index is zero-based. Counting the committed source catalog would miss
+        per-shop filtering, so only one actual seller_started event is accepted.
+        """
+        if isinstance(index, bool) or not isinstance(index, int) or not 0 <= index < len(self.processes):
+            raise ValueError("shop index must identify a started local seller")
+        trace_directory = self.directory / f"shop-{index + 1:02d}" / "trace"
+        starts = []
+        for path in trace_directory.glob("seller-*.jsonl"):
+            for line in path.read_text(encoding="utf-8").splitlines():
+                event = json.loads(line)
+                if event.get("event") == "seller_started":
+                    starts.append(event)
+        if len(starts) != 1:
+            raise RuntimeError("effective catalog size requires one actual seller_started trace event")
+        start = starts[0]
+        expected_name = self.configs[index]["config"]["name"]
+        size = start.get("catalog_size")
+        if start.get("name") != expected_name or isinstance(size, bool) or not isinstance(size, int) or size <= 0:
+            raise RuntimeError("seller startup trace does not identify a valid effective catalog")
+        return size
+
     def close(self):
         for process in self.processes:
             if process.poll() is None:
@@ -149,12 +173,17 @@ def shop_configs() -> list[dict[str, Any]]:
     return configs
 
 
-def run_catalog_challenge(url: str, log_dir: Path, policy: StrategyPolicy, timeout: float) -> dict[str, Any]:
+def run_catalog_challenge(url: str, log_dir: Path, policy: StrategyPolicy, timeout: float, *,
+                          server_catalog_size: int) -> dict[str, Any]:
+    if isinstance(server_catalog_size, bool) or not isinstance(server_catalog_size, int) or server_catalog_size <= 0:
+        raise ValueError("server_catalog_size must come from the actual seller startup trace")
     trace = Trace("challenge-1", log_dir)
     description = "something wooden to keep about 40 books, not taller than 85 cm"
     budget = 300
     catalog = load_catalog()
-    trace.write("challenge_started", query=description, budget=budget, catalog_size=len(catalog))
+    trace.write("challenge_started", query=description, budget=budget,
+                catalog_size=server_catalog_size, committed_catalog_size=len(catalog),
+                catalog_size_source="actual seller_started trace")
     started = time.monotonic()
     try:
         result = negotiate(url, description, budget, policy=policy,
@@ -165,7 +194,7 @@ def run_catalog_challenge(url: str, log_dir: Path, policy: StrategyPolicy, timeo
         attributes = product["attributes"] if product else {}
         checks = {
             "completed": result.get("status") == "completed",
-            "catalog_has_thousands": len(catalog) >= 2000,
+            "catalog_has_thousands": server_catalog_size >= 2000,
             "selected_catalog_product": product is not None,
             "wooden": attributes.get("material") == "wood",
             "book_capacity": attributes.get("capacity_books", 0) >= 40,
@@ -175,10 +204,14 @@ def run_catalog_challenge(url: str, log_dir: Path, policy: StrategyPolicy, timeo
         }
         summary = {"passed": all(checks.values()), "checks": checks, "query": description,
                    "budget": budget, "selected_product": product, "result": result,
-                   "catalog_size": len(catalog), "elapsed_seconds": round(time.monotonic() - started, 3)}
+                   "catalog_size": server_catalog_size, "committed_catalog_size": len(catalog),
+                   "catalog_size_source": "actual seller_started trace",
+                   "elapsed_seconds": round(time.monotonic() - started, 3)}
     except Exception as exc:
         summary = {"passed": False, "query": description, "budget": budget,
-                   "error": f"{type(exc).__name__}: {exc}", "elapsed_seconds": round(time.monotonic() - started, 3)}
+                   "error": f"{type(exc).__name__}: {exc}", "catalog_size": server_catalog_size,
+                   "committed_catalog_size": len(catalog), "catalog_size_source": "actual seller_started trace",
+                   "elapsed_seconds": round(time.monotonic() - started, 3)}
     trace.write("challenge_summary", summary=summary)
     _write_json(log_dir / "summary.json", summary)
     return summary
@@ -214,16 +247,23 @@ def main() -> None:
     policy = StrategyPolicy(args.policy)
     challenge_1_dir = ROOT / "logs/challenge-1" / run_id
     challenge_2_dir = ROOT / "logs/challenge-2" / run_id
-    process_dir = challenge_2_dir / "shops" if args.challenge in {"all", "2"} else challenge_1_dir / "shops"
     results = {}
-    with LocalShops(process_dir, args.policy) as shops:
-        configs = shop_configs() if args.challenge in {"all", "2"} else [shop_configs()[2]]
-        urls = shops.start(configs)
-        directory = read_directory(urls, Trace("directory", process_dir))
-        if args.challenge in {"all", "1"}:
-            shelf_url = urls[2] if len(urls) == 20 else urls[0]
-            results["challenge_1"] = run_catalog_challenge(shelf_url, challenge_1_dir, policy, min(240, args.timeout))
-        if args.challenge in {"all", "2"}:
+    if args.challenge in {"all", "1"}:
+        process_dir = challenge_1_dir / "shops"
+        # No categories field: the actual seller must search all 3,003 products.
+        full_catalog_config = {"name": "Full Catalog Home Shop", "reserve_offset": 0,
+                               "description": "Home-product shop with the complete ten-category catalog. Searches item descriptions and negotiates prices."}
+        with LocalShops(process_dir, args.policy) as shops:
+            urls = shops.start([full_catalog_config])
+            read_directory(urls, Trace("directory", process_dir))
+            results["challenge_1"] = run_catalog_challenge(
+                urls[0], challenge_1_dir, policy, min(240, args.timeout),
+                server_catalog_size=shops.active_catalog_size(0))
+    if args.challenge in {"all", "2"}:
+        process_dir = challenge_2_dir / "shops"
+        with LocalShops(process_dir, args.policy) as shops:
+            urls = shops.start(shop_configs())
+            directory = read_directory(urls, Trace("directory", process_dir))
             results["challenge_2"] = run_shopping_challenge(directory, challenge_2_dir, policy, args.timeout)
     print(json.dumps({"run_id": run_id, "results": results}, ensure_ascii=False), flush=True)
     raise SystemExit(0 if all(result["passed"] for result in results.values()) else 1)
