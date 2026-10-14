@@ -97,6 +97,10 @@ def last_number(text):
 def clean(msg, tag):
     """The harness's sentence to the buyer. Dropped if it has a number: the ask must be the last number."""
     msg = str(msg or "").strip()
+    # ASCII only: an em dash from haiku crashed the trade test's print() on a cp949 Windows console
+    msg = msg.translate(str.maketrans({"—": "-", "–": "-", "’": "'", "‘": "'",
+                                       "“": '"', "”": '"', "…": "..."}))
+    msg = msg.encode("ascii", "ignore").decode()
     if re.search(r"\d", msg):
         log(f"[{tag}] GUARD dropped harness sentence with a number in it: {msg!r}")
         return ""
