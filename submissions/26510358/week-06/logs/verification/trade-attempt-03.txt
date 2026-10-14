@@ -1,0 +1,59 @@
+# week-06 trade test, kit v1, 2026-10-14T07:01:21+00:00
+harness: Codex CLI 0.162.0-alpha.17.2 / gpt-6.1-sol / low reasoning / real non-interactive structured output
+
+## seller tests: python3 seller.py --port 56511
+  PASS  seller_card #1: name='26510358 Catalog Shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 125
+    -> SendMessage "60" taskId=776b66ac
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 100
+    -> SendMessage "100" taskId=776b66ac
+    <- TASK_STATE_COMPLETED | Deal completed. See receipt.
+       artifact receipt [{"price": 100.0, "seller": "26510358 Catalog Shop", "currency": "credits", "taskId": "776b66ac-18d2-48eb-a6f7-608cd87c77d9", "quantity": 1.0, "quoteId": "62374c8a51e542148753b14bb64e4b15", "purchaseId": "96942c38e11a44a789279f608624ef7b", "item": "lamp", "itemId": "lamp"}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 125
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 100.0, asks [125, 100]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=776b66ac
+    <- error -32004 Task 776b66ac-18d2-48eb-a6f7-608cd87c77d9 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 130
+    -> SendMessage "60" taskId=8915b334
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 110
+    -> SendMessage "110" taskId=8915b334
+    <- TASK_STATE_COMPLETED | Deal completed. See receipt.
+       artifact receipt [{"price": 110.0, "seller": "26510358 Catalog Shop", "currency": "credits", "taskId": "8915b334-a084-4c3c-938e-dc1e32a64a9d", "quantity": 1.0, "quoteId": "c6c6ec787eab4b19bc89e8b963970813", "purchaseId": "9aa48d1b34474f15b6d8d8f8e5f6a328", "item": "lamp", "itemId": "lamp"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 110.0, asks [130, 110]
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 130
+    -> SendMessage "60" taskId=0daf9242
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 110
+    -> SendMessage "110" taskId=0daf9242
+    <- TASK_STATE_COMPLETED | Deal completed. See receipt.
+       artifact receipt [{"price": 110.0, "seller": "26510358 Catalog Shop", "currency": "credits", "taskId": "0daf9242-53df-485f-9f67-59ce792a35a7", "quantity": 1.0, "quoteId": "adda00f3f14746af8c908cbdda430777", "purchaseId": "0cf354e8c75046a5a2b318fe69d6fdd3", "item": "lamp", "itemId": "lamp"}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 110.0, asks [130, 110]
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 320
+    -> SendMessage "140" taskId=234c3601
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 280
+    -> SendMessage "170" taskId=234c3601
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "200" taskId=234c3601
+    <- TASK_STATE_FAILED | Harness could not return a valid decision.
+  PASS  seller_holds_reserve #1: TASK_STATE_FAILED, asks [320, 280, 260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 320
+    -> SendMessage "140" taskId=85785c86
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 280
+    -> SendMessage "170" taskId=85785c86
