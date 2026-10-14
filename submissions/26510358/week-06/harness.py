@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 from contextlib import contextmanager
-import fcntl
 import os
 from pathlib import Path
 import shlex
@@ -13,6 +12,7 @@ import tempfile
 import time
 
 from tracing import Trace
+from inference_queue import QueueStateError, QueueTimeout, inference_slot
 
 ROOT = Path(__file__).resolve().parent
 MODEL = os.environ.get("A2A_MODEL", "gpt-6-sol")
@@ -78,31 +78,12 @@ def system_prompt(role: str) -> str:
 
 @contextmanager
 def invocation_slot(deadline=None):
-    """Serialize local CLI calls across agents and pace them without altering decisions."""
-    lock_path = Path(tempfile.gettempdir()) / f"a2a-harness-{os.getuid()}.lock"
-    with lock_path.open("a+") as handle:
-        while True:
-            try:
-                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                break
-            except BlockingIOError:
-                if deadline and time.monotonic() >= deadline - 1:
-                    raise HarnessError("Deadline reached while waiting for shared inference slot")
-                time.sleep(0.1)
-        try:
-            handle.seek(0)
-            last = float(handle.read() or 0)
-            pause = max(0, last + 10 - time.monotonic())
-            if deadline and time.monotonic() + pause >= deadline - 1:
-                raise HarnessError("Deadline reached during inference pacing")
-            time.sleep(pause)
+    """Admit cross-process CLI calls in FIFO order, preserving all decisions."""
+    try:
+        with inference_slot(deadline, interval=10):
             yield
-        finally:
-            handle.seek(0)
-            handle.truncate()
-            handle.write(str(time.monotonic()))
-            handle.flush()
-            fcntl.flock(handle, fcntl.LOCK_UN)
+    except (QueueTimeout, QueueStateError, OSError) as exc:
+        raise HarnessError(str(exc)) from exc
 
 
 class Harness:
