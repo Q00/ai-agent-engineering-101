@@ -21,6 +21,13 @@ MAX_TURNS = 10  # keeps one run well inside the 300 s limit
 PROMPT = """You are the buyer in a price negotiation. You want to buy one {item}.
 Your budget is {budget}: the most you may pay.
 
+How you negotiate (find the seller's floor, then buy at it):
+1. Your first offer is about half of the seller's asking price.
+2. When the seller's counteroffer is within your budget, do not accept it at once: offer a little less, one time.
+   When the seller repeats the same counteroffer, that price is the seller's floor: accept it if it is within your budget.
+3. If the floor is above your budget, walk. The seller turns down at most 4 offers: after 4, accept the last
+   counteroffer if it is within your budget, or walk.
+
 The negotiation so far:
 {history}
 
