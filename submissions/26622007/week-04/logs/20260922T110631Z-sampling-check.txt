@@ -1,0 +1,16 @@
+$ python3 -m unittest discover -s submissions/26622007/week-04/pilot -p test_*.py -v
+test_eight_nonterminal_messages_are_open (test_smoke.PilotTests.test_eight_nonterminal_messages_are_open) ... ok
+test_eighth_message_can_make_a_deal (test_smoke.PilotTests.test_eighth_message_can_make_a_deal) ... ok
+test_full_context_and_private_limits (test_smoke.PilotTests.test_full_context_and_private_limits) ... ok
+test_invalid_acceptance_is_recorded_and_continues (test_smoke.PilotTests.test_invalid_acceptance_is_recorded_and_continues) ... ok
+test_local_schema_and_business_validation (test_smoke.PilotTests.test_local_schema_and_business_validation) ... ok
+test_serialized_wire_formats_and_fail_closed (test_smoke.PilotTests.test_serialized_wire_formats_and_fail_closed) ... ok
+test_violation_is_measured_not_corrected (test_smoke.PilotTests.test_violation_is_measured_not_corrected) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.002s
+
+OK
+Exit code: 0
+$ python3 -m py_compile submissions/26622007/week-04/pilot/smoke.py submissions/26622007/week-04/pilot/transport.py
+Exit code: 0

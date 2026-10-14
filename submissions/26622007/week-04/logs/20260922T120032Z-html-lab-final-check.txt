@@ -1,0 +1,71 @@
+$ python3 submissions/26622007/week-04/lab/audit_report.py --suite html-deepseek-20260922
+{
+  "summary": {
+    "free": {
+      "episodes": 12,
+      "correct": 7,
+      "deal": 6,
+      "no_deal": 4,
+      "open": 2,
+      "crashed": 0,
+      "violations": 1,
+      "mean_turns": 4.333,
+      "format_errors": 12,
+      "reader_calls": 52,
+      "http_requests": 107,
+      "tokens": 24173,
+      "cost_usd": "0.0034699784"
+    },
+    "tagged": {
+      "episodes": 12,
+      "correct": 5,
+      "deal": 4,
+      "no_deal": 1,
+      "open": 7,
+      "crashed": 0,
+      "violations": 0,
+      "mean_turns": 7.583,
+      "format_errors": 24,
+      "reader_calls": 32,
+      "http_requests": 125,
+      "tokens": 31047,
+      "cost_usd": "0.0044580088"
+    },
+    "structured": {
+      "episodes": 12,
+      "correct": 10,
+      "deal": 8,
+      "no_deal": 2,
+      "open": 2,
+      "crashed": 0,
+      "violations": 0,
+      "mean_turns": 6.75,
+      "format_errors": 0,
+      "reader_calls": 0,
+      "http_requests": 81,
+      "tokens": 17442,
+      "cost_usd": "0.00285040"
+    }
+  },
+  "http_errors": {
+    "429": 5
+  },
+  "requests": 313,
+  "schema_invalid": []
+}
+Exit code: 0
+$ python3 submissions/26622007/week-04/lab/experiment.py --suite html-deepseek-20260922 --env-file submissions/26622007/.env --jobs 3
+Completed suite html-deepseek-20260922: 36 total CSV episodes
+Exit code: 0
+$ python3 submissions/26622007/course_checks/check_week04_51c09f4.py submissions/26622007/week-04
+ok    6 .py file(s) parse
+ok    scenarios.json has 4 scenarios, 3 with a deal possible
+ok    results.csv has 12 episode(s) for free, 3+ per scenario
+ok    results.csv has 12 episode(s) for tagged, 3+ per scenario
+ok    results.csv has 12 episode(s) for structured, 3+ per scenario
+ok    logs/ contains 28 file(s)
+ok    REPORT.md present with a table
+
+all checks passed
+Exit code: 0
+Resume verification: CSV, manifest, and 18 run logs byte-identical; no additional requests.

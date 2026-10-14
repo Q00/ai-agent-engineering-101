@@ -1,0 +1,21 @@
+{
+  "model": "openai/gpt-6-luna",
+  "reasoning": null,
+  "provider": {
+    "only": ["openai"],
+    "allow_fallbacks": false,
+    "require_parameters": true,
+    "max_price": {"prompt": 0.1, "completion": 0.5}
+  },
+  "timeout_seconds": 300,
+  "response_deadline_seconds": 600,
+  "max_attempts": 2,
+  "retry_delay_seconds": 2,
+  "rate_limit_retry": {
+    "max_attempts": 4,
+    "initial_delay_seconds": 5,
+    "max_delay_seconds": 30,
+    "max_wait_seconds": 120
+  },
+  "max_http_requests": 400
+}
