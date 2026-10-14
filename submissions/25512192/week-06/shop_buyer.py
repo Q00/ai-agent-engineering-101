@@ -40,6 +40,13 @@ up to at most {money}; give expensive kinds of furniture a larger share.
 Answer: {{"plan": [{{"entry": <number>, "shops": ["<id>", ...], "cap": N}}, ...]}}"""
 
 
+def num(v):
+    try:
+        return int(float(v))
+    except (TypeError, ValueError):
+        return 0
+
+
 def card_line(sid, shop):
     skills = " ".join(s.get("description", "") for s in shop.card.get("skills", []))
     return f"{sid} | {shop.name} | {shop.card.get('description', '')} {skills.split('. Name or')[0]}"
@@ -99,8 +106,8 @@ def main():
                              shops=directory, past=past)
         log(f"[plan {p}] prompt {len(prompt)} chars")
         plan = (harness.ask(SYSTEM, prompt, log, f"plan {p}") or {}).get("plan", [])
-        plan = {int(x["entry"]): x for x in plan if isinstance(x, dict) and int(x.get("entry", 0)) in open_}
-        caps = {n: max(0, int(plan.get(n, {}).get("cap") or 0)) for n in open_}
+        plan = {num(x.get("entry")): x for x in plan if isinstance(x, dict) and num(x.get("entry")) in open_}
+        caps = {n: max(0, num(plan.get(n, {}).get("cap"))) for n in open_}
         if sum(caps.values()) > money:             # GUARD: the caps of open entries never exceed the money left
             k = money / sum(caps.values())
             log(f"[plan {p}] GUARD caps {caps} add up to {sum(caps.values())} > {money}; scaling by {k:.2f}")
