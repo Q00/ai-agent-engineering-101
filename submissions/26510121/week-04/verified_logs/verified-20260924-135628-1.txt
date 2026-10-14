@@ -1,0 +1,67 @@
+run=verified-20260924-135628-1 turn_limit=8
+protocol=JSON acts + unique offer IDs + explicit acceptance reference
+verification=field schema, ID ownership/status, private limits
+scenario 1: reserve=120 budget=300
+  [1] buyer: {"act":"propose","offer_id":"1","price":250,"responds_to":null,"reason":"Starting negotiation below my maximum limit to allow room for discussion."}
+       verifier: record offer_id=1 price=250
+  [2] seller: {"act":"reject","offer_id":null,"price":120,"responds_to":null,"reason":"I appreciate your offer, but I cannot accept it. My minimum price for the bike is 120."}
+       verifier: valid rejection with counter-price 120
+  [3] buyer: {"act":"accept","offer_id":null,"price":null,"responds_to":"1","reason":"I agree to your offer of 250 for the bike."}
+       verifier: reject acceptance; cannot accept own offer 1
+  [4] seller: {"act":"walk_away","offer_id":null,"price":null,"responds_to":null,"reason":"I cannot accept your offer of 250. Thank you for your interest, but I will walk away from this negotiation."}
+       verifier: walk_away; negotiation ends
+  -> outcome=no_deal price= correct=0 violation=0 turns=4 format_errors=1
+scenario 2: reserve=245 budget=265
+  [1] buyer: {"act":"propose","offer_id":"1","price":250,"responds_to":null,"reason":"This is a fair offer considering the condition and market value of similar machines."}
+       verifier: record offer_id=1 price=250
+  [2] seller: {"act":"reject","price":245,"responds_to":"1","reason":"I appreciate your offer, but I can only accept a minimum of 245 for the espresso machine."}
+       verifier: reject malformed message (fields must be exactly ['act', 'offer_id', 'price', 'reason', 'responds_to'])
+  [3] buyer: {"act":"accept","offer_id":null,"price":null,"responds_to":"1","reason":null}
+       verifier: reject malformed message (reason must be a string)
+  [4] seller: {"act":"walk_away","offer_id":null,"price":null,"responds_to":null,"reason":null}
+       verifier: reject malformed message (reason must be a string)
+  [5] buyer: {"act":"propose","offer_id":"2","price":255,"responds_to":"1","reason":"I believe this is a reasonable compromise that reflects the value of the machine."}
+       verifier: reject malformed message (propose requires price and responds_to=null)
+  [6] seller: {"act":"accept","offer_id":"2","price":null,"responds_to":"1","reason":null}
+       verifier: reject malformed message (reason must be a string)
+  [7] buyer: {"act":"propose","offer_id":"3","price":260,"responds_to":"1","reason":"This offer is closer to my maximum and should be more acceptable."}
+       verifier: reject malformed message (propose requires price and responds_to=null)
+  [8] seller: {"act":"reject","price":245,"responds_to":"3","reason":"Thank you for your offer, but I can only accept a minimum of 245 for the espresso machine."}
+       verifier: reject malformed message (fields must be exactly ['act', 'offer_id', 'price', 'reason', 'responds_to'])
+  -> outcome=open price= correct=0 violation=0 turns=8 format_errors=7
+scenario 3: reserve=400 budget=380
+  [1] buyer: {"act":"propose","offer_id":"1","price":350,"responds_to":null,"reason":"The guitar has a buzzing fret, which affects its playability."}
+       verifier: record offer_id=1 price=350
+  [2] seller: {"act":"reject","offer_id":null,"price":400,"responds_to":"1","reason":"I appreciate your offer, but due to the buzzing fret, I can only accept a minimum of 400."}
+       verifier: reject malformed message (reject must not introduce or accept an offer ID)
+  [3] buyer: {"act":"reject","offer_id":null,"price":380,"responds_to":"1","reason":"I can only go up to 380 due to the buzzing fret."}
+       verifier: reject malformed message (reject must not introduce or accept an offer ID)
+  [4] seller: {"act":"reject","offer_id":null,"price":400,"responds_to":"1","reason":"Thank you for your offer, but I cannot accept anything below 400 due to the condition of the guitar."}
+       verifier: reject malformed message (reject must not introduce or accept an offer ID)
+  [5] buyer: {"act":"walk_away","offer_id":null,"price":null,"responds_to":null,"reason":null}
+       verifier: reject malformed message (reason must be a string)
+  [6] seller: {"act":"walk_away","offer_id":null,"price":null,"responds_to":null,"reason":null}
+       verifier: reject malformed message (reason must be a string)
+  [7] buyer: {"act":"propose","offer_id":"2","price":370,"responds_to":"1","reason":"Considering the buzzing fret, I can increase my offer to 370."}
+       verifier: reject malformed message (propose requires price and responds_to=null)
+  [8] seller: {"act":"reject","offer_id":null,"price":400,"responds_to":"2","reason":"I appreciate your increased offer, but I can only accept a minimum of 400 due to the buzzing fret."}
+       verifier: reject malformed message (reject must not introduce or accept an offer ID)
+  -> outcome=open price= correct=1 violation=0 turns=8 format_errors=7
+scenario 4: reserve=900 budget=250
+  [1] buyer: {"act":"propose","offer_id":"1","price":200,"responds_to":null,"reason":"Starting negotiation below my maximum to gauge the seller's response."}
+       verifier: record offer_id=1 price=200
+  [2] seller: {"act":"reject","offer_id":null,"price":900,"responds_to":null,"reason":"The initial offer is too low; my minimum acceptable price is 900."}
+       verifier: valid rejection with counter-price 900
+  [3] buyer: {"act":"reject","offer_id":null,"price":150,"responds_to":null,"reason":"The seller's minimum is too high; I am countering with a lower offer."}
+       verifier: valid rejection with counter-price 150
+  [4] seller: {"act":"reject","offer_id":null,"price":900,"responds_to":null,"reason":"Your counter-offer is still below my minimum acceptable price of 900."}
+       verifier: valid rejection with counter-price 900
+  [5] buyer: {"act":"walk_away","offer_id":null,"price":null,"responds_to":null}
+       verifier: reject malformed message (fields must be exactly ['act', 'offer_id', 'price', 'reason', 'responds_to'])
+  [6] seller: {"act":"reject","offer_id":null,"price":900,"responds_to":"1","reason":"Your initial offer is too low; my minimum acceptable price is 900."}
+       verifier: reject malformed message (reject must not introduce or accept an offer ID)
+  [7] buyer: {"act":"reject","offer_id":null,"price":250,"responds_to":"1","reason":"I am countering with my maximum offer, as the seller's minimum is too high."}
+       verifier: reject malformed message (reject must not introduce or accept an offer ID)
+  [8] seller: {"act":"reject","offer_id":null,"price":900,"responds_to":"1","reason":"Your counter-offer is still below my minimum acceptable price of 900."}
+       verifier: reject malformed message (reject must not introduce or accept an offer ID)
+  -> outcome=open price= correct=1 violation=0 turns=8 format_errors=4
