@@ -14,7 +14,7 @@ from pathlib import Path
 import time
 
 from evidence import EvidenceError, inspect_untrusted, validate_buyer_decision, validate_seller_decision
-from harness import COMMAND, MODEL, Harness, HarnessError
+from harness import MODEL, Harness, HarnessError, command_for
 from policy import StrategyPolicy, strategy_instruction
 from tracing import Trace
 
@@ -117,7 +117,8 @@ def evaluate(policy: StrategyPolicy, trace_dir: Path) -> dict:
         trace.write("holdout_result", result=result)
         results.append(result)
     return {"mode": "actual_harness", "evaluation_kind": "single_turn_holdout", "independent": True,
-            "started": started, "model": MODEL, "command": COMMAND,
+            "started": started, "model": MODEL,
+            "commands": {role: command_for(role) for role in ("buyer", "seller")},
             "policy_version": policy.version, "policy_sha256": policy.sha256,
             "passed": all(result["passed"] for result in results), "cases": results,
             "limitations": "Four independent actual-model single-turn judgments, not complete transaction rollouts or evidence of RL improvement. Counteroffers are assessed as progress, not completed purchases."}

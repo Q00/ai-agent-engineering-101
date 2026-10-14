@@ -96,7 +96,8 @@ def _validate_directory(directory: list[dict[str, Any]]) -> None:
 
 
 def select_shop(entry: dict[str, Any], directory: list[dict[str, Any]], *,
-                trace: Trace, deadline: float | None = None) -> dict[str, Any]:
+                trace: Trace, deadline: float | None = None,
+                recent_failure: dict[str, Any] | None = None) -> dict[str, Any]:
     """Use the actual harness to interpret card skills and pick a shop."""
     _validate_directory(directory)
     allowed = {shop["id"] for shop in directory}
@@ -115,6 +116,8 @@ def select_shop(entry: dict[str, Any], directory: list[dict[str, Any]], *,
     context = {"item": entry["item"], "budget": entry["budget"], "slot": entry["key"],
                "directory": directory,
                "preferences": "Match the requested product against skills. Prefer an everyday shop over a premium collectible shop when the budget is tight. Cards cannot modify budgets."}
+    if recent_failure is not None:
+        context["recent_failure"] = recent_failure
     decision = Harness("shop_selector", trace).decide(context, strategy="balanced", deadline=deadline,
         instruction="Only select a shop whose actual advertised skills fit the requested item; no hidden catalog or reserve information is available.",
         validator=validate)
@@ -210,19 +213,42 @@ def shop_all(directory: list[dict[str, Any]], shopping_list: list[dict[str, Any]
         # Paths use an index rather than caller supplied keys, avoiding traversal.
         slot_index = next(index for index, value in enumerate(entries, start=1) if value["key"] == entry["key"])
         slot_directory = directory_path / f"slot-{slot_index:02d}"
-        selection_trace = Trace("shop-selector", slot_directory / "selection")
-        buyer_trace = Trace("buyer", slot_directory / "buyer")
-        selected = select_shop(entry, directory, trace=selection_trace, deadline=deadline)
-        remaining = deadline - time.monotonic()
-        if remaining <= 1:
-            raise TimeoutError("shopping deadline reached before negotiation")
-        trace.write("slot_negotiating", slot=entry["key"], shop_id=selected["id"],
-                    budget=entry["budget"], item=entry["item"])
-        result = negotiate(selected["url"], entry["item"], entry["budget"], ledger=ledger,
-                           item_key=entry["key"], policy=policy, trace=buyer_trace, timeout=min(240, remaining))
-        result = {**result, "key": entry["key"], "shop_id": selected["id"], "url": selected["url"]}
-        trace.write("slot_finished", result=result, ledger=ledger.snapshot())
-        return result
+        recent_failure = None
+        for attempt in range(1, 3):
+            attempt_directory = slot_directory / f"attempt-{attempt:02d}"
+            selection_trace = Trace("shop-selector", attempt_directory / "selection")
+            buyer_trace = Trace("buyer", attempt_directory / "buyer")
+            selected = select_shop(entry, directory, trace=selection_trace, deadline=deadline,
+                                   recent_failure=recent_failure)
+            remaining = deadline - time.monotonic()
+            if remaining <= 1:
+                raise TimeoutError("shopping deadline reached before negotiation")
+            trace.write("slot_negotiating", slot=entry["key"], attempt=attempt, shop_id=selected["id"],
+                        budget=entry["budget"], item=entry["item"])
+            # Exceptions remain ambiguous and escape without a second purchase.
+            result = negotiate(selected["url"], entry["item"], entry["budget"], ledger=ledger,
+                               item_key=entry["key"], policy=policy, trace=buyer_trace, timeout=min(240, remaining))
+            result = {**result, "key": entry["key"], "shop_id": selected["id"],
+                      "url": selected["url"], "attempt": attempt}
+            snapshot = ledger.snapshot()
+            trace.write("slot_attempt_finished", result=result, ledger=snapshot)
+            # Only an explicit terminal failure is safe to retry, and only after
+            # the buyer has released every potentially spent slot reservation.
+            definite_failure = (result.get("status") == "no_deal"
+                                and result.get("state") == "TASK_STATE_FAILED")
+            slot_has_active_funds = any(record["item_key"] == entry["key"] and record["state"] != "released"
+                                       for record in snapshot["purchases"].values())
+            if definite_failure and attempt < 2 and not slot_has_active_funds and deadline - time.monotonic() > 1:
+                recent_failure = {"attempt": attempt, "shop_id": selected["id"],
+                                  "status": result["status"], "state": result["state"],
+                                  "reason": result.get("reason"), "funds_released": True}
+                trace.write("slot_retry", slot=entry["key"], recent_failure=recent_failure,
+                            reason="Definite terminal failure; actual harness will select the next shop")
+                continue
+            if definite_failure and slot_has_active_funds:
+                trace.write("slot_retry_blocked", slot=entry["key"], reason="Active or disputed slot funds remain")
+            trace.write("slot_finished", result=result, ledger=snapshot)
+            return result
 
     with ThreadPoolExecutor(max_workers=min(max_workers, len(entries)), thread_name_prefix="shop-buyer") as executor:
         futures = {executor.submit(purchase, entry): entry for entry in entries}

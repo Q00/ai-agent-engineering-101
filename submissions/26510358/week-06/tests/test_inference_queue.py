@@ -1,11 +1,13 @@
 """FIFO admission, crash recovery, and pacing across real processes/threads."""
 from pathlib import Path
+import json
 import multiprocessing
 import sys
 import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -157,6 +159,64 @@ class InferenceQueueTests(unittest.TestCase):
             with self.queue.slot(time.monotonic() - 1):
                 self.fail("An expired caller cannot enter")
         self.assertEqual(self.queue.snapshot()["queue"], [])
+
+    def test_head_waiter_progresses_despite_busy_control_readers(self):
+        stop, entered, errors, readers = threading.Event(), threading.Event(), [], []
+        def reader():
+            try:
+                while not stop.is_set():
+                    self.queue.snapshot()
+                    time.sleep(0.001)
+            except Exception as exc:
+                errors.append(exc)
+        def waiter():
+            try:
+                with self.queue.slot(time.monotonic() + 2):
+                    entered.set()
+            except Exception as exc:
+                errors.append(exc)
+        try:
+            with self.queue.slot():
+                thread = threading.Thread(target=waiter)
+                thread.start()
+                self.wait_for(lambda: len(self.queue.snapshot()["queue"]) == 1)
+                for _ in range(12):
+                    reader_thread = threading.Thread(target=reader)
+                    readers.append(reader_thread)
+                    reader_thread.start()
+                time.sleep(0.03)
+            self.assertTrue(entered.wait(timeout=2))
+            thread.join(timeout=2)
+        finally:
+            stop.set()
+            for reader_thread in readers:
+                reader_thread.join(timeout=2)
+        self.assertFalse(errors)
+
+    def test_queue_trace_proves_admission_release_and_labels_wait_deadline(self):
+        trace_path = Path(self.temporary.name) / "queue-events.jsonl"
+        errors = []
+        with patch.dict("os.environ", {"A2A_QUEUE_TRACE": str(trace_path)}):
+            queue = InferenceQueue(self.path, interval=0, poll_interval=0.005)
+            with queue.slot():
+                def waiter():
+                    try:
+                        with queue.slot(time.monotonic() + 0.03):
+                            self.fail("Waiting caller should expire while the owner is active")
+                    except QueueTimeout as exc:
+                        errors.append(str(exc))
+                thread = threading.Thread(target=waiter)
+                thread.start()
+                thread.join(timeout=2)
+        records = [json.loads(line) for line in trace_path.read_text().splitlines()]
+        self.assertEqual(len([r for r in records if r["event"] == "admitted"]), 1)
+        self.assertEqual(len([r for r in records if r["event"] == "released"]), 1)
+        expired = [r for r in records if r["event"] == "deadline_expired"]
+        self.assertEqual(len(expired), 1)
+        self.assertIn("FIFO admission", expired[0]["detail"])
+        self.assertTrue(errors)
+        self.assertIsNone(queue.snapshot()["owner"])
+        self.assertEqual(queue.snapshot()["queue"], [])
 
 
 if __name__ == "__main__":

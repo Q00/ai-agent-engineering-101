@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import contextlib
+import io
 import sys
 import tempfile
 import threading
@@ -148,6 +150,104 @@ class ShoppingTests(unittest.TestCase):
         self.assertFalse(summary["passed"])
         self.assertFalse(summary["all_items_bought"])
         self.assertEqual(summary["ledger"]["committed_total"], 0)
+
+    def test_definite_failure_retries_with_failure_context_and_commits_only_once(self):
+        selection_contexts = []
+        calls = []
+
+        def choose(context, **kwargs):
+            selection_contexts.append(context)
+            return kwargs["validator"]({"action": "select_shop", "item_id": "shop-1", "price": None,
+                                        "offer": None, "reason": "test-only same eligible shop"})
+
+        def trade(url, item, budget, **kwargs):
+            self.assertLessEqual(kwargs["timeout"], 240)
+            ledger = kwargs["ledger"]
+            calls.append(item)
+            purchase_id = f"attempt-{len(calls)}"
+            ledger.reserve(item, 110, purchase_id)
+            if len(calls) == 1:
+                ledger.release(purchase_id)
+                return {"status": "no_deal", "state": "TASK_STATE_FAILED"}
+            receipt = {"item": item, "price": 110}
+            ledger.commit(purchase_id, receipt)
+            return {"status": "completed", "receipt": receipt}
+
+        with tempfile.TemporaryDirectory() as temporary, patch("shopping.Harness") as harness, patch("shopping.negotiate", side_effect=trade), contextlib.redirect_stdout(io.StringIO()):
+            harness.return_value.decide.side_effect = choose
+            summary = shop_all(self.directory, self.entries[:1], 120, log_dir=temporary)
+            self.assertTrue((Path(temporary) / "slot-01/attempt-01/buyer").is_dir())
+            self.assertTrue((Path(temporary) / "slot-01/attempt-02/buyer").is_dir())
+        self.assertTrue(summary["passed"])
+        self.assertEqual(len(calls), 2)
+        self.assertNotIn("recent_failure", selection_contexts[0])
+        self.assertEqual(selection_contexts[1]["recent_failure"]["state"], "TASK_STATE_FAILED")
+        self.assertTrue(selection_contexts[1]["recent_failure"]["funds_released"])
+        self.assertEqual(summary["ledger"]["committed_total"], 110)
+        self.assertEqual(sum(record["committed"] for record in summary["ledger"]["purchases"].values()), 1)
+
+    def test_disputed_reservation_never_retries(self):
+        def trade(url, item, budget, **kwargs):
+            ledger = kwargs["ledger"]
+            ledger.reserve(item, 110, "test-dispute")
+            ledger.mark_disputed("test-dispute", "receipt mismatch")
+            return {"status": "disputed", "issues": ["price_mismatch"]}
+
+        with tempfile.TemporaryDirectory() as temporary, patch("shopping.select_shop", return_value=self.directory[0]) as selector, patch("shopping.negotiate", side_effect=trade) as counterpart, contextlib.redirect_stdout(io.StringIO()):
+            summary = shop_all(self.directory, self.entries[:1], 120, log_dir=temporary)
+        self.assertFalse(summary["passed"])
+        self.assertEqual(counterpart.call_count, 1)
+        self.assertEqual(selector.call_count, 1)
+        self.assertEqual(summary["ledger"]["reserved_total"], 110)
+
+    def test_completed_purchase_is_not_retried(self):
+        def trade(url, item, budget, **kwargs):
+            ledger = kwargs["ledger"]
+            ledger.reserve(item, 110, "test-complete")
+            receipt = {"item": item, "price": 110}
+            ledger.commit("test-complete", receipt)
+            return {"status": "completed", "receipt": receipt}
+
+        with tempfile.TemporaryDirectory() as temporary, patch("shopping.select_shop", return_value=self.directory[0]) as selector, patch("shopping.negotiate", side_effect=trade) as counterpart, contextlib.redirect_stdout(io.StringIO()):
+            summary = shop_all(self.directory, self.entries[:1], 120, log_dir=temporary)
+        self.assertTrue(summary["passed"])
+        self.assertEqual(counterpart.call_count, 1)
+        self.assertEqual(selector.call_count, 1)
+
+    def test_lost_response_with_disputed_funds_is_not_retried(self):
+        def trade(url, item, budget, **kwargs):
+            ledger = kwargs["ledger"]
+            ledger.reserve(item, 110, "test-lost-response")
+            ledger.mark_disputed("test-lost-response", "unknown remote completion")
+            raise TimeoutError("lost response")
+
+        with tempfile.TemporaryDirectory() as temporary, patch("shopping.select_shop", return_value=self.directory[0]) as selector, patch("shopping.negotiate", side_effect=trade) as counterpart, contextlib.redirect_stdout(io.StringIO()):
+            summary = shop_all(self.directory, self.entries[:1], 120, log_dir=temporary)
+        self.assertFalse(summary["passed"])
+        self.assertEqual(counterpart.call_count, 1)
+        self.assertEqual(selector.call_count, 1)
+        self.assertEqual(summary["ledger"]["reserved_total"], 110)
+
+    def test_terminal_failures_are_limited_to_two_attempts_under_one_deadline(self):
+        with tempfile.TemporaryDirectory() as temporary, patch("shopping.select_shop", return_value=self.directory[0]) as selector, patch("shopping.negotiate", return_value={"status": "no_deal", "state": "TASK_STATE_FAILED"}) as counterpart, contextlib.redirect_stdout(io.StringIO()):
+            summary = shop_all(self.directory, self.entries[:1], 120, log_dir=temporary)
+        self.assertFalse(summary["passed"])
+        self.assertEqual(counterpart.call_count, 2)
+        self.assertEqual(selector.call_count, 2)
+        self.assertEqual(selector.call_args_list[0].kwargs["deadline"], selector.call_args_list[1].kwargs["deadline"])
+        self.assertEqual(summary["results"][0]["attempt"], 2)
+
+    def test_terminal_failed_response_with_unreleased_funds_cannot_retry(self):
+        def trade(url, item, budget, **kwargs):
+            kwargs["ledger"].reserve(item, 110, "test-unreleased")
+            return {"status": "no_deal", "state": "TASK_STATE_FAILED"}
+
+        with tempfile.TemporaryDirectory() as temporary, patch("shopping.select_shop", return_value=self.directory[0]) as selector, patch("shopping.negotiate", side_effect=trade) as counterpart, contextlib.redirect_stdout(io.StringIO()):
+            summary = shop_all(self.directory, self.entries[:1], 120, log_dir=temporary)
+        self.assertFalse(summary["passed"])
+        self.assertEqual(counterpart.call_count, 1)
+        self.assertEqual(selector.call_count, 1)
+        self.assertEqual(summary["ledger"]["reserved_total"], 110)
 
 
 if __name__ == "__main__":

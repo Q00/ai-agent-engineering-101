@@ -8,11 +8,13 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 import copy
+from datetime import datetime, timezone
 import fcntl
 import json
 import math
 import os
 from pathlib import Path
+import random
 import tempfile
 import threading
 import time
@@ -65,19 +67,50 @@ class InferenceQueue:
             Path(tempfile.gettempdir()) / f"a2a-inference-{os.getuid()}" / "state.json")
         self.lock_path = self.path.with_name(self.path.name + ".lock")
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        trace_path = os.environ.get("A2A_QUEUE_TRACE")
+        self.trace_path = Path(trace_path) if trace_path else None
+        if self.trace_path is not None:
+            if self.trace_path.resolve() in (self.path.resolve(), self.lock_path.resolve()):
+                raise ValueError("Queue trace must not overwrite its state or control lock")
+            self.trace_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _trace(self, event, ticket=None, state=None, **fields):
+        if self.trace_path is None:
+            return
+        record = {"time": datetime.now(timezone.utc).isoformat(), "monotonic": time.monotonic(),
+                  "event": event, "pid": os.getpid(), "thread_id": threading.get_ident(),
+                  "state_path": str(self.path), **fields}
+        if ticket is not None:
+            record["ticket"] = ticket
+        if state is not None:
+            record["queue"] = [entry["ticket"] for entry in state["queue"]]
+            record["owner"] = state["owner"]["ticket"] if state["owner"] else None
+        data = (json.dumps(record, allow_nan=False) + "\n").encode("utf-8")
+        descriptor = os.open(self.trace_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+        try:
+            written = os.write(descriptor, data)
+            if written != len(data):
+                raise OSError("Incomplete inference queue trace append")
+        finally:
+            os.close(descriptor)
 
     @contextmanager
-    def _control(self, deadline=None):
+    def _control(self, deadline=None, *, stage="queue control"):
         descriptor = os.open(self.lock_path, os.O_RDWR | os.O_CREAT, 0o600)
         with os.fdopen(descriptor, "a+") as handle:
             while True:
                 if deadline is not None and time.monotonic() >= deadline:
-                    raise QueueTimeout("Inference deadline reached while acquiring queue control")
+                    raise QueueTimeout(f"Inference deadline reached during {stage}")
                 try:
                     fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     break
                 except BlockingIOError:
-                    time.sleep(self.poll_interval)
+                    # Control transactions are brief. Short jitter avoids
+                    # synchronized pollers repeatedly colliding at the same phase.
+                    pause = min(self.poll_interval, 0.005) * random.uniform(0.5, 1.5)
+                    if deadline is not None:
+                        pause = min(pause, max(0, deadline - time.monotonic()))
+                    time.sleep(pause)
             try:
                 yield
             finally:
@@ -137,11 +170,16 @@ class InferenceQueue:
             state["owner"] = None
             # Unknown completion time: wait one full pacing interval from recovery.
             state["last_completion"] = now
+            self._trace("dead_owner_recovered", owner["ticket"], state, owner_pid=owner["pid"])
             changed = True
         queued = [entry for entry in state["queue"] if _alive(entry)
                   and (entry["deadline"] is None or entry["deadline"] > now)]
         if queued != state["queue"]:
+            removed = [entry for entry in state["queue"] if entry not in queued]
             state["queue"] = queued
+            for entry in removed:
+                event = "expired_waiter_removed" if entry["deadline"] is not None and entry["deadline"] <= now else "dead_waiter_removed"
+                self._trace(event, entry["ticket"], state, ticket_pid=entry["pid"], deadline=entry["deadline"])
             changed = True
         # A monotonic clock restarts on reboot; no old timestamp may stall a new boot.
         if state["last_completion"] is not None and state["last_completion"] > now:
@@ -162,14 +200,15 @@ class InferenceQueue:
                   "enqueued_at": time.monotonic()}
         enqueued = acquired = False
         try:
-            with self._control(deadline):
+            with self._control(deadline, stage="queue registration"):
                 state = self._load()
                 self._prune(state, time.monotonic())
                 state["queue"].append(ticket)
                 self._save(state)
                 enqueued = True
+                self._trace("enqueued", ticket_id, state, deadline=deadline)
             while not acquired:
-                with self._control(deadline):
+                with self._control(deadline, stage="FIFO admission"):
                     state = self._load()
                     now = time.monotonic()
                     changed = self._prune(state, now)
@@ -188,12 +227,18 @@ class InferenceQueue:
                         acquired = changed = True
                     if changed:
                         self._save(state)
+                    if acquired:
+                        self._trace("admitted", ticket_id, state,
+                                    waited_seconds=round(now - ticket["enqueued_at"], 6), deadline=deadline)
                 if not acquired:
                     pause = self.poll_interval
                     if deadline is not None:
                         pause = min(pause, max(0, deadline - time.monotonic()))
                     time.sleep(pause)
             yield ticket_id
+        except QueueTimeout as exc:
+            self._trace("deadline_expired", ticket_id, detail=str(exc), enqueued=enqueued)
+            raise
         finally:
             if enqueued:
                 # Cleanup itself must succeed even after the caller's deadline.
@@ -205,13 +250,16 @@ class InferenceQueue:
                         state["owner"] = None
                         state["last_completion"] = time.monotonic()
                         changed = True
+                        release_event = "released"
                     else:
+                        release_event = "withdrawn"
                         queued = [entry for entry in state["queue"] if entry["ticket"] != ticket_id]
                         if queued != state["queue"]:
                             state["queue"] = queued
                             changed = True
                     if changed:
                         self._save(state)
+                    self._trace(release_event, ticket_id, state)
 
     def snapshot(self):
         """Inspect a copied queue state and recover expired/dead participants."""

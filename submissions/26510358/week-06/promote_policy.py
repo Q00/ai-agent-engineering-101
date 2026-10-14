@@ -286,7 +286,7 @@ def assemble(candidate: Path, holdout_path: Path, adversarial_path: Path,
             "official_policy_sha256": policy.sha256, "official_report_sha256": digest(trade_path),
             "artifact_checks": {"holdout_sha256": digest(holdout_path), "adversarial_sha256": digest(adversarial_path),
                                 "source_sha256": {name: digest(ROOT / name) for name in
-                                                  ("policy.py", "harness.py", "inference_queue.py", "evidence.py", "evaluate_policy.py", "run_adversarial.py", "tests/test_evidence.py", "tests/test_integrations.py", "tests/test_inference_queue.py")},
+                                                  ("policy.py", "harness.py", "inference_queue.py", "evidence.py", "evaluate_policy.py", "run_adversarial.py", "buyer-decision.schema.json", "seller-decision.schema.json", "shop-selection.schema.json", "budget-allocation.schema.json", "tests/test_evidence.py", "tests/test_integrations.py", "tests/test_inference_queue.py")},
                                 "traces": traces},
             "limitations": "Local reports and raw CLI artifacts are checked for completeness and consistency; this is not remote cryptographic attestation. Holdout covers single turns, not RL performance gains."}
 
