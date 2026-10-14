@@ -91,12 +91,13 @@ class Planner:
             for entry in proposal.reservations
         )
         if outside_directory or unchanged_failed_cap:
+            failure = "That shop already failed at an equal or higher cap;"
+            revision = "choose another advertised shop or a strictly higher cap."
             return ToolResult(
                 data=(
                     "Choose only advertised shop URLs"
                     if outside_directory
-                    else "That shop already failed at an equal or higher cap; "
-                    + "choose another advertised shop or a strictly higher cap."
+                    else f"{failure} {revision}"
                 ),
             )
         if sum(entry.cap for entry in proposal.reservations) > self.budget:
