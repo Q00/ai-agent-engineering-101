@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import uuid
+import time
 from urllib.parse import urlparse
 import httpx
 
@@ -11,9 +12,10 @@ class ProtocolError(RuntimeError):
 
 
 class A2AClient:
-    def __init__(self, base_url, trace, timeout=60):
+    def __init__(self, base_url, trace, timeout=120, deadline=None):
         self.base = base_url.rstrip("/")
         self.trace = trace
+        self.deadline = deadline
         self.http = httpx.Client(headers={"A2A-Version": "1.0"}, timeout=timeout, trust_env=False)
         response = self.http.get(self.base + "/.well-known/agent-card.json")
         response.raise_for_status()
@@ -31,7 +33,10 @@ class A2AClient:
     def rpc(self, method, params):
         request = {"jsonrpc": "2.0", "id": uuid.uuid4().hex, "method": method, "params": params}
         self.trace.write("rpc_request", endpoint=self.url, request=request, version="1.0")
-        response = self.http.post(self.url, json=request)
+        remaining = self.deadline - time.monotonic() if self.deadline else 120
+        if remaining <= 0:
+            raise TimeoutError("A2A request deadline reached")
+        response = self.http.post(self.url, json=request, timeout=min(120, remaining))
         response.raise_for_status()
         body = response.json()
         self.trace.write("rpc_response", response=body)

@@ -268,11 +268,12 @@ class Ledger:
         except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
             raise EvidenceError("cannot restore persisted ledger") from exc
 
-    def reserve(self, item_key: str, price: float, purchase_id: str) -> dict[str, Any]:
+    def reserve(self, item_key: str, price: float, purchase_id: str, *, expected_item: str | None = None) -> dict[str, Any]:
         """Atomically reserve one item and funds before sending acceptance."""
         item_key = self._identifier(item_key, "item_key")
         purchase_id = self._identifier(purchase_id, "purchase_id")
         amount = numeric_price(price)
+        expected_item = self._identifier(expected_item or item_key, "expected_item")
         with self._lock:
             if purchase_id in self._purchases:
                 raise EvidenceError("purchase_id has already been used")
@@ -284,6 +285,7 @@ class Ledger:
                 raise EvidenceError("reservation exceeds the remaining total budget")
             proposed = copy.deepcopy(self._purchases)
             record = {"purchase_id": purchase_id, "item_key": item_key,
+                      "expected_item": expected_item,
                       "price": amount, "state": "reserved", "committed": False,
                       "receipt": None, "disputed_reasons": []}
             proposed[purchase_id] = record
@@ -299,7 +301,7 @@ class Ledger:
                 return copy.deepcopy(record)
             if record["state"] != "reserved":
                 raise EvidenceError("only an active reservation can be committed")
-            issues = verify_receipt(received, item=record["item_key"],
+            issues = verify_receipt(received, item=record.get("expected_item", record["item_key"]),
                                     budget=record["price"], expected_price=record["price"])
             if issues:
                 raise EvidenceError("receipt verification failed: " + ", ".join(issues))

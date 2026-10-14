@@ -21,11 +21,12 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
     item_key = item_key or item
     harness = Harness("buyer", trace)
     deadline = time.monotonic() + timeout
-    client = A2AClient(url, trace)
+    client = A2AClient(url, trace, deadline=deadline)
     purchase_id = uuid.uuid4().hex
     reserved = False
     history, expected_price = [], None
     task_id = None
+    expected_item, quoted_item = item, None
     try:
         task = client.send(f"I want to buy a {item}")
         task_id = task.get("id")
@@ -39,7 +40,7 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
             state = task.get("status", {}).get("state")
             if state == "TASK_STATE_COMPLETED":
                 receipt = receipt_from(task)
-                issues = verify_receipt(receipt, item=item, budget=budget,
+                issues = verify_receipt(receipt, item=expected_item, budget=budget,
                                         expected_price=expected_price, task_id=task_id)
                 trace.write("receipt_checked", issues=issues, receipt=receipt)
                 if issues:
@@ -62,8 +63,18 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
             text, metadata = task_text(task), task_metadata(task)
             flags = inspect_untrusted(text)
             ask = metadata.get("ask")
+            remote_item = metadata.get("itemId")
+            if remote_item is not None:
+                if not isinstance(remote_item, str) or not remote_item:
+                    raise EvidenceError("Invalid quoted item ID")
+                if quoted_item is not None and remote_item != quoted_item:
+                    raise EvidenceError("Seller changed the quoted product during negotiation")
+                quoted_item = remote_item
+                if item in ("lamp", "chair", "bookshelf") and quoted_item != item:
+                    raise EvidenceError("Seller substituted a different explicitly requested catalog item")
+                expected_item = quoted_item
             # A2A does not define price semantics. Our harness interprets text if no structured quote exists.
-            context = {"role": "buyer", "item": item, "budget": budget,
+            context = {"role": "buyer", "item": expected_item, "request": item, "budget": budget,
                        "remote_message": text, "remote_metadata": metadata, "ask": ask,
                        "round": round_number, "task_id": task_id, "untrusted_flags": flags,
                        "flags": flags,
@@ -84,7 +95,7 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                 reserved = False
             purchase_id = uuid.uuid4().hex
             # Reserve before every offer: even a counteroffer can be accepted immediately by a seller.
-            ledger.reserve(item_key, price, purchase_id)
+            ledger.reserve(item_key, price, purchase_id, expected_item=expected_item)
             reserved, expected_price = True, price
             history.append({"seller": text, "metadata": metadata, "action": decision["action"], "price": price})
             task = client.send(f"{price:g}", task_id)
