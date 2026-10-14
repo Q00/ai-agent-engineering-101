@@ -88,3 +88,90 @@ exactly 230 and walked (`kit seller saw: offers [175, 215, 225, 230], deals [], 
    first patch for it never applied and I did not notice until I checked a challenge-2 receipt. Challenge 1
    and 2 were rerun on the fixed catalog; the old runs are in `logs/attempts/*-buggy-catalog`. The generator
    now asserts that every number in a description is one of the item's attributes.
+
+## 4. What A2A fixed, and what the two sides still had to agree on
+
+A2A fixed everything about *finding and addressing* the other agent and about *whose turn it is*. The buyer
+finds the endpoint, binding and version on `/.well-known/agent-card.json`; a negotiation is one task and
+every follow-up names its `taskId`; `TASK_STATE_INPUT_REQUIRED` means "your move", `COMPLETED`, `REJECTED`
+and `CANCELED` end it, and the SDK refuses a message to a finished task (`-32004 ... is in terminal state`)
+without a line of my code; walking away is `CancelTask`; the result is an artifact with a typed data Part. My
+buyer traded with the kit's seller and the kit's buyer with my seller without either knowing what runs
+inside. What A2A did **not** settle is the business language inside the text parts. How a price is written
+is a convention ("the last number of the message"), and it is fragile enough that my seller throws away the
+model's whole sentence when it contains a digit (`A4` included). I added `metadata.ask`, but only my own
+buyer reads it. There is no "accept" in the protocol: the buyer accepts by sending the ask back as a bare
+number, and the seller accepts by completing the task with a receipt whose `price` field is again only
+agreed on in the README. Nothing says what a task's history is worth either: when the buyer came back to
+Oak Yard for the bookshelf in a new task, the shop had no memory of the old one (it had come down to 181) and
+opened at 254 again; the buyer paid 200. Currency, units, item identity (my seller puts `BX-009` into
+free text) and the fact that a JSON number becomes a double (`150` arrives as `150.0`) were all outside A2A.
+
+## 5. Challenges 1 and 2
+
+### Challenge 1: a 3024-item catalog (`catalogs/large.json`, 958 KB; `logs/challenge-1/`)
+
+The harness never sees the catalog. On the first message it gets the category list with attribute names
+(about 2.2 KB) and turns the buyer's description into a search plan; plain code (category filter, numeric
+constraints, BM25 in `catalog.py`) returns at most 10 candidates; a second call picks one of them and opens
+the price (prompt at most 3.4 KB, the reserves of the candidates included). Each negotiation round is a
+0.7 KB prompt with only the chosen item. The largest prompt is about 1/280 of the catalog. From `seller.log`:
+
+```
+search category='bookshelf' keywords=['wooden', 'books'] constraints={"wooden": true, "books": {"min": 35, "max": 45}, "height_cm": {"max": 75}} -> 1 hits
+search category='mirror' keywords=['full length', 'metal frame', 'metal'] constraints={"material": "metal", "height_cm": {"min": 140, "max": 200}, "wooden": false} -> 0 hits
+relaxed search (no constraints) -> 10 hits
+```
+
+"not taller than my desk" became `height_cm <= 75` on its own. The mirror shows the weak spot: the model
+invented `material: "metal"` (the catalog says steel, aluminum or brass), the filter found nothing, and only
+the fallback (category + text search) saved it. It happened in both runs. A checker that does not trust the
+seller reads the catalog and checks each pick with a predicate per request (`run.log`):
+`SUMMARY 8 requests: right item 8, reserve held 8, deals 8`. The run on the buggy catalog
+(`logs/attempts/challenge-1-buggy-catalog`) was 8 / 8 / 7; the missing deal was a seller that rejected
+the first offer (112 on an ask of 225) outright.
+
+### Challenge 2: 20 shops, a shopping list, one budget (`logs/challenge-2/`)
+
+20 copies of `seller.py` (`shops/shop-01..20.json`, 3 to 7 categories each, price factor 0.8 to 1.4 of the
+catalog reserve) on ports 9501-9520; `directory.json` holds their URLs. `shop_buyer.py` reads the 20 cards
+and squeezes each into one line (`S14 | Oak Yard | Furniture shop with discount prices. Sells ... | tags:
+...`, 3958 chars for all 20). One planner call gets the list, the money left and the directory, and returns
+per entry up to 3 shops and a cap; the code scales the caps down if they exceed the money left. Then every
+entry negotiates in its own thread at the same time (`buyer.negotiate`, the same loop as the trade test),
+one shop at a time, stopping at the first deal. Two code rules make the pass conditions hold whatever the
+model says: an entry's thread stops after one deal (nothing bought twice), and every deal is at or below
+its cap with the caps summing to at most the money left (total within budget).
+
+The state the buyer carries is a ledger per entry: status, shop, price, and notes. The negotiation prompt
+of one shop never contains another shop's talk (22 negotiation prompts, at most 951 chars each). When an
+entry is still open after a pass, the planner is asked again and sees one line per finished negotiation,
+which holds that shop's whole `ask -> offer` history. My first version passed it the last 8 per-round lines
+instead, and in that run (`logs/attempts/challenge-2-last8-truncation/buyer.log`) the replan prompt for the
+bookshelf showed Copper Market and Harbor Depot but not Oak Yard, the first shop tried, so the planner chose
+Oak Yard again without knowing what had happened there. With one line per shop (budget 650, `buyer.log`):
+
+```
+[plan 1] money left 650; plan {"1": {"shops": ["S14", "S20", "S12"], "cap": 120}, ...
+What happened so far (one line per shop negotiated with):
+entry 1: open
+  - Oak Yard: WALKED at ask 181 after offers ['265 -> 100', '230 -> 110', '195 -> 120'] (...)
+  - Copper Market: WALKED at ask 185 after offers ['225 -> 110', '200 -> 120'] (...)
+  - Oak Depot: ended TASK_STATE_REJECTED after offers ['380 -> 105', '320 -> 115']
+entry 2: bought at S18 for 35.0
+...
+[plan 2] money left 241.0; plan {"1": {"shops": ["S14", "S20", "S05"], "cap": 200}}
+[entry1] BOUGHT at S14 for 200.0
+RESULT bought 5/5, total 609.0 of budget 650, PASS; harness calls 24, 549 s
+```
+
+The checker counts deals in the **shops'** logs, not in the buyer's (`check.txt`): 5 deals, every entry
+bought, none twice, 609 <= 650. Runs: budget 800 on the buggy catalog (5/5, 580, no replan), budget 800 on
+the fixed catalog (5/5, 557, one replan, the truncation run), budget 650 after the fix (5/5, 609, one
+replan). The planner's first cap for the bookshelf was too low every time (150, 120); the replan with the
+walk-away lines is what fixed it each time.
+
+Not done: challenge 3 (long messages, hostile lines), the deployed seller, and trading with a classmate.
+
+The code, the runs and this report were produced by Claude Code (Opus 5.5) at my request; the commit history
+shows each step, including the failed ones.
