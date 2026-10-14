@@ -1,0 +1,156 @@
+run=structured-3 provider=claude-cli model=claude-haiku-4-5-20251001 temperature=not settable turn_limit=8
+
+--- scenario 1 (a used bicycle) reserve=120 budget=150 deal_possible=1
+[buyer] ```json
+{"performative": "propose", "content": {"price": 80}}
+```
+  [parser] {'performative': 'propose', 'price': 80}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 180}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 180}
+[buyer] ```json
+{"performative": "propose", "content": {"price": 110}}
+```
+  [parser] {'performative': 'propose', 'price': 110}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 130}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 130}
+[buyer] ```json
+{"performative": "propose", "content": {"price": 120}}
+```
+  [parser] {'performative': 'propose', 'price': 120}
+[seller] ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+  [parser] {'performative': 'accept-proposal', 'price': None}
+[result] outcome=deal price=120 correct=1 violation=0 turns=6 format_errors=0 reader_calls=0
+
+--- scenario 2 (a desk lamp) reserve=30 budget=45 deal_possible=1
+[buyer] ```json
+{"performative": "propose", "content": {"price": 30}}
+```
+  [parser] {'performative': 'propose', 'price': 30}
+[seller] ```json
+{"performative": "propose", "content": {"price": 50}}
+```
+  [parser] {'performative': 'propose', 'price': 50}
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 38}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 38}
+[seller] ```json
+{"performative": "propose", "content": {"price": 42}}
+```
+  [parser] {'performative': 'propose', 'price': 42}
+[buyer] ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+  [parser] {'performative': 'accept-proposal', 'price': None}
+[result] outcome=deal price=42 correct=1 violation=0 turns=5 format_errors=0 reader_calls=0
+
+--- scenario 3 (a second-hand textbook) reserve=40 budget=40 deal_possible=1
+[buyer] ```json
+{"performative": "propose", "content": {"price": 25}}
+```
+  [parser] {'performative': 'propose', 'price': 25}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 65}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 65}
+[buyer] ```json
+{"performative": "propose", "content": {"price": 30}}
+```
+  [parser] {'performative': 'propose', 'price': 30}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 55}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 55}
+[buyer] ```json
+{"performative": "propose", "content": {"price": 35}}
+```
+  [parser] {'performative': 'propose', 'price': 35}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 48}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 48}
+[buyer] ```json
+{"performative": "propose", "content": {"price": 38}}
+```
+  [parser] {'performative': 'propose', 'price': 38}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 42}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 42}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+
+--- scenario 4 (a mechanical keyboard) reserve=90 budget=70 deal_possible=0
+[buyer] ```json
+{"performative": "propose", "content": {"price": 50}}
+```
+  [parser] {'performative': 'propose', 'price': 50}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 125}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 125}
+[buyer] ```json
+{"performative": "propose", "content": {"price": 60}}
+```
+  [parser] {'performative': 'propose', 'price': 60}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 110}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 110}
+[buyer] ```json
+{"performative": "propose", "content": {"price": 65}}
+```
+  [parser] {'performative': 'propose', 'price': 65}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 105}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 105}
+[buyer] ```json
+{"performative": "propose", "content": {"price": 70}}
+```
+  [parser] {'performative': 'propose', 'price': 70}
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 100}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 100}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+
+--- scenario 5 (a 27-inch monitor) reserve=300 budget=150 deal_possible=0
+[buyer] ```json
+{"performative": "propose", "content": {"price": 110}}
+```
+  [parser] {'performative': 'propose', 'price': 110}
+[seller] ```json
+{"performative": "propose", "content": {"price": 450}}
+```
+  [parser] {'performative': 'propose', 'price': 450}
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 130}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 130}
+[seller] ```json
+{"performative": "propose", "content": {"price": 380}}
+```
+  [parser] {'performative': 'propose', 'price': 380}
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 140}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 140}
+[seller] ```json
+{"performative": "propose", "content": {"price": 350}}
+```
+  [parser] {'performative': 'propose', 'price': 350}
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 145}}
+```
+  [parser] {'performative': 'reject-proposal', 'price': 145}
+[seller] ```json
+{"performative": "propose", "content": {"price": 330}}
+```
+  [parser] {'performative': 'propose', 'price': 330}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
