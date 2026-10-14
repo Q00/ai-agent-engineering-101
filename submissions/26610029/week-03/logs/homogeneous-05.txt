@@ -1,0 +1,31 @@
+[announce] contract 1: 주문 #1001 (노트북 2개, 단가 89만원, 세율 10%)의 총액을 계산하라.
+  [bid] A: bid=True confidence=85 reason='General problem solving covers basic arithmetic calculation tasks like computing order total with quantity, unit price, and tax.'
+  [bid] B: bid=True confidence=85 reason='General problem solving can handle this straightforward arithmetic calculation task for order total (2 notebooks × 890,000 won + 10% tax).'
+  [bid] C: bid=True confidence=95 reason='This is a straightforward calculation task (2 notebooks × 890,000 won + 10% tax) that falls under general problem solving.'
+  [award] C (gold A)
+[announce] contract 2: 주문 #1002 (마우스 5개, 단가 3만원, 세율 8%)의 총액을 계산하라.
+  [bid] A: bid=True confidence=85 reason='General problem solving covers basic arithmetic calculation of order total with quantity, unit price, and tax.'
+  [bid] B: bid=True confidence=85 reason='General problem solving covers basic arithmetic calculation of order total with quantity, unit price, and tax rate.'
+  [bid] C: bid=True confidence=85 reason='General problem solving can handle straightforward arithmetic calculation for order total with quantity, unit price, and tax rate.'
+  [award] A (gold A)
+[announce] contract 3: 주문 #1001의 배송 확인 이메일 초안을 작성하라.
+  [bid] A: bid=True confidence=75 reason='General problem solving can handle drafting a shipping confirmation email for order #1001 by applying standard business communication principles.'
+  [bid] B: bid=True confidence=75 reason='General problem solving can address email drafting tasks including order confirmation emails'
+  [bid] C: bid=True confidence=75 reason='General problem solving can handle drafting a shipping confirmation email for order #1001, which requires organizing information, professional writing, and understanding standard business communication formats'
+  [award] A (gold B)
+[announce] contract 4: 주문 #1002가 재고 부족으로 지연될 때 고객에게 보낼 사과 이메일을 작성하라.
+  [bid] A: bid=True confidence=85 reason='General problem solving covers composing professional apology emails for customer service situations like delayed orders due to inventory shortage.'
+  [bid] B: bid=True confidence=75 reason='General problem solving covers writing professional apology emails for order delays due to inventory issues.'
+  [bid] C: bid=True confidence=75 reason='General problem solving covers writing professional apology emails for order delays due to inventory issues.'
+  [award] A (gold B)
+[announce] contract 5: 주문 #1001 처리 후 재고 수량을 차감하는 로직을 작성하라.
+  [bid] A: bid=True confidence=75 reason='General problem solving can handle order processing and inventory logic design, though domain-specific expertise would be preferable'
+  [bid] B: bid=True confidence=75 reason='General problem solving can address order processing and inventory management logic design'
+  [bid] C: bid=True confidence=75 reason='General problem solving can address order processing and inventory management logic implementation, a standard business process task.'
+  [award] A (gold C)
+[announce] contract 6: 재고 DB에서 품절 임박 상품을 찾는 쿼리 로직을 작성하라.
+  [bid] A: bid=True confidence=85 reason='General problem solving covers database query logic design for identifying low-stock products, which is a standard inventory management problem'
+  [bid] B: bid=True confidence=85 reason='Writing query logic to find out-of-stock products from inventory DB is a general problem-solving task within my skill scope'
+  [bid] C: bid=True confidence=75 reason='General problem solving covers database query logic design for identifying low-stock products in inventory systems'
+  [award] A (gold C)
+[result] run=5 condition=homogeneous -> [5, 'homogeneous', 6, 1, 42, 0, 5, '']
