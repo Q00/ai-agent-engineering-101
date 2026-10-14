@@ -1,0 +1,67 @@
+=== negotiation run: condition=tagged run=6 model=haiku temperature=not settable (see REPORT.md) ===
+--- scenario s1: a used bicycle (reserve=80, budget=120) ---
+[1] buyer: (propose) I'm interested in your bicycle—I'd like to start at $70 for it.
+  [protocol] read: performative=propose price=70
+[2] seller: (propose) That's too low—I'm looking to get $130 for it, but I'm open to negotiation.
+  [protocol] read: performative=propose price=130
+[3] buyer: (reject-proposal) That's higher than I can go right now, but I appreciate you being open to negotiation. How about $90?
+  [protocol] read: performative=reject-proposal price=None
+[4] seller: (propose) I can come down to $110—that's a fair middle ground between our positions.
+  [protocol] read: performative=propose price=110
+[5] buyer: (accept-proposal) I'll take it at $110—that works for me.
+  [protocol] read: performative=accept-proposal price=None
+  [episode] outcome=deal price=110 correct=1 violation=0 tokens=2982 calls=8
+--- scenario s2: a vintage guitar (reserve=300, budget=280) ---
+[1] buyer: (propose) I'd like to start at $150 for this vintage guitar. It's a fair opening price that leaves room for us to work together.
+  [protocol] read: performative=propose price=150
+[2] seller: (reject-proposal) That's well below what this vintage guitar is worth — I'm looking for something much closer to $400 to start the conversation.
+  [protocol] read: performative=reject-proposal price=None
+[3] buyer: (propose) I appreciate that—I can see this is a quality instrument, so I'll move to $200, which is a significant increase from my opening bid and reflects the guitar's value.
+  [protocol] read: performative=propose price=200
+[4] seller: (reject-proposal) I appreciate you moving up, but $200 is still significantly undervaluing this instrument. I'd be willing to come down to $350 to reflect the quality and condition of this vintage guitar.
+  [protocol] read: performative=reject-proposal price=None
+[5] buyer: (propose) I understand this is a quality piece, and I appreciate you coming down to $350—that shows good faith. I can move to $245, which is a substantial increase from my previous offer and reflects the craftsmanship here.
+  [protocol] read: performative=propose price=245
+[6] seller: (reject-proposal) I appreciate your movement, but $245 still doesn't reflect the true value of this instrument. I can come down to $310 — that's a $40 reduction from my last position and represents a fair meeting point.
+  [protocol] read: performative=reject-proposal price=None
+[7] buyer: (propose) I can move to $270—that's another $25 increase showing serious commitment on my part, and it gets us much closer to a fair middle ground. I hope this demonstrates I'm genuinely interested in making this work.
+  [protocol] read: performative=propose price=270
+[8] seller: (propose) I can come down to $305—that's a genuine compromise that honors the quality of this guitar while meeting you much closer to where you are.
+  [protocol] read: performative=propose price=305
+  [episode] outcome=open price=None correct=1 violation=0 tokens=4151 calls=13
+--- scenario s3: an antique lamp (reserve=150, budget=155) ---
+[1] buyer: (propose) I'm interested in this antique lamp—would you consider $75 for it?
+  [protocol] read: performative=propose price=75
+[2] seller: (reject-proposal) That's far too low for a quality antique lamp like this. I'm looking for $250 or more.
+  [protocol] read: performative=reject-proposal price=None
+[3] buyer: (reject-proposal) That's quite a jump from my initial offer, and it's more than I can justify for this piece. I'd like to counter at $110—that reflects its value while staying reasonable for both of us.
+  [protocol] read: performative=reject-proposal price=None
+[4] seller: (propose) I appreciate you coming up, but $110 still falls short of what this lamp is worth. I can come down to $185—it's a genuine antique in excellent condition.
+  [protocol] read: performative=propose price=185
+[5] buyer: (reject-proposal) I appreciate you coming down, but $185 is still beyond what I can spend on this lamp. Let me meet you halfway with $135—that's a substantial move from my previous offer and reflects a fair compromise.
+  [protocol] read: performative=reject-proposal price=None
+[6] seller: (propose) I appreciate your willingness to move, but $135 is still below what I need for this piece. How about $170—that's a meaningful reduction from my previous ask and gets us much closer to fair value for both of us.
+  [protocol] read: performative=propose price=170
+[7] buyer: (propose) I can offer $148 for the lamp—that's a meaningful increase from my previous bid and gets us much closer to agreement.
+  [protocol] read: performative=propose price=148
+[8] seller: (propose) I can meet you at $150—that's my genuine bottom line, and I'm being transparent that this represents the limit of what I can accept for this lamp.
+  [protocol] read: performative=propose price=150
+  [episode] outcome=open price=None correct=0 violation=0 tokens=6358 calls=13
+--- scenario s4: a laptop (reserve=500, budget=350) ---
+[1] buyer: (propose) I'm interested in that laptop and would like to offer $200 for it. Is that something we can work with?
+  [protocol] read: performative=propose price=200
+[2] seller: (reject-proposal) That's quite a bit lower than what I'm looking for. I'd be willing to sell this laptop for $750—that's a fair price given its condition and specs.
+  [protocol] read: performative=reject-proposal price=None
+[3] buyer: (reject-proposal) $750 is way above what I can spend on this. I can go up to $280 though—how does that sound?
+  [protocol] read: performative=reject-proposal price=None
+[4] seller: (reject-proposal) I appreciate the increase, but $280 is still too low for this laptop. I'd be willing to come down to $600—that's a significant discount from my initial asking price and reflects a fair middle ground.
+  [protocol] read: performative=reject-proposal price=None
+[5] buyer: (propose) I appreciate you coming down to $600, but that's still beyond my budget. I can offer $320—that's a meaningful increase from my previous offer and shows I'm seriously interested in making a deal here.
+  [protocol] read: performative=propose price=320
+[6] seller: (reject-proposal) I appreciate your willingness to increase the offer, but $320 is still well below what I need to get for this laptop. How about $550—that's a substantial drop from my previous asking and shows I'm committed to finding a price that works for both of us.
+  [protocol] read: performative=reject-proposal price=None
+[7] buyer: (reject-proposal) $550 is still more than I'm comfortable spending. Let me increase my offer to $340—I'm moving significantly from my previous position and want to show I'm genuinely trying to meet you in the middle.
+  [protocol] read: performative=reject-proposal price=None
+[8] seller: (reject-proposal) I see you're making progress, but $340 is still too far from what I need. I'll come down to $520—that's a significant reduction from my previous ask and puts us much closer to a fair deal.
+  [protocol] read: performative=reject-proposal price=None
+  [episode] outcome=open price=None correct=1 violation=0 tokens=3317 calls=10
