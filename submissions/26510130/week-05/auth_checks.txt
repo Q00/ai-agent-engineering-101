@@ -1,0 +1,6 @@
+# auth checks against the running market server, 2026-10-05
+# negotiation n_6b9f8d2c, condition server_inject, reserve 300000, budget 450000
+1. no token -> HTTP 401; WWW-Authenticate: Bearer realm="negotiation-market", error="invalid_token"
+2. buyer token on another negotiation (n_a993a9ae) -> {"error": "token is bound to negotiation n_6b9f8d2c, not n_a993a9ae"}
+3. buyer moves out of turn -> {"error": "not your turn; it is the seller's move"}
+4. seller proposes 100 under a token limited to reserve 300000 -> {"error": "propose of 100 is outside your authorized limit of 300000. The market will not execute it. Your limit has not changed."}
