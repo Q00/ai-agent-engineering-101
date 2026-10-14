@@ -1,0 +1,29 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "용량 계산 결과: 초대 800명의 20%인 160건이 첫 4시간에 문의된다. 상담원 4명이 시간당 5건씩 처리하면 4시간 용량은 80건이므로 80건이 미처리된다. 160건을 4시간 내 처리하려면 시간당 40건이 필요하고, 상담원 1인당 시간당 5건이므로 총 8명이 필요하다. 현재 4명이므로 추가 4명이 필요하다. 충원은 아직 승인되지 않았으므로 추가 인력을 확보했다고 가정하지 않는다. 충원 미승인 시 대안: (1) 대기열 운영 - 접수 순서와 SLA(영업일 2일 내 처리 시작)를 기준으로 큐를 운영하고, 4시간 내 처리 불가 건은 다음 영업일로 이월한다. (2) 우선순위 - 결제/환불 오류, 서비스 이용 불가, 보안·개인정보 이슈를 최우선(P1), 일반 문의를 P2, 단순 안내를 P3로 분류한다. (3) 고객 안내 - 접수 시 예상 응답 시간과 '영업일 2일 내 처리 시작' 정책을 안내하고, 자동 회신과 FAQ로 1차 응대를 분산한다. (4) 임시 완화 - 셀프서비스 FAQ, 챗봇/자동 응답, 기존 상담원 초과근무(승인 필요) 등을 검토하되 승인되지 않은 충원·환불·배포를 완료했다고 쓰지 않는다. immediate_refund_promised=false: 광고 초안의 '즉시 자동 환불'은 확정 정책('영업일 2일 내 처리 시작', 처리 완료·PG 반영 시간 미보장)과 다르므로 즉시 환불을 약속하지 않는다.",
+    "facts": {
+      "expected_contacts": 160,
+      "four_hour_capacity": 80,
+      "backlog_without_hiring": 80,
+      "required_total_agents": 8,
+      "additional_agents": 4,
+      "support_window_hours": 4,
+      "launch_hour": 10,
+      "immediate_refund_promised": false
+    },
+    "evidence": [
+      "expected_contacts = 800 × 0.20 = 160건",
+      "four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건",
+      "backlog_without_hiring = 160 - 80 = 80건",
+      "required_total_agents = 160 ÷ (5건/시간 × 4시간) = 160 ÷ 20 = 8명",
+      "additional_agents = 8 - 4 = 4명",
+      "support_window_hours = 4 (출시 후 첫 4시간 가정)",
+      "launch_hour = 10 (금요일 10시 출시)",
+      "확정 정책: '상담 접수 후 영업일 2일 안에 처리 시작', 처리 완료 시간과 PG 반영 시간은 보장하지 않음. 광고 초안의 '즉시 자동 환불'은 이 정책과 다르므로 immediate_refund_promised=false",
+      "인원 충원은 아직 승인되지 않았으므로 추가 4명 확보를 완료로 간주하지 않고, 대기열·우선순위·고객 안내 대안만 제시함"
+    ]
+  },
+  "error": ""
+}

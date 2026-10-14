@@ -1,0 +1,34 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "'유적의 열두 밤' 개발 착수 자료(설계 제안, 실제 구현/테스트 미수행).\n\n[1] 게임 기획서(규칙↔재미 가설)\n- 보드/턴: 6×6 격자, 최대 12턴. 가설: 좁은 격자+짧은 턴 수가 '매 턴이 유의미한 선택'이라는 긴장감을 만든다.\n- 핵심 루프: 탐험(이동/탐색) → 전투(조우 시) → 보상(선택) → 탈출(출구 도달). 가설: 3단 선택 리듬이 반복 피로를 낮추고 위험-보상 판단을 유도한다.\n- 승리: 12턴 이내 출구 도달. 패배: 체력 0 또는 12턴 소진 시 미탈출. 가설: 이중 패배 조건이 '더 깊이 갈까' 결정에 비용을 부여한다.\n- 난이도 곡선: 턴 경과에 따라 적 밀도/체력 상승, 보상 가치도 상승(위험-보상 동조). 가설: 후반 고위험 고보상이 탈출 타이밍 판단을 재미있게 만든다.\n- 전투: 턴제, 공격/방어/도주 선택, 명중·피해는 주입된 Rng로 결정. 가설: 단순 3택이 학습 비용을 낮춘다.\n- 보상: 전투/탐험 후 2~3개 중 1택(체력 회복, 공격력, 이동/탐지 등). 가설: 빌드 차이가 매 판 다양성을 만든다.\n- 튜토리얼: 첫 판 고정 seed로 이동→전투→보상→탈출 1회 안내. 접근성: 키보드 전용 조작, 색 대비, 텍스트 로그, 애니메이션 감소 옵션.\n\n[2] 디렉터리 트리·모듈 책임·의존 방향\nsrc/domain(순수 규칙: state, turn, combat, map, rewards) / src/app(유스케이스: newGame, applyCommand, save/load) / src/render(Canvas 렌더, 입력→Command 변환) / src/persistence(SaveCodec 구현) / src/rng(주입형 Rng 구현) / tests(단위·재현·스키마). 의존 방향: render→app→domain, persistence/rng는 인터페이스로 domain/app에 주입. domain은 순수(부수효과·시각·실난수 금지).\n\n[3] 타입/시그니처(설계 제안, 짧은 조각)\ntype Rng = { nextInt(maxExclusive:number):number };\ntype GameState = { seed:number; turn:number; board:{w:6;h:6}; player:{x:number;y:number;hp:number}; enemies:Enemy[]; phase:'explore'|'combat'|'reward'|'won'|'lost'; rngCursor:number };\ntype Command = {t:'move';dx:number;dy:number}|{t:'attack'}|{t:'defend'}|{t:'flee'}|{t:'chooseReward';index:number};\ntype Event = {t:'moved'|'combat'|'reward'|'won'|'lost';...};\ninterface SaveCodec { encode(s:GameState):string; decode(v:string):GameState; version:number }\n턴 처리 의사코드: applyCommand(state,cmd,rng): 입력 검증→phase별 규칙 적용→rng 소비(결정적 순서)→이벤트 생성→턴 증가→승패 판정. 같은 seed+같은 입력 순서→동일 결과.\n\n[4] 규칙→모듈→테스트 대응\n이동/턴→domain/turn→tests/turn.spec; seed 맵→domain/map+rng→tests/map.determinism; 전투→domain/combat→tests/combat.spec; 저장/복원→persistence+app→tests/save.roundtrip; 화면→render→tests/render.smoke(수동); 자동 테스트→tests/*; 접근성→render/input→수동 체크리스트.\n\n[5] 저장 스키마·재현 테스트·수용 기준\n스키마 버전: saveVersion=1, 마이그레이션 훅. 재현 테스트: (a) 동일 seed+입력 시퀀스→동일 최종 state 해시, (b) 저장→복원 후 이어서 진행한 결과가 미저장 진행과 동일. 수용 기준: 12턴 내 승/패 도달, 결정론 재현 통과, 오프라인 동작(네트워크 호출 0), 키보드만으로 전 루프 완주.\n\n[6] 일정·예산·제외 범위\n개발 2명×20h×4주=160h, QA 1명×10h×4주=40h. 기본 범위 합계=24+24+32+24+20+24+12=160h → 개발 예산과 정확히 일치(여유 0). 협동 포함=160+80=240h>160h → 초과. 제외: 서버·로그인·결제·온라인 협동.\n\n[모순·미확인] 기본 범위가 예산과 정확히 일치해 버퍼 0(일정 리스크). QA 40h는 자동 테스트 24h와 별개로 수동/접근성 검증에 배분 필요하나 세부 배분 미확정. 렌더 스모크·접근성은 자동화 미검증(수동). 실제 구현·실행·테스트는 수행하지 않았고 본 문서는 설계 제안이다.",
+    "facts": {
+      "board_width": 6,
+      "board_height": 6,
+      "max_turns": 12,
+      "developer_hours": 160,
+      "qa_hours": 40,
+      "core_scope_hours": 160,
+      "with_coop_hours": 240,
+      "coop_fits_budget": false,
+      "seeded_replay_required": true,
+      "offline_required": true,
+      "save_schema_version": 1,
+      "core_scope_fits_budget": true,
+      "budget_buffer_hours": 0,
+      "implementation_performed": false,
+      "tests_executed": false
+    },
+    "evidence": [
+      "개발 예산: 2명×20h×4주=160h; QA 예산: 1명×10h×4주=40h.",
+      "기본 범위 합계: 24(이동/턴)+24(seed 맵)+32(전투)+24(저장/복원)+20(화면)+24(자동 테스트)+12(접근성)=160h.",
+      "160h(기본)=160h(개발 예산) → coop_fits_budget과 별개로 core_scope_fits_budget=true, 여유 0.",
+      "협동 포함: 160+80=240h > 160h → coop_fits_budget=false. 병렬화해도 사람 시간 합계 불변(자료 명시).",
+      "결정론 요구: 같은 seed+같은 입력 순서→동일 결과, 저장/복원 재현 → seeded_replay_required=true.",
+      "오프라인 요구: 서버·로그인·결제·온라인 협동 기본 범위 제외 → offline_required=true.",
+      "본 응답은 설계 제안이며 코드 실행·게임 구현·테스트는 수행하지 않음(implementation_performed=false, tests_executed=false)."
+    ]
+  },
+  "error": ""
+}

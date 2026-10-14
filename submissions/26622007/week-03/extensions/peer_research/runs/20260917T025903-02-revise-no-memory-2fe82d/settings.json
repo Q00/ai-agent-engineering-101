@@ -1,0 +1,74 @@
+{
+  "git_commit": "e67ab798c07a802f076c22e7a191cca8c5fbcc14",
+  "case": "02-revise",
+  "case_sha": "5daec318e3e514fbb6a97cfe228a9daf11eedfaaaa8520ccd529eebe9847a0c5",
+  "config": {
+    "max_depth": 2,
+    "max_tasks": 10,
+    "max_steps": 3,
+    "max_calls": 60,
+    "max_parallel": 3,
+    "memory_top_k": 3,
+    "memory_ttl_days": 7,
+    "scope": "rag-vector-adoption",
+    "transport": {
+      "model": "deepseek/deepseek-v4.1-flash",
+      "temperature": 0,
+      "max_tokens": 3800,
+      "reasoning": {
+        "enabled": false
+      },
+      "provider": {
+        "allow_fallbacks": true,
+        "require_parameters": true,
+        "max_price": {
+          "prompt": 0.3,
+          "completion": 1.2
+        }
+      },
+      "timeout_seconds": 45,
+      "response_deadline_seconds": 90,
+      "retry_delay_seconds": 1,
+      "max_attempts": 2
+    },
+    "source_fetch": {
+      "max_parallel": 3,
+      "max_requests": 20,
+      "timeout_seconds": 12,
+      "max_bytes": 2000000
+    },
+    "search": {
+      "engine": "exa",
+      "max_results": 3,
+      "max_total_results": 6,
+      "max_uses": 2,
+      "max_characters": 2200,
+      "allowed_domains": [
+        "github.com",
+        "postgresql.org",
+        "qdrant.tech"
+      ]
+    }
+  },
+  "requester": "C",
+  "memory_enabled": false,
+  "memory_snapshot_sha": "ceb0bf40d708e8e976b4bd0d9230e165ee817c1e8ee6951d1f11853e0686a8bd",
+  "process_id": 71265,
+  "sources": {
+    "peer_research/cli.py": "93c377defeb339a9a35dca66855fc10d3697432ce211b8e87870bfd8bda62024",
+    "peer_research/common.py": "099a6355c803754bb6e417e7b646255d333e1470123fce141a922d0f28f2ed1b",
+    "peer_research/memory.py": "c5590cb8151f8f85e031c0993b90d938f8469ce8d11f5b4cf117d48b4b54bbfd",
+    "peer_research/probe_web.py": "7549af0e99e64e4baa2afbfea09663cc3198dbac4039b92502c807789f054c43",
+    "peer_research/research_audit.py": "09ae2c58558b75a6563dab5b9135e980d9e9d289d81e28da301e856da31aa613",
+    "peer_research/research_model.py": "fcb1ad1c103bfff1433651d73a57ec5eade07f68ab17ef79af5c53457162b120",
+    "peer_research/source_reader.py": "8de2164ea801cbc08c4568a66acda7df2deede6f3451b6f3cf017547522ae840",
+    "peer_research/test_research.py": "ffcd2434fc8c1668bc65d20a3800dd16a8a3f9be7c3587d5726270e799a97ac6",
+    "peer_research/web_transport.py": "ec4266f0a4e9bcb352c7c8e7773c75b97523aed5b6d5e7b57c787d83d645ec6c",
+    "peer_dag/audit.py": "4ee3128fb6adbc32bce7ffba0b9fe403994d95aae99966dca4f969e99fab16a2",
+    "peer_dag/cli.py": "e841e3906207645989498bfe42c5df26a5fe044bed516aa3f19679fb784383b4",
+    "peer_dag/core.py": "30be82201cc3172c0a25fa67ab92ec97077c65c2e01ff5ba517ed8c806359590",
+    "peer_dag/fixtures.py": "06928c693f9a16b24d82486a5d7dbba70846fce973349d07ca5e3ac0f19ad692",
+    "peer_dag/models.py": "cb9eebf5e11eb447d18dcf7a579628b2fc80814da1d63c2a36fa754cd416130a",
+    "peer_dag/test_peer_dag.py": "c86636e3c5f0ddee12368056b102dccb0559dd7f7640d8243150afffd8698928"
+  }
+}

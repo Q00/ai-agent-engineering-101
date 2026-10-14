@@ -1,0 +1,42 @@
+{
+  "status": "succeeded",
+  "worker": "B",
+  "artifact": {
+    "summary": "## 폐쇄망 환경 pgvector vs 자체 호스팅 Qdrant: 백업·복구·운영 부담 조사 (closed_net_backup_research)\n\n가정: 100만×1536차원, 30 tenant, 일 1% 갱신(약 1만 벡터/일), 기존 PostgreSQL 운영 인력 2명, **폐쇄망(external_saas_allowed=false)**, 인력 증원 불가. 내부 결정 ID **ADR-RAG-7429**, 기존 PostgreSQL 백업 책임 **플랫폼팀**(handoff_memory에서 확인). 실제 latency/복구 벤치마크는 수행하지 않았으므로 `measured_latency=not_measured`.\n\n### 1. 폐쇄망 설치·백업·복구 근거 표\n\n| 항목 | pgvector (PostgreSQL 확장) | 자체 호스팅 Qdrant |\n|---|---|---|\n| 폐쇄망 설치 | 확장 소스/패키지를 오프라인 반입해 `CREATE EXTENSION`; 기존 PostgreSQL에 통합되어 별도 프로세스 없음 | 컨테이너 이미지/바이너리를 오프라인 반입해 별도 stateful 서비스로 기동 필요 |\n| 백업 방식 | 파일시스템 백업+WAL 아카이빙(PITR), `pg_dump` 논리 덤프 보조 | 스냅샷 API/스냅샷 파일(공식 문서 근거 확보) |\n| PITR | 지원(전체 클러스터 단위, 부분집합 복원 불가) | 시점 복구(PITR) 개념 미지원, 스냅샷 시점 복원만 |\n| 복구 범위 | 클러스터 전체 복원 | 컬렉션/스냅샷 단위 복원 가능 |\n| 운영 주체 | 기존 플랫폼팀 체계 재사용 | 신규 백업 파이프라인·복구 훈련 별도 수립 필요 |\n| 인력 부담(2명) | 추가 도구 없음, 기존 런북 확장 | 신규 stateful 저장소 1개 추가 운영 |\n\n### 2. 운영 부담 정성 평가\n- **pgvector**: 기존 PostgreSQL 백업 체계(PITR+pg_dump)를 그대로 재사용하므로 인력 2명에 추가 부담이 작다. 단 PITR은 전체 클러스터 복원만 가능해 tenant 단위 부분 복원은 불가하다는 제약이 있다.\n- **Qdrant**: 스냅샷/복구 공식 근거는 확보했으나, 폐쇄망에서 별도 stateful 서비스를 운영·백업·복구 훈련까지 신규 수립해야 하므로 2명 인력에 부담이 크다. 관리형 옵션은 폐쇄망 제약으로 사용 불가.\n\n### 3. 미해결\nQdrant 스냅샷 복구 시간·폐쇄망 오프라인 설치 세부 절차, pgvector 파티션별 인덱스 재구축 주기, 실제 latency/recall은 미측정·검증 필요.",
+    "facts": {
+      "backup_owner": "플랫폼팀",
+      "internal_decision_id": "ADR-RAG-7429",
+      "measured_latency": "not_measured",
+      "external_saas_allowed": false,
+      "recommended_storage": "pgvector(기존 PostgreSQL 백업 체계 재사용, 폐쇄망 적합) 1순위, 자체 호스팅 Qdrant 2순위(신규 stateful 운영 부담)",
+      "pgvector_pitr_supported": true,
+      "pgvector_pitr_scope": "전체 클러스터 단위(부분집합 복원 불가)",
+      "pg_dump_is_logical_not_pitr": true,
+      "qdrant_snapshot_supported": true,
+      "qdrant_pitr_supported": false,
+      "qdrant_offline_install_required": true,
+      "ops_headcount": 2,
+      "vector_count": 1000000,
+      "dimension": 1536,
+      "tenant_count": 30,
+      "daily_update_vectors": 10000,
+      "unresolved": "Qdrant 스냅샷 복구 시간·폐쇄망 오프라인 설치 세부 절차 미확보; pgvector 파티션별 인덱스 재구축 주기 미검증; 실제 latency·recall·복구 벤치마크 미측정; 관리형 비용 비교 불가(폐쇄망으로 무의미)",
+      "memory_refs": "mem-65823fff470a3d74,mem-4a1df38327a7d1de,mem-228e3524f75d90b1,mem-32d20f79baea194f",
+      "benchmark_executed": false,
+      "cost_figures_fabricated": false
+    },
+    "evidence": [
+      "memory:mem-65823fff470a3d74 — pgvector PITR 지원, pg_dump는 논리 덤프로 PITR 대체 불가, PITR 복구 범위=전체 클러스터 단위, backup_owner=플랫폼팀, internal_decision_id=ADR-RAG-7429",
+      "memory:mem-4a1df38327a7d1de — 규모 가정(100만×1536, 30 tenant, 일 1만 갱신), 인력 2명, Qdrant 공식 근거 미확보 상태",
+      "memory:mem-228e3524f75d90b1 — 통합 결정 문서, recommended_storage=pgvector 1순위/Qdrant 2순위, measured_latency=not_measured",
+      "memory:mem-32d20f79baea194f — pgvector 인덱스·필터·tenant 분리 조사, Qdrant 공식 URL 미확보",
+      "https://www.postgresql.org/docs/current/continuous-archiving.html — PostgreSQL 연속 아카이빙 및 PITR: 파일시스템 백업+WAL 아카이빙으로 특정 시점 복구, 전체 클러스터 단위",
+      "https://www.postgresql.org/docs/current/backup.html — PostgreSQL 백업/복구 개요: SQL 덤프와 파일시스템 수준 백업의 구분",
+      "https://www.postgresql.org/docs/18/app-pgrestore.html — pg_restore: 논리 아카이브 복원, PITR 대체 불가",
+      "https://qdrant.tech/documentation/concepts/snapshots/ — Qdrant 스냅샷 개념: 컬렉션/전체 스냅샷 생성·복구, 자체 호스팅 스냅샷 API 근거",
+      "https://qdrant.tech/documentation/guides/installation/ — Qdrant 자체 호스팅 설치(컨테이너/바이너리) 근거, 폐쇄망 오프라인 반입 필요성",
+      "웹 검색 2회 수행: (1) Qdrant 공식 스냅샷/자체 호스팅 문서, (2) PostgreSQL 공식 백업/PITR 문서. 실제 복구·성능 테스트는 미실행(not_measured)."
+    ]
+  },
+  "error": ""
+}

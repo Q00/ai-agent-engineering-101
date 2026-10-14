@@ -1,0 +1,52 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "제공된 확정 추정치로 사람 시간 합계와 예산 적합성을 계산하고 4주 일정·제외 범위 초안을 정리했다. 기본 범위(core)는 이동/턴 24 + seed 기반 맵 24 + 전투 32 + 저장/복원 24 + 화면 20 + 자동 테스트 24 + 접근성 12 = 160시간이다. 온라인 협동 80시간을 더하면 240시간이다. 가용 인력은 개발자 2명 × 주 20시간 × 4주 = 160시간, QA 1명 × 주 10시간 × 4주 = 40시간이다. 따라서 기본 범위 160시간은 개발자 가용 160시간과 정확히 일치해 예산 내이며, QA 40시간은 별도 검증 여력으로 남는다. 협동 포함 240시간은 개발자 160시간을 80시간 초과하므로 예산 밖이다(개발자만으로는 불가, QA 시간을 개발에 전용하더라도 200시간으로 여전히 40시간 부족). 병렬화는 사람 시간 합계를 줄이지 않는다. 4주 일정 초안과 제외 범위(서버·로그인·결제·온라인 협동)를 아래에 명시한다. 본 작업은 추정치 기반 계산·일정 초안이며 실제 구현이나 테스트 수행은 하지 않았다.",
+    "facts": {
+      "core_scope_hours": 160,
+      "with_coop_hours": 240,
+      "developer_hours": 160,
+      "qa_hours": 40,
+      "coop_fits_budget": false,
+      "base_scope_fits_developer_budget": true,
+      "coop_over_developer_hours": 80,
+      "coop_over_total_hours": 40,
+      "total_available_hours": 200,
+      "developer_count": 2,
+      "developer_hours_per_week": 20,
+      "qa_count": 1,
+      "qa_hours_per_week": 10,
+      "weeks": 4,
+      "move_turn_hours": 24,
+      "seeded_map_hours": 24,
+      "combat_hours": 32,
+      "save_restore_hours": 24,
+      "ui_hours": 20,
+      "auto_test_hours": 24,
+      "accessibility_hours": 12,
+      "coop_hours": 80,
+      "excluded_server": true,
+      "excluded_login": true,
+      "excluded_payment": true,
+      "excluded_online_coop": true,
+      "implementation_performed": false,
+      "tests_performed": false
+    },
+    "evidence": [
+      "core_scope_hours = 24(이동/턴) + 24(seed 기반 맵) + 32(전투) + 24(저장/복원) + 20(화면) + 24(자동 테스트) + 12(접근성) = 160시간",
+      "with_coop_hours = core_scope_hours 160 + 온라인 협동 80 = 240시간",
+      "developer_hours = 개발자 2명 × 주 20시간 × 4주 = 160시간",
+      "qa_hours = QA 1명 × 주 10시간 × 4주 = 40시간",
+      "total_available_hours = developer_hours 160 + qa_hours 40 = 200시간",
+      "기본 범위 판정: core_scope_hours 160 = developer_hours 160 → 개발자 예산에 정확히 적합, QA 40시간은 별도 검증 여력으로 잔여",
+      "협동 포함 판정: with_coop_hours 240 > developer_hours 160 → 80시간 초과, coop_fits_budget=false",
+      "협동 포함 시 총 가용 200시간 기준으로도 240 - 200 = 40시간 부족",
+      "병렬화는 사람 시간 합계를 줄이지 않음(원자료 명시)",
+      "4주 일정 초안: 1주차 이동/턴·seed 맵 착수 및 저장 스키마 확정, 2주차 전투·저장/복원, 3주차 화면·접근성, 4주차 자동 테스트·QA 회귀 및 통합 대조. QA는 1주차부터 테스트 케이스 설계, 3~4주차 집중 검증 배치",
+      "제외 범위: 서버, 로그인, 결제, 온라인 협동(별도 80시간, 병렬화해도 사람 시간 합계 불변)",
+      "본 작업은 제공 추정치 기반 계산·일정 초안이며 실제 구현/테스트는 수행하지 않음(미검증)"
+    ]
+  },
+  "error": ""
+}

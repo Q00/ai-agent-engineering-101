@@ -1,0 +1,26 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "공통 필수 범위는 요금/청구 64 + 조직/좌석 40 + 지표 수집 32 + 운영 도구 24 = 160시간으로 확정된다. S안은 공통 160 + 셀프 온보딩 64 = 224시간으로 240시간 예산 내에 적합하다(여유 16시간). E안은 공통 160 + SSO/감사 기록 96 = 256시간으로 240시간 예산을 16시간 초과한다. 따라서 E안은 16시간을 분기 밖으로 이연해야 하며, 이연 후보는 SSO/감사 기록 일부(예: 감사 로그 조회·내보내기 고도화, 세션 정책 세분화) 또는 운영 도구 일부(예: 관리자 대시보드 고도화, 알림 자동화) 중 하나다. SSO/감사 기록은 E안 필수 범위이므로 핵심 인증·기본 감사 기록은 분기 내 유지하고, 부가 감사 기능을 이연하는 방식이 사업 리스크가 가장 낮다.\n\n도메인·API·데이터 변경 개요(설계 제안, 실제 구현/테스트 미수행):\n1) 요금/청구(공통, 64h): 도메인 — Plan(요금제), Subscription(구독 상태), Invoice(청구서), Payment(결제). API — POST /subscriptions, GET /invoices, POST /payments/webhook. 데이터 — plan_id, billing_cycle, amount, status, paid_at. 선후: 조직/좌석 이전에 요금제·구독 모델 확정 필요.\n2) 조직/좌석(공통, 40h): 도메인 — Organization, Seat, MemberRole. API — POST /orgs, POST /orgs/{id}/seats, PATCH /members/{id}/role. 데이터 — org_id, seat_count, role, invited_at. 선후: 요금/청구 이후, 셀프 온보딩/SSO 이전.\n3) 지표 수집(공통, 32h): 도메인 — Event, MetricSnapshot. API — POST /events, GET /metrics. 데이터 — event_type, org_id, occurred_at, value. 선후: 조직/좌석 이후(org_id 필요), 운영 도구 이전.\n4) 운영 도구(공통, 24h): 도메인 — AdminAction, SupportTicket. API — GET /admin/orgs, POST /admin/actions. 데이터 — actor_id, action, target_org_id, created_at. 선후: 지표 수집 이후.\n5) 셀프 온보딩(S안 전용, 64h): 도메인 — OnboardingFlow, Checklist. API — POST /onboarding/start, GET /onboarding/status. 데이터 — step, completed_at, org_id. 선후: 조직/좌석 이후.\n6) SSO/감사 기록(E안 전용, 96h): 도메인 — SSOConnection, AuditLog. API — POST /sso/configure, GET /audit/logs. 데이터 — idp_metadata, session_policy, actor_id, action, resource, occurred_at. 선후: 조직/좌석 이후, 지표 수집과 병행 가능하나 운영 도구 이전.\n\n단계별 일정(선후 관계):\n- 1단계(공통 기반): 요금/청구 → 조직/좌석. 약 104시간.\n- 2단계(분기): S안은 셀프 온보딩(64h) 진행, E안은 SSO/감사 기록(96h) 진행. E안은 이 중 16시간을 분기 밖으로 이연(예: 감사 로그 고도화 16h).\n- 3단계(공통 후속): 지표 수집(32h) → 운영 도구(24h).\n- S안 총 224시간으로 240시간 내 완료 가능. E안은 분기 내 240시간(SSO/감사 80h + 공통 160h)만 수행하고 16시간 이연.\n\n실제 구현·테스트는 수행하지 않았으며, 위 내용은 제공 자료에 기반한 설계 제안과 시간 산정이다. 시장 조사나 고객 인터뷰는 수행하지 않았다.",
+    "facts": {
+      "common_dev_hours": 160,
+      "s_total_dev_hours": 224,
+      "e_total_dev_hours": 256,
+      "e_budget_shortfall_hours": 16,
+      "s_fits_budget": true,
+      "e_fits_budget": false
+    },
+    "evidence": [
+      "공통 필수 합산: 64(요금/청구) + 40(조직/좌석) + 32(지표 수집) + 24(운영 도구) = 160시간",
+      "S안 총계: 160(공통) + 64(셀프 온보딩) = 224시간",
+      "E안 총계: 160(공통) + 96(SSO/감사 기록) = 256시간",
+      "S안 예산 적합: 224 ≤ 240 → true, 여유 16시간",
+      "E안 예산 부족분: 256 - 240 = 16시간 → e_fits_budget=false",
+      "이연 후보: SSO/감사 기록 일부(감사 로그 조회·내보내기 고도화, 세션 정책 세분화) 또는 운영 도구 일부(관리자 대시보드 고도화, 알림 자동화) 중 16시간",
+      "일정 선후: 요금/청구 → 조직/좌석 → (S안 셀프 온보딩 또는 E안 SSO/감사) → 지표 수집 → 운영 도구",
+      "실제 구현·테스트 미수행: 본 산출물은 제공 자료 기반 시간 산정과 설계 제안이며 코드 작성이나 테스트 실행은 하지 않음"
+    ]
+  },
+  "error": ""
+}
