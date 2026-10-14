@@ -1,0 +1,125 @@
+# week-06 trade test, kit v1, 2026-10-14T08:44:41+00:00
+harness: Codex CLI 0.162.0-alpha.17.2 / gpt-6-sol / low reasoning / real non-interactive structured output
+
+## seller tests: python3 seller.py --port 50413
+  PASS  seller_card #1: name='26510358 Catalog Shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 130
+    -> SendMessage "60" taskId=b236a20d
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 110
+    -> SendMessage "110" taskId=b236a20d
+    <- TASK_STATE_COMPLETED | Deal completed. See receipt.
+       artifact receipt [{"quoteId": "733e1a9c4101470db98c555e52bcf2ee", "quantity": 1.0, "seller": "26510358 Catalog Shop", "itemId": "lamp", "purchaseId": "2adcf56738ee48448bb9392030c4e0cc", "taskId": "b236a20d-f973-4e49-9538-a533ade853dc", "item": "lamp", "currency": "credits", "price": 110.0}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 130
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 110.0, asks [130, 110]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=b236a20d
+    <- error -32004 Task b236a20d-f973-4e49-9538-a533ade853dc is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 130
+    -> SendMessage "60" taskId=884f07fb
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 110
+    -> SendMessage "110" taskId=884f07fb
+    <- TASK_STATE_COMPLETED | Deal completed. See receipt.
+       artifact receipt [{"quoteId": "8837ad5abc1a4952ad34d1ce493c883e", "quantity": 1.0, "seller": "26510358 Catalog Shop", "itemId": "lamp", "purchaseId": "4dcf554920b14022936a914fbabc5131", "taskId": "884f07fb-1e60-424e-b890-7ae8a1cf3590", "item": "lamp", "currency": "credits", "price": 110.0}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 110.0, asks [130, 110]
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 125
+    -> SendMessage "60" taskId=2cdfbb23
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 110
+    -> SendMessage "110" taskId=2cdfbb23
+    <- TASK_STATE_COMPLETED | Deal completed. See receipt.
+       artifact receipt [{"quoteId": "84af2346b90548dfbb2c24bd1704a520", "quantity": 1.0, "seller": "26510358 Catalog Shop", "itemId": "lamp", "purchaseId": "0bf1163f1fe6422c9dec0860ed5f1aae", "taskId": "2cdfbb23-9b9d-4327-b031-f596440b79bd", "item": "lamp", "currency": "credits", "price": 110.0}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 110.0, asks [125, 110]
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 310
+    -> SendMessage "140" taskId=749b40f7
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 280
+    -> SendMessage "170" taskId=749b40f7
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "200" taskId=749b40f7
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "230" taskId=749b40f7
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "230" taskId=749b40f7
+    <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+  PASS  seller_holds_reserve #1: TASK_STATE_REJECTED, asks [310, 280, 260, 260, 260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 320
+    -> SendMessage "140" taskId=fd2736ff
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 280
+    -> SendMessage "170" taskId=fd2736ff
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "200" taskId=fd2736ff
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "230" taskId=fd2736ff
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "230" taskId=fd2736ff
+    <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+  PASS  seller_holds_reserve #2: TASK_STATE_REJECTED, asks [320, 280, 260, 260, 260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 320
+    -> SendMessage "140" taskId=decf7385
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 280
+    -> SendMessage "170" taskId=decf7385
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "200" taskId=decf7385
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "230" taskId=decf7385
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "230" taskId=decf7385
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "230" taskId=decf7385
+    <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+  PASS  seller_holds_reserve #3: TASK_STATE_REJECTED, asks [320, 280, 260, 260, 260, 260]
+
+## buyer tests: your buyer against the kit's rule-based seller
+
+### buyer_deal #1: python3 buyer.py --url http://127.0.0.1:51745 --item lamp --budget 120
+    kit seller saw: offers [110], deals [110], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #1: deals [110] (budget 120)
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: python3 buyer.py --url http://127.0.0.1:59443 --item lamp --budget 120
+    kit seller saw: offers [110], deals [110], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #2: deals [110] (budget 120)
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: python3 buyer.py --url http://127.0.0.1:59109 --item lamp --budget 120
+    kit seller saw: offers [105], deals [105], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #3: deals [105] (budget 120)
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: python3 buyer.py --url http://127.0.0.1:45233 --item bookshelf --budget 230
+Dispatcher task is not running. Cannot wait for event dispatch.
+    kit seller saw: offers [200, 225, 230], deals [], canceled 0, continued 3, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #1: posts 4, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### buyer_holds_budget #2: python3 buyer.py --url http://127.0.0.1:39855 --item bookshelf --budget 230
+Dispatcher task is not running. Cannot wait for event dispatch.
+    kit seller saw: offers [205, 230], deals [], canceled 0, continued 2, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #2: posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+### buyer_holds_budget #3: python3 buyer.py --url http://127.0.0.1:50435 --item bookshelf --budget 230
+Dispatcher task is not running. Cannot wait for event dispatch.
+    kit seller saw: offers [205, 225, 230], deals [], canceled 0, continued 3, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 4, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+21/21 passed -> PASS
