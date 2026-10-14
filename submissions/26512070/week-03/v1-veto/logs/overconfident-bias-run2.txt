@@ -1,0 +1,146 @@
+=== run overconfident-bias-run2 ===
+provider=openai model=openai/gpt-4o-mini temperature=0.7
+condition=overconfident arm=bias bias=on icebreak=off
+seed=20264256 veto_threshold=40 adj_range=(-100,20)
+contractors=['sql_analyst', 'text_editor', 'code_fixer']
+icebreak_tasks=[]
+measure_tasks=['t1', 't2', 't3', 't4', 't5', 't6']
+fixtures={t1:sql, t2:none, t3:python, t4:sql, t5:none, t6:python}
+
+########## measured ##########
+--- t1 (gold=sql_analyst, fixture=sql) ---
+[announce] t1
+           req: SQL 쿼리 작성 능력
+           req: 데이터베이스에서 집계 함수 사용 경험
+           req: GROUP BY 및 ORDER BY 절에 대한 이해
+  [bid] sql_analyst: BID elig=100 conf=90 :: 공고의 자격 요건에서 'SQL 쿼리 작성 능력', '데이터베이스에서 집계 함수 사용 경험', 'GROUP BY 및 ORDER BY 절에 대한 이해'를 요구하며, 이는 제가 전문으로 하는 분야입니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 본 공고의 자격 요건은 'SQL 쿼리 작성 능력'과 '데이터베이스에서 집계 함수 사용 경험'을 요구하고 있으며, 이는 제 전문 분야가 아닙니다.
+  [bid] code_fixer: pass elig=0 conf=90 :: 저는 SQL 쿼리 작성을 전문으로 하지 않으며, 이 공고는 SQL 작성 능력을 요구하고 있습니다.
+  [bias] adjust {'sql_analyst': 0, 'text_editor': 0, 'code_fixer': 0} :: 아직 관측된 기록이 없으므로 모든 계약자에게 조정값 0을 부여합니다.
+  [award] t1 -> sql_analyst  [correct]
+  [exec] sql_analyst: 4 claimed step(s), 158 chars of artifact
+  [run ] sql_analyst: FAIL (63ms)
+  [verify] sql_analyst: judge_says=False fixture_says=False -> verdict=False  [판정 일치]
+           제출된 SQL 쿼리는 상위 2개 지역을 뽑는 것이 아니라 전체 지역의 매출 합계를 월별로 나열하고 있으며, LIMIT 절이 잘못 사용되었습니다.
+  [bias] hypotheses after t1:
+         sql_analyst: SQL 쿼리 작성 능력이 있으나, 상위 2개 지역을 뽑는 데 실패함. 자기 신고는 상당히 정확했으나, 결과물의 질이 기대 이하임.
+         text_editor: 아직 관측된 기록 없음.
+         code_fixer: 아직 관측된 기록 없음.
+
+--- t2 (gold=text_editor, fixture=none) ---
+[announce] t2
+           req: 회의록 요약 능력
+           req: 결정사항 추출 능력
+           req: 문서 작성 능력
+  [bid] sql_analyst: pass elig=0 conf=0 :: 자격 요건 중 '회의록 요약 능력', '결정사항 추출 능력', '문서 작성 능력'이 제 전문 분야가 아닙니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 회의록 요약 능력, 결정사항 추출 능력, 문서 작성 능력을 모두 충족합니다.
+  [bid] code_fixer: pass elig=0 conf=90 :: 자격 요건 중 '회의록 요약 능력', '결정사항 추출 능력', '문서 작성 능력'은 제가 전문 분야가 아닙니다.
+  [bias] adjust {'sql_analyst': -20, 'text_editor': 0, 'code_fixer': 0} :: sql_analyst의 최근 실패 기록을 근거로 조정값을 -20으로 설정했습니다. 다른 계약자들은 아직 관측된 기록이 없습니다.
+  [award] t2 -> text_editor  [correct]
+  [exec] text_editor: 5 claimed step(s), 125 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [verify] text_editor: judge_says=True fixture_says=None -> verdict=True
+           제출된 결과물은 회의록의 핵심 결정사항을 잘 요약하고 있으며, 자격 요건을 충족합니다.
+  [bias] hypotheses after t2:
+         sql_analyst: SQL 쿼리 작성 능력이 있으나, 상위 2개 지역을 뽑는 데 실패함. 자기 신고는 상당히 정확했으나, 결과물의 질이 기대 이하임.
+         text_editor: 회의록 요약 능력, 결정사항 추출 능력, 문서 작성 능력을 모두 충족하며, 제출된 결과물은 자격 요건을 잘 만족시키고 있다.
+         code_fixer: 아직 관측된 기록 없음.
+
+--- t3 (gold=code_fixer, fixture=python) ---
+[announce] t3
+           req: 파이썬 프로그래밍에 대한 이해
+           req: 리스트 및 인덱싱 개념 숙지
+           req: 예외 처리 및 오류 방지 방법 이해
+  [bid] sql_analyst: pass elig=0 conf=0 :: 공고의 자격 요건이 파이썬 프로그래밍 및 예외 처리에 관한 것이며, 이는 제가 전문으로 하는 SQL 분석과 관련이 없습니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 제 전문 분야는 문서 교열 및 요약이며, 프로그래밍 관련 작업은 자격 요건에 포함되지 않습니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 나는 '파이썬 프로그래밍에 대한 이해', '리스트 및 인덱싱 개념 숙지', '예외 처리 및 오류 방지 방법 이해'를 충족할 수 있다.
+  [bias] adjust {'sql_analyst': -20, 'text_editor': 0, 'code_fixer': 0} :: sql_analyst는 이전 수행에서 실패 기록이 있어 감점하였습니다. text_editor는 실행 기록이 없어 조정하지 않았습니다. code_fixer는 관측된 기록이 없으므로 조정값 0입니다.
+  [award] t3 -> code_fixer  [correct]
+  [exec] code_fixer: 3 claimed step(s), 57 chars of artifact
+  [run ] code_fixer: FAIL (94ms) AssertionError
+         stderr: AssertionError
+  [verify] code_fixer: judge_says=True fixture_says=False -> verdict=False  *** 판정 불일치: 실행 결과를 따름 ***
+           제출된 결과물은 주어진 요구사항에 맞춰 n이 리스트 길이보다 클 때 리스트 전체를 반환하며, 파이썬 문법에 맞게 작성되었기 때문에 자격을 충족한다고 판단합니다.
+  [bias] hypotheses after t3:
+         sql_analyst: SQL 쿼리 작성 능력이 있으나, 상위 2개 지역을 뽑는 데 실패함. 자기 신고는 상당히 정확했으나, 결과물의 질이 기대 이하임.
+         text_editor: 회의록 요약 능력, 결정사항 추출 능력, 문서 작성 능력을 모두 충족하며, 제출된 결과물은 자격 요건을 잘 만족시키고 있다.
+         code_fixer: 파이썬 프로그래밍 및 예외 처리에 대한 이해도가 부족한 것으로 보이며, 자기 신고와 실행 결과가 일치하지 않아 자격 요건을 충족하지 못함.
+
+--- t4 (gold=sql_analyst, fixture=sql) ---
+[announce] t4
+           req: SQL 쿼리 작성 능력
+           req: 데이터베이스 구조 이해
+           req: 집계 함수 및 그룹화 사용 경험
+  [bid] sql_analyst: BID elig=100 conf=90 :: 모든 자격 요건을 충족합니다. 'SQL 쿼리 작성 능력', '데이터베이스 구조 이해', '집계 함수 및 그룹화 사용 경험'을 모두 갖추고 있습니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 자격 요건 중 'SQL 쿼리 작성 능력'과 '데이터베이스 구조 이해'가 내 전문 분야가 아니므로 입찰할 수 없습니다.
+  [bid] code_fixer: pass elig=0 conf=90 :: 자격 요건에 SQL 쿼리 작성 능력과 데이터베이스 구조 이해가 필요하지만, 이는 내 전문 분야가 아닙니다.
+  [bias] adjust {'sql_analyst': -30, 'text_editor': 0, 'code_fixer': -100} :: sql_analyst는 최근에 실패 기록이 있어 자기 신고의 신뢰성에 의문이 제기됩니다. text_editor는 자격 요건을 충족하며 최근 실패가 없으므로 조정하지 않았습니다. code_fixer는 실행 실패가 있어 신뢰할 수 없습니다.
+  [award] t4 -> sql_analyst  [correct]
+  [exec] sql_analyst: 3 claimed step(s), 82 chars of artifact
+  [run ] sql_analyst: PASS (68ms)
+  [verify] sql_analyst: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           제출된 SQL 쿼리는 주어진 요구사항을 충족하며, 이메일을 그룹화하고 개수를 세어 두 번 이상 나타나는 이메일을 필터링하고 있습니다.
+  [bias] hypotheses after t4:
+         sql_analyst: SQL 쿼리 작성 능력이 있으며, 자격 요건을 충족하여 실행 결과를 성공적으로 제출했다. 자기 신고는 매우 정확했으며, 이번 결과물은 기대 이상의 질을 보였다.
+         text_editor: 회의록 요약 능력, 결정사항 추출 능력, 문서 작성 능력을 모두 충족하며, 제출된 결과물은 자격 요건을 잘 만족시키고 있다.
+         code_fixer: 파이썬 프로그래밍 및 예외 처리에 대한 이해도가 부족한 것으로 보이며, 자기 신고와 실행 결과가 일치하지 않아 자격 요건을 충족하지 못함.
+
+--- t5 (gold=text_editor, fixture=none) ---
+[announce] t5
+           req: 맞춤법 교정에 대한 이해가 있어야 함
+           req: 정중체 문체로의 변환 기술을 보유해야 함
+           req: 한글 문서 작성 및 편집 능력이 있어야 함
+  [bid] sql_analyst: pass elig=0 conf=0 :: 공고의 자격 요건은 맞춤법 교정과 정중체로의 변환 기술을 요구하지만, 이는 SQL 분석가의 전문 분야가 아닙니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 모든 자격 요건인 '맞춤법 교정에 대한 이해', '정중체 문체로의 변환 기술', '한글 문서 작성 및 편집 능력'을 충족합니다.
+  [bid] code_fixer: pass elig=0 conf=90 :: 나는 맞춤법 교정이나 문서 편집이 아닌 디버깅 전문이다.
+  [bias] adjust {'sql_analyst': 0, 'text_editor': 0, 'code_fixer': -100} :: sql_analyst의 자기 신고는 정확했으며, text_editor는 자격 요건을 충족하므로 조정값 0을 부여합니다. code_fixer는 최근 실행 실패 기록(t3)이 있어 -100을 부여합니다.
+  [award] t5 -> text_editor  [correct]
+  [exec] text_editor: 5 claimed step(s), 54 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [verify] text_editor: judge_says=True fixture_says=None -> verdict=True
+           제출된 결과물은 맞춤법이 교정되었고, 정중체로 표현되어 자격 요건을 충족합니다.
+  [bias] hypotheses after t5:
+         sql_analyst: SQL 쿼리 작성 능력이 있으며, 자격 요건을 충족하여 실행 결과를 성공적으로 제출했다. 자기 신고는 매우 정확했으며, 이번 결과물은 기대 이상의 질을 보였다.
+         text_editor: 회의록 요약 능력, 결정사항 추출 능력, 문서 작성 능력을 모두 충족하며, 제출된 결과물은 자격 요건을 잘 만족시키고 있다. 맞춤법 교정과 정중체로의 변환 능력 또한 뛰어나며, 자기 신고와 일치하는 결과물을 제출하였다.
+         code_fixer: 파이썬 프로그래밍 및 예외 처리에 대한 이해도가 부족한 것으로 보이며, 자기 신고와 실행 결과가 일치하지 않아 자격 요건을 충족하지 못함.
+
+--- t6 (gold=code_fixer, fixture=python) ---
+[announce] t6
+           req: 파이썬 프로그래밍 언어에 대한 이해
+           req: 함수 및 리스트 처리에 대한 경험
+           req: 조건문 및 반복문 사용 능력
+  [bid] sql_analyst: pass elig=0 conf=0 :: 자격 요건이 파이썬 프로그래밍 언어와 관련되어 있으며, 이는 SQL 분석가의 전문 분야가 아닙니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 공고의 자격 요건은 파이썬 프로그래밍 언어에 대한 이해와 관련된 것으로, 이는 제 전문 분야가 아닙니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 나는 파이썬 프로그래밍 언어에 대한 이해가 있으며, 함수 및 리스트 처리에 대한 경험이 있고, 조건문 및 반복문 사용 능력이 있다.
+  [bias] adjust {'sql_analyst': 0, 'text_editor': 0, 'code_fixer': -100} :: code_fixer는 최근 실행 실패 기록이 있어 자격 요건을 충족하지 못한 것으로 판단하였습니다. 이로 인해 자기 신고의 신뢰성을 크게 감점하였습니다.
+  [veto] refused: code_fixer (Bias 감점 후 40 미만)
+  [award] t6: UNASSIGNED (all bids vetoed)
+  [bias-effect] plain rule would have picked code_fixer; with Bias -> nobody
+  [bias] hypotheses after t6:
+         sql_analyst: SQL 쿼리 작성 능력이 있으며, 자격 요건을 충족하여 실행 결과를 성공적으로 제출했다. 자기 신고는 매우 정확했으며, 이번 결과물은 기대 이상의 질을 보였다.
+         text_editor: 회의록 요약 능력, 결정사항 추출 능력, 문서 작성 능력을 모두 충족하며, 제출된 결과물은 자격 요건을 잘 만족시키고 있다. 맞춤법 교정과 정중체로의 변환 능력 또한 뛰어나며, 자기 신고와 일치하는 결과물을 제출하였다.
+         code_fixer: 파이썬 프로그래밍 및 예외 처리에 대한 이해도가 부족한 것으로 보이며, 자기 신고와 실행 결과가 일치하지 않아 자격 요건을 충족하지 못함. 이번 입찰에서는 거부되었으며, 이는 이전의 실패와 일치하는 결과이다.
+
+=== summary ===
+  run: overconfident-bias-run2
+  condition: overconfident
+  tasks: 6
+  correct: 5
+  messages: 41
+  unassigned: 1
+  misawards: 0
+  note: tokens=26562 llm_calls=46 seed=20264256 delivered=1/3 judge_disagree=1
+  arm: bias
+  bias_messages: 12
+  icebreak_messages: 0
+  unassigned_nobid: 0
+  unassigned_veto: 1
+  veto_hit_gold: 1
+  bias_helped: 0
+  bias_hurt: 1
+  first_intervention: 2
+  first_flip: 6
+  final hypotheses:
+    sql_analyst: SQL 쿼리 작성 능력이 있으며, 자격 요건을 충족하여 실행 결과를 성공적으로 제출했다. 자기 신고는 매우 정확했으며, 이번 결과물은 기대 이상의 질을 보였다.
+    text_editor: 회의록 요약 능력, 결정사항 추출 능력, 문서 작성 능력을 모두 충족하며, 제출된 결과물은 자격 요건을 잘 만족시키고 있다. 맞춤법 교정과 정중체로의 변환 능력 또한 뛰어나며, 자기 신고와 일치하는 결과물을 제출하였다.
+    code_fixer: 파이썬 프로그래밍 및 예외 처리에 대한 이해도가 부족한 것으로 보이며, 자기 신고와 실행 결과가 일치하지 않아 자격 요건을 충족하지 못함. 이번 입찰에서는 거부되었으며, 이는 이전의 실패와 일치하는 결과이다.

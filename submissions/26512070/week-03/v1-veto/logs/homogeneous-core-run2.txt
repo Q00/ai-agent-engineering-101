@@ -1,0 +1,108 @@
+=== run homogeneous-core-run2 ===
+provider=openai model=openai/gpt-4o-mini temperature=0.7
+condition=homogeneous arm=core bias=off icebreak=off
+seed=20262606 veto_threshold=40 adj_range=(-100,20)
+contractors=['sql_analyst', 'text_editor', 'code_fixer']
+icebreak_tasks=[]
+measure_tasks=['t1', 't2', 't3', 't4', 't5', 't6']
+fixtures={t1:sql, t2:none, t3:python, t4:sql, t5:none, t6:python}
+
+########## measured ##########
+--- t1 (gold=sql_analyst, fixture=sql) ---
+[announce] t1
+           req: SQL 쿼리 작성 능력
+           req: 데이터베이스에서 집계 함수 사용 경험
+           req: GROUP BY 및 ORDER BY 절 이해
+  [bid] sql_analyst: BID elig=100 conf=90 :: 공고의 자격 요건 중 'SQL 쿼리 작성 능력' 및 '데이터베이스에서 집계 함수 사용 경험'을 충족할 수 있습니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 공고의 자격 요건인 'SQL 쿼리 작성 능력'과 'GROUP BY 및 ORDER BY 절 이해'를 충족할 수 있습니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 자격 요건 중 'SQL 쿼리 작성 능력', '데이터베이스에서 집계 함수 사용 경험', 'GROUP BY 및 ORDER BY 절 이해'를 모두 충족합니다.
+  [award] t1 -> code_fixer  [MISAWARD (gold=sql_analyst)]
+  [exec] code_fixer: 5 claimed step(s), 151 chars of artifact
+  [run ] code_fixer: FAIL (63ms)
+  [verify] code_fixer: judge_says=True fixture_says=False -> verdict=False  *** 판정 불일치: 실행 결과를 따름 ***
+           제출된 SQL 문장은 요구 사항에 맞게 작성되었으며, GROUP BY 및 ORDER BY 절을 올바르게 사용하고 있습니다.
+
+--- t2 (gold=text_editor, fixture=none) ---
+[announce] t2
+           req: 회의록 요약 능력
+           req: 결정사항 도출 능력
+           req: 간결한 문장 작성 능력
+  [bid] sql_analyst: BID elig=100 conf=90 :: 회의록 요약 능력, 결정사항 도출 능력, 간결한 문장 작성 능력을 충족할 수 있습니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 공고의 자격 요건인 '회의록 요약 능력', '결정사항 도출 능력', '간결한 문장 작성 능력'을 모두 충족할 수 있습니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 회의록 요약 능력, 결정사항 도출 능력, 간결한 문장 작성 능력 모두 충족합니다.
+  [award] t2 -> sql_analyst  [MISAWARD (gold=text_editor)]
+  [exec] sql_analyst: 3 claimed step(s), 141 chars of artifact
+  [run ] sql_analyst: fixture 없음 (LLM 판정만 가능)
+  [verify] sql_analyst: judge_says=True fixture_says=None -> verdict=True
+           결과물은 회의록의 핵심 결정사항을 5줄 이내로 간결하게 요약하고 있으며, 요구된 능력들을 충족합니다.
+  [bias-effect] plain rule would have picked code_fixer; with Bias -> sql_analyst
+
+--- t3 (gold=code_fixer, fixture=python) ---
+[announce] t3
+           req: 파이썬 프로그래밍 언어에 대한 이해
+           req: 리스트 및 인덱싱에 대한 경험
+           req: 예외 처리 및 오류 방지에 대한 지식
+  [bid] sql_analyst: BID elig=100 conf=90 :: 모든 자격 요건을 충족합니다: '파이썬 프로그래밍 언어에 대한 이해', '리스트 및 인덱싱에 대한 경험', '예외 처리 및 오류 방지에 대한 지식'이 있습니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 나는 '파이썬 프로그래밍 언어에 대한 이해'와 '리스트 및 인덱싱에 대한 경험'을 갖추고 있으며, 예외 처리 및 오류 방지에 대한 지식도 있다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 공고의 자격 요건인 '파이썬 프로그래밍 언어에 대한 이해'와 '리스트 및 인덱싱에 대한 경험'을 모두 충족합니다.
+  [award] t3 -> text_editor  [MISAWARD (gold=code_fixer)]
+  [exec] text_editor: 5 claimed step(s), 57 chars of artifact
+  [run ] text_editor: FAIL (91ms) AssertionError
+         stderr: AssertionError
+  [verify] text_editor: judge_says=True fixture_says=False -> verdict=False  *** 판정 불일치: 실행 결과를 따름 ***
+           제출된 결과물은 원래 함수의 요구 사항을 충족하며, IndexError를 방지하고 리스트 전체를 반환하도록 수정되었습니다.
+
+--- t4 (gold=sql_analyst, fixture=sql) ---
+[announce] t4
+           req: SQL 쿼리 작성 능력
+           req: 데이터베이스 구조 이해 능력
+           req: 집계 함수 및 GROUP BY 절 사용 능력
+  [bid] sql_analyst: BID elig=100 conf=90 :: 모든 자격 요건을 충족합니다: 'SQL 쿼리 작성 능력', '데이터베이스 구조 이해 능력', '집계 함수 및 GROUP BY 절 사용 능력'을 갖추고 있습니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 모든 자격 요건인 'SQL 쿼리 작성 능력', '데이터베이스 구조 이해 능력', '집계 함수 및 GROUP BY 절 사용 능력'을 충족합니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 나는 'SQL 쿼리 작성 능력', '데이터베이스 구조 이해 능력', '집계 함수 및 GROUP BY 절 사용 능력'을 모두 충족할 수 있다.
+  [award] t4 -> sql_analyst  [correct]
+  [exec] sql_analyst: 4 claimed step(s), 82 chars of artifact
+  [run ] sql_analyst: PASS (63ms)
+  [verify] sql_analyst: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           제출된 SQL 쿼리는 요구사항을 충족하며, 이메일을 그룹화하고 건수를 계산한 후 2회 이상 나타나는 이메일을 필터링하고 있습니다.
+  [bias-effect] plain rule would have picked code_fixer; with Bias -> sql_analyst
+
+--- t5 (gold=text_editor, fixture=none) ---
+[announce] t5
+           req: 한국어 맞춤법 및 문법에 대한 이해
+           req: 정중체 및 공식적인 어투로 글쓰기 능력
+           req: 커뮤니케이션 및 문서 교정 경험
+  [bid] sql_analyst: BID elig=100 conf=90 :: 모든 자격 요건을 충족할 수 있습니다: '한국어 맞춤법 및 문법에 대한 이해'와 '정중체 및 공식적인 어투로 글쓰기 능력'을 가지고 있습니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 모든 자격 요건을 충족합니다. 한국어 맞춤법 및 문법 이해, 정중체로 글쓰기 능력, 문서 교정 경험이 있습니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 모든 자격 요건을 충족합니다. '한국어 맞춤법 및 문법에 대한 이해'와 '정중체 및 공식적인 어투로 글쓰기 능력'을 갖추고 있습니다.
+  [check] text_editor: high_claim_without_reference
+  [award] t5 -> text_editor  [correct]
+  [exec] text_editor: 4 claimed step(s), 53 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [verify] text_editor: judge_says=True fixture_says=None -> verdict=True
+           제출된 결과물은 원문에 비해 맞춤법과 어투가 정중체로 교정되어 있으며, 모든 자격 요건을 충족합니다.
+  [bias-effect] plain rule would have picked sql_analyst; with Bias -> text_editor
+
+--- t6 (gold=code_fixer, fixture=python) ---
+[announce] t6
+           req: 파이썬 프로그래밍 언어에 대한 이해
+           req: 조건문 및 반복문 사용 능력
+           req: 리스트 데이터 구조에 대한 지식
+  [bid] sql_analyst: BID elig=100 conf=90 :: 공고의 자격 요건인 '파이썬 프로그래밍 언어에 대한 이해', '조건문 및 반복문 사용 능력', '리스트 데이터 구조에 대한 지식'을 모두 충족합니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 모든 자격 요건인 '파이썬 프로그래밍 언어에 대한 이해', '조건문 및 반복문 사용 능력', '리스트 데이터 구조에 대한 지식'을 충족합니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 모든 자격 요건인 '파이썬 프로그래밍 언어에 대한 이해', '조건문 및 반복문 사용 능력', '리스트 데이터 구조에 대한 지식'을 충족합니다.
+  [award] t6 -> sql_analyst  [MISAWARD (gold=code_fixer)]
+  [exec] sql_analyst: 5 claimed step(s), 99 chars of artifact
+  [run ] sql_analyst: PASS (61ms)
+  [verify] sql_analyst: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           결과물은 요구된 대로 수정된 파이썬 함수로, 양수만 리스트로 반환하며 홀수 입력에 대해 작동하지 않습니다.
+
+=== summary ===
+  run: homogeneous-core-run2
+  condition: homogeneous
+  tasks: 6
+  correct: 2
+  messages: 42
+  unassigned: 0
+  misawards: 4
+  note: tokens=15485 llm_calls=36 seed=20262606 delivered=2/4 judge_disagree=2
