@@ -1,12 +1,13 @@
-"""A rule-based seller exposed as an A2A server (a2a-sdk 1.2.x, JSON-RPC binding).
+"""A harness-driven seller exposed as an A2A server (a2a-sdk 1.2.x, JSON-RPC binding).
 
     python seller_agent.py                       # lamp shop on :9999
-    python seller_agent.py --config cards/b.json # another seller from a config file
+    python seller_agent.py --port 9100
 
-No model inside: the seller asks for an offer (INPUT_REQUIRED), counters, and
-either closes with a receipt artifact (COMPLETED) or walks away (REJECTED).
+The harness (harness.py) decides the asking price, the counteroffers, and when to accept or reject.
+The code speaks A2A and guards the reserve: no ask and no sale below it, whatever the harness says.
 """
 import argparse
+import asyncio
 import json
 import math
 import re
@@ -22,20 +23,49 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
+from harness import ask as ask_harness
+
 DEFAULT = {
     "name": "Lamp Shop",
     "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
     "skill_description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
     "port": 9999,
     "reserve": {"lamp": 100, "chair": 180, "bookshelf": 260},
-    "max_rounds": 3,
 }
+
+# What the harness sees on every turn. The wording is the seller's whole strategy.
+PROMPT = """You are the seller in a price negotiation. You are selling one {item}.
+Your reserve is {reserve}: the lowest price you may ask for or accept.
+
+The negotiation so far:
+{history}
+
+{situation}
+
+Answer with one JSON object and nothing else:
+{{"action": "counter" or "accept" or "reject", "price": <integer>}}
+"""
 
 
 class Seller(AgentExecutor):
     def __init__(self, cfg):
         self.cfg = cfg
-        self.open = {}  # task id -> {"item", "ask", "rounds"}
+        self.open = {}  # task id -> {"item", "ask", "history"}
+
+    async def decide(self, deal, situation):
+        """One harness call. Returns (action, price), or None when the answer cannot be read."""
+        reserve = self.cfg["reserve"][deal["item"]]
+        prompt = PROMPT.format(item=deal["item"], reserve=reserve, situation=situation,
+                               history="\n".join(deal["history"]) or "(nothing yet)")
+        try:
+            raw = await asyncio.to_thread(ask_harness, prompt)
+            d = json.loads(re.search(r"\{.*\}", raw, re.S).group())
+            action, price = str(d["action"]), int(d["price"])
+        except Exception as e:
+            print(f"[harness] {situation} -> unreadable: {e!r}", flush=True)
+            return None
+        print(f"[harness] {deal['item']} | {situation} -> {action} {price}", flush=True)
+        return action, price
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -52,8 +82,16 @@ class Seller(AgentExecutor):
             if item is None:
                 await up.reject(say("We only sell: " + ", ".join(self.cfg["reserve"]) + "."))
                 return
-            ask = math.ceil(self.cfg["reserve"][item] * 1.3)
-            self.open[task.id] = {"item": item, "ask": ask, "rounds": 0}
+            reserve = self.cfg["reserve"][item]
+            deal = {"item": item, "ask": None, "history": []}
+            answer = await self.decide(deal, "A buyer wants this item. Name your asking price (action: counter).")
+            ask = answer[1] if answer else math.ceil(reserve * 1.3)  # unreadable answer: the lab's opening rule
+            if ask < reserve:
+                print(f"[guard] opening ask {ask} < reserve {reserve} -> {reserve}", flush=True)
+                ask = reserve
+            deal["ask"] = ask
+            deal["history"].append(f"seller: asking {ask}")
+            self.open[task.id] = deal
             await up.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
             return
 
@@ -62,19 +100,29 @@ class Seller(AgentExecutor):
             await up.requires_input(say("Send your offer as a number."))
             return
         offer, reserve = int(m.group()), self.cfg["reserve"][deal["item"]]
-        if offer >= reserve:
+        deal["history"].append(f"buyer: offers {offer}")
+        answer = await self.decide(deal, f"The buyer now offers {offer}.")
+        action, price = answer if answer else ("counter", deal["ask"])  # unreadable answer: hold the last ask
+
+        if action == "accept" and offer < reserve:
+            print(f"[guard] accept at {offer} < reserve {reserve} -> counter {reserve}", flush=True)
+            action, price = "counter", reserve
+        if action == "accept":
             receipt = {"seller": self.cfg["name"], "item": deal["item"], "price": offer}
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {deal['item']} at {offer}."))
             del self.open[task.id]
             return
-        deal["rounds"] += 1
-        if deal["rounds"] >= self.cfg["max_rounds"]:
+        if action == "reject":
             await up.reject(say(f"No deal at {offer}."))
             del self.open[task.id]
             return
-        deal["ask"] = max(reserve, (offer + deal["ask"]) // 2)
-        await up.requires_input(say(f"{offer} is too low. Counteroffer: {deal['ask']}."))
+        if price < reserve:
+            print(f"[guard] counter {price} < reserve {reserve} -> {reserve}", flush=True)
+            price = reserve
+        deal["ask"] = price
+        deal["history"].append(f"seller: counteroffer {price}")
+        await up.requires_input(say(f"{offer} is too low. Counteroffer: {price}."))
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
