@@ -92,7 +92,7 @@ def invocation_slot(deadline=None):
         try:
             handle.seek(0)
             last = float(handle.read() or 0)
-            pause = max(0, last + 5 - time.monotonic())
+            pause = max(0, last + 10 - time.monotonic())
             if deadline and time.monotonic() + pause >= deadline - 1:
                 raise HarnessError("Deadline reached during inference pacing")
             time.sleep(pause)
@@ -110,7 +110,7 @@ class Harness:
         self.role, self.trace, self.timeout = role, trace, timeout
 
     def decide(self, context: dict, *, strategy: str = "balanced", instruction: str = "",
-               validator=None, deadline: float | None = None, attempts: int = 3) -> dict:
+               validator=None, deadline: float | None = None, attempts: int = 4) -> dict:
         feedback = []
         for attempt in range(1, attempts + 1):
             remaining = min(self.timeout, (deadline - time.monotonic()) if deadline else self.timeout)
@@ -157,11 +157,12 @@ class Harness:
                                  elapsed=round(time.monotonic() - started, 3))
                 try:
                     if process.returncode:
-                        if "429" in stderr or "Too Many Requests" in stderr:
-                            pause = min(10 * attempt, max(0, (deadline - time.monotonic() - 2) if deadline else 20))
+                        if ("429" in stderr or "Too Many Requests" in stderr) and attempt < attempts:
+                            pause = min(20 * attempt, max(0, (deadline - time.monotonic() - 2) if deadline else 60))
                             self.trace.write("rate_limit_backoff", seconds=pause)
                             time.sleep(pause)
-                        raise HarnessError(f"CLI exit {process.returncode}: {stderr[-1200:]}")
+                        detail = stderr.strip().splitlines()[-1] if stderr.strip() else "no stderr"
+                        raise HarnessError(f"CLI exit {process.returncode}: {detail[-300:]}")
                     decision = json.loads(output.read_text())
                     if validator:
                         decision = validator(decision)

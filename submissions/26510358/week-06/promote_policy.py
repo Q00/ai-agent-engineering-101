@@ -20,6 +20,7 @@ from evaluate_policy import holdout_cases, make_context, sensible_progress, vali
 from evidence import numeric_price, validate_buyer_decision, validate_seller_decision
 from harness import MODEL
 from policy import StrategyPolicy, promote_policy
+from run_adversarial import run_local_tests
 
 ROOT = Path(__file__).resolve().parent
 REQUIRED = {"seller_card": 1, "seller_opens": 1, "seller_deal": 3, "seller_terminal": 1,
@@ -274,14 +275,18 @@ def assemble(candidate: Path, holdout_path: Path, adversarial_path: Path,
     holdout, adversarial, trade = load(holdout_path), load(adversarial_path), load(trade_path)
     traces = verify_holdout(holdout, policy) + verify_adversarial(adversarial, policy)
     traces += verify_official(trade, trade_path, official_trace_dir, policy)
+    # The incoming guard report does not carry a tested-source hash. Recheck the
+    # current small deterministic suite rather than trusting only a passed flag.
+    current_guards = run_local_tests(ROOT / "tests/test_evidence.py", "deterministic_guard")
+    verify_test_coverage(current_guards, ROOT / "tests/test_evidence.py", "deterministic_guard")
     return {"schema_version": 1, "created_at": datetime.now(timezone.utc).isoformat(),
             "policy_version": policy.version, "policy_sha256": policy.sha256,
-            "actual_harness_holdout": holdout, "guard_tests": adversarial["guard_tests"],
+            "actual_harness_holdout": holdout, "guard_tests": current_guards,
             "adversarial_tests": adversarial["adversarial_tests"],
             "official_policy_sha256": policy.sha256, "official_report_sha256": digest(trade_path),
             "artifact_checks": {"holdout_sha256": digest(holdout_path), "adversarial_sha256": digest(adversarial_path),
                                 "source_sha256": {name: digest(ROOT / name) for name in
-                                                  ("policy.py", "harness.py", "evidence.py", "evaluate_policy.py", "run_adversarial.py")},
+                                                  ("policy.py", "harness.py", "evidence.py", "evaluate_policy.py", "run_adversarial.py", "tests/test_evidence.py", "tests/test_integrations.py")},
                                 "traces": traces},
             "limitations": "Local reports and raw CLI artifacts are checked for completeness and consistency; this is not remote cryptographic attestation. Holdout covers single turns, not RL performance gains."}
 

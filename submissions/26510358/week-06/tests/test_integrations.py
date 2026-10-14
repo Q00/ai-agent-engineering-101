@@ -205,6 +205,45 @@ class BuyerHTTPIntegrationTests(unittest.TestCase):
         self.assertIn("quote_id_mismatch", result["issues"])
         self.assertEqual(ledger.snapshot()["reserved_total"], 120)
 
+    def test_every_named_catalog_id_rejects_initial_product_substitution(self):
+        for requested in ("desk", "sofa", "lamp-00123", "bookshelf-0001", "cabinet-00005"):
+            initial = input_task()
+            initial["status"]["message"]["metadata"]["itemId"] = "chair-00300"
+            ledger = Ledger(120)
+            with self.subTest(requested=requested), ScriptedPeer([initial]) as peer, patch.object(Harness, "decide") as model:
+                with self.assertRaisesRegex(EvidenceError, "substituted"):
+                    buyer.negotiate(peer.url, requested, 120, ledger=ledger,
+                                    trace=RecordingTrace("named-item-substitution"), timeout=10)
+                model.assert_not_called()
+                self.assertFalse(peer.accepted)
+                self.assertEqual(ledger.snapshot()["available_budget"], 120)
+                self.assertEqual(len([r for r in peer.requests if r["method"] == "POST"]), 1)
+
+    def test_explicit_external_sku_prevents_substitution_for_descriptive_request(self):
+        initial = input_task()
+        initial["status"]["message"]["metadata"]["itemId"] = "SKU-WRONG"
+        with ScriptedPeer([initial]) as peer, patch.object(Harness, "decide") as model:
+            with self.assertRaisesRegex(EvidenceError, "substituted"):
+                buyer.negotiate(peer.url, "a red desk lamp", 120, expected_item_id="SKU-RED-XL",
+                                trace=RecordingTrace("external-sku-substitution"), timeout=10)
+            model.assert_not_called()
+            self.assertFalse(peer.accepted)
+
+    def test_named_and_descriptive_requests_keep_correct_canonical_item(self):
+        for requested, quoted in (("desk-0001", "desk-0001"),
+                                  ("something wooden to keep about 40 books", "bookshelf-0001")):
+            initial = input_task()
+            initial["status"]["message"]["metadata"]["itemId"] = quoted
+            receipt = {"item": quoted, "price": 120}
+            contexts = []
+            chosen = {**decision("accept", 120), "item_id": quoted}
+            with self.subTest(requested=requested), ScriptedPeer([initial, completed_task(receipt)]) as peer, patch.object(
+                    Harness, "decide", scripted_harness([chosen], contexts)):
+                result = buyer.negotiate(peer.url, requested, 120, trace=RecordingTrace("canonical-item"), timeout=10)
+            self.assertEqual(result["status"], "completed")
+            self.assertEqual(contexts[0]["item"], quoted)
+            self.assertEqual(contexts[0]["request"], requested)
+
     def test_receipt_corruption_is_disputed_and_keeps_remote_spend_reserved(self):
         corruptions = [("price", {"item": "lamp", "price": 115}, "price_mismatch"),
                        ("item", {"item": "chair", "price": 120}, "item_mismatch"),

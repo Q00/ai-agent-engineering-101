@@ -4,9 +4,11 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 import time
 import uuid
 
+from catalog import CATEGORY_TERMS
 from evidence import EvidenceError, Ledger, inspect_untrusted, validate_buyer_decision, verify_receipt
 from harness import Harness
 from policy import StrategyPolicy, strategy_instruction
@@ -14,7 +16,19 @@ from protocol import A2AClient, ProtocolError, receipt_from, task_metadata, task
 from tracing import Trace
 
 
-def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, trace=None, timeout=240):
+def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, trace=None,
+              timeout=240, expected_item_id=None):
+    if not isinstance(item, str) or not item.strip():
+        raise EvidenceError("Requested item must be nonempty text")
+    if expected_item_id is not None:
+        if not isinstance(expected_item_id, str) or not expected_item_id.strip():
+            raise EvidenceError("Expected item ID must be nonempty text")
+        requested_item_id = expected_item_id
+    else:
+        normalized = item.strip().lower()
+        numbered = re.fullmatch(r"([a-z]+)-\d+", normalized)
+        requested_item_id = normalized if (normalized in CATEGORY_TERMS or
+            (numbered is not None and numbered.group(1) in CATEGORY_TERMS)) else None
     trace = trace or Trace("buyer")
     ledger = ledger or Ledger(budget)
     policy = policy or StrategyPolicy()
@@ -27,7 +41,7 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
     reserved = False
     history, expected_price = [], None
     task_id = None
-    expected_item, quoted_item, expected_quote_id = item, None, None
+    expected_item, quoted_item, expected_quote_id = requested_item_id or item, None, None
     try:
         task = client.send(f"I want to buy a {item}")
         task_id = task.get("id")
@@ -72,9 +86,9 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                     raise EvidenceError("Invalid quoted item ID")
                 if quoted_item is not None and remote_item != quoted_item:
                     raise EvidenceError("Seller changed the quoted product during negotiation")
-                quoted_item = remote_item
-                if item in ("lamp", "chair", "bookshelf") and quoted_item != item:
+                if requested_item_id is not None and remote_item != requested_item_id:
                     raise EvidenceError("Seller substituted a different explicitly requested catalog item")
+                quoted_item = remote_item
                 expected_item = quoted_item
             # A2A does not define price semantics. Our harness interprets text if no structured quote exists.
             context = {"role": "buyer", "item": expected_item, "request": item, "budget": budget,
@@ -128,9 +142,11 @@ if __name__ == "__main__":
     parser.add_argument("--url", required=True)
     parser.add_argument("--item", required=True)
     parser.add_argument("--budget", required=True, type=float)
+    parser.add_argument("--expected-item-id", help="Require an exact external catalog ID, including arbitrary SKU formats")
     parser.add_argument("--policy")
     parser.add_argument("--log-dir")
     args = parser.parse_args()
     trace = Trace("buyer", args.log_dir)
-    result = negotiate(args.url, args.item, args.budget, policy=StrategyPolicy(args.policy), trace=trace)
+    result = negotiate(args.url, args.item, args.budget, policy=StrategyPolicy(args.policy), trace=trace,
+                       expected_item_id=args.expected_item_id)
     print(json.dumps(result, ensure_ascii=False), flush=True)
