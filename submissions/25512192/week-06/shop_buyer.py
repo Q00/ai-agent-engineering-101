@@ -15,6 +15,7 @@ State the buyer carries per entry: status, shop, price, and the notes lines (one
 """
 import argparse
 import json
+import re
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -24,6 +25,7 @@ from a2a_client import Shop
 from buyer import log, negotiate
 
 MAX_PASSES = 3
+FINAL = re.compile(r": (DEAL|WALKED|ended) ")
 SYSTEM = ("You are the planning brain of a buyer agent that shops at many shops at once. "
           "Answer with exactly one JSON object and nothing else.")
 PLAN = """Shopping list (entry: what to buy):
@@ -48,8 +50,9 @@ def num(v):
 
 
 def card_line(sid, shop):
-    skills = " ".join(s.get("description", "") for s in shop.card.get("skills", []))
-    return f"{sid} | {shop.name} | {shop.card.get('description', '')} {skills.split('. Name or')[0]}"
+    """One directory line per card: name, description, and the skill tags (the shop's categories)."""
+    tags = sorted({t for s in shop.card.get("skills", []) for t in s.get("tags", [])} - {"shopping", "negotiation"})
+    return f"{sid} | {shop.name} | {shop.card.get('description', '')} | tags: {', '.join(tags)}"
 
 
 def main():
@@ -99,9 +102,12 @@ def main():
         money = args.budget - spent()
         past = ""
         if p > 1:
-            past = "What happened so far (one line per negotiation round):\n" + "\n".join(
+            # one line per finished negotiation; it carries that shop's whole ask -> offer history.
+            # The per-round lines stay in the log only. (notes[-8:] used to cut off the first shop tried.)
+            past = "What happened so far (one line per shop negotiated with):\n" + "\n".join(
                 f"entry {n}: {e['status']}" + (f" at {e['shop']} for {e['price']}" if e["status"] == "bought" else "")
-                + "".join(f"\n  - {line}" for line in e["notes"][-8:]) for n, e in ledger.items()) + "\n\n"
+                + "".join(f"\n  - {line}" for line in e["notes"] if FINAL.search(line))
+                for n, e in ledger.items()) + "\n\n"
         prompt = PLAN.format(entries="\n".join(f"{n}: {e['want']}" for n, e in open_.items()), money=money,
                              shops=directory, past=past)
         log(f"[plan {p}] prompt {len(prompt)} chars")
