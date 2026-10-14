@@ -1,0 +1,71 @@
+# ======================================================================
+# 실험 조건 (이 런에 실제로 쓰인 값)
+# ======================================================================
+# harness            : plan_exec (harness_plan_execute.run_plan_execute)
+# model              : claude-sonnet-5
+# 호출 경로          : claude -p (구독 자격증명, API 키 미사용)
+# claude -p 플래그   : --output-format json --model claude-sonnet-5 --allowed-tools '' --exclude-dynamic-system-prompt-sections --strict-mcp-config --mcp-config '{"mcpServers":{}}'
+# 도구 집합          : count_pattern, read_file
+# IRREVERSIBLE       : (빈 집합)
+# max_replan         : 1
+# max_tool_rounds    : 3
+# task               : In app.log, which hour (HH:00) has the most ERROR lines? Answer with the hour in HH:00 form.
+# expected           : 14:00
+#
+# --- 시스템 프롬프트 전문 ---
+# [SYSTEM_PLAN] (187자)
+#   너는 계획을 짜는 사람이다. 도구를 직접 쓸 수 없고, 파일 내용도 볼 수 없다.
+#   
+#   주어진 태스크를 푸는 단계를 JSON 리스트 한 줄로만 답하라.
+#   각 단계는 짧은 한국어 또는 영어 문장이다. 설명, 코드 블록, 다른 말은 쓰지 마라.
+#   
+#   예: ["app.log를 읽는다", "시간대별 ERROR 수를 센다", "최다 시간대를 고른다"]
+# [SYSTEM_EXEC] (513자)
+#   너는 계획의 한 단계를 실행하는 사람이다. 계획을 짜지는 않는다.
+#   
+#   도구를 직접 실행할 수는 없다. 네가 Action을 텍스트로 쓰면 하네스가 실행해서
+#   Observation을 돌려준다. 파일을 스스로 읽으려 하지 마라.
+#   
+#   응답은 항상 정확히 두 줄이다.
+#   
+#   Thought: 이 단계에서 무엇을 할지 한 줄로
+#   Action: {"tool": "<이름>", "args": {...}}
+#   
+#   쓸 수 있는 도구:
+#     read_file(path)                -> 파일 내용을 돌려준다(앞 4000자).
+#     count_pattern(path, pattern)   -> 정규식에 걸리는 줄 수를 돌려준다.
+#     finish(answer)                 -> 태스크를 끝낸다. 답을 알았을 때 이것을 부른다.
+#   
+#   이 단계를 계획대로 진행할 수 없으면 Action 대신 다음 한 줄을 쓰라.
+#   OFF_PLAN: 왜 안 되는지
+#   
+#   이 단계에서 할 일을 마쳤으면 다음 한 줄을 쓰라.
+#   DONE: 이 단계의 결과를 한 줄로
+# ======================================================================
+[plan] ['app.log를 read_file로 읽어 시간 형식을 확인한다', 'count_pattern으로 각 시간대(HH:00~HH:59)의 ERROR 라인 수를 센다', '가장 많은 시간대를 찾는다', 'finish로 답을 반환한다']
+[step 1/4] app.log를 read_file로 읽어 시간 형식을 확인한다
+  Thought: app.log 파일의 시간 형식을 확인하기 위해 read_file로 내용을 읽는다.
+  [tool] read_file({'path': 'app.log'}) -> 2026-09-01 09:07:27 INFO  job finished in 320ms | 2026-09-01 09:11:56 ERROR NullReference in QuizService.score | 2026-09-01 09:13:14 INFO  health check ok | 2026-09-01 09:26:45 INFO  health check ok | 2026-09
+  [done] 시간 형식은 "YYYY-MM-DD HH:MM:SS LEVEL 메시지"이며 단일 날짜(2026-09-01)에 09~17시대 로그가 존재함을 확인함
+[step 2/4] count_pattern으로 각 시간대(HH:00~HH:59)의 ERROR 라인 수를 센다
+  Thought: 09시부터 17시까지 각 시간대별로 ERROR 라인 수를 count_pattern으로 센다.
+  [tool] count_pattern({'path': 'app.log', 'pattern': '^2026-09-01 09:\\d{2}:\\d{2} ERROR'}) -> 1
+  Thought: 09시대는 1건 확인했으니, 나머지 10~17시대 ERROR 라인 수를 마저 세야 한다.
+  [tool] count_pattern({'path': 'app.log', 'pattern': '^2026-09-01 10:\\d{2}:\\d{2} ERROR'}) -> 2
+  Thought: 나머지 시간대(11~17시)에 대해서도 ERROR 라인 수를 센다.
+  [tool] count_pattern({'path': 'app.log', 'pattern': '^2026-09-01 11:\\d{2}:\\d{2} ERROR'}) -> 1
+[replan] ['app.log를 read_file로 읽어 시간 형식을 확인한다', "09~17시 각 시간대에 대해 count_pattern으로 '^2026-09-01 HH:' ERROR 패턴 매칭 라인 수를 센다", '가장 많은 ERROR 라인 수를 가진 시간대를 찾는다', 'finish로 해당 시간대를 HH:00 형태로 답한다']
+[step 2/4] 09~17시 각 시간대에 대해 count_pattern으로 '^2026-09-01 HH:' ERROR 패턴 매칭 라인 수를 센다
+  Thought: 09시부터 17시까지 각 시간대별로 ERROR 로그 줄 수를 count_pattern으로 센다.
+  [tool] count_pattern({'path': 'app.log', 'pattern': '^2026-09-01 09:.*ERROR'}) -> 1
+  Thought: 09시는 1건, 이어서 10~17시 각각 ERROR 라인 수를 센다.
+  [tool] count_pattern({'path': 'app.log', 'pattern': '^2026-09-01 10:.*ERROR'}) -> 2
+  Thought: 나머지 시간대(11~17시)의 ERROR 라인 수를 센다
+  [tool] count_pattern({'path': 'app.log', 'pattern': '^2026-09-01 11:.*ERROR'}) -> 1
+[step 3/4] 가장 많은 ERROR 라인 수를 가진 시간대를 찾는다
+  [off_plan] 2단계에서 시간대별 ERROR 카운트가 산출되지 않아(도구 호출 상한 초과) 비교할 데이터가 없다
+[step 4/4] finish로 해당 시간대를 HH:00 형태로 답한다
+  [off_plan] 2단계에서 시간대별 ERROR 카운트를 얻지 못해 비교할 데이터가 없으므로 finish로 답을 낼 수 없다
+[answer] 도구 호출 상한 초과로 시간대별 ERROR 카운트를 산출하지 못해 답할 수 없음
+[final] 도구 호출 상한 초과로 시간대별 ERROR 카운트를 산출하지 못해 답할 수 없음
+[judge] expected='14:00' -> X (89.2s)
