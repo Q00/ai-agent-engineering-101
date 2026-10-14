@@ -1,0 +1,63 @@
+[host] 2 tools: ['calculator', 'read_file']
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-05/mcp_agent.py", line 63, in <module>
+  |     print(asyncio.run(run(goal)))
+  |           ^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/soony-home/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py", line 195, in run
+  |     return runner.run(main)
+  |            ^^^^^^^^^^^^^^^^
+  |   File "/Users/soony-home/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py", line 118, in run
+  |     return self._loop.run_until_complete(task)
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/soony-home/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+  |     return future.result()
+  |            ^^^^^^^^^^^^^^^
+  |   File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-05/mcp_agent.py", line 34, in run
+  |     async with Client(SERVER) as mcp:
+  |                ^^^^^^^^^^^^^^
+  |   File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/mcp/client/client.py", line 475, in __aexit__
+  |     await self._exit_stack.__aexit__(exc_type, exc_val, exc_tb)
+  |   File "/Users/soony-home/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py", line 754, in __aexit__
+  |     raise exc_details[1]
+  |   File "/Users/soony-home/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+  |     cb_suppress = await cb(*exc_details)
+  |                   ^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/soony-home/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/mcp/client/stdio.py", line 200, in stdio_client
+  |     async with anyio.create_task_group() as tg:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/mcp/client/stdio.py", line 204, in stdio_client
+    |     yield read_stream, write_stream
+    |   File "/Users/soony-home/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+    |     cb_suppress = await cb(*exc_details)
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/mcp/client/session.py", line 514, in __aexit__
+    |     result = await self._task_group.__aexit__(exc_type, exc_val, exc_tb)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+    |     raise BaseExceptionGroup(
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-05/mcp_agent.py", line 39, in run
+      |     resp = client.messages.create(
+      |            ^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/anthropic/_utils/_utils.py", line 294, in wrapper
+      |     return func(*args, **kwargs)
+      |            ^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/anthropic/resources/messages/messages.py", line 980, in create
+      |     return self._post(
+      |            ^^^^^^^^^^^
+      |   File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/anthropic/_base_client.py", line 1507, in post
+      |     return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+      |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/anthropic/_base_client.py", line 1191, in request
+      |     raise self._make_status_error_from_response(response) from None
+      | anthropic.APIStatusError: Error code: 402 - {'detail': {'code': 402, 'message': 'insufficient_quota - You have exceeded your credit quota for this month'}}
+      +------------------------------------
