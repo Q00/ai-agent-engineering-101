@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
-  "started": "2026-10-14T01:36:18+00:00",
+  "started": "2026-10-14T01:53:49+00:00",
   "harness": "Claude Code (claude -p), model haiku",
   "seller_cmd": "python seller_agent.py --port {port}",
   "buyer_cmd": "python buyer.py --url {url} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:58128/",
+        "url": "http://127.0.0.1:60280/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -71,67 +71,67 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 105.0, asks [175, 130, 105]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 120]"
     },
     {
       "test": "seller_deal",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [250, 150, 110]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [150, 125, 110]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [400, 300, 270, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [380, 270, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [300, 270, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [350, 280, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [345, 280, 270, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [380, 300, 270, 260]"
     },
     {
       "test": "buyer_deal",
       "run": 1,
       "pass": true,
-      "detail": "deals [115] (budget 120)"
+      "detail": "deals [100] (budget 120)"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 1,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_deal",
       "run": 2,
       "pass": true,
-      "detail": "deals [115] (budget 120)"
+      "detail": "deals [100] (budget 120)"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 2,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_deal",
       "run": 3,
       "pass": true,
-      "detail": "deals [115] (budget 120)"
+      "detail": "deals [100] (budget 120)"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 3,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_holds_budget",
