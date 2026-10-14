@@ -183,6 +183,28 @@ class BuyerHTTPIntegrationTests(unittest.TestCase):
         self.assertEqual(ledger.snapshot()["committed_total"], 120)
         self.assertEqual(len(ledger.snapshot()["purchases"]), 1)
 
+    def test_fractional_price_travels_without_six_digit_rounding(self):
+        amount = 100.123456
+        receipt = {"item": "lamp", "price": amount}
+        with ScriptedPeer([input_task(ask=130), completed_task(receipt)]) as peer:
+            result, ledger, _, _ = self.run_buyer(peer, [decision("offer", amount)])
+            posts = [r["body"] for r in peer.requests if r["method"] == "POST"]
+            transmitted = posts[-1]["params"]["message"]["parts"][0]["text"]
+            self.assertEqual(float(transmitted), amount)
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(ledger.snapshot()["committed_total"], amount)
+
+    def test_receipt_old_quote_id_is_disputed_with_funds_held(self):
+        initial = input_task()
+        initial["status"]["message"]["metadata"]["quoteId"] = "current-quote"
+        receipt = {"item": "lamp", "price": 120, "quoteId": "stale-quote"}
+        with ScriptedPeer([initial, completed_task(receipt)]) as peer:
+            result, ledger, _, _ = self.run_buyer(peer, [decision("accept", 120)])
+            self.assertTrue(peer.accepted)
+        self.assertEqual(result["status"], "disputed")
+        self.assertIn("quote_id_mismatch", result["issues"])
+        self.assertEqual(ledger.snapshot()["reserved_total"], 120)
+
     def test_receipt_corruption_is_disputed_and_keeps_remote_spend_reserved(self):
         corruptions = [("price", {"item": "lamp", "price": 115}, "price_mismatch"),
                        ("item", {"item": "chair", "price": 120}, "item_mismatch"),

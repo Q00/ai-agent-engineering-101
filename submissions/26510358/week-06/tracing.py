@@ -3,16 +3,17 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import threading
 import uuid
 
 
 class Trace:
-    def __init__(self, role: str, directory: str | Path = "logs/runtime"):
+    def __init__(self, role: str, directory: str | Path | None = None):
         self.run_id = uuid.uuid4().hex[:12]
         self.role = role
-        self.directory = Path(directory)
+        self.directory = Path(directory or os.environ.get("A2A_TRACE_DIR", "logs/runtime"))
         self.directory.mkdir(parents=True, exist_ok=True)
         self.path = self.directory / f"{role}-{self.run_id}.jsonl"
         self.lock = threading.Lock()

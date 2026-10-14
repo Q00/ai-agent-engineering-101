@@ -135,6 +135,7 @@ def validate_buyer_decision(
 def verify_receipt(
     receipt: Mapping[str, Any], *, item: str, budget: float,
     expected_price: float | None, task_id: str | None = None,
+    expected_quote_id: str | None = None,
 ) -> list[str]:
     """List inconsistencies; missing optional receipt task IDs are not a failure.
 
@@ -146,10 +147,10 @@ def verify_receipt(
     if not isinstance(receipt, Mapping):
         return ["receipt_not_object"]
     issues: list[str] = []
-    actual_item = receipt.get("item_id", receipt.get("item"))
-    if actual_item is None:
+    item_fields = [receipt[key] for key in ("item", "item_id", "itemId") if key in receipt]
+    if not item_fields:
         issues.append("missing_item_evidence")
-    elif actual_item != item:
+    elif any(value != item for value in item_fields):
         issues.append("item_mismatch")
     try:
         actual_price = numeric_price(receipt.get("price"))
@@ -167,7 +168,30 @@ def verify_receipt(
             if key in receipt and receipt[key] != task_id:
                 issues.append("task_id_mismatch")
                 break
-    return issues
+    for label, aliases, expected_id in (
+        ("task", ("taskId", "task_id"), task_id),
+        ("quote", ("quoteId", "quote_id"), expected_quote_id),
+        ("purchase", ("purchaseId", "purchase_id"), None),
+    ):
+        if expected_id is not None and (not isinstance(expected_id, str) or not expected_id.strip()):
+            raise EvidenceError(f"expected {label} ID must be nonempty text")
+        identifier, identifier_issues = _receipt_identifier(receipt, aliases, label)
+        issues.extend(identifier_issues)
+        # The kit does not supply optional IDs. Compare only IDs actually echoed.
+        if identifier is not None and expected_id is not None and identifier != expected_id:
+            issues.append(f"{label}_id_mismatch")
+    return list(dict.fromkeys(issues))
+
+
+def _receipt_identifier(receipt, aliases, label):
+    values = [receipt[key] for key in aliases if key in receipt]
+    if not values:
+        return None, []
+    if any(not isinstance(value, str) or not value.strip() for value in values):
+        return None, [f"invalid_{label}_id"]
+    if len(set(values)) != 1:
+        return None, [f"{label}_id_mismatch"]
+    return values[0], []
 
 
 def _json_copy(value: Any) -> Any:
@@ -268,12 +292,18 @@ class Ledger:
         except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
             raise EvidenceError("cannot restore persisted ledger") from exc
 
-    def reserve(self, item_key: str, price: float, purchase_id: str, *, expected_item: str | None = None) -> dict[str, Any]:
+    def reserve(self, item_key: str, price: float, purchase_id: str, *,
+                expected_item: str | None = None, seller_origin: str | None = None,
+                expected_quote_id: str | None = None) -> dict[str, Any]:
         """Atomically reserve one item and funds before sending acceptance."""
         item_key = self._identifier(item_key, "item_key")
         purchase_id = self._identifier(purchase_id, "purchase_id")
         amount = numeric_price(price)
         expected_item = self._identifier(expected_item or item_key, "expected_item")
+        if seller_origin is not None:
+            seller_origin = self._identifier(seller_origin, "seller_origin")
+        if expected_quote_id is not None:
+            expected_quote_id = self._identifier(expected_quote_id, "expected_quote_id")
         with self._lock:
             if purchase_id in self._purchases:
                 raise EvidenceError("purchase_id has already been used")
@@ -286,6 +316,7 @@ class Ledger:
             proposed = copy.deepcopy(self._purchases)
             record = {"purchase_id": purchase_id, "item_key": item_key,
                       "expected_item": expected_item,
+                      "seller_origin": seller_origin, "expected_quote_id": expected_quote_id,
                       "price": amount, "state": "reserved", "committed": False,
                       "receipt": None, "disputed_reasons": []}
             proposed[purchase_id] = record
@@ -302,9 +333,19 @@ class Ledger:
             if record["state"] != "reserved":
                 raise EvidenceError("only an active reservation can be committed")
             issues = verify_receipt(received, item=record.get("expected_item", record["item_key"]),
-                                    budget=record["price"], expected_price=record["price"])
+                                    budget=record["price"], expected_price=record["price"],
+                                    expected_quote_id=record.get("expected_quote_id"))
             if issues:
                 raise EvidenceError("receipt verification failed: " + ", ".join(issues))
+            remote_id, _ = _receipt_identifier(received, ("purchaseId", "purchase_id"), "purchase")
+            if remote_id is not None:
+                for previous_id, previous in self._purchases.items():
+                    old_receipt = previous.get("receipt")
+                    if (previous_id != purchase_id and isinstance(old_receipt, dict)
+                            and previous.get("seller_origin") == record.get("seller_origin")):
+                        old_remote_id, _ = _receipt_identifier(old_receipt, ("purchaseId", "purchase_id"), "purchase")
+                        if old_remote_id == remote_id:
+                            raise EvidenceError("receipt verification failed: purchase_id_replay")
             proposed = copy.deepcopy(self._purchases)
             proposed[purchase_id].update(state="committed", committed=True, receipt=received)
             self._save(proposed)

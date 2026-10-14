@@ -100,6 +100,53 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(snapshot["reserved_total"], 90)
         self.assertEqual(snapshot["available_budget"], 10)
 
+    def test_every_supplied_item_alias_must_match(self):
+        for receipt in ({"itemId": "lamp", "price": 100},
+                        {"item": "lamp", "item_id": "lamp", "itemId": "lamp", "price": 100}):
+            self.assertEqual(verify_receipt(receipt, item="lamp", budget=120, expected_price=100), [])
+        for alias in ("item", "item_id", "itemId"):
+            receipt = {"item": "lamp", "item_id": "lamp", "itemId": "lamp", "price": 100}
+            receipt[alias] = "chair"
+            with self.subTest(alias=alias):
+                self.assertIn("item_mismatch", verify_receipt(receipt, item="lamp", budget=120, expected_price=100))
+
+    def test_optional_quote_and_identifier_alias_evidence(self):
+        receipt = {"item": "lamp", "price": 100, "quoteId": "quote-1", "purchaseId": "purchase-1"}
+        self.assertEqual(verify_receipt(receipt, item="lamp", budget=120,
+                                        expected_price=100, expected_quote_id="quote-1"), [])
+        self.assertIn("quote_id_mismatch", verify_receipt(receipt, item="lamp", budget=120,
+                                        expected_price=100, expected_quote_id="quote-2"))
+        receipt["purchase_id"] = "another-purchase"
+        self.assertIn("purchase_id_mismatch", verify_receipt(receipt, item="lamp", budget=120, expected_price=100))
+        self.assertEqual(verify_receipt({"item": "lamp", "price": 100}, item="lamp", budget=120,
+                                        expected_price=100, expected_quote_id="quote-1"), [])
+
+    def test_remote_purchase_id_replay_is_scoped_to_origin_and_persisted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ledger.json"
+            ledger = Ledger(500, path)
+            ledger.reserve("slot-1", 100, "local-1", expected_item="lamp",
+                           seller_origin="http://shop-1", expected_quote_id="q1")
+            receipt = {"item": "lamp", "price": 100, "purchaseId": "remote-1", "quoteId": "q1"}
+            ledger.commit("local-1", receipt)
+            self.assertEqual(ledger.commit("local-1", receipt)["state"], "committed")
+            ledger = Ledger(500, path)
+            ledger.reserve("slot-2", 100, "local-2", expected_item="lamp", seller_origin="http://shop-1")
+            with self.assertRaisesRegex(EvidenceError, "purchase_id_replay"):
+                ledger.commit("local-2", {"item": "lamp", "price": 100, "purchase_id": "remote-1"})
+            self.assertEqual(ledger.snapshot()["reserved_total"], 100)
+            ledger.mark_disputed("local-2", "reused remote purchase ID")
+            ledger.reserve("slot-3", 100, "local-3", expected_item="lamp", seller_origin="http://shop-2")
+            ledger.commit("local-3", {"item": "lamp", "price": 100, "purchaseId": "remote-1"})
+            self.assertEqual(ledger.snapshot()["committed_total"], 200)
+
+    def test_ledger_rejects_stale_quote_without_releasing_funds(self):
+        ledger = Ledger(120)
+        ledger.reserve("lamp", 100, "p1", expected_quote_id="current")
+        with self.assertRaisesRegex(EvidenceError, "quote_id_mismatch"):
+            ledger.commit("p1", {"item": "lamp", "price": 100, "quoteId": "stale"})
+        self.assertEqual(ledger.snapshot()["reserved_total"], 100)
+
     def test_parallel_same_item_has_exactly_one_reservation(self):
         ledger = Ledger(1000)
         def attempt(index):

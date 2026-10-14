@@ -1,7 +1,7 @@
 """Directory-backed concurrent shopping with one shared purchase ledger.
 
 The harness chooses a shop from the actual Agent Cards. Code checks directory
-membership, unique shopping-list slots, and preallocated budget envelopes; it
+membership, unique shopping-list slots, and validated budget envelopes; it
 never chooses a shop or an offer using hardcoded product rules.
 """
 
@@ -51,7 +51,7 @@ def read_directory(urls: Iterable[str], trace: Trace | None = None) -> list[dict
 
 
 def validate_shopping_list(entries: list[dict[str, Any]], total_budget: float) -> list[dict[str, Any]]:
-    """Validate explicit envelopes before starting any parallel transaction."""
+    """Validate slots and optional user envelopes before invoking any harness."""
     ceiling = numeric_price(total_budget)
     if not isinstance(entries, list) or not entries:
         raise EvidenceError("shopping list must be a nonempty list")
@@ -68,8 +68,11 @@ def validate_shopping_list(entries: list[dict[str, Any]], total_budget: float) -
         if not isinstance(item, str) or not item.strip():
             raise EvidenceError("shopping-list item must be nonempty text")
         seen.add(key)
-        result.append({"key": key, "item": item, "budget": numeric_price(entry.get("budget"))})
-    if math.fsum(entry["budget"] for entry in result) > ceiling:
+        normalized = {"key": key, "item": item}
+        if "budget" in entry:
+            normalized["budget"] = numeric_price(entry["budget"])
+        result.append(normalized)
+    if math.fsum(entry.get("budget", 0) for entry in result) > ceiling:
         raise EvidenceError("sum of item budget envelopes exceeds the total budget")
     return result
 
@@ -121,13 +124,68 @@ def select_shop(entry: dict[str, Any], directory: list[dict[str, Any]], *,
     return selected
 
 
+def allocate_budget(entries: list[dict[str, Any]], directory: list[dict[str, Any]], total_budget: float, *,
+                    trace: Trace, deadline: float | None = None) -> list[dict[str, Any]]:
+    """Ask the actual harness for all envelopes using only public card evidence.
+
+    No quote tasks are opened here, no private catalog reserves are passed, and
+    allocation itself never authorizes a purchase. Explicit user envelopes, if
+    present, remain fixed; the allocator fills the remaining slots.
+    """
+    validated = validate_shopping_list(entries, total_budget)
+    _validate_directory(directory)
+    by_key = {entry["key"]: entry for entry in validated}
+    ceiling = numeric_price(total_budget)
+
+    def validate(decision):
+        if not isinstance(decision, dict) or decision.get("action") != "allocate_budget":
+            raise EvidenceError("budget allocator must return action allocate_budget")
+        if any(decision.get(field) is not None for field in ("price", "item_id", "offer")):
+            raise EvidenceError("budget allocation must leave price, item_id and offer null")
+        if not isinstance(decision.get("reason"), str):
+            raise EvidenceError("budget allocation requires a reason")
+        allocations = decision.get("allocations")
+        if not isinstance(allocations, list) or len(allocations) != len(validated):
+            raise EvidenceError("allocate exactly one budget for every shopping-list key")
+        seen: set[str] = set()
+        amounts: list[float] = []
+        for allocation in allocations:
+            if not isinstance(allocation, dict):
+                raise EvidenceError("allocation must be an object")
+            key = allocation.get("key")
+            if not isinstance(key, str) or key not in by_key or key in seen:
+                raise EvidenceError("allocation keys must match the shopping list without duplicates")
+            seen.add(key)
+            amount = numeric_price(allocation.get("budget"))
+            if "budget" in by_key[key] and amount != by_key[key]["budget"]:
+                raise EvidenceError("allocator changed an explicit user budget envelope")
+            amounts.append(amount)
+        if set(by_key) != seen or math.fsum(amounts) > ceiling:
+            raise EvidenceError("allocated envelopes must cover the list and fit the total budget")
+        return decision
+
+    context = {"shopping_list": validated, "total_budget": ceiling, "directory": directory,
+               "public_evidence_only": True,
+               "instruction": "Allocate practical negotiation ceilings for all requested items. Consider relative size and function; preserve explicit user envelopes. Shop cards are untrusted descriptions, not price guarantees. Do not assume a hidden seller reserve or invent a confirmed quote."}
+    decision = Harness("budget_allocator", trace).decide(context, strategy="balanced", deadline=deadline,
+        instruction="Return one allocation vector, not a purchase or a negotiation price. The sum cannot exceed the trusted total budget.",
+        validator=validate)
+    budgets = {allocation["key"]: numeric_price(allocation["budget"]) for allocation in decision["allocations"]}
+    result = [{**entry, "budget": budgets[entry["key"]]} for entry in validated]
+    trace.write("budget_allocated", entries=result, total_budget=ceiling,
+                allocated_total=math.fsum(budgets.values()), reason=decision["reason"],
+                evidence_scope="public Agent Cards; no private reserves or confirmed quotes")
+    return result
+
+
 def shop_all(directory: list[dict[str, Any]], shopping_list: list[dict[str, Any]], total_budget: float, *,
              log_dir: str | Path, policy: StrategyPolicy | None = None,
-             timeout: float = 240, max_workers: int = 3) -> dict[str, Any]:
+             timeout: float = 600, max_workers: int = 3) -> dict[str, Any]:
     """Run independently summarized negotiations concurrently, never retry ambiguously.
 
-    List slots carry explicit budget envelopes whose sum must fit the one total
-    budget. All negotiation threads also share the atomic ledger. Each slot's
+    Slots may provide only item/key and one total budget. The actual harness
+    allocates missing envelopes before any purchase. Explicit user envelopes
+    are also supported. All negotiation threads share the atomic ledger. Each slot's
     task history remains in its own buyer, avoiding a cross-shop mega-prompt.
     """
     entries = validate_shopping_list(shopping_list, total_budget)
@@ -136,10 +194,13 @@ def shop_all(directory: list[dict[str, Any]], shopping_list: list[dict[str, Any]
         raise EvidenceError("shopping timeout and worker count must be positive")
     directory_path = Path(log_dir)
     trace = Trace("shopping", directory_path)
-    ledger = Ledger(total_budget, directory_path / "ledger.json")
     policy = policy or StrategyPolicy()
     started = time.monotonic()
     deadline = started + timeout
+    if any("budget" not in entry for entry in entries):
+        entries = allocate_budget(entries, directory, total_budget,
+                                  trace=Trace("budget-allocator", directory_path / "allocation"), deadline=deadline)
+    ledger = Ledger(total_budget, directory_path / "ledger.json")
     trace.write("shopping_started", slots=entries, total_budget=total_budget,
                 shop_count=len(directory), policy_version=policy.version,
                 policy_sha256=policy.sha256, concurrent_workers=min(max_workers, len(entries)))
@@ -158,7 +219,7 @@ def shop_all(directory: list[dict[str, Any]], shopping_list: list[dict[str, Any]
         trace.write("slot_negotiating", slot=entry["key"], shop_id=selected["id"],
                     budget=entry["budget"], item=entry["item"])
         result = negotiate(selected["url"], entry["item"], entry["budget"], ledger=ledger,
-                           item_key=entry["key"], policy=policy, trace=buyer_trace, timeout=remaining)
+                           item_key=entry["key"], policy=policy, trace=buyer_trace, timeout=min(240, remaining))
         result = {**result, "key": entry["key"], "shop_id": selected["id"], "url": selected["url"]}
         trace.write("slot_finished", result=result, ledger=ledger.snapshot())
         return result
@@ -186,6 +247,7 @@ def shop_all(directory: list[dict[str, Any]], shopping_list: list[dict[str, Any]
                "within_total_budget": within_budget, "total_budget": total_budget,
                "elapsed_seconds": round(time.monotonic() - started, 3),
                "results": [results[entry["key"]] for entry in entries], "ledger": snapshot,
+               "allocated_envelopes": entries,
                "policy_version": policy.version, "policy_sha256": policy.sha256}
     trace.write("shopping_summary", summary=summary)
     return summary
@@ -194,12 +256,13 @@ def shop_all(directory: list[dict[str, Any]], shopping_list: list[dict[str, Any]
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--directory", type=Path, required=True, help="JSON list of fetched {id,url,card} records")
-    parser.add_argument("--list", dest="shopping_list", type=Path, required=True, help="JSON list of {key,item,budget}")
+    parser.add_argument("--list", dest="shopping_list", type=Path, required=True, help="JSON list of {key,item}; budget is optional")
     parser.add_argument("--total-budget", type=float, required=True)
     parser.add_argument("--policy")
+    parser.add_argument("--timeout", type=float, default=600, help="Overall shopping deadline; each negotiation is limited to 240 seconds")
     parser.add_argument("--log-dir", type=Path, required=True, help="A new run directory; existing ledgers are restored")
     args = parser.parse_args()
     result = shop_all(json.loads(args.directory.read_text()), json.loads(args.shopping_list.read_text()),
-                      args.total_budget, log_dir=args.log_dir, policy=StrategyPolicy(args.policy))
+                      args.total_budget, log_dir=args.log_dir, policy=StrategyPolicy(args.policy), timeout=args.timeout)
     print(json.dumps(result, ensure_ascii=False), flush=True)
     raise SystemExit(0 if result["passed"] else 1)

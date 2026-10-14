@@ -186,9 +186,9 @@ def run_catalog_challenge(url: str, log_dir: Path, policy: StrategyPolicy, timeo
 
 def run_shopping_challenge(directory: list[dict[str, Any]], log_dir: Path,
                            policy: StrategyPolicy, timeout: float) -> dict[str, Any]:
-    entries = [{"key": "lamp", "item": "lamp", "budget": 120},
-               {"key": "chair", "item": "chair", "budget": 200},
-               {"key": "bookshelf", "item": "bookshelf", "budget": 280}]
+    entries = [{"key": "lamp", "item": "lamp"},
+               {"key": "chair", "item": "chair"},
+               {"key": "bookshelf", "item": "bookshelf"}]
     _write_json(log_dir / "directory.json", directory)
     _write_json(log_dir / "shopping-list.json", {"total_budget": 600, "items": entries})
     try:
@@ -206,7 +206,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--challenge", choices=("all", "1", "2"), default="all")
     parser.add_argument("--policy")
-    parser.add_argument("--timeout", type=float, default=240)
+    parser.add_argument("--timeout", type=float, default=600,
+                        help="Overall shopping deadline; individual negotiations remain limited to 240 seconds")
     args = parser.parse_args()
     numeric_price(args.timeout)
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8]
@@ -221,7 +222,7 @@ def main() -> None:
         directory = read_directory(urls, Trace("directory", process_dir))
         if args.challenge in {"all", "1"}:
             shelf_url = urls[2] if len(urls) == 20 else urls[0]
-            results["challenge_1"] = run_catalog_challenge(shelf_url, challenge_1_dir, policy, args.timeout)
+            results["challenge_1"] = run_catalog_challenge(shelf_url, challenge_1_dir, policy, min(240, args.timeout))
         if args.challenge in {"all", "2"}:
             results["challenge_2"] = run_shopping_challenge(directory, challenge_2_dir, policy, args.timeout)
     print(json.dumps({"run_id": run_id, "results": results}, ensure_ascii=False), flush=True)

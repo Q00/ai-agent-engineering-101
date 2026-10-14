@@ -35,9 +35,11 @@ class Seller(AgentExecutor):
         offset = config.get("reserve_offset", 0)
         if offset:
             self.catalog = [{**p, "reserve": p["reserve"] + offset} for p in self.catalog]
-        self.trace = Trace("seller", config.get("log_dir", "logs/runtime"))
+        self.trace = Trace("seller", config.get("log_dir"))
         self.harness = Harness("seller", self.trace)
         self.policy = StrategyPolicy(config.get("policy"))
+        self.trace.write("policy_loaded", policy_sha256=self.policy.sha256,
+                         policy_version=self.policy.version)
         self.open = {}
         self.locks = {}
         self.trace.write("seller_started", name=config["name"], catalog_size=len(self.catalog),
@@ -77,8 +79,8 @@ class Seller(AgentExecutor):
                    "history_summary": [] if opening else deal["history"][-8:],
                    "last_ask": None if opening else deal["ask"]}
         reserve = candidates[0]["reserve"]
-        strategy = self.policy.choose("seller", {"round": trusted["round"], "reserve": reserve,
-                                                   "offer": plain_offer, "flags": flags})
+        trusted.update(reserve=reserve, offer=plain_offer, flags=flags)
+        strategy = self.policy.choose("seller", trusted)
 
         def validate(decision):
             selected = next((p for p in candidates if p["id"] == decision.get("item_id")), None)
@@ -114,7 +116,8 @@ class Seller(AgentExecutor):
                         "seller": self.config["name"], "quantity": 1, "currency": "credits",
                         "description": item["description"], "attributes": item["attributes"]}
             # Never place a round number or another price after the ask: the official kit reads the last number.
-            msg = up.new_agent_message(parts=[new_text_part(f"{item['name']}. Asking price: {deal['ask']:g}")],
+            msg = up.new_agent_message(parts=[new_text_part(
+                f"{item['name']}. Asking price: {json.dumps(deal['ask'], allow_nan=False)}")],
                                        metadata=metadata)
             await up.requires_input(msg)
             self.trace.write("quote", task_id=task.id, metadata=metadata)

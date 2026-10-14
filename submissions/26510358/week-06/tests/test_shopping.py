@@ -10,7 +10,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from evidence import EvidenceError
-from shopping import select_shop, shop_all, validate_shopping_list
+from shopping import allocate_budget, select_shop, shop_all, validate_shopping_list
 from tracing import Trace
 
 
@@ -78,6 +78,66 @@ class ShoppingTests(unittest.TestCase):
         self.assertEqual(summary["ledger"]["reserved_total"], 0)
         self.assertEqual(len(set(seen)), 1)
         self.assertEqual(len(summary["results"]), 3)
+
+    def test_total_only_list_uses_harness_allocation_before_concurrent_purchases(self):
+        entries = [{"key": entry["key"], "item": entry["item"]} for entry in self.entries]
+        barrier = threading.Barrier(3)
+        allocations = {"lamp": 120, "chair": 200, "bookshelf": 280}
+        prices = {"lamp": 110, "chair": 190, "bookshelf": 270}
+        roles = []
+
+        class FakeHarness:
+            def __init__(self, role, trace):
+                self.role = role
+
+            def decide(self, context, **kwargs):
+                roles.append(self.role)
+                if self.role == "budget_allocator":
+                    self_assert.assertEqual(context["total_budget"], 600)
+                    self_assert.assertNotIn("reserve", context)
+                    self_assert.assertTrue(all("budget" not in entry for entry in context["shopping_list"]))
+                    decision = {"action": "allocate_budget", "price": None, "item_id": None, "offer": None,
+                                "reason": "test-only vector allocation",
+                                "allocations": [{"key": key, "budget": budget} for key, budget in allocations.items()]}
+                else:
+                    shop_id = {"lamp": "shop-1", "chair": "shop-2", "bookshelf": "shop-3"}[context["item"]]
+                    decision = {"action": "select_shop", "item_id": shop_id, "price": None, "offer": None, "reason": "test skill match"}
+                return kwargs["validator"](decision)
+
+        self_assert = self
+
+        def fake_trade(url, item, budget, **kwargs):
+            self.assertEqual(budget, allocations[item])
+            self.assertLessEqual(kwargs["timeout"], 240)
+            ledger = kwargs["ledger"]
+            ledger.reserve(kwargs["item_key"], prices[item], f"purchase-{item}")
+            barrier.wait(timeout=5)
+            receipt = {"item": item, "price": prices[item]}
+            ledger.commit(f"purchase-{item}", receipt)
+            return {"status": "completed", "receipt": receipt}
+
+        with tempfile.TemporaryDirectory() as temporary, patch("shopping.Harness", FakeHarness), patch("shopping.negotiate", side_effect=fake_trade):
+            summary = shop_all(self.directory, entries, 600, log_dir=temporary)
+        self.assertTrue(summary["passed"])
+        self.assertEqual(roles[0], "budget_allocator")
+        self.assertEqual(roles.count("budget_allocator"), 1)
+        self.assertEqual(sum(entry["budget"] for entry in summary["allocated_envelopes"]), 600)
+
+    def test_allocator_rejects_overbudget_duplicate_and_changed_explicit_envelopes(self):
+        entries = [{"key": "lamp", "item": "lamp", "budget": 120},
+                   {"key": "chair", "item": "chair"}]
+        cases = [
+            [{"key": "lamp", "budget": 120}, {"key": "chair", "budget": 500}],
+            [{"key": "lamp", "budget": 120}, {"key": "lamp", "budget": 100}],
+            [{"key": "lamp", "budget": 121}, {"key": "chair", "budget": 200}],
+        ]
+        with tempfile.TemporaryDirectory() as temporary, patch("shopping.Harness") as harness:
+            for allocations in cases:
+                harness.return_value.decide.side_effect = lambda context, allocations=allocations, **kwargs: kwargs["validator"](
+                    {"action": "allocate_budget", "price": None, "item_id": None, "offer": None,
+                     "reason": "invalid test allocation", "allocations": allocations})
+                with self.subTest(allocations=allocations), self.assertRaises(EvidenceError):
+                    allocate_budget(entries, self.directory, 600, trace=Trace("allocator-test", temporary))
 
     def test_no_deal_is_recorded_without_claiming_every_item_was_bought(self):
         def choose(context, **kwargs):

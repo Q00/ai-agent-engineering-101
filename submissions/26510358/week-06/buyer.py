@@ -18,6 +18,7 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
     trace = trace or Trace("buyer")
     ledger = ledger or Ledger(budget)
     policy = policy or StrategyPolicy()
+    trace.write("policy_loaded", policy_sha256=policy.sha256, policy_version=policy.version)
     item_key = item_key or item
     harness = Harness("buyer", trace)
     deadline = time.monotonic() + timeout
@@ -26,7 +27,7 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
     reserved = False
     history, expected_price = [], None
     task_id = None
-    expected_item, quoted_item = item, None
+    expected_item, quoted_item, expected_quote_id = item, None, None
     try:
         task = client.send(f"I want to buy a {item}")
         task_id = task.get("id")
@@ -41,7 +42,8 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
             if state == "TASK_STATE_COMPLETED":
                 receipt = receipt_from(task)
                 issues = verify_receipt(receipt, item=expected_item, budget=budget,
-                                        expected_price=expected_price, task_id=task_id)
+                                        expected_price=expected_price, task_id=task_id,
+                                        expected_quote_id=expected_quote_id)
                 trace.write("receipt_checked", issues=issues, receipt=receipt)
                 if issues:
                     if reserved:
@@ -61,6 +63,7 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
             if state != "TASK_STATE_INPUT_REQUIRED":
                 raise ProtocolError(f"Unsupported task state: {state}")
             text, metadata = task_text(task), task_metadata(task)
+            expected_quote_id = metadata.get("quoteId")
             flags = inspect_untrusted(text)
             ask = metadata.get("ask")
             remote_item = metadata.get("itemId")
@@ -80,9 +83,14 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                        "flags": flags,
                        "remaining_seconds": round(deadline - time.monotonic()), "history_summary": history[-8:]}
             strategy = policy.choose("buyer", context)
+            def validate_decision(output):
+                validated = validate_buyer_decision(output, budget=budget, ask=ask)
+                if validated["item_id"] != expected_item:
+                    raise EvidenceError("Buyer decision must keep the requested quoted item ID")
+                return validated
             decision = harness.decide(context, strategy=strategy,
                 instruction=strategy_instruction("buyer", strategy), deadline=deadline,
-                validator=lambda d: validate_buyer_decision(d, budget=budget, ask=ask))
+                validator=validate_decision)
             if decision["action"] == "walk_away":
                 if reserved:
                     ledger.release(purchase_id)
@@ -95,10 +103,11 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                 reserved = False
             purchase_id = uuid.uuid4().hex
             # Reserve before every offer: even a counteroffer can be accepted immediately by a seller.
-            ledger.reserve(item_key, price, purchase_id, expected_item=expected_item)
+            ledger.reserve(item_key, price, purchase_id, expected_item=expected_item,
+                           seller_origin=client.base, expected_quote_id=expected_quote_id)
             reserved, expected_price = True, price
             history.append({"seller": text, "metadata": metadata, "action": decision["action"], "price": price})
-            task = client.send(f"{price:g}", task_id)
+            task = client.send(json.dumps(price, allow_nan=False), task_id)
         if reserved:
             ledger.release(purchase_id)
             reserved = False
@@ -120,7 +129,7 @@ if __name__ == "__main__":
     parser.add_argument("--item", required=True)
     parser.add_argument("--budget", required=True, type=float)
     parser.add_argument("--policy")
-    parser.add_argument("--log-dir", default="logs/runtime")
+    parser.add_argument("--log-dir")
     args = parser.parse_args()
     trace = Trace("buyer", args.log_dir)
     result = negotiate(args.url, args.item, args.budget, policy=StrategyPolicy(args.policy), trace=trace)
