@@ -1,0 +1,251 @@
+{
+  "version": "week05-required-3",
+  "week": "week-05",
+  "status": "unofficial-review-draft",
+  "base_point_per_item": 1,
+  "open_non_deal": "pending",
+  "notes": [
+    "Unofficial requirement checklist, not the official course score.",
+    "Only category=requirements earns base points; consistency and intent are unscored feedback.",
+    "Freeze this rubric and bonus policy across the cohort; do not create scored items from individual submissions.",
+    "Criterion IDs are stable identifiers; their prefixes do not determine scoring."
+  ],
+  "items": [
+    {
+      "id": "F01",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "필수 Python 소스 존재·최소 문법 요건",
+      "rule": "At least one submitted .py parses without importing or executing it, as stated in Checks. Report other syntax issues for F07 required implementation review or unscored optional-work feedback; they do not independently fail this structural item.",
+      "source_section": "What to submit",
+      "pass_rule": "At least one submitted .py parses without importing or executing it, as stated in Checks. Report other syntax issues for F07 required implementation review or unscored optional-work feedback; they do not independently fail this structural item.",
+      "fail_rule": "No submitted .py parses. If unreadable files prevent deciding whether any source parses, leave pending.",
+      "source_requirement": "What to submit / source: at least one .py file. Checks: at least one .py parses."
+    },
+    {
+      "id": "F02",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "시나리오 구성",
+      "rule": "At least four unique scenarios; integer reserve/budget; both feasible and infeasible cases.",
+      "source_section": "What to submit",
+      "pass_rule": "At least four unique scenarios; integer reserve/budget; both feasible and infeasible cases.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / scenarios.json: at least 4 scenarios, integer reserve/budget, both feasible and infeasible."
+    },
+    {
+      "id": "F03",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "결과 파일 데이터 계약",
+      "rule": "Exact header, valid vocabulary/counts; preserve crashed rows with error notes.",
+      "source_section": "What to submit",
+      "pass_rule": "Exact header, valid vocabulary/counts; preserve crashed rows with error notes.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / results.csv: exact header and fields; host/model in note; crashed episodes retained."
+    },
+    {
+      "id": "F04",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "조건·시나리오별 반복",
+      "rule": "Both required conditions and every included optional condition have three distinct run IDs per scenario; crashes remain attempts, not successful episodes.",
+      "source_section": "What to submit",
+      "pass_rule": "Both required conditions and every included optional condition have three distinct run IDs per scenario; crashes remain attempts, not successful episodes.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / results.csv: both injection conditions, >=3 repeats per scenario; included optional conditions too."
+    },
+    {
+      "id": "F05",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "실행 로그 파일 구성",
+      "rule": "At least six nonempty top-level logs, and at least one file per condition/run pair; this is structure only.",
+      "source_section": "What to submit",
+      "pass_rule": "At least six nonempty top-level logs, and at least one file per condition/run pair; this is structure only.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / logs/: one console capture per condition/repeat, at least 6 files."
+    },
+    {
+      "id": "F06",
+      "category": "requirements",
+      "mode": "review",
+      "title": "인증·권한 검사 기록",
+      "rule": "auth_checks.txt records actual results for missing token (401 and WWW-Authenticate), wrong negotiation, wrong turn, token limit. Text alone does not prove universal behavior.",
+      "source_section": "What to submit",
+      "pass_rule": "auth_checks.txt records actual results for missing token (401 and WWW-Authenticate), wrong negotiation, wrong turn, token limit. Text alone does not prove universal behavior.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / auth_checks.txt: four checks against the running server with status/header/errors."
+    },
+    {
+      "id": "F07",
+      "category": "requirements",
+      "mode": "review",
+      "title": "MCP market·host·runner 구현",
+      "rule": "Streamable HTTP and five required tools; role comes from token, server holds state; runner creates negotiations/tokens outside agent tools. Do not require a specific SDK or provider.",
+      "source_section": "The market server",
+      "pass_rule": "Streamable HTTP and five required tools; role comes from token, server holds state; runner creates negotiations/tokens outside agent tools. Do not require a specific SDK or provider.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "The market server: Streamable HTTP, five tools, token-derived role, server-held state; runner mints tokens outside agent tools."
+    },
+    {
+      "id": "F08",
+      "category": "requirements",
+      "mode": "review",
+      "title": "협상 범위·차례·가격 한도 처리",
+      "rule": "Code and available logs support negotiation binding, turn enforcement, and both propose/accept own-limit checks in server conditions. Do not claim runtime verification.",
+      "source_section": "The market server",
+      "pass_rule": "Code and available logs support negotiation binding, turn enforcement, and both propose/accept own-limit checks in server conditions. Do not claim runtime verification.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "The market server / Conditions: negotiation binding, turn enforcement, own-limit enforcement on propose and accept."
+    },
+    {
+      "id": "F09",
+      "category": "requirements",
+      "mode": "review",
+      "title": "보고서의 조건별 결과·에피소드 표",
+      "source_section": "What to submit / REPORT.md part 2",
+      "source_requirement": "REPORT.md part 2: one row per condition with correct, violations, attempted violations, refused calls, mean turns, plus the per-episode table.",
+      "rule": "Check the required condition summary metrics and per-episode table are present and materially represent the submitted experiment.",
+      "pass_rule": "Both required report tables and metrics are supplied and the core experiment is represented. Local metric-source wording errors belong in C04 feedback, not a deduction here.",
+      "fail_rule": "A required table/metric is missing or materially misrepresents the core experiment. Cite the concrete unmet deliverable; do not also deduct a metric error already scored under C01/C02/C03."
+    },
+    {
+      "id": "C01",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "가격·위반·성공 가능성 지표",
+      "rule": "Recompute deal_possible and violation from scenario and result; server violation must be zero; check eight successful moves at most.",
+      "source_section": "Measure, per episode",
+      "pass_rule": "Recompute deal_possible and violation from scenario and result; server violation must be zero; check eight successful moves at most.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "Measure, per episode: deal feasibility, outcome/price and violation; Conditions: eight moves and no server-limit violations."
+    },
+    {
+      "id": "C02",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "정답 지표",
+      "rule": "Recompute correct. Infeasible open follows explicit open_non_deal policy; pending by default.",
+      "source_section": "Measure, per episode",
+      "pass_rule": "Recompute correct. Infeasible open follows explicit open_non_deal policy; pending by default.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "Measure, per episode: correct as in week 04, deal exactly when feasible and within both limits, otherwise no deal."
+    },
+    {
+      "id": "C03",
+      "category": "requirements",
+      "mode": "review",
+      "title": "로그·결과의 일치와 완전성",
+      "rule": "Match per-episode results and tool calls/results including refusals, attempts, turns and recoveries; distinguish missing parser coverage from missing student evidence; preserve retries/crashes.",
+      "source_section": "What to submit",
+      "pass_rule": "Match per-episode results and tool calls/results including refusals, attempts, turns and recoveries; distinguish missing parser coverage from missing student evidence; preserve retries/crashes.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / logs/: every tool call/result including refusals and every episode result; Measure, per episode: attempted_violations, refused_calls, turns, tool_calls."
+    },
+    {
+      "id": "C04",
+      "category": "consistency",
+      "mode": "review",
+      "title": "보고서·PR·실제 구현의 일치",
+      "rule": "Check aggregates and per-episode table, claims about code behavior, source versions and any explained re-scoring; do not infer dishonesty from a mismatch. Review all material claims, including optional work, without assigning points or creating new scored items.",
+      "source_section": "What to submit",
+      "pass_rule": "Main experimental results, calculations and implementation descriptions agree. Explained historical re-scoring is permitted. Local wording errors that do not change the main results can receive revision feedback while this item passes.",
+      "fail_rule": "Unexplained contradictions materially change reported results, reproducibility or the central conclusion. Do not fail for a local phrasing error or one corrected metric-source description alone."
+    },
+    {
+      "id": "C05",
+      "category": "requirements",
+      "mode": "review",
+      "title": "조건 통제·주입 구현",
+      "rule": "Same scenarios/system prompts/host/model/eight moves; exact injection string in buyer view of each seller proposal, raised=max(reserve,budget)+30; condition not leaked to model except refusal.",
+      "source_section": "Conditions",
+      "pass_rule": "Same scenarios/system prompts/host/model/eight moves; exact injection string in buyer view of each seller proposal, raised=max(reserve,budget)+30; condition not leaked to model except refusal.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "Conditions: same scenarios/prompts/host/model/turn limit; exact injected notice and raised=max(reserve,budget)+30."
+    },
+    {
+      "id": "C06",
+      "category": "requirements",
+      "mode": "review",
+      "title": "사전 기준·실패 이력",
+      "rule": "Scenarios committed before runs; inspect available ancestry and artifacts. Timestamps and commit count alone do not prove when execution happened. Preserve failed attempts; local snapshots lack history.",
+      "source_section": "What to submit",
+      "pass_rule": "Scenarios committed before runs; inspect available ancestry and artifacts. Timestamps and commit count alone do not prove when execution happened. Preserve failed attempts; local snapshots lack history.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / scenarios.json: commit before runs; results.csv: failed episodes stay."
+    },
+    {
+      "id": "I01",
+      "category": "requirements",
+      "mode": "review",
+      "title": "재현 설정 설명",
+      "rule": "Host/model/temperature or explicitly not settable, token minting/claims and run commands; no provider preference and no requirement to expose secrets. Verify the required host/model notes in results.csv.",
+      "source_section": "REPORT.md",
+      "pass_rule": "Host/model/temperature or explicitly not settable, token minting/claims and run commands; no provider preference and no requirement to expose secrets. Verify the required host/model notes in results.csv.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / REPORT.md part 1: host, model, temperature, token minting/claims, run instructions."
+    },
+    {
+      "id": "I02",
+      "category": "intent",
+      "mode": "review",
+      "title": "과제 질문에 대한 해석의 타당성",
+      "rule": "Explain observed outcomes using the assignment question about prompt vs server enforcement; experimental success rate is not assignment quality. This is unscored qualitative feedback; the required interpretation deliverable is assessed under I05.",
+      "source_section": "Grading",
+      "pass_rule": "Explain observed outcomes using the assignment question about prompt vs server enforcement; experimental success rate is not assignment quality.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome."
+    },
+    {
+      "id": "I03",
+      "category": "requirements",
+      "mode": "review",
+      "title": "FIPA-ACL 비교",
+      "rule": "Six dimensions: caller/authority, act, content, limit enforcement, external verification, observed failures. Distinguish concept from personal experimental evidence.",
+      "source_section": "REPORT.md",
+      "pass_rule": "Six dimensions: caller/authority, act, content, limit enforcement, external verification, observed failures. Distinguish concept from personal experimental evidence.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / REPORT.md part 3: FIPA-ACL comparison table with six specified dimensions."
+    },
+    {
+      "id": "I04",
+      "category": "requirements",
+      "mode": "review",
+      "title": "거부 후 같은 턴의 행동",
+      "rule": "Count refusals followed by valid moves in same turn; distinguish refused calls from recovered turns, model revision from deterministic fallback. Zero is valid with supporting coverage.",
+      "source_section": "REPORT.md",
+      "pass_rule": "Count refusals followed by valid moves in same turn; distinguish refused calls from recovered turns, model revision from deterministic fallback. Zero is valid with supporting coverage.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / REPORT.md part 4: count refusals followed by a valid move in the same turn."
+    },
+    {
+      "id": "I05",
+      "category": "requirements",
+      "mode": "review",
+      "title": "주장에 대한 로그 근거",
+      "rule": "Concrete log evidence for which layer held under injection; lack of attempts does not demonstrate an observed blocking effect.",
+      "source_section": "Grading",
+      "pass_rule": "Concrete log evidence for which layer held under injection; lack of attempts does not demonstrate an observed blocking effect.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / REPORT.md part 4: interpretation of which layer held under injection, with log lines as evidence."
+    },
+    {
+      "id": "I06",
+      "category": "intent",
+      "mode": "review",
+      "title": "관측 범위·실패·한계 해석",
+      "rule": "Do not overgeneralize small samples or unobserved intent; separate diagnostic tests, pilots, failures and main experiment. Honest negative findings are valid.",
+      "source_section": "Grading",
+      "pass_rule": "Central conclusions stay within observed evidence, and major scope limits/failed attempts are disclosed. A local overstatement may need revision without failing the criterion when the main conclusion remains supported.",
+      "fail_rule": "The central conclusion rests on unsupported causal/general claims or concealed material limitations. Explain its consequence; do not fail merely because one sentence needs softer wording."
+    }
+  ],
+  "checker": "week05",
+  "bonus_policy": {
+    "explicit_criteria": [],
+    "open_ended": true,
+    "open_points": 1,
+    "cap": null
+  },
+  "scoring_policy": "requirements-only-v1"
+}
