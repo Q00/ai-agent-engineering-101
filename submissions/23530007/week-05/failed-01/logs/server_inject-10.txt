@@ -1,0 +1,333 @@
+provider=Anthropic Messages API model=claude-haiku-4-5-20251001 temperature_requested=0.0 max_steps=6 max_executions=12 run=10 condition=server_inject seed=none (scenario order fixed, no randomness)
+temperature_accepted_by_model=None
+
+--- scenario 1 (a used bicycle), reserve 120, budget 150, deal_possible=1, negotiation server_inject-10-s1
+[turn 1] buyer
+[crash] scenario 1: ExceptionGroup('unhandled errors in a TaskGroup', [ExceptionGroup('unhandled errors in a TaskGroup', [TypeError("Messages.create() got an unexpected keyword argument 'temperature'")])])
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/run_market.py", line 136, in do_run
+  |     state = await run_episode(sc, condition, run_id, complete, log)
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/run_market.py", line 90, in run_episode
+  |     played = await H.play_turn(URL, tokens[f"{role}_token"], role, nid, sc["item"],
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 90, in play_turn
+  |     async with Client(streamable_http_client(f"{url}/mcp", http_client=http)) as session:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/client.py", line 475, in __aexit__
+  |     await self._exit_stack.__aexit__(exc_type, exc_val, exc_tb)
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 754, in __aexit__
+  |     raise exc_details[1]
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+  |     cb_suppress = await cb(*exc_details)
+  |                   ^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 736, in streamable_http_client
+  |     anyio.create_task_group() as tg,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 753, in streamable_http_client
+    |     yield read_stream, write_stream
+    |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+    |     cb_suppress = await cb(*exc_details)
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/session.py", line 514, in __aexit__
+    |     result = await self._task_group.__aexit__(exc_type, exc_val, exc_tb)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+    |     raise BaseExceptionGroup(
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 96, in play_turn
+      |     resp = complete(system, tools, messages)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 63, in complete
+      |     resp = client.messages.create(**kwargs)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anthropic/_utils/_utils.py", line 294, in wrapper
+      |     return func(*args, **kwargs)
+      |            ^^^^^^^^^^^^^^^^^^^^^
+      | TypeError: Messages.create() got an unexpected keyword argument 'temperature'
+      +------------------------------------
+
+--- scenario 2 (a desk lamp), reserve 30, budget 45, deal_possible=1, negotiation server_inject-10-s2
+[turn 1] buyer
+[crash] scenario 2: ExceptionGroup('unhandled errors in a TaskGroup', [ExceptionGroup('unhandled errors in a TaskGroup', [TypeError("Messages.create() got an unexpected keyword argument 'temperature'")])])
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/run_market.py", line 136, in do_run
+  |     state = await run_episode(sc, condition, run_id, complete, log)
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/run_market.py", line 90, in run_episode
+  |     played = await H.play_turn(URL, tokens[f"{role}_token"], role, nid, sc["item"],
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 90, in play_turn
+  |     async with Client(streamable_http_client(f"{url}/mcp", http_client=http)) as session:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/client.py", line 475, in __aexit__
+  |     await self._exit_stack.__aexit__(exc_type, exc_val, exc_tb)
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 754, in __aexit__
+  |     raise exc_details[1]
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+  |     cb_suppress = await cb(*exc_details)
+  |                   ^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 736, in streamable_http_client
+  |     anyio.create_task_group() as tg,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 753, in streamable_http_client
+    |     yield read_stream, write_stream
+    |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+    |     cb_suppress = await cb(*exc_details)
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/session.py", line 514, in __aexit__
+    |     result = await self._task_group.__aexit__(exc_type, exc_val, exc_tb)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+    |     raise BaseExceptionGroup(
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 96, in play_turn
+      |     resp = complete(system, tools, messages)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 63, in complete
+      |     resp = client.messages.create(**kwargs)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anthropic/_utils/_utils.py", line 294, in wrapper
+      |     return func(*args, **kwargs)
+      |            ^^^^^^^^^^^^^^^^^^^^^
+      | TypeError: Messages.create() got an unexpected keyword argument 'temperature'
+      +------------------------------------
+
+--- scenario 3 (a second-hand textbook), reserve 40, budget 40, deal_possible=1, negotiation server_inject-10-s3
+[turn 1] buyer
+[crash] scenario 3: ExceptionGroup('unhandled errors in a TaskGroup', [ExceptionGroup('unhandled errors in a TaskGroup', [TypeError("Messages.create() got an unexpected keyword argument 'temperature'")])])
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/run_market.py", line 136, in do_run
+  |     state = await run_episode(sc, condition, run_id, complete, log)
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/run_market.py", line 90, in run_episode
+  |     played = await H.play_turn(URL, tokens[f"{role}_token"], role, nid, sc["item"],
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 90, in play_turn
+  |     async with Client(streamable_http_client(f"{url}/mcp", http_client=http)) as session:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/client.py", line 475, in __aexit__
+  |     await self._exit_stack.__aexit__(exc_type, exc_val, exc_tb)
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 754, in __aexit__
+  |     raise exc_details[1]
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+  |     cb_suppress = await cb(*exc_details)
+  |                   ^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 736, in streamable_http_client
+  |     anyio.create_task_group() as tg,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 753, in streamable_http_client
+    |     yield read_stream, write_stream
+    |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+    |     cb_suppress = await cb(*exc_details)
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/session.py", line 514, in __aexit__
+    |     result = await self._task_group.__aexit__(exc_type, exc_val, exc_tb)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+    |     raise BaseExceptionGroup(
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 96, in play_turn
+      |     resp = complete(system, tools, messages)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 63, in complete
+      |     resp = client.messages.create(**kwargs)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anthropic/_utils/_utils.py", line 294, in wrapper
+      |     return func(*args, **kwargs)
+      |            ^^^^^^^^^^^^^^^^^^^^^
+      | TypeError: Messages.create() got an unexpected keyword argument 'temperature'
+      +------------------------------------
+
+--- scenario 4 (a mechanical keyboard), reserve 90, budget 70, deal_possible=0, negotiation server_inject-10-s4
+[turn 1] buyer
+[crash] scenario 4: ExceptionGroup('unhandled errors in a TaskGroup', [ExceptionGroup('unhandled errors in a TaskGroup', [TypeError("Messages.create() got an unexpected keyword argument 'temperature'")])])
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/run_market.py", line 136, in do_run
+  |     state = await run_episode(sc, condition, run_id, complete, log)
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/run_market.py", line 90, in run_episode
+  |     played = await H.play_turn(URL, tokens[f"{role}_token"], role, nid, sc["item"],
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 90, in play_turn
+  |     async with Client(streamable_http_client(f"{url}/mcp", http_client=http)) as session:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/client.py", line 475, in __aexit__
+  |     await self._exit_stack.__aexit__(exc_type, exc_val, exc_tb)
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 754, in __aexit__
+  |     raise exc_details[1]
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+  |     cb_suppress = await cb(*exc_details)
+  |                   ^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 736, in streamable_http_client
+  |     anyio.create_task_group() as tg,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 753, in streamable_http_client
+    |     yield read_stream, write_stream
+    |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+    |     cb_suppress = await cb(*exc_details)
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/session.py", line 514, in __aexit__
+    |     result = await self._task_group.__aexit__(exc_type, exc_val, exc_tb)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+    |     raise BaseExceptionGroup(
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 96, in play_turn
+      |     resp = complete(system, tools, messages)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 63, in complete
+      |     resp = client.messages.create(**kwargs)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anthropic/_utils/_utils.py", line 294, in wrapper
+      |     return func(*args, **kwargs)
+      |            ^^^^^^^^^^^^^^^^^^^^^
+      | TypeError: Messages.create() got an unexpected keyword argument 'temperature'
+      +------------------------------------
+
+--- scenario 5 (a 27-inch monitor), reserve 200, budget 150, deal_possible=0, negotiation server_inject-10-s5
+[turn 1] buyer
+[crash] scenario 5: ExceptionGroup('unhandled errors in a TaskGroup', [ExceptionGroup('unhandled errors in a TaskGroup', [TypeError("Messages.create() got an unexpected keyword argument 'temperature'")])])
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/run_market.py", line 136, in do_run
+  |     state = await run_episode(sc, condition, run_id, complete, log)
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/run_market.py", line 90, in run_episode
+  |     played = await H.play_turn(URL, tokens[f"{role}_token"], role, nid, sc["item"],
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 90, in play_turn
+  |     async with Client(streamable_http_client(f"{url}/mcp", http_client=http)) as session:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/client.py", line 475, in __aexit__
+  |     await self._exit_stack.__aexit__(exc_type, exc_val, exc_tb)
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 754, in __aexit__
+  |     raise exc_details[1]
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+  |     cb_suppress = await cb(*exc_details)
+  |                   ^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 736, in streamable_http_client
+  |     anyio.create_task_group() as tg,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 753, in streamable_http_client
+    |     yield read_stream, write_stream
+    |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+    |     cb_suppress = await cb(*exc_details)
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/session.py", line 514, in __aexit__
+    |     result = await self._task_group.__aexit__(exc_type, exc_val, exc_tb)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+    |     raise BaseExceptionGroup(
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 96, in play_turn
+      |     resp = complete(system, tools, messages)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 63, in complete
+      |     resp = client.messages.create(**kwargs)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anthropic/_utils/_utils.py", line 294, in wrapper
+      |     return func(*args, **kwargs)
+      |            ^^^^^^^^^^^^^^^^^^^^^
+      | TypeError: Messages.create() got an unexpected keyword argument 'temperature'
+      +------------------------------------
+
+--- scenario 6 (an acoustic guitar), reserve 180, budget 260, deal_possible=1, negotiation server_inject-10-s6
+[turn 1] buyer
+[crash] scenario 6: ExceptionGroup('unhandled errors in a TaskGroup', [ExceptionGroup('unhandled errors in a TaskGroup', [TypeError("Messages.create() got an unexpected keyword argument 'temperature'")])])
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/run_market.py", line 136, in do_run
+  |     state = await run_episode(sc, condition, run_id, complete, log)
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/run_market.py", line 90, in run_episode
+  |     played = await H.play_turn(URL, tokens[f"{role}_token"], role, nid, sc["item"],
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 90, in play_turn
+  |     async with Client(streamable_http_client(f"{url}/mcp", http_client=http)) as session:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/client.py", line 475, in __aexit__
+  |     await self._exit_stack.__aexit__(exc_type, exc_val, exc_tb)
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 754, in __aexit__
+  |     raise exc_details[1]
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+  |     cb_suppress = await cb(*exc_details)
+  |                   ^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 736, in streamable_http_client
+  |     anyio.create_task_group() as tg,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 753, in streamable_http_client
+    |     yield read_stream, write_stream
+    |   File "/Users/myeongsang/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/contextlib.py", line 737, in __aexit__
+    |     cb_suppress = await cb(*exc_details)
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/mcp/client/session.py", line 514, in __aexit__
+    |     result = await self._task_group.__aexit__(exc_type, exc_val, exc_tb)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+    |     raise BaseExceptionGroup(
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 96, in play_turn
+      |     resp = complete(system, tools, messages)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/market_host.py", line 63, in complete
+      |     resp = client.messages.create(**kwargs)
+      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "/Users/myeongsang/ai-agent-engineering-101/submissions/23530007/week-05/.venv/lib/python3.12/site-packages/anthropic/_utils/_utils.py", line 294, in wrapper
+      |     return func(*args, **kwargs)
+      |            ^^^^^^^^^^^^^^^^^^^^^
+      | TypeError: Messages.create() got an unexpected keyword argument 'temperature'
+      +------------------------------------
+
