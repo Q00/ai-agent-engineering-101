@@ -1,0 +1,72 @@
+# run=free-1 provider=Claude Code CLI (claude -p) model=claude-haiku-4-5-20251001 temperature=not settable (claude -p exposes no temperature flag) max_turns=8
+
+--- scenario 1 (a used road bicycle) reserve=120 budget=150 deal_possible=1 ---
+[buyer] I'm interested in this bike—is 100 dollars a fair starting price?
+  [read] {'performative': 'propose', 'price': 100}
+[seller] I appreciate your interest, but $100 is too low—I'm looking for $150 for this bike. What's your best offer?
+  [read] {'performative': 'propose', 'price': 150}
+[buyer] I understand you're looking for $150, but I'd like to propose $125 as a fair middle ground. Can you work with that?
+  [read] {'performative': 'propose', 'price': 125}
+[seller] I can work with $125—that's a fair price and we have a deal. Let me get the bike ready for you.
+  [read] {'performative': 'accept-proposal', 'price': 125}
+[result] outcome=deal price=125 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+         agent_calls=4 agent_tokens=102157 reader_tokens=103329 unmatched_accepts=0
+
+--- scenario 2 (a second-hand textbook) reserve=40 budget=40 deal_possible=1 ---
+[buyer] I'm interested in this textbook—would you consider 25 for it?
+  [read] {'performative': 'propose', 'price': 25}
+[seller] I appreciate the interest, but I can't go that low—I'd need at least 50 for this textbook. Would that work for you?
+  [read] {'performative': 'propose', 'price': 50}
+[buyer] I appreciate the counteroffer, but 50 is more than I can spend on this—how about 35?
+  [read] {'performative': 'propose', 'price': 35}
+[seller] I appreciate you coming up a bit, but I really can't accept less than 42—that's the lowest I can go on this one. Would 42 work for you?
+  [read] {'performative': 'propose', 'price': 42}
+[buyer] I appreciate that, but 42 is a bit more than I can stretch to—would you consider 39?
+  [read] {'performative': 'propose', 'price': 39}
+[seller] I appreciate your effort to meet me halfway, but 39 is unfortunately below what I need to get for this book—could you stretch to 40?
+  [read] {'performative': 'propose', 'price': 40}
+[buyer] I appreciate you working with me on this—I can do 40 and we have a deal.
+  [read] {'performative': 'accept-proposal', 'price': 40}
+[result] outcome=deal price=40 correct=1 violation=0 turns=7 format_errors=0 reader_calls=7
+         agent_calls=7 agent_tokens=179260 reader_tokens=178700 unmatched_accepts=0
+
+--- scenario 3 (a mechanical keyboard) reserve=90 budget=70 deal_possible=0 ---
+[buyer] I'm interested in the mechanical keyboard you're selling. Would you consider $45 for it?
+  [read] {'performative': 'propose', 'price': 45}
+[seller] I appreciate your interest, but $45 is far too low for this keyboard—I'm looking for at least $140.
+  [read] {'performative': 'propose', 'price': 140}
+[buyer] That's quite a gap between us. How about $60—I think that's fair for a quality keyboard, and it's where I can comfortably meet you.
+  [read] {'performative': 'propose', 'price': 60}
+[seller] I understand we need to close the gap, but $60 is still too low for me—how about $110, which accounts for the quality and condition of this keyboard?
+  [read] {'performative': 'propose', 'price': 110}
+[buyer] I can see we're making progress on narrowing this, so let me move closer to your position—how about $65, which is a solid compromise from where we started?
+  [read] {'performative': 'propose', 'price': 65}
+[seller] I appreciate your effort to meet me halfway, but I still need to get closer to $90—how about $95 as a fair middle ground that reflects the quality and current market value of this keyboard?
+  [read] {'performative': 'propose', 'price': 95}
+[buyer] I appreciate the negotiation so far, but I need to be honest—$95 is beyond what I'm able to spend, so let me propose $68, which represents a meaningful move on my part toward your position.
+  [read] {'performative': 'propose', 'price': 68}
+[seller] I appreciate your movement too, but I need to be honest—I can only come down to $85, as that's genuinely close to where I need to be on this keyboard.
+  [read] {'performative': 'propose', 'price': 85}
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+         agent_calls=8 agent_tokens=207420 reader_tokens=205011 unmatched_accepts=0
+
+--- scenario 4 (a 27-inch monitor) reserve=200 budget=150 deal_possible=0 ---
+[buyer] I'm interested in your 27-inch monitor—would you be willing to sell it for $90?
+  [read] {'performative': 'propose', 'price': 90}
+[seller] That's far below what I'm looking for. I'm asking $380 for this monitor.
+  [read] {'performative': 'propose', 'price': 380}
+[buyer] That's way too high for me. How about $120—I appreciate the quality, but that's more in line with what I can spend.
+  [read] {'performative': 'propose', 'price': 120}
+[seller] I appreciate you moving your offer, but $120 is still well below what this monitor is worth—I'm looking at $280, which reflects the quality and market value while meeting you partway.
+  [read] {'performative': 'propose', 'price': 280}
+[buyer] I understand you're valuing it highly, but I can go up to $135—that's a significant jump from my earlier offer and honestly near my absolute top for this purchase.
+  [read] {'performative': 'propose', 'price': 135}
+[seller] I appreciate that you're putting serious effort into this, but $135 is still well below what I need to accept—I'm coming down to $250, and that's where I'd need you to meet me for a deal to work.
+  [read] {'performative': 'propose', 'price': 250}
+[buyer] I can go up to $145 as my final offer, but honestly, that's truly my maximum—if we can't meet somewhere in that range, I'll have to walk away from this deal.
+  [read] {'performative': 'propose', 'price': 145}
+[seller] I understand you're at your ceiling, but $200 is the absolute lowest I can go on this monitor—if you can meet me there, we have a deal.
+  [read] {'performative': 'propose', 'price': 200}
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+         agent_calls=8 agent_tokens=207550 reader_tokens=205976 unmatched_accepts=0
+

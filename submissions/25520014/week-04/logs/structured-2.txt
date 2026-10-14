@@ -1,0 +1,138 @@
+# run=structured-2 provider=Claude Code CLI (claude -p) model=claude-haiku-4-5-20251001 temperature=not settable (claude -p exposes no temperature flag) max_turns=8
+
+--- scenario 1 (a used road bicycle) reserve=120 budget=150 deal_possible=1 ---
+[buyer] ```json
+{"performative": "propose", "content": {"price": 90}}
+```
+  [read] {'performative': 'propose', 'price': 90}  flags=('fence',)
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 150}}
+```
+  [read] {'performative': 'reject-proposal', 'price': 150}  flags=('fence',)
+[buyer] ```json
+{"performative": "propose", "content": {"price": 110}}
+```
+  [read] {'performative': 'propose', 'price': 110}  flags=('fence',)
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 130}}
+```
+  [read] {'performative': 'reject-proposal', 'price': 130}  flags=('fence',)
+[buyer] ```json
+{"performative": "propose", "content": {"price": 120}}
+```
+  [read] {'performative': 'propose', 'price': 120}  flags=('fence',)
+[seller] ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+  [read] {'performative': 'accept-proposal', 'price': None}  flags=('fence',)
+[result] outcome=deal price=120 correct=1 violation=0 turns=6 format_errors=0 reader_calls=0
+         agent_calls=6 agent_tokens=153609 reader_tokens=0 unmatched_accepts=0 flags=fence
+
+--- scenario 2 (a second-hand textbook) reserve=40 budget=40 deal_possible=1 ---
+[buyer] ```json
+{"performative": "propose", "content": {"price": 25}}
+```
+  [read] {'performative': 'propose', 'price': 25}  flags=('fence',)
+[seller] ```json
+{"performative": "propose", "content": {"price": 65}}
+```
+  [read] {'performative': 'propose', 'price': 65}  flags=('fence',)
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 32}}
+```
+  [read] {'performative': 'reject-proposal', 'price': 32}  flags=('fence',)
+[seller] ```json
+{"performative": "propose", "content": {"price": 50}}
+```
+  [read] {'performative': 'propose', 'price': 50}  flags=('fence',)
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 37}}
+```
+  [read] {'performative': 'reject-proposal', 'price': 37}  flags=('fence',)
+[seller] ```json
+{"performative": "propose", "content": {"price": 44}}
+```
+  [read] {'performative': 'propose', 'price': 44}  flags=('fence',)
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 40}}
+```
+  [read] {'performative': 'reject-proposal', 'price': 40}  flags=('fence',)
+[seller] ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+  [read] {'performative': 'accept-proposal', 'price': None}  flags=('fence',)
+[result] outcome=deal price=25 correct=0 violation=1 turns=8 format_errors=0 reader_calls=0
+         agent_calls=8 agent_tokens=206506 reader_tokens=0 unmatched_accepts=0 flags=fence
+
+--- scenario 3 (a mechanical keyboard) reserve=90 budget=70 deal_possible=0 ---
+[buyer] ```json
+{"performative": "propose", "content": {"price": 45}}
+```
+  [read] {'performative': 'propose', 'price': 45}  flags=('fence',)
+[seller] ```json
+{"performative": "propose", "content": {"price": 140}}
+```
+  [read] {'performative': 'propose', 'price': 140}  flags=('fence',)
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 58}}
+```
+  [read] {'performative': 'reject-proposal', 'price': 58}  flags=('fence',)
+[seller] ```json
+{"performative": "propose", "content": {"price": 115}}
+```
+  [read] {'performative': 'propose', 'price': 115}  flags=('fence',)
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 62}}
+```
+  [read] {'performative': 'reject-proposal', 'price': 62}  flags=('fence',)
+[seller] ```json
+{"performative": "propose", "content": {"price": 105}}
+```
+  [read] {'performative': 'propose', 'price': 105}  flags=('fence',)
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 67}}
+```
+  [read] {'performative': 'reject-proposal', 'price': 67}  flags=('fence',)
+[seller] ```json
+{"performative": "propose", "content": {"price": 95}}
+```
+  [read] {'performative': 'propose', 'price': 95}  flags=('fence',)
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+         agent_calls=8 agent_tokens=206101 reader_tokens=0 unmatched_accepts=0 flags=fence
+
+--- scenario 4 (a 27-inch monitor) reserve=200 budget=150 deal_possible=0 ---
+[buyer] ```json
+{"performative": "propose", "content": {"price": 100}}
+```
+  [read] {'performative': 'propose', 'price': 100}  flags=('fence',)
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 380}}
+```
+  [read] {'performative': 'reject-proposal', 'price': 380}  flags=('fence',)
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 120}}
+```
+  [read] {'performative': 'reject-proposal', 'price': 120}  flags=('fence',)
+[seller] ```json
+{"performative": "propose", "content": {"price": 300}}
+```
+  [read] {'performative': 'propose', 'price': 300}  flags=('fence',)
+[buyer] ```json
+{"performative": "reject-proposal", "content": {"price": 130}}
+```
+  [read] {'performative': 'reject-proposal', 'price': 130}  flags=('fence',)
+[seller] ```json
+{"performative": "propose", "content": {"price": 250}}
+```
+  [read] {'performative': 'propose', 'price': 250}  flags=('fence',)
+[buyer] ```json
+{"performative": "propose", "content": {"price": 145}}
+```
+  [read] {'performative': 'propose', 'price': 145}  flags=('fence',)
+[seller] ```json
+{"performative": "propose", "content": {"price": 220}}
+```
+  [read] {'performative': 'propose', 'price': 220}  flags=('fence',)
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+         agent_calls=8 agent_tokens=205693 reader_tokens=0 unmatched_accepts=0 flags=fence
+
