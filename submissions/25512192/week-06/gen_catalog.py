@@ -10,6 +10,7 @@ Seeded, so the same file comes out every time.
 """
 import json
 import random
+import re
 from pathlib import Path
 
 WOOD = ["oak", "pine", "walnut", "birch", "beech", "teak", "bamboo"]
@@ -55,9 +56,9 @@ def standing_desk(rng):
 
 
 def office_chair(rng):
-    seat = r(rng, 42, 54)
-    return {"seat_height_cm": seat, "height_cm": r(rng, 95, 130), "max_user_kg": r(rng, 100, 150, 10)}, \
-        f"swivel office chair with lumbar support, seat height {seat} cm, for users up to {r(rng, 100, 150, 10)} kg", 1.0
+    seat, kg = r(rng, 42, 54), r(rng, 100, 150, 10)
+    return {"seat_height_cm": seat, "height_cm": r(rng, 95, 130), "max_user_kg": kg}, \
+        f"swivel office chair with lumbar support, seat height {seat} cm, for users up to {kg} kg", 1.0
 
 
 def dining_chair(rng):
@@ -76,8 +77,8 @@ def armchair(rng):
 
 def sofa(rng):
     seats = r(rng, 2, 4)
-    return {"seats": seats, "width_cm": seats * 70 + r(rng, 20, 50), "height_cm": r(rng, 75, 90)}, \
-        f"{seats}-seat sofa, {seats * 70 + 30} cm wide", 0.8 + seats * 0.6
+    w = seats * 70 + r(rng, 20, 50)
+    return {"seats": seats, "width_cm": w, "height_cm": r(rng, 75, 90)}, f"{seats}-seat sofa, {w} cm wide", 0.8 + seats * 0.6
 
 
 def desk_lamp(rng):
@@ -229,6 +230,8 @@ def large(seed=6):
         for i in range(PER_CATEGORY):
             mat, color, style = rng.choice(mats), rng.choice(COLORS), rng.choice(STYLES)
             attrs, sentence, size = make(rng)
+            stray = [n for n in re.findall(r"(?<![A-Za-z])\d+", sentence) if int(n) not in attrs.values()]
+            assert not stray, f"{cat}: description numbers {stray} are not attributes: {sentence} {attrs}"
             attrs = {"material": mat, "wooden": mat in WOOD, "color": color, **attrs}
             reserve = max(15, round(base * MAT_FACTOR.get(mat, 1.0) * size * rng.uniform(0.85, 1.15)))
             iid = f"{CODES[cat]}-{i + 1:03d}"
