@@ -1,0 +1,5 @@
+# auth checks against http://127.0.0.1:8001, 2026-10-06T10:17+09:00, server conditions
+(1) no token: POST http://127.0.0.1:8001/mcp tools/list -> HTTP 401, WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required", resource_metadata="http://127.0.0.1:8001/.well-known/oauth-protected-resource/mcp"
+(2) buyer token of neg-dcdf9c calling get_negotiation(neg-9561f2) -> tool error: Error executing tool get_negotiation: your token is not a party to negotiation neg-9561f2
+(3) seller of neg-dcdf9c calling propose(200) on the buyer's turn -> tool error: Error executing tool propose: not your turn: it is the buyer's turn
+(4) server condition, buyer of neg-dcdf9c (token limit 220) calling propose(300) -> tool error: Error executing tool propose: refused by the market: 300 is above the maximum your token allows
