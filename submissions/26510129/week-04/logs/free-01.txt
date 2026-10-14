@@ -1,0 +1,59 @@
+run=free-01 condition=free provider=openai base_url=https://api.openai.com/v1 model=gpt-5.4-mini temperature=0.0 max_tokens=200 turn_limit=8
+scenarios=[1, 2, 3, 4, 5] already_done=[]
+--- scenario 1 (a used mountain bicycle) reserve 120 budget 180 deal_possible=1
+  [param] this model wants max_completion_tokens; switching
+[buyer ] I can offer 150 dollars for the bike.
+  [read] reader: {"performative": "propose", "price": 150}
+[seller] I can do 180 dollars for the bike.
+  [read] reader: {"performative": "propose", "price": 180}
+[buyer ] I accept your proposal.
+  [read] reader: {"performative": "accept-proposal", "price": null}
+[result] outcome=deal price=180 correct=1 violation=0 turns=3 format_errors=0 reader_calls=3
+--- scenario 2 (a desk lamp) reserve 30 budget 38 deal_possible=1
+[buyer ] Would you take 30 dollars for the desk lamp?
+  [read] reader: {"performative": "propose", "price": 30}
+[seller] I can do 45 dollars for the desk lamp.
+  [read] reader: {"performative": "propose", "price": 45}
+[buyer ] I can’t go that high, but I can do 35 dollars.
+  [read] reader: {"performative": "propose", "price": 35}
+[seller] I accept your 35 dollars.
+  [read] reader: {"performative": "accept-proposal", "price": 35}
+[result] outcome=deal price=35 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+--- scenario 3 (a second-hand textbook) reserve 40 budget 40 deal_possible=1
+[buyer ] Would you take 30 dollars for the textbook?
+  [read] reader: {"performative": "propose", "price": 30}
+[seller] I can’t do 30, but I can offer it for 50 dollars.
+  [read] reader: {"performative": "propose", "price": 50}
+[buyer ] I can’t go that high. I can do 38 dollars.
+  [read] reader: {"performative": "propose", "price": 38}
+[seller] I’m sorry, but I can’t accept 38 dollars.
+  [read] reader: {"performative": "reject-proposal", "price": null}
+[buyer ] I understand. I can go up to 40 dollars if that works for you.
+  [read] reader: {"performative": "propose", "price": 40}
+[seller] I accept 40 dollars.
+  [read] reader: {"performative": "accept-proposal", "price": 40}
+[result] outcome=deal price=40 correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
+--- scenario 4 (a mechanical keyboard) reserve 90 budget 70 deal_possible=0
+[buyer ] Would you take 55 dollars?
+  [read] reader: {"performative": "propose", "price": 55}
+[seller] I can’t do $55. I can offer it for $120.
+  [read] reader: {"performative": "propose", "price": 120}
+[buyer ] I can’t go that high. I can do 65 dollars.
+  [read] reader: {"performative": "propose", "price": 65}
+[seller] I can’t accept $65. I can come down to $110.
+  [read] reader: {"performative": "reject-proposal", "price": 110}
+[buyer ] I’m sorry, but I can’t meet that price. I have to refuse.
+  [read] reader: {"performative": "refuse", "price": null}
+[result] outcome=no_deal price= correct=1 violation=0 turns=5 format_errors=0 reader_calls=5
+--- scenario 5 (a 27-inch monitor) reserve 260 budget 150 deal_possible=0
+[buyer ] I can offer 120 dollars for the 27-inch monitor.
+  [read] reader: {"performative": "propose", "price": 120}
+[seller] I can’t accept 120. I can do 300 dollars for the monitor.
+  [read] reader: {"performative": "propose", "price": 300}
+[buyer ] I can’t do 300, but I can offer 140 dollars.
+  [read] reader: {"performative": "propose", "price": 140}
+[seller] I can’t accept 140. I’ll have to refuse.
+  [read] reader: {"performative": "refuse", "price": null}
+[result] outcome=no_deal price= correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+[run] free-01 done. agent_calls=22 reader_calls=22 retries=0 tokens=10230
+[run] effective: token_param=max_completion_tokens temperature=0.0 adjusted=[max_tokens -> max_completion_tokens]
