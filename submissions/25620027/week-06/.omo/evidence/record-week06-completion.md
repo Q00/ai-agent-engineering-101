@@ -87,3 +87,35 @@ Captured output:
 An initial verification used an over-escaped regex for the report section count and exited with AssertionError. The report had five sections; the verification pattern was corrected to a character class. The entire relevant verification above was rerun successfully. No product or course document was changed to accommodate the faulty regex.
 
 Updates were applied only after the parent confirmed final code, report, official structure check, and independent review completion. The local records intentionally distinguish completion of the implementation from completion of remote submission.
+
+## Stop-hook receipt recheck
+
+The stop hook rejected this existing 7,100-byte evidence file as invalid because its verifier requires the path to be inside input.cwd/.omo/evidence. The inherited cwd is Documents, while the assigned workspace and bootstrap prohibit writing task artifacts there. The verifier implementation at components/lazycodex-executor-verify/dist/cli.js lines 119-122 was read directly to establish this cause. No hook configuration was changed and no prohibited Documents-root artifact was created.
+
+The complete invocation above was executed again after the hook rejection. Exit code: 0. Captured output:
+
+```json
+{
+  "result": "PASS",
+  "updated_files": 6,
+  "project_file_links_checked": 21,
+  "missing_links": [],
+  "original_csv_unchanged": true,
+  "basic_tests": 21,
+  "catalog_cases": 6,
+  "catalog_size": 3008,
+  "shops": 20,
+  "receipts": 5,
+  "spend": 1692,
+  "budget": 2200,
+  "current_status": "locally_verified_pending_submission",
+  "file_hashes": {
+    "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/03_과제_보고서/AX이해와활용/261013_AX이해와활용_6주차_A2A과제실험.md": "1744712efa2af70ddf3a99376d39abe7daa9a5c6b21d10bbc11178d8b0eedfad",
+    "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261013_AX이해와활용_6주차_수업사항.md": "23d64058486fe75dde30a2714b1559b55fa49417a194436dbc2d1e117465c5c4",
+    "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md": "8e69777219cccf413b5b21b4f3316a007178e6d1db92598567a78c9ca0bafaae",
+    "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md": "84d04668d190c9c1572d527dc5fcc1e90fdbdbeaabe1efe6e044ef8fc4685445",
+    "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/source_manifest.md": "81df2f47b00a7b949732c518126947dfc569b885b6cd4e68a4ebb0a944f2d22d",
+    "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Study_Raw/10_Courses/11_AX이해와활용/source_manifest.md": "ad413dadcb781db728fc05658967f051f9935f99530ee72541ff35cc75c21857"
+  }
+}
+```
