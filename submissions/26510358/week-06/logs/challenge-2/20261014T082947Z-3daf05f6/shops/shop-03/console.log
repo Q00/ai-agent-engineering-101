@@ -1,0 +1,12 @@
+{"event": "policy_loaded", "policy_sha256": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb", "policy_version": "synthetic-bandit-s42-n5000"}
+{"event": "seller_started", "name": "Everyday Bookshelf Shop", "catalog_size": 301, "policy_version": "synthetic-bandit-s42-n5000"}
+{"event": "remote_message", "task_id": "64313de3-7d33-4b06-a723-bcc56f06bd94", "message": "I want to buy a bookshelf", "flags": [], "candidates": ["bookshelf"]}
+{"event": "harness_request", "model": "gpt-6-sol", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 51.321}
+{"event": "harness_decision", "decision": {"action": "open", "price": 340, "item_id": "bookshelf", "offer": null, "reason": "The oak bookshelf is available for 340 credits."}}
+{"event": "quote", "task_id": "64313de3-7d33-4b06-a723-bcc56f06bd94", "metadata": {"ask": 340, "itemId": "bookshelf", "quoteId": "12628cb3672544c48a88452abc2902bf", "seller": "Everyday Bookshelf Shop", "quantity": 1, "currency": "credits", "description": "A wooden oak bookshelf for approximately 40 standard books, with three shelves. 나무 원목 책장, 높이 90cm, 너비 60cm, 깊이 28cm, 책 40권을 보관하는 3단 선반입니다.", "attributes": {"material": "wood", "wood_species": "oak", "height_cm": 90, "width_cm": 60, "depth_cm": 28, "capacity_books": 40, "shelves_count": 3, "finish": "natural"}}}
+{"event": "remote_message", "task_id": "64313de3-7d33-4b06-a723-bcc56f06bd94", "message": "260", "flags": [], "candidates": ["bookshelf"]}
+{"event": "harness_request", "model": "gpt-6-sol", "strategy": "direct", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 52.983}
+{"event": "harness_decision", "decision": {"action": "accept", "price": 260, "item_id": "bookshelf", "offer": 260, "reason": "I accept your offer of 260 credits."}}
+{"event": "sale_completed", "task_id": "64313de3-7d33-4b06-a723-bcc56f06bd94", "receipt": {"seller": "Everyday Bookshelf Shop", "item": "bookshelf", "itemId": "bookshelf", "price": 260, "taskId": "64313de3-7d33-4b06-a723-bcc56f06bd94", "quantity": 1, "currency": "credits", "purchaseId": "e4fce8813ce74e838dfa7e294155e4bd", "quoteId": "12628cb3672544c48a88452abc2902bf"}}
