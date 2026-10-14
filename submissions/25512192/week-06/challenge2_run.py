@@ -17,13 +17,16 @@ from pathlib import Path
 import httpx
 
 HERE = Path(__file__).parent
-OUT = HERE / "logs" / "challenge-2"
+OUT = HERE / "logs" / "challenge-2"   # --out changes it
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--budget", type=int, default=800)
+    ap.add_argument("--out", default="logs/challenge-2")
     args = ap.parse_args()
+    global OUT
+    OUT = HERE / args.out
     OUT.mkdir(parents=True, exist_ok=True)
     configs = sorted(glob.glob(str(HERE / "shops" / "shop-*.json")))
     procs, urls = [], []
