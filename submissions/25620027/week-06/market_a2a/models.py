@@ -59,6 +59,7 @@ class Purchase(FrozenModel):
     price: int | None = None
     task_id: str = ""
     shop: str = ""
+    failure_observation: str = ""
 
 
 class ShopCard(FrozenModel):

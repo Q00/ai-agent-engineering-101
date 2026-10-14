@@ -170,7 +170,13 @@ async def buy(
                 result = purchase(final_task, authorization)
             else:
                 result = Purchase(
-                    completed=False, item=item, task_id=final_task.id, shop=endpoint
+                    completed=False,
+                    item=item,
+                    task_id=final_task.id,
+                    shop=endpoint,
+                    failure_observation=(
+                        f"{final_task.status.state}: {final_task.observation()}"
+                    ),
                 )
             emit("[NEGOTIATION RESULT] " + result.model_dump_json())
             return result

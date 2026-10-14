@@ -20,7 +20,7 @@ from market_a2a.models import (
     ToolSpec,
 )
 from market_a2a.remote import Checkout, Receipt, Remote, Task, purchase
-from market_a2a.shopping import Planner, shop
+from market_a2a.shopping import Planner, PlanningRound, shop
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -149,6 +149,93 @@ def test_remote_header_endpoint_continuation_and_budget_guard() -> None:
             assert walked.terminal
             assert len(seen) == 4
             assert any("A2A REQUEST" in line for line in lines)
+
+    anyio.run(scenario)
+
+
+def test_shop_replans_only_failed_item_with_observed_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Given one paid item and one shop whose price exceeds its reserved cap.
+    async def scenario() -> None:
+        cards = tuple(
+            ShopCard(url=name, name=name, skills=("lamp", "chair"))
+            for name in ("paid-shop", "expensive-shop", "replacement-shop")
+        )
+        items = (
+            ShoppingItem(request_id="light", description="lamp"),
+            ShoppingItem(request_id="seat", description="chair"),
+        )
+        calls: list[str] = []
+        states: list[PlanningRound] = []
+        lines: list[str] = []
+
+        class Harness:
+            async def run(
+                self,
+                prompt: str,
+                state: JsonValue,
+                tools: tuple[ToolSpec, ...],
+                dispatch: ToolDispatch,
+            ) -> ToolResult:
+                _ = prompt, tools
+                parsed = PlanningRound.model_validate(state)
+                states.append(parsed)
+                reservations = [
+                    {"request_id": "seat", "shop_url": "replacement-shop", "cap": 200}
+                ]
+                if parsed.planning_round == 0:
+                    reservations = [
+                        {"request_id": "light", "shop_url": "paid-shop", "cap": 150},
+                        {
+                            "request_id": "seat",
+                            "shop_url": "expensive-shop",
+                            "cap": 200,
+                        },
+                    ]
+                return await dispatch(
+                    "plan_purchases",
+                    json.dumps({"reservations": reservations, "reason": "fixture"}),
+                )
+
+        async def external_checkout(
+            _harness: BuyerHarness,
+            url: str,
+            item: str,
+            _budget: int,
+            _emit: Callable[[str], None],
+        ) -> Purchase:
+            calls.append(url)
+            completed = not url.startswith("expensive")
+            return Purchase(
+                completed=completed,
+                item=item,
+                price=(120 if item == "lamp" else 180) if completed else None,
+                task_id=url,
+                shop=url,
+                failure_observation="Price exceeds 200" if not completed else "",
+            )
+
+        monkeypatch.setattr("market_a2a.shopping.buy", external_checkout)
+        # When the real shopping loop handles that unpaid checkout.
+        purchases = await shop(Harness(), cards, items, 400, lines.append)
+        # Then only the unpaid item is replanned with its failure evidence.
+        assert len(states) == 2
+        retry = states[1]
+        assert [item.request_id for item in retry.items] == ["seat"]
+        assert retry.total_budget == 280
+        assert len(retry.already_bought) == 1
+        failure = retry.failed_attempts[0]
+        assert failure.request_id == "seat"
+        assert failure.shop_url == "expensive-shop"
+        assert failure.cap == 200
+        assert failure.outcome.failure_observation == "Price exceeds 200"
+        assert calls.count("paid-shop") == 1
+        assert calls.count("expensive-shop") == 1
+        assert calls.count("replacement-shop") == 1
+        assert all(purchase.completed for purchase in purchases)
+        assert sum(purchase.price or 0 for purchase in purchases) == 300
+        assert '"reserved": 0' in lines[-1]
 
     anyio.run(scenario)
 

@@ -71,7 +71,13 @@ def isolated(run: Callable[[], Awaitable[None]]) -> None:
             os.chdir(previous)
 
 
-async def serve(port: int, catalog_path: Path, *, directory: bool = False) -> None:
+async def serve(
+    port: int,
+    catalog_path: Path,
+    *,
+    directory: bool = False,
+    first_shop_price_offset: int = 0,
+) -> None:
     """Own the shared model client until the seller server shuts down."""
     async with (
         create_client(model=True) as model_http,
@@ -83,7 +89,8 @@ async def serve(port: int, catalog_path: Path, *, directory: bool = False) -> No
             for index in range(SHOP_COUNT):
                 base = f"http://127.0.0.1:{port}/shops/{index:02d}/"
                 kind = KINDS[index % len(KINDS)]
-                catalog = Catalog(catalog_path, price_offset=index * 5, kinds=(kind,))
+                offset = index * 5 + (first_shop_price_offset if index == 0 else 0)
+                catalog = Catalog(catalog_path, price_offset=offset, kinds=(kind,))
                 child = create_app(base, harness, catalog, f"shop-{index:02d}-{kind}")
                 web.mount(f"/shops/{index:02d}", child)
         else:
@@ -117,12 +124,18 @@ def seller(
 def directory_server(
     port: Annotated[int, typer.Option(min=1024, max=65535)],
     catalog: Annotated[Path, typer.Option()] = ROOT / "catalog.json",
+    first_shop_price_offset: Annotated[int, typer.Option(min=0)] = 0,
 ) -> None:
     """Run 20 independent A2A shops with different categories and reserves."""
     absolute = catalog.resolve()
 
     async def run() -> None:
-        await serve(port, absolute, directory=True)
+        await serve(
+            port,
+            absolute,
+            directory=True,
+            first_shop_price_offset=first_shop_price_offset,
+        )
 
     isolated(run)
 

@@ -15,7 +15,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+from functools import partial
 from pathlib import Path
 from typing import Annotated, Final
 
@@ -41,6 +43,7 @@ from market_a2a.models import HarnessError, Product, ShopCard, ShoppingItem
 from market_a2a.remote import Card, Remote
 
 MIN_CATALOG: Final = 1000
+MIN_REPLANNING_PLANS: Final = 2
 ROOT: Final = Path(__file__).resolve().parent
 app = typer.Typer(add_completion=False)
 
@@ -174,14 +177,17 @@ async def shopping_challenge(base: str, directory: Path) -> Summary:
     return shopping_summary((directory / "buyer.log").read_text(), fixture, ROOT)
 
 
-async def run(challenge: int, attempt: int) -> None:
+async def run(challenge: int, attempt: int, *, replanning: bool = False) -> None:
     """Reserve a new evidence directory and always write an attempt verdict."""
-    directory = ROOT / "logs" / f"challenge-{challenge}" / f"attempt-{attempt}"
+    label = f"replanning-attempt-{attempt}" if replanning else f"attempt-{attempt}"
+    directory = ROOT / "logs" / f"challenge-{challenge}" / label
     directory.mkdir(parents=True, exist_ok=False)
     port = free_port()
     base = f"http://127.0.0.1:{port}/"
     mode = "seller" if challenge == 1 else "directory-server"
     command = [str(ROOT / "run_harness.sh"), mode, "--port", str(port)]
+    if replanning:
+        command.extend(("--first-shop-price-offset", "5000"))
     _ = (directory / "invocation.json").write_text(
         json.dumps(
             {
@@ -190,6 +196,15 @@ async def run(challenge: int, attempt: int) -> None:
                 "server": command,
                 "cwd": str(ROOT),
                 "runner": str(ROOT / "challenge_run.py"),
+                "scenario": "unaffordable-first-shop" if replanning else "baseline",
+                "source_sha256": {
+                    str(path.relative_to(ROOT)): hashlib.sha256(
+                        path.read_bytes()
+                    ).hexdigest()
+                    for path in sorted(
+                        [*ROOT.glob("*.py"), *ROOT.glob("market_a2a/*.py")]
+                    )
+                },
             },
             indent=2,
         )
@@ -208,6 +223,25 @@ async def run(challenge: int, attempt: int) -> None:
                     if challenge == 1
                     else shopping_challenge(base, directory)
                 )
+                if replanning:
+                    require(
+                        summary.planning_rounds >= MIN_REPLANNING_PLANS,
+                        "No actual second plan",
+                    )
+                    require(bool(summary.failed_checkouts), "No actual unpaid checkout")
+                    failed = summary.failed_checkouts[0]
+                    fixture = ShoppingFixture.model_validate_json(
+                        (ROOT / "shopping_list.json").read_bytes()
+                    )
+                    position = next(
+                        index
+                        for index, item in enumerate(fixture.items)
+                        if item.request_id == failed.request_id
+                    )
+                    require(
+                        summary.receipts[position].shop != failed.shop_url,
+                        "Failed item did not switch shops",
+                    )
     except (
         HarnessError,
         ValidationError,
@@ -231,9 +265,13 @@ def challenge_one(attempt: Annotated[int, typer.Option(min=1)]) -> None:
 
 
 @app.command("challenge-2")
-def challenge_two(attempt: Annotated[int, typer.Option(min=1)]) -> None:
+def challenge_two(
+    attempt: Annotated[int, typer.Option(min=1)],
+    *,
+    replanning: Annotated[bool, typer.Option()] = False,
+) -> None:
     """Run 20-shop discovery and concurrent shopping within one budget."""
-    anyio.run(run, 2, attempt)
+    anyio.run(partial(run, 2, attempt, replanning=replanning))
 
 
 if __name__ == "__main__":

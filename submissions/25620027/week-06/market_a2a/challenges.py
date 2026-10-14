@@ -9,7 +9,7 @@ from pydantic import Field, TypeAdapter
 
 from market_a2a.models import FrozenModel, HarnessError, Product, Purchase, ShoppingItem
 from market_a2a.remote import Task, Wire
-from market_a2a.shopping import Plan, Reservation
+from market_a2a.shopping import CheckoutAttempt, Plan, Reservation
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -108,6 +108,8 @@ class Summary(FrozenModel):
     header_count: int = 0
     state_count: int = 0
     ledger: tuple[Ledger, ...] = ()
+    planning_rounds: int = 0
+    failed_checkouts: tuple[CheckoutAttempt, ...] = ()
     error: str = ""
 
 
@@ -269,6 +271,10 @@ def shopping_summary(log: str, fixture: ShoppingFixture, root: Path) -> Summary:
     )
     states = events(log, "[NEGOTIATION SUMMARY] ")
     require(len(states) >= len(purchases), "Missing negotiation summaries")
+    attempts = tuple(
+        CheckoutAttempt.model_validate_json(raw)
+        for raw in events(log, "[CHECKOUT ATTEMPT] ")
+    )
     return Summary(
         passed=True,
         challenge=2,
@@ -280,4 +286,8 @@ def shopping_summary(log: str, fixture: ShoppingFixture, root: Path) -> Summary:
         header_count=len(headers),
         state_count=len(states),
         ledger=ledger,
+        planning_rounds=len(events(log, "[SHOPPING PLAN] ")),
+        failed_checkouts=tuple(
+            attempt for attempt in attempts if not attempt.outcome.completed
+        ),
     )
