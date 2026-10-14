@@ -4,7 +4,7 @@
 
 [시스템 구조](ARCHITECTURE.md), [코드 읽기 안내](CODE_WALKTHROUGH.md), [실행 근거와 과제 보고서](REPORT.md)를 함께 확인하세요. 검증 결과와 측정 범위는 실제 실행 로그를 인용하는 보고서에 기록했습니다.
 
-![A2A 거래 시스템 아키텍처](docs/architecture.png)
+![최종 구현의 A2A 거래 시스템 아키텍처](docs/architecture-final.png)
 
 ## 실행 준비
 
