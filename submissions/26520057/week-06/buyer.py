@@ -3,7 +3,7 @@
     python buyer.py --url http://127.0.0.1:9999 --item lamp --budget 120
 
 The harness (harness.py) decides every offer and when to walk away.
-The code speaks A2A. The budget lives in the prompt only: the code logs an offer above it but does not stop it.
+The code speaks A2A and guards the budget: an offer above it goes out as the budget, whatever the harness says.
 """
 import argparse
 import json
@@ -87,7 +87,8 @@ def main():
             return
         price = answer[1]
         if price > args.budget:
-            print(f"[note] offer {price} > budget {args.budget} (not stopped: the budget is prompt-only)", flush=True)
+            print(f"[guard] offer {price} > budget {args.budget} -> {args.budget}", flush=True)
+            price = args.budget
         history.append(f"buyer: offers {price}")
         task, said = send(url, str(price), task["id"])
         history.append(f"seller: {said}")
