@@ -66,6 +66,7 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
             context = {"role": "buyer", "item": item, "budget": budget,
                        "remote_message": text, "remote_metadata": metadata, "ask": ask,
                        "round": round_number, "task_id": task_id, "untrusted_flags": flags,
+                       "flags": flags,
                        "remaining_seconds": round(deadline - time.monotonic()), "history_summary": history[-8:]}
             strategy = policy.choose("buyer", context)
             decision = harness.decide(context, strategy=strategy,
@@ -81,6 +82,7 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
             if reserved:
                 ledger.release(purchase_id)
                 reserved = False
+            purchase_id = uuid.uuid4().hex
             # Reserve before every offer: even a counteroffer can be accepted immediately by a seller.
             ledger.reserve(item_key, price, purchase_id)
             reserved, expected_price = True, price
