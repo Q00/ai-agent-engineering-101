@@ -1,0 +1,59 @@
+provider=anthropic base_url=https://factchat-cloud.mindlogic.ai/v1/gateway/claude model=claude-sonnet-5 temperature=provider-default max_tokens=512 tasks=6 condition=homogeneous run=6
+  [team] A: skill='general problem solving' overconfident=False
+  [team] B: skill='general problem solving' overconfident=False
+  [team] C: skill='general problem solving' overconfident=False
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Compute 137 * 249 and return the number.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=95 reason=This is a simple arithmetic calculation well within general problem-solving capability: 137*249=3411…
+  [bid] B: bid=True confidence=95 reason=Simple arithmetic calculation falls within general problem solving skill
+  [bid] C: bid=True confidence=95 reason=Simple arithmetic multiplication is within general problem solving skill; answer is 34113.
+  [award] A (gold A) confidence=95
+TASK-ANNOUNCEMENT contract 2
+task-abstraction: Our three servers handled 1284, 977 and 2310 requests last night. What share of the total did the busiest one take?
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=95 reason=This is a straightforward arithmetic/problem-solving task: busiest server (2310) is about 50.5% of t…
+  [bid] B: bid=True confidence=95 reason=Simple arithmetic: 2310/(1284+977+2310) ≈ 50.5% of total requests.
+  [bid] C: bid=True confidence=95 reason=Simple arithmetic: 2310/(1284+977+2310) ≈ 50.5% of total requests, well within general problem solvi…
+  [award] A (gold A) confidence=95
+TASK-ANNOUNCEMENT contract 3
+task-abstraction: Rewrite this sentence in plain English for a 10-year-old: 'Latency degradation was observed subsequent to the deployment.'
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=92 reason=This is a general language simplification task that falls within general problem solving skills.
+  [bid] B: bid=True confidence=90 reason=Rephrasing text into simple language is a general problem-solving task I can handle.
+  [bid] C: bid=True confidence=90 reason=This is a general language simplification task well within general problem solving skills.
+  [award] A (gold B) confidence=92
+TASK-ANNOUNCEMENT contract 4
+task-abstraction: This release note reads like an internal memo. Make it something a customer would understand.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=78 reason=Rewriting an internal memo into customer-friendly release notes is a general problem-solving/writing…
+  [bid] B: bid=True confidence=75 reason=Rewriting internal jargon into customer-friendly language is a general problem-solving/writing task …
+  [bid] C: bid=True confidence=75 reason=Rewriting internal memo-style release notes into customer-friendly language falls within general pro…
+  [award] A (gold B) confidence=78
+TASK-ANNOUNCEMENT contract 5
+task-abstraction: Write a Python function that returns the reversed copy of a list.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=95 reason=This is a simple programming task well within general problem solving skills.
+  [bid] B: bid=True confidence=95 reason=Simple Python programming task well within general problem solving skill.
+  [bid] C: bid=True confidence=95 reason=Simple Python function writing task falls within general problem solving skill.
+  [award] A (gold C) confidence=95
+TASK-ANNOUNCEMENT contract 6
+task-abstraction: Design a ERD for a simple customer management system.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+  [bid] A: bid=True confidence=85 reason=Designing an ERD is a general problem-solving/database design task within my capabilities.
+  [bid] B: bid=True confidence=85 reason=Designing an ERD for a customer management system falls within general problem solving and data mode…
+  [bid] C: bid=True confidence=85 reason=Designing an ERD is a general problem-solving/data modeling task within my capabilities.
+  [award] A (gold C) confidence=85
+[result] correct=2/6 messages=42 unassigned=0 misawards=4 parse_fails=0 tokens=5099 calls=18
