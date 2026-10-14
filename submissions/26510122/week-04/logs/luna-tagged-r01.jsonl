@@ -1,0 +1,50 @@
+{"event": "setup", "run": "luna-tagged-r01", "condition": "tagged", "backend": "codex-cli", "model": "gpt-5.6-luna", "temperature": "not-settable", "turn_limit": 6, "reader_prompt": "You are the fixed protocol reader for a price negotiation. Classify the message as\nexactly one of: propose, accept-proposal, reject-proposal, refuse. Extract an\ninteger price only when the message proposes a price; otherwise use null. A\nquestion or departure that cannot be represented by the four acts is refuse.\nReturn only one JSON object in this shape:\n{\"performative\":\"propose\",\"price\":100}", "pending": ["bicycle-wide", "camera-no-overlap", "desk-narrow", "headphones-no-overlap"]}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "bicycle-wide", "turn": 1, "speaker": "buyer", "raw": "(propose) I can offer 80."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "bicycle-wide", "turn": 1, "performative": "propose", "price": 80, "error": null, "reader_calls": 1}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "bicycle-wide", "turn": 2, "speaker": "seller", "raw": "(accept-proposal) I accept your offer of 80."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "bicycle-wide", "turn": 2, "performative": "accept-proposal", "price": null, "error": null, "reader_calls": 1}
+{"event": "episode_result", "run": "luna-tagged-r01", "scenario": "bicycle-wide", "outcome": "deal", "price": 80, "correct": 1, "violation": 0, "turns": 2, "format_errors": 0, "reader_calls": 1}
+{"event": "usage", "run": "luna-tagged-r01", "scenario": "bicycle-wide", "model_calls": 3, "provider_retries": 0}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "turn": 1, "speaker": "buyer", "raw": "(propose) I can offer 100."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "turn": 1, "performative": "propose", "price": 100, "error": null, "reader_calls": 1}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "turn": 2, "speaker": "seller", "raw": "(propose) I can offer 200."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "turn": 2, "performative": "propose", "price": 200, "error": null, "reader_calls": 2}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "turn": 3, "speaker": "buyer", "raw": "(propose) I can offer 110."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "turn": 3, "performative": "propose", "price": 110, "error": null, "reader_calls": 3}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "turn": 4, "speaker": "seller", "raw": "(propose) I can offer 190."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "turn": 4, "performative": "propose", "price": 190, "error": null, "reader_calls": 4}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "turn": 5, "speaker": "buyer", "raw": "(propose) I can offer 115."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "turn": 5, "performative": "propose", "price": 115, "error": null, "reader_calls": 5}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "turn": 6, "speaker": "seller", "raw": "(propose) I can offer 180."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "turn": 6, "performative": "propose", "price": 180, "error": null, "reader_calls": 6}
+{"event": "episode_result", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 6, "format_errors": 0, "reader_calls": 6}
+{"event": "usage", "run": "luna-tagged-r01", "scenario": "camera-no-overlap", "model_calls": 12, "provider_retries": 0}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "desk-narrow", "turn": 1, "speaker": "buyer", "raw": "(propose) I can offer 60 for the standing desk."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "desk-narrow", "turn": 1, "performative": "propose", "price": 60, "error": null, "reader_calls": 1}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "desk-narrow", "turn": 2, "speaker": "seller", "raw": "(propose) I can offer 120 for the standing desk."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "desk-narrow", "turn": 2, "performative": "propose", "price": 120, "error": null, "reader_calls": 2}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "desk-narrow", "turn": 3, "speaker": "buyer", "raw": "(reject-proposal) I can't accept 120, but I can offer 70."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "desk-narrow", "turn": 3, "performative": "reject-proposal", "price": null, "error": null, "reader_calls": 2}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "desk-narrow", "turn": 4, "speaker": "seller", "raw": "(propose) I can offer 110 for the standing desk."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "desk-narrow", "turn": 4, "performative": "propose", "price": 110, "error": null, "reader_calls": 3}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "desk-narrow", "turn": 5, "speaker": "buyer", "raw": "(reject-proposal) I can't accept 110, but I can offer 80."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "desk-narrow", "turn": 5, "performative": "reject-proposal", "price": null, "error": null, "reader_calls": 3}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "desk-narrow", "turn": 6, "speaker": "seller", "raw": "(propose) I can offer 100 for the standing desk."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "desk-narrow", "turn": 6, "performative": "propose", "price": 100, "error": null, "reader_calls": 4}
+{"event": "episode_result", "run": "luna-tagged-r01", "scenario": "desk-narrow", "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 6, "format_errors": 0, "reader_calls": 4}
+{"event": "usage", "run": "luna-tagged-r01", "scenario": "desk-narrow", "model_calls": 10, "provider_retries": 0}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "turn": 1, "speaker": "buyer", "raw": "(propose) I can offer 30."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "turn": 1, "performative": "propose", "price": 30, "error": null, "reader_calls": 1}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "turn": 2, "speaker": "seller", "raw": "(propose) I can offer 100."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "turn": 2, "performative": "propose", "price": 100, "error": null, "reader_calls": 2}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "turn": 3, "speaker": "buyer", "raw": "(propose) I can offer 35."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "turn": 3, "performative": "propose", "price": 35, "error": null, "reader_calls": 3}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "turn": 4, "speaker": "seller", "raw": "(propose) I can offer 95."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "turn": 4, "performative": "propose", "price": 95, "error": null, "reader_calls": 4}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "turn": 5, "speaker": "buyer", "raw": "(propose) I can offer 40."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "turn": 5, "performative": "propose", "price": 40, "error": null, "reader_calls": 5}
+{"event": "message", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "turn": 6, "speaker": "seller", "raw": "(propose) I can offer 90."}
+{"event": "read", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "turn": 6, "performative": "propose", "price": 90, "error": null, "reader_calls": 6}
+{"event": "episode_result", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 6, "format_errors": 0, "reader_calls": 6}
+{"event": "usage", "run": "luna-tagged-r01", "scenario": "headphones-no-overlap", "model_calls": 12, "provider_retries": 0}
+{"event": "run_complete", "run": "luna-tagged-r01", "condition": "tagged", "scenarios": 4}

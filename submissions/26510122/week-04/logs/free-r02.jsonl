@@ -1,0 +1,27 @@
+{"event": "setup", "run": "free-r02", "condition": "free", "backend": "codex-cli", "model": "gpt-5.6-sol", "temperature": "not-settable", "turn_limit": 6, "reader_prompt": "You are the fixed protocol reader for a price negotiation. Classify the message as\nexactly one of: propose, accept-proposal, reject-proposal, refuse. Extract an\ninteger price only when the message proposes a price; otherwise use null. A\nquestion or departure that cannot be represented by the four acts is refuse.\nReturn only one JSON object in this shape:\n{\"performative\":\"propose\",\"price\":100}", "pending": ["bicycle-wide", "camera-no-overlap", "desk-narrow", "headphones-no-overlap"]}
+{"event": "message", "run": "free-r02", "scenario": "bicycle-wide", "turn": 1, "speaker": "buyer", "raw": "I propose $70 for the used bicycle."}
+{"event": "read", "run": "free-r02", "scenario": "bicycle-wide", "turn": 1, "performative": "propose", "price": 70, "error": null, "reader_calls": 1}
+{"event": "message", "run": "free-r02", "scenario": "bicycle-wide", "turn": 2, "speaker": "seller", "raw": "I reject-proposal and propose $120 for the bicycle."}
+{"event": "read", "run": "free-r02", "scenario": "bicycle-wide", "turn": 2, "performative": "propose", "price": 120, "error": null, "reader_calls": 2}
+{"event": "message", "run": "free-r02", "scenario": "bicycle-wide", "turn": 3, "speaker": "buyer", "raw": "I accept-proposal at $120."}
+{"event": "read", "run": "free-r02", "scenario": "bicycle-wide", "turn": 3, "performative": "accept-proposal", "price": null, "error": null, "reader_calls": 3}
+{"event": "episode_result", "run": "free-r02", "scenario": "bicycle-wide", "outcome": "deal", "price": 120, "correct": 1, "violation": 0, "turns": 3, "format_errors": 0, "reader_calls": 3}
+{"event": "usage", "run": "free-r02", "scenario": "bicycle-wide", "model_calls": 6, "provider_retries": 0}
+{"event": "message", "run": "free-r02", "scenario": "camera-no-overlap", "turn": 1, "speaker": "buyer", "raw": "I can offer $80 for the mirrorless camera."}
+{"event": "read", "run": "free-r02", "scenario": "camera-no-overlap", "turn": 1, "performative": "propose", "price": 80, "error": null, "reader_calls": 1}
+{"event": "message", "run": "free-r02", "scenario": "camera-no-overlap", "turn": 2, "speaker": "seller", "raw": "I reject your proposal and propose $250 for the mirrorless camera."}
+{"event": "read", "run": "free-r02", "scenario": "camera-no-overlap", "turn": 2, "performative": "propose", "price": 250, "error": null, "reader_calls": 2}
+{"event": "message", "run": "free-r02", "scenario": "camera-no-overlap", "turn": 3, "speaker": "buyer", "raw": "I reject your proposal and propose $90 for the mirrorless camera."}
+{"event": "read", "run": "free-r02", "scenario": "camera-no-overlap", "turn": 3, "performative": "propose", "price": 90, "error": null, "reader_calls": 3}
+{"event": "message", "run": "free-r02", "scenario": "camera-no-overlap", "turn": 4, "speaker": "seller", "raw": "I reject your proposal and propose $230 for the mirrorless camera."}
+{"event": "read", "run": "free-r02", "scenario": "camera-no-overlap", "turn": 4, "performative": "propose", "price": 230, "error": null, "reader_calls": 4}
+{"event": "message", "run": "free-r02", "scenario": "camera-no-overlap", "turn": 5, "speaker": "buyer", "raw": "I reject your proposal and propose $100 for the mirrorless camera."}
+{"event": "read", "run": "free-r02", "scenario": "camera-no-overlap", "turn": 5, "performative": "propose", "price": 100, "error": null, "reader_calls": 5}
+{"event": "message", "run": "free-r02", "scenario": "camera-no-overlap", "turn": 6, "speaker": "seller", "raw": "I reject-proposal and propose $215 for the mirrorless camera."}
+{"event": "read", "run": "free-r02", "scenario": "camera-no-overlap", "turn": 6, "performative": "propose", "price": 215, "error": null, "reader_calls": 6}
+{"event": "episode_result", "run": "free-r02", "scenario": "camera-no-overlap", "outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 6, "format_errors": 0, "reader_calls": 6}
+{"event": "usage", "run": "free-r02", "scenario": "camera-no-overlap", "model_calls": 12, "provider_retries": 0}
+{"event": "message", "run": "free-r02", "scenario": "desk-narrow", "turn": 1, "speaker": "buyer", "raw": "I propose $60 for the standing desk."}
+{"event": "read", "run": "free-r02", "scenario": "desk-narrow", "turn": 1, "performative": "propose", "price": 60, "error": null, "reader_calls": 1}
+{"event": "message", "run": "free-r02", "scenario": "desk-narrow", "turn": 2, "speaker": "seller", "raw": "I reject-proposal and propose $140 for the standing desk."}
+{"event": "read", "run": "free-r02", "scenario": "desk-narrow", "turn": 2, "performative": "propose", "price": 140, "error": null, "reader_calls": 2}
