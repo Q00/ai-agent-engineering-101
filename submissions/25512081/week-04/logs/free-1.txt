@@ -1,0 +1,91 @@
+# run=free-1 provider=openai model=gpt-4o-mini temp=0.0 max_turns=8 time=20260922T121754Z
+scenario 1 (a used road bike), reserve 120, budget 180, deal_possible=1
+  [buyer] I'm interested in the bike; would you consider selling it for 150?
+    [reader/parse] performative=propose price=150 ok=True
+  [seller] I appreciate your offer, but I was hoping to get at least 180 for it.
+    [reader/parse] performative=reject-proposal price=150 ok=True
+  [buyer] I understand, but 180 is a bit high for me. How about 160?
+    [reader/parse] performative=propose price=160 ok=True
+  [seller] I can do 175, which I think is a fair compromise.
+    [reader/parse] performative=propose price=175 ok=True
+  [buyer] I appreciate that, but I can only go up to 165. What do you think?
+    [reader/parse] performative=propose price=165 ok=True
+  [seller] I understand your position, but I really need to stick to 170.
+    [reader/parse] performative=reject-proposal price=170 ok=True
+  [buyer] I see where you're coming from, but I can only offer 167. Would you consider that?
+    [reader/parse] performative=propose price=167 ok=True
+  [seller] I appreciate your offer, but I can't go below 170.
+    [reader/parse] performative=reject-proposal price=170 ok=True
+  [result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+scenario 2 (a second-hand office chair), reserve 60, budget 75, deal_possible=1
+  [buyer] I'm interested in the chair! How about I offer you 50?
+    [reader/parse] performative=propose price=50 ok=True
+  [seller] I appreciate your interest, but I can't accept 50. How about 80?
+    [reader/parse] performative=reject-proposal price=50 ok=True
+  [buyer] 80 is a bit too high for me. I can offer you 55 instead.
+    [reader/parse] performative=propose price=55 ok=True
+  [seller] I understand, but 55 is still too low. How about we settle at 75?
+    [reader/parse] performative=propose price=75 ok=True
+  [buyer] 75 is still a bit above my budget. How about we meet at 60?
+    [reader/parse] performative=propose price=60 ok=True
+  [seller] I appreciate your offer, but I can't go as low as 60. How about 70?
+    [reader/parse] performative=propose price=70 ok=True
+  [buyer] 70 is closer, but I can only go up to 65. What do you think?
+    [reader/parse] performative=propose price=65 ok=True
+  [seller] I appreciate your flexibility, but I can't accept 65. How about 68?
+    [reader/parse] performative=propose price=68 ok=True
+  [result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+scenario 3 (a vintage film camera), reserve 200, budget 200, deal_possible=1
+  [buyer] I'm interested in the camera; would you consider selling it for 150?
+    [reader/parse] performative=propose price=150 ok=True
+  [seller] I appreciate your interest, but I can't go that low. How about 300?
+    [reader/parse] performative=reject-proposal price=150 ok=True
+  [buyer] That's quite a bit above my budget. How about we settle at 175?
+    [reader/parse] performative=propose price=175 ok=True
+  [seller] I understand your budget, but I can't accept that. Let's meet at 250.
+    [reader/parse] performative=reject-proposal price=250 ok=True
+  [buyer] I appreciate your offer, but 250 is still too high for me. Can we try 160?
+    [reader/parse] performative=propose price=160 ok=True
+  [seller] I can't accept 160, but I can lower my offer to 225.
+    [reader/parse] performative=reject-proposal price=160 ok=True
+  [buyer] 225 is still above my budget. Would you consider 165 instead?
+    [reader/parse] performative=propose price=165 ok=True
+  [seller] I can't go that low. How about we settle at 210?
+    [reader/parse] performative=propose price=210 ok=True
+  [result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+scenario 4 (a used electric guitar), reserve 300, budget 240, deal_possible=0
+  [buyer] I'm interested in the guitar! How about I offer you 180?
+    [reader/parse] performative=propose price=180 ok=True
+  [seller] I appreciate your interest, but I can't accept that offer. How about we start at 400?
+    [reader/parse] performative=reject-proposal price=180 ok=True
+  [buyer] That's quite a bit higher than I was hoping to spend. How about we meet in the middle at 220?
+    [reader/parse] performative=propose price=220 ok=True
+  [seller] I understand, but I can't go that low. How about 350?
+    [reader/parse] performative=propose price=350 ok=True
+  [buyer] That's still too high for me. I can offer 200 instead.
+    [reader/parse] performative=propose price=200 ok=True
+  [seller] I appreciate your offer, but I can't accept that. Let's try 340 instead.
+    [reader/parse] performative=reject-proposal price=340 ok=True
+  [buyer] I see we're still quite far apart. How about 210?
+    [reader/parse] performative=propose price=210 ok=True
+  [seller] I understand your position, but I can't accept that offer. How about 330?
+    [reader/parse] performative=propose price=330 ok=True
+  [result] outcome=open price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
+scenario 5 (a graphics tablet), reserve 150, budget 135, deal_possible=0
+  [buyer] I’d like to start by offering 100 for the graphics tablet.
+    [reader/parse] performative=propose price=100 ok=True
+  [seller] I appreciate your offer, but I can't accept anything below 200.
+    [reader/parse] performative=reject-proposal price=200 ok=True
+  [buyer] I understand, but 200 is too high for me. How about we meet in the middle at 120?
+    [reader/parse] performative=propose price=120 ok=True
+  [seller] I can't go that low; my best offer is 190.
+    [reader/parse] performative=propose price=190 ok=True
+  [buyer] 190 is still too high for me. I can offer 110 instead.
+    [reader/parse] performative=reject-proposal price=110 ok=True
+  [seller] I can't accept 110; my lowest price is 180.
+    [reader/parse] performative=reject-proposal price=110 ok=True
+  [buyer] 180 is still above my budget. I can go up to 130.
+    [reader/parse] performative=reject-proposal price=130 ok=True
+  [seller] I appreciate your offer, but I can't accept anything below 170.
+    [reader/parse] performative=reject-proposal price=170 ok=True
+  [result] outcome=open price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
