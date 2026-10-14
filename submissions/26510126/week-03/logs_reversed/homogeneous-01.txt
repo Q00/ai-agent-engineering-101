@@ -1,0 +1,39 @@
+provider=anthropic model=claude-sonnet-5 temperature=NOT_SETTABLE(sampling removed on claude-sonnet-5; internal value unknown) effort=low thinking=disabled max_tokens=300 sdk=anthropic 1.4.0 python=3.12.14
+run=1 condition=homogeneous order=reverse tasks=6
+  contractor C: skill='general problem solving' overconfident=False
+  contractor B: skill='general problem solving' overconfident=False
+  contractor A: skill='general problem solving' overconfident=False
+------------------------------------------------------------------------
+[announce] contract 1 to 3 contractors (gold A): Compute the sum of all integers from 1 to 500 inclusive. Return only the number.
+  [bid] C: bid=True confidence=95 how=ok reason='Simple arithmetic sum computable via formula n(n+1)/2, well within general problem solving skill.'
+  [bid] B: bid=True confidence=95 how=ok reason='Simple arithmetic sum computation, well within general problem solving skill.'
+  [bid] A: bid=True confidence=95 how=ok reason='Simple arithmetic sum computation falls within general problem solving skill'
+  [award] C at 95 (gold A) -> misaward
+[announce] contract 2 to 3 contractors (gold A): A log file has 1284 lines and 37 percent of them are WARN. How many WARN lines are there? Round down and return only the integer.
+  [bid] C: bid=True confidence=95 how=ok reason='Simple arithmetic calculation: 1284*0.37=475.08, floor is 475'
+  [bid] B: bid=True confidence=95 how=ok reason='Simple arithmetic calculation within general problem solving skill'
+  [bid] A: bid=True confidence=95 how=ok reason='Simple arithmetic calculation: 1284*0.37=475.08, floor=475'
+  [award] C at 95 (gold A) -> misaward
+[announce] contract 3 to 3 contractors (gold B): Rewrite this sentence in plain English for a 10-year-old: 'The mitigation strategy was deprioritized pending stakeholder alignment.'
+  [bid] C: bid=True confidence=90 how=ok reason='This is a general language simplification task well within my problem-solving skill.'
+  [bid] B: bid=True confidence=90 how=ok reason='Simplifying language is a general problem-solving task within my skill set.'
+  [bid] A: bid=True confidence=90 how=ok reason='This is a general language simplification task well within my problem-solving skills.'
+  [award] C at 90 (gold B) -> misaward
+[announce] contract 4 to 3 contractors (gold B): Write a two-sentence release note announcing that dark mode is now available in the settings menu.
+  [bid] C: bid=True confidence=90 how=ok reason='Simple writing task within general problem solving capability'
+  [bid] B: bid=True confidence=90 how=ok reason='Writing a concise release note is within general problem solving capability.'
+  [bid] A: bid=True confidence=90 how=ok reason='Writing a short release note is within general problem solving capability.'
+  [award] C at 90 (gold B) -> misaward
+[announce] contract 5 to 3 contractors (gold C): Write a Python function reverse_list(xs) that returns a reversed copy of a list without using reversed() or slice notation.
+  [bid] C: bid=True confidence=95 how=ok reason='Simple Python coding task well within general problem solving skill.'
+  [bid] B: bid=True confidence=90 how=ok reason='Simple general programming task well within my problem-solving skill.'
+  [bid] A: bid=True confidence=90 how=ok reason='General problem solving covers writing this simple Python function.'
+  [award] C at 95 (gold C) -> correct
+[announce] contract 6 to 3 contractors (gold C): Write a Python function is_palindrome(s) that ignores case and non-alphanumeric characters.
+  [bid] C: bid=True confidence=95 how=ok reason='Simple Python string processing task within general problem solving skill.'
+  [bid] B: bid=True confidence=95 how=ok reason='This is a straightforward Python string-processing task within general problem solving skills.'
+  [bid] A: bid=True confidence=95 how=ok reason='Simple string-processing task well within general problem solving and Python coding skill.'
+  [award] C at 95 (gold C) -> correct
+------------------------------------------------------------------------
+tasks=6 correct=2 messages=42 unassigned=0 misawards=4
+note: parse_fails=0 ok=18 order=reverse tokens=4901 calls=18 wall=32.3s
