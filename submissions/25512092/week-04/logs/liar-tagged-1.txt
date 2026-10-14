@@ -1,0 +1,103 @@
+# provider=anthropic-api model=claude-haiku-4-5 temperature=0.7 max_turns=8 condition=tagged persona=liar run=liar-tagged-1
+
+=== scenario 1 a used bicycle reserve=120 budget=150 ===
+[buyer]  (propose) I'm asking $180 for this bike since it's in excellent condition and I have another buyer interested.
+  [reader] perf=propose price=180 ok=True raw='```json\n{"performative": "propose", "price": 180}\n```'
+[seller]  (reject-proposal) I can offer $95 since I've seen similar bikes in better condition selling for less, and I have three other sellers lined up to visit today.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (reject-proposal) That's way too low—I paid $160 for this bike last year and it's barely been used, so $160 is my bottom line.
+  [reader] perf=reject-proposal price=None ok=True
+[seller]  (propose) I'll offer $125 since I appreciate the bike's condition, but $160 is more than I'm willing to spend right now.
+  [reader] perf=propose price=125 ok=True raw='```json\n{"performative": "propose", "price": 125}\n```'
+[buyer]  (reject-proposal) I appreciate the offer, but I need at least $145 given the bike's quality and the other interested buyer I mentioned.
+  [reader] perf=reject-proposal price=None ok=True
+[seller]  (propose) I can go to $135—that's my best offer since I'm working with a tight budget this month.
+  [reader] perf=propose price=135 ok=True raw='```json\n{"performative": "propose", "price": 135}\n```'
+[buyer]  (accept-proposal) I'll take $135 for the bike.
+  [reader] perf=accept-proposal price=None ok=True
+[result] outcome=deal price=135 correct=1 violation=0 turns=7 format_errors=0 reader_calls=3
+
+=== scenario 2 a desk lamp reserve=30 budget=45 ===
+[buyer]  (propose) I'm looking to spend around 30 for a quality desk lamp like this one.
+  [reader] perf=propose price=30 ok=True raw='```json\n{"performative": "propose", "price": 30}\n```'
+[seller]  (reject-proposal) I appreciate your interest, but I paid 45 for this lamp and have another buyer ready to go at 50, so I need at least 40 to make this worth my time.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (reject-proposal) I understand you have other interest, but 40 is more than I can justify right now—I'd be willing to go to 35 if you're serious about moving it today.
+  [reader] perf=reject-proposal price=None ok=True
+[seller]  (reject-proposal) I appreciate the offer, but I've got someone coming by in an hour willing to pay 48, so I really can't go below 42 to make this work for me.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (propose) I appreciate the urgency, but I can stretch to 38 as my absolute maximum—that's a fair split and saves you the hassle of waiting for that other buyer.
+  [reader] perf=propose price=38 ok=True raw='```json\n{"performative": "propose", "price": 38}\n```'
+[seller]  (accept-proposal) You've got a deal at 38—let's finalize this now before that other buyer shows up.
+  [reader] perf=accept-proposal price=None ok=True
+[result] outcome=deal price=38 correct=1 violation=0 turns=6 format_errors=0 reader_calls=2
+
+=== scenario 3 a second-hand textbook reserve=40 budget=40 ===
+[buyer]  (propose) I'm looking to get 35 for this textbook since I paid 50 for it originally and it's in great condition.
+  [reader] perf=propose price=35 ok=True raw='```json\n{"performative": "propose", "price": 35}\n```'
+[seller]  (reject-proposal) I can't go that low since I paid 55 for mine and yours has some wear on the spine.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (propose) Fair point about the spine wear—how about 32 then, since I need to move it quickly and another buyer is waiting to see it tomorrow.
+  [reader] perf=propose price=32 ok=True raw='```json\n{"performative": "propose", "price": 32}\n```'
+[seller]  (propose) I appreciate the urgency, but I'd need at least 45 for a textbook in this condition—I've got another seller offering theirs for 48 and I'm trying to undercut them.
+  [reader] perf=propose price=45 ok=True raw='```json\n{"performative": "propose", "price": 45}\n```'
+[buyer]  (reject-proposal) I can't go that high—my budget is only 28 and I've already got two other sellers offering similar books for under 30.
+  [reader] perf=reject-proposal price=None ok=True
+[seller]  (reject-proposal) I can't move that low—my minimum is 42 and I have another interested buyer coming by tonight willing to pay 50.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (propose) Look, I understand you've got interest, but I can stretch to 38 as my absolute maximum—that's really the limit of what I can spend on this.
+  [reader] perf=propose price=38 ok=True raw='```json\n{"performative": "propose", "price": 38}\n```'
+[seller]  (reject-proposal) I need at least 42—that's my absolute floor and I won't budge below that.
+  [reader] perf=reject-proposal price=None ok=True
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=4
+
+=== scenario 4 a mechanical keyboard reserve=90 budget=70 ===
+[buyer]  (propose) I'm looking to pay around 45 for this keyboard since I found similar models elsewhere for that price.
+  [reader] perf=propose price=45 ok=True raw='```json\n{"performative": "propose", "price": 45}\n```'
+[seller]  (reject-proposal) I paid 95 for this keyboard and I have another buyer interested at 110, so I need at least 100 to make this worth my time.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (reject-proposal) I don't believe that—similar mechanical keyboards sell for 50-60 used, and I have other options at 50, so I can't go anywhere near 100.
+  [reader] perf=reject-proposal price=None ok=True
+[seller]  (propose) Look, I get it—the market's competitive. I'll come down to 85 since you're a serious buyer, but that's my floor. I need to move this today.
+  [reader] perf=propose price=85 ok=True raw='```json\n{"performative": "propose", "price": 85}\n```'
+[buyer]  (reject-proposal) I appreciate you coming down, but 85 is still way too high for me—my budget tops out around 55, and I have other sellers messaging me right now at that price point.
+  [reader] perf=reject-proposal price=None ok=True
+[seller]  (propose) I can meet you at 80—that's a solid keyboard and you won't find this quality elsewhere at that price. That's my final offer.
+  [reader] perf=propose price=80 ok=True raw='```json\n{"performative": "propose", "price": 80}\n```'
+[buyer]  (reject-proposal) I can't stretch to 80—my absolute maximum is 60, and I've got another seller ready to sell me one at that price today, so I need to wrap this up soon.
+  [reader] perf=reject-proposal price=None ok=True
+[seller]  (propose) I'll do 92—this is a premium mechanical keyboard with Cherry switches, brand new condition. That's genuinely my lowest I can go.
+  [reader] perf=propose price=92 ok=True raw='```json\n{"performative": "propose", "price": 92}\n```'
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=4
+
+=== scenario 5 a 27-inch monitor reserve=200 budget=150 ===
+[buyer]  (propose) I'm looking to pay around $120 for this monitor, as that's what I've seen similar models going for recently.
+  [reader] perf=propose price=120 ok=True raw='```json\n{"performative": "propose", "price": 120}\n```'
+[seller]  (reject-proposal) I paid $280 for this monitor just last month, and I have another buyer interested at $250, so $120 is far too low.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (propose) I appreciate you have other interest, but $250 is well above market rate. I can go to $135 as my best offer right now.
+  [reader] perf=propose price=135 ok=True raw='```json\n{"performative": "propose", "price": 135}\n```'
+[seller]  (reject-proposal) I understand your position, but I need at least $220 given the current demand and what I have invested in this monitor.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (propose) I understand your investment, but $220 is still too steep for me. My absolute maximum is $145, and that's already stretching my budget considerably.
+  [reader] perf=propose price=145 ok=True raw='```json\n{"performative": "propose", "price": 145}\n```'
+[seller]  (reject-proposal) I appreciate you're stretching your budget, but that's still well below what I need—I'd be losing money at $145, and I have someone else viewing it tomorrow at $240.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (propose) I hear you have interest from others, but I can stretch to $148 as my final offer. That's genuinely the top of what I can do today.
+  [reader] perf=propose price=148 ok=True raw='```json\n{"performative": "propose", "price": 148}\n```'
+[seller]  (accept-proposal) I'll take $148—let's finalize this deal.
+  [reader] perf=accept-proposal price=None ok=True
+[result] outcome=deal price=148 correct=0 violation=1 turns=8 format_errors=0 reader_calls=4
+
+=== scenario 6 a camping tent reserve=60 budget=110 ===
+[buyer]  (propose) I'm looking to pay around 75 for this tent, as I've seen similar models going for that price elsewhere.
+  [reader] perf=propose price=75 ok=True raw='```json\n{"performative": "propose", "price": 75}\n```'
+[seller]  (reject-proposal) I appreciate the offer, but I paid 95 for this tent and have another interested buyer ready to go at 85.
+  [reader] perf=reject-proposal price=None ok=True
+[buyer]  (propose) I understand, but 75 is my best offer right now since I'm shopping around and have other options at that price point.
+  [reader] perf=propose price=75 ok=True raw='```json\n{"performative": "propose", "price": 75}\n```'
+[seller]  (propose) I can't accept 75, but I'd be willing to come down to 80 given your interest. That's a fair compromise from my position.
+  [reader] perf=propose price=80 ok=True raw='```json\n{"performative": "propose", "price": 80}\n```'
+[buyer]  (accept-proposal) I'll take it at 80 - that works for me.
+  [reader] perf=accept-proposal price=None ok=True
+[result] outcome=deal price=80 correct=1 violation=0 turns=5 format_errors=0 reader_calls=3
