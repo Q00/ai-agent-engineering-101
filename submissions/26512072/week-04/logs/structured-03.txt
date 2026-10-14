@@ -1,0 +1,196 @@
+provider=vllm(openai-compatible) base_url=http://127.0.0.1:8011/v1 model=Qwen/Qwen3.8-27B temperature=0.2 max_tokens=200 enable_thinking=false max_turns=8 run=structured-03 condition=structured
+=== scenario 1: a used bicycle, reserve 120, budget 150, deal_possible=1, condition=structured
+[system buyer] You are the buyer of a used bicycle, negotiating the price with the seller. Your private limit: you can pay at most 150 dollars. Never agree to a price above 150. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Reply with exactly one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <whole number or null>}}.
+[system seller] You are the seller of a used bicycle, negotiating the price with the buyer. Your private limit: you can accept at least 120 dollars. Never agree to a price below 120. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Reply with exactly one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <whole number or null>}}.
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 100
+      }
+    }
+    [read] {'performative': 'propose', 'price': 100}
+[seller] {
+      "performative": "reject-proposal",
+      "content": {
+        "price": null
+      }
+    }
+    [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 120
+      }
+    }
+    [read] {'performative': 'propose', 'price': 120}
+[seller] {
+      "performative": "accept-proposal",
+      "content": {
+        "price": 120
+      }
+    }
+    [read] {'performative': 'accept-proposal', 'price': 120}
+[result] outcome=deal price=120 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
+=== scenario 2: a desk lamp, reserve 30, budget 45, deal_possible=1, condition=structured
+[system buyer] You are the buyer of a desk lamp, negotiating the price with the seller. Your private limit: you can pay at most 45 dollars. Never agree to a price above 45. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Reply with exactly one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <whole number or null>}}.
+[system seller] You are the seller of a desk lamp, negotiating the price with the buyer. Your private limit: you can accept at least 30 dollars. Never agree to a price below 30. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Reply with exactly one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <whole number or null>}}.
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 20
+      }
+    }
+    [read] {'performative': 'propose', 'price': 20}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 30
+      }
+    }
+    [read] {'performative': 'propose', 'price': 30}
+[seller] {"performative": "accept-proposal", "content": {"price": 30}}
+    [read] {'performative': 'accept-proposal', 'price': 30}
+[result] outcome=deal price=30 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
+=== scenario 3: a second-hand textbook, reserve 40, budget 40, deal_possible=1, condition=structured
+[system buyer] You are the buyer of a second-hand textbook, negotiating the price with the seller. Your private limit: you can pay at most 40 dollars. Never agree to a price above 40. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Reply with exactly one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <whole number or null>}}.
+[system seller] You are the seller of a second-hand textbook, negotiating the price with the buyer. Your private limit: you can accept at least 40 dollars. Never agree to a price below 40. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Reply with exactly one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <whole number or null>}}.
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 15
+      }
+    }
+    [read] {'performative': 'propose', 'price': 15}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 25
+      }
+    }
+    [read] {'performative': 'propose', 'price': 25}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 35
+      }
+    }
+    [read] {'performative': 'propose', 'price': 35}
+[seller] {"performative": "propose", "content": {"price": 45}}
+    [read] {'performative': 'propose', 'price': 45}
+[buyer] {
+      "performative": "reject-proposal",
+      "content": {
+        "price": null
+      }
+    }
+    [read] {'performative': 'reject-proposal', 'price': None}
+[seller] {"performative": "propose", "content": {"price": 42}}
+    [read] {'performative': 'propose', 'price': 42}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+=== scenario 4: a mechanical keyboard, reserve 90, budget 70, deal_possible=0, condition=structured
+[system buyer] You are the buyer of a mechanical keyboard, negotiating the price with the seller. Your private limit: you can pay at most 70 dollars. Never agree to a price above 70. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Reply with exactly one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <whole number or null>}}.
+[system seller] You are the seller of a mechanical keyboard, negotiating the price with the buyer. Your private limit: you can accept at least 90 dollars. Never agree to a price below 90. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Reply with exactly one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <whole number or null>}}.
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 45
+      }
+    }
+    [read] {'performative': 'propose', 'price': 45}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 55
+      }
+    }
+    [read] {'performative': 'propose', 'price': 55}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 65
+      }
+    }
+    [read] {'performative': 'propose', 'price': 65}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 70
+      }
+    }
+    [read] {'performative': 'propose', 'price': 70}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+=== scenario 5: a 27-inch monitor, reserve 220, budget 150, deal_possible=0, condition=structured
+[system buyer] You are the buyer of a 27-inch monitor, negotiating the price with the seller. Your private limit: you can pay at most 150 dollars. Never agree to a price above 150. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Reply with exactly one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <whole number or null>}}.
+[system seller] You are the seller of a 27-inch monitor, negotiating the price with the buyer. Your private limit: you can accept at least 220 dollars. Never agree to a price below 220. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Reply with exactly one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <whole number or null>}}.
+[buyer] {"performative": "propose", "content": {"price": 100}}
+    [read] {'performative': 'propose', 'price': 100}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] {"performative": "propose", "content": {"price": 120}}
+    [read] {'performative': 'propose', 'price': 120}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] {"performative": "propose", "content": {"price": 135}}
+    [read] {'performative': 'propose', 'price': 135}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] {"performative": "propose", "content": {"price": 145}}
+    [read] {'performative': 'propose', 'price': 145}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+=== scenario 6: a film camera, reserve 260, budget 200, deal_possible=0, condition=structured
+[system buyer] You are the buyer of a film camera, negotiating the price with the seller. Your private limit: you can pay at most 200 dollars. Never agree to a price above 200. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Reply with exactly one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <whole number or null>}}.
+[system seller] You are the seller of a film camera, negotiating the price with the buyer. Your private limit: you can accept at least 260 dollars. Never agree to a price below 260. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Reply with exactly one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "content": {"price": <whole number or null>}}.
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 100
+      }
+    }
+    [read] {'performative': 'propose', 'price': 100}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 120
+      }
+    }
+    [read] {'performative': 'propose', 'price': 120}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 150
+      }
+    }
+    [read] {'performative': 'propose', 'price': 150}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] {
+      "performative": "propose",
+      "content": {
+        "price": 180
+      }
+    }
+    [read] {'performative': 'propose', 'price': 180}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+    [read] {'performative': 'reject-proposal', 'price': None}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+[run] structured-03 agent_calls=40 reader_calls=0 tokens=13285
