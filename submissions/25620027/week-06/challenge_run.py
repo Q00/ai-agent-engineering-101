@@ -229,7 +229,13 @@ async def run(challenge: int, attempt: int, *, replanning: bool = False) -> None
                         "No actual second plan",
                     )
                     require(bool(summary.failed_checkouts), "No actual unpaid checkout")
-                    failed = summary.failed_checkouts[0]
+                    injected_failures = tuple(
+                        attempt
+                        for attempt in summary.failed_checkouts
+                        if attempt.shop_url.endswith("/shops/00/")
+                    )
+                    require(bool(injected_failures), "No failure at the expensive shop")
+                    failed = injected_failures[0]
                     fixture = ShoppingFixture.model_validate_json(
                         (ROOT / "shopping_list.json").read_bytes()
                     )

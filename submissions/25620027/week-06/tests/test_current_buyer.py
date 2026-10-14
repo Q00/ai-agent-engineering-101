@@ -20,7 +20,7 @@ from market_a2a.models import (
     ToolSpec,
 )
 from market_a2a.remote import Checkout, Receipt, Remote, Task, purchase
-from market_a2a.shopping import Planner, PlanningRound, shop
+from market_a2a.shopping import CheckoutAttempt, Planner, PlanningRound, shop
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -290,6 +290,52 @@ def test_integral_protobuf_price() -> None:
         item="lamp",
         sku="lamp-1",
     )
+
+
+@pytest.mark.parametrize(
+    ("shop_url", "cap", "accepted"),
+    [
+        ("expensive", 199, False),
+        ("expensive", 200, False),
+        ("expensive", 201, True),
+        ("replacement", 200, True),
+    ],
+)
+def test_planner_requires_changed_shop_or_higher_failed_cap(
+    shop_url: str, cap: int, *, accepted: bool
+) -> None:
+    async def scenario() -> None:
+        planner = Planner(
+            tuple(
+                ShopCard(url=name, name=name, skills=("chair",))
+                for name in ("expensive", "replacement")
+            ),
+            (ShoppingItem(request_id="seat", description="chair"),),
+            400,
+            failed_attempts=(
+                CheckoutAttempt(
+                    request_id="seat",
+                    shop_url="expensive",
+                    cap=200,
+                    outcome=Purchase(completed=False, item="chair", shop="expensive"),
+                ),
+            ),
+        )
+        result = await planner.dispatch(
+            "plan_purchases",
+            json.dumps(
+                {
+                    "reservations": [
+                        {"request_id": "seat", "shop_url": shop_url, "cap": cap}
+                    ],
+                    "reason": "Replan after an unpaid checkout",
+                }
+            ),
+        )
+        assert result.terminal is accepted
+        assert (planner.plan is not None) is accepted
+
+    anyio.run(scenario)
 
 
 def test_parallel_checkout_ledger(monkeypatch: pytest.MonkeyPatch) -> None:
