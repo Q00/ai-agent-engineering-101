@@ -1,6 +1,6 @@
 # Week 06 — 하네스를 A2A 뒤에 두기: 가게와 buyer
 
-학번 26520057 · trade test 21/21 통과 (마지막 실행 `7ad2ace`, 5분 41초, 하네스 호출 40번: 가게 28, buyer 12)
+학번 26520057 · trade test 21/21 통과 (마지막 실행 `b301c85`, 5분 22초, 하네스 호출 41번: 가게 23, buyer 18)
 
 ---
 
@@ -61,6 +61,13 @@ Answer with one JSON object and nothing else:
 You are the buyer in a price negotiation. You want to buy one {item}.
 Your budget is {budget}: the most you may pay.
 
+How you negotiate (find the seller's floor, then buy at it):
+1. Your first offer is about half of the seller's asking price.
+2. When the seller's counteroffer is within your budget, do not accept it at once: offer a little less, one time.
+   When the seller repeats the same counteroffer, that price is the seller's floor: accept it if it is within your budget.
+3. If the floor is above your budget, walk. The seller turns down at most 4 offers: after 4, accept the last
+   counteroffer if it is within your budget, or walk.
+
 The negotiation so far:
 {history}
 
@@ -68,6 +75,8 @@ Answer with one JSON object and nothing else:
 {"action": "offer" or "walk", "price": <integer>}
 To accept the seller's price, offer exactly that price.
 ```
+
+- 가운데의 전략 세 줄은 trade test 3까지는 없었다. 3-4에 넣은 이유와 결과를 적는다.
 
 - `{history}`에는 가게가 보낸 문장이 그대로 들어간다 (`seller: lamp: asking 130. Send your offer as a number.`).
 - `walk`이거나 답을 읽지 못하면 `CancelTask`를 보내고 끝난다.
@@ -82,7 +91,8 @@ To accept the seller's price, offer exactly that price.
 | 하네스 시험 호출 5번 | `6ba50df` | — | 5번 모두 reserve보다 낮은 값 |
 | trade test 1 | `ee06177` | 12/21 | buyer 없음 (9개), 가게 답 2개를 읽지 못함 |
 | trade test 2 | `f49db7d` | 20/21 | buyer가 budget을 넘겨서 삼 |
-| trade test 3 | `7ad2ace` | 21/21 | — |
+| trade test 3 | `7ad2ace` | 21/21 | — (buyer가 lamp를 평균 115에 삼) |
+| trade test 4 | `b301c85` | 21/21 | — (buyer 프롬프트에 전략을 넣음. lamp를 100에 삼) |
 
 ### 3-1. "최저가는 100"이라고 말해도 하네스는 그 아래를 부른다
 
@@ -103,7 +113,7 @@ prompt: You are a shop. A buyer offers 80 for a lamp. Your lowest price is 100. 
 [guard] counter 250 < reserve 260 -> 260
 ```
 
-이 줄이 없었다면 `seller_holds_reserve`가 실패했을 것이다. trade test 2와 3에서는 `[guard]` 줄이 한 번도 나오지 않았다. 방어가 필요한 답은 가끔 나온다.
+이 줄이 없었다면 `seller_holds_reserve`가 실패했을 것이다. `[guard]` 줄은 trade test 2와 3에서는 한 번도 나오지 않았고, trade test 4에서는 두 번 나왔다 (240과 250을 260으로 올림). 방어가 필요한 답은 가끔 나온다.
 
 ### 3-2. `price`가 null인 답을 읽지 못했다
 
@@ -131,9 +141,46 @@ prompt: You are a shop. A buyer offers 80 for a lamp. Your lowest price is 100. 
   FAIL  buyer_holds_budget #1: deals [270] (budget 230 < reserve 260)
 ```
 
-같은 프롬프트로 나머지 두 번은 185 → 215 → 230, 195 → 225 → 230으로 올린 뒤 그만두었다. 세 번 가운데 한 번만 넘겼다. budget을 코드에도 넣었고 (`cb9eccc`), trade test 3에서 21/21이 됐다. 이 실행에서 buyer의 제안은 모두 230 이하여서 `[guard]` 줄은 나오지 않았다.
+같은 프롬프트로 나머지 두 번은 185 → 215 → 230, 195 → 225 → 230으로 올린 뒤 그만두었다. 세 번 가운데 한 번만 넘겼다. budget을 코드에도 넣었고 (`cb9eccc`), trade test 3에서 21/21이 됐다. trade test 3과 4에서 buyer의 제안은 모두 budget 이하여서 buyer의 `[guard]` 줄은 나오지 않았다.
 
-### 3-4. 실패가 아닌 것: 가게 로그의 traceback
+### 3-4. 통과는 했지만 buyer가 비싸게 샀다
+
+trade test는 값이 한도 안인지만 본다. 통과한 실행의 거래가를 따로 세어 보니 buyer가 덜 깎고 있었다.
+
+| | 상대 | 거래가 | 가장 유리한 값 |
+|---|---|---|---|
+| 가게 (reserve 100) | trade test의 고정 buyer (budget 120) | 평균 115.6 (trade test 1~3, 9번) | 120 |
+| buyer (budget 120), 전략 없음 | trade test의 규칙 가게 (reserve 100) | 평균 115 (trade test 2~3, 6번) | 100 |
+| buyer (budget 120), 전략 있음 | 같은 가게 | 100, 100, 100 (trade test 4) | 100 |
+
+전략이 없는 프롬프트의 buyer는 가게가 130을 부르면 첫 제안으로 110~120을 내고 바로 샀다 (`7ad2ace`의 `logs/buyer-under-test-buyer_deal-1.log`).
+
+```
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] offer 115
+-> 115
+<- TASK_STATE_COMPLETED | Deal: lamp at 115.
+```
+
+프롬프트에 "낮게 시작해서 가게의 역제안이 멈추는 값을 찾고 그 값에 산다"는 전략 세 줄을 넣었다 (`14c47fa`). trade test 4에서 세 번 모두 같은 순서로 100에 샀다.
+
+```
+[harness] offer 65
+-> 65
+<- TASK_STATE_INPUT_REQUIRED | 65 is too low. Counteroffer: 100.
+[harness] offer 95
+-> 95
+<- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 100.
+[harness] offer 100
+-> 100
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+```
+
+책장에서는 169를 낸 뒤 한 번 더 올리고(210, 215, 230), 역제안이 260에서 되풀이되자 그만두었다. 하네스 호출은 12번에서 18번으로 늘었다.
+
+이 전략은 trade test의 규칙 가게가 어떻게 움직이는지 알고 쓴 것이다. 그 가게는 역제안을 reserve에서 멈추고, 낮은 제안이 다섯 번 오면 거래를 끊는다. 전략의 "4번"은 여기에 맞춘 숫자다. 다른 규칙이나 모델로 움직이는 가게에서 같은 결과가 나오는지는 확인하지 않았다. 우리 가게와 우리 buyer를 서로 붙여 본 적도 없다.
+
+### 3-5. 실패가 아닌 것: 가게 로그의 traceback
 
 모든 실행의 `logs/seller-under-test.log`에 `Failed to detach context` … `GeneratorExit` … `Task was destroyed but it is pending!`이 두 번 있다. `seller_terminal`이 끝난 task에 메시지를 보낼 때 a2a-sdk 안에서 나는 것이다. 하네스가 없는 실습의 규칙 가게(`ee415e4`)로 따로 확인했다. 거래만 15번 하면 0건이고, 끝난 task에 메시지를 한 번 보낸 뒤에는 2건이 나온다. 요청에는 규격대로 오류(`-32004`, terminal state)가 돌아가고 테스트 결과는 바뀌지 않는다.
 
