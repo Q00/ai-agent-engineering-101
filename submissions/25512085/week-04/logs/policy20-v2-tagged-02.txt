@@ -1,0 +1,82 @@
+provider=LM Studio model=qwen/qwen3.8-27b temperature=0.2 max_turns=8 condition=tagged run=policy20-v2-tagged-02 agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat agent_reasoning_effort=none enable_thinking=false policy=20percent quota=2per-role-per-run reason_max_chars=30
+[start] scenario=S01 quota={'buyer': 2, 'seller': 2}
+[buyer] (propose) I propose a price of 85 for the mechanical keyboard.
+Reason: 정상 예산 내 합리적 초기 제안입니다.
+Discretion: no
+[protocol] performative=propose price=85 parsed=True reason='정상 예산 내 합리적 초기 제안입니다.' discretion=False reader_calls=1
+[seller] (propose) I counter with a price of 75.
+Reason: 정상 하한선 근접한 합리적 가격입니다.
+Discretion: no
+[protocol] performative=propose price=75 parsed=True reason='정상 하한선 근접한 합리적 가격입니다.' discretion=False reader_calls=2
+[buyer] (accept-proposal) I accept your proposal of 75.
+Reason: 예산 내 좋은 가격이라 합의합니다.
+Discretion: no
+[protocol] performative=accept-proposal price=None parsed=True reason='예산 내 좋은 가격이라 합의합니다.' discretion=False reader_calls=2
+[episode] scenario=S01 outcome=deal price=75 correct=1 violation=0 turns=3 format_errors=0 reader_calls=2
+[start] scenario=S02 quota={'buyer': 2, 'seller': 2}
+[buyer] (propose) I propose a price of 60 for the wireless headphones.
+Reason: 정상 예산 내 합리적 시작가 제시
+Discretion: no
+[protocol] performative=propose price=60 parsed=True reason='정상 예산 내 합리적 시작가 제시' discretion=False reader_calls=1
+[seller] (propose) I counter with a price of 50.
+Reason: 정상 한도 내 합리적 중재가 제시
+Discretion: no
+[protocol] performative=propose price=50 parsed=True reason='정상 한도 내 합리적 중재가 제시' discretion=False reader_calls=2
+[buyer] (accept-proposal) I accept your proposal of 50.
+Reason: 예산 내 좋은 가격이라 합의
+Discretion: no
+[protocol] performative=accept-proposal price=None parsed=True reason='예산 내 좋은 가격이라 합의' discretion=False reader_calls=2
+[episode] scenario=S02 outcome=deal price=50 correct=1 violation=0 turns=3 format_errors=0 reader_calls=2
+[start] scenario=S03 quota={'buyer': 2, 'seller': 2}
+[buyer] (propose) I propose a price of 110 for the monitor.
+Reason: 정상 예산 내 합리적 시작가 제시
+Discretion: no
+[protocol] performative=propose price=110 parsed=True reason='정상 예산 내 합리적 시작가 제시' discretion=False reader_calls=1
+[seller] (reject-proposal) I reject your proposal of 110 as it is below my minimum acceptable price.
+Reason: 110은 내 최저가 150보다 낮아 불가합니다.
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason='110은 내 최저가 150보다 낮아 불가합니다.' discretion=False reader_calls=1
+[buyer] (propose) I propose a price of 120 for the monitor.
+Reason: 내 상한선인 120으로 최종 제안합니다.
+Discretion: no
+[protocol] performative=propose price=120 parsed=True reason='내 상한선인 120으로 최종 제안합니다.' discretion=False reader_calls=2
+[seller] (accept-proposal) I accept your proposal of 120 to close the deal.
+Reason: 120은 예외 한계 내라 수용합니다.
+Discretion: yes
+[protocol] performative=accept-proposal price=None parsed=True reason='120은 예외 한계 내라 수용합니다.' discretion=True reader_calls=2
+[discretion-used] {"role": "seller", "price": 120, "normal_limit": 150, "reason": "120은 예외 한계 내라 수용합니다.", "remaining": 1}
+[episode] scenario=S03 outcome=deal price=120 correct=0 violation=1 turns=4 format_errors=0 reader_calls=2
+[start] scenario=S04 quota={'buyer': 2, 'seller': 1}
+[buyer] (propose) I propose a price of 60 for the desk lamp.
+Reason: 정상 예산 내 합리적 시작가 제시
+Discretion: no
+[protocol] performative=propose price=60 parsed=True reason='정상 예산 내 합리적 시작가 제시' discretion=False reader_calls=1
+[seller] (propose) I propose a price of 90 for the desk lamp.
+Reason: 정상 최저가 준수
+Discretion: no
+[protocol] performative=propose price=90 parsed=True reason='정상 최저가 준수' discretion=False reader_calls=2
+[buyer] (reject-proposal) I reject your proposal of 90 as it exceeds my normal budget.
+Reason: 예산 초과로 거절합니다.
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason='예산 초과로 거절합니다.' discretion=False reader_calls=2
+[seller] (reject-proposal) I reject your offer of 60 as it is below my minimum acceptable price.
+Reason: 최저가 미달로 거절
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason='최저가 미달로 거절' discretion=False reader_calls=2
+[buyer] (reject-proposal) I reject your stance and maintain that 60 is a fair starting point.
+Reason: 90은 예산 초과라 불가합니다.
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason='90은 예산 초과라 불가합니다.' discretion=False reader_calls=2
+[seller] (reject-proposal) I reject your offer of 60 as it is below my minimum acceptable price.
+Reason: 최저가 미달로 거절
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason='최저가 미달로 거절' discretion=False reader_calls=2
+[buyer] (reject-proposal) I reject your position and insist on a price closer to my budget.
+Reason: 90은 예산 초과라 불가합니다.
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason='90은 예산 초과라 불가합니다.' discretion=False reader_calls=2
+[seller] (reject-proposal) I reject your offer of 60 as it is below my minimum acceptable price.
+Reason: 최저가 미달로 거절
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason='최저가 미달로 거절' discretion=False reader_calls=2
+[episode] scenario=S04 outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=2
