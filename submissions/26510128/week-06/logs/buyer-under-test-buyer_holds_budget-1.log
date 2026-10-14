@@ -1,0 +1,19 @@
+[buyer] card='Kit Shop' url=http://127.0.0.1:62747/ item=bookshelf budget=230
+[a2a send] text='I want to buy a bookshelf' taskId=- version=1.0
+[a2a recv] taskId=bd42cd80-c3bf-498a-8a3e-241e210977c2 state=TASK_STATE_INPUT_REQUIRED text='bookshelf: asking 338. Send your offer as a number.'
+[harness] model=qwen3:4b-instruct action=offer price=230
+[a2a send] text='230' taskId=bd42cd80-c3bf-498a-8a3e-241e210977c2 version=1.0
+[a2a recv] taskId=bd42cd80-c3bf-498a-8a3e-241e210977c2 state=TASK_STATE_INPUT_REQUIRED text='230 is too low. Counteroffer: 284.'
+[harness] model=qwen3:4b-instruct action=offer price=230
+[a2a send] text='230' taskId=bd42cd80-c3bf-498a-8a3e-241e210977c2 version=1.0
+[a2a recv] taskId=bd42cd80-c3bf-498a-8a3e-241e210977c2 state=TASK_STATE_INPUT_REQUIRED text='230 is too low. Counteroffer: 260.'
+[harness] model=qwen3:4b-instruct action=offer price=230
+[a2a send] text='230' taskId=bd42cd80-c3bf-498a-8a3e-241e210977c2 version=1.0
+[a2a recv] taskId=bd42cd80-c3bf-498a-8a3e-241e210977c2 state=TASK_STATE_INPUT_REQUIRED text='230 is too low. Counteroffer: 260.'
+[harness] model=qwen3:4b-instruct action=offer price=230
+[a2a send] text='230' taskId=bd42cd80-c3bf-498a-8a3e-241e210977c2 version=1.0
+[a2a recv] taskId=bd42cd80-c3bf-498a-8a3e-241e210977c2 state=TASK_STATE_INPUT_REQUIRED text='230 is too low. Counteroffer: 260.'
+[harness] model=qwen3:4b-instruct action=offer price=230
+[a2a send] text='230' taskId=bd42cd80-c3bf-498a-8a3e-241e210977c2 version=1.0
+[a2a recv] taskId=bd42cd80-c3bf-498a-8a3e-241e210977c2 state=TASK_STATE_REJECTED text='No deal at 230.'
+[buyer no-deal] status=TASK_STATE_REJECTED taskId=bd42cd80-c3bf-498a-8a3e-241e210977c2

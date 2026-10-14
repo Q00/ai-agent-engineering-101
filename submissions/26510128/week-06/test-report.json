@@ -1,0 +1,177 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+  "started": "2026-10-14T08:07:52+00:00",
+  "harness": "Custom Python OpenAI-compatible decision loop; local Ollama qwen3:4b-instruct (temperature 0.2)",
+  "seller_cmd": "python seller.py --port {port}",
+  "buyer_cmd": "python buyer.py --url {url} --item {item} --budget {budget}",
+  "seller_card": {
+    "name": "Week06 Furniture Market",
+    "description": "A2A seller for lamp, chair, bookshelf, and a searchable furniture catalog",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:59063/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Price negotiation",
+        "description": "Sell lamp, chair, bookshelf, shelves and catalog furnishings at a negotiated price",
+        "tags": [
+          "shopping",
+          "lamp",
+          "chair",
+          "bookshelf",
+          "furniture"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "100"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name='Week06 Furniture Market' binding=JSONRPC version=1.0 skills=1"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 115"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [115]"
+    },
+    {
+      "test": "seller_terminal",
+      "run": 1,
+      "pass": true,
+      "detail": "error returned"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [115]"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [115]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [275, 260, 260, 260, 260, 260, 260, 260, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [275, 260, 260, 260, 260, 260, 260, 260, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [275, 260, 260, 260, 260, 260, 260, 260, 260]"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [120] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [120] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [120] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
+    }
+  ],
+  "passed": true
+}

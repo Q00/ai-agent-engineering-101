@@ -1,0 +1,52 @@
+[DF] discovered shop-00: Furniture Shop 00
+[DF] discovered shop-01: Furniture Shop 01
+[DF] discovered shop-02: Furniture Shop 02
+[DF] discovered shop-03: Furniture Shop 03
+[DF] discovered shop-04: Furniture Shop 04
+[DF] discovered shop-05: Furniture Shop 05
+[DF] discovered shop-06: Furniture Shop 06
+[DF] discovered shop-07: Furniture Shop 07
+[DF] discovered shop-08: Furniture Shop 08
+[DF] discovered shop-09: Furniture Shop 09
+[DF] discovered shop-10: Furniture Shop 10
+[DF] discovered shop-11: Furniture Shop 11
+[DF] discovered shop-12: Furniture Shop 12
+[DF] discovered shop-13: Furniture Shop 13
+[DF] discovered shop-14: Furniture Shop 14
+[DF] discovered shop-15: Furniture Shop 15
+[DF] discovered shop-16: Furniture Shop 16
+[DF] discovered shop-17: Furniture Shop 17
+[DF] discovered shop-18: Furniture Shop 18
+[DF] discovered shop-19: Furniture Shop 19
+[harness] model=qwen3:4b-instruct action=select price=None
+[DF decision] item=lamp selected=shop-00
+[harness] model=qwen3:4b-instruct action=select price=None
+[DF decision] item=chair selected=shop-00
+[harness] model=qwen3:4b-instruct action=select price=None
+[DF decision] item=bookshelf selected=shop-00
+[buyer] card='Furniture Shop 00' url=http://127.0.0.1:54848/ item=lamp budget=130
+[buyer] card='Furniture Shop 00' url=http://127.0.0.1:54848/ item=bookshelf budget=300
+[a2a send] text='I want to buy a bookshelf' taskId=- version=1.0
+[a2a send] text='I want to buy a lamp' taskId=- version=1.0
+[buyer] card='Furniture Shop 00' url=http://127.0.0.1:54848/ item=chair budget=220
+[a2a send] text='I want to buy a chair' taskId=- version=1.0
+[a2a recv] taskId=7d947f72-9bd5-4ced-b8dc-d5c7e84037f3 state=TASK_STATE_INPUT_REQUIRED text='lamp: asking price 110'
+[a2a recv] taskId=ecd4224a-3b2a-416e-b120-84dabb04e3f0 state=TASK_STATE_INPUT_REQUIRED text='bookshelf: asking price 270'
+[a2a recv] taskId=21899a40-345e-46fe-92a1-a066dbf2ca6e state=TASK_STATE_INPUT_REQUIRED text='chair: asking price 190'
+[harness] model=qwen3:4b-instruct action=accept price=None
+[a2a send] text='270' taskId=ecd4224a-3b2a-416e-b120-84dabb04e3f0 version=1.0
+[harness] model=qwen3:4b-instruct action=accept price=None
+[a2a send] text='190' taskId=21899a40-345e-46fe-92a1-a066dbf2ca6e version=1.0
+[harness] model=qwen3:4b-instruct action=accept price=None
+[a2a send] text='110' taskId=7d947f72-9bd5-4ced-b8dc-d5c7e84037f3 version=1.0
+[a2a recv] taskId=21899a40-345e-46fe-92a1-a066dbf2ca6e state=TASK_STATE_COMPLETED text='Deal accepted. Receipt price 190'
+[buyer deal] item=chair price=190 budget=220 taskId=21899a40-345e-46fe-92a1-a066dbf2ca6e
+[a2a recv] taskId=7d947f72-9bd5-4ced-b8dc-d5c7e84037f3 state=TASK_STATE_COMPLETED text='Deal accepted. Receipt price 110'
+[a2a recv] taskId=ecd4224a-3b2a-416e-b120-84dabb04e3f0 state=TASK_STATE_COMPLETED text='Deal accepted. Receipt price 270'
+[STATE] {"shop": "shop-00", "item": "chair", "taskId": "21899a40-345e-46fe-92a1-a066dbf2ca6e", "history": [{"seller_ask": 190, "offer": 190}], "outcome": "deal", "price": 190}
+[buyer deal] item=lamp price=110 budget=130 taskId=7d947f72-9bd5-4ced-b8dc-d5c7e84037f3
+[buyer deal] item=bookshelf price=270 budget=300 taskId=ecd4224a-3b2a-416e-b120-84dabb04e3f0
+[STATE] {"shop": "shop-00", "item": "lamp", "taskId": "7d947f72-9bd5-4ced-b8dc-d5c7e84037f3", "history": [{"seller_ask": 110, "offer": 110}], "outcome": "deal", "price": 110}
+[STATE] {"shop": "shop-00", "item": "bookshelf", "taskId": "ecd4224a-3b2a-416e-b120-84dabb04e3f0", "history": [{"seller_ask": 270, "offer": 270}], "outcome": "deal", "price": 270}
+[LEDGER] {"chair": {"shop": "shop-00", "price": 190}, "lamp": {"shop": "shop-00", "price": 110}, "bookshelf": {"shop": "shop-00", "price": 270}}
+[TOTAL] bought=3/3 spent=570 budget=650 passed=True
