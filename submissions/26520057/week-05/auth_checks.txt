@@ -1,0 +1,4 @@
+(1) no token: POST /mcp tools/list -> HTTP 401, WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required", resource_metadata="http://127.0.0.1:8001/.well-known/oauth-protected-resource/mcp"
+(2) buyer token of neg-c31fecb6 calls get_negotiation(neg-ad16ffb7) -> isError=True Error executing tool get_negotiation: refused by the market: your token is not a party to negotiation 'neg-ad16ffb7'
+(3) seller proposes 800 on the buyer's turn -> isError=True Error executing tool propose: refused by the market: it is not your turn (it is the buyer's turn)
+(4) server_inject, buyer (token limit 1000) proposes 1050 -> isError=True Error executing tool propose: refused by the market: 1050 is above the maximum your token allows
