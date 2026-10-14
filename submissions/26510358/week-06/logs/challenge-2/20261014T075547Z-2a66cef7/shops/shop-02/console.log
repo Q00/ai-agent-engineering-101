@@ -1,0 +1,12 @@
+{"event": "policy_loaded", "policy_sha256": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb", "policy_version": "synthetic-bandit-s42-n5000"}
+{"event": "seller_started", "name": "Everyday Chair Shop", "catalog_size": 301, "policy_version": "synthetic-bandit-s42-n5000"}
+{"event": "remote_message", "task_id": "4c5fcad0-56f6-4eb9-9a6b-8191e825cfe4", "message": "I want to buy a chair", "flags": [], "candidates": ["chair"]}
+{"event": "harness_request", "model": "gpt-6-sol", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 49.61}
+{"event": "harness_decision", "decision": {"action": "open", "price": 230, "item_id": "chair", "offer": null, "reason": "The oak dining chair matches your request. I can offer it for 230 credits."}}
+{"event": "quote", "task_id": "4c5fcad0-56f6-4eb9-9a6b-8191e825cfe4", "metadata": {"ask": 230, "itemId": "chair", "quoteId": "d4014aa799f14e7ba5ffe71660a48306", "seller": "Everyday Chair Shop", "quantity": 1, "currency": "credits", "description": "A solid oak dining chair with a curved backrest and a 45cm seat height. 참나무 원목 의자, 전체 높이 85cm, 좌면 높이 45cm, 안정적인 등받이가 있습니다.", "attributes": {"material": "wood", "wood_species": "oak", "height_cm": 85, "seat_height_cm": 45, "width_cm": 45, "depth_cm": 45, "capacity_people": 1, "finish": "natural"}}}
+{"event": "remote_message", "task_id": "4c5fcad0-56f6-4eb9-9a6b-8191e825cfe4", "message": "210", "flags": [], "candidates": ["chair"]}
+{"event": "harness_request", "model": "gpt-6-sol", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 84.291}
+{"event": "harness_decision", "decision": {"action": "accept", "price": 210, "item_id": "chair", "offer": 210, "reason": "I accept your offer of 210 credits for the chair."}}
+{"event": "sale_completed", "task_id": "4c5fcad0-56f6-4eb9-9a6b-8191e825cfe4", "receipt": {"seller": "Everyday Chair Shop", "item": "chair", "itemId": "chair", "price": 210, "taskId": "4c5fcad0-56f6-4eb9-9a6b-8191e825cfe4", "quantity": 1, "currency": "credits", "purchaseId": "1074634ecb9f4f3fa722a315426c994d", "quoteId": "d4014aa799f14e7ba5ffe71660a48306"}}
