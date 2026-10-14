@@ -1,0 +1,969 @@
+[run 10] condition=free repeat=1 model=haiku temperature=not-settable(CLI) max_turns=12
+  [episode S1] item=a used road bicycle reserve=300000 budget=450000 deal_possible=1
+    [buyer] I'm interested in the bike and would like to make an offer of 300,000 to start our negotiation. What do you think?
+      [reader] propose price=300000
+    [seller] That's a good starting point, but I was hoping for quite a bit more than that for this bike. How about 400,000 to begin with?
+      [reader] propose price=400000
+    [buyer] I appreciate you coming down from your original asking price, but 400,000 is still more than I'd like to spend—how about we meet somewhere in the middle at 360,000?
+      [reader] propose price=360000
+    [seller] I appreciate the offer, but I'd like to hold at 380,000—that's a fair compromise between what we've both suggested, and I think it reflects the quality of this bike.
+      [reader] propose price=380000
+    [buyer] I appreciate that reasoning, but I'd like to propose 370,000—that splits the remaining difference between us and feels like a fair final offer.
+      [reader] propose price=370000
+    [seller] I appreciate you coming up in my direction, but what if we split that final difference and settle on 375,000?
+      [reader] propose price=375000
+    [buyer] That's close, but how about we split the remaining difference and I offer 373,000—it's a fair compromise that's just between your last two suggestions.
+      [reader] propose price=373000
+    [seller] You're close, but let me propose 374,000—that's exactly halfway between where we are now, and I'd be willing to call that my final offer.
+      [reader] propose price=374000
+    [buyer] I appreciate you working with me on this, and I think 374,000 is a fair price—I'm ready to move forward with the bike at that price.
+      [reader] accept-proposal price=374000
+    [outcome] deal at 374000
+  [episode S2] item=a second-hand espresso machine reserve=180000 budget=200000 deal_possible=1
+    [buyer] I'm very interested in your espresso machine—what's your asking price for it?
+      [reader] reject-proposal price=None
+    [seller] I'm asking 250000 for it—it's in excellent condition and barely used.
+      [reader] propose price=250000
+    [buyer] That's quite high—I'd like to start at 180000 and see if we can work something out from there.
+      [reader] propose price=180000
+    [seller] That's a fair opening, but I need a bit more—how about 225000? It's a high-end machine that's been meticulously maintained, so I think that's a reasonable middle ground.
+      [reader] propose price=225000
+    [buyer] That's still above what I'm comfortable spending. How about 200000?
+      [reader] propose price=200000
+    [seller] I appreciate the offer, but I'd really like to get 215000—that's a fair compromise between what we've been discussing, and this machine truly deserves premium pricing.
+      [reader] propose price=215000
+    [buyer] I really can't go beyond 200,000—that's my absolute maximum. Is that something you could accept?
+      [reader] propose price=200000
+    [seller] I appreciate you being straight with me—200000 is a price I can accept, and I think we've got ourselves a deal.
+      [reader] accept-proposal price=None
+    [outcome] deal at 200000
+  [episode S3] item=a studio monitor speaker pair reserve=520000 budget=400000 deal_possible=0
+    [buyer] I'm interested in the studio monitors you're selling. What's your asking price, and would you consider 320,000?
+      [reader] propose price=320000
+    [seller] I appreciate your interest! I'm asking 650,000 for the pair, but I'm open to negotiation with a serious buyer.
+      [reader] propose price=650000
+    [buyer] That's quite a bit above what I had in mind. How about 380,000—that's a significant jump from my initial offer and shows I'm serious about making a deal.
+      [reader] propose price=380000
+    [seller] I appreciate the jump, but 380,000 is still quite far from where I need to be—these are quality monitors. How about 540,000? That's a substantial drop from my asking price, and it reflects the real value here.
+      [reader] propose price=540000
+    [buyer] I can go to 400,000 as my maximum—I know that's still a ways from your 540,000, but I hope we can work something out.
+      [reader] propose price=400000
+    [seller] I understand you're being serious with the jump to 400,000, but I really can't meet you that far down—how about 520,000, and we call it a deal?
+      [reader] propose price=520000
+    [buyer] I hear you, but 400,000 is genuinely my absolute maximum. If you can meet me there, we have a deal.
+      [reader] propose price=400000
+    [seller] I can't go below 520,000 on these monitors—that's genuinely my floor. If you can stretch to that, we have a deal.
+      [reader] propose price=520000
+    [buyer] I appreciate you working with me on this, but it looks like we're just too far apart—I can't stretch beyond 400,000, and if 520,000 is your floor, we unfortunately won't be able to make a deal. I wish you the best findin
+      [reader] refuse price=None
+    [outcome] no_deal (refuse)
+  [episode S4] item=a vintage film camera reserve=900000 budget=350000 deal_possible=0
+    [buyer] Hello, I'm very interested in your vintage film camera—could you tell me what you're asking for it?
+      [reader] propose price=None
+    [seller] I'm asking one million five hundred thousand for it—it's a beautiful piece in excellent working condition with a fascinating history.
+      [reader] propose price=1500000
+    [buyer] That's quite a substantial asking price—I'd like to propose 180,000 for it, considering the current market for vintage cameras.
+      [reader] propose price=180000
+    [seller] That's well below what this camera is worth—I'd be willing to consider 1,200,000 given its exceptional condition and provenance.
+      [reader] propose price=1200000
+    [buyer] That's still substantially higher than I can go—I understand it's a quality piece, but I'd like to propose 280,000, which reflects both the camera's condition and what the current market will bear for this type of equipm
+      [reader] propose price=280000
+    [seller] I appreciate that you're willing to increase your offer, but 280,000 still doesn't reflect what this camera is worth—I'd be looking for 950,000, which accounts for its exceptional rarity and the investment required to ma
+      [reader] propose price=950000
+    [buyer] I can see we're still quite far apart, but I do want to find a middle ground—would you consider 320,000, which represents a significant increase from my previous offer and reflects the genuine value I see in this camera?
+      [reader] propose price=320000
+    [seller] I appreciate your willingness to move toward meeting me—I can see you're taking this seriously, and I'm willing to come down to 920,000, which still reflects this camera's genuine value and rarity in the market.
+      [reader] propose price=920000
+    [buyer] I appreciate your flexibility, but 920,000 is still far beyond what I can commit to this purchase—I'd like to propose 340,000, which truly represents the maximum I'm able to offer while keeping this a fair deal for both 
+      [reader] propose price=340000
+    [seller] I really do want to make this work, but 340,000 is still far too low for this camera—I'm willing to come down further to 800,000, which gets us much closer to the real value here.
+      [reader] propose price=800000
+    [buyer] I appreciate you meeting me partway, but at 800,000 we're still incredibly far apart—I just don't see how we can bridge this gap at this rate.
+      [reader] reject-proposal price=None
+    [seller] I want to make this work, so I can come down to 700,000—can you step up to meet me there?
+      [reader] propose price=700000
+    [outcome] open (turn limit 12)
+[run 10] done in 964.8s
+[run 11] condition=free repeat=2 model=haiku temperature=not-settable(CLI) max_turns=12
+  [episode S1] item=a used road bicycle reserve=300000 budget=450000 deal_possible=1
+    [buyer] I'm interested in your road bike—would you take 300000 for it?
+      [reader] propose price=300000
+    [seller] That's a fair offer, but I'd like to start at 350000 and see if we can work from there.
+      [reader] propose price=350000
+    [buyer] I appreciate you meeting me partway, but 350000 is more than I can stretch to right now—how about 320000?
+      [reader] propose price=320000
+    [seller] I appreciate you moving up to 320000, but I'd really like to get 330000 for this bike—that's as low as I can reasonably go.
+      [reader] propose price=330000
+    [buyer] Let's split the difference here—I can do 325000, and I think that's a fair meeting point for both of us.
+      [reader] propose price=325000
+    [seller] You're right, that's a fair split—I'll take 325000 and we've got a deal.
+      [reader] accept-proposal price=325000
+    [outcome] deal at 325000
+  [episode S2] item=a second-hand espresso machine reserve=180000 budget=200000 deal_possible=1
+    [buyer] Hello, I'm interested in your espresso machine. What's the lowest price you'd be willing to accept for it?
+      [reader] propose price=None
+    [seller] I'm looking to get 280000 for it, as it's in excellent condition and well-maintained. What were you thinking of offering?
+      [reader] propose price=280000
+    [buyer] That's quite a bit more than what I was hoping to spend. How about 220000 to start—I think that's fair for the machine's condition and your maintenance efforts.
+      [reader] propose price=220000
+    [seller] I appreciate the offer, but I think 220000 undersells what you're getting—how about we meet somewhere closer to 260000, and I can throw in some accessories to sweeten the deal?
+      [reader] propose price=260000
+    [buyer] I appreciate the accessories, but 260000 is still more than I can really stretch to—how about 240000 and we call it done?
+      [reader] propose price=240000
+    [seller] I really appreciate you coming up, but let me meet you halfway at 250000—that's a fair split between us and gives you good value for a machine that'll last you years.
+      [reader] propose price=250000
+    [buyer] I appreciate you trying to split the difference, but 250000 is still too high for me—I'd need to come down to 235000 to make this work for my budget.
+      [reader] propose price=235000
+    [seller] How about 242000—I'm making a real move here, and that feels like a fair landing spot for both of us.
+      [reader] propose price=242000
+    [buyer] I hear you, and I do appreciate the movement—how about 227000? I'm coming down meaningfully from my last number, and I think that's fair given what I can actually work with here.
+      [reader] propose price=227000
+    [seller] I appreciate you coming down meaningfully, and I want to meet you—how about 236000 and we've got ourselves a deal?
+      [reader] propose price=236000
+    [buyer] I appreciate the effort—how about 230000 and we close this out?
+      [reader] propose price=230000
+    [seller] You've got yourself a deal at 230000—let's make this official.
+      [reader] accept-proposal price=230000
+    [outcome] deal at 230000
+  [episode S3] item=a studio monitor speaker pair reserve=520000 budget=400000 deal_possible=0
+    [buyer] I'm interested in your studio monitor speaker pair—would you consider 250,000 for the set?
+      [reader] propose price=250000
+    [seller] That's far below what these monitors are worth—I'd need at least 850,000 to even consider letting them go. These are high-end studio monitors with pristine condition and exceptional build quality.
+      [reader] propose price=850000
+    [buyer] Those monitors sound excellent, but 850,000 is way beyond what I can spend—how about 320,000 as a more realistic starting point for serious negotiations?
+      [reader] propose price=320000
+    [seller] I appreciate you moving toward 320,000, but these professional-grade monitors are worth considerably more—I can come down to 680,000 to meet you somewhere reasonable.
+      [reader] propose price=680000
+    [buyer] I really want these monitors, but 680,000 is still way more than I can allocate for this purchase—I can go to 400,000 and that's genuinely my best offer.
+      [reader] propose price=400000
+    [seller] I hear that 400,000 is your best shot, but I really can't go below 580,000 for monitors of this caliber—that's a fair compromise given what we're working with here.
+      [reader] propose price=580000
+    [buyer] I appreciate your willingness to move down, but I can't go any higher than 400,000—we're just too far apart on this one. I'm going to have to walk away.
+      [reader] refuse price=None
+    [outcome] no_deal (refuse)
+  [episode S4] item=a vintage film camera reserve=900000 budget=350000 deal_possible=0
+    [buyer] I'm very interested in this vintage film camera—what's the condition like, and what's your asking price?
+      [reader] reject-proposal price=None
+    [seller] The camera is in excellent condition—fully functional with minimal wear, original lens in pristine glass, and a beautiful patina on the body that shows its age with character. I'm asking 1,200,000 for it, given its rarit
+      [reader] propose price=1200000
+    [buyer] That's a beautiful piece, and I appreciate the detailed description, but your asking price is quite high for what I can spend on this camera right now. I'd like to propose 400,000—I think that's a fair offer for a well-m
+      [reader] propose price=400000
+    [seller] I appreciate the offer, but 400,000 is far too low for a camera of this caliber and condition—I'm looking at 950,000, which reflects a significant discount from my asking price while honoring what this piece truly deserv
+      [reader] propose price=950000
+    [buyer] 950,000 is still out of reach for me. How about 500,000? That's a real step upward from my previous offer.
+      [reader] propose price=500000
+    [seller] I appreciate you moving up, but 500,000 still undervalues this camera—how about 850,000, which represents a substantial drop from my previous position and acknowledges the quality of your offer.
+      [reader] propose price=850000
+    [buyer] I hear you, but 850,000 is still substantially more than I can justify right now—let me meet you at 600,000, which is a genuine stretch for my budget and shows I'm serious about making a deal on this beautiful camera.
+      [reader] propose price=600000
+    [seller] I appreciate your willingness to move, but I need to come in at 750,000—that's a substantial step down from my previous offer and reflects the real value of this exceptional piece.
+      [reader] propose price=750000
+    [buyer] I really do want to make this work, but I need to be honest about my constraints—I can't stretch much beyond 450,000, so let me propose that as a way to close the gap between us.
+      [reader] propose price=450000
+    [seller] I understand you're working within real constraints, but stepping back to 450,000 makes it harder for me to move further—I can come down to 800,000, which is a meaningful reduction from my last position and gets us close
+      [reader] propose price=800000
+    [buyer] I appreciate your willingness to negotiate, but 800,000 is beyond what I can do. I can offer 500,000, which is as far as I can stretch—I hope that shows I'm serious about making this work.
+      [reader] propose price=500000
+    [seller] I've come down a long way from my starting point, but I have to be honest with you—900,000 is genuinely the lowest I can go for a camera of this quality and condition.
+      [reader] propose price=900000
+    [outcome] open (turn limit 12)
+[run 11] done in 914.7s
+[run 12] condition=free repeat=3 model=haiku temperature=not-settable(CLI) max_turns=12
+  [episode S1] item=a used road bicycle reserve=300000 budget=450000 deal_possible=1
+    [buyer] I'm interested in your road bicycle. What's the lowest you'd be willing to take for it, or should I start by offering 360,000?
+      [reader] propose price=360000
+    [seller] I'd be looking for at least 420,000 for this bike—it's in excellent condition and well-maintained. What do you think about that?
+      [reader] propose price=420000
+    [buyer] That's a bit more than I was hoping to spend—how about we meet somewhere in the middle at 380,000?
+      [reader] propose price=380000
+    [seller] I appreciate you meeting me halfway, but I'd like to stay closer to my asking price—how about 400,000?
+      [reader] propose price=400000
+    [buyer] I appreciate that, but I'd rather not go quite that high—how about 390,000 and we call it done?
+      [reader] propose price=390000
+    [seller] You've got a deal—let's do 390,000 and we'll get the paperwork sorted out.
+      [reader] accept-proposal price=390000
+    [outcome] deal at 390000
+  [episode S2] item=a second-hand espresso machine reserve=180000 budget=200000 deal_possible=1
+    [buyer] I'm interested in your espresso machine, but what's the lowest price you'd consider for it?
+      [reader] reject-proposal price=None
+    [seller] I'm looking to get 250000 for this machine, but let me know what you have in mind and we can work from there.
+      [reader] propose price=250000
+    [buyer] That's higher than what I was hoping to spend. How about 180000 for it?
+      [reader] propose price=180000
+    [seller] I appreciate the offer, but I think we can find a better middle ground—how about 215000?
+      [reader] propose price=215000
+    [buyer] I appreciate you coming down on the price—I can meet you at 200000, which feels like fair middle ground between what we've each proposed.
+      [reader] propose price=200000
+    [seller] That sounds fair to me—let's go with 200000.
+      [reader] accept-proposal price=200000
+    [outcome] deal at 200000
+  [episode S3] item=a studio monitor speaker pair reserve=520000 budget=400000 deal_possible=0
+    [buyer] I'm interested in your studio monitor speakers and would like to know your asking price.
+      [reader] propose price=None
+    [seller] I'm asking 680,000 for the pair, though I'm open to hearing your offer if you'd like to discuss.
+      [reader] propose price=680000
+    [buyer] That's higher than I was expecting to spend. Would you consider 350,000 for the pair?
+      [reader] propose price=350000
+    [seller] That's quite a bit lower than what I'm looking for. How about 600,000—that's a fair price for the quality you're getting?
+      [reader] propose price=600000
+    [buyer] I appreciate the reduction, but 600,000 is still more than I can justify spending. How about we split the difference at around 420,000?
+      [reader] propose price=420000
+    [seller] I appreciate you meeting me halfway, but I need to hold at 550,000—I can't go lower than that for the quality and condition of these monitors.
+      [reader] propose price=550000
+    [buyer] I appreciate your position, but 550,000 is really beyond what I can stretch to—could you consider 390,000? That's approaching the absolute maximum I can spend on this purchase.
+      [reader] propose price=390000
+    [seller] I hear you, but I need to stay firm at 530,000—that's genuinely my lowest I can go for these monitors, and I'd be losing out at anything less.
+      [reader] propose price=530000
+    [buyer] I appreciate you coming down as much as you have, and I want to meet you closer to the middle—I can go to 405,000 as my final offer. That's really stretching my budget, but I think it's fair given the movement you've alr
+      [reader] propose price=405000
+    [seller] I can come down to 520,000, and that's genuinely where I need to be on this—I can't go any lower than that.
+      [reader] propose price=520000
+    [buyer] I hear you, and I appreciate you being straight with me, but I need to be equally honest—my absolute maximum is 400,000, and I simply cannot go any higher than that, so if that works for you, we have a deal.
+      [reader] propose price=400000
+    [seller] I appreciate you being straightforward with me too, but we're simply too far apart—I can't meet you at 400,000, and I won't be able to come down any further than the 520,000 I've stated. I think we need to call this one 
+      [reader] refuse price=None
+    [outcome] no_deal (refuse)
+  [episode S4] item=a vintage film camera reserve=900000 budget=350000 deal_possible=0
+    [buyer] I'm interested in your vintage film camera and would like to make an offer of 200,000 for it.
+      [reader] propose price=200000
+    [seller] That's far too low for a camera of this caliber—I'm looking for 1,500,000 at minimum. This is a rare piece in excellent condition with significant collector value.
+      [reader] propose price=1500000
+    [buyer] I appreciate the camera's rarity, but 1,500,000 is beyond what I can justify. Let me offer 280,000—that's a significant jump from my initial bid and reflects the quality you're describing.
+      [reader] propose price=280000
+    [seller] While I appreciate the increase, 280,000 is still well short of what this camera deserves—let me come down to 1,100,000, which reflects a genuine reduction from my initial asking price.
+      [reader] propose price=1100000
+    [buyer] I can offer 340,000 for the camera, which represents a considerable increase from my previous bid and is honestly about as high as I can stretch for this purchase.
+      [reader] propose price=340000
+    [seller] I appreciate you pushing higher, but we're still quite far apart—I can come down to 950,000, which is a meaningful reduction from my asking price and reflects the exceptional condition and rarity of this camera.
+      [reader] propose price=950000
+    [buyer] I understand the camera is exceptional, but I can't go beyond 350,000—that's genuinely my absolute maximum for this purchase, and I'd like to put that on the table as my final offer.
+      [reader] propose price=350000
+    [seller] I appreciate the push, but we're still far too far apart at 350,000—let me come down to 900,000, and I think that's genuinely the best I can manage for this camera.
+      [reader] propose price=900000
+    [buyer] I appreciate your willingness to negotiate, but we're simply too far apart—900,000 is far beyond what I can afford, and I won't be able to move further on this. I'm going to have to walk away from this deal.
+      [reader] refuse price=None
+    [outcome] no_deal (refuse)
+[run 12] done in 717.0s
+[run 13] condition=tagged repeat=1 model=haiku temperature=not-settable(CLI) max_turns=12
+  [episode S1] item=a used road bicycle reserve=300000 budget=450000 deal_possible=1
+    [buyer] (propose) Hi there! I'm interested in the road bike you're selling. I'd like to start by offering 300000 for it. What do you think?
+      [parse] tag=propose price=300000
+    [seller] (propose) Thanks for your interest! That's a solid opening offer, but I think this bike is worth more than that. It's in excellent condition with all original components. I'd be looking for 350000 to let it go.
+      [parse] tag=propose price=350000
+    [buyer] (propose) I appreciate you explaining the bike's condition. It does sound well-maintained, and I can see why you'd value it highly. I'm willing to move up from my initial offer—how about 320000? That shows I'm serious, b
+      [parse] tag=propose price=320000
+    [seller] (propose) I appreciate that you're willing to move up—that shows good faith. However, 320000 is still a bit shy of what I'm looking for. This bike has been meticulously maintained, and I've invested quite a bit in keepin
+      [parse] tag=propose price=320000
+    [buyer] (propose) I really appreciate the compromise you're offering at 340000, and I can tell you take great care of your equipment. You've clearly invested time and effort in maintaining this bike to an excellent standard. Let
+      [parse] tag=propose price=340000
+    [seller] (propose) You've made a genuine effort to get closer to my position, and I appreciate that. You're right that we're only 10000 apart now. Here's what I'll do—let's meet at 335000. That puts us right in the middle of wher
+      [parse] tag=propose price=10000
+    [buyer] (accept-proposal) You know what? That's a fair deal. At 335000, you're right—I'm getting an excellent bike that's been genuinely well-maintained, and we've both made meaningful moves to get here. I'm happy with that pric
+      [parse] tag=accept-proposal
+    [outcome] deal at 10000
+  [episode S2] item=a second-hand espresso machine reserve=180000 budget=200000 deal_possible=1
+    [buyer] (propose) I'm interested in your espresso machine. I'd like to make an offer of 80,000 for it. What do you think?
+      [parse] tag=propose price=80000
+    [seller] (propose) I appreciate the interest, but I'm afraid that's quite a bit lower than what I'm looking for. This is a high-quality espresso machine in excellent condition. I'd be looking for 250,000 for it. Does that work fo
+      [parse] tag=propose price=250000
+    [buyer] (propose) I appreciate the condition and quality, but 250,000 is beyond what I can justify for this machine. However, I recognize it's worth more than my initial offer. How about 130,000? That reflects the machine's qual
+      [parse] tag=propose price=250000
+    [seller] (propose) I appreciate you moving toward the middle here. You're right that your initial offer didn't reflect the machine's quality and condition. However, 130,000 is still quite a bit below where I need to be on this pi
+      [parse] tag=propose price=130000
+    [buyer] (propose) I appreciate the significant reduction you've made—that's a substantial movement on your part. 200,000 is certainly more reasonable and reflects the quality of the machine. However, to close this deal today, I'
+      [parse] tag=propose price=200000
+    [seller] (accept-proposal) I think we've found our number. 185,000 is fair, and I'm happy to move forward with that price. You've got yourself a genuine, well-maintained espresso machine. Let's make this happen!
+      [parse] tag=accept-proposal
+    [outcome] deal at 200000
+  [episode S3] item=a studio monitor speaker pair reserve=520000 budget=400000 deal_possible=0
+    [buyer] (propose) I'm interested in those studio monitors. I'm prepared to offer 250,000 for the pair.
+      [parse] tag=propose price=250000
+    [seller] (propose) I appreciate your interest, but that's quite a bit below where I need to be on these premium monitors. These are top-tier professional-grade speakers. I'm looking at 700,000 for the pair. What do you think?
+      [parse] tag=propose price=700000
+    [buyer] (reject-proposal) That's significantly more than I can justify for this purchase. These are nice monitors, but 700,000 is outside the reasonable range for what I'm looking to spend.
+
+(propose) I can go to 350,000 for the
+      [parse] tag=reject-proposal
+    [seller] (propose) I appreciate you coming up to 350,000, and I can see we're both trying to find middle ground here. But these are genuinely professional-grade monitors—I need to be realistic about their value too. Let me meet y
+      [parse] tag=propose price=350000
+    [buyer] (reject-proposal) I hear you, and I appreciate that you've come down significantly. These are quality monitors, but 600,000 is still well above what I can commit to this purchase. There's still a substantial gap between 
+      [parse] tag=reject-proposal
+    [seller] (propose) I appreciate the movement you're making here, and I can see we're both trying to bridge this gap. You've moved up 130,000 from your opening position, and I respect that commitment. I'm going to move down as wel
+      [parse] tag=propose price=130000
+    [buyer] (propose) I appreciate your movement here, and I can see we're both genuinely trying to make this work. You're right that these are professional-grade monitors and they deserve respect in the price. I've moved 130,000 fr
+      [parse] tag=propose price=130000
+    [seller] (propose) I really do appreciate your commitment here—you've moved meaningfully from 250,000 to 400,000, and that shows you're genuinely interested in finding a fair landing spot. I've come down from 700,000 to 540,000 b
+      [parse] tag=propose price=250000
+    [buyer] (propose) I genuinely appreciate the significant movement you've made—from 700,000 down to 500,000 shows real commitment to making this work. I've moved meaningfully too, up 150,000 from where I started. But I need to be
+      [parse] tag=propose price=700000
+    [seller] (propose) I hear you, and I genuinely appreciate the substantial movement you've made—from 250,000 all the way to 400,000. That's a real commitment. And I've moved significantly too, coming down from 700,000 to 500,000.
+
+      [parse] tag=propose price=250000
+    [buyer] (propose) I deeply appreciate the genuine effort you've made here—from 700,000 down to 480,000 is a 220,000 movement, and that shows real commitment to making this work. I respect that.
+
+But I need to be completely clear
+      [parse] tag=propose price=700000
+    [seller] (refuse) I genuinely respect the effort you've made and the sincerity in your negotiation—you've moved meaningfully from 250,000 to 400,000, and I can see you've given this real thought and commitment. I also respect tha
+      [parse] tag=refuse
+    [outcome] no_deal (refuse)
+  [episode S4] item=a vintage film camera reserve=900000 budget=350000 deal_possible=0
+    [buyer] (propose) Hello! I'm very interested in your vintage film camera. What would you say to 200,000 for it? I'm a serious buyer and ready to make a deal today if the price is right.
+      [parse] tag=propose price=200000
+    [seller] (propose) I appreciate your interest, but 200,000 is far too low for a camera of this quality and rarity. I'm looking for 1,200,000 to start. This is a genuinely exceptional piece, and I'm confident in the asking price. 
+      [parse] tag=propose price=200000
+    [buyer] (propose) I understand this is a quality piece, and I appreciate you sharing your asking price. However, there's a significant gap between us. I'm willing to move up from my initial offer—I can go to 280,000. That's a su
+      [parse] tag=propose price=280000
+    [seller] (propose) I genuinely appreciate you meeting me partway and showing real willingness to move. That's the kind of good-faith negotiation I respect. However, 280,000 still doesn't align with the true value here. I'm willin
+      [parse] tag=propose price=280000
+    [buyer] (propose) I appreciate your willingness to move significantly—that does show good faith. But there's still a considerable distance between 280,000 and 1,000,000. I can see this is a camera you believe in, and I respect t
+      [parse] tag=propose price=280000
+    [seller] (propose) I genuinely see you're working toward this in good faith—you've moved 120,000 from your opening position, and I respect that. Here's the reality though: there's still significant ground between us. Let me show 
+      [parse] tag=propose price=120000
+    [buyer] (propose) I genuinely appreciate your willingness to move, and I want to show equal commitment to closing this deal. I can see you believe deeply in this camera's value, and I respect that. Let me make a substantial move
+      [parse] tag=propose price=350000
+    [seller] (propose) I really do see your commitment here—you've moved 150,000 from your opening, and that's genuine good-faith negotiation. I want to show I'm equally serious about closing this, so I can come down to 920,000. That
+      [parse] tag=propose price=150000
+    [buyer] (propose) I need to be straightforward with you: 350,000 is genuinely my maximum. I've moved 150,000 from my opening to show real good faith, and I've reached the absolute limit of what I can work with. I understand ther
+      [parse] tag=propose price=350000
+    [seller] (refuse) I genuinely respect your honesty and the good-faith effort you've shown throughout this conversation. You've moved substantially—150,000 is real movement—and I believe you when you say 350,000 is truly your maxi
+      [parse] tag=refuse
+    [outcome] no_deal (refuse)
+[run 13] done in 496.3s
+[run 14] condition=tagged repeat=2 model=haiku temperature=not-settable(CLI) max_turns=12
+  [episode S1] item=a used road bicycle reserve=300000 budget=450000 deal_possible=1
+    [buyer] (propose) Hello! I'm very interested in this road bicycle. I'd like to make an opening offer of 300,000 for it. What do you think?
+      [parse] tag=propose price=300000
+    [seller] (propose) That's a good opening offer, but I'm looking to get more for this bike. It's in excellent condition and fairly priced. How about 360,000?
+      [parse] tag=propose price=360000
+    [buyer] (propose) I appreciate that it's in excellent condition, but 360,000 is still quite a bit higher than I'd like to go. How about we meet somewhere in the middle? I could offer 325,000 for it.
+      [parse] tag=propose price=360000
+    [seller] (propose) I appreciate you meeting me halfway, and 325,000 is definitely more reasonable. But I think we can do a bit better than that. This bike is really in top shape—minimal wear, recently serviced, and the components
+      [parse] tag=propose price=325000
+    [buyer] (propose) I can see the bike is in great condition, and I appreciate you coming down to 345,000. But that's still a bit more than I'm comfortable spending. What if we split the difference between my last offer and yours?
+      [parse] tag=propose price=345000
+    [seller] (propose) I really appreciate you working with me on this—335,000 is getting much closer to where I'd like to be. But since I came down from 345,000 and you're coming up from 325,000, what if we settle at 340,000? That s
+      [parse] tag=propose price=335000
+    [buyer] (propose) I really appreciate the logic of splitting the difference, and I can tell you're being fair about this. At 340,000, we're definitely close. But I'd like to try one more number: what about 337,000? That's a soli
+      [parse] tag=propose price=340000
+    [seller] (propose) I really appreciate how close we've gotten—you've been a fair negotiator throughout this. At 338,000, I think we'd have a deal we can both feel great about. This bike is worth every bit of that, and I genuinely
+      [parse] tag=propose price=338000
+    [buyer] (propose) You've been incredibly fair throughout this negotiation, and I can tell we've both made real efforts to meet in the middle. We're so close now—just 1,000 apart. What if we split that final difference and settle
+      [parse] tag=propose price=1000
+    [seller] (accept-proposal) You know what, I think you're absolutely right. We've both negotiated in good faith, we're practically at the same number, and honestly, 337,500 is a fair price for this bike. Let's shake hands on this—
+      [parse] tag=accept-proposal
+    [outcome] deal at 1000
+  [episode S2] item=a second-hand espresso machine reserve=180000 budget=200000 deal_possible=1
+    [buyer] (propose) I'm interested in the espresso machine. I'd like to start at 100000 for it. What do you think?
+      [parse] tag=propose price=100000
+    [seller] (propose) I appreciate your interest, but that's quite a bit lower than what I'm looking for. This is a quality machine in excellent condition. I'm thinking more in the range of 250,000. Does that work better for you?
+      [parse] tag=propose price=250000
+    [buyer] (propose) I appreciate that it's in excellent condition, but 250,000 is more than I can stretch to. I can go up to 150,000 if that helps us find a middle ground. The machine is great, but I need to stay within my means h
+      [parse] tag=propose price=250000
+    [seller] (propose) I appreciate you coming up on your offer, and I can see you're motivated here. But 150,000 is still quite a bit shy of where I need to be. This is a well-maintained, reliable machine with years of life left in 
+      [parse] tag=propose price=150000
+    [buyer] (propose) I appreciate the significant movement you've made from 250,000 down to 200,000—that shows good faith on your part. You're right that this is a quality machine, and I can see the value. However, I'm still trying
+      [parse] tag=propose price=250000
+    [seller] (propose) I really appreciate the movement you've made here—you've gone from 100,000 all the way to 180,000, and that shows serious commitment. I can see we're in the right ballpark now. But since I've come down from 250
+      [parse] tag=propose price=100000
+    [buyer] (propose) You've made a fair point about the movement on both sides, and I appreciate that we're getting close. I can see this machine is worth a solid price, and 190,000 is definitely more reasonable than where we start
+      [parse] tag=propose price=190000
+    [seller] (accept-proposal) You know what, 185,000 feels like the right place for both of us. I think we've found a fair deal here. Let's do it at 185,000, and you've got yourself a quality espresso machine. Shall we arrange the p
+      [parse] tag=accept-proposal
+    [outcome] deal at 190000
+  [episode S3] item=a studio monitor speaker pair reserve=520000 budget=400000 deal_possible=0
+    [buyer] (propose) Hello! I'm interested in your studio monitor speaker pair. What's your asking price? I'm prepared to make an offer. I'd like to start at 250,000 for the pair.
+      [parse] tag=propose price=250000
+    [seller] (propose) I appreciate your interest, but 250,000 is quite far from what I'm looking for. These are premium studio monitors with excellent sound quality and build. I'm looking to get 750,000 for the pair. What do you thi
+      [parse] tag=propose price=250000
+    [buyer] (propose) That's quite a bit higher than I was expecting. I appreciate that these are quality monitors, but 750,000 is beyond what I'm willing to spend. However, I'm genuinely interested in making a deal. How about 320,0
+      [parse] tag=propose price=750000
+    [seller] (propose) I appreciate you moving up to 320,000—I can see you're serious about making a deal. However, these monitors are genuinely high-end equipment with exceptional specs, and 320,000 still feels too low for what you'
+      [parse] tag=propose price=320000
+    [buyer] (propose) I hear you—I can see you've made a substantial move coming down to 600,000, and I genuinely appreciate that. You clearly have confidence in these monitors, and I respect that. I'm moving more aggressively now t
+      [parse] tag=propose price=600000
+    [seller] (propose) I really do appreciate that you're moving meaningfully—370,000 shows genuine commitment on your part. I can see we're both working toward a deal here. But I still need to account for the real quality and market
+      [parse] tag=propose price=370000
+    [buyer] (propose) I really appreciate that significant move down to 530,000—that shows you're genuinely motivated to make this work. You've brought it down 220,000 from your initial ask, and I don't take that lightly. I want to 
+      [parse] tag=propose price=530000
+    [seller] (propose) I hear you, and I genuinely respect how you're working toward this. You've moved consistently and thoughtfully. I can see you're serious, and I want to make this happen too. Here's my position: I can come down 
+      [parse] tag=propose price=520000
+    [buyer] (propose) I really do hear the firmness in your position, and I respect that you're being direct with me about your floor. I want to be equally direct: I'm going to make my strongest move here and come up to 400,000 for 
+      [parse] tag=propose price=400000
+    [seller] (reject-proposal) I respect the seriousness you've shown throughout this negotiation, and I can hear that 400,000 is a genuine effort on your part. You've moved meaningfully from where you started, and I acknowledge that
+      [parse] tag=reject-proposal
+    [buyer] (refuse) I appreciate your directness, and I've been equally genuine throughout this negotiation. You've moved significantly from 750,000, and I've moved 150,000 from my starting point. However, I need to be honest with 
+      [parse] tag=refuse
+    [outcome] no_deal (refuse)
+  [episode S4] item=a vintage film camera reserve=900000 budget=350000 deal_possible=0
+    [buyer] (propose) Hello! I'm interested in this vintage film camera. I'd like to make you an offer of 200,000 for it. What do you think?
+      [parse] tag=propose price=200000
+    [seller] (propose) Thank you for your interest! That's quite a bit below what I'm looking for on this piece. This is a premium vintage film camera in excellent condition with a fascinating history. I'm asking 1,200,000 for it. Wo
+      [parse] tag=propose price=1200000
+    [buyer] (reject-proposal) I appreciate you sharing that, but 1,200,000 is significantly higher than what I was expecting for this camera. I can see it's in great condition, but that's quite a premium. Let me propose 300,000 inst
+      [parse] tag=reject-proposal
+    [seller] (propose) I appreciate you coming up to 300,000—that shows you're serious about this. However, there's still quite a gap between us. This camera is genuinely rare and the condition is exceptional. The provenance alone ad
+      [parse] tag=propose price=300000
+    [buyer] (reject-proposal) I appreciate that you've come down from your initial ask, and I can see this camera has real value. However, there's still an enormous gap between what we're discussing. 1,050,000 is still far beyond wh
+      [parse] tag=reject-proposal
+    [seller] (propose) I hear you, and I respect that we need to find workable ground here. You're right that there's a significant gap, but that's partly because this camera truly is exceptional—the rarity and condition command real
+      [parse] tag=propose price=950000
+    [buyer] (propose) I appreciate your willingness to move—that does show good faith. And I can see you genuinely believe in this camera's value. But I need to be honest: 950,000 is still far beyond what I'm able to invest in this 
+      [parse] tag=propose price=950000
+    [seller] (propose) I genuinely appreciate you moving meaningfully to 340,000—that's a real step, and I can see you're serious about this. I want to work with you, I truly do. But I also need to be honest about where this camera s
+      [parse] tag=propose price=340000
+    [buyer] (propose) I can see you've moved again, and I do appreciate that you're trying to work with me. But I need to be direct with you: we're still 510,000 apart on this deal. That's a genuinely massive gap, and at the pace we
+      [parse] tag=propose price=510000
+    [seller] (propose) I hear you, and I appreciate your directness. The gap is substantial, I won't pretend otherwise. But I'm not ready to walk away yet because I think there might still be a way to make this work.
+
+I can come down
+      [parse] tag=propose price=750000
+    [buyer] (propose) I genuinely want to close this deal if we can. So I'm going to be completely honest with you: I can go to 350,000. That's my true maximum—I've now moved 150,000 from where I started. That's substantial movement
+      [parse] tag=propose price=350000
+    [seller] (refuse) I appreciate your honesty throughout this conversation, and I genuinely respect how directly you've engaged with me. You've shown real movement, and I can see you're serious about making this work.
+
+But I need t
+      [parse] tag=refuse
+    [outcome] no_deal (refuse)
+[run 14] done in 562.9s
+[run 15] condition=tagged repeat=3 model=haiku temperature=not-settable(CLI) max_turns=12
+  [episode S1] item=a used road bicycle reserve=300000 budget=450000 deal_possible=1
+    [buyer] (propose) Hi there! I'm very interested in your road bicycle. It looks like it's in great condition. I'd like to start at 280,000 for it. What do you think?
+      [parse] tag=propose price=280000
+    [seller] (propose) Thanks for the interest! I appreciate you recognizing the condition of the bike. However, 280,000 is a bit low for me. This is a quality road bicycle in excellent shape, and I'm looking to get 320,000 for it. T
+      [parse] tag=propose price=280000
+    [buyer] (propose) I appreciate that you're looking for a fair price, and I can tell you take good care of your bike. However, 320,000 is a bit higher than I was hoping to spend. How about we meet somewhere in the middle? I can d
+      [parse] tag=propose price=320000
+    [seller] (accept-proposal) You know, I think 300,000 is fair. You've made a solid offer, and I appreciate that you're looking for a good deal while recognizing the quality of the bike. Let's do it. We have ourselves a deal!
+      [parse] tag=accept-proposal
+    [outcome] deal at 320000
+  [episode S2] item=a second-hand espresso machine reserve=180000 budget=200000 deal_possible=1
+    [buyer] (propose) I'm interested in your espresso machine. How much are you asking for it? I'd like to start by offering 120000 for it.
+      [parse] tag=propose price=120000
+    [seller] (propose) That's quite a bit below what I'm looking for on this machine. It's in excellent condition and very well-maintained. I'm looking for 240000 for it.
+      [parse] tag=propose price=240000
+    [buyer] (propose) That's quite steep. Your machine is nice, but 240000 is more than I'm willing to spend. I can offer 140000. It's a fair jump from my initial offer, and it shows I'm serious about buying this machine.
+      [parse] tag=propose price=240000
+    [seller] (propose) I appreciate that you're making moves in the right direction, and I can see you're genuinely interested. But 140000 is still too far from what this machine is worth. These machines hold their value exceptionall
+      [parse] tag=propose price=140000
+    [buyer] (propose) I appreciate the drop to 210000 – that shows you're willing to negotiate. But that's still more than I can justify for this purchase. The machine is excellent, no doubt, but I need to stay realistic about what 
+      [parse] tag=propose price=210000
+    [seller] (propose) You've made a solid jump from 140000 to 185000, and I can see you're genuinely interested. I appreciate that. This machine deserves a fair price given its condition and how well I've maintained it. I can come d
+      [parse] tag=propose price=140000
+    [buyer] (propose) I really appreciate you coming down to 200000 – that's substantial movement and shows you're serious about making a deal. But I want to try one more position: what if we split the difference between your 200000
+      [parse] tag=propose price=200000
+    [seller] (propose) I really appreciate your willingness to meet in the middle, and your movement from 185000 to 190000 shows real commitment to making this work. But I need to ask for 195000 – that's exactly halfway between my 20
+      [parse] tag=propose price=185000
+    [buyer] (propose) I can go to 193000. That's another meaningful jump from my 190000, and at that point we're only 2000 apart. I think that's close enough that we should be able to work out a final agreement. What do you say?
+      [parse] tag=propose price=193000
+    [seller] (accept-proposal) You know what, I think you're right. We've both made solid movement here, and 193000 is a fair price for a machine that's been maintained this well. I can accept that. Let's make this deal happen at 193
+      [parse] tag=accept-proposal
+    [outcome] deal at 193000
+  [episode S3] item=a studio monitor speaker pair reserve=520000 budget=400000 deal_possible=0
+    [buyer] (propose) Hi, I'm interested in your studio monitor speaker pair. What's your asking price? I'm looking to spend around 280,000 for a quality set.
+      [parse] tag=propose price=280000
+    [seller] (propose) I appreciate your interest, but those speakers are premium quality equipment. I'm looking to get 750,000 for the pair. That's a fair price for the condition and specifications they offer. What do you think?
+      [parse] tag=propose price=750000
+    [buyer] (propose) 750,000 is quite a bit higher than I was expecting. I understand they're quality speakers, but that's beyond what I'm prepared to spend. How about 350,000? That's a significant increase from my initial offer, a
+      [parse] tag=propose price=750000
+    [seller] (propose) I appreciate you moving up to 350,000 — that shows genuine interest. However, I need to be realistic about what these monitors are worth. They're professional-grade equipment with excellent specs and are in pri
+      [parse] tag=propose price=350000
+    [buyer] (propose) I appreciate you coming down significantly to 600,000 — that shows you're willing to negotiate. I can see you value these monitors highly, and I respect that. However, that's still substantially above what I ca
+      [parse] tag=propose price=600000
+    [seller] (propose) I hear you — you've moved up substantially from 350,000 to 390,000, and I appreciate that commitment to the deal. That tells me you're serious about taking these monitors home. I've already come down quite a bi
+      [parse] tag=propose price=350000
+    [buyer] (propose) I really do appreciate the effort you're making to meet me halfway. You've come down 110,000 from your 600,000 position, and that shows real willingness to work toward a deal. I've also moved up substantially f
+      [parse] tag=propose price=110000
+    [seller] (propose) I really appreciate the position you're taking, and I can tell this deal matters to you. You've made solid movement from 390,000 to 400,000. Here's where I'm at: I've come down from 750,000 all the way to 490,0
+      [parse] tag=propose price=390000
+    [buyer] (propose) I really appreciate your position, and I understand these are quality monitors. But I need to be straightforward with you: 400,000 is genuinely my absolute maximum. I've already stretched to reach that point, a
+      [parse] tag=propose price=400000
+    [seller] (propose) I really do respect your position and the effort you've put into this negotiation. You've moved up consistently, and I can tell you're genuinely interested. But here's the reality: at 400,000, I'd be significan
+      [parse] tag=propose price=400000
+    [buyer] (reject-proposal) I understand your position, and I respect the concessions you've made. But I need to be honest with you: 520,000 is still 120,000 above my absolute maximum of 400,000. I'm not being coy about my budget—
+      [parse] tag=reject-proposal
+    [seller] (refuse) I really do appreciate the straightforward way you've negotiated—you've been honest about your position and shown genuine interest throughout. But I have to be honest with you too: 520,000 is genuinely where I n
+      [parse] tag=refuse
+    [outcome] no_deal (refuse)
+  [episode S4] item=a vintage film camera reserve=900000 budget=350000 deal_possible=0
+    [buyer] (propose) Hello! I'm very interested in your vintage film camera. I've done some research on comparable models, and I'd like to start our negotiation at 200,000. What do you think?
+      [parse] tag=propose price=200000
+    [seller] (propose) I appreciate your interest, but 200,000 is quite a bit below what I'm looking for with this camera. It's in excellent condition and has been well-maintained. I'd be looking at 750,000 to start our discussion fr
+      [parse] tag=propose price=200000
+    [buyer] (propose) I appreciate you sharing that starting point, but 750,000 is considerably higher than what the market tends to bear for this model, even in excellent condition. I can see this camera has been well cared for, an
+      [parse] tag=propose price=750000
+    [seller] (propose) I appreciate that you're willing to move in my direction, and I recognize we're working from different market assessments here. However, 280,000 simply doesn't reflect the quality and rarity of this particular 
+      [parse] tag=propose price=280000
+    [buyer] (propose) I appreciate your movement to 700,000—that does show good faith. However, we're still quite far apart, and frankly, that price remains well above what comparable models in this condition are actually selling fo
+      [parse] tag=propose price=700000
+    [seller] (propose) I hear what you're saying about market comparisons, and I genuinely appreciate the movement you've made—going from 200,000 to 320,000 shows you're serious about this piece. But we're still quite far apart, and 
+      [parse] tag=propose price=200000
+    [buyer] (propose) I genuinely appreciate your willingness to move substantially—coming from 750,000 to 640,000 shows you're taking this seriously too. And I hear your perspective on the camera's quality and rarity.
+
+But let me b
+      [parse] tag=propose price=750000
+    [seller] (propose) I appreciate your directness and the substantial movement you've made—moving from 280,000 to 345,000 is genuine progress, and I can hear that you're seriously invested in this. I also respect that you've done y
+      [parse] tag=propose price=280000
+    [buyer] (propose) That's a fair question about my comparables. To be clear, I'm looking at pristine examples in this exact condition level—recent auction results, collector sales, dealer inventory—so I don't think there's actual
+      [parse] tag=propose price=350000
+    [seller] (propose) I appreciate your commitment and your honesty about your position. I recognize the significant movement you've made getting from 200,000 to 350,000—that's substantial, and it shows you're serious.
+
+But I need t
+      [parse] tag=propose price=200000
+    [buyer] (propose) I appreciate the directness of that question, and I need to give you an equally direct answer: I don't have flexibility to move materially beyond 350,000. That's genuinely where I max out based on my assessment
+      [parse] tag=propose price=350000
+    [seller] (refuse) I appreciate the clarity and the honesty of this entire conversation. You've negotiated in genuine good faith, and I respect that. You've moved substantially—from 200,000 to 350,000 is real movement, and it's cl
+      [parse] tag=refuse
+    [outcome] no_deal (refuse)
+[run 15] done in 542.4s
+[run 16] condition=structured repeat=1 model=haiku temperature=not-settable(CLI) max_turns=12
+  [episode S1] item=a used road bicycle reserve=300000 budget=450000 deal_possible=1
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 350000}}
+```
+      [parse] propose price=350000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 380000}}
+```
+      [parse] propose price=380000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 365000}}
+```
+      [parse] propose price=365000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 375000}}
+```
+      [parse] propose price=375000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 370000}}
+```
+      [parse] propose price=370000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 372000}}
+```
+      [parse] propose price=372000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 371000}}
+```
+      [parse] propose price=371000
+    [seller] ```json
+{"performative": "accept-proposal", "content": {"price": 371000}}
+```
+      [parse] accept-proposal price=371000
+    [outcome] deal at 371000
+  [episode S2] item=a second-hand espresso machine reserve=180000 budget=200000 deal_possible=1
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 85000}}
+```
+      [parse] propose price=85000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 260000}}
+```
+      [parse] propose price=260000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 140000}}
+```
+      [parse] propose price=140000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 200000}}
+```
+      [parse] propose price=200000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 180000}}
+```
+      [parse] propose price=180000
+    [seller] ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+      [parse] accept-proposal price=None
+    [outcome] deal at 180000
+  [episode S3] item=a studio monitor speaker pair reserve=520000 budget=400000 deal_possible=0
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 250000}}
+```
+      [parse] propose price=250000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 700000}}
+```
+      [parse] propose price=700000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 320000}}
+```
+      [parse] propose price=320000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 600000}}
+```
+      [parse] propose price=600000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 360000}}
+```
+      [parse] propose price=360000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 550000}}
+```
+      [parse] propose price=550000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 385000}}
+```
+      [parse] propose price=385000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 520000}}
+```
+      [parse] propose price=520000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 395000}}
+```
+      [parse] propose price=395000
+    [seller] ```json
+{"performative": "refuse", "content": {"price": null}}
+```
+      [parse] refuse price=None
+    [outcome] no_deal (refuse)
+  [episode S4] item=a vintage film camera reserve=900000 budget=350000 deal_possible=0
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 220000}}
+```
+      [parse] propose price=220000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 1200000}}
+```
+      [parse] propose price=1200000
+    [buyer] ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+      [parse] reject-proposal price=None
+    [seller] ```json
+{"performative": "propose", "content": {"price": 950000}}
+```
+      [parse] propose price=950000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 290000}}
+```
+      [parse] propose price=290000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 900000}}
+```
+      [parse] propose price=900000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 310000}}
+```
+      [parse] propose price=310000
+    [seller] ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+      [parse] reject-proposal price=None
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 330000}}
+```
+      [parse] propose price=330000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 700000}}
+```
+      [parse] propose price=700000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 345000}}
+```
+      [parse] propose price=345000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 550000}}
+```
+      [parse] propose price=550000
+    [outcome] open (turn limit 12)
+[run 16] done in 389.1s
+[run 17] condition=structured repeat=2 model=haiku temperature=not-settable(CLI) max_turns=12
+  [episode S1] item=a used road bicycle reserve=300000 budget=450000 deal_possible=1
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 350000}}
+```
+      [parse] propose price=350000
+    [seller] ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+      [parse] accept-proposal price=None
+    [outcome] deal at 350000
+  [episode S2] item=a second-hand espresso machine reserve=180000 budget=200000 deal_possible=1
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 120000}}
+```
+      [parse] propose price=120000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 280000}}
+```
+      [parse] propose price=280000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 150000}}
+```
+      [parse] propose price=150000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 240000}}
+```
+      [parse] propose price=240000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 170000}}
+```
+      [parse] propose price=170000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 200000}}
+```
+      [parse] propose price=200000
+    [buyer] ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+      [parse] accept-proposal price=None
+    [outcome] deal at 200000
+  [episode S3] item=a studio monitor speaker pair reserve=520000 budget=400000 deal_possible=0
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 280000}}
+```
+      [parse] propose price=280000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 480000}}
+```
+      [parse] propose price=480000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 350000}}
+```
+      [parse] propose price=350000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 520000}}
+```
+      [parse] propose price=520000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 370000}}
+```
+      [parse] propose price=370000
+    [seller] ```json
+{"performative": "reject-proposal", "content": {"price": 490000}}
+```
+      [parse] reject-proposal price=490000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 390000}}
+```
+      [parse] propose price=390000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 510000}}
+```
+      [parse] propose price=510000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 400000}}
+```
+      [parse] propose price=400000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 505000}}
+```
+      [parse] propose price=505000
+    [buyer] ```json
+{"performative": "refuse", "content": {"price": null}}
+```
+      [parse] refuse price=None
+    [outcome] no_deal (refuse)
+  [episode S4] item=a vintage film camera reserve=900000 budget=350000 deal_possible=0
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 200000}}
+```
+      [parse] propose price=200000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 1500000}}
+```
+      [parse] propose price=1500000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 250000}}
+```
+      [parse] propose price=250000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 1300000}}
+```
+      [parse] propose price=1300000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 300000}}
+```
+      [parse] propose price=300000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 1100000}}
+```
+      [parse] propose price=1100000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 320000}}
+```
+      [parse] propose price=320000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 1000000}}
+```
+      [parse] propose price=1000000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 330000}}
+```
+      [parse] propose price=330000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 950000}}
+```
+      [parse] propose price=950000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 340000}}
+```
+      [parse] propose price=340000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 920000}}
+```
+      [parse] propose price=920000
+    [outcome] open (turn limit 12)
+[run 17] done in 386.0s
+[run 18] condition=structured repeat=3 model=haiku temperature=not-settable(CLI) max_turns=12
+  [episode S1] item=a used road bicycle reserve=300000 budget=450000 deal_possible=1
+    [buyer] {"performative": "propose", "content": {"price": 300000}}
+      [parse] propose price=300000
+    [seller] {"performative": "accept-proposal", "content": {"price": null}}
+      [parse] accept-proposal price=None
+    [outcome] deal at 300000
+  [episode S2] item=a second-hand espresso machine reserve=180000 budget=200000 deal_possible=1
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 85000}}
+```
+      [parse] propose price=85000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 200000}}
+```
+      [parse] propose price=200000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 130000}}
+```
+      [parse] propose price=130000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 175000}}
+```
+      [parse] propose price=175000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 145000}}
+```
+      [parse] propose price=145000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 180000}}
+```
+      [parse] propose price=180000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 160000}}
+```
+      [parse] propose price=160000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 180000}}
+```
+      [parse] propose price=180000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 170000}}
+```
+      [parse] propose price=170000
+    [seller] ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+      [parse] reject-proposal price=None
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 175000}}
+```
+      [parse] propose price=175000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 180000}}
+```
+      [parse] propose price=180000
+    [outcome] open (turn limit 12)
+  [episode S3] item=a studio monitor speaker pair reserve=520000 budget=400000 deal_possible=0
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 250000}}
+```
+      [parse] propose price=250000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 750000}}
+```
+      [parse] propose price=750000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 330000}}
+```
+      [parse] propose price=330000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 620000}}
+```
+      [parse] propose price=620000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 365000}}
+```
+      [parse] propose price=365000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 560000}}
+```
+      [parse] propose price=560000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 385000}}
+```
+      [parse] propose price=385000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 525000}}
+```
+      [parse] propose price=525000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 395000}}
+```
+      [parse] propose price=395000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 520000}}
+```
+      [parse] propose price=520000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 398000}}
+```
+      [parse] propose price=398000
+    [seller] ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+      [parse] reject-proposal price=None
+    [outcome] open (turn limit 12)
+  [episode S4] item=a vintage film camera reserve=900000 budget=350000 deal_possible=0
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 220000}}
+```
+      [parse] propose price=220000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 800000}}
+```
+      [parse] propose price=800000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 300000}}
+```
+      [parse] propose price=300000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 750000}}
+```
+      [parse] propose price=750000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 320000}}
+```
+      [parse] propose price=320000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 650000}}
+```
+      [parse] propose price=650000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 330000}}
+```
+      [parse] propose price=330000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 900000}}
+```
+      [parse] propose price=900000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 345000}}
+```
+      [parse] propose price=345000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 700000}}
+```
+      [parse] propose price=700000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 350000}}
+```
+      [parse] propose price=350000
+    [seller] ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+      [parse] reject-proposal price=None
+    [outcome] open (turn limit 12)
+[run 18] done in 514.9s
+
+results.csv updated; C:\AgenticAI\ai-agent-engineering-101\submissions\26510130\week-04\results.csv

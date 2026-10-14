@@ -1,0 +1,54 @@
+[run 2] condition=free repeat=2 model=haiku temperature=not-settable(CLI) max_turns=6
+  [episode S1] item=a used road bicycle reserve=300000 budget=450000 deal_possible=1
+    [buyer] I'm interested in your road bicycle—would you consider 300000 for it?
+      [reader] propose price=300000
+    [seller] I appreciate the offer, but I'm looking for 350000 for this bike—it's in excellent condition and well-maintained.
+      [reader] propose price=350000
+    [buyer] I appreciate that it's well-maintained, but 350000 is still more than I want to spend—would you take 325000?
+      [reader] propose price=325000
+    [seller] I can come down to 340000—that's a fair split between what you're offering and what I'm asking, and it reflects the bike's quality and condition.
+      [reader] propose price=340000
+    [buyer] I appreciate you coming down—how about we meet at 330000, right in between where we both are?
+      [reader] propose price=330000
+    [seller] I appreciate the reasonable offer, but I'd like to ask for 335000—just split the difference between where we both stand, and that's my final position on this bike.
+      [reader] propose price=335000
+    [outcome] open (turn limit 6)
+  [episode S2] item=a second-hand espresso machine reserve=180000 budget=200000 deal_possible=1
+    [buyer] I'm interested in your espresso machine—what's the lowest price you're willing to accept for it?
+      [reader] reject-proposal price=None
+    [seller] I'm looking for 220000 for this machine, which is in excellent condition—does that work for you?
+      [reader] propose price=220000
+    [buyer] That's higher than I was hoping to spend. Would you consider 180000 for it?
+      [reader] propose price=180000
+    [seller] That's actually my final price, so yes, let's make the deal—I can have it ready for you to pick up this week.
+      [reader] accept-proposal price=None
+    [outcome] deal at 180000
+  [episode S3] item=a studio monitor speaker pair reserve=520000 budget=400000 deal_possible=0
+    [buyer] I'm interested in those studio monitor speakers—what's your asking price for the pair?
+      [reader] reject-proposal price=None
+    [seller] I'm looking to get 680,000 for the pair, but I'm open to discussion if you're a serious buyer.
+      [reader] propose price=680000
+    [buyer] That's quite a bit higher than I was hoping to spend. How about 300,000 for the pair?
+      [reader] propose price=300000
+    [seller] That's quite a jump down from 680,000—I need to come down, but not that far. How about 620,000, and we can work from there?
+      [reader] propose price=620000
+    [buyer] I appreciate you coming down, but 620,000 is still too high for what I'm looking to spend—how about 380,000 and we can narrow the gap from there?
+      [reader] reject-proposal price=380000
+    [seller] I can see we're moving in the right direction, but I need to stay closer to what these monitors are worth—how about 550,000 and we can meet somewhere in between?
+      [reader] propose price=550000
+    [outcome] open (turn limit 6)
+  [episode S4] item=a vintage film camera reserve=900000 budget=350000 deal_possible=0
+    [buyer] I've been looking for a well-maintained vintage film camera and yours sounds interesting—what's your asking price?
+      [reader] propose price=None
+    [seller] I'm asking 1,100,000 for this camera—it's in excellent condition with all original documentation and has been meticulously maintained by a collector.
+      [reader] propose price=1100000
+    [buyer] That's quite a bit more than I expected to pay for a vintage camera, even a well-maintained one. Would you consider 520,000, given the competitive market for these models?
+      [reader] propose price=520000
+    [seller] That's considerably below what this camera is worth—it's a rare model in museum-quality condition. I'd be willing to come down to 950,000, which is a fair price for the condition and provenance.
+      [reader] propose price=950000
+    [buyer] I appreciate the reduction, but 950,000 is still too high—I'd like to propose 550,000.
+      [reader] propose price=550000
+    [seller] 550,000 is still well below what this camera is worth in its current condition. I'm willing to come down to 910,000.
+      [reader] propose price=910000
+    [outcome] open (turn limit 6)
+[run 2] done in 524.5s
