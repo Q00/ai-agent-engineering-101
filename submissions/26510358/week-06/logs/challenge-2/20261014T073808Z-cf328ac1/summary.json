@@ -1,0 +1,137 @@
+{
+  "passed": false,
+  "all_items_bought": false,
+  "no_duplicate_purchase": true,
+  "within_total_budget": true,
+  "total_budget": 600,
+  "elapsed_seconds": 249.168,
+  "results": [
+    {
+      "status": "completed",
+      "receipt": {
+        "taskId": "2a791f17-3e77-41f6-8290-8895d2c7bc52",
+        "currency": "credits",
+        "price": 100.0,
+        "item": "lamp",
+        "seller": "Everyday Lamp Shop",
+        "quoteId": "950db02aa69946fcb07f195b045690fc",
+        "quantity": 1.0,
+        "itemId": "lamp",
+        "purchaseId": "2a3241edb6834a64a84e9edfbef80f5a"
+      },
+      "key": "lamp",
+      "shop_id": "shop-01",
+      "url": "http://127.0.0.1:56857"
+    },
+    {
+      "status": "no_deal",
+      "state": "TASK_STATE_FAILED",
+      "key": "chair",
+      "shop_id": "shop-02",
+      "url": "http://127.0.0.1:32901"
+    },
+    {
+      "status": "completed",
+      "receipt": {
+        "item": "bookshelf",
+        "currency": "credits",
+        "taskId": "faef1f75-7a1b-4999-ad2f-17d42df83169",
+        "itemId": "bookshelf",
+        "seller": "Everyday Bookshelf Shop",
+        "quantity": 1.0,
+        "purchaseId": "f3d1fbdb6ca842539054aff74512b050",
+        "price": 280.0,
+        "quoteId": "4039b24a543749a3bf0dc3c033692bb8"
+      },
+      "key": "bookshelf",
+      "shop_id": "shop-03",
+      "url": "http://127.0.0.1:46417"
+    }
+  ],
+  "ledger": {
+    "version": 1,
+    "total_budget": 600.0,
+    "committed_total": 380.0,
+    "reserved_total": 0.0,
+    "available_budget": 220.0,
+    "purchases": {
+      "1251880f31da4a57b517c2471377ac3c": {
+        "purchase_id": "1251880f31da4a57b517c2471377ac3c",
+        "item_key": "lamp",
+        "expected_item": "lamp",
+        "seller_origin": "http://127.0.0.1:56857",
+        "expected_quote_id": "950db02aa69946fcb07f195b045690fc",
+        "price": 100.0,
+        "state": "committed",
+        "committed": true,
+        "receipt": {
+          "taskId": "2a791f17-3e77-41f6-8290-8895d2c7bc52",
+          "currency": "credits",
+          "price": 100.0,
+          "item": "lamp",
+          "seller": "Everyday Lamp Shop",
+          "quoteId": "950db02aa69946fcb07f195b045690fc",
+          "quantity": 1.0,
+          "itemId": "lamp",
+          "purchaseId": "2a3241edb6834a64a84e9edfbef80f5a"
+        },
+        "disputed_reasons": []
+      },
+      "b571f17b84dc4ce18cdd10c2c2a11e06": {
+        "purchase_id": "b571f17b84dc4ce18cdd10c2c2a11e06",
+        "item_key": "bookshelf",
+        "expected_item": "bookshelf",
+        "seller_origin": "http://127.0.0.1:46417",
+        "expected_quote_id": "af8e21836006442a9e3df883fc934534",
+        "price": 280.0,
+        "state": "released",
+        "committed": false,
+        "receipt": null,
+        "disputed_reasons": []
+      },
+      "b99b1852e0fc423f943337f190c2f54b": {
+        "purchase_id": "b99b1852e0fc423f943337f190c2f54b",
+        "item_key": "bookshelf",
+        "expected_item": "bookshelf",
+        "seller_origin": "http://127.0.0.1:46417",
+        "expected_quote_id": "4039b24a543749a3bf0dc3c033692bb8",
+        "price": 280.0,
+        "state": "committed",
+        "committed": true,
+        "receipt": {
+          "item": "bookshelf",
+          "currency": "credits",
+          "taskId": "faef1f75-7a1b-4999-ad2f-17d42df83169",
+          "itemId": "bookshelf",
+          "seller": "Everyday Bookshelf Shop",
+          "quantity": 1.0,
+          "purchaseId": "f3d1fbdb6ca842539054aff74512b050",
+          "price": 280.0,
+          "quoteId": "4039b24a543749a3bf0dc3c033692bb8"
+        },
+        "disputed_reasons": []
+      }
+    }
+  },
+  "allocated_envelopes": [
+    {
+      "key": "lamp",
+      "item": "lamp",
+      "budget": 100.0
+    },
+    {
+      "key": "chair",
+      "item": "chair",
+      "budget": 220.0
+    },
+    {
+      "key": "bookshelf",
+      "item": "bookshelf",
+      "budget": 280.0
+    }
+  ],
+  "policy_version": "synthetic-bandit-s42-n5000",
+  "policy_sha256": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb",
+  "directory_size": 20,
+  "directory_has_20_live_shops": true
+}
