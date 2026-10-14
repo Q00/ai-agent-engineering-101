@@ -7,7 +7,8 @@
 | 파일·시작점 | 읽을 내용 |
 |---|---|
 | [harness.py](harness.py) `system_prompt()`, `Harness.decide()` | 역할별 지시, 실제 Codex 호출, JSON 파싱, 검증 실패 재질문. 프롬프트와 원문 실행 출력이 로그에 남는 위치 |
-| [decision.schema.json](decision.schema.json) | 모든 판단의 `action`, `price`, `item_id`, `offer`, `reason` 형식 |
+| [구매자 스키마](buyer-decision.schema.json), [판매자 스키마](seller-decision.schema.json) | 역할별 허용 행동과 필드 형식. 구매 금액은 `price`, 판매자가 읽은 제안은 `offer` |
+| [inference_queue.py](inference_queue.py) `InferenceQueue.slot()` | 스레드·프로세스 간 FIFO 입장, 제한 시간, 종료된 소유자 복구, 호출 간격 |
 | [seller.py](seller.py) `build()`, `Seller._turn()` | Agent Card·A2A 서버, 상품 검색, 거래별 상태·잠금, 호가·영수증 응답 |
 | [buyer.py](buyer.py) `negotiate()` | 카드 읽기, 같은 task ID로 흥정, 견적 상품 ID 고정, 예산 예약·영수증 확인·종료 |
 | [protocol.py](protocol.py) `A2AClient` | JSON-RPC 요청, `A2A-Version: 1.0`, 카드의 동일 출처 검증, task 응답 처리 |
@@ -52,7 +53,9 @@
 
 `shop_all()`은 구매 목록 키가 중복되지 않는지 확인합니다. 개별 예산이 없으면 `allocate_budget()`이 전체 목록·총예산·공개 Agent Card만 실제 하네스에 전달해 한 번에 한도 벡터를 받습니다. 비공개 하한가를 넘기거나 모델을 부르기 전 별도 거래를 열지 않습니다. 코드는 모든 키가 한 번씩 포함되었는지, 배분 합계가 총예산 이내인지 검증합니다. 사용자가 명시한 개별 한도가 있으면 보존합니다. 공개 카드만으로 배분한 한도가 실제 판매 가격에 충분하다는 보장은 없습니다.
 
-협상마다 짧은 이력 요약·독립 task·개별 로그를 유지하고 공유 원장으로 총액을 지킵니다. 전체 장보기 제한 안에서 개별 협상도 240초 이내로 제한합니다. 협상 스레드는 병렬이지만 현재 `invocation_slot()`은 로컬 Codex 추론 호출을 공유 잠금과 호출 간격으로 조절합니다. “병렬 협상”이 모델 호출의 무제한 병렬 실행을 뜻하지는 않습니다.
+협상마다 짧은 이력 요약·독립 task·개별 로그를 유지하고 공유 원장으로 총액을 지킵니다. 전체 장보기 제한 안에서 개별 협상도 240초 이내로 제한합니다. `invocation_slot()`은 로컬 Codex 추론 호출을 FIFO 대기열과 호출 간격으로 조절합니다. 각 요청의 입장 순서를 유지해 다른 거래가 계속 앞서는 것을 막습니다.
+
+`TASK_STATE_FAILED`로 확실히 종료된 거래는 그 목록 키에 활성 예약·분쟁·완료 기록이 없는지 확인한 뒤 한 번만 다시 시도합니다. 하네스가 실패 문맥을 받아 상점을 다시 선택하며 `attempt-01/attempt-02` 로그를 따로 저장합니다. 응답 유실·분쟁·완료·일반적인 협상 거절은 재시도하지 않습니다. 이는 모호한 판매 완료 뒤 다른 상점에서 중복 구매하는 것을 막기 위한 조건입니다.
 
 ## 학습이 바꾸는 부분
 

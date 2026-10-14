@@ -2,7 +2,7 @@
 
 판매자와 구매자가 A2A v1.0으로 흥정하고, 실제 Codex 하네스가 상품·가격·수락·거절을 판단하는 과제 구현입니다. 거래 조건 검증과 오프라인 전략 학습을 함께 구성했습니다. 판매자와 구매자는 독립된 역할이며, 구매자에게 판매자의 하한가를 무효화할 권한은 없습니다.
 
-[시스템 구조](ARCHITECTURE.md), [코드 읽기 안내](CODE_WALKTHROUGH.md), [실행 근거와 과제 보고서](REPORT.md)를 함께 확인하세요. 최종 통과 여부와 측정 결과는 실제 실행 로그를 인용하는 보고서에서 확인합니다. 이 안내서는 벤치마크 완료를 주장하지 않습니다.
+[시스템 구조](ARCHITECTURE.md), [코드 읽기 안내](CODE_WALKTHROUGH.md), [실행 근거와 과제 보고서](REPORT.md)를 함께 확인하세요. 검증 결과와 측정 범위는 실제 실행 로그를 인용하는 보고서에 기록했습니다.
 
 ![A2A 거래 시스템 아키텍처](docs/architecture.png)
 
@@ -28,7 +28,7 @@ uv pip install -r requirements.txt
 
 Codex CLI가 `PATH`에 있고 기존 로그인 상태여야 합니다. 로그인되어 있지 않다면 `codex login`으로 로그인합니다. 이 구현은 기존 Codex 인증을 사용하며 별도 API 키를 요구하지 않습니다. 호출 시 `--ignore-user-config`를 사용합니다.
 
-기본 모델은 `gpt-6-sol`, reasoning effort는 `low`입니다. 정확한 CLI 인자는 [harness.py](harness.py)의 `COMMAND`와 각 로그의 `harness_request.command`에 있습니다. 빈 임시 디렉터리에서 비대화형으로 실행하며 [decision.schema.json](decision.schema.json) 형식의 JSON만 받아 검증합니다. `A2A_MODEL`로 모델을 바꾸면 `agent.json`의 설명과 실행 근거도 갱신해야 합니다.
+기본 모델은 `gpt-6-sol`, reasoning effort는 `low`입니다. 정확한 CLI 인자는 [harness.py](harness.py)의 `command_for()`와 각 로그의 `harness_request.command`에 있습니다. 빈 임시 디렉터리에서 비대화형으로 실행하며 [구매자 스키마](buyer-decision.schema.json)와 [판매자 스키마](seller-decision.schema.json)를 역할별로 사용합니다. 구매자의 제안 금액은 `price`에 기록하며 `offer`는 null입니다. `A2A_MODEL`로 모델을 바꾸면 `agent.json`의 설명과 실행 근거도 갱신해야 합니다.
 
 ## 한 가게와 거래
 
@@ -50,6 +50,8 @@ Agent Card 주소는 `http://127.0.0.1:9999/.well-known/agent-card.json`입니�
 
 기본 로그 위치는 `A2A_TRACE_DIR`로 지정할 수 있습니다. 구매자의 `--log-dir`나 판매자 설정의 `log_dir`처럼 명시한 경로가 있으면 그 경로를 우선합니다. 각 프로세스의 `policy_loaded` 기록에는 실제 로드한 정책 버전과 해시가 남습니다. 공식 후보 검사의 추론 로그는 다른 작업과 섞이지 않는 새 디렉터리에 저장합니다.
 
+추론 호출은 프로세스 간 FIFO 대기열로 차례를 지키며 호출 후 10초 간격을 둡니다. `A2A_QUEUE_TRACE`에 새 JSONL 파일 경로를 지정하면 입장·종료·만료 기록도 남습니다. 병렬 장보기는 확실한 `TASK_STATE_FAILED`와 예약 해제를 확인한 경우 한 번만 재시도하고, 완료·분쟁·응답 유실은 재시도하지 않습니다.
+
 ## 검사와 필수 도전
 
 가상환경을 활성화한 상태에서 저장소 루트로 돌아가 공식 검사를 실행합니다. 명령과 작업 디렉터리는 [agent.json](agent.json)에 정의되어 있습니다.
@@ -68,7 +70,7 @@ python3 -m unittest discover -s tests -v
 python3 run_challenges.py --challenge all
 ```
 
-`run_challenges.py`는 실제 판매자 프로세스 20개와 Agent Card를 만들고, 설명으로 상품을 찾는 도전과 총예산으로 병렬 장보기하는 도전을 실행합니다. `--challenge 1` 또는 `--challenge 2`로 나눠 실행할 수 있습니다. 로그·가게 설정·디렉터리·결과는 `logs/challenge-1/<실행 ID>/`, `logs/challenge-2/<실행 ID>/`에 저장됩니다. 서버는 실행 종료 시 정리합니다.
+`run_challenges.py`는 먼저 전체 3,003개 상품을 가진 판매자로 설명형 검색을 검사하고, 이어 실제 전문점 20개의 Agent Card를 읽어 총예산으로 병렬 장보기를 실행합니다. `--challenge 1` 또는 `--challenge 2`로 나눠 실행할 수 있습니다. 로그·가게 설정·디렉터리·결과는 `logs/challenge-1/<실행 ID>/`, `logs/challenge-2/<실행 ID>/`에 저장됩니다. 서버는 실행 종료 시 정리합니다.
 
 기존 가게 디렉터리로 장보기하려면 다음 형식을 사용합니다. 디렉터리는 실제로 읽은 `{id, url, card}` 배열, 구매 목록은 `{key, item}` 배열입니다. 개별 `budget`은 선택 사항이며, 없으면 실제 하네스가 전체 목록과 공개 카드를 보고 한 번에 예산을 배분합니다. 배분 합계를 총예산과 대조한 뒤 협상을 시작합니다. 전체 장보기 제한은 기본 600초이며 개별 협상은 240초 이내입니다. 예시 파일명은 자신의 파일 경로로 바꿉니다.
 
@@ -96,7 +98,7 @@ python3 run_adversarial.py --policy policies/candidate-example.json --log-dir lo
 
 ```bash
 A2A_POLICY_PATH="$PWD/submissions/26510358/week-06/policies/candidate.json" \
-A2A_TRACE_DIR="$PWD/submissions/26510358/week-06/logs/attempts/04/runtime" \
+A2A_TRACE_DIR="$PWD/submissions/26510358/week-06/logs/attempts/new-run/runtime" \
 python3 scripts/trade_test_week06.py submissions/26510358/week-06
 ```
 
@@ -105,14 +107,14 @@ python3 scripts/trade_test_week06.py submissions/26510358/week-06
 [promote_policy.py](promote_policy.py)는 이 근거를 실제 보고서와 원문 CLI 출력에서 조합하는 실행 도구입니다. 제출 디렉터리에서 아래처럼 먼저 점검합니다. 적대적 보고서 파일명은 `run_adversarial.py`가 출력한 실제 경로로 바꾸며, 모든 보고서와 추론 로그가 같은 후보·현재 모델을 사용해야 합니다. 파일이 아직 없거나 결과가 실패했다면 점검도 거절됩니다.
 
 ```bash
-A2A_ADVERSARIAL_REPORT="logs/adversarial/final-01/adversarial-report-d0b59d9a728f.json"
+A2A_ADVERSARIAL_REPORT="logs/adversarial/final-02/adversarial-report-6939005bcf62.json"
 python3 promote_policy.py \
   --candidate policies/candidate.json \
-  --holdout-report logs/rl/holdout-03.json \
+  --holdout-report logs/rl/holdout-04.json \
   --adversarial-report "$A2A_ADVERSARIAL_REPORT" \
   --trade-report test-report.json \
-  --official-trace-dir logs/attempts/04/runtime \
-  --evidence-output logs/rl/promotion-verify-04.json \
+  --official-trace-dir logs/attempts/05/runtime \
+  --evidence-output logs/rl/promotion-verify-new.json \
   --target policies/active.json \
   --verify-only
 ```
