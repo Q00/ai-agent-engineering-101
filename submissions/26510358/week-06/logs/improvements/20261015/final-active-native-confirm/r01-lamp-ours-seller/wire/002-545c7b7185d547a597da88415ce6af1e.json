@@ -1,0 +1,82 @@
+{
+  "id": "545c7b7185d547a597da88415ce6af1e",
+  "method": "POST",
+  "path": "/",
+  "headers": {
+    "content-type": "application/json",
+    "a2a-version": "1.0"
+  },
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "d6b0436f",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "6c56aa64-c92b-443b-82f5-3556a623b75e",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ]
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "result": {
+      "task": {
+        "id": "d3f982df-a44d-406f-b47a-d8180a709b2f",
+        "contextId": "c26c4bf5-d601-448b-b32e-75e9650e35ac",
+        "status": {
+          "state": "TASK_STATE_INPUT_REQUIRED",
+          "message": {
+            "messageId": "6ed0933f-eab2-4626-aec1-e9451450cb52",
+            "contextId": "c26c4bf5-d601-448b-b32e-75e9650e35ac",
+            "taskId": "d3f982df-a44d-406f-b47a-d8180a709b2f",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "Classic Reading Lamp / 기본 독서 램프. Asking price: 150"
+              }
+            ],
+            "metadata": {
+              "quantity": 1.0,
+              "attributes": {
+                "width_cm": 18.0,
+                "height_cm": 45.0,
+                "power_watts": 8.0,
+                "depth_cm": 18.0,
+                "finish": "charcoal",
+                "material": "metal"
+              },
+              "description": "A metal desk lamp with a warm LED, adjustable shade and stable weighted base. 금속 독서 조명, 높이 45cm, 각도 조절 갓과 따뜻한 LED가 있습니다.",
+              "currency": "credits",
+              "quoteId": "01549ec323c94355bcb256f225034eec",
+              "itemId": "lamp",
+              "ask": 150.0,
+              "seller": "26510358 Catalog Shop"
+            }
+          },
+          "timestamp": "2026-10-15T06:49:45.680642Z"
+        },
+        "history": [
+          {
+            "messageId": "6c56aa64-c92b-443b-82f5-3556a623b75e",
+            "contextId": "c26c4bf5-d601-448b-b32e-75e9650e35ac",
+            "taskId": "d3f982df-a44d-406f-b47a-d8180a709b2f",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "I want to buy a lamp"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "id": "d6b0436f",
+    "jsonrpc": "2.0"
+  },
+  "elapsed_seconds": 16.124
+}

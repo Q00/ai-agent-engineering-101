@@ -1,0 +1,284 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-15T07:12:16.500110+00:00",
+  "mode": "read_only_strategy_replay_existing_artifacts",
+  "model_calls_performed": 0,
+  "training_or_policy_promotion_performed": false,
+  "product_source_edits_performed": false,
+  "source_run": {
+    "path": "logs/improvements/20261015/final-controlled-cross/r01-lamp-pr296-buyer",
+    "result_sha256": "003801f33286db7466c6135cd07242d06bb2bde7ccb46e3300c9e865c038efeb",
+    "seller_trace_path": "logs/improvements/20261015/final-controlled-cross/r01-lamp-pr296-buyer/agent-trace/seller-b2f12b6ada95.jsonl",
+    "seller_trace_sha256": "c140a69de3b79ae44aeeb5a3892ff310d719919e02b0d672dc313f72f84c35f9",
+    "recorded_seller_policy": [
+      {
+        "trace_line": 1,
+        "policy_sha256": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb",
+        "policy_version": "synthetic-bandit-s42-n5000"
+      }
+    ],
+    "execution_scope": {
+      "buyer": "controlled_codex_transport",
+      "seller": "native_implementation"
+    },
+    "original_peer_model_scope": "PR296 original code rehosted through controlled Codex transport; this is not an original-provider benchmark."
+  },
+  "snapshots": {
+    "active": {
+      "path": "/tmp/a2a-improvement-20261015/stage-04-active",
+      "policy_path": "/tmp/a2a-improvement-20261015/stage-04-active/policies/active.json",
+      "policy_version": "synthetic-bandit-s42-n5000",
+      "policy_sha256": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb",
+      "code_sha256": {
+        "policy.py": "4208c6e450568fb09a3dc0f75d638a95df98b6f89552c517584e64d2a6cfe07f",
+        "seller.py": "aa136e591eb3d593de081ef68c5ac1e94c907549adeb41b2aff3f62f391fb734",
+        "harness.py": "a0bba3bac5aef0fd3d5dfc122c5b6a8476a69e0bd9a4d722eec1d9c2ebe7a485"
+      },
+      "environment_version": null,
+      "strategy_guidance_sha256": null
+    },
+    "candidate": {
+      "path": "/tmp/a2a-improvement-20261015/stage-04-candidate",
+      "policy_path": "/tmp/a2a-improvement-20261015/stage-04-candidate/policies/active.json",
+      "policy_version": "synthetic-bandit-env2-s42-n5000",
+      "policy_sha256": "fd6d53c8c780212c79b245b8fd271ae92a38fe2c306db3a3b81b9d4a90714794",
+      "code_sha256": {
+        "policy.py": "4208c6e450568fb09a3dc0f75d638a95df98b6f89552c517584e64d2a6cfe07f",
+        "seller.py": "aa136e591eb3d593de081ef68c5ac1e94c907549adeb41b2aff3f62f391fb734",
+        "harness.py": "a0bba3bac5aef0fd3d5dfc122c5b6a8476a69e0bd9a4d722eec1d9c2ebe7a485"
+      },
+      "environment_version": "negotiation-surrogate-v2",
+      "strategy_guidance_sha256": "0d5194b381826713361fcd1c352e6fc1ea23ba1f9a0a0ea7f162222bea7f021e"
+    }
+  },
+  "observed_snapshot_differences_excluding_logs_and_pycache": [
+    "policies/active.json"
+  ],
+  "replay_method": "Read the already recorded seller harness contexts, then call each frozen snapshot StrategyPolicy.choose with its explicit policies/active.json. This performs deterministic table lookup only; it does not invoke Harness.decide, model providers, sockets, inference queues, or the training simulator. Python bytecode writes were disabled.",
+  "strategy_rows": [
+    {
+      "trace_line": 4,
+      "time": "2026-10-15T06:57:05.540603+00:00",
+      "opening": true,
+      "round": 0,
+      "reserve": 100,
+      "offer": null,
+      "last_ask": null,
+      "flags": [],
+      "remote_stance": null,
+      "logged_strategy": "balanced",
+      "replay": {
+        "active": {
+          "context_key": "seller|early|unknown|clear",
+          "selected_strategy": "balanced",
+          "q_values": null,
+          "fallback_to_balanced": true
+        },
+        "candidate": {
+          "context_key": "seller|early|unknown|clear",
+          "selected_strategy": "balanced",
+          "q_values": null,
+          "fallback_to_balanced": true
+        }
+      }
+    },
+    {
+      "trace_line": 9,
+      "time": "2026-10-15T06:57:35.107444+00:00",
+      "opening": false,
+      "round": 1,
+      "reserve": 100,
+      "offer": 90.0,
+      "last_ask": 160,
+      "flags": [],
+      "remote_stance": null,
+      "logged_strategy": "direct",
+      "replay": {
+        "active": {
+          "context_key": "seller|early|near|clear",
+          "selected_strategy": "direct",
+          "q_values": {
+            "balanced": 5.352947225239609,
+            "patient": 3.709656745981338,
+            "direct": 5.845797614836474
+          },
+          "fallback_to_balanced": false
+        },
+        "candidate": {
+          "context_key": "seller|early|near|clear",
+          "selected_strategy": "direct",
+          "q_values": {
+            "balanced": 6.0248905925225325,
+            "patient": 2.349282600695536,
+            "direct": 6.125037221952566
+          },
+          "fallback_to_balanced": false
+        }
+      }
+    },
+    {
+      "trace_line": 14,
+      "time": "2026-10-15T06:58:07.720429+00:00",
+      "opening": false,
+      "round": 2,
+      "reserve": 100,
+      "offer": 105.0,
+      "last_ask": 145,
+      "flags": [],
+      "remote_stance": null,
+      "logged_strategy": "direct",
+      "replay": {
+        "active": {
+          "context_key": "seller|middle|near|clear",
+          "selected_strategy": "direct",
+          "q_values": {
+            "balanced": 5.427247066022696,
+            "patient": 3.471008644773854,
+            "direct": 5.561303889095551
+          },
+          "fallback_to_balanced": false
+        },
+        "candidate": {
+          "context_key": "seller|middle|near|clear",
+          "selected_strategy": "direct",
+          "q_values": {
+            "balanced": 5.654542847842647,
+            "patient": 4.206006781256461,
+            "direct": 5.9117044360594715
+          },
+          "fallback_to_balanced": false
+        }
+      }
+    },
+    {
+      "trace_line": 19,
+      "time": "2026-10-15T06:58:43.653329+00:00",
+      "opening": false,
+      "round": 3,
+      "reserve": 100,
+      "offer": 115.0,
+      "last_ask": 135,
+      "flags": [],
+      "remote_stance": null,
+      "logged_strategy": "patient",
+      "replay": {
+        "active": {
+          "context_key": "seller|middle|high|clear",
+          "selected_strategy": "patient",
+          "q_values": {
+            "balanced": 5.920926040005343,
+            "patient": 6.08579858595191,
+            "direct": 5.860348593932436
+          },
+          "fallback_to_balanced": false
+        },
+        "candidate": {
+          "context_key": "seller|middle|high|clear",
+          "selected_strategy": "balanced",
+          "q_values": {
+            "balanced": 7.054866615012867,
+            "patient": 6.063651765224435,
+            "direct": 6.359276069240463
+          },
+          "fallback_to_balanced": false
+        }
+      }
+    },
+    {
+      "trace_line": 24,
+      "time": "2026-10-15T06:59:16.766491+00:00",
+      "opening": false,
+      "round": 4,
+      "reserve": 100,
+      "offer": 120.0,
+      "last_ask": 130,
+      "flags": [],
+      "remote_stance": null,
+      "logged_strategy": "patient",
+      "replay": {
+        "active": {
+          "context_key": "seller|middle|high|clear",
+          "selected_strategy": "patient",
+          "q_values": {
+            "balanced": 5.920926040005343,
+            "patient": 6.08579858595191,
+            "direct": 5.860348593932436
+          },
+          "fallback_to_balanced": false
+        },
+        "candidate": {
+          "context_key": "seller|middle|high|clear",
+          "selected_strategy": "balanced",
+          "q_values": {
+            "balanced": 7.054866615012867,
+            "patient": 6.063651765224435,
+            "direct": 6.359276069240463
+          },
+          "fallback_to_balanced": false
+        }
+      }
+    }
+  ],
+  "observed_active_model_decisions": [
+    {
+      "trace_line": 6,
+      "time": "2026-10-15T06:57:19.202516+00:00",
+      "action": "open",
+      "price": 160,
+      "offer": null
+    },
+    {
+      "trace_line": 11,
+      "time": "2026-10-15T06:57:52.003021+00:00",
+      "action": "counter",
+      "price": 145,
+      "offer": 90
+    },
+    {
+      "trace_line": 16,
+      "time": "2026-10-15T06:58:25.569138+00:00",
+      "action": "counter",
+      "price": 135,
+      "offer": 105
+    },
+    {
+      "trace_line": 21,
+      "time": "2026-10-15T06:59:01.173134+00:00",
+      "action": "counter",
+      "price": 130,
+      "offer": 115
+    },
+    {
+      "trace_line": 26,
+      "time": "2026-10-15T06:59:35.064176+00:00",
+      "action": "counter",
+      "price": 130,
+      "offer": 120
+    }
+  ],
+  "observed_active_outcome": {
+    "completed_valid": false,
+    "wire_completed": false,
+    "price": null,
+    "receipts": [],
+    "safety_violations": [],
+    "rpc_calls": 6,
+    "elapsed_seconds": 167.726,
+    "interpretation": "The recorded active seller opened at160, countered145/135/130/130 against90/105/115/120, and the peer walked/canceled without a completed receipt."
+  },
+  "finding": "Opening,90 and105 select the same strategies in both snapshots. At the recorded115 and120 observations, active selects patient while env2 candidate selects balanced.",
+  "limitations": [
+    "This proves strategy selection on recorded observations only, not candidate model actions, prices, success, or improvements.",
+    "The candidate may take a different path from the first strategy divergence at115, so replaying the later120 context is conditional on retaining the active path.",
+    "Q values come from different synthetic reward environments; absolute values across policies cannot be interpreted as comparable measured performance.",
+    "The current encoder uses role/phase/observed-price-to-own-limit band/flags; it does not infer the peer private budget, patience, or the meaning of a final120 bid.",
+    "Same-band observations115 and120 produce the same strategy selection here; the actual harness still sees their distinct messages and history.",
+    "Synthetic policy metadata and this deterministic replay are insufficient for adoption or a claim of superiority over all7peers."
+  ],
+  "minimum_adoption_evidence": [
+    "A real candidate run against this exact frozen PR296 buyer with raw wire evidence is needed to determine whether a receipt completes while preserving reserve/budget/duplicate guards.",
+    "Use at least the planned3repetitions per compared role/common opponent as a screening comparison, with matched code/model/prompts/limits/deadlines/queue settings and explicit policy hashes. Compare completion first, then realized price/surplus and calls; do not report only prices from successful runs.",
+    "Retain candidate-specific actual guard/adversarial and current official21-result validation before promotion. A passing single PR296 diagnostic is not a generalization or7peer-ranking result.",
+    "Treat any1/3failure or boundary result as a reason for additional matched repetitions, and do not pool controlled-provider results with original-provider results."
+  ]
+}

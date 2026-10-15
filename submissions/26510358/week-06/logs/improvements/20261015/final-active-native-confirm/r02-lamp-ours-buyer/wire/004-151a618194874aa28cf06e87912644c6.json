@@ -1,0 +1,88 @@
+{
+  "id": "151a618194874aa28cf06e87912644c6",
+  "method": "POST",
+  "path": "/",
+  "headers": {
+    "content-type": "application/json",
+    "a2a-version": "1.0"
+  },
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "818d57c09f7a42eca69198eacf698156",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "cfe32336da584d3eb2aa9886a0ea175f",
+        "parts": [
+          {
+            "text": "95"
+          }
+        ],
+        "taskId": "d8623089-9b91-4661-b040-ca0e867cfa86"
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "result": {
+      "task": {
+        "id": "d8623089-9b91-4661-b040-ca0e867cfa86",
+        "contextId": "575c14f7-e69c-4b79-851a-47bbb8d0543b",
+        "status": {
+          "state": "TASK_STATE_INPUT_REQUIRED",
+          "message": {
+            "messageId": "8c7241de-bc8e-4a8c-8594-ad3eb66df151",
+            "contextId": "575c14f7-e69c-4b79-851a-47bbb8d0543b",
+            "taskId": "d8623089-9b91-4661-b040-ca0e867cfa86",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "95 is too low. Counteroffer: 112."
+              }
+            ]
+          },
+          "timestamp": "2026-10-15T06:51:35.248156Z"
+        },
+        "history": [
+          {
+            "messageId": "77c00227a7eb46bbb955291f97b5c786",
+            "contextId": "575c14f7-e69c-4b79-851a-47bbb8d0543b",
+            "taskId": "d8623089-9b91-4661-b040-ca0e867cfa86",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "I want to buy a lamp"
+              }
+            ]
+          },
+          {
+            "messageId": "3ceaf622-49b2-4ef1-af8a-824cb8904d6b",
+            "contextId": "575c14f7-e69c-4b79-851a-47bbb8d0543b",
+            "taskId": "d8623089-9b91-4661-b040-ca0e867cfa86",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "lamp: asking 130. Send your offer as a number."
+              }
+            ]
+          },
+          {
+            "messageId": "cfe32336da584d3eb2aa9886a0ea175f",
+            "contextId": "47fad083-9391-48f5-8d23-bff493b009ef",
+            "taskId": "d8623089-9b91-4661-b040-ca0e867cfa86",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "95"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "id": "818d57c09f7a42eca69198eacf698156",
+    "jsonrpc": "2.0"
+  },
+  "elapsed_seconds": 0.033
+}
