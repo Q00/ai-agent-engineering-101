@@ -17,7 +17,7 @@ codex login status
 
 Codex CLI가 `PATH`에 있고 개인 환경에서 로그인되어 있어야 합니다. 로그인되지 않았다면 본인 터미널에서 `codex login`을 실행하세요. 기존 인증을 사용하며 인증 파일이나 API 키를 제출하지 않습니다. 이미 준비한 `~/a2a-lab/.venv`도 사용할 수 있습니다.
 
-기본 추론은 `gpt-6-sol`, reasoning effort `low`입니다. 빈 임시 디렉터리에서 비대화형 CLI와 역할별 JSON 스키마를 사용합니다. 호출당 최대 40초, 검증 실패 시 최대 4회 재질문하며 가격을 코드로 보정하지 않습니다. 정확한 명령 생성은 `harness.py`, 제출 실행 명령은 [agent.json](agent.json)에 있습니다.
+기본 추론은 `gpt-6-sol`, reasoning effort `low`입니다. 빈 임시 디렉터리에서 비대화형 CLI와 역할별 JSON 스키마를 사용합니다. 호출당 최대 40초, 검증 재시도를 포함해 최대 4회 호출하며 가격을 코드로 보정하지 않습니다. 정확한 명령 생성은 `harness.py`, 제출 실행 명령은 [agent.json](agent.json)에 있습니다.
 
 ## 먼저 한 가게와 거래하기
 
@@ -77,6 +77,6 @@ python3 -m unittest discover -s tests -v
 
 ## 선택 배포: Hono
 
-Hono는 JavaScript/TypeScript 웹 프레임워크이고, Cloudflare Workers 같은 실행 환경에 앱을 배포하는 데 사용할 수 있습니다. 현재 Python A2A SDK·로컬 Codex subprocess·파일 잠금 구현을 그대로 Workers에 올릴 수는 없습니다. 현재 코드를 유지하려면 Python 실행 환경에 판매자를 배포하고, Hono·Workers를 사용하려면 판매자의 A2A 통신·상태·모델 호출을 별도로 이식해야 합니다. 시작 절차는 [Hono 공식 Cloudflare Workers 안내](https://hono.dev/docs/getting-started/cloudflare-workers/)를 참고하세요.
+Hono는 JavaScript/TypeScript 웹 프레임워크이고, Cloudflare Workers 같은 실행 환경에 앱을 배포하는 데 사용할 수 있습니다. 현재 Python A2A SDK·로컬 Codex subprocess·파일 잠금 구현을 그대로 Workers에 올릴 수는 없습니다. 현재 코드를 유지하려면 Python 서버를 배포하고 Hono/Workers를 HTTPS 프록시로 연결할 수 있습니다. 이때 Agent Card의 통신 주소는 공개 URL로 바꾸고 JSON-RPC 본문·응답·A2A 버전 헤더를 보존해야 합니다. Workers만으로 운영하려면 A2A 통신·협상 상태·HTTP 모델 호출을 별도로 이식해야 합니다. 시작 절차는 [Hono 공식 Cloudflare Workers 안내](https://hono.dev/docs/getting-started/cloudflare-workers/)를 참고하세요.
 
 현재 공개 배포 URL은 등록하지 않았습니다. 실제 배포 후 `/.well-known/agent-card.json`과 거래 동작을 확인한 URL만 `agent.json`의 `deployed`에 추가합니다. 코드 작성과 점검에 Codex 개발 보조를 사용했습니다.

@@ -4,15 +4,23 @@
 
 ## 정리 후 검증
 
-현재 소스를 새로 실행해 결과를 기록한다. 이전 실행의 `test-report.json`과 로그를 통과 근거로 재사용하지 않는다. 실제 실행 결과와 시각·명령·소스 해시는 `logs/verification/`에 저장한다. 아래 표는 해당 실행이 끝난 뒤 확정한다.
+현재 소스를 새로 실행해 결과를 기록했다. 이전 실행의 `test-report.json`과 로그를 통과 근거로 재사용하지 않았다. 실제 실행 결과와 시각·명령·소스 해시는 `logs/verification/`에 저장했다.
 
 | 항목 | 현재 실행 결과 | 근거 |
 |---|---|---|
-| 현재 코드 회귀 검사 | 실행 중 | `logs/verification/unit-final.txt` |
-| 공식 거래 검사 | 실행 전 | `test-report.json`, `logs/trade-test.log` |
-| 필수 도전 1 | 실행 전 | `logs/challenge-1/` |
-| 필수 도전 2 | 실행 전 | `logs/challenge-2/` |
-| 제출 구조 검사 | 실행 전 | `logs/verification/spec.txt` |
+| 현재 코드 회귀 검사 | 157/157 통과 | `logs/verification/unit-final.txt` |
+| 공식 거래 검사 | 21/21 통과 | `test-report.json`, `logs/trade-test.log` |
+| 필수 도전 1 | 통과: 조건에 맞는 책장 225 | `logs/challenge-1/20261015T092455Z-08c2197f/summary.json` |
+| 필수 도전 2 | 통과: 20개 상점·3개 품목·총 600 | `logs/challenge-2/20261015T092455Z-08c2197f/summary.json` |
+| 제출 구조 검사 | 통과 | `logs/verification/spec-console.txt`, `spec-final.txt` |
+
+공식 검사는 2026-10-15 18:07:36 KST에 시작해 1,038.660초에 완료했다. 판매 램프는 115·120·120, 구매 램프는 예산 120에서 102·103·103에 체결됐다. 구매자 예산 230과 판매자 최저가 260이 겹치지 않는 책장 검사는 양쪽 모두 3회씩 무구매로 끝났다. 공식 키트 SHA·명령·필수 항목 수·보고서 생성 시각·소스 불변 검사는 `logs/verification/official-status.json`에 남겼다.
+
+공식 검사→필수 도전→제출 구조 검사는 한 번에 하나씩 순차 실행해 18:34:02 KST에 모두 종료했다. `run-summary.json`과 `source-before.json`·`source-after.json`에서 실행 소스·설정·테스트 38개의 SHA와 활성 정책이 동일함을 확인했다. 각 단계는 종료 코드 0, 시간 초과 없음, 추적한 하위 프로세스 잔류 없음이다. Markdown 문서는 결과 확인 후 갱신했다.
+
+`official-console.txt`에는 예산 부족 구매자의 종료마다 SDK 경고 `Dispatcher task is not running. Cannot wait for event dispatch.`가 한 번씩, 총 3줄 있다. 테스트 키트의 A2A 이벤트 큐 종료 시 출력됐으며 해당 구매자의 최종 판단은 `walk_away`, 실제 CLI 종료 코드는 모두 0이었다. 거래·예산·헤더·taskId 검사는 통과했고 공식 단계의 잔류 프로세스는 없었다. 경고를 삭제하거나 실패 로그를 통과 기록으로 바꾸지 않았다.
+
+실제 CLI 호출은 공식 79회·도전 1의 11회·도전 2의 31회로 총 121회다. stderr에는 상태 DB 불일치 경고가 총 363줄, 원격 플러그인 카탈로그 갱신 경고가 1줄 있다. 모두 원문을 보존했으며 실제 모델·provider·reasoning effort와 stdout 결정, 종료 코드 0을 대조했다. 로그 근거를 독립 대조한 결과와 경고 분류는 `logs/verification/independent-audit.json`에 기록했다.
 
 ## 1. 하네스·모델·정확한 명령
 
@@ -28,7 +36,7 @@ codex exec --skip-git-repo-check --ephemeral --ignore-user-config \
   --output-last-message <empty-dir>/decision.json -
 ```
 
-구매자에는 `buyer-decision.schema.json`을 적용한다. `agent.json`의 실행 명령은 `python3 seller.py --port {port}`와 `python3 buyer.py --url {url} --item {item} --budget {budget}`다. 하네스 호출당 최대 40초, 잘못된 출력은 최대 4회까지 검증 이유를 전달해 다시 묻는다. 실패하면 코드는 가격을 대신 만들거나 예산에 맞춰 잘라내지 않는다. 한 로컬 FIFO 추론 슬롯과 완료 후 기본 5초 간격을 공유한다.
+구매자에는 `buyer-decision.schema.json`을 적용한다. `agent.json`의 실행 명령은 `python3 seller.py --port {port}`와 `python3 buyer.py --url {url} --item {item} --budget {budget}`다. 하네스 호출당 최대 40초이며, 잘못된 출력은 검증 이유를 전달해 최초 호출을 포함한 최대 4회까지 시도한다. 실패하면 코드는 가격을 대신 만들거나 예산에 맞춰 잘라내지 않는다. 한 로컬 FIFO 추론 슬롯과 완료 후 기본 5초 간격을 공유한다.
 
 ## 2. 판단·프롬프트·제약
 
@@ -36,7 +44,7 @@ codex exec --skip-git-repo-check --ephemeral --ignore-user-config \
 
 구매 목표는 낮은 가격과 가능한 구매의 성사, 판매 목표는 높은 가격과 가능한 판매의 성사다. 예산은 지출 목표가 아니고 최저가는 목표 판매가가 아니다. 실제 상품 선택·제안·수락·거절·종료는 모두 모델이 결정한다. 역할별 프롬프트는 `harness.py`의 `system_prompt()`에 있다.
 
-결정 필드는 `action`, `price`, `item_id`, `offer`, `reason`이다. 구매자는 공개 협상 태도인 `stance`도 반환한다. 구매자의 제안은 `price`, 판매자가 읽은 현재 구매 제안은 `offer`에 넣는다. 구매자는 `offer/accept/walk_away`, 판매자는 `open/counter/accept/reject`를 선택한다. 코드는 숫자·상품·예산·최저가·수락 가격을 검사하고 통과한 결정만 실행한다. 장보기에서 모델이 선택한 `negotiable/firm`만 상대에게 공개하며 비공개 예산과 판단 이유는 보내지 않는다. 구매자 우선 위계는 없다.
+매매 협상 결정 필드는 `action`, `price`, `item_id`, `offer`, `reason`이다. 구매자는 공개 협상 태도인 `stance`도 반환한다. 구매자의 제안은 `price`, 판매자가 읽은 현재 구매 제안은 `offer`에 넣는다. 구매자는 `offer/accept/walk_away`, 판매자는 `open/counter/accept/reject`를 선택한다. 코드는 숫자·상품·예산·최저가·수락 가격을 검사하고 통과한 결정만 실행한다. 장보기에서 모델이 선택한 `negotiable/firm`만 상대에게 공개하며 비공개 예산과 판단 이유는 보내지 않는다. 구매자 우선 위계는 없다.
 
 구조화된 현재 호가가 유일하고 유효하면 그대로 정규화한다. 텍스트만 있으면 실제 관측 하네스가 가격·상품·견적을 읽고 원문에 존재하는 값인지 검사한다. 마지막 숫자를 가격으로 정하지 않는다. 구조화된 통화·수량은 credits·1개 계약을 검사하지만, 텍스트에만 있는 단위는 모델 판단에 의존한다. 서로 다른 호가 근거가 충돌하면 임의로 선택하지 않고 중단한다.
 
@@ -70,9 +78,29 @@ A2A 1.0은 Agent Card에서 상대 능력과 JSON-RPC 주소를 찾고 같은 `t
 
 ## 5. 필수 도전과 제출 요건
 
-도전 1은 커밋한 실제 카탈로그 3,003개를 사용한다. `catalog.py`가 분류·소재·명시된 높이·책 수납량으로 후보를 최대 8개로 좁히고 실제 하네스가 최종 상품과 가격을 결정한다. 질의는 `something wooden to keep about 40 books, not taller than 85 cm`, 예산은 300이다. 알려지지 않은 책상 높이를 추정하지 않고 높이를 명시해 나무·40권·85cm 이하·선택 상품의 최저가를 실행 후 검사한다. 최종 선택·가격·로그 인용은 새 실행 완료 후 아래에 기록한다.
+도전 1은 커밋한 실제 카탈로그 3,003개를 사용한다. `catalog.py`가 분류·소재·명시된 높이·책 수납량으로 후보를 최대 8개로 좁히고 실제 하네스가 최종 상품과 가격을 결정한다. 질의는 `something wooden to keep about 40 books, not taller than 85 cm`, 예산은 300이다. 알려지지 않은 책상 높이를 추정하지 않고 높이를 명시해 나무·40권·85cm 이하·선택 상품의 최저가를 실행 후 검사한다.
 
-도전 2는 서로 다른 실제 판매자 프로세스 20개와 Card를 읽는다. 입력은 램프·의자·책장 목록과 총예산 600 하나다. `budget_allocator`가 공개 Card로 개별 협상 한도를 정하고 `shop_selector`가 실제 상점을 고른다. 비공개 최저가를 배분 입력으로 전달하지 않는다. 기본 2개 협상·개별 280초·전체 600초이며 각 협상은 별도 task·최근 8개 이력·로그를 갖는다. 공유 원장의 확정/예약 상태와 남은 시간을 시도 전 요약해 전달한다. 명확한 실패 종료와 해당 슬롯의 예약 해제를 확인한 경우만 한 번 재선택하며, 분쟁·시간 초과에는 재구매하지 않는다. 세 품목 완료·총예산·중복 없음·최종 원장은 새 실행 완료 후 기록한다.
+새 실행은 `bookshelf-0004`를 225에 구매했다. 실제 상품은 나무·높이 80cm·40권 수납·최저가 201이며 8개 검증이 모두 통과했다. 협상 소요 시간은 146.330초다. 실행 경로는 `logs/challenge-1/20261015T092455Z-08c2197f/`이고, `buyer/buyer-603062f4b854.jsonl:35`의 원문은 다음과 같다.
+
+```text
+{"time": "2026-10-15T09:27:22.151232+00:00", "run_id": "603062f4b854", "role": "buyer", "event": "receipt_checked", "issues": [], "receipt": {"price": 225.0, "item": "bookshelf-0004", "seller": "Full Catalog Home Shop", "taskId": "aafde1b3-5c0c-4f3e-911f-063d444ee6fd", "currency": "credits", "purchaseId": "a2657273914a476488d9dbf0edca8925", "quoteId": "6510c1bd604748d7ba35d6c7f2a366a3", "itemId": "bookshelf-0004", "quantity": 1.0}}
+```
+
+도전 2는 서로 다른 실제 판매자 프로세스 20개와 Card를 읽는다. 입력은 램프·의자·책장 목록과 총예산 600 하나다. `budget_allocator`가 공개 Card로 개별 협상 한도를 정하고 `shop_selector`가 실제 상점을 고른다. 비공개 최저가를 배분 입력으로 전달하지 않는다. 기본 2개 협상·개별 280초·전체 600초이며 각 협상은 별도 task·최근 8개 이력·로그를 갖는다. 공유 원장의 확정/예약 상태와 남은 시간을 시도 전 요약해 전달한다. 명확한 실패 종료와 해당 슬롯의 예약 해제를 확인한 경우만 한 번 재선택하며, 분쟁·시간 초과에는 재구매하지 않는다.
+
+새 실행은 398.045초에 세 품목을 모두 샀다. 램프는 `shop-01`에서 100, 의자는 `shop-02`에서 220, 책장은 `shop-03`에서 280에 체결됐다. 각 거래의 taskId·견적·영수증을 별도 로그로 유지했고, 원장의 확정 지출은 600, 예약은 0, 가용 예산은 0이다. 세 품목은 각각 한 번만 확정됐으며 모든 거래가 첫 상점에서 끝나 이번 실행에서는 재선택이 발동하지 않았다. 배분한 한도를 전액 사용했으므로 이 결과를 최저 구매가나 다른 제출물보다 우수한 가격의 증거로 해석하지 않는다.
+
+실행 경로는 `logs/challenge-2/20261015T092455Z-08c2197f/`다. 아래는 `transactions/allocation/budget-allocator-0481b4db9951.jsonl:4`의 원문이다.
+
+```text
+{"time": "2026-10-15T09:27:35.987543+00:00", "run_id": "0481b4db9951", "role": "budget-allocator", "event": "budget_allocated", "entries": [{"key": "lamp", "item": "lamp", "budget": 100.0}, {"key": "chair", "item": "chair", "budget": 220.0}, {"key": "bookshelf", "item": "bookshelf", "budget": 280.0}], "total_budget": 600.0, "allocated_total": 600.0, "reason": "Allocates the 600-credit total across all three items, with more room for the larger furniture. These are negotiation ceilings, not confirmed prices.", "evidence_scope": "public Agent Cards; no private reserves or confirmed quotes"}
+```
+
+마지막 `transactions/shopping-cfab2130d6cc.jsonl:10`의 원장 부분을 인용하면 다음과 같다. 전체 원장과 영수증은 `transactions/ledger.json` 및 `summary.json`에도 저장했다.
+
+```text
+"committed_total": 600.0, "reserved_total": 0.0, "available_budget": 0.0
+```
 
 | 강의의 필수 제출물 | 현재 경로 |
 |---|---|

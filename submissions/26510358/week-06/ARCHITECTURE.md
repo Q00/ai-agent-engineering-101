@@ -36,7 +36,7 @@ flowchart LR
 
     subgraph common["양쪽이 사용하는 실행 모듈"]
         policy["고정 Bandit 정책: balanced / patient / direct"]
-        harness["역할별 하네스: JSON 스키마·검증 재질문 최대 4회"]
+        harness["역할별 하네스: JSON 스키마·재시도 포함 최대 4회 호출"]
         queue["로컬 공유 FIFO: 추론 1개·완료 후 기본 5초 간격"]
         codex["실제 Codex CLI: gpt-6-sol·low·호출당 최대 40초"]
         trace["실행 근거: 판단·검증·A2A 요청/응답·원장 로그"]

@@ -1,0 +1,383 @@
+{
+  "audit_version": 1,
+  "audited_at": "2026-10-15T12:03:08.767469+00:00",
+  "scope": "Independent read-only audit of fresh saved output; no test, server, model invocation, source mutation, commit or push was performed. Only this new audit file is written.",
+  "passed": true,
+  "checks": {
+    "source_snapshot": {
+      "passed": true,
+      "file_count": 38,
+      "evidence": [
+        "logs/verification/source-before.json",
+        "logs/verification/source-after.json"
+      ],
+      "scope": "All 38 recorded Python, JSON, schema and requirement files rehashed against current bytes; Markdown and generated logs are outside this source snapshot."
+    },
+    "kit_and_policy": {
+      "passed": true,
+      "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+      "policy_sha256": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb",
+      "evidence": [
+        "policies/active.json",
+        "logs/verification/run-summary.json"
+      ]
+    },
+    "official_report": {
+      "passed": true,
+      "passed_count": 21,
+      "required_counts": {
+        "seller_card": 1,
+        "seller_opens": 1,
+        "seller_deal": 3,
+        "seller_terminal": 1,
+        "seller_holds_reserve": 3,
+        "buyer_deal": 3,
+        "buyer_protocol_deal": 3,
+        "buyer_holds_budget": 3,
+        "buyer_protocol_holds_budget": 3
+      },
+      "evidence": [
+        "test-report.json",
+        "agent.json",
+        "logs/verification/official-console.txt",
+        "logs/trade-test.log"
+      ]
+    },
+    "official_freshness": {
+      "passed": true,
+      "mtime_ns": 1792056294954027936,
+      "report_started": "2026-10-15T09:07:36+00:00",
+      "stage_started": "2026-10-15T09:07:36.450087+00:00",
+      "evidence": [
+        "logs/verification/official-status.json",
+        "test-report.json"
+      ]
+    },
+    "official_actual_cli": {
+      "passed": true,
+      "requests": 79,
+      "exits_zero": 79,
+      "json_decisions": 79,
+      "stderr_files": 79,
+      "stdout_files": 79,
+      "stdout_decisions_match_trace": true,
+      "example_request": "logs/runtime/official/buyer-08e95ead7873.jsonl:6",
+      "example_stderr": "logs/runtime/official/buyer-4f21f21ccf9f-f132ccff.stderr.txt",
+      "evidence_directory": "logs/runtime/official"
+    },
+    "challenge_1_actual_cli": {
+      "passed": true,
+      "requests": 11,
+      "exits_zero": 11,
+      "json_decisions": 11,
+      "stderr_files": 11,
+      "stdout_files": 11,
+      "stdout_decisions_match_trace": true,
+      "example_request": "logs/challenge-1/20261015T092455Z-08c2197f/buyer/buyer-603062f4b854.jsonl:6",
+      "example_stderr": "logs/challenge-1/20261015T092455Z-08c2197f/shops/shop-01/trace/seller-00419cc5cd56-d8c89028.stderr.txt",
+      "evidence_directory": "logs/challenge-1/20261015T092455Z-08c2197f"
+    },
+    "challenge_2_actual_cli": {
+      "passed": true,
+      "requests": 31,
+      "exits_zero": 31,
+      "json_decisions": 31,
+      "stderr_files": 31,
+      "stdout_files": 31,
+      "stdout_decisions_match_trace": true,
+      "example_request": "logs/challenge-2/20261015T092455Z-08c2197f/shops/shop-01/trace/seller-f48797ce2465.jsonl:4",
+      "example_stderr": "logs/challenge-2/20261015T092455Z-08c2197f/shops/shop-03/trace/seller-ef2f8c94791a-0313d09a.stderr.txt",
+      "evidence_directory": "logs/challenge-2/20261015T092455Z-08c2197f"
+    },
+    "all_runtime_policies": {
+      "passed": true,
+      "loaded_events": 32,
+      "policy_sha256": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb",
+      "evidence_directories": [
+        "logs/runtime/official",
+        "logs/challenge-1/20261015T092455Z-08c2197f",
+        "logs/challenge-2/20261015T092455Z-08c2197f"
+      ]
+    },
+    "challenge_1_catalog_and_product": {
+      "passed": true,
+      "catalog_size": 3003,
+      "item_id": "bookshelf-0004",
+      "material": "wood",
+      "height_cm": 80,
+      "capacity_books": 40,
+      "reserve": 201,
+      "receipt_price": 225,
+      "budget": 300,
+      "seller_started": "logs/challenge-1/20261015T092455Z-08c2197f/shops/shop-01/trace/seller-00419cc5cd56.jsonl:2",
+      "evidence": [
+        "logs/challenge-1/20261015T092455Z-08c2197f/summary.json",
+        "data/catalog.json"
+      ]
+    },
+    "challenge_2_twenty_live_shops": {
+      "passed": true,
+      "shop_startups": 20,
+      "fetched_agent_cards": 20,
+      "unique_origins": 20,
+      "evidence": [
+        "logs/challenge-2/20261015T092455Z-08c2197f/directory.json",
+        "logs/challenge-2/20261015T092455Z-08c2197f/shops/processes.json",
+        "logs/challenge-2/20261015T092455Z-08c2197f/shops/directory-2718946e1e99.jsonl"
+      ],
+      "sample_startup": "logs/challenge-2/20261015T092455Z-08c2197f/shops/shop-01/trace/seller-f48797ce2465.jsonl:2"
+    },
+    "challenge_1_wire_completed_count": {
+      "passed": true,
+      "completed_wire_tasks": 1
+    },
+    "challenge_1_receipt_bookshelf-0004": {
+      "passed": true,
+      "item_id": "bookshelf-0004",
+      "price": 225.0,
+      "task_id": "aafde1b3-5c0c-4f3e-911f-063d444ee6fd",
+      "quote_id": "6510c1bd604748d7ba35d6c7f2a366a3",
+      "purchase_id": "a2657273914a476488d9dbf0edca8925",
+      "wire": "logs/challenge-1/20261015T092455Z-08c2197f/buyer/buyer-603062f4b854.jsonl:34",
+      "sale": "logs/challenge-1/20261015T092455Z-08c2197f/shops/shop-01/trace/seller-00419cc5cd56.jsonl:32",
+      "buyer_commit": "logs/challenge-1/20261015T092455Z-08c2197f/buyer/buyer-603062f4b854.jsonl:36",
+      "buyer_request": "logs/challenge-1/20261015T092455Z-08c2197f/buyer/buyer-603062f4b854.jsonl:33",
+      "quoted_metadata": "logs/challenge-1/20261015T092455Z-08c2197f/shops/shop-01/trace/seller-00419cc5cd56.jsonl:27"
+    },
+    "challenge_2_wire_completed_count": {
+      "passed": true,
+      "completed_wire_tasks": 3
+    },
+    "challenge_2_receipt_lamp": {
+      "passed": true,
+      "item_id": "lamp",
+      "price": 100.0,
+      "task_id": "1801cbaa-e9ad-4999-8c6a-f36e41fe56b9",
+      "quote_id": "02d9e0329b5647658ee7c2bf9dad61be",
+      "purchase_id": "9655c591dbbc48beb028e17598ad1e30",
+      "wire": "logs/challenge-2/20261015T092455Z-08c2197f/transactions/slot-01/attempt-01/buyer/buyer-53f167f37047.jsonl:22",
+      "sale": "logs/challenge-2/20261015T092455Z-08c2197f/shops/shop-01/trace/seller-f48797ce2465.jsonl:22",
+      "buyer_commit": "logs/challenge-2/20261015T092455Z-08c2197f/transactions/slot-01/attempt-01/buyer/buyer-53f167f37047.jsonl:24",
+      "buyer_request": "logs/challenge-2/20261015T092455Z-08c2197f/transactions/slot-01/attempt-01/buyer/buyer-53f167f37047.jsonl:21",
+      "quoted_metadata": "logs/challenge-2/20261015T092455Z-08c2197f/shops/shop-01/trace/seller-f48797ce2465.jsonl:17"
+    },
+    "challenge_2_receipt_chair": {
+      "passed": true,
+      "item_id": "chair",
+      "price": 220.0,
+      "task_id": "9571d68a-2148-47c0-a49e-b5bf407803e6",
+      "quote_id": "7dcf5f3291f545c188b76d2259abc2f6",
+      "purchase_id": "a2f29a44701d4b5fbe125d53dc9435b6",
+      "wire": "logs/challenge-2/20261015T092455Z-08c2197f/transactions/slot-02/attempt-01/buyer/buyer-db5b27f7955a.jsonl:28",
+      "sale": "logs/challenge-2/20261015T092455Z-08c2197f/shops/shop-02/trace/seller-5e562ade05d0.jsonl:27",
+      "buyer_commit": "logs/challenge-2/20261015T092455Z-08c2197f/transactions/slot-02/attempt-01/buyer/buyer-db5b27f7955a.jsonl:30",
+      "buyer_request": "logs/challenge-2/20261015T092455Z-08c2197f/transactions/slot-02/attempt-01/buyer/buyer-db5b27f7955a.jsonl:27",
+      "quoted_metadata": "logs/challenge-2/20261015T092455Z-08c2197f/shops/shop-02/trace/seller-5e562ade05d0.jsonl:22"
+    },
+    "challenge_2_receipt_bookshelf": {
+      "passed": true,
+      "item_id": "bookshelf",
+      "price": 280.0,
+      "task_id": "6b8a6dc2-f1e1-4ed0-8044-9db698cd118f",
+      "quote_id": "b175da98d1bf4913b47c9d7ae132cd7c",
+      "purchase_id": "e3cee83501bf4dd5a042fa5dc2efa69c",
+      "wire": "logs/challenge-2/20261015T092455Z-08c2197f/transactions/slot-03/attempt-01/buyer/buyer-1f3f2bc90573.jsonl:34",
+      "sale": "logs/challenge-2/20261015T092455Z-08c2197f/shops/shop-03/trace/seller-ef2f8c94791a.jsonl:32",
+      "buyer_commit": "logs/challenge-2/20261015T092455Z-08c2197f/transactions/slot-03/attempt-01/buyer/buyer-1f3f2bc90573.jsonl:36",
+      "buyer_request": "logs/challenge-2/20261015T092455Z-08c2197f/transactions/slot-03/attempt-01/buyer/buyer-1f3f2bc90573.jsonl:33",
+      "quoted_metadata": "logs/challenge-2/20261015T092455Z-08c2197f/shops/shop-03/trace/seller-ef2f8c94791a.jsonl:27"
+    },
+    "challenge_2_budget_ledger": {
+      "passed": true,
+      "committed_count": 3,
+      "released_count": 9,
+      "prices": [
+        100,
+        220,
+        280
+      ],
+      "committed_total": 600,
+      "reserved_total": 0,
+      "disputed_count": 0,
+      "duplicate_items": 0,
+      "evidence": [
+        "logs/challenge-2/20261015T092455Z-08c2197f/transactions/ledger.json",
+        "logs/challenge-2/20261015T092455Z-08c2197f/summary.json"
+      ]
+    },
+    "official_queue_fifo_exclusive": {
+      "passed": true,
+      "admitted": 79,
+      "released": 79,
+      "interval_configuration_seconds": 5.0,
+      "min_release_trace_to_next_admitted_trace_seconds": 5.001644144300371,
+      "max_release_trace_to_next_admitted_trace_seconds": 5.050348069984466,
+      "evidence": [
+        "logs/verification/official-queue.jsonl",
+        "inference_queue.py"
+      ]
+    },
+    "challenges_queue_fifo_exclusive": {
+      "passed": true,
+      "admitted": 42,
+      "released": 42,
+      "interval_configuration_seconds": 5.0,
+      "min_release_trace_to_next_admitted_trace_seconds": 4.942673198878765,
+      "max_release_trace_to_next_admitted_trace_seconds": 5.050811023917049,
+      "evidence": [
+        "logs/verification/challenges-queue.jsonl",
+        "inference_queue.py"
+      ]
+    },
+    "official_stage_completion": {
+      "passed": true,
+      "elapsed_seconds": 1038.66,
+      "timeout_seconds": 1800,
+      "remaining_owned_recorded": [],
+      "evidence": [
+        "logs/verification/official-status.json"
+      ]
+    },
+    "official_trace_freshness": {
+      "passed": true,
+      "first_trace_time": "2026-10-15T09:07:36.966842+00:00",
+      "last_trace_time": "2026-10-15T09:24:53.380408+00:00"
+    },
+    "challenges_stage_completion": {
+      "passed": true,
+      "elapsed_seconds": 546.997,
+      "timeout_seconds": 1200,
+      "remaining_owned_recorded": [],
+      "evidence": [
+        "logs/verification/challenges-status.json"
+      ]
+    },
+    "challenge_1_trace_freshness": {
+      "passed": true,
+      "first_trace_time": "2026-10-15T09:24:55.724357+00:00",
+      "last_trace_time": "2026-10-15T09:27:22.152667+00:00"
+    },
+    "challenge_2_trace_freshness": {
+      "passed": true,
+      "first_trace_time": "2026-10-15T09:27:22.905661+00:00",
+      "last_trace_time": "2026-10-15T09:34:01.476263+00:00"
+    },
+    "spec_stage_completion": {
+      "passed": true,
+      "elapsed_seconds": 0.252,
+      "timeout_seconds": 120,
+      "remaining_owned_recorded": [],
+      "evidence": [
+        "logs/verification/spec-status.json"
+      ]
+    },
+    "challenge_1_summary_freshness": {
+      "passed": true,
+      "mtime_ns": 1792056442153030697,
+      "evidence": [
+        "logs/challenge-1/20261015T092455Z-08c2197f/summary.json"
+      ]
+    },
+    "challenge_2_summary_freshness": {
+      "passed": true,
+      "mtime_ns": 1792056841477038189,
+      "evidence": [
+        "logs/challenge-2/20261015T092455Z-08c2197f/summary.json"
+      ]
+    },
+    "no_runtime_failure_or_cancellation_events": {
+      "passed": true,
+      "failure_events": [],
+      "scope": "Fresh official and challenge JSONL event names, excluding model-free unit fixtures."
+    },
+    "unit_result_record": {
+      "passed": true,
+      "tests": 157,
+      "evidence": [
+        "logs/verification/unit-final.txt"
+      ],
+      "restricted_attempt_preserved": "logs/verification/unit-restricted-run.json"
+    },
+    "warnings_preserved_and_separated": {
+      "passed": true,
+      "sdk_close_warning_count": 3,
+      "cli_environment_warning_counts": {
+        "codex_state_db_fallback": 363,
+        "codex_plugin_catalog_refresh": 1
+      },
+      "all_actual_cli_exits_zero": true,
+      "evidence": [
+        "logs/verification/official-console.txt",
+        "logs/runtime/official/buyer-4f21f21ccf9f-f132ccff.stderr.txt:1",
+        "logs/runtime/official/seller-d6e7ea39ba68-8668bd21.stderr.txt:24"
+      ]
+    },
+    "sdk_warning_source": {
+      "passed": true,
+      "source": "/home/myeonggi/a2a-lab/.venv/lib/python3.12/site-packages/a2a/server/events/event_queue_v2.py",
+      "function": "_join_incoming_queue",
+      "observed_context": "Each warning is adjacent to a buyer_holds_budget case that passes; all three buyers end with walked_away and exit-zero decisions. Source correspondence supports close-associated SDK logging, not an observed purchase failure."
+    },
+    "runner_summary_consistency": {
+      "passed": true,
+      "evidence": [
+        "logs/verification/run-summary.json"
+      ]
+    }
+  },
+  "actual_cli_decisions": {
+    "official": 79,
+    "challenge_1": 11,
+    "challenge_2": 31
+  },
+  "total_actual_cli_decisions": 121,
+  "queue_observations": {
+    "official": {
+      "admitted": 79,
+      "trace_min_gap_seconds": 5.001644144300371,
+      "trace_gaps_below_5_seconds": 0
+    },
+    "challenges": {
+      "admitted": 42,
+      "trace_min_gap_seconds": 4.942673198878765,
+      "trace_gaps_below_5_seconds": 2
+    }
+  },
+  "warnings": {
+    "sdk_event_queue_close": {
+      "count": 3,
+      "evidence": "logs/verification/official-console.txt",
+      "classification": "SDK dispatcher-close warning adjacent to passing budget-hold cases; original output retained."
+    },
+    "cli_state_db_fallback": {
+      "count": 363,
+      "example": "logs/runtime/official/buyer-4f21f21ccf9f-f132ccff.stderr.txt:1",
+      "classification": "Codex environment warning; actual model decisions and exit codes separately verified."
+    },
+    "cli_plugin_catalog_refresh": {
+      "count": 1,
+      "example": "logs/runtime/official/seller-d6e7ea39ba68-8668bd21.stderr.txt:24",
+      "classification": "Codex optional plugin-catalog refresh warning; the corresponding invocation produced JSON and exited zero."
+    }
+  },
+  "limitations": [
+    "This audit verifies saved files and their cross-consistency. It does not independently reproduce a remote model execution or certify remote provider internals.",
+    "Source-before and source-after/current hashes establish matching sampled bytes, not a continuous attestation that no transient edit occurred between snapshots.",
+    "Owned-process cleanup and stage deadlines are verified from saved runner metadata. No independent host process scan was performed in this audit.",
+    "The queue config is 5 seconds, FIFO admits are exclusive, and code gates on last_completion. The released event is emitted after saving/fsync; its timestamp is later than the last_completion pacing reference. Challenge trace release-to-admit minima of 4.942673 and 4.999833 seconds are preserved as observations, not claimed to prove a pacing violation or to prove every true idle interval exceeded exactly 5 seconds.",
+    "The official kit, local shop challenges and model-free unit fixtures do not establish performance against other PR agents, online policy learning, real payment settlement or public-hosting readiness."
+  ],
+  "evidence_sha256": {
+    "test-report.json": "054ced72efe6155c6dd68378c7fdd2568ed0f74ce64a37c2f3533a6e6686eb8d",
+    "agent.json": "c23a6a4650d79033250b3e023751ee8dc05f0cdc14240f64ab3302b9b7cf4777",
+    "logs/verification/run-summary.json": "2ebe4eecb933e156c2718dff88882d1975307880e37809b01f49a3c23d6d6d37",
+    "logs/verification/source-before.json": "2ba65070242d2fd1376f164af8b572c2ab376ad7866690866d6ab8c3bd885c92",
+    "logs/verification/source-after.json": "2ba65070242d2fd1376f164af8b572c2ab376ad7866690866d6ab8c3bd885c92",
+    "logs/verification/unit-final.txt": "3a0e20232e593fd658e05ac6f394bd7240538cbc864d2d5054faf11f1bf4bc20",
+    "logs/challenge-1/20261015T092455Z-08c2197f/summary.json": "73fd24940821e4e2800588ed00fc4cac7d90df10abd624dfd69664a4d6d24617",
+    "logs/challenge-2/20261015T092455Z-08c2197f/summary.json": "231979e19072b7fde3df35d8065370601a7a7685e6bef23561262bb3111767f9",
+    "logs/challenge-2/20261015T092455Z-08c2197f/transactions/ledger.json": "dd87078b24b234a369dcdfea7d6c6fe1b198adc930a5f567b8b5e7384ad8d702",
+    "logs/verification/official-queue.jsonl": "44d4efce555d6576c475b9b16ded8c801b7bf4b043d8519c15c0918a50da7df5",
+    "logs/verification/challenges-queue.jsonl": "86d7974645f8e74e7a6e9f40f8ba650fd4b25af75cb7d1ad3db2962e1a463a0b"
+  }
+}
