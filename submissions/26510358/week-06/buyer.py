@@ -48,9 +48,9 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
         task_id = task.get("id")
         if not task_id:
             raise ProtocolError("Seller did not return a task ID")
-        for round_number in range(1, 9):
-            if time.monotonic() >= deadline:
-                raise TimeoutError("Buyer negotiation deadline reached")
+        # Eight decisions can produce eight replies. Drain the final reply's
+        # terminal evidence before applying the decision limit or deadline.
+        for round_number in range(1, 10):
             if task.get("id") != task_id:
                 raise ProtocolError("Counterpart changed task ID during negotiation")
             state = task.get("status", {}).get("state")
@@ -78,6 +78,10 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                 return {"status": "no_deal", "state": state}
             if state != "TASK_STATE_INPUT_REQUIRED":
                 raise ProtocolError(f"Unsupported task state: {state}")
+            if round_number > 8:
+                break
+            if time.monotonic() >= deadline:
+                raise TimeoutError("Buyer negotiation deadline reached")
             observation = normalize_quote(task, observer=observer, trace=trace, deadline=deadline,
                 context={"request": item, "requested_item_id": requested_item_id,
                          "task_id": task_id, "round": round_number})
