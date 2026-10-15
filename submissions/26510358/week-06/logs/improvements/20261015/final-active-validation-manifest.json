@@ -1,0 +1,118 @@
+{
+  "created": "2026-10-15T08:16:01.820951+00:00",
+  "label": "final-active",
+  "attempt": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/attempts/06",
+  "root": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06",
+  "repo": "/home/myeonggi/ai-agent-engineering-101",
+  "python": "/home/myeonggi/a2a-lab/.venv/bin/python",
+  "script": {
+    "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/run_final_validation.py",
+    "exists": true,
+    "sha256": "90da4b365e396c169826833779ac7903bd2e77a5e0ebd31dafadd207b18d6167",
+    "mtime_ns": 1792050836688925535,
+    "size": 24413
+  },
+  "policy": {
+    "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/policies/active.json",
+    "exists": true,
+    "sha256": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb",
+    "mtime_ns": 1791968579038382331,
+    "size": 9693,
+    "version": "synthetic-bandit-s42-n5000"
+  },
+  "backup": {
+    "reused": true,
+    "manifest": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/attempts/06/preserved-default-artifacts.json",
+    "manifest_sha256": "a7bc0cb2aec44d37591e81fc243f28e5af17b9f5a640b5926be61c2547f95b70"
+  },
+  "candidate_evaluation": false,
+  "active_policy_before": {
+    "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/policies/active.json",
+    "exists": true,
+    "sha256": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb",
+    "mtime_ns": 1791968579038382331,
+    "size": 9693,
+    "version": "synthetic-bandit-s42-n5000"
+  },
+  "automatic_promotion": false,
+  "source_before": {
+    "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/attempts/06/final-active-source-before.json",
+    "exists": true,
+    "sha256": "c395734ae6b2278629d4388ebc3a97a929ca237689477380400490202ccb9f5d",
+    "mtime_ns": 1792052161819950396,
+    "size": 5472
+  },
+  "checker_sources": {
+    "/home/myeonggi/ai-agent-engineering-101/scripts/trade_test_week06.py": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+    "/home/myeonggi/ai-agent-engineering-101/scripts/check_week06.py": "0d2042d9854874e566e08bd6622728866abd0bcc57cebc6259f57f0a2511a398"
+  },
+  "official_kit": {
+    "path": "/home/myeonggi/ai-agent-engineering-101/scripts/trade_test_week06.py",
+    "exists": true,
+    "sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+    "mtime_ns": 1791935311279758207,
+    "size": 17335,
+    "normalized_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120"
+  },
+  "environment": {
+    "removed": [
+      "A2A_POLICY_PATH",
+      "A2A_MODEL",
+      "A2A_HARNESS_COMMAND"
+    ],
+    "explicit_policy_path": null,
+    "path_prepend": "/home/myeonggi/a2a-lab/.venv/bin",
+    "A2A_INFERENCE_GAP_SECONDS": "5"
+  },
+  "plans": [
+    {
+      "stage": "official",
+      "command": [
+        "/home/myeonggi/a2a-lab/.venv/bin/python",
+        "/home/myeonggi/ai-agent-engineering-101/scripts/trade_test_week06.py",
+        "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06"
+      ],
+      "cwd": "/home/myeonggi/ai-agent-engineering-101",
+      "timeout": 1800,
+      "paths": {
+        "console": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/final-active-official.console.txt",
+        "runtime": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/attempts/06/final-active-official-runtime",
+        "queue": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/attempts/06/final-active-official-queue.jsonl",
+        "status": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/final-active-official-status.json"
+      }
+    },
+    {
+      "stage": "challenges",
+      "command": [
+        "/home/myeonggi/a2a-lab/.venv/bin/python",
+        "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/run_challenges.py",
+        "--challenge",
+        "all"
+      ],
+      "cwd": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06",
+      "timeout": 1200,
+      "paths": {
+        "console": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/final-active-challenges.console.txt",
+        "runtime": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/attempts/06/final-active-challenges-runtime",
+        "queue": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/attempts/06/final-active-challenges-queue.jsonl",
+        "status": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/final-active-challenges-status.json"
+      }
+    },
+    {
+      "stage": "structure",
+      "command": [
+        "/home/myeonggi/a2a-lab/.venv/bin/python",
+        "/home/myeonggi/ai-agent-engineering-101/scripts/check_week06.py",
+        "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06"
+      ],
+      "cwd": "/home/myeonggi/ai-agent-engineering-101",
+      "timeout": 120,
+      "paths": {
+        "console": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/final-active-structure.console.txt",
+        "runtime": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/attempts/06/final-active-structure-runtime",
+        "queue": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/attempts/06/final-active-structure-queue.jsonl",
+        "status": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/final-active-structure-status.json"
+      }
+    }
+  ]
+}
