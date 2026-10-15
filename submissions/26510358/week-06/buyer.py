@@ -149,7 +149,14 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                             "quote_observation": {key: observation[key] for key in (
                                 "ask", "item_id", "quote_id", "currency", "quantity", "source")},
                             "action": decision["action"], "price": price})
-            task = client.send(json.dumps(price, allow_nan=False), task_id)
+            send_options = {}
+            if coordination_context is not None and coordination_context.get("purpose") == "shopping_list":
+                # Only an explicit model-selected public stance can leave the
+                # shopping coordinator. Price equality never implies a stance.
+                stance = decision.get("stance")
+                if stance in ("negotiable", "firm"):
+                    send_options["stance"] = stance
+            task = client.send(json.dumps(price, allow_nan=False), task_id, **send_options)
         if reserved:
             ledger.release(purchase_id)
             reserved = False

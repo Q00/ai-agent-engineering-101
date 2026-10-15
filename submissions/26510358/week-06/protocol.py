@@ -70,10 +70,14 @@ class A2AClient:
             raise ProtocolError("A2A result must be an object")
         return result.get("task", result)
 
-    def send(self, text, task_id=None):
+    def send(self, text, task_id=None, *, stance=None):
+        if stance is not None and (not isinstance(stance, str) or stance not in ("negotiable", "firm")):
+            raise ProtocolError("Negotiation stance must be negotiable or firm")
         message = {"role": "ROLE_USER", "messageId": uuid.uuid4().hex, "parts": [{"text": text}]}
         if task_id:
             message["taskId"] = task_id
+        if stance is not None:
+            message["metadata"] = {"negotiationStance": stance}
         return self.rpc("SendMessage", {"message": message})
 
     def close(self):

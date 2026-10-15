@@ -64,6 +64,10 @@ Agent Card 주소는 `http://127.0.0.1:9999/.well-known/agent-card.json`입니�
 
 관측 호출도 같은 협상 deadline과 FIFO 대기열을 사용합니다. 간격을 바꾸어도 추론 입장 슬롯은 한 개이며, 기존 429 응답의 제한된 재시도·backoff 처리를 유지합니다. 간격 변경은 가격 판단이나 RL 가중치 갱신이 아닙니다. `quote_observation_started`, `quote_observation_finished`에는 남은 시간과 큐 대기를 포함한 경과 시간이 남고, `quote_normalized`에서 출처를 확인합니다. 최초 실제 검사에서 `130.`의 마침표를 소수점 연속으로 잘못 취급해 올바른 관측값을 거부한 실패가 있었습니다. 문장 마침표는 허용하면서 소수의 일부 값은 거부하도록 고쳤으며 [실패 원문](logs/improvements/20261015/stage-01-native-screen/r01-lamp-ours-buyer/buyer-trace/buyer-bdcd6501383d.jsonl)과 [수정 회귀 검사](logs/improvements/20261015/stage-01b-grounding-unit-XvGNwnPO/unittest.log)를 보존했습니다.
 
+장보기 제안에서는 모델이 선택한 공개 태도 `negotiable` 또는 `firm`만 `negotiationStance` 메타데이터로 보낼 수 있습니다. 숫자 본문은 그대로이며 비공개 예산과 `reason`은 보내지 않습니다. 가격이 예산과 같다는 이유로 코드가 `firm`을 자동 설정하지 않습니다. 판매자는 이를 비신뢰 협상 정보로 참고하고 독립적으로 판단합니다. 일반 단일 구매는 이 메타데이터를 보내지 않습니다.
+
+취소와 판매 게시가 겹치면 먼저 확정된 종료 상태를 유지합니다. 취소 확인 뒤 늦은 모델 응답은 버리고, 이미 판매가 완료됐다면 실제 HTTP 취소 요청에 `TASK_NOT_CANCELABLE`을 반환합니다. SDK V2의 오류 처리로 완료 상태가 실패로 바뀌었던 관측과 수정 검사는 별도 로그에 보존했습니다.
+
 ## 검사와 필수 도전
 
 가상환경을 활성화한 상태에서 저장소 루트로 돌아가 공식 검사를 실행합니다. 명령과 작업 디렉터리는 [agent.json](agent.json)에 정의되어 있습니다.

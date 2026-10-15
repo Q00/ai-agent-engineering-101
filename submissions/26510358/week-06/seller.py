@@ -10,6 +10,7 @@ import time
 import uuid
 
 import uvicorn
+from google.protobuf.json_format import MessageToDict
 from starlette.applications import Starlette
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
 from a2a.server.agent_execution import AgentExecutor
@@ -64,6 +65,9 @@ class Seller(AgentExecutor):
     async def _turn(self, task, context, event_queue):
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
         text = get_message_text(context.message) or ""
+        metadata = MessageToDict(context.message.metadata) if context.message is not None else {}
+        stance = metadata.get("negotiationStance")
+        remote_stance = stance if isinstance(stance, str) and stance in ("negotiable", "firm") else None
         flags = inspect_untrusted(text)
         deal = self.open.get(task.id)
         opening = deal is None
@@ -75,7 +79,7 @@ class Seller(AgentExecutor):
             if named:
                 candidates = named
         self.trace.write("remote_message", task_id=task.id, message=text, flags=flags,
-                         candidates=[p["id"] for p in candidates])
+                         candidates=[p["id"] for p in candidates], remote_stance=remote_stance)
         if not candidates:
             async with self.publication_locks.setdefault(task.id, asyncio.Lock()):
                 if task.id not in self.terminal:
@@ -84,6 +88,8 @@ class Seller(AgentExecutor):
             return
         plain_offer = float(text.strip()) if re.fullmatch(r"\d+(?:\.\d+)?", text.strip()) else None
         trusted = {"role": "seller", "opening": opening, "task_id": task.id,
+                   # A public stance is an untrusted claim, never budget proof.
+                   "remote_stance": remote_stance,
                    "round": 0 if opening else deal["round"], "candidates": candidates,
                    "remote_message": text, "untrusted_flags": flags,
                    "history_summary": [] if opening else deal["history"][-8:],

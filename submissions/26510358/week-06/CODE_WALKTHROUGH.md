@@ -53,6 +53,10 @@
 
 새 실행에서는 `quote_normalized`의 `source`, `evidence_sources`, `ask`를 먼저 보고 다음 `harness_request.context`의 정책 입력을 확인합니다. `quote_observation_started/finished`에는 추가 관측 호출의 남은 시간과 큐 대기 포함 경과 시간이 있습니다. 관측용 스키마와 프롬프트가 실제 호출 명령에 들어갔는지도 확인합니다. 구조화된 정상 호가만 처리했다면 관측 시작·종료 이벤트 없이 정규화 기록이 남습니다.
 
+장보기 구매 모델의 `stance`는 공개할 협상 태도만 표현합니다. `buyer.py`는 모델이 선택한 `negotiable/firm`을 선택적 메타데이터로 보내고 `reason`이나 예산은 전송하지 않습니다. `protocol.py`의 숫자 본문과 기존 단일 구매 경로는 유지합니다. 판매자는 허용된 태도만 `remote_stance`로 읽되 하한가·수락 검증은 그대로 적용합니다. 상대의 최종 제안은 수락 의무나 비공개 예산의 증거가 아닙니다.
+
+판매자의 게시 잠금은 추론 동안 잡지 않습니다. 취소가 먼저 확정되면 나중 모델 결과를 버리고, 영수증 게시가 먼저면 완료 상태를 유지합니다. SDK V2가 executor의 취소 예외를 실패 상태로 바꾸므로 이미 종료된 executor는 추가 이벤트 없이 반환하고, `CancellationAwareRequestHandler`가 바깥 경계에서 취소 불가 오류를 만듭니다. 실제 HTTP 경합 검사는 `tests/test_seller_cancel_http.py`에 있습니다.
+
 ## 원장의 상태 전이
 
 `Ledger.reserve()`는 같은 구매 목록 키의 활성 예약·구매가 있는지와 남은 총예산을 잠금 안에서 함께 검사합니다. `item_key`는 구매 목록의 한 칸을 식별하고, `expected_item`은 영수증에 나와야 하는 상품을 식별합니다. 설명형 요청에서도 두 값을 혼동하지 않아야 합니다.

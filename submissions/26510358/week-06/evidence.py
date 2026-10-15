@@ -114,6 +114,11 @@ def validate_buyer_decision(
 ) -> dict[str, Any]:
     """Validate a buyer decision without deriving or clamping any offer."""
     result = _decision(decision)
+    if "stance" in result and result["stance"] is not None:
+        if not isinstance(result["stance"], str) or result["stance"] not in ("negotiable", "firm"):
+            raise EvidenceError("buyer stance must be null, negotiable, or firm")
+        if result["action"] != "offer":
+            raise EvidenceError("a public stance is only valid for an offer")
     ceiling = numeric_price(budget)
     quoted = numeric_price(ask) if ask is not None else None
     action, price = result["action"], result["price"]
