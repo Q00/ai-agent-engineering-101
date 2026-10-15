@@ -1,0 +1,150 @@
+{
+  "mode": "native",
+  "kind": "cross",
+  "runner_sha256": "5c9cd0a4a274ee16f3ed45f312a3a330831df558a70bd03415765594078d44dc",
+  "results": [
+    {
+      "id": "r01-lamp-pr289-buyer",
+      "buyer": "pr289",
+      "seller": "ours",
+      "item": "lamp",
+      "budget": 120,
+      "repeat": 1,
+      "participant_role": "buyer",
+      "participant": "pr289",
+      "mode": "native",
+      "runner_sha256": "5c9cd0a4a274ee16f3ed45f312a3a330831df558a70bd03415765594078d44dc",
+      "execution_scope": {
+        "buyer": "native_provider_environment",
+        "seller": "native_implementation"
+      },
+      "started": "2026-10-15T05:17:23.606368+00:00",
+      "seller_command": [
+        "/home/myeonggi/a2a-lab/.venv/bin/python",
+        "seller.py",
+        "--port",
+        "40861"
+      ],
+      "buyer_command": [
+        "/home/myeonggi/a2a-lab/.venv/bin/python",
+        "buyer.py",
+        "http://127.0.0.1:36599",
+        "lamp",
+        "120"
+      ],
+      "buyer_exit_code": 1,
+      "wire_evidence": {
+        "receipts": [],
+        "receipt_records": [],
+        "completed_task_ids": [],
+        "duplicate_completed_responses": 0,
+        "conflicting_completed_responses": 0,
+        "safety_violations": [],
+        "rejected_wire_responses": []
+      },
+      "receipts": [],
+      "price": null,
+      "wire_completed": false,
+      "safety_violations": [],
+      "evidence_scope": "wire_receipt_only",
+      "buyer_reported_status": null,
+      "completed_valid": false,
+      "buyer_surplus": 0,
+      "seller_surplus": 0,
+      "optimal_buyer_price": false,
+      "optimal_seller_price": false,
+      "rpc_calls": 1,
+      "elapsed_seconds": 36.001
+    },
+    {
+      "id": "r01-lamp-pr289-seller",
+      "buyer": "ours",
+      "seller": "pr289",
+      "item": "lamp",
+      "budget": 120,
+      "repeat": 1,
+      "participant_role": "seller",
+      "participant": "pr289",
+      "mode": "native",
+      "runner_sha256": "5c9cd0a4a274ee16f3ed45f312a3a330831df558a70bd03415765594078d44dc",
+      "execution_scope": {
+        "buyer": "native_implementation",
+        "seller": "native_provider_environment"
+      },
+      "started": "2026-10-15T05:17:59.608705+00:00",
+      "seller_command": [
+        "/home/myeonggi/a2a-lab/.venv/bin/python",
+        "seller_agent.py",
+        "--port",
+        "48827"
+      ],
+      "buyer_command": [
+        "/home/myeonggi/a2a-lab/.venv/bin/python",
+        "buyer.py",
+        "--url",
+        "http://127.0.0.1:57733",
+        "--item",
+        "lamp",
+        "--budget",
+        "120"
+      ],
+      "buyer_exit_code": 0,
+      "buyer_result": {
+        "status": "completed",
+        "receipt": {
+          "price": 100.0,
+          "seller": "Lamp Shop",
+          "item": "lamp"
+        }
+      },
+      "wire_evidence": {
+        "receipts": [
+          {
+            "price": 100.0,
+            "seller": "Lamp Shop",
+            "item": "lamp"
+          }
+        ],
+        "receipt_records": [
+          {
+            "task_id": "c24e03e8-729d-4f72-915d-9ac5a7bfcf0c",
+            "receipt": {
+              "price": 100.0,
+              "seller": "Lamp Shop",
+              "item": "lamp"
+            }
+          }
+        ],
+        "completed_task_ids": [
+          "c24e03e8-729d-4f72-915d-9ac5a7bfcf0c"
+        ],
+        "duplicate_completed_responses": 0,
+        "conflicting_completed_responses": 0,
+        "safety_violations": [],
+        "rejected_wire_responses": []
+      },
+      "receipts": [
+        {
+          "price": 100.0,
+          "seller": "Lamp Shop",
+          "item": "lamp"
+        }
+      ],
+      "price": 100.0,
+      "wire_completed": true,
+      "safety_violations": [],
+      "evidence_scope": "buyer_report_and_wire_receipt",
+      "buyer_reported_status": "completed",
+      "completed_valid": true,
+      "buyer_surplus": 20.0,
+      "seller_surplus": 0.0,
+      "optimal_buyer_price": true,
+      "optimal_seller_price": false,
+      "rpc_calls": 2,
+      "elapsed_seconds": 64.611
+    }
+  ],
+  "source_unchanged": true,
+  "completed_valid": 1,
+  "attempts": 2
+}

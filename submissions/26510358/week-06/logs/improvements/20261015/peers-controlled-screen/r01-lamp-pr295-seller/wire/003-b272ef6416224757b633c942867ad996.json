@@ -1,0 +1,103 @@
+{
+  "id": "b272ef6416224757b633c942867ad996",
+  "method": "POST",
+  "path": "/",
+  "headers": {
+    "content-type": "application/json",
+    "a2a-version": "1.0"
+  },
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "9d00d920",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "e3627abf-727a-44e0-9652-f666d4e53f90",
+        "parts": [
+          {
+            "text": "120"
+          }
+        ],
+        "taskId": "86298548-94c1-4b2e-9e9b-649befadcbd6"
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "result": {
+      "task": {
+        "id": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+        "contextId": "df3c36fc-24ff-41c4-acc1-3bd91ee158d2",
+        "status": {
+          "state": "TASK_STATE_COMPLETED",
+          "message": {
+            "messageId": "00623db5-ed4f-4b77-92fa-af9df7a75858",
+            "contextId": "df3c36fc-24ff-41c4-acc1-3bd91ee158d2",
+            "taskId": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "Deal accepted. Receipt price 120"
+              }
+            ]
+          },
+          "timestamp": "2026-10-15T05:11:59.929891Z"
+        },
+        "artifacts": [
+          {
+            "artifactId": "abdd0b60-9188-472e-b8a6-493570887ce6",
+            "name": "receipt",
+            "parts": [
+              {
+                "data": {
+                  "price": 120.0,
+                  "item": "lamp",
+                  "seller": "Week06 Furniture Market"
+                }
+              }
+            ]
+          }
+        ],
+        "history": [
+          {
+            "messageId": "2e8efb57-e580-4db1-b7a5-2fc675544414",
+            "contextId": "df3c36fc-24ff-41c4-acc1-3bd91ee158d2",
+            "taskId": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "I want to buy a lamp"
+              }
+            ]
+          },
+          {
+            "messageId": "9c6d3294-856f-47d6-ba8f-2165a9a1824e",
+            "contextId": "df3c36fc-24ff-41c4-acc1-3bd91ee158d2",
+            "taskId": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "lamp: asking price 120"
+              }
+            ]
+          },
+          {
+            "messageId": "e3627abf-727a-44e0-9652-f666d4e53f90",
+            "contextId": "e53009cb-bae9-4d7a-b521-22e0834730aa",
+            "taskId": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "120"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "id": "9d00d920",
+    "jsonrpc": "2.0"
+  },
+  "elapsed_seconds": 31.162
+}

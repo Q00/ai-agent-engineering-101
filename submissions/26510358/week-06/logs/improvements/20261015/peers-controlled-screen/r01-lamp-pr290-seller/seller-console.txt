@@ -1,0 +1,17 @@
+[SELLER] model-driven A2A seller listening on http://127.0.0.1:50675
+INFO:     Started server process [178695]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:50675 (Press CTRL+C to quit)
+INFO:     127.0.0.1:45334 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45342 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+[SELLER HARNESS] opening={"action": "ask", "price": 130} effective_ask=130
+INFO:     127.0.0.1:45346 - "POST / HTTP/1.1" 200 OK
+[SELLER HARNESS] task=591b2dcb-caa4-43df-b3e8-17d3cc5f5760 offer=60 decision={"action": "counter", "price": 120}
+INFO:     127.0.0.1:41062 - "POST / HTTP/1.1" 200 OK
+[SELLER HARNESS] task=591b2dcb-caa4-43df-b3e8-17d3cc5f5760 offer=120 decision={"action": "accept"}
+INFO:     127.0.0.1:38902 - "POST / HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [178695]

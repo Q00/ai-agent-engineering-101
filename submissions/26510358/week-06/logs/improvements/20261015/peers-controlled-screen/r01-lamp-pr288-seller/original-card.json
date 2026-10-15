@@ -1,0 +1,35 @@
+{
+  "name": "Haiku Furniture Shop",
+  "description": "Sells lamps, chairs and bookshelves. A model negotiates the price with the buyer.",
+  "supportedInterfaces": [
+    {
+      "url": "http://127.0.0.1:39531/",
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "version": "1.0.0",
+  "capabilities": {},
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "application/json",
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "negotiate",
+      "name": "Negotiate a purchase",
+      "description": "Name an item (lamp, chair, bookshelf), then send offers as numbers on the same task. The asking price is the last number in each reply; a deal ends with a receipt artifact.",
+      "tags": [
+        "shopping",
+        "negotiation"
+      ],
+      "examples": [
+        "I want to buy a lamp",
+        "90"
+      ]
+    }
+  ]
+}

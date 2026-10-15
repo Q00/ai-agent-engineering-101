@@ -1,0 +1,53 @@
+{
+  "id": "d543c196a4024de4ade481962cea29ba",
+  "mode": "controlled_same_model_rehost_not_original_provider",
+  "model": "gpt-6-sol",
+  "reasoning_effort": "low",
+  "source": "claude-cli",
+  "participant": "pr288",
+  "time": "2026-10-15T05:21:42.321566+00:00",
+  "pid": 210940,
+  "original_request": {
+    "argv": [
+      "claude",
+      "-p",
+      "--model",
+      "haiku",
+      "--tools",
+      "",
+      "--setting-sources",
+      "",
+      "--no-session-persistence"
+    ],
+    "removed_flags": [
+      {
+        "flag": "-p",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--model",
+        "value": "haiku",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--tools",
+        "value": "",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--setting-sources",
+        "value": "",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--no-session-persistence",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      }
+    ],
+    "stdin": "You are the seller in a furniture shop, negotiating the price of a lamp with a buyer.\nYour reserve, the lowest price you may ever ask or sell for, is 100. The buyer does not know it.\n\nSo far:\nYou asked 150.\nThe buyer now offers 60. Your current asking price is 150.\n\nDecide:\n- \"accept\": sell at the buyer's offer of 60.\n- \"counter\": name a new asking price, at or above 100 and no higher than 150.\n- \"reject\": end the negotiation without a deal.\nA deal at or above your reserve is better than no deal. Concede step by step while the buyer keeps raising.\nReject only when the buyer clearly will not reach your reserve.\n\nAnswer with one JSON object and nothing else:\n{\"action\": \"accept\" | \"counter\" | \"reject\", \"price\": <integer>, \"note\": \"<one short sentence to the buyer, no digits>\"}",
+    "positional_prompt": null
+  },
+  "boundary_instruction": "You are the inference transport for a controlled negotiation benchmark. Answer the supplied original model request directly. Do not use tools, shell, files, apps, network browsing, or subagents. Emit only the final answer requested by the original prompts, without transport commentary. The transport supplies no negotiation strategy or replacement prices.",
+  "call_timeout_seconds": 40.0,
+  "queue_interval_seconds": 10
+}

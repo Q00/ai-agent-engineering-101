@@ -1,0 +1,170 @@
+{
+  "id": "r01-lamp-pr289-seller",
+  "buyer": "kit",
+  "seller": "pr289",
+  "item": "lamp",
+  "budget": 120,
+  "repeat": 1,
+  "participant_role": "seller",
+  "participant": "pr289",
+  "mode": "native",
+  "runner_sha256": "5c9cd0a4a274ee16f3ed45f312a3a330831df558a70bd03415765594078d44dc",
+  "execution_scope": {
+    "buyer": "fixed_counterpart",
+    "seller": "native_provider_environment"
+  },
+  "started": "2026-10-15T05:14:05.533121+00:00",
+  "seller_command": [
+    "/home/myeonggi/a2a-lab/.venv/bin/python",
+    "seller_agent.py",
+    "--port",
+    "43423"
+  ],
+  "fixed_buyer": {
+    "opened": true,
+    "opened_ask": 125,
+    "opened_state": "TASK_STATE_INPUT_REQUIRED",
+    "task": {
+      "id": "35ad3ed0-a9f9-45a6-842d-bca0969fed39",
+      "contextId": "ad03e8f4-3a4b-473f-9881-7f640fde6878",
+      "status": {
+        "state": "TASK_STATE_COMPLETED",
+        "message": {
+          "messageId": "868723ae-2042-448a-a4a5-9a72dce78ba8",
+          "contextId": "ad03e8f4-3a4b-473f-9881-7f640fde6878",
+          "taskId": "35ad3ed0-a9f9-45a6-842d-bca0969fed39",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "Deal: lamp at 115."
+            }
+          ]
+        },
+        "timestamp": "2026-10-15T05:14:31.526891Z"
+      },
+      "artifacts": [
+        {
+          "artifactId": "003fe6ac-9634-4b45-b490-6cb86498061e",
+          "name": "receipt",
+          "parts": [
+            {
+              "data": {
+                "item": "lamp",
+                "seller": "Lamp Shop",
+                "price": 115.0
+              }
+            }
+          ]
+        }
+      ],
+      "history": [
+        {
+          "messageId": "75777854-7a03-452a-bece-d38f5da59f31",
+          "contextId": "ad03e8f4-3a4b-473f-9881-7f640fde6878",
+          "taskId": "35ad3ed0-a9f9-45a6-842d-bca0969fed39",
+          "role": "ROLE_USER",
+          "parts": [
+            {
+              "text": "I want to buy a lamp"
+            }
+          ]
+        },
+        {
+          "messageId": "782ed36d-bec3-40bd-a011-ed82d73f6118",
+          "contextId": "ad03e8f4-3a4b-473f-9881-7f640fde6878",
+          "taskId": "35ad3ed0-a9f9-45a6-842d-bca0969fed39",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "lamp: asking 125. Send your offer as a number."
+            }
+          ]
+        },
+        {
+          "messageId": "dbe4b609-4551-4db6-a2ca-8a78257f416d",
+          "contextId": "d498a43f-f5b1-4053-b291-6e1953d2876d",
+          "taskId": "35ad3ed0-a9f9-45a6-842d-bca0969fed39",
+          "role": "ROLE_USER",
+          "parts": [
+            {
+              "text": "60"
+            }
+          ]
+        },
+        {
+          "messageId": "9c2d307b-7f5a-4b51-af6c-db576891deb3",
+          "contextId": "ad03e8f4-3a4b-473f-9881-7f640fde6878",
+          "taskId": "35ad3ed0-a9f9-45a6-842d-bca0969fed39",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "60 is too low. Counteroffer: 115."
+            }
+          ]
+        },
+        {
+          "messageId": "6180ae0f-eed2-441a-8071-dd194fcaf75a",
+          "contextId": "1e9c0086-9182-4f61-87a3-97e3d6245227",
+          "taskId": "35ad3ed0-a9f9-45a6-842d-bca0969fed39",
+          "role": "ROLE_USER",
+          "parts": [
+            {
+              "text": "115"
+            }
+          ]
+        }
+      ]
+    },
+    "task_id": "35ad3ed0-a9f9-45a6-842d-bca0969fed39",
+    "asks": [
+      125,
+      115
+    ]
+  },
+  "buyer_exit_code": 0,
+  "wire_evidence": {
+    "receipts": [
+      {
+        "item": "lamp",
+        "seller": "Lamp Shop",
+        "price": 115.0
+      }
+    ],
+    "receipt_records": [
+      {
+        "task_id": "35ad3ed0-a9f9-45a6-842d-bca0969fed39",
+        "receipt": {
+          "item": "lamp",
+          "seller": "Lamp Shop",
+          "price": 115.0
+        }
+      }
+    ],
+    "completed_task_ids": [
+      "35ad3ed0-a9f9-45a6-842d-bca0969fed39"
+    ],
+    "duplicate_completed_responses": 0,
+    "conflicting_completed_responses": 0,
+    "safety_violations": [],
+    "rejected_wire_responses": []
+  },
+  "receipts": [
+    {
+      "item": "lamp",
+      "seller": "Lamp Shop",
+      "price": 115.0
+    }
+  ],
+  "price": 115.0,
+  "wire_completed": true,
+  "safety_violations": [],
+  "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+  "buyer_reported_status": null,
+  "completed_valid": true,
+  "buyer_surplus": 5.0,
+  "seller_surplus": 15.0,
+  "optimal_buyer_price": false,
+  "optimal_seller_price": false,
+  "rpc_calls": 3,
+  "elapsed_seconds": 26.341
+}

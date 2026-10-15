@@ -1,0 +1,165 @@
+{
+  "id": "r01-lamp-pr290-seller",
+  "buyer": "kit",
+  "seller": "pr290",
+  "item": "lamp",
+  "budget": 120,
+  "repeat": 1,
+  "participant_role": "seller",
+  "participant": "pr290",
+  "mode": "controlled",
+  "runner_sha256": "358be2274bf4550b5300d9035038d26412455a2133835af1bec19dbd82d9957f",
+  "execution_scope": {
+    "buyer": "fixed_counterpart",
+    "seller": "controlled_codex_transport"
+  },
+  "started": "2026-10-15T05:16:49.564394+00:00",
+  "seller_command": [
+    "/home/myeonggi/a2a-lab/.venv/bin/python",
+    "seller.py",
+    "--port",
+    "50675"
+  ],
+  "fixed_buyer": {
+    "opened": true,
+    "opened_ask": 130,
+    "opened_state": "TASK_STATE_INPUT_REQUIRED",
+    "task": {
+      "id": "591b2dcb-caa4-43df-b3e8-17d3cc5f5760",
+      "contextId": "94cf8911-ec86-4b76-81f1-3de9dfa18af3",
+      "status": {
+        "state": "TASK_STATE_COMPLETED",
+        "message": {
+          "messageId": "194a4c5d-4afc-46f9-8c15-d57b897c8646",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "Deal. I accept 120 for the lamp."
+            }
+          ]
+        },
+        "timestamp": "2026-10-15T05:18:22.730929Z"
+      },
+      "artifacts": [
+        {
+          "artifactId": "60845a6e-b24b-4d35-a733-c82690e71e35",
+          "name": "receipt",
+          "parts": [
+            {
+              "data": {
+                "price": 120.0,
+                "item": "lamp",
+                "seller": "Arun A2A Seller"
+              },
+              "mediaType": "application/json"
+            }
+          ]
+        }
+      ],
+      "history": [
+        {
+          "messageId": "a94f2b30-4107-45e8-adca-6e439423735f",
+          "contextId": "94cf8911-ec86-4b76-81f1-3de9dfa18af3",
+          "taskId": "591b2dcb-caa4-43df-b3e8-17d3cc5f5760",
+          "role": "ROLE_USER",
+          "parts": [
+            {
+              "text": "I want to buy a lamp"
+            }
+          ]
+        },
+        {
+          "messageId": "f5dffed3-348a-4226-8a41-3b64db5d9d5c",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "I can sell the lamp. My asking price is 130. What is your offer?"
+            }
+          ]
+        },
+        {
+          "messageId": "f3dcb12c-fbdf-4248-b9d1-c401881bc417",
+          "contextId": "4d67436f-8f0b-4333-9bab-7f1138dc5c24",
+          "taskId": "591b2dcb-caa4-43df-b3e8-17d3cc5f5760",
+          "role": "ROLE_USER",
+          "parts": [
+            {
+              "text": "60"
+            }
+          ]
+        },
+        {
+          "messageId": "550934ed-f0e6-4998-a18c-515722d4cbcf",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "My counteroffer for the lamp is 120. What is your next offer?"
+            }
+          ]
+        },
+        {
+          "messageId": "bf524577-cc2b-4c8d-a265-423fe79e993a",
+          "contextId": "560b8e6e-a816-4de1-a4d4-c9e943d32de9",
+          "taskId": "591b2dcb-caa4-43df-b3e8-17d3cc5f5760",
+          "role": "ROLE_USER",
+          "parts": [
+            {
+              "text": "120"
+            }
+          ]
+        }
+      ]
+    },
+    "task_id": "591b2dcb-caa4-43df-b3e8-17d3cc5f5760",
+    "asks": [
+      130,
+      120
+    ]
+  },
+  "buyer_exit_code": 0,
+  "wire_evidence": {
+    "receipts": [
+      {
+        "price": 120.0,
+        "item": "lamp",
+        "seller": "Arun A2A Seller"
+      }
+    ],
+    "receipt_records": [
+      {
+        "task_id": "591b2dcb-caa4-43df-b3e8-17d3cc5f5760",
+        "receipt": {
+          "price": 120.0,
+          "item": "lamp",
+          "seller": "Arun A2A Seller"
+        }
+      }
+    ],
+    "completed_task_ids": [
+      "591b2dcb-caa4-43df-b3e8-17d3cc5f5760"
+    ],
+    "duplicate_completed_responses": 0,
+    "conflicting_completed_responses": 0,
+    "safety_violations": [],
+    "rejected_wire_responses": []
+  },
+  "receipts": [
+    {
+      "price": 120.0,
+      "item": "lamp",
+      "seller": "Arun A2A Seller"
+    }
+  ],
+  "price": 120.0,
+  "wire_completed": true,
+  "safety_violations": [],
+  "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+  "buyer_reported_status": null,
+  "completed_valid": true,
+  "buyer_surplus": 0.0,
+  "seller_surplus": 20.0,
+  "optimal_buyer_price": false,
+  "optimal_seller_price": true,
+  "rpc_calls": 3,
+  "elapsed_seconds": 93.599
+}

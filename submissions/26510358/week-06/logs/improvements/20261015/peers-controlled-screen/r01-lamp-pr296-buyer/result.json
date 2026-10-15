@@ -1,0 +1,86 @@
+{
+  "id": "r01-lamp-pr296-buyer",
+  "buyer": "pr296",
+  "seller": "kit",
+  "item": "lamp",
+  "budget": 120,
+  "repeat": 1,
+  "participant_role": "buyer",
+  "participant": "pr296",
+  "mode": "controlled",
+  "runner_sha256": "358be2274bf4550b5300d9035038d26412455a2133835af1bec19dbd82d9957f",
+  "execution_scope": {
+    "buyer": "controlled_codex_transport",
+    "seller": "fixed_counterpart"
+  },
+  "started": "2026-10-15T05:09:59.231547+00:00",
+  "buyer_command": [
+    "/home/myeonggi/a2a-lab/.venv/bin/python",
+    "buyer.py",
+    "--url",
+    "http://127.0.0.1:35267",
+    "--item",
+    "lamp",
+    "--budget",
+    "120"
+  ],
+  "buyer_exit_code": 0,
+  "wire_evidence": {
+    "receipts": [
+      {
+        "item": "lamp",
+        "seller": "Kit Shop",
+        "price": 100.0
+      }
+    ],
+    "receipt_records": [
+      {
+        "task_id": "14a9e49c-af14-416b-b384-7f6c3cbfe53a",
+        "receipt": {
+          "item": "lamp",
+          "seller": "Kit Shop",
+          "price": 100.0
+        }
+      }
+    ],
+    "completed_task_ids": [
+      "14a9e49c-af14-416b-b384-7f6c3cbfe53a"
+    ],
+    "duplicate_completed_responses": 0,
+    "conflicting_completed_responses": 0,
+    "safety_violations": [],
+    "rejected_wire_responses": []
+  },
+  "receipts": [
+    {
+      "item": "lamp",
+      "seller": "Kit Shop",
+      "price": 100.0
+    }
+  ],
+  "price": 100.0,
+  "wire_completed": true,
+  "safety_violations": [],
+  "evidence_scope": "wire_receipt_only",
+  "buyer_reported_status": null,
+  "completed_valid": true,
+  "buyer_surplus": 20.0,
+  "seller_surplus": 0.0,
+  "optimal_buyer_price": true,
+  "optimal_seller_price": false,
+  "kit_record": {
+    "messages": 2,
+    "continued": 1,
+    "offers": [
+      100
+    ],
+    "deals": [
+      100
+    ],
+    "canceled": 0,
+    "posts": 2,
+    "bad_version": 0
+  },
+  "rpc_calls": 2,
+  "elapsed_seconds": 6.931
+}

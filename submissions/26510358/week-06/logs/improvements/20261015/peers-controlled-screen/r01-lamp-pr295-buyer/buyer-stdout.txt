@@ -1,0 +1,7 @@
+[buyer] card='Kit Shop' url=http://127.0.0.1:54901/ item=lamp budget=120
+[a2a send] text='I want to buy a lamp' taskId=- version=1.0
+[a2a recv] taskId=250f6e0a-9396-4947-8d64-0823faca186d state=TASK_STATE_INPUT_REQUIRED text='lamp: asking 130. Send your offer as a number.'
+[harness] model=gpt-6-sol action=offer price=120
+[a2a send] text='120' taskId=250f6e0a-9396-4947-8d64-0823faca186d version=1.0
+[a2a recv] taskId=250f6e0a-9396-4947-8d64-0823faca186d state=TASK_STATE_COMPLETED text='Deal: lamp at 120.'
+[buyer deal] item=lamp price=120 budget=120 taskId=250f6e0a-9396-4947-8d64-0823faca186d

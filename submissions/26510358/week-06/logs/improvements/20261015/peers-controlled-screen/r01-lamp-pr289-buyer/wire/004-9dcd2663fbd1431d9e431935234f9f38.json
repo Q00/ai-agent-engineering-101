@@ -1,0 +1,104 @@
+{
+  "id": "9dcd2663fbd1431d9e431935234f9f38",
+  "method": "POST",
+  "path": "/",
+  "headers": {
+    "content-type": "application/json",
+    "a2a-version": "1.0"
+  },
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "9c2a5e56-df23-4f82-8ddd-d2e5a7d1d7e1",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "0f91698d-49dc-44e2-89df-cf6dbc273b30",
+        "parts": [
+          {
+            "text": "105"
+          }
+        ],
+        "taskId": "d10ee946-3053-47d6-a5c6-f45d9e429064",
+        "contextId": "1085adb3-bec3-44e6-b546-8ed3aff8927f"
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "result": {
+      "task": {
+        "id": "d10ee946-3053-47d6-a5c6-f45d9e429064",
+        "contextId": "1085adb3-bec3-44e6-b546-8ed3aff8927f",
+        "status": {
+          "state": "TASK_STATE_COMPLETED",
+          "message": {
+            "messageId": "c4178ee5-cace-4436-8a68-27f7b13c3db5",
+            "contextId": "1085adb3-bec3-44e6-b546-8ed3aff8927f",
+            "taskId": "d10ee946-3053-47d6-a5c6-f45d9e429064",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "Deal: lamp at 105."
+              }
+            ]
+          },
+          "timestamp": "2026-10-15T05:19:12.569698Z"
+        },
+        "artifacts": [
+          {
+            "artifactId": "8d3eb1f3-10cd-4fc2-a6da-fad26f0c387a",
+            "name": "receipt",
+            "parts": [
+              {
+                "data": {
+                  "item": "lamp",
+                  "seller": "Kit Shop",
+                  "price": 105.0
+                }
+              }
+            ]
+          }
+        ],
+        "history": [
+          {
+            "messageId": "b524943c-d983-4cce-bf3f-35b023549372",
+            "contextId": "1085adb3-bec3-44e6-b546-8ed3aff8927f",
+            "taskId": "d10ee946-3053-47d6-a5c6-f45d9e429064",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "I want to buy a lamp"
+              }
+            ]
+          },
+          {
+            "messageId": "8b00e36a-e83a-4853-9aae-9c38ec321391",
+            "contextId": "1085adb3-bec3-44e6-b546-8ed3aff8927f",
+            "taskId": "d10ee946-3053-47d6-a5c6-f45d9e429064",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "lamp: asking 130. Send your offer as a number."
+              }
+            ]
+          },
+          {
+            "messageId": "0f91698d-49dc-44e2-89df-cf6dbc273b30",
+            "contextId": "1085adb3-bec3-44e6-b546-8ed3aff8927f",
+            "taskId": "d10ee946-3053-47d6-a5c6-f45d9e429064",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "105"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "id": "9c2a5e56-df23-4f82-8ddd-d2e5a7d1d7e1",
+    "jsonrpc": "2.0"
+  },
+  "elapsed_seconds": 0.033
+}

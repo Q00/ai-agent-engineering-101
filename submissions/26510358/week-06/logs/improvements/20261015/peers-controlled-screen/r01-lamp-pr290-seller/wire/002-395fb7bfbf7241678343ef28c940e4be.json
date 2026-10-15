@@ -1,0 +1,63 @@
+{
+  "id": "395fb7bfbf7241678343ef28c940e4be",
+  "method": "POST",
+  "path": "/",
+  "headers": {
+    "content-type": "application/json",
+    "a2a-version": "1.0"
+  },
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "ba1b62c3",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "a94f2b30-4107-45e8-adca-6e439423735f",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ]
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "result": {
+      "task": {
+        "id": "591b2dcb-caa4-43df-b3e8-17d3cc5f5760",
+        "contextId": "94cf8911-ec86-4b76-81f1-3de9dfa18af3",
+        "status": {
+          "state": "TASK_STATE_INPUT_REQUIRED",
+          "message": {
+            "messageId": "f5dffed3-348a-4226-8a41-3b64db5d9d5c",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "I can sell the lamp. My asking price is 130. What is your offer?"
+              }
+            ]
+          },
+          "timestamp": "2026-10-15T05:17:20.594681Z"
+        },
+        "history": [
+          {
+            "messageId": "a94f2b30-4107-45e8-adca-6e439423735f",
+            "contextId": "94cf8911-ec86-4b76-81f1-3de9dfa18af3",
+            "taskId": "591b2dcb-caa4-43df-b3e8-17d3cc5f5760",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "I want to buy a lamp"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "id": "ba1b62c3",
+    "jsonrpc": "2.0"
+  },
+  "elapsed_seconds": 29.944
+}

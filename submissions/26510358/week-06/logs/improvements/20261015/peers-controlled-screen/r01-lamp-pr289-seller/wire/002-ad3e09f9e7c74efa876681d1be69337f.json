@@ -1,0 +1,65 @@
+{
+  "id": "ad3e09f9e7c74efa876681d1be69337f",
+  "method": "POST",
+  "path": "/",
+  "headers": {
+    "content-type": "application/json",
+    "a2a-version": "1.0"
+  },
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "f5beaa57",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "e8eb07f2-9ad6-4239-a62e-d22391edcb90",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ]
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "result": {
+      "task": {
+        "id": "88d69d85-a906-4c31-a57e-40d10d4ded61",
+        "contextId": "0f0e3a48-7217-44d2-99d4-aa4b3f29747f",
+        "status": {
+          "state": "TASK_STATE_INPUT_REQUIRED",
+          "message": {
+            "messageId": "09100369-7548-4a57-ac27-b60c50b2132f",
+            "contextId": "0f0e3a48-7217-44d2-99d4-aa4b3f29747f",
+            "taskId": "88d69d85-a906-4c31-a57e-40d10d4ded61",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "lamp: asking 120. Send your offer as a number."
+              }
+            ]
+          },
+          "timestamp": "2026-10-15T05:20:02.432927Z"
+        },
+        "history": [
+          {
+            "messageId": "e8eb07f2-9ad6-4239-a62e-d22391edcb90",
+            "contextId": "0f0e3a48-7217-44d2-99d4-aa4b3f29747f",
+            "taskId": "88d69d85-a906-4c31-a57e-40d10d4ded61",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "I want to buy a lamp"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "id": "f5beaa57",
+    "jsonrpc": "2.0"
+  },
+  "elapsed_seconds": 48.893
+}

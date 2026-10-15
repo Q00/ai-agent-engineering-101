@@ -1,0 +1,193 @@
+{
+  "id": "r01-lamp-pr291-seller",
+  "buyer": "kit",
+  "seller": "pr291",
+  "item": "lamp",
+  "budget": 120,
+  "repeat": 1,
+  "participant_role": "seller",
+  "participant": "pr291",
+  "mode": "controlled",
+  "runner_sha256": "358be2274bf4550b5300d9035038d26412455a2133835af1bec19dbd82d9957f",
+  "execution_scope": {
+    "buyer": "fixed_counterpart",
+    "seller": "controlled_codex_transport"
+  },
+  "started": "2026-10-15T05:15:32.002139+00:00",
+  "seller_command": [
+    "/home/myeonggi/a2a-lab/.venv/bin/python",
+    "seller_agent.py",
+    "--port",
+    "59519"
+  ],
+  "fixed_buyer": {
+    "opened": true,
+    "opened_ask": 150,
+    "opened_state": "TASK_STATE_INPUT_REQUIRED",
+    "task": {
+      "id": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+      "contextId": "4fc6ab6c-d4bb-46e6-8ee6-772ca90234f6",
+      "status": {
+        "state": "TASK_STATE_COMPLETED",
+        "message": {
+          "messageId": "35aedcb8-8ba1-4173-93e0-5851b3367f14",
+          "contextId": "4fc6ab6c-d4bb-46e6-8ee6-772ca90234f6",
+          "taskId": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "Deal: lamp at 115."
+            }
+          ]
+        },
+        "timestamp": "2026-10-15T05:16:33.978901Z"
+      },
+      "artifacts": [
+        {
+          "artifactId": "fa8acd7a-31b7-4665-a184-2c11cd7c39b2",
+          "name": "receipt",
+          "parts": [
+            {
+              "data": {
+                "price": 115.0,
+                "item": "lamp",
+                "seller": "Lamp Shop"
+              }
+            }
+          ]
+        }
+      ],
+      "history": [
+        {
+          "messageId": "a21d5541-4c95-4022-93b6-b2a0643ab6c1",
+          "contextId": "4fc6ab6c-d4bb-46e6-8ee6-772ca90234f6",
+          "taskId": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+          "role": "ROLE_USER",
+          "parts": [
+            {
+              "text": "I want to buy a lamp"
+            }
+          ]
+        },
+        {
+          "messageId": "198ed292-eafc-49e9-b334-7c61b276af07",
+          "contextId": "4fc6ab6c-d4bb-46e6-8ee6-772ca90234f6",
+          "taskId": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "lamp: asking 150. Send your offer as a number."
+            }
+          ]
+        },
+        {
+          "messageId": "ef629cc5-cc93-4151-9fd0-a48a89254807",
+          "contextId": "bef84bd8-4229-41cc-a8af-4a5f62da7d8d",
+          "taskId": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+          "role": "ROLE_USER",
+          "parts": [
+            {
+              "text": "60"
+            }
+          ]
+        },
+        {
+          "messageId": "7c67eb0f-f595-434a-9151-9ea3d25670a3",
+          "contextId": "4fc6ab6c-d4bb-46e6-8ee6-772ca90234f6",
+          "taskId": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "Counteroffer: 130."
+            }
+          ]
+        },
+        {
+          "messageId": "5dccb9c0-d6a4-44b0-a87e-d36988a85310",
+          "contextId": "a28859f7-393a-497b-bd15-f5f1957b94a1",
+          "taskId": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+          "role": "ROLE_USER",
+          "parts": [
+            {
+              "text": "80"
+            }
+          ]
+        },
+        {
+          "messageId": "84db66ab-ab22-4f46-9e3c-4ac633d1b1f8",
+          "contextId": "4fc6ab6c-d4bb-46e6-8ee6-772ca90234f6",
+          "taskId": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "Counteroffer: 115."
+            }
+          ]
+        },
+        {
+          "messageId": "1e440ca8-bfe0-43c7-92a7-71846d74b443",
+          "contextId": "3ce8e85c-2d95-4288-a5a7-2df9d8b2864c",
+          "taskId": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+          "role": "ROLE_USER",
+          "parts": [
+            {
+              "text": "115"
+            }
+          ]
+        }
+      ]
+    },
+    "task_id": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+    "asks": [
+      150,
+      130,
+      115
+    ]
+  },
+  "buyer_exit_code": 0,
+  "wire_evidence": {
+    "receipts": [
+      {
+        "price": 115.0,
+        "item": "lamp",
+        "seller": "Lamp Shop"
+      }
+    ],
+    "receipt_records": [
+      {
+        "task_id": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+        "receipt": {
+          "price": 115.0,
+          "item": "lamp",
+          "seller": "Lamp Shop"
+        }
+      }
+    ],
+    "completed_task_ids": [
+      "1d7d5218-1a01-446b-ae2b-f9671cb98e9b"
+    ],
+    "duplicate_completed_responses": 0,
+    "conflicting_completed_responses": 0,
+    "safety_violations": [],
+    "rejected_wire_responses": []
+  },
+  "receipts": [
+    {
+      "price": 115.0,
+      "item": "lamp",
+      "seller": "Lamp Shop"
+    }
+  ],
+  "price": 115.0,
+  "wire_completed": true,
+  "safety_violations": [],
+  "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+  "buyer_reported_status": null,
+  "completed_valid": true,
+  "buyer_surplus": 5.0,
+  "seller_surplus": 15.0,
+  "optimal_buyer_price": false,
+  "optimal_seller_price": false,
+  "rpc_calls": 4,
+  "elapsed_seconds": 62.388
+}

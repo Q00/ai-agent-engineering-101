@@ -1,0 +1,88 @@
+{
+  "id": "9324dc8ca487473c8c986b0d3fefb90b",
+  "method": "POST",
+  "path": "/",
+  "headers": {
+    "content-type": "application/json",
+    "a2a-version": "1.0"
+  },
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "804a8d51",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "992705e1-35f2-4fa5-bcbb-7c02fe5f4c75",
+        "parts": [
+          {
+            "text": "60"
+          }
+        ],
+        "taskId": "31b9be46-7245-4e27-88c5-c54d31f6fa0c"
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "result": {
+      "task": {
+        "id": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+        "contextId": "77518bd9-6880-4f38-a69f-e1449b49a2a4",
+        "status": {
+          "state": "TASK_STATE_INPUT_REQUIRED",
+          "message": {
+            "messageId": "486b3c31-388b-4f0a-adc2-d240a25f17f2",
+            "contextId": "77518bd9-6880-4f38-a69f-e1449b49a2a4",
+            "taskId": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "I can come down a little on the lamp. Counteroffer: 140."
+              }
+            ]
+          },
+          "timestamp": "2026-10-15T05:22:15.306996Z"
+        },
+        "history": [
+          {
+            "messageId": "7edd28be-82b5-4156-8183-9c0e83c3c44a",
+            "contextId": "77518bd9-6880-4f38-a69f-e1449b49a2a4",
+            "taskId": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "I want to buy a lamp"
+              }
+            ]
+          },
+          {
+            "messageId": "f42abc77-cca2-421b-84f6-5cde17d2ac12",
+            "contextId": "77518bd9-6880-4f38-a69f-e1449b49a2a4",
+            "taskId": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "lamp: This lamp would look lovely in your home. Asking 150. Send your offer as a number."
+              }
+            ]
+          },
+          {
+            "messageId": "992705e1-35f2-4fa5-bcbb-7c02fe5f4c75",
+            "contextId": "f4d54de8-acbf-4b9d-b771-5fd013fdce64",
+            "taskId": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "60"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "id": "804a8d51",
+    "jsonrpc": "2.0"
+  },
+  "elapsed_seconds": 33.052
+}

@@ -1,0 +1,53 @@
+{
+  "id": "d0ac755347454d288e43ffe4a39f6d90",
+  "mode": "controlled_same_model_rehost_not_original_provider",
+  "model": "gpt-6-sol",
+  "reasoning_effort": "low",
+  "source": "claude-cli",
+  "participant": "pr288",
+  "time": "2026-10-15T05:21:10.823891+00:00",
+  "pid": 207447,
+  "original_request": {
+    "argv": [
+      "claude",
+      "-p",
+      "--model",
+      "haiku",
+      "--tools",
+      "",
+      "--setting-sources",
+      "",
+      "--no-session-persistence"
+    ],
+    "removed_flags": [
+      {
+        "flag": "-p",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--model",
+        "value": "haiku",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--tools",
+        "value": "",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--setting-sources",
+        "value": "",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--no-session-persistence",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      }
+    ],
+    "stdin": "You are the seller in a furniture shop. A buyer has just asked for a lamp.\nYour reserve, the lowest price you may ever ask or sell for, is 100. The buyer does not know it.\nName your opening asking price. Leave room to come down, since the buyer will bargain.\n\nAnswer with one JSON object and nothing else:\n{\"price\": <integer>, \"note\": \"<one short sentence to the buyer, no digits>\"}",
+    "positional_prompt": null
+  },
+  "boundary_instruction": "You are the inference transport for a controlled negotiation benchmark. Answer the supplied original model request directly. Do not use tools, shell, files, apps, network browsing, or subagents. Emit only the final answer requested by the original prompts, without transport commentary. The transport supplies no negotiation strategy or replacement prices.",
+  "call_timeout_seconds": 40.0,
+  "queue_interval_seconds": 10
+}

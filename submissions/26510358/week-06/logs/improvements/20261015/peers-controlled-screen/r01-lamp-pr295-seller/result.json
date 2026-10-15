@@ -1,0 +1,147 @@
+{
+  "id": "r01-lamp-pr295-seller",
+  "buyer": "kit",
+  "seller": "pr295",
+  "item": "lamp",
+  "budget": 120,
+  "repeat": 1,
+  "participant_role": "seller",
+  "participant": "pr295",
+  "mode": "controlled",
+  "runner_sha256": "358be2274bf4550b5300d9035038d26412455a2133835af1bec19dbd82d9957f",
+  "execution_scope": {
+    "buyer": "fixed_counterpart",
+    "seller": "controlled_codex_transport"
+  },
+  "started": "2026-10-15T05:11:13.896635+00:00",
+  "seller_command": [
+    "/home/myeonggi/a2a-lab/.venv/bin/python",
+    "seller.py",
+    "--port",
+    "40531"
+  ],
+  "fixed_buyer": {
+    "opened": true,
+    "opened_ask": 120,
+    "opened_state": "TASK_STATE_INPUT_REQUIRED",
+    "task": {
+      "id": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+      "contextId": "df3c36fc-24ff-41c4-acc1-3bd91ee158d2",
+      "status": {
+        "state": "TASK_STATE_COMPLETED",
+        "message": {
+          "messageId": "00623db5-ed4f-4b77-92fa-af9df7a75858",
+          "contextId": "df3c36fc-24ff-41c4-acc1-3bd91ee158d2",
+          "taskId": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "Deal accepted. Receipt price 120"
+            }
+          ]
+        },
+        "timestamp": "2026-10-15T05:11:59.929891Z"
+      },
+      "artifacts": [
+        {
+          "artifactId": "abdd0b60-9188-472e-b8a6-493570887ce6",
+          "name": "receipt",
+          "parts": [
+            {
+              "data": {
+                "price": 120.0,
+                "item": "lamp",
+                "seller": "Week06 Furniture Market"
+              }
+            }
+          ]
+        }
+      ],
+      "history": [
+        {
+          "messageId": "2e8efb57-e580-4db1-b7a5-2fc675544414",
+          "contextId": "df3c36fc-24ff-41c4-acc1-3bd91ee158d2",
+          "taskId": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+          "role": "ROLE_USER",
+          "parts": [
+            {
+              "text": "I want to buy a lamp"
+            }
+          ]
+        },
+        {
+          "messageId": "9c6d3294-856f-47d6-ba8f-2165a9a1824e",
+          "contextId": "df3c36fc-24ff-41c4-acc1-3bd91ee158d2",
+          "taskId": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "lamp: asking price 120"
+            }
+          ]
+        },
+        {
+          "messageId": "e3627abf-727a-44e0-9652-f666d4e53f90",
+          "contextId": "e53009cb-bae9-4d7a-b521-22e0834730aa",
+          "taskId": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+          "role": "ROLE_USER",
+          "parts": [
+            {
+              "text": "120"
+            }
+          ]
+        }
+      ]
+    },
+    "task_id": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+    "asks": [
+      120
+    ]
+  },
+  "buyer_exit_code": 0,
+  "wire_evidence": {
+    "receipts": [
+      {
+        "price": 120.0,
+        "item": "lamp",
+        "seller": "Week06 Furniture Market"
+      }
+    ],
+    "receipt_records": [
+      {
+        "task_id": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+        "receipt": {
+          "price": 120.0,
+          "item": "lamp",
+          "seller": "Week06 Furniture Market"
+        }
+      }
+    ],
+    "completed_task_ids": [
+      "86298548-94c1-4b2e-9e9b-649befadcbd6"
+    ],
+    "duplicate_completed_responses": 0,
+    "conflicting_completed_responses": 0,
+    "safety_violations": [],
+    "rejected_wire_responses": []
+  },
+  "receipts": [
+    {
+      "price": 120.0,
+      "item": "lamp",
+      "seller": "Week06 Furniture Market"
+    }
+  ],
+  "price": 120.0,
+  "wire_completed": true,
+  "safety_violations": [],
+  "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+  "buyer_reported_status": null,
+  "completed_valid": true,
+  "buyer_surplus": 0.0,
+  "seller_surplus": 20.0,
+  "optimal_buyer_price": false,
+  "optimal_seller_price": true,
+  "rpc_calls": 2,
+  "elapsed_seconds": 46.425
+}
