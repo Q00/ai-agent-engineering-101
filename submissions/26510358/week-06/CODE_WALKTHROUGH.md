@@ -12,14 +12,14 @@
 | [호가 관측 스키마](quote-observation.schema.json) | 실제 `quote_observer`가 반환하는 호가·상품 ID·견적 ID. 거래 행동·구매 금액을 선택하는 스키마와 구분 |
 | [inference_queue.py](inference_queue.py) `InferenceQueue.slot()` | 스레드·프로세스 간 FIFO 입장, 제한 시간, 종료된 소유자 복구, 중앙 설정의 기본 5초 호출 간격 |
 | [seller.py](seller.py) `build()`, `Seller._turn()` | Agent Card·A2A 서버, 상품 검색, 거래별 상태·잠금, 호가·영수증 응답 |
-| [buyer.py](buyer.py) `negotiate()` | 카드 읽기, 같은 task ID로 흥정, 견적 상품 ID 고정, 예산 예약·영수증 확인·종료 |
-| [protocol.py](protocol.py) `A2AClient` | JSON-RPC 요청, `A2A-Version: 1.0`, 카드의 동일 출처 검증, task 응답 처리 |
+| [buyer.py](buyer.py) `negotiate()`, `_has_terminal_receipt_evidence()` | 카드 읽기, 같은 task ID로 흥정, 예산 예약·영수증 확인, 종료 상태와 구매 증거 충돌의 분쟁 처리 |
+| [protocol.py](protocol.py) `A2AClient.rpc()` | 버전·출처·응답 ID 검증, 새 요청 deadline 확인, 이미 수신한 완료 응답 보존 |
 | [evidence.py](evidence.py) `validate_*_decision()`, `verify_receipt()`, `Ledger` | 가격 제약·영수증 대조와 한 프로세스에서의 원자적 구매 예약 |
 | [catalog.py](catalog.py) `search_catalog()` | 한국어·영어 설명과 수치 조건으로 수천 개 상품을 짧은 후보 목록으로 좁히기 |
 | [generate_catalog.py](generate_catalog.py) `build_catalog()` | 커밋된 3,003개 합성 상품의 재현 가능한 생성 규칙 |
 | [shopping.py](shopping.py) `allocate_budget()`, `select_shop()`, `summarize_coordination()`, `shop_all()` | 총예산의 한도 배분, 실제 카드 선택, 기본 2개 협상 스레드, 원장 사실 요약과 안전한 재선택 |
 | [policy.py](policy.py) `context_key()`, `StrategyPolicy.choose()` | 공개 관측·자기 제약에서 전략 프롬프트 선택, 시작 시 고정한 정책 버전 |
-| [train_policy.py](train_policy.py) `train()`, `simulate()` | 합성 환경에서 전략별 보상을 모아 bandit 추정값 갱신 |
+| [train_policy.py](train_policy.py) `train()`, `simulate()`, `_outcome()` | v2 합성 협상에서 전략별 보상을 모아 bandit 추정값 갱신, 비공개 한도를 쓰는 평가 계산과 관측 분리 |
 | [evaluate_policy.py](evaluate_policy.py) `evaluate()` | 합성 학습과 분리한 실제 하네스의 단일 턴 평가 |
 | [promote_policy.py](promote_policy.py) `assemble()`, `verify_trace()`, `main()` | 실제 보고서·원문 CLI 출력과 후보 정책을 대조하고 검증 근거 저장·승격 실행 |
 | [run_challenges.py](run_challenges.py), [run_adversarial.py](run_adversarial.py) | 실제 도전 실행과 적대적 검사를 시작·정리하고 근거 저장 |
@@ -37,11 +37,17 @@
 
 `currency`·`quantity`는 구조화된 필드에서만 읽고 출처를 남깁니다. 거래의 기본 계약은 credits·수량 1이며, 누락은 기존 과제 상대의 기본 규약으로 허용합니다. 명시된 값이 다르거나 잘못된 타입·수치이면 구매 제안을 보내기 전에 차단합니다. 환율이나 수량을 모델로 추정하지 않습니다. 원문에 있다고 해서 예산 변경 지시를 따르는 것도 아닙니다.
 
+텍스트에만 있는 통화·수량은 `quote_observer` 스키마가 별도 추출하지 않으므로 이 결정적 검사의 대상이 아닙니다. 예를 들어 `110 USD for two lamps`는 구매 하네스의 의미 판단에 의존합니다. `collect_quote_evidence()`는 task metadata도 검사하므로 이전 task 호가와 현재 메시지 호가가 다르면 충돌로 중단합니다. task metadata를 최신 값으로 간주할 수 없는 외부 구현에는 호환 제한이 있습니다.
+
 현재 역할 프롬프트는 구매자에게 낮은 구매 가격과 거래 성사, 판매자에게 높은 판매 가격과 거래 성사를 함께 추구하도록 지시합니다. 구매 예산은 반드시 다 써야 할 목표가 아니며 판매 하한가도 목표 판매가나 생산원가가 아닙니다. 이전 제안과 상대의 실제 반응으로 양보하되 비공개 한도를 안다고 가정하지 않습니다. 밴딧이 고르는 세 전략은 이 목표 아래의 진행 속도·검토 방식을 조정합니다.
 
 하네스가 낸 구매 가격이 예산을 넘으면 실행하지 않고 검증 원인을 담아 재질문합니다. 통과한 **모든 제안**은 송신 전에 원장에 예약합니다. 역제안도 판매자가 바로 수락할 수 있기 때문입니다. 코드가 예산에 맞게 가격을 깎아 보내는 경로는 없습니다.
 
 판매자가 수락하면 숫자 `price`를 가진 영수증과 `COMPLETED` 상태를 반환합니다. 구매자는 자신이 제안한 가격, 견적의 상품 ID, 예산, task ID와 대조하고, 영수증에 명시된 통화·수량도 기본 계약과 비교한 뒤 원장을 확정합니다. 설명형 요청에서는 처음 견적의 상품 ID를 거래 중 고정하며, 도전 실행기는 최종 상품의 실제 카탈로그 속성도 설명 조건과 대조합니다. 현재 구매자는 외부 가게의 전체 상품 속성을 독립적으로 검증하는 기능까지 제공하지 않습니다.
+
+`A2AClient.rpc()`는 새 HTTP 요청 전에 deadline을 검사하되 성공적으로 수신한 응답은 검증·파싱합니다. 수신·처리가 한도를 넘어도 이미 승인한 구매의 완료 증거를 버리지 않기 위해서입니다. `negotiate()`는 마지막 8번째 제안의 응답도 먼저 읽어 완료·명시적 종료를 처리하고, 다음 가격 판단 전에 턴·시간 한도를 검사합니다. 따라서 늦게 받은 견적에서 새 제안을 하지 않으며, 잘못된 JSON-RPC ID·형식이나 응답 유실은 계속 오류·분쟁 경로로 갑니다. 이 실제 buyer/protocol 연결 회귀는 [test_protocol.py](tests/test_protocol.py)에 있습니다.
+
+실패·거절·취소 상태에 구매 증거가 함께 오면 단순 미체결로 해석하지 않습니다. `_has_terminal_receipt_evidence()`는 artifact의 DataPart에 `price` 키가 있거나 artifact 이름이 `receipt`인지 봅니다. 잘못된 가격과 부분 영수증도 포함합니다. `terminal_receipt_conflict`를 기록해 기존 예약을 분쟁으로 유지하며, 예약 없는 응답도 구매를 새로 승인하지 않고 분쟁으로 반환합니다. 영수증 이름·가격 증거가 없는 빈 artifact나 진단은 일반 종료로 처리할 수 있습니다. [혼합 종료 회귀](tests/test_terminal_receipt_conflict.py)는 실제 `shopping → buyer → Ledger` 경로에서 상점 재선택이 일어나지 않는지 확인합니다.
 
 명시한 기본 ID와 로컬 분류·번호 ID는 최초 견적부터 다른 상품으로 바뀌면 거절합니다. 외부 가게의 임의 SKU는 `negotiate(..., expected_item_id="SKU-LAMP_2026-A")` 또는 CLI의 `--expected-item-id`로 지정합니다. 이 값은 구매 목록 키와 별개인 정확한 상품 기대값입니다. 하네스의 `item_id`도 거래에서 고정한 상품 ID와 같아야 합니다.
 
@@ -61,7 +67,7 @@
 
 `Ledger.reserve()`는 같은 구매 목록 키의 활성 예약·구매가 있는지와 남은 총예산을 잠금 안에서 함께 검사합니다. `item_key`는 구매 목록의 한 칸을 식별하고, `expected_item`은 영수증에 나와야 하는 상품을 식별합니다. 설명형 요청에서도 두 값을 혼동하지 않아야 합니다.
 
-정상 흐름은 `reserved → committed`입니다. 명확히 거절되거나 협상을 중단하면 `reserved → released`로 금액을 해제합니다. 응답이 유실되거나 영수증이 불일치하면 `reserved → disputed`로 기록하고 금액을 유지합니다. 분쟁은 실제 판매가 취소되었다는 뜻이 아니며 자동 환불도 없습니다.
+정상 흐름은 `reserved → committed`입니다. 구매 증거와 충돌하지 않는 명확한 거절이나 협상 중단은 `reserved → released`로 금액을 해제합니다. 응답 유실·영수증 불일치·종료 상태와 영수증 증거의 충돌은 `reserved → disputed`로 기록하고 금액을 유지합니다. 분쟁은 실제 판매가 취소되었다는 뜻이 아니며 자동 환불도 없습니다.
 
 같은 영수증으로 확정을 재시도하면 결과를 재사용하고, 이미 사용한 구매 ID나 중복 상품 예약은 거절합니다. 이 잠금은 한 프로세스의 스레드 사이에서만 효력이 있습니다. 파일에 원장을 저장한다고 서로 다른 프로세스의 경쟁까지 해결되는 것은 아닙니다.
 
@@ -97,7 +103,11 @@ fixed는 각 구현을 과제의 고정 상대와 거래시키고, cross는 우�
 
 `train()`은 전략을 탐색하고 합성 협상 한 번의 보상을 받아 해당 상태·전략의 평균 추정값을 갱신합니다. 이는 단일 전략 선택의 contextual bandit이며 LLM 가중치 학습이나 전체 대화의 PPO 학습은 아닙니다. 합성 환경의 가격 공식은 학습·시뮬레이션에만 있고, 실제 판매자·구매자의 가격과 행동은 계속 하네스가 결정합니다.
 
-이번 개선은 관측 정규화·역할별 가격 목표·공유 호출 용량에 맞춘 장보기 동시성·확인된 종료 후의 제한적 재선택을 반영한 상태입니다. 기존 활성 정책을 고정했고 새 RL 학습은 하지 않았습니다. 전역 예산 재배분이나 실제 실패에서 자동 학습하는 기능도 없습니다. 실행 순서·문맥·안전한 재선택의 변경과 정책 가중치 갱신을 구분해야 합니다. 최종 가격 개선이나 조기 종료 판단은 진행 중인 실제 비교가 끝난 뒤 보고서의 근거로 확인합니다.
+단계 4의 `negotiation-surrogate-v2`는 같은 관측에서도 전략·진행 단계에 따라 서로 다른 합성 행동을 허용합니다. 예산 안의 호가가 곧바로 수락 의무가 되지 않으며 `balanced/patient`는 여유가 있을 때 할인 제안을 탐색하고 `direct`와 마지막 턴은 가능한 성사를 우선 검토합니다. 상대의 양보와 중단은 명시된 모의 규칙입니다. 실제 `STRATEGIES` 문구도 역할별 탐색·진전·양보 속도를 구분하지만, 합성 가격 공식과 LLM의 응답은 동일한 실행 모델이 아닙니다.
+
+`_outcome()`은 성사 여부와 `budget - reserve`에서 자기 이익이 차지하는 비율, 호출 비용으로 보상을 계산합니다. 양쪽 한도를 함께 쓰는 이 비율은 합성 평가 전용이며, 모의 상대는 자기 한도로 응답합니다. `Scenario.observation()`과 `initial_action()`을 함께 읽어 구매자 행동에는 상대 reserve가, 판매자 행동에는 상대 budget이 전달되지 않는지 확인합니다. 사기 시나리오는 관측 가능한 영수증 위반을 모의하고 공통 guard가 차단한다고 가정하므로 실제 사기 검출 성능의 근거가 아닙니다.
+
+단계 1–3b의 관측·조정 개선 뒤, 단계 4에서 seed 42·5,000회 갱신한 [env2 후보](policies/candidate-env2-20261015.json)를 생성했습니다. [학습 보고서](logs/improvements/20261015/stage-04-training-report.json)는 합성 결과이며 실제 평가·승격 완료를 주장하지 않습니다. 기본 활성 파일과 기존 Q값은 유지하고, 새 후보는 명시적 경로로만 평가합니다. 공통 전략 안내 문구는 변경됐으므로 활성 파일 해시가 같다고 전체 실행 행동이 같지는 않습니다. 전역 예산 재배분이나 실제 실패 로그에서 자동 학습하는 기능도 없습니다. 후속 가격·성사 결과는 보고서의 완료된 근거로 확인합니다.
 
 후보 JSON을 만들었다고 실행 정책이 자동 개선되는 것은 아닙니다. 별도 실제 평가, 적대적 검사, 후보를 사용한 공식 거래 검사 근거를 확인해야 합니다. `promote_policy()`가 후보 해시와 결과의 출처를 검사하며, 실행 중인 `StrategyPolicy` 객체는 정책 교체 후에도 이미 읽은 버전을 유지합니다. 실제 실행 로그를 이용한 온라인 자동 학습은 현재 구현하지 않았습니다.
 

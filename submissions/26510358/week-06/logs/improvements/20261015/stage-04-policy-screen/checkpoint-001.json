@@ -1,0 +1,97 @@
+[
+  {
+    "id": "r01-lamp-ours-buyer",
+    "buyer": "ours",
+    "seller": "kit",
+    "item": "lamp",
+    "budget": 120,
+    "repeat": 1,
+    "participant_role": "buyer",
+    "participant": "ours",
+    "mode": "native",
+    "runner_sha256": "66ea81ecb07ef1c63bf17c49a95372a00061d0c6ee6b1ccb96bee022132c2a1e",
+    "execution_scope": {
+      "buyer": "native_implementation",
+      "seller": "fixed_counterpart"
+    },
+    "started": "2026-10-15T06:38:35.044152+00:00",
+    "buyer_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "buyer.py",
+      "--url",
+      "http://127.0.0.1:35743",
+      "--item",
+      "lamp",
+      "--budget",
+      "120"
+    ],
+    "buyer_exit_code": 0,
+    "buyer_result": {
+      "status": "completed",
+      "receipt": {
+        "item": "lamp",
+        "seller": "Kit Shop",
+        "price": 102.0
+      }
+    },
+    "wire_evidence": {
+      "receipts": [
+        {
+          "item": "lamp",
+          "seller": "Kit Shop",
+          "price": 102.0
+        }
+      ],
+      "receipt_records": [
+        {
+          "task_id": "270d7588-fda4-42e6-ad17-cc6dae92dd96",
+          "receipt": {
+            "item": "lamp",
+            "seller": "Kit Shop",
+            "price": 102.0
+          }
+        }
+      ],
+      "completed_task_ids": [
+        "270d7588-fda4-42e6-ad17-cc6dae92dd96"
+      ],
+      "duplicate_completed_responses": 0,
+      "conflicting_completed_responses": 0,
+      "safety_violations": [],
+      "rejected_wire_responses": []
+    },
+    "receipts": [
+      {
+        "item": "lamp",
+        "seller": "Kit Shop",
+        "price": 102.0
+      }
+    ],
+    "price": 102.0,
+    "wire_completed": true,
+    "safety_violations": [],
+    "evidence_scope": "buyer_report_and_wire_receipt",
+    "buyer_reported_status": "completed",
+    "completed_valid": true,
+    "buyer_surplus": 18.0,
+    "seller_surplus": 2.0,
+    "optimal_buyer_price": false,
+    "optimal_seller_price": false,
+    "kit_record": {
+      "messages": 3,
+      "continued": 2,
+      "offers": [
+        95,
+        102
+      ],
+      "deals": [
+        102
+      ],
+      "canceled": 0,
+      "posts": 3,
+      "bad_version": 0
+    },
+    "rpc_calls": 3,
+    "elapsed_seconds": 62.247
+  }
+]
