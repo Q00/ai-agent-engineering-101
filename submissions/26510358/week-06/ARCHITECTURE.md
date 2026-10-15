@@ -14,12 +14,14 @@ flowchart LR
         userRequest["구매 목록과 총예산"]
         directory["공개 Agent Card 20개"]
         coordinator["구매 조정기 shopping.py: 실제 하네스 예산 배분과 상점 선택"]
+        coordination["시도 전 사실 요약: 실제 원장 · 다른 구매 · 남은 전체 시간 · 공유 호출 용량"]
+        retryGuard["재선택 검사: no_deal + 확인된 종료 + 해당 목록 칸 모두 해제 + 잔여 시간"]
         userRequest --> coordinator
         directory --> coordinator
     end
 
-    subgraph buyerProcess["구매 프로세스: 기본 최대 3개 독립 거래 스레드"]
-        buyerState["거래별 taskId와 최근 8개 이력"]
+    subgraph buyerProcess["구매 프로세스: 기본 최대 2개 독립 거래 스레드"]
+        buyerState["거래별 taskId와 최근 8개 이력: 개별 기본 280초 · 전체 기본 600초"]
         normalization["quote_normalization.py: metadata · DataPart 관측과 출처 보존"]
         observer["가격 불명일 때 quote_observer: 실제 하네스로 호가 · 상품 · 견적 ID 추출"]
         quoteGuard["관측 검증: 충돌 차단 · 원문 근거 · credits · 수량 1"]
@@ -49,6 +51,12 @@ flowchart LR
     end
 
     coordinator --> buyerState
+    ledger -->|"시점이 표시된 원장 스냅샷"| coordination
+    coordination -->|"상점 선택의 사실 문맥"| coordinator
+    coordination -->|"목록 전체를 고려한 구매 문맥 · 예산 변경 권한 없음"| buyerDecision
+    buyerGuard -->|"실제 반환 상태"| retryGuard
+    ledger -->|"해당 목록 칸의 모든 기록 확인"| retryGuard
+    retryGuard -->|"FAILED · REJECTED · CANCELED에서 최대 1회"| coordinator
     buyerGuard -->|"A2A v1.0 JSON-RPC · 버전 헤더 · 같은 taskId로 제안"| server
     server -->|"비신뢰 견적: metadata · DataPart · 텍스트"| normalization
     server -->|"완료 영수증 artifact"| buyerGuard
@@ -100,13 +108,17 @@ flowchart LR
 | A2A 구매자 | `buyer.py`, `protocol.py` | Card 탐색, 버전 헤더, 동일 taskId 협상, 한 번 구매 후 종료 |
 | 호가 관측 | `quote_normalization.py`, `quote-observation.schema.json` | 알려진 metadata/DataPart 필드 정규화, 필요한 경우 실제 모델로 텍스트 의미 추출, 출처·충돌·숫자/ID 근거 검증 |
 | 대규모 상품 검색 | `catalog.py`, `data/catalog.json` | 의미 있는 설명·속성으로 후보 축소, 후보 선택은 하네스 |
-| 여러 상점 구매 | `shopping.py`, `run_challenges.py` | 실제 Card 디렉터리, 하네스 상점 선택·예산 배분, 독립 거래 병렬 실행 |
+| 여러 상점 구매 | `shopping.py`, `run_challenges.py` | 실제 Card 디렉터리, 하네스 상점 선택·초기 예산 배분, 기본 2개 병렬 거래, 원장 사실 요약·조건부 1회 재선택 |
 | 거래 증거·예산 | `evidence.py`, `quote_normalization.py` | 제약·명시 통화/수량 검증, 원자적 예약, 중복 방지, 모호한 완료의 분쟁 처리 |
 | 전략 학습 | `policy.py`, `train_policy.py` | 역할별 전략을 선택하는 작은 contextual bandit, 실행 중 정책 고정 |
 | 평가·승격 | `evaluate_policy.py`, `run_adversarial.py`, `promote_policy.py` | 실제·합성 결과 구분, 정책 및 검사 파일의 해시 결합, 통과한 후보만 적용 |
 | 외부 구현 비교 | `benchmark_prepare.py`, `benchmark_a2a.py`, `benchmark_transport.py`, `benchmark_summary.py` | 커밋별 소스 고정, 원래 제공자/동일 모델 실행 구분, 고정 상대/직접 교차 거래 구분, 원문 근거 집계 |
 
-상점 거래는 여러 스레드에서 병렬로 진행한다. 이 환경에서는 실제 CLI가 429 응답을 반환했으므로 추론 호출만 로컬 FIFO 대기열로 직렬화하고 10초 간격을 둔다. 파일 잠금은 대기열의 짧은 상태 변경을 보호하며, 먼저 기다린 호출이 뒤에 온 요청에 밀리지 않도록 한다. A2A 서버의 이벤트 루프는 추론을 작업 스레드에 넘겨 다른 요청을 처리할 수 있다.
+상점 거래는 기본 2개 스레드에서 병렬로 진행하고, 추론 호출은 한 개의 로컬 FIFO 입장 슬롯과 10초 간격을 공유한다. 초기 3개 동시 협상에서 공유 호출 대기와 많은 협상 턴이 누적되어 제한 시간에 도달한 실패를 반영한 설정이다. 개별 협상의 기본 상한은 280초이며 전체 장보기의 기본 600초를 함께 지킨다. `--workers`, `--negotiation-timeout`으로 조정할 수 있고 개별 상한은 유한한 양수·300초 미만이어야 한다. 단일 구매자와 도전 1의 기본 240초는 유지한다. 파일 잠금은 대기열의 짧은 상태 변경을 보호하며, A2A 서버는 추론을 작업 스레드에 넘겨 다른 요청을 처리한다.
+
+상점 선택과 구매 시도 직전에 실제 원장·현재 목록 칸·다른 확정 구매·남은 전체 시간을 압축해 양쪽 판단 문맥으로 전달한다. 별도 요약 모델을 호출하거나 모든 대화를 합치지 않는다. 구매자는 공유 호출 용량과 전체 목록의 성사를 고려해 협상 진전을 판단하지만, 받은 문맥으로 자신의 예산 한도를 올리거나 판매자 하한가를 추정하지 않는다. 이 값은 시도 직전의 스냅샷이며 매 턴 갱신되는 실시간 원장이 아니다.
+
+재선택은 `no_deal`과 실제 FAILED·REJECTED·CANCELED 종료를 받고 해당 목록 칸의 기록이 모두 해제됐거나 지출 기록이 없을 때만 최대 한 번 허용한다. 같은 전체 deadline을 유지하며 실제 하네스가 다시 상점을 고른다. 완료·분쟁·응답 유실·시간 초과·진행 중 상태·모델 중단·회차 제한에는 재구매하지 않는다. 초기 배분한 예산은 고정하며 전역 재배분은 하지 않는다.
 
 정규화된 호가는 전략 정책의 `ask` 입력과 협상 이력에 들어간다. 구조화된 숫자 호가가 유일하면 관측용 모델 호출은 추가하지 않는다. 텍스트 의미를 읽어야 할 때만 실제 `quote_observer`를 호출하며, 이 호출도 같은 FIFO와 협상 deadline을 사용한다. 숫자 정규식은 관측 모델이 낸 값의 원문 존재 여부만 검증하며 숫자의 순서로 가격을 결정하지 않는다. 구조화된 가격·상품·견적·통화·수량이 충돌하면 중단한다. 명시된 거래 단위는 credits·수량 1과 같아야 하고, 단위가 없는 기존 상대는 이 기본 규약으로 처리한다.
 
@@ -114,4 +126,4 @@ flowchart LR
 
 원장은 한 구매 프로세스의 여러 거래가 공유하는 스레드 안전 원장이다. 여러 구매 프로세스나 여러 머신이 공유하는 결제 데이터베이스는 아니다. 영수증 검증은 가격·상품·task·견적·재사용 식별자와 명시된 통화·수량의 불일치를 발견하며, 실물 배송이나 판매자의 법적 신원을 보증하지 않는다. 완료 응답이 유실되면 구매가 일어났을 가능성이 있으므로 예약을 분쟁으로 유지한다.
 
-실행된 범위와 검증 결과는 [REPORT.md](REPORT.md)에 기록한다. 전체 카탈로그 검증은 3,003개를 제공하는 판매자를 사용하고, 여러 상점 검증은 분류별 구성으로 실행한 전문점 20개를 사용한다. 이번 관측·역할 목표 개선에서는 기존 활성 정책을 고정했고 RL을 재학습하지 않았다. 재계획 확장과 RL 재학습 단계는 아직 수행하지 않았다. 오프라인 학습기는 전략 선택 정책을 갱신할 수 있지만 실제 거래 가격을 계산하거나 Codex 모델 가중치를 학습하지 않는다. 최종 개선 성과나 조기 종료 판단은 단계별 측정이 끝난 보고서로 확인한다.
+실행된 범위와 검증 결과는 [REPORT.md](REPORT.md)에 기록한다. 전체 카탈로그 검증은 3,003개를 제공하는 판매자를 사용하고, 여러 상점 검증은 분류별 구성으로 실행한 전문점 20개를 사용한다. 관측·역할 목표·장보기 조정 개선에서도 기존 활성 정책을 고정했고 RL을 재학습하지 않았다. 오프라인 학습기는 전략 선택 정책을 갱신할 수 있지만 실제 거래 가격을 계산하거나 Codex 모델 가중치를 학습하지 않는다. 전역 예산 재배분과 실제 실패에서 자동 학습하는 경로는 없다. 최종 개선 성과나 조기 종료 판단은 단계별 측정이 끝난 보고서로 확인한다.
