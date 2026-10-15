@@ -1,0 +1,157 @@
+{
+  "id": "83801dbdf5f441219db32da1cc27aa8c",
+  "method": "POST",
+  "path": "/",
+  "headers": {
+    "content-type": "application/json",
+    "a2a-version": "1.0"
+  },
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "178259d506d747de9af588eb356fe9b0",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "1cbc10d440b44381a265bc2e469f46ba",
+        "parts": [
+          {
+            "text": "115"
+          }
+        ],
+        "taskId": "6a6ffe65-1437-49e1-b1c8-07ffbd0086d9"
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "result": {
+      "task": {
+        "id": "6a6ffe65-1437-49e1-b1c8-07ffbd0086d9",
+        "contextId": "f624a079-c31e-4acd-9f86-d996d21266b4",
+        "status": {
+          "state": "TASK_STATE_COMPLETED",
+          "message": {
+            "messageId": "42e46a02-e5c0-4d7e-9ed6-c0f1531f128e",
+            "contextId": "f624a079-c31e-4acd-9f86-d996d21266b4",
+            "taskId": "6a6ffe65-1437-49e1-b1c8-07ffbd0086d9",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "Deal: lamp at 115."
+              }
+            ]
+          },
+          "timestamp": "2026-10-15T07:01:58.060633Z"
+        },
+        "artifacts": [
+          {
+            "artifactId": "6338dd9b-27db-4754-a078-22bde0093b94",
+            "name": "receipt",
+            "parts": [
+              {
+                "data": {
+                  "price": 115.0,
+                  "item": "lamp",
+                  "name": "lamp",
+                  "seller": "Harness Furniture Shop"
+                }
+              }
+            ]
+          }
+        ],
+        "history": [
+          {
+            "messageId": "ce266ebb4e4c44f4a3634571fed216d0",
+            "contextId": "f624a079-c31e-4acd-9f86-d996d21266b4",
+            "taskId": "6a6ffe65-1437-49e1-b1c8-07ffbd0086d9",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "I want to buy a lamp"
+              }
+            ]
+          },
+          {
+            "messageId": "ae801c2b-dc37-4677-8290-2fab7d28cbe1",
+            "contextId": "f624a079-c31e-4acd-9f86-d996d21266b4",
+            "taskId": "6a6ffe65-1437-49e1-b1c8-07ffbd0086d9",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "The desk lamp is available, and I'd be happy to discuss the price. Item: lamp. Send your offer as a number. Asking price: 140"
+              }
+            ],
+            "metadata": {
+              "ask": 140.0
+            }
+          },
+          {
+            "messageId": "99332608778e438b83abbc53750790a3",
+            "contextId": "84dbf638-3d5b-4c8e-a00f-7bf1f42e7456",
+            "taskId": "6a6ffe65-1437-49e1-b1c8-07ffbd0086d9",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "95"
+              }
+            ]
+          },
+          {
+            "messageId": "48db2833-014c-42e4-93ae-5d45a97cb19f",
+            "contextId": "f624a079-c31e-4acd-9f86-d996d21266b4",
+            "taskId": "6a6ffe65-1437-49e1-b1c8-07ffbd0086d9",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "I can come down a little on the lamp. 95 is too low. Counteroffer: 130"
+              }
+            ],
+            "metadata": {
+              "ask": 130.0
+            }
+          },
+          {
+            "messageId": "09953a7a80ad46e794e7ffe8dc65fb95",
+            "contextId": "8161bde8-b202-487a-a6c8-a17ba4032f9a",
+            "taskId": "6a6ffe65-1437-49e1-b1c8-07ffbd0086d9",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "110"
+              }
+            ]
+          },
+          {
+            "messageId": "2feacd96-58ad-40ec-adb2-25597a15de48",
+            "contextId": "f624a079-c31e-4acd-9f86-d996d21266b4",
+            "taskId": "6a6ffe65-1437-49e1-b1c8-07ffbd0086d9",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "We're getting close, and I can meet you partway. 110 is too low. Counteroffer: 120"
+              }
+            ],
+            "metadata": {
+              "ask": 120.0
+            }
+          },
+          {
+            "messageId": "1cbc10d440b44381a265bc2e469f46ba",
+            "contextId": "e7f7054a-5f64-4c59-a475-84b6d3c0f6c5",
+            "taskId": "6a6ffe65-1437-49e1-b1c8-07ffbd0086d9",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "115"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "id": "178259d506d747de9af588eb356fe9b0",
+    "jsonrpc": "2.0"
+  },
+  "elapsed_seconds": 15.453
+}

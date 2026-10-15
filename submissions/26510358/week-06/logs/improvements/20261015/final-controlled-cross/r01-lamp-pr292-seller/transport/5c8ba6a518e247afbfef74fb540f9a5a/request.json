@@ -1,0 +1,53 @@
+{
+  "id": "5c8ba6a518e247afbfef74fb540f9a5a",
+  "mode": "controlled_same_model_rehost_not_original_provider",
+  "model": "gpt-6-sol",
+  "reasoning_effort": "low",
+  "source": "claude-cli",
+  "participant": "pr292",
+  "time": "2026-10-15T07:12:14.302324+00:00",
+  "pid": 879199,
+  "original_request": {
+    "argv": [
+      "claude",
+      "-p",
+      "--model",
+      "haiku",
+      "--tools",
+      "",
+      "--setting-sources",
+      "",
+      "--no-session-persistence"
+    ],
+    "removed_flags": [
+      {
+        "flag": "-p",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--model",
+        "value": "haiku",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--tools",
+        "value": "",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--setting-sources",
+        "value": "",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--no-session-persistence",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      }
+    ],
+    "stdin": "You are the seller in a price negotiation. You are selling one lamp.\nYour reserve is 100: the lowest price you may ask for or accept.\n\nThe negotiation so far:\nseller: asking 150\nbuyer: offers 95\nseller: counteroffer 125\nbuyer: offers 105\n\nThe buyer now offers 105.\n\nAnswer with one JSON object and nothing else:\n{\"action\": \"counter\" or \"accept\" or \"reject\", \"price\": <integer>}\n",
+    "positional_prompt": null
+  },
+  "boundary_instruction": "You are the inference transport for a controlled negotiation benchmark. Answer the supplied original model request directly. Do not use tools, shell, files, apps, network browsing, or subagents. Emit only the final answer requested by the original prompts, without transport commentary. The transport supplies no negotiation strategy or replacement prices.",
+  "call_timeout_seconds": 40.0,
+  "queue_interval_seconds": 10.0
+}

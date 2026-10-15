@@ -1,0 +1,110 @@
+{
+  "id": "38a00609c3f2437cac4c571fac0a382b",
+  "method": "POST",
+  "path": "/",
+  "headers": {
+    "content-type": "application/json",
+    "a2a-version": "1.0"
+  },
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "607f09146cf8432b942058836031e809",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "e6a4956f4a2b4a35b7e8ac51015da9d0",
+        "parts": [
+          {
+            "text": "105"
+          }
+        ],
+        "taskId": "f66d247f-3c46-4d9d-9d0e-7796bf41d8a1"
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "result": {
+      "task": {
+        "id": "f66d247f-3c46-4d9d-9d0e-7796bf41d8a1",
+        "contextId": "237eeba1-a46b-41e7-93ff-df73519ee522",
+        "status": {
+          "state": "TASK_STATE_INPUT_REQUIRED",
+          "message": {
+            "messageId": "1a944cd5-c273-4e22-ba80-52a102938b9f",
+            "contextId": "237eeba1-a46b-41e7-93ff-df73519ee522",
+            "taskId": "f66d247f-3c46-4d9d-9d0e-7796bf41d8a1",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "105 is too low. Counteroffer: 115."
+              }
+            ]
+          },
+          "timestamp": "2026-10-15T07:12:29.492126Z"
+        },
+        "history": [
+          {
+            "messageId": "eabddb0b76774041a56c55be39cf7346",
+            "contextId": "237eeba1-a46b-41e7-93ff-df73519ee522",
+            "taskId": "f66d247f-3c46-4d9d-9d0e-7796bf41d8a1",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "I want to buy a lamp"
+              }
+            ]
+          },
+          {
+            "messageId": "528c1260-2b45-48be-b35d-462afee6c535",
+            "contextId": "237eeba1-a46b-41e7-93ff-df73519ee522",
+            "taskId": "f66d247f-3c46-4d9d-9d0e-7796bf41d8a1",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "lamp: asking 150. Send your offer as a number."
+              }
+            ]
+          },
+          {
+            "messageId": "e98ee2458c934249bbdbbb4b3952cd06",
+            "contextId": "72d1105d-619f-4668-8293-d49b28f6f92c",
+            "taskId": "f66d247f-3c46-4d9d-9d0e-7796bf41d8a1",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "95"
+              }
+            ]
+          },
+          {
+            "messageId": "bf2a356f-3a2b-4af7-b065-ae2d2139004e",
+            "contextId": "237eeba1-a46b-41e7-93ff-df73519ee522",
+            "taskId": "f66d247f-3c46-4d9d-9d0e-7796bf41d8a1",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "95 is too low. Counteroffer: 125."
+              }
+            ]
+          },
+          {
+            "messageId": "e6a4956f4a2b4a35b7e8ac51015da9d0",
+            "contextId": "1777770a-9879-4f4d-b068-c223ff32df46",
+            "taskId": "f66d247f-3c46-4d9d-9d0e-7796bf41d8a1",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "105"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "id": "607f09146cf8432b942058836031e809",
+    "jsonrpc": "2.0"
+  },
+  "elapsed_seconds": 15.275
+}

@@ -1,0 +1,4 @@
+You are the inference transport for a controlled negotiation benchmark. Answer the supplied original model request directly. Do not use tools, shell, files, apps, network browsing, or subagents. Emit only the final answer requested by the original prompts, without transport commentary. The transport supplies no negotiation strategy or replacement prices.
+
+Original messages, in order (JSON preserves their exact text):
+[{"role": "user", "content": "You are the seller in a price negotiation. You are selling one lamp.\nYour reserve is 100: the lowest price you may ask for or accept.\n\nThe negotiation so far:\nseller: asking 150\nbuyer: offers 95\n\nThe buyer now offers 95.\n\nAnswer with one JSON object and nothing else:\n{\"action\": \"counter\" or \"accept\" or \"reject\", \"price\": <integer>}\n"}]

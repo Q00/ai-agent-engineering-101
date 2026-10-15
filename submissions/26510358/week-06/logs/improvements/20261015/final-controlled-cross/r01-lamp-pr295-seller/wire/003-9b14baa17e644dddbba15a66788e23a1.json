@@ -1,0 +1,65 @@
+{
+  "id": "9b14baa17e644dddbba15a66788e23a1",
+  "method": "POST",
+  "path": "/",
+  "headers": {
+    "content-type": "application/json",
+    "a2a-version": "1.0"
+  },
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "e5a37694929a47c69f6bf358315ce946",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "10371a7b03e04012a76bffb30889d4e0",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ]
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "result": {
+      "task": {
+        "id": "d28879e6-a01f-4079-b72a-b073ce4eb9db",
+        "contextId": "92d2df03-098f-4c5d-9d74-e177562b0aff",
+        "status": {
+          "state": "TASK_STATE_INPUT_REQUIRED",
+          "message": {
+            "messageId": "e2b5cb2a-3b72-4319-ab1d-00bf3dc9cf7c",
+            "contextId": "92d2df03-098f-4c5d-9d74-e177562b0aff",
+            "taskId": "d28879e6-a01f-4079-b72a-b073ce4eb9db",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "lamp: asking price 120"
+              }
+            ]
+          },
+          "timestamp": "2026-10-15T07:04:50.372905Z"
+        },
+        "history": [
+          {
+            "messageId": "10371a7b03e04012a76bffb30889d4e0",
+            "contextId": "92d2df03-098f-4c5d-9d74-e177562b0aff",
+            "taskId": "d28879e6-a01f-4079-b72a-b073ce4eb9db",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "I want to buy a lamp"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "id": "e5a37694929a47c69f6bf358315ce946",
+    "jsonrpc": "2.0"
+  },
+  "elapsed_seconds": 14.272
+}
