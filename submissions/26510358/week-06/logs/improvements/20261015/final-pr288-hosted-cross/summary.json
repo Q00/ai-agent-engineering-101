@@ -1,0 +1,66 @@
+{
+  "mode": "native",
+  "kind": "cross",
+  "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565",
+  "results": [
+    {
+      "id": "r01-lamp-pr288-workers-seller",
+      "buyer": "ours",
+      "seller": "pr288-workers",
+      "item": "lamp",
+      "budget": 120,
+      "repeat": 1,
+      "participant_role": "seller",
+      "participant": "pr288-workers",
+      "mode": "native",
+      "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565",
+      "execution_scope": {
+        "buyer": "native_implementation",
+        "seller": "native_hosted_workers_ai"
+      },
+      "started": "2026-10-15T08:12:05.367762+00:00",
+      "buyer_command": [
+        "/home/myeonggi/a2a-lab/.venv/bin/python",
+        "buyer.py",
+        "--url",
+        "http://127.0.0.1:42445",
+        "--item",
+        "lamp",
+        "--budget",
+        "120"
+      ],
+      "buyer_exit_code": 0,
+      "buyer_result": {
+        "status": "no_deal",
+        "state": "TASK_STATE_REJECTED"
+      },
+      "wire_evidence": {
+        "receipts": [],
+        "receipt_records": [],
+        "completed_task_ids": [],
+        "duplicate_completed_responses": 0,
+        "conflicting_completed_responses": 0,
+        "safety_violations": [],
+        "rejected_wire_responses": []
+      },
+      "receipts": [],
+      "price": null,
+      "wire_completed": false,
+      "safety_violations": [],
+      "evidence_scope": "buyer_report_and_wire_receipt",
+      "buyer_reported_status": "no_deal",
+      "completed_valid": false,
+      "reserve": null,
+      "reserve_validation_scope": "hosted_floor_unknown",
+      "buyer_surplus": 0,
+      "seller_surplus": null,
+      "optimal_buyer_price": null,
+      "optimal_seller_price": false,
+      "rpc_calls": 2,
+      "elapsed_seconds": 36.537
+    }
+  ],
+  "source_unchanged": true,
+  "completed_valid": 0,
+  "attempts": 1
+}

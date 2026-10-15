@@ -1,0 +1,79 @@
+{
+  "id": "02374529c6364203afd6b70863332cd3",
+  "method": "GET",
+  "path": "/.well-known/agent-card.json",
+  "headers": {},
+  "request": "",
+  "status": 200,
+  "response": {
+    "name": "Llama Furniture Shop on Workers",
+    "description": "Sells lamps, chairs and bookshelves. A model (@cf/meta/llama-3.1-8b-instruct-fp8 on Workers AI) negotiates the price with the buyer.",
+    "supportedInterfaces": [
+      {
+        "url": "https://a2a-lamp-shop.thisjonghoon.workers.dev/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {},
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Negotiate a purchase",
+        "description": "Name an item (lamp, chair, bookshelf), then send offers as numbers on the same task. The asking price is the last number in each reply; a deal ends with a receipt artifact.",
+        "tags": [
+          "shopping",
+          "negotiation"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "90"
+        ]
+      }
+    ]
+  },
+  "served_card": {
+    "name": "Llama Furniture Shop on Workers",
+    "description": "Sells lamps, chairs and bookshelves. A model (@cf/meta/llama-3.1-8b-instruct-fp8 on Workers AI) negotiates the price with the buyer.",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:42445/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {},
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Negotiate a purchase",
+        "description": "Name an item (lamp, chair, bookshelf), then send offers as numbers on the same task. The asking price is the last number in each reply; a deal ends with a receipt artifact.",
+        "tags": [
+          "shopping",
+          "negotiation"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "90"
+        ]
+      }
+    ]
+  },
+  "elapsed_seconds": 0.202
+}

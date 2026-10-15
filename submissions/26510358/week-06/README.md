@@ -6,7 +6,7 @@
 
 ![호가 정규화·역할 목표 추가 이전 버전의 A2A 거래 시스템 아키텍처](docs/architecture-final.png)
 
-위 정적 이미지는 호가 정규화와 역할별 가격 목표를 추가하기 전의 구조입니다. 현재 연결은 [시스템 구조의 Mermaid](ARCHITECTURE.md)를 기준으로 읽습니다. 관측 정규화·역할 목표·장보기 동시성·제한적 재선택과 거래 종료 경계를 개선했고, 단계 4에서는 합성 환경 v2로 새 전략 후보를 학습했습니다. 활성 정책 파일은 유지하며 새 후보는 실제 평가 대기 상태입니다. 전역 예산 재배분은 구현하지 않았습니다. 최종 성능 판단이나 조기 종료 결론은 측정 보고서에서 확인합니다.
+위 정적 이미지는 호가 정규화와 역할별 가격 목표를 추가하기 전의 구조입니다. 현재 연결은 [시스템 구조의 Mermaid](ARCHITECTURE.md)를 기준으로 읽습니다. 관측 정규화·역할 목표·장보기 동시성·제한적 재선택과 거래 종료 경계를 개선했고, 단계 4에서는 합성 환경 v2로 새 전략 후보를 학습했습니다. 후보의 실제 거래 screen·probe를 마쳤지만 승격하지 않았으며 활성 정책 파일은 유지합니다. 전역 예산 재배분은 구현하지 않았습니다. 성능 판단과 후보 선택 근거는 측정 보고서에서 확인합니다.
 
 ## 실행 준비
 
@@ -180,7 +180,7 @@ python3 run_adversarial.py --policy policies/candidate-example.json --log-dir lo
 
 정책 로드 우선순위는 **명시적 `--policy` → `A2A_POLICY_PATH` → `policies/active.json` → 학습 전 기본 정책**입니다. 실행 시작 시 한 번 읽어 고정하므로 거래 중 파일 변경으로 정책이 바뀌지 않습니다. 학습기는 후보만 생성하며 활성 정책을 자동 교체하지 않습니다.
 
-단계 1–3b에서는 기존 활성 정책을 유지했고, 단계 4에서는 seed 42·5,000회 갱신으로 [새 후보](policies/candidate-env2-20261015.json) `synthetic-bandit-env2-s42-n5000`를 만들었습니다. [학습 보고서](logs/improvements/20261015/stage-04-training-report.json)는 `synthetic_surrogate`, `actual_harness_evaluated=false`, `promoted=false`입니다. 기본 `active.json`은 기존 `synthetic-bandit-s42-n5000`이며 새 후보를 자동으로 선택하지 않습니다. 활성 파일과 Q값을 유지해도 공통 전략 프롬프트 문구가 바뀌면 실행 행동이 달라질 수 있으므로 정책 파일 해시와 소스 버전을 함께 비교합니다. 새 후보의 실제 평가·공식 검사·승격 결과는 완료 전까지 성과로 기록하지 않습니다. 실제 실패 로그에서 자동 재학습하는 경로와 전역 예산 재배분도 없습니다.
+단계 1–3b에서는 기존 활성 정책을 유지했고, 단계 4에서는 seed 42·5,000회 갱신으로 [새 후보](policies/candidate-env2-20261015.json) `synthetic-bandit-env2-s42-n5000`를 만들었습니다. [학습 시점 보고서](logs/improvements/20261015/stage-04-training-report.json)의 `actual_harness_evaluated=false`는 그대로 보존하고, 이후 실제 고정 상대 screen과 PR296 상대 probe를 별도 기록했습니다. screen에서 관측 우위가 없었고 probe는 미체결이어서 [기존 활성 정책 유지](logs/improvements/20261015/stage-04-opponent-probe-decision.json)를 선택했습니다. 후보 전용 holdout·공격·공식 검사 gate는 완료하지 않았으며 새 후보를 기본 런타임에 배포하지 않았습니다. 기본 `active.json`은 기존 `synthetic-bandit-s42-n5000`입니다. 활성 파일과 Q값을 유지해도 공통 전략 문구가 바뀌면 실행 행동이 달라질 수 있으므로 정책 해시와 소스 버전을 함께 비교합니다. 실제 실패 로그에서 자동 재학습하는 경로와 전역 예산 재배분은 없습니다.
 
 후보를 공식 검사에 적용하려면 저장소 루트에서 다음과 같이 해당 실행에만 환경변수를 지정합니다. 아래는 개발 후보 `policies/candidate.json`을 검사하는 예시이며, 다시 실행할 때는 새 추론 로그 경로를 사용합니다.
 
