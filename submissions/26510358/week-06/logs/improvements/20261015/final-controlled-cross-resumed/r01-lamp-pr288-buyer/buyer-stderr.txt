@@ -1,0 +1,20 @@
+[17:02:20] CARD: '26510358 Catalog Shop' at http://127.0.0.1:60091/, protocol 1.0
+[17:02:20] SEND: 'I want to buy a lamp'
+[17:02:39] RECV: TASK_STATE_INPUT_REQUIRED | 'Classic Reading Lamp / 기본 독서 램프. Asking price: 150'
+[17:02:39] ASK: 150 (text)
+[17:03:00] HARNESS: try 1: 21.0 s, exit 0, answer '{"action":"offer","price":100}'
+[17:03:00] SEND: '100' taskId=90877be6
+[17:03:18] RECV: TASK_STATE_INPUT_REQUIRED | 'Classic Reading Lamp / 기본 독서 램프. Asking price: 135'
+[17:03:18] ASK: 135 (text)
+[17:03:34] HARNESS: try 1: 16.8 s, exit 0, answer '{"action":"offer","price":110}'
+[17:03:34] SEND: '110' taskId=90877be6
+[17:03:53] RECV: TASK_STATE_INPUT_REQUIRED | 'Classic Reading Lamp / 기본 독서 램프. Asking price: 130'
+[17:03:53] ASK: 130 (text)
+[17:04:11] HARNESS: try 1: 18.0 s, exit 0, answer '{"action":"offer","price":120}'
+[17:04:11] SEND: '120' taskId=90877be6
+[17:04:30] RECV: TASK_STATE_INPUT_REQUIRED | 'Classic Reading Lamp / 기본 독서 램프. Asking price: 130'
+[17:04:30] ASK: 130 (text)
+[17:04:47] HARNESS: try 1: 17.8 s, exit 0, answer '{"action":"walk","price":0}'
+[17:04:47] OUT: harness walks away at ask 130
+[17:04:47] SEND: CancelTask 90877be6
+[17:04:47] RECV: TASK_STATE_CANCELED

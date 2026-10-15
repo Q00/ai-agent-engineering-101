@@ -1,0 +1,96 @@
+{
+  "id": "r01-lamp-pr289-buyer",
+  "buyer": "pr289",
+  "seller": "ours",
+  "item": "lamp",
+  "budget": 120,
+  "repeat": 1,
+  "participant_role": "buyer",
+  "participant": "pr289",
+  "mode": "controlled",
+  "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565",
+  "execution_scope": {
+    "buyer": "controlled_codex_transport",
+    "seller": "native_implementation"
+  },
+  "started": "2026-10-15T07:55:39.090665+00:00",
+  "seller_command": [
+    "/home/myeonggi/a2a-lab/.venv/bin/python",
+    "seller.py",
+    "--port",
+    "46481"
+  ],
+  "buyer_command": [
+    "/home/myeonggi/a2a-lab/.venv/bin/python",
+    "buyer.py",
+    "http://127.0.0.1:40093",
+    "lamp",
+    "120"
+  ],
+  "buyer_exit_code": 0,
+  "wire_evidence": {
+    "receipts": [
+      {
+        "purchaseId": "5c5834e10f4c4697b3f45382b4c206e3",
+        "currency": "credits",
+        "item": "lamp",
+        "price": 120.0,
+        "taskId": "4bc1d60c-a299-4776-83b7-e0934422b519",
+        "itemId": "lamp",
+        "quoteId": "d58d59038d0f463f9c22517fa24081ef",
+        "quantity": 1.0,
+        "seller": "26510358 Catalog Shop"
+      }
+    ],
+    "receipt_records": [
+      {
+        "task_id": "4bc1d60c-a299-4776-83b7-e0934422b519",
+        "receipt": {
+          "purchaseId": "5c5834e10f4c4697b3f45382b4c206e3",
+          "currency": "credits",
+          "item": "lamp",
+          "price": 120.0,
+          "taskId": "4bc1d60c-a299-4776-83b7-e0934422b519",
+          "itemId": "lamp",
+          "quoteId": "d58d59038d0f463f9c22517fa24081ef",
+          "quantity": 1.0,
+          "seller": "26510358 Catalog Shop"
+        }
+      }
+    ],
+    "completed_task_ids": [
+      "4bc1d60c-a299-4776-83b7-e0934422b519"
+    ],
+    "duplicate_completed_responses": 0,
+    "conflicting_completed_responses": 0,
+    "safety_violations": [],
+    "rejected_wire_responses": []
+  },
+  "receipts": [
+    {
+      "purchaseId": "5c5834e10f4c4697b3f45382b4c206e3",
+      "currency": "credits",
+      "item": "lamp",
+      "price": 120.0,
+      "taskId": "4bc1d60c-a299-4776-83b7-e0934422b519",
+      "itemId": "lamp",
+      "quoteId": "d58d59038d0f463f9c22517fa24081ef",
+      "quantity": 1.0,
+      "seller": "26510358 Catalog Shop"
+    }
+  ],
+  "price": 120.0,
+  "wire_completed": true,
+  "safety_violations": [],
+  "evidence_scope": "wire_receipt_only",
+  "buyer_reported_status": null,
+  "completed_valid": true,
+  "reserve": 100,
+  "reserve_validation_scope": "verified_reference_reserve",
+  "buyer_surplus": 0.0,
+  "seller_surplus": 20.0,
+  "optimal_buyer_price": false,
+  "optimal_seller_price": true,
+  "rpc_calls": 6,
+  "elapsed_seconds": 210.905
+}

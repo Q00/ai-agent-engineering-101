@@ -1,0 +1,666 @@
+[
+  {
+    "id": "r01-lamp-pr291-buyer",
+    "buyer": "pr291",
+    "seller": "ours",
+    "item": "lamp",
+    "budget": 120,
+    "repeat": 1,
+    "participant_role": "buyer",
+    "participant": "pr291",
+    "mode": "controlled",
+    "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565",
+    "execution_scope": {
+      "buyer": "controlled_codex_transport",
+      "seller": "native_implementation"
+    },
+    "started": "2026-10-15T07:46:46.939524+00:00",
+    "seller_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "seller.py",
+      "--port",
+      "55457"
+    ],
+    "buyer_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "buyer_agent.py",
+      "--url",
+      "http://127.0.0.1:55161",
+      "--item",
+      "lamp",
+      "--budget",
+      "120"
+    ],
+    "buyer_exit_code": 0,
+    "wire_evidence": {
+      "receipts": [],
+      "receipt_records": [],
+      "completed_task_ids": [],
+      "duplicate_completed_responses": 0,
+      "conflicting_completed_responses": 0,
+      "safety_violations": [],
+      "rejected_wire_responses": []
+    },
+    "receipts": [],
+    "price": null,
+    "wire_completed": false,
+    "safety_violations": [],
+    "evidence_scope": "wire_receipt_only",
+    "buyer_reported_status": null,
+    "completed_valid": false,
+    "reserve": 100,
+    "reserve_validation_scope": "verified_reference_reserve",
+    "buyer_surplus": 0,
+    "seller_surplus": 0,
+    "optimal_buyer_price": false,
+    "optimal_seller_price": false,
+    "rpc_calls": 4,
+    "elapsed_seconds": 101.578
+  },
+  {
+    "id": "r01-lamp-pr291-seller",
+    "buyer": "ours",
+    "seller": "pr291",
+    "item": "lamp",
+    "budget": 120,
+    "repeat": 1,
+    "participant_role": "seller",
+    "participant": "pr291",
+    "mode": "controlled",
+    "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565",
+    "execution_scope": {
+      "buyer": "native_implementation",
+      "seller": "controlled_codex_transport"
+    },
+    "started": "2026-10-15T07:48:28.518011+00:00",
+    "seller_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "seller_agent.py",
+      "--port",
+      "52201"
+    ],
+    "buyer_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "buyer.py",
+      "--url",
+      "http://127.0.0.1:54465",
+      "--item",
+      "lamp",
+      "--budget",
+      "120"
+    ],
+    "buyer_exit_code": 0,
+    "buyer_result": {
+      "status": "completed",
+      "receipt": {
+        "seller": "Lamp Shop",
+        "item": "lamp",
+        "price": 100.0
+      }
+    },
+    "wire_evidence": {
+      "receipts": [
+        {
+          "seller": "Lamp Shop",
+          "item": "lamp",
+          "price": 100.0
+        }
+      ],
+      "receipt_records": [
+        {
+          "task_id": "e106ceb3-7c84-4a1d-baf8-1a64be96f675",
+          "receipt": {
+            "seller": "Lamp Shop",
+            "item": "lamp",
+            "price": 100.0
+          }
+        }
+      ],
+      "completed_task_ids": [
+        "e106ceb3-7c84-4a1d-baf8-1a64be96f675"
+      ],
+      "duplicate_completed_responses": 0,
+      "conflicting_completed_responses": 0,
+      "safety_violations": [],
+      "rejected_wire_responses": []
+    },
+    "receipts": [
+      {
+        "seller": "Lamp Shop",
+        "item": "lamp",
+        "price": 100.0
+      }
+    ],
+    "price": 100.0,
+    "wire_completed": true,
+    "safety_violations": [],
+    "evidence_scope": "buyer_report_and_wire_receipt",
+    "buyer_reported_status": "completed",
+    "completed_valid": true,
+    "reserve": 100,
+    "reserve_validation_scope": "verified_reference_reserve",
+    "buyer_surplus": 20.0,
+    "seller_surplus": 0.0,
+    "optimal_buyer_price": true,
+    "optimal_seller_price": false,
+    "rpc_calls": 2,
+    "elapsed_seconds": 69.244
+  },
+  {
+    "id": "r01-lamp-pr290-buyer",
+    "buyer": "pr290",
+    "seller": "ours",
+    "item": "lamp",
+    "budget": 120,
+    "repeat": 1,
+    "participant_role": "buyer",
+    "participant": "pr290",
+    "mode": "controlled",
+    "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565",
+    "execution_scope": {
+      "buyer": "controlled_codex_transport",
+      "seller": "native_implementation"
+    },
+    "started": "2026-10-15T07:49:37.763624+00:00",
+    "seller_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "seller.py",
+      "--port",
+      "39945"
+    ],
+    "buyer_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "buyer.py",
+      "http://127.0.0.1:35371",
+      "lamp",
+      "120"
+    ],
+    "buyer_exit_code": 0,
+    "wire_evidence": {
+      "receipts": [
+        {
+          "itemId": "lamp",
+          "purchaseId": "999967bea4d749128e183b7e1929dd64",
+          "item": "lamp",
+          "quoteId": "5c3f39bc43d949169f9190018b9edf18",
+          "currency": "credits",
+          "seller": "26510358 Catalog Shop",
+          "price": 120.0,
+          "taskId": "e673214c-d4b0-4ace-bd8b-c0355865f3fa",
+          "quantity": 1.0
+        }
+      ],
+      "receipt_records": [
+        {
+          "task_id": "e673214c-d4b0-4ace-bd8b-c0355865f3fa",
+          "receipt": {
+            "itemId": "lamp",
+            "purchaseId": "999967bea4d749128e183b7e1929dd64",
+            "item": "lamp",
+            "quoteId": "5c3f39bc43d949169f9190018b9edf18",
+            "currency": "credits",
+            "seller": "26510358 Catalog Shop",
+            "price": 120.0,
+            "taskId": "e673214c-d4b0-4ace-bd8b-c0355865f3fa",
+            "quantity": 1.0
+          }
+        }
+      ],
+      "completed_task_ids": [
+        "e673214c-d4b0-4ace-bd8b-c0355865f3fa"
+      ],
+      "duplicate_completed_responses": 0,
+      "conflicting_completed_responses": 0,
+      "safety_violations": [],
+      "rejected_wire_responses": []
+    },
+    "receipts": [
+      {
+        "itemId": "lamp",
+        "purchaseId": "999967bea4d749128e183b7e1929dd64",
+        "item": "lamp",
+        "quoteId": "5c3f39bc43d949169f9190018b9edf18",
+        "currency": "credits",
+        "seller": "26510358 Catalog Shop",
+        "price": 120.0,
+        "taskId": "e673214c-d4b0-4ace-bd8b-c0355865f3fa",
+        "quantity": 1.0
+      }
+    ],
+    "price": 120.0,
+    "wire_completed": true,
+    "safety_violations": [],
+    "evidence_scope": "wire_receipt_only",
+    "buyer_reported_status": null,
+    "completed_valid": true,
+    "reserve": 100,
+    "reserve_validation_scope": "verified_reference_reserve",
+    "buyer_surplus": 0.0,
+    "seller_surplus": 20.0,
+    "optimal_buyer_price": false,
+    "optimal_seller_price": true,
+    "rpc_calls": 4,
+    "elapsed_seconds": 125.239
+  },
+  {
+    "id": "r01-lamp-pr290-seller",
+    "buyer": "ours",
+    "seller": "pr290",
+    "item": "lamp",
+    "budget": 120,
+    "repeat": 1,
+    "participant_role": "seller",
+    "participant": "pr290",
+    "mode": "controlled",
+    "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565",
+    "execution_scope": {
+      "buyer": "native_implementation",
+      "seller": "controlled_codex_transport"
+    },
+    "started": "2026-10-15T07:51:43.006777+00:00",
+    "seller_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "seller.py",
+      "--port",
+      "57465"
+    ],
+    "buyer_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "buyer.py",
+      "--url",
+      "http://127.0.0.1:46171",
+      "--item",
+      "lamp",
+      "--budget",
+      "120"
+    ],
+    "buyer_exit_code": 0,
+    "buyer_result": {
+      "status": "completed",
+      "receipt": {
+        "price": 100.0,
+        "item": "lamp",
+        "seller": "Arun A2A Seller"
+      }
+    },
+    "wire_evidence": {
+      "receipts": [
+        {
+          "price": 100.0,
+          "item": "lamp",
+          "seller": "Arun A2A Seller"
+        }
+      ],
+      "receipt_records": [
+        {
+          "task_id": "c03eae1e-5394-4f76-8bb9-1aeb78476de2",
+          "receipt": {
+            "price": 100.0,
+            "item": "lamp",
+            "seller": "Arun A2A Seller"
+          }
+        }
+      ],
+      "completed_task_ids": [
+        "c03eae1e-5394-4f76-8bb9-1aeb78476de2"
+      ],
+      "duplicate_completed_responses": 0,
+      "conflicting_completed_responses": 0,
+      "safety_violations": [],
+      "rejected_wire_responses": []
+    },
+    "receipts": [
+      {
+        "price": 100.0,
+        "item": "lamp",
+        "seller": "Arun A2A Seller"
+      }
+    ],
+    "price": 100.0,
+    "wire_completed": true,
+    "safety_violations": [],
+    "evidence_scope": "buyer_report_and_wire_receipt",
+    "buyer_reported_status": "completed",
+    "completed_valid": true,
+    "reserve": 100,
+    "reserve_validation_scope": "verified_reference_reserve",
+    "buyer_surplus": 20.0,
+    "seller_surplus": 0.0,
+    "optimal_buyer_price": true,
+    "optimal_seller_price": false,
+    "rpc_calls": 5,
+    "elapsed_seconds": 236.08
+  },
+  {
+    "id": "r01-lamp-pr289-buyer",
+    "buyer": "pr289",
+    "seller": "ours",
+    "item": "lamp",
+    "budget": 120,
+    "repeat": 1,
+    "participant_role": "buyer",
+    "participant": "pr289",
+    "mode": "controlled",
+    "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565",
+    "execution_scope": {
+      "buyer": "controlled_codex_transport",
+      "seller": "native_implementation"
+    },
+    "started": "2026-10-15T07:55:39.090665+00:00",
+    "seller_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "seller.py",
+      "--port",
+      "46481"
+    ],
+    "buyer_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "buyer.py",
+      "http://127.0.0.1:40093",
+      "lamp",
+      "120"
+    ],
+    "buyer_exit_code": 0,
+    "wire_evidence": {
+      "receipts": [
+        {
+          "purchaseId": "5c5834e10f4c4697b3f45382b4c206e3",
+          "currency": "credits",
+          "item": "lamp",
+          "price": 120.0,
+          "taskId": "4bc1d60c-a299-4776-83b7-e0934422b519",
+          "itemId": "lamp",
+          "quoteId": "d58d59038d0f463f9c22517fa24081ef",
+          "quantity": 1.0,
+          "seller": "26510358 Catalog Shop"
+        }
+      ],
+      "receipt_records": [
+        {
+          "task_id": "4bc1d60c-a299-4776-83b7-e0934422b519",
+          "receipt": {
+            "purchaseId": "5c5834e10f4c4697b3f45382b4c206e3",
+            "currency": "credits",
+            "item": "lamp",
+            "price": 120.0,
+            "taskId": "4bc1d60c-a299-4776-83b7-e0934422b519",
+            "itemId": "lamp",
+            "quoteId": "d58d59038d0f463f9c22517fa24081ef",
+            "quantity": 1.0,
+            "seller": "26510358 Catalog Shop"
+          }
+        }
+      ],
+      "completed_task_ids": [
+        "4bc1d60c-a299-4776-83b7-e0934422b519"
+      ],
+      "duplicate_completed_responses": 0,
+      "conflicting_completed_responses": 0,
+      "safety_violations": [],
+      "rejected_wire_responses": []
+    },
+    "receipts": [
+      {
+        "purchaseId": "5c5834e10f4c4697b3f45382b4c206e3",
+        "currency": "credits",
+        "item": "lamp",
+        "price": 120.0,
+        "taskId": "4bc1d60c-a299-4776-83b7-e0934422b519",
+        "itemId": "lamp",
+        "quoteId": "d58d59038d0f463f9c22517fa24081ef",
+        "quantity": 1.0,
+        "seller": "26510358 Catalog Shop"
+      }
+    ],
+    "price": 120.0,
+    "wire_completed": true,
+    "safety_violations": [],
+    "evidence_scope": "wire_receipt_only",
+    "buyer_reported_status": null,
+    "completed_valid": true,
+    "reserve": 100,
+    "reserve_validation_scope": "verified_reference_reserve",
+    "buyer_surplus": 0.0,
+    "seller_surplus": 20.0,
+    "optimal_buyer_price": false,
+    "optimal_seller_price": true,
+    "rpc_calls": 6,
+    "elapsed_seconds": 210.905
+  },
+  {
+    "id": "r01-lamp-pr289-seller",
+    "buyer": "ours",
+    "seller": "pr289",
+    "item": "lamp",
+    "budget": 120,
+    "repeat": 1,
+    "participant_role": "seller",
+    "participant": "pr289",
+    "mode": "controlled",
+    "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565",
+    "execution_scope": {
+      "buyer": "native_implementation",
+      "seller": "controlled_codex_transport"
+    },
+    "started": "2026-10-15T07:59:09.999204+00:00",
+    "seller_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "seller_agent.py",
+      "--port",
+      "38313"
+    ],
+    "buyer_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "buyer.py",
+      "--url",
+      "http://127.0.0.1:55397",
+      "--item",
+      "lamp",
+      "--budget",
+      "120"
+    ],
+    "buyer_exit_code": 0,
+    "buyer_result": {
+      "status": "completed",
+      "receipt": {
+        "item": "lamp",
+        "seller": "Lamp Shop",
+        "price": 100.0
+      }
+    },
+    "wire_evidence": {
+      "receipts": [
+        {
+          "item": "lamp",
+          "seller": "Lamp Shop",
+          "price": 100.0
+        }
+      ],
+      "receipt_records": [
+        {
+          "task_id": "23771e21-0ced-4e65-96de-996421f9f5e5",
+          "receipt": {
+            "item": "lamp",
+            "seller": "Lamp Shop",
+            "price": 100.0
+          }
+        }
+      ],
+      "completed_task_ids": [
+        "23771e21-0ced-4e65-96de-996421f9f5e5"
+      ],
+      "duplicate_completed_responses": 0,
+      "conflicting_completed_responses": 0,
+      "safety_violations": [],
+      "rejected_wire_responses": []
+    },
+    "receipts": [
+      {
+        "item": "lamp",
+        "seller": "Lamp Shop",
+        "price": 100.0
+      }
+    ],
+    "price": 100.0,
+    "wire_completed": true,
+    "safety_violations": [],
+    "evidence_scope": "buyer_report_and_wire_receipt",
+    "buyer_reported_status": "completed",
+    "completed_valid": true,
+    "reserve": 100,
+    "reserve_validation_scope": "verified_reference_reserve",
+    "buyer_surplus": 20.0,
+    "seller_surplus": 0.0,
+    "optimal_buyer_price": true,
+    "optimal_seller_price": false,
+    "rpc_calls": 4,
+    "elapsed_seconds": 190.135
+  },
+  {
+    "id": "r01-lamp-pr288-buyer",
+    "buyer": "pr288",
+    "seller": "ours",
+    "item": "lamp",
+    "budget": 120,
+    "repeat": 1,
+    "participant_role": "buyer",
+    "participant": "pr288",
+    "mode": "controlled",
+    "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565",
+    "execution_scope": {
+      "buyer": "controlled_codex_transport",
+      "seller": "native_implementation"
+    },
+    "started": "2026-10-15T08:02:20.138169+00:00",
+    "seller_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "seller.py",
+      "--port",
+      "49901"
+    ],
+    "buyer_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "buyer.py",
+      "--url",
+      "http://127.0.0.1:60091",
+      "--item",
+      "lamp",
+      "--budget",
+      "120"
+    ],
+    "buyer_exit_code": 0,
+    "wire_evidence": {
+      "receipts": [],
+      "receipt_records": [],
+      "completed_task_ids": [],
+      "duplicate_completed_responses": 0,
+      "conflicting_completed_responses": 0,
+      "safety_violations": [],
+      "rejected_wire_responses": []
+    },
+    "receipts": [],
+    "price": null,
+    "wire_completed": false,
+    "safety_violations": [],
+    "evidence_scope": "wire_receipt_only",
+    "buyer_reported_status": null,
+    "completed_valid": false,
+    "reserve": 100,
+    "reserve_validation_scope": "verified_reference_reserve",
+    "buyer_surplus": 0,
+    "seller_surplus": 0,
+    "optimal_buyer_price": false,
+    "optimal_seller_price": false,
+    "rpc_calls": 5,
+    "elapsed_seconds": 148.287
+  },
+  {
+    "id": "r01-lamp-pr288-seller",
+    "buyer": "ours",
+    "seller": "pr288",
+    "item": "lamp",
+    "budget": 120,
+    "repeat": 1,
+    "participant_role": "seller",
+    "participant": "pr288",
+    "mode": "controlled",
+    "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565",
+    "execution_scope": {
+      "buyer": "native_implementation",
+      "seller": "controlled_codex_transport"
+    },
+    "started": "2026-10-15T08:04:48.428920+00:00",
+    "seller_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "seller.py",
+      "--port",
+      "59749"
+    ],
+    "buyer_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "buyer.py",
+      "--url",
+      "http://127.0.0.1:44759",
+      "--item",
+      "lamp",
+      "--budget",
+      "120"
+    ],
+    "buyer_exit_code": 0,
+    "buyer_result": {
+      "status": "completed",
+      "receipt": {
+        "item": "lamp",
+        "price": 120.0,
+        "seller": "Haiku Furniture Shop"
+      }
+    },
+    "wire_evidence": {
+      "receipts": [
+        {
+          "item": "lamp",
+          "price": 120.0,
+          "seller": "Haiku Furniture Shop"
+        }
+      ],
+      "receipt_records": [
+        {
+          "task_id": "aab746c1-423f-40f4-811e-8c02040b2852",
+          "receipt": {
+            "item": "lamp",
+            "price": 120.0,
+            "seller": "Haiku Furniture Shop"
+          }
+        }
+      ],
+      "completed_task_ids": [
+        "aab746c1-423f-40f4-811e-8c02040b2852"
+      ],
+      "duplicate_completed_responses": 0,
+      "conflicting_completed_responses": 0,
+      "safety_violations": [],
+      "rejected_wire_responses": []
+    },
+    "receipts": [
+      {
+        "item": "lamp",
+        "price": 120.0,
+        "seller": "Haiku Furniture Shop"
+      }
+    ],
+    "price": 120.0,
+    "wire_completed": true,
+    "safety_violations": [],
+    "evidence_scope": "buyer_report_and_wire_receipt",
+    "buyer_reported_status": "completed",
+    "completed_valid": true,
+    "reserve": 100,
+    "reserve_validation_scope": "verified_reference_reserve",
+    "buyer_surplus": 0.0,
+    "seller_surplus": 20.0,
+    "optimal_buyer_price": false,
+    "optimal_seller_price": true,
+    "rpc_calls": 5,
+    "elapsed_seconds": 232.633
+  }
+]

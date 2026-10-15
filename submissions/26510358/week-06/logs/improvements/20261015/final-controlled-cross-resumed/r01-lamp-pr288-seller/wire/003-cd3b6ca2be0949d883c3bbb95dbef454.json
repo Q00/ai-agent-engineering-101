@@ -1,0 +1,65 @@
+{
+  "id": "cd3b6ca2be0949d883c3bbb95dbef454",
+  "method": "POST",
+  "path": "/",
+  "headers": {
+    "content-type": "application/json",
+    "a2a-version": "1.0"
+  },
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "049ef1457ddb4c89aea14b0edcca01ee",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "65422c822c8f4860a9b1b2b95e0c240c",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ]
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "result": {
+      "task": {
+        "id": "aab746c1-423f-40f4-811e-8c02040b2852",
+        "contextId": "e0b703ed-5825-43f2-a225-6eb3818a137b",
+        "status": {
+          "state": "TASK_STATE_INPUT_REQUIRED",
+          "message": {
+            "messageId": "913c6a5d-aef7-4f7e-83f5-5fa48ee88e6e",
+            "contextId": "e0b703ed-5825-43f2-a225-6eb3818a137b",
+            "taskId": "aab746c1-423f-40f4-811e-8c02040b2852",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "lamp: This lamp is a lovely piece, and I’m happy to discuss the price. Asking 150. Send your offer as a number."
+              }
+            ]
+          },
+          "timestamp": "2026-10-15T08:05:03.901147Z"
+        },
+        "history": [
+          {
+            "messageId": "65422c822c8f4860a9b1b2b95e0c240c",
+            "contextId": "e0b703ed-5825-43f2-a225-6eb3818a137b",
+            "taskId": "aab746c1-423f-40f4-811e-8c02040b2852",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "I want to buy a lamp"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "id": "049ef1457ddb4c89aea14b0edcca01ee",
+    "jsonrpc": "2.0"
+  },
+  "elapsed_seconds": 14.863
+}

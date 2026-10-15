@@ -1,0 +1,88 @@
+{
+  "id": "48cb24cbb8b149fd9cfdef5711453141",
+  "method": "POST",
+  "path": "/",
+  "headers": {
+    "content-type": "application/json",
+    "a2a-version": "1.0"
+  },
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "41f46151db0245c787cdb2d2534c6735",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "82840e78d44240cdb02cb90b9ceed0a4",
+        "parts": [
+          {
+            "text": "95"
+          }
+        ],
+        "taskId": "aab746c1-423f-40f4-811e-8c02040b2852"
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "result": {
+      "task": {
+        "id": "aab746c1-423f-40f4-811e-8c02040b2852",
+        "contextId": "e0b703ed-5825-43f2-a225-6eb3818a137b",
+        "status": {
+          "state": "TASK_STATE_INPUT_REQUIRED",
+          "message": {
+            "messageId": "618c33aa-e622-4897-b6c9-c2d2ef99ae31",
+            "contextId": "e0b703ed-5825-43f2-a225-6eb3818a137b",
+            "taskId": "aab746c1-423f-40f4-811e-8c02040b2852",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "I can come down a little on the lamp. Counteroffer: 140."
+              }
+            ]
+          },
+          "timestamp": "2026-10-15T08:05:56.441322Z"
+        },
+        "history": [
+          {
+            "messageId": "65422c822c8f4860a9b1b2b95e0c240c",
+            "contextId": "e0b703ed-5825-43f2-a225-6eb3818a137b",
+            "taskId": "aab746c1-423f-40f4-811e-8c02040b2852",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "I want to buy a lamp"
+              }
+            ]
+          },
+          {
+            "messageId": "913c6a5d-aef7-4f7e-83f5-5fa48ee88e6e",
+            "contextId": "e0b703ed-5825-43f2-a225-6eb3818a137b",
+            "taskId": "aab746c1-423f-40f4-811e-8c02040b2852",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "lamp: This lamp is a lovely piece, and I’m happy to discuss the price. Asking 150. Send your offer as a number."
+              }
+            ]
+          },
+          {
+            "messageId": "82840e78d44240cdb02cb90b9ceed0a4",
+            "contextId": "8bfd62cc-54c3-4467-ba3f-7a0de6a2d55e",
+            "taskId": "aab746c1-423f-40f4-811e-8c02040b2852",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "95"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "id": "41f46151db0245c787cdb2d2534c6735",
+    "jsonrpc": "2.0"
+  },
+  "elapsed_seconds": 16.785
+}

@@ -1,0 +1,45 @@
+{
+  "id": "09214e46cad343fd942a11174b2af624",
+  "mode": "controlled_same_model_rehost_not_original_provider",
+  "model": "gpt-6-sol",
+  "reasoning_effort": "low",
+  "source": "codex-cli",
+  "participant": "pr289",
+  "time": "2026-10-15T07:59:10.783777+00:00",
+  "pid": 1214743,
+  "original_request": {
+    "argv": [
+      "codex",
+      "exec",
+      "--skip-git-repo-check",
+      "--ephemeral",
+      "--color",
+      "never",
+      "-"
+    ],
+    "removed_flags": [
+      {
+        "flag": "--skip-git-repo-check",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--ephemeral",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "--color",
+        "value": "never",
+        "reason": "source runtime flag replaced by controlled Codex execution"
+      },
+      {
+        "flag": "-",
+        "reason": "original stdin retained"
+      }
+    ],
+    "stdin": "\nYou are a seller negotiating one item.\n\nItem: lamp\nMinimum acceptable price (reserve): 100\nCurrent asking price: None\nBuyer offer: None\nPrevious low offers: 0\n\nDecide the next action.\n\nRules:\n- Never sell below the reserve.\n- Never ask or counter below the reserve.\n- If there is no buyer offer yet, choose an asking price.\n- If the buyer offer is at least the reserve, accept it.\n- For a lower offer, normally counter.\n- After repeated low offers, you may reject.\n\nReturn ONLY one JSON object:\n{\"action\":\"ask\",\"price\":123}\n{\"action\":\"counter\",\"price\":123}\n{\"action\":\"accept\",\"price\":123}\nor\n{\"action\":\"reject\"}\n",
+    "positional_prompt": null
+  },
+  "boundary_instruction": "You are the inference transport for a controlled negotiation benchmark. Answer the supplied original model request directly. Do not use tools, shell, files, apps, network browsing, or subagents. Emit only the final answer requested by the original prompts, without transport commentary. The transport supplies no negotiation strategy or replacement prices.",
+  "call_timeout_seconds": 40.0,
+  "queue_interval_seconds": 10.0
+}

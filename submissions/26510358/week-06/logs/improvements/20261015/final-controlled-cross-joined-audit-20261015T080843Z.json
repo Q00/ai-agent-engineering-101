@@ -1,0 +1,1134 @@
+{
+  "report_type": "joined_controlled_cross_completed_attempts_across_interruption",
+  "created_at_utc": "2026-10-15T08:08:43.525656+00:00",
+  "original_benchmark_summaries_not_created_or_modified": true,
+  "interruption_evidence": {
+    "path": "logs/improvements/20261015/comparison-interruption.json",
+    "sha256": "ad152781ae8aa7b9897c2f74db0a6f0882355dc5a1ed3bfd6611c7b8bedad161"
+  },
+  "cohort_provenance": [
+    {
+      "audit": "logs/improvements/20261015/final-controlled-cross-audit-20261015T075230Z.json",
+      "run": "final-controlled-cross",
+      "run_state": "interrupted_checkpoint_completed_attempts_only",
+      "checkpoint": "checkpoint-006.json",
+      "attempts": 6,
+      "source_unchanged_reported": null,
+      "excluded_incomplete_directories": [
+        "logs/improvements/20261015/final-controlled-cross/r01-lamp-pr291-buyer"
+      ],
+      "audit_errors": [],
+      "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565"
+    },
+    {
+      "audit": "logs/improvements/20261015/final-controlled-cross-resumed-audit-20261015T080843Z.json",
+      "run": "final-controlled-cross-resumed",
+      "run_state": "completed_summary",
+      "checkpoint": null,
+      "attempts": 8,
+      "source_unchanged_reported": true,
+      "excluded_incomplete_directories": [],
+      "audit_errors": [],
+      "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565"
+    }
+  ],
+  "source_checks": [
+    {
+      "participant": "ours",
+      "source_commit": "f2eb0fb5c0b84ed01d6855e467bee1a00ecf1a28",
+      "path": "/tmp/a2a-improvement-20261015/stage-04-active",
+      "matches_manifest": true,
+      "file_count": 58,
+      "scope": "frozen_local_source"
+    },
+    {
+      "participant": "pr296",
+      "source_commit": "eae935eb671e1df2919998352218343251af5921",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr296",
+      "matches_manifest": true,
+      "file_count": 36,
+      "scope": "frozen_local_source"
+    },
+    {
+      "participant": "pr295",
+      "source_commit": "b2e707abeea92d29cd1be72c6994ed87c10e2072",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr295",
+      "matches_manifest": true,
+      "file_count": 12,
+      "scope": "frozen_local_source"
+    },
+    {
+      "participant": "pr292",
+      "source_commit": "095afe2822ebb5e12ee36b4f732cea67f76e1ee7",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr292",
+      "matches_manifest": true,
+      "file_count": 5,
+      "scope": "frozen_local_source"
+    },
+    {
+      "participant": "pr291",
+      "source_commit": "4dcfa7a19a79b6d99bf004e69ffba64662ecdaca",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr291",
+      "matches_manifest": true,
+      "file_count": 28,
+      "scope": "frozen_local_source"
+    },
+    {
+      "participant": "pr290",
+      "source_commit": "951c9a4cb828f50f9c5ca77786c60d321453b290",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr290",
+      "matches_manifest": true,
+      "file_count": 5,
+      "scope": "frozen_local_source"
+    },
+    {
+      "participant": "pr289",
+      "source_commit": "34a8317dec0932eb6fe77f5fc57b7e10880885a8",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr289",
+      "matches_manifest": true,
+      "file_count": 5,
+      "scope": "frozen_local_source"
+    },
+    {
+      "participant": "pr288",
+      "source_commit": "ac15c2a71183cfbdbab8af2533cc6e09cf29ede7",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr288",
+      "matches_manifest": true,
+      "file_count": 25,
+      "scope": "frozen_local_source"
+    }
+  ],
+  "active_policy_sha256": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb",
+  "participant_direction_rows": [
+    {
+      "peer": "pr296",
+      "our_buyer": {
+        "actual_buyer": "ours",
+        "actual_seller": "pr296",
+        "completed_valid": true,
+        "price": 115.0,
+        "outcome": "valid_completed_purchase",
+        "utility_scored": 5.0,
+        "elapsed_seconds": 126.018,
+        "RPC_count": 4,
+        "model_call_evidence": {
+          "own_harness_requests": 3,
+          "own_CLI_model_headers": 3,
+          "adapter_requests": 4,
+          "adapter_process_records": 4,
+          "shared_HTTP_per_match": 0,
+          "total_model_calls": 7,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": [
+          {
+            "task_id": "6a6ffe65-1437-49e1-b1c8-07ffbd0086d9",
+            "receipt": {
+              "price": 115.0,
+              "item": "lamp",
+              "name": "lamp",
+              "seller": "Harness Furniture Shop"
+            },
+            "wire_path": "logs/improvements/20261015/final-controlled-cross/r01-lamp-pr296-seller/wire/006-83801dbdf5f441219db32da1cc27aa8c.json"
+          }
+        ]
+      },
+      "our_seller": {
+        "actual_buyer": "pr296",
+        "actual_seller": "ours",
+        "completed_valid": false,
+        "price": null,
+        "outcome": "buyer_canceled_no_deal",
+        "utility_scored": 0,
+        "elapsed_seconds": 167.726,
+        "RPC_count": 6,
+        "model_call_evidence": {
+          "own_harness_requests": 5,
+          "own_CLI_model_headers": 5,
+          "adapter_requests": 5,
+          "adapter_process_records": 5,
+          "shared_HTTP_per_match": 0,
+          "total_model_calls": 10,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": []
+      }
+    },
+    {
+      "peer": "pr295",
+      "our_buyer": {
+        "actual_buyer": "ours",
+        "actual_seller": "pr295",
+        "completed_valid": true,
+        "price": 100.0,
+        "outcome": "valid_completed_purchase",
+        "utility_scored": 20.0,
+        "elapsed_seconds": 219.533,
+        "RPC_count": 5,
+        "model_call_evidence": {
+          "own_harness_requests": 8,
+          "own_CLI_model_headers": 8,
+          "adapter_requests": 0,
+          "adapter_process_records": 0,
+          "shared_HTTP_per_match": null,
+          "total_model_calls": null,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": [
+          {
+            "task_id": "d28879e6-a01f-4079-b72a-b073ce4eb9db",
+            "receipt": {
+              "seller": "Week06 Furniture Market",
+              "price": 100.0,
+              "item": "lamp"
+            },
+            "wire_path": "logs/improvements/20261015/final-controlled-cross/r01-lamp-pr295-seller/wire/007-436527217c154b53a54f9864a90b1f8a.json"
+          }
+        ]
+      },
+      "our_seller": {
+        "actual_buyer": "pr295",
+        "actual_seller": "ours",
+        "completed_valid": true,
+        "price": 120.0,
+        "outcome": "valid_completed_purchase",
+        "utility_scored": 20.0,
+        "elapsed_seconds": 156.415,
+        "RPC_count": 5,
+        "model_call_evidence": {
+          "own_harness_requests": 5,
+          "own_CLI_model_headers": 5,
+          "adapter_requests": 0,
+          "adapter_process_records": 0,
+          "shared_HTTP_per_match": null,
+          "total_model_calls": null,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": [
+          {
+            "task_id": "85217da5-8883-48cf-9af2-863f4a8848fa",
+            "receipt": {
+              "quoteId": "e9d987e1591d4d1c86ed95bf5c4a2e1d",
+              "quantity": 1.0,
+              "taskId": "85217da5-8883-48cf-9af2-863f4a8848fa",
+              "currency": "credits",
+              "item": "lamp",
+              "seller": "26510358 Catalog Shop",
+              "itemId": "lamp",
+              "purchaseId": "bae742f9c6264e7c8ca8dc172f1d1959",
+              "price": 120.0
+            },
+            "wire_path": "logs/improvements/20261015/final-controlled-cross/r01-lamp-pr295-buyer/wire/007-7b0be5014fe043cfbe7ee0856abe800d.json"
+          }
+        ]
+      }
+    },
+    {
+      "peer": "pr292",
+      "our_buyer": {
+        "actual_buyer": "ours",
+        "actual_seller": "pr292",
+        "completed_valid": true,
+        "price": 110.0,
+        "outcome": "valid_completed_purchase",
+        "utility_scored": 10.0,
+        "elapsed_seconds": 173.457,
+        "RPC_count": 4,
+        "model_call_evidence": {
+          "own_harness_requests": 6,
+          "own_CLI_model_headers": 6,
+          "adapter_requests": 4,
+          "adapter_process_records": 4,
+          "shared_HTTP_per_match": 0,
+          "total_model_calls": 10,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": [
+          {
+            "task_id": "f66d247f-3c46-4d9d-9d0e-7796bf41d8a1",
+            "receipt": {
+              "seller": "Lamp Shop",
+              "price": 110.0,
+              "item": "lamp"
+            },
+            "wire_path": "logs/improvements/20261015/final-controlled-cross/r01-lamp-pr292-seller/wire/006-bf45fb9048034d23b48fa13cc4bcd613.json"
+          }
+        ]
+      },
+      "our_seller": {
+        "actual_buyer": "pr292",
+        "actual_seller": "ours",
+        "completed_valid": false,
+        "price": null,
+        "outcome": "buyer_canceled_no_deal",
+        "utility_scored": 0,
+        "elapsed_seconds": 135.436,
+        "RPC_count": 5,
+        "model_call_evidence": {
+          "own_harness_requests": 4,
+          "own_CLI_model_headers": 4,
+          "adapter_requests": 4,
+          "adapter_process_records": 4,
+          "shared_HTTP_per_match": 0,
+          "total_model_calls": 8,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": []
+      }
+    },
+    {
+      "peer": "pr291",
+      "our_buyer": {
+        "actual_buyer": "ours",
+        "actual_seller": "pr291",
+        "completed_valid": true,
+        "price": 100.0,
+        "outcome": "valid_completed_purchase",
+        "utility_scored": 20.0,
+        "elapsed_seconds": 69.244,
+        "RPC_count": 2,
+        "model_call_evidence": {
+          "own_harness_requests": 2,
+          "own_CLI_model_headers": 2,
+          "adapter_requests": 2,
+          "adapter_process_records": 2,
+          "shared_HTTP_per_match": 0,
+          "total_model_calls": 4,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": [
+          {
+            "task_id": "e106ceb3-7c84-4a1d-baf8-1a64be96f675",
+            "receipt": {
+              "seller": "Lamp Shop",
+              "item": "lamp",
+              "price": 100.0
+            },
+            "wire_path": "logs/improvements/20261015/final-controlled-cross-resumed/r01-lamp-pr291-seller/wire/004-9ebbecd6ac1f4b0895586b1ab4e452d2.json"
+          }
+        ]
+      },
+      "our_seller": {
+        "actual_buyer": "pr291",
+        "actual_seller": "ours",
+        "completed_valid": false,
+        "price": null,
+        "outcome": "buyer_canceled_no_deal",
+        "utility_scored": 0,
+        "elapsed_seconds": 101.578,
+        "RPC_count": 4,
+        "model_call_evidence": {
+          "own_harness_requests": 3,
+          "own_CLI_model_headers": 3,
+          "adapter_requests": 3,
+          "adapter_process_records": 3,
+          "shared_HTTP_per_match": 0,
+          "total_model_calls": 6,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": []
+      }
+    },
+    {
+      "peer": "pr290",
+      "our_buyer": {
+        "actual_buyer": "ours",
+        "actual_seller": "pr290",
+        "completed_valid": true,
+        "price": 100.0,
+        "outcome": "valid_completed_purchase",
+        "utility_scored": 20.0,
+        "elapsed_seconds": 236.08,
+        "RPC_count": 5,
+        "model_call_evidence": {
+          "own_harness_requests": 8,
+          "own_CLI_model_headers": 8,
+          "adapter_requests": 0,
+          "adapter_process_records": 0,
+          "shared_HTTP_per_match": null,
+          "total_model_calls": null,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": [
+          {
+            "task_id": "c03eae1e-5394-4f76-8bb9-1aeb78476de2",
+            "receipt": {
+              "price": 100.0,
+              "item": "lamp",
+              "seller": "Arun A2A Seller"
+            },
+            "wire_path": "logs/improvements/20261015/final-controlled-cross-resumed/r01-lamp-pr290-seller/wire/007-f00244343b544d92987e23072d489f77.json"
+          }
+        ]
+      },
+      "our_seller": {
+        "actual_buyer": "pr290",
+        "actual_seller": "ours",
+        "completed_valid": true,
+        "price": 120.0,
+        "outcome": "valid_completed_purchase",
+        "utility_scored": 20.0,
+        "elapsed_seconds": 125.239,
+        "RPC_count": 4,
+        "model_call_evidence": {
+          "own_harness_requests": 4,
+          "own_CLI_model_headers": 4,
+          "adapter_requests": 0,
+          "adapter_process_records": 0,
+          "shared_HTTP_per_match": null,
+          "total_model_calls": null,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": [
+          {
+            "task_id": "e673214c-d4b0-4ace-bd8b-c0355865f3fa",
+            "receipt": {
+              "itemId": "lamp",
+              "purchaseId": "999967bea4d749128e183b7e1929dd64",
+              "item": "lamp",
+              "quoteId": "5c3f39bc43d949169f9190018b9edf18",
+              "currency": "credits",
+              "seller": "26510358 Catalog Shop",
+              "price": 120.0,
+              "taskId": "e673214c-d4b0-4ace-bd8b-c0355865f3fa",
+              "quantity": 1.0
+            },
+            "wire_path": "logs/improvements/20261015/final-controlled-cross-resumed/r01-lamp-pr290-buyer/wire/006-6e165fe34cb5448485b1c7f5b1f3fef6.json"
+          }
+        ]
+      }
+    },
+    {
+      "peer": "pr289",
+      "our_buyer": {
+        "actual_buyer": "ours",
+        "actual_seller": "pr289",
+        "completed_valid": true,
+        "price": 100.0,
+        "outcome": "valid_completed_purchase",
+        "utility_scored": 20.0,
+        "elapsed_seconds": 190.135,
+        "RPC_count": 4,
+        "model_call_evidence": {
+          "own_harness_requests": 6,
+          "own_CLI_model_headers": 6,
+          "adapter_requests": 4,
+          "adapter_process_records": 4,
+          "shared_HTTP_per_match": 0,
+          "total_model_calls": 10,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": [
+          {
+            "task_id": "23771e21-0ced-4e65-96de-996421f9f5e5",
+            "receipt": {
+              "item": "lamp",
+              "seller": "Lamp Shop",
+              "price": 100.0
+            },
+            "wire_path": "logs/improvements/20261015/final-controlled-cross-resumed/r01-lamp-pr289-seller/wire/006-f6e03c809fba49d5b36dccc27ec03f4d.json"
+          }
+        ]
+      },
+      "our_seller": {
+        "actual_buyer": "pr289",
+        "actual_seller": "ours",
+        "completed_valid": true,
+        "price": 120.0,
+        "outcome": "valid_completed_purchase",
+        "utility_scored": 20.0,
+        "elapsed_seconds": 210.905,
+        "RPC_count": 6,
+        "model_call_evidence": {
+          "own_harness_requests": 6,
+          "own_CLI_model_headers": 6,
+          "adapter_requests": 5,
+          "adapter_process_records": 5,
+          "shared_HTTP_per_match": 0,
+          "total_model_calls": 11,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": [
+          {
+            "task_id": "4bc1d60c-a299-4776-83b7-e0934422b519",
+            "receipt": {
+              "purchaseId": "5c5834e10f4c4697b3f45382b4c206e3",
+              "currency": "credits",
+              "item": "lamp",
+              "price": 120.0,
+              "taskId": "4bc1d60c-a299-4776-83b7-e0934422b519",
+              "itemId": "lamp",
+              "quoteId": "d58d59038d0f463f9c22517fa24081ef",
+              "quantity": 1.0,
+              "seller": "26510358 Catalog Shop"
+            },
+            "wire_path": "logs/improvements/20261015/final-controlled-cross-resumed/r01-lamp-pr289-buyer/wire/008-69d77a9671d54032978142947daf9000.json"
+          }
+        ]
+      }
+    },
+    {
+      "peer": "pr288",
+      "our_buyer": {
+        "actual_buyer": "ours",
+        "actual_seller": "pr288",
+        "completed_valid": true,
+        "price": 120.0,
+        "outcome": "valid_completed_purchase",
+        "utility_scored": 0.0,
+        "elapsed_seconds": 232.633,
+        "RPC_count": 5,
+        "model_call_evidence": {
+          "own_harness_requests": 8,
+          "own_CLI_model_headers": 8,
+          "adapter_requests": 5,
+          "adapter_process_records": 5,
+          "shared_HTTP_per_match": 0,
+          "total_model_calls": 13,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": [
+          {
+            "task_id": "aab746c1-423f-40f4-811e-8c02040b2852",
+            "receipt": {
+              "item": "lamp",
+              "price": 120.0,
+              "seller": "Haiku Furniture Shop"
+            },
+            "wire_path": "logs/improvements/20261015/final-controlled-cross-resumed/r01-lamp-pr288-seller/wire/007-f6f29e34054142be8122407a4ad1baa3.json"
+          }
+        ]
+      },
+      "our_seller": {
+        "actual_buyer": "pr288",
+        "actual_seller": "ours",
+        "completed_valid": false,
+        "price": null,
+        "outcome": "buyer_canceled_no_deal",
+        "utility_scored": 0,
+        "elapsed_seconds": 148.287,
+        "RPC_count": 5,
+        "model_call_evidence": {
+          "own_harness_requests": 4,
+          "own_CLI_model_headers": 4,
+          "adapter_requests": 4,
+          "adapter_process_records": 4,
+          "shared_HTTP_per_match": 0,
+          "total_model_calls": 8,
+          "scope": "Only recorded own CLI starts and controlled adapter process records are attributable. HTTP and native peer/hosted calls are not inferred."
+        },
+        "protocol_safety_reported": [],
+        "protocol_safety_independent": [],
+        "raw_receipt_records": []
+      }
+    }
+  ],
+  "role_aggregate": [
+    {
+      "our_role": "buyer",
+      "attempts": 7,
+      "completed_valid": 7,
+      "per_attempt_prices": [
+        115.0,
+        100.0,
+        110.0,
+        100.0,
+        100.0,
+        100.0,
+        120.0
+      ],
+      "per_attempt_utility": [
+        5.0,
+        20.0,
+        10.0,
+        20.0,
+        20.0,
+        20.0,
+        0.0
+      ],
+      "utility_per_attempt": 13.571428571428571,
+      "completed_prices_mean_auxiliary_only": 106.42857142857143,
+      "elapsed_mean": 178.15714285714284,
+      "RPC_mean": 4.142857142857143,
+      "outcomes": {
+        "valid_completed_purchase": 7
+      }
+    },
+    {
+      "our_role": "seller",
+      "attempts": 7,
+      "completed_valid": 3,
+      "per_attempt_prices": [
+        null,
+        120.0,
+        null,
+        null,
+        120.0,
+        120.0,
+        null
+      ],
+      "per_attempt_utility": [
+        0,
+        20.0,
+        0,
+        0,
+        20.0,
+        20.0,
+        0
+      ],
+      "utility_per_attempt": 8.571428571428571,
+      "completed_prices_mean_auxiliary_only": 120.0,
+      "elapsed_mean": 149.36942857142859,
+      "RPC_mean": 5,
+      "outcomes": {
+        "buyer_canceled_no_deal": 4,
+        "valid_completed_purchase": 3
+      }
+    }
+  ],
+  "started_attempts_including_preserved_interrupted_partials": 15,
+  "interrupted_partial_costs_included_in_completed_cohort_model_count": false,
+  "interrupted_partial_model_cost_scope": "Not measured in completed-cohort totals; preserved separately in the original partial directory and interruption record.",
+  "actual_model_call_evidence": {
+    "own_CLI_headers": 72,
+    "adapter_CLI_process_records": 40,
+    "shared_HTTP_global_calls": 17,
+    "shared_HTTP_audits": [
+      {
+        "audit": "logs/improvements/20261015/final-controlled-cross-shared-http-audit-20261015T074813Z.json",
+        "global_calls": 9,
+        "errors": [],
+        "pending": []
+      },
+      {
+        "audit": "logs/improvements/20261015/final-controlled-cross-resumed-shared-http-audit-20261015T080843Z.json",
+        "global_calls": 8,
+        "errors": [],
+        "pending": []
+      }
+    ],
+    "known_actual_starts_in_controlled_completed_cohorts": 129,
+    "shared_HTTP_per_attempt_allocation": null
+  },
+  "common_kit_reference_cohorts": [
+    {
+      "cohort": "baseline-native-confirm",
+      "summary": "logs/improvements/20261015/baseline-native-confirm/summary.json",
+      "mode": "native",
+      "kind": "fixed",
+      "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+      "same_common_kit_source": true,
+      "model_scope": "own native gpt-6-sol/low",
+      "table": [
+        {
+          "participant": "ours",
+          "role": "buyer",
+          "attempts": 3,
+          "completed_valid": 3,
+          "per_attempt_prices": [
+            105.0,
+            105.0,
+            110.0
+          ],
+          "completed_price_mean": 106.66666666666667,
+          "per_attempt_utility": [
+            15.0,
+            15.0,
+            10.0
+          ],
+          "utility_per_attempt": 13.333333333333334,
+          "elapsed_seconds": [
+            19.15,
+            20.183,
+            19.074
+          ],
+          "elapsed_mean": 19.469,
+          "RPC_counts": [
+            2,
+            2,
+            2
+          ],
+          "RPC_mean": 2,
+          "source_commit": "cf0ed87f22e08d5712aa4a7c00e645fffa63bf62"
+        },
+        {
+          "participant": "ours",
+          "role": "seller",
+          "attempts": 3,
+          "completed_valid": 3,
+          "per_attempt_prices": [
+            110.0,
+            110.0,
+            110.0
+          ],
+          "completed_price_mean": 110.0,
+          "per_attempt_utility": [
+            10.0,
+            10.0,
+            10.0
+          ],
+          "utility_per_attempt": 10.0,
+          "elapsed_seconds": [
+            61.099,
+            57.358,
+            54.665
+          ],
+          "elapsed_mean": 57.70733333333333,
+          "RPC_counts": [
+            3,
+            3,
+            3
+          ],
+          "RPC_mean": 3,
+          "source_commit": "cf0ed87f22e08d5712aa4a7c00e645fffa63bf62"
+        }
+      ]
+    },
+    {
+      "cohort": "final-active-native-confirm",
+      "summary": "logs/improvements/20261015/final-active-native-confirm/summary.json",
+      "mode": "native",
+      "kind": "fixed",
+      "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+      "same_common_kit_source": true,
+      "model_scope": "own native gpt-6-sol/low",
+      "table": [
+        {
+          "participant": "ours",
+          "role": "buyer",
+          "attempts": 3,
+          "completed_valid": 3,
+          "per_attempt_prices": [
+            103.0,
+            103.0,
+            103.0
+          ],
+          "completed_price_mean": 103.0,
+          "per_attempt_utility": [
+            17.0,
+            17.0,
+            17.0
+          ],
+          "utility_per_attempt": 17.0,
+          "elapsed_seconds": [
+            59.702,
+            68.054,
+            67.861
+          ],
+          "elapsed_mean": 65.20566666666667,
+          "RPC_counts": [
+            3,
+            3,
+            3
+          ],
+          "RPC_mean": 3,
+          "source_commit": "f2eb0fb5c0b84ed01d6855e467bee1a00ecf1a28"
+        },
+        {
+          "participant": "ours",
+          "role": "seller",
+          "attempts": 3,
+          "completed_valid": 3,
+          "per_attempt_prices": [
+            120.0,
+            120.0,
+            120.0
+          ],
+          "completed_price_mean": 120.0,
+          "per_attempt_utility": [
+            20.0,
+            20.0,
+            20.0
+          ],
+          "utility_per_attempt": 20.0,
+          "elapsed_seconds": [
+            91.985,
+            141.594,
+            84.759
+          ],
+          "elapsed_mean": 106.11266666666667,
+          "RPC_counts": [
+            5,
+            8,
+            5
+          ],
+          "RPC_mean": 6,
+          "source_commit": "f2eb0fb5c0b84ed01d6855e467bee1a00ecf1a28"
+        }
+      ]
+    },
+    {
+      "cohort": "peers-controlled-screen",
+      "summary": "logs/improvements/20261015/peers-controlled-screen/summary.json",
+      "mode": "controlled",
+      "kind": "fixed",
+      "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+      "same_common_kit_source": true,
+      "model_scope": "controlled gpt-6-sol/low rehost, not native peer provider reproduction",
+      "table": [
+        {
+          "participant": "pr288",
+          "role": "buyer",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            100.0
+          ],
+          "completed_price_mean": 100.0,
+          "per_attempt_utility": [
+            20.0
+          ],
+          "utility_per_attempt": 20.0,
+          "elapsed_seconds": [
+            33.325
+          ],
+          "elapsed_mean": 33.325,
+          "RPC_counts": [
+            2
+          ],
+          "RPC_mean": 2,
+          "source_commit": "ac15c2a71183cfbdbab8af2533cc6e09cf29ede7"
+        },
+        {
+          "participant": "pr288",
+          "role": "seller",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            120.0
+          ],
+          "completed_price_mean": 120.0,
+          "per_attempt_utility": [
+            20.0
+          ],
+          "utility_per_attempt": 20.0,
+          "elapsed_seconds": [
+            132.038
+          ],
+          "elapsed_mean": 132.038,
+          "RPC_counts": [
+            5
+          ],
+          "RPC_mean": 5,
+          "source_commit": "ac15c2a71183cfbdbab8af2533cc6e09cf29ede7"
+        },
+        {
+          "participant": "pr289",
+          "role": "buyer",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            105.0
+          ],
+          "completed_price_mean": 105.0,
+          "per_attempt_utility": [
+            15.0
+          ],
+          "utility_per_attempt": 15.0,
+          "elapsed_seconds": [
+            49.781
+          ],
+          "elapsed_mean": 49.781,
+          "RPC_counts": [
+            2
+          ],
+          "RPC_mean": 2,
+          "source_commit": "34a8317dec0932eb6fe77f5fc57b7e10880885a8"
+        },
+        {
+          "participant": "pr289",
+          "role": "seller",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            120.0
+          ],
+          "completed_price_mean": 120.0,
+          "per_attempt_utility": [
+            20.0
+          ],
+          "utility_per_attempt": 20.0,
+          "elapsed_seconds": [
+            83.851
+          ],
+          "elapsed_mean": 83.851,
+          "RPC_counts": [
+            2
+          ],
+          "RPC_mean": 2,
+          "source_commit": "34a8317dec0932eb6fe77f5fc57b7e10880885a8"
+        },
+        {
+          "participant": "pr290",
+          "role": "buyer",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            120.0
+          ],
+          "completed_price_mean": 120.0,
+          "per_attempt_utility": [
+            0.0
+          ],
+          "utility_per_attempt": 0.0,
+          "elapsed_seconds": [
+            15.161
+          ],
+          "elapsed_mean": 15.161,
+          "RPC_counts": [
+            2
+          ],
+          "RPC_mean": 2,
+          "source_commit": "951c9a4cb828f50f9c5ca77786c60d321453b290"
+        },
+        {
+          "participant": "pr290",
+          "role": "seller",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            120.0
+          ],
+          "completed_price_mean": 120.0,
+          "per_attempt_utility": [
+            20.0
+          ],
+          "utility_per_attempt": 20.0,
+          "elapsed_seconds": [
+            93.599
+          ],
+          "elapsed_mean": 93.599,
+          "RPC_counts": [
+            3
+          ],
+          "RPC_mean": 3,
+          "source_commit": "951c9a4cb828f50f9c5ca77786c60d321453b290"
+        },
+        {
+          "participant": "pr291",
+          "role": "buyer",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            100.0
+          ],
+          "completed_price_mean": 100.0,
+          "per_attempt_utility": [
+            20.0
+          ],
+          "utility_per_attempt": 20.0,
+          "elapsed_seconds": [
+            16.769
+          ],
+          "elapsed_mean": 16.769,
+          "RPC_counts": [
+            2
+          ],
+          "RPC_mean": 2,
+          "source_commit": "4dcfa7a19a79b6d99bf004e69ffba64662ecdaca"
+        },
+        {
+          "participant": "pr291",
+          "role": "seller",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            115.0
+          ],
+          "completed_price_mean": 115.0,
+          "per_attempt_utility": [
+            15.0
+          ],
+          "utility_per_attempt": 15.0,
+          "elapsed_seconds": [
+            62.388
+          ],
+          "elapsed_mean": 62.388,
+          "RPC_counts": [
+            4
+          ],
+          "RPC_mean": 4,
+          "source_commit": "4dcfa7a19a79b6d99bf004e69ffba64662ecdaca"
+        },
+        {
+          "participant": "pr292",
+          "role": "buyer",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            100.0
+          ],
+          "completed_price_mean": 100.0,
+          "per_attempt_utility": [
+            20.0
+          ],
+          "utility_per_attempt": 20.0,
+          "elapsed_seconds": [
+            97.191
+          ],
+          "elapsed_mean": 97.191,
+          "RPC_counts": [
+            4
+          ],
+          "RPC_mean": 4,
+          "source_commit": "095afe2822ebb5e12ee36b4f732cea67f76e1ee7"
+        },
+        {
+          "participant": "pr292",
+          "role": "seller",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            115.0
+          ],
+          "completed_price_mean": 115.0,
+          "per_attempt_utility": [
+            15.0
+          ],
+          "utility_per_attempt": 15.0,
+          "elapsed_seconds": [
+            97.704
+          ],
+          "elapsed_mean": 97.704,
+          "RPC_counts": [
+            3
+          ],
+          "RPC_mean": 3,
+          "source_commit": "095afe2822ebb5e12ee36b4f732cea67f76e1ee7"
+        },
+        {
+          "participant": "pr295",
+          "role": "buyer",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            120.0
+          ],
+          "completed_price_mean": 120.0,
+          "per_attempt_utility": [
+            0.0
+          ],
+          "utility_per_attempt": 0.0,
+          "elapsed_seconds": [
+            17.076
+          ],
+          "elapsed_mean": 17.076,
+          "RPC_counts": [
+            2
+          ],
+          "RPC_mean": 2,
+          "source_commit": "b2e707abeea92d29cd1be72c6994ed87c10e2072"
+        },
+        {
+          "participant": "pr295",
+          "role": "seller",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            120.0
+          ],
+          "completed_price_mean": 120.0,
+          "per_attempt_utility": [
+            20.0
+          ],
+          "utility_per_attempt": 20.0,
+          "elapsed_seconds": [
+            46.425
+          ],
+          "elapsed_mean": 46.425,
+          "RPC_counts": [
+            2
+          ],
+          "RPC_mean": 2,
+          "source_commit": "b2e707abeea92d29cd1be72c6994ed87c10e2072"
+        },
+        {
+          "participant": "pr296",
+          "role": "buyer",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            100.0
+          ],
+          "completed_price_mean": 100.0,
+          "per_attempt_utility": [
+            20.0
+          ],
+          "utility_per_attempt": 20.0,
+          "elapsed_seconds": [
+            6.931
+          ],
+          "elapsed_mean": 6.931,
+          "RPC_counts": [
+            2
+          ],
+          "RPC_mean": 2,
+          "source_commit": "eae935eb671e1df2919998352218343251af5921"
+        },
+        {
+          "participant": "pr296",
+          "role": "seller",
+          "attempts": 1,
+          "completed_valid": 1,
+          "per_attempt_prices": [
+            120.0
+          ],
+          "completed_price_mean": 120.0,
+          "per_attempt_utility": [
+            20.0
+          ],
+          "utility_per_attempt": 20.0,
+          "elapsed_seconds": [
+            50.649
+          ],
+          "elapsed_mean": 50.649,
+          "RPC_counts": [
+            4
+          ],
+          "RPC_mean": 4,
+          "source_commit": "eae935eb671e1df2919998352218343251af5921"
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "limits": [
+    "This is an explicit joined report of 6 completed pre-interruption attempts and 8 completed resumed attempts, not a newly executed single uninterrupted benchmark.",
+    "The interrupted PR291 partial attempt has no result and is excluded rather than assigned success/failure or utility. Its raw directory remains preserved.",
+    "All completed attempts stay in per-attempt utility denominators; failed accepted-purchase outcomes score0. This scoring convention does not imply zero remote financial exposure.",
+    "Single attempt per peer/direction under controlled gpt-6-sol/low is exploratory and is not original-provider reproduction, a ranking, or a win probability.",
+    "Native PR289 and hosted PR288, if run, are separate execution scopes and are excluded from controlled aggregate metrics.",
+    "Shared HTTP calls are global per completed cohort time window and cannot be assigned to individual matches.",
+    "Raw late-completion observations and audit limitations are preserved in the linked cohort audits."
+  ],
+  "evidence_sha256": {
+    "logs/improvements/20261015/final-controlled-cross-audit-20261015T075230Z.json": "e3097c1aa5f0e1d5f178e0fe55bbda5ea4671ee7cb0befa505a65efc8f091747",
+    "logs/improvements/20261015/final-controlled-cross-resumed-audit-20261015T080843Z.json": "73119738e4d6990d40d5bd905dc0d1fc18712836d109fb46abf140eb463cddbe"
+  }
+}

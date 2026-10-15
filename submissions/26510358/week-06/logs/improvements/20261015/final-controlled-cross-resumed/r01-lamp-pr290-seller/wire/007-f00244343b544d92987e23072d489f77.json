@@ -1,0 +1,160 @@
+{
+  "id": "f00244343b544d92987e23072d489f77",
+  "method": "POST",
+  "path": "/",
+  "headers": {
+    "content-type": "application/json",
+    "a2a-version": "1.0"
+  },
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "f84c386ca04740c19b3df840d4c2fb31",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "3edb91f2efad49ba821b2b3ff65a9b72",
+        "parts": [
+          {
+            "text": "100"
+          }
+        ],
+        "taskId": "c03eae1e-5394-4f76-8bb9-1aeb78476de2"
+      }
+    }
+  },
+  "status": 200,
+  "response": {
+    "result": {
+      "task": {
+        "id": "c03eae1e-5394-4f76-8bb9-1aeb78476de2",
+        "contextId": "2b08d987-d555-4c31-9c57-2ec6100a5e44",
+        "status": {
+          "state": "TASK_STATE_COMPLETED",
+          "message": {
+            "messageId": "d5e07c35-5b39-4228-8804-229e472618ad",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "Deal. I accept 100 for the lamp."
+              }
+            ]
+          },
+          "timestamp": "2026-10-15T07:55:38.686504Z"
+        },
+        "artifacts": [
+          {
+            "artifactId": "6adf98ea-d4ca-4a30-ad38-6865300e2198",
+            "name": "receipt",
+            "parts": [
+              {
+                "data": {
+                  "price": 100.0,
+                  "item": "lamp",
+                  "seller": "Arun A2A Seller"
+                },
+                "mediaType": "application/json"
+              }
+            ]
+          }
+        ],
+        "history": [
+          {
+            "messageId": "6d753256097f445799c2396c35ba6b0f",
+            "contextId": "2b08d987-d555-4c31-9c57-2ec6100a5e44",
+            "taskId": "c03eae1e-5394-4f76-8bb9-1aeb78476de2",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "I want to buy a lamp"
+              }
+            ]
+          },
+          {
+            "messageId": "26141f71-9c68-4258-8fa8-0ec37446caa2",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "I can sell the lamp. My asking price is 130. What is your offer?"
+              }
+            ]
+          },
+          {
+            "messageId": "482eb87bf0f84b46bb6fa01f56f9ae9c",
+            "contextId": "8749e0b1-e47c-43ff-b51e-28442edb1fea",
+            "taskId": "c03eae1e-5394-4f76-8bb9-1aeb78476de2",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "90"
+              }
+            ]
+          },
+          {
+            "messageId": "67604abf-42c0-4f5a-a373-75ad1287349e",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "My counteroffer for the lamp is 100. What is your next offer?"
+              }
+            ]
+          },
+          {
+            "messageId": "f471e61fdb744695ae27e0519baf6ae8",
+            "contextId": "78a0d748-5b73-4310-b0a5-0c1dade43977",
+            "taskId": "c03eae1e-5394-4f76-8bb9-1aeb78476de2",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "95"
+              }
+            ]
+          },
+          {
+            "messageId": "2cb4ca62-38b0-4066-9026-b149d0a9ac14",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "My counteroffer for the lamp is 100. What is your next offer?"
+              }
+            ]
+          },
+          {
+            "messageId": "3782236636074a7f9c0521e0a7cb6451",
+            "contextId": "f718016a-7a98-49e7-8cb0-a43957c3c5d3",
+            "taskId": "c03eae1e-5394-4f76-8bb9-1aeb78476de2",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "98"
+              }
+            ]
+          },
+          {
+            "messageId": "27715a97-059d-4e09-b2f4-cdae0c820d71",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "My counteroffer for the lamp is 100. What is your next offer?"
+              }
+            ]
+          },
+          {
+            "messageId": "3edb91f2efad49ba821b2b3ff65a9b72",
+            "contextId": "7c82e3fd-b7c8-43f0-905c-fa1decafc7b8",
+            "taskId": "c03eae1e-5394-4f76-8bb9-1aeb78476de2",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "100"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "id": "f84c386ca04740c19b3df840d4c2fb31",
+    "jsonrpc": "2.0"
+  },
+  "elapsed_seconds": 20.543
+}

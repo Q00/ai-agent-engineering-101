@@ -1,0 +1,89 @@
+{
+  "id": "r01-lamp-pr288-seller",
+  "buyer": "ours",
+  "seller": "pr288",
+  "item": "lamp",
+  "budget": 120,
+  "repeat": 1,
+  "participant_role": "seller",
+  "participant": "pr288",
+  "mode": "controlled",
+  "runner_sha256": "23ce23b7f52ad7dbd9c447419beccac4a97fbf1fecc607087ac632db8682c565",
+  "execution_scope": {
+    "buyer": "native_implementation",
+    "seller": "controlled_codex_transport"
+  },
+  "started": "2026-10-15T08:04:48.428920+00:00",
+  "seller_command": [
+    "/home/myeonggi/a2a-lab/.venv/bin/python",
+    "seller.py",
+    "--port",
+    "59749"
+  ],
+  "buyer_command": [
+    "/home/myeonggi/a2a-lab/.venv/bin/python",
+    "buyer.py",
+    "--url",
+    "http://127.0.0.1:44759",
+    "--item",
+    "lamp",
+    "--budget",
+    "120"
+  ],
+  "buyer_exit_code": 0,
+  "buyer_result": {
+    "status": "completed",
+    "receipt": {
+      "item": "lamp",
+      "price": 120.0,
+      "seller": "Haiku Furniture Shop"
+    }
+  },
+  "wire_evidence": {
+    "receipts": [
+      {
+        "item": "lamp",
+        "price": 120.0,
+        "seller": "Haiku Furniture Shop"
+      }
+    ],
+    "receipt_records": [
+      {
+        "task_id": "aab746c1-423f-40f4-811e-8c02040b2852",
+        "receipt": {
+          "item": "lamp",
+          "price": 120.0,
+          "seller": "Haiku Furniture Shop"
+        }
+      }
+    ],
+    "completed_task_ids": [
+      "aab746c1-423f-40f4-811e-8c02040b2852"
+    ],
+    "duplicate_completed_responses": 0,
+    "conflicting_completed_responses": 0,
+    "safety_violations": [],
+    "rejected_wire_responses": []
+  },
+  "receipts": [
+    {
+      "item": "lamp",
+      "price": 120.0,
+      "seller": "Haiku Furniture Shop"
+    }
+  ],
+  "price": 120.0,
+  "wire_completed": true,
+  "safety_violations": [],
+  "evidence_scope": "buyer_report_and_wire_receipt",
+  "buyer_reported_status": "completed",
+  "completed_valid": true,
+  "reserve": 100,
+  "reserve_validation_scope": "verified_reference_reserve",
+  "buyer_surplus": 0.0,
+  "seller_surplus": 20.0,
+  "optimal_buyer_price": false,
+  "optimal_seller_price": true,
+  "rpc_calls": 5,
+  "elapsed_seconds": 232.633
+}
