@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from copy import deepcopy
 import json
 import re
 import time
@@ -17,9 +18,11 @@ from tracing import Trace
 
 
 def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, trace=None,
-              timeout=240, expected_item_id=None):
+              timeout=240, expected_item_id=None, coordination_context=None):
     if not isinstance(item, str) or not item.strip():
         raise EvidenceError("Requested item must be nonempty text")
+    if coordination_context is not None and not isinstance(coordination_context, dict):
+        raise EvidenceError("Coordination context must be a factual object")
     if expected_item_id is not None:
         if not isinstance(expected_item_id, str) or not expected_item_id.strip():
             raise EvidenceError("Expected item ID must be nonempty text")
@@ -113,6 +116,9 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                        "task_id": task_id, "untrusted_flags": flags,
                        "flags": flags,
                        "remaining_seconds": round(deadline - time.monotonic()), "history_summary": history[-8:]}
+            if coordination_context is not None:
+                # Coordinator observations never replace the slot's authorized budget.
+                context["coordination"] = deepcopy(coordination_context)
             strategy = policy.choose("buyer", context)
             def validate_decision(output):
                 validated = validate_buyer_decision(output, budget=budget, ask=ask)

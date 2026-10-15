@@ -25,7 +25,7 @@ from buyer import negotiate
 from catalog import load_catalog
 from evidence import numeric_price
 from policy import StrategyPolicy
-from shopping import read_directory, shop_all
+from shopping import read_directory, shop_all, validate_execution_limits
 from tracing import Trace
 
 ROOT = Path(__file__).resolve().parent
@@ -218,14 +218,16 @@ def run_catalog_challenge(url: str, log_dir: Path, policy: StrategyPolicy, timeo
 
 
 def run_shopping_challenge(directory: list[dict[str, Any]], log_dir: Path,
-                           policy: StrategyPolicy, timeout: float) -> dict[str, Any]:
+                           policy: StrategyPolicy, timeout: float, *,
+                           max_workers: int = 2, slot_timeout: float = 280) -> dict[str, Any]:
     entries = [{"key": "lamp", "item": "lamp"},
                {"key": "chair", "item": "chair"},
                {"key": "bookshelf", "item": "bookshelf"}]
     _write_json(log_dir / "directory.json", directory)
     _write_json(log_dir / "shopping-list.json", {"total_budget": 600, "items": entries})
     try:
-        summary = shop_all(directory, entries, 600, log_dir=log_dir / "transactions", policy=policy, timeout=timeout)
+        summary = shop_all(directory, entries, 600, log_dir=log_dir / "transactions", policy=policy,
+                           timeout=timeout, max_workers=max_workers, slot_timeout=slot_timeout)
     except Exception as exc:
         summary = {"passed": False, "error": f"{type(exc).__name__}: {exc}"}
     summary["directory_size"] = len(directory)
@@ -235,14 +237,17 @@ def run_shopping_challenge(directory: list[dict[str, Any]], log_dir: Path,
     return summary
 
 
-def main() -> None:
+def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--challenge", choices=("all", "1", "2"), default="all")
     parser.add_argument("--policy")
     parser.add_argument("--timeout", type=float, default=600,
-                        help="Overall shopping deadline; individual negotiations remain limited to 240 seconds")
-    args = parser.parse_args()
-    numeric_price(args.timeout)
+                        help="Overall shopping deadline in seconds")
+    parser.add_argument("--workers", type=int, default=2, help="Concurrent challenge-2 negotiations, default 2")
+    parser.add_argument("--negotiation-timeout", type=float, default=280,
+                        help="Challenge-2 per-negotiation seconds, positive and below 300; challenge 1 remains at most 240")
+    args = parser.parse_args(argv)
+    validate_execution_limits(args.timeout, args.workers, args.negotiation_timeout)
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8]
     policy = StrategyPolicy(args.policy)
     challenge_1_dir = ROOT / "logs/challenge-1" / run_id
@@ -264,7 +269,8 @@ def main() -> None:
         with LocalShops(process_dir, args.policy) as shops:
             urls = shops.start(shop_configs())
             directory = read_directory(urls, Trace("directory", process_dir))
-            results["challenge_2"] = run_shopping_challenge(directory, challenge_2_dir, policy, args.timeout)
+            results["challenge_2"] = run_shopping_challenge(directory, challenge_2_dir, policy, args.timeout,
+                max_workers=args.workers, slot_timeout=args.negotiation_timeout)
     print(json.dumps({"run_id": run_id, "results": results}, ensure_ascii=False), flush=True)
     raise SystemExit(0 if all(result["passed"] for result in results.values()) else 1)
 

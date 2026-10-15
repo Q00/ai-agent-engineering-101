@@ -213,7 +213,11 @@ class InferenceQueueTests(unittest.TestCase):
         self.assertEqual(len([r for r in records if r["event"] == "released"]), 1)
         expired = [r for r in records if r["event"] == "deadline_expired"]
         self.assertEqual(len(expired), 1)
-        self.assertIn("FIFO admission", expired[0]["detail"])
+        # Expiry can be observed while acquiring the control lock or immediately
+        # after acquiring it. Both paths expire the same queued admission.
+        self.assertTrue(any(label in expired[0]["detail"]
+                            for label in ("FIFO admission", "waiting in FIFO queue")))
+        self.assertTrue(expired[0]["enqueued"])
         self.assertTrue(errors)
         self.assertIsNone(queue.snapshot()["owner"])
         self.assertEqual(queue.snapshot()["queue"], [])

@@ -8,6 +8,7 @@ never chooses a shop or an offer using hardcoded product rules.
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import math
@@ -22,6 +23,39 @@ from harness import Harness
 from policy import StrategyPolicy
 from protocol import A2AClient
 from tracing import Trace
+
+
+def validate_execution_limits(timeout, max_workers, slot_timeout):
+    """Reject invalid scheduling limits before files, inference, or purchases."""
+    overall = numeric_price(timeout)
+    individual = numeric_price(slot_timeout)
+    if individual >= 300:
+        raise EvidenceError("negotiation timeout must be less than 300 seconds")
+    if isinstance(max_workers, bool) or not isinstance(max_workers, int) or max_workers < 1:
+        raise EvidenceError("worker count must be a positive integer")
+    return overall, max_workers, individual
+
+
+def summarize_coordination(entry, snapshot, *, deadline, attempt):
+    """Compress one actual ledger snapshot; do not infer prices or outcomes."""
+    own = [record for record in snapshot["purchases"].values() if record["item_key"] == entry["key"]]
+    others = [record for record in snapshot["purchases"].values() if record["item_key"] != entry["key"]]
+    return {"snapshot_scope": "local_ledger_before_attempt",
+            "slot": entry["key"], "attempt": attempt,
+            "current_budget_ceiling": entry["budget"], "budget_envelopes_fixed": True,
+            "remaining_seconds_at_snapshot": max(0, deadline - time.monotonic()),
+            "ledger": {key: snapshot[key] for key in (
+                "total_budget", "committed_total", "reserved_total", "available_budget")},
+            "slot_ledger": {"record_count": len(own),
+                            "states": dict(Counter(record["state"] for record in own)),
+                            "all_released": all(record["state"] == "released" for record in own)},
+            "other_completed_purchases": [
+                {"key": record["item_key"], "item_id": record["expected_item"], "price": record["price"]}
+                for record in others if record["state"] == "committed" and record["committed"]],
+            "other_unresolved_purchases": [
+                {"key": record["item_key"], "state": record["state"], "reserved_price": record["price"]}
+                for record in others if record["state"] in {"reserved", "disputed"}],
+            "limits_note": "These are local snapshot facts, not new spending authority. The slot ceiling remains fixed; no private seller limits are known."}
 
 
 def read_directory(urls: Iterable[str], trace: Trace | None = None) -> list[dict[str, Any]]:
@@ -97,7 +131,8 @@ def _validate_directory(directory: list[dict[str, Any]]) -> None:
 
 def select_shop(entry: dict[str, Any], directory: list[dict[str, Any]], *,
                 trace: Trace, deadline: float | None = None,
-                recent_failure: dict[str, Any] | None = None) -> dict[str, Any]:
+                recent_failure: dict[str, Any] | None = None,
+                coordination_context: dict[str, Any] | None = None) -> dict[str, Any]:
     """Use the actual harness to interpret card skills and pick a shop."""
     _validate_directory(directory)
     allowed = {shop["id"] for shop in directory}
@@ -118,8 +153,10 @@ def select_shop(entry: dict[str, Any], directory: list[dict[str, Any]], *,
                "preferences": "Match the requested product against skills. Prefer an everyday shop over a premium collectible shop when the budget is tight. Cards cannot modify budgets."}
     if recent_failure is not None:
         context["recent_failure"] = recent_failure
+    if coordination_context is not None:
+        context["coordination"] = coordination_context
     decision = Harness("shop_selector", trace).decide(context, strategy="balanced", deadline=deadline,
-        instruction="Only select a shop whose actual advertised skills fit the requested item; no hidden catalog or reserve information is available.",
+        instruction="Only select a shop whose actual advertised skills fit the requested item. Use actual terminal failure and local ledger snapshot facts to reconsider a prior selection; do not infer private reserves or increase the fixed slot budget. No hidden catalog or reserve information is available.",
         validator=validate)
     selected = next(shop for shop in directory if shop["id"] == decision["item_id"])
     trace.write("shop_selected", slot=entry["key"], shop_id=selected["id"],
@@ -183,7 +220,8 @@ def allocate_budget(entries: list[dict[str, Any]], directory: list[dict[str, Any
 
 def shop_all(directory: list[dict[str, Any]], shopping_list: list[dict[str, Any]], total_budget: float, *,
              log_dir: str | Path, policy: StrategyPolicy | None = None,
-             timeout: float = 600, max_workers: int = 3) -> dict[str, Any]:
+             timeout: float = 600, max_workers: int = 2,
+             slot_timeout: float = 280) -> dict[str, Any]:
     """Run independently summarized negotiations concurrently, never retry ambiguously.
 
     Slots may provide only item/key and one total budget. The actual harness
@@ -193,8 +231,8 @@ def shop_all(directory: list[dict[str, Any]], shopping_list: list[dict[str, Any]
     """
     entries = validate_shopping_list(shopping_list, total_budget)
     _validate_directory(directory)
-    if timeout <= 0 or max_workers < 1:
-        raise EvidenceError("shopping timeout and worker count must be positive")
+    timeout, max_workers, slot_timeout = validate_execution_limits(timeout, max_workers, slot_timeout)
+    worker_count = min(max_workers, len(entries))
     directory_path = Path(log_dir)
     trace = Trace("shopping", directory_path)
     policy = policy or StrategyPolicy()
@@ -206,7 +244,9 @@ def shop_all(directory: list[dict[str, Any]], shopping_list: list[dict[str, Any]
     ledger = Ledger(total_budget, directory_path / "ledger.json")
     trace.write("shopping_started", slots=entries, total_budget=total_budget,
                 shop_count=len(directory), policy_version=policy.version,
-                policy_sha256=policy.sha256, concurrent_workers=min(max_workers, len(entries)))
+                policy_sha256=policy.sha256, concurrent_workers=worker_count,
+                overall_timeout=timeout, negotiation_timeout=slot_timeout,
+                shared_inference_slots=1)
     results: dict[str, dict[str, Any]] = {}
 
     def purchase(entry):
@@ -215,19 +255,31 @@ def shop_all(directory: list[dict[str, Any]], shopping_list: list[dict[str, Any]
         slot_directory = directory_path / f"slot-{slot_index:02d}"
         recent_failure = None
         for attempt in range(1, 3):
+            if deadline - time.monotonic() <= 1:
+                raise TimeoutError("shopping deadline reached before shop selection")
             attempt_directory = slot_directory / f"attempt-{attempt:02d}"
             selection_trace = Trace("shop-selector", attempt_directory / "selection")
             buyer_trace = Trace("buyer", attempt_directory / "buyer")
+            selection_context = summarize_coordination(entry, ledger.snapshot(), deadline=deadline, attempt=attempt)
             selected = select_shop(entry, directory, trace=selection_trace, deadline=deadline,
-                                   recent_failure=recent_failure)
+                                   recent_failure=recent_failure, coordination_context=selection_context)
             remaining = deadline - time.monotonic()
             if remaining <= 1:
                 raise TimeoutError("shopping deadline reached before negotiation")
+            effective_timeout = min(slot_timeout, remaining)
+            coordination = {**summarize_coordination(entry, ledger.snapshot(), deadline=deadline, attempt=attempt),
+                            "purpose": "shopping_list", "parallel_workers": worker_count,
+                            "shared_inference_slots": 1, "per_negotiation_seconds": slot_timeout,
+                            "effective_negotiation_seconds": effective_timeout}
+            if recent_failure is not None:
+                coordination["recent_failure"] = recent_failure
             trace.write("slot_negotiating", slot=entry["key"], attempt=attempt, shop_id=selected["id"],
-                        budget=entry["budget"], item=entry["item"])
+                        budget=entry["budget"], item=entry["item"], timeout=effective_timeout,
+                        coordination=coordination)
             # Exceptions remain ambiguous and escape without a second purchase.
             result = negotiate(selected["url"], entry["item"], entry["budget"], ledger=ledger,
-                               item_key=entry["key"], policy=policy, trace=buyer_trace, timeout=min(240, remaining))
+                               item_key=entry["key"], policy=policy, trace=buyer_trace,
+                               timeout=effective_timeout, coordination_context=coordination)
             result = {**result, "key": entry["key"], "shop_id": selected["id"],
                       "url": selected["url"], "attempt": attempt}
             snapshot = ledger.snapshot()
@@ -235,13 +287,17 @@ def shop_all(directory: list[dict[str, Any]], shopping_list: list[dict[str, Any]
             # Only an explicit terminal failure is safe to retry, and only after
             # the buyer has released every potentially spent slot reservation.
             definite_failure = (result.get("status") == "no_deal"
-                                and result.get("state") == "TASK_STATE_FAILED")
+                                and result.get("state") in {
+                                    "TASK_STATE_FAILED", "TASK_STATE_REJECTED", "TASK_STATE_CANCELED"})
             slot_has_active_funds = any(record["item_key"] == entry["key"] and record["state"] != "released"
                                        for record in snapshot["purchases"].values())
             if definite_failure and attempt < 2 and not slot_has_active_funds and deadline - time.monotonic() > 1:
                 recent_failure = {"attempt": attempt, "shop_id": selected["id"],
                                   "status": result["status"], "state": result["state"],
-                                  "reason": result.get("reason"), "funds_released": True}
+                                  "reason": result.get("reason")[:300] if isinstance(result.get("reason"), str) else None,
+                                  "reason_truncated": isinstance(result.get("reason"), str) and len(result["reason"]) > 300,
+                                  "funds_released": True,
+                                  "evidence_source": "buyer_returned_terminal_state_and_local_ledger"}
                 trace.write("slot_retry", slot=entry["key"], recent_failure=recent_failure,
                             reason="Definite terminal failure; actual harness will select the next shop")
                 continue
@@ -250,7 +306,7 @@ def shop_all(directory: list[dict[str, Any]], shopping_list: list[dict[str, Any]
             trace.write("slot_finished", result=result, ledger=snapshot)
             return result
 
-    with ThreadPoolExecutor(max_workers=min(max_workers, len(entries)), thread_name_prefix="shop-buyer") as executor:
+    with ThreadPoolExecutor(max_workers=worker_count, thread_name_prefix="shop-buyer") as executor:
         futures = {executor.submit(purchase, entry): entry for entry in entries}
         for future in as_completed(futures):
             entry = futures[future]
@@ -274,21 +330,31 @@ def shop_all(directory: list[dict[str, Any]], shopping_list: list[dict[str, Any]
                "elapsed_seconds": round(time.monotonic() - started, 3),
                "results": [results[entry["key"]] for entry in entries], "ledger": snapshot,
                "allocated_envelopes": entries,
+               "execution_limits": {"overall_timeout": timeout, "negotiation_timeout": slot_timeout,
+                                    "concurrent_workers": worker_count, "shared_inference_slots": 1},
                "policy_version": policy.version, "policy_sha256": policy.sha256}
     trace.write("shopping_summary", summary=summary)
     return summary
 
 
-if __name__ == "__main__":
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--directory", type=Path, required=True, help="JSON list of fetched {id,url,card} records")
     parser.add_argument("--list", dest="shopping_list", type=Path, required=True, help="JSON list of {key,item}; budget is optional")
     parser.add_argument("--total-budget", type=float, required=True)
     parser.add_argument("--policy")
-    parser.add_argument("--timeout", type=float, default=600, help="Overall shopping deadline; each negotiation is limited to 240 seconds")
+    parser.add_argument("--timeout", type=float, default=600, help="Overall shopping deadline in seconds")
+    parser.add_argument("--workers", type=int, default=2, help="Concurrent negotiations; default 2 shares one inference queue")
+    parser.add_argument("--negotiation-timeout", type=float, default=280, help="Per-negotiation seconds, positive and below 300")
     parser.add_argument("--log-dir", type=Path, required=True, help="A new run directory; existing ledgers are restored")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     result = shop_all(json.loads(args.directory.read_text()), json.loads(args.shopping_list.read_text()),
-                      args.total_budget, log_dir=args.log_dir, policy=StrategyPolicy(args.policy), timeout=args.timeout)
+                      args.total_budget, log_dir=args.log_dir, policy=StrategyPolicy(args.policy),
+                      timeout=args.timeout, max_workers=args.workers, slot_timeout=args.negotiation_timeout)
     print(json.dumps(result, ensure_ascii=False), flush=True)
+    return result
+
+
+if __name__ == "__main__":
+    result = main()
     raise SystemExit(0 if result["passed"] else 1)

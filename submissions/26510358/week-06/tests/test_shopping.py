@@ -74,7 +74,7 @@ class ShoppingTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary, patch("shopping.Harness") as harness, patch("shopping.negotiate", side_effect=fake_trade):
             harness.return_value.decide.side_effect = choose
-            summary = shop_all(self.directory, self.entries, 600, log_dir=temporary)
+            summary = shop_all(self.directory, self.entries, 600, log_dir=temporary, max_workers=3)
         self.assertTrue(summary["passed"])
         self.assertEqual(summary["ledger"]["committed_total"], 570)
         self.assertEqual(summary["ledger"]["reserved_total"], 0)
@@ -110,7 +110,7 @@ class ShoppingTests(unittest.TestCase):
 
         def fake_trade(url, item, budget, **kwargs):
             self.assertEqual(budget, allocations[item])
-            self.assertLessEqual(kwargs["timeout"], 240)
+            self.assertLessEqual(kwargs["timeout"], 280)
             ledger = kwargs["ledger"]
             ledger.reserve(kwargs["item_key"], prices[item], f"purchase-{item}")
             barrier.wait(timeout=5)
@@ -119,7 +119,7 @@ class ShoppingTests(unittest.TestCase):
             return {"status": "completed", "receipt": receipt}
 
         with tempfile.TemporaryDirectory() as temporary, patch("shopping.Harness", FakeHarness), patch("shopping.negotiate", side_effect=fake_trade):
-            summary = shop_all(self.directory, entries, 600, log_dir=temporary)
+            summary = shop_all(self.directory, entries, 600, log_dir=temporary, max_workers=3)
         self.assertTrue(summary["passed"])
         self.assertEqual(roles[0], "budget_allocator")
         self.assertEqual(roles.count("budget_allocator"), 1)
@@ -161,7 +161,7 @@ class ShoppingTests(unittest.TestCase):
                                         "offer": None, "reason": "test-only same eligible shop"})
 
         def trade(url, item, budget, **kwargs):
-            self.assertLessEqual(kwargs["timeout"], 240)
+            self.assertLessEqual(kwargs["timeout"], 280)
             ledger = kwargs["ledger"]
             calls.append(item)
             purchase_id = f"attempt-{len(calls)}"
