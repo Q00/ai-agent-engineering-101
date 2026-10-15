@@ -52,7 +52,9 @@ class A2AClient:
         self.trace.write("rpc_request", endpoint=self.url, request=request, version="1.0")
         response = self.http.post(self.url, json=request, timeout=self._remaining_timeout())
         response.raise_for_status()
-        self._remaining_timeout()
+        # Receiving a reply may cross the deadline after the peer has completed
+        # an authorized purchase. Preserve and validate that evidence; every new
+        # request still checks the deadline before making its HTTP call.
         body = response.json()
         if not isinstance(body, dict) or body.get("jsonrpc") != "2.0":
             raise ProtocolError("Expected a JSON-RPC 2.0 response object")

@@ -17,6 +17,30 @@ from quote_normalization import contract_issues, normalize_quote
 from tracing import Trace
 
 
+def _has_terminal_receipt_evidence(task):
+    """Detect purchase evidence that contradicts an explicit no-deal state.
+
+    A DataPart containing price is receipt-shaped even when its value is invalid.
+    An artifact named receipt also counts when partial or empty. Other diagnostic
+    artifacts do not turn an otherwise explicit failure into a possible purchase.
+    """
+    artifacts = task.get("artifacts", [])
+    if not isinstance(artifacts, list):
+        return False
+    for artifact in artifacts:
+        if not isinstance(artifact, dict):
+            continue
+        name = artifact.get("name")
+        if isinstance(name, str) and name.strip().casefold() == "receipt":
+            return True
+        parts = artifact.get("parts", [])
+        if isinstance(parts, list) and any(
+                isinstance(part, dict) and isinstance(part.get("data"), dict) and "price" in part["data"]
+                for part in parts):
+            return True
+    return False
+
+
 def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, trace=None,
               timeout=240, expected_item_id=None, coordination_context=None):
     if not isinstance(item, str) or not item.strip():
@@ -74,6 +98,15 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                 trace.write("purchase_completed", receipt=receipt, ledger=ledger.snapshot())
                 return {"status": "completed", "receipt": receipt}
             if state in ("TASK_STATE_REJECTED", "TASK_STATE_CANCELED", "TASK_STATE_FAILED"):
+                if _has_terminal_receipt_evidence(task):
+                    # A peer may fail after publishing a purchase artifact. Its
+                    # terminal label cannot prove the prior offer was unspent.
+                    if reserved:
+                        ledger.mark_disputed(purchase_id, "terminal_receipt_conflict")
+                    trace.write("terminal_receipt_conflict", state=state, reserved=reserved,
+                                artifacts=task.get("artifacts", []))
+                    return {"status": "disputed", "state": state,
+                            "issues": ["terminal_receipt_conflict"]}
                 if reserved:
                     ledger.release(purchase_id)
                     reserved = False
