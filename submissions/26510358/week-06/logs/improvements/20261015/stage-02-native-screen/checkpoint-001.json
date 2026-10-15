@@ -1,0 +1,96 @@
+[
+  {
+    "id": "r01-lamp-ours-buyer",
+    "buyer": "ours",
+    "seller": "kit",
+    "item": "lamp",
+    "budget": 120,
+    "repeat": 1,
+    "participant_role": "buyer",
+    "participant": "ours",
+    "mode": "native",
+    "runner_sha256": "5c9cd0a4a274ee16f3ed45f312a3a330831df558a70bd03415765594078d44dc",
+    "execution_scope": {
+      "buyer": "native_implementation",
+      "seller": "fixed_counterpart"
+    },
+    "started": "2026-10-15T05:18:42.218453+00:00",
+    "buyer_command": [
+      "/home/myeonggi/a2a-lab/.venv/bin/python",
+      "buyer.py",
+      "--url",
+      "http://127.0.0.1:41691",
+      "--item",
+      "lamp",
+      "--budget",
+      "120"
+    ],
+    "buyer_exit_code": 0,
+    "buyer_result": {
+      "status": "completed",
+      "receipt": {
+        "item": "lamp",
+        "price": 100.0,
+        "seller": "Kit Shop"
+      }
+    },
+    "wire_evidence": {
+      "receipts": [
+        {
+          "item": "lamp",
+          "price": 100.0,
+          "seller": "Kit Shop"
+        }
+      ],
+      "receipt_records": [
+        {
+          "task_id": "c70f3185-6661-4890-9247-55f983304474",
+          "receipt": {
+            "item": "lamp",
+            "price": 100.0,
+            "seller": "Kit Shop"
+          }
+        }
+      ],
+      "completed_task_ids": [
+        "c70f3185-6661-4890-9247-55f983304474"
+      ],
+      "duplicate_completed_responses": 0,
+      "conflicting_completed_responses": 0,
+      "safety_violations": [],
+      "rejected_wire_responses": []
+    },
+    "receipts": [
+      {
+        "item": "lamp",
+        "price": 100.0,
+        "seller": "Kit Shop"
+      }
+    ],
+    "price": 100.0,
+    "wire_completed": true,
+    "safety_violations": [],
+    "evidence_scope": "buyer_report_and_wire_receipt",
+    "buyer_reported_status": "completed",
+    "completed_valid": true,
+    "buyer_surplus": 20.0,
+    "seller_surplus": 0.0,
+    "optimal_buyer_price": true,
+    "optimal_seller_price": false,
+    "kit_record": {
+      "messages": 2,
+      "continued": 1,
+      "offers": [
+        100
+      ],
+      "deals": [
+        100
+      ],
+      "canceled": 0,
+      "posts": 2,
+      "bad_version": 0
+    },
+    "rpc_calls": 2,
+    "elapsed_seconds": 97.529
+  }
+]
