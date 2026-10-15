@@ -541,6 +541,7 @@ def main():
     write_new(out / "manifest.json", {"arguments": vars(args), "participants": participants,
               "source_hashes": before, "runner_sha256": RUNNER_SHA256,
               "kit_sha256": hashlib.sha256(Path(args.kit).read_bytes()).hexdigest(),
+              "inference_gap_seconds_override": os.environ.get("A2A_INFERENCE_GAP_SECONDS"),
               "controlled_model": "gpt-6-sol/low" if args.mode == "controlled" else None,
               "claim_scope": "Exploratory observed comparisons, not statistical dominance or historical provider reproduction"})
     kit = load_kit(args.kit)
