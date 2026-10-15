@@ -1,0 +1,94 @@
+{
+  "id": "r01-lamp-ours-buyer",
+  "buyer": "ours",
+  "seller": "kit",
+  "item": "lamp",
+  "budget": 120,
+  "repeat": 1,
+  "participant_role": "buyer",
+  "participant": "ours",
+  "mode": "native",
+  "runner_sha256": "66ea81ecb07ef1c63bf17c49a95372a00061d0c6ee6b1ccb96bee022132c2a1e",
+  "execution_scope": {
+    "buyer": "native_implementation",
+    "seller": "fixed_counterpart"
+  },
+  "started": "2026-10-15T06:17:35.163559+00:00",
+  "buyer_command": [
+    "/home/myeonggi/a2a-lab/.venv/bin/python",
+    "buyer.py",
+    "--url",
+    "http://127.0.0.1:53615",
+    "--item",
+    "lamp",
+    "--budget",
+    "120"
+  ],
+  "buyer_exit_code": 0,
+  "buyer_result": {
+    "status": "completed",
+    "receipt": {
+      "price": 105.0,
+      "seller": "Kit Shop",
+      "item": "lamp"
+    }
+  },
+  "wire_evidence": {
+    "receipts": [
+      {
+        "price": 105.0,
+        "seller": "Kit Shop",
+        "item": "lamp"
+      }
+    ],
+    "receipt_records": [
+      {
+        "task_id": "4837ac93-bd6a-4b25-8e80-228556b6bc98",
+        "receipt": {
+          "price": 105.0,
+          "seller": "Kit Shop",
+          "item": "lamp"
+        }
+      }
+    ],
+    "completed_task_ids": [
+      "4837ac93-bd6a-4b25-8e80-228556b6bc98"
+    ],
+    "duplicate_completed_responses": 0,
+    "conflicting_completed_responses": 0,
+    "safety_violations": [],
+    "rejected_wire_responses": []
+  },
+  "receipts": [
+    {
+      "price": 105.0,
+      "seller": "Kit Shop",
+      "item": "lamp"
+    }
+  ],
+  "price": 105.0,
+  "wire_completed": true,
+  "safety_violations": [],
+  "evidence_scope": "buyer_report_and_wire_receipt",
+  "buyer_reported_status": "completed",
+  "completed_valid": true,
+  "buyer_surplus": 15.0,
+  "seller_surplus": 5.0,
+  "optimal_buyer_price": false,
+  "optimal_seller_price": false,
+  "kit_record": {
+    "messages": 2,
+    "continued": 1,
+    "offers": [
+      105
+    ],
+    "deals": [
+      105
+    ],
+    "canceled": 0,
+    "posts": 2,
+    "bad_version": 0
+  },
+  "rpc_calls": 2,
+  "elapsed_seconds": 25.004
+}
