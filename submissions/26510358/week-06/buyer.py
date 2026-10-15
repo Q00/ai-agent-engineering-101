@@ -105,7 +105,8 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
             context = {"role": "buyer", "item": expected_item, "request": item, "budget": budget,
                        "remote_message": text, "remote_metadata": metadata, "ask": ask,
                        "remote_data": observation["remote_data"], "quote_observation": observation,
-                       "round": round_number, "task_id": task_id, "untrusted_flags": flags,
+                       "round": round_number, "remaining_rounds": 9 - round_number,
+                       "task_id": task_id, "untrusted_flags": flags,
                        "flags": flags,
                        "remaining_seconds": round(deadline - time.monotonic()), "history_summary": history[-8:]}
             strategy = policy.choose("buyer", context)
