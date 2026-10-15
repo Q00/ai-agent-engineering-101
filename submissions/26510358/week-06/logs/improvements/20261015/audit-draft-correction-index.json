@@ -1,0 +1,15 @@
+{
+  "preserved_draft": "logs/improvements/20261015/stderr.txt-shared-http-audit-20261015T074757Z.json",
+  "sha256": "4ffff59c7edaa96640a18fe53facaaffe26a987bc1689f06c6af00f696dafdf2",
+  "excluded_from_aggregate": true,
+  "reason": "Audit helper reused a loop variable for the draft run label. The corrected audit below identifies the cohort; original wire/model records are unchanged.",
+  "replacement": "logs/improvements/20261015/final-controlled-cross-shared-http-audit-20261015T074813Z.json",
+  "wording_clarifications": [
+    {
+      "artifact": "logs/improvements/20261015/final-active-independent-validation-audit-20261015T084150Z.json",
+      "sha256": "866c252dbd78c36728ec7d650effd015117d998a9a3b0b29d0dd98ae39d4b3dc",
+      "original_phrase": "sub-ms differences around5",
+      "clarification": "Official release-trace to next-admit delta reaches approximately4.978s, about22ms below5. The completion marker is written before release telemetry, so this delta includes log timestamp ordering and is not a direct measurement of the configured completion-to-admission gap. Use timestamp-ordering language, not sub-millisecond language. Raw timing values and pass/fail evidence are unchanged."
+    }
+  ]
+}
