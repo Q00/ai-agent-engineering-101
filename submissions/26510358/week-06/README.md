@@ -58,11 +58,11 @@ Agent Card 주소는 `http://127.0.0.1:9999/.well-known/agent-card.json`입니�
 
 기본 로그 위치는 `A2A_TRACE_DIR`로 지정할 수 있습니다. 구매자의 `--log-dir`나 판매자 설정의 `log_dir`처럼 명시한 경로가 있으면 그 경로를 우선합니다. 각 프로세스의 `policy_loaded` 기록에는 실제 로드한 정책 버전과 해시가 남습니다. 공식 후보 검사의 추론 로그는 다른 작업과 섞이지 않는 새 디렉터리에 저장합니다.
 
-추론 호출은 프로세스 간 FIFO 대기열로 차례를 지키며 호출 후 10초 간격을 둡니다. `A2A_QUEUE_TRACE`에 새 JSONL 파일 경로를 지정하면 입장·종료·만료 기록도 남습니다. 병렬 장보기는 기본 2개 협상 스레드가 이 한 개의 추론 입장 슬롯을 공유합니다. 원래 3개 협상에서 공유 호출 대기와 여러 차례의 작은 양보가 쌓여 제한 시간에 도달한 실패를 반영한 설정이며, 각 스레드의 협상 판단은 계속 실제 하네스가 합니다.
+추론 호출은 프로세스 간 FIFO 대기열로 차례를 지키며 완료 후 기본 5초 간격을 둡니다. 중앙 `inference_slot()`이 `A2A_INFERENCE_GAP_SECONDS`를 읽으며 값은 유한한 0 이상의 초 단위 숫자여야 합니다. 잘못된 설정은 모델 프로세스를 시작하기 전에 거부합니다. 예전 10초 조건을 재현하려면 모든 관련 프로세스를 시작하기 전에 `A2A_INFERENCE_GAP_SECONDS=10`을 지정합니다. `A2A_QUEUE_TRACE`에 새 JSONL 파일 경로를 지정하면 입장·종료·만료 기록도 남습니다. 병렬 장보기는 기본 2개 협상 스레드가 이 한 개의 추론 입장 슬롯을 공유합니다. 원래 3개 협상에서 공유 호출 대기와 여러 차례의 작은 양보가 쌓여 제한 시간에 도달한 실패를 반영한 설정이며, 각 스레드의 협상 판단은 계속 실제 하네스가 합니다.
 
 `no_deal`과 실제 `TASK_STATE_FAILED`, `TASK_STATE_REJECTED`, `TASK_STATE_CANCELED` 중 하나를 함께 받고 해당 목록 키의 모든 원장 기록이 해제 상태일 때만 상점을 한 번 더 선택합니다. 지출 기록이 전혀 없는 경우도 재선택할 수 있습니다. 완료·분쟁·응답 유실·시간 초과·진행 중 상태와 모델의 단순 중단·회차 제한 종료는 재구매하지 않습니다. 재선택은 실제 카드와 현재 실패·원장 스냅샷을 읽는 하네스가 결정하고, 같은 상점이 다시 선택될 수도 있습니다.
 
-관측 호출도 같은 협상 deadline과 FIFO 대기열을 사용합니다. `quote_observation_started`, `quote_observation_finished`에는 남은 시간과 큐 대기를 포함한 경과 시간이 남고, `quote_normalized`에서 출처를 확인합니다. 최초 실제 검사에서 `130.`의 마침표를 소수점 연속으로 잘못 취급해 올바른 관측값을 거부한 실패가 있었습니다. 문장 마침표는 허용하면서 소수의 일부 값은 거부하도록 고쳤으며 [실패 원문](logs/improvements/20261015/stage-01-native-screen/r01-lamp-ours-buyer/buyer-trace/buyer-bdcd6501383d.jsonl)과 [수정 회귀 검사](logs/improvements/20261015/stage-01b-grounding-unit-XvGNwnPO/unittest.log)를 보존했습니다.
+관측 호출도 같은 협상 deadline과 FIFO 대기열을 사용합니다. 간격을 바꾸어도 추론 입장 슬롯은 한 개이며, 기존 429 응답의 제한된 재시도·backoff 처리를 유지합니다. 간격 변경은 가격 판단이나 RL 가중치 갱신이 아닙니다. `quote_observation_started`, `quote_observation_finished`에는 남은 시간과 큐 대기를 포함한 경과 시간이 남고, `quote_normalized`에서 출처를 확인합니다. 최초 실제 검사에서 `130.`의 마침표를 소수점 연속으로 잘못 취급해 올바른 관측값을 거부한 실패가 있었습니다. 문장 마침표는 허용하면서 소수의 일부 값은 거부하도록 고쳤으며 [실패 원문](logs/improvements/20261015/stage-01-native-screen/r01-lamp-ours-buyer/buyer-trace/buyer-bdcd6501383d.jsonl)과 [수정 회귀 검사](logs/improvements/20261015/stage-01b-grounding-unit-XvGNwnPO/unittest.log)를 보존했습니다.
 
 ## 검사와 필수 도전
 
@@ -122,7 +122,7 @@ python3 benchmark_a2a.py \
   --out "$A2A_BENCH_WORK/native-fixed-ours"
 ```
 
-동일 모델 실험은 별도 터미널에서 같은 가상환경·제출 디렉터리·작업 경로를 사용해 호환 HTTP 서버를 먼저 실행합니다. 위 `A2A_BENCH_WORK` 변수도 같은 값으로 지정합니다. CLI 호출을 치환하는 `benchmark_bin` 경로는 비교 실행기가 상대 프로세스에만 설정합니다. 서버는 사용 후 해당 터미널에서 종료합니다.
+동일 모델 실험은 별도 터미널에서 같은 가상환경·제출 디렉터리·작업 경로를 사용해 호환 HTTP 서버를 먼저 실행합니다. 위 `A2A_BENCH_WORK` 변수도 같은 값으로 지정합니다. 비교 서버와 CLI 상대 프로세스는 같은 `A2A_INFERENCE_GAP_SECONDS` 값을 사용해야 하며, 실제 간격은 queue 이벤트와 transport 요청 근거에 기록됩니다. CLI 호출을 치환하는 `benchmark_bin` 경로는 비교 실행기가 상대 프로세스에만 설정합니다. 서버는 사용 후 해당 터미널에서 종료합니다.
 
 ```bash
 python3 benchmark_transport.py serve --port 9780 \

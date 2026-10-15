@@ -48,7 +48,7 @@ class BenchmarkTransportTests(unittest.TestCase):
 
     @contextmanager
     def isolated_slot(self, *args, **kwargs):
-        self.assertEqual(kwargs["interval"], 10)
+        self.assertNotIn("interval", kwargs)  # The shared policy resolves it centrally.
         yield "isolated-test-ticket"
 
     def assert_mock_inference(self, exit_code=0):
@@ -77,7 +77,8 @@ class BenchmarkTransportTests(unittest.TestCase):
                 process.communicate.side_effect = communicate
                 return process
 
-            with patch.object(transport, "inference_slot", self.isolated_slot), \
+            with patch.dict(transport.os.environ, {"A2A_INFERENCE_GAP_SECONDS": "5"}), \
+                    patch.object(transport, "inference_slot", self.isolated_slot), \
                     patch.object(transport.subprocess, "Popen", popen):
                 arguments = {"source": "test", "original_request": {"argv": []},
                              "codex": sys.executable, "trace_dir": directory}
@@ -89,6 +90,8 @@ class BenchmarkTransportTests(unittest.TestCase):
                     final, _ = transport.invoke(messages, **arguments)
                     self.assertEqual(final, "literal transport output\n")
             artifact = next(directory.iterdir())
+            request = json.loads((artifact / "request.json").read_text())
+            self.assertEqual(request["queue_interval_seconds"], 5)
             self.assertEqual((artifact / "stdout.txt").read_text(), "native trace")
             self.assertEqual((artifact / "stderr.txt").read_text(), "native stderr")
             result = json.loads((artifact / "result.json").read_text())

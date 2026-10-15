@@ -21,7 +21,7 @@ import threading
 import time
 import uuid
 
-from inference_queue import inference_slot
+from inference_queue import inference_gap_seconds, inference_slot
 
 
 MODEL = "gpt-6-sol"
@@ -102,11 +102,12 @@ def render_request(messages):
 
 
 def invoke(messages, *, source, original_request, codex=None, trace_dir=None):
-    """One real inference call, with the same shared 10-second FIFO as our agent.
+    """One real inference call, with the same configured FIFO as our agent.
 
     There are no added retries, schemas, or semantic guards. Peer code retains
     its own retry and validation behavior. A failed call stays a failed call.
     """
+    gap = inference_gap_seconds()
     binary, directory = _configuration(codex, trace_dir)
     call_id = uuid.uuid4().hex
     artifact = directory / call_id
@@ -116,7 +117,7 @@ def invoke(messages, *, source, original_request, codex=None, trace_dir=None):
                 "source": source, "participant": os.environ.get("A2A_BENCH_PARTICIPANT"),
                 "time": datetime.now(timezone.utc).isoformat(), "pid": os.getpid(),
                 "original_request": original_request, "boundary_instruction": BOUNDARY,
-                "call_timeout_seconds": CALL_TIMEOUT, "queue_interval_seconds": 10}
+                "call_timeout_seconds": CALL_TIMEOUT, "queue_interval_seconds": gap}
     _write(artifact / "request.json", metadata)
     process = None
     stdout = stderr = ""
@@ -136,7 +137,7 @@ def invoke(messages, *, source, original_request, codex=None, trace_dir=None):
                        "--output-last-message", str(output), "-"]
             _write(artifact / "execution.json", {"command": command, "cwd": empty,
                     "environment_recorded": False, "source_cwd": os.getcwd()})
-            with inference_slot(time.monotonic() + wait_seconds, interval=10) as ticket:
+            with inference_slot(time.monotonic() + wait_seconds) as ticket:
                 _write(artifact / "admission.json", {"ticket": ticket,
                         "waited_seconds": round(time.monotonic() - started, 6)})
                 process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,

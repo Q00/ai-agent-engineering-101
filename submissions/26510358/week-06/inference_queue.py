@@ -21,6 +21,28 @@ import time
 import uuid
 
 
+DEFAULT_INFERENCE_GAP_SECONDS = 5.0
+
+
+def inference_gap_seconds(interval=None):
+    """Resolve the shared pacing policy before queue mutation or inference."""
+    if interval is None:
+        raw = os.environ.get("A2A_INFERENCE_GAP_SECONDS", str(DEFAULT_INFERENCE_GAP_SECONDS))
+        try:
+            interval = float(raw)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("A2A_INFERENCE_GAP_SECONDS must be finite and nonnegative") from exc
+    if isinstance(interval, bool) or not isinstance(interval, (int, float)):
+        raise ValueError("inference gap must be a finite nonnegative number")
+    try:
+        resolved = float(interval)
+    except (ValueError, OverflowError) as exc:
+        raise ValueError("inference gap must be finite and nonnegative") from exc
+    if not math.isfinite(resolved) or resolved < 0:
+        raise ValueError("A2A_INFERENCE_GAP_SECONDS/inference gap must be finite and nonnegative")
+    return resolved
+
+
 class QueueTimeout(TimeoutError):
     """A caller's deadline expired before it obtained the inference slot."""
 
@@ -56,7 +78,7 @@ def _alive(ticket):
 
 
 class InferenceQueue:
-    def __init__(self, state_path=None, *, interval=10.0, poll_interval=0.05):
+    def __init__(self, state_path=None, *, interval=DEFAULT_INFERENCE_GAP_SECONDS, poll_interval=0.05):
         for name, value in (("interval", interval), ("poll_interval", poll_interval)):
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
                 raise ValueError(f"{name} must be a finite number")
@@ -79,7 +101,7 @@ class InferenceQueue:
             return
         record = {"time": datetime.now(timezone.utc).isoformat(), "monotonic": time.monotonic(),
                   "event": event, "pid": os.getpid(), "thread_id": threading.get_ident(),
-                  "state_path": str(self.path), **fields}
+                  "state_path": str(self.path), "interval_seconds": self.interval, **fields}
         if ticket is not None:
             record["ticket"] = ticket
         if state is not None:
@@ -271,6 +293,7 @@ class InferenceQueue:
 
 
 @contextmanager
-def inference_slot(deadline=None, *, state_path=None, interval=10.0, poll_interval=0.05):
-    with InferenceQueue(state_path, interval=interval, poll_interval=poll_interval).slot(deadline) as ticket:
+def inference_slot(deadline=None, *, state_path=None, interval=None, poll_interval=0.05):
+    gap = inference_gap_seconds(interval)
+    with InferenceQueue(state_path, interval=gap, poll_interval=poll_interval).slot(deadline) as ticket:
         yield ticket

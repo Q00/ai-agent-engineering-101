@@ -10,7 +10,7 @@
 | [구매자 스키마](buyer-decision.schema.json), [판매자 스키마](seller-decision.schema.json) | 역할별 허용 행동과 필드 형식. 구매 금액은 `price`, 판매자가 읽은 제안은 `offer` |
 | [quote_normalization.py](quote_normalization.py) `collect_quote_evidence()`, `normalize_quote()`, `contract_issues()` | metadata/DataPart/텍스트의 현재 관측 정규화, 출처·충돌 검사, credits·수량 1 계약 대조 |
 | [호가 관측 스키마](quote-observation.schema.json) | 실제 `quote_observer`가 반환하는 호가·상품 ID·견적 ID. 거래 행동·구매 금액을 선택하는 스키마와 구분 |
-| [inference_queue.py](inference_queue.py) `InferenceQueue.slot()` | 스레드·프로세스 간 FIFO 입장, 제한 시간, 종료된 소유자 복구, 호출 간격 |
+| [inference_queue.py](inference_queue.py) `InferenceQueue.slot()` | 스레드·프로세스 간 FIFO 입장, 제한 시간, 종료된 소유자 복구, 중앙 설정의 기본 5초 호출 간격 |
 | [seller.py](seller.py) `build()`, `Seller._turn()` | Agent Card·A2A 서버, 상품 검색, 거래별 상태·잠금, 호가·영수증 응답 |
 | [buyer.py](buyer.py) `negotiate()` | 카드 읽기, 같은 task ID로 흥정, 견적 상품 ID 고정, 예산 예약·영수증 확인·종료 |
 | [protocol.py](protocol.py) `A2AClient` | JSON-RPC 요청, `A2A-Version: 1.0`, 카드의 동일 출처 검증, task 응답 처리 |
@@ -69,7 +69,7 @@
 
 `shop_all()`은 구매 목록 키가 중복되지 않는지 확인합니다. 개별 예산이 없으면 `allocate_budget()`이 전체 목록·총예산·공개 Agent Card만 실제 하네스에 전달해 한 번에 한도 벡터를 받습니다. 비공개 하한가를 넘기거나 모델을 부르기 전 별도 거래를 열지 않습니다. 코드는 모든 키가 한 번씩 포함되었는지, 배분 합계가 총예산 이내인지 검증합니다. 사용자가 명시한 개별 한도가 있으면 보존합니다. 공개 카드만으로 배분한 한도가 실제 판매 가격에 충분하다는 보장은 없습니다.
 
-협상마다 짧은 이력 요약·독립 task·개별 로그를 유지하고 공유 원장으로 총액을 지킵니다. 기본 스레드는 2개이며, 전체 장보기 600초 안에서 개별 협상은 기본 280초와 전체 잔여 시간 중 작은 값으로 제한합니다. `validate_execution_limits()`가 유한한 양수·300초 미만의 개별 상한과 양의 정수 worker를 모델 호출 전에 확인합니다. 두 CLI의 `--workers`, `--negotiation-timeout`으로 조정할 수 있고, 단일 구매자와 도전 1의 기본 240초는 바뀌지 않습니다. `invocation_slot()`은 공유 추론 한 개를 FIFO 대기열과 호출 간격으로 조절합니다.
+협상마다 짧은 이력 요약·독립 task·개별 로그를 유지하고 공유 원장으로 총액을 지킵니다. 기본 스레드는 2개이며, 전체 장보기 600초 안에서 개별 협상은 기본 280초와 전체 잔여 시간 중 작은 값으로 제한합니다. `validate_execution_limits()`가 유한한 양수·300초 미만의 개별 상한과 양의 정수 worker를 모델 호출 전에 확인합니다. 두 CLI의 `--workers`, `--negotiation-timeout`으로 조정할 수 있고, 단일 구매자와 도전 1의 기본 240초는 바뀌지 않습니다. `invocation_slot()`은 공유 추론 한 개를 FIFO 대기열과 완료 후 기본 5초 간격으로 조절합니다. 중앙 `inference_slot(interval=None)`이 `A2A_INFERENCE_GAP_SECONDS`의 유한한 0 이상 값을 검증합니다. 명시적 `interval`은 그 값을 우선하므로 기존 짧은 간격 테스트는 바뀌지 않습니다. 일반 하네스와 비교 transport는 간격을 하드코딩하지 않고 이 정책을 공유합니다.
 
 `no_deal`과 실제 `TASK_STATE_FAILED`·`TASK_STATE_REJECTED`·`TASK_STATE_CANCELED` 중 하나가 함께 있어야 재선택을 검토합니다. 해당 목록 키의 모든 기록이 released인지도 확인하며, 기록이 전혀 없는 경우는 지출이 없는 것으로 처리합니다. 전체 시간이 남아 있을 때 최대 한 번만 실제 하네스가 상점을 다시 고르고 `attempt-01/attempt-02` 로그를 나눕니다. 응답 유실·분쟁·완료·시간 초과·진행 중 응답·모델의 단순 중단·회차 제한 종료에는 재구매하지 않습니다. 명확히 거절된 거래와 응답을 받지 못한 거래를 구분하는 조건입니다.
 
@@ -81,7 +81,7 @@
 
 재현 명령 전체는 [README의 비교 안내](README.md#다른-구현과-a2a-비교-재현)에 있습니다. 비교용 의존성은 `python3 -m pip install -r requirements-benchmark.txt`로 준비하며, 앱의 기본 의존성과 구분합니다. `benchmark_prepare.py`는 고정 SHA의 원본 소스를 외부 새 디렉터리에 복사하고 해시·명령·준비 실패를 남깁니다. 이 단계에서는 모델이나 에이전트를 실행하지 않습니다.
 
-`benchmark_a2a.py`에서 `--mode`는 `native` 또는 `controlled`, `--kind`는 `fixed` 또는 `cross`로 독립적으로 선택합니다. native는 원래 제공자 환경, controlled는 상대의 CLI/HTTP 추론만 실제 `gpt-6-sol/low`로 치환한 환경입니다. `benchmark_transport.py`는 가격을 보정하거나 대신 판단하지 않고 원래 요청과 실제 CLI 출력을 남깁니다. 원래 모델의 도구·생성 파라미터·지연을 재현하지 않으며 지원하지 않는 요청은 실패로 남습니다. 원본 소스가 유지됐다고 원래 모델까지 재현됐다는 뜻은 아닙니다.
+`benchmark_a2a.py`에서 `--mode`는 `native` 또는 `controlled`, `--kind`는 `fixed` 또는 `cross`로 독립적으로 선택합니다. native는 원래 제공자 환경, controlled는 상대의 CLI/HTTP 추론만 실제 `gpt-6-sol/low`로 치환한 환경입니다. `benchmark_transport.py`는 가격을 보정하거나 대신 판단하지 않고 원래 요청과 실제 CLI 출력을 남깁니다. 실제 gap은 queue 이벤트의 `interval_seconds`와 transport 요청의 `queue_interval_seconds`에 남습니다. 예전 10초 실행과 새 기본 5초 실행을 같은 조건으로 합치지 않습니다. 원래 모델의 도구·생성 파라미터·지연을 재현하지 않으며 지원하지 않는 요청은 실패로 남습니다. 원본 소스가 유지됐다고 원래 모델까지 재현됐다는 뜻은 아닙니다.
 
 fixed는 각 구현을 과제의 고정 상대와 거래시키고, cross는 우리 구매자↔상대 판매자와 상대 구매자↔우리 판매자를 구분합니다. `--roles`는 선택한 참가자의 역할이며 최종 `buyer`·`seller` 필드로 방향을 확인합니다. `manifest.json`의 커밋·소스 해시·실행기 해시, 개별 wire 로그와 원문 CLI, `summary.json`의 실제 성사·안전 문제·오류를 차례로 대조합니다.
 
