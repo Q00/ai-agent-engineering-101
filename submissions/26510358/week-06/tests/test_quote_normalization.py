@@ -121,6 +121,30 @@ class QuoteNormalizationTests(unittest.TestCase):
         finished = next(event for event in trace.events if event["event"] == "quote_observation_finished")
         self.assertGreaterEqual(finished["elapsed_including_queue"], 0)
 
+    def test_sentence_period_after_observed_price_does_not_discard_the_number(self):
+        result = normalize_quote(quoted("lamp: asking 130. Send your offer as a number."),
+                                 observer=SimulatedObserver(observation(130)))
+        self.assertEqual(result["ask"], 130)
+
+    def test_complete_decimal_and_grouped_price_allow_sentence_punctuation(self):
+        for text, price in (("Current ask 130.50. Send an offer.", 130.5),
+                            ("Current ask 1,230.50. Send an offer.", 1230.5)):
+            with self.subTest(text=text):
+                result = normalize_quote(quoted(text), observer=SimulatedObserver(observation(price)))
+                self.assertEqual(result["ask"], price)
+
+    def test_punctuated_multi_number_quote_still_uses_the_observers_price(self):
+        text = "Last year 150. Current ask 110. Delivery in 3 days."
+        result = normalize_quote(quoted(text), observer=SimulatedObserver(observation(110)))
+        self.assertEqual(result["ask"], 110)
+
+    def test_decimal_and_integer_substrings_cannot_ground_a_partial_price(self):
+        cases = [("Current ask 130.50.", 130), ("Current ask 130.50.", 50),
+                 ("Current ask 130.", 30), ("Current ask 1.2.3.", 1.2)]
+        for text, partial in cases:
+            with self.subTest(text=text, partial=partial), self.assertRaisesRegex(EvidenceError, "must occur"):
+                normalize_quote(quoted(text), observer=SimulatedObserver(observation(partial)))
+
     def test_observation_accounts_for_entire_call_time_under_the_existing_deadline(self):
         trace, observer = RecordingTrace(), SimulatedObserver(observation(110))
         with patch("quote_normalization.time.monotonic", side_effect=[100, 108, 108]):

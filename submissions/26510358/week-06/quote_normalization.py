@@ -21,7 +21,9 @@ ITEM_KEYS = ("itemId", "item_id", "productId", "product_id", "sku")
 QUOTE_KEYS = ("quoteId", "quote_id")
 CURRENCY_KEYS = ("currency", "currency_code", "currencyCode")
 QUANTITY_KEYS = ("quantity", "qty")
-_NUMBERS = re.compile(r"(?<![\d.])[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][-+]?\d+)?(?![\d.])")
+# A period followed by a digit continues a decimal; a sentence period does not.
+# The final guard still forbids backtracking to an integer prefix of a decimal.
+_NUMBERS = re.compile(r"(?<![\d.])[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][-+]?\d+)?(?!\d|\.\d)")
 
 
 def collect_quote_evidence(task: Mapping[str, Any]) -> dict[str, Any]:
