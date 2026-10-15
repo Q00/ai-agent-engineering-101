@@ -1,0 +1,984 @@
+{
+  "audit_type": "read_only_completed_C2_runtime_and_public_stance",
+  "created_at_utc": "2026-10-15T06:21:16.685282+00:00",
+  "run": "logs/challenge-2/20261015T060055Z-6bdcecf8",
+  "facts": {
+    "summary_passed": true,
+    "all_items_bought": true,
+    "no_duplicate_purchase": true,
+    "within_total_budget": true,
+    "elapsed_seconds": 320.429,
+    "total_budget": 600,
+    "committed_total": 600,
+    "reserved_total": 0,
+    "available_budget": 0,
+    "allocation": [
+      {
+        "key": "lamp",
+        "item": "lamp",
+        "budget": 100.0
+      },
+      {
+        "key": "chair",
+        "item": "chair",
+        "budget": 200.0
+      },
+      {
+        "key": "bookshelf",
+        "item": "bookshelf",
+        "budget": 300.0
+      }
+    ],
+    "reservation_states": {
+      "released": 6,
+      "committed": 3
+    },
+    "rpc_pairs_checked": 12,
+    "single_completed_receipt_per_task": 3,
+    "public_stance_transmissions_checked": 9,
+    "stance_counts": {
+      "negotiable": 6,
+      "firm": 3
+    },
+    "harness_request_count": 25,
+    "harness_exit_count": 25,
+    "all_harness_exits_zero": true,
+    "actual_CLI_stderr_header_identity": {
+      "files_checked": 25,
+      "model": "gpt-6-sol",
+      "reasoning_effort": "low"
+    },
+    "trace_event_counts": {
+      "agent_card": 23,
+      "directory_loaded": 1,
+      "policy_loaded": 23,
+      "seller_started": 20,
+      "remote_message": 12,
+      "harness_request": 25,
+      "harness_exit": 25,
+      "harness_decision": 25,
+      "quote": 9,
+      "sale_completed": 3,
+      "budget_allocated": 1,
+      "shopping_started": 1,
+      "slot_negotiating": 3,
+      "slot_attempt_finished": 3,
+      "slot_finished": 3,
+      "shopping_summary": 1,
+      "rpc_request": 12,
+      "rpc_response": 12,
+      "quote_normalized": 9,
+      "receipt_checked": 3,
+      "purchase_completed": 3,
+      "shop_selected": 3
+    }
+  },
+  "queue": {
+    "source": "logs/improvements/20261015/stage-03b-c2-queue.jsonl",
+    "event_counts": {
+      "enqueued": 25,
+      "admitted": 25,
+      "released": 25
+    },
+    "interval_seconds": 5.0,
+    "FIFO_enqueue_admission_order_equal": true,
+    "no_overlapping_slots": true,
+    "waited_seconds": {
+      "count": 25,
+      "min": 0.003577,
+      "mean": 13.298627,
+      "max": 20.499574,
+      "sum": 332.46567500000003
+    },
+    "slot_hold_seconds": {
+      "count": 25,
+      "min": 5.9364323620684445,
+      "mean": 7.997123878858983,
+      "max": 10.602950089145452,
+      "sum": 199.9280969714746
+    },
+    "release_trace_to_next_admission_seconds": {
+      "count": 24,
+      "min": 4.999600468669087,
+      "mean": 5.019997226481792,
+      "max": 5.0508931507356465,
+      "sum": 120.479933435563
+    },
+    "timing_note": "The release trace is written after last_completion is assigned and state persisted. A 4.9996-second trace-to-trace minimum is compatible with a 5-second last_completion pacing condition. Slot hold is admission-to-release including bookkeeping; harness_exit.elapsed includes waiting and is not isolated generation time. Summed waits overlap across actors and are not wall-clock duration.",
+    "tickets": [
+      {
+        "ticket": "cd8907930bae47f2bb481e3b1d2a11ec",
+        "pid": 443801,
+        "actor": "shopping coordinator",
+        "enqueued_at": "2026-10-15T06:00:56.311507+00:00",
+        "admitted_at": "2026-10-15T06:00:56.313240+00:00",
+        "released_at": "2026-10-15T06:01:04.116894+00:00",
+        "waited_seconds": 0.003577,
+        "enqueue_to_admission_seconds": 0.0017319479957222939,
+        "slot_hold_seconds": 7.8036780343391
+      },
+      {
+        "ticket": "05d010250f2d49778699d4035e269ece",
+        "pid": 443801,
+        "actor": "shopping coordinator",
+        "enqueued_at": "2026-10-15T06:01:04.128556+00:00",
+        "admitted_at": "2026-10-15T06:01:09.130228+00:00",
+        "released_at": "2026-10-15T06:01:16.561539+00:00",
+        "waited_seconds": 4.998928,
+        "enqueue_to_admission_seconds": 5.001687619835138,
+        "slot_hold_seconds": 7.431323676835746
+      },
+      {
+        "ticket": "70dd39d1e2114d8393eba553fd46809c",
+        "pid": 443801,
+        "actor": "shopping coordinator",
+        "enqueued_at": "2026-10-15T06:01:04.132335+00:00",
+        "admitted_at": "2026-10-15T06:01:21.599961+00:00",
+        "released_at": "2026-10-15T06:01:30.614204+00:00",
+        "waited_seconds": 17.469608,
+        "enqueue_to_admission_seconds": 17.467646177858114,
+        "slot_hold_seconds": 9.014250135980546
+      },
+      {
+        "ticket": "c3e2e15fcb294876a6d026e0dfc4adbe",
+        "pid": 443809,
+        "actor": "Everyday Lamp Shop",
+        "enqueued_at": "2026-10-15T06:01:16.680878+00:00",
+        "admitted_at": "2026-10-15T06:01:35.614540+00:00",
+        "released_at": "2026-10-15T06:01:46.217477+00:00",
+        "waited_seconds": 18.932464,
+        "enqueue_to_admission_seconds": 18.933668886777014,
+        "slot_hold_seconds": 10.602950089145452
+      },
+      {
+        "ticket": "6d5443335da04dde82e2cc183276dbb7",
+        "pid": 443810,
+        "actor": "Everyday Chair Shop",
+        "enqueued_at": "2026-10-15T06:01:30.736420+00:00",
+        "admitted_at": "2026-10-15T06:01:51.237340+00:00",
+        "released_at": "2026-10-15T06:01:59.666817+00:00",
+        "waited_seconds": 20.499574,
+        "enqueue_to_admission_seconds": 20.50094050494954,
+        "slot_hold_seconds": 8.429483051877469
+      },
+      {
+        "ticket": "2b2ba603b58a4076a140519556f93655",
+        "pid": 443801,
+        "actor": "shopping coordinator",
+        "enqueued_at": "2026-10-15T06:01:46.234455+00:00",
+        "admitted_at": "2026-10-15T06:02:04.710354+00:00",
+        "released_at": "2026-10-15T06:02:11.990758+00:00",
+        "waited_seconds": 18.476036,
+        "enqueue_to_admission_seconds": 18.475901902187616,
+        "slot_hold_seconds": 7.280407675076276
+      },
+      {
+        "ticket": "ea2196bc54fb48cc8cc81b06f3536b1f",
+        "pid": 443801,
+        "actor": "shopping coordinator",
+        "enqueued_at": "2026-10-15T06:01:59.677701+00:00",
+        "admitted_at": "2026-10-15T06:02:17.038766+00:00",
+        "released_at": "2026-10-15T06:02:26.383236+00:00",
+        "waited_seconds": 17.360477,
+        "enqueue_to_admission_seconds": 17.36108638579026,
+        "slot_hold_seconds": 9.344489347189665
+      },
+      {
+        "ticket": "99a28d24484e4a30a3e00a96b2b9d6ac",
+        "pid": 443809,
+        "actor": "Everyday Lamp Shop",
+        "enqueued_at": "2026-10-15T06:02:12.008679+00:00",
+        "admitted_at": "2026-10-15T06:02:31.419749+00:00",
+        "released_at": "2026-10-15T06:02:40.930893+00:00",
+        "waited_seconds": 19.411097,
+        "enqueue_to_admission_seconds": 19.41107433103025,
+        "slot_hold_seconds": 9.511150357779115
+      },
+      {
+        "ticket": "cffc67e49d5948d4953777f942f9e337",
+        "pid": 443810,
+        "actor": "Everyday Chair Shop",
+        "enqueued_at": "2026-10-15T06:02:26.401519+00:00",
+        "admitted_at": "2026-10-15T06:02:45.944761+00:00",
+        "released_at": "2026-10-15T06:02:51.881188+00:00",
+        "waited_seconds": 19.542617,
+        "enqueue_to_admission_seconds": 19.5432457360439,
+        "slot_hold_seconds": 5.9364323620684445
+      },
+      {
+        "ticket": "a24613d0f00a41ada9ae58bab8079672",
+        "pid": 443801,
+        "actor": "shopping coordinator",
+        "enqueued_at": "2026-10-15T06:02:40.952792+00:00",
+        "admitted_at": "2026-10-15T06:02:56.884904+00:00",
+        "released_at": "2026-10-15T06:03:05.015667+00:00",
+        "waited_seconds": 15.936826,
+        "enqueue_to_admission_seconds": 15.93211780488491,
+        "slot_hold_seconds": 8.13077000202611
+      },
+      {
+        "ticket": "bfbb508cc4634318b0e7e942d0c66a23",
+        "pid": 443801,
+        "actor": "shopping coordinator",
+        "enqueued_at": "2026-10-15T06:02:51.896481+00:00",
+        "admitted_at": "2026-10-15T06:03:10.058144+00:00",
+        "released_at": "2026-10-15T06:03:18.497548+00:00",
+        "waited_seconds": 18.160271,
+        "enqueue_to_admission_seconds": 18.161676215939224,
+        "slot_hold_seconds": 8.439402728807181
+      },
+      {
+        "ticket": "535c6fa6d85d4a20810a1b3d6761fb52",
+        "pid": 443809,
+        "actor": "Everyday Lamp Shop",
+        "enqueued_at": "2026-10-15T06:03:05.039638+00:00",
+        "admitted_at": "2026-10-15T06:03:23.539016+00:00",
+        "released_at": "2026-10-15T06:03:32.748152+00:00",
+        "waited_seconds": 18.499272,
+        "enqueue_to_admission_seconds": 18.49941081320867,
+        "slot_hold_seconds": 9.209125900175422
+      },
+      {
+        "ticket": "c88d898d62fe425f92a6f024da004f5b",
+        "pid": 443810,
+        "actor": "Everyday Chair Shop",
+        "enqueued_at": "2026-10-15T06:03:18.520930+00:00",
+        "admitted_at": "2026-10-15T06:03:37.758967+00:00",
+        "released_at": "2026-10-15T06:03:45.623771+00:00",
+        "waited_seconds": 19.235825,
+        "enqueue_to_admission_seconds": 19.238046064041555,
+        "slot_hold_seconds": 7.864816459361464
+      },
+      {
+        "ticket": "10bf7f0cb0364df09861e5463efa05b0",
+        "pid": 443801,
+        "actor": "shopping coordinator",
+        "enqueued_at": "2026-10-15T06:03:32.769111+00:00",
+        "admitted_at": "2026-10-15T06:03:50.623394+00:00",
+        "released_at": "2026-10-15T06:03:57.567598+00:00",
+        "waited_seconds": 17.852964,
+        "enqueue_to_admission_seconds": 17.854282807093114,
+        "slot_hold_seconds": 6.9441989292390645
+      },
+      {
+        "ticket": "982882ba17f04386b71a33254cd211e5",
+        "pid": 443801,
+        "actor": "shopping coordinator",
+        "enqueued_at": "2026-10-15T06:03:45.651891+00:00",
+        "admitted_at": "2026-10-15T06:04:02.571331+00:00",
+        "released_at": "2026-10-15T06:04:10.208917+00:00",
+        "waited_seconds": 16.918519,
+        "enqueue_to_admission_seconds": 16.919441127218306,
+        "slot_hold_seconds": 7.637596679851413
+      },
+      {
+        "ticket": "6303d65c815b4c35a3597f40bca303ff",
+        "pid": 443809,
+        "actor": "Everyday Lamp Shop",
+        "enqueued_at": "2026-10-15T06:03:57.586364+00:00",
+        "admitted_at": "2026-10-15T06:04:15.259817+00:00",
+        "released_at": "2026-10-15T06:04:23.389253+00:00",
+        "waited_seconds": 17.673629,
+        "enqueue_to_admission_seconds": 17.67345157591626,
+        "slot_hold_seconds": 8.129428702406585
+      },
+      {
+        "ticket": "48b1adb495ca483fa20701c9b9b63832",
+        "pid": 443810,
+        "actor": "Everyday Chair Shop",
+        "enqueued_at": "2026-10-15T06:04:10.224578+00:00",
+        "admitted_at": "2026-10-15T06:04:28.412903+00:00",
+        "released_at": "2026-10-15T06:04:36.862118+00:00",
+        "waited_seconds": 18.189166,
+        "enqueue_to_admission_seconds": 18.188327582087368,
+        "slot_hold_seconds": 8.449234304018319
+      },
+      {
+        "ticket": "a4f64436e79c413e902e5baacea44179",
+        "pid": 443801,
+        "actor": "shopping coordinator",
+        "enqueued_at": "2026-10-15T06:04:23.409339+00:00",
+        "admitted_at": "2026-10-15T06:04:41.905927+00:00",
+        "released_at": "2026-10-15T06:04:49.015126+00:00",
+        "waited_seconds": 18.495296,
+        "enqueue_to_admission_seconds": 18.49659393215552,
+        "slot_hold_seconds": 7.10920750675723
+      },
+      {
+        "ticket": "f663def3058b4d988d1309101c47f2d9",
+        "pid": 443811,
+        "actor": "Everyday Bookshelf Shop",
+        "enqueued_at": "2026-10-15T06:04:49.141051+00:00",
+        "admitted_at": "2026-10-15T06:04:54.027828+00:00",
+        "released_at": "2026-10-15T06:05:01.119061+00:00",
+        "waited_seconds": 4.886957,
+        "enqueue_to_admission_seconds": 4.8867932059802115,
+        "slot_hold_seconds": 7.091222858987749
+      },
+      {
+        "ticket": "53b517d1a80e4775b2d32d9a23471b2a",
+        "pid": 443801,
+        "actor": "shopping coordinator",
+        "enqueued_at": "2026-10-15T06:05:01.132646+00:00",
+        "admitted_at": "2026-10-15T06:05:06.122247+00:00",
+        "released_at": "2026-10-15T06:05:14.058062+00:00",
+        "waited_seconds": 4.987835,
+        "enqueue_to_admission_seconds": 4.989605864044279,
+        "slot_hold_seconds": 7.935810753144324
+      },
+      {
+        "ticket": "8c824496ac4949b395b271b4a2dd87e3",
+        "pid": 443811,
+        "actor": "Everyday Bookshelf Shop",
+        "enqueued_at": "2026-10-15T06:05:14.074678+00:00",
+        "admitted_at": "2026-10-15T06:05:19.065098+00:00",
+        "released_at": "2026-10-15T06:05:25.843677+00:00",
+        "waited_seconds": 4.989146,
+        "enqueue_to_admission_seconds": 4.990421485155821,
+        "slot_hold_seconds": 6.77857455285266
+      },
+      {
+        "ticket": "1bcff15edf96441f8f3590ef63dd7326",
+        "pid": 443801,
+        "actor": "shopping coordinator",
+        "enqueued_at": "2026-10-15T06:05:25.858423+00:00",
+        "admitted_at": "2026-10-15T06:05:30.844581+00:00",
+        "released_at": "2026-10-15T06:05:38.314215+00:00",
+        "waited_seconds": 4.985183,
+        "enqueue_to_admission_seconds": 4.986158679705113,
+        "slot_hold_seconds": 7.469642356038094
+      },
+      {
+        "ticket": "7eb68d7ab6e14a3984549348709959bb",
+        "pid": 443811,
+        "actor": "Everyday Bookshelf Shop",
+        "enqueued_at": "2026-10-15T06:05:38.336438+00:00",
+        "admitted_at": "2026-10-15T06:05:43.321312+00:00",
+        "released_at": "2026-10-15T06:05:50.280092+00:00",
+        "waited_seconds": 4.986038,
+        "enqueue_to_admission_seconds": 4.984865870326757,
+        "slot_hold_seconds": 6.958795644808561
+      },
+      {
+        "ticket": "e168fae325ca4c9f8d8c9c4bb14e74dc",
+        "pid": 443801,
+        "actor": "shopping coordinator",
+        "enqueued_at": "2026-10-15T06:05:50.296636+00:00",
+        "admitted_at": "2026-10-15T06:05:55.279779+00:00",
+        "released_at": "2026-10-15T06:06:04.401589+00:00",
+        "waited_seconds": 4.98404,
+        "enqueue_to_admission_seconds": 4.983132337220013,
+        "slot_hold_seconds": 9.121831635013223
+      },
+      {
+        "ticket": "01cef3503283464c84cf63d6379fa65e",
+        "pid": 443811,
+        "actor": "Everyday Bookshelf Shop",
+        "enqueued_at": "2026-10-15T06:06:04.425719+00:00",
+        "admitted_at": "2026-10-15T06:06:09.416977+00:00",
+        "released_at": "2026-10-15T06:06:16.721243+00:00",
+        "waited_seconds": 4.99033,
+        "enqueue_to_admission_seconds": 4.991262895055115,
+        "slot_hold_seconds": 7.304273227695376
+      }
+    ]
+  },
+  "slots": [
+    {
+      "item": "lamp",
+      "buyer_trace": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-01/attempt-01/buyer/buyer-22ab4203681e.jsonl",
+      "seller_trace": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-01/trace/seller-0f4415a520f4.jsonl",
+      "budget": 100.0,
+      "seller_reserve": 100,
+      "buyer_prices": [
+        85,
+        95,
+        100
+      ],
+      "buyer_stances": [
+        "negotiable",
+        "negotiable",
+        "firm"
+      ],
+      "seller_actions": [
+        "open",
+        "counter",
+        "counter",
+        "accept"
+      ],
+      "seller_prices": [
+        145,
+        140,
+        135,
+        100
+      ],
+      "task_id": "286ff8e2-1d10-4866-b63d-f2da302a9def",
+      "receipt": {
+        "quantity": 1.0,
+        "itemId": "lamp",
+        "seller": "Everyday Lamp Shop",
+        "purchaseId": "98630baa503242ce9a6fbd11e74c6ba5",
+        "currency": "credits",
+        "taskId": "286ff8e2-1d10-4866-b63d-f2da302a9def",
+        "quoteId": "1f9ad0aa68324a569b72ee1d005cde6f",
+        "price": 100.0,
+        "item": "lamp"
+      },
+      "rpc_completed_receipts": 1,
+      "ledger_states": {
+        "released": 2,
+        "committed": 1
+      },
+      "buyer_wall_seconds": 186.837351
+    },
+    {
+      "item": "chair",
+      "buyer_trace": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-02/attempt-01/buyer/buyer-8d9001372d52.jsonl",
+      "seller_trace": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-02/trace/seller-b8746a00bcec.jsonl",
+      "budget": 200.0,
+      "seller_reserve": 180,
+      "buyer_prices": [
+        180,
+        195,
+        200
+      ],
+      "buyer_stances": [
+        "negotiable",
+        "negotiable",
+        "firm"
+      ],
+      "seller_actions": [
+        "open",
+        "counter",
+        "counter",
+        "accept"
+      ],
+      "seller_prices": [
+        260,
+        240,
+        230,
+        200
+      ],
+      "task_id": "35f10b6c-fbe9-4674-a90d-6d9b39677d03",
+      "receipt": {
+        "item": "chair",
+        "taskId": "35f10b6c-fbe9-4674-a90d-6d9b39677d03",
+        "quoteId": "67f13e471c084e9aa9e757027e1279cc",
+        "seller": "Everyday Chair Shop",
+        "price": 200.0,
+        "quantity": 1.0,
+        "itemId": "chair",
+        "currency": "credits",
+        "purchaseId": "965d04d8aa2b407e9152f273a29ace42"
+      },
+      "rpc_completed_receipts": 1,
+      "ledger_states": {
+        "released": 2,
+        "committed": 1
+      },
+      "buyer_wall_seconds": 186.260089
+    },
+    {
+      "item": "bookshelf",
+      "buyer_trace": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-03/attempt-01/buyer/buyer-091c4fda976e.jsonl",
+      "seller_trace": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-03/trace/seller-a3c90c41cff9.jsonl",
+      "budget": 300.0,
+      "seller_reserve": 260,
+      "buyer_prices": [
+        270,
+        290,
+        300
+      ],
+      "buyer_stances": [
+        "negotiable",
+        "negotiable",
+        "firm"
+      ],
+      "seller_actions": [
+        "open",
+        "counter",
+        "counter",
+        "accept"
+      ],
+      "seller_prices": [
+        360,
+        330,
+        315,
+        300
+      ],
+      "task_id": "d88f8184-4776-488e-95ff-82efe2dd4b0b",
+      "receipt": {
+        "quantity": 1.0,
+        "price": 300.0,
+        "seller": "Everyday Bookshelf Shop",
+        "taskId": "d88f8184-4776-488e-95ff-82efe2dd4b0b",
+        "currency": "credits",
+        "purchaseId": "61fd4ff8a26e4a36ab07f8503e910a4d",
+        "quoteId": "0d77dd00916248a4991dcf8e42e05686",
+        "itemId": "bookshelf",
+        "item": "bookshelf"
+      },
+      "rpc_completed_receipts": 1,
+      "ledger_states": {
+        "released": 2,
+        "committed": 1
+      },
+      "buyer_wall_seconds": 87.716024
+    }
+  ],
+  "public_stance_correlations": [
+    {
+      "item": "lamp",
+      "round": 1,
+      "price": 85,
+      "stance": "negotiable",
+      "request_id": "008f167a17c04fc88df7a5a4c6a0ed6e",
+      "task_id": "286ff8e2-1d10-4866-b63d-f2da302a9def",
+      "buyer_decision_matches_wire": true,
+      "seller_observation_matches_wire": true,
+      "seller_model_context_matches_wire": true
+    },
+    {
+      "item": "lamp",
+      "round": 2,
+      "price": 95,
+      "stance": "negotiable",
+      "request_id": "d80dd5ae9e264975970fc76efb91bb06",
+      "task_id": "286ff8e2-1d10-4866-b63d-f2da302a9def",
+      "buyer_decision_matches_wire": true,
+      "seller_observation_matches_wire": true,
+      "seller_model_context_matches_wire": true
+    },
+    {
+      "item": "lamp",
+      "round": 3,
+      "price": 100,
+      "stance": "firm",
+      "request_id": "24422c4bd3e74efb8ec3ed5b11291f9a",
+      "task_id": "286ff8e2-1d10-4866-b63d-f2da302a9def",
+      "buyer_decision_matches_wire": true,
+      "seller_observation_matches_wire": true,
+      "seller_model_context_matches_wire": true
+    },
+    {
+      "item": "chair",
+      "round": 1,
+      "price": 180,
+      "stance": "negotiable",
+      "request_id": "117bcf0869e543229cd01b71ee637c61",
+      "task_id": "35f10b6c-fbe9-4674-a90d-6d9b39677d03",
+      "buyer_decision_matches_wire": true,
+      "seller_observation_matches_wire": true,
+      "seller_model_context_matches_wire": true
+    },
+    {
+      "item": "chair",
+      "round": 2,
+      "price": 195,
+      "stance": "negotiable",
+      "request_id": "ae700647439e4dd7861ad1d738fb56f1",
+      "task_id": "35f10b6c-fbe9-4674-a90d-6d9b39677d03",
+      "buyer_decision_matches_wire": true,
+      "seller_observation_matches_wire": true,
+      "seller_model_context_matches_wire": true
+    },
+    {
+      "item": "chair",
+      "round": 3,
+      "price": 200,
+      "stance": "firm",
+      "request_id": "27ce1fef9d384f738ab91d8f73554e34",
+      "task_id": "35f10b6c-fbe9-4674-a90d-6d9b39677d03",
+      "buyer_decision_matches_wire": true,
+      "seller_observation_matches_wire": true,
+      "seller_model_context_matches_wire": true
+    },
+    {
+      "item": "bookshelf",
+      "round": 1,
+      "price": 270,
+      "stance": "negotiable",
+      "request_id": "5136eca193594f4e88e3fd02de4b3744",
+      "task_id": "d88f8184-4776-488e-95ff-82efe2dd4b0b",
+      "buyer_decision_matches_wire": true,
+      "seller_observation_matches_wire": true,
+      "seller_model_context_matches_wire": true
+    },
+    {
+      "item": "bookshelf",
+      "round": 2,
+      "price": 290,
+      "stance": "negotiable",
+      "request_id": "4e8d93aaaf5f4b75bfcb44af25ca0a5b",
+      "task_id": "d88f8184-4776-488e-95ff-82efe2dd4b0b",
+      "buyer_decision_matches_wire": true,
+      "seller_observation_matches_wire": true,
+      "seller_model_context_matches_wire": true
+    },
+    {
+      "item": "bookshelf",
+      "round": 3,
+      "price": 300,
+      "stance": "firm",
+      "request_id": "86c54c14dc6a4f16a1f1fe1cfb857a38",
+      "task_id": "d88f8184-4776-488e-95ff-82efe2dd4b0b",
+      "buyer_decision_matches_wire": true,
+      "seller_observation_matches_wire": true,
+      "seller_model_context_matches_wire": true
+    }
+  ],
+  "prior_stage03_observation": {
+    "run": "logs/challenge-2/20261015T054653Z-c02511e0",
+    "passed": false,
+    "elapsed_seconds": 526.825,
+    "completed_prices": [
+      300.0
+    ],
+    "committed_total": 300.0,
+    "reserved_total": 300.0,
+    "queue_calls": 27,
+    "waited_seconds": {
+      "count": 27,
+      "min": 0.002379,
+      "mean": 21.765164296296295,
+      "max": 33.331043,
+      "sum": 587.6594360000001
+    },
+    "slot_hold_seconds": {
+      "count": 27,
+      "min": 6.892987078987062,
+      "mean": 9.856230819218412,
+      "max": 17.109781696926802,
+      "sum": 266.11823211889714
+    },
+    "gap_seconds": {
+      "count": 26,
+      "min": 10.001843891106546,
+      "mean": 10.025756982620806,
+      "max": 10.04869943484664,
+      "sum": 260.66968154814094
+    }
+  },
+  "interpretation_limits": [
+    "This is one self-play shopping-list execution, not seven-peer competitive evidence or a success-rate estimate.",
+    "The 5-second shared gap and public stance prompt/protocol support changed together. The prior 10-second failure versus current pass cannot identify either individual causal effect.",
+    "Current receipts use the entire allocated 600 budget; this establishes completion and bounds, not minimum purchase prices. Seller reserves are 100/180/260, so buyer envelopes are not seller reserves.",
+    "The bounded public enum travels through message.metadata.negotiationStance into context.remote_stance. It is an untrusted bargaining claim, not authenticated buyer budget proof; no field named trusted_remote_stance was observed.",
+    "All three final seller model decisions accepted after seeing firm, but the counterfactual without firm under the same model samples and scheduling was not run.",
+    "CLI stderr headers establish reported gpt-6-sol/low identity and trace exits are zero; provider-internal model execution is not independently observable.",
+    "Outbound A2A version 1.0 and decoded JSONRPC response task/id/artifact consistency were checked. This execution has no independent HTTP proxy capture of response status/version headers.",
+    "The forthcoming controlled common/cross cohort uses 10-second pacing; its latency must not be pooled with this 5-second C2 run."
+  ],
+  "errors": [],
+  "evidence_sha256": {
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/summary.json": "cc4ae27fe0ef3b34afdc67252571d0dc056fecae6b0d55016b43e30570af82c6",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/ledger.json": "f64e6a259644768c92045570c58ba19df881b2bd4a83155ad7e8ae36d31df835",
+    "logs/improvements/20261015/stage-03b-c2-queue.jsonl": "864226493b4e501623d27f2fdd539729501f127d697aada3b800e53606c127df",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/directory-3ef43811781d.jsonl": "84e80cbe4cb5e2bcef263d42c13c52cb19277861c7a351c671f503ab5c73b38e",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-01/trace/seller-0f4415a520f4.jsonl": "4f69c3401ef53326874ab04872991d6aa7508e4a5ac145bf524a0834cf414fae",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-02/trace/seller-b8746a00bcec.jsonl": "1004c21e846493eb40178b3285b4596561a175c8406d5ccb7ad0364f576c72ed",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-03/trace/seller-a3c90c41cff9.jsonl": "9db8f854b173b495fc82e18624892c4621159c24ce8b7695c2094046da08a707",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-04/trace/seller-54d9262602f9.jsonl": "d842478268363876d95166a595da9bb67a6b91fc2e2496d6cf868ecae9da92ea",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-05/trace/seller-77b8f9191cae.jsonl": "923b26243d9fd6e08127af810254358b1f2c8b46157c79a62891fc3f4301bcff",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-06/trace/seller-88fdc259653a.jsonl": "c58b848cf9bfcff604a89e460e5606871c5165d7202f1220feb8b45dbf200f16",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-07/trace/seller-c9c50c589908.jsonl": "51d913e59dcbb8666b7f75a51516a12327020f87136d08c93256cf8050a4b4f9",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-08/trace/seller-9303fd7bd7c6.jsonl": "d6fdc7650d4a8b3a05849f3332c303e2a76fe09a638933391186f8bea675e0ef",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-09/trace/seller-3537dfeca753.jsonl": "825dad23354014024190dcd236817f0a26fcd5878760399ff013bb72efcc8e3c",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-10/trace/seller-9e73e3e56b0b.jsonl": "67e7c5a67678a8084c80330cdd38ba2e0d9a2c87e105566496a21f9937e245a9",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-11/trace/seller-b1efc23a9d99.jsonl": "c90541c4570678ac03faf29dd7d22e5ee07de8fc828e875667ab2b17fe301379",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-12/trace/seller-862d745d2409.jsonl": "bb94a568b95692c16724b2cdd31a1d5e30ce9638ae70bd18ef3ae76abb40280c",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-13/trace/seller-71ea92932ee5.jsonl": "3d214b66235abb4abf006e5575b1e95a6c88983b78f83e03e6fa5733d962f9ca",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-14/trace/seller-6b4152a04a61.jsonl": "1bb31a8ce3a2cdd3dd31a3f7d0b7357cd174abe42cf483844251dc7c6adcb0a0",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-15/trace/seller-4d83d7252427.jsonl": "a70b2eccae85b0b4fe071d51aa749618f2ec511d06ca22d8fd289b6d671875b0",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-16/trace/seller-c7ee7da8d3af.jsonl": "ae661ef7549feae9eca33a69cf3bd5586ad7a30e362c4474f1a3c49a562006b4",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-17/trace/seller-526de539fa12.jsonl": "0bea53330865ba83ed362d71ba28ee96bbca19f5a9cadab473c1534dadf75247",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-18/trace/seller-d9e08dce51b5.jsonl": "f74ba94f2d9be617120b0d83121361c3d0bd6642f0a7753fcea9372b5c75faa8",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-19/trace/seller-0c2076a44764.jsonl": "1268c39652dc28d62729dd91dbdc4f2e35a4d7939e60c7af0d2e7a2b14dee2d1",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-20/trace/seller-124297de4d6d.jsonl": "c2db6fc0d098c6016d626ae7647072b188a6d89daaf79f88bcd34a35c0c436cc",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/allocation/budget-allocator-147df87296e8.jsonl": "d80e8fd0eb5ac6d68b55bd21cd5fd59c9facbbf0ae36f4d97e2d6df1b2e7cccf",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/shopping-6a431f5f7862.jsonl": "f9d12fefefd286e2d489079b54d009a3f191564212990b4af547dad18a33cf39",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-01/attempt-01/buyer/buyer-22ab4203681e.jsonl": "8e451a878d83d2dbe8655dda0ae5bbced114cc3073400edaa48c83314b33528a",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-01/attempt-01/selection/shop-selector-dc117eb7c391.jsonl": "5cf774627fccaffcee7be95b4afbf8112a70135dc9901b568a531a3f5cc324e2",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-02/attempt-01/buyer/buyer-8d9001372d52.jsonl": "7b3218236741dc682b696071aa6c1b0a3d673dd71094fa5edea6aeae7baf29d4",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-02/attempt-01/selection/shop-selector-948845965b70.jsonl": "02d35421d82c4c2f5c500e882da0f40c5d4dc824575df848b5ff14b01fcd717d",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-03/attempt-01/buyer/buyer-091c4fda976e.jsonl": "fb61019dcc79484a381d6385af9440f6aa0ff6694cda15409bce7cd7391187f2",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-03/attempt-01/selection/shop-selector-54b98301701e.jsonl": "b031d892ee4301b918f6df679cfd5ee70a33fadc3b5a233eb7f4a1382d501abe",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-01/trace/seller-0f4415a520f4-11c321d2.stderr.txt": "f1a33831deab0d96b44ea893f0843822171fde80022481239755ee4251b7f858",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-01/trace/seller-0f4415a520f4-26fa0448.stderr.txt": "44a5232bd2cc498001ea291fb169adcbdc527eb9a1be1c9d3b739951799921c3",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-01/trace/seller-0f4415a520f4-44b282e0.stderr.txt": "bc18d1d23af728330fd9dec1ad1d3d59a63c70883a931e1a1d0220e3682c0368",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-01/trace/seller-0f4415a520f4-ea9de91f.stderr.txt": "03b0e542b6936db550cbcf7a34aad6b867aa79a9fe499fb42995f184f83e20b3",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-02/trace/seller-b8746a00bcec-016132ac.stderr.txt": "a0692dc931573b27075e099dafad2d35c099565af60eab725ea4def1b37c23a2",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-02/trace/seller-b8746a00bcec-362f9127.stderr.txt": "1c940dbb884afa5868915eaed2c6f5026b0e9395dff8cd805b2427fe5d31bd87",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-02/trace/seller-b8746a00bcec-5334c7a9.stderr.txt": "17c1b7d913b8221a94c9c62bc58ae1f36486d6d7bc30f8f3242f004fa6d74eaa",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-02/trace/seller-b8746a00bcec-ac901dc2.stderr.txt": "6995c8b1c8029dd68880f934ca1a2ea426496e199e2e803d5b7c0a99f4100608",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-03/trace/seller-a3c90c41cff9-04f1c47e.stderr.txt": "e425847721adfd54e2edb20ab9dd08af72313ef177b147749e5c97ad25aab01a",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-03/trace/seller-a3c90c41cff9-199731af.stderr.txt": "eb96fae19843e178a922d38ebb0d45116d492f38845249ecf376fa5865968fd9",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-03/trace/seller-a3c90c41cff9-4a455fc8.stderr.txt": "8e30ee1c640132bbee0ddf33dd24b5eebd566ff4bcedca95045bdb0dadf2adf2",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-03/trace/seller-a3c90c41cff9-db144735.stderr.txt": "f30b7ff224a22919b0e4b252749267874af23e2808d8b35619082fc93e75168d",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/allocation/budget-allocator-147df87296e8-a509ff1f.stderr.txt": "eec8c95429e1f4f1674c8ceb18b7b4fc22fbdc1a74ca317992864d5fe60036f0",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-01/attempt-01/buyer/buyer-22ab4203681e-0f1b8173.stderr.txt": "62ddc574255ccb6ab7765e1333e257745eda931366a9e2434cf78305ce5ef961",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-01/attempt-01/buyer/buyer-22ab4203681e-c2075a4c.stderr.txt": "ce80121eb6c529e6c92735811462e403d5539c1fbda2c95e97f635f183a01b2f",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-01/attempt-01/buyer/buyer-22ab4203681e-e80f51a7.stderr.txt": "e2f9ae7c5540c979df554daa289b9c926cf15cf1ce6a950ca544998443364d39",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-01/attempt-01/selection/shop-selector-dc117eb7c391-cad71982.stderr.txt": "87eb99d41c2511ffc2211758934fcee0e9d137021e28d9c8339038916060ce8e",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-02/attempt-01/buyer/buyer-8d9001372d52-5a462c6f.stderr.txt": "64ce1f49c3c219eab71045086608b36d841ba15791716462839fed3ebc7ce5e0",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-02/attempt-01/buyer/buyer-8d9001372d52-9da5753d.stderr.txt": "f3543dfe16bb8ef826d37cec85ea1b77cb34b4fa05e8965fd3623690207e7b5b",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-02/attempt-01/buyer/buyer-8d9001372d52-c8551f9d.stderr.txt": "193faf4b1ef3aba39ea4c4d2a1e153a78e63d2c522a5e645b53b4f71366d88e9",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-02/attempt-01/selection/shop-selector-948845965b70-51020414.stderr.txt": "e2fb2ea2f664b88f488bbdb6d751faf1d5e6ed1401280295fe4cc85f7200c3dd",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-03/attempt-01/buyer/buyer-091c4fda976e-1b6fcd78.stderr.txt": "8fd882c8aa401e216708bdd45bbf2fe14f2114ab5c53a9c675f5f7149f17f2de",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-03/attempt-01/buyer/buyer-091c4fda976e-1c987914.stderr.txt": "c9558825edd673d33b2a953e88146bb4fcc7a67b1a5b1bfb36694d22a58b0fa6",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-03/attempt-01/buyer/buyer-091c4fda976e-89136408.stderr.txt": "0f72c531cfc6375b64468a5f16309b681da444cb138863b7a6e57f1bc8da8bc6",
+    "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-03/attempt-01/selection/shop-selector-54b98301701e-c0a0bc92.stderr.txt": "a4804dbce95f2a2d0a238d05f9f6cd884df8d2b2c6664ddd69d2e34b3ca651af"
+  },
+  "CLI_header_evidence": [
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-01/trace/seller-0f4415a520f4-11c321d2.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "f1a33831deab0d96b44ea893f0843822171fde80022481239755ee4251b7f858"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-01/trace/seller-0f4415a520f4-26fa0448.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "44a5232bd2cc498001ea291fb169adcbdc527eb9a1be1c9d3b739951799921c3"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-01/trace/seller-0f4415a520f4-44b282e0.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "bc18d1d23af728330fd9dec1ad1d3d59a63c70883a931e1a1d0220e3682c0368"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-01/trace/seller-0f4415a520f4-ea9de91f.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "03b0e542b6936db550cbcf7a34aad6b867aa79a9fe499fb42995f184f83e20b3"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-02/trace/seller-b8746a00bcec-016132ac.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "a0692dc931573b27075e099dafad2d35c099565af60eab725ea4def1b37c23a2"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-02/trace/seller-b8746a00bcec-362f9127.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "1c940dbb884afa5868915eaed2c6f5026b0e9395dff8cd805b2427fe5d31bd87"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-02/trace/seller-b8746a00bcec-5334c7a9.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "17c1b7d913b8221a94c9c62bc58ae1f36486d6d7bc30f8f3242f004fa6d74eaa"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-02/trace/seller-b8746a00bcec-ac901dc2.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "6995c8b1c8029dd68880f934ca1a2ea426496e199e2e803d5b7c0a99f4100608"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-03/trace/seller-a3c90c41cff9-04f1c47e.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "e425847721adfd54e2edb20ab9dd08af72313ef177b147749e5c97ad25aab01a"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-03/trace/seller-a3c90c41cff9-199731af.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "eb96fae19843e178a922d38ebb0d45116d492f38845249ecf376fa5865968fd9"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-03/trace/seller-a3c90c41cff9-4a455fc8.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "8e30ee1c640132bbee0ddf33dd24b5eebd566ff4bcedca95045bdb0dadf2adf2"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/shops/shop-03/trace/seller-a3c90c41cff9-db144735.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "f30b7ff224a22919b0e4b252749267874af23e2808d8b35619082fc93e75168d"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/allocation/budget-allocator-147df87296e8-a509ff1f.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "eec8c95429e1f4f1674c8ceb18b7b4fc22fbdc1a74ca317992864d5fe60036f0"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-01/attempt-01/buyer/buyer-22ab4203681e-0f1b8173.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "62ddc574255ccb6ab7765e1333e257745eda931366a9e2434cf78305ce5ef961"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-01/attempt-01/buyer/buyer-22ab4203681e-c2075a4c.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "ce80121eb6c529e6c92735811462e403d5539c1fbda2c95e97f635f183a01b2f"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-01/attempt-01/buyer/buyer-22ab4203681e-e80f51a7.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "e2f9ae7c5540c979df554daa289b9c926cf15cf1ce6a950ca544998443364d39"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-01/attempt-01/selection/shop-selector-dc117eb7c391-cad71982.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "87eb99d41c2511ffc2211758934fcee0e9d137021e28d9c8339038916060ce8e"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-02/attempt-01/buyer/buyer-8d9001372d52-5a462c6f.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "64ce1f49c3c219eab71045086608b36d841ba15791716462839fed3ebc7ce5e0"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-02/attempt-01/buyer/buyer-8d9001372d52-9da5753d.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "f3543dfe16bb8ef826d37cec85ea1b77cb34b4fa05e8965fd3623690207e7b5b"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-02/attempt-01/buyer/buyer-8d9001372d52-c8551f9d.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "193faf4b1ef3aba39ea4c4d2a1e153a78e63d2c522a5e645b53b4f71366d88e9"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-02/attempt-01/selection/shop-selector-948845965b70-51020414.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "e2fb2ea2f664b88f488bbdb6d751faf1d5e6ed1401280295fe4cc85f7200c3dd"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-03/attempt-01/buyer/buyer-091c4fda976e-1b6fcd78.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "8fd882c8aa401e216708bdd45bbf2fe14f2114ab5c53a9c675f5f7149f17f2de"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-03/attempt-01/buyer/buyer-091c4fda976e-1c987914.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "c9558825edd673d33b2a953e88146bb4fcc7a67b1a5b1bfb36694d22a58b0fa6"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-03/attempt-01/buyer/buyer-091c4fda976e-89136408.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "0f72c531cfc6375b64468a5f16309b681da444cb138863b7a6e57f1bc8da8bc6"
+    },
+    {
+      "path": "logs/challenge-2/20261015T060055Z-6bdcecf8/transactions/slot-03/attempt-01/selection/shop-selector-54b98301701e-c0a0bc92.stderr.txt",
+      "model": [
+        "gpt-6-sol"
+      ],
+      "reasoning_effort": [
+        "low"
+      ],
+      "sha256": "a4804dbce95f2a2d0a238d05f9f6cd884df8d2b2c6664ddd69d2e34b3ca651af"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{"event": "policy_loaded", "policy_sha256": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb", "policy_version": "synthetic-bandit-s42-n5000"}
+{"event": "seller_started", "name": "Everyday Chair Shop", "catalog_size": 301, "policy_version": "synthetic-bandit-s42-n5000"}
+{"event": "remote_message", "task_id": "35f10b6c-fbe9-4674-a90d-6d9b39677d03", "message": "I want to buy a chair", "flags": [], "candidates": ["chair"], "remote_stance": null}
+{"event": "harness_request", "model": "gpt-6-sol", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 28.934}
+{"event": "harness_decision", "decision": {"action": "open", "price": 260, "item_id": "chair", "offer": null, "reason": "I can offer the solid oak dining chair for 260 credits."}}
+{"event": "quote", "task_id": "35f10b6c-fbe9-4674-a90d-6d9b39677d03", "metadata": {"ask": 260, "itemId": "chair", "quoteId": "a971eab76e7241148aeb544942d06c15", "seller": "Everyday Chair Shop", "quantity": 1, "currency": "credits", "description": "A solid oak dining chair with a curved backrest and a 45cm seat height. 참나무 원목 의자, 전체 높이 85cm, 좌면 높이 45cm, 안정적인 등받이가 있습니다.", "attributes": {"material": "wood", "wood_species": "oak", "height_cm": 85, "seat_height_cm": 45, "width_cm": 45, "depth_cm": 45, "capacity_people": 1, "finish": "natural"}}}
+{"event": "remote_message", "task_id": "35f10b6c-fbe9-4674-a90d-6d9b39677d03", "message": "180", "flags": [], "candidates": ["chair"], "remote_stance": "negotiable"}
+{"event": "harness_request", "model": "gpt-6-sol", "strategy": "direct", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 25.485}
+{"event": "harness_decision", "decision": {"action": "counter", "price": 240, "item_id": "chair", "offer": 180, "reason": "I can offer the oak chair for 240 credits."}}
+{"event": "quote", "task_id": "35f10b6c-fbe9-4674-a90d-6d9b39677d03", "metadata": {"ask": 240, "itemId": "chair", "quoteId": "6d3a4dacbe0d47dc972e8283993028a2", "seller": "Everyday Chair Shop", "quantity": 1, "currency": "credits", "description": "A solid oak dining chair with a curved backrest and a 45cm seat height. 참나무 원목 의자, 전체 높이 85cm, 좌면 높이 45cm, 안정적인 등받이가 있습니다.", "attributes": {"material": "wood", "wood_species": "oak", "height_cm": 85, "seat_height_cm": 45, "width_cm": 45, "depth_cm": 45, "capacity_people": 1, "finish": "natural"}}}
+{"event": "remote_message", "task_id": "35f10b6c-fbe9-4674-a90d-6d9b39677d03", "message": "195", "flags": [], "candidates": ["chair"], "remote_stance": "negotiable"}
+{"event": "harness_request", "model": "gpt-6-sol", "strategy": "patient", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 27.108}
+{"event": "harness_decision", "decision": {"action": "counter", "price": 230, "item_id": "chair", "offer": 195, "reason": "Your bid has improved. I can offer the oak chair for 230 credits."}}
+{"event": "quote", "task_id": "35f10b6c-fbe9-4674-a90d-6d9b39677d03", "metadata": {"ask": 230, "itemId": "chair", "quoteId": "67f13e471c084e9aa9e757027e1279cc", "seller": "Everyday Chair Shop", "quantity": 1, "currency": "credits", "description": "A solid oak dining chair with a curved backrest and a 45cm seat height. 참나무 원목 의자, 전체 높이 85cm, 좌면 높이 45cm, 안정적인 등받이가 있습니다.", "attributes": {"material": "wood", "wood_species": "oak", "height_cm": 85, "seat_height_cm": 45, "width_cm": 45, "depth_cm": 45, "capacity_people": 1, "finish": "natural"}}}
+{"event": "remote_message", "task_id": "35f10b6c-fbe9-4674-a90d-6d9b39677d03", "message": "200", "flags": [], "candidates": ["chair"], "remote_stance": "firm"}
+{"event": "harness_request", "model": "gpt-6-sol", "strategy": "patient", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 26.643}
+{"event": "harness_decision", "decision": {"action": "accept", "price": 200, "item_id": "chair", "offer": 200, "reason": "The buyer raised the offer to 200 and now states it is firm. Accepting secures a valid sale."}}
+{"event": "sale_completed", "task_id": "35f10b6c-fbe9-4674-a90d-6d9b39677d03", "receipt": {"seller": "Everyday Chair Shop", "item": "chair", "itemId": "chair", "price": 200, "taskId": "35f10b6c-fbe9-4674-a90d-6d9b39677d03", "quantity": 1, "currency": "credits", "purchaseId": "965d04d8aa2b407e9152f273a29ace42", "quoteId": "67f13e471c084e9aa9e757027e1279cc"}}
