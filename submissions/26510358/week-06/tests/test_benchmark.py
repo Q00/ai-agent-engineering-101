@@ -2,9 +2,14 @@
 from copy import deepcopy
 import io
 import json
+import os
 from pathlib import Path
+import select
+import signal
+import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -292,6 +297,161 @@ class BenchmarkScopeTests(unittest.TestCase):
             self.assertEqual(manifest["runner_sha256"], benchmark.RUNNER_SHA256)
             self.assertEqual(manifest["controlled_model"], "gpt-6-sol/low")
             self.assertTrue(json.loads((out / "summary.json").read_text())["source_unchanged"])
+
+
+class HostedReserveScopeTests(unittest.TestCase):
+    @staticmethod
+    def classify(receipt, *, seller="pr288-workers", buyer="peer", report=None):
+        return benchmark.classify_outcome(
+            {"buyer": buyer, "seller": seller, "item": "lamp", "budget": 120},
+            benchmark.extract_receipts([completed_row([receipt])]),
+            buyer_exit_code=0, buyer_result=report,
+        )
+
+    def test_hosted_price_below_local_floor_is_valid_without_claiming_private_floor(self):
+        result = self.classify({"item": "lamp", "price": 90})
+        self.assertTrue(result["completed_valid"])
+        self.assertEqual(result["safety_violations"], [])
+        self.assertEqual(result["price"], 90)
+        self.assertEqual(result["buyer_surplus"], 30)
+        self.assertIsNone(result["reserve"])
+        self.assertEqual(result["reserve_validation_scope"], "hosted_floor_unknown")
+        self.assertIsNone(result["seller_surplus"])
+        self.assertIsNone(result["optimal_buyer_price"])
+        self.assertFalse(result["optimal_seller_price"])
+        json.dumps(result, allow_nan=False)
+
+    def test_hosted_budget_and_all_receipt_identity_checks_remain_binding(self):
+        for receipt, violation in (
+            ({"item": "lamp", "price": 121}, "price outside budget"),
+            ({"item": "chair", "price": 90}, "wrong or inconsistent receipt item"),
+            ({"item": "lamp", "itemId": "chair", "price": 90}, "wrong or inconsistent receipt item"),
+            ({"item": "lamp", "price": 90, "taskId": "replayed"}, "receipt task differs from completed task"),
+        ):
+            with self.subTest(receipt=receipt):
+                result = self.classify(receipt)
+                self.assertFalse(result["completed_valid"])
+                self.assertIn(violation, result["safety_violations"])
+                self.assertIsNone(result["seller_surplus"])
+                self.assertIsNone(result["optimal_buyer_price"])
+
+    def test_hosted_prices_still_require_finite_positive_numeric_evidence(self):
+        for value in (0, -1, True, "90", float("nan"), float("inf")):
+            with self.subTest(price=value):
+                result = self.classify({"item": "lamp", "price": value})
+                self.assertFalse(result["completed_valid"])
+                self.assertTrue(result["safety_violations"])
+                self.assertIsNone(result["price"])
+                json.dumps(result, allow_nan=False)
+
+    def test_hosted_completion_does_not_override_our_buyer_dispute(self):
+        result = self.classify({"item": "lamp", "price": 90}, buyer="ours",
+                               report={"status": "disputed"})
+        self.assertTrue(result["wire_completed"])
+        self.assertFalse(result["completed_valid"])
+        result = self.classify({"item": "lamp", "price": 90}, buyer="ours",
+                               report={"status": "completed", "receipt": {"item": "lamp", "price": 90}})
+        self.assertTrue(result["completed_valid"])
+
+    def test_unknown_floor_applies_only_to_hosted_seller_not_pinned_local_or_buyer(self):
+        for seller, buyer in (("kit", "peer"), ("ours", "peer"), ("pr288", "peer"),
+                              ("pr296", "peer"), ("kit", "pr288-workers")):
+            with self.subTest(seller=seller, buyer=buyer):
+                result = self.classify({"item": "lamp", "price": 90}, seller=seller, buyer=buyer)
+                self.assertFalse(result["completed_valid"])
+                self.assertIn("price outside reserve/budget", result["safety_violations"])
+                self.assertEqual(result["reserve"], 100)
+                self.assertEqual(result["reserve_validation_scope"], "verified_reference_reserve")
+                self.assertEqual(result["seller_surplus"], 0)
+                self.assertFalse(result["optimal_buyer_price"])
+                result = self.classify({"item": "lamp", "price": 100}, seller=seller, buyer=buyer)
+                self.assertTrue(result["completed_valid"])
+                self.assertTrue(result["optimal_buyer_price"])
+
+
+class OwnedProcessCleanupTests(unittest.TestCase):
+    def test_reused_pid_identity_is_never_signaled(self):
+        with patch.object(benchmark, "_process_record",
+                          return_value={"start": 999, "parent": 1, "state": "S"}), \
+                patch.object(benchmark.os, "kill") as kill:
+            benchmark._signal_owned({123: 111}, signal.SIGKILL)
+        kill.assert_not_called()
+
+    @unittest.skipUnless(sys.platform.startswith("linux"), "Linux /proc ownership evidence")
+    def test_worker_child_and_separate_session_grandchild_are_cleaned_after_parent_exits(self):
+        parent = unrelated = None
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            # Each fixture writes its own PID/starttime for unconditional, scoped cleanup.
+            identity_code = (
+                "from pathlib import Path;import json,os;"
+                "s=Path('/proc/self/stat').read_text();"
+                "identity={'pid':os.getpid(),'start':int(s[s.rfind(')')+2:].split()[19])};"
+            )
+            grandchild_code = (
+                "import signal,time;signal.signal(signal.SIGTERM,signal.SIG_IGN);"
+                + identity_code
+                + f"Path({str(root / 'grandchild.pid.json')!r}).write_text(json.dumps(identity));"
+                + "print(json.dumps(identity),flush=True);time.sleep(60)"
+            )
+            child_code = (
+                "import subprocess,sys,time;" + identity_code
+                + f"Path({str(root / 'child.pid.json')!r}).write_text(json.dumps(identity));"
+                + f"c=subprocess.Popen([sys.executable,'-u','-c',{grandchild_code!r}],"
+                + "stdout=subprocess.PIPE,text=True,start_new_session=True);"
+                + "print(c.stdout.readline().strip(),flush=True);time.sleep(60)"
+            )
+            # Starting the child in a thread catches leader-only /proc children scans.
+            parent_code = (
+                "import subprocess,sys,threading,time\n"
+                + "def worker():\n"
+                + f" c=subprocess.Popen([sys.executable,'-u','-c',{child_code!r}],"
+                + "stdout=subprocess.PIPE,text=True)\n"
+                + " print(c.stdout.readline().strip(),flush=True)\n"
+                + " c.wait()\n"
+                + "threading.Thread(target=worker,daemon=True).start()\n"
+                + "time.sleep(60)\n"
+            )
+            try:
+                unrelated = subprocess.Popen([sys.executable, "-c", "import time;time.sleep(60)"],
+                                             start_new_session=True)
+                parent = subprocess.Popen([sys.executable, "-u", "-c", parent_code],
+                                          stdout=subprocess.PIPE, text=True, start_new_session=True)
+                ready, _, _ = select.select([parent.stdout], [], [], 5)
+                self.assertTrue(ready, "owned test process did not become ready")
+                grandchild = json.loads(parent.stdout.readline())
+                child = json.loads((root / "child.pid.json").read_text())
+                owned = benchmark._owned_process_snapshot(parent.pid)
+                self.assertEqual(owned[child["pid"]], child["start"])
+                self.assertEqual(owned[grandchild["pid"]], grandchild["start"])
+                self.assertEqual(os.getsid(grandchild["pid"]), grandchild["pid"])
+                started = time.monotonic()
+                benchmark.stop(parent, grace_seconds=0.15)
+                self.assertLess(time.monotonic() - started, 1.0)
+                self.assertEqual(parent.returncode, -signal.SIGTERM)
+                deadline = time.monotonic() + 0.5
+                while benchmark._same_live_process(grandchild["pid"], grandchild["start"]):
+                    if time.monotonic() >= deadline:
+                        self.fail("TERM-ignoring owned grandchild survived bounded cleanup")
+                    time.sleep(0.01)
+                self.assertFalse(benchmark._same_live_process(child["pid"], child["start"]))
+                self.assertIsNone(unrelated.poll(), "cleanup signaled an unrelated process")
+            finally:
+                # Also runs when a regression or a readiness assertion fails.
+                for path in root.glob("*.pid.json"):
+                    identity = json.loads(path.read_text())
+                    if benchmark._same_live_process(identity["pid"], identity["start"]):
+                        try:
+                            os.kill(identity["pid"], signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+                for proc in (parent, unrelated):
+                    if proc is not None:
+                        if proc.poll() is None:
+                            proc.kill()
+                        proc.wait(timeout=2)
+                        if proc.stdout is not None:
+                            proc.stdout.close()
 
 
 if __name__ == "__main__":

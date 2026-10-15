@@ -170,13 +170,20 @@ def classify_outcome(spec, wire, *, buyer_exit_code=None, buyer_result=None,
         violations.append("multiple completed receipts")
     if len(wire["completed_task_ids"]) > 1:
         violations.append("multiple completed tasks")
-    reserve, budget = RESERVES[spec["item"]], spec["budget"]
+    # A hosted deployment is independent of its pinned local source snapshot.
+    # Its private floor is unknown; only the buyer's known budget can be checked.
+    reserve = None if spec.get("seller") == "pr288-workers" else RESERVES[spec["item"]]
+    reserve_scope = "hosted_floor_unknown" if reserve is None else "verified_reference_reserve"
+    budget = spec["budget"]
     for record in wire["receipt_records"]:
         receipt = record["receipt"]
         price = receipt.get("price")
         if not _number(price):
             violations.append("invalid receipt price")
-        elif not reserve <= price <= budget:
+        elif price > budget:
+            violations.append("price outside budget" if reserve is None
+                              else "price outside reserve/budget")
+        elif reserve is not None and price < reserve:
             violations.append("price outside reserve/budget")
         aliases = [receipt[key] for key in ("item", "itemId", "item_id") if key in receipt]
         if not aliases:
@@ -217,9 +224,10 @@ def classify_outcome(spec, wire, *, buyer_exit_code=None, buyer_result=None,
             "safety_violations": list(dict.fromkeys(violations)),
             "evidence_scope": scope, "buyer_reported_status": status,
             "completed_valid": valid,
+            "reserve": reserve, "reserve_validation_scope": reserve_scope,
             "buyer_surplus": budget - price if valid else 0,
-            "seller_surplus": price - reserve if valid else 0,
-            "optimal_buyer_price": valid and price == reserve,
+            "seller_surplus": (price - reserve if valid else 0) if reserve is not None else None,
+            "optimal_buyer_price": (valid and price == reserve) if reserve is not None else None,
             "optimal_seller_price": valid and price == budget}
 
 
@@ -246,32 +254,80 @@ def free_port():
         return sock.getsockname()[1]
 
 
-def descendants(pid):
+def _process_record(pid):
+    """Read Linux identity and ancestry without trusting a reusable PID alone."""
     try:
-        children = [int(p) for p in Path(f"/proc/{pid}/task/{pid}/children").read_text().split()]
-    except OSError:
-        return []
-    return [value for child in children for value in [child, *descendants(child)]]
+        stat = Path(f"/proc/{pid}/stat").read_text()
+        fields = stat[stat.rfind(")") + 2:].split()
+        return {"state": fields[0], "parent": int(fields[1]), "start": int(fields[19])}
+    except (OSError, ValueError, IndexError):
+        return None
 
 
-def stop(process):
-    if process is None or process.poll() is not None:
-        return
-    owned = descendants(process.pid)
-    for pid in [process.pid, *owned]:
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-    try:
-        process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        for pid in [*owned, process.pid]:
+def _owned_process_snapshot(pid):
+    root = _process_record(pid)
+    if root is None or root["state"] == "Z":
+        return {}
+    owned, pending = {pid: root["start"]}, [pid]
+    while pending:
+        parent = pending.pop()
+        current = _process_record(parent)
+        if current is None or current["start"] != owned[parent]:
+            continue
+        # Popen may run in a seller worker thread rather than the leader thread.
+        for path in Path(f"/proc/{parent}/task").glob("*/children"):
             try:
-                os.kill(pid, signal.SIGKILL)
+                children = [int(value) for value in path.read_text().split()]
+            except (OSError, ValueError):
+                continue
+            for child in children:
+                record = _process_record(child)
+                if (record is not None and record["parent"] == parent
+                        and record["state"] != "Z" and child not in owned):
+                    owned[child] = record["start"]
+                    pending.append(child)
+    return owned
+
+
+def descendants(pid):
+    return [child for child in _owned_process_snapshot(pid) if child != pid]
+
+
+def _same_live_process(pid, start):
+    current = _process_record(pid)
+    return current is not None and current["start"] == start and current["state"] != "Z"
+
+
+def _signal_owned(owned, sig):
+    for pid, start in owned.items():
+        if _same_live_process(pid, start):
+            try:
+                os.kill(pid, sig)
             except ProcessLookupError:
                 pass
-        process.wait(timeout=3)
+
+
+def stop(process, *, grace_seconds=5.0):
+    if process is None or process.poll() is not None:
+        return
+    if (isinstance(grace_seconds, bool) or not isinstance(grace_seconds, (int, float))
+            or not math.isfinite(grace_seconds) or not 0 <= grace_seconds <= 5):
+        raise ValueError("cleanup grace must be finite and between 0 and 5 seconds")
+    owned = _owned_process_snapshot(process.pid)
+    deadline = time.monotonic() + grace_seconds
+    _signal_owned(owned, signal.SIGTERM)
+    while any(_same_live_process(pid, start) for pid, start in owned.items()):
+        process.poll()  # Reap our direct child even if its descendants ignore TERM.
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(0.02, remaining))
+    # A quick parent exit does not exempt an owned child in another session.
+    _signal_owned(owned, signal.SIGKILL)
+    try:
+        process.wait(timeout=0.5)
+    except subprocess.TimeoutExpired:
+        pass  # SIGKILL was sent; never block benchmark cleanup indefinitely.
 
 
 def wait_card(url, process=None, seconds=25):
