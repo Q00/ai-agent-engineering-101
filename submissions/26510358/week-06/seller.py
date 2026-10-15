@@ -17,6 +17,7 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+from a2a.utils.errors import TaskNotCancelableError
 
 from catalog import load_catalog, search_catalog
 from evidence import EvidenceError, inspect_untrusted, validate_seller_decision
@@ -42,6 +43,10 @@ class Seller(AgentExecutor):
                          policy_version=self.policy.version)
         self.open = {}
         self.locks = {}
+        # The turn lock covers model work; cancellation only waits for the short
+        # event-publication lock. SDK TaskUpdater terminal flags are per instance.
+        self.publication_locks = {}
+        self.terminal = {}
         self.trace.write("seller_started", name=config["name"], catalog_size=len(self.catalog),
                          policy_version=self.policy.version)
 
@@ -52,6 +57,8 @@ class Seller(AgentExecutor):
             await event_queue.enqueue_event(task)
         lock = self.locks.setdefault(task.id, asyncio.Lock())
         async with lock:
+            if task.id in self.terminal:
+                return
             await self._turn(task, context, event_queue)
 
     async def _turn(self, task, context, event_queue):
@@ -70,7 +77,10 @@ class Seller(AgentExecutor):
         self.trace.write("remote_message", task_id=task.id, message=text, flags=flags,
                          candidates=[p["id"] for p in candidates])
         if not candidates:
-            await up.reject(up.new_agent_message(parts=[new_text_part("No matching catalog item.")]))
+            async with self.publication_locks.setdefault(task.id, asyncio.Lock()):
+                if task.id not in self.terminal:
+                    await up.reject(up.new_agent_message(parts=[new_text_part("No matching catalog item.")]))
+                    self.terminal[task.id] = "rejected"
             return
         plain_offer = float(text.strip()) if re.fullmatch(r"\d+(?:\.\d+)?", text.strip()) else None
         trusted = {"role": "seller", "opening": opening, "task_id": task.id,
@@ -99,9 +109,24 @@ class Seller(AgentExecutor):
                 instruction=strategy_instruction("seller", strategy), validator=validate,
                 deadline=time.monotonic() + 90)
         except (HarnessError, EvidenceError) as exc:
-            self.trace.write("negotiation_failed", task_id=task.id, detail=str(exc))
-            await up.failed(up.new_agent_message(parts=[new_text_part("Harness could not return a valid decision.")]))
+            async with self.publication_locks.setdefault(task.id, asyncio.Lock()):
+                if task.id in self.terminal:
+                    self.trace.write("terminal_decision_discarded", task_id=task.id,
+                                     state=self.terminal[task.id])
+                    return
+                self.trace.write("negotiation_failed", task_id=task.id, detail=str(exc))
+                await up.failed(up.new_agent_message(parts=[new_text_part("Harness could not return a valid decision.")]))
+                self.terminal[task.id] = "failed"
             return
+        async with self.publication_locks.setdefault(task.id, asyncio.Lock()):
+            if task.id in self.terminal:
+                self.trace.write("terminal_decision_discarded", task_id=task.id,
+                                 state=self.terminal[task.id])
+                return
+            await self._publish_decision(task, up, candidates, deal, opening, text, decision)
+
+    async def _publish_decision(self, task, up, candidates, deal, opening, text, decision):
+        """Apply one validated decision while cancellation cannot interleave events."""
         item = next(p for p in candidates if p["id"] == decision["item_id"])
         if opening:
             deal = {"item": item, "ask": decision["price"], "round": 0, "history": []}
@@ -129,18 +154,24 @@ class Seller(AgentExecutor):
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(up.new_agent_message(parts=[new_text_part("Deal completed. See receipt.")]))
             self.open.pop(task.id, None)
+            self.terminal[task.id] = "completed"
             self.trace.write("sale_completed", task_id=task.id, receipt=receipt)
         else:
             await up.reject(up.new_agent_message(parts=[new_text_part("Negotiation ended without a deal.")]))
             self.open.pop(task.id, None)
+            self.terminal[task.id] = "rejected"
             self.trace.write("sale_rejected", task_id=task.id)
 
     async def cancel(self, context, event_queue):
         task = context.current_task
         if task:
-            self.open.pop(task.id, None)
-            await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
-            self.trace.write("sale_canceled", task_id=task.id)
+            async with self.publication_locks.setdefault(task.id, asyncio.Lock()):
+                if task.id in self.terminal:
+                    raise TaskNotCancelableError(message="Task already reached a terminal state")
+                self.terminal[task.id] = "canceled"
+                self.open.pop(task.id, None)
+                await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
+                self.trace.write("sale_canceled", task_id=task.id)
 
 
 def build(config):

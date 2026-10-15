@@ -1,0 +1,16 @@
+TEST ONLY model outputs; actual asyncio.to_thread, SDK TaskUpdater, protobuf events, and seller guards. No model process, socket, or price fallback.
+Command: /home/myeonggi/a2a-lab/.venv/bin/python -m unittest discover -s tests -p test_seller_cancel.py -v
+
+test_cancel_ack_before_accept_model_finishes_drops_late_receipt_and_sale (test_seller_cancel.SellerCancelTests.test_cancel_ack_before_accept_model_finishes_drops_late_receipt_and_sale) ... ok
+test_cancel_ack_before_counter_model_finishes_drops_late_quote (test_seller_cancel.SellerCancelTests.test_cancel_ack_before_counter_model_finishes_drops_late_quote) ... ok
+test_cancel_ack_before_opening_model_finishes_drops_late_quote (test_seller_cancel.SellerCancelTests.test_cancel_ack_before_opening_model_finishes_drops_late_quote) ... ok
+test_canceled_task_does_not_restart_a_turn_already_waiting_for_lock (test_seller_cancel.SellerCancelTests.test_canceled_task_does_not_restart_a_turn_already_waiting_for_lock) ... ok
+test_late_model_error_does_not_overwrite_cancel_with_failed_status (test_seller_cancel.SellerCancelTests.test_late_model_error_does_not_overwrite_cancel_with_failed_status) ... ok
+test_published_sale_cannot_later_acknowledge_cancellation (test_seller_cancel.SellerCancelTests.test_published_sale_cannot_later_acknowledge_cancellation) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.043s
+
+OK
+
+Exit code: 0
