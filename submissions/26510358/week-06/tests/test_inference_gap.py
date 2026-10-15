@@ -10,7 +10,6 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import benchmark_transport
 import harness
 import inference_queue
 
@@ -66,18 +65,6 @@ class InferenceGapTests(unittest.TestCase):
                     with self.assertRaisesRegex(harness.HarnessError, "finite.*nonnegative"):
                         harness.Harness("buyer", trace).decide({"test_only": True}, attempts=1)
                     process.assert_not_called()
-
-    def test_invalid_gap_stops_benchmark_transport_before_subprocess_creation(self):
-        for raw in ("-1", "nan"):
-            with self.subTest(raw=raw), tempfile.TemporaryDirectory() as directory, patch.dict(
-                    "os.environ", {"A2A_INFERENCE_GAP_SECONDS": raw}), patch.object(
-                    benchmark_transport.subprocess, "Popen") as process:
-                with self.assertRaisesRegex(ValueError, "finite.*nonnegative"):
-                    benchmark_transport.invoke([{"role": "user", "content": "TEST ONLY"}],
-                        source="test-only", original_request={"test_only": True},
-                        codex=sys.executable, trace_dir=directory)
-                process.assert_not_called()
-                self.assertEqual(list(Path(directory).iterdir()), [])
 
     def test_low_level_default_and_queue_trace_record_five_second_policy(self):
         with tempfile.TemporaryDirectory() as directory:

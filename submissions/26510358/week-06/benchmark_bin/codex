@@ -1,9 +1,0 @@
-#!/usr/bin/env python3
-"""Benchmark-only Codex CLI with a pinned model and isolated inference context."""
-from pathlib import Path
-import sys
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from benchmark_transport import cli_main
-
-raise SystemExit(cli_main("codex"))

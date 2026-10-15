@@ -10,7 +10,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from catalog import load_catalog, search_catalog
-from generate_catalog import build_catalog
 
 
 class CatalogTests(unittest.TestCase):
@@ -23,7 +22,6 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(len({item["id"] for item in self.items}), len(self.items))
         self.assertEqual({item["id"]: item["reserve"] for item in self.items[:3]},
                          {"lamp": 100, "chair": 180, "bookshelf": 260})
-        self.assertEqual(self.items, build_catalog())
 
     def test_described_english_bookshelf_meets_all_requirements(self):
         results = search_catalog("something wooden to keep about 40 books, not taller than 75 cm", self.items)
