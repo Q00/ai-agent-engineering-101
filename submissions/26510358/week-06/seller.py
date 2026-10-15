@@ -16,7 +16,7 @@ from a2a.server.agent_execution import AgentExecutor
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
-from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill, TaskState
 from a2a.utils.errors import TaskNotCancelableError
 
 from catalog import load_catalog, search_catalog
@@ -167,11 +167,25 @@ class Seller(AgentExecutor):
         if task:
             async with self.publication_locks.setdefault(task.id, asyncio.Lock()):
                 if task.id in self.terminal:
-                    raise TaskNotCancelableError(message="Task already reached a terminal state")
+                    # V2 treats executor.cancel() exceptions as task failures.
+                    # Keep the completed publication intact; the handler below
+                    # reports the non-cancelable outcome outside ActiveTask.
+                    self.trace.write("cancel_already_terminal", task_id=task.id,
+                                     state=self.terminal[task.id])
+                    return
                 self.terminal[task.id] = "canceled"
                 self.open.pop(task.id, None)
                 await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
                 self.trace.write("sale_canceled", task_id=task.id)
+
+
+class CancellationAwareRequestHandler(DefaultRequestHandler):
+    """Preserve a concurrent completed sale while returning the A2A cancel error."""
+    async def on_cancel_task(self, params, context):
+        task = await super().on_cancel_task(params, context)
+        if task is None or task.status.state != TaskState.TASK_STATE_CANCELED:
+            raise TaskNotCancelableError(message="Task finished before cancellation")
+        return task
 
 
 def build(config):
@@ -184,7 +198,7 @@ def build(config):
             url=f"http://127.0.0.1:{config['port']}/")],
         skills=[AgentSkill(id="negotiate", name="Catalog search and negotiation", description=description,
             tags=["shopping", *categories], examples=["I want to buy a lamp", "A wooden shelf for 40 books"])])
-    handler = DefaultRequestHandler(agent_executor=Seller(config), task_store=InMemoryTaskStore(), agent_card=card)
+    handler = CancellationAwareRequestHandler(agent_executor=Seller(config), task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
 

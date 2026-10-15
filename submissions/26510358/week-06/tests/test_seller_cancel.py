@@ -15,7 +15,6 @@ from a2a.server.context import ServerCallContext
 from a2a.server.events import EventQueue
 from a2a.types import (Message, Role, SendMessageRequest, Task, TaskArtifactUpdateEvent,
                        TaskState, TaskStatus, TaskStatusUpdateEvent)
-from a2a.utils.errors import TaskNotCancelableError
 
 import seller
 from harness import HarnessError
@@ -164,8 +163,9 @@ class SellerCancelTests(unittest.IsolatedAsyncioTestCase):
         statuses = [e.status.state for e in queue.events if isinstance(e, TaskStatusUpdateEvent)]
         self.assertEqual(statuses, [TaskState.TASK_STATE_COMPLETED])
         self.assertEqual(sum(isinstance(e, TaskArtifactUpdateEvent) for e in queue.events), 1)
-        with self.assertRaises(TaskNotCancelableError):
-            await executor.cancel(request_context("", task=current), queue)
+        # The executor performs no new publication for an already finished sale.
+        # The actual HTTP handler converts its completed result to a cancel error.
+        await executor.cancel(request_context("", task=current), queue)
         self.assertEqual([e.status.state for e in queue.events if isinstance(e, TaskStatusUpdateEvent)], statuses)
         self.assertEqual(executor.terminal[current.id], "completed")
         self.assertNotIn(current.id, executor.open)
