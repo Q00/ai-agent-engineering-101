@@ -1,0 +1,115 @@
+{
+  "arguments": {
+    "participants": "/tmp/a2a-improvement-20261015/participants-stage-01.json",
+    "out": "logs/improvements/20261015/stage-01-native-screen",
+    "kit": "/home/myeonggi/ai-agent-engineering-101/scripts/trade_test_week06.py",
+    "mode": "native",
+    "kind": "fixed",
+    "only": "ours",
+    "roles": "buyer,seller",
+    "repeats": 1,
+    "items": "lamp",
+    "api_url": null
+  },
+  "participants": {
+    "ours": {
+      "id": "ours",
+      "path": "/tmp/a2a-improvement-20261015/stage-01",
+      "source_commit": "stage-01-working-tree-frozen",
+      "native_model": "gpt-6-sol/low"
+    },
+    "pr296": {
+      "id": "pr296",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr296",
+      "source_commit": "eae935eb671e1df2919998352218343251af5921",
+      "repository": "winun1127/ai-agent-engineering-101"
+    },
+    "pr295": {
+      "id": "pr295",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr295",
+      "source_commit": "b2e707abeea92d29cd1be72c6994ed87c10e2072",
+      "repository": "JangSeongWoong/ai-agent-engineering-101"
+    },
+    "pr292": {
+      "id": "pr292",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr292",
+      "source_commit": "095afe2822ebb5e12ee36b4f732cea67f76e1ee7",
+      "repository": "danayoou/ai-agent-engineering-101"
+    },
+    "pr291": {
+      "id": "pr291",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr291",
+      "source_commit": "4dcfa7a19a79b6d99bf004e69ffba64662ecdaca",
+      "repository": "dyishappy/ai-agent-engineering-101"
+    },
+    "pr290": {
+      "id": "pr290",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr290",
+      "source_commit": "951c9a4cb828f50f9c5ca77786c60d321453b290",
+      "repository": "ChanArun/ai-agent-engineering-101"
+    },
+    "pr289": {
+      "id": "pr289",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr289",
+      "source_commit": "34a8317dec0932eb6fe77f5fc57b7e10880885a8",
+      "repository": "dariaklt/ai-agent-engineering-101"
+    },
+    "pr288": {
+      "id": "pr288",
+      "path": "/tmp/a2a-improvement-20261015/peers/pr288",
+      "source_commit": "ac15c2a71183cfbdbab8af2533cc6e09cf29ede7",
+      "repository": "thisjonghoon/ai-agent-engineering-101"
+    }
+  },
+  "source_hashes": {
+    "ours": {
+      "agent.json": "c23a6a4650d79033250b3e023751ee8dc05f0cdc14240f64ab3302b9b7cf4777",
+      "benchmark_a2a.py": "358be2274bf4550b5300d9035038d26412455a2133835af1bec19dbd82d9957f",
+      "benchmark_transport.py": "3ffd2a80f9864721a879a005621043818868b1af712a27084569a1f1f663a193",
+      "budget-allocation.schema.json": "9fbacd822f02c6bf5806cb697e668510cd4fbe65a50103611a2c57f3d2a0e797",
+      "buyer-decision.schema.json": "e20b0ba821a155dd69a1c3d08dbdf8469bfa0022e9b74c5153cea8dfe5f256fb",
+      "buyer.py": "7ebd88fc0f37d32b612a0fc0c299739256895374a7116fb68cd16992e847f1dd",
+      "catalog.py": "985dc48b26d373758dfbc4cacc7a612e12c4604ca897a394626f956b510279d8",
+      "data/catalog.json": "d008a305d6d1c586000221554bbdbc0929c73067f160a5900a4301ec889f693b",
+      "decision.schema.json": "cd55fbcfb991208e5109208f622b47fe3ef2e98ea9a6baae5ab411c9b8243643",
+      "evaluate_policy.py": "d52e5a6d9882ff355ea3fdd0e432e0d118f92145fe596d05f81b6f726b6bddcc",
+      "evidence.py": "fb9be609723d16e9ec91d1730720bb8cc2aa7e2331fe5be8f2a7402afedfe61c",
+      "generate_catalog.py": "3fc4c16442552b73db38ad86fbc88f61fbbf8cb1e87378b920e422876c45faac",
+      "harness.py": "f6620b9820af270c3334824758260fd17c2ae426420b7a81376d26e1a06e8252",
+      "inference_queue.py": "4e94f26923b3b065385103f289be58da640ffe04a7aacb32c03e6580d622de71",
+      "policies/active.json": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb",
+      "policies/candidate.json": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb",
+      "policy.py": "c8489f85d9986bb551b1cd990157e89c16d0827dba1c95f366aded03e54550f1",
+      "promote_policy.py": "2208945dff2b06ba089a5cd59510d85ec0df4ab92dd7d1a0d17a7c448ba49976",
+      "protocol.py": "d68c6840a3ef008e77d5fdf7f39731eb06181ad75c160d8abc858e9e25a74b48",
+      "quote-observation.schema.json": "585ffc77dccc9422b6e76eb5818bb1d1e674db8c3c7a9884ce22889d33561986",
+      "quote_normalization.py": "0be74c3b6fd76fb1fd96eeb9541de8625fd5257dfad9d6ee2ec9669c9190daa6",
+      "requirements.txt": "63ab6102ed87a58ed3c833636e625d7cc2d8eeaf1ebe6f644f2b0913e0c71b9e",
+      "run_adversarial.py": "f003e947928201608ee33ea57ab5ca76268864decc33bea4b359903375d1adb2",
+      "run_challenges.py": "9e86bd1e6f59a62d509acfd51f68f7948359e533cf9b46014ff1afe33dd22c0b",
+      "seller-decision.schema.json": "9fb07a4166607917adc8d67a697c7292b333171c6715a37ce3cda22ed0a29653",
+      "seller.py": "c4b977c7e9357c61ad981b591a77c7c2c5d5e22ee7f43c54be9fa744097fc8cb",
+      "shop-selection.schema.json": "417387dd8f4817c85b702f98c498507dd914c0fc6b578faefffc0e8c0a723b3a",
+      "shopping.py": "b253a57fc53e01d13cc1cfe6b5fe95fc878f4c233872f7bd4302c10685f0180d",
+      "test-report.json": "dec04c107f8d08c454f6f3e27635b5aee4f7881796d3095aaec2d04b0d436fc0",
+      "tests/test_benchmark.py": "61c48a49146b2298926637b148946c9b70b85d66fe4dd08564131a76e7b007d5",
+      "tests/test_benchmark_transport.py": "9fe6e9bcd46eeaa451fc6b1acc31bba968ffa582973ba1b2d9ad15f88e2a5e69",
+      "tests/test_catalog.py": "17803fdd8bee913bc6afde49c934ff2024f8e8266ddb51377292b7780cb7e187",
+      "tests/test_challenges.py": "463dc68271834947cc4a3aa02f9f63535179eb610918c1af604b20cefb7f0775",
+      "tests/test_evidence.py": "758133b370c6dc011486a994b7319ab15f6d56f5085576e1fc4dcf1a8adbfcde",
+      "tests/test_inference_queue.py": "8db334182b7765c47dc08bc4bb15e33895771812388fa372bc69a41c6b8c99d8",
+      "tests/test_integrations.py": "c33b758590253b36d6e626e71711bfc96b6e9f0561888eee73340ed023be1351",
+      "tests/test_policy.py": "cef42c2485922a204dc6445605bf75f0cdd6e133c86978d474dd0131ad50ab0f",
+      "tests/test_promotion.py": "943550aad3606f1766cdcc208782f03f6b97d1b59982451886167a7086fe940b",
+      "tests/test_protocol.py": "ad439bad727b1bd337dfb6e327115d43d6b65c2bd5343adcdd6d6442a1c27aa7",
+      "tests/test_quote_normalization.py": "b849a457d318a54ee06e3f79bd54c4b19358d7443eab6e510cc6076368a7c762",
+      "tests/test_shopping.py": "5ec20a192ddf4c19c05ffc2c8b6523f814b9f30ed1af490996c820f57d402037",
+      "tracing.py": "d57134cf37684c41f4a6a1462fb97c80b4772fbfa4ba3aa42046787c8bbfa99d",
+      "train_policy.py": "8a98030fa3dc780027eed969b65cb5f1724ca647b94f5ced4fddfa3c8fc599fe"
+    }
+  },
+  "runner_sha256": "358be2274bf4550b5300d9035038d26412455a2133835af1bec19dbd82d9957f",
+  "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+  "controlled_model": null,
+  "claim_scope": "Exploratory observed comparisons, not statistical dominance or historical provider reproduction"
+}
