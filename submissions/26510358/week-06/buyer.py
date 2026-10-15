@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 import re
 import time
 import uuid
@@ -12,7 +11,8 @@ from catalog import CATEGORY_TERMS
 from evidence import EvidenceError, Ledger, inspect_untrusted, validate_buyer_decision, verify_receipt
 from harness import Harness
 from policy import StrategyPolicy, strategy_instruction
-from protocol import A2AClient, ProtocolError, receipt_from, task_metadata, task_text
+from protocol import A2AClient, ProtocolError, receipt_from
+from quote_normalization import contract_issues, normalize_quote
 from tracing import Trace
 
 
@@ -35,6 +35,7 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
     trace.write("policy_loaded", policy_sha256=policy.sha256, policy_version=policy.version)
     item_key = item_key or item
     harness = Harness("buyer", trace)
+    observer = Harness("quote_observer", trace)
     deadline = time.monotonic() + timeout
     client = A2AClient(url, trace, deadline=deadline)
     purchase_id = uuid.uuid4().hex
@@ -58,6 +59,7 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                 issues = verify_receipt(receipt, item=expected_item, budget=budget,
                                         expected_price=expected_price, task_id=task_id,
                                         expected_quote_id=expected_quote_id)
+                issues.extend(contract_issues(receipt))
                 trace.write("receipt_checked", issues=issues, receipt=receipt)
                 if issues:
                     if reserved:
@@ -76,11 +78,20 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                 return {"status": "no_deal", "state": state}
             if state != "TASK_STATE_INPUT_REQUIRED":
                 raise ProtocolError(f"Unsupported task state: {state}")
-            text, metadata = task_text(task), task_metadata(task)
-            expected_quote_id = metadata.get("quoteId")
-            flags = inspect_untrusted(text)
-            ask = metadata.get("ask")
-            remote_item = metadata.get("itemId")
+            observation = normalize_quote(task, observer=observer, trace=trace, deadline=deadline,
+                context={"request": item, "requested_item_id": requested_item_id,
+                         "task_id": task_id, "round": round_number})
+            unit_issues = contract_issues({key: observation[key] for key in ("currency", "quantity")
+                                           if observation[key] is not None})
+            if unit_issues:
+                raise EvidenceError("Quote violates the credits/quantity-one contract: " + ", ".join(unit_issues))
+            text, metadata = observation["remote_message"], observation["remote_metadata"]
+            expected_quote_id = observation["quote_id"]
+            flags = inspect_untrusted(json.dumps({"text": text, "metadata": metadata,
+                "task_metadata": observation["remote_task_metadata"],
+                "data": observation["remote_data"]}, ensure_ascii=False))
+            ask = observation["ask"]
+            remote_item = observation["item_id"]
             if remote_item is not None:
                 if not isinstance(remote_item, str) or not remote_item:
                     raise EvidenceError("Invalid quoted item ID")
@@ -90,15 +101,18 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                     raise EvidenceError("Seller substituted a different explicitly requested catalog item")
                 quoted_item = remote_item
                 expected_item = quoted_item
-            # A2A does not define price semantics. Our harness interprets text if no structured quote exists.
+            # Public observations enter the frozen policy only after format normalization.
             context = {"role": "buyer", "item": expected_item, "request": item, "budget": budget,
                        "remote_message": text, "remote_metadata": metadata, "ask": ask,
+                       "remote_data": observation["remote_data"], "quote_observation": observation,
                        "round": round_number, "task_id": task_id, "untrusted_flags": flags,
                        "flags": flags,
                        "remaining_seconds": round(deadline - time.monotonic()), "history_summary": history[-8:]}
             strategy = policy.choose("buyer", context)
             def validate_decision(output):
                 validated = validate_buyer_decision(output, budget=budget, ask=ask)
+                if validated["action"] == "accept" and ask is None:
+                    raise EvidenceError("Cannot accept without an observed asking price; offer or walk away instead")
                 if validated["item_id"] != expected_item:
                     raise EvidenceError("Buyer decision must keep the requested quoted item ID")
                 return validated
@@ -120,7 +134,10 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
             ledger.reserve(item_key, price, purchase_id, expected_item=expected_item,
                            seller_origin=client.base, expected_quote_id=expected_quote_id)
             reserved, expected_price = True, price
-            history.append({"seller": text, "metadata": metadata, "action": decision["action"], "price": price})
+            history.append({"seller": text, "metadata": metadata, "ask": ask,
+                            "quote_observation": {key: observation[key] for key in (
+                                "ask", "item_id", "quote_id", "currency", "quantity", "source")},
+                            "action": decision["action"], "price": price})
             task = client.send(json.dumps(price, allow_nan=False), task_id)
         if reserved:
             ledger.release(purchase_id)
