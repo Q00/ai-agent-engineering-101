@@ -1,0 +1,1774 @@
+{
+  "generated_at": "2026-10-15T05:48:21.749015+00:00",
+  "scope": "Read-only independent raw-RPC/source/hash/model-header audit. No model or service calls. No source/data modification; this unique audit is the only new file.",
+  "counts": {
+    "runs": 2,
+    "matches": 20,
+    "matches_with_one_valid_correlated_rpc_receipt": 20,
+    "rpc_posts": 54,
+    "audit_discrepancies": 0,
+    "controlled_adapter_calls_checked": 30,
+    "ours_native_cli_headers_checked": 12
+  },
+  "errors": [],
+  "runs": [
+    {
+      "run": "baseline-native-confirm",
+      "mode": "native",
+      "kind": "fixed",
+      "summary_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/summary.json",
+      "summary_sha256": "85ee7cea8f81cbeb02dcef9dd0353a7dbb4678aea0b29d507dddb344f5d60994",
+      "manifest_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/manifest.json",
+      "manifest_sha256": "e019ef59f989a5ae82d6b8e33e6f7ff37c2cb6dea649462aff711fd372a0f541",
+      "runner_sha256": "5c9cd0a4a274ee16f3ed45f312a3a330831df558a70bd03415765594078d44dc",
+      "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+      "source_unchanged_declared": true,
+      "source_hash_rechecks": [
+        {
+          "participant": "ours",
+          "source_commit": "cf0ed87f22e08d5712aa4a7c00e645fffa63bf62",
+          "source_path": "/tmp/a2a-improvement-20261015/baseline-cf0ed87/submissions/26510358/week-06",
+          "file_count": 36,
+          "hashes_match_manifest_now": true,
+          "changed_paths": []
+        }
+      ],
+      "groups": [
+        {
+          "participant": "ours",
+          "role": "buyer",
+          "n": 3,
+          "completed": 3,
+          "prices": [
+            105.0,
+            105.0,
+            110.0
+          ],
+          "price_mean": 106.66666666666667,
+          "price_min": 105.0,
+          "price_max": 110.0,
+          "surplus_per_attempt": 13.333333333333334,
+          "elapsed_mean_seconds": 19.468999999999998,
+          "rpc_mean": 2.0
+        },
+        {
+          "participant": "ours",
+          "role": "seller",
+          "n": 3,
+          "completed": 3,
+          "prices": [
+            110.0,
+            110.0,
+            110.0
+          ],
+          "price_mean": 110.0,
+          "price_min": 110.0,
+          "price_max": 110.0,
+          "surplus_per_attempt": 10.0,
+          "elapsed_mean_seconds": 57.70733333333333,
+          "rpc_mean": 3.0
+        }
+      ],
+      "matches": [
+        {
+          "id": "r01-lamp-ours-buyer",
+          "buyer": "ours",
+          "seller": "kit",
+          "participant": "ours",
+          "actual_role": "buyer",
+          "price": 105.0,
+          "completed_valid": true,
+          "elapsed_seconds": 19.15,
+          "rpc_count": 2,
+          "evidence_scope": "buyer_report_and_wire_receipt",
+          "execution_scope": {
+            "buyer": "native_implementation",
+            "seller": "fixed_counterpart"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r01-lamp-ours-buyer/wire/003-d4d02106b71d41c2a9d197b5d5a8c977.json",
+              "sha256": "33ef3f4a2c57db17528c5b043df63597d796a713af6b82769084ae1ae49b5f19",
+              "request_id": "98eab31a133648f79c57272ce9535cf1",
+              "response_id": "98eab31a133648f79c57272ce9535cf1",
+              "task_id": "90532b63-96e7-47ac-9b66-1904fe28e874",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r01-lamp-ours-buyer/wire/004-c29210f4d214465384a4a4fe19598bb3.json",
+              "sha256": "7b1c5e5ee251a46aafeacb989a540de937a9f1dde14e333d51994087c2704b2f",
+              "request_id": "b687500a87e8477e87542c6db4167abb",
+              "response_id": "b687500a87e8477e87542c6db4167abb",
+              "task_id": "90532b63-96e7-47ac-9b66-1904fe28e874",
+              "requested_task_id": "90532b63-96e7-47ac-9b66-1904fe28e874",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "seller": "Kit Shop",
+                "item": "lamp",
+                "price": 105.0
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-ours-seller",
+          "buyer": "kit",
+          "seller": "ours",
+          "participant": "ours",
+          "actual_role": "seller",
+          "price": 110.0,
+          "completed_valid": true,
+          "elapsed_seconds": 61.099,
+          "rpc_count": 3,
+          "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+          "execution_scope": {
+            "buyer": "fixed_counterpart",
+            "seller": "native_implementation"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r01-lamp-ours-seller/wire/002-face32165b614b579305bb482f700be0.json",
+              "sha256": "2ee392e2fb87faf9ef1c898a160be8baade720b591a1f351784b1c71cb1ccce8",
+              "request_id": "458e9346",
+              "response_id": "458e9346",
+              "task_id": "9736e9e2-c677-4a4e-94ff-e8bbac83df57",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r01-lamp-ours-seller/wire/003-8ca21df6f8a549cda4e169b8958ecbb8.json",
+              "sha256": "7e9679852ab5e1640708e9b2fdde4d2582a9517c468c64bd9192e6a10fae92a3",
+              "request_id": "d6a701ca",
+              "response_id": "d6a701ca",
+              "task_id": "9736e9e2-c677-4a4e-94ff-e8bbac83df57",
+              "requested_task_id": "9736e9e2-c677-4a4e-94ff-e8bbac83df57",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r01-lamp-ours-seller/wire/004-a66f5cca016547d0a20cf3c1d11b5970.json",
+              "sha256": "c814daaa5befb3961ff6ed9e9f8ac401c53687704ab488470cc7a37dc97c801b",
+              "request_id": "c9de9fc6",
+              "response_id": "c9de9fc6",
+              "task_id": "9736e9e2-c677-4a4e-94ff-e8bbac83df57",
+              "requested_task_id": "9736e9e2-c677-4a4e-94ff-e8bbac83df57",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "price": 110.0,
+                "purchaseId": "a1b8b72f0b7145ceb95c08773e68bd5f",
+                "item": "lamp",
+                "itemId": "lamp",
+                "currency": "credits",
+                "quoteId": "94fd387989a0487eb2107b274f09d10c",
+                "taskId": "9736e9e2-c677-4a4e-94ff-e8bbac83df57",
+                "seller": "26510358 Catalog Shop",
+                "quantity": 1.0
+              }
+            }
+          ]
+        },
+        {
+          "id": "r02-lamp-ours-buyer",
+          "buyer": "ours",
+          "seller": "kit",
+          "participant": "ours",
+          "actual_role": "buyer",
+          "price": 105.0,
+          "completed_valid": true,
+          "elapsed_seconds": 20.183,
+          "rpc_count": 2,
+          "evidence_scope": "buyer_report_and_wire_receipt",
+          "execution_scope": {
+            "buyer": "native_implementation",
+            "seller": "fixed_counterpart"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r02-lamp-ours-buyer/wire/003-2f547b59548541119d5b0104296da66a.json",
+              "sha256": "927a460cf59b8a2d3a325527df021ec1c5bd18b4dbda3a0ab1b24470b6379614",
+              "request_id": "7d4cb617020d49439f70cddc9cf808f4",
+              "response_id": "7d4cb617020d49439f70cddc9cf808f4",
+              "task_id": "f7b371bf-c4da-4da9-bb0d-33c7f10d0f20",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r02-lamp-ours-buyer/wire/004-82a378be320948debaa5ae5bff536ae9.json",
+              "sha256": "35cd71fbac2ac6a5e96d0ffba30e69dd96d52068ea4ad07d6a1e9ffad7d9f868",
+              "request_id": "1e56cb564bbb4a969812d9edaf02c678",
+              "response_id": "1e56cb564bbb4a969812d9edaf02c678",
+              "task_id": "f7b371bf-c4da-4da9-bb0d-33c7f10d0f20",
+              "requested_task_id": "f7b371bf-c4da-4da9-bb0d-33c7f10d0f20",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "seller": "Kit Shop",
+                "item": "lamp",
+                "price": 105.0
+              }
+            }
+          ]
+        },
+        {
+          "id": "r02-lamp-ours-seller",
+          "buyer": "kit",
+          "seller": "ours",
+          "participant": "ours",
+          "actual_role": "seller",
+          "price": 110.0,
+          "completed_valid": true,
+          "elapsed_seconds": 57.358,
+          "rpc_count": 3,
+          "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+          "execution_scope": {
+            "buyer": "fixed_counterpart",
+            "seller": "native_implementation"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r02-lamp-ours-seller/wire/002-2a47eacf28a54d1894819f8e5ba226bc.json",
+              "sha256": "4a2979f842d2f03b80ac783f8e32542c825da2f275b83348f85381999dcbdbff",
+              "request_id": "271995ea",
+              "response_id": "271995ea",
+              "task_id": "f6075f98-6904-4c9e-b179-c2d9ad6f29d5",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r02-lamp-ours-seller/wire/003-03afcd96c1104e57a4f0ec2f0f23afbb.json",
+              "sha256": "d16a58a1c3dc5e8a201e38afef0f167e723419ee65dca5051572a96ed4101bc3",
+              "request_id": "0d650232",
+              "response_id": "0d650232",
+              "task_id": "f6075f98-6904-4c9e-b179-c2d9ad6f29d5",
+              "requested_task_id": "f6075f98-6904-4c9e-b179-c2d9ad6f29d5",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r02-lamp-ours-seller/wire/004-7fa0b6ee25614731948a191680415bef.json",
+              "sha256": "bf4906d637f764fb5ab1e42e286ea72ab9e7e3f9226c3935dc28acc94fe47321",
+              "request_id": "c2486a1d",
+              "response_id": "c2486a1d",
+              "task_id": "f6075f98-6904-4c9e-b179-c2d9ad6f29d5",
+              "requested_task_id": "f6075f98-6904-4c9e-b179-c2d9ad6f29d5",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "purchaseId": "c89e987c7b38466990d5777513c08115",
+                "itemId": "lamp",
+                "seller": "26510358 Catalog Shop",
+                "quantity": 1.0,
+                "item": "lamp",
+                "price": 110.0,
+                "currency": "credits",
+                "taskId": "f6075f98-6904-4c9e-b179-c2d9ad6f29d5",
+                "quoteId": "79935ca8a8a041349c44f3014a2cfd20"
+              }
+            }
+          ]
+        },
+        {
+          "id": "r03-lamp-ours-buyer",
+          "buyer": "ours",
+          "seller": "kit",
+          "participant": "ours",
+          "actual_role": "buyer",
+          "price": 110.0,
+          "completed_valid": true,
+          "elapsed_seconds": 19.074,
+          "rpc_count": 2,
+          "evidence_scope": "buyer_report_and_wire_receipt",
+          "execution_scope": {
+            "buyer": "native_implementation",
+            "seller": "fixed_counterpart"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r03-lamp-ours-buyer/wire/003-d4cf05d168be4adabdfba5ae7230ea8b.json",
+              "sha256": "a14b31a3cdacd05d0c21ae6d59e91ba801df99b3f4934a4e3eb6dd86b250ccd5",
+              "request_id": "b822b605104f41eda6bdd77d3d385290",
+              "response_id": "b822b605104f41eda6bdd77d3d385290",
+              "task_id": "f638a269-1199-4c69-8609-37ba7bc91084",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r03-lamp-ours-buyer/wire/004-714ed2826fc34b9fbf85432f683e0125.json",
+              "sha256": "79b2b0d5a1acefd2197d6efaab4510da67f0071c4ea6cf0f93d3e48ebf05d6e7",
+              "request_id": "d5bbb10cb96d4a81a77502da70a8ec55",
+              "response_id": "d5bbb10cb96d4a81a77502da70a8ec55",
+              "task_id": "f638a269-1199-4c69-8609-37ba7bc91084",
+              "requested_task_id": "f638a269-1199-4c69-8609-37ba7bc91084",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "seller": "Kit Shop",
+                "item": "lamp",
+                "price": 110.0
+              }
+            }
+          ]
+        },
+        {
+          "id": "r03-lamp-ours-seller",
+          "buyer": "kit",
+          "seller": "ours",
+          "participant": "ours",
+          "actual_role": "seller",
+          "price": 110.0,
+          "completed_valid": true,
+          "elapsed_seconds": 54.665,
+          "rpc_count": 3,
+          "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+          "execution_scope": {
+            "buyer": "fixed_counterpart",
+            "seller": "native_implementation"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r03-lamp-ours-seller/wire/002-e781bdeb30044572a911662ab79664c0.json",
+              "sha256": "5a367bbf66ee017344af32e192bc45d021145601811c918aebac25fbc7dc51c9",
+              "request_id": "afdcc3ae",
+              "response_id": "afdcc3ae",
+              "task_id": "68db0f76-40f2-44c7-a671-9f91b8f25db4",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r03-lamp-ours-seller/wire/003-3a291893f0d64461be2566049867fb78.json",
+              "sha256": "d53d21d6e17ce4b438e62281e6842116b472fb856cea736a6c13c6899f1cfceb",
+              "request_id": "a24c8846",
+              "response_id": "a24c8846",
+              "task_id": "68db0f76-40f2-44c7-a671-9f91b8f25db4",
+              "requested_task_id": "68db0f76-40f2-44c7-a671-9f91b8f25db4",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r03-lamp-ours-seller/wire/004-d137050ee1214cc080bd43ffb90bbde9.json",
+              "sha256": "a22864f32180537b186f46140f587912a8edbae92d0fd48d33200a49724c0d6e",
+              "request_id": "0c5f8fab",
+              "response_id": "0c5f8fab",
+              "task_id": "68db0f76-40f2-44c7-a671-9f91b8f25db4",
+              "requested_task_id": "68db0f76-40f2-44c7-a671-9f91b8f25db4",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "taskId": "68db0f76-40f2-44c7-a671-9f91b8f25db4",
+                "seller": "26510358 Catalog Shop",
+                "purchaseId": "01fdcb4415e74f73a00e8c87cc4a44ac",
+                "itemId": "lamp",
+                "quantity": 1.0,
+                "item": "lamp",
+                "price": 110.0,
+                "quoteId": "0dc40cc33738450e8b4410cfc05d08f4",
+                "currency": "credits"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "run": "peers-controlled-screen",
+      "mode": "controlled",
+      "kind": "fixed",
+      "summary_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/summary.json",
+      "summary_sha256": "114441ce27c0d6cde79c83292726477c8f722e186bd2ef3711382af4cbbd34a8",
+      "manifest_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/manifest.json",
+      "manifest_sha256": "fd54c4fc9ef4092de8ac1739741a793e1501b6faa36f78093421c9a6459e643f",
+      "runner_sha256": "358be2274bf4550b5300d9035038d26412455a2133835af1bec19dbd82d9957f",
+      "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+      "source_unchanged_declared": true,
+      "source_hash_rechecks": [
+        {
+          "participant": "ours",
+          "source_commit": "cf0ed87f22e08d5712aa4a7c00e645fffa63bf62",
+          "source_path": "/tmp/a2a-improvement-20261015/baseline-cf0ed87/submissions/26510358/week-06",
+          "file_count": 36,
+          "hashes_match_manifest_now": true,
+          "changed_paths": []
+        },
+        {
+          "participant": "pr296",
+          "source_commit": "eae935eb671e1df2919998352218343251af5921",
+          "source_path": "/tmp/a2a-improvement-20261015/peers/pr296",
+          "file_count": 36,
+          "hashes_match_manifest_now": true,
+          "changed_paths": []
+        },
+        {
+          "participant": "pr295",
+          "source_commit": "b2e707abeea92d29cd1be72c6994ed87c10e2072",
+          "source_path": "/tmp/a2a-improvement-20261015/peers/pr295",
+          "file_count": 12,
+          "hashes_match_manifest_now": true,
+          "changed_paths": []
+        },
+        {
+          "participant": "pr292",
+          "source_commit": "095afe2822ebb5e12ee36b4f732cea67f76e1ee7",
+          "source_path": "/tmp/a2a-improvement-20261015/peers/pr292",
+          "file_count": 5,
+          "hashes_match_manifest_now": true,
+          "changed_paths": []
+        },
+        {
+          "participant": "pr291",
+          "source_commit": "4dcfa7a19a79b6d99bf004e69ffba64662ecdaca",
+          "source_path": "/tmp/a2a-improvement-20261015/peers/pr291",
+          "file_count": 28,
+          "hashes_match_manifest_now": true,
+          "changed_paths": []
+        },
+        {
+          "participant": "pr290",
+          "source_commit": "951c9a4cb828f50f9c5ca77786c60d321453b290",
+          "source_path": "/tmp/a2a-improvement-20261015/peers/pr290",
+          "file_count": 5,
+          "hashes_match_manifest_now": true,
+          "changed_paths": []
+        },
+        {
+          "participant": "pr289",
+          "source_commit": "34a8317dec0932eb6fe77f5fc57b7e10880885a8",
+          "source_path": "/tmp/a2a-improvement-20261015/peers/pr289",
+          "file_count": 5,
+          "hashes_match_manifest_now": true,
+          "changed_paths": []
+        },
+        {
+          "participant": "pr288",
+          "source_commit": "ac15c2a71183cfbdbab8af2533cc6e09cf29ede7",
+          "source_path": "/tmp/a2a-improvement-20261015/peers/pr288",
+          "file_count": 25,
+          "hashes_match_manifest_now": true,
+          "changed_paths": []
+        }
+      ],
+      "groups": [
+        {
+          "participant": "pr288",
+          "role": "buyer",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            100.0
+          ],
+          "price_mean": 100.0,
+          "price_min": 100.0,
+          "price_max": 100.0,
+          "surplus_per_attempt": 20.0,
+          "elapsed_mean_seconds": 33.325,
+          "rpc_mean": 2.0
+        },
+        {
+          "participant": "pr288",
+          "role": "seller",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            120.0
+          ],
+          "price_mean": 120.0,
+          "price_min": 120.0,
+          "price_max": 120.0,
+          "surplus_per_attempt": 20.0,
+          "elapsed_mean_seconds": 132.038,
+          "rpc_mean": 5.0
+        },
+        {
+          "participant": "pr289",
+          "role": "buyer",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            105.0
+          ],
+          "price_mean": 105.0,
+          "price_min": 105.0,
+          "price_max": 105.0,
+          "surplus_per_attempt": 15.0,
+          "elapsed_mean_seconds": 49.781,
+          "rpc_mean": 2.0
+        },
+        {
+          "participant": "pr289",
+          "role": "seller",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            120.0
+          ],
+          "price_mean": 120.0,
+          "price_min": 120.0,
+          "price_max": 120.0,
+          "surplus_per_attempt": 20.0,
+          "elapsed_mean_seconds": 83.851,
+          "rpc_mean": 2.0
+        },
+        {
+          "participant": "pr290",
+          "role": "buyer",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            120.0
+          ],
+          "price_mean": 120.0,
+          "price_min": 120.0,
+          "price_max": 120.0,
+          "surplus_per_attempt": 0.0,
+          "elapsed_mean_seconds": 15.161,
+          "rpc_mean": 2.0
+        },
+        {
+          "participant": "pr290",
+          "role": "seller",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            120.0
+          ],
+          "price_mean": 120.0,
+          "price_min": 120.0,
+          "price_max": 120.0,
+          "surplus_per_attempt": 20.0,
+          "elapsed_mean_seconds": 93.599,
+          "rpc_mean": 3.0
+        },
+        {
+          "participant": "pr291",
+          "role": "buyer",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            100.0
+          ],
+          "price_mean": 100.0,
+          "price_min": 100.0,
+          "price_max": 100.0,
+          "surplus_per_attempt": 20.0,
+          "elapsed_mean_seconds": 16.769,
+          "rpc_mean": 2.0
+        },
+        {
+          "participant": "pr291",
+          "role": "seller",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            115.0
+          ],
+          "price_mean": 115.0,
+          "price_min": 115.0,
+          "price_max": 115.0,
+          "surplus_per_attempt": 15.0,
+          "elapsed_mean_seconds": 62.388,
+          "rpc_mean": 4.0
+        },
+        {
+          "participant": "pr292",
+          "role": "buyer",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            100.0
+          ],
+          "price_mean": 100.0,
+          "price_min": 100.0,
+          "price_max": 100.0,
+          "surplus_per_attempt": 20.0,
+          "elapsed_mean_seconds": 97.191,
+          "rpc_mean": 4.0
+        },
+        {
+          "participant": "pr292",
+          "role": "seller",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            115.0
+          ],
+          "price_mean": 115.0,
+          "price_min": 115.0,
+          "price_max": 115.0,
+          "surplus_per_attempt": 15.0,
+          "elapsed_mean_seconds": 97.704,
+          "rpc_mean": 3.0
+        },
+        {
+          "participant": "pr295",
+          "role": "buyer",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            120.0
+          ],
+          "price_mean": 120.0,
+          "price_min": 120.0,
+          "price_max": 120.0,
+          "surplus_per_attempt": 0.0,
+          "elapsed_mean_seconds": 17.076,
+          "rpc_mean": 2.0
+        },
+        {
+          "participant": "pr295",
+          "role": "seller",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            120.0
+          ],
+          "price_mean": 120.0,
+          "price_min": 120.0,
+          "price_max": 120.0,
+          "surplus_per_attempt": 20.0,
+          "elapsed_mean_seconds": 46.425,
+          "rpc_mean": 2.0
+        },
+        {
+          "participant": "pr296",
+          "role": "buyer",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            100.0
+          ],
+          "price_mean": 100.0,
+          "price_min": 100.0,
+          "price_max": 100.0,
+          "surplus_per_attempt": 20.0,
+          "elapsed_mean_seconds": 6.931,
+          "rpc_mean": 2.0
+        },
+        {
+          "participant": "pr296",
+          "role": "seller",
+          "n": 1,
+          "completed": 1,
+          "prices": [
+            120.0
+          ],
+          "price_mean": 120.0,
+          "price_min": 120.0,
+          "price_max": 120.0,
+          "surplus_per_attempt": 20.0,
+          "elapsed_mean_seconds": 50.649,
+          "rpc_mean": 4.0
+        }
+      ],
+      "matches": [
+        {
+          "id": "r01-lamp-pr296-buyer",
+          "buyer": "pr296",
+          "seller": "kit",
+          "participant": "pr296",
+          "actual_role": "buyer",
+          "price": 100.0,
+          "completed_valid": true,
+          "elapsed_seconds": 6.931,
+          "rpc_count": 2,
+          "evidence_scope": "wire_receipt_only",
+          "execution_scope": {
+            "buyer": "controlled_codex_transport",
+            "seller": "fixed_counterpart"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-buyer/wire/003-49477d30b1f24ce79c8793825b878a1a.json",
+              "sha256": "014d8484fd69fc7ec2321fa9a9f67be3b1b827aee0d31d90c4482752c5126b54",
+              "request_id": "87f70961",
+              "response_id": "87f70961",
+              "task_id": "14a9e49c-af14-416b-b384-7f6c3cbfe53a",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-buyer/wire/004-e6f6ba750d65409a9ce485d48c69ceaf.json",
+              "sha256": "25471efb644142b8505b37faf8e41dde3a01967487179da85c3fcd54fb511ff6",
+              "request_id": "841269fb",
+              "response_id": "841269fb",
+              "task_id": "14a9e49c-af14-416b-b384-7f6c3cbfe53a",
+              "requested_task_id": "14a9e49c-af14-416b-b384-7f6c3cbfe53a",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "item": "lamp",
+                "seller": "Kit Shop",
+                "price": 100.0
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-pr296-seller",
+          "buyer": "kit",
+          "seller": "pr296",
+          "participant": "pr296",
+          "actual_role": "seller",
+          "price": 120.0,
+          "completed_valid": true,
+          "elapsed_seconds": 50.649,
+          "rpc_count": 4,
+          "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+          "execution_scope": {
+            "buyer": "fixed_counterpart",
+            "seller": "controlled_codex_transport"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-seller/wire/002-dbb0bbe5965b45168565691411978833.json",
+              "sha256": "f02e1b73749a86e2ee00b628f2f3f4ccf849fbb12a3f5f5461108595b32cfe0e",
+              "request_id": "541c24ea",
+              "response_id": "541c24ea",
+              "task_id": "452f91eb-df62-420c-a398-946062e403a8",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-seller/wire/003-788aa9c115ac4965ae4e335e88b3bf4d.json",
+              "sha256": "1f36213c6d7a41a44a8bd291cd143141f1b7cf76abb92ab067abd69758b2b1be",
+              "request_id": "c6147794",
+              "response_id": "c6147794",
+              "task_id": "452f91eb-df62-420c-a398-946062e403a8",
+              "requested_task_id": "452f91eb-df62-420c-a398-946062e403a8",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-seller/wire/004-7ce7753fb2c94e48971c02452cbe9416.json",
+              "sha256": "7898fa53dbe8bff255f807ce571f415f290c739c5557f140ed760373f060abc0",
+              "request_id": "0e839589",
+              "response_id": "0e839589",
+              "task_id": "452f91eb-df62-420c-a398-946062e403a8",
+              "requested_task_id": "452f91eb-df62-420c-a398-946062e403a8",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-seller/wire/005-f4bf0a31f02c49a78964f2594f537659.json",
+              "sha256": "11677d342f7a876f3e1d74092d05a1ad1475fc2013be76c687478cc65eb0d506",
+              "request_id": "70c5a2dd",
+              "response_id": "70c5a2dd",
+              "task_id": "452f91eb-df62-420c-a398-946062e403a8",
+              "requested_task_id": "452f91eb-df62-420c-a398-946062e403a8",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "price": 120.0,
+                "seller": "Harness Furniture Shop",
+                "name": "lamp",
+                "item": "lamp"
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-pr295-buyer",
+          "buyer": "pr295",
+          "seller": "kit",
+          "participant": "pr295",
+          "actual_role": "buyer",
+          "price": 120.0,
+          "completed_valid": true,
+          "elapsed_seconds": 17.076,
+          "rpc_count": 2,
+          "evidence_scope": "wire_receipt_only",
+          "execution_scope": {
+            "buyer": "controlled_codex_transport",
+            "seller": "fixed_counterpart"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr295-buyer/wire/003-37bb4c8796a04f17b437befadb815bc7.json",
+              "sha256": "120eddc6387c6d966933c21709c7b787e919a67885353d628d8b240f56e5b6e8",
+              "request_id": "6208b3a6-212d-441c-8c7d-fef20a2c2668",
+              "response_id": "6208b3a6-212d-441c-8c7d-fef20a2c2668",
+              "task_id": "250f6e0a-9396-4947-8d64-0823faca186d",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr295-buyer/wire/004-22618b12c698410b995026af85553c2b.json",
+              "sha256": "020291c422614cfbc77e6ce2632b0249a0bc385ca28b6ac5d8f980e4d12671c7",
+              "request_id": "a8fc0cb6-7435-42a8-9077-8adfe3d1fbc1",
+              "response_id": "a8fc0cb6-7435-42a8-9077-8adfe3d1fbc1",
+              "task_id": "250f6e0a-9396-4947-8d64-0823faca186d",
+              "requested_task_id": "250f6e0a-9396-4947-8d64-0823faca186d",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "item": "lamp",
+                "seller": "Kit Shop",
+                "price": 120.0
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-pr295-seller",
+          "buyer": "kit",
+          "seller": "pr295",
+          "participant": "pr295",
+          "actual_role": "seller",
+          "price": 120.0,
+          "completed_valid": true,
+          "elapsed_seconds": 46.425,
+          "rpc_count": 2,
+          "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+          "execution_scope": {
+            "buyer": "fixed_counterpart",
+            "seller": "controlled_codex_transport"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr295-seller/wire/002-ce790a48adca4cf9b09670e438cf7a06.json",
+              "sha256": "cee44822e52523bfd7a8082685d89fb0a1e13cebe13837ca7ab67ed65f245087",
+              "request_id": "3d4b2c6e",
+              "response_id": "3d4b2c6e",
+              "task_id": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr295-seller/wire/003-b272ef6416224757b633c942867ad996.json",
+              "sha256": "c0a4d116cc38b71af9714d50bdea9adb626cf979f8c7412f2e9cdd4469fac35c",
+              "request_id": "9d00d920",
+              "response_id": "9d00d920",
+              "task_id": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+              "requested_task_id": "86298548-94c1-4b2e-9e9b-649befadcbd6",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "price": 120.0,
+                "item": "lamp",
+                "seller": "Week06 Furniture Market"
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-pr292-buyer",
+          "buyer": "pr292",
+          "seller": "kit",
+          "participant": "pr292",
+          "actual_role": "buyer",
+          "price": 100.0,
+          "completed_valid": true,
+          "elapsed_seconds": 97.191,
+          "rpc_count": 4,
+          "evidence_scope": "wire_receipt_only",
+          "execution_scope": {
+            "buyer": "controlled_codex_transport",
+            "seller": "fixed_counterpart"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-buyer/wire/003-cd6448cb9cef40b09ebabd824d884a00.json",
+              "sha256": "711bc1753c9072be30ddfacdf1745166512fbfd793a8f87bb75b60ad439da090",
+              "request_id": "ee75d038",
+              "response_id": "ee75d038",
+              "task_id": "d8766146-2fd4-43ed-865a-e48dd1ede9a1",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-buyer/wire/004-5615f3fb38b6481da3d0d90f584d024e.json",
+              "sha256": "c2b714c04493953d2002de530303e7975c52da91d14917452fe831e32b1fe1dd",
+              "request_id": "38df0688",
+              "response_id": "38df0688",
+              "task_id": "d8766146-2fd4-43ed-865a-e48dd1ede9a1",
+              "requested_task_id": "d8766146-2fd4-43ed-865a-e48dd1ede9a1",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-buyer/wire/005-fa910182e5374e71b5fdfb79f983d9c7.json",
+              "sha256": "8dc1d7d8fbb43a27865e601754e3eb44e9fb4cd20a0adf879da15ea32f0261c7",
+              "request_id": "d1e1704e",
+              "response_id": "d1e1704e",
+              "task_id": "d8766146-2fd4-43ed-865a-e48dd1ede9a1",
+              "requested_task_id": "d8766146-2fd4-43ed-865a-e48dd1ede9a1",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-buyer/wire/006-04ddefc49beb43cebade40057a4159ff.json",
+              "sha256": "3a249eb7f1d427a6fba5ef0493573dfe0b8811124277bdbc0fd9dff865deffb9",
+              "request_id": "c57ea9b0",
+              "response_id": "c57ea9b0",
+              "task_id": "d8766146-2fd4-43ed-865a-e48dd1ede9a1",
+              "requested_task_id": "d8766146-2fd4-43ed-865a-e48dd1ede9a1",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "item": "lamp",
+                "seller": "Kit Shop",
+                "price": 100.0
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-pr292-seller",
+          "buyer": "kit",
+          "seller": "pr292",
+          "participant": "pr292",
+          "actual_role": "seller",
+          "price": 115.0,
+          "completed_valid": true,
+          "elapsed_seconds": 97.704,
+          "rpc_count": 3,
+          "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+          "execution_scope": {
+            "buyer": "fixed_counterpart",
+            "seller": "controlled_codex_transport"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-seller/wire/002-873a694a95e642de8833bec9f736d32c.json",
+              "sha256": "1d4072444fcbbe4e4b441ac6261753605eb7a8579c51a47e139e4bdcc9d0b579",
+              "request_id": "3a853685",
+              "response_id": "3a853685",
+              "task_id": "567695e5-bf1c-4ae9-9c85-df95be84fb38",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-seller/wire/003-7a4aa60a152f4775bc026dde6a623f6e.json",
+              "sha256": "6343bbbaf2e119ccaa5cc2b93d3919b668891ea5afb484269acb83ab02f0fb6d",
+              "request_id": "5ae0862d",
+              "response_id": "5ae0862d",
+              "task_id": "567695e5-bf1c-4ae9-9c85-df95be84fb38",
+              "requested_task_id": "567695e5-bf1c-4ae9-9c85-df95be84fb38",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-seller/wire/004-d46869f52109438fa8bdce34b3f18466.json",
+              "sha256": "b9f0bc1db3fa4f76b9d476c170be3f0e81d79690a80eec853879c767b96f6eb6",
+              "request_id": "6e6f2e32",
+              "response_id": "6e6f2e32",
+              "task_id": "567695e5-bf1c-4ae9-9c85-df95be84fb38",
+              "requested_task_id": "567695e5-bf1c-4ae9-9c85-df95be84fb38",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "price": 115.0,
+                "seller": "Lamp Shop",
+                "item": "lamp"
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-pr291-buyer",
+          "buyer": "pr291",
+          "seller": "kit",
+          "participant": "pr291",
+          "actual_role": "buyer",
+          "price": 100.0,
+          "completed_valid": true,
+          "elapsed_seconds": 16.769,
+          "rpc_count": 2,
+          "evidence_scope": "wire_receipt_only",
+          "execution_scope": {
+            "buyer": "controlled_codex_transport",
+            "seller": "fixed_counterpart"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-buyer/wire/003-fd57d1e5bd064686bd82beffaf63216d.json",
+              "sha256": "fdd8f2e1588b7920c9cde1bab77dce14d30fc899391668b46beaa7a2e5b3c72b",
+              "request_id": "ec38a414-44cd-427b-a90a-443487986dc6",
+              "response_id": "ec38a414-44cd-427b-a90a-443487986dc6",
+              "task_id": "d5ec9f0d-3cea-4fd3-9997-f6072f352d22",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-buyer/wire/004-0ce83095be2a41258e1d56b0bd12256d.json",
+              "sha256": "da935d0f7c21113454ef3fdc15240dc23a0df833eced2257005520285fe9368b",
+              "request_id": "5b972a1a-13b5-4e96-a3f7-541e3d29228b",
+              "response_id": "5b972a1a-13b5-4e96-a3f7-541e3d29228b",
+              "task_id": "d5ec9f0d-3cea-4fd3-9997-f6072f352d22",
+              "requested_task_id": "d5ec9f0d-3cea-4fd3-9997-f6072f352d22",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "item": "lamp",
+                "seller": "Kit Shop",
+                "price": 100.0
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-pr291-seller",
+          "buyer": "kit",
+          "seller": "pr291",
+          "participant": "pr291",
+          "actual_role": "seller",
+          "price": 115.0,
+          "completed_valid": true,
+          "elapsed_seconds": 62.388,
+          "rpc_count": 4,
+          "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+          "execution_scope": {
+            "buyer": "fixed_counterpart",
+            "seller": "controlled_codex_transport"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-seller/wire/002-dec83e51d94c462d85d4a9fb29a3d459.json",
+              "sha256": "b4947de8306dbbd361cb715c8c10aa005ce286bea9aaca3eb1e5b15d46fd1799",
+              "request_id": "7494d976",
+              "response_id": "7494d976",
+              "task_id": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-seller/wire/003-0a8625ffebd740408fd3be482e5e24c4.json",
+              "sha256": "d0f356b2f898b99b1d8d54d3977424791111be9e176ebd454b9ff22f477011ce",
+              "request_id": "0dec5ec3",
+              "response_id": "0dec5ec3",
+              "task_id": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+              "requested_task_id": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-seller/wire/004-5ad5780d28dd468d9aaf2d4a396a0a74.json",
+              "sha256": "23f7230bf79cee167fb961743cc9992594cf25fa40d9d11ba38fe2c66dc8dcb0",
+              "request_id": "760657a1",
+              "response_id": "760657a1",
+              "task_id": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+              "requested_task_id": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-seller/wire/005-236e8155ba924a80b1a8fb1bc6e7490c.json",
+              "sha256": "eaaf7df75d14ee8d98aea490269780764744f0ecf6ccce3c02b4add4dc89032e",
+              "request_id": "20b1ca09",
+              "response_id": "20b1ca09",
+              "task_id": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+              "requested_task_id": "1d7d5218-1a01-446b-ae2b-f9671cb98e9b",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "price": 115.0,
+                "item": "lamp",
+                "seller": "Lamp Shop"
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-pr290-buyer",
+          "buyer": "pr290",
+          "seller": "kit",
+          "participant": "pr290",
+          "actual_role": "buyer",
+          "price": 120.0,
+          "completed_valid": true,
+          "elapsed_seconds": 15.161,
+          "rpc_count": 2,
+          "evidence_scope": "wire_receipt_only",
+          "execution_scope": {
+            "buyer": "controlled_codex_transport",
+            "seller": "fixed_counterpart"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr290-buyer/wire/003-c6e4aa356cd647ac94840f7081acff87.json",
+              "sha256": "15b3619f77c09248300f03c5f8d5c96fba82867244a09316a5ca30b84c872fc2",
+              "request_id": "7a542c69-b28d-4ee2-b082-2dea4e667a6c",
+              "response_id": "7a542c69-b28d-4ee2-b082-2dea4e667a6c",
+              "task_id": "73fee91d-4197-4090-8927-348eb10c19f6",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr290-buyer/wire/004-1f486d9de9604bd78f78793f3511d175.json",
+              "sha256": "e6c33de15bf053c49ba7f19d3b677188de74e37eaf36552cc052afdebc3e0579",
+              "request_id": "24f5f0b5-502a-4b4d-8a6d-9dbbe3a249dd",
+              "response_id": "24f5f0b5-502a-4b4d-8a6d-9dbbe3a249dd",
+              "task_id": "73fee91d-4197-4090-8927-348eb10c19f6",
+              "requested_task_id": "73fee91d-4197-4090-8927-348eb10c19f6",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "item": "lamp",
+                "seller": "Kit Shop",
+                "price": 120.0
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-pr290-seller",
+          "buyer": "kit",
+          "seller": "pr290",
+          "participant": "pr290",
+          "actual_role": "seller",
+          "price": 120.0,
+          "completed_valid": true,
+          "elapsed_seconds": 93.599,
+          "rpc_count": 3,
+          "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+          "execution_scope": {
+            "buyer": "fixed_counterpart",
+            "seller": "controlled_codex_transport"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr290-seller/wire/002-395fb7bfbf7241678343ef28c940e4be.json",
+              "sha256": "b68a16e074096806e58198cd097d1bdb90b4d73a1abba1053a18a8df72c093dd",
+              "request_id": "ba1b62c3",
+              "response_id": "ba1b62c3",
+              "task_id": "591b2dcb-caa4-43df-b3e8-17d3cc5f5760",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr290-seller/wire/003-cfec9df86d7349e08bb21627d072b471.json",
+              "sha256": "d711eb83e786ca75e51030cf3896dffabf1911748851d7ce16449c54f9b66440",
+              "request_id": "24981e05",
+              "response_id": "24981e05",
+              "task_id": "591b2dcb-caa4-43df-b3e8-17d3cc5f5760",
+              "requested_task_id": "591b2dcb-caa4-43df-b3e8-17d3cc5f5760",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr290-seller/wire/004-e8df5ad8377f439d84e4203314b1d2de.json",
+              "sha256": "de80ec3c026e44595c8825de7e738c995df99345f85f355c6ba420e845c8cda7",
+              "request_id": "bc4ed445",
+              "response_id": "bc4ed445",
+              "task_id": "591b2dcb-caa4-43df-b3e8-17d3cc5f5760",
+              "requested_task_id": "591b2dcb-caa4-43df-b3e8-17d3cc5f5760",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "price": 120.0,
+                "item": "lamp",
+                "seller": "Arun A2A Seller"
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-pr289-buyer",
+          "buyer": "pr289",
+          "seller": "kit",
+          "participant": "pr289",
+          "actual_role": "buyer",
+          "price": 105.0,
+          "completed_valid": true,
+          "elapsed_seconds": 49.781,
+          "rpc_count": 2,
+          "evidence_scope": "wire_receipt_only",
+          "execution_scope": {
+            "buyer": "controlled_codex_transport",
+            "seller": "fixed_counterpart"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr289-buyer/wire/003-c242d44b4ce1465388891ba3dd06f097.json",
+              "sha256": "2cfa5164c30f7115c3260615d032f786369a597dabea57aca4b0b1772d98473d",
+              "request_id": "e023df6e-c70c-4a7b-9ffe-87f09adc9657",
+              "response_id": "e023df6e-c70c-4a7b-9ffe-87f09adc9657",
+              "task_id": "d10ee946-3053-47d6-a5c6-f45d9e429064",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr289-buyer/wire/004-9dcd2663fbd1431d9e431935234f9f38.json",
+              "sha256": "62f5426780449e19882dbe3ebdd8b5f7d1527d0821258814d8be2d593de5a873",
+              "request_id": "9c2a5e56-df23-4f82-8ddd-d2e5a7d1d7e1",
+              "response_id": "9c2a5e56-df23-4f82-8ddd-d2e5a7d1d7e1",
+              "task_id": "d10ee946-3053-47d6-a5c6-f45d9e429064",
+              "requested_task_id": "d10ee946-3053-47d6-a5c6-f45d9e429064",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "item": "lamp",
+                "seller": "Kit Shop",
+                "price": 105.0
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-pr289-seller",
+          "buyer": "kit",
+          "seller": "pr289",
+          "participant": "pr289",
+          "actual_role": "seller",
+          "price": 120.0,
+          "completed_valid": true,
+          "elapsed_seconds": 83.851,
+          "rpc_count": 2,
+          "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+          "execution_scope": {
+            "buyer": "fixed_counterpart",
+            "seller": "controlled_codex_transport"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr289-seller/wire/002-ad3e09f9e7c74efa876681d1be69337f.json",
+              "sha256": "f36e81179c76545a75e417fc54eb27f375e5ee90fff2877d1ec6ba2b0aaf61ed",
+              "request_id": "f5beaa57",
+              "response_id": "f5beaa57",
+              "task_id": "88d69d85-a906-4c31-a57e-40d10d4ded61",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr289-seller/wire/003-29f77ea805254ac8ad6cbc671ac0e895.json",
+              "sha256": "e25e1faaf007c08824278ebb38e9e0bb04ae073f04c49b360114ae59ed7b60f1",
+              "request_id": "bf031c2f",
+              "response_id": "bf031c2f",
+              "task_id": "88d69d85-a906-4c31-a57e-40d10d4ded61",
+              "requested_task_id": "88d69d85-a906-4c31-a57e-40d10d4ded61",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "seller": "Lamp Shop",
+                "price": 120.0,
+                "item": "lamp"
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-pr288-buyer",
+          "buyer": "pr288",
+          "seller": "kit",
+          "participant": "pr288",
+          "actual_role": "buyer",
+          "price": 100.0,
+          "completed_valid": true,
+          "elapsed_seconds": 33.325,
+          "rpc_count": 2,
+          "evidence_scope": "wire_receipt_only",
+          "execution_scope": {
+            "buyer": "controlled_codex_transport",
+            "seller": "fixed_counterpart"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-buyer/wire/003-5e1144a39a164f259bb375003b554546.json",
+              "sha256": "041223a9f0e5e86044afe5ed901b2ddce757eedebf3c8dbfa1acb53b0c72347c",
+              "request_id": "172a086c",
+              "response_id": "172a086c",
+              "task_id": "c85d4eff-dd96-4c84-8959-dd367df1915a",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-buyer/wire/004-bc5724afa6774ffcbc805983abb2df97.json",
+              "sha256": "f071714c0c4928a7234fe5654de41033fcfd241600da9ca1154b809b260fbf23",
+              "request_id": "6fd828f8",
+              "response_id": "6fd828f8",
+              "task_id": "c85d4eff-dd96-4c84-8959-dd367df1915a",
+              "requested_task_id": "c85d4eff-dd96-4c84-8959-dd367df1915a",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "item": "lamp",
+                "seller": "Kit Shop",
+                "price": 100.0
+              }
+            }
+          ]
+        },
+        {
+          "id": "r01-lamp-pr288-seller",
+          "buyer": "kit",
+          "seller": "pr288",
+          "participant": "pr288",
+          "actual_role": "seller",
+          "price": 120.0,
+          "completed_valid": true,
+          "elapsed_seconds": 132.038,
+          "rpc_count": 5,
+          "evidence_scope": "fixed_buyer_final_task_and_wire_receipt",
+          "execution_scope": {
+            "buyer": "fixed_counterpart",
+            "seller": "controlled_codex_transport"
+          },
+          "wire_checks_passed": true,
+          "wire_evidence": [
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-seller/wire/002-c5e9ac0247be4ed1a63ac23ea630e7f7.json",
+              "sha256": "5c1142add8b7fc4d7b89fea4614d852e014dd4a22065bd07898ae06909356c70",
+              "request_id": "1bf13786",
+              "response_id": "1bf13786",
+              "task_id": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+              "requested_task_id": null,
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-seller/wire/003-9324dc8ca487473c8c986b0d3fefb90b.json",
+              "sha256": "ba3b08fbd318d1b251eedb225a1f020b2d30fb23e0cc06d2580b5862c6730d2b",
+              "request_id": "804a8d51",
+              "response_id": "804a8d51",
+              "task_id": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+              "requested_task_id": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-seller/wire/004-82285a1a0bb24f4e80f7467ea921cddf.json",
+              "sha256": "d3d195490d60172024399b2a61d59f3df4a785c1aa059e7b9d1b1f603c821f0a",
+              "request_id": "185c1aa2",
+              "response_id": "185c1aa2",
+              "task_id": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+              "requested_task_id": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-seller/wire/005-eb276ff14cde4268a77960c612dcd96b.json",
+              "sha256": "a31ef8bde2f46b6fcd5f4afff04a7eb94769e4af5e11d7f88fb200ce45a308ad",
+              "request_id": "070caedb",
+              "response_id": "070caedb",
+              "task_id": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+              "requested_task_id": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_INPUT_REQUIRED"
+            },
+            {
+              "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-seller/wire/006-63cf4c9751c14564ae3d71c589d9c033.json",
+              "sha256": "7833fbdda853dcfd685e73bf9a10c2e46a574061aeb378f19d7b0cbd609a4d5a",
+              "request_id": "03b88da6",
+              "response_id": "03b88da6",
+              "task_id": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+              "requested_task_id": "31b9be46-7245-4e27-88c5-c54d31f6fa0c",
+              "a2a_version": "1.0",
+              "state": "TASK_STATE_COMPLETED",
+              "receipt": {
+                "seller": "Haiku Furniture Shop",
+                "item": "lamp",
+                "price": 120.0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "own_model_headers": [
+    {
+      "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r01-lamp-ours-buyer/buyer-trace/buyer-ee934a1cdd79-106dd27b.stderr.txt",
+      "sha256": "8ef664ba322267e75f2003718f5f9271fde7f7e33cbaa5ad38c003d9c340dce8",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "low"
+    },
+    {
+      "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r01-lamp-ours-seller/agent-trace/seller-576c8ad6a2ec-02caad5a.stderr.txt",
+      "sha256": "70534343a77783287cef3f3809721c749180e69898e78f337a931199a031be59",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "low"
+    },
+    {
+      "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r01-lamp-ours-seller/agent-trace/seller-576c8ad6a2ec-58b8bcab.stderr.txt",
+      "sha256": "03d78b0a2b1eba0797a3732acee81206d716cb4fd14b16b6e76f2700f6d06aa2",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "low"
+    },
+    {
+      "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r01-lamp-ours-seller/agent-trace/seller-576c8ad6a2ec-ab3d7fec.stderr.txt",
+      "sha256": "2478379ae27c32fdf9774af5256d2bc99793b9888613772e8a131f83938bc82d",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "low"
+    },
+    {
+      "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r02-lamp-ours-buyer/buyer-trace/buyer-12efc6047570-1786c34b.stderr.txt",
+      "sha256": "bdc565e48f12a8f13fa1bcbb59d1ff530e398d397d6ffd9bea044ff784f03f94",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "low"
+    },
+    {
+      "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r02-lamp-ours-seller/agent-trace/seller-1f9ee4b3e7ca-d3cee273.stderr.txt",
+      "sha256": "de7a59d063b0b1aae8bb7175738d0472ad21dcfdeb81c69ed64744d0132e6d4d",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "low"
+    },
+    {
+      "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r02-lamp-ours-seller/agent-trace/seller-1f9ee4b3e7ca-3165a041.stderr.txt",
+      "sha256": "6efc20db7f8ff8cbbd65f1c65f81de8aeb3f372c3d53325c37ca08cebe15cc58",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "low"
+    },
+    {
+      "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r02-lamp-ours-seller/agent-trace/seller-1f9ee4b3e7ca-bc86f10d.stderr.txt",
+      "sha256": "aa964c0715f13a5ffe7a72e59219ed381725d38c7f84e5f95a16b89b6aba84a7",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "low"
+    },
+    {
+      "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r03-lamp-ours-buyer/buyer-trace/buyer-c4aec96a4ce1-a34229b2.stderr.txt",
+      "sha256": "4fce3a957a360b1eb3735d89ec0e6cd6a0fd3a490788e591a014354603afd7cb",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "low"
+    },
+    {
+      "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r03-lamp-ours-seller/agent-trace/seller-85564f65b8bb-d01d0aab.stderr.txt",
+      "sha256": "20c4edc627efb428aacea3d76ddc86a8570ff595d6a6f8982d9fce1cae215cbe",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "low"
+    },
+    {
+      "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r03-lamp-ours-seller/agent-trace/seller-85564f65b8bb-455ff44e.stderr.txt",
+      "sha256": "e12a7a7a705c47e7bac43ff71f1a9e0b89b1c57844713341e8bc1f2da394af84",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "low"
+    },
+    {
+      "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-native-confirm/r03-lamp-ours-seller/agent-trace/seller-85564f65b8bb-20ea2803.stderr.txt",
+      "sha256": "4c29f9a04ab1f4df96274cab4533ad0a75abd05dcab43462e50ab292cf9f5891",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "low"
+    }
+  ],
+  "controlled_model_records": [
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-buyer/buyer-transport/353fde9177e14d91af1b25d87379ea1d/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-buyer/buyer-transport/353fde9177e14d91af1b25d87379ea1d/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-seller/transport/38bb1023b4ef4ca1bd23c27f62048667/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-seller/transport/38bb1023b4ef4ca1bd23c27f62048667/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-seller/transport/7130d934a3504046845edfa1f564c5c3/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-seller/transport/7130d934a3504046845edfa1f564c5c3/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-seller/transport/d0ac755347454d288e43ffe4a39f6d90/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-seller/transport/d0ac755347454d288e43ffe4a39f6d90/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-seller/transport/d543c196a4024de4ade481962cea29ba/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr288-seller/transport/d543c196a4024de4ade481962cea29ba/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr289-buyer/buyer-transport/0166987cc0394c20afa89e68d98aac62/request.json",
+      "source": "codex-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr289-buyer/buyer-transport/0166987cc0394c20afa89e68d98aac62/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr289-seller/transport/9100bc179c9c4be081a4697bd6c613d0/request.json",
+      "source": "codex-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr289-seller/transport/9100bc179c9c4be081a4697bd6c613d0/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr289-seller/transport/9ecc12da17184b6a9a0c73347b431579/request.json",
+      "source": "codex-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr289-seller/transport/9ecc12da17184b6a9a0c73347b431579/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-buyer/buyer-transport/f9be4b5e9b2242de8455afe1e6d7df36/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-buyer/buyer-transport/f9be4b5e9b2242de8455afe1e6d7df36/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-seller/transport/16a3a4a185f642029c845f708636b5cc/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-seller/transport/16a3a4a185f642029c845f708636b5cc/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-seller/transport/2e4ab32c95834a9c99345264f3d6f24c/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-seller/transport/2e4ab32c95834a9c99345264f3d6f24c/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-seller/transport/481c4cd6ee314d68a14050d8a6e96bc1/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-seller/transport/481c4cd6ee314d68a14050d8a6e96bc1/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-seller/transport/5b5392443c404e6f99f59fedf517c4e3/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr291-seller/transport/5b5392443c404e6f99f59fedf517c4e3/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-buyer/buyer-transport/3d38e8514aec458ca0a6be3eff519d45/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-buyer/buyer-transport/3d38e8514aec458ca0a6be3eff519d45/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-buyer/buyer-transport/d29d2536fa2a476fa3ca5cd863bb435b/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-buyer/buyer-transport/d29d2536fa2a476fa3ca5cd863bb435b/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-buyer/buyer-transport/e03a654ee56b49dab578e446b92d83b4/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-buyer/buyer-transport/e03a654ee56b49dab578e446b92d83b4/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-seller/transport/00a6b46620114da4aefbf1aa85fd4ad1/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-seller/transport/00a6b46620114da4aefbf1aa85fd4ad1/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-seller/transport/157e4f626b3b4925a113c2305b40491c/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-seller/transport/157e4f626b3b4925a113c2305b40491c/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-seller/transport/36b5ff27156544fe87d28ea22421d881/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr292-seller/transport/36b5ff27156544fe87d28ea22421d881/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-buyer/buyer-transport/3c0a29eb84944f75ab964751f9f495e6/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-buyer/buyer-transport/3c0a29eb84944f75ab964751f9f495e6/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-seller/transport/25776c4e2ccc44cdb3b9aae2f950a525/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-seller/transport/25776c4e2ccc44cdb3b9aae2f950a525/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-seller/transport/3ba2b451c19a45ee854ef660fe8a3268/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-seller/transport/3ba2b451c19a45ee854ef660fe8a3268/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-seller/transport/50e0536a28584329a65f1548225d59ea/request.json",
+      "source": "claude-cli",
+      "source_scope": "per_match_cli",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/peers-controlled-screen/r01-lamp-pr296-seller/transport/50e0536a28584329a65f1548225d59ea/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/4cae69fb0f0141fa8b5fd83ad090a269/request.json",
+      "source": "openai-compatible-http",
+      "source_scope": "shared_global_only",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/4cae69fb0f0141fa8b5fd83ad090a269/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/4d1fe7748cc6433da27839e0ada5784a/request.json",
+      "source": "openai-compatible-http",
+      "source_scope": "shared_global_only",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/4d1fe7748cc6433da27839e0ada5784a/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/9b622b447e874537a6672a99e42bfd66/request.json",
+      "source": "openai-compatible-http",
+      "source_scope": "shared_global_only",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/9b622b447e874537a6672a99e42bfd66/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/9bf0e37f51dc4fd684a0d8525fbb14b4/request.json",
+      "source": "openai-compatible-http",
+      "source_scope": "shared_global_only",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/9bf0e37f51dc4fd684a0d8525fbb14b4/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/a69a8823f4c44d7982eb7e0ed91a379e/request.json",
+      "source": "openai-compatible-http",
+      "source_scope": "shared_global_only",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/a69a8823f4c44d7982eb7e0ed91a379e/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/dac86810b9f745f984d1843756ce75ad/request.json",
+      "source": "openai-compatible-http",
+      "source_scope": "shared_global_only",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/dac86810b9f745f984d1843756ce75ad/stderr.txt"
+    },
+    {
+      "request_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/e2ee67417d4243118f9a356cb86f981d/request.json",
+      "source": "openai-compatible-http",
+      "source_scope": "shared_global_only",
+      "model_identity_process_and_completion_verified": true,
+      "stderr_path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/controlled-http-calls/e2ee67417d4243118f9a356cb86f981d/stderr.txt"
+    }
+  ],
+  "cross_review": {
+    "mapping": "role=buyer maps named peer buyer -> ours seller; role=seller maps ours buyer -> named peer seller. Labels are currently correct.",
+    "isolation": "Main loop schedules matches sequentially. Each match starts a fresh seller subprocess, fresh buyer subprocess and fresh localhost proxy/port; each Codex transport invocation is ephemeral. Native state in peer submission directories may persist only if that peer explicitly writes state; source hashes alone do not prove no external/shared state.",
+    "fairness_requirements": [
+      "Finish other inference jobs before cross runs; a shared FIFO can add queue time that consumes original buyer HTTP timeouts.",
+      "Keep peer sources, own stage source commit, policy files, model/reasoning, fixed fixture, item, budget, execution mode, runner and adapter versions pinned.",
+      "Compare actual directions separately; per-party budgets/reserves differ in meaning and seller reserve is not verified accounting cost.",
+      "Do not change original peer timeouts for a native claim. A timeout is an observed compatibility failure, not necessarily negotiation-policy failure."
+    ],
+    "validator_known_scope": [
+      "Current completion evidence verifies HTTP success, JSON-RPC IDs/version, completed task receipt, finite numeric price, item aliases and optional task ID; a legacy peer buyer may be wire_receipt_only rather than independent buyer-receipt confirmation.",
+      "The completion extractor does not itself gate A2A-Version HTTP headers or full earlier task continuity; both were independently checked for every audited run here. Future cross raw audit remains necessary.",
+      "Quantity is not a classification gate; every priced receipt in the audited runs had unit quantity when supplied."
+    ],
+    "timeout_snapshot_caveat": {
+      "fact": "Result evidence is snapshotted before server/proxy cleanup. A timed-out in-flight RPC may finish or fail after that snapshot; a failed match does not prove no remote completion.",
+      "observed_example": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/logs/improvements/20261015/baseline-pr289-native-cross/r01-lamp-pr289-buyer/result.json",
+      "saved_wire_rejections": [],
+      "raw_post_rows_after_cleanup": 1,
+      "raw_post_errors": [
+        "RemoteProtocolError: Server disconnected without sending a response."
+      ],
+      "queue_events": [
+        "enqueued"
+      ]
+    },
+    "code_references": {
+      "cross_role_mapping": {
+        "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/benchmark_a2a.py",
+        "lines": [
+          556
+        ]
+      },
+      "sequential_match_schedule": {
+        "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/benchmark_a2a.py",
+        "lines": [
+          548
+        ]
+      },
+      "fresh_seller": {
+        "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/benchmark_a2a.py",
+        "lines": [
+          463
+        ]
+      },
+      "fresh_buyer": {
+        "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/benchmark_a2a.py",
+        "lines": [
+          484
+        ]
+      },
+      "evidence_snapshot": {
+        "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/benchmark_a2a.py",
+        "lines": [
+          495
+        ]
+      },
+      "server_cleanup": {
+        "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/benchmark_a2a.py",
+        "lines": [
+          508
+        ]
+      },
+      "proxy_cleanup": {
+        "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-06/benchmark_a2a.py",
+        "lines": [
+          513
+        ]
+      }
+    }
+  },
+  "limits": [
+    "Original baseline cf0ed87 has 3 observations per role; each peer controlled result has only 1 observation per role. These are not equal-sample causal treatment/control cohorts.",
+    "All values here are lamp/budget120/reserve100 fixed-counterpart screens, not actual peer-versus-ours cross outcomes.",
+    "Controlled peers use real gpt-6-sol/low rehosting, not original Haiku/Ollama/Groq providers; peer behavior includes different prompts, clamps and retries.",
+    "The two cohorts used different runner SHA values; independent raw audit confirms recorded outcomes but does not silently equate runner versions.",
+    "No rank, statistical dominance, general win rate, or causal RL/replanning gain is established.",
+    "Latency includes shared FIFO queue, cooldown and CLI startup; this is not pure model generation latency.",
+    "Native peer Codex default model identity is not pinned or retained by its original successful harness logs; do not label native PR289 gpt-6-sol/low without separate execution evidence.",
+    "Original screen prior to baseline confirmation (buyer110/seller120, n1) remains a separate archived run, not merged into this n3 baseline."
+  ]
+}
