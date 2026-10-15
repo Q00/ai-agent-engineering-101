@@ -1,0 +1,22 @@
+{"event": "policy_loaded", "policy_sha256": "07829f68cf786dc71eee06fafb7cf988722e22b6b85e4b4e7453e0c1561508fb", "policy_version": "synthetic-bandit-s42-n5000"}
+{"event": "agent_card", "base_url": "https://a2a-lamp-shop.thisjonghoon.workers.dev"}
+{"event": "rpc_request", "endpoint": "https://a2a-lamp-shop.thisjonghoon.workers.dev/", "version": "1.0"}
+{"event": "rpc_response"}
+{"event": "harness_request", "model": "gpt-6-sol", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 8.373}
+{"event": "harness_decision", "decision": {"action": "offer", "price": 95, "item_id": "lamp", "offer": null, "reason": "The asking price is 250 credits, above my 120-credit budget. I can offer 95 credits."}}
+{"event": "rpc_request", "endpoint": "https://a2a-lamp-shop.thisjonghoon.workers.dev/", "version": "1.0"}
+{"event": "rpc_response"}
+{"event": "harness_request", "model": "gpt-6-sol", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 13.72}
+{"event": "harness_decision", "decision": {"action": "offer", "price": 110, "item_id": "lamp", "offer": null, "reason": "I can raise my offer to 110 credits for the lamp."}}
+{"event": "rpc_request", "endpoint": "https://a2a-lamp-shop.thisjonghoon.workers.dev/", "version": "1.0"}
+{"event": "rpc_response"}
+{"event": "harness_request", "model": "gpt-6-sol", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 14.516}
+{"event": "harness_decision", "decision": {"action": "offer", "price": 120, "item_id": "lamp", "offer": null, "reason": "My budget tops out at 120 credits. I can offer 120 for the lamp."}}
+{"event": "rpc_request", "endpoint": "https://a2a-lamp-shop.thisjonghoon.workers.dev/", "version": "1.0"}
+{"event": "rpc_response"}
+{"event": "receipt_checked", "issues": [], "receipt": {"seller": "Llama Furniture Shop on Workers", "item": "lamp", "price": 120}}
+{"event": "purchase_completed", "receipt": {"seller": "Llama Furniture Shop on Workers", "item": "lamp", "price": 120}, "ledger": {"version": 1, "total_budget": 120.0, "committed_total": 120.0, "reserved_total": 0.0, "available_budget": 0.0, "purchases": {"6ddf4de2f3c646ea82c14c039bde73c9": {"purchase_id": "6ddf4de2f3c646ea82c14c039bde73c9", "item_key": "lamp", "expected_item": "lamp", "seller_origin": "https://a2a-lamp-shop.thisjonghoon.workers.dev", "expected_quote_id": null, "price": 95.0, "state": "released", "committed": false, "receipt": null, "disputed_reasons": []}, "862e1e2344c9498fa04b52a0804ca854": {"purchase_id": "862e1e2344c9498fa04b52a0804ca854", "item_key": "lamp", "expected_item": "lamp", "seller_origin": "https://a2a-lamp-shop.thisjonghoon.workers.dev", "expected_quote_id": null, "price": 110.0, "state": "released", "committed": false, "receipt": null, "disputed_reasons": []}, "b5ea58aff0af4d6c872a0ddbdd927f2d": {"purchase_id": "b5ea58aff0af4d6c872a0ddbdd927f2d", "item_key": "lamp", "expected_item": "lamp", "seller_origin": "https://a2a-lamp-shop.thisjonghoon.workers.dev", "expected_quote_id": null, "price": 120.0, "state": "committed", "committed": true, "receipt": {"seller": "Llama Furniture Shop on Workers", "item": "lamp", "price": 120}, "disputed_reasons": []}}}}
+{"status": "completed", "receipt": {"seller": "Llama Furniture Shop on Workers", "item": "lamp", "price": 120}}
