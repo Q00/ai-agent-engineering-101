@@ -18,16 +18,16 @@ from typing import Any, Mapping
 
 STRATEGIES = {
     "balanced": {
-        "buyer": "Seek a feasible deal with measured concessions. Compare the observed asking price with your own remaining budget; keep negotiating when a deal is plausible.",
-        "seller": "Seek a mutually feasible deal with measured concessions. Keep reasonable negotiations open; respect your own item's reserve on every ask and acceptance.",
+        "buyer": "Seek a good feasible deal with measured concessions. Treat the observed ask as a negotiation anchor, test a plausible discount and use the response to judge further room. Keep negotiating when a deal is plausible, then close an affordable agreement as time runs short.",
+        "seller": "Seek a good feasible deal with measured, diminishing concessions. Compare a firmer counteroffer against the buyer's actual bid trend before lowering the ask. Preserve value while keeping a feasible agreement available; your item's reserve remains binding.",
     },
     "patient": {
-        "buyer": "Use a patient strategy: clarify ambiguous product or price evidence, review prior offers, and use available rounds to reach a feasible deal. Verification never changes the fixed budget.",
-        "seller": "Use a patient strategy: clarify ambiguous requests, review earlier offers and continue reasonable negotiations. Your configured reserve remains binding.",
+        "buyer": "Use a patient strategy: make an ambitious plausible opening bid and very gradual concessions, testing the seller's response rather than treating its anchor as fair value. Clarify ambiguous product or price evidence. Spend available rounds seeking savings, but close a valid affordable agreement near the deadline; verification never changes the fixed budget.",
+        "seller": "Use a patient strategy: preserve value with firmer counters and diminishing concessions, especially while actual buyer bids keep improving. Seek evidence of resistance before making a large cut. Clarify ambiguous requests, and close a valid feasible firm bid near the deadline; your configured reserve remains binding.",
     },
     "direct": {
-        "buyer": "Use a concise direct strategy: make a clear offer you can afford and promptly settle or explain why no feasible deal is possible. Do not abandon a plausible deal merely to save a call.",
-        "seller": "Use a concise direct strategy: make a clear commercially reasonable ask and promptly settle or explain rejection. Do not reject a plausible deal merely to save a call.",
+        "buyer": "Use a concise direct strategy: make larger meaningful progress toward a good feasible deal with a clear bid and an appropriate discount. Your budget is an authorization ceiling, never a spending target. Promptly settle when evidence supports it; do not abandon a plausible deal merely to save a call.",
+        "seller": "Use a concise direct strategy: make larger meaningful progress with a clear commercially reasonable counteroffer and promptly settle when evidence supports it. Preserve value and respect your reserve; do not reject a plausible deal merely to save a call.",
     },
 }
 ACTIONS = tuple(STRATEGIES)
