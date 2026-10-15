@@ -4,6 +4,8 @@
 
 현재 운영에 필요한 소스·스키마·카탈로그·고정 정책·회귀 검사와 제출 문서만 유지했습니다. 이전 학습 도구·후보·비교 실행기·이미지·로그는 Git 이력 `4762fd350bb5891fb02d70eb2e4d0f26d8354fc7`에 남아 있습니다. 아래 명령으로 새 로그와 공식 보고서를 생성합니다. 과거 측정값은 새 실행의 통과 근거가 아닙니다.
 
+제출 로그는 공식 키트 출력과 필수 도전 1·2의 통신·판단·결과·상점 설정·원장으로 한정했습니다. 별도 CLI 출력·공식 상세 추적·감사 메타데이터는 [검증 당시 커밋](https://github.com/SUNGMYEONGGI/ai-agent-engineering-101/tree/877adeefb898cde2b12e350cf8f0a4dff2a5bddd/submissions/26510358/week-06/logs)에 보존했습니다.
+
 ## 실행 준비
 
 Linux·WSL·macOS와 Python 3.10 이상이 필요하며 3.12를 권장합니다. 아래는 **저장소 루트**에서 실행합니다. 가상환경은 제출 폴더 밖에 만듭니다.
@@ -34,7 +36,7 @@ python3 seller.py --port 9999
 python3 buyer.py --url http://127.0.0.1:9999 --item lamp --budget 120
 ```
 
-Agent Card는 `http://127.0.0.1:9999/.well-known/agent-card.json`입니다. `logs/runtime/*.jsonl`에서 `quote_normalized`, `harness_decision`, `receipt_checked`, `purchase_completed`를 확인할 수 있습니다. 판매자 터미널은 거래 관찰 후 `Ctrl+C`로 종료합니다.
+Agent Card는 `http://127.0.0.1:9999/.well-known/agent-card.json`입니다. 직접 실행하면 생성되는 `logs/runtime/*.jsonl`에서 `quote_normalized`, `harness_decision`, `receipt_checked`, `purchase_completed`를 확인할 수 있습니다. 판매자 터미널은 거래 관찰 후 `Ctrl+C`로 종료합니다.
 
 ## 공식 검사와 필수 도전 재현
 
@@ -59,7 +61,7 @@ python3 -m unittest discover -s tests -v
 | `test-report.json` | 공식 거래 검사 결과와 실제 사용한 제출 명령 |
 | `logs/trade-test.log` | 공식 검사 전체 진행·결과 |
 | `logs/seller-under-test.log`, `logs/buyer-under-test-*.log` | 공식 검사에서 실행한 각 프로세스의 출력 |
-| `logs/runtime/*.jsonl` | 기본 하네스 판단·검증·A2A 요청/응답 |
+| `logs/runtime/*.jsonl` | 재실행 시 생성되는 기본 하네스 판단·검증·A2A 요청/응답 |
 | `logs/challenge-1/<실행 ID>/summary.json` | 대규모 카탈로그의 실제 선택 상품·가격·예산 검증 |
 | `logs/challenge-2/<실행 ID>/summary.json` | 20개 상점 탐색·품목별 결과·원장·총예산 검증 |
 

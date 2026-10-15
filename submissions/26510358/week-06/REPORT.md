@@ -4,29 +4,27 @@
 
 ## 정리 후 검증
 
-현재 소스를 새로 실행해 결과를 기록했다. 이전 실행의 `test-report.json`과 로그를 통과 근거로 재사용하지 않았다. 실제 실행 결과와 시각·명령·소스 해시는 `logs/verification/`에 저장했다.
+현재 소스를 새로 실행해 결과를 기록했다. 이전 실행의 `test-report.json`과 로그를 통과 근거로 재사용하지 않았다. 제출 폴더에는 공식 키트 로그 8개, 도전 1의 로그·설정·결과 8개, 도전 2의 로그·설정·Card·원장·결과 74개를 남겼다. 별도 CLI 출력·공식 상세 추적·감사 메타데이터 267개는 제출 필수 항목이 아니므로 제거했다. 원본은 [검증 당시 커밋](https://github.com/SUNGMYEONGGI/ai-agent-engineering-101/tree/877adeefb898cde2b12e350cf8f0a4dff2a5bddd/submissions/26510358/week-06/logs)에 보존돼 있다.
 
 | 항목 | 현재 실행 결과 | 근거 |
 |---|---|---|
-| 현재 코드 회귀 검사 | 157/157 통과 | `logs/verification/unit-final.txt` |
+| 현재 코드 회귀 검사 | 157/157 통과 | [검증 당시 회귀 검사 로그](https://github.com/SUNGMYEONGGI/ai-agent-engineering-101/blob/877adeefb898cde2b12e350cf8f0a4dff2a5bddd/submissions/26510358/week-06/logs/verification/unit-final.txt) |
 | 공식 거래 검사 | 21/21 통과 | `test-report.json`, `logs/trade-test.log` |
 | 필수 도전 1 | 통과: 조건에 맞는 책장 225 | `logs/challenge-1/20261015T092455Z-08c2197f/summary.json` |
 | 필수 도전 2 | 통과: 20개 상점·3개 품목·총 600 | `logs/challenge-2/20261015T092455Z-08c2197f/summary.json` |
-| 제출 구조 검사 | 통과 | `logs/verification/spec-console.txt`, `spec-final.txt` |
+| 제출 구조 검사 | 통과 | `python3 scripts/check_week06.py submissions/26510358/week-06`, [PR CI](https://github.com/Q00/ai-agent-engineering-101/pull/297/checks) |
 
-공식 검사는 2026-10-15 18:07:36 KST에 시작해 1,038.660초에 완료했다. 판매 램프는 115·120·120, 구매 램프는 예산 120에서 102·103·103에 체결됐다. 구매자 예산 230과 판매자 최저가 260이 겹치지 않는 책장 검사는 양쪽 모두 3회씩 무구매로 끝났다. 공식 키트 SHA·명령·필수 항목 수·보고서 생성 시각·소스 불변 검사는 `logs/verification/official-status.json`에 남겼다.
+공식 검사는 2026-10-15 18:07:36 KST에 시작해 1,038.660초에 완료했다. 판매 램프는 115·120·120, 구매 램프는 예산 120에서 102·103·103에 체결됐다. 구매자 예산 230과 판매자 최저가 260이 겹치지 않는 책장 검사는 양쪽 모두 3회씩 무구매로 끝났다. 현재 공식 보고서는 `test-report.json`, 거래 원문은 `logs/trade-test.log`와 판매자·구매자 콘솔 7개에 남아 있다.
 
-공식 검사→필수 도전→제출 구조 검사는 한 번에 하나씩 순차 실행해 18:34:02 KST에 모두 종료했다. `run-summary.json`과 `source-before.json`·`source-after.json`에서 실행 소스·설정·테스트 38개의 SHA와 활성 정책이 동일함을 확인했다. 각 단계는 종료 코드 0, 시간 초과 없음, 추적한 하위 프로세스 잔류 없음이다. Markdown 문서는 결과 확인 후 갱신했다.
+공식 검사→필수 도전→제출 구조 검사는 순차 실행해 18:34:02 KST에 모두 종료했다. 실행 소스·설정·테스트 38개의 SHA와 활성 정책이 같았고 각 단계는 종료 코드 0이었다. 상세 해시·프로세스 정리·실제 CLI 호출 121회의 대조는 [검증 당시 감사 결과](https://github.com/SUNGMYEONGGI/ai-agent-engineering-101/blob/877adeefb898cde2b12e350cf8f0a4dff2a5bddd/submissions/26510358/week-06/logs/verification/independent-audit.json)에서 확인할 수 있다. 이번 추가 정리는 로그와 문서만 변경했으며 실행 소스·설정·테스트는 그대로다.
 
-`official-console.txt`에는 예산 부족 구매자의 종료마다 SDK 경고 `Dispatcher task is not running. Cannot wait for event dispatch.`가 한 번씩, 총 3줄 있다. 테스트 키트의 A2A 이벤트 큐 종료 시 출력됐으며 해당 구매자의 최종 판단은 `walk_away`, 실제 CLI 종료 코드는 모두 0이었다. 거래·예산·헤더·taskId 검사는 통과했고 공식 단계의 잔류 프로세스는 없었다. 경고를 삭제하거나 실패 로그를 통과 기록으로 바꾸지 않았다.
-
-실제 CLI 호출은 공식 79회·도전 1의 11회·도전 2의 31회로 총 121회다. stderr에는 상태 DB 불일치 경고가 총 363줄, 원격 플러그인 카탈로그 갱신 경고가 1줄 있다. 모두 원문을 보존했으며 실제 모델·provider·reasoning effort와 stdout 결정, 종료 코드 0을 대조했다. 로그 근거를 독립 대조한 결과와 경고 분류는 `logs/verification/independent-audit.json`에 기록했다.
+검증 당시 SDK 이벤트 큐 종료 경고 3줄, CLI 상태 DB 경고 363줄, 플러그인 카탈로그 갱신 경고 1줄이 있었으나 모델 호출 종료 코드는 모두 0이었다. 경고 원문과 분류는 위 검증 커밋의 콘솔·stderr·감사 결과에 보존했다.
 
 ## 1. 하네스·모델·정확한 명령
 
 Python 3.12와 `a2a-sdk[http-server]==1.2.2`, `uvicorn==0.54.0`, `httpx==0.28.1`을 사용한다. 협상 하네스는 Codex CLI `0.162.0-alpha.17.2`, 모델 `gpt-6-sol`, reasoning effort `low`다. 구매자·판매자·예산 배분·상점 선택·텍스트 호가 관측마다 역할별 JSON 스키마를 사용한다.
 
-판매자 호출은 다음 형태이며 프롬프트는 stdin으로 전달한다. `<empty-dir>`는 호출마다 새로 만드는 빈 임시 디렉터리다. 실제 절대 경로와 호출 출력은 각 JSONL의 `harness_request`·`harness_exit` 및 stdout/stderr 파일에 남는다.
+판매자 호출은 다음 형태이며 프롬프트는 stdin으로 전달한다. `<empty-dir>`는 호출마다 새로 만드는 빈 임시 디렉터리다. 도전 JSONL의 `harness_request`·`harness_exit`·`harness_decision`에 실제 명령·프롬프트·종료 코드·판단이 남는다. 중복되는 개별 stdout/stderr 파일은 위 검증 커밋에서 확인할 수 있다.
 
 ```bash
 codex exec --skip-git-repo-check --ephemeral --ignore-user-config \
@@ -70,7 +68,7 @@ Ledger.reserve() got an unexpected keyword argument 'seller_origin'
 
 원장과 구매자 인터페이스를 맞추고 검사 중 실행 코드를 바꾸지 않도록 실행 전후 해시를 대조했다. 텍스트 `asking 130.`의 문장 마침표를 소수점 연속으로 오인해 정상 관측을 거절한 [호가 관측 실패](https://github.com/SUNGMYEONGGI/ai-agent-engineering-101/blob/4762fd350bb5891fb02d70eb2e4d0f26d8354fc7/submissions/26510358/week-06/logs/improvements/20261015/stage-01-native-screen/r01-lamp-ours-buyer/buyer-trace/buyer-bdcd6501383d.jsonl)도 있었다. 문장 마침표는 허용하고 `130.50`의 부분 숫자는 거부하도록 수정해 현재 회귀 검사에 남겼다.
 
-정리 후 첫 회귀 실행은 제한된 실행 환경에서 진행이 멈춰 중단했으며 통과로 집계하지 않는다. 원문은 `logs/verification/unit.txt`, 중단 기록은 `unit-restricted-run.json`이다. 같은 테스트를 로컬 HTTP·프로세스 사용이 가능한 환경에서 다시 실행한 결과는 `unit-final.txt`로 구분한다.
+정리 후 첫 회귀 실행은 제한된 실행 환경에서 진행이 멈춰 중단했으며 통과로 집계하지 않는다. [중단한 회귀 검사 원문](https://github.com/SUNGMYEONGGI/ai-agent-engineering-101/blob/877adeefb898cde2b12e350cf8f0a4dff2a5bddd/submissions/26510358/week-06/logs/verification/unit.txt)과 `unit-restricted-run.json`은 같은 검증 커밋에 보존했다. 같은 테스트를 로컬 HTTP·프로세스 사용이 가능한 환경에서 다시 실행한 결과는 위 표의 회귀 검사 로그로 구분해 남겼다.
 
 ## 4. A2A가 정한 것과 별도 거래 합의
 
