@@ -1,0 +1,45 @@
+
+### something wooden to keep about 40 books, not taller than my desk
+  -> 'something wooden to keep about 40 books, not taller than my desk'
+  <- TASK_STATE_INPUT_REQUIRED | ask=None | Could you tell me roughly how tall your desk is, and whether you have a preferred wood or colour? We sell: armchair, bed frame, bedside lamp, bookshelf, cabinet, chair, coffee table, desk, desk lamp, dining chair, dining
+  => item None None reserve None, asks [], TASK_STATE_INPUT_REQUIRED, price None, right item False, reserve held False
+
+### an office chair with wheels for long work days
+  -> 'an office chair with wheels for long work days'
+  <- TASK_STATE_INPUT_REQUIRED | ask=250.0 | chair: asking 250. Send your offer as a number. Asking 250
+  => item None None reserve None, asks [250.0], TASK_STATE_INPUT_REQUIRED, price None, right item False, reserve held False
+
+### a dimmable lamp for my bedside table
+  -> 'a dimmable lamp for my bedside table'
+  <- TASK_STATE_INPUT_REQUIRED | ask=150.0 | lamp: asking 150. Send your offer as a number. Asking 150
+  => item None None reserve None, asks [150.0], TASK_STATE_INPUT_REQUIRED, price None, right item False, reserve held False
+
+### a dining table that seats 6 people
+  -> 'a dining table that seats 6 people'
+  <- TASK_STATE_INPUT_REQUIRED | ask=None | We have several tables that seat six. Do you have a preference for material, such as wood, marble, or glass, or a color or size you're looking for? We sell: armchair, bed frame, bedside lamp, bookshelf, cabinet, chair, c
+  => item None None reserve None, asks [], TASK_STATE_INPUT_REQUIRED, price None, right item False, reserve held False
+
+### a leather sofa with three seats
+  -> 'a leather sofa with three seats'
+  <- TASK_STATE_INPUT_REQUIRED | ask=2500.0 | Fjord Leather Sofa (P-00014: A black leather sofa. Width 152 cm. Seats 3.): asking 2500. Send your offer as a number. Asking 2500
+  -> '1250.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=2400.0 | 1250 is too low. Counteroffer: 2400
+  -> '1625.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=2350.0 | 1625 is too low. Counteroffer: 2350
+  -> '2000.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=2305.0 | 2000 is too low. Counteroffer: 2305
+  -> '2250.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=2305.0 | 2250 is too low. Counteroffer: 2305
+  -> '2500.0'
+  <- TASK_STATE_COMPLETED | ask=None | Deal: Fjord Leather Sofa at 2500.
+  => item P-00014 'Fjord Leather Sofa' reserve 2305, asks [2500.0, 2400.0, 2350.0, 2305.0, 2305.0], TASK_STATE_COMPLETED, price 2500.0, right item True, reserve held True
+
+### (unclear) what's the weather like today?
+  -> "what's the weather like today?"
+  <- TASK_STATE_INPUT_REQUIRED | ask=None | I'm not sure what you're asking, since I can only help with our furniture and lighting. Are you looking for something like a sofa, desk, or lamp? We sell: armchair, bed frame, bedside lamp, bookshelf, cabinet, chair, cof
+  => asked back instead of quoting a price: True
+
+### (unclear) I need something nice
+  -> 'I need something nice'
+  <- TASK_STATE_INPUT_REQUIRED | ask=None | Sorry, I'm not sure what you mean by "something nice" — are you looking for a piece of furniture or lighting, like a sofa, desk, or lamp? We sell: armchair, bed frame, bedside lamp, bookshelf, cabinet, chair, coffee tabl
+  => asked back instead of quoting a price: True

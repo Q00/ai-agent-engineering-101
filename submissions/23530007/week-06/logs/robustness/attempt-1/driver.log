@@ -1,0 +1,59 @@
+
+### B/legacy: our buyer, lamp, budget 120, seller floor 100
+  seller saw methods ['SendMessage', 'message/send'], offers [90, 100], deals [100], canceled 0, posts without A2A-Version 0
+  buyer: [buyer] SendMessage unknown to this seller; switching to v0.3 method names
+  buyer: [buyer] bought: {"item": "thing", "price": 100}
+  => exit 0, passed True
+
+### B/message_only: our buyer, lamp, budget 120, seller floor 100
+  seller saw methods ['SendMessage'], offers [100], deals [100], canceled 0, posts without A2A-Version 0
+  buyer: [buyer] bought: {"item": "thing", "price": 100}
+  => exit 0, passed True
+
+### B/rpc_error: our buyer, lamp, budget 120, seller floor 100
+  seller saw methods ['CancelTask', 'SendMessage'], offers [], deals [], canceled 1, posts without A2A-Version 0
+  buyer: [buyer] card: 'rpc_error shop', JSON-RPC http://127.0.0.1:49285/, skills ['sell']
+  buyer: [buyer] seller error: SendMessage: {'code': -32603, 'message': 'internal error'}; walking away
+  buyer: [buyer] walked away; canceled the task -> TASK_STATE_CANCELED; no purchase
+  => exit 0, passed False
+
+### B/big_numbers: our buyer, bookshelf, budget 1300, seller floor 1100
+  seller saw methods ['SendMessage'], offers [1000, 1100], deals [1100], canceled 0, posts without A2A-Version 0
+  buyer: [buyer] bought: {"item": "thing", "price": 1100}
+  => exit 0, passed True
+
+### S/greeting
+  <- TASK_STATE_INPUT_REQUIRED ask=150.0 | lamp: asking 150. Send your offer as a number. Asking 150
+  => greeting: passed True (opened on 'lamp: asking 150. Se' at 150.0)
+
+### S/data_offer: offer sent as a data part
+  <- TASK_STATE_INPUT_REQUIRED ask=140.0 | 125 is too low. Counteroffer: 140
+  => data_offer: passed False (seller took the data part as offer None, now TASK_STATE_INPUT_REQUIRED)
+
+### S/formats: "$105" then "110 dollars"
+  -> '$105'
+  <- TASK_STATE_INPUT_REQUIRED ask=230.0 | 105 is too low. Counteroffer: 230
+  -> '110 dollars'
+  <- TASK_STATE_INPUT_REQUIRED ask=200.0 | 110 is too low. Counteroffer: 200
+  => formats: passed True (read as plain offers without the harness: True; states ['TASK_STATE_INPUT_REQUIRED', 'TASK_STATE_INPUT_REQUIRED'])
+
+### S/concurrent: buyer B is answered while buyer A's harness call runs
+  A offer took 2.8 s -> TASK_STATE_INPUT_REQUIRED ask=330.0 | 150 is too low. Counteroffer: 330
+  B open took 2.7 s -> TASK_STATE_INPUT_REQUIRED ask=150.0 | lamp: asking 150. Send your offer as a number. Asking 150
+  => concurrent: passed True (A 2.8 s and B 2.7 s overlapped (serial would be about 5.5 s))
+
+### S/hold_lapse: A opens the lamp and goes quiet; B asks right away, then after 6 s
+  B at once  <- TASK_STATE_REJECTED ask=None | The lamp is being negotiated with another buyer. Try again later.
+  B after 6 s <- TASK_STATE_INPUT_REQUIRED ask=150.0 | lamp: asking 150. Send your offer as a number. Asking 150
+  A comes back <- TASK_STATE_REJECTED ask=None | Your hold lapsed: no message for too long. Start again.
+  => hold_lapse: passed True (held, then lapsed, quiet buyer told to start again)
+
+### S/no_harness: the harness command does not exist
+  <- TASK_STATE_INPUT_REQUIRED ask=130.0 | lamp: asking 130. Send your offer as a number. Asking 130
+  -> '80'
+  <- TASK_STATE_INPUT_REQUIRED ask=130.0 | 80 is too low. Counteroffer: 130
+  -> '95'
+  <- TASK_STATE_INPUT_REQUIRED ask=130.0 | 95 is too low. Counteroffer: 130
+  -> '120'
+  <- TASK_STATE_INPUT_REQUIRED ask=130.0 | 120 is too low. Counteroffer: 130
+  => no_harness: passed True (asks [130.0, 130.0, 130.0, 130.0], final TASK_STATE_INPUT_REQUIRED, price None)
