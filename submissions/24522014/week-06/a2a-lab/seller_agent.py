@@ -1,4 +1,4 @@
-﻿"""A rule-based seller exposed as an A2A server (a2a-sdk 1.2.x, JSON-RPC binding).
+"""A rule-based seller exposed as an A2A server (a2a-sdk 1.2.x, JSON-RPC binding).
 
     python seller_agent.py                       # lamp shop on :9999
     python seller_agent.py --config cards/b.json # another seller from a config file
