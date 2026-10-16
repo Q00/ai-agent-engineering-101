@@ -1,5 +1,8 @@
 # STEP 3 — 하네스가 첫 가격을 정하는 seller
 
+이 문서는 STEP 3 당시의 검증 기록이다. 현재 seller의 후속 흥정·수락·거절·취소는
+STEP 4에서 추가했으며 실행 안내는 `STEP4.md`를 따른다.
+
 ## 결과
 
 `seller.py`와 `prompts/seller.txt`를 작성했다. 실제 모델 호출 결과:
