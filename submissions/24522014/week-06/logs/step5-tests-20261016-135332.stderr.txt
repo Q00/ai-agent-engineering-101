@@ -1,0 +1,130 @@
+test_all_pairings (test_harness.HarnessChecks.test_all_pairings) ... ok
+test_invalid_price_and_shape (test_harness.HarnessChecks.test_invalid_price_and_shape) ... ok
+test_nonzero_exit_keeps_raw_error (test_harness.HarnessChecks.test_nonzero_exit_keeps_raw_error) ... Harness logs: C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\logs\step2-tests\1400741985a34043899e4be392fe670b\logs\harness\20261016T045333013811Z-6f912e44-claude
+ok
+test_timeout_keeps_partial_output (test_harness.HarnessChecks.test_timeout_keeps_partial_output) ... Harness logs: C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\logs\step2-tests\031a5613150e470f951d46e04b6f81b3\logs\harness\20261016T045333054807Z-3c5dcff0-claude
+ok
+test_valid_actions (test_harness.HarnessChecks.test_valid_actions) ... ok
+test_process_failure_is_not_retried (test_seller_opening.OpeningChecks.test_process_failure_is_not_retried) ... ok
+test_reject_under_reserve_and_wrong_action (test_seller_opening.OpeningChecks.test_reject_under_reserve_and_wrong_action) ... ok
+test_retry_constraint_violation_once (test_seller_opening.OpeningChecks.test_retry_constraint_violation_once) ... ok
+test_two_invalid_decisions_fail_without_fallback (test_seller_opening.OpeningChecks.test_two_invalid_decisions_fail_without_fallback) ... ok
+test_valid_price_is_not_replaced (test_seller_opening.OpeningChecks.test_valid_price_is_not_replaced) ... ok
+test_accept_must_match_offer_and_reserve (test_seller_negotiation.FollowupValidation.test_accept_must_match_offer_and_reserve) ... ok
+test_counteroffer_receipt_and_terminal_task (test_seller_negotiation.NegotiationProtocol.test_counteroffer_receipt_and_terminal_task) ... ok
+test_invalid_acceptance_is_corrected_not_clamped (test_seller_negotiation.NegotiationProtocol.test_invalid_acceptance_is_corrected_not_clamped) ... ok
+Dispatcher task is not running. Cannot wait for event dispatch.
+test_invalid_offer_does_not_call_harness_or_lose_task (test_seller_negotiation.NegotiationProtocol.test_invalid_offer_does_not_call_harness_or_lose_task) ... ok
+Dispatcher task is not running. Cannot wait for event dispatch.
+test_reject_and_cancel_have_no_receipts (test_seller_negotiation.NegotiationProtocol.test_reject_and_cancel_have_no_receipts) ... ok
+test_accepted_price_must_equal_current_offer (test_seller_limits.SellerLimits.test_accepted_price_must_equal_current_offer) ... Decision failed for task a20c871d-62fa-454e-b6bb-e8212a4eda97: Seller decision failed: An accepted price must equal the current buyer offer
+ok
+test_all_item_counteroffers_and_deals_fail_closed_below_reserve (test_seller_limits.SellerLimits.test_all_item_counteroffers_and_deals_fail_closed_below_reserve) ... Decision failed for task bd75ed79-1f3b-48c9-92be-74124a32bc6a: Seller decision failed: Price must be at least the reserve 100
+Decision failed for task 3192d773-ce5b-4d28-b3d5-069b3b846f5a: Seller decision failed: Price must be at least the reserve 100
+Decision failed for task 82720909-f7f1-47d0-b947-0a0d95a4a351: Seller decision failed: Price must be at least the reserve 180
+Decision failed for task 70c07ce6-57fd-4f74-a3b8-9b0885d0cd6e: Seller decision failed: Price must be at least the reserve 180
+Decision failed for task e0f2edc8-fc18-40ae-9bb7-9b5a4e6bf480: Seller decision failed: Price must be at least the reserve 260
+Decision failed for task 191b4e39-31e4-4edb-a057-b0c4749f2e43: Seller decision failed: Price must be at least the reserve 260
+ok
+test_all_item_openings_fail_closed_below_reserve (test_seller_limits.SellerLimits.test_all_item_openings_fail_closed_below_reserve) ... Decision failed for task b981240f-2384-437e-88f3-293a52d43bed: Seller decision failed: Opening price must be at least the reserve 100
+Decision failed for task 28e4de9c-358f-411a-85c9-76f1ccea298b: Seller decision failed: Opening price must be at least the reserve 180
+Decision failed for task 8e0f97c2-59c2-484b-9b56-56b5a95e9745: Seller decision failed: Opening price must be at least the reserve 260
+ok
+test_finished_tasks_cannot_resume_or_cancel (test_seller_limits.SellerLimits.test_finished_tasks_cannot_resume_or_cancel) ... ok
+test_interleaved_tasks_keep_their_own_reserves_and_history (test_seller_limits.SellerLimits.test_interleaved_tasks_keep_their_own_reserves_and_history) ... ok
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+test_invalid_protocol_or_item_does_not_call_model (test_seller_limits.SellerLimits.test_invalid_protocol_or_item_does_not_call_model) ... Version mismatch: actual='0.3', expected='1.0'
+Producer[2604211a-3b9f-4f97-883f-eb34fb75679b]: Execution failed
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 123, in execute
+    item = requested_item(text)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 35, in requested_item
+    raise InvalidParamsError("Name exactly one item: lamp, chair, or bookshelf.")
+a2a.utils.errors.InvalidParamsError: Name exactly one item: lamp, chair, or bookshelf.
+Consumer[2604211a-3b9f-4f97-883f-eb34fb75679b]: Failed
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 123, in execute
+    item = requested_item(text)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 35, in requested_item
+    raise InvalidParamsError("Name exactly one item: lamp, chair, or bookshelf.")
+a2a.utils.errors.InvalidParamsError: Name exactly one item: lamp, chair, or bookshelf.
+Producer[08609c5c-3153-4d72-8804-373619e5a6d1]: Execution failed
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 123, in execute
+    item = requested_item(text)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 35, in requested_item
+    raise InvalidParamsError("Name exactly one item: lamp, chair, or bookshelf.")
+a2a.utils.errors.InvalidParamsError: Name exactly one item: lamp, chair, or bookshelf.
+Dispatcher task was cancelled or finished. Events may be lost.
+Consumer[08609c5c-3153-4d72-8804-373619e5a6d1]: Failed
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 123, in execute
+    item = requested_item(text)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 35, in requested_item
+    raise InvalidParamsError("Name exactly one item: lamp, chair, or bookshelf.")
+a2a.utils.errors.InvalidParamsError: Name exactly one item: lamp, chair, or bookshelf.
+Producer[5461d015-9ccd-4477-8535-33489776d957]: Execution failed
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 123, in execute
+    item = requested_item(text)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 35, in requested_item
+    raise InvalidParamsError("Name exactly one item: lamp, chair, or bookshelf.")
+a2a.utils.errors.InvalidParamsError: Name exactly one item: lamp, chair, or bookshelf.
+Dispatcher task was cancelled or finished. Events may be lost.
+Consumer[5461d015-9ccd-4477-8535-33489776d957]: Failed
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 123, in execute
+    item = requested_item(text)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 35, in requested_item
+    raise InvalidParamsError("Name exactly one item: lamp, chair, or bookshelf.")
+a2a.utils.errors.InvalidParamsError: Name exactly one item: lamp, chair, or bookshelf.
+Dispatcher task was cancelled or finished. Events may be lost.
+ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 1.739s
+
+OK
