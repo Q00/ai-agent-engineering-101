@@ -1,0 +1,78 @@
+
+## seller tests: C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Scripts\python.exe C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py --mode claude --port 60577
+  PASS  seller_card #1: name='Harness Furniture Shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 180
+    -> SendMessage "60" taskId=5a847f4a
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 150
+    -> SendMessage "80" taskId=5a847f4a
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130
+    -> SendMessage "100" taskId=5a847f4a
+    <- TASK_STATE_COMPLETED | Deal: lamp at 100
+       artifact receipt [{"item": "lamp", "price": 100.0, "seller": "Harness Furniture Shop"}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 180
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 100.0, asks [180, 150, 130]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=5a847f4a
+    <- error -32004 Task 5a847f4a-e401-4677-a40e-563cd807fa48 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 180
+    -> SendMessage "60" taskId=1ea38395
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 140
+    -> SendMessage "80" taskId=1ea38395
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 120
+    -> SendMessage "120" taskId=1ea38395
+    <- TASK_STATE_COMPLETED | Deal: lamp at 120
+       artifact receipt [{"item": "lamp", "price": 120.0, "seller": "Harness Furniture Shop"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 120.0, asks [180, 140, 120]
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 160
+    -> SendMessage "60" taskId=2ea849b1
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 135
+    -> SendMessage "80" taskId=2ea849b1
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 120
+    -> SendMessage "120" taskId=2ea849b1
+    <- TASK_STATE_COMPLETED | Deal: lamp at 120
+       artifact receipt [{"item": "lamp", "price": 120.0, "seller": "Harness Furniture Shop"}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 120.0, asks [160, 135, 120]
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 340
+    -> SendMessage "140" taskId=81b3fe2f
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 320
+    -> SendMessage "170" taskId=81b3fe2f
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 300
+    -> SendMessage "200" taskId=81b3fe2f
+    <- TASK_STATE_REJECTED | No deal. Negotiation closed.
+  PASS  seller_holds_reserve #1: TASK_STATE_REJECTED, asks [340, 320, 300]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 340
+    -> SendMessage "140" taskId=9a4767b4
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 300
+    -> SendMessage "170" taskId=9a4767b4
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 280
+    -> SendMessage "200" taskId=9a4767b4
+    <- TASK_STATE_REJECTED | No deal. Negotiation closed.
+  PASS  seller_holds_reserve #2: TASK_STATE_REJECTED, asks [340, 300, 280]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 330
+    -> SendMessage "140" taskId=ad3e5b40
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 300
+    -> SendMessage "170" taskId=ad3e5b40
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 285
+    -> SendMessage "200" taskId=ad3e5b40
+    <- TASK_STATE_REJECTED | No deal. Negotiation closed.
+  PASS  seller_holds_reserve #3: TASK_STATE_REJECTED, asks [330, 300, 285]
