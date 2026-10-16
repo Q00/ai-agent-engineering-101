@@ -1,16 +1,16 @@
 {
   "kit_version": "1",
   "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
-  "started": "2026-10-13T10:31:09+00:00",
+  "started": "2026-10-16T11:02:20+00:00",
   "harness": "Claude Code 2.1.296: claude -p --model haiku --tools '' --setting-sources '' --no-session-persistence",
   "seller_cmd": "python seller.py --port {port}",
   "buyer_cmd": "python buyer.py --url {url} --item {item} --budget {budget}",
   "seller_card": {
     "name": "Harness Furniture",
-    "description": "Sells lamps, chairs and bookshelves. A model decides the prices.",
+    "description": "Furniture shop with 3000 items (beds, decor, lighting, seating, sofas, storage, tables). A model decides the prices.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:49510/",
+        "url": "http://127.0.0.1:49980/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -30,13 +30,21 @@
       {
         "id": "negotiate",
         "name": "Negotiate a purchase",
-        "description": "Name an item (lamp, chair, bookshelf), then send offers as numbers. The shop answers with an asking price (the last number in its message), a receipt, or a rejection.",
+        "description": "Sells: armchair, bed frame, bedside lamp, bookshelf, cabinet, chair, coffee table, desk, desk lamp, dining chair, dining table, floor lamp, folding chair, lamp, loveseat, mirror, nightstand, office chair, pendant lamp, reading lamp, rug, shoe rack, side table, sofa, sofa bed, standing desk, stool, wall shelf, wardrobe. Describe what you want or name an item, then send offers as numbers. The shop answers with an asking price (the last number in its message, also in message metadata as 'ask'), a receipt, or a rejection.",
         "tags": [
           "shopping",
-          "negotiation"
+          "negotiation",
+          "beds",
+          "decor",
+          "lighting",
+          "seating",
+          "sofas",
+          "storage",
+          "tables"
         ],
         "examples": [
           "I want to buy a lamp",
+          "something wooden to keep about 40 books",
           "90"
         ]
       }
@@ -59,7 +67,7 @@
       "test": "seller_deal",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [150, 130, 110]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 140, 120]"
     },
     {
       "test": "seller_terminal",
@@ -71,31 +79,31 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 120]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 140, 120]"
     },
     {
       "test": "seller_deal",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [150, 130, 110]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 140, 120]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [350, 300, 260, 260, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [400, 330, 300, 270, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [350, 300, 280, 265, 262, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [340, 320, 290, 260, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [340, 300, 260, 260, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [350, 320, 290, 260, 260]"
     },
     {
       "test": "buyer_deal",
@@ -107,7 +115,7 @@
       "test": "buyer_protocol_deal",
       "run": 1,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2"
     },
     {
       "test": "buyer_deal",
@@ -119,13 +127,13 @@
       "test": "buyer_protocol_deal",
       "run": 2,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2"
     },
     {
       "test": "buyer_deal",
       "run": 3,
       "pass": true,
-      "detail": "deals [105] (budget 120)"
+      "detail": "deals [100] (budget 120)"
     },
     {
       "test": "buyer_protocol_deal",
@@ -143,22 +151,22 @@
       "test": "buyer_protocol_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
-    },
-    {
-      "test": "buyer_holds_budget",
-      "run": 2,
-      "pass": true,
-      "detail": "deals [] (budget 230 < reserve 260)"
-    },
-    {
-      "test": "buyer_protocol_holds_budget",
-      "run": 2,
-      "pass": true,
       "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
     },
     {
       "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
+    },
+    {
+      "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
       "detail": "deals [] (budget 230 < reserve 260)"
@@ -167,7 +175,7 @@
       "test": "buyer_protocol_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
     }
   ],
   "passed": true
