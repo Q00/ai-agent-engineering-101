@@ -124,6 +124,29 @@ class BuyerTransportChecks(unittest.TestCase):
                 client.open()
             self.assertEqual(self.requests, [])
 
+    def test_jsonrpc_errors_and_mismatched_response_ids(self):
+        for error_mode in (True, False):
+            def reply(request):
+                if request.method == "GET":
+                    return httpx.Response(200, json={"supportedInterfaces": [{"protocolBinding": "JSONRPC",
+                        "protocolVersion": "1.0", "url": "http://fixture/rpc"}]})
+                data = json.loads(request.content)
+                if error_mode:
+                    return httpx.Response(200, json={"jsonrpc": "2.0", "id": data["id"],
+                                                    "error": {"code": -32001, "message": "fixture error"}})
+                return httpx.Response(200, json={"jsonrpc": "2.0", "id": "wrong-id", "result": task()})
+            with self.subTest(error_mode=error_mode), self.client(transport=httpx.MockTransport(reply)) as client:
+                with self.assertRaises(buyer.BuyerError):
+                    client.open()
+
+    def test_changed_context_id_is_rejected(self):
+        changed = task()
+        changed["contextId"] = "other-context"
+        with self.client(transport=self.transport([task(), changed])) as client:
+            client.open()
+            with self.assertRaisesRegex(buyer.BuyerError, "changed contextId"):
+                client.offer(80)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

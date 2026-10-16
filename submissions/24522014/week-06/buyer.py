@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import json
 import math
 from pathlib import Path
+import sys
 import time
 from uuid import uuid4
 
@@ -89,6 +90,8 @@ class BuyerTransport:
         if not isinstance(card, dict):
             raise BuyerError("Agent Card must be a JSON object")
         interfaces = card.get("supportedInterfaces", [])
+        if not isinstance(interfaces, list):
+            raise BuyerError("Agent Card supportedInterfaces must be a list")
         chosen = next((entry for entry in interfaces if isinstance(entry, dict)
                        and entry.get("protocolBinding") == "JSONRPC"
                        and str(entry.get("protocolVersion")) == "1.0"), None)
@@ -192,7 +195,7 @@ def main():
         parser.exit(1, str(error) + "\n")
     finally:
         if buyer is not None:
-            print(f"Buyer logs: {buyer.log_dir}", file=__import__("sys").stderr)
+            print(f"Buyer logs: {buyer.log_dir}", file=sys.stderr)
 
 
 if __name__ == "__main__":
