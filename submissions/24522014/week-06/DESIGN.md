@@ -6,14 +6,44 @@
 
 ## 1. 사용할 하네스
 
-STEP 6에서 실제 응답을 확인한 Claude Code + Haiku를 사용한다.
-다음 비대화형 명령에 Python이 표준 입력으로 판단 요청을 전달한다.
+Claude Code + Haiku와 Codex + Luna를 선택 가능한 하네스로 둔다.
+Claude Code + Haiku는 STEP 6에서 실제 응답을 확인했다.
+Codex + Luna는 설계에 추가했으며 실제 모델 호출은 STEP 2에서 검증한다.
+각 비대화형 명령에 Python이 표준 입력으로 판단 요청을 전달한다.
+
+Claude Code + Haiku:
 
 ```text
 claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence
 ```
 
-이 명령 자체의 Python 호출 검증은 STEP 2에서 한다. STEP 6의 서버는
+Codex + Luna (Windows):
+
+```text
+codex.cmd exec --skip-git-repo-check --model gpt-6-luna --sandbox read-only --ephemeral -
+```
+
+Luna의 모델 ID는 `gpt-6-luna`로 명시한다. Windows에서는 설치된 npm의
+`codex.cmd`를 사용해 PowerShell의 `codex.ps1` 실행 정책 오류를 피한다.
+macOS/Linux에서는 실행 파일 이름을 `codex`로 사용한다.
+`--ephemeral`은 세션 파일 보존을 끄고, `--sandbox read-only`는 모델이 실행하는
+셸 명령의 쓰기를 제한한다. 도구 자체를 비활성화하는 옵션은 아니다.
+Codex CLI의 설치된 도움말에서 위 옵션을 확인했다. 현재 계정의 Luna 접근과
+실제 JSON 응답 성공 여부는 아직 검증하지 않았다.
+
+STEP 2에서는 하네스 종류와 모델을 설정으로 선택하고, 공통 JSON 응답을
+반환하는 호출 인터페이스를 만든다. seller와 buyer에 각각 선택할 수 있게
+설계하되, 처음에는 같은 하네스로 검증하고 이후 서로 다른 조합을 시도한다.
+한쪽 호출이 실패해도 다른 하네스로 자동 대체하지 않고 오류를 기록한다.
+로그와 `agent.json`의 `harness`에는 양쪽의 실제 하네스·모델을 명시한다.
+조합을 바꾼 뒤에는 공식 trade test를 다시 실행해 결과를 보존한다.
+
+공식 참고 문서:
+
+- 모델 ID: https://developers.openai.com/api/docs/models
+- 비대화형 실행: https://learn.chatgpt.com/docs/non-interactive-mode
+
+각 명령의 Python 호출 검증은 STEP 2에서 한다. STEP 6의 서버는
 메시지마다 작업을 끝내므로 여기서는 Python이 거래 이력을 관리하고
 판단할 때마다 이력을 하네스에 전달한다. 하네스는 매번 새 빈 임시 폴더를
 작업 디렉터리로 사용하며 임시 폴더도 자신의 제출 디렉터리 안에 만든다.
