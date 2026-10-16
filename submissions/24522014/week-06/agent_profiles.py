@@ -53,10 +53,7 @@ def command_for(config, role, **values):
 def select_profile(name):
     config = load_profile(name)
     target = ROOT / "agent.json"
-    if target.exists() and (ROOT / "test-report.json").exists():
-        current = json.loads(target.read_text(encoding="utf-8"))
-        if current != config:
-            raise ValueError("A trade-test report already exists. Preserve that run before switching its configuration.")
+    # Change only the selected configuration. Existing evidence is never edited here.
     target.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return config
 

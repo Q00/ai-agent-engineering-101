@@ -1,0 +1,92 @@
+{
+  "scope": "one purchase and one insufficient-budget case per pairing",
+  "profile": {
+    "profile": "mixed-codex-seller",
+    "harness": "seller: Codex + Luna (gpt-6-luna); buyer: Claude Code + Haiku",
+    "seller": {
+      "harness": "codex",
+      "model": "gpt-6-luna",
+      "cmd": "python seller.py --mode mixed --seller-harness codex --port {port}"
+    },
+    "buyer": {
+      "harness": "claude",
+      "model": "haiku",
+      "cmd": "python buyer.py --mode mixed --buyer-harness claude --url {url} --item {item} --budget {budget}"
+    }
+  },
+  "seller_command": [
+    "C:\\Submissions\\ai_agent_engineering\\submissions\\24522014\\week-06\\a2a-lab\\.venv\\Scripts\\python.exe",
+    "seller.py",
+    "--mode",
+    "mixed",
+    "--seller-harness",
+    "codex",
+    "--port",
+    "56166"
+  ],
+  "passed": true,
+  "cases": [
+    {
+      "item": "lamp",
+      "budget": 120,
+      "buyer_command": [
+        "C:\\Submissions\\ai_agent_engineering\\submissions\\24522014\\week-06\\a2a-lab\\.venv\\Scripts\\python.exe",
+        "buyer.py",
+        "--mode",
+        "mixed",
+        "--buyer-harness",
+        "claude",
+        "--url",
+        "http://127.0.0.1:56166",
+        "--item",
+        "lamp",
+        "--budget",
+        "120"
+      ],
+      "outcome": {
+        "outcome": "purchased",
+        "harness": "claude",
+        "model": "haiku",
+        "item": "lamp",
+        "budget": 120,
+        "task_id": "ca9c4030-852f-4027-9866-0a073fb65da0",
+        "state": "TASK_STATE_COMPLETED",
+        "receipt": {
+          "item": "lamp",
+          "price": 100.0,
+          "seller": "Harness Furniture Shop"
+        },
+        "turns": 1
+      }
+    },
+    {
+      "item": "bookshelf",
+      "budget": 230,
+      "buyer_command": [
+        "C:\\Submissions\\ai_agent_engineering\\submissions\\24522014\\week-06\\a2a-lab\\.venv\\Scripts\\python.exe",
+        "buyer.py",
+        "--mode",
+        "mixed",
+        "--buyer-harness",
+        "claude",
+        "--url",
+        "http://127.0.0.1:56166",
+        "--item",
+        "bookshelf",
+        "--budget",
+        "230"
+      ],
+      "outcome": {
+        "outcome": "seller_rejected",
+        "harness": "claude",
+        "model": "haiku",
+        "item": "bookshelf",
+        "budget": 230,
+        "task_id": "7754612e-e969-43a4-91a6-0a972fb1344f",
+        "state": "TASK_STATE_REJECTED",
+        "receipt": null,
+        "turns": 4
+      }
+    }
+  ]
+}
