@@ -1,5 +1,8 @@
 # STEP 6 — buyer의 A2A 통신 구현
 
+이 문서는 STEP 6 당시의 기록이다. 현재는 STEP 7에서 자율 모드를 추가했으며,
+아래의 `--manual` 실습도 그대로 사용할 수 있다. 자율 실행은 `STEP7.md`를 따른다.
+
 ## 완료한 범위
 
 `buyer.py`의 `BuyerTransport`가 Agent Card 조회, JSON-RPC 1.0 요청,

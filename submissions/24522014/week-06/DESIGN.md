@@ -1,7 +1,7 @@
 # 내 하네스로 만드는 buyer와 가게 — STEP 1 설계
 
-상태: STEP 1–6 완료. seller와 buyer의 A2A 통신을 구현하고 검증함.
-buyer의 하네스 기반 가격·철수 판단은 STEP 7에서 연결할 예정.
+상태: STEP 1–7 완료. seller와 buyer의 하네스 판단·A2A 통신을 구현하고 검증함.
+실행 설정과 두 에이전트 연결은 STEP 8에서 진행할 예정.
 요구 사항의 기준: `weeks/week-06/README.md`.
 기존 `a2a-lab/`은 강의 실습 기록으로 보존한다.
 
@@ -193,4 +193,5 @@ STEP 3 결과와 직접 실행 안내는 `STEP3.md`에 기록했다.
 STEP 4 결과와 직접 실습 안내, 실패·수정 과정은 `STEP4.md`에 기록했다.
 STEP 5의 로컬 검사 21건과 공식 seller 검사 18건의 결과는 `STEP5.md`에 기록했다.
 STEP 6의 buyer 통신 검사와 직접 실습은 `STEP6.md`에 기록했다.
-다음은 STEP 7의 하네스 기반 buyer 구매 판단 구현이다.
+STEP 7의 자율 buyer 구현과 검사 결과는 `STEP7.md`에 기록했다.
+다음은 STEP 8의 agent.json 실행 설정과 seller/buyer 연결 검증이다.
