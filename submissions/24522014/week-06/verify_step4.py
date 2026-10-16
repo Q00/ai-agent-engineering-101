@@ -102,8 +102,9 @@ def main():
                 for index in range(3):
                     bookshelf = send("1", book_tid)
                     assert bookshelf["id"] == book_tid
-                    if index < 2:
-                        asking(bookshelf, 260)
+                    if state(bookshelf) == "TASK_STATE_REJECTED":
+                        break
+                    asking(bookshelf, 260)
                 assert state(bookshelf) == "TASK_STATE_REJECTED", bookshelf
                 assert not bookshelf.get("artifacts"), bookshelf
 
