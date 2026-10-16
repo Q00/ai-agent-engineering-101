@@ -1,6 +1,7 @@
 # 내 하네스로 만드는 buyer와 가게 — STEP 1 설계
 
-상태: STEP 1 설계와 STEP 2 하네스 호출 검증 완료. seller/buyer 거래 구현은 아직 시작하지 않음.
+상태: STEP 1 설계, STEP 2 하네스 호출, STEP 3 seller 첫 제안 검증 완료.
+후속 흥정과 buyer는 아직 구현하지 않음.
 요구 사항의 기준: `weeks/week-06/README.md`.
 기존 `a2a-lab/`은 강의 실습 기록으로 보존한다.
 
@@ -188,4 +189,5 @@ Seller의 Agent Card는 `/.well-known/agent-card.json`에 제공한다.
 
 STEP 1은 문서 설계만 수행했다. 모델 호출·서버 실행·공식 테스트는 하지 않았다.
 STEP 2 결과와 직접 실행 안내는 `STEP2.md`에 기록했다.
-다음은 STEP 3의 seller 첫 가격 제안 구현이다.
+STEP 3 결과와 직접 실행 안내는 `STEP3.md`에 기록했다.
+다음은 STEP 4의 seller 흥정·수락·거절 구현이다.
