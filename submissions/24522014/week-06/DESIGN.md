@@ -1,7 +1,7 @@
 # 내 하네스로 만드는 buyer와 가게 — STEP 1 설계
 
-상태: STEP 1 설계, STEP 2 하네스 호출, STEP 3 첫 제안, STEP 4 후속 흥정 검증 완료.
-seller의 역제안·수락·거절·취소를 구현했으며 buyer는 아직 구현하지 않음.
+상태: STEP 1–5 완료. 두 하네스에서 seller의 제한 조건과 공식 seller 검사까지 검증함.
+buyer는 아직 구현하지 않음.
 요구 사항의 기준: `weeks/week-06/README.md`.
 기존 `a2a-lab/`은 강의 실습 기록으로 보존한다.
 
@@ -191,4 +191,5 @@ STEP 1은 문서 설계만 수행했다. 모델 호출·서버 실행·공식 �
 STEP 2 결과와 직접 실행 안내는 `STEP2.md`에 기록했다.
 STEP 3 결과와 직접 실행 안내는 `STEP3.md`에 기록했다.
 STEP 4 결과와 직접 실습 안내, 실패·수정 과정은 `STEP4.md`에 기록했다.
-다음은 STEP 5의 seller 제한 조건 검증이다.
+STEP 5의 로컬 검사 21건과 공식 seller 검사 18건의 결과는 `STEP5.md`에 기록했다.
+다음은 STEP 6의 buyer A2A 통신 구현이다.
