@@ -1,6 +1,6 @@
 # 내 하네스로 만드는 buyer와 가게 — STEP 1 설계
 
-상태: 설계 완료, 과제 구현 및 거래 검증은 아직 시작하지 않음.
+상태: STEP 1 설계와 STEP 2 하네스 호출 검증 완료. seller/buyer 거래 구현은 아직 시작하지 않음.
 요구 사항의 기준: `weeks/week-06/README.md`.
 기존 `a2a-lab/`은 강의 실습 기록으로 보존한다.
 
@@ -8,7 +8,7 @@
 
 Claude Code + Haiku와 Codex + Luna를 선택 가능한 하네스로 둔다.
 Claude Code + Haiku는 STEP 6에서 실제 응답을 확인했다.
-Codex + Luna는 설계에 추가했으며 실제 모델 호출은 STEP 2에서 검증한다.
+Codex + Luna도 STEP 2에서 Python을 통한 실제 JSON 응답을 확인했다.
 각 비대화형 명령에 Python이 표준 입력으로 판단 요청을 전달한다.
 
 Claude Code + Haiku:
@@ -20,7 +20,7 @@ claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence
 Codex + Luna (Windows):
 
 ```text
-codex.cmd exec --skip-git-repo-check --model gpt-6-luna --sandbox read-only --ephemeral -
+codex.cmd exec --skip-git-repo-check --model gpt-6-luna --sandbox read-only --ephemeral --ignore-user-config -c project_doc_max_bytes=0 -
 ```
 
 Luna의 모델 ID는 `gpt-6-luna`로 명시한다. Windows에서는 설치된 npm의
@@ -28,8 +28,12 @@ Luna의 모델 ID는 `gpt-6-luna`로 명시한다. Windows에서는 설치된 np
 macOS/Linux에서는 실행 파일 이름을 `codex`로 사용한다.
 `--ephemeral`은 세션 파일 보존을 끄고, `--sandbox read-only`는 모델이 실행하는
 셸 명령의 쓰기를 제한한다. 도구 자체를 비활성화하는 옵션은 아니다.
-Codex CLI의 설치된 도움말에서 위 옵션을 확인했다. 현재 계정의 Luna 접근과
-실제 JSON 응답 성공 여부는 아직 검증하지 않았다.
+Codex CLI의 설치된 도움말에서 위 옵션을 확인했다. STEP 2에서는 Windows의
+셸·문자열 인용 문제를 줄이기 위해 npm 설치 경로에서 native `codex.exe`를
+찾아 직접 실행했다. 현재 계정에서 Luna의 JSON 응답이 성공했다.
+`--ignore-user-config`와 `project_doc_max_bytes=0`으로 사용자 설정 및 상위
+프로젝트 지침의 자동 로딩을 억제한다. 빈 하위 폴더만으로는 상위 저장소
+지침 탐색을 막을 수 없어 이 옵션을 명시했다.
 
 STEP 2에서는 하네스 종류와 모델을 설정으로 선택하고, 공통 JSON 응답을
 반환하는 호출 인터페이스를 만든다. seller와 buyer에 각각 선택할 수 있게
@@ -37,6 +41,18 @@ STEP 2에서는 하네스 종류와 모델을 설정으로 선택하고, 공통 
 한쪽 호출이 실패해도 다른 하네스로 자동 대체하지 않고 오류를 기록한다.
 로그와 `agent.json`의 `harness`에는 양쪽의 실제 하네스·모델을 명시한다.
 조합을 바꾼 뒤에는 공식 trade test를 다시 실행해 결과를 보존한다.
+
+사용자가 선택한 세 가지 실행 방식:
+
+| 모드 | seller | buyer |
+|---|---|---|
+| `claude` | Claude Code + Haiku | Claude Code + Haiku |
+| `codex` | Codex + Luna | Codex + Luna |
+| `mixed` | 각각 선택 (기본 Claude) | 각각 선택 (기본 Codex) |
+
+`mixed`에서는 반대 방향도 선택할 수 있어 서로 다른 조합은 총 네 가지다.
+STEP 2에서는 선택 함수와 개별 호출만 검증했다. 실제 조합별 거래와 공식
+테스트는 seller/buyer 구현 이후 수행한다.
 
 공식 참고 문서:
 
@@ -171,4 +187,5 @@ Seller의 Agent Card는 `/.well-known/agent-card.json`에 제공한다.
 4. 가격 판단은 하네스가 해도 Python이 대화 이력을 저장해야 하는 이유는 무엇인가?
 
 STEP 1은 문서 설계만 수행했다. 모델 호출·서버 실행·공식 테스트는 하지 않았다.
-다음은 STEP 2의 Python 하네스 호출과 JSON 응답 확인이다.
+STEP 2 결과와 직접 실행 안내는 `STEP2.md`에 기록했다.
+다음은 STEP 3의 seller 첫 가격 제안 구현이다.
