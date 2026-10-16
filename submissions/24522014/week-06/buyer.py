@@ -1,16 +1,18 @@
-"""STEP 6: A2A buyer transport. Explicit manual offers only; no model decisions yet."""
+"""A2A buyer with harness-driven offers and withdrawal, plus an explicit manual mode."""
 
 import argparse
 from datetime import datetime, timezone
 import json
 import math
 from pathlib import Path
+import re
 import sys
 import time
 from uuid import uuid4
 
 import httpx
 
+from harness import HarnessError, MODELS, parse_response, run_harness, select_harness
 
 ROOT = Path(__file__).resolve().parent
 TERMINAL = {"TASK_STATE_COMPLETED", "TASK_STATE_REJECTED", "TASK_STATE_CANCELED", "TASK_STATE_FAILED"}
@@ -37,6 +39,7 @@ class BuyerTransport:
         self.card = None
         self.task = None
         self.receipt = None
+        self.provider = None
         self.sequence = 0
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
         self.log_dir = ROOT / "logs/buyer" / (stamp + "-" + uuid4().hex[:8])
@@ -49,6 +52,8 @@ class BuyerTransport:
     def __exit__(self, exc_type, exc_value, traceback):
         self.client.close()
         metadata = {"scope": "A2A transport", "item": self.item, "budget": self.budget,
+                    "controller": self.provider or "manual",
+                    "model": MODELS[self.provider] if self.provider else None,
                     "task_id": self.task_id, "state": self.state, "receipt": self.receipt,
                     "status": "error" if exc_value else "ok", "error": str(exc_value) if exc_value else None}
         (self.log_dir / "session.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
@@ -170,19 +175,122 @@ class BuyerTransport:
         return self._rpc("CancelTask", {"id": self.task_id})
 
 
+def seller_message(task):
+    message = task["status"].get("message") or {}
+    return " ".join(part.get("text", "") for part in message.get("parts", []) if isinstance(part, dict))
+
+
+def validate_buyer_decision(decision, budget):
+    parse_response(json.dumps(decision))
+    if decision["action"] not in ("offer", "walk_away"):
+        raise ValueError("Buyer must offer or walk_away")
+    if decision["action"] == "offer" and decision["price"] > budget:
+        raise ValueError(f"Offer must not exceed the budget {budget}")
+
+
+def buyer_decision(client, provider, history, turn, max_turns):
+    """Ask for one decision; retry invalid JSON or budget violations once, without clamping."""
+    text = seller_message(client.task)
+    prices = re.findall(r"-?\d+(?:\.\d+)?", text)
+    asking = float(prices[-1]) if prices else None
+    if asking is None or not math.isfinite(asking) or asking <= 0:
+        raise BuyerError("Seller input-required message has no valid asking price")
+    # Keep time for the HTTP request that follows the model decision.
+    allowance = min(90, client.remaining() - 5)
+    if allowance <= 0:
+        raise BuyerError("Insufficient time for another harness decision")
+    deadline = time.monotonic() + allowance
+    context = {"item": client.item, "budget": client.budget, "current_ask": asking,
+               "seller_message": text, "history": history,
+               "remaining_turns": max_turns - turn + 1, "remaining_seconds": round(client.remaining(), 2)}
+    instructions = (ROOT / "prompts/buyer.txt").read_text(encoding="utf-8")
+    prompt = instructions + "\nInput data:\n" + json.dumps(context, ensure_ascii=False)
+    record = {"task_id": client.task_id, "provider": provider, "model": MODELS[provider],
+              "turn": turn, "context": context, "status": "failed", "attempts": []}
+    try:
+        for attempt in range(2):
+            entry = {"attempt": attempt + 1, "prompt": prompt}
+            record["attempts"].append(entry)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise BuyerError("Buyer decision time limit exceeded")
+            try:
+                decision = run_harness(provider, prompt, timeout=remaining)
+                entry["response"] = decision
+                validate_buyer_decision(decision, client.budget)
+            except (ValueError, HarnessError) as error:
+                entry["error"] = str(error)
+                validation_error = isinstance(error, ValueError) or isinstance(error.__cause__, ValueError)
+                if not validation_error or attempt == 1:
+                    raise BuyerError(f"Buyer decision failed: {error}") from error
+                prompt += ("\nYour previous response was invalid. Error: " + str(error)
+                           + "\nReturn a corrected JSON object obeying the original rules.")
+                continue
+            record["status"] = "ok"
+            return decision
+        raise BuyerError("No valid buyer decision")
+    finally:
+        (client.log_dir / f"decision-{turn:02d}.json").write_text(
+            json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def run_autonomous(client, provider, *, max_turns=12):
+    client.provider = provider
+    client.open()
+    history = [{"role": "seller", "text": seller_message(client.task), "state": client.state}]
+    turn = 0
+    outcome = None
+    while client.state not in TERMINAL:
+        if client.state != "TASK_STATE_INPUT_REQUIRED":
+            raise BuyerError("Expected an input-required or terminal task from the seller")
+        turn += 1
+        if turn > max_turns:
+            raise BuyerError("Buyer decision turn limit exceeded")
+        decision = buyer_decision(client, provider, history, turn, max_turns)
+        history.append({"role": "buyer", "decision": decision})
+        if decision["action"] == "walk_away":
+            client.cancel()
+            if client.state != "TASK_STATE_CANCELED":
+                raise BuyerError("Seller did not confirm cancellation")
+            outcome = "walked_away"
+            break
+        client.offer(decision["price"])
+        history.append({"role": "seller", "text": seller_message(client.task), "state": client.state})
+    if client.state == "TASK_STATE_FAILED":
+        raise BuyerError("Seller task failed")
+    if outcome is None:
+        outcome = {"TASK_STATE_COMPLETED": "purchased", "TASK_STATE_REJECTED": "seller_rejected",
+                   "TASK_STATE_CANCELED": "canceled"}[client.state]
+    summary = {"outcome": outcome, "harness": provider, "model": MODELS[provider],
+               "item": client.item, "budget": client.budget, "task_id": client.task_id,
+               "state": client.state, "receipt": client.receipt, "turns": turn}
+    (client.log_dir / "outcome.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    return summary
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", required=True)
     parser.add_argument("--item", choices=["lamp", "chair", "bookshelf"], required=True)
     parser.add_argument("--budget", type=int, required=True)
-    parser.add_argument("--manual", action="store_true", required=True,
+    parser.add_argument("--manual", action="store_true",
                         help="Exercise transport using explicit offers, without a model")
+    parser.add_argument("--mode", choices=["claude", "codex", "mixed"])
+    parser.add_argument("--buyer-harness", choices=list(MODELS), default="codex")
     parser.add_argument("--offer", action="append", type=int, default=[])
     parser.add_argument("--cancel", action="store_true", help="Cancel if still active after the supplied offers")
     args = parser.parse_args()
+    if args.manual and args.mode:
+        parser.error("Choose either --manual or --mode")
+    if not args.manual and (not args.mode or args.offer or args.cancel):
+        parser.error("Autonomous mode requires --mode and cannot use --offer or --cancel")
     buyer = None
     try:
         with BuyerTransport(args.url, args.item, args.budget) as buyer:
+            if not args.manual:
+                provider = select_harness(args.mode, "buyer", buyer=args.buyer_harness)
+                print(json.dumps(run_autonomous(buyer, provider), ensure_ascii=False), flush=True)
+                return
             task = buyer.open()
             print(json.dumps(task, ensure_ascii=False), flush=True)
             for offer in args.offer:
