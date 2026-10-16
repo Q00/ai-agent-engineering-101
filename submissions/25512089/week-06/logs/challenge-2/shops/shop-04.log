@@ -1,0 +1,14 @@
+[CHALLENGE2 SHOP START] shop=shop-04 name='Arun Shop 04' items=['desk', 'side table', 'chair'] url=http://127.0.0.1:9304
+INFO:     Started server process [16220]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9304 (Press CTRL+C to quit)
+INFO:     127.0.0.1:58154 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58586 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55047 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+[CHALLENGE2 SHOP OPEN] shop=shop-04 task=31e311a2-e2a2-4825-9a52-e2baca54cfbe item='chair' reserve=128 listed=148 ask=150 harness={"action": "ask", "price": 150}
+INFO:     127.0.0.1:59908 - "POST / HTTP/1.1" 200 OK
+[CHALLENGE2 SHOP TURN] shop=shop-04 task=31e311a2-e2a2-4825-9a52-e2baca54cfbe item='chair' offer=150 decision={"action": "accept"}
+[CHALLENGE2 SHOP DEAL] {"shop_id": "shop-04", "seller": "Arun Shop 04", "item": "chair", "price": 150}
+INFO:     127.0.0.1:59908 - "POST / HTTP/1.1" 200 OK
+INFO:     Shutting down

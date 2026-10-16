@@ -1,0 +1,25 @@
+[CHALLENGE1 SELLER] catalog_size=4000 listening=http://127.0.0.1:9201
+INFO:     Started server process [16516]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:9201 (Press CTRL+C to quit)
+INFO:     127.0.0.1:61050 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+[CHALLENGE1 REQUEST] task=b66cf389-a9d6-4c7e-8a0a-15283c83cd4a description='I need something wooden to keep about 40 books, and it should not be taller than my desk.'
+[CHALLENGE1 CRITERIA] {"category": "bookshelf", "materials": ["wood"], "colors": [], "styles": [], "max_height_cm": 85, "min_capacity": 35, "max_capacity": 45}
+[CHALLENGE1 SEARCH] catalog_size=4000 candidate_count=8 candidate_skus=['ARUN-0891', 'ARUN-2211', 'ARUN-3001', 'ARUN-1201', 'ARUN-2691', 'ARUN-2451', 'ARUN-0651', 'ARUN-1131']
+[CHALLENGE1 SELECTION] task=b66cf389-a9d6-4c7e-8a0a-15283c83cd4a sku=ARUN-3001 name='Modern Wood Bookshelf 3001' reserve=114 ask=130
+INFO:     127.0.0.1:61050 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57184 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+[CHALLENGE1 REQUEST] task=1675f68d-1e85-41cb-a04e-1d14f2cb1508 description='I need a bamboo bookshelf that can hold about 40 books and must be no taller than 50 cm.'
+[CHALLENGE1 CRITERIA] {"category": "bookshelf", "materials": ["bamboo"], "colors": [], "styles": [], "max_height_cm": 50, "min_capacity": 35, "max_capacity": 45}
+[CHALLENGE1 SEARCH] catalog_size=4000 candidate_count=0 candidate_skus=[]
+[CHALLENGE1 NO MATCH] task=1675f68d-1e85-41cb-a04e-1d14f2cb1508
+INFO:     127.0.0.1:57184 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62252 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+[CHALLENGE1 NEGOTIATION] task=b66cf389-a9d6-4c7e-8a0a-15283c83cd4a sku=ARUN-3001 offer=120 decision={"action": "accept"}
+[CHALLENGE1 DEAL] {"seller": "Arun Large Catalog Seller", "sku": "ARUN-3001", "item": "Modern Wood Bookshelf 3001", "price": 120, "reserve": 114}
+INFO:     127.0.0.1:62252 - "POST / HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [16516]
