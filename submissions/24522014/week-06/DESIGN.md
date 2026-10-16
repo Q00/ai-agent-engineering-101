@@ -1,14 +1,14 @@
 # 내 하네스로 만드는 buyer와 가게 — STEP 1 설계
 
-상태: STEP 1–5 완료. 두 하네스에서 seller의 제한 조건과 공식 seller 검사까지 검증함.
-buyer는 아직 구현하지 않음.
+상태: STEP 1–6 완료. seller와 buyer의 A2A 통신을 구현하고 검증함.
+buyer의 하네스 기반 가격·철수 판단은 STEP 7에서 연결할 예정.
 요구 사항의 기준: `weeks/week-06/README.md`.
 기존 `a2a-lab/`은 강의 실습 기록으로 보존한다.
 
 ## 1. 사용할 하네스
 
 Claude Code + Haiku와 Codex + Luna를 선택 가능한 하네스로 둔다.
-Claude Code + Haiku는 STEP 6에서 실제 응답을 확인했다.
+Claude Code + Haiku는 앞선 PART B: LAB STEP 6에서 실제 응답을 확인했다.
 Codex + Luna도 STEP 2에서 Python을 통한 실제 JSON 응답을 확인했다.
 각 비대화형 명령에 Python이 표준 입력으로 판단 요청을 전달한다.
 
@@ -60,7 +60,7 @@ STEP 2에서는 선택 함수와 개별 호출만 검증했다. 실제 조합별
 - 모델 ID: https://developers.openai.com/api/docs/models
 - 비대화형 실행: https://learn.chatgpt.com/docs/non-interactive-mode
 
-각 명령의 Python 호출 검증은 STEP 2에서 한다. STEP 6의 서버는
+각 명령의 Python 호출 검증은 STEP 2에서 한다. 앞선 LAB STEP 6의 서버는
 메시지마다 작업을 끝내므로 여기서는 Python이 거래 이력을 관리하고
 판단할 때마다 이력을 하네스에 전달한다. 하네스는 매번 새 빈 임시 폴더를
 작업 디렉터리로 사용하며 임시 폴더도 자신의 제출 디렉터리 안에 만든다.
@@ -192,4 +192,5 @@ STEP 2 결과와 직접 실행 안내는 `STEP2.md`에 기록했다.
 STEP 3 결과와 직접 실행 안내는 `STEP3.md`에 기록했다.
 STEP 4 결과와 직접 실습 안내, 실패·수정 과정은 `STEP4.md`에 기록했다.
 STEP 5의 로컬 검사 21건과 공식 seller 검사 18건의 결과는 `STEP5.md`에 기록했다.
-다음은 STEP 6의 buyer A2A 통신 구현이다.
+STEP 6의 buyer 통신 검사와 직접 실습은 `STEP6.md`에 기록했다.
+다음은 STEP 7의 하네스 기반 buyer 구매 판단 구현이다.
