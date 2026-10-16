@@ -40,3 +40,19 @@ Git 객체에서만 충돌 여부를 계산했다. GitHub의 최종 CI·병합 �
 
 PR 제목: `[week-06] 24522014`.
 PR 설명 원본: `PR_BODY.md`.
+
+## 원격 제출 결과
+
+2026-10-17 08:39:45 KST에 upstream PR을 생성했다.
+
+- PR: [#299 — [week-06] 24522014](https://github.com/Q00/ai-agent-engineering-101/pull/299).
+- base: `Q00/ai-agent-engineering-101:main`.
+- head: `kcwarni/ai-agent-engineering-101:week-06`.
+- 생성 당시 head `75ec4b1`의 GitHub `check`가 completed / success였고,
+  mergeable=true, mergeable_state=clean을 확인했다.
+- [확인한 CI 실행](https://github.com/Q00/ai-agent-engineering-101/actions/runs/38982606348/job/117246693696).
+
+PR 생성 응답과 해당 시점의 CI 상태는 `logs/assignment-pr-*.json`,
+`logs/assignment-ci-*.json`에 기록했다. 이 제출 기록을 추가로 push하면 GitHub가
+새 head에 대해 검사를 다시 실행하므로 최신 상태는 PR 페이지가 기준이다.
+PR은 제출을 위해 열어 두며 병합하지 않는다.
