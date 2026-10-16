@@ -1,0 +1,298 @@
+[20:14:48] [shop] card: 'Book Nook Furniture', JSON-RPC http://127.0.0.1:9206/, skills ['negotiate']
+[20:14:48] [shop] card: 'Table Talk', JSON-RPC http://127.0.0.1:9207/, skills ['negotiate']
+[20:14:48] [shop] card: 'Shelf Life', JSON-RPC http://127.0.0.1:9205/, skills ['negotiate']
+[20:14:48] [shop] card: 'Seat Society', JSON-RPC http://127.0.0.1:9203/, skills ['negotiate']
+[20:14:48] [shop] card: 'Office Nest', JSON-RPC http://127.0.0.1:9204/, skills ['negotiate']
+[20:14:48] [shop] card: 'Bright Corner', JSON-RPC http://127.0.0.1:9202/, skills ['negotiate']
+[20:14:48] [shop] card: 'Desk Works', JSON-RPC http://127.0.0.1:9208/, skills ['negotiate']
+[20:14:48] [shop] card: 'Lumen Lights', JSON-RPC http://127.0.0.1:9201/, skills ['negotiate']
+[20:14:48] [shop] card: 'Sofa Street', JSON-RPC http://127.0.0.1:9209/, skills ['negotiate']
+[20:14:48] [shop] card: 'Small Space Co', JSON-RPC http://127.0.0.1:9214/, skills ['negotiate']
+[20:14:48] [shop] card: 'Rug Room', JSON-RPC http://127.0.0.1:9211/, skills ['negotiate']
+[20:14:48] [shop] card: 'Sleep Well Beds', JSON-RPC http://127.0.0.1:9210/, skills ['negotiate']
+[20:14:48] [shop] card: 'Cozy Den', JSON-RPC http://127.0.0.1:9216/, skills ['negotiate']
+[20:14:48] [shop] card: 'Nordic Living', JSON-RPC http://127.0.0.1:9213/, skills ['negotiate']
+[20:14:48] [shop] card: 'Home Basics', JSON-RPC http://127.0.0.1:9212/, skills ['negotiate']
+[20:14:48] [shop] card: 'Loft Supply', JSON-RPC http://127.0.0.1:9215/, skills ['negotiate']
+[20:14:48] [shop] card: 'Study Hall', JSON-RPC http://127.0.0.1:9217/, skills ['negotiate']
+[20:14:48] [shop] card: 'Patio & More', JSON-RPC http://127.0.0.1:9218/, skills ['negotiate']
+[20:14:48] [shop] card: 'Big Box Furniture', JSON-RPC http://127.0.0.1:9219/, skills ['negotiate']
+[20:14:48] [shop] card: 'Thrift Finds', JSON-RPC http://127.0.0.1:9220/, skills ['negotiate']
+[20:14:48] [shop] harness: claude -p --model haiku --tools '' --setting-sources '' --no-session-persistence; 4 items, budget 1000, 20 shops
+[20:14:48] [shop] directory: S01 | Lumen Lights | bedside lamp, desk lamp, floor lamp, pendant lamp, reading lamp
+[20:14:48] [shop] directory: S02 | Bright Corner | bedside lamp, desk lamp, floor lamp, mirror, pendant lamp, reading lamp, rug
+[20:14:48] [shop] directory: S03 | Seat Society | armchair, dining chair, folding chair, office chair, stool
+[20:14:48] [shop] directory: S04 | Office Nest | armchair, coffee table, desk, dining chair, dining table, folding chair, nightstand, office chair, side table, standing desk, stool
+[20:14:48] [shop] directory: S05 | Shelf Life | bookshelf, cabinet, shoe rack, wall shelf, wardrobe
+[20:14:48] [shop] directory: S06 | Book Nook Furniture | bookshelf, cabinet, shoe rack, wall shelf, wardrobe
+[20:14:48] [shop] directory: S07 | Table Talk | coffee table, desk, dining table, nightstand, side table, standing desk
+[20:14:48] [shop] directory: S08 | Desk Works | armchair, coffee table, desk, dining chair, dining table, folding chair, nightstand, office chair, side table, standing desk, stool
+[20:14:48] [shop] directory: S09 | Sofa Street | loveseat, sofa, sofa bed
+[20:14:48] [shop] directory: S10 | Sleep Well Beds | bed frame
+[20:14:48] [shop] directory: S11 | Rug Room | mirror, rug
+[20:14:48] [shop] directory: S12 | Home Basics | armchair, bedside lamp, bookshelf, cabinet, desk lamp, dining chair, floor lamp, folding chair, office chair, pendant lamp, reading lamp, shoe rack, stool, wall
+[20:14:48] [shop] directory: S13 | Nordic Living | armchair, bookshelf, cabinet, coffee table, desk, dining chair, dining table, folding chair, nightstand, office chair, shoe rack, side table, standing desk, sto
+[20:14:48] [shop] directory: S14 | Small Space Co | bookshelf, cabinet, coffee table, desk, dining table, nightstand, shoe rack, side table, standing desk, wall shelf, wardrobe
+[20:14:48] [shop] directory: S15 | Loft Supply | bedside lamp, coffee table, desk, desk lamp, dining table, floor lamp, nightstand, pendant lamp, reading lamp, side table, standing desk
+[20:14:48] [shop] directory: S16 | Cozy Den | bedside lamp, desk lamp, floor lamp, loveseat, mirror, pendant lamp, reading lamp, rug, sofa, sofa bed
+[20:14:48] [shop] directory: S17 | Study Hall | bedside lamp, bookshelf, cabinet, coffee table, desk, desk lamp, dining table, floor lamp, nightstand, pendant lamp, reading lamp, shoe rack, side table, standi
+[20:14:48] [shop] directory: S18 | Patio & More | armchair, dining chair, folding chair, mirror, office chair, rug, stool
+[20:14:48] [shop] directory: S19 | Big Box Furniture | armchair, bed frame, bedside lamp, bookshelf, cabinet, coffee table, desk, desk lamp, dining chair, dining table, floor lamp, folding chair, loveseat, mirror, n
+[20:14:48] [shop] directory: S20 | Thrift Finds | armchair, bedside lamp, bookshelf, cabinet, desk lamp, dining chair, floor lamp, folding chair, office chair, pendant lamp, reading lamp, shoe rack, stool, wall
+[20:14:54] [shop] harness call #1 -> '{"plan": [{"item": 1, "shops": ["S15", "S17", "S12", "S02"], "cap": 90}, {"item": 2, "shops": ["S04", "S08", "S03", "S13"], "cap": 290}, {"item": 3, "shops": ["S05", "S06", "S14", "S13"], "cap": 300}, {"item": 4, "shops": ["S07", "S04", "S14", "S15"], "cap": 250}]}'
+[20:14:54] [shop] plan: #1 'a desk lamp for reading at night': cap 90, shops ['S15', 'S17', 'S12', 'S02'] ...
+[20:14:54] [shop] plan: #2 'an office chair on wheels': cap 290, shops ['S04', 'S08', 'S03', 'S13'] ...
+[20:14:54] [shop] plan: #3 'a wooden bookshelf that holds about 100 books': cap 300, shops ['S05', 'S06', 'S14', 'S13'] ...
+[20:14:54] [shop] plan: #4 'a coffee table for a small living room': cap 250, shops ['S07', 'S04', 'S14', 'S15'] ...
+[20:14:54] [shop#1] pass 1: cap 54, shops ['S15', 'S17', 'S12', 'S02']
+[20:14:54] [shop] -> SendMessage 'I want to buy a desk lamp for reading at night'
+[20:14:54] [shop#2] pass 1: cap 174, shops ['S04', 'S08', 'S03', 'S13']
+[20:14:54] [shop#3] pass 1: cap 180, shops ['S05', 'S06', 'S14', 'S13']
+[20:14:54] [shop#4] pass 1: cap 150, shops ['S07', 'S04', 'S14', 'S15']
+[20:14:54] [shop] -> SendMessage 'I want to buy a coffee table for a small living room'
+[20:14:54] [shop] -> SendMessage 'I want to buy an office chair on wheels'
+[20:14:54] [shop] -> SendMessage 'I want to buy a wooden bookshelf that holds about 100 books'
+[20:14:57] [shop] <- TASK_STATE_INPUT_REQUIRED | Runa Plastic Office Chair (P-00035: A natural plastic office chair. Height 106 cm. On wheels. With armrests. Holds up to 150 kg.): asking 200. Send your offer as a number. Asking 200
+[20:14:57] [shop] <- TASK_STATE_INPUT_REQUIRED | Cove Birch Bookshelf (P-01997: A brown birch bookshelf. 5 shelves, holds about 100 books. Height 195 cm. Width 80 cm.): asking 360. Send your offer as a number. Asking 360
+[20:14:58] [shop] <- TASK_STATE_INPUT_REQUIRED | Ulla Steel Reading Lamp (P-00394: A brown steel reading lamp. Height 62 cm. Dimmable. E27 bulb.): asking 55. Send your offer as a number. Asking 55
+[20:14:58] [shop] <- TASK_STATE_INPUT_REQUIRED | Kasa Walnut Coffee Table (P-00470: A green walnut coffee table. Height 41 cm. Width 40 cm. 3 drawers.): asking 165. Send your offer as a number. Asking 165
+[20:15:00] [shop#2] harness call #5 -> '{"action": "offer", "price": 140}'
+[20:15:00] [shop] -> SendMessage '140' taskId=c199c96b
+[20:15:00] [shop#3] harness call #5 -> '{"action": "offer", "price": 150}'
+[20:15:00] [shop] -> SendMessage '150' taskId=dfabbbb9
+[20:15:01] [shop#1] harness call #5 -> '{"action": "offer", "price": 40}'
+[20:15:01] [shop] -> SendMessage '40' taskId=e64a3f4a
+[20:15:01] [shop#4] harness call #5 -> '{"action": "offer", "price": 120}'
+[20:15:01] [shop] -> SendMessage '120' taskId=27a8f339
+[20:15:02] [shop] <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 190
+[20:15:03] [shop] <- TASK_STATE_INPUT_REQUIRED | 150 is too low. Counteroffer: 340
+[20:15:03] [shop] <- TASK_STATE_INPUT_REQUIRED | 40 is too low. Counteroffer: 48
+[20:15:05] [shop#2] harness call #8 -> '{"action": "offer", "price": 150}'
+[20:15:05] [shop] -> SendMessage '150' taskId=c199c96b
+[20:15:05] [shop] <- TASK_STATE_INPUT_REQUIRED | 120 is too low. Counteroffer: 155
+[20:15:06] [shop#3] harness call #9 -> '{"action": "offer", "price": 160}'
+[20:15:06] [shop] -> SendMessage '160' taskId=dfabbbb9
+[20:15:06] [shop#1] harness call #9 -> '{"action": "offer", "price": 44}'
+[20:15:06] [shop] -> SendMessage '44' taskId=e64a3f4a
+[20:15:08] [shop#4] harness call #9 -> '{"action": "offer", "price": 135}'
+[20:15:08] [shop] -> SendMessage '135' taskId=27a8f339
+[20:15:09] [shop] <- TASK_STATE_INPUT_REQUIRED | 150 is too low. Counteroffer: 180
+[20:15:09] [shop] <- TASK_STATE_INPUT_REQUIRED | 44 is too low. Counteroffer: 46
+[20:15:09] [shop] <- TASK_STATE_INPUT_REQUIRED | 160 is too low. Counteroffer: 330
+[20:15:10] [shop] <- TASK_STATE_INPUT_REQUIRED | 135 is too low. Counteroffer: 145
+[20:15:11] [shop#1] harness call #13 -> '{"action": "offer", "price": 45}'
+[20:15:11] [shop] -> SendMessage '45' taskId=e64a3f4a
+[20:15:11] [shop#3] harness call #13 -> '{"action": "offer", "price": 170}'
+[20:15:11] [shop] -> SendMessage '170' taskId=dfabbbb9
+[20:15:12] [shop#2] harness call #13 -> '{"action": "offer", "price": 160}'
+[20:15:12] [shop] -> SendMessage '160' taskId=c199c96b
+[20:15:13] [shop#4] harness call #13 -> '{"action": "offer", "price": 140}'
+[20:15:13] [shop] -> SendMessage '140' taskId=27a8f339
+[20:15:14] [shop] <- TASK_STATE_COMPLETED | Deal: Ulla Steel Reading Lamp at 45.
+[20:15:14] [shop#1] BOUGHT at S15: 'Ulla Steel Reading Lamp' for 45.0 (cap 54)
+[20:15:14] [shop] <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 320
+[20:15:14] [shop#3] context compaction: 2 older moves -> 1 line, 4 kept
+[20:15:15] [shop] <- TASK_STATE_INPUT_REQUIRED | 160 is too low. Counteroffer: 180
+[20:15:15] [shop#2] context compaction: 2 older moves -> 1 line, 4 kept
+[20:15:16] [shop] <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 145
+[20:15:16] [shop#4] context compaction: 2 older moves -> 1 line, 4 kept
+[20:15:16] [shop#3] harness call #16 -> '{"action": "offer", "price": 175}'
+[20:15:16] [shop] -> SendMessage '175' taskId=dfabbbb9
+[20:15:18] [shop#2] harness call #16 -> '{"action": "offer", "price": 165}'
+[20:15:18] [shop] -> SendMessage '165' taskId=c199c96b
+[20:15:18] [shop#4] harness call #16 -> '{"action": "offer", "price": 142}'
+[20:15:18] [shop] -> SendMessage '142' taskId=27a8f339
+[20:15:19] [shop] <- TASK_STATE_INPUT_REQUIRED | 175 is too low. Counteroffer: 310
+[20:15:19] [shop#3] context compaction: 4 older moves -> 1 line, 4 kept
+[20:15:20] [shop] <- TASK_STATE_INPUT_REQUIRED | 165 is too low. Counteroffer: 180
+[20:15:20] [shop#2] context compaction: 4 older moves -> 1 line, 4 kept
+[20:15:21] [shop] <- TASK_STATE_INPUT_REQUIRED | 142 is too low. Counteroffer: 145
+[20:15:21] [shop#4] context compaction: 4 older moves -> 1 line, 4 kept
+[20:15:22] [shop#3] harness call #19 -> '{"action": "offer", "price": 178}'
+[20:15:22] [shop] -> SendMessage '178' taskId=dfabbbb9
+[20:15:24] [shop#4] harness call #19 -> '{"action": "offer", "price": 143}'
+[20:15:24] [shop] -> SendMessage '143' taskId=27a8f339
+[20:15:24] [shop#2] harness call #19 -> '{"action": "offer", "price": 170}'
+[20:15:24] [shop] -> SendMessage '170' taskId=c199c96b
+[20:15:26] [shop] <- TASK_STATE_INPUT_REQUIRED | 143 is too low. Counteroffer: 145
+[20:15:26] [shop#4] context compaction: 6 older moves -> 1 line, 4 kept
+[20:15:27] [shop] <- TASK_STATE_INPUT_REQUIRED | 178 is too low. Counteroffer: 310
+[20:15:27] [shop#3] context compaction: 6 older moves -> 1 line, 4 kept
+[20:15:27] [shop] <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 180
+[20:15:27] [shop#2] context compaction: 6 older moves -> 1 line, 4 kept
+[20:15:29] [shop#2] harness call #22 -> '{"action": "offer", "price": 172}'
+[20:15:29] [shop] -> SendMessage '172' taskId=c199c96b
+[20:15:29] [shop#3] harness call #22 -> '{"action": "offer", "price": 180}'
+[20:15:29] [shop] -> SendMessage '180' taskId=dfabbbb9
+[20:15:30] [shop#4] harness call #22 -> '{"action": "accept"}'
+[20:15:30] [shop] -> SendMessage '145' taskId=27a8f339
+[20:15:30] [shop] <- TASK_STATE_COMPLETED | Deal: Kasa Walnut Coffee Table at 145.
+[20:15:30] [shop#4] BOUGHT at S07: 'Kasa Walnut Coffee Table' for 145.0 (cap 150)
+[20:15:32] [shop] <- TASK_STATE_INPUT_REQUIRED | 172 is too low. Counteroffer: 180
+[20:15:32] [shop#2] context compaction: 8 older moves -> 1 line, 4 kept
+[20:15:32] [shop] <- TASK_STATE_INPUT_REQUIRED | 180 is too low. Counteroffer: 310
+[20:15:32] [shop#3] context compaction: 8 older moves -> 1 line, 4 kept
+[20:15:35] [shop#2] harness call #24 -> '{"action": "offer", "price": 173}'
+[20:15:35] [shop] -> SendMessage '173' taskId=c199c96b
+[20:15:36] [shop#3] harness call #24 -> '{"action": "walk"}'
+[20:15:36] [shop#3] harness walks away
+[20:15:36] [shop#3] walked away from S05, canceled task dfabbbb9
+[20:15:36] [shop] -> SendMessage 'I want to buy a wooden bookshelf that holds about 100 books'
+[20:15:38] [shop] <- TASK_STATE_INPUT_REQUIRED | 173 is too low. Counteroffer: 180
+[20:15:38] [shop#2] context compaction: 10 older moves -> 1 line, 4 kept
+[20:15:39] [shop] <- TASK_STATE_INPUT_REQUIRED | Orla Oak Bookshelf (P-00212: A white oak bookshelf. 4 shelves, holds about 100 books. Height 149 cm. Width 80 cm.): asking 420. Send your offer as a number. Asking 420
+[20:15:40] [shop#2] harness call #26 -> '{"action": "offer", "price": 174}'
+[20:15:40] [shop] -> SendMessage '174' taskId=c199c96b
+[20:15:42] [shop#3] harness call #26 -> '{"action": "offer", "price": 160}'
+[20:15:42] [shop] -> SendMessage '160' taskId=bb22b72a
+[20:15:43] [shop] <- TASK_STATE_REJECTED | No deal after 8 offers.
+[20:15:43] [shop#2] S04 ended in TASK_STATE_REJECTED
+[20:15:43] [shop] -> SendMessage 'I want to buy an office chair on wheels'
+[20:15:44] [shop] <- TASK_STATE_INPUT_REQUIRED | 160 is too low. Counteroffer: 400
+[20:15:47] [shop#3] harness call #27 -> '{"action": "offer", "price": 170}'
+[20:15:47] [shop] -> SendMessage '170' taskId=bb22b72a
+[20:15:47] [shop] <- TASK_STATE_INPUT_REQUIRED | Brisa Fabric Office Chair (P-01075: A natural fabric office chair. Height 81 cm. On wheels. Height adjustable. With armrests. Holds up to 120 kg.): asking 330. Send your offer as a number. Asking 330
+[20:15:49] [shop] <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 390
+[20:15:50] [shop#2] harness call #29 -> '{"action": "offer", "price": 150}'
+[20:15:50] [shop] -> SendMessage '150' taskId=864bb470
+[20:15:52] [shop#3] harness call #29 -> '{"action": "offer", "price": 175}'
+[20:15:52] [shop] -> SendMessage '175' taskId=bb22b72a
+[20:15:52] [shop] <- TASK_STATE_INPUT_REQUIRED | 150 is too low. Counteroffer: 310
+[20:15:55] [shop] <- TASK_STATE_INPUT_REQUIRED | 175 is too low. Counteroffer: 385
+[20:15:55] [shop#3] context compaction: 2 older moves -> 1 line, 4 kept
+[20:15:55] [shop#2] harness call #31 -> '{"action": "offer", "price": 165}'
+[20:15:55] [shop] -> SendMessage '165' taskId=864bb470
+[20:15:57] [shop#3] harness call #31 -> '{"action": "offer", "price": 175}'
+[20:15:57] [shop] -> SendMessage '175' taskId=bb22b72a
+[20:15:57] [shop] <- TASK_STATE_INPUT_REQUIRED | 165 is too low. Counteroffer: 305
+[20:16:00] [shop] <- TASK_STATE_INPUT_REQUIRED | 175 is too low. Counteroffer: 380
+[20:16:00] [shop#3] context compaction: 4 older moves -> 1 line, 4 kept
+[20:16:00] [shop#2] harness call #33 -> '{"action": "offer", "price": 170}'
+[20:16:00] [shop] -> SendMessage '170' taskId=864bb470
+[20:16:02] [shop] <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 300
+[20:16:02] [shop#2] context compaction: 2 older moves -> 1 line, 4 kept
+[20:16:03] [shop#3] harness call #34 -> '{"action": "offer", "price": 176}'
+[20:16:03] [shop] -> SendMessage '176' taskId=bb22b72a
+[20:16:05] [shop] <- TASK_STATE_INPUT_REQUIRED | 176 is too low. Counteroffer: 370
+[20:16:05] [shop#3] context compaction: 6 older moves -> 1 line, 4 kept
+[20:16:07] [shop#2] harness call #35 -> '{"action": "offer", "price": 172}'
+[20:16:07] [shop] -> SendMessage '172' taskId=864bb470
+[20:16:07] [shop#3] harness call #35 -> '{"action": "offer", "price": 178}'
+[20:16:07] [shop] -> SendMessage '178' taskId=bb22b72a
+[20:16:09] [shop] <- TASK_STATE_INPUT_REQUIRED | 172 is too low. Counteroffer: 300
+[20:16:09] [shop#2] context compaction: 4 older moves -> 1 line, 4 kept
+[20:16:10] [shop] <- TASK_STATE_INPUT_REQUIRED | 178 is too low. Counteroffer: 362
+[20:16:10] [shop#3] context compaction: 8 older moves -> 1 line, 4 kept
+[20:16:12] [shop#2] harness call #37 -> '{"action": "offer", "price": 173}'
+[20:16:12] [shop] -> SendMessage '173' taskId=864bb470
+[20:16:13] [shop#3] harness call #37 -> '{"action": "offer", "price": 179}'
+[20:16:13] [shop] -> SendMessage '179' taskId=bb22b72a
+[20:16:14] [shop] <- TASK_STATE_INPUT_REQUIRED | 173 is too low. Counteroffer: 300
+[20:16:14] [shop#2] context compaction: 6 older moves -> 1 line, 4 kept
+[20:16:16] [shop] <- TASK_STATE_INPUT_REQUIRED | 179 is too low. Counteroffer: 361
+[20:16:16] [shop#3] context compaction: 10 older moves -> 1 line, 4 kept
+[20:16:17] [shop#2] harness call #39 -> '{"action": "offer", "price": 174}'
+[20:16:17] [shop] -> SendMessage '174' taskId=864bb470
+[20:16:19] [shop#3] harness call #39 -> '{"action": "offer", "price": 179}'
+[20:16:19] [shop] -> SendMessage '179' taskId=bb22b72a
+[20:16:21] [shop] <- TASK_STATE_INPUT_REQUIRED | 174 is too low. Counteroffer: 300
+[20:16:21] [shop#2] context compaction: 8 older moves -> 1 line, 4 kept
+[20:16:21] [shop] <- TASK_STATE_REJECTED | No deal after 8 offers.
+[20:16:21] [shop#3] S06 ended in TASK_STATE_REJECTED
+[20:16:21] [shop] -> SendMessage 'I want to buy a wooden bookshelf that holds about 100 books'
+[20:16:24] [shop#2] harness call #40 -> '{"action": "walk"}'
+[20:16:24] [shop#2] harness walks away
+[20:16:24] [shop#2] walked away from S08, canceled task 864bb470
+[20:16:24] [shop] -> SendMessage 'I want to buy an office chair on wheels'
+[20:16:25] [shop] <- TASK_STATE_INPUT_REQUIRED | Cove Birch Bookshelf (P-01997: A brown birch bookshelf. 5 shelves, holds about 100 books. Height 195 cm. Width 80 cm.): asking 350. Send your offer as a number. Asking 350
+[20:16:28] [shop#3] harness call #41 -> '{"action": "offer", "price": 150}'
+[20:16:28] [shop] -> SendMessage '150' taskId=fed00d67
+[20:16:29] [shop] <- TASK_STATE_INPUT_REQUIRED | Runa Fabric Office Chair (P-00032: A red fabric office chair. Height 78 cm. On wheels. Height adjustable. With armrests. Holds up to 100 kg.): asking 175. Send your offer as a number. Asking 175
+[20:16:30] [shop] <- TASK_STATE_INPUT_REQUIRED | 150 is too low. Counteroffer: 340
+[20:16:32] [shop#2] harness call #43 -> '{"action": "offer", "price": 150}'
+[20:16:32] [shop] -> SendMessage '150' taskId=b87e48ed
+[20:16:33] [shop#3] harness call #43 -> '{"action": "offer", "price": 165}'
+[20:16:33] [shop] -> SendMessage '165' taskId=fed00d67
+[20:16:34] [shop] <- TASK_STATE_INPUT_REQUIRED | 150 is too low. Counteroffer: 165
+[20:16:35] [shop] <- TASK_STATE_INPUT_REQUIRED | 165 is too low. Counteroffer: 330
+[20:16:38] [shop#2] harness call #45 -> '{"action": "offer", "price": 158}'
+[20:16:38] [shop] -> SendMessage '158' taskId=b87e48ed
+[20:16:38] [shop#3] harness call #45 -> '{"action": "offer", "price": 170}'
+[20:16:38] [shop] -> SendMessage '170' taskId=fed00d67
+[20:16:41] [shop] <- TASK_STATE_INPUT_REQUIRED | 158 is too low. Counteroffer: 162
+[20:16:41] [shop] <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 320
+[20:16:41] [shop#3] context compaction: 2 older moves -> 1 line, 4 kept
+[20:16:43] [shop#2] harness call #47 -> '{"action": "offer", "price": 160}'
+[20:16:43] [shop] -> SendMessage '160' taskId=b87e48ed
+[20:16:44] [shop#3] harness call #47 -> '{"action": "offer", "price": 175}'
+[20:16:44] [shop] -> SendMessage '175' taskId=fed00d67
+[20:16:46] [shop] <- TASK_STATE_COMPLETED | Deal: Runa Fabric Office Chair at 160.
+[20:16:46] [shop#2] BOUGHT at S03: 'Runa Fabric Office Chair' for 160.0 (cap 174)
+[20:16:47] [shop] <- TASK_STATE_INPUT_REQUIRED | 175 is too low. Counteroffer: 318
+[20:16:47] [shop#3] context compaction: 4 older moves -> 1 line, 4 kept
+[20:16:49] [shop#3] harness call #48 -> '{"action": "offer", "price": 176}'
+[20:16:49] [shop] -> SendMessage '176' taskId=fed00d67
+[20:16:52] [shop] <- TASK_STATE_INPUT_REQUIRED | 176 is too low. Counteroffer: 315
+[20:16:52] [shop#3] context compaction: 6 older moves -> 1 line, 4 kept
+[20:16:55] [shop#3] harness call #49 -> '{"action": "offer", "price": 177}'
+[20:16:55] [shop] -> SendMessage '177' taskId=fed00d67
+[20:16:58] [shop] <- TASK_STATE_INPUT_REQUIRED | 177 is too low. Counteroffer: 315
+[20:16:58] [shop#3] context compaction: 8 older moves -> 1 line, 4 kept
+[20:17:01] [shop#3] harness call #50 -> '{"action": "offer", "price": 178}'
+[20:17:01] [shop] -> SendMessage '178' taskId=fed00d67
+[20:17:04] [shop] <- TASK_STATE_INPUT_REQUIRED | 178 is too low. Counteroffer: 315
+[20:17:04] [shop#3] context compaction: 10 older moves -> 1 line, 4 kept
+[20:17:06] [shop#3] harness call #51 -> '{"action": "offer", "price": 179}'
+[20:17:06] [shop] -> SendMessage '179' taskId=fed00d67
+[20:17:11] [shop] <- TASK_STATE_REJECTED | No deal after 8 offers.
+[20:17:11] [shop#3] S14 ended in TASK_STATE_REJECTED
+[20:17:11] [shop] -> SendMessage 'I want to buy a wooden bookshelf that holds about 100 books'
+[20:17:15] [shop] <- TASK_STATE_INPUT_REQUIRED | Mira Oak Bookshelf (P-01376: A red oak bookshelf. 4 shelves, holds about 100 books. Height 141 cm. Width 40 cm.): asking 340. Send your offer as a number. Asking 340
+[20:17:18] [shop#3] harness call #52 -> '{"action": "offer", "price": 130}'
+[20:17:18] [shop] -> SendMessage '130' taskId=dd550e93
+[20:17:21] [shop] <- TASK_STATE_INPUT_REQUIRED | 130 is too low. Counteroffer: 330
+[20:17:24] [shop#3] harness call #53 -> '{"action": "offer", "price": 150}'
+[20:17:24] [shop] -> SendMessage '150' taskId=dd550e93
+[20:17:27] [shop] <- TASK_STATE_INPUT_REQUIRED | 150 is too low. Counteroffer: 320
+[20:17:32] [shop#3] harness call #54 -> '{"action": "offer", "price": 170}'
+[20:17:32] [shop] -> SendMessage '170' taskId=dd550e93
+[20:17:35] [shop] <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 315
+[20:17:35] [shop#3] context compaction: 2 older moves -> 1 line, 4 kept
+[20:17:40] [shop#3] harness call #55 -> '{"action": "offer", "price": 175}'
+[20:17:40] [shop] -> SendMessage '175' taskId=dd550e93
+[20:17:44] [shop] <- TASK_STATE_INPUT_REQUIRED | 175 is too low. Counteroffer: 315
+[20:17:44] [shop#3] context compaction: 4 older moves -> 1 line, 4 kept
+[20:17:46] [shop#3] harness call #56 -> '{"action": "offer", "price": 175}'
+[20:17:46] [shop] -> SendMessage '175' taskId=dd550e93
+[20:17:49] [shop] <- TASK_STATE_INPUT_REQUIRED | 175 is too low. Counteroffer: 315
+[20:17:49] [shop#3] context compaction: 6 older moves -> 1 line, 4 kept
+[20:17:53] [shop#3] harness call #57 -> '{"action": "walk"}'
+[20:17:53] [shop#3] harness walks away
+[20:17:53] [shop#3] walked away from S13, canceled task dd550e93
+[20:17:53] [shop] pass 2: open [3], caps [650.0]
+[20:17:53] [shop#3] pass 2: cap 650.0, shops ['S05', 'S14', 'S13', 'S06'], last asks {'S05': 310, 'S06': 361, 'S14': 315, 'S13': 315}
+[20:17:53] [shop] -> SendMessage 'I want to buy a wooden bookshelf that holds about 100 books'
+[20:17:58] [shop] <- TASK_STATE_INPUT_REQUIRED | Cove Birch Bookshelf (P-01997: A brown birch bookshelf. 5 shelves, holds about 100 books. Height 195 cm. Width 80 cm.): asking 340. Send your offer as a number. Asking 340
+[20:18:01] [shop#3] harness call #58 -> '{"action": "offer", "price": 260}'
+[20:18:01] [shop] -> SendMessage '260' taskId=4b4e8384
+[20:18:03] [shop] <- TASK_STATE_INPUT_REQUIRED | 260 is too low. Counteroffer: 320
+[20:18:06] [shop#3] harness call #59 -> '{"action": "offer", "price": 280}'
+[20:18:06] [shop] -> SendMessage '280' taskId=4b4e8384
+[20:18:09] [shop] <- TASK_STATE_INPUT_REQUIRED | 280 is too low. Counteroffer: 310
+[20:18:11] [shop#3] harness call #60 -> '{"action": "offer", "price": 290}'
+[20:18:11] [shop] -> SendMessage '290' taskId=4b4e8384
+[20:18:14] [shop] <- TASK_STATE_INPUT_REQUIRED | 290 is too low. Counteroffer: 310
+[20:18:14] [shop#3] context compaction: 2 older moves -> 1 line, 4 kept
+[20:18:18] [shop#3] harness call #61 -> '{"action": "offer", "price": 300}'
+[20:18:18] [shop] -> SendMessage '300' taskId=4b4e8384
+[20:18:22] [shop] <- TASK_STATE_INPUT_REQUIRED | 300 is too low. Counteroffer: 310
+[20:18:22] [shop#3] context compaction: 4 older moves -> 1 line, 4 kept
+[20:18:25] [shop#3] harness call #62 -> '{"action": "offer", "price": 305}'
+[20:18:25] [shop] -> SendMessage '305' taskId=4b4e8384
+[20:18:28] [shop] <- TASK_STATE_INPUT_REQUIRED | 305 is too low. Counteroffer: 310
+[20:18:28] [shop#3] context compaction: 6 older moves -> 1 line, 4 kept
+[20:18:32] [shop#3] harness call #63 -> '{"action": "accept"}'
+[20:18:32] [shop] -> SendMessage '310' taskId=4b4e8384
+[20:18:32] [shop] <- TASK_STATE_COMPLETED | Deal: Cove Birch Bookshelf at 310.
+[20:18:32] [shop#3] BOUGHT at S05: 'Cove Birch Bookshelf' for 310.0 (cap 650.0)
+[20:18:32] [shop] done: bought 4/4, spent 660.0/1000, 224 s, harness calls 63
