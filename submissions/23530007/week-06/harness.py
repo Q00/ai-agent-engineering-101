@@ -41,15 +41,60 @@ def decide(who: str, prompt: str) -> dict | None:
             except subprocess.TimeoutExpired:
                 raw = ""
                 log(who, f"harness call #{CALLS['n']} timed out after {TIMEOUT} s")
+            except OSError as e:          # harness not installed / not on PATH: the caller falls back
+                log(who, f"harness could not start: {e!r}")
+                return None
         log(who, f"harness call #{CALLS['n']} -> {raw[:300]!r}")
-        found = re.findall(r"\{[^{}]*\}", raw)
-        for chunk in reversed(found):
-            try:
-                return json.loads(chunk)
-            except json.JSONDecodeError:
-                continue
+        obj = last_json_object(raw)
+        if obj is not None:
+            return obj
         log(who, f"no JSON object in the answer (attempt {attempt})")
     return None
+
+
+KEEP_RECENT = 4     # moves kept word for word; older ones are compacted into one line
+
+
+def compact(history: list, who: str = "") -> str:
+    """Context compaction for the prompt. `history` is [(label, price), ...], oldest first.
+
+    The last KEEP_RECENT moves stay as they are. Everything before them becomes one summary line
+    with the move count and how each side's price moved (first -> last), so the prompt stays short
+    however long the negotiation runs, and the trend survives.
+    """
+    if not history:
+        return "- (nothing yet)"
+    recent = [f"- {w}: {p}" for w, p in history[-KEEP_RECENT:]]
+    older = history[:-KEEP_RECENT]
+    if not older:
+        return "\n".join(recent)
+    trend = {}
+    for w, p in older:
+        trend.setdefault(w, []).append(p)
+    parts = "; ".join(f"{w} {v[0]}" + (f" -> {v[-1]}" if len(v) > 1 else "") for w, v in trend.items())
+    if who:
+        log(who, f"context compaction: {len(older)} older moves -> 1 line, {len(recent)} kept")
+    return "\n".join([f"- (earlier, {len(older)} moves compacted) {parts}"] + recent)
+
+
+def last_json_object(raw: str):
+    """The last complete top-level JSON object in the text, nested objects included.
+
+    The first version took the last brace pair without any brace inside it. For a nested
+    answer like {"plan": [{...}, {...}]} that returned the last inner object, so challenge 2's plan
+    was silently dropped and the buyer fell back to trying every shop in order (attempt 1).
+    """
+    dec, found, i = json.JSONDecoder(), None, 0
+    while (i := raw.find("{", i)) != -1:
+        try:
+            obj, end = dec.raw_decode(raw, i)
+        except json.JSONDecodeError:
+            i += 1
+            continue
+        if isinstance(obj, dict):
+            found = obj
+        i = end
+    return found
 
 
 def as_int(v):
