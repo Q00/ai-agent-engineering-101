@@ -1,7 +1,7 @@
 # 내 하네스로 만드는 buyer와 가게 — STEP 1 설계
 
-상태: STEP 1–8 완료. seller와 buyer의 하네스 판단·A2A 통신과 실행 설정을 구현하고 검증함.
-두 에이전트의 네 조합에서 구매·예산 부족 시나리오 총 8건을 확인함.
+상태: STEP 1–9 완료. seller와 buyer의 하네스 판단·A2A 통신과 실행 설정을 구현하고 검증함.
+네 조합의 연결 검사 8건 및 기본 Claude 조합의 공식 전체 trade test 21건을 통과함.
 요구 사항의 기준: `weeks/week-06/README.md`.
 기존 `a2a-lab/`은 강의 실습 기록으로 보존한다.
 
@@ -195,4 +195,5 @@ STEP 5의 로컬 검사 21건과 공식 seller 검사 18건의 결과는 `STEP5.
 STEP 6의 buyer 통신 검사와 직접 실습은 `STEP6.md`에 기록했다.
 STEP 7의 자율 buyer 구현과 검사 결과는 `STEP7.md`에 기록했다.
 STEP 8의 agent.json 실행 설정과 네 조합의 연결 검증은 `STEP8.md`에 기록했다.
-다음은 STEP 9의 공식 전체 trade test와 결과 보존이다.
+STEP 9의 공식 전체 trade test 21/21 통과 결과와 BOM 수정은 `STEP9.md`에 기록했다.
+다음은 STEP 10의 REPORT.md 작성과 최종 구조 검사다.
