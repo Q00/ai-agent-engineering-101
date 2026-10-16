@@ -88,7 +88,9 @@ class NegotiationProtocol(unittest.IsolatedAsyncioTestCase):
             first = self.task(await self.send("lamp"))
             tid = first["id"]
             for text in ("-80", "80.5", "I offer 80"):
-                self.assertIn("error", await self.send(text, tid))
+                unchanged = self.task(await self.send(text, tid))
+                self.assertEqual(unchanged["status"]["state"], "TASK_STATE_INPUT_REQUIRED")
+                self.assertIn("asking 150", unchanged["status"]["message"]["parts"][0]["text"])
             self.assertEqual(harness.call_count, 1)
             counter = self.task(await self.send("80", tid))
             self.assertEqual(counter["status"]["state"], "TASK_STATE_INPUT_REQUIRED")

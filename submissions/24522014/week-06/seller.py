@@ -129,11 +129,15 @@ class Seller(AgentExecutor):
             deal = self.open.get(task.id)
             if deal is None:
                 raise UnsupportedOperationError("This task has no open negotiation.")
-            if not re.fullmatch(r"[1-9]\d*", text.strip()):
-                raise InvalidParamsError("Send your offer as one positive integer.")
             item = deal["item"]
-            offer = int(text.strip())
+            offer = int(text.strip()) if re.fullmatch(r"[1-9]\d*", text.strip()) else None
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
+        if deal is not None and offer is None:
+            # Raising inside AgentExecutor can terminate the task in the SDK.
+            # Keep the conversation open and repeat the last already validated ask.
+            message = f"Send your offer as one positive integer. {item}: asking {deal['ask']}"
+            await up.requires_input(up.new_agent_message(parts=[new_text_part(message)]))
+            return
         await up.start_work()
         try:
             if deal is None:
