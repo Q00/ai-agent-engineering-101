@@ -1,0 +1,9 @@
+[20:01:17] [buyer] harness: claude -p --model haiku --tools '' --setting-sources '' --no-session-persistence; item lamp, budget 120
+[20:01:17] [buyer] card: 'message_only shop', JSON-RPC http://127.0.0.1:49641/, skills ['sell']
+[20:01:17] [buyer] -> SendMessage 'I want to buy a lamp'
+[20:01:17] [buyer] <- TASK_STATE_INPUT_REQUIRED | Welcome. My price for it is 130.
+[20:01:20] [buyer] harness call #1 -> '{"action": "offer", "price": 100}'
+[20:01:20] [buyer] -> SendMessage '100' contextId=577b7612
+[20:01:20] [buyer] <- TASK_STATE_COMPLETED | Deal at 100. 
+[20:01:20] [buyer] bought: {"item": "thing", "price": 100}
+[20:01:20] [buyer] done in 2 s, harness calls 1
