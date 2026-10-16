@@ -1,4 +1,4 @@
-"""STEP 3 seller: Agent Card and a model-driven opening quote; no follow-up trades yet."""
+"""Harness-driven seller: opening quotes, counteroffers, receipts, rejection and cancellation."""
 
 import argparse
 import asyncio
@@ -13,13 +13,13 @@ from uuid import uuid4
 import uvicorn
 from starlette.applications import Starlette
 
-from a2a.helpers import get_message_text, new_task_from_user_message, new_text_part
+from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
 from a2a.server.agent_execution import AgentExecutor
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
-from a2a.utils.errors import InvalidParamsError, UnsupportedOperationError
+from a2a.utils.errors import InvalidParamsError, TaskNotCancelableError, UnsupportedOperationError
 
 from harness import HarnessError, MODELS, parse_response, run_harness, select_harness
 
@@ -45,12 +45,35 @@ def validate_opening(decision, reserve):
 
 
 def opening_decision(provider, item, buyer_message, task_id, timeout=90):
+    return seller_decision(provider, item, buyer_message, task_id, "opening", timeout=timeout)
+
+
+def validate_followup(decision, reserve, offer):
+    parse_response(json.dumps(decision))
+    if decision["action"] not in ("ask", "accept", "reject"):
+        raise ValueError("Seller must ask, accept, or reject")
+    if decision["action"] == "reject":
+        return
+    if decision["price"] < reserve:
+        raise ValueError(f"Price must be at least the reserve {reserve}")
+    if decision["action"] == "accept" and decision["price"] != offer:
+        raise ValueError("An accepted price must equal the current buyer offer")
+
+
+def followup_decision(provider, deal, buyer_message, offer, task_id, timeout=90):
+    return seller_decision(provider, deal["item"], buyer_message, task_id, "followup",
+                           offer=offer, ask=deal["ask"], history=deal["history"], timeout=timeout)
+
+
+def seller_decision(provider, item, buyer_message, task_id, phase, *, offer=None, ask=None,
+                    history=None, timeout=90):
     """Ask a model, retry a validation error once, and never invent a fallback price."""
     instructions = (ROOT / "prompts/seller.txt").read_text(encoding="utf-8")
-    context = {"phase": "opening", "item": item, "reserve": RESERVES[item],
-               "buyer_message": buyer_message, "history": []}
+    context = {"phase": phase, "item": item, "reserve": RESERVES[item],
+               "buyer_message": buyer_message, "current_offer": offer, "current_ask": ask,
+               "history": history if history is not None else []}
     prompt = instructions + "\nInput data:\n" + json.dumps(context, ensure_ascii=False)
-    record = {"task_id": task_id, "provider": provider, "model": MODELS[provider],
+    record = {"task_id": task_id, "phase": phase, "provider": provider, "model": MODELS[provider],
               "item": item, "reserve": RESERVES[item], "attempts": [], "status": "failed"}
     deadline = time.monotonic() + timeout
     try:
@@ -59,30 +82,33 @@ def opening_decision(provider, item, buyer_message, task_id, timeout=90):
             record["attempts"].append(entry)
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                raise HarnessError("Opening decision exceeded its total time limit")
+                raise HarnessError("Seller decision exceeded its total time limit")
             try:
                 decision = run_harness(provider, prompt, timeout=remaining)
                 entry["response"] = decision
-                validate_opening(decision, RESERVES[item])
+                if phase == "opening":
+                    validate_opening(decision, RESERVES[item])
+                else:
+                    validate_followup(decision, RESERVES[item], offer)
             except (ValueError, HarnessError) as error:
                 entry["error"] = str(error)
                 # Retry malformed decisions, but not authentication, process, or network failures.
                 validation_error = isinstance(error, ValueError) or isinstance(error.__cause__, ValueError)
                 if not validation_error or attempt == 1:
-                    raise HarnessError(f"Opening decision failed: {error}") from error
+                    raise HarnessError(f"Seller decision failed: {error}") from error
                 prompt += ("\nYour previous response was invalid. Error: " + str(error)
                            + "\nReturn a corrected JSON object obeying the original rules.")
                 continue
             record["status"] = "ok"
             return decision
-        raise HarnessError("No valid opening decision")
+        raise HarnessError("No valid seller decision")
     finally:
         log_dir = ROOT / "logs/seller"
         log_dir.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
         path = log_dir / (stamp + "-" + uuid4().hex[:8] + ".json")
         path.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
-        LOGGER.info("Opening decision log: %s", path)
+        LOGGER.info("Seller decision log: %s", path)
 
 
 class Seller(AgentExecutor):
@@ -91,42 +117,71 @@ class Seller(AgentExecutor):
         self.open = {}
 
     async def execute(self, context, event_queue):
-        if context.current_task is not None:
-            raise UnsupportedOperationError("Follow-up negotiation is not implemented in this step.")
         text = get_message_text(context.message) or ""
-        item = requested_item(text)
-        task = new_task_from_user_message(context.message)
-        await event_queue.enqueue_event(task)
+        task = context.current_task
+        if task is None:
+            item = requested_item(text)
+            offer = None
+            deal = None
+            task = new_task_from_user_message(context.message)
+            await event_queue.enqueue_event(task)
+        else:
+            deal = self.open.get(task.id)
+            if deal is None:
+                raise UnsupportedOperationError("This task has no open negotiation.")
+            if not re.fullmatch(r"[1-9]\d*", text.strip()):
+                raise InvalidParamsError("Send your offer as one positive integer.")
+            item = deal["item"]
+            offer = int(text.strip())
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
         await up.start_work()
         try:
-            decision = await asyncio.to_thread(opening_decision, self.provider, item, text, task.id)
+            if deal is None:
+                decision = await asyncio.to_thread(opening_decision, self.provider, item, text, task.id)
+            else:
+                decision = await asyncio.to_thread(followup_decision, self.provider, deal, text, offer, task.id)
         except HarnessError as error:
-            LOGGER.error("Opening failed for task %s: %s", task.id, error)
-            await up.failed(up.new_agent_message(parts=[new_text_part("Unable to obtain a valid asking price.")]))
+            self.open.pop(task.id, None)
+            LOGGER.error("Decision failed for task %s: %s", task.id, error)
+            await up.failed(up.new_agent_message(parts=[new_text_part("Unable to obtain a valid seller decision.")]))
             return
-        self.open[task.id] = {"item": item, "ask": decision["price"],
-                              "history": [{"role": "buyer", "text": text},
-                                          {"role": "seller", "decision": decision}]}
-        # The test reads the LAST number as the ask; keep the model's reason out of this text.
-        message = f"{item}: asking {decision['price']}"
-        await up.requires_input(up.new_agent_message(parts=[new_text_part(message)]))
+        history = [] if deal is None else deal["history"]
+        history.extend([{"role": "buyer", "text": text, "offer": offer},
+                        {"role": "seller", "decision": decision}])
+        say = lambda message: up.new_agent_message(parts=[new_text_part(message)])
+        if decision["action"] == "ask":
+            self.open[task.id] = {"item": item, "ask": decision["price"], "history": history}
+            # The last number is the ask; the private reason is never copied into this text.
+            await up.requires_input(say(f"{item}: asking {decision['price']}"))
+        elif decision["action"] == "accept":
+            receipt = {"seller": "Harness Furniture Shop", "item": item, "price": decision["price"]}
+            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+            await up.complete(say(f"Deal: {item} at {decision['price']}"))
+            self.open.pop(task.id, None)
+        else:
+            await up.reject(say("No deal. Negotiation closed."))
+            self.open.pop(task.id, None)
 
     async def cancel(self, context, event_queue):
-        raise UnsupportedOperationError("Cancellation is not implemented in this step.")
+        task = context.current_task
+        if task is None or task.id not in self.open:
+            raise TaskNotCancelableError("This task has no open negotiation.")
+        await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
+        self.open.pop(task.id, None)
 
 
 def build_app(provider, port):
     card = AgentCard(
         name="Harness Furniture Shop",
-        description=f"Opening quotes for furniture using {provider} ({MODELS[provider]}).",
-        version="0.1.0",
-        default_input_modes=["text/plain"], default_output_modes=["text/plain"],
+        description=f"Negotiates furniture purchases using {provider} ({MODELS[provider]}).",
+        version="0.2.0",
+        default_input_modes=["text/plain"], default_output_modes=["text/plain", "application/json"],
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", protocol_version="1.0",
                                              url=f"http://127.0.0.1:{port}/")],
-        skills=[AgentSkill(id="opening_quote", name="Quote a first price",
-                           description="Ask for one lamp, chair, or bookshelf.", tags=["shopping"])],
+        skills=[AgentSkill(id="negotiate", name="Negotiate a purchase",
+                           description="Ask for an item, then offer a numeric price on the same task.",
+                           tags=["shopping", "negotiation"])],
     )
     handler = DefaultRequestHandler(agent_executor=Seller(provider), task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
