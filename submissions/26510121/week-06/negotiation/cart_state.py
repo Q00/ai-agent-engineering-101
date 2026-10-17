@@ -19,6 +19,7 @@ class CartLine:
     cap: int = 0
     shop_id: str | None = None
     task_id: str | None = None
+    last_offer: int | None = None
     attempted_shops: list = field(default_factory=list)
     summary: str = ""
     recent_turns: list = field(default_factory=list)
@@ -80,6 +81,7 @@ class CartLedger:
                 line = self.lines[row.line_id]
                 line.cap, line.shop_id, line.state = row.budget, row.shop_id, "reserved"
                 line.task_id = None
+                line.last_offer = None
                 line.summary, line.recent_turns = "", []
             self.record("cart_reserved")
 
@@ -98,6 +100,7 @@ class CartLedger:
             if line.state != "active" or (line.task_id is not None and line.task_id != memory.task_id):
                 raise ProtocolError("cart_task_changed")
             line.task_id = memory.task_id
+            line.last_offer = memory.last_offer
             line.summary = memory.summary
             line.recent_turns = list(memory.recent)
             self.record("cart_memory", line_id=line_id, task_id=line.task_id,

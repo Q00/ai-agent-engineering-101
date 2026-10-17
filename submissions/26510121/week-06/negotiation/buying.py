@@ -32,10 +32,12 @@ def outcome(task, item, budget, agreed_price):
     return None
 
 
-async def negotiate(client, harness, base_url, item, budget, log):
+async def negotiate(client, harness, base_url, item, budget, log, *, request_text=None, progress=None):
     card = await client.discover(base_url)
-    task = await client.send(f"I want to buy a {item}")
+    task = await client.send(request_text if request_text is not None else f"I want to buy a {item}")
     memory = BuyerMemory(task["id"], task.get("contextId", ""))
+    if progress is not None:
+        await progress(memory)
     for turn in range(8):
         task = await settled_task(client, task, memory.task_id)
         result = outcome(task, item, budget, memory.last_offer)
@@ -43,10 +45,19 @@ async def negotiate(client, harness, base_url, item, budget, log):
             log.record("buyer_result", **result)
             return result
         text = task_text(task)
+        # Catalog mode identifies the selected SKU before any binding price offer.
+        selected = [part["data"]["selected_item"]
+                    for part in task.get("status", {}).get("message", {}).get("parts", [])
+                    if isinstance(part.get("data"), dict) and "selected_item" in part["data"]]
+        if selected and (len(selected) != 1 or selected[0].get("item_id") != item):
+            await client.cancel(memory.task_id)
+            raise ProtocolError("selected_item_mismatch_before_offer")
         context = BuyerContext(item, budget, asking_price(task))
         decision = await harness.buyer(context, memory.observation(text, card, 8 - turn))
         log.record("buyer_decision", task_id=memory.task_id, budget=budget, decision=decision.model_dump())
         memory.apply(text, decision)
+        if progress is not None:
+            await progress(memory)
         if decision.action == "walk_away":
             task = await client.cancel(memory.task_id)
             task = await settled_task(client, task, memory.task_id)

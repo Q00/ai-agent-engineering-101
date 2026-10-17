@@ -34,12 +34,13 @@ RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
 
 class Seller(AgentExecutor):
-    def __init__(self, harness, log, catalog=None):
+    def __init__(self, harness, log, catalog=None, shop_name="Seochanit Shop"):
         self.harness = harness
         self.log = log
         self.memories = {}
         self.locks = {}
         self.catalog = catalog
+        self.shop_name = shop_name
         self.pending = {}
 
     async def choose_catalog(self, task_id, text, updater, say):
@@ -140,7 +141,7 @@ class Seller(AgentExecutor):
                     message.parts.append(new_data_part({"selected_item": product.public()}))
                 await updater.requires_input(message)
             elif decision.action == "accept":
-                receipt = {"seller": "Seochanit Shop", "item": decision.item_id, "price": decision.price}
+                receipt = {"seller": self.shop_name, "item": decision.item_id, "price": decision.price}
                 await updater.add_artifact(parts=[new_data_part(receipt)], name="receipt")
                 await updater.complete(say(f"Deal: {decision.item_id} at {decision.price}"))
                 self.log.record("receipt", task_id=task.id, receipt=receipt)
@@ -164,26 +165,38 @@ class Seller(AgentExecutor):
             self.log.record("canceled", task_id=task.id)
 
 
-def build(port, log_dir, catalog_path=None):
+def build(port, log_dir, catalog_path=None, profile=None):
     settings = load_settings()
     log = RunLog(Path(log_dir) / "server-events.jsonl", settings.api_key)
     catalog = Catalog(catalog_path) if catalog_path else None
+    profile = profile or {}
+    shop_name = profile.get("name", "Seochanit Shop")
+    guide = profile.get("price_guide", "")
+    if not isinstance(shop_name, str) or not 1 <= len(shop_name) <= 80 or not isinstance(guide, str) or len(guide) > 240:
+        raise ValueError("Invalid public shop profile")
     log.record("startup", model=settings.model, reserves=RESERVES if catalog is None else None,
                catalog_size=len(catalog.products) if catalog else 3, port=port)
+    skills = [AgentSkill(id="negotiate", name="Negotiate furniture purchase",
+                        description="Name lamp, chair or bookshelf, then offer an integer price on the same task. A counteroffer, receipt or rejection follows.",
+                        tags=["shopping", "negotiation"], examples=["I want to buy a lamp", "100"])]
+    if catalog is not None:
+        skills = [AgentSkill(id="catalog-" + category, name="Buy " + category,
+                             description=("Describe one need; may ask clarification. After selected_item data and an ask, offer an integer on the same task. "
+                                          + guide + " Public sample products: "
+                                          + json.dumps([p.public() for p in products[:3]], ensure_ascii=False)),
+                             tags=["shopping", "negotiation", category])
+                  for category, products in catalog.by_category.items() if products]
     card = AgentCard(
-        name="Seochanit Shop", description=("Describe one furniture need; searches 3000 synthetic products, then negotiates."
+        name=shop_name, description=(f"Describe one furniture need; searches {len(catalog.products)} synthetic products, then negotiates."
                                             if catalog else "Sells lamps, chairs and bookshelves. A model negotiates the price."),
         version="1.0.0", default_input_modes=["text/plain"],
         default_output_modes=["text/plain", "application/json"],
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", protocol_version="1.0",
                                              url=f"http://127.0.0.1:{port}/")],
-        skills=[AgentSkill(id="negotiate", name="Negotiate furniture purchase",
-                           description=("Describe one need with material, color, book capacity, max height/width in cm. May ask for clarification. Once selected_item data and an ask appear, offer an integer on the same task."
-                                        if catalog else "Name lamp, chair or bookshelf, then offer an integer price on the same task. A counteroffer, receipt or rejection follows."),
-                           tags=["shopping", "negotiation"], examples=["I want to buy a lamp", "100"])],
+        skills=skills,
     )
-    executor = Seller(ModelHarness(log_dir), log, catalog)
+    executor = Seller(ModelHarness(log_dir), log, catalog, shop_name)
     handler = DefaultRequestHandler(agent_executor=executor, task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
@@ -193,9 +206,11 @@ def main():
     parser.add_argument("--port", type=int, default=9999)
     parser.add_argument("--log-dir", type=Path)
     parser.add_argument("--catalog", type=Path, help="Enable description-based selection from this JSONL inventory")
+    parser.add_argument("--profile", type=Path, help="Public shop name and optional indicative price guide JSON")
     args = parser.parse_args()
     log_dir = args.log_dir or ROOT / "logs" / "seller" / datetime.now(timezone.utc).strftime("server-%Y%m%dT%H%M%S.%fZ")
-    uvicorn.run(build(args.port, log_dir, args.catalog), host="127.0.0.1", port=args.port, log_level="warning")
+    profile = json.loads(args.profile.read_text(encoding="utf-8")) if args.profile else None
+    uvicorn.run(build(args.port, log_dir, args.catalog, profile), host="127.0.0.1", port=args.port, log_level="warning")
 
 
 if __name__ == "__main__":

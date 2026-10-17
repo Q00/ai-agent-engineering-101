@@ -21,12 +21,13 @@ from negotiation.runlog import RunLog
 from negotiation.catalog_contracts import (
     NeedContext, SelectionContext, catalog_schema, parse_need_decision, parse_selection_decision,
 )
+from negotiation.cart_contracts import CartContext, cart_schema, parse_cart_decision
 
 
 PARSERS = {"seller": parse_seller_decision, "buyer": parse_buyer_decision,
-           "need": parse_need_decision, "select": parse_selection_decision}
+           "need": parse_need_decision, "select": parse_selection_decision, "cart": parse_cart_decision}
 CONTEXTS = {"seller": SellerContext, "buyer": BuyerContext,
-            "need": NeedContext, "select": SelectionContext}
+            "need": NeedContext, "select": SelectionContext, "cart": CartContext}
 
 
 class HarnessError(RuntimeError):
@@ -40,7 +41,8 @@ def decide(role, context, observation, settings, log, client):
     trusted = asdict(context)
     input_data = {"trusted_context": trusted, "observation": observation}
     parser = PARSERS[role]
-    schema = decision_schema(role) if role in {"seller", "buyer"} else catalog_schema(role)
+    schema = (cart_schema() if role == "cart" else decision_schema(role)
+              if role in {"seller", "buyer"} else catalog_schema(role))
     for attempt in (1, 2):
         log.record("model_request", role=role, attempt=attempt, model=settings.model,
                    instructions=instructions, input=input_data)
@@ -52,7 +54,7 @@ def decide(role, context, observation, settings, log, client):
                       "input": json.dumps(input_data, ensure_ascii=False),
                       "text": {"format": {"type": "json_schema", "name": role + "_decision",
                                           "strict": True, "schema": schema}},
-                      "temperature": 0, "max_output_tokens": 512, "store": False},
+                      "temperature": 0, "max_output_tokens": 1024 if role == "cart" else 512, "store": False},
             )
         except httpx.HTTPError:
             log.record("api_error", code="network_error", attempt=attempt)
@@ -106,6 +108,9 @@ class ModelHarness:
 
     async def select(self, context, observation):
         return await self._run("select", context, observation)
+
+    async def cart(self, context, observation):
+        return await self._run("cart", context, observation)
 
     async def _run(self, role, context, observation):
         log_path = self.log_dir / ("model-" + uuid.uuid4().hex + ".jsonl")
