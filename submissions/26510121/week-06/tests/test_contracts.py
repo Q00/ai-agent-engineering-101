@@ -124,6 +124,8 @@ class ContractTests(unittest.TestCase):
                 schema = decision_schema(role)
                 self.assertFalse(schema["additionalProperties"])
                 self.assertEqual(set(schema["required"]), {"item_id", "price", "reason", "summary", "action"})
+                if role == "buyer":
+                    self.assertEqual(next(iter(schema["properties"])), "action")
 
 
 if __name__ == "__main__":
