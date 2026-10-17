@@ -15,4 +15,28 @@
 원본: `weeks/week-06/lab/hello_agent.py`, `seller_agent.py`, `lab_cli.sh`.
 공식 CLI: https://github.com/a2aproject/a2a-cli (실습 버전 v0.3.0).
 
-설치와 실행 명령 및 실제 결과는 환경 준비 후 추가한다.
+## 실행 (Windows PowerShell)
+
+6주차 제출 폴더를 현재 디렉터리로 두고 실행한다.
+
+```powershell
+# 처음 한 번: Python 3.10+ 실행파일을 지정할 수 있다.
+.\lab\setup.ps1 -Python python
+
+# 가상환경을 활성화하지 않고도 실행 가능하다.
+.\.venv\Scripts\python.exe lab\run_lab.py
+```
+
+이 컴퓨터에서는 Python이 PATH에 없어 Codex에 포함된 Python 3.12.14를
+`setup.ps1 -Python` 인자로 지정했다. OS의 PATH나 기본 Python은 바꾸지 않았다.
+다른 컴퓨터에서는 설치된 Python 경로를 사용하면 된다.
+
+설치는 공식 CLI v0.3.0 Windows x64 압축파일의 SHA256을 확인하며,
+Python 의존성의 실제 설치 버전은 `requirements-lock.txt`에 보관한다.
+동일 버전 재현은 가상환경에서 `python -m pip install -r lab/requirements-lock.txt`로 가능하다.
+
+기본 실습은 모델을 호출하지 않는다. 사용 포트는 echo 8080, hello 9000,
+판매자 9999이며 이미 사용 중이면 기존 프로세스를 건드리지 않고 중단한다.
+직접 시작한 서버만 실습 종료 시 종료한다.
+
+결과와 실패 원인: `RESULTS.md`. 매 실행마다 새 로그 디렉터리를 생성한다.

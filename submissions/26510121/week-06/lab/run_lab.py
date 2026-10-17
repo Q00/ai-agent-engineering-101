@@ -145,12 +145,12 @@ class Lab:
                         process.kill()
                         process.wait(timeout=5)
 
-    def check_card(self, name, url, expected_name=None, expected_binding="JSONRPC"):
+    def check_card(self, name, url, expected_name=None, expected_binding="JSONRPC", require_skills=True):
         card = self.cli_json(name + "_card", "card", "get", url)
         interface = card.get("supportedInterfaces", [{}])[0]
         self.require(
             name + "_card",
-            bool(card.get("name")) and bool(card.get("skills"))
+            bool(card.get("name")) and (not require_skills or bool(card.get("skills")))
             and interface.get("protocolBinding") == expected_binding
             and interface.get("protocolVersion") == "1.0"
             and (expected_name is None or card["name"] == expected_name),
@@ -161,7 +161,7 @@ class Lab:
         out, _ = self.command("cli-version", [CLI, "version"])
         self.require("cli_version", "0.3.0" in out, out.strip())
         with self.server("echo", [CLI, "server", "--echo", "--port", "8080"], 8080) as url:
-            self.check_card("echo", url, expected_binding="HTTP+JSON")
+            self.check_card("echo", url, expected_binding="HTTP+JSON", require_skills=False)
             task = self.send("echo-send", url, "hello A2A")
             self.require("echo_completed_artifact", task["status"]["state"] == "TASK_STATE_COMPLETED"
                          and "hello A2A" in list(part_texts(task.get("artifacts", []))),

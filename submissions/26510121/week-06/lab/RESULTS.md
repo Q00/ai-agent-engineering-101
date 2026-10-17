@@ -16,4 +16,26 @@
 - 원인: 판매자 과제의 필수 skill 목록 조건까지 echo에 적용했다. CLI가 기본 생성한 echo 카드의 skill 목록은 비어 있다.
 - 다음 수정: echo는 이름·지원 binding·버전을 확인하고, hello와 판매자는 skill 목록도 확인한다. 판매자 과제의 조건을 완화하지 않는다.
 
+## 시도 3: 프로토콜 실습 통과
+
+- 로그: `logs/lab/20261017T034522.256182Z/`
+- `lab-summary.json`의 `passed`는 `true`.
+- echo: HTTP+JSON 1.0 카드 조회, completed와 `hello A2A` artifact 확인.
+- hello: JSONRPC 1.0 카드 조회, completed와 `Hello! You said: hi there` 확인.
+- 판매자: JSONRPC 1.0 카드와 skill 확인.
+- 버전 헤더 없는 요청: `-32009`, `VERSION_NOT_SUPPORTED` 확인.
+- lamp: 동일 taskId로 `asking 130` → `80 is too low. Counteroffer: 105.` → completed. 영수증: `{'item': 'lamp', 'price': 105, 'seller': 'Lamp Shop'}`.
+- task 조회: history 5개. 종료 후 추가 메시지: `UNSUPPORTED_OPERATION`, CLI exit code 1.
+- sofa: rejected. chair에 100을 3회 제안: input-required, input-required, rejected.
+- bookshelf: CancelTask 후 canceled.
+- 실행 도구가 시작한 서버는 각 시나리오가 끝나면 종료한다.
+
+## 배운 점
+
+- A2A 카드의 binding을 읽어야 한다. echo의 REST와 판매자의 JSON-RPC가 모두 A2A 1.0으로 동작한다.
+- 다중 턴 협상은 같은 taskId를 유지해야 한다. contextId는 관련 메시지와 task를 묶는다.
+- 응답 메시지는 협상 진행을, artifact의 data Part는 최종 영수증을 전달한다.
+- A2A는 상태·메시지·결과물의 틀을 정하지만, `80`이 제안이고 `105`가 수락이라는 의미나 최저가·예산 정책까지 정하지 않는다.
+- 이 판매자는 강의의 규칙 기반 예제다. 최종 과제에서는 이 판단을 하네스가 수행해야 한다.
+
 이 기록은 실습용이며 최종 과제의 `REPORT.md` 또는 공식 `test-report.json`을 대신하지 않는다.

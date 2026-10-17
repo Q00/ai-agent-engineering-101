@@ -1,0 +1,42 @@
+$ C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-06\.runtime\a2a\a2a.exe card get http://127.0.0.1:9999 -o json
+{
+  "supportedInterfaces": [
+    {
+      "url": "http://127.0.0.1:9999/",
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "application/json",
+    "text/plain"
+  ],
+  "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+  "name": "Lamp Shop",
+  "skills": [
+    {
+      "description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
+      "examples": [
+        "I want to buy a lamp",
+        "90"
+      ],
+      "id": "negotiate",
+      "name": "Negotiate a purchase",
+      "tags": [
+        "shopping",
+        "negotiation"
+      ]
+    }
+  ],
+  "version": "1.0.0"
+}
+
+STDERR:
+
+exit code 0
