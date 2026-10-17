@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import time
 
 
 BASE = Path(__file__).resolve().parent
@@ -33,14 +34,26 @@ def find_codex():
 
 def call_harness(prompt, timeout=90):
     executable = find_codex()
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ")
     log_dir = BASE / "development_logs"
     log_dir.mkdir(exist_ok=True)
-    log = log_dir / f"harness_{stamp}.txt"
     command = [executable, "exec", "--skip-git-repo-check", "--ephemeral",
                "--sandbox", "read-only", "--color", "never",
                "-c", "project_doc_max_bytes=0", "-"]
-    # Each call gets a fresh conversation and an empty working directory.
+    deadline = time.monotonic() + timeout
+    for attempt in range(4):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("Harness retry time budget exhausted")
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ")
+        log = log_dir / f"harness_{stamp}_attempt{attempt + 1}.txt"
+        answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+        if delay is None:
+            return answer
+        time.sleep(delay)
+
+
+def _run_attempt(command, prompt, remaining, log, attempt, deadline):
+    # Each attempt preserves raw output in its own new file.
     with log.open("x", encoding="utf-8") as capture:
         capture.write("COMMAND: " + json.dumps(command) + "\nPROMPT:\n" + prompt + "\n")
         capture.flush()
@@ -48,9 +61,9 @@ def call_harness(prompt, timeout=90):
             try:
                 result = subprocess.run(command, input=prompt, text=True,
                                         encoding="utf-8", errors="replace",
-                                        capture_output=True, cwd=work, timeout=timeout)
+                                        capture_output=True, cwd=work, timeout=remaining)
             except subprocess.TimeoutExpired as error:
-                capture.write(f"TIMEOUT: {timeout}s\n")
+                capture.write(f"TIMEOUT: {remaining}s\n")
                 for label, value in [("STDOUT", error.stdout), ("STDERR", error.stderr)]:
                     if isinstance(value, bytes):
                         value = value.decode("utf-8", errors="replace")
@@ -59,6 +72,15 @@ def call_harness(prompt, timeout=90):
         capture.write(f"EXIT: {result.returncode}\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\n")
         capture.flush()
         if result.returncode:
+            # Match an HTTP status in diagnostic output, not arbitrary prompt text.
+            rate_limited = "429 Too Many Requests" in result.stderr
+            if rate_limited and attempt < 3:
+                delay = 5 * (2 ** attempt)
+                if deadline - time.monotonic() <= delay + 1:
+                    capture.write("RETRY STOPPED: total time budget exhausted\n")
+                    raise TimeoutError(f"Harness retry time budget exhausted; see {log}")
+                capture.write(f"RETRY: HTTP 429; waiting {delay}s before attempt {attempt + 2}\n")
+                return None, delay
             raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
         try:
             answer = json.loads(result.stdout)
@@ -67,7 +89,7 @@ def call_harness(prompt, timeout=90):
         except ValueError as error:
             capture.write(f"PARSE ERROR: {error}\n")
             raise
-        return answer
+        return answer, None
 
 
 if __name__ == "__main__":
