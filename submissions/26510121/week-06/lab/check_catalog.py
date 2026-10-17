@@ -4,7 +4,7 @@ Does not overwrite official reports. The server runs in this process and closes
 in finally, so there is no shell-launched server left behind on Windows.
 """
 import asyncio
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, redirect_stderr
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -74,6 +74,9 @@ class Tee:
     def flush(self):
         for stream in self.streams:
             stream.flush()
+
+    def isatty(self):
+        return False
 
 
 async def run(logs):
@@ -211,8 +214,15 @@ def main():
     logs = ROOT / "logs/challenge-1" / datetime.now(timezone.utc).strftime("run-%Y%m%dT%H%M%S.%fZ")
     logs.mkdir(parents=True, exist_ok=False)
     with (logs / "console.log").open("x", encoding="utf-8") as console:
-        with redirect_stdout(Tee(sys.stdout, console)):
-            return asyncio.run(run(logs))
+        with redirect_stdout(Tee(sys.stdout, console)), redirect_stderr(Tee(sys.stderr, console)):
+            try:
+                return asyncio.run(run(logs))
+            except Exception as error:
+                # Keep the failed run visible even before checks/summary exist.
+                print("Catalog run aborted: " + type(error).__name__, file=sys.stderr)
+                with (logs / "failure.json").open("x", encoding="utf-8") as output:
+                    json.dump({"passed": False, "error_type": type(error).__name__}, output)
+                return 1
 
 
 if __name__ == "__main__":
