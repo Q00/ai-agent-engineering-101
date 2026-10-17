@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
-  "started": "2026-10-17T04:25:10+00:00",
+  "started": "2026-10-17T04:27:18+00:00",
   "harness": "Python prompt/validation loop + OpenAI Responses API; gpt-4o-mini; strict JSON Schema; temperature 0",
   "seller_cmd": "python -u seller.py --port {port}",
   "buyer_cmd": "python -u buyer.py --url {url} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Sells lamps, chairs and bookshelves. A model negotiates the price.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:50301/",
+        "url": "http://127.0.0.1:59474/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -83,13 +83,13 @@
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [300, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [300]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [300]"
+      "detail": "TASK_STATE_REJECTED, asks [300, 260]"
     },
     {
       "test": "seller_holds_reserve",
@@ -100,14 +100,14 @@
     {
       "test": "buyer_deal",
       "run": 1,
-      "pass": true,
-      "detail": "deals [120] (budget 120)"
+      "pass": false,
+      "detail": "deals [] (budget 120)"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 1,
-      "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "pass": false,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
     },
     {
       "test": "buyer_deal",
