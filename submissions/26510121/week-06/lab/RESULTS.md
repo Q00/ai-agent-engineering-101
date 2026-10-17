@@ -51,6 +51,18 @@
 - 기존 과제 코드의 OpenAI API 기본 모델은 `gpt-4o-mini`이다. CLI의 기본 모델 설정과 별개다.
 - 현재 프로세스·Windows 사용자·시스템 환경변수에서 키가 없음을 값 출력 없이 확인했다. Git에서 제외되는 `.env`에 사용자가 직접 입력할 빈 설정을 준비했다. API 호출은 아직 하지 않았다.
 
+## 시도 6: OpenAI API 하네스 연결 통과
+
+- 로그: `logs/lab/20261017T040106.607650Z/`.
+- 사용자가 로컬 `.env`에 저장한 기존 키를 사용했다. 파일은 Git에서 제외하며 키 값은 출력하지 않았다.
+- 요청 모델: `gpt-4o-mini`. OpenAI Responses API로 한 번 호출했다.
+- 실행: `.venv/Scripts/python.exe lab/run_lab.py --harness-only --harness openai --shell-directory 'C:\Program Files\Git\bin'`.
+- 빈 작업 폴더에서 `.venv/Scripts/python.exe lab/openai_smoke.py --metadata-log <실행 로그 폴더>/api-call.json`을 공식 A2A CLI의 `server --exec`로 감쌌다.
+- 키 설정·모델 설정·Agent Card·완료 및 artifact의 4개 확인 항목이 통과했다.
+- 실제 결과: `"state": "TASK_STATE_COMPLETED"`, artifact의 text: `"A2A lab ready\r\n"`.
+- API 요청·응답 모델과 토큰 사용량은 같은 폴더의 `api-call.json`에 보관했다.
+- 실습 1단계를 완료했다. 공식 trade test나 과제의 하네스 기반 다중 턴 협상 구현은 아직 진행하지 않았다.
+
 ## 배운 점
 
 - A2A 카드의 binding을 읽어야 한다. echo의 REST와 판매자의 JSON-RPC가 모두 A2A 1.0으로 동작한다.

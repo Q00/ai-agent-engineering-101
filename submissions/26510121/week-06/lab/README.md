@@ -8,6 +8,7 @@
 - `reference/`: `weeks/week-06/lab/`의 원본 3개 파일을 그대로 복사
 - `requirements.txt`: 강의 참조 버전의 Python 패키지
 - `run_lab.py`: 로컬 서버와 공식 CLI를 시작하고 강의 체크포인트 확인
+- `openai_smoke.py`: stdin 프롬프트를 OpenAI Responses API에 보내는 단일 턴 실습 하네스
 - `../.venv/`: 로컬 가상환경 (커밋 제외)
 - `../.runtime/`: 공식 CLI 실행파일·다운로드·빈 하네스 작업 폴더 (커밋 제외)
 - `../logs/lab/`: 실행별 원본 CLI·서버 로그와 요약
@@ -43,11 +44,30 @@ Python 의존성의 실제 설치 버전은 `requirements-lock.txt`에 보관한
 
 ## 단일 하네스 응답 실습의 현재 상태
 
-프로토콜 실습 22개 확인 항목은 통과했다. 하네스 단일 응답 실습은 아직 통과하지 않았다.
-Claude는 조직의 구독 접근 제한, Codex CLI는 현재 설정 모델의 ChatGPT 계정 접근 오류로 종료됐다.
-실패 로그는 삭제하거나 수정하지 않고 보존했다.
+프로토콜 실습 22개와 API 하네스 연결 4개 확인 항목이 통과했다.
+이전에 Claude는 조직의 구독 접근 제한, Codex CLI는 설정 모델의 ChatGPT 계정 접근 오류로 종료됐다.
+이 실패 로그도 삭제하거나 수정하지 않고 보존했다.
 
 사용자는 기존 OpenAI API 키를 로컬 설정으로 사용하는 방식을 선택했다.
 `.env.example`은 공개 가능한 빈 설정 예시이며, 실제 키는 Git에서 제외되는 `.env`에만 둔다.
 `AGENT_MODEL`의 기본값은 이전 과제와 같은 `gpt-4o-mini`이다.
-키가 설정된 뒤 API 기반 단일 응답을 A2A artifact로 반환하는 실습을 이어간다.
+키를 설정한 뒤 다음 명령으로 단일 응답 실습을 실행할 수 있다.
+
+```powershell
+.\.venv\Scripts\python.exe lab\openai_smoke.py --describe
+.\.venv\Scripts\python.exe lab\run_lab.py --harness-only --harness openai --shell-directory 'C:\Program Files\Git\bin'
+```
+
+첫 명령은 키의 존재 여부와 모델명만 출력하며 API를 호출하지 않는다.
+두 번째 명령은 A2A CLI의 `--exec`로 단일 턴 API 하네스를 감싸고,
+요청 → Responses API → `TASK_STATE_COMPLETED` + 텍스트 artifact를 확인한다.
+CLI v0.3.0의 `--exec`가 `sh -c`를 사용하므로 Windows에서는 Git의 sh.exe 경로를 지정했다.
+요청마다 새 task와 단일 응답이 생성되며 협상 기록은 유지하지 않는다.
+다중 턴 구매자·판매자는 다음 단계에서 설계한다.
+
+API 호출은 60초 제한·출력 최대 128토큰·서버 저장 비활성화로 실행한다.
+인증 헤더·키 값·실패한 API의 원본 응답 본문은 로그에 쓰지 않는다.
+성공 시 `api-call.json`에는 모델·사용 토큰·응답 결과만 기록한다.
+
+실행 결과: `logs/lab/20261017T040106.607650Z/`.
+공식 API 설명: https://developers.openai.com/api/docs/guides/text
