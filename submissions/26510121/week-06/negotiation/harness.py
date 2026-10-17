@@ -18,6 +18,15 @@ from negotiation.contracts import (
     parse_buyer_decision, parse_seller_decision,
 )
 from negotiation.runlog import RunLog
+from negotiation.catalog_contracts import (
+    NeedContext, SelectionContext, catalog_schema, parse_need_decision, parse_selection_decision,
+)
+
+
+PARSERS = {"seller": parse_seller_decision, "buyer": parse_buyer_decision,
+           "need": parse_need_decision, "select": parse_selection_decision}
+CONTEXTS = {"seller": SellerContext, "buyer": BuyerContext,
+            "need": NeedContext, "select": SelectionContext}
 
 
 class HarnessError(RuntimeError):
@@ -30,7 +39,8 @@ def decide(role, context, observation, settings, log, client):
     instructions = (ROOT / "prompts" / f"{role}.md").read_text(encoding="utf-8")
     trusted = asdict(context)
     input_data = {"trusted_context": trusted, "observation": observation}
-    parser = parse_seller_decision if role == "seller" else parse_buyer_decision
+    parser = PARSERS[role]
+    schema = decision_schema(role) if role in {"seller", "buyer"} else catalog_schema(role)
     for attempt in (1, 2):
         log.record("model_request", role=role, attempt=attempt, model=settings.model,
                    instructions=instructions, input=input_data)
@@ -41,7 +51,7 @@ def decide(role, context, observation, settings, log, client):
                 json={"model": settings.model, "instructions": instructions,
                       "input": json.dumps(input_data, ensure_ascii=False),
                       "text": {"format": {"type": "json_schema", "name": role + "_decision",
-                                          "strict": True, "schema": decision_schema(role)}},
+                                          "strict": True, "schema": schema}},
                       "temperature": 0, "max_output_tokens": 512, "store": False},
             )
         except httpx.HTTPError:
@@ -91,6 +101,12 @@ class ModelHarness:
     async def buyer(self, context, observation):
         return await self._run("buyer", context, observation)
 
+    async def need(self, context, observation):
+        return await self._run("need", context, observation)
+
+    async def select(self, context, observation):
+        return await self._run("select", context, observation)
+
     async def _run(self, role, context, observation):
         log_path = self.log_dir / ("model-" + uuid.uuid4().hex + ".jsonl")
         process = await asyncio.create_subprocess_exec(
@@ -113,7 +129,7 @@ class ModelHarness:
             # The worker only emits safe error codes. Its detailed attempts live in log_path.
             raise HarnessError("worker_failed")
         try:
-            parser = parse_seller_decision if role == "seller" else parse_buyer_decision
+            parser = PARSERS[role]
             return parser(stdout.decode("utf-8"), context)
         except (ValueError, UnicodeError):
             raise HarnessError("invalid_worker_decision") from None
@@ -121,14 +137,14 @@ class ModelHarness:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--role", choices=["seller", "buyer"], required=True)
+    parser.add_argument("--role", choices=list(PARSERS), required=True)
     parser.add_argument("--log", type=Path, required=True)
     args = parser.parse_args()
     settings = load_settings()
     log = RunLog(args.log, settings.api_key)
     try:
         request = json.load(sys.stdin)
-        context_class = SellerContext if args.role == "seller" else BuyerContext
+        context_class = CONTEXTS[args.role]
         context = context_class(**request["context"])
         with httpx.Client(timeout=15, trust_env=False, follow_redirects=False) as client:
             decision = decide(args.role, context, request["observation"], settings, log, client)
