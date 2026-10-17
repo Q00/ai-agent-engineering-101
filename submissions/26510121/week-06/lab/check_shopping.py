@@ -134,7 +134,7 @@ def audit(shopping, result, buyer_dir, shops, previous_receipts):
                            "price": line["receipt"]["price"], "cap": line["cap"]} for line in result["lines"]]}
 
 
-async def run(logs, repeats):
+async def run(logs, repeats, budget=None, expect_no_sale=False, require_summary=False):
     settings = load_settings()
     if not settings.api_key:
         raise RuntimeError("api_key_missing")
@@ -144,12 +144,16 @@ async def run(logs, repeats):
                       "lab/check_shopping.py", "shopping/shopping-list.json"]
     manifest_files += [p.relative_to(ROOT).as_posix() for p in (ROOT / "shopping/shops").glob("*")]
     manifest_files += ["prompts/" + role + ".md" for role in ("cart", "buyer", "seller", "need", "select")]
+    manifest_files += [p.relative_to(ROOT).as_posix() for p in (ROOT / "negotiation").glob("*.py")]
     manifest = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in manifest_files}
     log.record("start", source_sha256=manifest, model=settings.model)
     config = json.loads((ROOT / "shopping/shops.json").read_text(encoding="utf-8"))
     shopping = json.loads((ROOT / "shopping/shopping-list.json").read_text(encoding="utf-8"))
+    if budget is not None:
+        shopping["total_budget"] = budget
     list_path = logs / "shopping-list.json"
-    list_path.write_bytes((ROOT / "shopping/shopping-list.json").read_bytes())
+    with list_path.open("x", encoding="utf-8") as output:
+        json.dump(shopping, output, ensure_ascii=False, indent=2)
     servers, sockets, tasks, shops, checks = [], [], [], {}, []
     previous_receipts = set()
     try:
@@ -191,8 +195,18 @@ async def run(logs, repeats):
             buyer_dir = logs / f"buyer-{repeat}"
             try:
                 code, result = await buyer(directory_path, list_path, buyer_dir)
-                assert code == 0, result.get("code", result.get("outcome"))
-                detail = audit(shopping, result, buyer_dir, shops, previous_receipts)
+                if expect_no_sale:
+                    assert code == 1 and result["outcome"] == "incomplete"
+                    assert result["spent"] == 0 and result["held"] <= shopping["total_budget"]
+                    assert not any(line["receipt"] for line in result["lines"])
+                    assert not any(event["event"] == "receipt" for shop in shops.values() for event in events(shop["events"]))
+                    detail = {"expected": "incomplete-with-no-purchases", "actual_sales": 0,
+                              "spent": result["spent"], "held": result["held"], "total_budget": shopping["total_budget"]}
+                else:
+                    assert code == 0, result.get("code", result.get("outcome"))
+                    detail = audit(shopping, result, buyer_dir, shops, previous_receipts)
+                    if require_summary:
+                        assert detail["buyer_calls_using_summary"] > 0, "No real follow-up using model summary observed"
                 check = {"name": f"shopping-{repeat}", "passed": True, "detail": detail}
             except Exception as error:
                 check = {"name": f"shopping-{repeat}", "passed": False, "error_type": type(error).__name__,
@@ -214,7 +228,9 @@ async def run(logs, repeats):
     passed = len(checks) == repeats and all(check["passed"] for check in checks)
     with (logs / "summary.json").open("x", encoding="utf-8") as output:
         json.dump({"kind": "challenge-2-real-model-many-shops", "passed": passed, "requested_repeats": repeats,
-                   "model": settings.model, "checks": checks, "source_sha256": manifest}, output,
+                   "model": settings.model, "checks": checks, "source_sha256": manifest,
+                   "effective_total_budget": shopping["total_budget"], "expect_no_sale": expect_no_sale,
+                   "require_summary": require_summary}, output,
                   ensure_ascii=False, indent=2)
     print(f"Challenge 2: {sum(c['passed'] for c in checks)}/{repeats}; logs: {logs}")
     return 0 if passed else 1
@@ -223,15 +239,22 @@ async def run(logs, repeats):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--budget", type=int, help="Override only the verifier's copied shopping-list budget")
+    parser.add_argument("--expect-no-sale", action="store_true")
+    parser.add_argument("--require-summary", action="store_true", help="Require a real follow-up that reuses prior model memory")
     args = parser.parse_args()
     if not 1 <= args.repeats <= 3:
         parser.error("repeats must be 1..3")
+    if args.budget is not None and args.budget <= 0:
+        parser.error("budget must be positive")
+    if args.expect_no_sale and args.require_summary:
+        parser.error("choose either no-sale or follow-up coverage")
     logs = ROOT / "logs/challenge-2" / datetime.now(timezone.utc).strftime("run-%Y%m%dT%H%M%S.%fZ")
     logs.mkdir(parents=True, exist_ok=False)
     with (logs / "console.log").open("x", encoding="utf-8") as console:
         with redirect_stdout(Tee(sys.stdout, console)), redirect_stderr(Tee(sys.stderr, console)):
             try:
-                return asyncio.run(run(logs, args.repeats))
+                return asyncio.run(run(logs, args.repeats, args.budget, args.expect_no_sale, args.require_summary))
             except Exception as error:
                 print("Shopping verifier aborted: " + type(error).__name__, file=sys.stderr)
                 with (logs / "failure.json").open("x", encoding="utf-8") as output:
