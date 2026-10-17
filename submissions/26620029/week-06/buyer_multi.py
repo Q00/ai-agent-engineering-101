@@ -11,7 +11,8 @@ Phases (each harness call sees a summary, never a raw transcript):
   4. ALLOT   harness: one shop per item and a price cap per item; code makes the caps fit the budget
              and cancels every quote task that was not chosen
   5. HAGGLE  one thread per item, all at once; each round the harness sees one state line
-  6. REPLAN  items that failed go back to 3-5 with the money that is left and the failed shops excluded
+  6. REPLAN  items that failed go back to 3-5 with the money that is left. A shop whose asks stopped
+             falling (its floor showed) stays a candidate with "floor seen N"; other failed shops are dropped
 
 Enforced in code (the harness is told too): the Ledger. A cap is reserved before a
 negotiation starts, the sum of reservations never exceeds the budget, no offer goes
@@ -42,10 +43,12 @@ For every list item choose up to 3 shops that sell that kind of item.
 Answer with JSON only: {{"plan": [{{"item": <list number>, "shops": ["S01", ...]}}, ...]}}"""
 
 ALLOT_PROMPT = """You are a buyer. Total budget left: {budget}. You must buy every item below exactly once, within the budget.
-Quotes (opening asks; shops usually come down 10-30% when you negotiate):
+Quotes (opening asks; shops usually come down 10-30% when you negotiate. "floor seen N" means that shop's asks
+stopped falling at N in an earlier negotiation, so it will most likely sell at N but not below):
 {quotes}
 For each item choose one quote and a price cap (the most you will pay for it). The caps must add up to at most {budget}.
-Prefer cheap quotes; leave some slack for items that look tight.
+Prefer cheap quotes. A cap below a seen floor will fail again; give such a quote a cap of at least its floor when the
+budget allows, and take the money from items with more slack.
 Answer with JSON only: {{"choice": [{{"item": <item number>, "quote": "<quote id>", "cap": <integer>}}, ...]}}"""
 
 HAGGLE_PROMPT = """You are a buyer negotiating with one shop. State of this negotiation:
@@ -157,6 +160,7 @@ def main():
     log(f"[plan] {json.dumps({items[i]: v for i, v in shortlist.items()})}")
 
     failed_at = {i: set() for i in range(len(items))}
+    floors = {}   # (item, shop) -> the ask the shop stopped at in a failed negotiation
     notes = []
     for rnd in range(REPLANS + 1):
         todo = [i for i in range(len(items)) if i not in ledger.bought]
@@ -183,7 +187,9 @@ def main():
         for k, q in enumerate(open_q):
             q["id"] = f"Q{k + 1}"
         table = "\n".join(f"{q['id']} | item {q['item'] + 1} ({items[q['item']]}) | {shops[q['shop']]['name']} "
-                          f"| {q['product']} | ask {q['ask']}" for q in open_q)
+                          f"| {q['product']} | ask {q['ask']}"
+                          + (f" | floor seen {floors[q['item'], q['shop']]}" if (q['item'], q['shop']) in floors else "")
+                          for q in open_q)
         log("[quote] table\n" + table)
 
         # 4. ALLOT
@@ -256,7 +262,10 @@ def main():
                     f" | asks {asks} offers {offers}")
             else:
                 ledger.release(i)
-                failed_at[i].add(q["shop"])
+                if len(asks) >= 3 and asks[-1] == asks[-2]:   # the shop held its price: that is its floor
+                    floors[i, q["shop"]] = asks[-1]
+                else:
+                    failed_at[i].add(q["shop"])
                 notes.append(f"item {i + 1} failed at {name} (asks {asks}, offers {offers}, cap {cap})")
                 log(f"[fail] item {i + 1} at {name}: {state(t)} | asks {asks} offers {offers} cap {cap}")
         list(pool.map(lambda a: haggle(*a), [(i, q, caps[i]) for i, (q, _) in chosen.items()]))
