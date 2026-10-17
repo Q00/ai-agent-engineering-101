@@ -106,3 +106,45 @@ Responses API의 `text.format`에 strict JSON Schema를 적용하는 구조를 �
 5. agent.json을 만든 뒤 공식 trade test 21회와 제출 구조 검사를 실행한다. 재실행 전 기존 원본 로그와 보고서를 새 디렉터리에 그대로 보관한다.
 
 각 단위의 코드·실패·수정·결과를 따로 커밋한다. 현재 단계에서 최종 agent.json이나 공식 테스트 보고서를 임의로 만들지 않는다.
+
+## 파일 구조와 완료 상태
+
+```text
+week-06/
+  DESIGN.md                    완료: 책임·흐름·상태·확장 설계
+  PLAN.md                      완료: 전체 단계와 현재 위치
+  prompts/
+    seller.md                  작성: 판매자 판단 지침 (실제 협상 검증 예정)
+    buyer.md                   작성: 구매자 판단 지침 (실제 협상 검증 예정)
+  negotiation/
+    contracts.py               구현: 결정 형식·금액·품목·상태 검사
+    harness.py                 예정: API 호출·형식 지정·한 번의 수정 요청
+    state.py                   예정: task별 관찰·최근 이력·요약
+    a2a_client.py              예정: 버전 헤더·taskId·결과 해석
+  seller.py                    예정: A2A 판매자와 하네스 연결
+  buyer.py                     예정: 구매자 실행 진입점
+  tests/test_contracts.py      구현: 네트워크 없는 19개 테스트
+  lab/                         완료: 프로토콜·API 연결 실습
+  logs/design/                 보존: 설계 기반 검증 실행 로그
+```
+
+`예정` 파일은 아직 만들지 않았다. 단순한 빈 파일을 완성된 구성요소처럼 세지 않는다.
+패키지 설치는 `requirements.txt`, 모델·키의 로컬 설정은 `.env`를 사용한다.
+
+## 이번 단계에서 검증한 것
+
+2026-10-17, 가상환경에서 다음 명령을 실행했다.
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+결과는 `Ran 19 tests ... OK`, exit code 0이며 원본 로그는 `logs/design/contracts-20261017-040544-674.log`다. 문법 검사도 통과했다.
+
+- 최저가 이하와 예산 초과를 차단하고, 유효한 모델 가격은 그대로 유지했다.
+- 수락 가격이 실제 상대 가격과 다른 경우, 품목 교체, 종료된 task의 추가 결정을 차단했다.
+- bool·문자열·소수·NaN·Infinity를 정수 가격으로 오인하지 않았다.
+- 중복 JSON 키·누락/추가 필드·알 수 없는 action을 거절했다.
+- 요약에 예산 변경 지시가 있어도 검증기는 원래 예산을 유지했다. 이는 코드 검증 테스트이며 모델의 프롬프트 주입 저항성을 실험한 결과는 아니다.
+
+이번 단계에서는 API 협상 호출이나 공식 trade test를 실행하지 않았다. 모델의 가격 선택, 양보, 종료 판단의 적절성은 통합 후 실제 로그로 평가해야 한다.
