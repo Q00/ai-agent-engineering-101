@@ -12,7 +12,11 @@ What the code still does on its own:
   - writes the message text, so the asking price is always the last number in it
     (the trade test reads the ask that way),
   - on accept, writes the receipt with the buyer's offer as the price.
-The reserve is only in the prompt. The code does not clamp asks or block deals.
+The reserve is in the prompt and also guarded in code: an ask below the reserve is raised
+to the reserve, and an accept below the reserve becomes a counter at the reserve. Every
+time the guard overrides the harness it prints a GUARD line. (The first trade test ran
+with the reserve in the prompt only and failed: haiku countered 250 and sold at 230 on a
+bookshelf with reserve 260.)
 """
 import argparse
 import asyncio
@@ -73,6 +77,14 @@ def render_history(lines):
     return "\n".join(f"  {who}: {what}" for who, what in lines)
 
 
+def guard_ask(task_id, ask, reserve):
+    """Never ask below the reserve, whatever the harness said."""
+    if ask < reserve:
+        print(f"[task {task_id[:8]}] GUARD ask {ask} < reserve {reserve} -> ask {reserve}", flush=True)
+        return reserve
+    return ask
+
+
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}  # task id -> {"item", "reserve", "ask", "history"}
@@ -106,7 +118,7 @@ class Seller(AgentExecutor):
         reserve = RESERVE[item]
         answer = await asyncio.to_thread(
             harness.ask_json, OPEN_PROMPT.format(item=item, reserve=reserve, text=text), f"open {task_id[:8]}")
-        ask = int(answer["price"])
+        ask = guard_ask(task_id, int(answer["price"]), reserve)
         self.open[task_id] = {"item": item, "reserve": reserve, "ask": ask,
                               "history": [("Buyer", text), ("You", f"asked {ask}")]}
         print(f"[task {task_id[:8]}] -> INPUT_REQUIRED ask {ask}", flush=True)
@@ -123,6 +135,11 @@ class Seller(AgentExecutor):
                                        history=render_history(deal["history"]), offer=offer)
         answer = await asyncio.to_thread(harness.ask_json, prompt, f"respond {task_id[:8]}")
         action = answer.get("action")
+        if action == "accept" and offer < deal["reserve"]:
+            print(f"[task {task_id[:8]}] GUARD accept at {offer} < reserve {deal['reserve']} "
+                  f"-> counter {deal['reserve']}", flush=True)
+            answer = {"action": "counter", "price": deal["reserve"]}
+            action = "counter"
 
         if action == "accept":
             receipt = {"seller": SHOP, "item": deal["item"], "price": offer}
@@ -131,7 +148,7 @@ class Seller(AgentExecutor):
             await up.complete(say(f"Deal: {deal['item']} at {offer}."))
             del self.open[task_id]
         elif action == "counter":
-            deal["ask"] = int(answer["price"])
+            deal["ask"] = guard_ask(task_id, int(answer["price"]), deal["reserve"])
             deal["history"].append(("You", f"countered {deal['ask']}"))
             print(f"[task {task_id[:8]}] -> INPUT_REQUIRED ask {deal['ask']}", flush=True)
             await up.requires_input(say(f"{offer} is too low. Counteroffer: {deal['ask']}."))
