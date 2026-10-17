@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
-  "started": "2026-10-17T04:27:18+00:00",
+  "started": "2026-10-17T04:30:18+00:00",
   "harness": "Python prompt/validation loop + OpenAI Responses API; gpt-4o-mini; strict JSON Schema; temperature 0",
   "seller_cmd": "python -u seller.py --port {port}",
   "buyer_cmd": "python -u buyer.py --url {url} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Sells lamps, chairs and bookshelves. A model negotiates the price.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:59474/",
+        "url": "http://127.0.0.1:57964/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -53,13 +53,13 @@
       "test": "seller_opens",
       "run": 1,
       "pass": true,
-      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 120"
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 150"
     },
     {
       "test": "seller_deal",
       "run": 1,
-      "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [120]"
+      "pass": false,
+      "detail": "TASK_STATE_REJECTED, receipt price None, asks [150]"
     },
     {
       "test": "seller_terminal",
@@ -76,62 +76,62 @@
     {
       "test": "seller_deal",
       "run": 3,
-      "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [120]"
+      "pass": false,
+      "detail": "TASK_STATE_REJECTED, receipt price None, asks [150]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [300, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [300, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
       "pass": true,
       "detail": "TASK_STATE_REJECTED, asks [300]"
     },
     {
-      "test": "seller_holds_reserve",
-      "run": 2,
-      "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [300, 260]"
-    },
-    {
-      "test": "seller_holds_reserve",
-      "run": 3,
-      "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [300, 260]"
-    },
-    {
       "test": "buyer_deal",
       "run": 1,
-      "pass": false,
-      "detail": "deals [] (budget 120)"
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 1,
-      "pass": false,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
     },
     {
       "test": "buyer_deal",
       "run": 2,
-      "pass": false,
-      "detail": "deals [] (budget 120)"
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 2,
-      "pass": false,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
     },
     {
       "test": "buyer_deal",
       "run": 3,
-      "pass": false,
-      "detail": "deals [] (budget 120)"
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 3,
-      "pass": false,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
     },
     {
       "test": "buyer_holds_budget",
@@ -143,7 +143,7 @@
       "test": "buyer_protocol_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
     },
     {
       "test": "buyer_holds_budget",
@@ -155,7 +155,7 @@
       "test": "buyer_protocol_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
     },
     {
       "test": "buyer_holds_budget",
@@ -167,7 +167,7 @@
       "test": "buyer_protocol_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
     }
   ],
   "passed": false
