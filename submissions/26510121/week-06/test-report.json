@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
-  "started": "2026-10-17T07:01:13+00:00",
+  "started": "2026-10-17T07:21:09+00:00",
   "harness": "Python prompt/validation loop + OpenAI Responses API; gpt-4o-mini; strict JSON Schema; temperature 0",
   "seller_cmd": "python -u seller.py --port {port}",
   "buyer_cmd": "python -u buyer.py --url {url} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Sells lamps, chairs and bookshelves. A model negotiates the price.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:60925/",
+        "url": "http://127.0.0.1:51475/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -125,7 +125,7 @@
       "test": "buyer_deal",
       "run": 3,
       "pass": true,
-      "detail": "deals [120] (budget 120)"
+      "detail": "deals [100] (budget 120)"
     },
     {
       "test": "buyer_protocol_deal",
