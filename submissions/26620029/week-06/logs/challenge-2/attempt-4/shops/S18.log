@@ -1,0 +1,55 @@
+Chair Market: 334 items, port 42841, chatty=False
+[seller a82fa804] <- 'a shoe cabinet for at least 20 pairs of shoes'
+[seller cb8ceb34] <- 'an office chair with lumbar support'
+[seller cb8ceb34] call 2 (7.8s) -> '{"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["lumbar"], "keywords": ["lumbar support", "ergonomic", "back support"]}'
+[seller cb8ceb34] query {"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["lumbar"], "keywords": ["lumbar support", "ergonomic", "back support"]} -> 8 candidates
+[seller a82fa804] call 3 (8.1s) -> '{"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "20 pairs"]}'
+[seller a82fa804] query {"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "20 pairs"]} -> 8 candidates
+[seller cb8ceb34] call 4 (8.7s) -> '{"sku": "OFF-03033", "price": 200, "say": "This black plastic office chair has lumbar support and adjustable height, and we can talk about the price."}'
+[seller cb8ceb34] -> item OFF-03033 (search+pick), reserve 158, open ask 200
+[seller a82fa804] call 4 (9.9s) -> '{"sku": "SHO-10003", "price": 211, "say": "This sturdy metal cabinet in oak beige comfortably holds a full shoe collection and fits your requirement."}'
+[seller a82fa804] -> item SHO-10003 (search+pick), reserve 158, open ask 211
+[seller 6b395020] <- 'a shoe cabinet for at least 20 pairs of shoes'
+[seller 4cf1c600] <- 'an office chair with lumbar support'
+[seller 4cf1c600] call 6 (4.7s) -> '{"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["lumbar"], "keywords": ["office chair", "lumbar support", "ergonomic"]}'
+[seller 4cf1c600] query {"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["lumbar"], "keywords": ["office chair", "lumbar support", "ergonomic"]} -> 8 candidates
+[seller 6b395020] call 7 (5.8s) -> '{"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "20 pairs"]}'
+[seller 6b395020] query {"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "20 pairs"]} -> 8 candidates
+[seller 4cf1c600] call 8 (5.9s) -> '{"sku": "OFF-03033", "price": 205, "say": "This black plastic office chair offers lumbar support and adjustable height for comfortable everyday seating."}'
+[seller 4cf1c600] -> item OFF-03033 (search+pick), reserve 158, open ask 205
+[seller 6b395020] call 8 (7.0s) -> '{"sku": "SHO-10003", "price": 200, "say": "Our Urban Metal Shoe Cabinet holds a full set of shoes in a practical oak beige finish, and I can offer it at a good price."}'
+[seller 6b395020] -> item SHO-10003 (search+pick), reserve 158, open ask 200
+[seller 43c1d362] <- 'a shoe cabinet for at least 20 pairs of shoes'
+[seller d5e58aaa] <- 'an office chair with lumbar support'
+[seller 43c1d362] call 10 (4.0s) -> '{"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "shoe rack"]}'
+[seller 43c1d362] query {"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "shoe rack"]} -> 8 candidates
+[seller d5e58aaa] call 11 (4.1s) -> '{"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 1, "size": null, "features": ["lumbar"], "keywords": ["ergonomic", "lumbar support", "lumbar cushion", "back support", "chair"]}'
+[seller d5e58aaa] query {"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 1, "size": null, "features": ["lumbar"], "keywords": ["ergonomic", "lumbar support", "lumbar cushion", "back support", "chair"]} -> 8 candidates
+[seller 43c1d362] call 12 (5.1s) -> '{"sku": "SHO-10097", "price": 186, "say": "Yes, this particleboard cabinet holds at least 20 pairs and is our most affordable option that fits your request."}'
+[seller 43c1d362] -> item SHO-10097 (search+pick), reserve 134, open ask 186
+[seller d5e58aaa] call 12 (5.9s) -> '{"sku": "OFF-03033", "price": 212, "say": "This black plastic office chair has lumbar support and adjustable height, which suits long days at the desk."}'
+[seller d5e58aaa] -> item OFF-03033 (search+pick), reserve 158, open ask 212
+[seller d5e58aaa] <- '85'
+[seller 43c1d362] <- '50'
+[seller 43c1d362] call 14 (4.4s) -> '{"buyer_offer": 50, "action": "counter", "price": 160, "say": "Thanks for your interest, but this shoe cabinet is priced for its solid build and 24-pair capacity, so I can meet you partway at this price."}'
+[seller 43c1d362] -> counter 160
+[seller d5e58aaa] call 14 (6.1s) -> '{"buyer_offer": 85, "action": "counter", "price": 185, "say": "That\'s well below what this chair is worth, but I can meet you partway on the price."}'
+[seller d5e58aaa] -> counter 185
+[seller 43c1d362] <- '68'
+[seller d5e58aaa] <- '100'
+[seller 43c1d362] call 16 (5.7s) -> '{"buyer_offer": 68, "action": "counter", "price": 147, "say": "Your offer is still well below my price, but I can meet you partway on this cabinet."}'
+[seller 43c1d362] -> counter 147
+[seller d5e58aaa] call 16 (5.6s) -> '{"buyer_offer": 100, "action": "counter", "price": 170, "say": "I can meet you partway, but this chair\'s build and lumbar support justify a price above your current offer."}'
+[seller d5e58aaa] -> counter 170
+[seller 43c1d362] <- '70'
+[seller d5e58aaa] <- '110'
+[seller 43c1d362] call 18 (6.9s) -> '{"buyer_offer": 70, "action": "counter", "price": 140, "say": "That\'s still well below what this solid cabinet is worth, but I can come down a bit to meet you partway."}'
+[seller 43c1d362] -> counter 140
+[seller d5e58aaa] call 18 (6.1s) -> '{"buyer_offer": 110, "action": "counter", "price": 160, "say": "We\'re close, and this is my best movement on a chair this well made."}'
+[seller d5e58aaa] -> counter 160
+[seller d5e58aaa] <- '113'
+[seller d5e58aaa] call 19 (5.4s) -> '{"buyer_offer": 113, "action": "counter", "price": 158, "say": "I can\'t go as low as that, but I\'ve come down a long way, so I\'m asking for my final price on this chair."}'
+[seller d5e58aaa] -> counter 158
+[seller d5e58aaa] <- '115'
+[seller d5e58aaa] call 20 (7.4s) -> '{"buyer_offer": 115, "action": "counter", "price": 158, "say": "We\'re still well apart, but I can hold at our current price, and I\'m happy to keep talking if you can meet it closer to there."}'
+[seller d5e58aaa] -> counter 158
