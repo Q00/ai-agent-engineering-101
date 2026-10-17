@@ -30,6 +30,16 @@
 - bookshelf: CancelTask 후 canceled.
 - 실행 도구가 시작한 서버는 각 시나리오가 끝나면 종료한다.
 
+## 시도 4: Claude 하네스 실행 권한 오류
+
+- A2A 로그: `logs/lab/20261017T034736.022356Z/`.
+- 실제 하네스 명령의 직접 실행 로그: `logs/lab/claude-direct-20261017-034759-567.log`.
+- A2A 카드 조회는 성공했지만 task는 `TASK_STATE_FAILED`, `exit status 1`로 끝났다.
+- 직접 실행한 실제 오류: `Your organization has disabled Claude subscription access for Claude Code · Use an Anthropic API key instead, or ask your admin to enable access`.
+- API 키를 새로 만들거나 요청하지 않는다. 기존 ChatGPT 로그인을 쓰는 Codex CLI로 동일한 단일 응답 실습을 시도한다.
+- 참고: 제한된 셸에서는 Codex 상태가 `Not logged in`으로 보였으나, 권한을 허용한 실행에서 `Logged in using ChatGPT`와 exit code 0을 확인했다. 인증 파일을 읽거나 복사하지 않았다.
+- 공식 설명: https://learn.chatgpt.com/docs/non-interactive-mode (`codex exec`는 최종 응답을 stdout에 출력하고, `--ephemeral`은 세션 파일 저장을 생략한다).
+
 ## 배운 점
 
 - A2A 카드의 binding을 읽어야 한다. echo의 REST와 판매자의 JSON-RPC가 모두 A2A 1.0으로 동작한다.

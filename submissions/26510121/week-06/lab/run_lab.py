@@ -11,6 +11,7 @@ from importlib.metadata import version
 import json
 import os
 from pathlib import Path
+import shlex
 import socket
 import subprocess
 import sys
@@ -91,8 +92,8 @@ class Lab:
             raise RuntimeError(f"{name}: exit {result.returncode}, expected {expected}; see {path}")
         return result.stdout.decode("utf-8-sig"), result.stderr.decode("utf-8-sig")
 
-    def cli_json(self, name, *args, expected=0):
-        out, err = self.command(name, [CLI, *args, "-o", "json"], expected=expected)
+    def cli_json(self, name, *args, expected=0, timeout=45):
+        out, err = self.command(name, [CLI, *args, "-o", "json"], expected=expected, timeout=timeout)
         # Successful commands use stdout; structured CLI errors may use stderr.
         return json.loads(out.strip() or err.strip())
 
@@ -215,6 +216,37 @@ class Lab:
             self.require("bookshelf_canceled", canceled is not None and canceled["id"] == task["id"]
                          and canceled["status"]["state"] == "TASK_STATE_CANCELED", str(canceled))
 
+    def run_harness(self, executable, shell_directory):
+        """Lecture STEP 6: one-shot harness output as an A2A artifact."""
+        executable = Path(executable).resolve(strict=True)
+        if shell_directory:
+            shell_directory = Path(shell_directory).resolve(strict=True)
+            self.env["PATH"] = str(shell_directory) + os.pathsep + self.env.get("PATH", "")
+        empty = SUBMISSION / ".runtime" / "harness-empty"
+        empty.mkdir(parents=True, exist_ok=True)
+        if list(empty.iterdir()):
+            raise RuntimeError("Harness work directory must be empty")
+        command = shlex.join([
+            executable.as_posix(), "-p", "--model", "haiku", "--tools", "",
+            "--setting-sources", "", "--no-session-persistence",
+        ])
+        out, _ = self.command("claude-version", [executable, "--version"])
+        self.require("harness_version", bool(out.strip()), out.strip())
+        args = [CLI, "server", "--exec", command, "--name", "Claude Lab", "--port", "8090"]
+        with self.server("harness", args, 8090, cwd=empty) as url:
+            self.check_card("harness", url, "Claude Lab", expected_binding="HTTP+JSON", require_skills=False)
+            payload = self.cli_json(
+                "harness-reply", "send", "-a", url,
+                "Reply with exactly these three words and nothing else: A2A lab ready",
+                "--timeout", "120s", timeout=135,
+            )
+            task = find_task(payload)
+            texts = list(part_texts(task.get("artifacts", []))) if task else []
+            self.require("harness_completed_artifact", task is not None
+                         and task["status"]["state"] == "TASK_STATE_COMPLETED"
+                         and any(text.strip() == "A2A lab ready" for text in texts),
+                         json.dumps(payload, ensure_ascii=False))
+
     def finish(self, error=None):
         self.http.close()
         summary = {
@@ -233,11 +265,19 @@ class Lab:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.parse_args()
+    parser.add_argument("--harness-only", action="store_true", help="Run lecture STEP 6 using an existing Claude login")
+    parser.add_argument("--claude-executable", help="Path to the native Claude executable")
+    parser.add_argument("--shell-directory", help="Directory containing sh.exe; --exec in CLI v0.3.0 uses sh -c")
+    args = parser.parse_args()
+    if args.harness_only and not args.claude_executable:
+        parser.error("--harness-only requires --claude-executable")
     lab = Lab()
     error = None
     try:
-        lab.run_protocol()
+        if args.harness_only:
+            lab.run_harness(args.claude_executable, args.shell_directory)
+        else:
+            lab.run_protocol()
     except Exception:
         error = traceback.format_exc()
         with (lab.logs / "failure.log").open("x", encoding="utf-8") as log:
