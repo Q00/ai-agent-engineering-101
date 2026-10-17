@@ -2,6 +2,7 @@
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -11,10 +12,27 @@ import tempfile
 BASE = Path(__file__).resolve().parent
 
 
-def call_harness(prompt, timeout=90):
+def find_codex():
+    """Support normal terminals as well as the VS Code extension environment."""
+    override = os.environ.get("CODEX_EXECUTABLE")
+    if override:
+        executable = shutil.which(override)
+        if executable:
+            return executable
+        raise RuntimeError("CODEX_EXECUTABLE does not name an available executable")
     executable = shutil.which("codex")
-    if executable is None:
-        raise RuntimeError("codex is not on PATH")
+    if executable:
+        return executable
+    # VS Code exposes its bundled CLI on PATH only in some child environments.
+    extensions = Path.home() / ".vscode" / "extensions"
+    candidates = list(extensions.glob("openai.chatgpt-*/bin/windows-x86_64/codex.exe"))
+    if candidates:
+        return str(max(candidates, key=lambda path: path.stat().st_mtime))
+    raise RuntimeError("Codex not found. Add it to PATH or set CODEX_EXECUTABLE to its full path.")
+
+
+def call_harness(prompt, timeout=90):
+    executable = find_codex()
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ")
     log_dir = BASE / "development_logs"
     log_dir.mkdir(exist_ok=True)
