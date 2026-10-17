@@ -75,3 +75,35 @@ exit code 2
 ## 4. A2A가 정해 준 것과 밖에서 맞춘 것
 
 A2A가 정해 준 것은 "어디로 어떻게 보내는가"다. 카드의 위치와 안에 적힌 JSON-RPC 주소, SendMessage와 CancelTask라는 메서드, taskId로 대화를 이어 가는 방식, input-required / completed / rejected / canceled라는 상태, 영수증을 artifact의 data Part로 붙이는 자리, 끝난 task에 다시 보내면 오류가 온다는 규칙까지다. 덕분에 buyer는 Codex 가게든 실습의 규칙 가게든 Kit Shop이든 코드를 바꾸지 않고 거래했다. 반면 "무엇을 말하는가"는 A2A 밖에서 따로 맞춰야 했다. 가격이 메시지의 마지막 숫자라는 약속, 수락이 "호가와 같은 숫자를 보내는 것"이라는 약속, 영수증 data Part에 `price`라는 키가 있다는 약속, 하네스와 코드 사이의 `{"action": ..., "price": ...}` 형식은 전부 A2A 규격에 없고 이번 과제의 trade test와 내 프롬프트가 정한 것이다. 같은 A2A 서버라도 가게가 "Counteroffer: 120 for 2 units" 처럼 답했다면 buyer는 2를 호가로 읽었을 것이다. 프로토콜은 봉투를 정하고, 봉투 안의 말은 양쪽이 따로 합의해야 한다.
+
+## 5. 원격으로 띄운 가게 (평가자 확인용)
+
+trade test와 별개로, 같은 가게를 Docker 컨테이너로 띄우고 Cloudflare Quick Tunnel로 공개했다. 채점 기준은 여전히 agent.json으로 다시 돌리는 trade test이고, 이 절은 설치 없이 가게와 바로 거래해 볼 수 있게 덧붙인 것이다.
+
+- 주소: https://conf-comfortable-prefix-intensity.trycloudflare.com/
+- 카드: https://conf-comfortable-prefix-intensity.trycloudflare.com/.well-known/agent-card.json (`supportedInterfaces[0].url`이 위 주소)
+- 띄운 방법: Dockerfile, compose.yaml. 컨테이너 안에서도 하네스는 같은 `codex exec`이고, Codex 로그인은 이미지에 넣지 않고 실행할 때 `/codex-home`으로 연결한다. 카드에 공개 주소를 쓰도록 seller.py에 `--public-url`, 컨테이너에서 받도록 `--host`를 더했다(기본값은 trade test 때와 같다).
+
+거래해 보는 방법(둘 중 하나):
+
+```bash
+# 이 저장소의 buyer로
+python buyer.py --url https://conf-comfortable-prefix-intensity.trycloudflare.com/ --item lamp --budget 120
+
+# a2a CLI로 직접
+a2a send -a https://conf-comfortable-prefix-intensity.trycloudflare.com/ "I want to buy a lamp"
+a2a send -a https://conf-comfortable-prefix-intensity.trycloudflare.com/ --task-id <위 응답의 task id> "110"
+```
+
+공개 직후 내 buyer로 붙여 본 결과다(lamp, 예산 120).
+
+```
+[buyer] card: 'Codex Shop' binding=JSONRPC v1.0 url=https://conf-comfortable-prefix-intensity.trycloudflare.com/
+[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 65 is too low. Counteroffer: 120.
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 120.
+[buyer]    artifact receipt: [{'item': 'lamp', 'price': 120.0, 'seller': 'Codex Shop'}]
+[buyer] done: TASK_STATE_COMPLETED after 26s
+```
+
+주의: Quick Tunnel 주소는 터널을 다시 띄우면 바뀌고, 가게는 내 Codex 구독으로 판단하므로 상시 운영이 아니다. 주소가 응답하지 않으면 agent.json의 명령으로 trade test를 돌려 확인하면 된다.
