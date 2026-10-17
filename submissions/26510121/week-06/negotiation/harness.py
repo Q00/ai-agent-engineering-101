@@ -86,9 +86,15 @@ class ModelHarness:
             raise HarnessError("worker_directory_not_empty")
 
     async def seller(self, context, observation):
+        return await self._run("seller", context, observation)
+
+    async def buyer(self, context, observation):
+        return await self._run("buyer", context, observation)
+
+    async def _run(self, role, context, observation):
         log_path = self.log_dir / ("model-" + uuid.uuid4().hex + ".jsonl")
         process = await asyncio.create_subprocess_exec(
-            sys.executable, str(ROOT / "harness_cli.py"), "--role", "seller", "--log", str(log_path),
+            sys.executable, str(ROOT / "harness_cli.py"), "--role", role, "--log", str(log_path),
             cwd=self.work_dir, stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
             creationflags=0x08000000 if sys.platform == "win32" else 0,
@@ -96,16 +102,19 @@ class ModelHarness:
         request = json.dumps({"context": asdict(context), "observation": observation}).encode("utf-8")
         try:
             stdout, stderr = await asyncio.wait_for(process.communicate(request), timeout=40)
-        except (asyncio.TimeoutError, asyncio.CancelledError):
+        except (asyncio.TimeoutError, asyncio.CancelledError) as error:
             if process.returncode is None:
                 process.kill()
             await process.wait()
-            raise HarnessError("worker_timeout_or_canceled") from None
+            if isinstance(error, asyncio.CancelledError):
+                raise
+            raise HarnessError("worker_timeout") from None
         if process.returncode != 0:
             # The worker only emits safe error codes. Its detailed attempts live in log_path.
             raise HarnessError("worker_failed")
         try:
-            return parse_seller_decision(stdout.decode("utf-8"), context)
+            parser = parse_seller_decision if role == "seller" else parse_buyer_decision
+            return parser(stdout.decode("utf-8"), context)
         except (ValueError, UnicodeError):
             raise HarnessError("invalid_worker_decision") from None
 

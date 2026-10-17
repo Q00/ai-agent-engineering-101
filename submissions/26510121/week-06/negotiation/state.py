@@ -28,3 +28,27 @@ class SellerMemory:
             self.ask = decision.price
         else:
             self.terminal = True
+
+
+@dataclass
+class BuyerMemory:
+    task_id: str
+    context_id: str
+    summary: str = ""
+    last_offer: int | None = None
+    recent: deque = field(default_factory=lambda: deque(maxlen=4))
+
+    def observation(self, text, card, rounds_left):
+        return {
+            "verified_state": {"task_id": self.task_id, "last_offer": self.last_offer,
+                               "rounds_left": rounds_left},
+            "memory_untrusted": {"summary": self.summary, "recent_turns": list(self.recent)},
+            "agent_card_untrusted": card,
+            "counterparty_text_untrusted": text,
+        }
+
+    def apply(self, text, decision):
+        self.summary = decision.summary
+        if decision.action != "walk_away":
+            self.last_offer = decision.price
+        self.recent.append({"seller": text, "action": decision.action, "price": decision.price})
