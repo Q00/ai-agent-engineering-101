@@ -40,6 +40,17 @@
 - 참고: 제한된 셸에서는 Codex 상태가 `Not logged in`으로 보였으나, 권한을 허용한 실행에서 `Logged in using ChatGPT`와 exit code 0을 확인했다. 인증 파일을 읽거나 복사하지 않았다.
 - 공식 설명: https://learn.chatgpt.com/docs/non-interactive-mode (`codex exec`는 최종 응답을 stdout에 출력하고, `--ephemeral`은 세션 파일 저장을 생략한다).
 
+## 시도 5: Codex CLI 기본 모델의 계정 접근 오류
+
+- 로그: `logs/lab/20261017T035000.123587Z/`.
+- Codex CLI 0.156.1, 기존 ChatGPT 로그인, 설정된 모델 `gpt-6.1-sol`로 실행.
+- A2A 카드는 조회됐지만 task는 `TASK_STATE_FAILED`로 종료됐다.
+- 실제 오류: `The 'gpt-6.1-sol' model is not supported when using Codex with a ChatGPT account.`
+- 요청받은 기본 모델을 임의로 다른 CLI 모델로 바꾸지 않았다.
+- 사용자는 보유한 OpenAI API 키를 로컬에 설정해 사용하는 방식을 선택했다.
+- 기존 과제 코드의 OpenAI API 기본 모델은 `gpt-4o-mini`이다. CLI의 기본 모델 설정과 별개다.
+- 현재 프로세스·Windows 사용자·시스템 환경변수에서 키가 없음을 값 출력 없이 확인했다. Git에서 제외되는 `.env`에 사용자가 직접 입력할 빈 설정을 준비했다. API 호출은 아직 하지 않았다.
+
 ## 배운 점
 
 - A2A 카드의 binding을 읽어야 한다. echo의 REST와 판매자의 JSON-RPC가 모두 A2A 1.0으로 동작한다.

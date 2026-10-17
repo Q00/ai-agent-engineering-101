@@ -216,7 +216,7 @@ class Lab:
             self.require("bookshelf_canceled", canceled is not None and canceled["id"] == task["id"]
                          and canceled["status"]["state"] == "TASK_STATE_CANCELED", str(canceled))
 
-    def run_harness(self, executable, shell_directory):
+    def run_harness(self, executable, shell_directory, kind):
         """Lecture STEP 6: one-shot harness output as an A2A artifact."""
         executable = Path(executable).resolve(strict=True)
         if shell_directory:
@@ -226,18 +226,29 @@ class Lab:
         empty.mkdir(parents=True, exist_ok=True)
         if list(empty.iterdir()):
             raise RuntimeError("Harness work directory must be empty")
-        command = shlex.join([
-            executable.as_posix(), "-p", "--model", "haiku", "--tools", "",
-            "--setting-sources", "", "--no-session-persistence",
-        ])
-        out, _ = self.command("claude-version", [executable, "--version"])
+        if kind == "claude":
+            harness_args = [
+                executable.as_posix(), "-p", "--model", "haiku", "--tools", "",
+                "--setting-sources", "", "--no-session-persistence",
+            ]
+        else:
+            # Keep the user's configured model. Only isolate project documents
+            # and session storage for this one-shot, read-only protocol lab.
+            harness_args = [
+                executable.as_posix(), "exec", "--skip-git-repo-check",
+                "--sandbox", "read-only", "--ephemeral", "--color", "never",
+                "-c", "project_doc_max_bytes=0", "-",
+            ]
+        command = shlex.join(harness_args)
+        out, _ = self.command(kind + "-version", [executable, "--version"])
         self.require("harness_version", bool(out.strip()), out.strip())
-        args = [CLI, "server", "--exec", command, "--name", "Claude Lab", "--port", "8090"]
+        card_name = kind.capitalize() + " Lab"
+        args = [CLI, "server", "--exec", command, "--name", card_name, "--port", "8090"]
         with self.server("harness", args, 8090, cwd=empty) as url:
-            self.check_card("harness", url, "Claude Lab", expected_binding="HTTP+JSON", require_skills=False)
+            self.check_card("harness", url, card_name, expected_binding="HTTP+JSON", require_skills=False)
             payload = self.cli_json(
                 "harness-reply", "send", "-a", url,
-                "Reply with exactly these three words and nothing else: A2A lab ready",
+                "Do not use tools. Reply with exactly these three words and nothing else: A2A lab ready",
                 "--timeout", "120s", timeout=135,
             )
             task = find_task(payload)
@@ -265,17 +276,18 @@ class Lab:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--harness-only", action="store_true", help="Run lecture STEP 6 using an existing Claude login")
-    parser.add_argument("--claude-executable", help="Path to the native Claude executable")
+    parser.add_argument("--harness-only", action="store_true", help="Run lecture STEP 6 using an existing harness login")
+    parser.add_argument("--harness", choices=["claude", "codex"], default="claude")
+    parser.add_argument("--harness-executable", "--claude-executable", dest="harness_executable", help="Path to the native harness executable")
     parser.add_argument("--shell-directory", help="Directory containing sh.exe; --exec in CLI v0.3.0 uses sh -c")
     args = parser.parse_args()
-    if args.harness_only and not args.claude_executable:
-        parser.error("--harness-only requires --claude-executable")
+    if args.harness_only and not args.harness_executable:
+        parser.error("--harness-only requires --harness-executable")
     lab = Lab()
     error = None
     try:
         if args.harness_only:
-            lab.run_harness(args.claude_executable, args.shell_directory)
+            lab.run_harness(args.harness_executable, args.shell_directory, args.harness)
         else:
             lab.run_protocol()
     except Exception:
