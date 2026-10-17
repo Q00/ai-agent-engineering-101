@@ -116,7 +116,7 @@ def audit(shopping, result, buyer_dir, shops, previous_receipts):
             if event["event"] != "model_request":
                 continue
             request_count += 1
-            if event["role"] == "buyer":
+            if event["role"] in {"buyer", "cart_buyer"}:
                 observation = event["input"]["observation"]
                 assert len(observation["memory_untrusted"]["recent_turns"]) <= 4
                 assert len(observation["memory_untrusted"]["summary"]) <= 600
@@ -143,7 +143,7 @@ async def run(logs, repeats, budget=None, expect_no_sale=False, require_summary=
                       "negotiation/cart_contracts.py", "negotiation/cart_state.py", "negotiation/shopping.py",
                       "lab/check_shopping.py", "shopping/shopping-list.json"]
     manifest_files += [p.relative_to(ROOT).as_posix() for p in (ROOT / "shopping/shops").glob("*")]
-    manifest_files += ["prompts/" + role + ".md" for role in ("cart", "buyer", "seller", "need", "select")]
+    manifest_files += ["prompts/" + role + ".md" for role in ("cart", "cart_buyer", "buyer", "seller", "need", "select")]
     manifest_files += [p.relative_to(ROOT).as_posix() for p in (ROOT / "negotiation").glob("*.py")]
     manifest = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in manifest_files}
     log.record("start", source_sha256=manifest, model=settings.model)

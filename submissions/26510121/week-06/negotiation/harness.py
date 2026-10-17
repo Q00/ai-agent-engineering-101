@@ -25,9 +25,10 @@ from negotiation.cart_contracts import CartContext, cart_schema, parse_cart_deci
 
 
 PARSERS = {"seller": parse_seller_decision, "buyer": parse_buyer_decision,
-           "need": parse_need_decision, "select": parse_selection_decision, "cart": parse_cart_decision}
+           "need": parse_need_decision, "select": parse_selection_decision, "cart": parse_cart_decision,
+           "cart_buyer": parse_buyer_decision}
 CONTEXTS = {"seller": SellerContext, "buyer": BuyerContext,
-            "need": NeedContext, "select": SelectionContext, "cart": CartContext}
+            "need": NeedContext, "select": SelectionContext, "cart": CartContext, "cart_buyer": BuyerContext}
 
 
 class HarnessError(RuntimeError):
@@ -41,8 +42,8 @@ def decide(role, context, observation, settings, log, client):
     trusted = asdict(context)
     input_data = {"trusted_context": trusted, "observation": observation}
     parser = PARSERS[role]
-    schema = (cart_schema() if role == "cart" else decision_schema(role)
-              if role in {"seller", "buyer"} else catalog_schema(role))
+    schema = (cart_schema() if role == "cart" else decision_schema("buyer" if role == "cart_buyer" else role)
+              if role in {"seller", "buyer", "cart_buyer"} else catalog_schema(role))
     for attempt in (1, 2):
         log.record("model_request", role=role, attempt=attempt, model=settings.model,
                    instructions=instructions, input=input_data)
@@ -90,7 +91,10 @@ def decide(role, context, observation, settings, log, client):
 
 
 class ModelHarness:
-    def __init__(self, log_dir):
+    def __init__(self, log_dir, buyer_role="buyer"):
+        if buyer_role not in {"buyer", "cart_buyer"}:
+            raise ValueError("Unsupported buyer policy")
+        self.buyer_role = buyer_role
         self.log_dir = Path(log_dir).resolve()
         self.work_dir = ROOT / ".runtime" / "negotiation-empty"
         self.work_dir.mkdir(parents=True, exist_ok=True)
@@ -101,7 +105,7 @@ class ModelHarness:
         return await self._run("seller", context, observation)
 
     async def buyer(self, context, observation):
-        return await self._run("buyer", context, observation)
+        return await self._run(self.buyer_role, context, observation)
 
     async def need(self, context, observation):
         return await self._run("need", context, observation)

@@ -20,7 +20,7 @@ async def run(args):
     try:
         directory = json.loads(args.directory.read_text(encoding="utf-8"))
         shopping = json.loads(args.shopping_list.read_text(encoding="utf-8"))
-        shopper = Shopper(shopping["items"], shopping["total_budget"], ModelHarness(log_dir), log,
+        shopper = Shopper(shopping["items"], shopping["total_budget"], ModelHarness(log_dir, buyer_role="cart_buyer"), log,
                           concurrency=args.concurrency)
         async with asyncio.timeout(280):
             result = await shopper.run(directory)
