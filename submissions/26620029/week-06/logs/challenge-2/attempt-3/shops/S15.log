@@ -1,0 +1,11 @@
+Entryway Co: 347 items, port 54763, chatty=False
+[seller 87c824fa] <- 'a shoe cabinet for at least 20 pairs of shoes'
+[seller b239003a] <- 'a wooden bookshelf for about 60 books'
+[seller b239003a] call 2 (8.9s) -> '{"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "bookcase", "book storage", "shelving"]}'
+[seller b239003a] query {"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "bookcase", "book storage", "shelving"]} -> 8 candidates
+[seller 87c824fa] call 3 (9.8s) -> '{"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "shoe rack", "entryway"]}'
+[seller 87c824fa] query {"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "shoe rack", "entryway"]} -> 8 candidates
+[seller b239003a] call 4 (7.4s) -> '{"sku": "BOO-00154", "price": 260, "say": "This oak bookshelf holds about sixty books on three shelves, and I can offer it at this price."}'
+[seller b239003a] -> item BOO-00154 (search+pick), reserve 187, open ask 260
+[seller 87c824fa] call 4 (8.0s) -> '{"sku": "SHO-10007", "price": 100, "say": "This grey particleboard cabinet holds exactly 20 pairs of shoes and is our most affordable option for that capacity."}'
+[seller 87c824fa] -> item SHO-10007 (search+pick), reserve 78, open ask 100
