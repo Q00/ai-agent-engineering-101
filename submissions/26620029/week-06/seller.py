@@ -122,6 +122,8 @@ class Seller(AgentExecutor):
             return
 
         deal["ask"] = guard_ask(data.get("price"), reserve, fallback=deal["ask"])
+        if str(deal["ask"]) not in note and re.search(r"\d", note):
+            note = ""   # the model's sentence names another price (e.g. one the guard raised); drop it
         deal["history"].append(f"you asked {deal['ask']}")
         log(f"[task {task.id[:8]}] -> counter {deal['ask']}")
         await up.requires_input(say(f"{note} Counteroffer: {deal['ask']}.".strip()))
