@@ -62,6 +62,59 @@ done: TASK_STATE_INPUT_REQUIRED, harness calls 5, 22s
 
 그 밖에 본 것: buyer는 lamp에서 거의 매번 첫 제안에 100이나 105를 불러 바로 샀다(하네스 1회 호출). 하한가가 100이라는 정보는 buyer 프롬프트에 없다. 그런데도 kit 가게의 첫 호가 130을 보고 바로 100 근처를 부른 것은 모델이 그렇게 판단했기 때문이다. 책장에서는 180→215→225→230처럼 예산 쪽으로 올리다가, 가게가 거절하거나(REJECTED) 하네스가 walk를 골랐다(CANCELED). 예산 가드가 작동한 적은 없다. 그래도 최저가 쪽에서 모델이 프롬프트를 어긴 것을 봤기 때문에, 예산 가드도 그대로 둔다.
 
-## (4) A2A가 정해 준 것과, A2A 밖에서 따로 맞춰야 했던 것
 
-A2A는 **대화의 틀**을 정해 줬다. 상대가 누구이고 어디로 보내는지(Agent Card의 `supportedInterfaces`), 어떤 메서드를 쓰는지(`SendMessage`, `CancelTask`), 여러 번 주고받는 흥정을 하나로 묶는 방법(`taskId`), 지금 누가 무엇을 기다리는지(`TASK_STATE_INPUT_REQUIRED`), 어떻게 끝났는지(COMPLETED/REJECTED/CANCELED), 끝난 task에 다시 보내면 어떻게 되는지(`-32004 UNSUPPORTED_OPERATION`, SDK가 알아서 처리), 버전을 어떻게 맞추는지(`A2A-Version: 1.0`)가 그렇다. 덕분에 내 buyer는 처음 보는 kit 가게와도, 강의 `seller_agent.py`와도 코드를 고치지 않고 거래했다. 하지만 **흥정의 내용**은 A2A 밖에서 맞춰야 했다. 가격은 text Part 안의 자유 문장이고, "마지막 숫자가 호가"라는 것은 trade test와 맺은 약속일 뿐이다. 그래서 내 가게는 모델 문장 끝에 숫자를 코드로 붙여야 했고, (3)-②처럼 문장 속 다른 숫자가 오해를 낳을 수 있었다. buyer 쪽의 "수락"은 별도 메시지 타입이 아니라 상대의 호가를 그대로 숫자로 보내는 것이고, 가게 쪽의 수락은 `COMPLETED`와 함께 data Part `price`가 든 receipt artifact를 붙이는 것이다. 이것도 관례일 뿐이다. 통화 단위, 소수점 처리(receipt의 `price`가 protobuf Struct를 거치며 `110.0`이 됨), 몇 번 제안하면 가게가 끝내는지, CancelTask와 그냥 멈추기 중 어느 쪽이 "그만두기"인지도 A2A가 정해 주지 않는다. 결국 A2A는 봉투와 우편 경로를 정하고, 봉투 안의 흥정 언어는 양쪽이 따로 맞춰야 한다. 그래서 다음 단계는 offer와 accept를 data Part의 정해진 스키마로 주고받는 것이다.
+## (4) 결론 / Lessoned & Learn
+
+① AI가 "최저가 아래로 부르지 마"를 어겼다
+
+프롬프트에 넣은 지시 (seller.py의 OFFER_PROMPT):
+
+Your lowest acceptable price (reserve) is {reserve}. Never ask below it and never sell below it.
+
+1회차 logs/seller-under-test.log: 손님이 230을 내자 모델이 245를 불렀고, 가드가 260으로 올렸습니다.
+
+135-[task c31176d5] <- '230'
+136-[seller c31176d5] call 29 (6.2s) -> '{"action": "counter", "price": 245, "say": "I can\'t come down to 230, but I\'m willing to meet you partway at 245 if that works for you."}'
+137:[guard] ask 245 below reserve 260 -> 260
+--
+154-[task a8bc1cdb] <- '230'
+155-[seller a8bc1cdb] call 35 (5.8s) -> '{"action": "counter", "price": 245, "say": "We\'re close, but I can\'t go below 245 on this bookshelf; can you meet me there?"}'
+156:[guard] ask 245 below reserve 260 -> 260
+
+2회차에도 같은 위반이 한 번 더 나왔습니다. 우연한 한 번이 아니라 반복되는 경향입니다.
+
+68-[seller b7aedc53] call 23 (5.7s) -> '{"action": "counter", "price": 245, "say": "...I can\'t go below 245 on this bookshelf, and I\'m offering that as my final price."}'
+69:[guard] ask 245 below reserve 260 -> 260
+
+→ 두 번의 실행에서 모두 3번 위반했고, 3번 모두 가드가 막았습니다.
+
+② 숫자만 고쳐서 앞뒤가 안 맞는 메시지가 나갔다
+
+1회차 logs/trade-test.log: 상대에게 실제로 전달된 메시지입니다.
+
+86:  <- TASK_STATE_INPUT_REQUIRED | I can't come down to 230, but I'm willing to meet you partway at 245 if that works for you. Counteroffer: 260.
+101: <- TASK_STATE_INPUT_REQUIRED | We're close, but I can't go below 245 on this bookshelf; can you meet me there? Counteroffer: 260.
+
+2회차 (커밋 ae0b677로 수정한 뒤): 다른 숫자가 든 문장은 빠지고 가격만 나갑니다.
+
+70-  -> SendMessage "230" taskId=b7aedc53
+71:  <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+③ 구매자가 "취소"를 두 번 보냈다
+
+1회차 logs/buyer-under-test-buyer_holds_budget-1.log:
+
+-> SendMessage '230' taskId=7733842c
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+harness says walk; walking away (CancelTask)        ← 1번째 취소
+out of rounds; walking away (CancelTask)            ← 2번째 취소 (버그)
+<- error -32002 Task cannot be canceled
+done: TASK_STATE_INPUT_REQUIRED, harness calls 5, 22s   ← 취소됐는데 상태도 잘못 기록됨
+
+2회차 (커밋 545bc16로 수정한 뒤) logs/buyer-under-test-buyer_holds_budget-2.log:
+
+harness says walk; walking away (CancelTask)
+done: TASK_STATE_CANCELED, harness calls 5, 25s
+
+그래도 테스트는 PASS였다는 근거: 1회차 결과도 21/21 passed -> PASS였습니다. 시험은 "거래가 없었는지"만 봤기 때문에 이 버그를 잡지 못했습니다.
+
+
