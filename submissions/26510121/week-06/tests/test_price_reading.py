@@ -31,6 +31,16 @@ class PriceReadingTests(unittest.TestCase):
             with self.assertRaises(DecisionError):
                 parse_price_reading(raw, self.context)
 
+    def test_unique_case_only_evidence_is_anchored_to_original_spelling(self):
+        context = PriceContext("buyer", "bookshelf", 400, "My current offer is 369, delivery in 3 days.")
+        result = parse_price_reading(reading(price=369, evidence="my current offer is 369"), context)
+        self.assertEqual((result.price, result.evidence), (369, "My current offer is 369"))
+
+    def test_case_only_match_at_multiple_locations_is_not_guessed(self):
+        context = PriceContext("buyer", "lamp", 130, "My offer is 95. MY OFFER IS 95.")
+        with self.assertRaisesRegex(DecisionError, "price_evidence_not_in_message"):
+            parse_price_reading(reading(evidence="my offer is 95"), context)
+
     def test_invalid_numeric_types_and_duplicate_keys_are_rejected(self):
         for amount in (True, "95", 95.5, -95, 0, None):
             with self.assertRaises(DecisionError):

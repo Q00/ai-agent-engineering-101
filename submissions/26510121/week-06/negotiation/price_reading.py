@@ -48,7 +48,12 @@ def parse_price_reading(raw, context):
     if not reading.reason.strip():
         raise DecisionError("empty_price_reading_reason")
     if reading.evidence and reading.evidence not in context.text:
-        raise DecisionError("price_evidence_not_in_message")
+        matches = list(re.finditer(re.escape(reading.evidence), context.text, flags=re.IGNORECASE))
+        if len(matches) != 1:
+            raise DecisionError("price_evidence_not_in_message")
+        # Only a unique case-only match can be anchored to its original spelling.
+        # Raw model JSON remains unchanged in model_response logs.
+        reading = reading.model_copy(update={"evidence": matches[0].group()})
     if reading.action in {"none", "ambiguous"}:
         if reading.price is not None:
             raise DecisionError("uncertain_reading_requires_null_price")

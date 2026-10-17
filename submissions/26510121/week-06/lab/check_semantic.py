@@ -166,8 +166,10 @@ async def run(logs):
         return await settled_task(client, task, task["id"])
 
     def read_offer(folder, task_id):
-        return [e["reading"] for e in events(folder / "server-events.jsonl")
-                if e["event"] == "offer_reading" and e["task_id"] == task_id][-1]
+        source = [e for e in events(folder / "server-events.jsonl") if e.get("task_id") == task_id]
+        readings = [e["reading"] for e in source if e["event"] == "offer_reading"]
+        assert readings, {"missing_reading": [e.get("code") for e in source if e["event"] == "negotiation_failed"]}
+        return readings[-1]
 
     try:
         model_logs = logs / "model-seller"
