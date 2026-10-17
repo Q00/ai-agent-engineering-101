@@ -29,7 +29,18 @@ def log(*a):
 
 
 def _extract_json(text: str):
-    """Last JSON object in the text, or None."""
+    """The JSON object in the text, or None.
+
+    Tries the outermost {...} first (nested answers like {"plan": [{...}, ...]});
+    a flat-object scan only finds the innermost piece of those.
+    """
+    text = re.sub(r"```(?:json)?", "", text)
+    i, j = text.find("{"), text.rfind("}")
+    if 0 <= i < j:
+        try:
+            return json.loads(text[i:j + 1])
+        except json.JSONDecodeError:
+            pass
     for m in reversed(list(re.finditer(r"\{[^{}]*\}", text, flags=re.S))):
         try:
             return json.loads(m.group())
