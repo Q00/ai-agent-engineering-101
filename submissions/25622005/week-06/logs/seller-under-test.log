@@ -1,0 +1,88 @@
+[harness] 6.2s rc=0 answer='{"action":"ask","price":130}'
+[seller] harness said action='ask' price=130 (offer None, reserve 100)
+[harness] 6.0s rc=0 answer='{"action":"counter","price":120}'
+[seller] harness said action='counter' price=120 (offer 60, reserve 100)
+[harness] 5.3s rc=0 answer='{"action": "accept", "price": 120}'
+[seller] harness said action='accept' price=120 (offer 120, reserve 100)
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x10bf6c310> at 0x10c4847c0> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-47' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x10bf6c310> at 0x10c486580> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-48' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+[harness] 5.1s rc=0 answer='{"action":"ask","price":130}'
+[seller] harness said action='ask' price=130 (offer None, reserve 100)
+[harness] 5.8s rc=0 answer='{"action": "counter", "price": 120}'
+[seller] harness said action='counter' price=120 (offer 60, reserve 100)
+[harness] 5.6s rc=0 answer='{"action": "accept", "price": 120}'
+[seller] harness said action='accept' price=120 (offer 120, reserve 100)
+[harness] 6.2s rc=0 answer='{"action":"ask","price":130}'
+[seller] harness said action='ask' price=130 (offer None, reserve 100)
+[harness] 6.5s rc=0 answer='{"action":"counter","price":120}'
+[seller] harness said action='counter' price=120 (offer 60, reserve 100)
+[harness] 5.3s rc=0 answer='{"action": "accept", "price": 120}'
+[seller] harness said action='accept' price=120 (offer 120, reserve 100)
+[harness] 6.8s rc=0 answer='{"action":"ask","price":338}'
+[seller] harness said action='ask' price=338 (offer None, reserve 260)
+[harness] 5.1s rc=0 answer='{"action":"counter","price":312}'
+[seller] harness said action='counter' price=312 (offer 140, reserve 260)
+[harness] 8.2s rc=0 answer='{"action":"counter","price":286}'
+[seller] harness said action='counter' price=286 (offer 170, reserve 260)
+[harness] 4.5s rc=0 answer='{"action": "reject", "price": 0}'
+[seller] harness said action='reject' price=0 (offer 200, reserve 260)
+[harness] 5.1s rc=0 answer='{"action":"ask","price":338}'
+[seller] harness said action='ask' price=338 (offer None, reserve 260)
+[harness] 6.6s rc=0 answer='{"action":"counter","price":312}'
+[seller] harness said action='counter' price=312 (offer 140, reserve 260)
+[harness] 6.1s rc=0 answer='{"action":"counter","price":286}'
+[seller] harness said action='counter' price=286 (offer 170, reserve 260)
+[harness] 6.8s rc=0 answer='{"action": "reject", "price": 0}'
+[seller] harness said action='reject' price=0 (offer 200, reserve 260)
+[harness] 5.6s rc=0 answer='{"action": "ask", "price": 338}'
+[seller] harness said action='ask' price=338 (offer None, reserve 260)
+[harness] 5.1s rc=0 answer='{"action":"counter","price":312}'
+[seller] harness said action='counter' price=312 (offer 140, reserve 260)
+[harness] 5.6s rc=0 answer='{"action":"counter","price":286}'
+[seller] harness said action='counter' price=286 (offer 170, reserve 260)
+[harness] 6.2s rc=0 answer='{"action": "reject", "price": 0}'
+[seller] harness said action='reject' price=0 (offer 200, reserve 260)
