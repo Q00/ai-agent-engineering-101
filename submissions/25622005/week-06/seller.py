@@ -119,8 +119,8 @@ class Seller(AgentExecutor):
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 
-def build(port):
-    url = f"http://127.0.0.1:{port}/"
+def build(port, public_url=None):
+    url = public_url or f"http://127.0.0.1:{port}/"  # behind a tunnel the card must carry the public address
     card = AgentCard(
         name=NAME,
         description="Sells desk lamps, chairs and bookshelves. A Codex harness negotiates the price.",
@@ -144,5 +144,6 @@ def build(port):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=9999)
+    ap.add_argument("--public-url", help="address written into the Agent Card, e.g. a tunnel URL ending in /")
     args = ap.parse_args()
-    uvicorn.run(build(args.port), host="127.0.0.1", port=args.port, log_level="warning")
+    uvicorn.run(build(args.port, args.public_url), host="127.0.0.1", port=args.port, log_level="warning")
