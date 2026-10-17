@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import json
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from negotiation.catalog import matches
 from negotiation.contracts import DecisionError, _unique_object
@@ -18,14 +18,14 @@ class NeedDecision(BaseModel):
     min_books: int | None
     max_height_cm: int | None
     max_width_cm: int | None
-    reason: str
+    reason: str = Field(min_length=1, max_length=240, description="A nonempty explanation or concrete clarification question")
 
 
 class SelectionDecision(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     action: Literal["select", "clarify"]
     item_id: str | None
-    reason: str
+    reason: str = Field(min_length=1, max_length=240, description="A nonempty sentence explaining the product fit, or a clarification question")
 
 
 @dataclass(frozen=True)
@@ -57,16 +57,15 @@ def _parse(raw, model):
 
 def parse_need_decision(raw, context):
     decision = _parse(raw, NeedDecision)
+    for value in (decision.min_books, decision.max_height_cm, decision.max_width_cm):
+        if value is not None and (type(value) is not int or value <= 0):
+            raise DecisionError("positive_integer_constraint_required")
     if decision.action == "search":
         if decision.category is None:
             raise DecisionError("search_requires_category")
-        for value in (decision.min_books, decision.max_height_cm, decision.max_width_cm):
-            if value is not None and (type(value) is not int or value <= 0):
-                raise DecisionError("positive_integer_constraint_required")
         if decision.min_books is not None and decision.category not in {"bookshelf", "cabinet"}:
             raise DecisionError("book_capacity_requires_storage")
-    elif any(value is not None for key, value in decision.model_dump().items() if key not in {"action", "reason"}):
-        raise DecisionError("non_search_requires_null_constraints")
+    # A clarification may retain known facts; only action=search can reach retrieval.
     return decision
 
 

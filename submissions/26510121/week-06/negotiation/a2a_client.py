@@ -65,10 +65,10 @@ def _http_url(url):
 
 
 class A2AClient:
-    def __init__(self, log, transport=None):
+    def __init__(self, log, transport=None, *, timeout=10):
         self.log = log
         self.endpoint = None
-        self.http = httpx.AsyncClient(headers={"A2A-Version": "1.0"}, timeout=10,
+        self.http = httpx.AsyncClient(headers={"A2A-Version": "1.0"}, timeout=timeout,
                                       trust_env=False, follow_redirects=False, transport=transport)
 
     async def close(self):

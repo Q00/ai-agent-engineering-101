@@ -4,7 +4,7 @@ import unittest
 
 from negotiation.catalog import Catalog, matches
 from negotiation.catalog_contracts import (
-    NeedContext, SelectionContext, parse_need_decision, parse_selection_decision,
+    NeedContext, SelectionContext, catalog_schema, parse_need_decision, parse_selection_decision,
 )
 from negotiation.config import ROOT
 from negotiation.contracts import DecisionError, SellerContext, parse_seller_decision
@@ -60,9 +60,20 @@ class CatalogTests(unittest.TestCase):
             with self.assertRaises(DecisionError):
                 parse_need_decision(json.dumps(need(**change)), NeedContext())
 
-    def test_clarification_cannot_smuggle_search_constraints(self):
-        with self.assertRaisesRegex(DecisionError, "non_search_requires_null_constraints"):
-            parse_need_decision(json.dumps(need(action="clarify")), NeedContext())
+    def test_partial_clarification_is_valid_but_cannot_trigger_retrieval(self):
+        decision = parse_need_decision(json.dumps(need(action="clarify", max_height_cm=None)), NeedContext())
+        self.assertEqual(decision.category, "bookshelf")
+        with self.assertRaises(ValueError):
+            self.catalog.retrieve(decision.model_dump())
+
+    def test_empty_reason_is_blocked_and_length_rule_is_sent_in_schema(self):
+        for role in ("need", "select"):
+            schema = catalog_schema(role)
+            self.assertEqual(schema["properties"]["reason"]["minLength"], 1)
+            self.assertEqual(schema["properties"]["reason"]["maxLength"], 240)
+        with self.assertRaises(DecisionError):
+            parse_selection_decision('{"action":"clarify","item_id":null,"reason":""}',
+                                     SelectionContext(need(), []))
 
     def test_duplicate_json_keys_are_rejected(self):
         with self.assertRaisesRegex(DecisionError, "duplicate_json_key"):

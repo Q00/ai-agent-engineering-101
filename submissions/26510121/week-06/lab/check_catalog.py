@@ -98,7 +98,8 @@ async def run(logs):
     sock.setblocking(False)
     server = uvicorn.Server(uvicorn.Config(build(port, logs / "server", inventory.path), log_level="warning"))
     server_task = asyncio.create_task(server.serve(sockets=[sock]))
-    client = A2AClient(log)
+    # An opening can run three workers (intent, selection, ask), 40s each.
+    client = A2AClient(log, timeout=125)
 
     async def settle(task):
         async with asyncio.timeout(100):
