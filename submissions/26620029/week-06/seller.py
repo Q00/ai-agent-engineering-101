@@ -47,7 +47,7 @@ Categories we sell: {cats}
 {untrusted}
 <buyer>{text}</buyer>
 Answer with JSON only:
-{{"category": "<one category from the list, or null>", "materials": [<material words, e.g. "wood", "metal", "wool">],
+{{"categories": [<1 to 3 categories from the list that the item could be; the kind of item to buy, not the place it goes>], "materials": [<material words, e.g. "wood", "metal", "wool">],
  "exclude_materials": [...], "max_height_cm": <number or null>, "min_height_cm": <number or null>,
  "min_capacity": <number of books / pairs of shoes / seats / hooks, or null>, "size": "<rug size like 120x170, or null>",
  "features": [<e.g. "dimmable", "lumbar", "adjustable">], "keywords": [<other useful words>]}}
