@@ -1,0 +1,113 @@
+challenge 1: seed 0, 8 trials, correct 8, low asks 0, deals 8, 92 s
+
+## trial 1: target C01577 'Tatamo Modern Birch Shoe Rack' (reserve 60)
+request: Something wooden by my front door to hold at least 8 pairs of shoes, no taller than 80 cm.
+constraints: {"category": "shoe rack", "material_family": "wood", "min": {"pairs": 8}, "equal": {}, "max": {"height_cm": 80}}; 13 catalog items match; budget 118
+<- TASK_STATE_INPUT_REQUIRED | A solid teak farmhouse rack that holds 12 pairs, more than you asked for, and stands 76 cm tall, a sturdy, warm honey-finished piece for your entrance. Offering: Loma Farmhouse Teak Shoe Rack (C01097). Asking price: 149.
+-> 71
+<- TASK_STATE_INPUT_REQUIRED | Solid teak at this size rarely goes for less, but I can come down to 129 for a rack that fits your entrance perfectly and holds 12 pairs. Offering: Loma Farmhouse Teak Shoe Rack (C01097). Asking price: 129.
+-> 83
+<- TASK_STATE_INPUT_REQUIRED | You're moving in the right direction. Solid teak that holds 12 pairs and fits under your height limit is worth it, so I'll meet you at 112. Offering: Loma Farmhouse Teak Shoe Rack (C01097). Asking price: 112.
+-> 112
+<- TASK_STATE_COMPLETED | Deal: Loma Farmhouse Teak Shoe Rack (C01097) at 112.
+   receipt: {"seller": "Hearth & Grain Home Store", "item": "Loma Farmhouse Teak Shoe Rack", "price": 112.0, "item_id": "C01097"}
+offered C01097 'Loma Farmhouse Teak Shoe Rack' reserve 89 attrs {"category": "shoe rack", "material": "teak", "material_family": "wood", "style": "farmhouse", "colour": "honey", "height_cm": 76, "width_cm": 107, "depth_cm": 34, "pairs": 12} -> meets the request
+asks [149, 129, 112]; final TASK_STATE_COMPLETED; price 112.0; low asks 0; verdict CORRECT
+
+## trial 2: target C01722 'Sanael Mid-Century Ceramic Pendant Lamp' (reserve 102)
+request: A ceramic light to hang from the ceiling above my dining table, at least 1400 lumens, no wider than 70 cm.
+constraints: {"category": "pendant lamp", "material_family": "ceramic", "min": {"lumens": 1400}, "equal": {}, "max": {"width_cm": 70}}; 13 catalog items match; budget 140
+<- TASK_STATE_INPUT_REQUIRED | Here's a great match: a Scandinavian pendant in glazed terracotta ceramic, 54 cm wide, with a bright 2300 lumens that will light a dining table well. Offering: Naorri Scandinavian Ceramic Pendant Lamp (C00102). Asking price: 175.
+-> 84
+<- TASK_STATE_INPUT_REQUIRED | 84 is too low for a glazed ceramic pendant this bright, but I can come down to 148 for a lamp that meets every one of your specs. Offering: Naorri Scandinavian Ceramic Pendant Lamp (C00102). Asking price: 148.
+-> 98
+<- TASK_STATE_INPUT_REQUIRED | Thanks for coming up to 98. This pendant meets every spec you gave, with 2300 lumens and a 54 cm width, so I'll come down to 128 to meet you partway. Offering: Naorri Scandinavian Ceramic Pendant Lamp (C00102). Asking price: 128.
+-> 128
+<- TASK_STATE_COMPLETED | Deal: Naorri Scandinavian Ceramic Pendant Lamp (C00102) at 128.
+   receipt: {"seller": "Hearth & Grain Home Store", "item": "Naorri Scandinavian Ceramic Pendant Lamp", "price": 128.0, "item_id": "C00102"}
+offered C00102 'Naorri Scandinavian Ceramic Pendant Lamp' reserve 98 attrs {"category": "pendant lamp", "material": "ceramic", "material_family": "ceramic", "style": "Scandinavian", "colour": "terracotta", "height_cm": 36, "width_cm": 54, "depth_cm": 54, "lumens": 2300} -> meets the request
+asks [175, 148, 128]; final TASK_STATE_COMPLETED; price 128.0; low asks 0; verdict CORRECT
+
+## trial 3: target C00165 'Rihaki Farmhouse Rattan Armchair' (reserve 287)
+request: A comfortable rattan seat for one person to read in, with a seat at least 50 cm wide, no wider than 90 cm overall.
+constraints: {"category": "armchair", "material_family": "rattan", "min": {"seat_width_cm": 50}, "equal": {}, "max": {"width_cm": 90}}; 13 catalog items match; budget 345
+<- TASK_STATE_INPUT_REQUIRED | The Ramo is a roomy rattan reading chair: its 63 cm seat gives you plenty of space to curl up with a book, and at 88 cm wide overall it stays within your 90 cm limit. Offering: Ramo Modern Rattan Armchair (C02485). Asking price: 449.
+-> 207
+<- TASK_STATE_INPUT_REQUIRED | 207 is too far below what this handwoven rattan armchair is worth, but I can come down to 399 for a chair that fits your reading-nook needs exactly. Offering: Ramo Modern Rattan Armchair (C02485). Asking price: 399.
+-> 241
+<- TASK_STATE_INPUT_REQUIRED | I appreciate you moving up. I'll meet you partway at 365 for a chair that matches every requirement you listed, but there isn't much room left below that. Offering: Ramo Modern Rattan Armchair (C02485). Asking price: 365.
+-> 276
+<- TASK_STATE_INPUT_REQUIRED | You're getting closer, and I want this chair in your reading nook. I'll come down to 335, which is close to my limit for a handwoven rattan armchair that meets every spec you gave. Offering: Ramo Modern Rattan Armchair (C02485). Asking price: 335.
+-> 335
+<- TASK_STATE_COMPLETED | Deal: Ramo Modern Rattan Armchair (C02485) at 335.
+   receipt: {"seller": "Hearth & Grain Home Store", "item": "Ramo Modern Rattan Armchair", "price": 335.0, "item_id": "C02485"}
+offered C02485 'Ramo Modern Rattan Armchair' reserve 284 attrs {"category": "armchair", "material": "rattan", "material_family": "rattan", "style": "modern", "colour": "cream", "height_cm": 72, "width_cm": 88, "depth_cm": 77, "seats": 1, "seat_width_cm": 63} -> meets the request
+asks [449, 399, 365, 335]; final TASK_STATE_COMPLETED; price 335.0; low asks 0; verdict CORRECT
+
+## trial 4: target C01060 'Rirido Art Deco Bamboo Desk Lamp' (reserve 38)
+request: A wooden light to stand on my desk for reading, at least 500 lumens, no taller than 50 cm.
+constraints: {"category": "desk lamp", "material_family": "wood", "min": {"lumens": 500}, "equal": {}, "max": {"height_cm": 50}}; 17 catalog items match; budget 131
+<- TASK_STATE_INPUT_REQUIRED | We have a solid walnut desk lamp, 50 cm tall, giving a warm 750 lumens for reading, in a honey finish that suits any desk. Offering: Dodo Bohemian Walnut Desk Lamp (C00460). Asking price: 169.
+-> 79
+<- TASK_STATE_INPUT_REQUIRED | Solid walnut with 750 lumens, half again your minimum, is hard to beat; I can come down to 145 for you. Offering: Dodo Bohemian Walnut Desk Lamp (C00460). Asking price: 145.
+-> 92
+<- TASK_STATE_INPUT_REQUIRED | You're moving in the right direction, and I'll meet you partway: solid walnut, 750 lumens, right at your 50 cm limit, for 129. Offering: Dodo Bohemian Walnut Desk Lamp (C00460). Asking price: 129.
+-> 129
+<- TASK_STATE_COMPLETED | Deal: Dodo Bohemian Walnut Desk Lamp (C00460) at 129.
+   receipt: {"seller": "Hearth & Grain Home Store", "item": "Dodo Bohemian Walnut Desk Lamp", "price": 129.0, "item_id": "C00460"}
+offered C00460 'Dodo Bohemian Walnut Desk Lamp' reserve 108 attrs {"category": "desk lamp", "material": "walnut", "material_family": "wood", "style": "bohemian", "colour": "honey", "height_cm": 50, "width_cm": 22, "depth_cm": 22, "lumens": 750} -> meets the request
+asks [169, 145, 129]; final TASK_STATE_COMPLETED; price 129.0; low asks 0; verdict CORRECT
+
+## trial 5: target C02094 'Naha Farmhouse Pine Cabinet' (reserve 219)
+request: Wooden closed storage with doors for my hall, at least 4 shelves inside, no taller than 200 cm.
+constraints: {"category": "cabinet", "material_family": "wood", "min": {"shelves": 4}, "equal": {}, "max": {"height_cm": 200}}; 38 catalog items match; budget 638
+<- TASK_STATE_INPUT_REQUIRED | Our solid walnut cabinet fits your hall well: closed doors, 4 shelves, 180 cm tall, and a wide 139 cm body for lots of storage, all in durable real hardwood. Offering: Kive Industrial Walnut Cabinet (C00094). Asking price: 849.
+-> 383
+<- TASK_STATE_INPUT_REQUIRED | 383 is too low for a solid walnut cabinet this size, but I can come down to 759 for you: real hardwood, 4 shelves and closed doors, made to last in your hall. Offering: Kive Industrial Walnut Cabinet (C00094). Asking price: 759.
+-> 447
+<- TASK_STATE_INPUT_REQUIRED | Thanks for moving up. I can meet you partway at 689 for a solid walnut cabinet with 4 shelves and closed doors that fits your hall under 200 cm. Offering: Kive Industrial Walnut Cabinet (C00094). Asking price: 689.
+-> 510
+<- TASK_STATE_INPUT_REQUIRED | We're getting close. I can go to 615 for this solid walnut cabinet with 4 shelves and closed doors, sized right for your hall. Offering: Kive Industrial Walnut Cabinet (C00094). Asking price: 615.
+-> 615
+<- TASK_STATE_COMPLETED | Deal: Kive Industrial Walnut Cabinet (C00094) at 615.
+   receipt: {"seller": "Hearth & Grain Home Store", "item": "Kive Industrial Walnut Cabinet", "price": 615.0, "item_id": "C00094"}
+offered C00094 'Kive Industrial Walnut Cabinet' reserve 531 attrs {"category": "cabinet", "material": "walnut", "material_family": "wood", "style": "industrial", "colour": "grey", "height_cm": 180, "width_cm": 139, "depth_cm": 50, "shelves": 4} -> meets the request
+asks [849, 759, 689, 615]; final TASK_STATE_COMPLETED; price 615.0; low asks 0; verdict CORRECT
+
+## trial 6: target C01990 'Rido Rustic Glass Coffee Table' (reserve 155)
+request: A low glass table to put in front of my couch, at least 70 cm long, no higher than 50 cm.
+constraints: {"category": "coffee table", "material_family": "glass", "min": {"width_cm": 70}, "equal": {}, "max": {"height_cm": 50}}; 11 catalog items match; budget 237
+<- TASK_STATE_INPUT_REQUIRED | A great match: a tempered glass coffee table, 115 cm long and just 35 cm high, in a versatile black finish, ideal in front of a couch. Offering: Kidota Farmhouse Glass Coffee Table (C02070). Asking price: 299.
+-> 142
+<- TASK_STATE_INPUT_REQUIRED | I can come down meaningfully for you: this tempered glass table is 115 cm long and just 35 cm high, a sturdy fit for your couch, and 235 is a fair price for that size and build. Offering: Kidota Farmhouse Glass Coffee Table (C02070). Asking price: 235.
+-> 235
+<- TASK_STATE_COMPLETED | Deal: Kidota Farmhouse Glass Coffee Table (C02070) at 235.
+   receipt: {"seller": "Hearth & Grain Home Store", "item": "Kidota Farmhouse Glass Coffee Table", "price": 235.0, "item_id": "C02070"}
+offered C02070 'Kidota Farmhouse Glass Coffee Table' reserve 142 attrs {"category": "coffee table", "material": "glass", "material_family": "glass", "style": "farmhouse", "colour": "black", "height_cm": 35, "width_cm": 115, "depth_cm": 55} -> meets the request
+asks [299, 235]; final TASK_STATE_COMPLETED; price 235.0; low asks 0; verdict CORRECT
+
+## trial 7: target C01658 'Kimosa Japanese Brass Mirror' (reserve 92)
+request: Something with a metal frame to see myself in, at least 90 cm tall, no wider than 50 cm.
+constraints: {"category": "mirror", "material_family": "metal", "min": {"height_cm": 90}, "equal": {}, "max": {"width_cm": 50}}; 18 catalog items match; budget 177
+<- TASK_STATE_INPUT_REQUIRED | A solid brass, full-length mirror at 141 cm tall and only 35 cm wide, in a warm honey finish; it fits your size needs, hangs or leans, and works for full outfit checks. Offering: Nesaki Scandinavian Brass Mirror (C00138). Asking price: 185.
+-> 106
+<- TASK_STATE_INPUT_REQUIRED | Solid brass at full length is a real piece, not a plated frame; I can come down to 152 for you, which is a strong price for this size and material. Offering: Nesaki Scandinavian Brass Mirror (C00138). Asking price: 152.
+-> 152
+<- TASK_STATE_COMPLETED | Deal: Nesaki Scandinavian Brass Mirror (C00138) at 152.
+   receipt: {"seller": "Hearth & Grain Home Store", "item": "Nesaki Scandinavian Brass Mirror", "price": 152.0, "item_id": "C00138"}
+offered C00138 'Nesaki Scandinavian Brass Mirror' reserve 102 attrs {"category": "mirror", "material": "brass", "material_family": "metal", "style": "Scandinavian", "colour": "honey", "height_cm": 141, "width_cm": 35, "depth_cm": 3, "full_length": true} -> meets the request
+asks [185, 152]; final TASK_STATE_COMPLETED; price 152.0; low asks 0; verdict CORRECT
+
+## trial 8: target C01242 'Morina Rustic Rattan Pendant Lamp' (reserve 113)
+request: A rattan light to hang from the ceiling above my dining table, at least 1000 lumens, no wider than 60 cm.
+constraints: {"category": "pendant lamp", "material_family": "rattan", "min": {"lumens": 1000}, "equal": {}, "max": {"width_cm": 60}}; 10 catalog items match; budget 136
+<- TASK_STATE_INPUT_REQUIRED | A great match: hand-woven natural rattan pendant, a bright 1900 lumens over your table, and only 54 cm wide, well within your 60 cm limit. Offering: Orha Farmhouse Rattan Pendant Lamp (C01322). Asking price: 165.
+-> 82
+<- TASK_STATE_INPUT_REQUIRED | 82 is too low for a hand-woven rattan pendant that nearly doubles your brightness requirement, but I can come down to 139 to make this work for you. Offering: Orha Farmhouse Rattan Pendant Lamp (C01322). Asking price: 139.
+-> 95
+<- TASK_STATE_INPUT_REQUIRED | We're getting close: it fits your table and gives 1900 lumens of light, and I can meet you at 118 to close this today. Offering: Orha Farmhouse Rattan Pendant Lamp (C01322). Asking price: 118.
+-> 118
+<- TASK_STATE_COMPLETED | Deal: Orha Farmhouse Rattan Pendant Lamp (C01322) at 118.
+   receipt: {"seller": "Hearth & Grain Home Store", "item": "Orha Farmhouse Rattan Pendant Lamp", "price": 118.0, "item_id": "C01322"}
+offered C01322 'Orha Farmhouse Rattan Pendant Lamp' reserve 90 attrs {"category": "pendant lamp", "material": "rattan", "material_family": "rattan", "style": "farmhouse", "colour": "natural", "height_cm": 35, "width_cm": 54, "depth_cm": 54, "lumens": 1900} -> meets the request
+asks [165, 139, 118]; final TASK_STATE_COMPLETED; price 118.0; low asks 0; verdict CORRECT
