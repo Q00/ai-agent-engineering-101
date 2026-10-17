@@ -41,6 +41,7 @@ def _extract_json(text: str):
 def ask_json(prompt: str, tag: str = "harness", tries: int = 2):
     """Send prompt to the harness, return (dict | None, raw_text)."""
     global CALLS
+    tag = tag.strip("[]")
     raw = ""
     for attempt in range(1, tries + 1):
         CALLS += 1
