@@ -36,7 +36,7 @@ Five offline retry checks passed.
 The final test passed 21/21. Lamp deals closed at 100.
 The buyer canceled bookshelf negotiations within its budget of 230.
 Failed attempts remain in commits and logs.
-The saved test still needs comparison with the current official version.
+The saved test matches the current official version. Structural checks passed.
 
 ## 4. What A2A handled
 

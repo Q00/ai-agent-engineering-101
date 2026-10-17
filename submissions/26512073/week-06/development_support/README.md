@@ -5,3 +5,7 @@ Course code license: CC BY-NC-SA 4.0 (see repository LICENSE).
 
 The buyer development check imports its rule-based shop. This does not replace
 running the current official script from `scripts/` for final submission.
+
+`check_week06.py` is also an unchanged copy of the instructor's current checker.
+Final verification confirmed that the saved trade test and passing report have
+the same hash as the current official trade test. The copied checker passed.
