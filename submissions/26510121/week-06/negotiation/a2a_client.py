@@ -38,6 +38,25 @@ def asking_price(task):
         raise ProtocolError("invalid_numeric_price") from None
 
 
+def metadata_ask(task):
+    """Challenge-3 contract: current ask in Task and/or status Message metadata.
+
+    Two copies must agree. Never fall back to a number in text on missing/bad data.
+    """
+    if task.get("status", {}).get("state") != "TASK_STATE_INPUT_REQUIRED":
+        raise ProtocolError("ask_metadata_requires_input_state")
+    values = []
+    for holder in (task, task.get("status", {}).get("message", {})):
+        metadata = holder.get("metadata", {})
+        if isinstance(metadata, dict) and "ask" in metadata:
+            values.append(integer_money(metadata["ask"]))
+    if not values:
+        raise ProtocolError("ask_metadata_missing")
+    if len(set(values)) != 1:
+        raise ProtocolError("ask_metadata_conflict")
+    return values[0]
+
+
 def receipt(task, item, budget, agreed_price):
     if task.get("status", {}).get("state") != "TASK_STATE_COMPLETED":
         raise ProtocolError("receipt_requires_completed_task")

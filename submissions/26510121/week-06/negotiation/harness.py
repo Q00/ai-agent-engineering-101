@@ -22,13 +22,15 @@ from negotiation.catalog_contracts import (
     NeedContext, SelectionContext, catalog_schema, parse_need_decision, parse_selection_decision,
 )
 from negotiation.cart_contracts import CartContext, cart_schema, parse_cart_decision
+from negotiation.price_reading import PriceContext, parse_price_reading, price_schema
 
 
 PARSERS = {"seller": parse_seller_decision, "buyer": parse_buyer_decision,
            "need": parse_need_decision, "select": parse_selection_decision, "cart": parse_cart_decision,
-           "cart_buyer": parse_buyer_decision}
+           "cart_buyer": parse_buyer_decision, "price": parse_price_reading}
 CONTEXTS = {"seller": SellerContext, "buyer": BuyerContext,
-            "need": NeedContext, "select": SelectionContext, "cart": CartContext, "cart_buyer": BuyerContext}
+            "need": NeedContext, "select": SelectionContext, "cart": CartContext, "cart_buyer": BuyerContext,
+            "price": PriceContext}
 
 
 class HarnessError(RuntimeError):
@@ -40,9 +42,13 @@ def decide(role, context, observation, settings, log, client):
         raise HarnessError("api_key_missing")
     instructions = (ROOT / "prompts" / f"{role}.md").read_text(encoding="utf-8")
     trusted = asdict(context)
+    if role == "price":
+        # The validator needs the source text, but it is not trusted policy.
+        trusted.pop("text")
+        observation = {"counterparty_text_untrusted": context.text}
     input_data = {"trusted_context": trusted, "observation": observation}
     parser = PARSERS[role]
-    schema = (cart_schema() if role == "cart" else decision_schema("buyer" if role == "cart_buyer" else role)
+    schema = (price_schema() if role == "price" else cart_schema() if role == "cart" else decision_schema("buyer" if role == "cart_buyer" else role)
               if role in {"seller", "buyer", "cart_buyer"} else catalog_schema(role))
     for attempt in (1, 2):
         log.record("model_request", role=role, attempt=attempt, model=settings.model,
@@ -115,6 +121,9 @@ class ModelHarness:
 
     async def cart(self, context, observation):
         return await self._run("cart", context, observation)
+
+    async def price(self, context):
+        return await self._run("price", context, {"counterparty_text_untrusted": context.text})
 
     async def _run(self, role, context, observation):
         log_path = self.log_dir / ("model-" + uuid.uuid4().hex + ".jsonl")
