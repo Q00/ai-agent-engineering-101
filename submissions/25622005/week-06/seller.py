@@ -144,6 +144,7 @@ def build(port, public_url=None):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=9999)
+    ap.add_argument("--host", default="127.0.0.1", help="0.0.0.0 inside a container")
     ap.add_argument("--public-url", help="address written into the Agent Card, e.g. a tunnel URL ending in /")
     args = ap.parse_args()
-    uvicorn.run(build(args.port, args.public_url), host="127.0.0.1", port=args.port, log_level="warning")
+    uvicorn.run(build(args.port, args.public_url), host=args.host, port=args.port, log_level="warning")
