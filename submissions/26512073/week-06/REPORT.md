@@ -1,7 +1,6 @@
 # Week 06: A2A Buyer and Seller
 
 Student ID: 26512073  
-Date: 2026-10-17
 
 ## 1. Setup
 
