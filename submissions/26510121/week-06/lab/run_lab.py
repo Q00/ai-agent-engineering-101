@@ -218,7 +218,7 @@ class Lab:
 
     def run_harness(self, executable, shell_directory, kind):
         """Lecture STEP 6: one-shot harness output as an A2A artifact."""
-        executable = Path(executable).resolve(strict=True)
+        executable = Path(executable or sys.executable).resolve(strict=True)
         if shell_directory:
             shell_directory = Path(shell_directory).resolve(strict=True)
             self.env["PATH"] = str(shell_directory) + os.pathsep + self.env.get("PATH", "")
@@ -231,7 +231,7 @@ class Lab:
                 executable.as_posix(), "-p", "--model", "haiku", "--tools", "",
                 "--setting-sources", "", "--no-session-persistence",
             ]
-        else:
+        elif kind == "codex":
             # Keep the user's configured model. Only isolate project documents
             # and session storage for this one-shot, read-only protocol lab.
             harness_args = [
@@ -239,9 +239,20 @@ class Lab:
                 "--sandbox", "read-only", "--ephemeral", "--color", "never",
                 "-c", "project_doc_max_bytes=0", "-",
             ]
+        else:
+            harness_args = [
+                executable.as_posix(), (SUBMISSION / "lab" / "openai_smoke.py").as_posix(),
+                "--metadata-log", (self.logs / "api-call.json").as_posix(),
+            ]
         command = shlex.join(harness_args)
-        out, _ = self.command(kind + "-version", [executable, "--version"])
-        self.require("harness_version", bool(out.strip()), out.strip())
+        if kind == "openai":
+            out, _ = self.command("openai-config", [executable, SUBMISSION / "lab" / "openai_smoke.py", "--describe"])
+            config = json.loads(out)
+            self.require("api_key_configured", config["key_configured"], "Key is configured; its value is not logged.")
+            self.require("api_model", bool(config["model"]), config["model"])
+        else:
+            out, _ = self.command(kind + "-version", [executable, "--version"])
+            self.require("harness_version", bool(out.strip()), out.strip())
         card_name = kind.capitalize() + " Lab"
         args = [CLI, "server", "--exec", command, "--name", card_name, "--port", "8090"]
         with self.server("harness", args, 8090, cwd=empty) as url:
@@ -277,11 +288,11 @@ class Lab:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--harness-only", action="store_true", help="Run lecture STEP 6 using an existing harness login")
-    parser.add_argument("--harness", choices=["claude", "codex"], default="claude")
+    parser.add_argument("--harness", choices=["claude", "codex", "openai"], default="claude")
     parser.add_argument("--harness-executable", "--claude-executable", dest="harness_executable", help="Path to the native harness executable")
     parser.add_argument("--shell-directory", help="Directory containing sh.exe; --exec in CLI v0.3.0 uses sh -c")
     args = parser.parse_args()
-    if args.harness_only and not args.harness_executable:
+    if args.harness_only and args.harness != "openai" and not args.harness_executable:
         parser.error("--harness-only requires --harness-executable")
     lab = Lab()
     error = None
