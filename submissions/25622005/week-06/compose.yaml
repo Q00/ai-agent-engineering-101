@@ -1,0 +1,13 @@
+# Seller in a container. Before the first run:
+#   mkdir -p ~/.codex-docker && cp ~/.codex/auth.json ~/.codex/config.toml ~/.codex-docker/
+# PUBLIC_URL (the tunnel address, ending in /) comes from the shell or a .env next to this file (git-ignored).
+#   PUBLIC_URL=https://xxxx.trycloudflare.com/ docker compose up --build
+services:
+  seller:
+    build: .
+    image: codex-shop
+    command: ["--public-url", "${PUBLIC_URL:-http://127.0.0.1:9000/}"]
+    ports:
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - ${HOME}/.codex-docker:/codex-home
