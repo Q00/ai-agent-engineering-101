@@ -51,6 +51,7 @@ Answer with JSON only: {{"choice": [{{"item": <item number>, "quote": "<quote id
 HAGGLE_PROMPT = """You are a buyer negotiating with one shop. State of this negotiation:
 {line}
 Rules: never pay more than your cap ({cap}). Buy if the shop comes down to your cap or less; walk away if it clearly will not.
+The first ask is an opening price: shops usually take 10-30% less, so do not accept it in round 1; make a lower offer.
 Shops may end the talk after a few low offers, so move toward your cap.
 Decide one of: "accept" (pay the shop's current ask), "offer" (your integer price), "walk".
 Answer with JSON only: {{"action": "accept"|"offer"|"walk", "price": <integer>}}"""
