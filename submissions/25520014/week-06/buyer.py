@@ -11,7 +11,9 @@ What the code still does on its own:
     (the same convention the trade test uses on our seller),
   - accepts by sending the asking price back as the offer,
   - walks away with CancelTask, and also when the round limit or the time limit is hit.
-The budget is only in the prompt. The code does not clamp offers or block accepts.
+The budget is in the prompt and also guarded in code: an offer above the budget, or an
+accept of an ask above the budget, is sent as an offer at the budget instead. Every time
+the guard overrides the harness it prints a GUARD line.
 """
 import argparse
 import re
@@ -153,6 +155,10 @@ def negotiate(base, item, budget):
         else:  # "walk" or anything the prompt did not allow
             walk_away(url, task_id, f"harness chose {action!r}")
             return
+        if offer > budget:
+            print(f"GUARD {action} at {offer} > budget {budget} -> offer {budget}", flush=True)
+            offer = budget
+            history[-1] = ("You", f"offered {offer}")
         task = send(url, str(offer), task_id)
 
 
