@@ -67,12 +67,10 @@ def decision_schema(role):
     if role not in {"seller", "buyer"}:
         raise ValueError("Unknown decision role")
     schema = (SellerDecision if role == "seller" else BuyerDecision).model_json_schema()
-    if role == "buyer":
-        # Generate the action before the nullable price, so choosing a price
-        # does not implicitly select walk_away before the action is considered.
-        order = ("action", "item_id", "price", "reason", "summary")
-        schema["properties"] = {name: schema["properties"][name] for name in order}
-        schema["required"] = list(order)
+    # Choose the action before its nullable price for both negotiation roles.
+    order = ("action", "item_id", "price", "reason", "summary")
+    schema["properties"] = {name: schema["properties"][name] for name in order}
+    schema["required"] = list(order)
     return schema
 
 
