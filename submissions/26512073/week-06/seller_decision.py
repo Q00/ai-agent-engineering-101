@@ -4,6 +4,23 @@ import json
 from harness import call_harness
 
 
+def decide_opening(item, reserve):
+    prompt = (
+        "You are a seller opening a negotiation. Do not use tools.\n"
+        "The student's strategy is to start around 30 percent above the "
+        "reserve. Choose a whole-number asking price at or above the reserve.\n"
+        "Return only a JSON object with action set to ask, price (an integer), "
+        "and reason (one short sentence).\n"
+        "Item and private reserve:\n" + json.dumps({"item": item, "reserve": reserve})
+    )
+    decision = call_harness(prompt)
+    price = decision.get("price")
+    if (decision.get("action") != "ask" or type(price) is not int
+            or price < reserve):
+        raise ValueError(f"Invalid opening or price below reserve: {decision}")
+    return decision
+
+
 def decide_offer(item, reserve, offer, countered_at_reserve=False):
     state = {
         "item": item,
