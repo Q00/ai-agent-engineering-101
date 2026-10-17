@@ -117,7 +117,7 @@ def main():
             break
         if time.time() - t0 > DEADLINE:
             log("deadline reached; walking away")
-            a2a.call("CancelTask", {"id": tid})
+            t = a2a.call("CancelTask", {"id": tid}) or t
             break
         ask = last_number(text_of(t))
         history.append(f"shop asked {ask}")
@@ -132,7 +132,7 @@ def main():
             offer = None
         if offer is None:
             log(f"harness says {action}; walking away (CancelTask)")
-            a2a.call("CancelTask", {"id": tid})
+            t = a2a.call("CancelTask", {"id": tid}) or t   # canceled task, so the out-of-rounds cancel below is skipped
             break
         history.append(f"you offered {offer}")
         t = a2a.send(str(offer), tid)
