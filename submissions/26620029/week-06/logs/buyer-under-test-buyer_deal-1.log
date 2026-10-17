@@ -1,8 +1,8 @@
-card: 'Kit Shop' -> http://127.0.0.1:37023/
+card: 'Kit Shop' -> http://127.0.0.1:53871/
 -> SendMessage 'I want to buy a lamp'
 <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[buyer] call 1 (4.2s) -> '{"action": "offer", "price": 100}'
--> SendMessage '100' taskId=0bc1470f
+[buyer] call 1 (3.8s) -> '{"action": "offer", "price": 100}'
+-> SendMessage '100' taskId=29f3bf02
 <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-receipt: [{'item': 'lamp', 'price': 100.0, 'seller': 'Kit Shop'}]
+receipt: [{'seller': 'Kit Shop', 'price': 100.0, 'item': 'lamp'}]
 done: TASK_STATE_COMPLETED, harness calls 1, 4s
