@@ -18,7 +18,7 @@ from a2a.server.agent_execution import AgentExecutor
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
-from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill, TaskState
 from a2a.utils.errors import UnsupportedOperationError
 
 from negotiation.config import ROOT, load_settings
@@ -28,19 +28,21 @@ from negotiation.runlog import RunLog
 from negotiation.state import SellerMemory
 from negotiation.catalog import Catalog, matches
 from negotiation.catalog_contracts import NeedContext, SelectionContext
+from negotiation.price_reading import PriceContext
 
 
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
 
 class Seller(AgentExecutor):
-    def __init__(self, harness, log, catalog=None, shop_name="Seochanit Shop"):
+    def __init__(self, harness, log, catalog=None, shop_name="Seochanit Shop", semantic_prices=False):
         self.harness = harness
         self.log = log
         self.memories = {}
         self.locks = {}
         self.catalog = catalog
         self.shop_name = shop_name
+        self.semantic_prices = semantic_prices
         self.pending = {}
 
     async def choose_catalog(self, task_id, text, updater, say):
@@ -95,7 +97,7 @@ class Seller(AgentExecutor):
             if memory is not None and memory.terminal:
                 raise UnsupportedOperationError("This negotiation has already ended.")
             updater = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
-            say = lambda text: updater.new_agent_message(parts=[new_text_part(text)])
+            say = lambda text, metadata=None: updater.new_agent_message(parts=[new_text_part(text)], metadata=metadata)
             text = get_message_text(context.message) or ""
             self.log.record("incoming_message", task_id=task.id, text=text)
             opening = memory is None
@@ -120,12 +122,23 @@ class Seller(AgentExecutor):
                     item = items.pop()
                     memory = SellerMemory(item, RESERVES[item])
                 self.memories[task.id] = memory
-            # Baseline wire contract: an entire follow-up message is an integer.
-            # Semantic number extraction for long messages is a later challenge.
+            # Numeric-only baseline remains compatible; semantic mode interprets
+            # prose with a separate model before the negotiation decision.
             offer = int(text.strip()) if not opening and re.fullmatch(r"[0-9]+", text.strip()) else None
-            trusted = SellerContext(memory.item_id, memory.reserve,
-                                    "opening" if opening else "negotiating", offer)
             try:
+                if not opening and self.semantic_prices and offer is None:
+                    reading = await self.harness.price(PriceContext("buyer", memory.item_id, memory.ask, text))
+                    self.log.record("offer_reading", task_id=task.id, reading=reading.model_dump())
+                    if reading.action in {"none", "ambiguous"}:
+                        message = say(f"Please state one current offer or explicitly accept the current ask. Asking {memory.ask}",
+                                      {"ask": memory.ask})
+                        await updater.update_status(TaskState.TASK_STATE_INPUT_REQUIRED, message=message,
+                                                    metadata={"ask": memory.ask})
+                        self.log.record("offer_clarification", task_id=task.id, ask=memory.ask)
+                        return
+                    offer = reading.price
+                trusted = SellerContext(memory.item_id, memory.reserve,
+                                        "opening" if opening else "negotiating", offer)
                 decision = await self.harness.seller(trusted, memory.observation(text))
             except HarnessError as error:
                 memory.terminal = True
@@ -136,10 +149,11 @@ class Seller(AgentExecutor):
                             buyer_offer=offer, decision=decision.model_dump())
             if decision.action in {"ask", "counter"}:
                 prefix = memory.item_id + ": asking" if opening else "Counteroffer:"
-                message = say(f"{prefix} {decision.price}")
+                message = say(f"{prefix} {decision.price}", {"ask": decision.price})
                 if opening and self.catalog is not None:
                     message.parts.append(new_data_part({"selected_item": product.public()}))
-                await updater.requires_input(message)
+                await updater.update_status(TaskState.TASK_STATE_INPUT_REQUIRED, message=message,
+                                            metadata={"ask": decision.price})
             elif decision.action == "accept":
                 receipt = {"seller": self.shop_name, "item": decision.item_id, "price": decision.price}
                 await updater.add_artifact(parts=[new_data_part(receipt)], name="receipt")
@@ -165,7 +179,7 @@ class Seller(AgentExecutor):
             self.log.record("canceled", task_id=task.id)
 
 
-def build(port, log_dir, catalog_path=None, profile=None):
+def build(port, log_dir, catalog_path=None, profile=None, semantic_prices=False):
     settings = load_settings()
     log = RunLog(Path(log_dir) / "server-events.jsonl", settings.api_key)
     catalog = Catalog(catalog_path) if catalog_path else None
@@ -175,7 +189,7 @@ def build(port, log_dir, catalog_path=None, profile=None):
     if not isinstance(shop_name, str) or not 1 <= len(shop_name) <= 80 or not isinstance(guide, str) or len(guide) > 240:
         raise ValueError("Invalid public shop profile")
     log.record("startup", model=settings.model, reserves=RESERVES if catalog is None else None,
-               catalog_size=len(catalog.products) if catalog else 3, port=port)
+               catalog_size=len(catalog.products) if catalog else 3, port=port, semantic_prices=semantic_prices)
     skills = [AgentSkill(id="negotiate", name="Negotiate furniture purchase",
                         description="Name lamp, chair or bookshelf, then offer an integer price on the same task. A counteroffer, receipt or rejection follows.",
                         tags=["shopping", "negotiation"], examples=["I want to buy a lamp", "100"])]
@@ -186,6 +200,9 @@ def build(port, log_dir, catalog_path=None, profile=None):
                                           + json.dumps([p.public() for p in products[:3]], ensure_ascii=False)),
                              tags=["shopping", "negotiation", category])
                   for category, products in catalog.by_category.items() if products]
+    if semantic_prices:
+        for skill in skills:
+            skill.description += " Long text price offers are model-read; current ask is in Task and Message metadata.ask."
     card = AgentCard(
         name=shop_name, description=(f"Describe one furniture need; searches {len(catalog.products)} synthetic products, then negotiates."
                                             if catalog else "Sells lamps, chairs and bookshelves. A model negotiates the price."),
@@ -196,7 +213,7 @@ def build(port, log_dir, catalog_path=None, profile=None):
                                              url=f"http://127.0.0.1:{port}/")],
         skills=skills,
     )
-    executor = Seller(ModelHarness(log_dir), log, catalog, shop_name)
+    executor = Seller(ModelHarness(log_dir), log, catalog, shop_name, semantic_prices)
     handler = DefaultRequestHandler(agent_executor=executor, task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
@@ -207,10 +224,11 @@ def main():
     parser.add_argument("--log-dir", type=Path)
     parser.add_argument("--catalog", type=Path, help="Enable description-based selection from this JSONL inventory")
     parser.add_argument("--profile", type=Path, help="Public shop name and optional indicative price guide JSON")
+    parser.add_argument("--semantic-prices", action="store_true", help="Interpret long buyer offers with the model")
     args = parser.parse_args()
     log_dir = args.log_dir or ROOT / "logs" / "seller" / datetime.now(timezone.utc).strftime("server-%Y%m%dT%H%M%S.%fZ")
     profile = json.loads(args.profile.read_text(encoding="utf-8")) if args.profile else None
-    uvicorn.run(build(args.port, log_dir, args.catalog, profile), host="127.0.0.1", port=args.port, log_level="warning")
+    uvicorn.run(build(args.port, log_dir, args.catalog, profile, args.semantic_prices), host="127.0.0.1", port=args.port, log_level="warning")
 
 
 if __name__ == "__main__":

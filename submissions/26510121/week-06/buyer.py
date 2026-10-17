@@ -23,7 +23,8 @@ async def run(args):
     try:
         # Smaller than the course test's 300-second process deadline.
         async with asyncio.timeout(240):
-            result = await negotiate(client, ModelHarness(log_dir), args.url, args.item, args.budget, log)
+            result = await negotiate(client, ModelHarness(log_dir), args.url, args.item, args.budget, log,
+                                     semantic_prices=args.semantic_prices)
         output = json.dumps(result, ensure_ascii=False)
         print(output.replace(settings.api_key, "[REDACTED]") if settings.api_key else output)
         return 0
@@ -50,6 +51,7 @@ def main():
     parser.add_argument("--item", required=True)
     parser.add_argument("--budget", type=int, required=True)
     parser.add_argument("--log-dir", type=Path)
+    parser.add_argument("--semantic-prices", action="store_true", help="Model-read seller quotes and require matching ask metadata")
     args = parser.parse_args()
     if not args.item.strip() or args.budget < 0:
         parser.error("A nonempty item and nonnegative integer budget are required")
