@@ -1,11 +1,11 @@
 """Strict contracts for model intent extraction and shortlist selection."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from negotiation.catalog import matches
+from negotiation.catalog import CATEGORIES, COLORS, MATERIALS, matches
 from negotiation.contracts import DecisionError, _unique_object
 
 
@@ -31,6 +31,9 @@ class SelectionDecision(BaseModel):
 @dataclass(frozen=True)
 class NeedContext:
     inventory_version: str = "synthetic-v1"
+    supported_categories: list = field(default_factory=lambda: list(CATEGORIES))
+    supported_materials: list = field(default_factory=lambda: list(MATERIALS))
+    supported_colors: list = field(default_factory=lambda: list(COLORS))
 
 
 @dataclass(frozen=True)
@@ -65,6 +68,8 @@ def parse_need_decision(raw, context):
             raise DecisionError("search_requires_category")
         if decision.min_books is not None and decision.category not in {"bookshelf", "cabinet"}:
             raise DecisionError("book_capacity_requires_storage")
+    if decision.action == "unsupported" and all((decision.category, decision.material, decision.color)):
+        raise DecisionError("supported_attributes_require_search_or_clarification")
     # A clarification may retain known facts; only action=search can reach retrieval.
     return decision
 

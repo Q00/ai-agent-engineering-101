@@ -75,6 +75,11 @@ class CatalogTests(unittest.TestCase):
             parse_selection_decision('{"action":"clarify","item_id":null,"reason":""}',
                                      SelectionContext(need(), []))
 
+    def test_known_supported_combination_cannot_be_declared_unsupported(self):
+        with self.assertRaisesRegex(DecisionError, "supported_attributes_require_search_or_clarification"):
+            parse_need_decision(json.dumps(need(action="unsupported", category="chair", material="wood",
+                                                color="white", min_books=None)), NeedContext())
+
     def test_duplicate_json_keys_are_rejected(self):
         with self.assertRaisesRegex(DecisionError, "duplicate_json_key"):
             parse_selection_decision('{"action":"select","action":"clarify","item_id":null,"reason":"Which size?"}',

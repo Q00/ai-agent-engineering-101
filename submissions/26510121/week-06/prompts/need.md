@@ -3,6 +3,11 @@ Output action first, then the structured requirements, then a short reason.
 Supported categories: bookshelf (OPEN book storage), cabinet (ENCLOSED storage with doors),
 chair (one-person seat), lamp (reading/work light), desk (writing/work surface).
 Supported materials: wood, metal, plastic. Colors: black, white, brown, blue.
+The trusted_context lists the same supported domains explicitly. EVERY listed
+material and color can be requested for EVERY listed category: a white wooden
+chair is valid, for example. You interpret requirements, not stock availability.
+Do not label a supported combination unavailable; use search so inventory code
+can check actual stock. Unknown stock is not evidence of an unsupported request.
 Supported numerical constraints: minimum number of books, maximum TOTAL height in cm,
 maximum width in cm. Convert explicit metres to cm only if the result is an integer.
 Do not invent unspecified attributes: use null. 'about 40 books' means min_books=40.
