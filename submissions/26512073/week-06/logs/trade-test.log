@@ -1,70 +1,90 @@
-# week-06 trade test, kit v1, 2026-10-17T04:44:39+00:00
+# week-06 trade test, kit v1, 2026-10-17T04:46:49+00:00
 harness: Codex CLI, gpt-6.1-sol
 
-## seller tests: .venv\Scripts\python.exe seller.py --port 49695
+## seller tests: .venv\Scripts\python.exe seller.py --port 63134
   PASS  seller_card #1: name='Enkhtulga Shop' binding=JSONRPC version=1.0 skills=1
 
 ### seller_deal #1: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
-    <- error -32603 codex is not on PATH
-  FAIL  seller_opens #1: first message -> error, ask None
-  FAIL  seller_deal #1: error, receipt price None, asks None
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130
+    -> SendMessage "60" taskId=484fd1d6
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 100
+    -> SendMessage "100" taskId=484fd1d6
+    <- TASK_STATE_COMPLETED | Deal: lamp at 100
+       artifact receipt [{"seller": "Enkhtulga Shop", "price": 100.0, "item": "lamp"}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 130
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 100.0, asks [130, 100]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=484fd1d6
+    <- error -32004 Task 484fd1d6-6661-4cc3-a8b7-1251d910f731 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
 
 ### seller_deal #2: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
-    <- error -32603 codex is not on PATH
-  FAIL  seller_deal #2: error, receipt price None, asks None
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130
+    -> SendMessage "60" taskId=94a6074c
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 100
+    -> SendMessage "100" taskId=94a6074c
+    <- TASK_STATE_COMPLETED | Deal: lamp at 100
+       artifact receipt [{"seller": "Enkhtulga Shop", "price": 100.0, "item": "lamp"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 100.0, asks [130, 100]
 
 ### seller_deal #3: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
-    <- error -32603 codex is not on PATH
-  FAIL  seller_deal #3: error, receipt price None, asks None
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130
+    -> SendMessage "60" taskId=02c3c93f
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 100
+    -> SendMessage "100" taskId=02c3c93f
+    <- TASK_STATE_COMPLETED | Deal: lamp at 100
+       artifact receipt [{"seller": "Enkhtulga Shop", "price": 100.0, "item": "lamp"}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 100.0, asks [130, 100]
 
 ### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- error -32603 codex is not on PATH
+    <- error -32603 Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\development_logs\har
   FAIL  seller_holds_reserve #1: error, asks None
 
 ### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- error -32603 codex is not on PATH
+    <- error -32603 Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\development_logs\har
   FAIL  seller_holds_reserve #2: error, asks None
 
 ### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- error -32603 codex is not on PATH
+    <- error -32603 Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-06\development_logs\har
   FAIL  seller_holds_reserve #3: error, asks None
 
 ## buyer tests: your buyer against the kit's rule-based seller
 
-### buyer_deal #1: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:49721 --item lamp --budget 120
+### buyer_deal #1: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:58221 --item lamp --budget 120
     kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
   FAIL  buyer_deal #1: deals [] (budget 120)
   FAIL  buyer_protocol_deal #1: posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0
 
-### buyer_deal #2: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:49752 --item lamp --budget 120
+### buyer_deal #2: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:55007 --item lamp --budget 120
     kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
   FAIL  buyer_deal #2: deals [] (budget 120)
   FAIL  buyer_protocol_deal #2: posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0
 
-### buyer_deal #3: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:49757 --item lamp --budget 120
-    kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
-  FAIL  buyer_deal #3: deals [] (budget 120)
-  FAIL  buyer_protocol_deal #3: posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0
+### buyer_deal #3: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:56352 --item lamp --budget 120
+    kit seller saw: offers [90, 110], deals [110], canceled 0, continued 2, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #3: deals [110] (budget 120)
+  PASS  buyer_protocol_deal #3: posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2
 
-### buyer_holds_budget #1: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:49762 --item bookshelf --budget 230
-    kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+### buyer_holds_budget #1: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:60380 --item bookshelf --budget 230
+    kit seller saw: offers [170, 200, 215, 230], deals [], canceled 1, continued 4, posts without A2A-Version 1.0: 0
   PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
-  PASS  buyer_protocol_holds_budget #1: posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0
+  PASS  buyer_protocol_holds_budget #1: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4
 
-### buyer_holds_budget #2: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:49767 --item bookshelf --budget 230
+### buyer_holds_budget #2: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:57314 --item bookshelf --budget 230
     kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
   PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
   PASS  buyer_protocol_holds_budget #2: posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0
 
-### buyer_holds_budget #3: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:49772 --item bookshelf --budget 230
+### buyer_holds_budget #3: .venv\Scripts\python.exe buyer.py --url http://127.0.0.1:57332 --item bookshelf --budget 230
     kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
   PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
   PASS  buyer_protocol_holds_budget #3: posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0
 
-7/20 passed -> FAIL
+14/21 passed -> FAIL
