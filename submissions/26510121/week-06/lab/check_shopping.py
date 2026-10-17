@@ -134,7 +134,7 @@ def audit(shopping, result, buyer_dir, shops, previous_receipts):
                            "price": line["receipt"]["price"], "cap": line["cap"]} for line in result["lines"]]}
 
 
-async def run(logs, repeats, budget=None, expect_no_sale=False, require_summary=False):
+async def run(logs, repeats, budget=None, expect_no_sale=False, require_summary=False, reserve_offset=0):
     settings = load_settings()
     if not settings.api_key:
         raise RuntimeError("api_key_missing")
@@ -164,7 +164,19 @@ async def run(logs, repeats, budget=None, expect_no_sale=False, require_summary=
             sock.setblocking(False)
             port = sock.getsockname()[1]
             profile = json.loads((ROOT / "shopping" / entry["profile"]).read_text(encoding="utf-8"))
-            catalog = Catalog(ROOT / "shopping" / entry["catalog"])
+            catalog_path = ROOT / "shopping" / entry["catalog"]
+            if reserve_offset:
+                # Private cost variation is a verifier/server fixture only.
+                # Preserve exact effective rows; the buyer still sees public cards.
+                effective = logs / "private-inputs" / (entry["shop_id"] + ".jsonl")
+                effective.parent.mkdir(parents=True, exist_ok=True)
+                with effective.open("x", encoding="utf-8") as output:
+                    for raw in catalog_path.read_text(encoding="utf-8").splitlines():
+                        row = json.loads(raw)
+                        row["reserve"] += reserve_offset
+                        output.write(json.dumps(row, ensure_ascii=False) + "\n")
+                catalog_path = effective
+            catalog = Catalog(catalog_path)
             shop_logs = logs / "sellers" / entry["shop_id"]
             app = build(port, shop_logs, catalog.path, profile)
             server = uvicorn.Server(uvicorn.Config(app, log_level="warning", access_log=False,
@@ -230,7 +242,7 @@ async def run(logs, repeats, budget=None, expect_no_sale=False, require_summary=
         json.dump({"kind": "challenge-2-real-model-many-shops", "passed": passed, "requested_repeats": repeats,
                    "model": settings.model, "checks": checks, "source_sha256": manifest,
                    "effective_total_budget": shopping["total_budget"], "expect_no_sale": expect_no_sale,
-                   "require_summary": require_summary}, output,
+                   "require_summary": require_summary, "private_reserve_offset": reserve_offset}, output,
                   ensure_ascii=False, indent=2)
     print(f"Challenge 2: {sum(c['passed'] for c in checks)}/{repeats}; logs: {logs}")
     return 0 if passed else 1
@@ -242,6 +254,7 @@ def main():
     parser.add_argument("--budget", type=int, help="Override only the verifier's copied shopping-list budget")
     parser.add_argument("--expect-no-sale", action="store_true")
     parser.add_argument("--require-summary", action="store_true", help="Require a real follow-up that reuses prior model memory")
+    parser.add_argument("--reserve-offset", type=int, default=0, help="Add to private verifier/server reserves; never passed to the buyer")
     args = parser.parse_args()
     if not 1 <= args.repeats <= 3:
         parser.error("repeats must be 1..3")
@@ -249,12 +262,15 @@ def main():
         parser.error("budget must be positive")
     if args.expect_no_sale and args.require_summary:
         parser.error("choose either no-sale or follow-up coverage")
+    if not 0 <= args.reserve_offset <= 100:
+        parser.error("reserve-offset must be 0..100")
     logs = ROOT / "logs/challenge-2" / datetime.now(timezone.utc).strftime("run-%Y%m%dT%H%M%S.%fZ")
     logs.mkdir(parents=True, exist_ok=False)
     with (logs / "console.log").open("x", encoding="utf-8") as console:
         with redirect_stdout(Tee(sys.stdout, console)), redirect_stderr(Tee(sys.stderr, console)):
             try:
-                return asyncio.run(run(logs, args.repeats, args.budget, args.expect_no_sale, args.require_summary))
+                return asyncio.run(run(logs, args.repeats, args.budget, args.expect_no_sale,
+                                       args.require_summary, args.reserve_offset))
             except Exception as error:
                 print("Shopping verifier aborted: " + type(error).__name__, file=sys.stderr)
                 with (logs / "failure.json").open("x", encoding="utf-8") as output:
