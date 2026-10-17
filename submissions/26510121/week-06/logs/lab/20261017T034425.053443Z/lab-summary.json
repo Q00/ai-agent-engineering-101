@@ -1,0 +1,23 @@
+{
+  "kind": "lecture-lab-not-assignment-trade-test",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "packages": {
+    "a2a-sdk": "1.2.2",
+    "uvicorn": "0.54.0",
+    "httpx": "0.28.1"
+  },
+  "passed": false,
+  "checks": [
+    {
+      "check": "cli_version",
+      "passed": true,
+      "detail": "a2a 0.3.0\ncommit:  6286ed6a9a1f8c7360c03b5e832811fe0896414a\nbuilt:   2026-09-24T09:01:49Z\ngo:      go1.25.0\nos/arch: windows/amd64"
+    },
+    {
+      "check": "echo_card",
+      "passed": false,
+      "detail": "name=Echo Agent; interface={'url': 'http://127.0.0.1:8080', 'protocolBinding': 'HTTP+JSON', 'protocolVersion': '1.0'}"
+    }
+  ],
+  "error": "Traceback (most recent call last):\n  File \"C:\\Users\\MASTER\\ai-agent-engineering-101\\submissions\\26510121\\week-06\\lab\\run_lab.py\", line 240, in main\n    lab.run_protocol()\n  File \"C:\\Users\\MASTER\\ai-agent-engineering-101\\submissions\\26510121\\week-06\\lab\\run_lab.py\", line 164, in run_protocol\n    self.check_card(\"echo\", url)\n  File \"C:\\Users\\MASTER\\ai-agent-engineering-101\\submissions\\26510121\\week-06\\lab\\run_lab.py\", line 151, in check_card\n    self.require(\n  File \"C:\\Users\\MASTER\\ai-agent-engineering-101\\submissions\\26510121\\week-06\\lab\\run_lab.py\", line 67, in require\n    raise AssertionError(f\"{name}: {detail}\")\nAssertionError: echo_card: name=Echo Agent; interface={'url': 'http://127.0.0.1:8080', 'protocolBinding': 'HTTP+JSON', 'protocolVersion': '1.0'}\n"
+}
