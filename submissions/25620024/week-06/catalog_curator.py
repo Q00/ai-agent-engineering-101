@@ -9,6 +9,9 @@ Its context is thrown away after the pick; the negotiator later sees only the ch
 Code guards around it:
   - a pick that is not one of the five candidates is not accepted (no invented ids)
   - no candidates, or a vague request: the answer must be a question
+  - a question when the request is NOT vague (v3): code picks the top-ranked candidate instead,
+    and both the log note and the buyer-facing reason say why the turn moved on, quoting the
+    question the curator wanted to ask (the buyer can still ask to switch)
   - a harness failure becomes a generic question, never a guess
 """
 import json
@@ -53,7 +56,19 @@ def curate(request, candidates, vague, applied="nothing specific"):
     except Exception as e:
         return {"question": GENERIC_QUESTION, "note": f"harness error: {e}"}
     if answer.get("question"):
-        return {"question": str(answer["question"])}
+        if vague:
+            return {"question": str(answer["question"])}
+        # Not vague and every candidate meets the applied conditions: asking is against the rule
+        # (design decision 2: the shop offers one and names it). Code picks the top-ranked
+        # candidate -- the closest fit from the search -- and says why the turn moved on.
+        top = candidates[0]
+        asked = str(answer["question"])
+        return {"pick": top,
+                "reason": (f"It is the closest match to what you described. "
+                           f"I was going to ask: \"{asked}\" -- tell me if that matters and I can switch."),
+                "note": (f"GUARD curator asked \"{asked}\" although the request is not vague and every candidate "
+                         f"meets the applied conditions; code picked the top-ranked candidate {top['id']}"),
+                "skipped_question": asked}
     pick = answer.get("pick")
     if pick not in ids:
         return {"question": GENERIC_QUESTION, "note": f"GUARD pick {pick!r} is not one of the candidates"}
@@ -76,7 +91,8 @@ if __name__ == "__main__":
     result = curate(request, top, vague, applied)
     if "pick" in result:
         it = result["pick"]
-        print(f"curator  : PICK {it['id']} {it['name']} -- {result['reason']}")
+        who = "CODE PICK (curator overruled)" if result.get("skipped_question") else "PICK"
+        print(f"curator  : {who} {it['id']} {it['name']} -- {result['reason']}")
         print(f"           (code now locks this item; its reserve {it['reserve']} goes to the negotiation guard)")
     else:
         print(f"curator  : QUESTION {result['question']}")
