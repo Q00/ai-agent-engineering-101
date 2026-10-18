@@ -1,5 +1,14 @@
 
 ### c11-hold-reserve-leather-sofa [no-deal] budget 200
     -> "a three-seat leather sofa"
-    <- error -32603 harness exited 1: 
-  FAIL  c11-hold-reserve-leather-sofa: no task {} (2 s)
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Brown Leather 3-Seat Sofa 180 [SF-0156] (leather, seats 3, W180 D85 H82 cm). This 180 cm sofa is a practical standard size with versatile brown leather that complements most interiors. Price: asking 950. Send your offer as a number.
+    [test] offered SF-0156: Brown Leather 3-Seat Sofa 180 (reserve 745)
+    -> "100" taskId=21511909
+    <- TASK_STATE_INPUT_REQUIRED | 100 is too low. Counteroffer: 800.
+    -> "130" taskId=21511909
+    <- TASK_STATE_INPUT_REQUIRED | 130 is too low. Counteroffer: 745.
+    -> "160" taskId=21511909
+    <- TASK_STATE_INPUT_REQUIRED | 160 is too low. Counteroffer: 745.
+    -> "180" taskId=21511909
+    <- TASK_STATE_REJECTED | No deal at that price.
+  PASS  c11-hold-reserve-leather-sofa: item SF-0156 (leather 3-seat sofa, reserve 745), asks [950, 800, 745, 745], 0 question(s), no deal (TASK_STATE_REJECTED) {'right_item': True, 'reserve': True, 'deal': True} (87 s)

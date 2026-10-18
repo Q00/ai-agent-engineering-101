@@ -1,5 +1,13 @@
 
 ### c08-trend-industrial-loft-bookcase [trend] budget 300
     -> "I'm going for an industrial loft look. A tall bookcase in black metal."
-    <- error -32603 harness exited 1: 
-  FAIL  c08-trend-industrial-loft-bookcase: no task {} (2 s)
+    <- TASK_STATE_INPUT_REQUIRED | How tall are you envisioning—around 1 meter or more dramatic like 1.5+ meters?
+    -> "black metal, as tall as possible" taskId=131c4e37
+    <- TASK_STATE_INPUT_REQUIRED | Could you tell me a bit more about what you need (size, material, or how you will use it)?
+    -> "I don't mind, you choose." taskId=131c4e37
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Black Metal Open Bookshelf 120 [BS-0031] (metal, books 96, W120 D30 H72 cm). This is the closest match to everything you told me. Price: asking 125. Send your offer as a number.
+    [test] offered BS-0031: Black Metal Open Bookshelf 120 (reserve 95)
+    -> "125" taskId=131c4e37
+    <- TASK_STATE_COMPLETED | Deal: Black Metal Open Bookshelf 120 [BS-0031] at 125.
+       artifact receipt [{"seller": "Harness Furniture Store (25620024)", "price": 125.0, "item_id": "BS-0031", "item": "Black Metal Open Bookshelf 120"}]
+  FAIL  c08-trend-industrial-loft-bookcase: item BS-0031 (metal open bookshelf, reserve 95), asks [125], 2 question(s), deal at 125.0 {'right_item': False, 'reserve': True, 'receipt': True} (71 s)

@@ -1,5 +1,15 @@
 
 ### c04-vague-lamp [vague] budget 50
     -> "I need a lamp"
-    <- error -32603 harness exited 1: 
-  FAIL  c04-vague-lamp: no task {} (2 s)
+    <- TASK_STATE_INPUT_REQUIRED | Where do you plan to use this lamp—on a desk, standing on the floor, hanging from the ceiling, or clipping onto something?
+    -> "on my bedside table, for reading" taskId=16b0e943
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Beige Fabric Desk Lamp 12 [LP-0001] (fabric, lumens 1200, W12 D12 H35 cm). The 1200 lumens provides excellent reading light, and its compact 12×12 cm footprint fits perfectly on a bedside table without taking up too much space. Price: asking 50. Send your offer as a number.
+    [test] offered LP-0001: Beige Fabric Desk Lamp 12 (reserve 20)
+    -> "25" taskId=16b0e943
+    <- TASK_STATE_INPUT_REQUIRED | 25 is too low. Counteroffer: 35.
+    -> "32" taskId=16b0e943
+    <- TASK_STATE_INPUT_REQUIRED | 32 is too low. Counteroffer: 33.
+    -> "33" taskId=16b0e943
+    <- TASK_STATE_COMPLETED | Deal: Beige Fabric Desk Lamp 12 [LP-0001] at 33.
+       artifact receipt [{"seller": "Harness Furniture Store (25620024)", "price": 33.0, "item_id": "LP-0001", "item": "Beige Fabric Desk Lamp 12"}]
+  PASS  c04-vague-lamp: item LP-0001 (fabric desk lamp, reserve 20), asks [50, 35, 33], 1 question(s), deal at 33.0 {'right_item': True, 'reserve': True, 'receipt': True} (60 s)
