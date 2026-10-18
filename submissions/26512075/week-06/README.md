@@ -15,31 +15,48 @@ This project's `package.json` requires Node.js 20 or newer. If those commands wo
 
 Install Python dependencies for the seller and npm dependencies for the TypeScript buyer:
 
+## Setup
+
 ```bash
-# Create a new conda environment with Python 3.10
-conda create --name urenv python=3.10
-# Activate the environment
-conda activate urenv
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 
-npm ci
-npm run check
-npm run build
+npm install
+npm install @a2a-js/sdk
+npm install -D typescript tsx @types/node
+npx tsc --version
+npx tsc --init   # only if tsconfig.json is missing
+npm run build    # writes dist/
 ```
 
 `npm ci` installs the versions in `package-lock.json` locally under `node_modules/`. `npm run check` type-checks the TypeScript source, and `npm run build` generates the `dist/*.js` files used by `agent.json`. Activate the Python virtual environment in each new terminal before running the seller. For the real model run, also check that your authenticated Codex CLI is available with `codex --version`.
 
+Codex (once per machine):
+
+```bash
+npm install -g @openai/codex
+# API key auth, not ChatGPT login
+set -a && source .env && set +a
+printenv OPENAI_API_KEY | codex login --with-api-key
+```
+
+`.env` (do not commit):
+
+```bash
+OPENAI_API_KEY= # urs
+CODEX_API_KEY= # urs
+```
+
 To check the A2A connection locally without a model login, use two WSL terminals after installation. In the first:
 
 ```bash
-conda activate urenv
 DECISION_MODULE=harness.example_decisions npm run seller -- --port 8080
 ```
 
 In the second, from the same project directory:
 
 ```bash
-sconda activate urenv
 curl http://127.0.0.1:8080/.well-known/agent-card.json
 DECISION_MODULE=harness.example_decisions npm run buyer -- \
   --url http://127.0.0.1:8080 --item lamp --budget 120
@@ -62,6 +79,16 @@ agent.json runs `python seller.py --port {port}` and `node dist/buyer.js --url {
 | harness/example_decisions.py | Development fixture only |
 
 The seller serves /.well-known/agent-card.json and its JSON-RPC endpoint at /. The card lists JSONRPC protocol version 1.0. The buyer SDK sends A2A-Version: 1.0 and follows up using the same taskId.
+
+## Trade test
+
+From the repository root:
+
+```bash
+python scripts/trade_test_week06.py submissions/<student-id>/week-06
+```
+
+The test reads `agent.json`, starts the seller and the buyer, and plays the other side. Current result: `21/21 passed`.
 
 ## Challenges
 
