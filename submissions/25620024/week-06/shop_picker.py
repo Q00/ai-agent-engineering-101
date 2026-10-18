@@ -8,8 +8,8 @@ numbers, not URLs, so it cannot mistype an address.
 
 Code guards:
   - numbers that are not in the directory are dropped; duplicates removed; at most 3 per item
-  - an item left with no shop gets the shops whose card tags name a word of the item
-    (or, failing that, the shops that sell every category)
+  - an item left with no shop gets the shops that sell every category (v2; v1 matched the
+    item's words against card tags, and "read in bed" picked a bed shop)
 """
 import json
 import os
@@ -74,12 +74,10 @@ def pick_shops(items, cards):
             notes.append(f"GUARD item {i + 1}: {len(picked)} shops chosen, kept the first {MAX_SHOPS}")
             picked = picked[:MAX_SHOPS]
         if not picked:
-            words = set(re.findall(r"[a-z]+", item.lower()))
-            picked = [j for j, c in enumerate(cards) if any(t in words for t in c["tags"]
-                                                            if t not in ("shopping", "furniture", "negotiation", "catalog"))]
-            if not picked:
-                picked = [j for j, c in enumerate(cards) if len(c["tags"]) >= 14]   # sells all 10 categories
-            picked = picked[:MAX_SHOPS]
+            # v2: only the shops that sell every category. v1 matched card tags against the item's
+            # words and sent "a lamp to read in bed" to a bed shop and the bookshelf "not taller
+            # than my desk" to a desk shop (logs/challenge-2, run a55bd5c)
+            picked = [j for j, c in enumerate(cards) if len(c["tags"]) >= 14][:MAX_SHOPS]
             notes.append(f"GUARD item {i + 1}: no valid shop from the harness, code chose {[cards[j]['name'] for j in picked]}")
         chosen[item] = picked
     return chosen, notes
