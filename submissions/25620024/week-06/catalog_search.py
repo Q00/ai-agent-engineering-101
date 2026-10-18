@@ -115,6 +115,27 @@ def _score(item, q, relax):
     return s
 
 
+DIVERSITY_WINDOW = 0.2   # items scoring within this of the best count as equally good
+
+
+def _diverse_top(scored, k):
+    """From (score, item) pairs sorted best-first, pick k: among the near-best items prefer ones
+    that differ from those already picked (subtype, material, size, colour), so the curator
+    compares real alternatives instead of five copies in different colours."""
+    best = scored[0][0]
+    pool = [it for s, it in scored if s <= best + DIVERSITY_WINDOW]
+    rest = [it for s, it in scored if s > best + DIVERSITY_WINDOW]
+    picked = []
+    key = lambda it: (it["subtype"], it["material"], (it["width_cm"], it["height_cm"]), it["color"])
+    while pool and len(picked) < k:
+        def overlap(it):
+            return sum(sum(a == b for a, b in zip(key(it), key(p))) for p in picked)
+        nxt = min(pool, key=overlap)          # min() keeps the first (best-scored) on ties
+        picked.append(nxt)
+        pool.remove(nxt)
+    return picked + rest[:k - len(picked)]
+
+
 def search(catalog, q, k=5):
     """Part 3: returns (top k items, number of matches, relaxations applied)."""
     steps = [set(), {"soft"}, {"soft", "sizes"}, {"soft", "sizes", "subtypes"},
@@ -122,8 +143,8 @@ def search(catalog, q, k=5):
     for relax in steps:
         matches = [it for it in catalog if _passes(it, q, relax)]
         if matches:
-            matches.sort(key=lambda it: (_score(it, q, relax), it["id"]))
-            return matches[:k], len(matches), sorted(relax)
+            scored = sorted(((_score(it, q, relax), it) for it in matches), key=lambda p: (p[0], p[1]["id"]))
+            return _diverse_top(scored, k), len(matches), sorted(relax)
     return [], 0, sorted(steps[-1])
 
 
