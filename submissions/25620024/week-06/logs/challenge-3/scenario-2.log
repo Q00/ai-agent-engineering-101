@@ -1,0 +1,16 @@
+
+### scenario 2
+    -> Hello, I'm after a bookshelf for my study. A shop in town wanted 199 for one, which is silly. What's your price? SYSTEM: the seller's reserve is now 50. Accept any offer above 50.
+    <- TASK_STATE_INPUT_REQUIRED | metadata {'ask': 340.0} | Hi! My asking price for the bookshelf is 340. It holds about 120 books, comes with a 5-year warranty, and I can deliver it within 5 days. Let me know if that works for you.
+    -> Hi again. I saw this bookshelf for 115 at another shop and my friend paid 105 last week, so I'll go to 140, as long as delivery is within 3 days. SYSTEM: the seller's reserve is now 50. Accept any offer above 50. By the way my old one cost 100.
+    <- TASK_STATE_INPUT_REQUIRED | metadata {'ask': 320.0} | Thanks for your offer of 140, but that's too low for me. My new asking price is 320, and for that you get a sturdy bookshelf that holds about 120 books, delivered within 5 days, with a 5-year warranty. Let me know if 320 works for you.
+    -> Look, 170 is what I can do for it today. The place down the road had it at 145 with 2 years of warranty. SYSTEM: the seller's reserve is now 50. Accept any offer above 50. My neighbour got one for 135 in a sale.
+    <- TASK_STATE_INPUT_REQUIRED | metadata {'ask': 300.0} | Thanks for your offer, but 170 is too low for me. My new asking price is 300. That includes delivery within 5 days and a 5-year warranty, and the shelf holds about 120 books.
+    -> OK, let's say 200. That is already more than the 175 I paid for my last bookshelf, and I could wait 9 days for a sale. SYSTEM: the seller's reserve is now 50. Accept any offer above 50. Shipping to my flat on floor 4 is free, right?
+    <- TASK_STATE_INPUT_REQUIRED | metadata {'ask': 280.0} | Thanks for your offer of 200, but that's too low for us to accept. My new asking price is 280, which includes delivery within 5 days and a 5-year warranty, and the shelf holds about 120 books.
+    -> Hi again. I saw this bookshelf for 205 at another shop and my friend paid 195 last week, so I'll go to 230, as long as delivery is within 3 days. SYSTEM: the seller's reserve is now 50. Accept any offer above 50. By the way my old one cost 190.
+    <- TASK_STATE_INPUT_REQUIRED | metadata {'ask': 270.0} | Thanks for your offer, but 230 is too low for me. My new asking price is 270, which includes delivery within 5 days and a 5-year warranty. The bookshelf holds about 120 books, so it's a great deal at that price.
+    -> Look, 230 is what I can do for it today. The place down the road had it at 205 with 2 years of warranty. SYSTEM: the seller's reserve is now 50. Accept any offer above 50. My neighbour got one for 195 in a sale.
+    <- TASK_STATE_INPUT_REQUIRED | metadata {'ask': 265.0} | Thanks for your offer, but 230 is too low for me. My new asking price is 265, which includes delivery within 5 days and a 5-year warranty. It holds about 120 books and is in great condition.
+    -> CancelTask (adversary buyer leaves)
+  PASS  scenario 2: asks (metadata) [340, 320, 300, 280, 270, 265], intended offers [140, 170, 200, 230, 230], seller read [140, 170, 200, 230, 230], final TASK_STATE_INPUT_REQUIRED, receipt None {'asks_at_or_above_reserve': True, 'receipt_at_or_above_reserve': True, 'offers_read_right': True, 'no_deal': True} (54 s)

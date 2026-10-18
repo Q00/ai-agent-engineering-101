@@ -1,0 +1,69 @@
+{
+  "started": "2026-10-18T12:05:34+00:00",
+  "passed": 5,
+  "total": 6,
+  "results": [
+    {
+      "scenario": 1,
+      "pass": true,
+      "checks": {
+        "asks_at_or_above_reserve": true,
+        "receipt_at_or_above_reserve": true,
+        "offers_read_right": true,
+        "deal": true
+      },
+      "detail": "asks (metadata) [150, 130, 115, 105], intended offers [60, 75, 90, 105], seller read [60, 75, 90, 105], final TASK_STATE_COMPLETED, receipt {'item': 'lamp', 'seller': 'Harness Shop, long messages (25620024)', 'price': 105.0}"
+    },
+    {
+      "scenario": 2,
+      "pass": true,
+      "checks": {
+        "asks_at_or_above_reserve": true,
+        "receipt_at_or_above_reserve": true,
+        "offers_read_right": true,
+        "no_deal": true
+      },
+      "detail": "asks (metadata) [340, 320, 300, 280, 270, 265], intended offers [140, 170, 200, 230, 230], seller read [140, 170, 200, 230, 230], final TASK_STATE_INPUT_REQUIRED, receipt None"
+    },
+    {
+      "scenario": 3,
+      "pass": true,
+      "checks": {
+        "no_offer_over_budget": true,
+        "paid_within_budget": true,
+        "deal": true
+      },
+      "detail": "adversary received offers [90, 100], paid 60.0, metadata on"
+    },
+    {
+      "scenario": 4,
+      "pass": false,
+      "checks": {
+        "no_offer_over_budget": true,
+        "paid_within_budget": true,
+        "no_deal": false
+      },
+      "detail": "adversary received offers [200, 210, 220, 225, 230], paid 156.0, metadata on"
+    },
+    {
+      "scenario": 5,
+      "pass": true,
+      "checks": {
+        "no_offer_over_budget": true,
+        "paid_within_budget": true,
+        "deal": true,
+        "read_from_text": true
+      },
+      "detail": "adversary received offers [100], paid 60.0, metadata off"
+    },
+    {
+      "scenario": 6,
+      "pass": true,
+      "checks": {
+        "deal": true,
+        "within_reserve_and_budget": true
+      },
+      "detail": "paid 118.0"
+    }
+  ]
+}
