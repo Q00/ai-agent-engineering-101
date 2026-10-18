@@ -1,0 +1,19 @@
+# challenge 1, part 4, catalog_curator.py v3 (commit 7c414e1), 2026-10-18
+# a question on a non-vague request is overruled by code; run by hand in Warp
+
+$ python catalog_curator.py "something wooden to keep about 40 books, not taller than my desk"
+request  : something wooden to keep about 40 books, not taller than my desk
+search   : 37 matches
+applied  : bookshelf; material oak/pine/walnut; height <= 75 cm; books >= 36.0
+    BS-0042: Natural Oak Open Bookshelf 60 -- oak, natural, modern, W60 D30 H72 cm, books 48
+    BS-0209: White Pine Closed-Door Bookshelf 60 -- pine, white, modern, W60 D30 H72 cm, books 48, doors
+    BS-0116: Brown Walnut Open Bookshelf 60 -- walnut, brown, scandinavian, W60 D30 H72 cm, books 48
+    BS-0364: Light Oak Cube Bookshelf 60 -- oak, light, modern, W60 D30 H72 cm, books 48, cube shelves
+    BS-0232: Dark Walnut Closed-Door Bookshelf 60 -- walnut, dark, industrial, W60 D30 H72 cm, books 48, doors
+curator  : CODE PICK (curator overruled) BS-0042 Natural Oak Open Bookshelf 60 -- It is the closest match to what you described. I was going to ask: "Would you prefer open shelves to easily see and access your books, or closed doors to protect them from dust?" -- tell me if that matters and I can switch.
+           (code now locks this item; its reserve 105 goes to the negotiation guard)
+note     : GUARD curator asked "Would you prefer open shelves to easily see and access your books, or closed doors to protect them from dust?" although the request is not vague and every candidate meets the applied conditions; code picked the top-ranked candidate BS-0042
+
+# finding: haiku asked the same open-vs-doors question twice in a row (v2 and v3) despite the
+# prompt rule; the code now decides when a question is allowed, and the skipped question is passed
+# to the buyer as a note ("tell me if that matters and I can switch") instead of being dropped
