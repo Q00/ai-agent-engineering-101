@@ -2,8 +2,8 @@
 ### c12-not-in-catalog-fridge [no-item] budget 100
     -> "Can I get a refrigerator?"
     <- TASK_STATE_INPUT_REQUIRED | Which kind of furniture are you looking for? We sell bookshelves, desks, office and dining chairs, sofas, beds, wardrobes, chests of drawers, tables and lamps.
-    -> "a fridge for my kitchen, about 300 litres" taskId=ef5396d1
+    -> "a fridge for my kitchen, about 300 litres" taskId=ee35f0a2
     <- TASK_STATE_INPUT_REQUIRED | Which kind of furniture are you looking for? We sell bookshelves, desks, office and dining chairs, sofas, beds, wardrobes, chests of drawers, tables and lamps.
-    -> "just a normal fridge" taskId=ef5396d1
+    -> "just a normal fridge" taskId=ee35f0a2
     <- TASK_STATE_REJECTED | Sorry, nothing in our catalog matches that.
-  PASS  c12-not-in-catalog-fridge: item offered: none, final TASK_STATE_REJECTED, 2 question(s) {'right_item': True} (19 s)
+  PASS  c12-not-in-catalog-fridge: item offered: none, final TASK_STATE_REJECTED, 2 question(s) {'right_item': True} (18 s)

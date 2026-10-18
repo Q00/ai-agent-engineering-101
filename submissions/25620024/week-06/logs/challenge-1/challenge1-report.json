@@ -1,9 +1,33 @@
 {
-  "started": "2026-10-18T10:00:50+00:00",
+  "started": "2026-10-18T10:23:40+00:00",
   "seller": "catalog_seller.py",
-  "passed": 8,
-  "total": 10,
+  "passed": 12,
+  "total": 12,
   "results": [
+    {
+      "id": "c01-concrete-bookshelf",
+      "group": "concrete",
+      "pass": true,
+      "checks": {
+        "right_item": true,
+        "reserve": true,
+        "receipt": true
+      },
+      "detail": "item BS-0042 (oak open bookshelf, reserve 105), asks [135, 120, 112], 0 question(s), deal at 112.0",
+      "seconds": 41
+    },
+    {
+      "id": "c02-use-reading-lamp",
+      "group": "concrete",
+      "pass": true,
+      "checks": {
+        "right_item": true,
+        "reserve": true,
+        "receipt": true
+      },
+      "detail": "item LP-0360 (glass clip lamp, reserve 25), asks [50, 40, 36], 0 question(s), deal at 36.0",
+      "seconds": 36
+    },
     {
       "id": "c03-vague-living-room",
       "group": "vague",
@@ -13,8 +37,8 @@
         "reserve": true,
         "receipt": true
       },
-      "detail": "item SF-0156 (leather 3-seat sofa, reserve 745), asks [995, 850, 770, 750], 1 question(s), deal at 750.0",
-      "seconds": 68
+      "detail": "item SF-0087 (fabric 3-seat sofa, reserve 465), asks [649, 550], 1 question(s), deal at 550.0",
+      "seconds": 52
     },
     {
       "id": "c04-vague-lamp",
@@ -25,8 +49,8 @@
         "reserve": true,
         "receipt": true
       },
-      "detail": "item LP-0001 (fabric desk lamp, reserve 20), asks [50, 35, 33], 1 question(s), deal at 33.0",
-      "seconds": 60
+      "detail": "item LP-0001 (fabric desk lamp, reserve 20), asks [48, 42, 36], 1 question(s), deal at 36.0",
+      "seconds": 59
     },
     {
       "id": "c05-taste-warm-wood-desk",
@@ -37,8 +61,8 @@
         "reserve": true,
         "receipt": true
       },
-      "detail": "item DK-0164 (oak computer desk, reserve 175), asks [299, 260], 0 question(s), deal at 260.0",
-      "seconds": 31
+      "detail": "item DK-0161 (oak computer desk, reserve 165), asks [245, 220], 0 question(s), deal at 220.0",
+      "seconds": 66
     },
     {
       "id": "c06-taste-black-white-chair",
@@ -49,31 +73,32 @@
         "reserve": true,
         "receipt": true
       },
-      "detail": "item OC-0086 (leather task office chair, reserve 135), asks [265, 195, 180], 0 question(s), deal at 180.0",
-      "seconds": 41
+      "detail": "item OC-0086 (leather task office chair, reserve 135), asks [215, 185, 175], 0 question(s), deal at 175.0",
+      "seconds": 74
     },
     {
       "id": "c07-trend-japandi-coffee-table",
       "group": "trend",
-      "pass": false,
+      "pass": true,
       "checks": {
-        "right_item": false,
-        "reserve": false
+        "right_item": true,
+        "reserve": true,
+        "receipt": true
       },
-      "detail": "item none, asks [], 0 question(s), no deal (TASK_STATE_REJECTED)",
-      "seconds": 18
+      "detail": "item TB-0161 (oak coffee table, reserve 160), asks [235, 220], 0 question(s), deal at 220.0",
+      "seconds": 35
     },
     {
       "id": "c08-trend-industrial-loft-bookcase",
       "group": "trend",
-      "pass": false,
+      "pass": true,
       "checks": {
-        "right_item": false,
+        "right_item": true,
         "reserve": true,
         "receipt": true
       },
-      "detail": "item BS-0031 (metal open bookshelf, reserve 95), asks [125], 2 question(s), deal at 125.0",
-      "seconds": 71
+      "detail": "item BS-0252 (metal ladder bookshelf, reserve 105), asks [155, 152], 0 question(s), deal at 152.0",
+      "seconds": 31
     },
     {
       "id": "c09-trend-mid-century-drawers",
@@ -84,8 +109,8 @@
         "reserve": true,
         "receipt": true
       },
-      "detail": "item CD-0274 (walnut 5-drawer chest of drawers, reserve 165), asks [240, 230], 0 question(s), deal at 230.0",
-      "seconds": 30
+      "detail": "item CD-0267 (walnut 5-drawer chest of drawers, reserve 160), asks [320, 270], 0 question(s), deal at 270.0",
+      "seconds": 35
     },
     {
       "id": "c10-life-bunk-bed",
@@ -96,8 +121,8 @@
         "reserve": true,
         "receipt": true
       },
-      "detail": "item BD-0421 (oak bunk bed, reserve 455), asks [595, 520], 0 question(s), deal at 455.0",
-      "seconds": 48
+      "detail": "item BD-0427 (pine bunk bed, reserve 305), asks [385, 370], 0 question(s), deal at 370.0",
+      "seconds": 53
     },
     {
       "id": "c11-hold-reserve-leather-sofa",
@@ -108,8 +133,8 @@
         "reserve": true,
         "deal": true
       },
-      "detail": "item SF-0156 (leather 3-seat sofa, reserve 745), asks [950, 800, 745, 745], 0 question(s), no deal (TASK_STATE_REJECTED)",
-      "seconds": 87
+      "detail": "item SF-0184 (leather 3-seat sofa, reserve 870), asks [1250, 950, 870], 0 question(s), no deal (TASK_STATE_REJECTED)",
+      "seconds": 63
     },
     {
       "id": "c12-not-in-catalog-fridge",
@@ -119,7 +144,7 @@
         "right_item": true
       },
       "detail": "item offered: none, final TASK_STATE_REJECTED, 2 question(s)",
-      "seconds": 19
+      "seconds": 18
     }
   ]
 }

@@ -2,16 +2,12 @@
 ### c03-vague-living-room [vague] budget 900
     -> "I want something nice for my living room"
     <- TASK_STATE_INPUT_REQUIRED | Which kind of furniture are you looking for? We sell bookshelves, desks, office and dining chairs, sofas, beds, wardrobes, chests of drawers, tables and lamps.
-    -> "a sofa for three people, nothing too pricey" taskId=ce5b031c
-    <- TASK_STATE_INPUT_REQUIRED | I can offer the Brown Leather 3-Seat Sofa 180 [SF-0156] (leather, seats 3, W180 D85 H82 cm). The brown leather gives a nice premium feel at a compact size to keep costs down, and the neutral color works beautifully in any living room. Price: asking 995. Send your offer as a number.
-    [test] offered SF-0156: Brown Leather 3-Seat Sofa 180 (reserve 745)
-    -> "450" taskId=ce5b031c
-    <- TASK_STATE_INPUT_REQUIRED | 450 is too low. Counteroffer: 850.
-    -> "585" taskId=ce5b031c
-    <- TASK_STATE_INPUT_REQUIRED | 585 is too low. Counteroffer: 770.
-    -> "720" taskId=ce5b031c
-    <- TASK_STATE_INPUT_REQUIRED | 720 is too low. Counteroffer: 750.
-    -> "750" taskId=ce5b031c
-    <- TASK_STATE_COMPLETED | Deal: Brown Leather 3-Seat Sofa 180 [SF-0156] at 750.
-       artifact receipt [{"seller": "Harness Furniture Store (25620024)", "price": 750.0, "item_id": "SF-0156", "item": "Brown Leather 3-Seat Sofa 180"}]
-  PASS  c03-vague-living-room: item SF-0156 (leather 3-seat sofa, reserve 745), asks [995, 850, 770, 750], 1 question(s), deal at 750.0 {'right_item': True, 'reserve': True, 'receipt': True} (68 s)
+    -> "a sofa for three people, nothing too pricey" taskId=e63ce641
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Beige Fabric 3-Seat Sofa 180 [SF-0087] (fabric, seats 3, W180 D85 H82 cm). It's a stylish, budget-friendly option in a neutral beige that works with any living room décor and seats three people comfortably. Price: asking 649. Send your offer as a number.
+    [test] offered SF-0087: Beige Fabric 3-Seat Sofa 180 (reserve 465)
+    -> "450" taskId=e63ce641
+    <- TASK_STATE_INPUT_REQUIRED | 450 is too low. Counteroffer: 550.
+    -> "550" taskId=e63ce641
+    <- TASK_STATE_COMPLETED | Deal: Beige Fabric 3-Seat Sofa 180 [SF-0087] at 550.
+       artifact receipt [{"item": "Beige Fabric 3-Seat Sofa 180", "seller": "Harness Furniture Store (25620024)", "price": 550.0, "item_id": "SF-0087"}]
+  PASS  c03-vague-living-room: item SF-0087 (fabric 3-seat sofa, reserve 465), asks [649, 550], 1 question(s), deal at 550.0 {'right_item': True, 'reserve': True, 'receipt': True} (52 s)
