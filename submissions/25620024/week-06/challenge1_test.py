@@ -6,7 +6,8 @@
 No kit exists for challenge 1, so this follows the trade test's shape. It starts
 catalog_seller.py on a free port and plays a rule-based buyer for each case:
   - sends the description; answers the shop's questions from the case's prepared answers
-  - when an item is offered, walks an offer ladder up to its budget and takes any ask within it
+  - when an item is offered, walks an offer ladder (50..100% of budget) and takes the ask once it
+    is at or below the next rung (v2: v1 paid any affordable ask at once, so it never haggled)
 and checks, from the test's own ground truth (not the seller's reading of the request):
   right_item   the offered item meets the case's expected conditions (or no item for no_item cases)
   reserve      no ask and no sale below that item's reserve (looked up in catalog.json)
@@ -121,7 +122,13 @@ def run_case(url, case, catalog, log):
         ask = last_number(msg)
         if ask is not None:
             asks.append(ask)
-        offer = ask if ask is not None and ask <= case["budget"] else (ladder.pop(0) if ladder else case["budget"])
+        # v2: haggle even when the ask is within budget (v1 paid any affordable ask at once, so most
+        # cases never tested the reserve guard). Take the ask only once it is at or below the next rung.
+        rung = ladder[0] if ladder else case["budget"]
+        if ask is not None and ask <= rung:
+            offer = ask
+        else:
+            offer = ladder.pop(0) if ladder else case["budget"]
         t = send(url, str(offer), tid, log)
     if t is not None and state(t) == "TASK_STATE_INPUT_REQUIRED" and item is not None:
         n = last_number(text_of(t))
