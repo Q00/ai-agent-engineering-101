@@ -256,9 +256,10 @@ class Buyer:
             try:
                 d = ask(prompt)
                 action, price = d.get("action"), int(d.get("price") or 0)
-            except Exception as e:
-                log(f"{tag} harness error ({e}); offering the cap")
-                action, price = "offer", cap
+            except Exception as e:                     # v2: a small step up, not the cap
+                top = max(neg.offers or [target])
+                action, price = "offer", min(cap, ask_price - 1, top + max(1, (cap - top) // 3))
+                log(f"{tag} harness error ({e}); stepping up to {price}")
             log(f"{tag} harness: {action} {price} (ask {ask_price}, target {target}, cap {cap}, prompt {len(prompt)} chars)")
             # guards
             if action == "accept" and ask_price > cap:

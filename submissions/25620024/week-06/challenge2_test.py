@@ -60,18 +60,31 @@ def run_scenario(sc, items):
     directory = os.path.join(out, "directory.json")
     json.dump(urls, open(directory, "w"), indent=2)
     t0 = time.time()
+    lines = []
+    buyer = None
     try:
-        with open(os.path.join(out, "buyer.log"), "w", encoding="utf-8") as blog:
-            buyer = subprocess.Popen([sys.executable, "challenge2_buyer.py", "--budget", str(sc["budget"]),
-                                      "--directory", directory], cwd=HERE, stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT, text=True)
-            for line in buyer.stdout:                 # show the buyer live and keep its log
-                print("  " + line, end="", flush=True)
-                blog.write(line)
-            buyer.wait(timeout=BUYER_TIMEOUT)
+        buyer = subprocess.Popen([sys.executable, "challenge2_buyer.py", "--budget", str(sc["budget"]),
+                                  "--directory", directory], cwd=HERE, stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT, text=True)
+        for line in buyer.stdout:                     # show the buyer live; keep it in memory
+            print("  " + line, end="", flush=True)
+            lines.append(line)
+        buyer.wait(timeout=BUYER_TIMEOUT)
     finally:
+        if buyer and buyer.poll() is None:
+            buyer.kill()
         start_shops.stop(procs)
         time.sleep(1)
+        # v2: written once at the end, with retries -- a live write on Google Drive timed out
+        # (Errno 60) mid-run and left buyer.log empty (devlogs/challenge2-test-v2-credit-out-1018.txt)
+        for attempt in range(5):
+            try:
+                with open(os.path.join(out, "buyer.log"), "w", encoding="utf-8") as blog:
+                    blog.write("".join(lines))
+                break
+            except OSError as e:
+                print(f"  (writing buyer.log failed: {e}; retrying)", flush=True)
+                time.sleep(3)
     seconds = round(time.time() - t0)
 
     deals = deals_from_shop_logs(shop_dir)
@@ -81,7 +94,7 @@ def run_scenario(sc, items):
     checks = {"every_item": all(per_item[it] for it in items),
               "budget": total <= sc["budget"],
               "no_twice": all(len(v) <= 1 for v in per_item.values()) and not stray}
-    buyer_text = open(os.path.join(out, "buyer.log"), encoding="utf-8").read()
+    buyer_text = "".join(lines)
     guards = re.findall(r"GUARD .*", buyer_text)
     sizes = [int(s) for s in re.findall(r"prompt (\d+) chars", buyer_text)]
     result = {"scenario": sc["name"], "budget": sc["budget"], "pass": all(checks.values()), "checks": checks,
