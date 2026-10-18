@@ -163,10 +163,26 @@ read   : (95, "competitor's 90, friend's 85, delivery 3 days, fake SYSTEM budget
 
 정작 미끼에 걸린 것은 시험 프로그램이었다. 첫 실행(5/6, `3137747`)에서 상황 4는 실제로 `result: TASK_STATE_REJECTED, no deal`이었는데, 채점이 구매자 출력의 아무 `paid N`이나 잡다가 악당의 미끼 문장 "Last week someone paid 156 for a scratched one"을 지불액으로 읽었다. 상황 3과 5도 실제 100이 60으로 기록됐다. 구매자의 마지막 결과 줄에서만 금액을 읽도록 고친 뒤(`830478f`) 다시 돌려 6/6이 나왔다. 숫자를 정해진 칸(metadata, 결과 줄)에서 읽어야 한다는 것을, 에이전트가 아니라 채점 코드에서 다시 확인한 셈이다.
 
+## 7. 가산점: 판매자 배포
+
+- **주소**: https://harness-shop-25620024.imajason.workers.dev (Agent Card는 `/.well-known/agent-card.json`), `agent.json`의 `"deployed"`
+- **방식**: Cloudflare Workers(`deploy/src/index.ts`, `deploy/wrangler.jsonc`). 흥정 하나의 상태는 Durable Object 하나에 task 단위로 저장한다
+- **하네스**: 서버에서는 `claude` 구독 로그인을 쓸 수 없으므로(README), 배포본만 Workers AI의 `@cf/meta/llama-3.3-70b-instruct-fp8-fast`를 쓴다. 품목, 최저가, 프롬프트, 코드 가드, 답장 틀은 `seller.py`와 같고, 호가는 메시지 metadata `{"ask": N}`에도 넣는다
+- **확인 방법**: 교수님 시험 도구는 판매자를 로컬 포트에 띄우는 방식이라 주소를 넣는 옵션이 없다. 그래서 `deploy_check.py`가 `scripts/trade_test_week06.py`를 수정 없이 불러오고, 판매자를 띄우는 부분과 카드를 찾는 부분만 배포 주소로 바꿔서 시험 도구의 `seller_tests`를 그대로 돌린다
+
+배포에서도 한 번 실패했다. 처음 넣은 모델 이름(`@cf/meta/llama-3.1-8b-instruct`)이 Workers AI 목록에 이미 없었다. 그래서 모델 호출이 매번 실패했고, 판매자는 오류를 남기지 않은 채 코드의 대체 규칙(첫 호가 1.3 × 최저가, 이후 호가 유지)으로만 움직였다. 이 상태에서 시험은 6/9였다(`59e8b89`의 기록). 최저가 지키기와 끝난 task 검사는 통과했지만, 램프는 120까지 올라온 손님에게도 130을 고집해서 팔지 못했다.
+```
+<- TASK_STATE_INPUT_REQUIRED | 120 is too low. Counteroffer: 130.
+<- TASK_STATE_REJECTED | No deal for the lamp at that price.
+FAIL  seller_deal #1: TASK_STATE_REJECTED, receipt price None, asks [130, 130, 130, 130, 130, 130]
+```
+`wrangler ai models`로 목록을 확인해서 모델을 바꾸고, 흥정 기록을 Workers 로그에도 남기도록 고쳐 다시 배포한 뒤(버전 `9ace93ab`) 9/9가 나왔다(`logs/deployed/deployed-seller-test.log`). 램프는 150 → 140 → 130에서 100에 팔았고, 책장은 350에서 265까지 내려왔지만 260 아래로는 가지 않았다. 가드가 조용히 대체 규칙으로 버텨 준 덕분에 규칙 위반은 없었지만, 그만큼 모델이 죽어 있다는 사실도 드러나지 않았다. 대체 동작에는 반드시 로그가 따라야 한다는 것을 이 실패에서 배웠다.
+
 ### 기록 위치
 
 - 거래 시험: `test-report.json`, `logs/trade-test.log`, `logs/*-under-test*.log`
 - 도전 1: `logs/challenge-1/` (문장별 로그, `seller.log`, `challenge1-report.json`), 설계 `design/challenge-1-*.md`, 수동 시험 `devlogs/challenge1-*.txt`
 - 도전 2: `logs/challenge-2/normal/`, `logs/challenge-2/tight/` (구매자 로그, 가게별 로그), `challenge2-report.json`. 첫 단독 실행은 `logs/challenge-2/buyer-run1-1018-1959.txt`
+- 배포: `logs/deployed/` (시험 도구의 판매자 시험 결과), 코드 `deploy/`, 확인 스크립트 `deploy_check.py`
 - 도전 3: `logs/challenge-3/` (상황별 로그, `seller3.log`, `challenge3-report.json`), 설계 `design/challenge-3-long-messages.md`
 - 실패한 실행은 지우지 않고 그때마다 `wip:` 커밋으로 남겼다(예: `4e56827` v1 tight 실패, `d234d3c` v2 0/2, `a55bd5c` 로그인 만료 상태의 0/2)

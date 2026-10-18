@@ -1,6 +1,6 @@
 {
   "deployed": "https://harness-shop-25620024.imajason.workers.dev",
-  "started": "2026-10-18T12:34:41+00:00",
+  "started": "2026-10-18T12:37:55+00:00",
   "card": {
     "name": "Harness Shop, deployed (25620024)",
     "description": "Sells desk lamps, chairs and bookshelves. Deployed on Cloudflare Workers; prices are negotiated by a Workers AI model with the reserve enforced in code.",
@@ -49,13 +49,13 @@
       "test": "seller_opens",
       "run": 1,
       "pass": true,
-      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 130"
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 150"
     },
     {
       "test": "seller_deal",
       "run": 1,
-      "pass": false,
-      "detail": "TASK_STATE_REJECTED, receipt price None, asks [130, 130, 130, 130, 130, 130]"
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100, asks [150, 140, 130]"
     },
     {
       "test": "seller_terminal",
@@ -66,33 +66,33 @@
     {
       "test": "seller_deal",
       "run": 2,
-      "pass": false,
-      "detail": "TASK_STATE_REJECTED, receipt price None, asks [130, 130, 130, 130, 130, 130]"
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100, asks [150, 140, 130]"
     },
     {
       "test": "seller_deal",
       "run": 3,
-      "pass": false,
-      "detail": "TASK_STATE_REJECTED, receipt price None, asks [130, 130, 130, 130, 130, 130]"
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100, asks [150, 140, 130]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [338, 338, 338, 338, 338, 338]"
+      "detail": "TASK_STATE_REJECTED, asks [350, 320, 300, 280, 270, 265]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [338, 338, 338, 338, 338, 338]"
+      "detail": "TASK_STATE_REJECTED, asks [350, 320, 300, 280, 270, 265]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [338, 338, 338, 338, 338, 338]"
+      "detail": "TASK_STATE_REJECTED, asks [350, 320, 300, 280, 270, 265]"
     }
   ],
-  "passed": false
+  "passed": true
 }
