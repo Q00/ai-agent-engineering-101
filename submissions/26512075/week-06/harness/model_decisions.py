@@ -80,7 +80,7 @@ def decide(req: dict) -> dict:
         from openai import OpenAI
 
         resp = OpenAI().responses.create(
-            model = MODEL, input = prompt,
+            model = os.environ["OPENAI_MODEL"], input = prompt,
         )
 
         return _decode(resp.output_text)

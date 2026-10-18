@@ -17,16 +17,44 @@ import uvicorn
 from starlette.applications import Starlette
 
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
-from a2a.server.agent_execution import AgentExecutor
+from a2a.server.agent_execution import AgentExecutor, SimpleRequestContextBuilder
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import TaskUpdater
-from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill, TaskState
+from a2a.utils.errors import UnsupportedOperationError
 
 from catalog import load, search
 from storage import stores
 
 LOG = logging.getLogger("seller")
+TERMINAL_STATES = {
+    TaskState.TASK_STATE_COMPLETED,
+    TaskState.TASK_STATE_REJECTED,
+    TaskState.TASK_STATE_CANCELED,
+    TaskState.TASK_STATE_FAILED,
+}
+
+
+class ExistingTaskContextBuilder(SimpleRequestContextBuilder):
+    """Keep the stored context when a client continues by taskId alone."""
+
+    def __init__(self, task_store):
+        super().__init__(should_populate_referred_tasks=False)
+        self.task_store = task_store
+
+    async def build(self, context, params=None, task_id=None, context_id=None, task=None):
+        if task_id:
+            stored = await self.task_store.get(task_id, context)
+            task = stored.task if hasattr(stored, "version") else stored
+            if task is not None and task.status.state in TERMINAL_STATES:
+                raise UnsupportedOperationError(message=f"Task {task_id} is finished")
+            if task is not None and not context_id:
+                context_id = task.context_id
+        return await super().build(
+            context=context, params=params, task_id=task_id,
+            context_id=context_id, task=task,
+        )
 
 def _positive_int(value):
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
@@ -100,13 +128,19 @@ class Seller(AgentExecutor):
 
         if deal is None:
             simple = re.fullmatch(
-                r"\s*(?:(:i want to buy|buy|want)\s+(?:a|an)\s+)?"
+                r"\s*(?:(?:i want to buy|buy|want)\s+(?:a|an)\s+)?"
                 r"(lamp|chair|bookshelf)\s*[.!]?\s*", text, re.I,
             )
 
             exact = simple.group(1).lower() if simple else None
-            if exact and exact in self.by_id:
-                item = self.by_id[exact]
+            if exact:
+                item = self.by_id.get(exact)
+                
+                if item is None:
+                    await updater.reject(updater.new_agent_message(
+                        parts=[new_text_part("No matching item.")]))
+                    return
+
             else:
                 candidates = search(text, self.catalog)
                 if not candidates:
@@ -130,7 +164,7 @@ class Seller(AgentExecutor):
                 ask = max(item["reserve"], _positive_int(selection.get("price")))
                 deal = {"itemId": item["id"], "ask": ask, "turn": 0, "transcript": [f"buyer: {text}"]}
                 await self.deals.save(task.id, deal)
-                msg = updater.new_agent_message(parts=[new_text_part(f"{item['name']}: asking {ask}{self.message_suffix}")], metadata={"ask":ask})
+                msg = updater.new_agent_message(parts=[new_text_part(f"{item['name']}: asking {ask}{self.message_suffix}")], metadata={"ask":ask, "itemId": item["id"]})
                 await updater.requires_input(msg)
                 LOG.info("open task=%s item=%s ask=%s", task.id, item["id"], ask)
             except Exception as e:
@@ -192,7 +226,8 @@ class Seller(AgentExecutor):
 
 def build_app(*, port: int = 9999, cfg: dict | None = None) -> Starlette:
     cfg = cfg or {}
-    url = os.getenv("PUBLIC_BASE_URL") or f"http://127.0.0.1:{port}/"
+    domain = os.getenv("VERCEL_URL") or os.getenv("VERCEL_PROJECT_PRODUCTION_URL")
+    url = os.getenv("PUBLIC_BASE_URL") or (f"https://{domain}" if domain else f"http://127.0.0.1:{port}/")
     if not url.endswith("/"):
         url += "/"
     products = load(Path(cfg["catalog"])) if cfg.get("catalog") else load()
