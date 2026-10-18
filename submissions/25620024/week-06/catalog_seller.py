@@ -103,6 +103,13 @@ class CatalogSeller(HarnessSeller):
             + f" | top: {', '.join(it['id'] for it in top)}")
         if not top:
             return {"question": "", "none": True}
+        if q.get("category") is None:                  # v2: no furniture category -> never pick an item
+            if must_pick:                              # e.g. "a refrigerator": not something this shop sells
+                log(f"[{tid}] GUARD no furniture category after {MAX_QUESTIONS} questions: not picking anything")
+                return {"question": "", "none": True}
+            log(f"[{tid}] GUARD no furniture category: asking which kind of furniture")
+            return {"question": "Which kind of furniture are you looking for? We sell bookshelves, desks, "
+                                "office and dining chairs, sofas, beds, wardrobes, chests of drawers, tables and lamps."}
         if must_pick:                                  # questions used up: closest item, said plainly
             log(f"[{tid}] GUARD {MAX_QUESTIONS} questions asked already: picking the top-ranked {top[0]['id']}")
             return {"pick": top[0], "reason": "This is the closest match to everything you told me."}
