@@ -1,0 +1,37 @@
+# challenge 1, part 4, catalog_curator.py v1 (commit 1529a85) on search v3 (a65c035), 2026-10-18
+# three requests run by hand in Warp; copied from the screen
+
+$ python catalog_curator.py "something wooden to keep about 40 books, not taller than my desk"
+search   : 37 matches
+    BS-0042: Natural Oak Open Bookshelf 60 -- oak, natural, modern, W60 D30 H72 cm, books 48
+    BS-0209: White Pine Closed-Door Bookshelf 60 -- pine, white, modern, W60 D30 H72 cm, books 48, doors
+    BS-0116: Brown Walnut Open Bookshelf 60 -- walnut, brown, scandinavian, W60 D30 H72 cm, books 48
+    BS-0364: Light Oak Cube Bookshelf 60 -- oak, light, modern, W60 D30 H72 cm, books 48, cube shelves
+    BS-0232: Dark Walnut Closed-Door Bookshelf 60 -- walnut, dark, industrial, W60 D30 H72 cm, books 48, doors
+curator  : QUESTION How tall is your desk?
+
+$ python catalog_curator.py "a light so I can read in bed"
+search   : 264 matches
+    LP-0001: Beige Fabric Desk Lamp 12 -- fabric, beige, classic, W12 D12 H35 cm, lumens 1200, adjustable arm
+    LP-0360: Clear Glass Clip Lamp 12 -- glass, clear, industrial, W12 D12 H50 cm, lumens 1600, clip-on
+    LP-0078: Black Metal Desk Lamp 20 -- metal, black, industrial, W20 D20 H35 cm, lumens 400, adjustable arm
+    LP-0435: Light Oak Clip Lamp 20 -- oak, light, industrial, W20 D20 H50 cm, lumens 400, clip-on
+    LP-0042: Blue Fabric Desk Lamp 30 -- fabric, blue, industrial, W30 D30 H50 cm, lumens 800, adjustable arm
+curator  : PICK LP-0360 Clear Glass Clip Lamp 12 -- The clip-on design mounts securely to your headboard, and at 1600 lumens it provides excellent brightness for reading.
+           (code now locks this item; its reserve 25 goes to the negotiation guard)
+
+$ python catalog_curator.py "I need a lamp"
+search   : 450 matches, VAGUE
+    LP-0001: Beige Fabric Desk Lamp 12 -- fabric, beige, classic, W12 D12 H35 cm, lumens 1200, adjustable arm
+    LP-0149: Smoked Glass Floor Lamp 12 -- glass, smoked, modern, W12 D12 H150 cm, lumens 1600, tall
+    LP-0261: White Metal Pendant Lamp 12 -- metal, white, modern, W12 D12 H50 cm, lumens 300, hangs from ceiling
+    LP-0426: Natural Oak Clip Lamp 20 -- oak, natural, modern, W20 D20 H35 cm, lumens 400, clip-on
+    LP-0029: Green Fabric Desk Lamp 20 -- fabric, green, classic, W20 D20 H50 cm, lumens 400, adjustable arm
+curator  : QUESTION Where would you like to use the lamp -- on a desk, floor, or ceiling?
+
+# findings
+# - reading lamp: picked a clip lamp out of 3 desk + 2 clip candidates, with a reason tied to the request
+# - vague lamp: asked a question that splits the subtypes (desk / floor / ceiling)
+# - bookshelf: asked "How tall is your desk?" although every candidate is 72 cm; the search had
+#   already assumed a 75 cm desk and filtered on it, but the curator never saw that assumption --
+#   splitting the curator from the parser lost information (the cost of a disposable context)
