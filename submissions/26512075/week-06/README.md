@@ -106,4 +106,4 @@ For a local transport check without a CLI account, prefix commands with DECISION
 
 ## Hosting option
 
-app.py exports the ASGI app. Set P_BASE_URL(PUBLIC_BASE_URL) to its HTTPS origin and REDIS_URL for persistent tasks and negotiation state. A headless server needs HARNESS_BACKEND=openai, OPENAI_MODEL and OPENAI_API_KEY for API-backed inference. Check the public card and a complete trade before setting `"deployed":"https://..."` in agent.json.
+app.py exports the ASGI app. Set P_BASE_URL(PUBLIC_BASE_URL) to its HTTPS origin and REDIS_URL for persistent tasks and negotiation state. A headless server needs HARNESS_BACKEND=openai, OPENAI_MODEL and OPENAI_API_KEY for API-backed inference. Check the public card and a complete trade before setting `"deployed":"https://https://ai-agent-engineering-a2a.vercel.app/"` in agent.json.
