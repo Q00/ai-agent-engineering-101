@@ -19,6 +19,12 @@ their whole caps -- the harness treated the cap it was shown as a target):
   - the harness is shown a TARGET (the floor estimate), never the cap; the cap stays in code
   - walk_away while the cap still has room becomes a small step up instead
 
+v3 (after logs/challenge-2 run d234d3c, 0/2: the harness stopped AT the target -- sofa 387, 387,
+387 with cap 568 -- and every shop rejected after six offers): a concession schedule in code.
+  - offers 1-3: the harness's own moves (low, near the target)
+  - offers 4-6: at least target + (cap - target) x (n - 3) / 3, so the last offer is the cap
+  - offers 5-6: an ask within the cap is taken (a lost item costs more than a few units)
+
 Guards in code (the harness proposes, code checks):
   - never offer above the item's cap; offer >= ask -> take the ask instead
   - accept only if the ask <= cap AND spent + ask + other holds <= budget (checked under a lock)
@@ -43,6 +49,8 @@ HEADERS = {"A2A-Version": "1.0"}
 PARALLEL = 5          # shop conversations at once
 MAX_QUESTIONS = 2     # questions from a shop answered during the call for proposals
 MAX_OFFERS = 6        # offers per negotiation before walking away
+SCHEDULE_FROM = 4     # v3: from this offer on, code sets a minimum offer rising to the cap
+DEADLINE_FROM = 5     # v3: from this offer on, an ask within the cap is taken
 ITEM_RX = re.compile(r"\[([A-Z]{2}-\d{4})\]")
 
 FLOOR_RATIO = 1.5     # opening ask / reserve in the shop logs: median 1.47 (36 openings, 1.24-2.75)
@@ -271,6 +279,19 @@ class Buyer:
             if action == "offer" and price >= ask_price:
                 log(f"{tag} GUARD offer {price} >= ask {ask_price}: taking the ask")
                 action, price = "accept", ask_price
+            n = len(neg.offers) + 1                        # v3: which offer this move would be
+            if n >= DEADLINE_FROM and ask_price <= cap and action != "accept":
+                log(f"{tag} GUARD deadline (offer {n} of {MAX_OFFERS}): ask {ask_price} is within the cap, taking it")
+                action, price = "accept", ask_price
+            elif n >= SCHEDULE_FROM and action in ("offer", "walk_away"):
+                least = round(target + (cap - target) * (n - SCHEDULE_FROM + 1) / (MAX_OFFERS - SCHEDULE_FROM + 1))
+                if action == "walk_away" or price < least:
+                    if least >= ask_price and ask_price <= cap:
+                        log(f"{tag} GUARD schedule (offer {n}): minimum {least} >= ask {ask_price}, taking the ask")
+                        action, price = "accept", ask_price
+                    else:
+                        log(f"{tag} GUARD schedule (offer {n}): {action} {price} raised to {min(least, cap)}")
+                        action, price = "offer", min(least, cap)
             if action == "walk_away":
                 top = max(neg.offers or [0])
                 if top < cap and len(neg.offers) < MAX_OFFERS:   # v2: room left under the cap
