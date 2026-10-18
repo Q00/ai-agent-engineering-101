@@ -1,0 +1,10 @@
+{
+  // Week 06 extra credit: the seller on Cloudflare Workers (see src/index.ts)
+  "name": "harness-shop-25620024",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-01",
+  "ai": { "binding": "AI" },
+  "vars": { "MODEL": "@cf/meta/llama-3.1-8b-instruct" },
+  "durable_objects": { "bindings": [{ "name": "SHOP", "class_name": "Shop" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Shop"] }]
+}
