@@ -133,11 +133,13 @@ def challenge2():
         print(f"{sum(up)}/{len(bases)} shops up")
         rc, text = run_buyer(["--directory", "directory.json", "--list", ",".join(SHOPPING_LIST), "--budget", str(TOTAL_BUDGET)],
                              out / "buyer.log", timeout=1500)
-        m = re.search(r"\[summary\] bought (\{.*?\}) spent (\d+) of (\d+); missing (\[.*?\])", text)
+        # prices arrive as JSON numbers (floats), so spent is logged as e.g. 900.0 — the first
+        # version of this regex expected an integer and silently reported FAIL (see REPORT §3)
+        m = re.search(r"\[summary\] bought (\{.*?\}) spent (\d+(?:\.\d+)?) of (\d+); missing (\[.*?\])", text)
         bought = eval(m.group(1)) if m else {}
-        spent, total, missing = (int(m.group(2)), int(m.group(3)), eval(m.group(4))) if m else (0, TOTAL_BUDGET, SHOPPING_LIST)
+        spent, total, missing = (float(m.group(2)), int(m.group(3)), eval(m.group(4))) if m else (0, TOTAL_BUDGET, SHOPPING_LIST)
         receipts = sum(len(re.findall(r"-> accept", (out / f"shop_{k:02d}.log").read_text(encoding="utf-8"))) for k in range(1, len(bases) + 1))
-        ok = not missing and spent <= total and receipts == len(SHOPPING_LIST) and len(bought) == len(SHOPPING_LIST)
+        ok = not missing and spent <= total and len(bought) == len(SHOPPING_LIST) and receipts == len(bought)
         line = (f"{'PASS' if ok else 'FAIL'} list {SHOPPING_LIST} budget {total}: bought {bought}, spent {spent}, missing {missing}, "
                 f"receipts across shops {receipts} (no item twice: {receipts == len(bought)})")
         print(line)
