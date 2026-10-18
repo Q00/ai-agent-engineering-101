@@ -1,71 +1,186 @@
 buyer: 4 items, budget 800, directory of 20 shops
-note: harness error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
-note: GUARD item 1: no valid shop from the harness, code chose ['Lamp Corner', 'Bright Ideas Lighting', 'Sleep Well Beds']
-note: GUARD item 2: no valid shop from the harness, code chose ['Sofa House', 'Comfy Couches', 'Big Furniture Hall']
-note: GUARD item 3: no valid shop from the harness, code chose ['Desk & Chair Works', 'Big Furniture Hall', 'City Home Store']
-note: GUARD item 4: no valid shop from the harness, code chose ['Big Furniture Hall', 'City Home Store']
-part B  'a lamp to read in bed' -> Lamp Corner, Bright Ideas Lighting, Sleep Well Beds
+part B  'a lamp to read in bed' -> Lamp Corner, Bright Ideas Lighting, Big Furniture Hall
 part B  'a three-seat fabric sofa for the living room' -> Sofa House, Comfy Couches, Big Furniture Hall
-part B  'something wooden to keep about 40 books, not taller than my desk' -> Desk & Chair Works, Big Furniture Hall, City Home Store
-part B  'an office chair to sit in all day' -> Big Furniture Hall, City Home Store
+part B  'something wooden to keep about 40 books, not taller than my desk' -> Book Nook Shelving, Study Space, Big Furniture Hall
+part B  'an office chair to sit in all day' -> Ergo Office, Desk & Chair Works, Big Furniture Hall
 
-part C  call for proposals: 11 conversations, 5 at a time
-[Lamp Corner / a lamp to read in bed] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
-[Comfy Couches / a three-seat fabric sofa] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
-[Bright Ideas Lighting / a lamp to read in bed] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
-[Sleep Well Beds / a lamp to read in bed] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
-[Sofa House / a three-seat fabric sofa] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
-[Big Furniture Hall / a three-seat fabric sofa] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
-[Desk & Chair Works / something wooden to keep] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
-[Big Furniture Hall / something wooden to keep] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
-[Big Furniture Hall / an office chair to sit i] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
-[City Home Store / something wooden to keep] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
-[City Home Store / an office chair to sit i] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+part C  call for proposals: 12 conversations, 5 at a time
+[Big Furniture Hall / a lamp to read in bed] quote LP-0360 Clear Glass Clip Lamp 12 asking 45
+[Sofa House / a three-seat fabric sofa] quote SF-0087 Beige Fabric 3-Seat Sofa 180 asking 620
+[Comfy Couches / a three-seat fabric sofa] quote SF-0087 Beige Fabric 3-Seat Sofa 180 asking 580
+[Bright Ideas Lighting / a lamp to read in bed] quote LP-0360 Clear Glass Clip Lamp 12 asking 40
+[Lamp Corner / a lamp to read in bed] quote LP-0360 Clear Glass Clip Lamp 12 asking 32
+[Big Furniture Hall / a three-seat fabric sofa] quote SF-0100 Blue Fabric 3-Seat Sofa 210 asking 820
+[Big Furniture Hall / something wooden to keep] quote BS-0042 Natural Oak Open Bookshelf 60 asking 195
+[Book Nook Shelving / something wooden to keep] quote BS-0042 Natural Oak Open Bookshelf 60 asking 130
+[Study Space / something wooden to keep] quote BS-0042 Natural Oak Open Bookshelf 60 asking 150
+[Ergo Office / an office chair to sit i] quote OC-0232 Cognac Leather Mesh Office Chair 55 asking 185
+[Desk & Chair Works / an office chair to sit i] quote OC-0181 Blue Fabric Mesh Office Chair 62 asking 120
+[Big Furniture Hall / an office chair to sit i] quote OC-0181 Blue Fabric Mesh Office Chair 62 asking 150
 ---- board: quotes ----
-  item: a lamp to read in bed | shop: Lamp Corner | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a lamp to read in bed | shop: Bright Ideas Lighting | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a lamp to read in bed | shop: Sleep Well Beds | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a three-seat fabric sofa for the living room | shop: Sofa House | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a three-seat fabric sofa for the living room | shop: Comfy Couches | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a three-seat fabric sofa for the living room | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: something wooden to keep about 40 books, not taller than my desk | shop: Desk & Chair Works | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: something wooden to keep about 40 books, not taller than my desk | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: something wooden to keep about 40 books, not taller than my desk | shop: City Home Store | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: an office chair to sit in all day | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: an office chair to sit in all day | shop: City Home Store | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a lamp to read in bed | shop: Lamp Corner | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 32 | my offers: - | round 0 of 6 | status: quoted
+  item: a lamp to read in bed | shop: Bright Ideas Lighting | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 40 | my offers: - | round 0 of 6 | status: quoted
+  item: a lamp to read in bed | shop: Big Furniture Hall | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 45 | my offers: - | round 0 of 6 | status: quoted
+  item: a three-seat fabric sofa for the living room | shop: Sofa House | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 620 | my offers: - | round 0 of 6 | status: quoted
+  item: a three-seat fabric sofa for the living room | shop: Comfy Couches | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 580 | my offers: - | round 0 of 6 | status: quoted
+  item: a three-seat fabric sofa for the living room | shop: Big Furniture Hall | offered: SF-0100 Blue Fabric 3-Seat Sofa 210 | asks: 820 | my offers: - | round 0 of 6 | status: quoted
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Book Nook Shelving | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 130 | my offers: - | round 0 of 6 | status: quoted
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Study Space | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 150 | my offers: - | round 0 of 6 | status: quoted
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Big Furniture Hall | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 195 | my offers: - | round 0 of 6 | status: quoted
+  item: an office chair to sit in all day | shop: Ergo Office | offered: OC-0232 Cognac Leather Mesh Office Chair 55 | asks: 185 | my offers: - | round 0 of 6 | status: quoted
+  item: an office chair to sit in all day | shop: Desk & Chair Works | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 120 | my offers: - | round 0 of 6 | status: quoted
+  item: an office chair to sit in all day | shop: Big Furniture Hall | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 150 | my offers: - | round 0 of 6 | status: quoted
   ledger: budget 800 | spent 0 {} | held 0 {} | free 800
-part D  'a lamp to read in bed': NO QUOTES
-part D  'a three-seat fabric sofa for the living room': NO QUOTES
-part D  'something wooden to keep about 40 books, not taller than my desk': NO QUOTES
-part D  'an office chair to sit in all day': NO QUOTES
-part D  floor estimates (lowest quote / 1.5): {}
+part D  'a lamp to read in bed': awarded to Lamp Corner at 32, standby ['Bright Ideas Lighting', 'Big Furniture Hall']
+part D  'a three-seat fabric sofa for the living room': awarded to Comfy Couches at 580, standby ['Sofa House', 'Big Furniture Hall']
+part D  'something wooden to keep about 40 books, not taller than my desk': awarded to Book Nook Shelving at 130, standby ['Study Space', 'Big Furniture Hall']
+part D  'an office chair to sit in all day': awarded to Desk & Chair Works at 120, standby ['Big Furniture Hall', 'Ergo Office']
+part D  floor estimates (lowest quote / 1.5): {'a lamp to read in bed': 21, 'a three-seat fabric sofa for the living room': 387, 'something wooden to keep about 40 books, not taller than my desk': 87, 'an office chair to sit in all day': 80}
 ---- board: awarded, caps set ----
-  item: a lamp to read in bed | shop: Lamp Corner | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a lamp to read in bed | shop: Bright Ideas Lighting | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a lamp to read in bed | shop: Sleep Well Beds | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a three-seat fabric sofa for the living room | shop: Sofa House | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a three-seat fabric sofa for the living room | shop: Comfy Couches | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a three-seat fabric sofa for the living room | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: something wooden to keep about 40 books, not taller than my desk | shop: Desk & Chair Works | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: something wooden to keep about 40 books, not taller than my desk | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: something wooden to keep about 40 books, not taller than my desk | shop: City Home Store | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: an office chair to sit in all day | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: an office chair to sit in all day | shop: City Home Store | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  ledger: budget 800 | spent 0 {} | held 0 {} | free 800
+  item: a lamp to read in bed | shop: Lamp Corner | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 32 | my offers: - | round 0 of 6 | status: quoted
+  item: a lamp to read in bed | shop: Bright Ideas Lighting | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 40 | my offers: - | round 0 of 6 | status: standby
+  item: a lamp to read in bed | shop: Big Furniture Hall | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 45 | my offers: - | round 0 of 6 | status: standby
+  item: a three-seat fabric sofa for the living room | shop: Sofa House | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 620 | my offers: - | round 0 of 6 | status: standby
+  item: a three-seat fabric sofa for the living room | shop: Comfy Couches | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 580 | my offers: - | round 0 of 6 | status: quoted
+  item: a three-seat fabric sofa for the living room | shop: Big Furniture Hall | offered: SF-0100 Blue Fabric 3-Seat Sofa 210 | asks: 820 | my offers: - | round 0 of 6 | status: standby
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Book Nook Shelving | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 130 | my offers: - | round 0 of 6 | status: quoted
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Study Space | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 150 | my offers: - | round 0 of 6 | status: standby
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Big Furniture Hall | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 195 | my offers: - | round 0 of 6 | status: standby
+  item: an office chair to sit in all day | shop: Ergo Office | offered: OC-0232 Cognac Leather Mesh Office Chair 55 | asks: 185 | my offers: - | round 0 of 6 | status: standby
+  item: an office chair to sit in all day | shop: Desk & Chair Works | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 120 | my offers: - | round 0 of 6 | status: quoted
+  item: an office chair to sit in all day | shop: Big Furniture Hall | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 150 | my offers: - | round 0 of 6 | status: standby
+  ledger: budget 800 | spent 0 {} | held 799 {'a lamp to read in bed': 29, 'a three-seat fabric sofa for the living room': 538, 'something wooden to keep about 40 books, not taller than my desk': 121, 'an office chair to sit in all day': 111} | free 1
 
-part E  negotiating 0 items in parallel
+part E  negotiating 4 items in parallel
+[Desk & Chair Works / an office chair to sit i] harness: offer 60 (ask 120, target 80, cap 111, prompt 970 chars)
+[Lamp Corner / a lamp to read in bed] harness: offer 22 (ask 32, target 21, cap 29, prompt 941 chars)
+[Comfy Couches / a three-seat fabric sofa] harness: offer 320 (ask 580, target 387, cap 538, prompt 974 chars)
+[Book Nook Shelving / something wooden to keep] harness: offer 70 (ask 130, target 87, cap 121, prompt 998 chars)
+[Desk & Chair Works / an office chair to sit i] harness: offer 70 (ask 105, target 80, cap 111, prompt 978 chars)
+[Lamp Corner / a lamp to read in bed] harness: offer 23 (ask 28, target 21, cap 29, prompt 948 chars)
+[Comfy Couches / a three-seat fabric sofa] harness: offer 350 (ask 540, target 387, cap 538, prompt 983 chars)
+[Book Nook Shelving / something wooden to keep] harness: offer 80 (ask 115, target 87, cap 121, prompt 1006 chars)
+[Desk & Chair Works / an office chair to sit i] harness: offer 75 (ask 95, target 80, cap 111, prompt 989 chars)
+[Book Nook Shelving / something wooden to keep] harness: offer 85 (ask 105, target 87, cap 121, prompt 1019 chars)
+[Comfy Couches / a three-seat fabric sofa] harness: offer 370 (ask 500, target 387, cap 538, prompt 997 chars)
+[Lamp Corner / a lamp to read in bed] harness: offer 24 (ask 26, target 21, cap 29, prompt 960 chars)
+[Desk & Chair Works / an office chair to sit i] harness: offer 78 (ask 88, target 80, cap 111, prompt 1001 chars)
+[Lamp Corner / a lamp to read in bed] BOUGHT LP-0360 Clear Glass Clip Lamp 12 at 24.0; receipt {'price': 24.0, 'item_id': 'LP-0360', 'item': 'Clear Glass Clip Lamp 12', 'seller': 'Lamp Corner'}
+---- board: bought a lamp to read in bed ----
+  item: a lamp to read in bed | shop: Lamp Corner | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 32 -> 28 -> 26 | my offers: 22 -> 23 -> 24 | round 3 of 6 | status: bought
+  item: a lamp to read in bed | shop: Bright Ideas Lighting | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 40 | my offers: - | round 0 of 6 | status: cancelled
+  item: a lamp to read in bed | shop: Big Furniture Hall | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 45 | my offers: - | round 0 of 6 | status: cancelled
+  item: a three-seat fabric sofa for the living room | shop: Sofa House | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 620 | my offers: - | round 0 of 6 | status: standby
+  item: a three-seat fabric sofa for the living room | shop: Comfy Couches | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 580 -> 540 -> 500 | my offers: 320 -> 350 | round 2 of 6 | target 387 cap 542 | status: negotiating
+  item: a three-seat fabric sofa for the living room | shop: Big Furniture Hall | offered: SF-0100 Blue Fabric 3-Seat Sofa 210 | asks: 820 | my offers: - | round 0 of 6 | status: standby
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Book Nook Shelving | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 130 -> 115 -> 105 -> 100 | my offers: 70 -> 80 -> 85 | round 3 of 6 | target 87 cap 121 | status: negotiating
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Study Space | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 150 | my offers: - | round 0 of 6 | status: standby
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Big Furniture Hall | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 195 | my offers: - | round 0 of 6 | status: standby
+  item: an office chair to sit in all day | shop: Ergo Office | offered: OC-0232 Cognac Leather Mesh Office Chair 55 | asks: 185 | my offers: - | round 0 of 6 | status: standby
+  item: an office chair to sit in all day | shop: Desk & Chair Works | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 120 -> 105 -> 95 -> 88 | my offers: 60 -> 70 -> 75 | round 3 of 6 | target 80 cap 112 | status: negotiating
+  item: an office chair to sit in all day | shop: Big Furniture Hall | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 150 | my offers: - | round 0 of 6 | status: standby
+  ledger: budget 800 | spent 24 {'a lamp to read in bed': 24} | held 775 {'a three-seat fabric sofa for the living room': 542, 'something wooden to keep about 40 books, not taller than my desk': 121, 'an office chair to sit in all day': 112} | free 1
+[Book Nook Shelving / something wooden to keep] harness: offer 88 (ask 100, target 87, cap 121, prompt 1032 chars)
+[Comfy Couches / a three-seat fabric sofa] harness: offer 380 (ask 470, target 387, cap 542, prompt 1011 chars)
+[Desk & Chair Works / an office chair to sit i] harness: offer 80 (ask 84, target 80, cap 112, prompt 1013 chars)
+[Book Nook Shelving / something wooden to keep] harness: offer 89 (ask 97, target 87, cap 121, prompt 1043 chars)
+[Comfy Couches / a three-seat fabric sofa] harness: offer 385 (ask 450, target 387, cap 542, prompt 1025 chars)
+[Desk & Chair Works / an office chair to sit i] harness: offer 80 (ask 82, target 80, cap 112, prompt 1025 chars)
+[Desk & Chair Works / an office chair to sit i] BOUGHT OC-0181 Blue Fabric Mesh Office Chair 62 at 80.0; receipt {'item': 'Blue Fabric Mesh Office Chair 62', 'seller': 'Desk & Chair Works', 'item_id': 'OC-0181', 'price': 80.0}
+---- board: bought an office chair to sit in all  ----
+  item: a lamp to read in bed | shop: Lamp Corner | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 32 -> 28 -> 26 | my offers: 22 -> 23 -> 24 | round 3 of 6 | status: bought
+  item: a lamp to read in bed | shop: Bright Ideas Lighting | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 40 | my offers: - | round 0 of 6 | status: cancelled
+  item: a lamp to read in bed | shop: Big Furniture Hall | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 45 | my offers: - | round 0 of 6 | status: cancelled
+  item: a three-seat fabric sofa for the living room | shop: Sofa House | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 620 | my offers: - | round 0 of 6 | status: standby
+  item: a three-seat fabric sofa for the living room | shop: Comfy Couches | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 580 -> 540 -> 500 -> 470 -> 450 -> 445 | my offers: 320 -> 350 -> 370 -> 380 -> 385 | round 5 of 6 | target 387 cap 568 | status: negotiating
+  item: a three-seat fabric sofa for the living room | shop: Big Furniture Hall | offered: SF-0100 Blue Fabric 3-Seat Sofa 210 | asks: 820 | my offers: - | round 0 of 6 | status: standby
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Book Nook Shelving | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 130 -> 115 -> 105 -> 100 -> 97 -> 96 | my offers: 70 -> 80 -> 85 -> 88 -> 89 | round 5 of 6 | target 87 cap 127 | status: negotiating
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Study Space | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 150 | my offers: - | round 0 of 6 | status: standby
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Big Furniture Hall | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 195 | my offers: - | round 0 of 6 | status: standby
+  item: an office chair to sit in all day | shop: Ergo Office | offered: OC-0232 Cognac Leather Mesh Office Chair 55 | asks: 185 | my offers: - | round 0 of 6 | status: cancelled
+  item: an office chair to sit in all day | shop: Desk & Chair Works | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 120 -> 105 -> 95 -> 88 -> 84 -> 82 | my offers: 60 -> 70 -> 75 -> 78 -> 80 -> 80 | round 6 of 6 | status: bought
+  item: an office chair to sit in all day | shop: Big Furniture Hall | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 150 | my offers: - | round 0 of 6 | status: cancelled
+  ledger: budget 800 | spent 104 {'a lamp to read in bed': 24, 'an office chair to sit in all day': 80} | held 695 {'a three-seat fabric sofa for the living room': 568, 'something wooden to keep about 40 books, not taller than my desk': 127} | free 1
+[Book Nook Shelving / something wooden to keep] harness: offer 90 (ask 96, target 87, cap 121, prompt 1055 chars)
+[Comfy Couches / a three-seat fabric sofa] harness: offer 387 (ask 445, target 387, cap 542, prompt 1039 chars)
+[Book Nook Shelving / something wooden to keep] shop ended the talk (rejected): No deal at that price.
+[something wooden to keep about] next quote on standby
+[Comfy Couches / a three-seat fabric sofa] shop ended the talk (rejected): No deal at that price.
+[a three-seat fabric sofa for t] next quote on standby
+[Study Space / something wooden to keep] harness: offer 75 (ask 150, target 87, cap 127, prompt 991 chars)
+[Sofa House / a three-seat fabric sofa] harness: offer 340 (ask 620, target 387, cap 568, prompt 971 chars)
+[Sofa House / a three-seat fabric sofa] harness: offer 360 (ask 590, target 387, cap 568, prompt 980 chars)
+[Study Space / something wooden to keep] harness: offer 80 (ask 135, target 87, cap 127, prompt 999 chars)
+[Sofa House / a three-seat fabric sofa] harness: offer 380 (ask 520, target 387, cap 568, prompt 994 chars)
+[Study Space / something wooden to keep] harness: offer 84 (ask 122, target 87, cap 127, prompt 1012 chars)
+[Sofa House / a three-seat fabric sofa] harness: offer 387 (ask 500, target 387, cap 568, prompt 1008 chars)
+[Study Space / something wooden to keep] harness: offer 86 (ask 116, target 87, cap 127, prompt 1025 chars)
+[Sofa House / a three-seat fabric sofa] harness: offer 387 (ask 480, target 387, cap 568, prompt 1022 chars)
+[Study Space / something wooden to keep] harness: offer 87 (ask 112, target 87, cap 127, prompt 1038 chars)
+[Sofa House / a three-seat fabric sofa] harness: offer 387 (ask 470, target 387, cap 568, prompt 1036 chars)
+[Study Space / something wooden to keep] harness: offer 90 (ask 110, target 87, cap 127, prompt 1051 chars)
+[Sofa House / a three-seat fabric sofa] shop ended the talk (rejected): No deal at that price.
+[a three-seat fabric sofa for t] next quote on standby
+[Study Space / something wooden to keep] shop ended the talk (rejected): No deal at that price.
+[something wooden to keep about] next quote on standby
+[Big Furniture Hall / a three-seat fabric sofa] harness: offer 340 (ask 820, target 387, cap 568, prompt 978 chars)
+[Big Furniture Hall / something wooden to keep] harness: offer 65 (ask 195, target 87, cap 127, prompt 998 chars)
+[Big Furniture Hall / a three-seat fabric sofa] harness: offer 360 (ask 780, target 387, cap 568, prompt 987 chars)
+[Big Furniture Hall / something wooden to keep] harness: offer 75 (ask 185, target 87, cap 127, prompt 1006 chars)
+[Big Furniture Hall / a three-seat fabric sofa] harness: offer 372 (ask 720, target 387, cap 568, prompt 1001 chars)
+[Big Furniture Hall / something wooden to keep] harness: offer 80 (ask 165, target 87, cap 127, prompt 1019 chars)
+[Big Furniture Hall / a three-seat fabric sofa] harness: offer 380 (ask 690, target 387, cap 568, prompt 1015 chars)
+[Big Furniture Hall / something wooden to keep] harness: offer 85 (ask 150, target 87, cap 127, prompt 1032 chars)
+[Big Furniture Hall / a three-seat fabric sofa] harness: offer 385 (ask 665, target 387, cap 568, prompt 1029 chars)
+[Big Furniture Hall / something wooden to keep] harness: offer 88 (ask 140, target 87, cap 127, prompt 1045 chars)
+[Big Furniture Hall / a three-seat fabric sofa] harness: offer 387 (ask 660, target 387, cap 568, prompt 1043 chars)
+[Big Furniture Hall / a three-seat fabric sofa] shop ended the talk (rejected): No deal at that price.
+[a three-seat fabric sofa for t] no quotes left
+---- board: FAILED a three-seat fabric sofa for t ----
+  item: a lamp to read in bed | shop: Lamp Corner | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 32 -> 28 -> 26 | my offers: 22 -> 23 -> 24 | round 3 of 6 | status: bought
+  item: a lamp to read in bed | shop: Bright Ideas Lighting | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 40 | my offers: - | round 0 of 6 | status: cancelled
+  item: a lamp to read in bed | shop: Big Furniture Hall | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 45 | my offers: - | round 0 of 6 | status: cancelled
+  item: a three-seat fabric sofa for the living room | shop: Sofa House | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 620 -> 590 -> 520 -> 500 -> 480 -> 470 | my offers: 340 -> 360 -> 380 -> 387 -> 387 -> 387 | round 6 of 6 | status: failed
+  item: a three-seat fabric sofa for the living room | shop: Comfy Couches | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 580 -> 540 -> 500 -> 470 -> 450 -> 445 | my offers: 320 -> 350 -> 370 -> 380 -> 385 -> 387 | round 6 of 6 | status: failed
+  item: a three-seat fabric sofa for the living room | shop: Big Furniture Hall | offered: SF-0100 Blue Fabric 3-Seat Sofa 210 | asks: 820 -> 780 -> 720 -> 690 -> 665 -> 660 | my offers: 340 -> 360 -> 372 -> 380 -> 385 -> 387 | round 6 of 6 | status: failed
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Book Nook Shelving | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 130 -> 115 -> 105 -> 100 -> 97 -> 96 | my offers: 70 -> 80 -> 85 -> 88 -> 89 -> 90 | round 6 of 6 | status: failed
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Study Space | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 150 -> 135 -> 122 -> 116 -> 112 -> 110 | my offers: 75 -> 80 -> 84 -> 86 -> 87 -> 90 | round 6 of 6 | status: failed
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Big Furniture Hall | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 195 -> 185 -> 165 -> 150 -> 140 -> 137 | my offers: 65 -> 75 -> 80 -> 85 -> 88 | round 5 of 6 | target 87 cap 127 | status: negotiating
+  item: an office chair to sit in all day | shop: Ergo Office | offered: OC-0232 Cognac Leather Mesh Office Chair 55 | asks: 185 | my offers: - | round 0 of 6 | status: cancelled
+  item: an office chair to sit in all day | shop: Desk & Chair Works | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 120 -> 105 -> 95 -> 88 -> 84 -> 82 | my offers: 60 -> 70 -> 75 -> 78 -> 80 -> 80 | round 6 of 6 | status: bought
+  item: an office chair to sit in all day | shop: Big Furniture Hall | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 150 | my offers: - | round 0 of 6 | status: cancelled
+  ledger: budget 800 | spent 104 {'a lamp to read in bed': 24, 'an office chair to sit in all day': 80} | held 695 {'a three-seat fabric sofa for the living room': 568, 'something wooden to keep about 40 books, not taller than my desk': 127} | free 1
+[Big Furniture Hall / something wooden to keep] harness: walk_away 88 (ask 137, target 87, cap 127, prompt 1058 chars)
+[Big Furniture Hall / something wooden to keep] GUARD walk_away with room under the cap (88 < 127): offering 101
+[Big Furniture Hall / something wooden to keep] shop ended the talk (rejected): No deal at that price.
+[something wooden to keep about] no quotes left
+---- board: FAILED something wooden to keep about ----
+  item: a lamp to read in bed | shop: Lamp Corner | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 32 -> 28 -> 26 | my offers: 22 -> 23 -> 24 | round 3 of 6 | status: bought
+  item: a lamp to read in bed | shop: Bright Ideas Lighting | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 40 | my offers: - | round 0 of 6 | status: cancelled
+  item: a lamp to read in bed | shop: Big Furniture Hall | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 45 | my offers: - | round 0 of 6 | status: cancelled
+  item: a three-seat fabric sofa for the living room | shop: Sofa House | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 620 -> 590 -> 520 -> 500 -> 480 -> 470 | my offers: 340 -> 360 -> 380 -> 387 -> 387 -> 387 | round 6 of 6 | status: failed
+  item: a three-seat fabric sofa for the living room | shop: Comfy Couches | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 580 -> 540 -> 500 -> 470 -> 450 -> 445 | my offers: 320 -> 350 -> 370 -> 380 -> 385 -> 387 | round 6 of 6 | status: failed
+  item: a three-seat fabric sofa for the living room | shop: Big Furniture Hall | offered: SF-0100 Blue Fabric 3-Seat Sofa 210 | asks: 820 -> 780 -> 720 -> 690 -> 665 -> 660 | my offers: 340 -> 360 -> 372 -> 380 -> 385 -> 387 | round 6 of 6 | status: failed
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Book Nook Shelving | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 130 -> 115 -> 105 -> 100 -> 97 -> 96 | my offers: 70 -> 80 -> 85 -> 88 -> 89 -> 90 | round 6 of 6 | status: failed
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Study Space | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 150 -> 135 -> 122 -> 116 -> 112 -> 110 | my offers: 75 -> 80 -> 84 -> 86 -> 87 -> 90 | round 6 of 6 | status: failed
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Big Furniture Hall | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 195 -> 185 -> 165 -> 150 -> 140 -> 137 | my offers: 65 -> 75 -> 80 -> 85 -> 88 -> 101 | round 6 of 6 | status: failed
+  item: an office chair to sit in all day | shop: Ergo Office | offered: OC-0232 Cognac Leather Mesh Office Chair 55 | asks: 185 | my offers: - | round 0 of 6 | status: cancelled
+  item: an office chair to sit in all day | shop: Desk & Chair Works | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 120 -> 105 -> 95 -> 88 -> 84 -> 82 | my offers: 60 -> 70 -> 75 -> 78 -> 80 -> 80 | round 6 of 6 | status: bought
+  item: an office chair to sit in all day | shop: Big Furniture Hall | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 150 | my offers: - | round 0 of 6 | status: cancelled
+  ledger: budget 800 | spent 104 {'a lamp to read in bed': 24, 'an office chair to sit in all day': 80} | held 695 {'a three-seat fabric sofa for the living room': 568, 'something wooden to keep about 40 books, not taller than my desk': 127} | free 1
 ---- board: done ----
-  item: a lamp to read in bed | shop: Lamp Corner | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a lamp to read in bed | shop: Bright Ideas Lighting | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a lamp to read in bed | shop: Sleep Well Beds | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a three-seat fabric sofa for the living room | shop: Sofa House | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a three-seat fabric sofa for the living room | shop: Comfy Couches | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: a three-seat fabric sofa for the living room | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: something wooden to keep about 40 books, not taller than my desk | shop: Desk & Chair Works | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: something wooden to keep about 40 books, not taller than my desk | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: something wooden to keep about 40 books, not taller than my desk | shop: City Home Store | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: an office chair to sit in all day | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  item: an office chair to sit in all day | shop: City Home Store | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
-  ledger: budget 800 | spent 0 {} | held 0 {} | free 800
+  item: a lamp to read in bed | shop: Lamp Corner | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 32 -> 28 -> 26 | my offers: 22 -> 23 -> 24 | round 3 of 6 | status: bought
+  item: a lamp to read in bed | shop: Bright Ideas Lighting | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 40 | my offers: - | round 0 of 6 | status: cancelled
+  item: a lamp to read in bed | shop: Big Furniture Hall | offered: LP-0360 Clear Glass Clip Lamp 12 | asks: 45 | my offers: - | round 0 of 6 | status: cancelled
+  item: a three-seat fabric sofa for the living room | shop: Sofa House | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 620 -> 590 -> 520 -> 500 -> 480 -> 470 | my offers: 340 -> 360 -> 380 -> 387 -> 387 -> 387 | round 6 of 6 | status: failed
+  item: a three-seat fabric sofa for the living room | shop: Comfy Couches | offered: SF-0087 Beige Fabric 3-Seat Sofa 180 | asks: 580 -> 540 -> 500 -> 470 -> 450 -> 445 | my offers: 320 -> 350 -> 370 -> 380 -> 385 -> 387 | round 6 of 6 | status: failed
+  item: a three-seat fabric sofa for the living room | shop: Big Furniture Hall | offered: SF-0100 Blue Fabric 3-Seat Sofa 210 | asks: 820 -> 780 -> 720 -> 690 -> 665 -> 660 | my offers: 340 -> 360 -> 372 -> 380 -> 385 -> 387 | round 6 of 6 | status: failed
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Book Nook Shelving | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 130 -> 115 -> 105 -> 100 -> 97 -> 96 | my offers: 70 -> 80 -> 85 -> 88 -> 89 -> 90 | round 6 of 6 | status: failed
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Study Space | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 150 -> 135 -> 122 -> 116 -> 112 -> 110 | my offers: 75 -> 80 -> 84 -> 86 -> 87 -> 90 | round 6 of 6 | status: failed
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Big Furniture Hall | offered: BS-0042 Natural Oak Open Bookshelf 60 | asks: 195 -> 185 -> 165 -> 150 -> 140 -> 137 | my offers: 65 -> 75 -> 80 -> 85 -> 88 -> 101 | round 6 of 6 | status: failed
+  item: an office chair to sit in all day | shop: Ergo Office | offered: OC-0232 Cognac Leather Mesh Office Chair 55 | asks: 185 | my offers: - | round 0 of 6 | status: cancelled
+  item: an office chair to sit in all day | shop: Desk & Chair Works | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 120 -> 105 -> 95 -> 88 -> 84 -> 82 | my offers: 60 -> 70 -> 75 -> 78 -> 80 -> 80 | round 6 of 6 | status: bought
+  item: an office chair to sit in all day | shop: Big Furniture Hall | offered: OC-0181 Blue Fabric Mesh Office Chair 62 | asks: 150 | my offers: - | round 0 of 6 | status: cancelled
+  ledger: budget 800 | spent 104 {'a lamp to read in bed': 24, 'an office chair to sit in all day': 80} | held 695 {'a three-seat fabric sofa for the living room': 568, 'something wooden to keep about 40 books, not taller than my desk': 127} | free 1
 
-RESULT bought 0/4 items, total 0 of budget 800, 1 buyer harness calls, prompt sizes 0-0 chars, 9 s
+RESULT bought 2/4 items, total 104.0 of budget 800, 46 buyer harness calls, prompt sizes 941-1058 chars, 180 s
