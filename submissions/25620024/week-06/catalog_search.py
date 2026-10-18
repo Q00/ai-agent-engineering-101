@@ -154,6 +154,24 @@ def is_vague(q, n_matches):
     return n_matches > VAGUE_MATCHES and not concrete
 
 
+def applied_conditions(q, relaxed):
+    """One line telling the curator what the search already enforced (so it does not ask again)."""
+    parts = []
+    if q.get("category"):
+        parts.append(q["category"])
+    if q["subtypes"] and "subtypes" not in relaxed:
+        parts.append("subtype " + "/".join(q["subtypes"]))
+    if q["materials"] and "materials" not in relaxed:
+        parts.append("material " + "/".join(q["materials"]))
+    widen = " (+10%)" if "sizes" in relaxed else ""
+    for dim in ("height", "width", "depth"):
+        if q.get(f"max_{dim}_cm"):
+            parts.append(f"{dim} <= {q[f'max_{dim}_cm']} cm{widen}")
+    if q.get("capacity") and q.get("category"):
+        parts.append(f"{CAPACITY_FIELD[q['category']]} >= {round(0.9 * float(q['capacity']), 1)}")
+    return "; ".join(parts) if parts else "nothing specific"
+
+
 def summary(item):
     """One short line per candidate, as the curator will see it (no reserve, no price)."""
     cap_field = CAPACITY_FIELD[item["category"]]
