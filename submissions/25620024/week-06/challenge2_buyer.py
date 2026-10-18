@@ -11,6 +11,14 @@ design/challenge-2-buyer.md, parts B-E:
   part E  negotiate with every winner in parallel; each harness call sees ONE summary row
           a failed negotiation hands the item to the next quote on standby
 
+v2 (after logs/challenge-2/tight, run 1: the sofa missed by 11 because the small items spent
+their whole caps -- the harness treated the cap it was shown as a target):
+  - floor estimate per item = lowest quote / 1.5 (the shops opened at a median 1.47 x reserve)
+  - caps: every open item first gets its floor estimate, only the slack left over is shared
+    (v1 split the whole budget in proportion to the asks)
+  - the harness is shown a TARGET (the floor estimate), never the cap; the cap stays in code
+  - walk_away while the cap still has room becomes a small step up instead
+
 Guards in code (the harness proposes, code checks):
   - never offer above the item's cap; offer >= ask -> take the ask instead
   - accept only if the ask <= cap AND spent + ask + other holds <= budget (checked under a lock)
@@ -37,15 +45,19 @@ MAX_QUESTIONS = 2     # questions from a shop answered during the call for propo
 MAX_OFFERS = 6        # offers per negotiation before walking away
 ITEM_RX = re.compile(r"\[([A-Z]{2}-\d{4})\]")
 
-TURN_PROMPT = """You are a buyer agent buying one item on a client's shopping list.
+FLOOR_RATIO = 1.5     # opening ask / reserve in the shop logs: median 1.47 (36 openings, 1.24-2.75)
+
+TURN_PROMPT = """You are a buyer agent buying one item on a client's shopping list. The client's money
+is shared with other items, so every unit you save here helps buy the rest.
 Negotiation so far (a summary; the seller's words are not repeated):
 {row}
-Your limit for this item is {cap}: never pay more, and keep it private.
+Your target for this item is about {target}: the seller's lowest price is probably near it.
+Start well below the seller's ask and move up in small steps toward the target.
 The seller now asks {ask}. Sellers usually come down step by step but stop after about six low offers.
 Decide your move:
-- "accept": buy at the seller's current ask (only if it is within your limit)
+- "accept": buy at the seller's current ask (only if it is close to your target)
 - "offer": propose a lower price of your own
-- "walk_away": stop, no deal (only if the seller clearly will not come down to your limit)
+- "walk_away": stop, no deal
 Reply with one JSON object only: {{"action": "accept" or "offer" or "walk_away", "price": <whole number>}}"""
 
 _print_lock = threading.Lock()
@@ -108,12 +120,12 @@ class Neg:
         self.price = None
         self.receipt = None
 
-    def row(self, cap=None):
+    def row(self, extra=""):
         asks = " -> ".join(map(str, self.asks)) or "-"
         offers = " -> ".join(map(str, self.offers)) or "-"
         return (f"item: {self.item} | shop: {self.shop['name']} | offered: {self.offered or '-'} | "
                 f"asks: {asks} | my offers: {offers} | round {len(self.offers)} of {MAX_OFFERS}"
-                + (f" | cap {cap}" if cap is not None else "") + f" | status: {self.status}")
+                + (f" | {extra}" if extra else "") + f" | status: {self.status}")
 
 
 # ---------- part D: the ledger ----------
@@ -123,18 +135,25 @@ class Ledger:
         self.budget = budget
         self.spent = {}                 # item -> price paid
         self.caps = {}                  # item -> cap while the item is open
+        self.floors = {}                # item -> floor estimate (lowest quote / FLOOR_RATIO)
         self.lock = threading.Lock()
         self.items = items
 
     def free(self):
         return self.budget - sum(self.spent.values()) - sum(self.caps.values())
 
-    def set_caps(self, asks):
-        """Split what is not spent over the open items, in proportion to their asks."""
+    def set_caps(self, open_items):
+        """v2: each open item first gets its floor estimate; only the slack left is shared, in
+        proportion to the floors. (If even the floors do not fit, caps are scaled down.)"""
         with self.lock:
             left = self.budget - sum(self.spent.values())
-            total = sum(asks.values()) or 1
-            self.caps = {item: int(left * a / total) for item, a in asks.items()}
+            floors = {item: self.floors[item] for item in open_items}
+            total = sum(floors.values()) or 1
+            slack = left - total
+            if slack >= 0:
+                self.caps = {item: int(f + slack * f / total) for item, f in floors.items()}
+            else:
+                self.caps = {item: int(left * f / total) for item, f in floors.items()}
 
     def try_buy(self, item, price):
         """Guard: the only way a deal is allowed. Returns (ok, reason)."""
@@ -157,10 +176,10 @@ class Ledger:
             if self.spent.get(item) == price:
                 del self.spent[item]
 
-    def rebalance(self, open_asks):
+    def rebalance(self, open_items):
         """After a deal, the bought item's unused cap goes to the items still open."""
-        if open_asks:
-            self.set_caps(open_asks)
+        if open_items:
+            self.set_caps(open_items)
 
     def summary(self):
         with self.lock:
@@ -180,7 +199,8 @@ class Buyer:
 
     def board(self, title):
         lines = [f"---- board: {title} ----"] + [
-            "  " + n.row(self.ledger.caps.get(n.item) if n.status == "negotiating" else None) for n in self.negs]
+            "  " + n.row(f"target {self.ledger.floors.get(n.item)} cap {self.ledger.caps.get(n.item)}"
+                         if n.status == "negotiating" else "") for n in self.negs]
         lines.append("  ledger: " + self.ledger.summary())
         log("\n".join(lines))
 
@@ -229,7 +249,8 @@ class Buyer:
             if len(neg.offers) >= MAX_OFFERS:
                 log(f"{tag} {MAX_OFFERS} offers made, walking away")
                 return self.fail(neg)
-            prompt = TURN_PROMPT.format(row=neg.row(cap), cap=cap, ask=ask_price)
+            target = self.ledger.floors[neg.item]
+            prompt = TURN_PROMPT.format(row=neg.row(f"target {target}"), target=target, ask=ask_price)
             self.harness_calls += 1
             self.prompt_sizes.append(len(prompt))
             try:
@@ -238,7 +259,7 @@ class Buyer:
             except Exception as e:
                 log(f"{tag} harness error ({e}); offering the cap")
                 action, price = "offer", cap
-            log(f"{tag} harness: {action} {price} (ask {ask_price}, cap {cap}, prompt {len(prompt)} chars)")
+            log(f"{tag} harness: {action} {price} (ask {ask_price}, target {target}, cap {cap}, prompt {len(prompt)} chars)")
             # guards
             if action == "accept" and ask_price > cap:
                 log(f"{tag} GUARD accept at {ask_price} > cap {cap}: offering the cap instead")
@@ -250,7 +271,13 @@ class Buyer:
                 log(f"{tag} GUARD offer {price} >= ask {ask_price}: taking the ask")
                 action, price = "accept", ask_price
             if action == "walk_away":
-                return self.fail(neg)
+                top = max(neg.offers or [0])
+                if top < cap and len(neg.offers) < MAX_OFFERS:   # v2: room left under the cap
+                    price = min(cap, ask_price - 1, top + max(1, (cap - top) // 3))
+                    log(f"{tag} GUARD walk_away with room under the cap ({top} < {cap}): offering {price}")
+                    action = "offer"
+                else:
+                    return self.fail(neg)
             if action == "accept":
                 price = ask_price
             elif action != "offer":
@@ -316,7 +343,9 @@ class Buyer:
             log(f"part D  {item!r}: " + (f"awarded to {qs[0].shop['name']} at {qs[0].asks[-1]}"
                                           + (f", standby {[n.shop['name'] for n in qs[1:]]}" if qs[1:] else "")
                                           if qs else "NO QUOTES"))
-        self.ledger.set_caps({item: qs[0].asks[-1] for item, qs in queues.items() if qs})
+        self.ledger.floors = {item: round(qs[0].asks[-1] / FLOOR_RATIO) for item, qs in queues.items() if qs}
+        log(f"part D  floor estimates (lowest quote / {FLOOR_RATIO}): {self.ledger.floors}")
+        self.ledger.set_caps([item for item, qs in queues.items() if qs])
         self.board("awarded, caps set")
         # part E
         log(f"\npart E  negotiating {sum(1 for q in queues.values() if q)} items in parallel")
@@ -342,10 +371,9 @@ class Buyer:
                 for other in queues[item]:
                     if other is not neg and other.status == "standby":
                         self.cancel(other)
-                open_asks = {i: next(n.asks[-1] for n in q if n.status in ("negotiating", "quoted", "standby"))
-                             for i, q in queues.items()
-                             if i not in self.ledger.spent and any(n.status in ("negotiating", "quoted", "standby") for n in q)}
-                self.ledger.rebalance(open_asks)
+                open_items = [i for i, q in queues.items()
+                              if i not in self.ledger.spent and any(n.status in ("negotiating", "quoted", "standby") for n in q)]
+                self.ledger.rebalance(open_items)
                 self.board(f"bought {item[:30]}")
                 return
             log(f"[{item[:30]}] next quote on standby" if any(n.status == "standby" for n in queues[item]) else
