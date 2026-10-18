@@ -227,7 +227,7 @@ class Seller(AgentExecutor):
 def build_app(*, port: int = 9999, cfg: dict | None = None) -> Starlette:
     cfg = cfg or {}
     domain = os.getenv("VERCEL_URL") or os.getenv("VERCEL_PROJECT_PRODUCTION_URL")
-    url = os.getenv("PUBLIC_BASE_URL") or (f"https://{domain}" if domain else f"http://127.0.0.1:{port}/")
+    url = os.getenv("P_BASE_URL") or (f"https://{domain}" if domain else f"http://127.0.0.1:{port}/")
     if not url.endswith("/"):
         url += "/"
     products = load(Path(cfg["catalog"])) if cfg.get("catalog") else load()
@@ -252,7 +252,7 @@ def build_app(*, port: int = 9999, cfg: dict | None = None) -> Starlette:
     )
     handler = DefaultRequestHandler(agent_executor=Seller(
         products, deal_store, card.name, cfg.get("message_suffix", "")),
-                                    task_store=task_store, agent_card=card)
+                                    task_store=task_store, agent_card=card, request_context_builder=ExistingTaskContextBuilder(task_store))
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
 
