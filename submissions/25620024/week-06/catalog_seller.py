@@ -102,6 +102,10 @@ class CatalogSeller(HarnessSeller):
         log(f"[{tid}] search: {n} matches" + (f", relaxed {relaxed}" if relaxed else "") + (", VAGUE" if vague else "")
             + f" | top: {', '.join(it['id'] for it in top)}")
         if not top:
+            if q.get("category") and not must_pick:    # v3: a kind we sell -> ask before giving up (c07)
+                log(f"[{tid}] GUARD no match for a {q['category']}: asking instead of rejecting")
+                return {"question": f"I couldn't find a {q['category']} like that. Which matters most to you: "
+                                    f"the size, the material, or the style?"}
             return {"question": "", "none": True}
         if q.get("category") is None:                  # v2: no furniture category -> never pick an item
             if must_pick:                              # e.g. "a refrigerator": not something this shop sells

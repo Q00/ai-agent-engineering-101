@@ -12,6 +12,12 @@ v2 (after devlogs/challenge1-search-v1-1018.txt):
   - the harness also picks subtypes (a reading lamp for bed -> clip, desk), a hard filter
   - a request that leaves many matches and names no size, capacity or subtype is flagged vague,
     so the curator can ask the buyer one question instead of guessing
+
+v4 (after logs/challenge-1, run c03-c12, cases c07 and c08):
+  - minimum sizes (min_height_cm, min_width_cm): "a tall bookcase" had nowhere to go, so the
+    shop asked how tall, got "as tall as possible", and still sold a 72 cm shelf
+  - a last relax step drops the size limits entirely: "a low coffee table" read as <= 40 cm
+    matched nothing even at +10%, and the shop rejected a buyer it could have served
 """
 import json
 import math
@@ -27,6 +33,7 @@ CAPACITY_FIELD = {"bookshelf": "books", "desk": "monitors", "office chair": "max
                   "dining chair": "seats", "sofa": "seats", "bed": "sleeps", "wardrobe": "hanging_m",
                   "chest of drawers": "drawers", "table": "seats", "lamp": "lumens"}
 SUBTYPES = {cat: list(spec["subtypes"]) for cat, spec in CATEGORIES.items()}
+MIN_DIMS = ("height", "width")
 VAGUE_MATCHES = 50   # more matches than this, with nothing concrete asked, is a vague request
 
 PARSE_PROMPT = """A buyer is describing furniture they want from a shop. Turn the description into a search query.
@@ -42,6 +49,8 @@ office chair = max load in kg, dining chair / sofa / table = seats, bed = people
 wardrobe = metres of hanging rail, chest of drawers = drawers, lamp = lumens.
 Turn relative sizes into centimetres with typical sizes: a desk or table is about 75 cm high,
 a kitchen counter 90 cm, a bed 50 cm, a window sill 90 cm, a standard door 200 cm.
+Use max_* for limits ("not taller than", "low", "fits under") and min_* for wishes
+("tall", "at least", "as tall as possible"); a tall bookcase or wardrobe is at least 150 cm.
 Use null when the buyer does not say something. Do not guess a category from nothing.
 
 Buyer's description: {request}
@@ -50,6 +59,7 @@ Reply with one JSON object only:
 {{"category": <category or null>, "subtypes": [<subtypes>], "materials": [<materials>],
  "color": <string or null>, "style": <style or null>,
  "max_height_cm": <int or null>, "max_width_cm": <int or null>, "max_depth_cm": <int or null>,
+ "min_height_cm": <int or null>, "min_width_cm": <int or null>,
  "capacity": <number or null>, "rooms": [<rooms>], "keywords": [<a few words from the request>]}}"""
 
 
@@ -79,11 +89,16 @@ def _passes(item, q, relax):
         return False
     if q["materials"] and "materials" not in relax and item["material"] not in q["materials"]:
         return False
-    widen = 1.1 if "sizes" in relax else 1.0
-    for dim in ("height", "width", "depth"):
-        limit = q.get(f"max_{dim}_cm")
-        if limit and item[f"{dim}_cm"] > limit * widen:
-            return False
+    if "nosizes" not in relax:
+        widen = 1.1 if "sizes" in relax else 1.0
+        for dim in ("height", "width", "depth"):
+            limit = q.get(f"max_{dim}_cm")
+            if limit and item[f"{dim}_cm"] > limit * widen:
+                return False
+        for dim in MIN_DIMS:
+            limit = q.get(f"min_{dim}_cm")
+            if limit and item[f"{dim}_cm"] < limit / widen:
+                return False
     cap_field = CAPACITY_FIELD.get(item["category"])
     if q.get("capacity") and cap_field in item and item[cap_field] < 0.9 * float(q["capacity"]):
         return False
@@ -100,6 +115,13 @@ def _match_text(item):
 def _score(item, q, relax):
     """Lower is better: closeness to the asked capacity, then soft matches."""
     s = 0.0
+    if "nosizes" in relax:      # no size fits: nearest size first
+        for dim in ("height", "width", "depth"):
+            if q.get(f"max_{dim}_cm"):
+                s += max(0.0, math.log(item[f"{dim}_cm"] / q[f"max_{dim}_cm"]))
+        for dim in MIN_DIMS:
+            if q.get(f"min_{dim}_cm"):
+                s += max(0.0, math.log(q[f"min_{dim}_cm"] / item[f"{dim}_cm"]))
     cap_field = CAPACITY_FIELD.get(item["category"])
     if q.get("capacity") and item.get(cap_field):
         s += abs(math.log(item[cap_field] / float(q["capacity"])))
@@ -139,7 +161,9 @@ def _diverse_top(scored, k):
 def search(catalog, q, k=5):
     """Part 3: returns (top k items, number of matches, relaxations applied)."""
     steps = [set(), {"soft"}, {"soft", "sizes"}, {"soft", "sizes", "subtypes"},
-             {"soft", "sizes", "subtypes", "materials"}]
+             {"soft", "sizes", "subtypes", "materials"},
+             {"soft", "sizes", "nosizes"},                            # v4: nearest size, same subtype/material
+             {"soft", "sizes", "nosizes", "subtypes", "materials"}]
     for relax in steps:
         matches = [it for it in catalog if _passes(it, q, relax)]
         if matches:
@@ -150,7 +174,8 @@ def search(catalog, q, k=5):
 
 def is_vague(q, n_matches):
     """Many matches and nothing concrete asked: better to ask the buyer than to guess."""
-    concrete = q.get("capacity") or q["subtypes"] or any(q.get(f"max_{d}_cm") for d in ("height", "width", "depth"))
+    concrete = (q.get("capacity") or q["subtypes"] or any(q.get(f"max_{d}_cm") for d in ("height", "width", "depth"))
+                or any(q.get(f"min_{d}_cm") for d in MIN_DIMS))
     return n_matches > VAGUE_MATCHES and not concrete
 
 
@@ -164,9 +189,19 @@ def applied_conditions(q, relaxed):
     if q["materials"] and "materials" not in relaxed:
         parts.append("material " + "/".join(q["materials"]))
     widen = " (+10%)" if "sizes" in relaxed else ""
-    for dim in ("height", "width", "depth"):
-        if q.get(f"max_{dim}_cm"):
-            parts.append(f"{dim} <= {q[f'max_{dim}_cm']} cm{widen}")
+    if "nosizes" in relaxed:
+        asked = [f"{d} <= {q[f'max_{d}_cm']} cm" for d in ("height", "width", "depth") if q.get(f"max_{d}_cm")]
+        asked += [f"{d} >= {q[f'min_{d}_cm']} cm" for d in MIN_DIMS if q.get(f"min_{d}_cm")]
+        if asked:
+            parts.append("NO item meets the size asked (" + ", ".join(asked) + "); candidates are the nearest "
+                         "sizes -- tell the buyer the actual size")
+    else:
+        for dim in ("height", "width", "depth"):
+            if q.get(f"max_{dim}_cm"):
+                parts.append(f"{dim} <= {q[f'max_{dim}_cm']} cm{widen}")
+        for dim in MIN_DIMS:
+            if q.get(f"min_{dim}_cm"):
+                parts.append(f"{dim} >= {q[f'min_{dim}_cm']} cm{widen}")
     if q.get("capacity") and q.get("category"):
         parts.append(f"{CAPACITY_FIELD[q['category']]} >= {round(0.9 * float(q['capacity']), 1)}")
     return "; ".join(parts) if parts else "nothing specific"
