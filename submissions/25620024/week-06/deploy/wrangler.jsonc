@@ -4,7 +4,10 @@
   "main": "src/index.ts",
   "compatibility_date": "2025-09-01",
   "ai": { "binding": "AI" },
-  "vars": { "MODEL": "@cf/meta/llama-3.1-8b-instruct" },
+  // v2: @cf/meta/llama-3.1-8b-instruct is no longer in the model list; every call failed and the
+  // shop opened at the code fallback 1.3 x reserve (130, 338). Checked with `wrangler ai models`.
+  "vars": { "MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast" },
+  "observability": { "enabled": true },
   "durable_objects": { "bindings": [{ "name": "SHOP", "class_name": "Shop" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Shop"] }]
 }

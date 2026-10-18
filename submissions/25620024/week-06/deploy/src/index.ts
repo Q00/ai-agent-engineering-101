@@ -134,7 +134,14 @@ export class Shop {
       s = { task: { id: tid, contextId: msg.contextId ?? crypto.randomUUID(), status: {}, artifacts: [] }, deal: null, log: [] };
     }
     const task = s.task;
-    const save = async () => { await this.state.storage.put(`task:${task.id}`, s); return ok({ task }); };
+    const logged = s.log.length;
+    const save = async () => {
+      // v2: every log line also goes to the Workers log (wrangler tail / dashboard), so a failing
+      // model call is visible instead of hiding behind the 1.3 x reserve fallback
+      for (const line of s.log.slice(logged)) console.log(`[${task.id.slice(0, 8)}] ${line}`);
+      await this.state.storage.put(`task:${task.id}`, s);
+      return ok({ task });
+    };
     s.log.push(`buyer: ${text}`);
 
     if (!s.deal) {                                   // first message: the item and the opening ask
