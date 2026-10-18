@@ -1,9 +1,5 @@
 
 ### c12-not-in-catalog-fridge [no-item] budget 100
     -> "Can I get a refrigerator?"
-    <- TASK_STATE_INPUT_REQUIRED | Which kind of furniture are you looking for? We sell bookshelves, desks, office and dining chairs, sofas, beds, wardrobes, chests of drawers, tables and lamps.
-    -> "a fridge for my kitchen, about 300 litres" taskId=6c65ad16
-    <- TASK_STATE_INPUT_REQUIRED | Which kind of furniture are you looking for? We sell bookshelves, desks, office and dining chairs, sofas, beds, wardrobes, chests of drawers, tables and lamps.
-    -> "just a normal fridge" taskId=6c65ad16
-    <- TASK_STATE_REJECTED | Sorry, nothing in our catalog matches that.
-  PASS  c12-not-in-catalog-fridge: item offered: none, final TASK_STATE_REJECTED, 2 question(s) {'right_item': True} (20 s)
+    <- error -32603 harness exited 1: 
+  FAIL  c12-not-in-catalog-fridge: no task {} (2 s)

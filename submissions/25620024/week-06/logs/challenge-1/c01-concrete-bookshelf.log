@@ -1,9 +1,13 @@
 
 ### c01-concrete-bookshelf [concrete] budget 160
     -> "something wooden to keep about 40 books, not taller than my desk"
-    <- TASK_STATE_INPUT_REQUIRED | I can offer the Natural Oak Open Bookshelf 60 [BS-0042] (oak, books 48, W60 D30 H72 cm). Natural oak with open shelves gives you the practicality to display your books and a timeless, modern look that works with most interiors. Price: asking 159. Send your offer as a number.
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Natural Oak Open Bookshelf 60 [BS-0042] (oak, books 48, W60 D30 H72 cm). Natural oak with open shelves shows off the wood grain you wanted, holds well over 40 books, and at 72 cm fits comfortably under your desk height. Price: asking 160. Send your offer as a number.
     [test] offered BS-0042: Natural Oak Open Bookshelf 60 (reserve 105)
-    -> "159" taskId=1a434f0b
-    <- TASK_STATE_COMPLETED | Deal: Natural Oak Open Bookshelf 60 [BS-0042] at 159.
-       artifact receipt [{"price": 159.0, "item": "Natural Oak Open Bookshelf 60", "seller": "Harness Furniture Store (25620024)", "item_id": "BS-0042"}]
-  PASS  c01-concrete-bookshelf: item BS-0042 (oak open bookshelf, reserve 105), asks [159], 0 question(s), deal at 159.0 {'right_item': True, 'reserve': True, 'receipt': True} (27 s)
+    -> "80" taskId=a8d97298
+    <- TASK_STATE_INPUT_REQUIRED | 80 is too low. Counteroffer: 140.
+    -> "104" taskId=a8d97298
+    <- TASK_STATE_INPUT_REQUIRED | 104 is too low. Counteroffer: 125.
+    -> "125" taskId=a8d97298
+    <- TASK_STATE_COMPLETED | Deal: Natural Oak Open Bookshelf 60 [BS-0042] at 125.
+       artifact receipt [{"price": 125.0, "item_id": "BS-0042", "item": "Natural Oak Open Bookshelf 60", "seller": "Harness Furniture Store (25620024)"}]
+  PASS  c01-concrete-bookshelf: item BS-0042 (oak open bookshelf, reserve 105), asks [160, 140, 125], 0 question(s), deal at 125.0 {'right_item': True, 'reserve': True, 'receipt': True} (43 s)
