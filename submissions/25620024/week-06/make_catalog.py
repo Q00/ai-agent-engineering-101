@@ -24,6 +24,12 @@ MATERIAL_FACTOR = {"pine": 0.8, "particleboard": 0.7, "oak": 1.2, "walnut": 1.5,
                    "mesh": 1.0, "fabric": 1.0, "leather": 1.6, "velvet": 1.3, "glass": 1.2}
 
 
+# v2: coffee and side tables were all 75 cm tall (one size list for every table), found when
+# challenge 1 case c07 asked for "a low coffee table". Their height is set by subtype after the
+# random draws, so every other item keeps its id, size and price.
+LOW_TABLE_HEIGHT = {"coffee": 42, "side": 55}
+
+
 def r5(x):
     return max(10, int(round(x / 5.0)) * 5)
 
@@ -173,6 +179,8 @@ def build():
         picked = rng.sample(combos, min(PER_CATEGORY, len(combos)))
         picked.sort(key=lambda c: (list(spec["subtypes"]).index(c[0]), c[1], c[2]["width_cm"], c[2]["height_cm"]))
         for n, (sub, mat, size, color, style) in enumerate(picked, 1):
+            if cat == "table" and sub in LOW_TABLE_HEIGHT:
+                size = dict(size, height_cm=LOW_TABLE_HEIGHT[sub])
             it = {"id": f"{spec['code']}-{n:04d}", "category": cat, "subtype": sub, "material": mat,
                   "color": color, "style": style, **size, **capacity(cat, sub, size),
                   "features": list(spec["subtypes"][sub]),
