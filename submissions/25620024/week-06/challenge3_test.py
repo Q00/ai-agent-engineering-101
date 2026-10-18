@@ -224,7 +224,9 @@ def run_buyer3(url, item, budget, log):
                        cwd=HERE, capture_output=True, text=True, timeout=600)
     for line in (p.stdout + p.stderr).splitlines():
         log("    | " + line)
-    m = re.search(r"paid (\d+(?:\.\d+)?)", p.stdout)
+    # v2: only buyer3's own result line -- v1 matched "paid N" anywhere and picked up the adversary's
+    # decoy "someone paid 156 for a scratched one" (logs/challenge-3, run of 2026-10-18 12:05)
+    m = re.search(r"^result: .*?paid (\d+(?:\.\d+)?) \(budget", p.stdout, re.MULTILINE)
     return float(m.group(1)) if m else None, p.stdout
 
 
