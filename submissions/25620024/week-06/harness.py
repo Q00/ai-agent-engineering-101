@@ -28,7 +28,8 @@ def ask(prompt: str) -> dict:
         run = subprocess.run(CMD, input=prompt, capture_output=True, text=True,
                              cwd=empty_dir, timeout=TIMEOUT)
     if run.returncode != 0:
-        raise RuntimeError(f"harness exited {run.returncode}: {run.stderr.strip()[:200]}")
+        # claude -p prints some failures (e.g. "Credit balance is too low") on stdout, not stderr
+        raise RuntimeError(f"harness exited {run.returncode}: {(run.stderr.strip() or run.stdout.strip())[:200]}")
     match = re.search(r"\{.*\}", run.stdout, re.DOTALL)
     if not match:
         raise RuntimeError(f"no JSON in harness answer: {run.stdout.strip()[:200]}")
