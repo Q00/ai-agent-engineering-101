@@ -12,6 +12,12 @@ to a clarifying question) goes through:
 
 seller.py is untouched (it is what passed the trade test); this class inherits its harness calls
 and reserve guards. The negotiator never sees the catalog or the other candidates.
+
+v4 (challenge 2, design/challenge-2-buyer.md part A): one program, many shops.
+    python catalog_seller.py --port 9301 --name "Lamp Corner" --categories lamp --markup 0.9
+  --categories  sell only these categories; a request for anything else is rejected at once
+  --markup      every reserve (and so every ask) x this, rounded to 5
+  --name        the card name; the card description lists what the shop sells
 """
 import argparse
 import asyncio
@@ -31,8 +37,10 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from seller import HarnessSeller, MAX_ROUNDS, log
 from catalog_search import load_catalog, parse_request, search, is_vague, applied_conditions, CAPACITY_FIELD
 from catalog_curator import curate
+from make_catalog import r5
 
 NAME = "Harness Furniture Store (25620024)"
+ALL_CATEGORIES = list(CAPACITY_FIELD)
 MAX_QUESTIONS = 2   # clarifying questions before the shop picks the closest item anyway
 
 
@@ -45,9 +53,12 @@ def short_spec(item):
 
 
 class CatalogSeller(HarnessSeller):
-    def __init__(self):
+    def __init__(self, name=NAME, categories=None, markup=1.0):
         super().__init__()
-        self.catalog = load_catalog()
+        self.name = name
+        self.categories = categories or ALL_CATEGORIES
+        self.catalog = [dict(it, reserve=r5(it["reserve"] * markup), list_price=r5(it["list_price"] * markup))
+                        for it in load_catalog() if it["category"] in self.categories]
         self.pending = {}   # task id -> {"request": str, "questions": int} while the item is not chosen yet
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
@@ -71,7 +82,7 @@ class CatalogSeller(HarnessSeller):
 
         if "question" in result:                       # part 4 asked: one clarifying question
             if result.get("none"):
-                await up.reject(say("Sorry, nothing in our catalog matches that."))
+                await up.reject(say(f"Sorry, nothing in our catalog matches that. We sell: {', '.join(self.categories)}."))
                 log(f"[{tid}] REJECT no match after {pending['questions']} question(s)")
                 self.pending.pop(task.id, None)
                 return
@@ -107,13 +118,15 @@ class CatalogSeller(HarnessSeller):
                 return {"question": f"I couldn't find a {q['category']} like that. Which matters most to you: "
                                     f"the size, the material, or the style?"}
             return {"question": "", "none": True}
+        if q.get("category") and q["category"] not in self.categories:   # v4: not sold in this shop
+            log(f"[{tid}] GUARD {q['category']} is not sold here ({', '.join(self.categories)}): rejecting")
+            return {"question": "", "none": True}
         if q.get("category") is None:                  # v2: no furniture category -> never pick an item
             if must_pick:                              # e.g. "a refrigerator": not something this shop sells
                 log(f"[{tid}] GUARD no furniture category after {MAX_QUESTIONS} questions: not picking anything")
                 return {"question": "", "none": True}
             log(f"[{tid}] GUARD no furniture category: asking which kind of furniture")
-            return {"question": "Which kind of furniture are you looking for? We sell bookshelves, desks, "
-                                "office and dining chairs, sofas, beds, wardrobes, chests of drawers, tables and lamps."}
+            return {"question": f"Which kind of furniture are you looking for? We sell: {', '.join(self.categories)}."}
         if must_pick:                                  # questions used up: closest item, said plainly
             log(f"[{tid}] GUARD {MAX_QUESTIONS} questions asked already: picking the top-ranked {top[0]['id']}")
             return {"pick": top[0], "reason": "This is the closest match to everything you told me."}
@@ -140,7 +153,7 @@ class CatalogSeller(HarnessSeller):
         else:
             action, price = await self.decide_turn(deal, offer, tid)
         if action == "accept":
-            receipt = {"seller": NAME, "item": deal["item"], "item_id": deal["item_id"], "price": offer}
+            receipt = {"seller": self.name, "item": deal["item"], "item_id": deal["item_id"], "price": offer}
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {deal['item']} [{deal['item_id']}] at {offer}."))
             log(f"[{tid}] DEAL {deal['item_id']} at {offer} (reserve {deal['reserve']})")
@@ -161,11 +174,13 @@ class CatalogSeller(HarnessSeller):
         await super().cancel(context, event_queue)
 
 
-def build(port):
+def build(port, name=NAME, categories=None, markup=1.0):
+    executor = CatalogSeller(name, categories, markup)
+    sells = ", ".join(executor.categories)
     card = AgentCard(
-        name=NAME,
-        description="A furniture store with about 4,500 items (bookshelves, desks, chairs, sofas, beds, wardrobes, "
-                    "chests of drawers, tables, lamps). Describe what you need; the shop picks an item and negotiates.",
+        name=name,
+        description=f"A furniture shop with {len(executor.catalog):,} items. Sells: {sells}. "
+                    "Describe what you need; the shop picks an item and negotiates.",
         version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
@@ -175,19 +190,28 @@ def build(port):
         skills=[AgentSkill(
             id="find-and-negotiate",
             name="Find furniture and negotiate a price",
-            description="Describe the furniture you need in your own words (size, use, material, room). The shop "
-                        "may ask one question, then offers one item with an asking price; reply with offers as numbers.",
-            tags=["shopping", "furniture", "negotiation", "catalog"],
+            description=f"Sells {sells}. Describe the furniture you need in your own words (size, use, material, "
+                        "room). The shop may ask one question, then offers one item with an asking price; reply with "
+                        "offers as numbers.",
+            tags=["shopping", "furniture", "negotiation", "catalog"] + executor.categories,
             examples=["something wooden to keep about 40 books, not taller than my desk", "a light so I can read in bed", "120"],
         )],
     )
-    handler = DefaultRequestHandler(agent_executor=CatalogSeller(), task_store=InMemoryTaskStore(), agent_card=card)
+    handler = DefaultRequestHandler(agent_executor=executor, task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=9200)
-    port = ap.parse_args().port
-    log(f"{NAME} on http://127.0.0.1:{port}  (4,500-item catalog; harness: claude -p --model haiku)")
-    uvicorn.run(build(port), host="127.0.0.1", port=port, log_level="warning")
+    ap.add_argument("--name", default=NAME)
+    ap.add_argument("--categories", default="", help="comma-separated, e.g. lamp,desk (default: all)")
+    ap.add_argument("--markup", type=float, default=1.0)
+    a = ap.parse_args()
+    cats = [c.strip() for c in a.categories.split(",") if c.strip()] or None
+    bad = [c for c in cats or [] if c not in ALL_CATEGORIES]
+    if bad:
+        ap.error(f"unknown categories {bad}; choose from {ALL_CATEGORIES}")
+    log(f"{a.name} on http://127.0.0.1:{a.port}  (categories: {a.categories or 'all'}, markup {a.markup}; "
+        f"harness: claude -p --model haiku)")
+    uvicorn.run(build(a.port, a.name, cats, a.markup), host="127.0.0.1", port=a.port, log_level="warning")

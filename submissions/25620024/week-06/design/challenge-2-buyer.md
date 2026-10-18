@@ -119,3 +119,16 @@ Writes `logs/challenge-2/` (buyer log, one log per shop, report json).
 4. **Parallel limit.** How many shop conversations run at once (3, 5, or all).
 5. **List and budget for the test.** For example 4 items, budget about 1.2 x the sum of cheapest
    reserves, so the budget is tight but every item can be bought.
+
+## Decisions (2026-10-18)
+
+1. Shopping list items are descriptions ("a lamp to read in bed"), as in challenge 1.
+2. The harness chooses 2-3 shops per item from the cards; code drops unknown shops and fills empty items.
+3. Code awards each item to the lowest opening ask.
+4. At most 5 shop conversations at once.
+5. Test list: 4 items; budget about 1.2 x the sum of the cheapest reserves.
+
+Part A as built: `shops.json` (20 shops: 12 specialists, 2 general stores at x1.2-1.3, 6 mixed;
+markups 0.8-1.3) and `start_shops.py`. The discount shop's "barely moves" behaviour is not
+built; a discount shop is only a lower markup. Shops share item ids (BS-0042 in several shops
+at different prices), like one product sold by many retailers.
