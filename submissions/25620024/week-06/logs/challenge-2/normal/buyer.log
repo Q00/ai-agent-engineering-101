@@ -1,0 +1,71 @@
+buyer: 4 items, budget 800, directory of 20 shops
+note: harness error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+note: GUARD item 1: no valid shop from the harness, code chose ['Lamp Corner', 'Bright Ideas Lighting', 'Sleep Well Beds']
+note: GUARD item 2: no valid shop from the harness, code chose ['Sofa House', 'Comfy Couches', 'Big Furniture Hall']
+note: GUARD item 3: no valid shop from the harness, code chose ['Desk & Chair Works', 'Big Furniture Hall', 'City Home Store']
+note: GUARD item 4: no valid shop from the harness, code chose ['Big Furniture Hall', 'City Home Store']
+part B  'a lamp to read in bed' -> Lamp Corner, Bright Ideas Lighting, Sleep Well Beds
+part B  'a three-seat fabric sofa for the living room' -> Sofa House, Comfy Couches, Big Furniture Hall
+part B  'something wooden to keep about 40 books, not taller than my desk' -> Desk & Chair Works, Big Furniture Hall, City Home Store
+part B  'an office chair to sit in all day' -> Big Furniture Hall, City Home Store
+
+part C  call for proposals: 11 conversations, 5 at a time
+[Lamp Corner / a lamp to read in bed] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+[Comfy Couches / a three-seat fabric sofa] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+[Bright Ideas Lighting / a lamp to read in bed] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+[Sleep Well Beds / a lamp to read in bed] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+[Sofa House / a three-seat fabric sofa] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+[Big Furniture Hall / a three-seat fabric sofa] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+[Desk & Chair Works / something wooden to keep] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+[Big Furniture Hall / something wooden to keep] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+[Big Furniture Hall / an office chair to sit i] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+[City Home Store / something wooden to keep] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+[City Home Store / an office chair to sit i] error: SendMessage error: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+---- board: quotes ----
+  item: a lamp to read in bed | shop: Lamp Corner | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a lamp to read in bed | shop: Bright Ideas Lighting | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a lamp to read in bed | shop: Sleep Well Beds | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a three-seat fabric sofa for the living room | shop: Sofa House | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a three-seat fabric sofa for the living room | shop: Comfy Couches | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a three-seat fabric sofa for the living room | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Desk & Chair Works | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: something wooden to keep about 40 books, not taller than my desk | shop: City Home Store | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: an office chair to sit in all day | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: an office chair to sit in all day | shop: City Home Store | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  ledger: budget 800 | spent 0 {} | held 0 {} | free 800
+part D  'a lamp to read in bed': NO QUOTES
+part D  'a three-seat fabric sofa for the living room': NO QUOTES
+part D  'something wooden to keep about 40 books, not taller than my desk': NO QUOTES
+part D  'an office chair to sit in all day': NO QUOTES
+part D  floor estimates (lowest quote / 1.5): {}
+---- board: awarded, caps set ----
+  item: a lamp to read in bed | shop: Lamp Corner | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a lamp to read in bed | shop: Bright Ideas Lighting | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a lamp to read in bed | shop: Sleep Well Beds | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a three-seat fabric sofa for the living room | shop: Sofa House | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a three-seat fabric sofa for the living room | shop: Comfy Couches | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a three-seat fabric sofa for the living room | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Desk & Chair Works | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: something wooden to keep about 40 books, not taller than my desk | shop: City Home Store | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: an office chair to sit in all day | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: an office chair to sit in all day | shop: City Home Store | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  ledger: budget 800 | spent 0 {} | held 0 {} | free 800
+
+part E  negotiating 0 items in parallel
+---- board: done ----
+  item: a lamp to read in bed | shop: Lamp Corner | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a lamp to read in bed | shop: Bright Ideas Lighting | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a lamp to read in bed | shop: Sleep Well Beds | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a three-seat fabric sofa for the living room | shop: Sofa House | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a three-seat fabric sofa for the living room | shop: Comfy Couches | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: a three-seat fabric sofa for the living room | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Desk & Chair Works | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: something wooden to keep about 40 books, not taller than my desk | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: something wooden to keep about 40 books, not taller than my desk | shop: City Home Store | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: an office chair to sit in all day | shop: Big Furniture Hall | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  item: an office chair to sit in all day | shop: City Home Store | offered: - | asks: - | my offers: - | round 0 of 6 | status: no-item
+  ledger: budget 800 | spent 0 {} | held 0 {} | free 800
+
+RESULT bought 0/4 items, total 0 of budget 800, 1 buyer harness calls, prompt sizes 0-0 chars, 9 s

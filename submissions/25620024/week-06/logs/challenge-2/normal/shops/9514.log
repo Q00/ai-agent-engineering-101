@@ -1,26 +1,219 @@
 City Home Store on http://127.0.0.1:9514  (categories: all, markup 1.2; harness: claude -p --model haiku)
-[5ae83d94] request: 'a lamp to read in bed'
-[5ae83d94] query {'category': 'lamp', 'subtypes': ['clip', 'desk'], 'materials': [], 'color': None, 'style': None, 'max_height_cm': None, 'max_width_cm': None, 'max_depth_cm': None, 'min_height_cm': None, 'min_width_cm': None, 'capacity': None, 'rooms': [], 'keywords': ['lamp', 'read', 'bed']}
-[5ae83d94] search: 264 matches | top: LP-0001, LP-0360, LP-0078, LP-0434, LP-0036
-[1dbee7dd] request: 'a three-seat fabric sofa for the living room'
-[5ae83d94] curator picked LP-0360: The clip-on design lets you attach it directly to your headboard or nightstand without taking up space, and at 1600 lumens it provides excellent brightness for comfortable reading.
-[1dbee7dd] query {'category': 'sofa', 'subtypes': ['3-seat'], 'materials': ['fabric'], 'color': None, 'style': None, 'max_height_cm': None, 'max_width_cm': None, 'max_depth_cm': None, 'min_height_cm': None, 'min_width_cm': None, 'capacity': 3, 'rooms': ['living room'], 'keywords': ['three-seat', 'fabric', 'sofa']}
-[1dbee7dd] search: 69 matches | top: SF-0087, SF-0100, SF-0120, SF-0142, SF-0088
-[5ae83d94] harness opening ask 50 for Clear Glass Clip Lamp 12 (reserve 30)
-[5ae83d94] LOCKED LP-0360 (reserve 30), opening ask 50
-[86f354f7] request: 'something wooden to keep about 40 books, not taller than my desk'
-[1dbee7dd] GUARD curator asked "How much space do you have in your living room, and do you have a preferred color or style?" although the request is not vague and every candidate meets the applied conditions; code picked the top-ranked candidate SF-0087
-[1dbee7dd] curator picked SF-0087: It is the closest match to what you described. I was going to ask: "How much space do you have in your living room, and do you have a preferred color or style?" -- tell me if that matters and I can switch.
-[1dbee7dd] harness opening ask 750 for Beige Fabric 3-Seat Sofa 180 (reserve 560)
-[1dbee7dd] LOCKED SF-0087 (reserve 560), opening ask 750
-[86f354f7] query {'category': 'bookshelf', 'subtypes': [], 'materials': ['oak', 'pine', 'walnut'], 'color': None, 'style': None, 'max_height_cm': 75, 'max_width_cm': None, 'max_depth_cm': None, 'min_height_cm': None, 'min_width_cm': None, 'capacity': 40, 'rooms': [], 'keywords': ['wooden', 'books', '40', 'desk']}
-[86f354f7] search: 37 matches | top: BS-0042, BS-0209, BS-0116, BS-0364, BS-0232
-[86f354f7] curator picked BS-0042: The open shelves showcase the natural oak wood you wanted, and it holds your books without being taller than your desk.
-[1f19ea1d] request: 'an office chair to sit in all day'
-[86f354f7] harness opening ask 175 for Natural Oak Open Bookshelf 60 (reserve 125)
-[86f354f7] LOCKED BS-0042 (reserve 125), opening ask 175
-[1f19ea1d] query {'category': 'office chair', 'subtypes': ['task', 'mesh'], 'materials': [], 'color': None, 'style': None, 'max_height_cm': None, 'max_width_cm': None, 'max_depth_cm': None, 'min_height_cm': None, 'min_width_cm': None, 'capacity': None, 'rooms': [], 'keywords': ['office', 'chair', 'comfort', 'all-day']}
-[1f19ea1d] search: 312 matches | top: OC-0001, OC-0232, OC-0126, OC-0181, OC-0086
-[1f19ea1d] curator picked OC-0126: Full mesh material keeps you cool and comfortable throughout the day, which is essential for sitting all day.
-[1f19ea1d] harness opening ask 189 for Grey Mesh Task Office Chair 55 (reserve 100)
-[1f19ea1d] LOCKED OC-0126 (reserve 100), opening ask 189
+[c06f41c2] request: 'something wooden to keep about 40 books, not taller than my desk'
+[0e42e2c3] request: 'an office chair to sit in all day'
+Producer[c06f41c2-1899-4e5e-a414-a959b965d7c2]: Execution failed
+Traceback (most recent call last):
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_seller.py", line 81, in execute
+    result = await asyncio.to_thread(self.find_item, request, tid, pending["questions"] >= MAX_QUESTIONS)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_seller.py", line 108, in find_item
+    q = parse_request(request)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_search.py", line 74, in parse_request
+    q = ask(PARSE_PROMPT.format(subtypes=subtypes_text, request=request))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/harness.py", line 32, in ask
+    raise RuntimeError(f"harness exited {run.returncode}: {(run.stderr.strip() or run.stdout.strip())[:200]}")
+RuntimeError: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+Consumer[c06f41c2-1899-4e5e-a414-a959b965d7c2]: Failed
+Traceback (most recent call last):
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_seller.py", line 81, in execute
+    result = await asyncio.to_thread(self.find_item, request, tid, pending["questions"] >= MAX_QUESTIONS)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_seller.py", line 108, in find_item
+    q = parse_request(request)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_search.py", line 74, in parse_request
+    q = ask(PARSE_PROMPT.format(subtypes=subtypes_text, request=request))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/harness.py", line 32, in ask
+    raise RuntimeError(f"harness exited {run.returncode}: {(run.stderr.strip() or run.stdout.strip())[:200]}")
+RuntimeError: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+Unhandled exception
+Traceback (most recent call last):
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_seller.py", line 81, in execute
+    result = await asyncio.to_thread(self.find_item, request, tid, pending["questions"] >= MAX_QUESTIONS)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_seller.py", line 108, in find_item
+    q = parse_request(request)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_search.py", line 74, in parse_request
+    q = ask(PARSE_PROMPT.format(subtypes=subtypes_text, request=request))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/harness.py", line 32, in ask
+    raise RuntimeError(f"harness exited {run.returncode}: {(run.stderr.strip() or run.stdout.strip())[:200]}")
+RuntimeError: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+Request Error (ID: 8e5d5753): Code=-32603, Message='harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed'
+Dispatcher task was cancelled or finished. Events may be lost.
+Producer[0e42e2c3-e1c1-442c-bb3b-a956036c0e4c]: Execution failed
+Traceback (most recent call last):
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_seller.py", line 81, in execute
+    result = await asyncio.to_thread(self.find_item, request, tid, pending["questions"] >= MAX_QUESTIONS)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_seller.py", line 108, in find_item
+    q = parse_request(request)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_search.py", line 74, in parse_request
+    q = ask(PARSE_PROMPT.format(subtypes=subtypes_text, request=request))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/harness.py", line 32, in ask
+    raise RuntimeError(f"harness exited {run.returncode}: {(run.stderr.strip() or run.stdout.strip())[:200]}")
+RuntimeError: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+Consumer[0e42e2c3-e1c1-442c-bb3b-a956036c0e4c]: Failed
+Traceback (most recent call last):
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_seller.py", line 81, in execute
+    result = await asyncio.to_thread(self.find_item, request, tid, pending["questions"] >= MAX_QUESTIONS)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_seller.py", line 108, in find_item
+    q = parse_request(request)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_search.py", line 74, in parse_request
+    q = ask(PARSE_PROMPT.format(subtypes=subtypes_text, request=request))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/harness.py", line 32, in ask
+    raise RuntimeError(f"harness exited {run.returncode}: {(run.stderr.strip() or run.stdout.strip())[:200]}")
+RuntimeError: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+Unhandled exception
+Traceback (most recent call last):
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/Users/dragonash/.venvs/a2a-w06/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_seller.py", line 81, in execute
+    result = await asyncio.to_thread(self.find_item, request, tid, pending["questions"] >= MAX_QUESTIONS)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_seller.py", line 108, in find_item
+    q = parse_request(request)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/catalog_search.py", line 74, in parse_request
+    q = ask(PARSE_PROMPT.format(subtypes=subtypes_text, request=request))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/dragonash/Library/CloudStorage/GoogleDrive-imajason@gmail.com/내 드라이브/HERMES/김대학원생/AX의 이해와 활용/ai-agent-engineering-101/submissions/25620024/week-06/harness.py", line 32, in ask
+    raise RuntimeError(f"harness exited {run.returncode}: {(run.stderr.strip() or run.stdout.strip())[:200]}")
+RuntimeError: harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed
+Request Error (ID: d24672a3): Code=-32603, Message='harness exited 1: Failed to authenticate: OAuth session expired and could not be refreshed'
+Dispatcher task was cancelled or finished. Events may be lost.
