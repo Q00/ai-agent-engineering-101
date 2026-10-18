@@ -1,0 +1,37 @@
+# challenge 1, catalog_seller.py (commit ebe6c52) on :9200, 2026-10-18
+# buyer side typed by hand with the a2a CLI (--timeout 120s); copied from the Warp screen
+
+## 1. described item -> pick -> negotiation -> receipt   task 1e02c74a
+[user] something wooden to keep about 40 books, not taller than my desk
+[agent] I can offer the Natural Oak Open Bookshelf 60 [BS-0042] (oak, books 48, W60 D30 H72 cm). The natural oak open bookshelf is a classic choice for displaying books--it's warm-toned, modern-styled, and lets you see your whole collection at a glance. Price: asking 155. Send your offer as a number.
+[user] 80
+[agent] 80 is too low. Counteroffer: 135.
+[user] 100
+[agent] 100 is too low. Counteroffer: 125.
+[user] 110
+[agent] 110 is too low. Counteroffer: 120.
+[user] 120
+Status: completed  Deal: Natural Oak Open Bookshelf 60 [BS-0042] at 120.
+Artifacts: [receipt] {"item":"Natural Oak Open Bookshelf 60","item_id":"BS-0042","price":120,"seller":"Harness Furniture Store (25620024)"}
+$ a2a send ... --task-id 1e02c74a-c02c-4140-b28a-54c6da60a7c5 130
+Error: failed to send message: Task 1e02c74a-c02c-4140-b28a-54c6da60a7c5 is in terminal state: TASK_STATE_COMPLETED
+(BS-0042 reserve is 105; no ask went below it)
+
+## 2. vague request -> one question -> answer -> pick   task ce778889
+--- seller tab
+[ce778889] request: 'I need a lamp'
+[ce778889] query {'category': 'lamp', 'subtypes': [], 'materials': [], 'color': None, 'style': None, 'max_height_cm': None, 'max_width_cm': None, 'max_depth_cm': None, 'capacity': None, 'rooms': [], 'keywords': ['lamp']}
+[ce778889] search: 450 matches, VAGUE | top: LP-0001, LP-0149, LP-0261, LP-0426, LP-0029
+[ce778889] QUESTION 'Where would you like to use the lamp--on a desk, as a floor lamp, hung from the ceiling, or clipped to a surface?'
+--- buyer tab
+[user] I need a lamp
+[agent] Where would you like to use the lamp--on a desk, as a floor lamp, hung from the ceiling, or clipped to a surface?
+[user] on my bedside table, for reading
+Status: input-required
+  I can offer the Beige Fabric Desk Lamp 12 [LP-0001] (fabric, lumens 1200, W12 D12 H35 cm). The compact 12cm size fits well on a bedside table, its 1200 lumens provides excellent brightness for reading, and the adjustable arm lets you position the light exactly where you need it. Price: asking 48. Send your offer as a number.
+(the answer was appended to the original request and parts 2-4 ran again; the reason text has other
+ numbers, but the ask 48 is the last number in the message)
+
+## mistakes on the way
+- a reply typed without its closing quote left zsh at a dquote> prompt; Ctrl+C and retyped
+- the seller tab showed the usual OpenTelemetry "Failed to detach context" tracebacks when the CLI dropped a connection
