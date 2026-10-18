@@ -1,6 +1,6 @@
-# Challenge 1 design, part 1: the catalog (draft v1, 2026-10-18)
+# Challenge 1 design, part 1: the catalog (v1, 2026-10-18)
 
-Status: draft for review. Nothing is generated yet.
+Status: reviewed; the three open decisions below were settled on 2026-10-18 (see "Decisions").
 
 ## Why the catalog comes first
 
@@ -107,3 +107,14 @@ is a correct item, and the deal is locked to the one the shop offers.
    the shop asks one clarifying question instead of guessing.
 3. **Units and language.** Centimetres and whole-number prices, English item text (the buyer
    agents and the trade test speak English).
+
+## Decisions (2026-10-18)
+
+1. Two sellers: `seller.py` stays as the passing trade-test seller; challenge 1 gets a separate
+   `catalog_seller.py` that reuses `harness.py` and the same guard ideas.
+2. Equal matches: the shop offers one and names it. Too vague a description: one clarifying
+   question (INPUT_REQUIRED) instead of a guess.
+3. Centimetres, whole-number prices, English item text.
+
+The sample rows above are illustrative; the generator's shelf rule decides the real shelf and
+book counts.
