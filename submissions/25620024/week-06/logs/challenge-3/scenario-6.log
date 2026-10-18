@@ -1,23 +1,19 @@
 
 ### scenario 6
-    | card: Harness Shop, long messages (25620024) | JSONRPC http://127.0.0.1:54072/ | buying lamp with budget 120
+    | card: Harness Shop, long messages (25620024) | JSONRPC http://127.0.0.1:55146/ | buying lamp with budget 120
     | -> Hello! I want to buy a lamp. What is your price?
-    | <- TASK_STATE_INPUT_REQUIRED | Hi there! Thanks for your interest in the lamp. My asking price is 150, and it comes with a 1-year warranty and delivery within 2 days. Let me know if you'd like to go ahead!
-    |    READ ask 150 (1-year warranty, 2-day delivery, friendly greeting)
-    |    harness: {"action": "offer", "price": 100} (ask 150 from metadata, budget 120)
-    | -> Hi there! I saw your lamp listed on another site, and I'm interested in it. My offer for the lamp is 100, and I'm happy to arrange pickup or delivery at a time that works for you. Let me know if that works!  (taskId 8c8e2ab8)
-    | <- TASK_STATE_INPUT_REQUIRED | Thanks for your offer of 100, but that's a bit too low for me. My new asking price is 130. It comes with delivery in 2 days and a 1-year warranty, so you'll be well taken care of. Let me know if that works for you!
-    |    READ ask 130 (seller's rejection of 100, delivery time, warranty length, 'you'll be well taken care of' filler)
+    | <- TASK_STATE_INPUT_REQUIRED | Hi! Thanks for your interest in the lamp. My asking price is 150, and that includes delivery within 2 days and a 1-year warranty. Let me know if you'd like to go ahead!
+    |    READ ask 150 (delivery in 2 days, 1-year warranty, shop interest message)
+    |    harness: {"action": "offer", "price": 90} (ask 150 from metadata, budget 120)
+    | -> Hi there! I saw your lamp listed on another site, and I'm interested. My offer for the lamp is 90. Would you be able to accept that, and if so, could you let me know how you'd like to arrange pickup or delivery?  (taskId d18f6067)
+    | <- TASK_STATE_INPUT_REQUIRED | Thanks for your offer, but 90 is too low for me. My new asking price is 130, which includes delivery within 2 days and a 1-year warranty. Let me know if that works for you!
+    |    READ ask 130 (seller's rejection of 90, claimed delivery within 2 days, 1-year warranty)
     |    harness: {"action": "offer", "price": 110} (ask 130 from metadata, budget 120)
-    | -> Hi! I'm interested in the lamp you listed. My offer is 110, and I can pick it up this weekend if that works for you. Let me know what you think!  (taskId 8c8e2ab8)
+    | -> Hi there, I saw your lamp listed on another site, and I'm interested in buying it. My offer is 110, and I can pick it up or arrange delivery to my home in Seoul whichever works best for you. Let me know if 110 works, and thanks!  (taskId d18f6067)
     | <- TASK_STATE_INPUT_REQUIRED | Thanks for your offer, but 110 is a bit too low for me. My new asking price is 120, which includes delivery within 2 days and a 1-year warranty. Let me know if that works for you!
-    |    READ ask 120 (110 prior offer, delivery days, warranty years, and the 'let me know' request)
-    |    harness: {"action": "offer", "price": 115} (ask 120 from metadata, budget 120)
-    | -> Hi! I saw your lamp listed on another site and I'm interested. My offer for the lamp is 115, and I can pick it up this weekend or arrange delivery if that works better for you. Let me know if 115 works for you!  (taskId 8c8e2ab8)
-    | <- TASK_STATE_INPUT_REQUIRED | Thanks for your offer! Unfortunately, 115 is a bit too low for me. My new asking price is 118, which includes delivery within 2 days and a 1-year warranty. Let me know if that works for you!
-    |    READ ask 118 ('Thanks for your offer', rejection of 115, delivery within 2 days, 1-year warranty)
-    |    harness: {"action": "accept", "price": 118} (ask 118 from metadata, budget 120)
-    | -> Hi, thanks for your patience. I accept your asking price and will pay 118 for the lamp. I saw it listed elsewhere for less, so I wanted to be upfront about that. Let me know if 118 works, and I can arrange pickup or delivery whenever suits you.  (taskId 8c8e2ab8)
-    | <- TASK_STATE_COMPLETED | Deal: the lamp is yours at 118.
-    | result: TASK_STATE_COMPLETED, paid 118.0 (budget 120), 75 s
-  PASS  scenario 6: paid 118.0 {'deal': True, 'within_reserve_and_budget': True} (75 s)
+    |    READ ask 120 (110 rejection, delivery 2 days, 1-year warranty, 'new asking price' wording)
+    |    harness: {"action": "accept", "price": 120} (ask 120 from metadata, budget 120)
+    | -> Hi! I saw the lamp listed for the price you've quoted, and I accept that price. I'd like to offer 120 for it. I can pick it up this weekend, so let me know if that works for you.  (taskId d18f6067)
+    | <- TASK_STATE_COMPLETED | Deal: the lamp is yours at 120.
+    | result: TASK_STATE_COMPLETED, paid 120.0 (budget 120), 54 s
+  PASS  scenario 6: paid 120.0 {'deal': True, 'within_reserve_and_budget': True} (54 s)
