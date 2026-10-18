@@ -5,6 +5,13 @@
 parse_request(): one harness call turns the buyer's sentence into a fixed JSON query.
 search():        code only -- hard filters on the catalog fields, then a closeness score,
                  then the top five. The harness never sees the catalog here.
+
+v2 (after devlogs/challenge1-search-v1-1018.txt):
+  - keywords match whole words only, and never the item's colour word ("light" vs "Light Oak")
+  - style must be one of the catalog's four styles; anything else becomes null
+  - the harness also picks subtypes (a reading lamp for bed -> clip, desk), a hard filter
+  - a request that leaves many matches and names no size, capacity or subtype is flagged vague,
+    so the curator can ask the buyer one question instead of guessing
 """
 import json
 import math
@@ -13,17 +20,23 @@ import re
 import sys
 
 from harness import ask
+from make_catalog import CATEGORIES, STYLES
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CAPACITY_FIELD = {"bookshelf": "books", "desk": "monitors", "office chair": "max_load_kg",
                   "dining chair": "seats", "sofa": "seats", "bed": "sleeps", "wardrobe": "hanging_m",
                   "chest of drawers": "drawers", "table": "seats", "lamp": "lumens"}
-WOODS = ["oak", "pine", "walnut"]
+SUBTYPES = {cat: list(spec["subtypes"]) for cat, spec in CATEGORIES.items()}
+VAGUE_MATCHES = 50   # more matches than this, with nothing concrete asked, is a vague request
 
 PARSE_PROMPT = """A buyer is describing furniture they want from a shop. Turn the description into a search query.
-Categories: bookshelf, desk, office chair, dining chair, sofa, bed, wardrobe, chest of drawers, table, lamp.
+Categories and their subtypes:
+{subtypes}
 Materials in the catalog: oak, pine, walnut, particleboard, metal, mesh, fabric, leather, velvet, glass.
 ("wooden" or "wood" means oak, pine and walnut; "solid wood" means oak and walnut.)
+Styles in the catalog: scandinavian, industrial, classic, modern. Use one of these or null; nothing else.
+Subtypes: list the subtypes of the category that fit what the buyer will use it for (for example,
+a lamp to read in bed -> ["clip", "desk"]); leave the list empty if any subtype would do.
 Capacity is the amount the buyer needs, in the category's unit: bookshelf = books, desk = monitors,
 office chair = max load in kg, dining chair / sofa / table = seats, bed = people it sleeps,
 wardrobe = metres of hanging rail, chest of drawers = drawers, lamp = lumens.
@@ -34,7 +47,8 @@ Use null when the buyer does not say something. Do not guess a category from not
 Buyer's description: {request}
 
 Reply with one JSON object only:
-{{"category": <category or null>, "materials": [<materials>], "color": <string or null>, "style": <string or null>,
+{{"category": <category or null>, "subtypes": [<subtypes>], "materials": [<materials>],
+ "color": <string or null>, "style": <style or null>,
  "max_height_cm": <int or null>, "max_width_cm": <int or null>, "max_depth_cm": <int or null>,
  "capacity": <number or null>, "rooms": [<rooms>], "keywords": [<a few words from the request>]}}"""
 
@@ -45,18 +59,23 @@ def load_catalog(path=os.path.join(HERE, "catalog.json")):
 
 
 def parse_request(request):
-    """Part 2: one harness call. Returns the query dict (fields as in the design doc)."""
-    q = ask(PARSE_PROMPT.format(request=request))
-    q.setdefault("materials", [])
-    q.setdefault("rooms", [])
-    q.setdefault("keywords", [])
+    """Part 2: one harness call. Returns the query dict, cleaned to the catalog's vocabulary."""
+    subtypes_text = "\n".join(f"  {cat}: {', '.join(subs)}" for cat, subs in SUBTYPES.items())
+    q = ask(PARSE_PROMPT.format(subtypes=subtypes_text, request=request))
+    for key in ("subtypes", "materials", "rooms", "keywords"):
+        q[key] = q.get(key) or []
     if q.get("category") not in CAPACITY_FIELD:
         q["category"] = None
+    if q.get("style") not in STYLES:                     # e.g. "cozy" is not a catalog style
+        q["style"] = None
+    q["subtypes"] = [s for s in q["subtypes"] if q["category"] and s in SUBTYPES[q["category"]]]
     return q
 
 
 def _passes(item, q, relax):
     if q.get("category") and item["category"] != q["category"]:
+        return False
+    if q["subtypes"] and "subtypes" not in relax and item["subtype"] not in q["subtypes"]:
         return False
     if q["materials"] and "materials" not in relax and item["material"] not in q["materials"]:
         return False
@@ -71,6 +90,13 @@ def _passes(item, q, relax):
     return True
 
 
+def _match_text(item):
+    """Text the keywords are matched against: everything but the colour word."""
+    text = " ".join([item["subtype"], item["category"], item["description"],
+                     " ".join(item["features"]), " ".join(item["rooms"])]).lower()
+    return re.sub(rf"\b{re.escape(item['color'].lower())}\b", " ", text)
+
+
 def _score(item, q, relax):
     """Lower is better: closeness to the asked capacity, then soft matches."""
     s = 0.0
@@ -78,26 +104,33 @@ def _score(item, q, relax):
     if q.get("capacity") and item.get(cap_field):
         s += abs(math.log(item[cap_field] / float(q["capacity"])))
     if "soft" not in relax:
-        if q.get("color") and q["color"].lower() not in item["color"]:
+        if q.get("color") and q["color"].lower() != item["color"]:
             s += 0.3
-        if q.get("style") and q["style"].lower() not in item["style"]:
+        if q.get("style") and q["style"] != item["style"]:
             s += 0.3
         if q["rooms"] and not set(r.lower() for r in q["rooms"]) & set(item["rooms"]):
             s += 0.2
-    text = " ".join([item["description"], " ".join(item["features"]), " ".join(item["rooms"])]).lower()
-    s -= 0.05 * sum(1 for k in q["keywords"] if k.lower() in text)
+    text = _match_text(item)
+    s -= 0.05 * sum(1 for k in q["keywords"] if re.search(rf"\b{re.escape(k.lower())}\b", text))
     return s
 
 
 def search(catalog, q, k=5):
     """Part 3: returns (top k items, number of matches, relaxations applied)."""
-    steps = [set(), {"soft"}, {"soft", "sizes"}, {"soft", "sizes", "materials"}]
+    steps = [set(), {"soft"}, {"soft", "sizes"}, {"soft", "sizes", "subtypes"},
+             {"soft", "sizes", "subtypes", "materials"}]
     for relax in steps:
         matches = [it for it in catalog if _passes(it, q, relax)]
         if matches:
             matches.sort(key=lambda it: (_score(it, q, relax), it["id"]))
             return matches[:k], len(matches), sorted(relax)
     return [], 0, sorted(steps[-1])
+
+
+def is_vague(q, n_matches):
+    """Many matches and nothing concrete asked: better to ask the buyer than to guess."""
+    concrete = q.get("capacity") or q["subtypes"] or any(q.get(f"max_{d}_cm") for d in ("height", "width", "depth"))
+    return n_matches > VAGUE_MATCHES and not concrete
 
 
 def summary(item):
@@ -115,6 +148,7 @@ if __name__ == "__main__":
     q = parse_request(request)
     print("query   :", json.dumps(q, ensure_ascii=False))
     top, n, relaxed = search(load_catalog(), q)
-    print(f"matches : {n}" + (f" (relaxed: {', '.join(relaxed)})" if relaxed else ""))
+    print(f"matches : {n}" + (f" (relaxed: {', '.join(relaxed)})" if relaxed else "")
+          + ("  -- VAGUE: the curator should ask the buyer one question" if is_vague(q, n) else ""))
     for it in top:
         print("  ", summary(it))

@@ -46,3 +46,17 @@ both how the request is read and how the matches are ordered matter.
 
 `catalog_search.py "<request>"` prints the parsed query, the number of matches and the top five,
 so parts 2-3 can be checked before the curator and the seller exist.
+
+## v2 changes (2026-10-18, after devlogs/challenge1-search-v1-1018.txt)
+
+The first run of three requests showed three problems with the reading-lamp request
+("a light so I can read in bed"): the keyword "light" matched the colour word in "Light Oak",
+the harness returned the style "cozy" (not a catalog style), and the vague request matched all
+450 lamps. Changes:
+
+1. Keywords match whole words only, and never the item's colour word.
+2. `style` must be one of scandinavian / industrial / classic / modern; anything else becomes null.
+3. The query gets `subtypes`: the harness lists the subtypes that fit the use ("read in bed" ->
+   clip, desk), and the search filters on them (relaxed before materials when nothing matches).
+4. `is_vague()`: more than 50 matches with no capacity, size or subtype asked -> the curator
+   should ask the buyer one question instead of guessing.
