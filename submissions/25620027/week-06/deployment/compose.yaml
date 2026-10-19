@@ -1,0 +1,45 @@
+services:
+  seller:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:9998:9998"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY in the deployment environment}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      AX_PUBLIC_URL: ${AX_PUBLIC_URL:?Set the public HTTPS base URL}
+      AX_DAILY_MODEL_REQUESTS: ${AX_DAILY_MODEL_REQUESTS:-600}
+      AX_MODEL_BUDGET_PATH: /data/model-budget.sqlite
+    volumes:
+      - model-budget:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 128
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9998/.well-known/agent-card.json', timeout=5).close()"
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  model-budget:
