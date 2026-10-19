@@ -88,15 +88,63 @@ def search(catalog: list, text: str, k: int = CANDIDATES) -> list:
 
 # ------------------------------------------------------------------ decisions
 
+def kinds_of(catalog: list) -> list:
+    """The ~25 distinct kinds. Small enough to put in a prompt; the 3000 rows
+    are not."""
+    seen, out = set(), []
+    for it in catalog:
+        k = it.get("kind") or it["name"]
+        if k not in seen:
+            seen.add(k)
+            out.append(k)
+    return out
+
+
+def pick_kind(catalog: list, text: str, log) -> str | None:
+    """Stage one. Word overlap alone picks on surface words: 'a light that
+    hangs over the dining table' scored a dining table above a pendant lamp,
+    and 'a padded seat with arms, for reading in the evening' scored a reading
+    light above an armchair -- in both the right row was not among the six the
+    harness was shown, so it could only choose the least wrong one. Asking the
+    harness for the kind first, from a list that does fit in a prompt, puts the
+    judgement before the narrowing instead of after it."""
+    ks = kinds_of(catalog)
+    listing = "\n".join(f"{i}. {k}" for i, k in enumerate(ks))
+    d = harness.ask(
+        "A shopper described what they want. Which kind of product is it? "
+        "Answer with the number of the single best kind, or -1 if none fit.\n\n"
+        f"Shopper: {text!r}\n\nKinds:\n{listing}\n\n"
+        'Reply with one JSON object and nothing else: {"kind": <number>}.',
+        want=("kind",), tag=" kind")
+    i = harness.as_int(d.get("kind"))
+    if i is None or not (0 <= i < len(ks)):
+        log(f"[seller] no usable kind from the harness ({d!r}); searching the whole catalog")
+        return None
+    log(f"[seller] harness kind -> {ks[i]}")
+    return ks[i]
+
+
 def pick_item(catalog: list, text: str, log) -> dict | None:
-    """Code narrows, harness chooses. Returns a catalog row or None."""
-    cands = search(catalog, text)
+    """Code narrows, harness chooses -- twice. Returns a catalog row or None."""
+    named = next((c for c in catalog if c["name"].lower() in (text or "").lower()), None)
+    if named is not None:                 # a buyer that names the item needs no model
+        log(f"[seller] named outright -> {named['name']}")
+        return named
+
+    kind = pick_kind(catalog, text, log)
+    if kind is not None:
+        pool = [c for c in catalog if (c.get("kind") or c["name"]) == kind]
+        if not pool:
+            # A shop that sells something whatever it is asked for makes a
+            # directory pointless. It has to be able to say no.
+            log(f"[seller] does not stock {kind!r}; declining")
+            return None
+    else:
+        pool = catalog
+    log(f"[seller] pool for search(): {len(pool)} of {len(catalog)} rows")
+    cands = search(pool, text)
     if not cands:
         return None
-    exact = next((c for c in cands if c["name"].lower() in (text or "").lower()), None)
-    if exact is not None:                 # a buyer that names the item needs no model
-        log(f"[seller] named outright -> {exact['name']}")
-        return exact
     listing = "\n".join(f'{i}. {c["name"]}: {c["description"]}' for i, c in enumerate(cands))
     d = harness.ask(
         "A shopper described what they want. Choose the single best match from the "
@@ -276,8 +324,13 @@ def build(cfg, catalog):
         skills=[AgentSkill(
             id="negotiate",
             name="Negotiate a purchase",
-            description="Name or describe what you want; the shop answers with an asking "
-                        "price, then counteroffers, a receipt, or a refusal.",
+            # Challenge 2: what a shop advertises is the only thing a buyer can
+            # choose on before talking to it. With 20 identical cards the
+            # directory is not a directory -- the first run bought every item
+            # from Shop 00 for exactly that reason.
+            description=cfg.get("skill_description")
+            or ("Name or describe what you want; the shop answers with an asking "
+                "price, then counteroffers, a receipt, or a refusal."),
             tags=["shopping", "negotiation", "furniture", "lighting", "storage"],
             examples=["I want to buy a lamp",
                       "something wooden to keep about 40 books, not taller than my desk",
@@ -294,11 +347,19 @@ if __name__ == "__main__":
     ap.add_argument("--port", type=int, default=9999)
     ap.add_argument("--catalog", default="catalog.json")
     ap.add_argument("--name", default="Harness Shop")
+    ap.add_argument("--stocks", default="",
+                    help="comma-separated kinds this shop advertises on its Agent Card")
     args = ap.parse_args()
     catalog = load_catalog(args.catalog)
+    stocks = [s.strip() for s in args.stocks.split(",") if s.strip()]
     cfg = {"name": args.name, "port": args.port,
-           "description": "Sells furniture, lighting and storage from a large catalog. "
-                          "Describe what you need; the shop negotiates the price."}
+           "description": ("Sells " + ", ".join(stocks) + ". " if stocks else
+                           "Sells furniture, lighting and storage from a large catalog. ")
+                          + "Describe what you need; the shop negotiates the price.",
+           "skill_description": ("Stocks " + ", ".join(stocks) + ". " if stocks else "")
+                                + "Name or describe what you want; the shop answers with "
+                                  "an asking price, then counteroffers, a receipt, or a "
+                                  "refusal."}
     harness.log(f"[seller] {args.name} on :{args.port}, catalog {len(catalog)} items, "
                 f"harness {harness.MODEL}")
     uvicorn.run(build(cfg, catalog), host="127.0.0.1", port=args.port, log_level="warning")

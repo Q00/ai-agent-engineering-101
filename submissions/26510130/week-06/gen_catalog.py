@@ -64,7 +64,8 @@ SIZE = [("compact", 0.75), ("standard", 1.0), ("wide", 1.25), ("extra-large", 1.
 
 def main():
     rng = random.Random(SEED)
-    items = [dict(f, category="core", material="", size="standard") for f in FIXED]
+    items = [dict(f, category="core", kind=f["name"], material="", size="standard")
+             for f in FIXED]
     seen = {i["name"] for i in items}
     n = len(items)
 
@@ -84,6 +85,7 @@ def main():
             "id": f"it-{n:04d}",
             "name": name,
             "category": cat,
+            "kind": kind,
             "material": material,
             "size": size,
             "reserve": reserve,

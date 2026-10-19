@@ -1,0 +1,41 @@
+# challenge 2: 20 shops, shopping list of 5, one budget of 500
+# directory: 20 Agent Cards read from /.well-known/agent-card.json
+
+## 'a desk lamp for reading'
+   budget left 500, items left 5 -> cap 340 for this item
+   trying shops [1, 11, 16]
+   Shop 01: offers 'lamp' at 165
+      offer 165 -> TASK_STATE_COMPLETED | Deal: lamp at 165.
+   BOUGHT lamp at 165.0 from Shop 01 | spent 165.0/500
+
+## 'something to keep about 40 books, lower than a desk'
+   budget left 335.0, items left 4 -> cap 215.0 for this item
+   trying shops [1, 8, 16]
+   Shop 01: offers 'compact oiled birch low bookcase' at 130
+      offer 130 -> TASK_STATE_COMPLETED | Deal: compact oiled birch low bookcase at 130.
+   BOUGHT compact oiled birch low bookcase at 130.0 from Shop 01 | spent 295.0/500
+
+## 'a small table beside the sofa'
+   budget left 205.0, items left 3 -> cap 125.0 for this item
+   trying shops [2, 12, 19]
+   Shop 02: offers 'compact matte walnut side table' at 130
+      offer 125 -> TASK_STATE_COMPLETED | Deal: compact matte walnut side table at 125.
+   BOUGHT compact matte walnut side table at 125.0 from Shop 02 | spent 420.0/500
+
+## 'a wall clock that is quiet'
+   budget left 80.0, items left 2 -> cap 40.0 for this item
+   trying shops [3, 10, 18]
+   Shop 03: offers 'compact whitewashed felt clock' at 55
+      offer 38 -> TASK_STATE_COMPLETED | Deal: compact whitewashed felt clock at 38.
+   BOUGHT compact whitewashed felt clock at 38.0 from Shop 03 | spent 458.0/500
+
+## 'a box to stack and hide small things'
+   budget left 42.0, items left 1 -> cap 42.0 for this item
+   trying shops [3, 9, 19]
+   Shop 03: offers 'compact raw felt storage box' at 36
+      offer 36 -> TASK_STATE_COMPLETED | Deal: compact raw felt storage box at 36.
+   BOUGHT compact raw felt storage box at 36.0 from Shop 03 | spent 494.0/500
+
+# bought 5/5 items, total 494.0 of 500
+# within budget: True
+# no item bought twice: True (['lamp', 'compact oiled birch low bookcase', 'compact matte walnut side table', 'compact whitewashed felt clock', 'compact raw felt storage box'])
