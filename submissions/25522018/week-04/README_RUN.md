@@ -1,29 +1,27 @@
-# Week 04 run instructions
+# Week 04 — Run on Windows PowerShell (GroqCloud)
 
-This folder is intended to become `submissions/25522018/week-04/`.
-
-## Git Bash / macOS / Linux
-
-```bash
-export OPENROUTER_API_KEY='YOUR_KEY'
-export OPENROUTER_MODEL='nvidia/nemotron-3.5-lightning:free'
-python run_week04.py
-```
-
-## Windows PowerShell
+- Provider: GroqCloud
+- Model: `openai/gpt-oss-20b` (set `GROQ_MODEL` to change)
+- 4 scenarios × 3 communication formats × 3 repeats = **36 LLM episodes**.
+- Before rerunning, back up the previous `results.csv`, `REPORT.md`, and `logs` outside the repository and remove the old files from this working directory. Otherwise old HTTP 401 failure rows will be incorrectly skipped.
+- Use the same model for all 36 episodes.
 
 ```powershell
-$env:OPENROUTER_API_KEY='YOUR_KEY'
-$env:OPENROUTER_MODEL='nvidia/nemotron-3.5-lightning:free'
+# Run these from the repository root:
+cd submissions/25522018/week-04
+$secure = Read-Host 'Paste Groq API key' -AsSecureString
+$ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+try { $env:GROQ_API_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) }
+finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) }
+Remove-Variable secure, ptr
+$env:GROQ_MODEL = 'openai/gpt-oss-20b'
 python run_week04.py
 ```
 
-The script runs 4 scenarios × 3 conditions × 3 repeats = 36 episodes. It creates 9 log files, appends every episode (including crashes) to `results.csv`, and regenerates `REPORT.md` from the measured results. Re-running resumes completed `(run, scenario)` pairs.
+If transient API errors occur, **rerun the same command** after recovery; completed episodes are preserved in `results.csv`. Do not publish API keys or temporary backup copies.
 
-After the run, from the repository root:
+From the repository root:
 
-```bash
+```powershell
 python scripts/check_week04.py submissions/25522018/week-04
 ```
-
-Do not commit your API key.

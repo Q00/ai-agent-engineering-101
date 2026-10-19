@@ -1,17 +1,70 @@
-provider=OpenRouter model=nvidia/nemotron-3.5-lightning:free temperature=0.2 max_turns=8 condition=tagged run=tagged-01
+provider=GroqCloud model=openai/gpt-oss-20b temperature=0.2 max_turns=8 condition=tagged run=tagged-01
 
 === scenario 1: a used bicycle reserve=120 budget=150 ===
-[crash] CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}}
-[result] outcome= price= correct= violation= turns= format_errors= reader_calls=
+[buyer] (propose) I would like to offer $120 for the bicycle.
+[reader-price] {"price": 120}
+[interrupted] INTERRUPTED: RuntimeError: HTTP 400: {"error":{"message":"Tool choice is none, but model called a tool","type":"invalid_request_error","code":"tool_use_failed","failed_generation":"{\"name\": \"final\", \"arguments\": (accept-proposal) Thank you, 
+
+=== scenario 1: a used bicycle reserve=120 budget=150 ===
+[buyer] (propose) I would like to offer $120 for the bicycle.
+[reader-price] {"price": 120}
+[seller] (accept-proposal) Thank you, I accept your offer of $120 and we have a deal.
+[parser] performative=accept-proposal
+[result] outcome=deal price=120 correct=1 violation=0 turns=2 format_errors=0 reader_calls=1
 
 === scenario 2: a desk lamp reserve=30 budget=45 ===
-[crash] CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}}
-[result] outcome= price= correct= violation= turns= format_errors= reader_calls=
+[buyer] (propose) I would like to offer $40 for the desk lamp.
+[reader-price] {"price": 40}
+[seller] (accept-proposal) I accept your offer of $40 for the desk lamp.
+[parser] performative=accept-proposal
+[result] outcome=deal price=40 correct=1 violation=0 turns=2 format_errors=0 reader_calls=1
 
 === scenario 3: a second-hand textbook reserve=40 budget=40 ===
-[crash] CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}}
-[result] outcome= price= correct= violation= turns= format_errors= reader_calls=
+[buyer] (propose) I would be willing to pay $35 for the textbook.
+[reader-price] {"price": 35}
+[seller] (propose) I can offer the textbook for $45.
+[reader-price] {"price": 45}
+[buyer] (propose) I can offer $40 for the textbook.
+[reader-price] {"price": 40}
+[seller] (accept-proposal) Deal! The textbook is yours for $40.
+[parser] performative=accept-proposal
+[result] outcome=deal price=40 correct=1 violation=0 turns=4 format_errors=0 reader_calls=3
 
 === scenario 4: a mechanical keyboard reserve=90 budget=70 ===
-[crash] CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}}
-[result] outcome= price= correct= violation= turns= format_errors= reader_calls=
+[buyer] (propose) I would like to offer $60 for the mechanical keyboard.
+[reader-price] {"price": 60}
+[seller] (propose) I can offer the keyboard for $90.
+[reader-price] {"price": 90}
+[buyer] (propose) I can offer $70 for the keyboard.
+[reader-price] {"price": 70}
+[seller] (propose) I can offer the keyboard for $90.
+[reader-price] {"price": 90}
+[buyer] (propose) I can offer $70 for the keyboard.
+[reader-price] {"price": 70}
+[interrupted] INTERRUPTED: RuntimeError: Groq model returned empty text; check model output and token settings
+
+=== scenario 4: a mechanical keyboard reserve=90 budget=70 ===
+[buyer] (propose) I would like to offer $60 for the keyboard.
+[reader-price] {"price": 60}
+[seller] (propose) I can offer $90 for the keyboard.
+[reader-price] {"price": 90}
+[buyer] (propose) I can offer $70 for the keyboard.
+[reader-price] {"price": 70}
+[seller] (propose) I can offer $90 for the keyboard.
+[reader-price] {"price": 90}
+[interrupted] INTERRUPTED: RuntimeError: Groq model returned empty text; check model output and token settings
+
+=== scenario 4: a mechanical keyboard reserve=90 budget=70 ===
+[buyer] (propose) I would like to offer $60 for the keyboard.
+[reader-price] {"price": 60}
+[seller] (propose) I can offer the keyboard for $90.
+[reader-price] {"price": 90}
+[buyer] (propose) I can offer $70 for the keyboard.
+[reader-price] {"price": 70}
+[seller] (propose) I can offer the keyboard for $90.
+[reader-price] {"price": 90}
+[buyer] (propose) I would like to offer $70 for the keyboard.
+[reader-price] {"price": 70}
+[seller] (refuse) I’m sorry, but I can’t accept that offer.
+[parser] performative=refuse
+[result] outcome=no_deal price= correct=1 violation=0 turns=6 format_errors=0 reader_calls=5

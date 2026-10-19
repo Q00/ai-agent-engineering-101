@@ -13,11 +13,11 @@ CONDITIONS = ("free", "tagged", "structured")
 PERFS = {"propose", "accept-proposal", "reject-proposal", "refuse"}
 MAX_TURNS = int(os.getenv("MAX_TURNS", "8"))
 REPEATS = int(os.getenv("REPEATS", "3"))
-PROVIDER = "OpenRouter"
-MODEL = os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3.5-lightning:free")
+PROVIDER = "GroqCloud"
+MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 TEMPERATURE = float(os.getenv("TEMPERATURE", "0.2"))
-API_URL = os.getenv("OPENROUTER_URL", "https://openrouter.ai/api/v1/chat/completions")
-API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+API_URL = "https://api.groq.com/openai/v1/chat/completions"
+API_KEY = os.getenv("GROQ_API_KEY", "")
 
 HEADER = ["run","condition","scenario","deal_possible","outcome","price","correct",
           "violation","turns","format_errors","reader_calls","note"]
@@ -75,19 +75,18 @@ def system_prompt(role, item, limit, condition):
 
 def call_model(system, history, attempts=8):
     if not API_KEY:
-        raise RuntimeError("OPENROUTER_API_KEY is not set")
+        raise RuntimeError("GROQ_API_KEY is not set")
     payload = {
         "model": MODEL,
         "temperature": TEMPERATURE,
         "messages": [{"role": "system", "content": system}] + history,
-        "max_tokens": 220,
+        "max_completion_tokens": 1024,
     }
     data = json.dumps(payload).encode("utf-8")
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/Q00/ai-agent-engineering-101",
-        "X-Title": "SeoulTech AI Agent Engineering Week 04",
+        "User-Agent": "SeoulTech-Week04-GroqClient/1.0",
     }
     delay = 2
     for attempt in range(attempts):
@@ -98,9 +97,36 @@ def call_model(system, history, attempts=8):
             text = obj["choices"][0]["message"]["content"]
             if isinstance(text, list):
                 text = "".join(x.get("text", "") if isinstance(x, dict) else str(x) for x in text)
-            return str(text).strip()
+            if not isinstance(text, str) or not text.strip():
+                finish_reason = obj["choices"][0].get("finish_reason", "unknown")
+                if attempt == attempts - 1:
+                    raise RuntimeError(
+                        f"Groq returned empty text after {attempts} attempts; "
+                        f"last finish_reason={finish_reason}"
+                    )
+                print(f"[Groq] empty text (finish_reason={finish_reason}); retry {attempt + 2}/{attempts}", flush=True)
+                payload["reasoning_effort"] = "low"
+                payload["max_completion_tokens"] = 2048
+                data = json.dumps(payload).encode("utf-8")
+                time.sleep(min(delay, 5))
+                continue
+            return text.strip()
         except error.HTTPError as e:
             body = e.read().decode("utf-8", errors="ignore")
+            if e.code == 400 and "tool_use_failed" in body:
+                if attempt == attempts - 1:
+                    raise RuntimeError(
+                        "Groq repeatedly generated an invalid tool call: "
+                        + body[:300]
+                    ) from e
+                payload["messages"][0]["content"] += (
+                    "\nIMPORTANT: Respond using ordinary assistant text only. "
+                    "Do not call tools or functions. "
+                    "Do not generate a name/arguments tool-call envelope."
+                )
+                data = json.dumps(payload).encode("utf-8")
+                time.sleep(min(delay, 10))
+                continue
             if e.code == 429 or 500 <= e.code < 600:
                 time.sleep(delay); delay = min(delay * 2, 45); continue
             raise RuntimeError(f"HTTP {e.code}: {body[:500]}") from e
@@ -287,7 +313,7 @@ def build_report():
         f"- **tagged:** {FORMAT['tagged']}",
         f"- **structured:** {FORMAT['structured']}", "",
         f"Reader prompt: `{READER_SYSTEM}`", "",
-        "Run with `OPENROUTER_API_KEY=... python run_week04.py`. The program retries 429/5xx errors, resumes already completed `(run, scenario)` pairs, writes one log per condition/repeat, and regenerates this report.", "",
+        "Run on Windows PowerShell with `GROQ_API_KEY` configured and `python run_week04.py`. The program retries transient errors, resumes completed `(run, scenario)` pairs, stops without recording interrupted episodes as completed, writes one log per condition/repeat, and regenerates this report.", "",
         "## 2. Results", "",
         "| condition | correct | violation | mean turns | format_errors | reader_calls |",
         "|---|---:|---:|---:|---:|---:|",
@@ -347,9 +373,8 @@ def main():
     # ensure report exists even before model calls
     build_report()
     if not API_KEY:
-        print("ERROR: OPENROUTER_API_KEY is not set. Set it in your shell, then rerun.")
-        print(f"Example: export OPENROUTER_API_KEY='your_key_here'   # macOS/Linux/Git Bash")
-        print(f"PowerShell: $env:OPENROUTER_API_KEY='your_key_here'")
+        print("ERROR: GROQ_API_KEY is not set. Set it in your current PowerShell session, then rerun.")
+        print("PowerShell: $env:GROQ_API_KEY = '<your Groq API key>'")
         return 2
     for condition in CONDITIONS:
         for rep in range(1, REPEATS+1):
@@ -368,10 +393,14 @@ def main():
                 try:
                     ep=run_episode(sc,condition,log)
                 except Exception as e:
-                    ep={"deal_possible":int(sc['reserve']<=sc['budget']),"outcome":"","price":"","correct":"",
-                        "violation":"","turns":"","format_errors":"","reader_calls":""}
-                    note=f"CRASH: {type(e).__name__}: {str(e)[:220]}"
-                    log.append("[crash] "+note)
+                    note=f"INTERRUPTED: {type(e).__name__}: {str(e)[:220]}"
+                    log.append("[interrupted] "+note)
+                    with log_path.open("a",encoding="utf-8") as f:
+                        f.write("\n".join(log)+"\n")
+                    print(f"Stopped at {run_id} scenario {sc['id']}: {note}")
+                    print("Earlier completed episodes are saved. Rerun later to resume this episode.")
+                    build_report()
+                    return 1
                 row={"run":run_id,"condition":condition,"scenario":str(sc['id']),**ep,"note":note}
                 append_result(row); done.add(key)
                 log.append("[result] "+" ".join(f"{k}={row[k]}" for k in ["outcome","price","correct","violation","turns","format_errors","reader_calls"]))

@@ -2,7 +2,7 @@
 
 ## 1. Setup
 
-Provider: **OpenRouter**; model: **`nvidia/nemotron-3.5-lightning:free`**; temperature: **0.2**; turn limit: **8**. The buyer and seller share the same role/limit rules and four-act vocabulary; only the message-format paragraph changes.
+Provider: **GroqCloud**; model: **`openai/gpt-oss-20b`**; temperature: **0.2**; turn limit: **8**. The buyer and seller share the same role/limit rules and four-act vocabulary; only the message-format paragraph changes.
 
 - **free:**  Write your message as one or two plain English sentences. Do not use JSON or a leading performative tag.
 - **tagged:**  Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.
@@ -10,56 +10,56 @@ Provider: **OpenRouter**; model: **`nvidia/nemotron-3.5-lightning:free`**; tempe
 
 Reader prompt: `You are an observer reading a price negotiation between a buyer and a seller. Label the LAST message only. Reply with exactly one JSON object and nothing else: {"performative": "propose" | "accept-proposal" | "reject-proposal" | "refuse", "price": <whole number or null>}. Use propose only when the last message itself offers a new price. Use accept-proposal only when it explicitly agrees to the other side's previous offered price. Use reject-proposal when it declines but continues. Use refuse when it ends/leaves the negotiation. For propose, extract the NEW price offered by the speaker, not a price merely mentioned as the other side's earlier offer. For non-propose acts, price should be null.`
 
-Run with `OPENROUTER_API_KEY=... python run_week04.py`. The program retries 429/5xx errors, resumes already completed `(run, scenario)` pairs, writes one log per condition/repeat, and regenerates this report.
+Run on Windows PowerShell with `GROQ_API_KEY` configured and `python run_week04.py`. The program retries transient errors, resumes completed `(run, scenario)` pairs, stops without recording interrupted episodes as completed, writes one log per condition/repeat, and regenerates this report.
 
 ## 2. Results
 
 | condition | correct | violation | mean turns | format_errors | reader_calls |
 |---|---:|---:|---:|---:|---:|
-| free | 0/12 | 0 | 0.00 | 0 | 0 |
-| tagged | 0/12 | 0 | 0.00 | 0 | 0 |
-| structured | 0/12 | 0 | 0.00 | 0 | 0 |
+| free | 9/12 | 0 | 3.92 | 0 | 47 |
+| tagged | 11/12 | 0 | 3.75 | 0 | 34 |
+| structured | 11/12 | 0 | 3.58 | 0 | 0 |
 
 ### Every episode from `results.csv`
 
 | run | condition | scenario | deal_possible | outcome | price | correct | violation | turns | format_errors | reader_calls | note |
 |---|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---|
-| free-01 | free | 1 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| free-01 | free | 2 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| free-01 | free | 3 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| free-01 | free | 4 | 0 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| free-02 | free | 1 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| free-02 | free | 2 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| free-02 | free | 3 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| free-02 | free | 4 | 0 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| free-03 | free | 1 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| free-03 | free | 2 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| free-03 | free | 3 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| free-03 | free | 4 | 0 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| tagged-01 | tagged | 1 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| tagged-01 | tagged | 2 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| tagged-01 | tagged | 3 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| tagged-01 | tagged | 4 | 0 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| tagged-02 | tagged | 1 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| tagged-02 | tagged | 2 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| tagged-02 | tagged | 3 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| tagged-02 | tagged | 4 | 0 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| tagged-03 | tagged | 1 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| tagged-03 | tagged | 2 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| tagged-03 | tagged | 3 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| tagged-03 | tagged | 4 | 0 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| structured-01 | structured | 1 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| structured-01 | structured | 2 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| structured-01 | structured | 3 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| structured-01 | structured | 4 | 0 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| structured-02 | structured | 1 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| structured-02 | structured | 2 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| structured-02 | structured | 3 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| structured-02 | structured | 4 | 0 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| structured-03 | structured | 1 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| structured-03 | structured | 2 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| structured-03 | structured | 3 | 1 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
-| structured-03 | structured | 4 | 0 |  |  |  |  |  |  |  | CRASH: RuntimeError: HTTP 401: {"error":{"message":"Missing Authentication header","code":401}} |
+| free-01 | free | 1 | 1 | deal | 120 | 1 | 0 | 2 | 0 | 2 |  |
+| free-01 | free | 2 | 1 | deal | 35 | 1 | 0 | 2 | 0 | 2 |  |
+| free-01 | free | 3 | 1 | deal | 40 | 1 | 0 | 5 | 0 | 5 |  |
+| free-01 | free | 4 | 0 | open |  | 0 | 0 | 8 | 0 | 8 |  |
+| free-02 | free | 1 | 1 | deal | 120 | 1 | 0 | 2 | 0 | 2 |  |
+| free-02 | free | 2 | 1 | deal | 40 | 1 | 0 | 2 | 0 | 2 |  |
+| free-02 | free | 3 | 1 | deal | 40 | 1 | 0 | 3 | 0 | 3 |  |
+| free-02 | free | 4 | 0 | open |  | 0 | 0 | 8 | 0 | 8 |  |
+| free-03 | free | 1 | 1 | deal | 120 | 1 | 0 | 2 | 0 | 2 |  |
+| free-03 | free | 2 | 1 | deal | 40 | 1 | 0 | 2 | 0 | 2 |  |
+| free-03 | free | 3 | 1 | deal | 40 | 1 | 0 | 3 | 0 | 3 |  |
+| free-03 | free | 4 | 0 | open |  | 0 | 0 | 8 | 0 | 8 |  |
+| tagged-01 | tagged | 1 | 1 | deal | 120 | 1 | 0 | 2 | 0 | 1 |  |
+| tagged-01 | tagged | 2 | 1 | deal | 40 | 1 | 0 | 2 | 0 | 1 |  |
+| tagged-01 | tagged | 3 | 1 | deal | 40 | 1 | 0 | 4 | 0 | 3 |  |
+| tagged-01 | tagged | 4 | 0 | no_deal |  | 1 | 0 | 6 | 0 | 5 |  |
+| tagged-02 | tagged | 1 | 1 | deal | 120 | 1 | 0 | 2 | 0 | 1 |  |
+| tagged-02 | tagged | 2 | 1 | deal | 40 | 1 | 0 | 2 | 0 | 1 |  |
+| tagged-02 | tagged | 3 | 1 | deal | 40 | 1 | 0 | 4 | 0 | 3 |  |
+| tagged-02 | tagged | 4 | 0 | open |  | 0 | 0 | 8 | 0 | 8 |  |
+| tagged-03 | tagged | 1 | 1 | deal | 120 | 1 | 0 | 2 | 0 | 1 |  |
+| tagged-03 | tagged | 2 | 1 | deal | 40 | 1 | 0 | 2 | 0 | 1 |  |
+| tagged-03 | tagged | 3 | 1 | deal | 40 | 1 | 0 | 4 | 0 | 3 |  |
+| tagged-03 | tagged | 4 | 0 | no_deal |  | 1 | 0 | 7 | 0 | 6 |  |
+| structured-01 | structured | 1 | 1 | deal | 140 | 1 | 0 | 2 | 0 | 0 |  |
+| structured-01 | structured | 2 | 1 | deal | 45 | 1 | 0 | 2 | 0 | 0 |  |
+| structured-01 | structured | 3 | 1 | deal | 40 | 1 | 0 | 3 | 0 | 0 |  |
+| structured-01 | structured | 4 | 0 | open |  | 0 | 0 | 8 | 0 | 0 |  |
+| structured-02 | structured | 1 | 1 | deal | 140 | 1 | 0 | 2 | 0 | 0 |  |
+| structured-02 | structured | 2 | 1 | deal | 45 | 1 | 0 | 2 | 0 | 0 |  |
+| structured-02 | structured | 3 | 1 | deal | 40 | 1 | 0 | 2 | 0 | 0 |  |
+| structured-02 | structured | 4 | 0 | no_deal |  | 1 | 0 | 8 | 0 | 0 |  |
+| structured-03 | structured | 1 | 1 | deal | 120 | 1 | 0 | 2 | 0 | 0 |  |
+| structured-03 | structured | 2 | 1 | deal | 35 | 1 | 0 | 2 | 0 | 0 |  |
+| structured-03 | structured | 3 | 1 | deal | 40 | 1 | 0 | 3 | 0 | 0 |  |
+| structured-03 | structured | 4 | 0 | no_deal |  | 1 | 0 | 7 | 0 | 0 |  |
 
 ## 3. FIPA-ACL comparison
 
@@ -75,4 +75,11 @@ Run with `OPENROUTER_API_KEY=... python run_week04.py`. The program retries 429/
 
 ## 4. Interpretation
 
-Across 36 episodes, changing only the message representation changed both protocol cost and failure mode. Free required 0 reader calls and produced 0 format errors; tagged reduced act interpretation to a regex but still used 0 reader calls to recover proposal prices; structured used 0 reader calls because both act and price were machine-readable. Correct outcomes were free 0/12, tagged 0/12, and structured 0/12; violations were 0, 0, and 0 respectively. This shows that an explicit performative removes one ambiguity, but it does not guarantee rational behavior or faithful content generation: the agents can still violate private limits, place a counter-offer under the wrong act, or emit malformed structure. Evidence from the logs: `free-01.txt` records `[result] outcome= price= correct= violation= turns= format_errors= reader_calls=`. `free-01.txt` records `[result] outcome= price= correct= violation= turns= format_errors= reader_calls=`. `free-01.txt` records `[result] outcome= price= correct= violation= turns= format_errors= reader_calls=`.
+Across 36 episodes, changing only the message representation changed both protocol cost and failure mode. Free required 47 reader calls and produced 0 format errors; tagged reduced act interpretation to a regex but still used 34 reader calls to recover proposal prices; structured used 0 reader calls because both act and price were machine-readable. Correct outcomes were free 9/12, tagged 11/12, and structured 11/12; violations were 0, 0, and 0 respectively. This shows that an explicit performative removes one ambiguity, but it does not guarantee rational behavior or faithful content generation: the agents can still violate private limits, place a counter-offer under the wrong act, or emit malformed structure. Evidence from the logs: `free-01.txt` records `[result] outcome=deal price=120 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2`. `free-01.txt` records `[result] outcome=deal price=35 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2`. `free-01.txt` records `[result] outcome=deal price=40 correct=1 violation=0 turns=5 format_errors=0 reader_calls=5`.
+
+## 5. Experimental Limitations
+
+During the experiments, GroqCloud occasionally returned empty responses because of output-token limits or invalid tool-call responses. To address these issues, the runner retried failed API requests using additional text-only instructions, lower reasoning effort, or a larger completion-token allowance.
+
+These adjustments were applied only when API failures occurred. Therefore, the results should be interpreted as descriptive comparisons rather than strictly controlled experiments with identical inference settings.
+
