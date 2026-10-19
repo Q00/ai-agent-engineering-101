@@ -59,7 +59,7 @@ def status_text(task: dict) -> str:
     )
 
 
-def shop(base_url: str, item: str, budget: int, max_turns: int = 8) -> dict:
+def shop(base_url: str, item: str, budget: int, max_turns: int = 8, compact_history: bool = False) -> dict:
     with httpx.Client(timeout=200) as client:
         card, url = card_and_url(client, base_url)
         task = send(client, url, f"I want to buy a {item}")
@@ -71,11 +71,20 @@ def shop(base_url: str, item: str, budget: int, max_turns: int = 8) -> dict:
                 break
             message = status_text(task)
             history.append({"seller_message": message})
+            compact = {
+                "task_id": task.get("id"), "last_seller_message": message[:180],
+                "offers_count": len(offers), "last_offer": offers[-1] if offers else None,
+                "remaining_budget_for_this_item": budget,
+            }
+            if compact_history:
+                trace("state_summary", item=item, **compact)
             answer = decide("buyer", {
                 "item": item, "private_budget": budget,
                 "seller_card_name": card.get("name"),
                 "seller_skills": card.get("skills", []),
-                "seller_message": message, "history": history,
+                "seller_message": message,
+                "history": history[-2:] if compact_history else history,
+                "state_summary": compact if compact_history else None,
                 "objective": (
                     "Buy this item if the seller can accept a price within budget. "
                     "Make a concrete offer; a high opening ask does not prove a deal is impossible. "
@@ -93,7 +102,8 @@ def shop(base_url: str, item: str, budget: int, max_turns: int = 8) -> dict:
             history[-1]["buyer_offer"] = offer
             task = send(client, url, str(offer), task["id"])
         outcome = {
-            "item": item, "budget": budget, "state": state(task),
+            "item": item, "budget": budget, "shop_url": base_url,
+            "shop_name": card.get("name"), "state": state(task),
             "offers": offers, "task_id": task.get("id"),
             "artifacts": task.get("artifacts", []),
         }
