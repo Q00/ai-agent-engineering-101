@@ -253,8 +253,18 @@ uv run --frozen --python 3.12.11 --script challenge_run.py challenge-2 --attempt
 
 선택 챌린지 3·공개 서비스 가동·다른 학생의 가게 거래는 수행하지 않았다. **공식 기본 21/21·챌린지 1 고정 설명 6/6·최신 일반 챌린지 2 전 품목 구매를 확인했고, 최신 두 실행에서 실제 미체결 후 복구 성공을 관찰했다.** 통신 오류·체결 여부 불명 상황의 복구는 미검증이다. 현재 상태는 [GitHub PR #293 제출 완료](https://github.com/Q00/ai-agent-engineering-101/pull/293)이며, 제출 시각은 2026-10-14 15:20:44 KST다. 제출 시점은 교수 명세대로 7주차 수업 시작 전 PR 생성 시간으로 판단된다. PR 제출과 자동 검사 통과는 교수자의 최종 채점·승인을 뜻하지 않는다.
 
-## 6. 공개 배포 구성 준비와 가동 보류 — 2026-10-20
+## 6. 공개 배포 준비·무료 API 분리 — 2026-10-20
 
 기존 하네스·판매자 판단 코드를 그대로 불러오는 [공개 실행 진입점](public_seller.py), [Docker·HTTPS 터널 구성과 운영 설명](deployment/README.md), [외부 거래 검증 도구](verify_deployment.py)를 추가했다. 추가 후 오프라인 테스트 **100개**, Ruff·strict basedpyright가 통과했고 Linux 이미지 빌드·모듈 로딩·NGINX 설정 문법도 확인했다. 검증 도구는 영수증 가격이 예산 이내인지뿐 아니라 구매자가 실제 제안한 금액과 같은지도 검사한다. 코드·검사 근거는 [배포 준비 기록](.omo/evidence/public-deploy-20261019/PREDEPLOY.md)에 있다.
 
 2026-10-20 사용자 결정에 따라 **인증 키 배치와 공개 서비스 가동을 보류**했다. 준비된 호스트명은 실제 거래가 가능한 URL로 검증하지 않았고, 공개 거래 로그와 `agent.json`의 `deployed` 항목도 추가하지 않았다. 따라서 **공개 배포 가산점은 아직 완료하지 않았다.** 추후 가동 요청이 있으면 필요한 인증 설정, 외부 Agent Card 조회와 실제 A2A 거래를 검증한 뒤 상태를 갱신한다. 이 준비 과정에서 새 유료 모델 호출은 수행하지 않았다.
+
+### 같은 날 후속 결정: 공개판에만 무료 API 적용
+
+이후 사용자가 공개 배포판에만 무료 API를 연결하고 키를 노출하지 않도록 요청했다. 공개 진입점은 전용 `AX_PUBLIC_MODEL_*` 설정을 필수로 받고, Cloudflare Workers AI의 명시적인 HTTPS 계정 엔드포인트와 `@cf/…` 모델만 허용한다. 기존 구매자·판매자 명령의 OpenAI 모델 기본값은 유지하며, 공개판에는 기존 유료 키·기본 엔드포인트로 돌아가는 경로가 없다. 키의 일반 출력·설정 오류 표시를 가리고, 다른 인증을 포함할 수 있는 `OPENAI_CUSTOM_HEADERS`가 있으면 시작 전에 중단한다. 기존 OpenAI 조직·프로젝트 설정과 HTTP 리디렉션도 공개 요청에 사용하지 않는다.
+
+공개판 후보는 `@cf/zai-org/glm-4.7-flash`다. [공식 무료 플랜 안내](https://developers.cloudflare.com/changelog/post/2026-07-28-models-require-workers-paid/)에 포함되어 있고 [모델 명세](https://developers.cloudflare.com/workers-ai/models/glm-4.7-flash/)는 현재 하네스가 사용하는 도구 호출 필드를 지원한다. [Workers Free 한도](https://developers.cloudflare.com/workers-ai/platform/pricing/)는 계정 전체 하루 10,000 Neurons이며 00:00 UTC에 초기화되고, 초과 시 요청이 실패한다. 유료 플랜 전환은 승인되지 않았다.
+
+추가 후 **오프라인 테스트 117개**, Ruff 전체 규칙·소스 포맷·strict basedpyright와 공식 구조 검사를 통과했다. 실제 SDK의 HTTP 요청으로 원래 모델 기본값, 공개 모델 선택, 인증 분리와 리디렉션 거부를 검사했다. 독립 코드 검토에서 발견한 주변 환경 헤더 유입도 수정 후 재검증했다. [구현·검사 기록](.omo/evidence/free-public-model-config/EXECUTOR_REPORT.md) · [독립 검토](.omo/evidence/free-public-config-code-review.md).
+
+**현재는 Cloudflare 로그인·전용 AI 키 생성과 계정의 Workers Free 상태 확인을 기다린다.** 기존 터널 인증은 AI API에 403을 반환했다. 무료 모델의 실제 응답·공개 거래는 아직 실행하지 않았고 `agent.json.deployed`도 추가하지 않았다. 기존 기본 검사 **21/21**은 원래 OpenAI 설정의 실행 근거이며 무료 모델의 합격 증거로 대신하지 않는다. 공개 배포 가산점은 여전히 미완료다.

@@ -1,7 +1,9 @@
 # Public deployment readiness — 2026-10-19
 
-Current status (2026-10-20): PREPARED; owner explicitly deferred credential
-placement and live activation. No public trade success is claimed in this record.
+Current status (2026-10-20): FREE PUBLIC CONFIG PREPARED; the owner subsequently
+requested a free API for the public variant only. Cloudflare sign-in, a dedicated
+AI credential and account Free-plan confirmation are pending. No public trade
+success is claimed in this record. Earlier deferral below is historical.
 
 ## Observed checks
 
@@ -57,3 +59,26 @@ nonempty local evidence links and the explicit note that `agent.json.deployed`
 was not set. The publishing owner separately checked the actual agent.json file.
 Its Python verification exited 0 and returned PASS for all four existing records.
 No additional project ledger or source transcript was created or modified.
+
+## 2026-10-20 free public configuration
+
+- Original OpenAI seller/buyer CLI model defaults and agent.json are unchanged.
+- Public-only configuration requires an explicit Cloudflare Workers AI endpoint,
+  model and private token. Ambient custom headers are rejected before a client
+  opens; ambient organization/project settings and redirects are excluded.
+- Full offline suite: **117 passed**. Ruff ALL passed; source-only format check
+  reports 49 formatted files; strict basedpyright reports 0 errors/warnings/notes.
+  Raw commands and outputs are in ../free-public-model-config/EXECUTOR_REPORT.md.
+- Independent review: CLEAR / APPROVE after reproducing and fixing the SDK's
+  ambient Authorization-header override. Its 26 focused tests passed.
+- Official checker exited 0: 43 source files parse, original current-kit 21 runs
+  pass, required logs and REPORT are present. No new paid trade test was run.
+- Read-only account lookup with existing tunnel authentication succeeded, but
+  Workers AI model listing returned HTTP 403. The tunnel token was not reused
+  as an inference credential. Chrome is waiting for the owner's Cloudflare login.
+- Free plan and live GLM-4.7-Flash tool-calling remain unverified; agent.json has
+  no deployed URL and optional extra credit remains incomplete.
+- The existing assignment note, academic current_state, academic source_manifest
+  and course RAW source_manifest now record the free-public-only decision and
+  sign-in/key/plan verification still pending. The recorder's fresh read and
+  assertions exited 0 with PASS 4/4; submitted assignment status was preserved.
