@@ -42,3 +42,18 @@ remain unplaced, with activation considered only if requested later. There is no
 pending automatic activation. The prepared runtime would cap model HTTP attempts
 at 600 per UTC day; the previously proposed live scope was at most six virtual-
 product negotiations. Neither paid runtime nor public verification was started.
+
+## 2026-10-20 record reconciliation
+
+The existing assignment note, academic current_state, academic source_manifest
+and course RAW source_manifest were updated in place. Required assignment status
+remains submitted with PR #293; optional public deployment is recorded as
+prepared, keys unplaced, service activation deferred and public trades unverified.
+No automatic activation or extra-credit completion is recorded.
+
+The delegated recorder reread all four files and checked one new decision section
+per note/manifest, the current AX entry, preserved submitted frontmatter, valid
+nonempty local evidence links and the explicit note that `agent.json.deployed`
+was not set. The publishing owner separately checked the actual agent.json file.
+Its Python verification exited 0 and returned PASS for all four existing records.
+No additional project ledger or source transcript was created or modified.
