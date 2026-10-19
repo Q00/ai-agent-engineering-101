@@ -82,3 +82,15 @@ No additional project ledger or source transcript was created or modified.
   and course RAW source_manifest now record the free-public-only decision and
   sign-in/key/plan verification still pending. The recorder's fresh read and
   assertions exited 0 with PASS 4/4; submitted assignment status was preserved.
+- Public code commit `25caaa1` was pushed to the existing PR. GitHub check passed:
+  https://github.com/Q00/ai-agent-engineering-101/actions/runs/39342509123/job/118367183555.
+- All 25 files in the source bundle were byte-compared to that public commit;
+  unauthenticated GitHub repository metadata confirmed private=false.
+  Bundle SHA-256: ccf9bdb86e9c978d174e61792e1db8d8caec90a90bca0b14294f0f14bbc27ea8.
+- The existing VPS built `ax-week06-25620027:free-20261020`; manifest-list digest
+  `sha256:b41e5a5f8b3cf4567eacb57d02436dbbd14d5f5fb750eb6f17231ab472ff7525`.
+  A network-disabled, read-only container imported the application successfully:
+  UID 10001, Python 3.12.11, original model default unchanged.
+- Existing public SSH worked, so Tailscale activation was unnecessary and its
+  original stopped state was preserved. No credentials were copied or model
+  calls made; no long-running seller/tunnel containers were started.
