@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 import re
+from pathlib import Path
 
 import uvicorn
 from starlette.applications import Starlette
@@ -19,13 +20,17 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import decide, trace
+from catalog import Catalog
 
 
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
 
 class Seller(AgentExecutor):
-    def __init__(self) -> None:
+    def __init__(self, name: str, reserves: dict[str, int], catalog: Catalog | None = None) -> None:
+        self.name = name
+        self.reserves = reserves
+        self.catalog = catalog
         self.open: dict[str, dict] = {}
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
@@ -39,11 +44,20 @@ class Seller(AgentExecutor):
         deal = self.open.get(task.id)
 
         if deal is None:
-            item = next((name for name in RESERVES if re.search(rf"\b{name}\b", message.lower())), None)
-            if item is None:
-                await updater.reject(say("We sell lamp, chair, and bookshelf."))
-                return
-            reserve = RESERVES[item]
+            if self.catalog:
+                try:
+                    product = await asyncio.to_thread(self.catalog.choose, message)
+                except ValueError:
+                    await updater.reject(say("No matching product in this catalog."))
+                    return
+                item, reserve = product["name"], product["reserve"]
+                product_id = product["id"]
+            else:
+                item = next((name for name in self.reserves if re.search(rf"\b{name}\b", message.lower())), None)
+                if item is None:
+                    await updater.reject(say("We sell: " + ", ".join(self.reserves) + "."))
+                    return
+                reserve, product_id = self.reserves[item], item
             answer = await asyncio.to_thread(decide, "seller", {
                 "phase": "opening", "item": item, "private_reserve": reserve,
                 "buyer_message": message,
@@ -52,8 +66,8 @@ class Seller(AgentExecutor):
             ask = max(reserve, int(answer["price"]))
             if ask != answer["price"]:
                 trace("price_guard", task_id=task.id, reason="ask below reserve", proposed=answer["price"], effective=ask)
-            self.open[task.id] = {"item": item, "reserve": reserve, "ask": ask, "history": []}
-            trace("seller_open", task_id=task.id, item=item, reserve=reserve, ask=ask)
+            self.open[task.id] = {"item": item, "product_id": product_id, "reserve": reserve, "ask": ask, "history": []}
+            trace("seller_open", task_id=task.id, item=item, product_id=product_id, reserve=reserve, ask=ask)
             await updater.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
             return
 
@@ -75,7 +89,8 @@ class Seller(AgentExecutor):
             answer["price"] = deal["reserve"]
         if action == "deal":
             await updater.add_artifact(parts=[new_data_part({
-                "seller": "Luna Shop", "item": deal["item"], "price": offer,
+                "seller": self.name, "item": deal["item"],
+                "product_id": deal["product_id"], "price": offer,
             })], name="receipt")
             await updater.complete(say(f"Deal: {deal['item']} at {offer}."))
             trace("seller_deal", task_id=task.id, item=deal["item"], price=offer)
@@ -100,31 +115,45 @@ class Seller(AgentExecutor):
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 
-def build(port: int) -> Starlette:
+def build(port: int, profile: dict | None = None, catalog: Catalog | None = None) -> Starlette:
+    profile = profile or {}
+    name = profile.get("name", "Luna Shop")
+    reserves = profile.get("reserve", RESERVES)
+    description = profile.get("description", "Negotiates purchases of " + ", ".join(reserves) + ".")
+    if catalog:
+        description = f"Negotiates a catalog of {len(catalog.products)} furniture products from natural-language descriptions."
+    skill_description = (
+        "Describe the furniture you need; the shop selects a matching product, then negotiates a numeric offer."
+        if catalog else "Ask for " + ", ".join(reserves) + "; continue with a numeric offer."
+    )
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
-        name="Luna Shop",
-        description="Negotiates purchases of a lamp, chair, or bookshelf.",
+        name=name,
+        description=description,
         version="1.0.0", default_input_modes=["text/plain"],
         default_output_modes=["text/plain", "application/json"],
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", url=url, protocol_version="1.0")],
         skills=[AgentSkill(
             id="negotiate", name="Negotiate a purchase",
-            description="Ask for a lamp, chair, or bookshelf; continue with a numeric offer.",
-            tags=["shopping", "lamp", "chair", "bookshelf"],
+            description=skill_description,
+            tags=["shopping", *reserves],
             examples=["I want to buy a lamp", "110"],
         )],
     )
-    handler = DefaultRequestHandler(agent_executor=Seller(), task_store=InMemoryTaskStore(), agent_card=card)
+    handler = DefaultRequestHandler(agent_executor=Seller(name, reserves, catalog), task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=9999)
+    parser.add_argument("--profile")
+    parser.add_argument("--catalog")
     args = parser.parse_args()
-    uvicorn.run(build(args.port), host="127.0.0.1", port=args.port, log_level="warning")
+    profile = json.loads(Path(args.profile).read_text(encoding="utf-8")) if args.profile else None
+    catalog = Catalog(args.catalog) if args.catalog else None
+    uvicorn.run(build(args.port, profile, catalog), host="127.0.0.1", port=args.port, log_level="warning")
 
 
 if __name__ == "__main__":
