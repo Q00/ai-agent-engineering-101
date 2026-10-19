@@ -26,12 +26,25 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
-@pytest.mark.anyio
-async def test_public_discovery_when_configured(tmp_path: Path) -> None:
-    # Given the actual seller with a public HTTPS endpoint and no API transport.
-    settings = Settings.model_validate(
-        {"public_url": "https://seller.example/", "budget_path": tmp_path / "budget"}
+@pytest.fixture
+def settings(tmp_path: Path) -> Settings:
+    return Settings.model_validate(
+        {
+            "public_url": "https://seller.example/",
+            "budget_path": tmp_path / "budget",
+            "model_base_url": (
+                "https://api.cloudflare.com/client/v4/accounts/"
+                "0123456789abcdef0123456789abcdef/ai/v1"
+            ),
+            "model": "@cf/zai-org/glm-4.7-flash",
+            "model_api_key": "test-only-public",
+        }
     )
+
+
+@pytest.mark.anyio
+async def test_public_discovery_when_configured(settings: Settings) -> None:
+    # Given the actual seller with a public HTTPS endpoint and no API transport.
     async with AsyncOpenAI(api_key="test-only", max_retries=0) as model:
         web = public_app(settings, Harness(model, lambda _: None))
         async with httpx2.AsyncClient(
@@ -47,9 +60,10 @@ async def test_public_discovery_when_configured(tmp_path: Path) -> None:
 
 
 @pytest.mark.anyio
-async def test_public_root_when_browser_or_rpc_client_connects() -> None:
+async def test_public_root_when_browser_or_rpc_client_connects(
+    settings: Settings,
+) -> None:
     # Given the deployment wrapper around the actual SDK routes.
-    settings = Settings.model_validate({"public_url": "https://seller.example/"})
     async with AsyncOpenAI(api_key="test-only", max_retries=0) as model:
         web = public_app(settings, Harness(model, lambda _: None))
         async with httpx2.AsyncClient(
@@ -72,11 +86,62 @@ async def test_public_root_when_browser_or_rpc_client_connects() -> None:
     "url",
     ["http://seller.example/", "https://user:pass@seller.example/", "https://x/?a=b"],
 )
-def test_settings_when_public_url_is_invalid(url: str) -> None:
+def test_settings_when_public_url_is_invalid(url: str, settings: Settings) -> None:
     # Given an invalid deployment address.
+    values = settings.model_dump()
+    values["public_url"] = url
     # When configuration is parsed, then startup is rejected.
     with pytest.raises(ValidationError):
-        _ = Settings.model_validate({"public_url": url})
+        _ = Settings.model_validate(values)
+
+
+@pytest.mark.parametrize("field", ["model_base_url", "model", "model_api_key"])
+def test_settings_when_public_model_config_is_missing(
+    field: str, settings: Settings
+) -> None:
+    # Given public configuration missing one required model setting.
+    values = settings.model_dump()
+    del values[field]
+    # When parsed, then the server cannot start with a paid/default fallback.
+    with pytest.raises(ValidationError):
+        _ = Settings.model_validate(values)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("model_base_url", "https://api.openai.com/v1"),
+        ("model_base_url", "http://api.cloudflare.com/client/v4/accounts/x/ai/v1"),
+        ("model_base_url", "https://api.cloudflare.com.evil.example/ai/v1"),
+        ("model_base_url", "https://user:secret@api.cloudflare.com/ai/v1"),
+        ("model", "gpt-4.1-nano-2025-04-14"),
+        ("model", "@cf/"),
+        ("model_api_key", ""),
+        ("model_api_key", " \n"),
+    ],
+)
+def test_settings_when_public_model_config_is_invalid(
+    field: str, value: str, settings: Settings
+) -> None:
+    # Given an unsupported provider, malformed model, or empty credential.
+    values = settings.model_dump()
+    values[field] = value
+    # When parsed, then startup fails closed.
+    with pytest.raises(ValidationError):
+        _ = Settings.model_validate(values)
+
+
+def test_settings_error_when_raw_token_is_present(settings: Settings) -> None:
+    # Given environment-like input with a raw token and a missing companion field.
+    values = settings.model_dump()
+    values["model_api_key"] = "test-only-hidden-token"
+    del values["model"]
+    # When startup validation fails.
+    with pytest.raises(ValidationError) as caught:
+        _ = Settings.model_validate(values)
+    # Then exception rendering does not reveal the raw credential dictionary.
+    assert "test-only-hidden-token" not in str(caught.value)
+    assert "test-only-public" not in repr(settings)
 
 
 @pytest.mark.anyio

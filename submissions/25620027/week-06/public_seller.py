@@ -23,8 +23,11 @@ from openai import AsyncOpenAI
 from pydantic import (
     BaseModel,
     ConfigDict,
+    Field,
     HttpUrl,
     PositiveInt,
+    SecretStr,
+    StringConstraints,
     UrlConstraints,
     field_validator,
 )
@@ -45,10 +48,29 @@ ROOT: Final = Path(__file__).resolve().parent
 class Settings(BaseModel):
     """Parse deployment environment before opening the listener."""
 
-    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
+    model_config: ClassVar[ConfigDict] = ConfigDict(
+        frozen=True, hide_input_in_errors=True
+    )
     public_url: Annotated[HttpUrl, UrlConstraints(allowed_schemes=["https"])]
+    model_base_url: Annotated[
+        str,
+        StringConstraints(
+            pattern=r"^https://api\.cloudflare\.com/client/v4/accounts/[a-f0-9]{32}/ai/v1/?$"
+        ),
+    ]
+    model: Annotated[str, StringConstraints(pattern=r"^@cf/[a-z0-9._-]+/[a-z0-9._-]+$")]
+    model_api_key: Annotated[SecretStr, Field(min_length=1)]
     budget_path: Path = Path("/data/model-budget.sqlite")
     daily_requests: PositiveInt = 600
+
+    @field_validator("model_api_key")
+    @classmethod
+    def model_credential(cls, value: SecretStr) -> SecretStr:
+        """Reject whitespace credentials without including their value in errors."""
+        if any(character.isspace() for character in value.get_secret_value()):
+            message = "AX_PUBLIC_MODEL_API_KEY must not contain whitespace"
+            raise ValueError(message)
+        return value
 
     @field_validator("budget_path")
     @classmethod
@@ -128,13 +150,24 @@ def public_app(settings: Settings, harness: Harness) -> FastAPI:
 
 async def serve(settings: Settings) -> None:
     """Keep one model client and one in-memory seller alive until shutdown."""
+    if os.environ.get("OPENAI_CUSTOM_HEADERS"):
+        message = "Public seller requires OPENAI_CUSTOM_HEADERS to be unset"
+        raise ValueError(message)
     budget = DailyBudget(settings.budget_path, settings.daily_requests)
     async with (
         create_client(model=True) as model_http,
-        AsyncOpenAI(http_client=model_http, max_retries=0) as model,
+        AsyncOpenAI(
+            api_key=settings.model_api_key.get_secret_value(),
+            base_url=settings.model_base_url,
+            organization="",
+            project="",
+            http_client=model_http,
+            max_retries=0,
+        ) as model,
     ):
+        model_http.follow_redirects = False
         model_http.event_hooks["request"].append(budget.before_request)
-        web = public_app(settings, Harness(model, emit))
+        web = public_app(settings, Harness(model, emit, model=settings.model))
         emit("PUBLIC_SELLER workers=1 task_state=memory budget_day=UTC")
         await uvicorn.Server(
             uvicorn.Config(
@@ -154,6 +187,9 @@ if __name__ == "__main__":
     settings = Settings.model_validate(
         {
             "public_url": os.environ["AX_PUBLIC_URL"],
+            "model_base_url": os.environ["AX_PUBLIC_MODEL_BASE_URL"],
+            "model": os.environ["AX_PUBLIC_MODEL"],
+            "model_api_key": os.environ["AX_PUBLIC_MODEL_API_KEY"],
             "budget_path": os.environ.get(
                 "AX_MODEL_BUDGET_PATH", "/data/model-budget.sqlite"
             ),

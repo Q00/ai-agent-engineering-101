@@ -73,10 +73,13 @@ class Harness:
     negotiation state; full wire/tool traces remain outside the model context.
     """
 
-    def __init__(self, client: AsyncOpenAI, emit: Callable[[str], None]) -> None:
+    def __init__(
+        self, client: AsyncOpenAI, emit: Callable[[str], None], *, model: str = MODEL
+    ) -> None:
         """Own observability counters while the caller owns the API client."""
         self.client = client
         self.emit = emit
+        self.model = model
         self.calls = 0
         self.input_tokens = 0
         self.output_tokens = 0
@@ -152,7 +155,7 @@ class Harness:
             try:
                 async with self.limit:
                     completion = await self.client.chat.completions.create(
-                        model=MODEL,
+                        model=self.model,
                         temperature=0,
                         messages=messages,
                         tools=tools,
@@ -177,7 +180,7 @@ class Harness:
                     self.emit(
                         "".join(
                             (
-                                f"MODEL_USAGE model={MODEL} ",
+                                f"MODEL_USAGE model={self.model} ",
                                 f"input={usage.prompt_tokens} ",
                                 f"output={usage.completion_tokens}",
                             ),

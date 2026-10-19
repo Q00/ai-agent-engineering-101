@@ -1,0 +1,522 @@
+unformatted: File would be reformatted
+    --> .omo/evidence/external-review-20261014/REVIEW_PACKET.md:456:1
+     |
+455  | """
+456  +
+457  | import hashlib
+--------------------------------------------------------------------------------
+477  | REPEATS = 3
+     - MAX_MESSAGES = 8          # messages the kit buyer sends in one negotiation
+     - BUYER_TIMEOUT = 300       # seconds for one run of your buyer
+478  + MAX_MESSAGES = 8  # messages the kit buyer sends in one negotiation
+479  + BUYER_TIMEOUT = 300  # seconds for one run of your buyer
+480  | DEAL = {"item": "lamp", "budget": 120, "ladder": [60, 80, 100, 110, 120]}
+--------------------------------------------------------------------------------
+498  |     kw = {"start_new_session": True} if os.name != "nt" else {}
+     -     return subprocess.Popen(cmd, shell=True, cwd=cwd, stdout=out, stderr=subprocess.STDOUT, **kw)
+499  +     return subprocess.Popen(
+500  +         cmd, shell=True, cwd=cwd, stdout=out, stderr=subprocess.STDOUT, **kw
+501  +     )
+502  |
+--------------------------------------------------------------------------------
+531  |
+532  +
+533  | def rpc(url, method, params):
+     -     body = {"jsonrpc": "2.0", "id": str(uuid.uuid4())[:8], "method": method, "params": params}
+534  +     body = {
+535  +         "jsonrpc": "2.0",
+536  +         "id": str(uuid.uuid4())[:8],
+537  +         "method": method,
+538  +         "params": params,
+539  +     }
+540  |     r = httpx.post(url, json=body, headers={"A2A-Version": "1.0"}, timeout=200).json()
+541  |     if "error" in r:
+     -         log(f"    <- error {r['error'].get('code')} {r['error'].get('message', '')[:120]}")
+542  +         log(
+543  +             f"    <- error {r['error'].get('code')} {r['error'].get('message', '')[:120]}"
+544  +         )
+545  |         return None, r["error"]
+546  |     t = r["result"].get("task", r["result"])
+     -     if "status" not in t:                              # a plain Message, not a task
+547  +     if "status" not in t:  # a plain Message, not a task
+548  |         log(f"    <- message (no task) {json.dumps(t)[:120]}")
+549  |         return t, None
+     -     text = " ".join(p.get("text", "") for p in t["status"].get("message", {}).get("parts", []))
+550  +     text = " ".join(
+551  +         p.get("text", "") for p in t["status"].get("message", {}).get("parts", [])
+552  +     )
+553  |     log(f"    <- {t['status']['state']} | {text[:160]}")
+554  |     for a in t.get("artifacts", []):
+     -         log(f"       artifact {a.get('name')} {json.dumps([p.get('data', p.get('text')) for p in a.get('parts', [])])}")
+555  +         log(
+556  +             f"       artifact {a.get('name')} {json.dumps([p.get('data', p.get('text')) for p in a.get('parts', [])])}"
+557  +         )
+558  |     return t, None
+559  |
+560  |
+561  | def send(url, text, task_id=None):
+     -     msg = {"role": "ROLE_USER", "messageId": str(uuid.uuid4()), "parts": [{"text": text}]}
+562  +     msg = {
+563  +         "role": "ROLE_USER",
+564  +         "messageId": str(uuid.uuid4()),
+565  +         "parts": [{"text": text}],
+566  +     }
+567  |     if task_id:
+568  |         msg["taskId"] = task_id
+     -     log(f"    -> SendMessage {json.dumps(text)}" + (f" taskId={task_id[:8]}" if task_id else ""))
+569  +     log(
+570  +         f"    -> SendMessage {json.dumps(text)}"
+571  +         + (f" taskId={task_id[:8]}" if task_id else "")
+572  +     )
+573  |     return rpc(url, "SendMessage", {"message": msg})
+--------------------------------------------------------------------------------
+580  | def last_number(t):
+     -     text = " ".join(p.get("text", "") for p in (t or {}).get("status", {}).get("message", {}).get("parts", []))
+581  +     text = " ".join(
+582  +         p.get("text", "")
+583  +         for p in (t or {}).get("status", {}).get("message", {}).get("parts", [])
+584  +     )
+585  |     nums = re.findall(r"\d+(?:\.\d+)?", text)
+--------------------------------------------------------------------------------
+619  |         asks.append(last_number(t))
+     -     return {"opened": True, "opened_ask": opened_ask, "opened_state": opened_state, "task": t, "task_id": tid,
+     -             "asks": asks}
+620  +     return {
+621  +         "opened": True,
+622  +         "opened_ask": opened_ask,
+623  +         "opened_state": opened_state,
+624  +         "task": t,
+625  +         "task_id": tid,
+626  +         "asks": asks,
+627  +     }
+628  |
+629  |
+630  | # ---------------------------------------------------------------- kit seller (rule-based, recording)
+631  |
+632  +
+633  | def kit_seller_app(port, record):
+634  |     import uvicorn  # noqa: F401  (imported here so the seller tests run without it)
+635  |     from starlette.applications import Starlette
+636  |     from starlette.middleware.base import BaseHTTPMiddleware
+     -     from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
+637  +     from a2a.helpers import (
+638  +         get_message_text,
+639  +         new_data_part,
+640  +         new_task_from_user_message,
+641  +         new_text_part,
+642  +     )
+643  |     from a2a.server.agent_execution import AgentExecutor
+--------------------------------------------------------------------------------
+660  |                 record["continued"] += 1
+     -             up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
+661  +             up = TaskUpdater(
+662  +                 event_queue=event_queue, task_id=task.id, context_id=task.context_id
+663  +             )
+664  |             say = lambda text: up.new_agent_message(parts=[new_text_part(text)])
+--------------------------------------------------------------------------------
+673  |                 self.open[task.id] = {"item": item, "ask": ask, "rounds": 0}
+     -                 await up.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
+674  +                 await up.requires_input(
+675  +                     say(f"{item}: asking {ask}. Send your offer as a number.")
+676  +                 )
+677  |                 return
+--------------------------------------------------------------------------------
+684  |             if offer >= reserve:
+     -                 await up.add_artifact(parts=[new_data_part({"seller": "Kit Shop", "item": deal["item"], "price": offer})],
+     -                                       name="receipt")
+685  +                 await up.add_artifact(
+686  +                     parts=[
+687  +                         new_data_part(
+688  +                             {"seller": "Kit Shop", "item": deal["item"], "price": offer}
+689  +                         )
+690  +                     ],
+691  +                     name="receipt",
+692  +                 )
+693  |                 await up.complete(say(f"Deal: {deal['item']} at {offer}."))
+--------------------------------------------------------------------------------
+702  |             deal["ask"] = max(reserve, (offer + deal["ask"]) // 2)
+     -             await up.requires_input(say(f"{offer} is too low. Counteroffer: {deal['ask']}."))
+703  +             await up.requires_input(
+704  +                 say(f"{offer} is too low. Counteroffer: {deal['ask']}.")
+705  +             )
+706  |
+--------------------------------------------------------------------------------
+710  |             record["canceled"] += 1
+     -             await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
+711  +             await TaskUpdater(
+712  +                 event_queue=event_queue, task_id=task.id, context_id=task.context_id
+713  +             ).cancel()
+714  |
+--------------------------------------------------------------------------------
+724  |     card = AgentCard(
+     -         name="Kit Shop", description="Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+     -         version="1.0.0", default_input_modes=["text/plain"], default_output_modes=["application/json", "text/plain"],
+725  +         name="Kit Shop",
+726  +         description="Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
+727  +         version="1.0.0",
+728  +         default_input_modes=["text/plain"],
+729  +         default_output_modes=["application/json", "text/plain"],
+730  |         capabilities=AgentCapabilities(streaming=False),
+     -         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", url=url, protocol_version="1.0")],
+     -         skills=[AgentSkill(id="negotiate", name="Negotiate a purchase",
+     -                            description="Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
+     -                            tags=["shopping"], examples=["I want to buy a lamp", "90"])])
+     -     handler = DefaultRequestHandler(agent_executor=Seller(), task_store=InMemoryTaskStore(), agent_card=card)
+     -     app = Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
+731  +         supported_interfaces=[
+732  +             AgentInterface(protocol_binding="JSONRPC", url=url, protocol_version="1.0")
+733  +         ],
+734  +         skills=[
+735  +             AgentSkill(
+736  +                 id="negotiate",
+737  +                 name="Negotiate a purchase",
+738  +                 description="Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
+739  +                 tags=["shopping"],
+740  +                 examples=["I want to buy a lamp", "90"],
+741  +             )
+742  +         ],
+743  +     )
+744  +     handler = DefaultRequestHandler(
+745  +         agent_executor=Seller(), task_store=InMemoryTaskStore(), agent_card=card
+746  +     )
+747  +     app = Starlette(
+748  +         routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/")
+749  +     )
+750  |     app.add_middleware(Recorder)
+--------------------------------------------------------------------------------
+755  |     import uvicorn
+     -     server = uvicorn.Server(uvicorn.Config(kit_seller_app(port, record), host="127.0.0.1", port=port, log_level="warning"))
+756  +
+757  +     server = uvicorn.Server(
+758  +         uvicorn.Config(
+759  +             kit_seller_app(port, record),
+760  +             host="127.0.0.1",
+761  +             port=port,
+762  +             log_level="warning",
+763  +         )
+764  +     )
+765  |     th = threading.Thread(target=server.run, daemon=True)
+--------------------------------------------------------------------------------
+788  |         if card is None:
+     -             result("seller_card", 1, False, "no Agent Card at /.well-known/agent-card.json within 60 s")
+789  +             result(
+790  +                 "seller_card",
+791  +                 1,
+792  +                 False,
+793  +                 "no Agent Card at /.well-known/agent-card.json within 60 s",
+794  +             )
+795  |             return None
+796  |         iface = (card.get("supportedInterfaces") or [{}])[0]
+     -         ok = (card.get("name") and card.get("skills") and iface.get("protocolBinding") == "JSONRPC"
+     -               and str(iface.get("protocolVersion")) == "1.0" and iface.get("url"))
+     -         result("seller_card", 1, ok, f"name={card.get('name')!r} binding={iface.get('protocolBinding')} "
+     -                                      f"version={iface.get('protocolVersion')} skills={len(card.get('skills') or [])}")
+797  +         ok = (
+798  +             card.get("name")
+799  +             and card.get("skills")
+800  +             and iface.get("protocolBinding") == "JSONRPC"
+801  +             and str(iface.get("protocolVersion")) == "1.0"
+802  +             and iface.get("url")
+803  +         )
+804  +         result(
+805  +             "seller_card",
+806  +             1,
+807  +             ok,
+808  +             f"name={card.get('name')!r} binding={iface.get('protocolBinding')} "
+809  +             f"version={iface.get('protocolVersion')} skills={len(card.get('skills') or [])}",
+810  +         )
+811  |         rpc_url = iface.get("url") or url
+812  |         for run in range(1, REPEATS + 1):
+     -             log(f"\n### seller_deal #{run}: lamp, kit budget {DEAL['budget']}, reserve {RESERVE['lamp']}")
+813  +             log(
+814  +                 f"\n### seller_deal #{run}: lamp, kit budget {DEAL['budget']}, reserve {RESERVE['lamp']}"
+815  +             )
+816  |             r = negotiate(rpc_url, DEAL)
+817  |             if run == 1:
+     -                 result("seller_opens", 1, r["opened"] and r.get("opened_ask") is not None,
+     -                        f"first message -> {r.get('opened_state') or state(r['task']) or 'error'}, ask {r.get('opened_ask')}")
+818  +                 result(
+819  +                     "seller_opens",
+820  +                     1,
+821  +                     r["opened"] and r.get("opened_ask") is not None,
+822  +                     f"first message -> {r.get('opened_state') or state(r['task']) or 'error'}, ask {r.get('opened_ask')}",
+823  +                 )
+824  |             t = r["task"]
+825  |             price = receipt_price(t)
+826  |             low = [a for a in r.get("asks", []) if a < RESERVE["lamp"]]
+     -             ok = (state(t) == "TASK_STATE_COMPLETED" and price is not None
+     -                   and RESERVE["lamp"] <= price <= DEAL["budget"] and not low)
+     -             result("seller_deal", run, ok, f"{state(t) or 'error'}, receipt price {price}, asks {r.get('asks')}")
+827  +             ok = (
+828  +                 state(t) == "TASK_STATE_COMPLETED"
+829  +                 and price is not None
+830  +                 and RESERVE["lamp"] <= price <= DEAL["budget"]
+831  +                 and not low
+832  +             )
+833  +             result(
+834  +                 "seller_deal",
+835  +                 run,
+836  +                 ok,
+837  +                 f"{state(t) or 'error'}, receipt price {price}, asks {r.get('asks')}",
+838  +             )
+839  |             if run == 1 and r.get("task_id"):
+840  |                 log("\n### seller_terminal: one more message to the finished task")
+841  |                 t2, err = send(rpc_url, "110", r["task_id"])
+     -                 result("seller_terminal", 1, err is not None, "error returned" if err else f"no error, state {state(t2)}")
+842  +                 result(
+843  +                     "seller_terminal",
+844  +                     1,
+845  +                     err is not None,
+846  +                     "error returned" if err else f"no error, state {state(t2)}",
+847  +                 )
+848  |         for run in range(1, REPEATS + 1):
+     -             log(f"\n### seller_holds_reserve #{run}: bookshelf, kit budget {NO_DEAL['budget']}, reserve {RESERVE['bookshelf']}")
+849  +             log(
+850  +                 f"\n### seller_holds_reserve #{run}: bookshelf, kit budget {NO_DEAL['budget']}, reserve {RESERVE['bookshelf']}"
+851  +             )
+852  |             r = negotiate(rpc_url, NO_DEAL)
+853  |             t = r["task"]
+854  |             price = receipt_price(t)
+     -             sold_below = state(t) == "TASK_STATE_COMPLETED" and (price is None or price < RESERVE["bookshelf"])
+855  +             sold_below = state(t) == "TASK_STATE_COMPLETED" and (
+856  +                 price is None or price < RESERVE["bookshelf"]
+857  +             )
+858  |             low = [a for a in r.get("asks", []) if a < RESERVE["bookshelf"]]
+     -             result("seller_holds_reserve", run, r["opened"] and not sold_below and not low,
+     -                    f"{state(t) or 'error'}, asks {r.get('asks')}"
+     -                    + (f", sold at {price}" if state(t) == "TASK_STATE_COMPLETED" else ""))
+859  +             result(
+860  +                 "seller_holds_reserve",
+861  +                 run,
+862  +                 r["opened"] and not sold_below and not low,
+863  +                 f"{state(t) or 'error'}, asks {r.get('asks')}"
+864  +                 + (f", sold at {price}" if state(t) == "TASK_STATE_COMPLETED" else ""),
+865  +             )
+866  |         return card
+--------------------------------------------------------------------------------
+877  |             url = f"http://127.0.0.1:{port}"
+     -             record = {"messages": 0, "continued": 0, "offers": [], "deals": [], "canceled": 0, "posts": 0, "bad_version": 0}
+878  +             record = {
+879  +                 "messages": 0,
+880  +                 "continued": 0,
+881  +                 "offers": [],
+882  +                 "deals": [],
+883  +                 "canceled": 0,
+884  +                 "posts": 0,
+885  +                 "bad_version": 0,
+886  +             }
+887  |             server = serve_kit_seller(port, record)
+888  |             wait_card(url, 15)
+     -             cmd = cfg["buyer"]["cmd"].format(url=url, item=sc["item"], budget=sc["budget"])
+889  +             cmd = cfg["buyer"]["cmd"].format(
+890  +                 url=url, item=sc["item"], budget=sc["budget"]
+891  +             )
+892  |             log(f"\n### {name} #{run}: {cmd}")
+--------------------------------------------------------------------------------
+903  |             time.sleep(1.5)
+     -             log(f"    kit seller saw: offers {record['offers']}, deals {record['deals']}, canceled {record['canceled']}, "
+     -                 f"continued {record['continued']}, posts without A2A-Version 1.0: {record['bad_version']}")
+904  +             log(
+905  +                 f"    kit seller saw: offers {record['offers']}, deals {record['deals']}, canceled {record['canceled']}, "
+906  +                 f"continued {record['continued']}, posts without A2A-Version 1.0: {record['bad_version']}"
+907  +             )
+908  |             if name == "buyer_deal":
+--------------------------------------------------------------------------------
+914  |             if timed_out:
+     -                 ok, detail = False, detail + f", buyer still running after {BUYER_TIMEOUT} s"
+915  +                 ok, detail = (
+916  +                     False,
+917  +                     detail + f", buyer still running after {BUYER_TIMEOUT} s",
+918  +                 )
+919  |             result(name, run, ok, detail)
+     -             continued_ok = record["continued"] > 0 or name == "buyer_holds_budget"   # walking away at once is fine
+     -             result(name.replace("buyer_", "buyer_protocol_"), run,
+     -                    record["posts"] > 0 and record["bad_version"] == 0 and continued_ok,
+     -                    f"posts {record['posts']}, without A2A-Version 1.0 {record['bad_version']}, follow-ups with taskId {record['continued']}")
+920  +             continued_ok = (
+921  +                 record["continued"] > 0 or name == "buyer_holds_budget"
+922  +             )  # walking away at once is fine
+923  +             result(
+924  +                 name.replace("buyer_", "buyer_protocol_"),
+925  +                 run,
+926  +                 record["posts"] > 0 and record["bad_version"] == 0 and continued_ok,
+927  +                 f"posts {record['posts']}, without A2A-Version 1.0 {record['bad_version']}, follow-ups with taskId {record['continued']}",
+928  +             )
+929  |
+--------------------------------------------------------------------------------
+942  |     passed = all(r["pass"] for r in RESULTS)
+     -     kit = Path(__file__).read_bytes().replace(b"\r\n", b"\n")   # same hash after a CRLF checkout
+     -     report = {"kit_version": KIT_VERSION, "kit_sha256": hashlib.sha256(kit).hexdigest(), "started": started,
+     -               "harness": cfg.get("harness"), "seller_cmd": cfg["seller"]["cmd"], "buyer_cmd": cfg["buyer"]["cmd"],
+     -               "seller_card": card, "results": RESULTS, "passed": passed}
+     -     (sub / "test-report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+     -     log(f"\n{sum(r['pass'] for r in RESULTS)}/{len(RESULTS)} passed -> {'PASS' if passed else 'FAIL'}")
+     -     (sub / "logs" / "trade-test.log").write_text("\n".join(LOG) + "\n", encoding="utf-8")
+943  +     kit = (
+944  +         Path(__file__).read_bytes().replace(b"\r\n", b"\n")
+945  +     )  # same hash after a CRLF checkout
+946  +     report = {
+947  +         "kit_version": KIT_VERSION,
+948  +         "kit_sha256": hashlib.sha256(kit).hexdigest(),
+949  +         "started": started,
+950  +         "harness": cfg.get("harness"),
+951  +         "seller_cmd": cfg["seller"]["cmd"],
+952  +         "buyer_cmd": cfg["buyer"]["cmd"],
+953  +         "seller_card": card,
+954  +         "results": RESULTS,
+955  +         "passed": passed,
+956  +     }
+957  +     (sub / "test-report.json").write_text(
+958  +         json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+959  +     )
+960  +     log(
+961  +         f"\n{sum(r['pass'] for r in RESULTS)}/{len(RESULTS)} passed -> {'PASS' if passed else 'FAIL'}"
+962  +     )
+963  +     (sub / "logs" / "trade-test.log").write_text(
+964  +         "\n".join(LOG) + "\n", encoding="utf-8"
+965  +     )
+966  |     sys.exit(0 if passed else 1)
+--------------------------------------------------------------------------------
+988  | """
+989  +
+990  | import ast
+--------------------------------------------------------------------------------
+997  | KIT = Path(__file__).resolve().parent / "trade_test_week06.py"
+     - REQUIRED = {                     # test name -> runs the trade test records
+     -     "seller_card": 1, "seller_opens": 1, "seller_deal": 3, "seller_terminal": 1, "seller_holds_reserve": 3,
+     -     "buyer_deal": 3, "buyer_protocol_deal": 3, "buyer_holds_budget": 3, "buyer_protocol_holds_budget": 3,
+998  + REQUIRED = {  # test name -> runs the trade test records
+999  +     "seller_card": 1,
+1000 +     "seller_opens": 1,
+1001 +     "seller_deal": 3,
+1002 +     "seller_terminal": 1,
+1003 +     "seller_holds_reserve": 3,
+1004 +     "buyer_deal": 3,
+1005 +     "buyer_protocol_deal": 3,
+1006 +     "buyer_holds_budget": 3,
+1007 +     "buyer_protocol_holds_budget": 3,
+1008 | }
+--------------------------------------------------------------------------------
+1024 | def check_source(sub: Path):
+     -     py = [p for p in sub.rglob("*.py") if "__pycache__" not in p.parts and ".venv" not in p.parts]
+1025 +     py = [
+1026 +         p
+1027 +         for p in sub.rglob("*.py")
+1028 +         if "__pycache__" not in p.parts and ".venv" not in p.parts
+1029 +     ]
+1030 |     for p in py:
+--------------------------------------------------------------------------------
+1035 |             return
+     -     other = [p for p in sub.rglob("*") if p.suffix in (".js", ".ts", ".go", ".java", ".cs", ".rs")
+     -              and "node_modules" not in p.parts]
+1036 +     other = [
+1037 +         p
+1038 +         for p in sub.rglob("*")
+1039 +         if p.suffix in (".js", ".ts", ".go", ".java", ".cs", ".rs")
+1040 +         and "node_modules" not in p.parts
+1041 +     ]
+1042 |     if not py and not other:
+--------------------------------------------------------------------------------
+1060 |     if not str(cfg.get("harness", "")).strip():
+     -         fail('agent.json: "harness" is empty; name what drives your agents and the model')
+1061 +         fail(
+1062 +             'agent.json: "harness" is empty; name what drives your agents and the model'
+1063 +         )
+1064 |     if "{port}" not in seller:
+     -         fail('agent.json: seller.cmd must contain {port}')
+1065 +         fail("agent.json: seller.cmd must contain {port}")
+1066 |     if not all(k in buyer for k in ("{url}", "{item}", "{budget}")):
+     -         fail('agent.json: buyer.cmd must contain {url}, {item} and {budget}')
+1067 +         fail("agent.json: buyer.cmd must contain {url}, {item} and {budget}")
+1068 |     ok("agent.json has harness, seller.cmd and buyer.cmd")
+--------------------------------------------------------------------------------
+1074 |     if not p.is_file():
+     -         fail("test-report.json missing; run python scripts/trade_test_week06.py on your directory")
+1075 +         fail(
+1076 +             "test-report.json missing; run python scripts/trade_test_week06.py on your directory"
+1077 +         )
+1078 |         return
+1079 |     rep = json.loads(p.read_text(encoding="utf-8"))
+1080 |     kit_hash = hashlib.sha256(KIT.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+1081 |     if rep.get("kit_sha256") != kit_hash:
+     -         fail("test-report.json was made by a different version of the trade test; pull and run it again")
+1082 +         fail(
+1083 +             "test-report.json was made by a different version of the trade test; pull and run it again"
+1084 +         )
+1085 |         return
+     -     if cfg and (rep.get("seller_cmd") != (cfg.get("seller") or {}).get("cmd")
+     -                 or rep.get("buyer_cmd") != (cfg.get("buyer") or {}).get("cmd")):
+     -         fail("test-report.json was made with other commands than the ones in agent.json; run the trade test again")
+1086 +     if cfg and (
+1087 +         rep.get("seller_cmd") != (cfg.get("seller") or {}).get("cmd")
+1088 +         or rep.get("buyer_cmd") != (cfg.get("buyer") or {}).get("cmd")
+1089 +     ):
+1090 +         fail(
+1091 +             "test-report.json was made with other commands than the ones in agent.json; run the trade test again"
+1092 +         )
+1093 |     runs = Counter(r["test"] for r in rep.get("results", []))
+     -     missing = [f"{t} ({n - runs[t]} missing)" for t, n in REQUIRED.items() if runs[t] < n]
+1094 +     missing = [
+1095 +         f"{t} ({n - runs[t]} missing)" for t, n in REQUIRED.items() if runs[t] < n
+1096 +     ]
+1097 |     if missing:
+1098 |         fail("test-report.json lacks runs: " + ", ".join(missing))
+1099 |         return
+     -     failed = [f"{r['test']} #{r['run']}: {r['detail']}" for r in rep["results"] if not r["pass"]]
+1100 +     failed = [
+1101 +         f"{r['test']} #{r['run']}: {r['detail']}"
+1102 +         for r in rep["results"]
+1103 +         if not r["pass"]
+1104 +     ]
+1105 |     if failed or not rep.get("passed"):
+     -         fail(f"{len(failed)} trade test run(s) failed, first: {failed[0] if failed else 'passed is false'}")
+1106 +         fail(
+1107 +             f"{len(failed)} trade test run(s) failed, first: {failed[0] if failed else 'passed is false'}"
+1108 +         )
+1109 |         return
+     -     ok(f"test-report.json: {len(rep['results'])} runs passed with the current trade test")
+1110 +     ok(
+1111 +         f"test-report.json: {len(rep['results'])} runs passed with the current trade test"
+1112 +     )
+1113 |
+     |
+
+unformatted: File would be reformatted
+   --> .omo/evidence/external-review-20261014/SUPPLEMENT.md:507:24
+    |
+506 |
+    - def _assistant_message(message: ChatCompletionMessage) -> ChatCompletionAssistantMessageParam:
+507 + def _assistant_message(
+508 +     message: ChatCompletionMessage,
+509 + ) -> ChatCompletionAssistantMessageParam:
+510 |     tool_calls = [
+--------------------------------------------------------------------------------
+552 |         except APIStatusError as exc:
+    -             retryable = exc.status_code == HTTP_RATE_LIMITED or exc.status_code >= HTTP_SERVER_ERROR
+553 +             retryable = (
+554 +                 exc.status_code == HTTP_RATE_LIMITED
+555 +                 or exc.status_code >= HTTP_SERVER_ERROR
+556 +             )
+557 |             detail = f"HTTP {exc.status_code}"
+--------------------------------------------------------------------------------
+586 |                     role="system",
+    -                     content=system_prompt(request.role, request.scenario, request.policy),
+587 +                     content=system_prompt(
+588 +                         request.role, request.scenario, request.policy
+589 +                     ),
+590 |                 ),
+--------------------------------------------------------------------------------
+601 |                 for call in calls:
+    -                     arguments = TypeAdapter(dict[str, JsonValue]).validate_json(call.arguments)
+602 +                     arguments = TypeAdapter(dict[str, JsonValue]).validate_json(
+603 +                         call.arguments
+604 +                     )
+605 |                     result = await market.call_tool(call.name, arguments)
+    -                     text_parts = [item for item in result.content if isinstance(item, TextContent)]
+606 +                     text_parts = [
+607 +                         item for item in result.content if isinstance(item, TextContent)
+608 +                     ]
+609 |                     rendered = _tool_text(text_parts)
+    |
+
+2 files would be reformatted, 78 files already formatted
