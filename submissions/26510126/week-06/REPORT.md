@@ -286,7 +286,7 @@ action, not the sentence.
 
 ## 7. Optional: trading across harnesses
 
-A classmate (25620024) deployed a seller on Cloudflare Workers, driven by Workers AI
+Yongjae Kim (25620024, @dragonash22) deployed a seller on Cloudflare Workers, driven by Workers AI
 (Llama 3.3 70B, by their account) with the reserve enforced in code
 (`https://harness-shop-25620024.imajason.workers.dev`, card in
 `logs/cross/peer-card-25620024.json`). Their shop follows the same conventions as
@@ -318,7 +318,8 @@ offer was 119 or 120.
 The other direction, their buyer against my deployed seller, is up to them; I sent
 them the address.
 
-**Another classmate's buyer against my deployed seller.** 26510118 ran their buyer
+**Another classmate's buyer against my deployed seller.** Junho Kwon (26510118,
+@Kiro729) ran their buyer
 (Claude Code, Sonnet) against my Workers seller and sent me their notes, kept as
 `logs/cross/buyer-26510118-vs-seller-26510126-report.md`. Three plain trades all
 closed (lamp at 185, chair at 223, bookshelf at 270, three rounds each), and they
