@@ -28,30 +28,32 @@ def _env():
 
 
 def call(system: str, situation: str) -> str:
-    t0 = time.time()
+    t0, size = time.time(), len(system) + len(situation)
     r = subprocess.run(CMD + ["--system-prompt", system], input=situation, capture_output=True, text=True,
                        timeout=TIMEOUT, cwd=EMPTY_DIR, env=_env())
     out = r.stdout.strip()
-    print(f"[harness] {time.time() - t0:.1f}s exit {r.returncode} -> {out[:200]!r}", file=sys.stderr, flush=True)
+    print(f"[harness] {time.time() - t0:.1f}s exit {r.returncode} in={size}ch -> {out[:200]!r}", file=sys.stderr, flush=True)
     if r.returncode != 0:
         print(f"[harness] stderr: {r.stderr.strip()[:300]}", file=sys.stderr, flush=True)
     return out
 
 
-def parse(text: str):
-    m = re.search(r"\{.*?\}", text, re.S)
-    if not m:
-        return None
-    try:
-        d = json.loads(m.group())
-    except json.JSONDecodeError:
-        return None
-    return d if isinstance(d, dict) and "action" in d else None
+def parse(text: str, need: str = "action"):
+    """The first JSON object in the answer that has the key `need`. Nested objects are fine; code fences are ignored."""
+    dec = json.JSONDecoder()
+    for m in re.finditer(r"\{", text):
+        try:
+            d, _ = dec.raw_decode(text[m.start():])
+        except json.JSONDecodeError:
+            continue
+        if isinstance(d, dict) and need in d:
+            return d
+    return None
 
 
-def decide(system: str, situation: str) -> dict | None:
+def decide(system: str, situation: str, need: str = "action") -> dict | None:
     for _ in range(1 + RETRIES):
-        d = parse(call(system, situation))
+        d = parse(call(system, situation), need)
         if d is not None:
             if "price" in d:
                 try:
