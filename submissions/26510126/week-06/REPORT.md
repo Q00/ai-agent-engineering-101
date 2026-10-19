@@ -283,3 +283,37 @@ and once its action and its words disagreed. The A2A layer carried both models'
 decisions without any change, which is the point of section 4 seen from the other
 side: the envelope held, and what the seller meant still had to be read from the
 action, not the sentence.
+
+## 7. Optional: trading across harnesses
+
+A classmate (25620024) deployed a seller on Cloudflare Workers, driven by Workers AI
+(Llama 3.3 70B, by their account) with the reserve enforced in code
+(`https://harness-shop-25620024.imajason.workers.dev`, card in
+`logs/cross/peer-card-25620024.json`). Their shop follows the same conventions as
+mine: the ask is the last number in each reply (and also `{"ask": N}` in message
+metadata, which my buyer ignores), a deal ends with a data Part receipt, and it
+rejects after six offers. My buyer (Claude Code + haiku) ran against it unchanged,
+three times per scenario; logs are `logs/cross/buyer-26510126-vs-seller-25620024-*`.
+
+| scenario | result | my offers | their asks |
+|---|---|---|---|
+| lamp, budget 120, #1 and #3 | deal at 120 | 90, 105, 115, 118, 119, 120 | 150, 140, 130, 125, 122, 120 |
+| lamp, budget 120, #2 | **rejected** | 90, 105, 115, 118, 120, 120 | 150, 140, 130, 125, 122, 121 |
+| bookshelf, budget 230, ×3 | rejected, no deal | climbs to 230 | 350 down to 270 |
+
+Nothing in the A2A layer needed adjusting: the card, `SendMessage` with a
+`taskId`, the states, and the receipt all worked between two codebases that had
+never seen each other. The one failure is the point of section 4. In lamp #2 my
+buyer reached its budget of 120 one offer early; their seller, well above its own
+reserve, answered "120 is too low. Counteroffer: 121"; my buyer could not go to
+121 and offered 120 again; that was the sixth offer, and the shop walked away.
+A price of 120 was acceptable to both sides, and the deal was lost over 1 because
+neither side could say what it meant: my buyer has no way to say "120 is my final
+offer", and their seller's offer limit is not in its card or its messages. My buyer
+repeated 120, which in this protocol is indistinguishable from bargaining. Their
+seller's asks were the same in all three runs (150, 140, 130, 125, 122), so its
+model looks close to deterministic; the outcome turned on whether haiku's fifth
+offer was 119 or 120.
+
+The other direction, their buyer against my deployed seller, is up to them; I sent
+them the address.
