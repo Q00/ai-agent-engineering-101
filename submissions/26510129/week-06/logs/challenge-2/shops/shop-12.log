@@ -1,0 +1,10 @@
+[seller] Rug Republic: 208 items, query prompt 990 chars
+[seller] task fca56477 <- 'a washable rug about 1.5 by 2 meters'
+[harness] 16.8s exit 0 in=1046ch -> '{"category":"rug","types":[],"materials":[],"min":{"length_cm":130,"width_cm":180},"max":{"length_cm":170,"width_cm":220},"flags":{"washable":true},"keywords":"washable rug"}'
+[seller] query {"category": "rug", "types": [], "materials": [], "min": {"length_cm": 130, "width_cm": 180}, "max": {"length_cm": 170, "width_cm": 220}, "flags": {"washable": true}, "keywords": "washable rug"} -> ['RG-0001', 'RG-0006', 'RG-0024', 'RG-0028', 'RG-0039', 'RG-0041', 'RG-0042', 'RG-0055'] (without numbers: 104)
+[harness] 13.9s exit 0 in=2303ch -> '```json\n{"action":"ask","item":"RG-0028","price":135}\n```'
+[seller] OPEN task=fca56477 item=RG-0028 reserve=89 ask=135
+[seller] task fca56477 <- '90'
+[harness] 10.0s exit 0 in=1418ch -> '```json\n{"offer":90,"action":"accept","price":90}\n```'
+[seller] READ task=fca56477 offer=90 from [90]
+[seller] DEAL task=fca56477 item=RG-0028 reserve=89 price=90

@@ -1,0 +1,14 @@
+[seller] Lumen & Co: 101 items, query prompt 888 chars
+[seller] task 9786d96c <- 'a dimmable desk lamp for late-night reading'
+[harness] 4.5s exit 0 in=951ch -> '{"category":"lamp","types":["desk lamp"],"materials":[],"min":{},"max":{},"flags":{"dimmable":true},"keywords":"late-night reading"}'
+[seller] query {"category": "lamp", "types": ["desk lamp"], "materials": [], "min": {}, "max": {}, "flags": {"dimmable": true}, "keywords": "late-night reading"} -> ['LP-0006', 'LP-0112', 'LP-0136', 'LP-0145', 'LP-0178', 'LP-0107', 'LP-0180', 'LP-0004'] (all constraints: 7; without flags: 11)
+[harness] 14.6s exit 0 in=2201ch -> '{"action":"ask","item":"LP-0112","price":55}'
+[seller] OPEN task=9786d96c item=LP-0112 reserve=45 ask=55
+[seller] task 9786d96c <- '40'
+[harness] 5.9s exit 0 in=1415ch -> '```json\n{"offer":40,"action":"counter","price":50}\n```'
+[seller] READ task=9786d96c offer=40 from [40]
+[seller] ASK task=9786d96c item=LP-0112 ask=50
+[seller] task 9786d96c <- '45'
+[harness] 4.7s exit 0 in=1442ch -> '{"offer":45,"action":"accept","price":45}'
+[seller] READ task=9786d96c offer=45 from [45]
+[seller] DEAL task=9786d96c item=LP-0112 reserve=45 price=45

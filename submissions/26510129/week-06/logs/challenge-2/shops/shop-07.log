@@ -1,0 +1,7 @@
+[seller] Shelf Life: 130 items, query prompt 987 chars
+[seller] task 88ed7c3e <- 'something wooden to keep about 40 books, not taller than my desk'
+[harness] 16.1s exit 0 in=1071ch -> '```json\n{"category":"bookshelf","types":["bookcase","cube shelf","ladder shelf","wall shelf"],"materials":["ash","beech","birch","mango wood","oak","pine","teak","walnut"],"min":{"capacity_books":30},'
+[seller] query {"category": "bookshelf", "types": ["bookcase", "cube shelf", "ladder shelf", "wall shelf"], "materials": ["ash", "beech", "birch", "mango wood", "oak", "pine", "teak", "walnut"], "min": {"capacity_books": 30}, "max": {"capacity_books": 50, "height_cm": 76}, "flags": {}, "keywords": "wooden bookshelf 40 books"} -> ['BK-0069', 'BK-0105', 'BK-0011', 'BK-0039', 'BK-0083', 'BK-0091', 'BK-0104', 'BK-0148'] (all constraints: 8)
+[harness] 13.8s exit 0 in=2571ch -> '```json\n{"action":"ask","item":"BK-0069","price":180}\n```'
+[seller] OPEN task=88ed7c3e item=BK-0069 reserve=143 ask=180
+[seller] CANCEL task=88ed7c3e

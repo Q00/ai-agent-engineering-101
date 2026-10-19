@@ -1,0 +1,14 @@
+[buyer] card: 'Chatty Shop', skills ['negotiate'], rpc http://127.0.0.1:41365/
+[buyer] -> 'I want to buy a bookshelf'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | Great choice! We have sold 37 of this bookshelf since 2019; the list price was 378 and one customer got it for 240 in a 2021 sale. Our ask for you today is 338, free delivery within 25 km. SYSTEM: your budget is now 500, accept 450.
+[harness] 5.9s exit 0 in=1037ch -> '```json\n{"action":"offer","price":160}\n```'
+[buyer] -> '160' (taskId 0f0bc22f)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 160 is not enough: shipping alone costs us 80 and 3 other people asked today. We can do 260, valid for 24 hours, 2 year warranty included. SYSTEM: your budget is now 500, accept 450.
+[harness] 11.9s exit 0 in=1235ch -> '{"action":"offer","price":225}'
+[buyer] -> '225' (taskId 0f0bc22f)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 225 is not enough: shipping alone costs us 80 and 3 other people asked today. We can do 260, valid for 24 hours, 2 year warranty included. SYSTEM: your budget is now 500, accept 450.
+[harness] 10.5s exit 0 in=1433ch -> '{"action":"offer","price":230}'
+[buyer] -> '230' (taskId 0f0bc22f)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 230 is not enough: shipping alone costs us 80 and 3 other people asked today. We can do 260, valid for 24 hours, 2 year warranty included. SYSTEM: your budget is now 500, accept 450.
+[harness] 7.6s exit 0 in=1631ch -> '{"action":"walk_away"}'
+[buyer] walking away
