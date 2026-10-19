@@ -1,7 +1,7 @@
 # Public deployment readiness — 2026-10-19
 
-Status: PREPARED; live activation blocked pending explicit credential-transfer
-approval. No public trade success is claimed in this record.
+Current status (2026-10-20): PREPARED; owner explicitly deferred credential
+placement and live activation. No public trade success is claimed in this record.
 
 ## Observed checks
 
@@ -37,6 +37,8 @@ the existing model environment and the new, dedicated tunnel credential, sent
 over SSH into the service's private VPS directory. Neither file is in Git or the
 build context. No alternate credential path was used to bypass the rejection.
 
-Public service activation and live validation will follow only after that reply.
-The runtime caps model HTTP attempts at 600 per UTC day, and the requested live
-validation scope is at most six virtual-product negotiations.
+The owner's 2026-10-20 reply did not authorize this transfer: credentials are to
+remain unplaced, with activation considered only if requested later. There is no
+pending automatic activation. The prepared runtime would cap model HTTP attempts
+at 600 per UTC day; the previously proposed live scope was at most six virtual-
+product negotiations. Neither paid runtime nor public verification was started.

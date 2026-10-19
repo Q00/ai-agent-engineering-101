@@ -1,8 +1,12 @@
 # Public seller deployment
 
-Status: application and Linux images prepared; secret transfer, service activation,
-public trades and `agent.json.deployed` remain pending explicit transfer approval.
-The configured HTTPS hostname is `ax-week06.treasuresky.xyz`.
+Status as of 2026-10-20: application and Linux images prepared; credential
+placement and service activation are deferred by the owner. Do not transfer
+model or tunnel credentials or start paid model calls under this decision.
+The owner may request activation later. No automatic activation is scheduled.
+The configured hostname `ax-week06.treasuresky.xyz` is not a verified live shop.
+Public trades have not been run and `agent.json.deployed` has not been set.
+This preparation does not constitute completion of the deployment extra credit.
 
 ## Architecture
 
@@ -30,7 +34,8 @@ configuration. Required deployment variables:
 - `AX_TUNNEL_CREDENTIALS_FILE`: private credential file for this tunnel only;
   it must be readable by the tunnel container's UID 65532.
 
-Run from this submission directory after providing the private environment:
+For a later, explicitly requested activation, run from this submission directory
+after arranging private credentials and confirming the runtime limits:
 
 ```bash
 docker compose --env-file /private/path/model.env \
