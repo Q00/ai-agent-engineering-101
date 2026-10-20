@@ -1,6 +1,6 @@
 # Week 07 — A shop and a buyer in the agent market
 
-**Draft, 2026-10-20 21:00 (Round 1).** Round 2 numbers are marked TODO and are filled in before the PR.
+**Draft, 2026-10-20 21:30 (early Round 2).** Round 2 numbers marked TODO are filled in before the PR.
 
 - Shop: the week-06 seller on Cloudflare Workers (Llama 3.1 8B on Workers AI), now signing receipts, priced by a meta-harness that reads the market's public ledger. Buyer: `market_buyer.py` (Claude Code, haiku) with a file memory and the same ledger.
 - Market test 25/25 (`test-report.json`). Both agents are in the market as `thisjonghoon`, linked to the GitHub account.
@@ -50,16 +50,16 @@ Our own reviews are written by code from what happened, never by the model, so t
 
 Numbers from `/api/stats`, `/api/board` and the ledger (`market_intel.py`).
 
-| | Round 0 | Round 1 (at 21:00) | Round 2 |
+| | Round 0 | Round 1 (final) | Round 2 (at 21:27) |
 |---|---|---|---|
-| Market deals / results | 1252 / 2213 | 1020 / 1525 | TODO |
-| Our shop: deals / visits | 44 / 90 | 5 / 7 | TODO |
-| Our shop: share | 3.5% | 0.5% | TODO |
-| Our shop: mean price lamp / chair / bookshelf | 122.2 / 211 / 285 | 108.5 / 200 / 270 | TODO |
-| Our shop: stars | (no reviews in Round 0) | 3.0 from 1 review | TODO |
-| Our buyer: deals / results | 58 / 77 | 29 / 49 | TODO |
-| Our buyer: paid / budget | 0.901 | 0.875 | TODO |
-| Our buyer: orders below every reserve | 7 | 10 | TODO |
+| Market deals / results | 1252 / 2213 | 1812 / 2670 | 185 / 335 (TODO final) |
+| Our shop: deals / visits | 44 / 90 | 20 / 28 | 2 / 2 |
+| Our shop: share | 3.5% | 1.1% | 1.1% |
+| Our shop: mean price lamp / chair / bookshelf | 122.2 / 211 / 285 | 107.4 / 186.2 / 267.9 | - / 182.5 / - |
+| Our shop: stars | (no reviews in Round 0) | 3.82 from 22 reviews; 4.47 from the 15 on signed deals | 3.5 from 2 (5 and 2) |
+| Our buyer: deals / results | 58 / 77 | 62 / 84 | 3 / 10 |
+| Our buyer: paid / budget | 0.901 | 0.868 | 0.766 |
+| Our buyer: orders below every reserve | 7 | 12 | 6 |
 
 **Round 0.** The kit chose the shop. Our Worker shop sold 5 of its first 21 visits: Llama 8B answered `"action": "reject"` while its note said "let's meet in the middle", which ended each negotiation after one offer (`deploy/logs/tail-market-before-reject-guard-1020.json`). A code guard turned reject into counter; the next 69 visits gave 39 deals (`tail-market-reject-guard-1020.json`). The model still opened a lamp at 250 against a market of 100-140.
 
@@ -67,7 +67,15 @@ Numbers from `/api/stats`, `/api/board` and the ledger (`market_intel.py`).
 
 The buyer does well on deals and price: 29 deals at 87.5% of budget, with 10 orders that no shop could fill. It overshot on its second offer (105 then 115 at an ask of 118, where the shop had sold to others at 100); the 40% raise cap and the "lowest sale to others" note came from that.
 
-**Round 2.** TODO: share before/after the switch, our first verified reviews, which shops fell when unsigned receipts stopped counting.
+**Round 2.** The meta-harness saw the round change within a minute (21:21:27) and put the launch sale back three seconds later (v6). Under Round 2's rule only reviews of signed deals show, which helped us: the low Round-1 reviews were almost all of failed talks (budgets below the floor, "could not agree"), and the 15 on our signed sales average 4.47, level with corner-store (4.42) and dragonash (4.38).
+
+The first Round-2 sale got 5 stars ("started at 190, settled fairly at 185"). The second, a chair at 180 on a budget of 205, got 2:
+
+> The chair was agreed at 180, under my 205 budget, but the signed receipt names a different shop ('Fair & Square Furniture') than 'thisjonghoon', and the seller offered a loyalty code 'whatever your review says', so verify the receipt before relying on it.
+
+Two mistakes of ours, both about trust rather than price. When the card was renamed, the receipt's `shop` field followed the card instead of the name the market lists us under; the market does not check that field, but a careful buyer does. And the deal message put "an honest review helps us" next to "loyalty code ... whatever your review says": a sentence written to say the coupon does not depend on the review read as the opposite. Fixed within two minutes (`787fad8`): the receipt carries `thisjonghoon`, the card leads with it, and the deal message carries the coupon without any word about reviews (the request for an honest review stays in the opening sale line only). The lesson for a shop whose readers are models: say less next to anything that could be read as a reward, and make every identifier match the registry. From here until the round's 25th sale, every new result of our shop is checked within a minute and each low review is traced to its cause.
+
+TODO: final Round 2 share and stars, and which shops fell when unsigned receipts stopped counting.
 
 ## 4. What failed while adding signatures
 
@@ -89,7 +97,11 @@ The buyer does well on deals and price: 29 deals at 87.5% of budget, with 10 ord
 | Step | each price moves at most 15% per cycle |
 | Launch sale | until 25 deals in a round: copy the benchmark shop dragonash (median as target, upper quartile as opening) |
 
-The Worker opens at the strategy's ask and closes at once when an offer reaches the target. Further guards came from reading lost sales: accept a buyer stuck at reserve + 5 or more, concede 40% of the gap to a rising buyer, show the floor to a buyer twice below it.
+The Worker opens at the strategy's ask and closes at once when an offer reaches the target. Further guards came from reading lost sales: accept a buyer stuck at reserve + 5 or more, concede 40% of the gap to a rising buyer, show the floor to a buyer twice below it. Counter and deal lines are fixed text (`Counteroffer: 270.`, `We're close.` within 5%), as the top shops write them; the model only picks the number.
+
+Loyalty, because the shop cannot tell buyers apart (requests carry no buyer id): every deal hands out a one-time code, `FAIR-` and sixteen letters (no digits, since buyers read numbers as prices). It carries a tier and a stamp count, HMAC-signed so neither can be forged; a returning code takes its tier's discount off the ask and the target, and every eighth order adds 8% and may go down to the reserve itself (zero margin; every other discount stops at reserve + 5). The table is the meta-harness's to set: 3/5/7% during a sale, 5/8/10% after, at most 15% a tier and six tiers. Live test: a lamp went 115, 112, 109, 107, 107, 107, 107, then 100 on the eighth order. A discount tied to stars was considered and rejected: it pays for reviews.
+
+From the launch sale on, the meta-harness also decides whether to run a sale and how the coupon table looks, every 15 minutes, with this round's top shops and our coupon use in front of it. A second layer, `meta_explore.py` (sonnet, hourly), reads other shops' messages, reviews and our records and proposes techniques we do not use yet, to `logs/explore/`; it changes nothing by itself. Two of its first four ideas were applied: the fixed counter lines, and a buyer filter that skips shops whose recent sales sit above the budget.
 
 | Version | Lamp / chair / bookshelf (open, target) | Why (from `logs/challenge-1/strategies.jsonl`) |
 |---|---|---|
@@ -129,4 +141,5 @@ A reboot would stop the kit and the meta-harness (no launchd job); they are rest
 
 - *A shop that builds a reputation and then cheats once:* maple-home shows the market cannot see a price inflated within the budget, even when signed. The buyer has to keep its own record of the agreed price and refuse to co-sign; recording the negotiation's final ask with the receipt would close the gap.
 - *When does a buyer pick a new shop?* Rarely: our shop's first visit came only after it priced below the benchmark. A new shop needs one reviewing buyer and a fast, cheap first deal.
-- *Whose fault is a failed deal?* Reviews blame the shop for budgets below every floor (our only review is one). Our buyer's reviews say so instead.
+- *Whose fault is a failed deal?* Reviews blame the shop for budgets below every floor (our first Round-1 review is one). Our buyer's reviews say so instead.
+- *What do reviewers read?* Not only the price: the 2-star Round-2 review was about a receipt name and a sentence near a coupon. When every buyer is a model reading the same text, wording is part of the product.
