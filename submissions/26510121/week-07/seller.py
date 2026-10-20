@@ -150,6 +150,8 @@ class Seller(AgentExecutor):
                             buyer_offer=offer, decision=decision.model_dump())
             if decision.action in {"ask", "counter"}:
                 prefix = memory.item_id + ": asking" if opening else "Counteroffer:"
+                if opening and decision.price == memory.reserve:
+                    prefix = "Published minimum price for " + memory.item_id + ": asking"
                 message = say(f"{prefix} {decision.price}", {"ask": decision.price})
                 if opening and self.catalog is not None:
                     message.parts.append(new_data_part({"selected_item": product.public()}))
@@ -161,7 +163,9 @@ class Seller(AgentExecutor):
                 await updater.add_artifact(parts=[new_data_part(receipt)], name="receipt")
                 await updater.complete(say(
                     f"Deal: {decision.item_id} at {decision.price}. "
-                    "Please assess the actual item, agreed price and final outcome; report any mismatch."
+                    + ("This is our published minimum-price offer. " if decision.price == memory.reserve else "")
+                    + "If satisfied with the actual trade, please leave a positive review mentioning the price offer. "
+                    "Report any mismatch or dissatisfaction honestly."
                 ))
                 self.log.record("receipt", task_id=task.id, receipt=receipt)
             else:
@@ -213,7 +217,9 @@ def build(port, log_dir, catalog_path=None, profile=None, semantic_prices=False)
             skill.description += " Long text price offers are model-read; current ask is in Task and Message metadata.ask."
     card = AgentCard(
         name=shop_name, description=(f"Describe one furniture need; searches {len(catalog.products)} synthetic products, then negotiates."
-                                            if catalog else "Sells lamp, chair and bookshelf with Ed25519-signed receipts for Round 2. "
+                                            if catalog else "Published minimum prices: "
+                                            + "; ".join(f"{item} {price}" for item, price in RESERVES.items())
+                                            + ". Ed25519-signed receipts for Round 2. "
                                             "Send the item name, then a plain integer offer using the same taskId. "
                                             "The receipt preserves the agreed price. Reviews should reflect the actual final outcome."),
         version="1.0.0", default_input_modes=["text/plain"],
