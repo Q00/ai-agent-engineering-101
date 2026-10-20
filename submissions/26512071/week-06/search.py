@@ -45,10 +45,15 @@ class Catalog:
         self.idf = {t: math.log(1 + (n - c + 0.5) / (c + 0.5)) for t, c in df.items()}
 
     def exact(self, text):
-        """The item whose name the text names as a whole word, e.g. 'I want to buy a lamp'."""
-        words = " " + " ".join(re.findall(r"[a-z0-9]+", text.lower())) + " "
-        hits = [i for name, i in self.by_name.items() if f" {name} " in words]
-        return max(hits, key=lambda i: len(i["name"]), default=None)
+        """The item the text is nothing but a request for, e.g. 'I want to buy a lamp'.
+
+        Only the whole request counts: 'a chair I can sit in all day' mentions 'chair'
+        but describes something else, so it goes to the search.
+        """
+        words = " ".join(re.findall(r"[a-z0-9]+", text.lower()))
+        words = re.sub(r"^(i want to buy|i d like to buy|i want|i d like|buy)\s+", "", words)
+        words = re.sub(r"^(a|an|one|the)\s+", "", words)
+        return self.by_name.get(words)
 
     def search(self, text, k=20):
         q = tokens(text)
