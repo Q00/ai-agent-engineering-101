@@ -317,7 +317,9 @@ export class TaskObject extends DurableObject<Env> {
       const note = [welcome, promo, cleanNote(answer.note)].filter(Boolean).join(" ");
       await this.ctx.storage.put("deal", { item, ask: price, history: [`You asked ${price}.`], discount, tier, stamps, floor } satisfies Deal);
       console.log(`OUT: open ${item} at ${price}`);
-      this.respond(task, "TASK_STATE_INPUT_REQUIRED", `${item}: ${note ? note + " " : ""}Asking ${price}. Send your offer as a number.`);
+      // the reference shop's wording first ("lamp: asking 130."): lee-sungsoo's buyer read no ask from
+      // "chair: <note> Asking 192." and left after zero offers, 24 times in 40 minutes; it reads "asking N" shops fine
+      this.respond(task, "TASK_STATE_INPUT_REQUIRED", `${item}: asking ${price}. ${note ? note + " " : ""}Send your offer as a number.`);
     }
     await this.ctx.storage.put("task", task);
     return { task };
@@ -336,7 +338,7 @@ export class TaskObject extends DurableObject<Env> {
     const deal = (await this.ctx.storage.get<Deal>("deal"))!;
     const m = textOf(msg).match(/\d+(?:\.\d+)?/);
     if (!m) {
-      this.respond(task, "TASK_STATE_INPUT_REQUIRED", `Send your offer as a number. Asking ${deal.ask}.`);
+      this.respond(task, "TASK_STATE_INPUT_REQUIRED", `Send your offer as a number. asking ${deal.ask}.`);
     } else {
       await this.negotiate(task, deal, Math.round(Number(m[0])));
       await this.ctx.storage.put("deal", deal);
