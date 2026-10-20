@@ -1,21 +1,21 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-20T11:32:28+00:00",
+  "started": "2026-10-20T15:22:08+00:00",
   "harness": "Week05 custom Python function-tool loop inherited from Week06; OpenAI gpt-4.1-nano-2025-04-14; model-selected market shop and review; Ed25519 seller receipts",
   "seller_cmd": "./run_harness.sh seller --port {port}",
   "market_buyer_cmd": "./run_harness.sh market-buyer --shops {shops} --item {item} --budget {budget}",
   "seller_card": {
     "name": "Sungjin Shop",
-    "description": "Catalog shop: search and negotiate purchases.",
+    "description": "Sungjin Shop | Clear quotes and quick numeric bargaining. Basic opening quote caps: lamp 110, chair 198, bookshelf 286. The actual quote is in metadata.ask; eligible offers settle promptly. Counteroffers never increase within a negotiation. Receipts show the exact agreed price. R2WELCOME: up to 5 of the first negotiated reduction is a coupon; larger negotiated reductions are allowed, with the reserve protected. Ed25519-signed receipts. Machine-readable ask and coupon metadata. Terms and A2A examples: https://ax-week07.treasuresky.xyz/ . No rating is required for a discount. Please leave an honest review of your transaction.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:50083/",
+        "url": "http://127.0.0.1:57444/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
     ],
-    "version": "1.0.0",
+    "version": "1.1.0",
     "capabilities": {
       "streaming": false
     },
@@ -53,13 +53,13 @@
       "test": "seller_opens",
       "run": 1,
       "pass": true,
-      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 105"
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 110"
     },
     {
       "test": "seller_deal",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 105.0, asks [105]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [110]"
     },
     {
       "test": "seller_signed_receipt",
@@ -77,7 +77,7 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [100]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [110]"
     },
     {
       "test": "seller_signed_receipt",
@@ -89,7 +89,7 @@
       "test": "seller_deal",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 105.0, asks [105]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [110]"
     },
     {
       "test": "seller_signed_receipt",
@@ -101,19 +101,19 @@
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [273, 273, 260, 273, 260, 273, 273, 273, 273]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [286, 286, 286, 286, 286, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [273, 260, 260, 260, 260, 273]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [286, 286, 286, 286, 286, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [273, 273, 273, 260, 273]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [286, 286, 286, 286, 286, 260, 260, 260, 260]"
     },
     {
       "test": "buyer_deal",
@@ -155,7 +155,7 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [230, 230, 230, 230, 230], stars 1, receipt null"
+      "detail": "offers [200, 200, 210, 215, 210], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -167,7 +167,7 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [230, 230, 230, 230, 230], stars 1, receipt null"
+      "detail": "offers [200, 200, 200, 200, 200], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -179,7 +179,7 @@
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [230, 230, 230, 230, 230], stars 1, receipt null"
+      "detail": "offers [200, 210, 215, 215, 215], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",

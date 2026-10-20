@@ -1,0 +1,1450 @@
+FFFFFF..FFF                                                              [100%]
+=================================== FAILURES ===================================
+_______ test_opening_ask_when_model_corrects_out_of_range_prices[case0] ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b555e80>
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-24/test_opening_ask_when_model_co0')
+case = ('lamp', 100, 105, 100)
+
+    @pytest.mark.parametrize(
+        "case",
+        [
+            ("lamp", 100, 105, 100),
+            ("lamp", 100, 105, 105),
+            ("chair", 180, 189, 180),
+            ("chair", 180, 189, 189),
+            ("bookshelf", 260, 273, 273),
+            ("lamp", 101, 107, 107),
+            ("lamp", 1, 2, 2),
+        ],
+    )
+    def test_opening_ask_when_model_corrects_out_of_range_prices(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        case: tuple[str, int, int, int],
+    ) -> None:
+        # Given: a real catalog and model attempts above/below the valid opening range.
+        item, reserve, ceiling, accepted = case
+        product = Product(sku=item, name=item, description=item, kind=item, reserve=reserve)
+        catalog_path = tmp_path / "catalog.json"
+        _ = catalog_path.write_text(f"[{product.model_dump_json()}]", encoding="utf-8")
+        replies = iter(
+            [
+                ("search_catalog", {"query": item}),
+                (
+                    "decide",
+                    {
+                        "action": "quote",
+                        "sku": item,
+                        "price": ceiling + 1,
+                        "reason": "High",
+                    },
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": item, "price": reserve - 1, "reason": "Low"},
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": item, "price": accepted, "reason": "Valid"},
+                ),
+            ]
+        )
+        feedback: list[JsonValue] = []
+    
+        async def complete(
+            _self: Harness,
+            messages: list[ChatCompletionMessageParam],
+            _tools: list[ChatCompletionToolParam],
+        ) -> ChatCompletionMessage:
+            last = messages[-1]
+            if last["role"] == "tool":
+                content = last["content"]
+                assert isinstance(content, str)
+                feedback.append(TypeAdapter(JsonValue).validate_json(content))
+            name, arguments = next(replies)
+            return ChatCompletionMessage.model_validate(
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "offline",
+                            "type": "function",
+                            "function": {"name": name, "arguments": json.dumps(arguments)},
+                        }
+                    ],
+                }
+            )
+    
+        monkeypatch.setattr(Harness, "complete", complete)
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/",
+                    Harness(model, lambda _line: None),
+                    Catalog(catalog_path),
+                    "Opening test",
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                    timeout=5,
+                    trust_env=False,
+                ) as client:
+                    # When: one buyer opens a negotiation.
+                    response = await send(client, f"I want a {item}")
+    
+                    # Then: only the corrected quote reaches the buyer.
+                    task = task_from(response)
+                    assert task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    assert f"Asking price: {accepted}" in task.status.message.parts[0].text
+                    assert not task.artifacts
+                    assert len(feedback) == 3
+                    candidates = feedback[0]
+                    assert isinstance(candidates, list)
+                    candidate = candidates[0]
+                    assert isinstance(candidate, dict)
+                    assert candidate["opening_max"] == ceiling
+                    guard = feedback[1]
+                    assert isinstance(guard, dict)
+                    assert guard["code"] == "opening_ask_limit"
+                    assert guard["minimum"] == reserve
+                    assert guard["maximum"] == ceiling
+                    assert isinstance(feedback[2], dict)
+                    assert "error" in feedback[2]
+    
+>       anyio.run(scenario)
+
+tests/test_opening_ask.py:141: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/",
+                Harness(model, lambda _line: None),
+                Catalog(catalog_path),
+                "Opening test",
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+                timeout=5,
+                trust_env=False,
+            ) as client:
+                # When: one buyer opens a negotiation.
+                response = await send(client, f"I want a {item}")
+    
+                # Then: only the corrected quote reaches the buyer.
+                task = task_from(response)
+                assert task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+>               assert f"Asking price: {accepted}" in task.status.message.parts[0].text
+E               assert 'Asking price: 100' in 'lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 106'
+E                +  where 'lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 106' = text: "lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 106"\n.text
+
+tests/test_opening_ask.py:125: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+_______ test_opening_ask_when_model_corrects_out_of_range_prices[case1] ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b7fbb90>
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-24/test_opening_ask_when_model_co1')
+case = ('lamp', 100, 105, 105)
+
+    @pytest.mark.parametrize(
+        "case",
+        [
+            ("lamp", 100, 105, 100),
+            ("lamp", 100, 105, 105),
+            ("chair", 180, 189, 180),
+            ("chair", 180, 189, 189),
+            ("bookshelf", 260, 273, 273),
+            ("lamp", 101, 107, 107),
+            ("lamp", 1, 2, 2),
+        ],
+    )
+    def test_opening_ask_when_model_corrects_out_of_range_prices(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        case: tuple[str, int, int, int],
+    ) -> None:
+        # Given: a real catalog and model attempts above/below the valid opening range.
+        item, reserve, ceiling, accepted = case
+        product = Product(sku=item, name=item, description=item, kind=item, reserve=reserve)
+        catalog_path = tmp_path / "catalog.json"
+        _ = catalog_path.write_text(f"[{product.model_dump_json()}]", encoding="utf-8")
+        replies = iter(
+            [
+                ("search_catalog", {"query": item}),
+                (
+                    "decide",
+                    {
+                        "action": "quote",
+                        "sku": item,
+                        "price": ceiling + 1,
+                        "reason": "High",
+                    },
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": item, "price": reserve - 1, "reason": "Low"},
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": item, "price": accepted, "reason": "Valid"},
+                ),
+            ]
+        )
+        feedback: list[JsonValue] = []
+    
+        async def complete(
+            _self: Harness,
+            messages: list[ChatCompletionMessageParam],
+            _tools: list[ChatCompletionToolParam],
+        ) -> ChatCompletionMessage:
+            last = messages[-1]
+            if last["role"] == "tool":
+                content = last["content"]
+                assert isinstance(content, str)
+                feedback.append(TypeAdapter(JsonValue).validate_json(content))
+            name, arguments = next(replies)
+            return ChatCompletionMessage.model_validate(
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "offline",
+                            "type": "function",
+                            "function": {"name": name, "arguments": json.dumps(arguments)},
+                        }
+                    ],
+                }
+            )
+    
+        monkeypatch.setattr(Harness, "complete", complete)
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/",
+                    Harness(model, lambda _line: None),
+                    Catalog(catalog_path),
+                    "Opening test",
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                    timeout=5,
+                    trust_env=False,
+                ) as client:
+                    # When: one buyer opens a negotiation.
+                    response = await send(client, f"I want a {item}")
+    
+                    # Then: only the corrected quote reaches the buyer.
+                    task = task_from(response)
+                    assert task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    assert f"Asking price: {accepted}" in task.status.message.parts[0].text
+                    assert not task.artifacts
+                    assert len(feedback) == 3
+                    candidates = feedback[0]
+                    assert isinstance(candidates, list)
+                    candidate = candidates[0]
+                    assert isinstance(candidate, dict)
+                    assert candidate["opening_max"] == ceiling
+                    guard = feedback[1]
+                    assert isinstance(guard, dict)
+                    assert guard["code"] == "opening_ask_limit"
+                    assert guard["minimum"] == reserve
+                    assert guard["maximum"] == ceiling
+                    assert isinstance(feedback[2], dict)
+                    assert "error" in feedback[2]
+    
+>       anyio.run(scenario)
+
+tests/test_opening_ask.py:141: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/",
+                Harness(model, lambda _line: None),
+                Catalog(catalog_path),
+                "Opening test",
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+                timeout=5,
+                trust_env=False,
+            ) as client:
+                # When: one buyer opens a negotiation.
+                response = await send(client, f"I want a {item}")
+    
+                # Then: only the corrected quote reaches the buyer.
+                task = task_from(response)
+                assert task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+>               assert f"Asking price: {accepted}" in task.status.message.parts[0].text
+E               assert 'Asking price: 105' in 'lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 106'
+E                +  where 'lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 106' = text: "lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 106"\n.text
+
+tests/test_opening_ask.py:125: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+_______ test_opening_ask_when_model_corrects_out_of_range_prices[case2] ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b8391f0>
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-24/test_opening_ask_when_model_co2')
+case = ('chair', 180, 189, 180)
+
+    @pytest.mark.parametrize(
+        "case",
+        [
+            ("lamp", 100, 105, 100),
+            ("lamp", 100, 105, 105),
+            ("chair", 180, 189, 180),
+            ("chair", 180, 189, 189),
+            ("bookshelf", 260, 273, 273),
+            ("lamp", 101, 107, 107),
+            ("lamp", 1, 2, 2),
+        ],
+    )
+    def test_opening_ask_when_model_corrects_out_of_range_prices(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        case: tuple[str, int, int, int],
+    ) -> None:
+        # Given: a real catalog and model attempts above/below the valid opening range.
+        item, reserve, ceiling, accepted = case
+        product = Product(sku=item, name=item, description=item, kind=item, reserve=reserve)
+        catalog_path = tmp_path / "catalog.json"
+        _ = catalog_path.write_text(f"[{product.model_dump_json()}]", encoding="utf-8")
+        replies = iter(
+            [
+                ("search_catalog", {"query": item}),
+                (
+                    "decide",
+                    {
+                        "action": "quote",
+                        "sku": item,
+                        "price": ceiling + 1,
+                        "reason": "High",
+                    },
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": item, "price": reserve - 1, "reason": "Low"},
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": item, "price": accepted, "reason": "Valid"},
+                ),
+            ]
+        )
+        feedback: list[JsonValue] = []
+    
+        async def complete(
+            _self: Harness,
+            messages: list[ChatCompletionMessageParam],
+            _tools: list[ChatCompletionToolParam],
+        ) -> ChatCompletionMessage:
+            last = messages[-1]
+            if last["role"] == "tool":
+                content = last["content"]
+                assert isinstance(content, str)
+                feedback.append(TypeAdapter(JsonValue).validate_json(content))
+            name, arguments = next(replies)
+            return ChatCompletionMessage.model_validate(
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "offline",
+                            "type": "function",
+                            "function": {"name": name, "arguments": json.dumps(arguments)},
+                        }
+                    ],
+                }
+            )
+    
+        monkeypatch.setattr(Harness, "complete", complete)
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/",
+                    Harness(model, lambda _line: None),
+                    Catalog(catalog_path),
+                    "Opening test",
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                    timeout=5,
+                    trust_env=False,
+                ) as client:
+                    # When: one buyer opens a negotiation.
+                    response = await send(client, f"I want a {item}")
+    
+                    # Then: only the corrected quote reaches the buyer.
+                    task = task_from(response)
+                    assert task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    assert f"Asking price: {accepted}" in task.status.message.parts[0].text
+                    assert not task.artifacts
+                    assert len(feedback) == 3
+                    candidates = feedback[0]
+                    assert isinstance(candidates, list)
+                    candidate = candidates[0]
+                    assert isinstance(candidate, dict)
+                    assert candidate["opening_max"] == ceiling
+                    guard = feedback[1]
+                    assert isinstance(guard, dict)
+                    assert guard["code"] == "opening_ask_limit"
+                    assert guard["minimum"] == reserve
+                    assert guard["maximum"] == ceiling
+                    assert isinstance(feedback[2], dict)
+                    assert "error" in feedback[2]
+    
+>       anyio.run(scenario)
+
+tests/test_opening_ask.py:141: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/",
+                Harness(model, lambda _line: None),
+                Catalog(catalog_path),
+                "Opening test",
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+                timeout=5,
+                trust_env=False,
+            ) as client:
+                # When: one buyer opens a negotiation.
+                response = await send(client, f"I want a {item}")
+    
+                # Then: only the corrected quote reaches the buyer.
+                task = task_from(response)
+                assert task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+>               assert f"Asking price: {accepted}" in task.status.message.parts[0].text
+E               assert 'Asking price: 180' in 'chair. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 190'
+E                +  where 'chair. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 190' = text: "chair. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 190"\n.text
+
+tests/test_opening_ask.py:125: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+_______ test_opening_ask_when_model_corrects_out_of_range_prices[case3] ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b7fb260>
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-24/test_opening_ask_when_model_co3')
+case = ('chair', 180, 189, 189)
+
+    @pytest.mark.parametrize(
+        "case",
+        [
+            ("lamp", 100, 105, 100),
+            ("lamp", 100, 105, 105),
+            ("chair", 180, 189, 180),
+            ("chair", 180, 189, 189),
+            ("bookshelf", 260, 273, 273),
+            ("lamp", 101, 107, 107),
+            ("lamp", 1, 2, 2),
+        ],
+    )
+    def test_opening_ask_when_model_corrects_out_of_range_prices(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        case: tuple[str, int, int, int],
+    ) -> None:
+        # Given: a real catalog and model attempts above/below the valid opening range.
+        item, reserve, ceiling, accepted = case
+        product = Product(sku=item, name=item, description=item, kind=item, reserve=reserve)
+        catalog_path = tmp_path / "catalog.json"
+        _ = catalog_path.write_text(f"[{product.model_dump_json()}]", encoding="utf-8")
+        replies = iter(
+            [
+                ("search_catalog", {"query": item}),
+                (
+                    "decide",
+                    {
+                        "action": "quote",
+                        "sku": item,
+                        "price": ceiling + 1,
+                        "reason": "High",
+                    },
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": item, "price": reserve - 1, "reason": "Low"},
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": item, "price": accepted, "reason": "Valid"},
+                ),
+            ]
+        )
+        feedback: list[JsonValue] = []
+    
+        async def complete(
+            _self: Harness,
+            messages: list[ChatCompletionMessageParam],
+            _tools: list[ChatCompletionToolParam],
+        ) -> ChatCompletionMessage:
+            last = messages[-1]
+            if last["role"] == "tool":
+                content = last["content"]
+                assert isinstance(content, str)
+                feedback.append(TypeAdapter(JsonValue).validate_json(content))
+            name, arguments = next(replies)
+            return ChatCompletionMessage.model_validate(
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "offline",
+                            "type": "function",
+                            "function": {"name": name, "arguments": json.dumps(arguments)},
+                        }
+                    ],
+                }
+            )
+    
+        monkeypatch.setattr(Harness, "complete", complete)
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/",
+                    Harness(model, lambda _line: None),
+                    Catalog(catalog_path),
+                    "Opening test",
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                    timeout=5,
+                    trust_env=False,
+                ) as client:
+                    # When: one buyer opens a negotiation.
+                    response = await send(client, f"I want a {item}")
+    
+                    # Then: only the corrected quote reaches the buyer.
+                    task = task_from(response)
+                    assert task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    assert f"Asking price: {accepted}" in task.status.message.parts[0].text
+                    assert not task.artifacts
+                    assert len(feedback) == 3
+                    candidates = feedback[0]
+                    assert isinstance(candidates, list)
+                    candidate = candidates[0]
+                    assert isinstance(candidate, dict)
+                    assert candidate["opening_max"] == ceiling
+                    guard = feedback[1]
+                    assert isinstance(guard, dict)
+                    assert guard["code"] == "opening_ask_limit"
+                    assert guard["minimum"] == reserve
+                    assert guard["maximum"] == ceiling
+                    assert isinstance(feedback[2], dict)
+                    assert "error" in feedback[2]
+    
+>       anyio.run(scenario)
+
+tests/test_opening_ask.py:141: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/",
+                Harness(model, lambda _line: None),
+                Catalog(catalog_path),
+                "Opening test",
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+                timeout=5,
+                trust_env=False,
+            ) as client:
+                # When: one buyer opens a negotiation.
+                response = await send(client, f"I want a {item}")
+    
+                # Then: only the corrected quote reaches the buyer.
+                task = task_from(response)
+                assert task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+>               assert f"Asking price: {accepted}" in task.status.message.parts[0].text
+E               assert 'Asking price: 189' in 'chair. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 190'
+E                +  where 'chair. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 190' = text: "chair. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 190"\n.text
+
+tests/test_opening_ask.py:125: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+_______ test_opening_ask_when_model_corrects_out_of_range_prices[case4] ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b826ff0>
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-24/test_opening_ask_when_model_co4')
+case = ('bookshelf', 260, 273, 273)
+
+    @pytest.mark.parametrize(
+        "case",
+        [
+            ("lamp", 100, 105, 100),
+            ("lamp", 100, 105, 105),
+            ("chair", 180, 189, 180),
+            ("chair", 180, 189, 189),
+            ("bookshelf", 260, 273, 273),
+            ("lamp", 101, 107, 107),
+            ("lamp", 1, 2, 2),
+        ],
+    )
+    def test_opening_ask_when_model_corrects_out_of_range_prices(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        case: tuple[str, int, int, int],
+    ) -> None:
+        # Given: a real catalog and model attempts above/below the valid opening range.
+        item, reserve, ceiling, accepted = case
+        product = Product(sku=item, name=item, description=item, kind=item, reserve=reserve)
+        catalog_path = tmp_path / "catalog.json"
+        _ = catalog_path.write_text(f"[{product.model_dump_json()}]", encoding="utf-8")
+        replies = iter(
+            [
+                ("search_catalog", {"query": item}),
+                (
+                    "decide",
+                    {
+                        "action": "quote",
+                        "sku": item,
+                        "price": ceiling + 1,
+                        "reason": "High",
+                    },
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": item, "price": reserve - 1, "reason": "Low"},
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": item, "price": accepted, "reason": "Valid"},
+                ),
+            ]
+        )
+        feedback: list[JsonValue] = []
+    
+        async def complete(
+            _self: Harness,
+            messages: list[ChatCompletionMessageParam],
+            _tools: list[ChatCompletionToolParam],
+        ) -> ChatCompletionMessage:
+            last = messages[-1]
+            if last["role"] == "tool":
+                content = last["content"]
+                assert isinstance(content, str)
+                feedback.append(TypeAdapter(JsonValue).validate_json(content))
+            name, arguments = next(replies)
+            return ChatCompletionMessage.model_validate(
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "offline",
+                            "type": "function",
+                            "function": {"name": name, "arguments": json.dumps(arguments)},
+                        }
+                    ],
+                }
+            )
+    
+        monkeypatch.setattr(Harness, "complete", complete)
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/",
+                    Harness(model, lambda _line: None),
+                    Catalog(catalog_path),
+                    "Opening test",
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                    timeout=5,
+                    trust_env=False,
+                ) as client:
+                    # When: one buyer opens a negotiation.
+                    response = await send(client, f"I want a {item}")
+    
+                    # Then: only the corrected quote reaches the buyer.
+                    task = task_from(response)
+                    assert task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    assert f"Asking price: {accepted}" in task.status.message.parts[0].text
+                    assert not task.artifacts
+                    assert len(feedback) == 3
+                    candidates = feedback[0]
+                    assert isinstance(candidates, list)
+                    candidate = candidates[0]
+                    assert isinstance(candidate, dict)
+                    assert candidate["opening_max"] == ceiling
+                    guard = feedback[1]
+                    assert isinstance(guard, dict)
+                    assert guard["code"] == "opening_ask_limit"
+                    assert guard["minimum"] == reserve
+                    assert guard["maximum"] == ceiling
+                    assert isinstance(feedback[2], dict)
+                    assert "error" in feedback[2]
+    
+>       anyio.run(scenario)
+
+tests/test_opening_ask.py:141: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/",
+                Harness(model, lambda _line: None),
+                Catalog(catalog_path),
+                "Opening test",
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+                timeout=5,
+                trust_env=False,
+            ) as client:
+                # When: one buyer opens a negotiation.
+                response = await send(client, f"I want a {item}")
+    
+                # Then: only the corrected quote reaches the buyer.
+                task = task_from(response)
+                assert task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+>               assert f"Asking price: {accepted}" in task.status.message.parts[0].text
+E               assert 'Asking price: 273' in 'bookshelf. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 274'
+E                +  where 'bookshelf. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 274' = text: "bookshelf. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 274"\n.text
+
+tests/test_opening_ask.py:125: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+_______ test_opening_ask_when_model_corrects_out_of_range_prices[case5] ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b826de0>
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-24/test_opening_ask_when_model_co5')
+case = ('lamp', 101, 107, 107)
+
+    @pytest.mark.parametrize(
+        "case",
+        [
+            ("lamp", 100, 105, 100),
+            ("lamp", 100, 105, 105),
+            ("chair", 180, 189, 180),
+            ("chair", 180, 189, 189),
+            ("bookshelf", 260, 273, 273),
+            ("lamp", 101, 107, 107),
+            ("lamp", 1, 2, 2),
+        ],
+    )
+    def test_opening_ask_when_model_corrects_out_of_range_prices(
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        case: tuple[str, int, int, int],
+    ) -> None:
+        # Given: a real catalog and model attempts above/below the valid opening range.
+        item, reserve, ceiling, accepted = case
+        product = Product(sku=item, name=item, description=item, kind=item, reserve=reserve)
+        catalog_path = tmp_path / "catalog.json"
+        _ = catalog_path.write_text(f"[{product.model_dump_json()}]", encoding="utf-8")
+        replies = iter(
+            [
+                ("search_catalog", {"query": item}),
+                (
+                    "decide",
+                    {
+                        "action": "quote",
+                        "sku": item,
+                        "price": ceiling + 1,
+                        "reason": "High",
+                    },
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": item, "price": reserve - 1, "reason": "Low"},
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": item, "price": accepted, "reason": "Valid"},
+                ),
+            ]
+        )
+        feedback: list[JsonValue] = []
+    
+        async def complete(
+            _self: Harness,
+            messages: list[ChatCompletionMessageParam],
+            _tools: list[ChatCompletionToolParam],
+        ) -> ChatCompletionMessage:
+            last = messages[-1]
+            if last["role"] == "tool":
+                content = last["content"]
+                assert isinstance(content, str)
+                feedback.append(TypeAdapter(JsonValue).validate_json(content))
+            name, arguments = next(replies)
+            return ChatCompletionMessage.model_validate(
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "offline",
+                            "type": "function",
+                            "function": {"name": name, "arguments": json.dumps(arguments)},
+                        }
+                    ],
+                }
+            )
+    
+        monkeypatch.setattr(Harness, "complete", complete)
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/",
+                    Harness(model, lambda _line: None),
+                    Catalog(catalog_path),
+                    "Opening test",
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                    timeout=5,
+                    trust_env=False,
+                ) as client:
+                    # When: one buyer opens a negotiation.
+                    response = await send(client, f"I want a {item}")
+    
+                    # Then: only the corrected quote reaches the buyer.
+                    task = task_from(response)
+                    assert task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    assert f"Asking price: {accepted}" in task.status.message.parts[0].text
+                    assert not task.artifacts
+                    assert len(feedback) == 3
+                    candidates = feedback[0]
+                    assert isinstance(candidates, list)
+                    candidate = candidates[0]
+                    assert isinstance(candidate, dict)
+                    assert candidate["opening_max"] == ceiling
+                    guard = feedback[1]
+                    assert isinstance(guard, dict)
+                    assert guard["code"] == "opening_ask_limit"
+                    assert guard["minimum"] == reserve
+                    assert guard["maximum"] == ceiling
+                    assert isinstance(feedback[2], dict)
+                    assert "error" in feedback[2]
+    
+>       anyio.run(scenario)
+
+tests/test_opening_ask.py:141: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/",
+                Harness(model, lambda _line: None),
+                Catalog(catalog_path),
+                "Opening test",
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+                timeout=5,
+                trust_env=False,
+            ) as client:
+                # When: one buyer opens a negotiation.
+                response = await send(client, f"I want a {item}")
+    
+                # Then: only the corrected quote reaches the buyer.
+                task = task_from(response)
+                assert task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+>               assert f"Asking price: {accepted}" in task.status.message.parts[0].text
+E               assert 'Asking price: 107' in 'lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 108'
+E                +  where 'lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 108' = text: "lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 108"\n.text
+
+tests/test_opening_ask.py:125: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+____ test_invalid_opening_when_guard_leaves_task_and_events_untouched[106] _____
+
+price = 106
+
+    @pytest.mark.parametrize("price", [99, 106])
+    def test_invalid_opening_when_guard_leaves_task_and_events_untouched(
+        price: int,
+    ) -> None:
+        # Given: one freshly retrieved product and no committed negotiation.
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        queue = EventCollector()
+        decision = Decision(action="quote", sku="lamp", price=price, reason="Out of range")
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                seller = Negotiator(Harness(model, lambda _line: None), catalog, "Test")
+                turn = Turn(
+                    "new-task",
+                    TaskUpdater(queue, "new-task", "context"),
+                    None,
+                    {"lamp": catalog.get("lamp")},
+                    None,
+                )
+    
+                # When: the tool attempts to publish an invalid opening quote.
+                result = await seller.commit(turn, decision)
+    
+                # Then: no task, artifact, or negotiation state was committed.
+                assert not result.terminal
+                assert queue.events == []
+                assert seller.negotiations == {}
+                assert seller.closed == set()
+    
+>       anyio.run(scenario)
+
+tests/test_opening_ask.py:185: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            seller = Negotiator(Harness(model, lambda _line: None), catalog, "Test")
+            turn = Turn(
+                "new-task",
+                TaskUpdater(queue, "new-task", "context"),
+                None,
+                {"lamp": catalog.get("lamp")},
+                None,
+            )
+    
+            # When: the tool attempts to publish an invalid opening quote.
+            result = await seller.commit(turn, decision)
+    
+            # Then: no task, artifact, or negotiation state was committed.
+>           assert not result.terminal
+E           AssertionError: assert not True
+E            +  where True = ToolResult(data={'action': 'quote', 'price': 106}, terminal=True).terminal
+
+tests/test_opening_ask.py:180: AssertionError
+__________ test_seller_receipt_when_real_a2a_task_accepts_offer[True] __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10be2cef0>
+signed = True
+
+    @pytest.mark.parametrize("signed", [True, False])
+    def test_seller_receipt_when_real_a2a_task_accepts_offer(
+        monkeypatch: pytest.MonkeyPatch,
+        *,
+        signed: bool,
+    ) -> None:
+        # Given: only the external model completion is replaced; tool loop/routes are real.
+        replies = iter(
+            [
+                ("search_catalog", {"query": "lamp"}),
+                (
+                    "decide",
+                    {"action": "quote", "sku": "lamp", "price": 120, "reason": "Opening"},
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": "lamp", "price": 105, "reason": "Corrected"},
+                ),
+                (
+                    "decide",
+                    {"action": "accept", "sku": "lamp", "price": 1, "reason": "Low bid"},
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": "lamp", "price": 120, "reason": "Reserve"},
+                ),
+                (
+                    "decide",
+                    {"action": "accept", "sku": "lamp", "price": 120, "reason": "Deal"},
+                ),
+            ]
+        )
+        logs: list[str] = []
+        key = Ed25519PrivateKey.generate()
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+    
+        async def complete(
+            _self: Harness,
+            _messages: list[ChatCompletionMessageParam],
+            _tools: list[ChatCompletionToolParam],
+        ) -> ChatCompletionMessage:
+            name, arguments = next(replies)
+            return ChatCompletionMessage.model_validate(
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "offline",
+                            "type": "function",
+                            "function": {"name": name, "arguments": json.dumps(arguments)},
+                        }
+                    ],
+                }
+            )
+    
+        monkeypatch.setattr(Harness, "complete", complete)
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                harness = Harness(model, logs.append)
+                app = create_app(
+                    "http://seller/",
+                    harness,
+                    catalog,
+                    "테스트 상점",
+                    signer=ReceiptSigner(key) if signed else None,
+                )
+                # ASGI transport stays in process: no socket, API, or network traffic.
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                    timeout=5,
+                    trust_env=False,
+                ) as client:
+                    # When: open, submit a below-reserve bid, then agree and try replay.
+                    opening = await send(client, "I want a lamp")
+                    assert (
+                        "Asking price: 105"
+                        in task_from(opening).status.message.parts[0].text
+                    )
+                    task_id = task_from(opening).id
+                    assert task_id
+                    low = await send(client, "1", task_id)
+                    accepted = await send(client, "120", task_id)
+                    replay = await send(client, "120", task_id)
+    
+                    # Then: reserve holds, receipt belongs to SDK task, task is terminal.
+                    low_task = task_from(low)
+                    assert low_task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    assert not low_task.artifacts
+                    assert any("code=reserve" in line for line in logs)
+                    completed = task_from(accepted)
+                    assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                    assert len(completed.artifacts) == 1
+                    assert len(completed.artifacts[0].parts) == 1
+                    receipt = TypeAdapter(JsonValue).validate_json(
+                        MessageToJson(completed.artifacts[0].parts[0].data)
+                    )
+                    assert isinstance(receipt, dict)
+                    assert receipt["price"] == 120
+                    assert receipt["sku"] == "lamp"
+                    if signed:
+                        assert receipt["task"] == task_id
+                        assert receipt["shop"] == "테스트 상점"
+                        signature = receipt["sig_seller"]
+                        assert isinstance(signature, str)
+                        body = {
+                            field: receipt[field]
+                            for field in ("shop", "item", "price", "task")
+                        }
+                        body["price"] = 120
+                        canonical = json.dumps(
+                            body, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+                        ).encode()
+                        key.public_key().verify(
+                            base64.b64decode(signature, validate=True), canonical
+                        )
+                    else:
+                        assert receipt["seller"] == "테스트 상점"
+                        assert "sig_seller" not in receipt
+                    assert isinstance(replay, dict)
+                    assert "error" in replay
+                    print(
+                        json.dumps(
+                            {
+                                "signed": signed,
+                                "task": task_id,
+                                "receipt": receipt,
+                                "reserve_held": True,
+                                "terminal_rejected": True,
+                            },
+                            ensure_ascii=False,
+                        )
+                    )
+    
+>       anyio.run(scenario)
+
+tests/test_signed_seller.py:165: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            harness = Harness(model, logs.append)
+            app = create_app(
+                "http://seller/",
+                harness,
+                catalog,
+                "테스트 상점",
+                signer=ReceiptSigner(key) if signed else None,
+            )
+            # ASGI transport stays in process: no socket, API, or network traffic.
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+                timeout=5,
+                trust_env=False,
+            ) as client:
+                # When: open, submit a below-reserve bid, then agree and try replay.
+                opening = await send(client, "I want a lamp")
+>               assert (
+                    "Asking price: 105"
+                    in task_from(opening).status.message.parts[0].text
+                )
+E               assert 'Asking price: 105' in 'lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 120'
+E                +  where 'lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 120' = text: "lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 120"\n.text
+
+tests/test_signed_seller.py:106: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+_________ test_seller_receipt_when_real_a2a_task_accepts_offer[False] __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1113fd0d0>
+signed = False
+
+    @pytest.mark.parametrize("signed", [True, False])
+    def test_seller_receipt_when_real_a2a_task_accepts_offer(
+        monkeypatch: pytest.MonkeyPatch,
+        *,
+        signed: bool,
+    ) -> None:
+        # Given: only the external model completion is replaced; tool loop/routes are real.
+        replies = iter(
+            [
+                ("search_catalog", {"query": "lamp"}),
+                (
+                    "decide",
+                    {"action": "quote", "sku": "lamp", "price": 120, "reason": "Opening"},
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": "lamp", "price": 105, "reason": "Corrected"},
+                ),
+                (
+                    "decide",
+                    {"action": "accept", "sku": "lamp", "price": 1, "reason": "Low bid"},
+                ),
+                (
+                    "decide",
+                    {"action": "quote", "sku": "lamp", "price": 120, "reason": "Reserve"},
+                ),
+                (
+                    "decide",
+                    {"action": "accept", "sku": "lamp", "price": 120, "reason": "Deal"},
+                ),
+            ]
+        )
+        logs: list[str] = []
+        key = Ed25519PrivateKey.generate()
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+    
+        async def complete(
+            _self: Harness,
+            _messages: list[ChatCompletionMessageParam],
+            _tools: list[ChatCompletionToolParam],
+        ) -> ChatCompletionMessage:
+            name, arguments = next(replies)
+            return ChatCompletionMessage.model_validate(
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "offline",
+                            "type": "function",
+                            "function": {"name": name, "arguments": json.dumps(arguments)},
+                        }
+                    ],
+                }
+            )
+    
+        monkeypatch.setattr(Harness, "complete", complete)
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                harness = Harness(model, logs.append)
+                app = create_app(
+                    "http://seller/",
+                    harness,
+                    catalog,
+                    "테스트 상점",
+                    signer=ReceiptSigner(key) if signed else None,
+                )
+                # ASGI transport stays in process: no socket, API, or network traffic.
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                    timeout=5,
+                    trust_env=False,
+                ) as client:
+                    # When: open, submit a below-reserve bid, then agree and try replay.
+                    opening = await send(client, "I want a lamp")
+                    assert (
+                        "Asking price: 105"
+                        in task_from(opening).status.message.parts[0].text
+                    )
+                    task_id = task_from(opening).id
+                    assert task_id
+                    low = await send(client, "1", task_id)
+                    accepted = await send(client, "120", task_id)
+                    replay = await send(client, "120", task_id)
+    
+                    # Then: reserve holds, receipt belongs to SDK task, task is terminal.
+                    low_task = task_from(low)
+                    assert low_task.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    assert not low_task.artifacts
+                    assert any("code=reserve" in line for line in logs)
+                    completed = task_from(accepted)
+                    assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                    assert len(completed.artifacts) == 1
+                    assert len(completed.artifacts[0].parts) == 1
+                    receipt = TypeAdapter(JsonValue).validate_json(
+                        MessageToJson(completed.artifacts[0].parts[0].data)
+                    )
+                    assert isinstance(receipt, dict)
+                    assert receipt["price"] == 120
+                    assert receipt["sku"] == "lamp"
+                    if signed:
+                        assert receipt["task"] == task_id
+                        assert receipt["shop"] == "테스트 상점"
+                        signature = receipt["sig_seller"]
+                        assert isinstance(signature, str)
+                        body = {
+                            field: receipt[field]
+                            for field in ("shop", "item", "price", "task")
+                        }
+                        body["price"] = 120
+                        canonical = json.dumps(
+                            body, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+                        ).encode()
+                        key.public_key().verify(
+                            base64.b64decode(signature, validate=True), canonical
+                        )
+                    else:
+                        assert receipt["seller"] == "테스트 상점"
+                        assert "sig_seller" not in receipt
+                    assert isinstance(replay, dict)
+                    assert "error" in replay
+                    print(
+                        json.dumps(
+                            {
+                                "signed": signed,
+                                "task": task_id,
+                                "receipt": receipt,
+                                "reserve_held": True,
+                                "terminal_rejected": True,
+                            },
+                            ensure_ascii=False,
+                        )
+                    )
+    
+>       anyio.run(scenario)
+
+tests/test_signed_seller.py:165: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            harness = Harness(model, logs.append)
+            app = create_app(
+                "http://seller/",
+                harness,
+                catalog,
+                "테스트 상점",
+                signer=ReceiptSigner(key) if signed else None,
+            )
+            # ASGI transport stays in process: no socket, API, or network traffic.
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+                timeout=5,
+                trust_env=False,
+            ) as client:
+                # When: open, submit a below-reserve bid, then agree and try replay.
+                opening = await send(client, "I want a lamp")
+>               assert (
+                    "Asking price: 105"
+                    in task_from(opening).status.message.parts[0].text
+                )
+E               assert 'Asking price: 105' in 'lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 120'
+E                +  where 'lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 120' = text: "lamp. R2WELCOME: send a numeric counteroffer for one coupon review, up to 5 price units off, subject to our minimum price. Asking price: 120"\n.text
+
+tests/test_signed_seller.py:106: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+=========================== short test summary info ============================
+FAILED tests/test_opening_ask.py::test_opening_ask_when_model_corrects_out_of_range_prices[case0]
+FAILED tests/test_opening_ask.py::test_opening_ask_when_model_corrects_out_of_range_prices[case1]
+FAILED tests/test_opening_ask.py::test_opening_ask_when_model_corrects_out_of_range_prices[case2]
+FAILED tests/test_opening_ask.py::test_opening_ask_when_model_corrects_out_of_range_prices[case3]
+FAILED tests/test_opening_ask.py::test_opening_ask_when_model_corrects_out_of_range_prices[case4]
+FAILED tests/test_opening_ask.py::test_opening_ask_when_model_corrects_out_of_range_prices[case5]
+FAILED tests/test_opening_ask.py::test_invalid_opening_when_guard_leaves_task_and_events_untouched[106]
+FAILED tests/test_signed_seller.py::test_seller_receipt_when_real_a2a_task_accepts_offer[True]
+FAILED tests/test_signed_seller.py::test_seller_receipt_when_real_a2a_task_accepts_offer[False]
+9 failed, 2 passed in 1.51s
