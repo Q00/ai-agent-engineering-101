@@ -42,6 +42,7 @@ type Strategy = {
   reason: string;
   updated: string;
   promo?: string; // a line before the opening ask (launch sale); digits are stripped so buyers read the ask right
+  loyalty?: number[]; // coupon discount by tier, set by meta_shop.py (small during the launch sale, larger after)
 };
 const STRATEGY_ID = "__strategy__";
 
@@ -187,7 +188,8 @@ async function signReceipt(env: Env, body: { shop: string; item: string; price: 
 // the first eight: no digits, because buyers read prices as numbers in the text, and the tier cannot be
 // raised without the key (derived from ADMIN_TOKEN).
 
-const LOYALTY = [0, 0.03, 0.05, 0.07]; // by tier; tier 3 and above stay at the cap
+const LOYALTY = [0, 0.03, 0.05, 0.07]; // by tier, when the strategy sets none; tier 3 and above stay at the cap
+const MAX_LOYALTY = 0.15; // the Worker refuses a strategy with a bigger step
 const COUPON = /FAIR-([A-Z]{8})([A-Z]{8})/i;
 const tierOf = (code: string) => Math.max(1, Math.min(LOYALTY.length - 1, code.charCodeAt(5) - 64));
 const toLetters = (bytes: Uint8Array, n: number) => Array.from(bytes.slice(0, n), (b) => String.fromCharCode(65 + (b % 26))).join("");
@@ -267,7 +269,8 @@ export class TaskObject extends DurableObject<Env> {
       const code = await validCoupon(this.env, textOf(msg));
       if (code && (await this.env.TASKS.get(this.env.TASKS.idFromName(STRATEGY_ID)).redeem(code))) {
         tier = tierOf(code);
-        discount = LOYALTY[tier];
+        const table = strategy?.loyalty?.length ? strategy.loyalty : LOYALTY;
+        discount = Math.min(MAX_LOYALTY, table[Math.min(tier, table.length - 1)] ?? 0);
         const lower = Math.max(reserve + MARGIN, Math.round(price * (1 - discount)));
         console.log(`COUPON: ${code} redeemed, tier ${tier}, opening ${price} -> ${lower}`);
         price = Math.min(price, lower);
@@ -536,6 +539,10 @@ app.put("/admin/strategy", async (c) => {
       if (v === null || v < RESERVE[item]) return c.json({ error: `${key}.${item} missing or below reserve ${RESERVE[item]}` }, 400);
       s[key][item] = v;
     }
+  }
+  if (s.loyalty !== undefined) {
+    const ok = Array.isArray(s.loyalty) && s.loyalty.every((v) => typeof v === "number" && v >= 0 && v <= MAX_LOYALTY);
+    if (!ok) return c.json({ error: `loyalty must be a list of discounts between 0 and ${MAX_LOYALTY}` }, 400);
   }
   console.log(`STRATEGY: set v${s.version} open ${JSON.stringify(s.open)} target ${JSON.stringify(s.target)}`);
   return c.json(await strategyStub(c.env).setStrategy({ ...s, updated: new Date().toISOString() }));
