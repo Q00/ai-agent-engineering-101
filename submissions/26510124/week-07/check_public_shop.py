@@ -4,6 +4,7 @@ This fixed test counterpart accepts the seller's quote (up to --budget).
 It does not submit a market result or write a review.
 """
 import argparse
+import base64
 import json
 from pathlib import Path
 import time
@@ -12,6 +13,7 @@ import uuid
 import httpx
 
 from buyer_agent import last_asking_price, message_text
+from receipt_signing import load_shop_key
 
 
 def main():
@@ -19,6 +21,7 @@ def main():
     ap.add_argument("--url")
     ap.add_argument("--item", default="lamp")
     ap.add_argument("--budget", type=int, default=250)
+    ap.add_argument("--verify-signature", action="store_true")
     args = ap.parse_args()
     directory = Path(__file__).resolve().parent
     base = (args.url or (directory / "agent-market/shop-url").read_text().strip()).rstrip("/")
@@ -58,7 +61,17 @@ def main():
                 if task["status"]["state"] == "TASK_STATE_COMPLETED":
                     receipt = next(p["data"] for a in task["artifacts"] for p in a["parts"] if "data" in p)
                     assert receipt["price"] == offered and receipt["item"] == args.item, receipt
-                    record({"PASS": True, "receipt": receipt, "market_result_submitted": False})
+                    if args.verify_signature:
+                        assert receipt["task"] == task_id
+                        assert receipt["shop"] == card["name"]
+                        signed = {k: receipt[k] for k in ("shop", "item", "price", "task")}
+                        signed["price"] = offered
+                        canonical = json.dumps(signed, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+                        load_shop_key(directory / "shop_key.pem").public_key().verify(
+                            base64.b64decode(receipt["sig_seller"], validate=True), canonical,
+                        )
+                    record({"PASS": True, "receipt": receipt, "market_result_submitted": False,
+                            "signature_verified": args.verify_signature})
                     return
                 assert task["status"]["state"] == "TASK_STATE_INPUT_REQUIRED", task
                 quote = last_asking_price(message_text(task))

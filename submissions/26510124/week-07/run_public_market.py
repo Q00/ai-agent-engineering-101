@@ -135,7 +135,8 @@ def main():
                     active = fresh
                     (runtime / "shop-url").write_text(fresh.url + "\n")
                     (runtime / "tunnel.pid").write_text(f"{fresh.process.pid}\n")
-                    kit.log(f"[managed] shop registered as {args.name}, round {joined['round']}: {fresh.url}")
+                    kit.log(f"[market] shop registered as {args.name}, round {joined['round']}")
+                    kit.log(f"[managed] public shop URL: {fresh.url}")
                     # Keep the preceding tunnel through this next order, allowing
                     # requests already using its URL to finish on the same seller.
                     for old in tunnels[:-2]:
@@ -152,7 +153,7 @@ def main():
                     continue
             if not buyer_joined:
                 joined = market.join("buyer", args.name, keys["buyer"])
-                kit.log(f"[managed] buyer registered as {args.name}, round {joined['round']}")
+                kit.log(f"[market] buyer registered as {args.name}, round {joined['round']}")
                 buyer_joined = True
             try:
                 response = market.call("POST", "/api/orders")
