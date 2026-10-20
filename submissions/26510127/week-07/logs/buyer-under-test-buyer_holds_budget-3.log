@@ -1,0 +1,17 @@
+[shops]
+Kit Shop | no reviews | 5 trades, 3 deals, paid lamp 100,100,100. Last: bookshelf: asks [338, 269, 260], my offers [200, 220], no deal
+[pick] Kit Shop because: it is the only shop I can use
+-> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[harness] {"action": "offer", "price": 220}
+-> '220'  <- TASK_STATE_INPUT_REQUIRED | 220 is too low. Counteroffer: 279.
+[harness] {"action": "offer", "price": 225}
+-> '225'  <- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
+[harness] {"action": "offer", "price": 228}
+-> '228'  <- TASK_STATE_INPUT_REQUIRED | 228 is too low. Counteroffer: 260.
+[harness] {"action": "offer", "price": 230}
+-> '230'  <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness] {"action": "walk"}
+walked away (CancelTask)
+[check] outcome: TASK_STATE_INPUT_REQUIRED; shop asks: [338, 279, 260, 260, 260]; my offers: [220, 225, 228, 230]; receipt: none
+[harness] review {"stars": 2, "review": "I never bought the bookshelf from Kit Shop because the seller kept asking for 260 to 338 while my offers of 220 to 230 went unaccepted, and no receipt was issued."}
+{"shop": "http://127.0.0.1:45171", "receipt": null, "stars": 2, "review": "I never bought the bookshelf from Kit Shop because the seller kept asking for 260 to 338 while my offers of 220 to 230 went unaccepted, and no receipt was issued."}

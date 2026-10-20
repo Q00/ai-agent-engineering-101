@@ -1,0 +1,11 @@
+[shops]
+Kit Shop North | 3 reviews, mean 1.3 stars; newest: 1* "Agreed 110, the receipt said 135." / 1* "Receipt price was higher than the price we agreed." / 2* "Overcharged on the receipt, avoid." | never traded
+Kit Shop South | 3 reviews, mean 4.7 stars; newest: 5* "Fair price, receipt matched." / 4* "Came down to my budget, honest receipt." / 5* "Quick deal at a fair price." | 1 trades, 1 deals, paid lamp 100. Last: lamp: asks [130], my offers [100], paid 100.0
+[harness] pick {"shop": "Kit Shop South", "reason": "Its reviews are strong and report receipts matching the agreed price, and my own record shows I paid the 100 I offered, well under the 120 limit, with no overcharge."}
+[pick] Kit Shop South because: Its reviews are strong and report receipts matching the agreed price, and my own record shows I paid the 100 I offered, well under the 120 limit, with no overcharge.
+-> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] {"action": "offer", "price": 100}
+-> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[check] outcome: TASK_STATE_COMPLETED; shop asks: [130]; my offers: [100]; receipt: {"price": 100.0, "task": "80ab1df8-36d0-4bf3-ac81-f5586b93f2ba", "item": "lamp", "shop": "Kit Shop South"}; receipt matches what we agreed
+[harness] review {"stars": 4, "review": "I bought the lamp from Kit Shop South for 100, below the shop's asking price of 130 and matching the price we agreed on, and the receipt confirms the sale went through as agreed."}
+{"shop": "http://127.0.0.1:48107", "receipt": {"price": 100.0, "task": "80ab1df8-36d0-4bf3-ac81-f5586b93f2ba", "item": "lamp", "sig_seller": "nWvCAsRJZCBQ8owXF30MrXH39zXriRkrl0wfg529iiJJCXSnIHzMKZbh9YFPqXyk3q8Knwsn6fWop/v8Pe1KAg==", "shop": "Kit Shop South"}, "stars": 4, "review": "I bought the lamp from Kit Shop South for 100, below the shop's asking price of 130 and matching the price we agreed on, and the receipt confirms the sale went through as agreed."}
