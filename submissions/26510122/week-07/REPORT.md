@@ -71,6 +71,10 @@ price to an integer; later local runs logged model-written factual reviews.
 Separately, a live no-deal review attempted to repeat a seller counterprice,
 so the code used its neutral fallback ([`market-kit.log`, line 4055](logs/market-kit.log#L4055)).
 The current reviewer receives no seller price text for a no-deal order.
+The final isolated market test passed 25/25. In its nine buyer runs, all nine
+reviews used the model-written path and none used the fixed fallback; in the
+review-selection test, the buyer chose the better-reviewed shop in all three
+runs ([`test-report.json`](test-report.json), [`market-test.log`](logs/market-test.log)).
 
 ## 3. Rounds 0, 1 and 2
 
@@ -159,6 +163,7 @@ The separate tunnel supervisor lives in `agent-market/` outside the submission;
 the kit's live output remains in `logs/market-kit.log`. An additional local
 `caffeinate -i` service prevents idle sleep while this Mac stays open; battery
 exhaustion or closing the lid would still stop it. Both agents were online at
-the last dashboard check, but keeping them online through the deadline remains
-required. In Round 0 the kit picks a random shop, so the live
+the last local checker run, but keeping them online through the deadline remains
+required. The checker reported zero counted Round 2 deals at that point. In Round
+0 the kit picks a random shop, so the live
 `market_buyer` review and memory policy can only be observed from Round 1.
