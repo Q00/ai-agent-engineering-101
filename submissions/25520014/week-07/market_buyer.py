@@ -19,7 +19,11 @@ Choosing (epsilon-greedy): with probability EPSILON a random shop from the list.
   2. never a shop whose only memories are no-deals,
   3. among the rest, the highest average review stars (no reviews counts as 3), ties at random.
 
-Stars and review are still placeholders.
+Stars and review, like a person would leave them: honesty first, then value against what
+I usually pay (the average remembered deal price for the item, else the budget):
+  receipt price or item differs from what was agreed -> 1, "Agreed X, receipt says Y."
+  deal 5% or more below the usual price -> 5, within 5% -> 4, 5% or more above -> 3
+  no deal -> 2 (the shop's last ask and my budget), shop did not answer -> 1
 """
 import argparse
 import json
@@ -92,11 +96,37 @@ def choose(shops, item, budget, memory):
                   + (f", avoiding {len(avoid)} shops with only no-deals" if avoid else ""))
 
 
-def review(shop, outcome, budget):
-    """Stars and review for the trade. Step 1: placeholders."""
-    if outcome["receipt"]:
-        return 3, f"Deal at {outcome['receipt'].get('price')} (budget {budget})."
-    return 3, f"No deal ({outcome['end']})."
+def usual_price(item, budget, memory):
+    prices = [m["price"] for m in memory if m["item"] == item and m["result"] == "deal" and m["price"] is not None]
+    if prices:
+        usual = sum(prices) / len(prices)
+        return usual, f"the {usual:.0f} I usually pay"
+    return budget, f"my budget of {budget}"
+
+
+def review(outcome, item, budget, memory):
+    """Stars (1-5) and a short factual review for the trade."""
+    rc = outcome["receipt"]
+    if not rc:
+        if outcome["end"].startswith("error"):
+            return 1, "Shop did not answer."
+        if outcome["asks"]:
+            return 2, f"No deal on {item}: shop stayed at {outcome['asks'][-1]}, my budget was {budget}."
+        return 2, f"No deal on {item}."
+
+    price = round(float(rc.get("price", 0)))
+    agreed = outcome["offers"][-1] if outcome["offers"] else None
+    if rc.get("item") != item:
+        return 1, f"Ordered {item}, receipt says {rc.get('item')}."
+    if agreed is not None and price != agreed:
+        return 1, f"Agreed {agreed}, receipt says {price}."
+
+    usual, basis = usual_price(item, budget, memory)
+    if price <= usual * 0.95:
+        return 5, f"Fair deal: {item} at {price}, below {basis}."
+    if price < usual * 1.05:
+        return 4, f"{item.capitalize()} at {price}, about {basis}."
+    return 3, f"{item.capitalize()} at {price}, above {basis}."
 
 
 def main():
@@ -123,7 +153,7 @@ def main():
     if not test:
         remember(shop, args.item, outcome)
 
-    stars, text = review(shop, outcome, args.budget)
+    stars, text = review(outcome, args.item, args.budget, memory)
     print(json.dumps({"shop": shop["url"], "receipt": outcome["receipt"], "stars": stars, "review": text},
                      ensure_ascii=False), flush=True)
 
