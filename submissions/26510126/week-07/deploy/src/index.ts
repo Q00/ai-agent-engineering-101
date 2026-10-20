@@ -130,7 +130,8 @@ type Task = {
   artifacts?: { artifactId: string; name: string; parts: Part[] }[];
   history: Message[];
 };
-type Deal = { item: string; ask: number; history: string[] };
+type Deal = { item: string; ask: number; history: string[]; offers?: number[] };
+const MARGIN = 5; // a stuck buyer is accepted only at reserve + MARGIN or more
 type RpcError = { code: number; message: string; data: unknown[] };
 type Outcome = { task: Task } | { error: RpcError };
 
@@ -249,6 +250,8 @@ export class TaskObject extends DurableObject<Env> {
   private async negotiate(task: Task, deal: Deal, offer: number) {
     const { item, ask: current } = deal;
     const reserve = RESERVE[item];
+    const prev = deal.offers?.at(-1);
+    deal.offers = [...(deal.offers ?? []), offer];
     deal.history.push(`The buyer offered ${offer}.`);
 
     if (offer >= current) {
@@ -261,6 +264,12 @@ export class TaskObject extends DurableObject<Env> {
     if (target && offer >= Math.max(target, reserve)) {
       // a fair offer closes at once: haggling a reached target down by ones loses buyers, and a quick fair deal earns the review
       console.log(`OUT: offer ${offer} reaches target ${target}, accepted by code`);
+      return await this.close(task, item, offer, "Agreed.");
+    }
+
+    if (prev !== undefined && offer <= prev + 1 && offer >= reserve + MARGIN) {
+      // the buyer stopped raising: this is its limit, and it is above our floor. A deal earns a good review, a walkaway a bad one.
+      console.log(`OUT: buyer stuck at ${offer} (last ${prev}), at or above reserve + ${MARGIN}, accepted by code`);
       return await this.close(task, item, offer, "Agreed.");
     }
 
@@ -292,6 +301,17 @@ export class TaskObject extends DurableObject<Env> {
     if (price > current) {
       console.log(`GUARD: counter ${price} above the last ask ${current}, holding at ${current}`);
       price = current;
+    }
+    if (prev !== undefined && offer > prev && current - price < 0.25 * (current - offer)) {
+      // the buyer is raising but the model concedes by ones (141, 142, ...): buyers walk and review it badly
+      const step = Math.max(reserve, Math.round(current - 0.4 * (current - offer)));
+      console.log(`GUARD: counter ${price} concedes too little to a rising buyer, countering at ${step}`);
+      price = Math.min(price, step);
+    }
+    if (prev !== undefined && offer < reserve && prev < reserve && price > reserve + MARGIN) {
+      // a buyer twice below our floor: show the floor now so it can decide fast instead of haggling for nothing
+      console.log(`GUARD: buyer below reserve twice (${prev}, ${offer}), countering near the floor at ${reserve + MARGIN}`);
+      price = reserve + MARGIN;
     }
     if (price <= offer) {
       // countering at or below the offer means the offer is acceptable
