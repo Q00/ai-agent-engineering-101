@@ -48,6 +48,7 @@ DEFAULT = {
 ASKS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "asks.json")
 START_ASKS = {"lamp": 110, "chair": 200, "bookshelf": 285}  # round-1 market averages: 109.7, 199.2, 284.8
 QUICK = 0.9  # a first offer at 90% of the ask or more closes at once (when it is above the floor)
+INTRO_VISITORS = 30  # the first 30 buyers get any offer at or above the floor at once, to collect first reviews
 STEP_UP, STEP_DOWN = 20, 30  # how the ask moves after a sale on the first offer / after a walkaway
 
 REVIEW_DISCOUNT = 0.05  # price off for a buyer who promises a 5-star review; the promise is not checked
@@ -82,6 +83,9 @@ class Seller(AgentExecutor):
         old = self.asks[item]
         self.asks[item] = max(math.ceil(self.cfg["reserve"][item] * 1.05), old + step)
         print(f"[price] {item}: {why}, ask {old} -> {self.asks[item]}", flush=True)
+        self.save()
+
+    def save(self):
         with open(ASKS_PATH, "w") as f:
             json.dump(self.asks, f)
 
@@ -101,7 +105,10 @@ class Seller(AgentExecutor):
                 await up.reject(say("We only sell: " + ", ".join(self.cfg["reserve"]) + "."))
                 return
             ask = max(self.cfg["reserve"][item], self.asks[item])
-            deal = {"item": item, "ask": ask, "counters": 0, "history": []}
+            self.asks["visitors"] = self.asks.get("visitors", 0) + 1  # kept in asks.json across restarts
+            self.save()
+            deal = {"item": item, "ask": ask, "counters": 0, "history": [],
+                    "intro": self.asks["visitors"] <= INTRO_VISITORS}
             deal["history"].append(f"seller: asking {ask}")
             self.open[task.id] = deal
             await up.requires_input(say(f"Promise a five-star review for a lower price. {item}: asking {ask}. "
@@ -122,14 +129,15 @@ class Seller(AgentExecutor):
         offer = int(m.group())
         deal["history"].append(f"buyer: offers {offer}")
         first = deal["counters"] == 0
-        if offer >= reserve and (offer >= deal["ask"] or deal["counters"] >= 1 or offer >= deal["ask"] * QUICK):
-            action = "accept"  # the card's term (1), a quick first offer, or any offer above the floor after a counter
+        if offer >= reserve and (deal["intro"] or offer >= deal["ask"] or deal["counters"] >= 1
+                                 or offer >= deal["ask"] * QUICK):
+            action = "accept"  # an intro buyer, the card's term (1), a quick first offer, or any offer after the floor
         else:
             action, price = "counter", reserve  # the floor at once, said as final
         print(f"[rule] {deal['item']} | offer {offer}, ask {deal['ask']}, floor {reserve} -> {action}"
               + ("" if action == "accept" else f" {price}"), flush=True)
         if action == "accept":
-            if first:
+            if first and not deal["intro"]:  # an intro sale says nothing about the price
                 self.move_ask(deal["item"], STEP_UP, f"sold at {offer} on the first offer")
             receipt = sign_receipt(self.key, {"shop": self.cfg["name"], "item": deal["item"],
                                               "price": offer, "task": task.id})  # offer is an int: signs 120, not 120.0
