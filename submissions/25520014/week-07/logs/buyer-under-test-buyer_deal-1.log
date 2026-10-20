@@ -1,11 +1,10 @@
-buyer: lamp, budget 120 (harness: claude -p --model haiku)
-seller: 'Kit Shop' at http://127.0.0.1:50916/
+market buyer: lamp, budget 120 (harness: claude -p --model haiku)
+[choose] http://127.0.0.1:63209 (Kit Shop): step-1 skeleton: first shop in the list
+seller: 'Kit Shop' at http://127.0.0.1:63209/
 -> SendMessage 'I want to buy a lamp'
 <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness round 1] 3.2s reply: {"action": "offer", "price": 95}
--> SendMessage '95' taskId=d26ae966
-<- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 112.
-[harness round 2] 3.9s reply: {"action": "offer", "price": 105}
--> SendMessage '105' taskId=d26ae966
-<- TASK_STATE_COMPLETED | Deal: lamp at 105.
-DONE bought: {'seller': 'Kit Shop', 'price': 105.0, 'item': 'lamp'}
+[harness round 1] 3.1s reply: {"action": "offer", "price": 100}
+-> SendMessage '100' taskId=d05023e1
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+DONE bought: {'item': 'lamp', 'task': 'd05023e1-2ba3-4e56-b4a1-31e8de06b4b6', 'sig_seller': 'sIv9Kn3CF9HLRI8qzK2nDitvOtgv0WREEweESaIwv0+UJV6MzyYzkr+xF2FyHq8HYbQbnumDDX+Kh4Eizl79DA==', 'price': 100.0, 'shop': 'Kit Shop'}
+{"shop": "http://127.0.0.1:63209", "receipt": {"item": "lamp", "task": "d05023e1-2ba3-4e56-b4a1-31e8de06b4b6", "sig_seller": "sIv9Kn3CF9HLRI8qzK2nDitvOtgv0WREEweESaIwv0+UJV6MzyYzkr+xF2FyHq8HYbQbnumDDX+Kh4Eizl79DA==", "price": 100.0, "shop": "Kit Shop"}, "stars": 3, "review": "Deal at 100.0 (budget 120)."}

@@ -1,0 +1,10 @@
+market buyer: lamp, budget 120 (harness: claude -p --model haiku)
+[choose] http://127.0.0.1:63955 (Kit Shop North): step-1 skeleton: first shop in the list
+seller: 'Kit Shop North' at http://127.0.0.1:63955/
+-> SendMessage 'I want to buy a lamp'
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness round 1] 2.8s reply: {"action": "offer", "price": 100}
+-> SendMessage '100' taskId=ccf2834a
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+DONE bought: {'item': 'lamp', 'task': 'ccf2834a-d4ef-46da-b980-adcb50ee88c9', 'sig_seller': '9Lq4Z6/lCCKJYidDrmB7/kNpIzELnrge9ZvVBX5tdI7V0pXN4pgYQMy6ou1hxdX+BIs0eWsVDkmMODyyJeTgDg==', 'price': 100.0, 'shop': 'Kit Shop North'}
+{"shop": "http://127.0.0.1:63955", "receipt": {"item": "lamp", "task": "ccf2834a-d4ef-46da-b980-adcb50ee88c9", "sig_seller": "9Lq4Z6/lCCKJYidDrmB7/kNpIzELnrge9ZvVBX5tdI7V0pXN4pgYQMy6ou1hxdX+BIs0eWsVDkmMODyyJeTgDg==", "price": 100.0, "shop": "Kit Shop North"}, "stars": 3, "review": "Deal at 100.0 (budget 120)."}
