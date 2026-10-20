@@ -53,23 +53,29 @@ class MarketMemory:
             end = chunk.rfind(b"\n") + 1
             pending = data.get("kit_pending", {})
             for line in chunk[:end].decode("utf-8", errors="replace").splitlines():
-                if "[order " in line:
+                # Match the kit's own prefix, never a marker quoted inside an
+                # untrusted remote message in a buyer/seller JSON trace.
+                stamped = re.match(r"^\d{2}:\d{2}:\d{2} (.*)$", line)
+                if not stamped:
+                    continue
+                entry = stamped.group(1)
+                if entry.startswith("[order "):
                     pending = {}
-                if '[buyer] {' in line:
+                if entry.startswith('[buyer] {'):
                     try:
-                        event = json.loads(line.split("[buyer] ", 1)[1])
+                        event = json.loads(entry[len("[buyer] "):])
                     except (ValueError, IndexError):
                         continue
                     if event.get("event") == "market_shop_selected":
                         pending["name"] = event.get("shop")
-                if "[sign]" in line:
+                if entry.startswith("[sign] "):
                     if "sig_seller ok" in line:
                         pending["signature"] = "verified"
                     elif "does not verify" in line:
                         pending["signature"] = "invalid"
                     elif "has no sig_seller" in line:
                         pending["signature"] = "missing"
-                if "[market] ledger #" in line and pending.get("name"):
+                if entry.startswith("[market] ledger #") and pending.get("name"):
                     name, verdict = pending["name"], pending.get("signature")
                     shop = data["shops"].setdefault(name, {"trades": 0, "completed": 0, "failures": 0, "recent": []})
                     if verdict == "verified":
