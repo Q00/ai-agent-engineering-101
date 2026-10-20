@@ -57,6 +57,7 @@ REVIEW_CHARS = 120   # each review is cut to this length
 GOING_WINDOW = 3 * 3600  # going prices from the last three hours
 SIGN_WINDOW = 3600       # whether a shop signs is judged on its last hour
 PAY_CAP = 1.1        # never pay more than this x the market's upper quartile for the item
+HOPELESS_OFFERS = 3  # offers to try when the budget is below every price the market has ever cleared
 MAX_RAISE = 0.4      # raise at most 40% of the gap to the shop's ask per offer (we overshot: 105 -> 115 at an ask of 118)
 
 PICK_PROMPT = """You are a buyer choosing a shop to buy a {item} from. Your budget is {budget}.
@@ -311,7 +312,13 @@ async def main(args):
             log("GUARD", f"paying at most {cap} ({PAY_CAP} x market upper quartile {g['p75']:g}), below the budget {args.budget}")
             limit = cap
     try:
-        result = await buyer.shop(chosen["url"], args.item, limit, memory=note, max_raise=MAX_RAISE)
+        floor = going.get(args.item, {}).get("min") or FLOOR.get(args.item)
+        tries = buyer.MAX_OFFERS
+        if floor and args.budget < floor:
+            # no shop has sold this item below the floor: three tries, then a polite walk (not eight rounds at 90)
+            log("PREMISE", f"budget {args.budget} is below the market's lowest {args.item} price {floor:g}, trying {HOPELESS_OFFERS} offers")
+            tries = HOPELESS_OFFERS
+        result = await buyer.shop(chosen["url"], args.item, limit, memory=note, max_raise=MAX_RAISE, max_offers=tries)
     except Exception as e:  # the shop is down or answers garbage
         log("ERROR", f"trade with {chosen['name']} failed: {e!r}")
         result = {"state": "error", "asks": [], "offers": [], "error": type(e).__name__}

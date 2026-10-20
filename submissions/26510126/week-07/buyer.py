@@ -124,7 +124,7 @@ def as_int(value):
         return None
 
 
-async def shop(base, item, budget, memory="", max_raise=None):
+async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFFERS):
     """Negotiate one item. `memory` is what market_buyer.py remembers about this shop (empty in week 6).
     `max_raise` (market_buyer.py only): raise at most this share of the gap between our last offer and the ask."""
     async with httpx.AsyncClient(timeout=200) as client:
@@ -137,7 +137,7 @@ async def shop(base, item, budget, memory="", max_raise=None):
         task_id, history, last_offer = task["id"], [], None
         result["task"] = task_id
 
-        for n in range(1, MAX_OFFERS + 1):
+        for n in range(1, max_offers + 1):
             if state(task) != "TASK_STATE_INPUT_REQUIRED":
                 break
             ask = asking_price(task)
@@ -188,7 +188,7 @@ async def shop(base, item, budget, memory="", max_raise=None):
                 return result
         else:
             if state(task) == "TASK_STATE_INPUT_REQUIRED":
-                log("OUT", f"{MAX_OFFERS} offers without a deal, walking away")
+                log("OUT", f"{max_offers} offers without a deal, walking away")
                 await seller.cancel(task_id)
                 return {**result, "state": "walked"}
 
