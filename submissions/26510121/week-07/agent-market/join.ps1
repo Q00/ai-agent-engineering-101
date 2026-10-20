@@ -22,6 +22,8 @@ $oldPath = $env:PATH
 $oldKey = $env:OPENAI_API_KEY
 $oldOwner = $env:MARKET_OWNER
 $oldUtf8 = $env:PYTHONUTF8
+$oldTunnelLog = $env:TUNNEL_LOGFILE
+$oldTunnelLevel = $env:TUNNEL_LOGLEVEL
 try {
     if (-not $env:OPENAI_API_KEY) {
         $credentialFile = Join-Path $agentDir '../week-06/.env'
@@ -40,6 +42,9 @@ try {
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
     $stdout = Join-Path $logDir "join-$stamp.log"
     $stderr = Join-Path $logDir "join-$stamp.err"
+    # Info-level tunnel diagnostics contain no HTTP request headers.
+    $env:TUNNEL_LOGFILE = Join-Path $logDir "cloudflared-$stamp.log"
+    $env:TUNNEL_LOGLEVEL = 'info'
     $mode = if ($BuyerOnly) { '--buyer-only' } else { '--tunnel' }
     $kit = Join-Path $repoRoot 'scripts/market_kit.py'
     $arguments = @('-u', ('"' + $kit + '"'), 'join', '--dir', ('"' + $agentDir + '"'),
@@ -56,4 +61,6 @@ try {
     $env:OPENAI_API_KEY = $oldKey
     $env:MARKET_OWNER = $oldOwner
     $env:PYTHONUTF8 = $oldUtf8
+    $env:TUNNEL_LOGFILE = $oldTunnelLog
+    $env:TUNNEL_LOGLEVEL = $oldTunnelLevel
 }

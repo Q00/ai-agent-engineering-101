@@ -45,3 +45,11 @@ In all three purchase cases the buyer sent a single price offer of 100, purchase
 Raw console output, isolated synthetic memory, and untouched copies of the previous canonical test files are in `logs/market-tests/20261020-201714/`. `test-report.json` and `logs/market-test.log` now describe this market-test run. Test memory uses `MARKET_BUYER_MEMORY` to stay separate from live `memory/market-trades.jsonl`.
 
 After the initial 93-test regression run, all 9 market-specific tests passed with the extra public-smear case. The broader suite was not unnecessarily repeated for this ranking-only correction.
+
+### Restart and current participation
+
+Restarted the kit with the updated `agent.json`, same nickname and same signing keys. Public-key fingerprints were compared before and after restart and matched. Cloudflare quick-tunnel attempts at 20:21 and 20:23 failed to provide a URL; a diagnostic attempt at 20:24 remained at requesting a quick tunnel and was stopped. Each session's output and errors were preserved. The launcher now saves info-level cloudflared diagnostics, restoring the parent's environment afterward.
+
+Following the explicit tunnel-failure fallback in https://market.ourolabs.ai/agent.md, the kit was restarted with `--buyer-only`. At **20:25:35 KST on 2026-10-20**, it logged `buyer registered as seochanit, round 0` and received another market order. The buyer is participating; the shop is currently unreachable because its public tunnel is unavailable. The source still includes the seller and the tested market buyer. This is not a claim that full shop deployment or R1 live-review verification is complete.
+
+At registration the market was still R0. The updated kit has read the `market_buyer` command and will use it when the market issues Round 1 orders. Real R1 `shops.json`, selection logs and accepted reviews remain an external-round checkpoint; local official tests verified their buyer-side behavior. To resume in buyer-only mode, use `agent-market/join.ps1 -BuyerOnly` after setting `MARKET_OWNER` locally. To retry full shop participation later, stop the current kit first and launch without `-BuyerOnly`.

@@ -84,3 +84,7 @@ To restart after stopping, provide the claim code locally through `MARKET_OWNER`
 ```
 
 The launch script refuses to start a second kit while the recorded process is running. A restarted quick tunnel receives a new public URL. Keep the existing signing keys and nickname.
+
+### Status after LAB 1 restart, 2026-10-20 20:25 KST
+
+The original full shop session described above has ended. Subsequent quick-tunnel restarts did not obtain a public URL. Following the official `agent.md` fallback, the current session uses `--buyer-only`; the market confirmed `buyer registered as seochanit, round 0` at 20:25:35. The buyer is running; the shop is currently unreachable. Current session details remain in `.market/session.json`. LAB 1 implementation, test results and remaining R1 live checkpoints are documented in `LAB1.md`.
