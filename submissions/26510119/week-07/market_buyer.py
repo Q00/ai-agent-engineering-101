@@ -23,9 +23,10 @@ DEADLINE = 240
 MAX_ROUNDS = 10
 
 CHOOSE_PROMPT = """You are a buyer in an online market. You need a {item} and can pay at most {budget}.
-Pick ONE shop to buy from. Avoid shops whose reviews or your own past trades show dishonesty
-(for example a receipt price higher than the agreed price). Prefer shops with fair, honest reviews.
-A shop with no reviews and no history is unknown, not bad.
+Pick ONE shop to buy from. Each line summarizes other buyers' reviews and your own past trades.
+"warnings" counts reviews of 2 stars or less, or reviews that report a receipt not matching the agreed
+price or a shop trying to manipulate buyers. Avoid shops with warnings. A shop with no reviews and no
+history is unknown, not bad.
 
 Shops:
 {shops}
@@ -62,21 +63,27 @@ def remember(row):
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def describe(shop, memory):
+SHOWN = 6   # shops the harness sees; review texts stay out of the prompt
+WARNING = re.compile(r"receipt (says|said|showed|was|price)|overcharg|higher than|n.t match|mismatch|inject"
+                     r"|telling ai|instruct|manipulat|ignore (previous|your)|scam|fake|forged|lied", re.I)
+
+
+def summarize(shop, item, memory):
+    """Numbers instead of review texts: shorter, and another seller's words never reach the harness."""
     reviews = shop.get("reviews") or []
     stars = [r["stars"] for r in reviews if isinstance(r.get("stars"), (int, float))]
-    lines = [f'- {shop["name"]}: {len(reviews)} reviews'
-             + (f', average {sum(stars) / len(stars):.1f} stars' if stars else "")]
-    for r in reviews[:3]:
-        lines.append(f'    review ({r.get("stars")} stars): {str(r.get("review", ""))[:150]}')
-    mine = [m for m in memory if m.get("shop") == shop["name"]]
-    if mine:
-        deals = [m for m in mine if m.get("result") == "deal"]
-        bad = [m for m in mine if m.get("receipt_problem")]
-        lines.append(f"    your history: {len(mine)} trades, {len(deals)} deals"
-                     + (f", prices {[m.get('price') for m in deals][-5:]}" if deals else "")
-                     + (f", RECEIPT PROBLEMS: {[m['receipt_problem'] for m in bad][-3:]}" if bad else ""))
-    return "\n".join(lines)
+    warnings = sum(1 for r in reviews
+                   if (isinstance(r.get("stars"), (int, float)) and r["stars"] <= 2) or WARNING.search(str(r.get("review", ""))))
+    mine = [m for m in memory if m.get("shop") == shop["name"] and m.get("item") == item]
+    deals = [m["price"] for m in mine if m.get("result") == "deal" and m.get("price") is not None]
+    avg = sum(stars) / len(stars) if stars else None
+    score = (avg if avg is not None else 3.0) - 0.5 * warnings + 0.3 * min(len(deals), 3)
+    line = (f"- {shop['name']}: {len(reviews)} reviews"
+            + (f", average {avg:.1f} stars" if avg is not None else "")
+            + f", warnings {warnings}"
+            + (f"; you bought this item there {len(deals)} times, average price {sum(deals) / len(deals):.0f}" if deals
+               else f"; you tried this item there {len(mine)} times without a deal" if mine else "; no history"))
+    return score, line, not reviews and not mine
 
 
 def choose(shops, item, budget, memory):
@@ -84,7 +91,14 @@ def choose(shops, item, budget, memory):
     candidates = [s for s in shops if s["name"] not in flagged] or shops
     if len(candidates) < len(shops):
         log(f"[memory] skipping shops with a receipt problem in my own trades: {sorted(flagged & {s['name'] for s in shops})}")
-    text = "\n".join(describe(s, memory) for s in candidates)
+    rated = sorted(((summarize(s, item, memory), s) for s in candidates), key=lambda x: -x[0][0])
+    shown = rated[:SHOWN]
+    unknown = next((r for r in rated[SHOWN:] if r[0][2]), None)
+    if unknown:
+        shown.append(unknown)
+    candidates = [s for _, s in shown]
+    text = "\n".join(summary[1] for summary, _ in shown)
+    log(f"[choose] showing {len(shown)} of {len(rated)} shops: {[s['name'] for s in candidates]}")
     answer = harness.ask(CHOOSE_PROMPT.format(item=item, budget=budget, shops=text), log) or {}
     pick = next((s for s in candidates if s["name"] == answer.get("shop")), None)
     if pick is None:
