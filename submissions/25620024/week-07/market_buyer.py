@@ -11,6 +11,9 @@ The kit runs this for every order from Round 1 on. {shops} is a JSON list of
             "stars", "problem"}. Shops are remembered by name (their URL changes when their kit restarts).
   filter   code drops shops my own memory marks as bad: a receipt above the agreed price, a receipt
            for another item, or two failed connections. If that leaves nothing, every shop stays in.
+  signed   Round 2 counts only receipts signed by the shop. Shops that sold to me two or more times and
+           never signed are dropped when others are left, and each summary line shows how many of my
+           receipts from that shop were signed.
   choose   the harness reads one summary line per remaining shop (its reviews, compressed by code,
            and my own history with it) and answers with a shop number and a reason. If the harness
            fails, code takes the shop with the best score.
@@ -56,7 +59,8 @@ Some shops in this market are dishonest: they may write a higher price on the re
 agreed, or have fake reviews. Each line below summarizes one shop: its recent reviews and my own past
 trades with it.
 {lines}
-Pick the shop most likely to sell at a fair price and issue an honest receipt.
+Only deals with a receipt signed by the shop count in the market, so prefer shops whose receipts
+I have seen signed. Pick the shop most likely to sell at a fair price and issue an honest, signed receipt.
 Reply with one JSON object only: {{"pick": <shop number>, "reason": "<one short sentence>"}}"""
 
 
@@ -110,8 +114,10 @@ def summary(i, shop, memory):
         rev = "no reviews yet"
     rows, deals, flags = my_history(memory, shop["name"])
     if rows:
-        paid = [d["agreed"] / d["budget"] for d in deals if d.get("budget")]
+        paid = [d["agreed"] / d["budget"] for d in deals if d.get("budget") and d.get("agreed")]
         mine = f"my trades: {len(rows)}, deals {len(deals)}"
+        if deals:
+            mine += f", signed receipts {sum(bool(d.get('signed')) for d in deals)}/{len(deals)}"
         if paid:
             mine += f", paid {sum(paid) / len(paid):.0%} of budget on average"
         if flags:
@@ -126,7 +132,14 @@ def score(shop, memory):
     s = 3.0 if not revs else sum(r.get("stars", 0) for r in revs) / len(revs)
     s -= sum(1 for r in revs if BAD_WORDS.search(r.get("review", "")))
     _, deals, flags = my_history(memory, shop["name"])
-    return s + 0.2 * len(deals) - len(flags)
+    signed = sum(bool(d.get("signed")) for d in deals)
+    return s + 0.2 * len(deals) + 0.5 * signed - 0.5 * (len(deals) - signed) - len(flags)
+
+
+def unsigned_only(memory, name):
+    """Two or more deals with this shop and not one signed receipt: in Round 2 its deals do not count."""
+    _, deals, _ = my_history(memory, name)
+    return len(deals) >= 2 and not any(d.get("signed") for d in deals)
 
 
 def choose(shops, item, budget, memory):
@@ -135,6 +148,11 @@ def choose(shops, item, budget, memory):
         if why:
             log(f"[filter] skip {s['name']}: {why}")
     allowed = [s for s in shops if not blocked(memory, s["name"])] or shops
+    # Round 2 counts only signed receipts: drop shops that never signed for me, if others are left
+    signing = [s for s in allowed if not unsigned_only(memory, s["name"])]
+    if signing and len(signing) < len(allowed):
+        log(f"[filter] skip unsigned-only shops: {', '.join(s['name'] for s in allowed if s not in signing)}")
+        allowed = signing
     if len(allowed) == 1:
         return allowed[0], "the only shop left after my memory filter"
     lines = "\n".join(summary(i + 1, s, memory) for i, s in enumerate(allowed))
