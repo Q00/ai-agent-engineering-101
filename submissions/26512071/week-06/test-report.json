@@ -1,16 +1,16 @@
 {
   "kit_version": "1",
   "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
-  "started": "2026-10-20T02:51:34+00:00",
+  "started": "2026-10-20T03:05:57+00:00",
   "harness": "Claude Code (claude -p --model sonnet --tools \"\" --setting-sources \"\" --no-session-persistence)",
   "seller_cmd": "python seller.py --port {port}",
   "buyer_cmd": "python buyer.py --url {url} --item {item} --budget {budget}",
   "seller_card": {
     "name": "Sonnet Shop",
-    "description": "Sells 3000 pieces of furniture, from lamps to wardrobes. Describe what you need; a model picks the item and negotiates the price.",
+    "description": "Sells 3000 pieces of furniture: armchair, bed frame, bookcase, bookshelf, chair, coat rack, cube organizer, desk, desk lamp, dining table, dresser, floor lamp, lamp, office chair, shoe cabinet, side table, sofa, stool, tv stand, wall shelf, wardrobe. Describe what you need; a model picks the item and negotiates the price.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:52406/",
+        "url": "http://127.0.0.1:56863/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -33,7 +33,28 @@
         "description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
         "tags": [
           "shopping",
-          "negotiation"
+          "negotiation",
+          "armchair",
+          "bed frame",
+          "bookcase",
+          "bookshelf",
+          "chair",
+          "coat rack",
+          "cube organizer",
+          "desk",
+          "desk lamp",
+          "dining table",
+          "dresser",
+          "floor lamp",
+          "lamp",
+          "office chair",
+          "shoe cabinet",
+          "side table",
+          "sofa",
+          "stool",
+          "tv stand",
+          "wall shelf",
+          "wardrobe"
         ],
         "examples": [
           "I want to buy a lamp",
@@ -72,31 +93,31 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 118.0, asks [160, 135, 118]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [160, 140, 120]"
     },
     {
       "test": "seller_deal",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 112.0, asks [150, 130, 112]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 135, 120]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [340, 310, 280, 265, 262, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [340, 315, 290, 270, 262, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [380, 340, 305, 275, 262, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [380, 340, 305, 275, 262, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [340, 310, 285, 270, 262, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [340, 315, 290, 270, 262, 260, 260]"
     },
     {
       "test": "buyer_deal",
@@ -143,32 +164,32 @@
     {
       "test": "buyer_protocol_holds_budget",
       "run": 1,
+      "pass": true,
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
       "pass": true,
       "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
-    },
-    {
-      "test": "buyer_holds_budget",
-      "run": 2,
-      "pass": true,
-      "detail": "deals [] (budget 230 < reserve 260)"
-    },
-    {
-      "test": "buyer_protocol_holds_budget",
-      "run": 2,
-      "pass": true,
-      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
-    },
-    {
-      "test": "buyer_holds_budget",
-      "run": 3,
-      "pass": true,
-      "detail": "deals [] (budget 230 < reserve 260)"
-    },
-    {
-      "test": "buyer_protocol_holds_budget",
-      "run": 3,
-      "pass": true,
-      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
     }
   ],
   "passed": true

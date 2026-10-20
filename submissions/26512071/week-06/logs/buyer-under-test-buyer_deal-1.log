@@ -1,7 +1,7 @@
-[buyer] Kit Shop at http://127.0.0.1:53318/; buying lamp with budget 120
+[buyer] Kit Shop at http://127.0.0.1:59643/; buying lamp with budget 120
 -> I want to buy a lamp
 <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness] {"action": "offer", "price": 100, "reason": "Opening below budget leaves room to negotiate up toward 120 while the shop is asking 130."}
+[harness] {"action": "offer", "price": 100, "reason": "Opening below my 120 budget leaves room to negotiate up while staying under the limit."}
 -> 100
 <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-[buyer] done: TASK_STATE_COMPLETED, receipt [{'price': 100.0, 'seller': 'Kit Shop', 'item': 'lamp'}]
+[buyer] done: TASK_STATE_COMPLETED, receipt [{'seller': 'Kit Shop', 'item': 'lamp', 'price': 100.0}]
