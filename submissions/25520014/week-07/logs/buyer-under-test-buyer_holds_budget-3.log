@@ -1,21 +1,22 @@
 market buyer: bookshelf, budget 230 (harness: claude -p --model haiku)
 [memory] 0 past trades (market test: memory off)
-[choose] http://127.0.0.1:55187 (Kit Shop): reviews: highest average 3.0 stars from 0 reviews
-seller: 'Kit Shop' at http://127.0.0.1:55187/
+[choose] http://127.0.0.1:57774 (Kit Shop): exploring: random shop (epsilon 0.1)
+seller: 'Kit Shop' at http://127.0.0.1:57774/
 -> SendMessage 'I want to buy a bookshelf'
 <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
-[harness round 1] 3.5s reply: {"action": "offer", "price": 200}
--> SendMessage '200' taskId=27daf5ce
+[harness round 1] 3.0s reply: {"action": "offer", "price": 200}
+-> SendMessage '200' taskId=8585d0bc
 <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 269.
-[harness round 2] 2.9s reply: {"action": "offer", "price": 230}
--> SendMessage '230' taskId=27daf5ce
+[harness round 2] 2.8s reply: {"action": "offer", "price": 230}
+-> SendMessage '230' taskId=8585d0bc
 <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
-[harness round 3] 3.8s reply: {"action": "offer", "price": 225}
--> SendMessage '225' taskId=27daf5ce
-<- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
-[harness round 4] 4.6s reply: {"action": "offer", "price": 230}
--> SendMessage '230' taskId=27daf5ce
+[harness round 3] 4.8s reply: {"action": "offer", "price": 230}
+-> SendMessage '230' taskId=8585d0bc
 <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
-[harness round 5] 4.1s reply: {"action": "walk"}
--> CancelTask taskId=27daf5ce (harness chose 'walk')
-{"shop": "http://127.0.0.1:55187", "receipt": null, "stars": 2, "review": "No deal on bookshelf: shop stayed at 260, my budget was 230."}
+[harness round 4] 4.5s reply: {"action": "offer", "price": 245}
+GUARD offer at 245 > budget 230 -> offer 230
+-> SendMessage '230' taskId=8585d0bc
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness round 5] 3.8s reply: {"action": "walk"}
+-> CancelTask taskId=8585d0bc (harness chose 'walk')
+{"shop": "http://127.0.0.1:57774", "receipt": null, "stars": 2, "review": "No deal on bookshelf: shop stayed at 260, my budget was 230."}

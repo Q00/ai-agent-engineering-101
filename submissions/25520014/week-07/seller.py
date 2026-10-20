@@ -1,17 +1,26 @@
-"""Week 07 seller: an A2A v1.0 server (JSON-RPC binding) that sells at the floor price, fast.
+"""Week 07 seller: an A2A v1.0 server (JSON-RPC binding) priced against the market, fast.
 
     python seller.py --port 9999
 
 Round 2 ranks shops by counted deals: signed receipts behind a market order. Round 1 showed
 that share follows visits, and visits follow memory: buyers go back to the shop where they
-paid least (corner-store 466 visits, outseop 237, both near the reserve). Nobody may sell
-below the reserve, so a shop that always sells at the reserve is a place no memory-driven
-buyer has a reason to leave. So the rules are fixed, no harness (week 06 used claude -p,
-about 3 s per turn, and lost a few deals to harness errors):
-  - open at the reserve (the asking price is always the last number in the message),
-  - accept any offer at or above the reserve, at the offered price,
-  - counter anything below with the reserve, and never end the negotiation ourselves,
-  - accept words without a number ("accept", "deal", "ok") close at the current ask.
+paid least (corner-store 466 visits, outseop 237, both near the reserve). So the shop stays
+at or under the cheapest price in the market, with fixed rules and no harness (week 06 used
+claude -p, about 3 s per turn, and lost a few deals to harness errors).
+
+Market price: a background thread reads the public ledger every minute and keeps, per item,
+the lowest verified sale by another shop in the current round over the last 30 minutes.
+No data (or no market) -> the reserve.
+
+The ladder, never below the reserve:
+  0. open at the market price,
+  1. "too expensive" (an offer below the reserve, or words without a number) -> market price - 1,
+     with the fact that it is below every verified sale in the last half hour,
+  2. still below the reserve -> the reserve, as the final price, repeated from then on.
+  Any offer at or above the reserve closes at once at the offered price; accept words
+  without a number ("accept", "deal", "ok") close at the current ask. The shop never walks away.
+  The asking price is the only number in each message, so buyers that read the first or the
+  last number both read the ask.
 Week 06 history: the first trade test ran with the reserve in the prompt only and failed
 (haiku countered 250 and sold at 230 on a bookshelf with reserve 260); the code guard fixed it.
 
@@ -21,8 +30,12 @@ task id, signed with shop_key.pem over canon(...) as sig_seller (sign_receipt fr
 import argparse
 import base64
 import json
+import os
 import re
+import threading
+import time
 
+import httpx
 import uvicorn
 from cryptography.hazmat.primitives import serialization
 from starlette.applications import Starlette
@@ -47,6 +60,53 @@ def accepts(text):
     return bool(ACCEPT.search(t)) and not REFUSE.search(t)
 
 
+MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai")
+WINDOW = 30 * 60   # seconds of verified sales that set the market price
+REFRESH = 60       # seconds between ledger reads
+
+
+class MarketPrices:
+    """Lowest verified sale per item by other shops, current round, last WINDOW seconds."""
+
+    def __init__(self):
+        self.after, self.round, self.sales = 0, None, []   # sales: (ts, item, price)
+        self.lock = threading.Lock()
+
+    def poll(self):
+        while True:
+            try:
+                self.read_new()
+            except Exception as e:  # the shop keeps selling at the reserve without the feed
+                print(f"[prices] ledger read failed: {type(e).__name__}", flush=True)
+            time.sleep(REFRESH)
+
+    def read_new(self):
+        while True:
+            batch = httpx.get(f"{MARKET}/api/ledger", params={"after": self.after}, timeout=20).json()
+            if not batch:
+                break
+            with self.lock:
+                for e in batch:
+                    if e["round"] != self.round:
+                        self.round, self.sales = e["round"], []
+                    rc = e["data"].get("receipt") if e["kind"] == "result" else None
+                    if rc and e["data"].get("verified") and rc.get("shop") != SHOP and rc.get("item") in RESERVE:
+                        self.sales.append((e["ts"], rc["item"], round(float(rc["price"]))))
+                self.after = batch[-1]["seq"]
+            if len(batch) < 500:
+                break
+        print(f"[prices] round {self.round}: " + ", ".join(f"{i} {self.lowest(i)}" for i in RESERVE), flush=True)
+
+    def lowest(self, item):
+        cutoff = time.time() - WINDOW
+        with self.lock:
+            prices = [p for ts, i, p in self.sales if i == item and ts >= cutoff]
+        return min(prices) if prices else None
+
+
+PRICES = MarketPrices()
+
+
 def canon(d):
     return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
@@ -60,7 +120,7 @@ def sign_receipt(receipt, key_path="shop_key.pem"):
 
 class Seller(AgentExecutor):
     def __init__(self):
-        self.open = {}  # task id -> {"item", "ask"}
+        self.open = {}  # task id -> {"item", "ask", "step", "market"}
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -82,26 +142,37 @@ class Seller(AgentExecutor):
         if item is None:
             await up.reject(say("We only sell: " + ", ".join(RESERVE) + "."))
             return
-        ask = RESERVE[item]
-        self.open[task_id] = {"item": item, "ask": ask}
-        print(f"[task {task_id[:8]}] -> INPUT_REQUIRED ask {ask}", flush=True)
-        await up.requires_input(say(f"{item}: our lowest price, no haggling needed. Asking {ask}. "
-                                    f"Send your offer as a number."))
+        market = PRICES.lowest(item)
+        ask = max(RESERVE[item], market or 0)
+        self.open[task_id] = {"item": item, "ask": ask, "step": 0, "market": market}
+        print(f"[task {task_id[:8]}] -> INPUT_REQUIRED ask {ask} (market {market})", flush=True)
+        await up.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
 
     async def respond(self, task_id, deal, text, up, say):
         m = re.search(r"\d+(?:\.\d+)?", text)
-        if m is None:
-            if accepts(text):
-                await self.close(task_id, deal, deal["ask"], up, say)
-            else:
-                await up.requires_input(say(f"Send your offer as a number. Current price: {deal['ask']}."))
+        if m is None and accepts(text):
+            await self.close(task_id, deal, deal["ask"], up, say)
             return
-        offer = round(float(m.group()))
-        if offer >= RESERVE[deal["item"]]:
+        offer = round(float(m.group())) if m else None
+        if offer is not None and offer >= RESERVE[deal["item"]]:
             await self.close(task_id, deal, offer, up, say)
+            return
+        await self.step_down(task_id, deal, offer, up, say)
+
+    async def step_down(self, task_id, deal, offer, up, say):
+        """Too expensive: market price - 1 first, then the reserve as the final price."""
+        item, reserve, market = deal["item"], RESERVE[deal["item"]], deal["market"]
+        under = max(reserve, market - 1) if market else reserve
+        if deal["step"] == 0 and under < deal["ask"] and under > reserve:
+            deal["step"], deal["ask"] = 1, under
+            msg = (f"{item}: {under}, below every verified {item} sale in this market in the last half hour. "
+                   f"Asking {under}.")
         else:
-            print(f"[task {task_id[:8]}] -> INPUT_REQUIRED ask {deal['ask']} (offer {offer})", flush=True)
-            await up.requires_input(say(f"{offer} is below our floor price. Counteroffer: {deal['ask']}."))
+            deal["step"], deal["ask"] = 2, reserve
+            msg = f"{item}: final price, the lowest we can go. Asking {reserve}."
+        print(f"[task {task_id[:8]}] -> INPUT_REQUIRED ask {deal['ask']} step {deal['step']} (offer {offer})",
+              flush=True)
+        await up.requires_input(say(msg))
 
     async def close(self, task_id, deal, price, up, say):
         receipt = sign_receipt({"shop": SHOP, "item": deal["item"], "price": int(price), "task": task_id})
@@ -120,8 +191,8 @@ def build_app(port):
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name=SHOP,
-        description="Sells lamps, chairs and bookshelves at the lowest price in the market "
-                    "(lamp 100, chair 180, bookshelf 260). Instant replies, signed receipts.",
+        description="Sells lamps, chairs and bookshelves, priced at the cheapest recent verified sale in "
+                    "this market or below. Instant replies, signed receipts.",
         version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
@@ -130,8 +201,8 @@ def build_app(port):
         skills=[AgentSkill(
             id="negotiate", name="Negotiate a purchase",
             description="Name an item (lamp, chair, bookshelf) to get an asking price, then reply with your "
-                        "offer as a number on the same task. Any offer at the asking price or above closes "
-                        "at once with a signed receipt artifact {shop, item, price, task, sig_seller}.",
+                        "offer as a number on the same task. The shop closes with a signed receipt artifact "
+                        "{shop, item, price, task, sig_seller} or comes down; it never ends the negotiation.",
             tags=["shopping", "negotiation"], examples=["I want to buy a lamp", "100"])],
     )
     handler = DefaultRequestHandler(agent_executor=Seller(), task_store=InMemoryTaskStore(), agent_card=card)
@@ -142,5 +213,6 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=9999)
     args = ap.parse_args()
-    print(f"{SHOP} on http://127.0.0.1:{args.port}/ (rule-based: floor price, no harness)", flush=True)
+    print(f"{SHOP} on http://127.0.0.1:{args.port}/ (rule-based: market price ladder, no harness)", flush=True)
+    threading.Thread(target=PRICES.poll, daemon=True).start()
     uvicorn.run(build_app(args.port), host="127.0.0.1", port=args.port, log_level="warning")

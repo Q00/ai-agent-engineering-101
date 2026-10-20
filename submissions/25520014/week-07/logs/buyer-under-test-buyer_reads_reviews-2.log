@@ -1,11 +1,14 @@
 market buyer: lamp, budget 120 (harness: claude -p --model haiku)
 [memory] 0 past trades (market test: memory off)
-[choose] http://127.0.0.1:55481 (Kit Shop South): reviews: highest average 4.7 stars from 3 reviews
-seller: 'Kit Shop South' at http://127.0.0.1:55481/
+[choose] http://127.0.0.1:57969 (Kit Shop South): reviews: highest average 4.7 stars from 3 reviews
+seller: 'Kit Shop South' at http://127.0.0.1:57969/
 -> SendMessage 'I want to buy a lamp'
 <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness round 1] 3.2s reply: {"action": "offer", "price": 100}
--> SendMessage '100' taskId=d249e5e7
-<- TASK_STATE_COMPLETED | Deal: lamp at 100.
-DONE bought: {'item': 'lamp', 'shop': 'Kit Shop South', 'sig_seller': 'LO0UI9foaUI5UR+J1r1gguxWD4qhP3lYapE2pRlLwxvehXbkpzZ/zn387o5tHaqccOVU0QoEq8ZDeemT5YUwDA==', 'task': 'd249e5e7-cf98-44e7-aea8-1a97f1f5db09', 'price': 100.0}
-{"shop": "http://127.0.0.1:55481", "receipt": {"item": "lamp", "shop": "Kit Shop South", "sig_seller": "LO0UI9foaUI5UR+J1r1gguxWD4qhP3lYapE2pRlLwxvehXbkpzZ/zn387o5tHaqccOVU0QoEq8ZDeemT5YUwDA==", "task": "d249e5e7-cf98-44e7-aea8-1a97f1f5db09", "price": 100.0}, "stars": 5, "review": "Fair deal: lamp at 100, below my budget of 120."}
+[harness round 1] 2.8s reply: {"action": "offer", "price": 95}
+-> SendMessage '95' taskId=55f3572d
+<- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 112.
+[harness round 2] 3.0s reply: {"action": "offer", "price": 105}
+-> SendMessage '105' taskId=55f3572d
+<- TASK_STATE_COMPLETED | Deal: lamp at 105.
+DONE bought: {'sig_seller': '/yV7di6rArLnYIunkX4FLL9JulAkECTFZ1ErSwq5tshQ1/ekyAlKPh4MCFsZU19qnX6igAc9CfOOCJ4fpuyeCw==', 'shop': 'Kit Shop South', 'item': 'lamp', 'task': '55f3572d-df09-4025-b084-eed10f7332d9', 'price': 105.0}
+{"shop": "http://127.0.0.1:57969", "receipt": {"sig_seller": "/yV7di6rArLnYIunkX4FLL9JulAkECTFZ1ErSwq5tshQ1/ekyAlKPh4MCFsZU19qnX6igAc9CfOOCJ4fpuyeCw==", "shop": "Kit Shop South", "item": "lamp", "task": "55f3572d-df09-4025-b084-eed10f7332d9", "price": 105.0}, "stars": 5, "review": "Fair deal: lamp at 105, below my budget of 120."}

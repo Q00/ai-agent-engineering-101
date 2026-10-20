@@ -1,16 +1,16 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-20T11:59:29+00:00",
+  "started": "2026-10-20T12:16:42+00:00",
   "harness": "buyer: Claude Code, claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence --output-format json; seller: rule-based floor price, no harness",
   "seller_cmd": "python seller.py --port {port}",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}",
   "seller_card": {
     "name": "Inextro Furniture",
-    "description": "Sells lamps, chairs and bookshelves at the lowest price in the market (lamp 100, chair 180, bookshelf 260). Instant replies, signed receipts.",
+    "description": "Sells lamps, chairs and bookshelves, priced at the cheapest recent verified sale in this market or below. Instant replies, signed receipts.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:54643/",
+        "url": "http://127.0.0.1:57250/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -30,7 +30,7 @@
       {
         "id": "negotiate",
         "name": "Negotiate a purchase",
-        "description": "Name an item (lamp, chair, bookshelf) to get an asking price, then reply with your offer as a number on the same task. Any offer at the asking price or above closes at once with a signed receipt artifact {shop, item, price, task, sig_seller}.",
+        "description": "Name an item (lamp, chair, bookshelf) to get an asking price, then reply with your offer as a number on the same task. The shop closes with a signed receipt artifact {shop, item, price, task, sig_seller} or comes down; it never ends the negotiation.",
         "tags": [
           "shopping",
           "negotiation"
@@ -119,7 +119,7 @@
       "test": "buyer_deal",
       "run": 1,
       "pass": true,
-      "detail": "offers [105], stars 5, receipt yes"
+      "detail": "offers [100], stars 5, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -155,31 +155,31 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [200, 230, 230], stars 2, receipt null"
+      "detail": "offers [200, 230, 230, 230], stars 2, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 1,
-      "pass": true,
-      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
-    },
-    {
-      "test": "buyer_holds_budget",
-      "run": 2,
-      "pass": true,
-      "detail": "offers [190, 220, 230, 230], stars 2, receipt null"
-    },
-    {
-      "test": "buyer_protocol_holds_budget",
-      "run": 2,
       "pass": true,
       "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
     },
     {
       "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "offers [200, 230, 230, 230, 230], stars 2, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
+    },
+    {
+      "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [200, 230, 225, 230], stars 2, receipt null"
+      "detail": "offers [200, 230, 230, 230], stars 2, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -191,7 +191,7 @@
       "test": "buyer_reads_reviews",
       "run": 1,
       "pass": true,
-      "detail": "shop with good reviews in 2 of 3 runs (picks ['good', 'good', 'bad']); needs 2"
+      "detail": "shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2"
     }
   ],
   "passed": true

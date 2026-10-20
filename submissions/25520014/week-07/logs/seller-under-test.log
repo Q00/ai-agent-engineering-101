@@ -1,67 +1,119 @@
-Inextro Furniture on http://127.0.0.1:54643/ (rule-based: floor price, no harness)
-[task d55b488c] buyer: 'I want to buy a lamp'
-[task d55b488c] -> INPUT_REQUIRED ask 100
-[task d55b488c] buyer: '100'
-[task d55b488c] -> COMPLETED at 100
-[task e8a72176] buyer: 'I want to buy a lamp'
-[task e8a72176] -> INPUT_REQUIRED ask 100
-[task e8a72176] buyer: '100'
-[task e8a72176] -> COMPLETED at 100
-[task 1533b0cb] buyer: 'I want to buy a lamp'
-[task 1533b0cb] -> INPUT_REQUIRED ask 100
-[task 1533b0cb] buyer: '100'
-[task 1533b0cb] -> COMPLETED at 100
-[task dcc21d5f] buyer: 'I want to buy a bookshelf'
-[task dcc21d5f] -> INPUT_REQUIRED ask 260
-[task dcc21d5f] buyer: '140'
-[task dcc21d5f] -> INPUT_REQUIRED ask 260 (offer 140)
-[task dcc21d5f] buyer: '170'
-[task dcc21d5f] -> INPUT_REQUIRED ask 260 (offer 170)
-[task dcc21d5f] buyer: '200'
-[task dcc21d5f] -> INPUT_REQUIRED ask 260 (offer 200)
-[task dcc21d5f] buyer: '230'
-[task dcc21d5f] -> INPUT_REQUIRED ask 260 (offer 230)
-[task dcc21d5f] buyer: '230'
-[task dcc21d5f] -> INPUT_REQUIRED ask 260 (offer 230)
-[task dcc21d5f] buyer: '230'
-[task dcc21d5f] -> INPUT_REQUIRED ask 260 (offer 230)
-[task dcc21d5f] buyer: '230'
-[task dcc21d5f] -> INPUT_REQUIRED ask 260 (offer 230)
-[task dcc21d5f] buyer: '230'
-[task dcc21d5f] -> INPUT_REQUIRED ask 260 (offer 230)
-[task 29c0ad09] buyer: 'I want to buy a bookshelf'
-[task 29c0ad09] -> INPUT_REQUIRED ask 260
-[task 29c0ad09] buyer: '140'
-[task 29c0ad09] -> INPUT_REQUIRED ask 260 (offer 140)
-[task 29c0ad09] buyer: '170'
-[task 29c0ad09] -> INPUT_REQUIRED ask 260 (offer 170)
-[task 29c0ad09] buyer: '200'
-[task 29c0ad09] -> INPUT_REQUIRED ask 260 (offer 200)
-[task 29c0ad09] buyer: '230'
-[task 29c0ad09] -> INPUT_REQUIRED ask 260 (offer 230)
-[task 29c0ad09] buyer: '230'
-[task 29c0ad09] -> INPUT_REQUIRED ask 260 (offer 230)
-[task 29c0ad09] buyer: '230'
-[task 29c0ad09] -> INPUT_REQUIRED ask 260 (offer 230)
-[task 29c0ad09] buyer: '230'
-[task 29c0ad09] -> INPUT_REQUIRED ask 260 (offer 230)
-[task 29c0ad09] buyer: '230'
-[task 29c0ad09] -> INPUT_REQUIRED ask 260 (offer 230)
-[task 2f11f8a1] buyer: 'I want to buy a bookshelf'
-[task 2f11f8a1] -> INPUT_REQUIRED ask 260
-[task 2f11f8a1] buyer: '140'
-[task 2f11f8a1] -> INPUT_REQUIRED ask 260 (offer 140)
-[task 2f11f8a1] buyer: '170'
-[task 2f11f8a1] -> INPUT_REQUIRED ask 260 (offer 170)
-[task 2f11f8a1] buyer: '200'
-[task 2f11f8a1] -> INPUT_REQUIRED ask 260 (offer 200)
-[task 2f11f8a1] buyer: '230'
-[task 2f11f8a1] -> INPUT_REQUIRED ask 260 (offer 230)
-[task 2f11f8a1] buyer: '230'
-[task 2f11f8a1] -> INPUT_REQUIRED ask 260 (offer 230)
-[task 2f11f8a1] buyer: '230'
-[task 2f11f8a1] -> INPUT_REQUIRED ask 260 (offer 230)
-[task 2f11f8a1] buyer: '230'
-[task 2f11f8a1] -> INPUT_REQUIRED ask 260 (offer 230)
-[task 2f11f8a1] buyer: '230'
-[task 2f11f8a1] -> INPUT_REQUIRED ask 260 (offer 230)
+Inextro Furniture on http://127.0.0.1:57250/ (rule-based: market price ladder, no harness)
+[task 41802bbe] buyer: 'I want to buy a lamp'
+[task 41802bbe] -> INPUT_REQUIRED ask 100 (market None)
+[task 41802bbe] buyer: '100'
+[task 41802bbe] -> COMPLETED at 100
+[task 7da5e102] buyer: 'I want to buy a lamp'
+[task 7da5e102] -> INPUT_REQUIRED ask 100 (market None)
+[task 7da5e102] buyer: '100'
+[task 7da5e102] -> COMPLETED at 100
+[task ba551424] buyer: 'I want to buy a lamp'
+[task ba551424] -> INPUT_REQUIRED ask 100 (market None)
+[task ba551424] buyer: '100'
+[task ba551424] -> COMPLETED at 100
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x104f69080> at 0x106424740> was created in a different Context
+Task exception was never retrieved
+future: <Task finished name='Task-36' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> exception=ValueError('coroutine already executing')>
+ValueError: coroutine already executing
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x104f69080> at 0x106424c00> was created in a different Context
+Task exception was never retrieved
+future: <Task finished name='Task-37' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/jungmin/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> exception=ValueError('coroutine already executing')>
+ValueError: coroutine already executing
+[task b9673f51] buyer: 'I want to buy a bookshelf'
+[task b9673f51] -> INPUT_REQUIRED ask 260 (market None)
+[task b9673f51] buyer: '140'
+[task b9673f51] -> INPUT_REQUIRED ask 260 step 2 (offer 140)
+[task b9673f51] buyer: '170'
+[task b9673f51] -> INPUT_REQUIRED ask 260 step 2 (offer 170)
+[task b9673f51] buyer: '200'
+[task b9673f51] -> INPUT_REQUIRED ask 260 step 2 (offer 200)
+[task b9673f51] buyer: '230'
+[task b9673f51] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task b9673f51] buyer: '230'
+[task b9673f51] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task b9673f51] buyer: '230'
+[task b9673f51] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task b9673f51] buyer: '230'
+[task b9673f51] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task b9673f51] buyer: '230'
+[task b9673f51] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task bd9e5a90] buyer: 'I want to buy a bookshelf'
+[task bd9e5a90] -> INPUT_REQUIRED ask 260 (market None)
+[task bd9e5a90] buyer: '140'
+[task bd9e5a90] -> INPUT_REQUIRED ask 260 step 2 (offer 140)
+[task bd9e5a90] buyer: '170'
+[task bd9e5a90] -> INPUT_REQUIRED ask 260 step 2 (offer 170)
+[task bd9e5a90] buyer: '200'
+[task bd9e5a90] -> INPUT_REQUIRED ask 260 step 2 (offer 200)
+[task bd9e5a90] buyer: '230'
+[task bd9e5a90] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task bd9e5a90] buyer: '230'
+[task bd9e5a90] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task bd9e5a90] buyer: '230'
+[task bd9e5a90] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task bd9e5a90] buyer: '230'
+[task bd9e5a90] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task bd9e5a90] buyer: '230'
+[task bd9e5a90] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task 6e122232] buyer: 'I want to buy a bookshelf'
+[task 6e122232] -> INPUT_REQUIRED ask 260 (market None)
+[task 6e122232] buyer: '140'
+[task 6e122232] -> INPUT_REQUIRED ask 260 step 2 (offer 140)
+[task 6e122232] buyer: '170'
+[task 6e122232] -> INPUT_REQUIRED ask 260 step 2 (offer 170)
+[task 6e122232] buyer: '200'
+[task 6e122232] -> INPUT_REQUIRED ask 260 step 2 (offer 200)
+[task 6e122232] buyer: '230'
+[task 6e122232] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task 6e122232] buyer: '230'
+[task 6e122232] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task 6e122232] buyer: '230'
+[task 6e122232] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task 6e122232] buyer: '230'
+[task 6e122232] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+[task 6e122232] buyer: '230'
+[task 6e122232] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
