@@ -1,21 +1,21 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-20T12:34:30+00:00",
+  "started": "2026-10-20T12:40:18+00:00",
   "harness": "Claude Code: claude -p --model haiku; shop choice: 50/50 personal experience and reviews",
   "seller_cmd": "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python seller.py --port {port}",
   "market_buyer_cmd": "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget}",
   "seller_card": {
-    "name": "psyoung82 Furniture | Direct Price Sale",
-    "description": "Direct-price sale: lamp 100, chair 180, bookshelf 260. Our previous opening asks were lamp 110, chair 200, bookshelf 285. Buy directly with an item and explicit offer, or ask for an item and accept its quote. Quotes include numeric metadata.ask. Purchases return task-bound signed receipts.",
+    "name": "psyoung82 Furniture | Welcome & Return Offers",
+    "description": "First-purchase offers: lamp 100, chair 180, bookshelf 260. Up to 10% off the first completed purchase, up to 5% off the second; base prices lamp 110, chair 200, bookshelf 285. Whole-unit rounding and minimum prices apply. Send the same customer_id in A2A metadata for repeat-purchase tracking; anonymous buyers receive the welcome quote. Quotes include metadata.ask; signed receipts.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:49487/",
+        "url": "http://127.0.0.1:50627/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
     ],
-    "version": "1.7.0",
+    "version": "1.8.0",
     "capabilities": {
       "streaming": false
     },
@@ -50,7 +50,7 @@
       "test": "seller_card",
       "run": 1,
       "pass": true,
-      "detail": "name='psyoung82 Furniture | Direct Price Sale' binding=JSONRPC version=1.0 skills=1"
+      "detail": "name='psyoung82 Furniture | Welcome & Return Offers' binding=JSONRPC version=1.0 skills=1"
     },
     {
       "test": "seller_opens",
@@ -134,7 +134,7 @@
       "test": "buyer_deal",
       "run": 2,
       "pass": true,
-      "detail": "offers [110], stars 3, receipt yes"
+      "detail": "offers [105], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -146,7 +146,7 @@
       "test": "buyer_deal",
       "run": 3,
       "pass": true,
-      "detail": "offers [100], stars 4, receipt yes"
+      "detail": "offers [105], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -170,25 +170,25 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [180, 210, 230], stars 3, receipt null"
+      "detail": "offers [200, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
     },
     {
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [200, 230], stars 3, receipt null"
+      "detail": "offers [180, 210, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_reads_reviews",

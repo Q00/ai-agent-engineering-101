@@ -136,8 +136,9 @@ class Seller(AgentExecutor):
         reserve = RESERVE[deal["item"]]
         opening = deal["quote"]["price"]
         # Each task keeps its quoted tier, even if another purchase completes.
-        # Numeric offers retain their explicit amount; text acceptance uses ask.
-        action = "accept" if deal["offer"] is not None and deal["offer"] >= max(reserve, opening) else "counter"
+        # Confirm the discounted amount rather than charging a higher offered
+        # base price. The receipt then matches the buyer's final agreed price.
+        action = "accept" if deal["offer"] == opening and opening >= reserve else "counter"
         if action == "accept":
             price = deal["offer"]
             receipt = sign_receipt({"shop": "psyoung82", "item": deal["item"],
