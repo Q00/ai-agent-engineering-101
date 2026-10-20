@@ -132,15 +132,17 @@ def decide(prompt_name, context, validate, *, timeout=90, prefix="decision"):
                 return decision
 
 
-def opening_price(item, reserve, buyer_message):
-    return decide("seller_opening.txt", {
+def opening_price(item, reserve, buyer_message, *, strategy=None):
+    return decide("seller_opening_value.txt" if strategy else "seller_opening.txt", {
         "item": item, "reserve": reserve, "buyer_message": buyer_message,
+        **({"sales_strategy": strategy} if strategy else {}),
     }, lambda output: parse_opening(output, reserve), prefix="opening")["price"]
 
 
-def seller_decision(*, item, reserve, offer, history):
-    return decide("seller.txt", {
+def seller_decision(*, item, reserve, offer, history, strategy=None):
+    return decide("seller_value.txt" if strategy else "seller.txt", {
         "item": item, "reserve": reserve, "buyer_offer": offer, "history": history,
+        **({"sales_strategy": strategy} if strategy else {}),
     }, lambda output: parse_seller(output, reserve, offer), prefix="seller")
 
 

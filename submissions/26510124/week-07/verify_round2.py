@@ -16,10 +16,11 @@ def main():
     stage = d / ".market" / name
     stage.mkdir(parents=True)
     (stage / "logs").mkdir()
-    files = ["seller_agent.py", "receipt_signing.py", "buyer_agent.py", "market_buyer.py", "harness.py"]
+    files = ["seller_agent.py", "receipt_signing.py", "buyer_agent.py", "market_buyer.py", "harness.py", "shop-round2.json"]
     for filename in files:
         shutil.copy2(d / filename, stage / filename)
     shutil.copytree(d / "prompts", stage / "prompts")
+    files.extend(str(p.relative_to(stage)) for p in sorted((stage / "prompts").glob("*.txt")))
     shutil.copy2(d / "agent-round2.json", stage / "agent.json")
     shutil.copy2(d / "shop_key.pem", stage / "shop_key.pem")
     (stage / "shop_key.pem").chmod(0o600)

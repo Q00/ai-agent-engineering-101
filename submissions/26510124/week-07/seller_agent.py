@@ -84,12 +84,16 @@ class Seller(AgentExecutor):
         try:
             try:
                 if deal is None:
-                    price = await asyncio.to_thread(opening_price, item, self.cfg["reserve"][item], text)
+                    options = ({"strategy": self.cfg["sales_strategy"]["goal"]}
+                               if self.cfg.get("sales_strategy") else {})
+                    price = await asyncio.to_thread(opening_price, item, self.cfg["reserve"][item], text, **options)
                     decision = {"action": "counter", "price": price}
                 else:
+                    options = ({"strategy": self.cfg["sales_strategy"]["goal"]}
+                               if self.cfg.get("sales_strategy") else {})
                     decision = await asyncio.to_thread(
                         seller_decision, item=item, reserve=self.cfg["reserve"][item],
-                        offer=offer, history=history,
+                        offer=offer, history=history, **options,
                     )
             except HarnessError as exc:
                 async with lock:
@@ -108,9 +112,19 @@ class Seller(AgentExecutor):
                     price = decision["price"]
                     reply = (f"{REVIEW_COUPON_PITCH} {item}: asking {price}. Send your offer as a number."
                              if deal is None else f"Counteroffer: {price}.")
+                    strategy = self.cfg.get("sales_strategy")
+                    counters = deal.get("counters", 0) if deal else 0
+                    if strategy:
+                        pitch = (strategy["opening"] if deal is None else
+                                 strategy["counters"][counters % len(strategy["counters"])])
+                        # Keep the actual quote last for numeric-price buyers.
+                        suffix = (f"{item}: asking {price}. Send your offer as a number."
+                                  if deal is None else f"Counteroffer: {price}.")
+                        reply = f"{pitch.format(item=item)} {suffix}"
                     self.open[task.id] = {
                         "item": item, "ask": price,
                         "history": history + [{"role": "seller", "text": reply}],
+                        "counters": counters + (deal is not None),
                     }
                     await up.requires_input(say(reply))
                 elif action == "accept":
@@ -122,7 +136,10 @@ class Seller(AgentExecutor):
                             price=price, task=task.id,
                         )
                     await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-                    await up.complete(say(f"{REVIEW_COUPON_PITCH} Deal: {item} at {price}."))
+                    strategy = self.cfg.get("sales_strategy")
+                    closing = (f"{strategy['completion'].format(item=item)} {strategy['review_request']}"
+                               if strategy else REVIEW_COUPON_PITCH)
+                    await up.complete(say(f"{closing} Deal: {item} at {price}."))
                     self.open.pop(task.id, None)
                 else:
                     await up.reject(say("No mutually acceptable deal. Negotiation ended."))
