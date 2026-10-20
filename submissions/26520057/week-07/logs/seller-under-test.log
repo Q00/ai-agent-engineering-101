@@ -1,6 +1,6 @@
-[harness] lamp | A buyer wants this item. Name your asking price (action: counter). -> counter 150
-[harness] lamp | The buyer now offers 60. -> counter 100
-[harness] lamp | The buyer now offers 100. -> accept 100
+[harness] lamp | A buyer wants this item. Name your asking price (action: counter). -> counter 130
+[harness] lamp | The buyer now offers 60. -> counter 110
+[harness] lamp | The buyer now offers 110. -> accept 110
 Failed to detach context
 Traceback (most recent call last):
   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
@@ -21,7 +21,7 @@ Traceback (most recent call last):
     _RUNTIME_CONTEXT.detach(token)
   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
     self._current_context.reset(token)
-ValueError: <Token var=<ContextVar name='current_context' default={} at 0x1074c5580> at 0x107afe140> was created in a different Context
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x10342d580> at 0x103a65240> was created in a different Context
 Task was destroyed but it is pending!
 task: <Task pending name='Task-47' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
 Failed to detach context
@@ -44,26 +44,27 @@ Traceback (most recent call last):
     _RUNTIME_CONTEXT.detach(token)
   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
     self._current_context.reset(token)
-ValueError: <Token var=<ContextVar name='current_context' default={} at 0x1074c5580> at 0x107aff140> was created in a different Context
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x10342d580> at 0x103a67340> was created in a different Context
 Task was destroyed but it is pending!
 task: <Task pending name='Task-48' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
 [harness] lamp | A buyer wants this item. Name your asking price (action: counter). -> counter 150
 [harness] lamp | The buyer now offers 60. -> counter 120
 [harness] lamp | The buyer now offers 120. -> accept 120
 [harness] lamp | A buyer wants this item. Name your asking price (action: counter). -> counter 150
-[harness] lamp | The buyer now offers 60. -> counter 110
-[harness] lamp | The buyer now offers 110. -> accept 110
-[harness] bookshelf | A buyer wants this item. Name your asking price (action: counter). -> counter 330
-[harness] bookshelf | The buyer now offers 140. -> counter 280
-[harness] bookshelf | The buyer now offers 170. -> counter 265
+[harness] lamp | The buyer now offers 60. -> counter 120
+[harness] lamp | The buyer now offers 120. -> accept 120
+[harness] bookshelf | A buyer wants this item. Name your asking price (action: counter). -> counter 380
+[harness] bookshelf | The buyer now offers 140. -> counter 300
+[harness] bookshelf | The buyer now offers 170. -> counter 275
 [harness] bookshelf | The buyer now offers 200. -> counter 260
 [harness] bookshelf | The buyer now offers 230. -> reject 260
-[harness] bookshelf | A buyer wants this item. Name your asking price (action: counter). -> counter 350
+[harness] bookshelf | A buyer wants this item. Name your asking price (action: counter). -> counter 380
+[harness] bookshelf | The buyer now offers 140. -> counter 310
+[harness] bookshelf | The buyer now offers 170. -> counter 280
+[harness] bookshelf | The buyer now offers 200. -> counter 260
+[harness] bookshelf | The buyer now offers 230. -> reject 260
+[harness] bookshelf | A buyer wants this item. Name your asking price (action: counter). -> counter 380
 [harness] bookshelf | The buyer now offers 140. -> counter 300
 [harness] bookshelf | The buyer now offers 170. -> counter 280
 [harness] bookshelf | The buyer now offers 200. -> counter 260
 [harness] bookshelf | The buyer now offers 230. -> reject 260
-[harness] bookshelf | A buyer wants this item. Name your asking price (action: counter). -> counter 330
-[harness] bookshelf | The buyer now offers 140. -> counter 280
-[harness] bookshelf | The buyer now offers 170. -> counter 260
-[harness] bookshelf | The buyer now offers 200. -> reject 260
