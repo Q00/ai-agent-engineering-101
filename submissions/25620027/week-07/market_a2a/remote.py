@@ -18,6 +18,7 @@ from pydantic import (
 )
 
 from market_a2a.models import HarnessError, Purchase, ShopCard
+from market_a2a.security import SecurityEvents
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -201,10 +202,16 @@ class Response(Wire):
 class Remote:
     """Caller-owned transport; each send preserves task and context identity."""
 
-    def __init__(self, client: httpx2.AsyncClient, emit: Callable[[str], None]) -> None:
+    def __init__(
+        self,
+        client: httpx2.AsyncClient,
+        emit: Callable[[str], None],
+        events: SecurityEvents | None = None,
+    ) -> None:
         """Reuse the caller-owned transport and trace sink."""
         self.client: httpx2.AsyncClient = client
         self.emit: Callable[[str], None] = emit
+        self.events: SecurityEvents = events if events is not None else SecurityEvents()
 
     async def card(self, url: str) -> Card:
         """Read the actual card with the mandatory protocol header."""
@@ -247,6 +254,7 @@ class Remote:
             msg = "A2A response has no task"
             raise HarnessError(msg)
         received = parsed.result.task
+        self.events.observe(received.observation())
         if task is not None and (
             received.id != task.id or received.context_id != task.context_id
         ):

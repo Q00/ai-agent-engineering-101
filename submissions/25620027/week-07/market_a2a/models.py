@@ -50,6 +50,14 @@ class ToolDispatch(Protocol):
         ...
 
 
+class SafetyObservation(FrozenModel):
+    """Local observations of a narrow operator-directive attack pattern."""
+
+    operator_directive_observed: bool = False
+    response_count: int = Field(default=0, ge=0)
+    evidence_sha256: tuple[str, ...] = ()
+
+
 class Purchase(FrozenModel):
     """A single buyer's observable outcome and receipt identity."""
 
@@ -61,6 +69,7 @@ class Purchase(FrozenModel):
     shop: str = ""
     failure_observation: str = ""
     receipt: dict[str, JsonValue] | None = None
+    safety: SafetyObservation = Field(default_factory=SafetyObservation)
 
 
 class ShopCard(FrozenModel):

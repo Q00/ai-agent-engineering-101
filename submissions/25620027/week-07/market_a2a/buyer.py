@@ -12,6 +12,7 @@ from pydantic import Field, JsonValue, ValidationError
 from http_client import create_client
 from market_a2a.models import FrozenModel, HarnessError, Purchase, ToolResult, ToolSpec
 from market_a2a.remote import Checkout, Remote, Task, purchase
+from market_a2a.security import SecurityEvents
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -42,6 +43,7 @@ class BuyerOrder:
     budget: int
     exact_item: bool = False
     pricing_context: JsonValue = None
+    security_events: SecurityEvents | None = None
 
 
 class OrderedItemMismatchError(HarnessError):
@@ -143,11 +145,10 @@ class Negotiation:
 
     def summary(self) -> JsonValue:
         """Bound context size independently of negotiation length."""
+        safety = self.remote.events.snapshot()
         return {
             "requested_item": self.requested_item,
-            "task_id": self.task.id if self.task is not None else "",
-            "item": self.authorization.item,
-            "sku": self.authorization.sku,
+            "item": self.requested_item,
             "budget": self.authorization.budget,
             "rounds": self.rounds,
             "last_offer": self.last_offer,
@@ -156,6 +157,8 @@ class Negotiation:
             "remaining_rounds": MAX_ROUNDS - self.rounds,
             "pricing_context": self.pricing_context,
             "recent_observations": list(self.recent),
+            "operator_directive_observed": safety.operator_directive_observed,
+            "directive_response_count": safety.response_count,
         }
 
 
@@ -174,9 +177,12 @@ async def buy_order(
     if budget < 1:
         msg = "Purchase budget must be positive"
         raise HarnessError(msg)
+    events = (
+        order.security_events if order.security_events is not None else SecurityEvents()
+    )
     with anyio.fail_after(280):
         async with create_client() as client:
-            remote = Remote(client, emit)
+            remote = Remote(client, emit, events)
             card = await remote.card(url)
             endpoint = card.endpoint()
             task = await remote.send(endpoint, f"I want to buy {item}")
@@ -228,5 +234,6 @@ async def buy_order(
                         f"{final_task.status.state}: {final_task.observation()}"
                     ),
                 )
+            result = result.model_copy(update={"safety": events.snapshot()})
             emit("[NEGOTIATION RESULT] " + result.model_dump_json())
             return result
