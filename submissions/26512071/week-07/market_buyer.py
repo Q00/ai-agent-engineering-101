@@ -5,13 +5,18 @@
 market_kit.py starts this for each order. {shops} is a JSON list of
 {"name", "url", "reviews": [{"stars", "review", "round"}]}, newest review first.
 
-1. Memory: memory.jsonl next to this file, one line per trade this buyer made
-   (shop name, item, budget, first ask, final price or no deal, receipt check, stars).
-   Shops are remembered by name; their URLs change when their kits restart.
+1. Memory: memory.jsonl next to this file, one line per trade this buyer made:
+   shop name, item, budget, first and lowest ask, my last offer (the agreed price when
+   the shop closed on it), the receipt's price, what was wrong with the receipt, stars.
+   Shops are remembered by name; their URLs change when their kits restart. The market
+   test's own shops go to memory-test.jsonl (its shops files are .market/test-*.json),
+   so test trades never mix with market trades.
 2. Probe: every shop's Agent Card is fetched at once with a short timeout, and shops
    that do not answer with a card are dropped (in Round 0 most failed orders were dead
    shops). If none answers, the whole list is kept.
-3. Pick: code turns each shop into one line (my own trades with it, then its review
+3. Pick: code turns each shop into one line (my own trades with it for this item first:
+   deals and what they cost, the lowest ask it ever made, receipts that did not match
+   the agreed price; then its review
    average and its three newest reviews, cut short and quoted as data) and drops the
    shops my memory caught with a bad receipt. The harness picks one of the rest by name
    and says why; the reason goes to the output.
@@ -32,7 +37,7 @@ import httpx
 
 from buyer import HEADERS, MAX_OFFERS, decide, harness, log, rpc, send
 
-MEMORY = Path(__file__).with_name("memory.jsonl")
+MEMORY = Path(__file__).with_name("memory.jsonl")  # memory-test.jsonl under the market test
 REVIEWS_SHOWN, REVIEW_CHARS = 3, 120
 PROBE_TIMEOUT = 5
 
@@ -67,16 +72,25 @@ def remember(entry):
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
-def my_line(trades):
+def my_line(trades, item):
+    """My own history with one shop, the ordered item first."""
     if not trades:
         return "no trades of mine"
-    deals = [t for t in trades if t.get("price") is not None]
+    same = [t for t in trades if t.get("item") == item]
+    parts = []
+    if same:
+        deals = [t for t in same if t.get("price") is not None]
+        parts.append(f"{item}: {len(same)} trades, {len(deals)} deals"
+                     + (" at " + ", ".join(f"{t['price']} (budget {t['budget']})" for t in deals[-3:]) if deals else ""))
+        asks = [a for t in same for a in (t.get("first_ask"), t.get("min_ask")) if isinstance(a, int)]
+        if asks:
+            parts.append(f"its lowest {item} ask so far {min(asks)}")
+    other = len(trades) - len(same)
+    if other:
+        parts.append(f"{other} trades for other items")
     bad = [t for t in trades if t.get("receipt_problem")]
-    parts = [f"{len(trades)} trades of mine, {len(deals)} deals"]
-    if deals:
-        parts.append("prices " + ", ".join(f"{t['item']} {t['price']}/{t['budget']}" for t in deals[-3:]))
     if bad:
-        parts.append(f"BAD RECEIPT {len(bad)}x: {bad[-1]['receipt_problem']}")
+        parts.append(f"BAD RECEIPT {len(bad)}x, last: {bad[-1]['receipt_problem']}")
     return "; ".join(parts)
 
 
@@ -114,7 +128,7 @@ def pick(shops, item, budget, memory):
     by_name = {}
     for s in shops:
         by_name.setdefault(s["name"], s)
-    mine = {n: [t for t in memory if t.get("shop") == n] for n in by_name}
+    mine = {n: [t for t in memory if t.get("shop") == n] for n in by_name}  # by name: URLs change
     ok = [n for n in by_name if not any(t.get("receipt_problem") for t in mine[n])]
     for n in by_name:
         if n not in ok:
@@ -123,7 +137,7 @@ def pick(shops, item, budget, memory):
     if len(ok) == 1:
         log(f"[pick] {ok[0]}: the only shop left")
         return by_name[ok[0]]
-    table = "\n".join(f"- {n} | mine: {my_line(mine[n])} | reviews: {review_line(by_name[n].get('reviews', []))}"
+    table = "\n".join(f"- {n} | mine: {my_line(mine[n], item)} | reviews: {review_line(by_name[n].get('reviews', []))}"
                       for n in ok)
     log("[pick] table:\n" + table)
     for attempt in range(2):
@@ -147,13 +161,17 @@ def pick(shops, item, budget, memory):
 
 
 def negotiate(url, item, budget):
-    """The week-06 negotiation. Returns (task, first ask, rounds)."""
+    """The week-06 negotiation. Returns (task, {first_ask, min_ask, agreed, rounds}).
+
+    agreed is my last offer: a shop that completes the task closes on that offer, so the
+    receipt must say that price (or less)."""
     t, state, reply = send(url, f"I want to buy a {item}")
     task_id = t["id"]
     nums = re.findall(r"\d+", reply)
     first_ask = int(nums[-1]) if nums and state == "TASK_STATE_INPUT_REQUIRED" else None
+    asks = [first_ask] if first_ask is not None else []
     history = [f"You: I want to buy a {item}", f"Shop: {reply}"]
-    rounds = 0
+    rounds, offer = 0, None
     for _ in range(MAX_OFFERS):
         if state != "TASK_STATE_INPUT_REQUIRED":
             break
@@ -165,18 +183,22 @@ def negotiate(url, item, budget):
         if price > budget:
             log(f"[guard] offer {price} above budget {budget} -> {budget}")
             price = budget
-        rounds += 1
+        rounds, offer = rounds + 1, price
         t, state, reply = send(url, str(price), task_id)
         history += [f"You offer {price}.", f"Shop: {reply}"]
+        nums = re.findall(r"\d+", reply)
+        if nums and state == "TASK_STATE_INPUT_REQUIRED":
+            asks.append(int(nums[-1]))
     else:
         if state == "TASK_STATE_INPUT_REQUIRED":
             log("[buyer] offer limit reached, walking away")
             rpc(url, "CancelTask", {"id": task_id})
-    return t, first_ask, rounds
+    return t, {"first_ask": first_ask, "min_ask": min(asks) if asks else None,
+               "agreed": offer if state == "TASK_STATE_COMPLETED" else None, "rounds": rounds}
 
 
-def receipt_problem(receipt, item, budget, task_id):
-    """What is wrong with a receipt by the order's terms, or None."""
+def receipt_problem(receipt, item, budget, task_id, agreed):
+    """What is wrong with a receipt by the order's terms and the agreed price, or None."""
     if not receipt.get("sig_seller"):
         return "no sig_seller"
     if receipt.get("item") != item:
@@ -184,6 +206,8 @@ def receipt_problem(receipt, item, budget, task_id):
     price = receipt.get("price")
     if not isinstance(price, (int, float)) or price > budget:
         return f"price {price} above budget {budget}"
+    if agreed is not None and price > agreed:
+        return f"agreed {agreed}, receipt says {price}"
     if receipt.get("task") != task_id:
         return f"task {receipt.get('task')!r} is not this negotiation's {task_id!r}"
     return None
@@ -195,17 +219,21 @@ def main():
     ap.add_argument("--item", required=True)
     ap.add_argument("--budget", type=int, required=True)
     args = ap.parse_args()
+    global MEMORY
+    if Path(args.shops).name.startswith("test-"):  # the market test's shops, not the market's
+        MEMORY = MEMORY.with_name("memory-test.jsonl")
 
     shops = json.loads(Path(args.shops).read_text(encoding="utf-8"))
     memory = load_memory()
     log(f"[buyer] {len(shops)} shops, {len(memory)} remembered trades; {args.item} with budget {args.budget}")
     shop = pick(probe(shops), args.item, args.budget, memory)
 
-    receipt, problem, first_ask, rounds, task_id = None, None, None, 0, None
+    receipt, problem, task_id = None, None, None
+    got = {"first_ask": None, "min_ask": None, "agreed": None, "rounds": 0}
     try:
         card = httpx.get(shop["url"].rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=30).json()
         url = next(i["url"] for i in card["supportedInterfaces"] if i["protocolBinding"] == "JSONRPC")
-        t, first_ask, rounds = negotiate(url, args.item, args.budget)
+        t, got = negotiate(url, args.item, args.budget)
         task_id = t["id"]
         state = t.get("status", {}).get("state")
         data = [p["data"] for a in t.get("artifacts", []) for p in a.get("parts", []) if p.get("data")]
@@ -213,11 +241,12 @@ def main():
             receipt = data[0]
             if isinstance(receipt.get("price"), float) and receipt["price"].is_integer():
                 receipt["price"] = int(receipt["price"])  # A2A data Parts carry numbers as doubles
-            problem = receipt_problem(receipt, args.item, args.budget, task_id)
+            problem = receipt_problem(receipt, args.item, args.budget, task_id, got["agreed"])
     except (httpx.HTTPError, RuntimeError, StopIteration, KeyError, ValueError) as e:
         log(f"[buyer] trade failed: {e}")
         problem = None
 
+    first_ask, rounds = got["first_ask"], got["rounds"]
     if receipt and problem:
         stars, review = 1, f"Receipt did not match the deal: {problem}."
     elif receipt:
@@ -231,7 +260,8 @@ def main():
     log(f"[buyer] {shop['name']}: {review} ({stars} stars)")
 
     remember({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "shop": shop["name"], "item": args.item,
-              "budget": args.budget, "first_ask": first_ask, "rounds": rounds,
+              "budget": args.budget, "first_ask": first_ask, "min_ask": got["min_ask"], "rounds": rounds,
+              "agreed": got["agreed"], "receipt_price": receipt.get("price") if receipt else None,
               "price": receipt["price"] if receipt and not problem else None,
               "receipt_problem": problem, "stars": stars})
     print(json.dumps({"shop": shop["url"], "receipt": receipt, "stars": stars, "review": review},
