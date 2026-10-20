@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-20T11:48:52+00:00",
+  "started": "2026-10-20T12:08:57+00:00",
   "harness": "Claude Code: claude -p --model haiku; shop choice: 50/50 personal experience and reviews",
   "seller_cmd": "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python seller.py --port {port}",
   "market_buyer_cmd": "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Furniture shop. Opening asks: lamp 110, chair 200, bookshelf 285. Quick acceptance, Ed25519-signed receipts, and claude for counteroffers.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:55430/",
+        "url": "http://127.0.0.1:59910/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -131,7 +131,7 @@
       "test": "buyer_deal",
       "run": 2,
       "pass": true,
-      "detail": "offers [105], stars 4, receipt yes"
+      "detail": "offers [100], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -143,7 +143,7 @@
       "test": "buyer_deal",
       "run": 3,
       "pass": true,
-      "detail": "offers [100], stars 4, receipt yes"
+      "detail": "offers [105], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -155,7 +155,7 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [180, 210, 230], stars 3, receipt null"
+      "detail": "offers [170, 200, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -167,13 +167,13 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [200, 230], stars 3, receipt null"
+      "detail": "offers [200, 230, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_holds_budget",
