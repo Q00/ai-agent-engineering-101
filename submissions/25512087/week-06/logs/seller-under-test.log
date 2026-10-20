@@ -1,0 +1,94 @@
+{"event": "harness_decision", "action": "ask", "price": 150, "reason": "Opening above the reserve of 100."}
+{"event": "opening", "task_id": "951c2dbf-7a99-4a06-adf5-a885684c0666", "item": "lamp", "ask": 150, "reserve": 100}
+{"event": "harness_decision", "action": "counter", "price": 100, "reason": "Offer is below reserve; counter at reserve."}
+{"event": "response", "task_id": "951c2dbf-7a99-4a06-adf5-a885684c0666", "item": "lamp", "offer": 60, "reserve": 100, "decision": "counter", "decision_price": 100}
+{"event": "harness_decision", "action": "accept", "price": 100, "reason": "Offer meets the reserve."}
+{"event": "response", "task_id": "951c2dbf-7a99-4a06-adf5-a885684c0666", "item": "lamp", "offer": 100, "reserve": 100, "decision": "accept", "decision_price": 100}
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x107496390> at 0x107f94b80> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-47' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x107496390> at 0x107f944c0> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-48' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+{"event": "harness_decision", "action": "open", "price": 120, "reason": "Opening above the 100 reserve to leave room to negotiate."}
+{"event": "opening", "task_id": "08989021-fd6a-4dc5-8c57-0158eefb8575", "item": "lamp", "ask": 120, "reserve": 100}
+{"event": "harness_decision", "action": "accept", "price": 120, "reason": "Offer meets the reserve."}
+{"event": "response", "task_id": "08989021-fd6a-4dc5-8c57-0158eefb8575", "item": "lamp", "offer": 120, "reserve": 100, "decision": "accept", "decision_price": 120}
+{"event": "harness_decision", "action": "ask", "price": 120, "reason": "Opens above the 100 reserve while leaving room to negotiate."}
+{"event": "opening", "task_id": "673719ea-054a-4997-aca8-21ef97b096cc", "item": "lamp", "ask": 120, "reserve": 100}
+{"event": "harness_decision", "action": "accept", "price": 120, "reason": "Offer meets the reserve and matches the current ask."}
+{"event": "response", "task_id": "673719ea-054a-4997-aca8-21ef97b096cc", "item": "lamp", "offer": 120, "reserve": 100, "decision": "accept", "decision_price": 120}
+{"event": "harness_decision", "action": "counter", "price": 320, "reason": "Opening above the 260 reserve to leave room for negotiation."}
+{"event": "opening", "task_id": "2c1cb15e-2e8c-4d31-b84c-d4a7c042d382", "item": "bookshelf", "ask": 320, "reserve": 260}
+{"event": "harness_decision", "action": "counter", "price": 260, "reason": "Offer is below the reserve; counter at the minimum acceptable price."}
+{"event": "response", "task_id": "2c1cb15e-2e8c-4d31-b84c-d4a7c042d382", "item": "bookshelf", "offer": 140, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_decision", "action": "counter", "price": 260, "reason": "Offer is below reserve; counter at reserve."}
+{"event": "response", "task_id": "2c1cb15e-2e8c-4d31-b84c-d4a7c042d382", "item": "bookshelf", "offer": 170, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_decision", "action": "counter", "price": 260, "reason": "Offer is below the reserve; counter at reserve."}
+{"event": "response", "task_id": "2c1cb15e-2e8c-4d31-b84c-d4a7c042d382", "item": "bookshelf", "offer": 200, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_decision", "action": "reject", "price": null, "reason": "Offer is below the 260 reserve."}
+{"event": "response", "task_id": "2c1cb15e-2e8c-4d31-b84c-d4a7c042d382", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "reject", "decision_price": null}
+{"event": "harness_decision", "action": "counter", "price": 320, "reason": "Opening above the 260 reserve to leave room for negotiation."}
+{"event": "opening", "task_id": "6584bab8-86d0-41cb-887a-f6fb6d1cf975", "item": "bookshelf", "ask": 320, "reserve": 260}
+{"event": "harness_decision", "action": "counter", "price": 260, "reason": "Offer is below the 260 reserve."}
+{"event": "response", "task_id": "6584bab8-86d0-41cb-887a-f6fb6d1cf975", "item": "bookshelf", "offer": 140, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: ERROR: exceeded retry limit, last status: 429 Too Many Requests"}
+{"event": "response", "task_id": "6584bab8-86d0-41cb-887a-f6fb6d1cf975", "item": "bookshelf", "offer": 170, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: ERROR: exceeded retry limit, last status: 429 Too Many Requests"}
+{"event": "response", "task_id": "6584bab8-86d0-41cb-887a-f6fb6d1cf975", "item": "bookshelf", "offer": 200, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: ERROR: exceeded retry limit, last status: 429 Too Many Requests"}
+{"event": "response", "task_id": "6584bab8-86d0-41cb-887a-f6fb6d1cf975", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: ERROR: exceeded retry limit, last status: 429 Too Many Requests"}
+{"event": "response", "task_id": "6584bab8-86d0-41cb-887a-f6fb6d1cf975", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: ERROR: exceeded retry limit, last status: 429 Too Many Requests"}
+{"event": "response", "task_id": "6584bab8-86d0-41cb-887a-f6fb6d1cf975", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: ERROR: exceeded retry limit, last status: 429 Too Many Requests"}
+{"event": "response", "task_id": "6584bab8-86d0-41cb-887a-f6fb6d1cf975", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: ERROR: exceeded retry limit, last status: 429 Too Many Requests"}
+{"event": "response", "task_id": "6584bab8-86d0-41cb-887a-f6fb6d1cf975", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_decision", "action": "counter", "price": 350, "reason": "Opening above the reserve to leave room for negotiation."}
+{"event": "opening", "task_id": "0a745bcf-6195-44bc-9f63-3df1e1d91c2e", "item": "bookshelf", "ask": 350, "reserve": 260}
+{"event": "harness_decision", "action": "counter", "price": 260, "reason": "Offer is below the $260 reserve."}
+{"event": "response", "task_id": "0a745bcf-6195-44bc-9f63-3df1e1d91c2e", "item": "bookshelf", "offer": 140, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_decision", "action": "reject", "price": null, "reason": "Offer is below the reserve of 260."}
+{"event": "response", "task_id": "0a745bcf-6195-44bc-9f63-3df1e1d91c2e", "item": "bookshelf", "offer": 170, "reserve": 260, "decision": "reject", "decision_price": null}
