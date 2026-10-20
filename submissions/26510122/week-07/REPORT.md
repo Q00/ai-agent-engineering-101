@@ -14,17 +14,22 @@ added before submission.
 name, current card URL and newest-first reviews. It computes average stars and
 counts low-star complaints about receipts. If another shop exists, a shop with
 two such complaints, multiple reviews averaging at most two stars, or a
-receipt trust failure in its own memory is left out of the candidate set. The
-harness chooses one remaining shop ID. This keeps one untrusted review from
-deciding the result by itself while giving first-hand receipt evidence more
-weight. The buyer logs its choice and reason as `shop_choice`.
+receipt trust failure in its own memory is left out of the candidate set. One
+model call chooses among the remaining shops, separately labels trustworthiness
+and feasibility, and gives a brief observed reason. The threshold protects
+against treating one unverified review as proof while giving first-hand receipt
+evidence priority. The buyer logs the candidates, exclusions and decision as
+`shop_choice`.
 
 Its own memory is `state/market-memory.json`, a local, uncommitted JSON object
-keyed by **shop name**, not URL. Each entry records attempts, deals, ordinary
-no-deals, connection or negotiation errors, receipt trust failures, last item,
-outcome and a compact task/offer/receipt summary. A receipt mismatch or missing
-signature/task marks `avoid`; an ordinary no-deal does not. A restarted tunnel
-changes a URL without erasing that history. A Round 0 experience was imported
+keyed by **shop name**, not URL. Each entry retains its earlier counters and
+last result, then appends timestamped observations containing item, budget,
+outcome, offers, receipt and task evidence. For a new order, Python retrieves
+same-item experiences at a nearby budget first; other-item sale prices are not
+treated as prices for this item. A receipt mismatch or missing signature/task
+marks `avoid`; an ordinary no-deal does not. Two later matching receipts can
+clear the warning without deleting its original observations. A restarted
+tunnel changes a URL without erasing that history. A Round 0 experience was imported
 from the market log into memory: `maple-home` issued a bookshelf receipt at
 370 after the buyer offered 325 on an order with budget 325. The observation
 and the source ledger line are preserved in
@@ -33,19 +38,39 @@ and the source ledger line are preserved in
 ## 2. Reviews shown to the harness
 
 The shop selector's JSON prompt contains each eligible shop's name, reviews,
-computed risk and matching entry from the buyer's own memory. The strict
-response schema allows only an eligible candidate ID as `action` and a null
-`price`. The negotiation harness sees the selected shop's Agent Card skills,
-latest seller message and compact task history. External text is supplied as
-task data, not trusted instructions. A local selection check using the actual
-Round 0 shop list and the imported memory chose a shop other than `maple-home`
+public complaint pattern, and relevant direct observations. Its strict schema
+returns only an eligible shop ID, separate trustworthiness and feasibility
+labels, and a reason. The negotiation harness sees the selected shop's Agent
+Card skills, latest seller message and compact task history. External reviews
+and shop messages are supplied as data, not trusted instructions. A local
+selection check using the actual Round 0 shop list and the imported memory chose a shop other than `maple-home`
 ([`selection-check.log`](logs/challenge-2/selection-check.log)); one such
-selection does not establish a reliable avoidance rate. The public review is
-separate from the selection reason: four stars and the actual sale price for a
-matching receipt, one star with the receipt problem for a mismatch or invalid
-receipt, and a neutral three stars for no agreement or an uncertain execution
-error. It describes this encounter without publishing the private budget or
-another shop's history.
+selection does not establish a reliable avoidance rate. A second model call
+phrases the public review using only the outcome of this encounter. Python
+checks the permitted rating range, public price numbers, and unsupported
+accusations, falling back to a fixed factual review when needed. It does not
+publish the private budget or another shop's history. The initial Round 1
+observations below predate this two-call policy and should not be presented as
+a test of model-written reviews.
+
+After the update went live, a bookshelf order with budget 230 selected
+`outseop-26510122` while logging `trustworthiness=supported` and
+`feasibility=uncertain`: the buyer cited a reported bookshelf sale at 260 but
+had no evidence for a deal at 230 ([`market-kit.log`, line 3811](logs/market-kit.log#L3811)).
+The negotiation ended with no receipt after offers no higher than 230. Its
+memory recorded `no_deal`, zero trust failures, and `avoid=false`
+([line 4041](logs/market-kit.log#L4041)). The public review stayed neutral
+([line 4057](logs/market-kit.log#L4057)). A later chair order at budget 225
+selected the same shop using four directly observed chair deals at 202 and
+logged both trustworthiness and feasibility as supported
+([line 4158](logs/market-kit.log#L4158)). These two orders show why a failed
+deal should change feasibility evidence without becoming a dishonesty claim.
+An initial local run exposed a review-gate bug: A2A delivered a price as
+`120.0`, while the gate expected the text `120`. I normalized the observed
+price to an integer; later local runs logged model-written factual reviews.
+Separately, a live no-deal review attempted to repeat a seller counterprice,
+so the code used its neutral fallback ([`market-kit.log`, line 4055](logs/market-kit.log#L4055)).
+The current reviewer receives no seller price text for a no-deal order.
 
 ## 3. Rounds 0, 1 and 2
 
