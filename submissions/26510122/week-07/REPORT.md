@@ -1,7 +1,10 @@
 # Week 07: Agent Market (work in progress)
 
 This report records observations as of 2026-10-20. The local market test passed
-25/25 both before and after the price change. Live Round 1 and Round 2 had not
+25/25 both before and after the price change. The Week 06 compatibility test
+also passed 21/21 in an isolated copy, so its report did not replace the Week
+07 report ([`week06-precheck`](logs/week06-precheck/trade-test.log)). Live Round
+1 and Round 2 had not
 started at the time of this draft; their results and the final deployment status
 must be added before submission.
 
