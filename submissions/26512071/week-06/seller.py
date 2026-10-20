@@ -12,9 +12,11 @@ an ask below the reserve is raised to the reserve, and an accept below it become
 counteroffer at the reserve.
 
 Challenge 1: the shop sells from catalog.json (3000 items). A first message that names
-an item exactly ("I want to buy a lamp") goes straight to it. Otherwise search.py
-narrows the catalog to 20 candidates and the harness picks one by id; code checks that
-the id is one of the candidates, and the reserve comes from that catalog entry.
+an item exactly ("I want to buy a lamp") goes straight to it. Otherwise two harness
+calls: the first turns the request into a spec (kinds, sizes, books, seats), search.py
+keeps the items that fit it and ranks them, and the second picks one of the top 20 by
+id. Code checks that the id is one of the candidates, and the reserve comes from that
+catalog entry.
 """
 import argparse
 import asyncio
@@ -41,6 +43,17 @@ CATALOG = Catalog()
 MAX_ROUNDS = 10  # safety net so a task cannot run forever
 HARNESS = ["claude", "-p", "--model", "sonnet", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
 WORKDIR = tempfile.mkdtemp(prefix="seller-harness-")  # empty dir: no project instructions
+
+SPEC = """You work at a furniture shop. A buyer wrote:
+{request}
+
+Turn the request into a search spec. Kinds the shop sells: {kinds}.
+Answer with one JSON object and nothing else; use null for anything the buyer does not say:
+{{"kinds": [<kinds from the list that could fit>], "wooden": true | null,
+ "max_height_cm": <int> | null, "min_height_cm": <int> | null, "max_width_cm": <int> | null,
+ "books": <int> | null, "seats": <int> | null}}
+Turn everyday references into numbers (a desk or a table is about 75 cm tall).
+"""
 
 PICK = """You are a furniture shop owner. A buyer wrote:
 {request}
@@ -86,23 +99,33 @@ async def pick(request):
     hit = CATALOG.exact(request)
     if hit:
         return hit
-    candidates = CATALOG.search(request)
+    spec = await ask_json(SPEC.format(request=request, kinds=", ".join(CATALOG.kinds)),
+                          lambda d: isinstance(d.get("kinds"), list))
+    log(f"[spec] {json.dumps(spec)}")
+    candidates = CATALOG.search(request, spec=spec)
     if not candidates:
         return None
     log(f"[search] {len(candidates)} candidates: " + " ".join(c["id"] for c in candidates))
     by_id = {c["id"]: c for c in candidates}
     prompt = PICK.format(request=request, candidates="\n".join(f"{c['id']} | {c['description']}" for c in candidates))
+    # code-side guard: only a candidate can be sold
+    d = await ask_json(prompt, lambda d: d.get("id") is None or d.get("id") in by_id)
+    return by_id.get(d["id"]) if d else None
+
+
+async def ask_json(prompt, valid):
+    """The harness's answer as a dict that passes valid(), or None after two tries."""
     for attempt in range(2):
         raw = await harness(prompt)
         log(f"[harness] {raw.strip()}")
-        m = re.search(r"\{.*?\}", raw, re.S)
+        m = re.search(r"\{.*\}", raw, re.S)
         try:
             d = json.loads(m.group())
-            if d["id"] is None or d["id"] in by_id:  # code-side guard: only a candidate can be sold
-                return by_id.get(d["id"])
-        except (AttributeError, KeyError, TypeError, ValueError):
+            if isinstance(d, dict) and valid(d):
+                return d
+        except (AttributeError, TypeError, ValueError):
             pass
-        log(f"[seller] unusable pick, attempt {attempt + 1}")
+        log(f"[seller] unusable answer, attempt {attempt + 1}")
     return None
 
 
