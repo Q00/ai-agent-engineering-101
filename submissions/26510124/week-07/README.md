@@ -56,9 +56,19 @@ submissions/26510124/week-07/.venv/bin/python \
 
 2026-10-20 20:25 KST에 새 설정을 읽은 키트가 구매자 전용으로 재접속했다.
 재시작 중 Cloudflare가 429를 반환했고 localhost.run SSH 연결도 시간 초과됐다.
-따라서 현재 판매자 공개 연결은 복구되지 않았으며, 터널이 가능해지면 키트를
-`--tunnel` 또는 `--public-url`로 다시 시작해야 한다. 기존 키는 유지했다.
+당시 판매자 공개 연결은 복구되지 않았으며, 기존 키는 유지했다.
 관련 기록은 `logs/market-buyer-restart.log`와 `logs/market-ssh-tunnel.log`에 있다.
+
+2026-10-20 20:39 KST에는 Serveo SSH 443 터널로 가게를 다시 등록했다.
+공개 주소는 https://b38e4d02fbc10cd9-203-246-85-178.serveousercontent.com 이다.
+터널은 로컬 8900 포트로 전달하고, 판매자 키트는 `--public-url <주소>
+--port 8900 --shop-only`로 실행한다. buyer 키트는 기존 거래의 결과 제출을
+확인한 뒤 `--deployed <주소>`로 재시작해 자기 가게를 후보에서 제외한다.
+두 키트와 SSH는 터미널과 분리된 백그라운드 프로세스다.
+`agent-market/kit.pid`, `shop-kit.pid`, `tunnel.pid`에 각각 PID를 보관한다.
+이 컴퓨터와 네트워크가 유지되어야 하며, 재부팅·터널 단절 시 자동 복구하지 않는다.
+실행 기록은 `logs/round1-shop-start.log`, `logs/round1-serveo-live-20261020T203624.log`,
+`logs/market-kit.log`와 `logs/round1-online-check-20261020.json`에 있다.
 
 가게 선택과 흥정을 합해 최대 270초, 선택은 그중 최대 90초를 사용한다.
 예산보다 큰 제안은 하네스 검증과 송신 전 검증에서 거부하며 보정해서 보내지 않는다.
