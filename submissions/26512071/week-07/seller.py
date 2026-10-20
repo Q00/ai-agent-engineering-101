@@ -141,7 +141,13 @@ def open_shop(n):
 # 3-star review ("Paid 103.0 of 105."), because it opened at about 1.5x the reserve and
 # closed near the buyer's budget. Shop rank counts deals, not revenue.
 PROMO = int(os.environ.get("SHOP_PROMO", "0"))  # opening-price deals, only when the kit sets it
-PROMO_ASK, OPEN_CAP = 1.05, 1.2  # promo: ask 1.05x reserve and take any offer at the reserve; after: open at most 1.2x
+PROMO_ASK, OPEN_CAP = 1.05, 1.1  # opening asks: 1.05x reserve during the promo, at most 1.1x after
+# Fair-price mode in the market, from 264 market reviews: shown ratings come from deals,
+# 5-star deals were paid at about 0.81 of the buyer's budget and 4-star at 0.91, and the
+# 2-star ones say the shop "held firm". So: any offer at or above the reserve closes,
+# asks only come down, a reject becomes one more ask, and a slow harness never stalls a buyer.
+STEP = 0.03         # each counter comes down at least 3% of the reserve
+HARNESS_WAIT = 20   # seconds; after that the code makes the move
 SALES = Path(__file__).with_name("sales.jsonl")  # every deal, for the before/after numbers
 # Each new review of this shop with LOW_STARS or fewer stars buys PER_LOW_REVIEW more
 # opening-price deals. The shop reads its own reviews from the market registry.
@@ -298,9 +304,14 @@ class Seller(AgentExecutor):
             deal["history"].append(f"Buyer offers {offer}.")
 
         item, reserve = deal["item"], deal["item"]["reserve"]
-        decision = await decide(item, deal["history"])
-        if decision is None:  # harness failed twice: hold the current ask
-            action, price, message = "ask", deal["ask"] or reserve, ""
+        try:
+            decision = await (asyncio.wait_for(decide(item, deal["history"]), HARNESS_WAIT) if MARKET
+                              else decide(item, deal["history"]))
+        except asyncio.TimeoutError:
+            log(f"[harness] no answer in {HARNESS_WAIT} s, the code moves")
+            decision = None
+        if decision is None:  # harness failed or was slow: the fair-price rules below make the move
+            action, price, message = "ask", deal["ask"] or round(reserve * OPEN_CAP), ""
         else:
             action, price, message = decision
         if re.search(r"\d", message):  # 40 of 141 market asks carried sizes like "180 cm ... 150 books ... 340"
@@ -309,14 +320,20 @@ class Seller(AgentExecutor):
                        "reject": "Sorry, I cannot go that low."}.get(action, "")
 
         promo = promo_left() > 0
-        if promo:  # opening price: low ask, and any offer at or above the reserve closes
-            if offer is not None and offer >= reserve:
-                action = "accept"
-            elif action == "ask":
-                price = min(price, round(reserve * PROMO_ASK))
-            message = f"New shop opening price. {message}"
-        elif MARKET and offer is None and action == "ask":
-            price = min(price, round(reserve * OPEN_CAP))
+        if MARKET:
+            if offer is not None and (offer >= reserve or (deal["ask"] and offer >= deal["ask"])):
+                action = "accept"                      # any offer at the reserve, or at my ask, closes
+            elif action == "reject" and deal["rounds"] < MAX_ROUNDS:
+                log("[fair] reject -> one more ask")    # a buyer who walks may still have had room
+                action = "ask"
+            if action == "ask":
+                step = max(1, round(reserve * STEP))
+                if deal["ask"] is None:
+                    price = min(price, round(reserve * (PROMO_ASK if promo else OPEN_CAP)))
+                elif price > deal["ask"] - step:       # asks only come down, by at least one step
+                    price = deal["ask"] - step
+            if promo:
+                message = f"New shop opening price. {message}"
         # close a near deal: in the market, buyers walked at offers 205 vs ask 208 and 270 vs 272
         if (action == "ask" and offer is not None and offer >= reserve
                 and offer >= CLOSE_GAP * price):
