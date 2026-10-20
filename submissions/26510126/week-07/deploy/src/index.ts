@@ -134,7 +134,7 @@ type Task = {
   artifacts?: { artifactId: string; name: string; parts: Part[] }[];
   history: Message[];
 };
-type Deal = { item: string; ask: number; history: string[]; offers?: number[]; discount?: number; tier?: number; stamps?: number };
+type Deal = { item: string; ask: number; history: string[]; offers?: number[]; discount?: number; tier?: number; stamps?: number; floor?: number };
 const MARGIN = 5; // a stuck buyer is accepted only at reserve + MARGIN or more
 type RpcError = { code: number; message: string; data: unknown[] };
 type Outcome = { task: Task } | { error: RpcError };
@@ -194,7 +194,8 @@ const MAX_TIER = 6; // the meta-harness may add tiers up to this one
 const COUPON = /FAIR-([A-Z]{8})([A-Z]{8})/i;
 const tierOf = (code: string) => Math.max(1, Math.min(MAX_TIER, code.charCodeAt(5) - 64));
 // Stamp card: the code's second letter counts the buyer's deals so far, modulo STAMP_EVERY (signed with the
-// rest), and every STAMP_EVERY-th order gets STAMP_BONUS more off, still never below reserve + MARGIN.
+// rest), and every STAMP_EVERY-th order gets STAMP_BONUS more off and may go down to the reserve itself
+// (no margin, never a loss); every other discount stops at reserve + MARGIN.
 const STAMP_EVERY = 8;
 const STAMP_BONUS = 0.08;
 const stampsOf = (code: string) => (code.charCodeAt(6) - 65) % STAMP_EVERY;
@@ -288,6 +289,7 @@ export class TaskObject extends DurableObject<Env> {
       let discount = 0;
       let tier = 0;
       let stamps = 0;
+      let floor = reserve + MARGIN;
       let welcome = "";
       const code = await validCoupon(this.env, textOf(msg));
       if (code && (await this.env.TASKS.get(this.env.TASKS.idFromName(STRATEGY_ID)).redeem(code))) {
@@ -296,8 +298,11 @@ export class TaskObject extends DurableObject<Env> {
         const table = strategy?.loyalty?.length ? strategy.loyalty : LOYALTY;
         discount = Math.min(MAX_LOYALTY, table[Math.min(tier, table.length - 1)] ?? 0);
         const full = stamps === STAMP_EVERY - 1; // this order is the STAMP_EVERY-th
-        if (full) discount += STAMP_BONUS;
-        const lower = Math.max(reserve + MARGIN, Math.round(price * (1 - discount)));
+        if (full) {
+          discount += STAMP_BONUS;
+          floor = reserve;
+        }
+        const lower = Math.max(floor, Math.round(price * (1 - discount)));
         console.log(`COUPON: ${code} redeemed, tier ${tier}, stamps ${stamps}${full ? " (stamp bonus)" : ""}, opening ${price} -> ${lower}`);
         price = Math.min(price, lower);
         welcome = full ? "Welcome back! Your stamp card is full: loyalty discount plus the stamp bonus applied."
@@ -308,7 +313,7 @@ export class TaskObject extends DurableObject<Env> {
       }
       const promo = cleanNote(strategy?.promo);
       const note = [welcome, promo, cleanNote(answer.note)].filter(Boolean).join(" ");
-      await this.ctx.storage.put("deal", { item, ask: price, history: [`You asked ${price}.`], discount, tier, stamps } satisfies Deal);
+      await this.ctx.storage.put("deal", { item, ask: price, history: [`You asked ${price}.`], discount, tier, stamps, floor } satisfies Deal);
       console.log(`OUT: open ${item} at ${price}`);
       this.respond(task, "TASK_STATE_INPUT_REQUIRED", `${item}: ${note ? note + " " : ""}Asking ${price}. Send your offer as a number.`);
     }
@@ -352,14 +357,15 @@ export class TaskObject extends DurableObject<Env> {
     }
     const strategy = await this.strategy();
     const base = strategy?.target[item];
-    const target = base ? Math.max(reserve + MARGIN, Math.round(base * (1 - (deal.discount ?? 0)))) : undefined;
+    const floor = deal.floor ?? reserve + MARGIN;
+    const target = base ? Math.max(floor, Math.round(base * (1 - (deal.discount ?? 0)))) : undefined;
     if (target && offer >= Math.max(target, reserve)) {
       // a fair offer closes at once: haggling a reached target down by ones loses buyers, and a quick fair deal earns the review
       console.log(`OUT: offer ${offer} reaches target ${target}, accepted by code`);
       return await this.close(task, item, offer, "Agreed.");
     }
 
-    if (prev !== undefined && offer <= prev + 1 && offer >= reserve + MARGIN) {
+    if (prev !== undefined && offer <= prev + 1 && offer >= floor) {
       // the buyer stopped raising: this is its limit, and it is above our floor. A deal earns a good review, a walkaway a bad one.
       console.log(`OUT: buyer stuck at ${offer} (last ${prev}), at or above reserve + ${MARGIN}, accepted by code`);
       return await this.close(task, item, offer, "Agreed.");
