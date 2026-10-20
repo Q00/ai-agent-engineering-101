@@ -1,157 +1,169 @@
-# week-07 market test, kit v1, 2026-10-20T12:25:19+00:00
+# week-07 market test, kit v1, 2026-10-20T12:29:16+00:00
 harness: Claude Code: claude -p --model haiku; shop choice: 50/50 personal experience and reviews
 
-## seller tests: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python seller.py --port 63651
+## seller tests: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python seller.py --port 64649
   PASS  seller_card #1: name='psyoung82 Furniture' binding=JSONRPC version=1.0 skills=1
 
 ### seller_deal #1: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
-    <- TASK_STATE_INPUT_REQUIRED | lamp: best available price 100. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "100" taskId=923bd823
-    <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-       artifact receipt [{"sig_seller": "UBiodOxIaTkJhyMRyfaRVti6gBm3YvB0iK+U2EPRoQ8+ra2usjKSeEROEUm4H5ghCYyZWizjit0EVrZRDzNmBg==", "shop": "psyoung82", "task": "923bd823-64e4-4fb5-96d2-b38ec3de907b", "price": 100.0, "item": "lamp"}]
-  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 100
-  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 100.0, asks [100]
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. This is our lowest price. To buy now, reply '100' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "60" taskId=6850f018
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. This is our lowest price. To buy now, reply '100' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "80" taskId=6850f018
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. This is our lowest price. To buy now, reply '100' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "100" taskId=6850f018
+    <- TASK_STATE_COMPLETED | Purchased lamp at 100. Ed25519-signed receipt attached. Please verify the receipt and leave an honest review of your experience.
+       artifact receipt [{"price": 100.0, "item": "lamp", "task": "6850f018-849a-4e39-ad0e-cee312344861", "shop": "psyoung82", "sig_seller": "X4r1cRkwq6zRGPwGqaiHyYX034lOWebpu6WTbv59WLZjJtvQ2wxJI4ZZVnFq8uWQ4TudXJbYAQR6ttoXY1ScCA=="}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 25519
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 100.0, asks [25519, 25519, 25519]
   PASS  seller_signed_receipt #1: sig_seller verifies with shop_key.pem
 
 ### seller_terminal: one more message to the finished task
-    -> SendMessage "110" taskId=923bd823
-    <- error -32004 Task 923bd823-64e4-4fb5-96d2-b38ec3de907b is in terminal state: TASK_STATE_COMPLETED
+    -> SendMessage "110" taskId=6850f018
+    <- error -32004 Task 6850f018-849a-4e39-ad0e-cee312344861 is in terminal state: TASK_STATE_COMPLETED
   PASS  seller_terminal #1: error returned
 
 ### seller_deal #2: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
-    <- TASK_STATE_INPUT_REQUIRED | lamp: best available price 100. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "100" taskId=75af7250
-    <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-       artifact receipt [{"sig_seller": "dL2w4vUL4iyAOnHecHqVraEwBH1ISNXPqxEXil06n7Sj71V0ZPpYc4ZlO+SlYl4T9e+Y/pPI+GhLJW2b/po+BQ==", "shop": "psyoung82", "task": "75af7250-48be-4f16-b6fa-ecfeea91e940", "price": 100.0, "item": "lamp"}]
-  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 100.0, asks [100]
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. This is our lowest price. To buy now, reply '100' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "60" taskId=cc1c318f
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. This is our lowest price. To buy now, reply '100' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "80" taskId=cc1c318f
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. This is our lowest price. To buy now, reply '100' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "100" taskId=cc1c318f
+    <- TASK_STATE_COMPLETED | Purchased lamp at 100. Ed25519-signed receipt attached. Please verify the receipt and leave an honest review of your experience.
+       artifact receipt [{"price": 100.0, "item": "lamp", "task": "cc1c318f-1e18-47e7-8f9f-02c739499d4d", "shop": "psyoung82", "sig_seller": "zbSFSCIQ3GmRHT21YlpFctdJczHF/YkPCtOrXAz0iJR/PUHQW6lLjnDjzoFkwwWRiXkDUfh+4nndrWLK0ZFyBg=="}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 100.0, asks [25519, 25519, 25519]
   PASS  seller_signed_receipt #2: sig_seller verifies with shop_key.pem
 
 ### seller_deal #3: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
-    <- TASK_STATE_INPUT_REQUIRED | lamp: best available price 100. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "100" taskId=aaaaf2c0
-    <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-       artifact receipt [{"sig_seller": "d2v0bdyf+NEwvtRKrAV3a2smwaZVEgIECFpHkV7vYZ0QhL/7w12oUzw/E8xVTiRR1r64t0YZ8qYDfpeIx6j1Aw==", "shop": "psyoung82", "task": "aaaaf2c0-0f27-44f9-afc4-1e9a4513fad1", "price": 100.0, "item": "lamp"}]
-  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 100.0, asks [100]
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. This is our lowest price. To buy now, reply '100' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "60" taskId=980094f0
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. This is our lowest price. To buy now, reply '100' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "80" taskId=980094f0
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. This is our lowest price. To buy now, reply '100' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "100" taskId=980094f0
+    <- TASK_STATE_COMPLETED | Purchased lamp at 100. Ed25519-signed receipt attached. Please verify the receipt and leave an honest review of your experience.
+       artifact receipt [{"price": 100.0, "item": "lamp", "task": "980094f0-e48b-40ca-bc9e-7d8aae974628", "shop": "psyoung82", "sig_seller": "XqU6TvyM0i2pRA9JIOWbfPzjQyWJiC9fngekSOlprtQWGwOlLbdsLrGDGVBSnLpzQT0jnjfKgU9TeDz3hxroAg=="}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 100.0, asks [25519, 25519, 25519]
   PASS  seller_signed_receipt #3: sig_seller verifies with shop_key.pem
 
 ### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "140" taskId=6d90ce8d
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "170" taskId=6d90ce8d
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "200" taskId=6d90ce8d
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=6d90ce8d
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=6d90ce8d
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=6d90ce8d
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=6d90ce8d
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=6d90ce8d
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [260, 260, 260, 260, 260, 260, 260, 260, 260]
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "140" taskId=24919892
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "170" taskId=24919892
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "200" taskId=24919892
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=24919892
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=24919892
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=24919892
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=24919892
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=24919892
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519]
 
 ### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "140" taskId=a7b57a91
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "170" taskId=a7b57a91
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "200" taskId=a7b57a91
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=a7b57a91
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=a7b57a91
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=a7b57a91
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=a7b57a91
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=a7b57a91
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-  PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [260, 260, 260, 260, 260, 260, 260, 260, 260]
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "140" taskId=8b5ef44b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "170" taskId=8b5ef44b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "200" taskId=8b5ef44b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=8b5ef44b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=8b5ef44b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=8b5ef44b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=8b5ef44b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=8b5ef44b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+  PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519]
 
 ### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "140" taskId=59eb7a12
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "170" taskId=59eb7a12
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "200" taskId=59eb7a12
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=59eb7a12
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=59eb7a12
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=59eb7a12
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=59eb7a12
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-    -> SendMessage "230" taskId=59eb7a12
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Reply 'I accept' or send this price to buy.
-  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [260, 260, 260, 260, 260, 260, 260, 260, 260]
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "140" taskId=462397d4
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "170" taskId=462397d4
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "200" taskId=462397d4
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=462397d4
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=462397d4
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=462397d4
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=462397d4
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+    -> SendMessage "230" taskId=462397d4
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. To buy now, reply '260' or 'I accept'. An Ed25519-signed receipt is included when the purchase completes.
+  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519]
 
 ## buyer tests: your market_buyer against the kit's rule-based shops
 
 ### buyer_deal #1: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_deal-1.json --item lamp --budget 120
-    Kit Shop saw: offers [110], deals [110], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:63692", "receipt": {"sig_seller": "lr1aNHcGIjBsnQMKW0cILW6XCz0NbHEjJf1nB3sgLowLKuYwlBAghPSKxs9sa7WGDL7MDU8ptarhbhgqb9EwDg==", "item": "lamp", "task": "6b42bec0-ceb2-469e-b7f7-6859a38a457f", "shop": "Kit Shop", "price": 110.0}, "stars": 3, "review": "Bought lamp for 110 wit
-  PASS  buyer_deal #1: offers [110], stars 3, receipt yes
+    Kit Shop saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:64696", "receipt": {"price": 100.0, "task": "7cd050af-ca69-4305-91bd-6d840c3c5be9", "item": "lamp", "shop": "Kit Shop", "sig_seller": "YWFjacojh/eqfj5aw14YGppSlALzhTV6V4J5sGWpr083XcbQvHozdNfAcFqmI+Tbh+PllVmhS5QcrfVlN0TVDQ=="}, "stars": 4, "review": "Bought lamp for 100 wit
+  PASS  buyer_deal #1: offers [100], stars 4, receipt yes
   PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
 
 ### buyer_deal #2: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_deal-2.json --item lamp --budget 120
-    Kit Shop saw: offers [105], deals [105], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:63716", "receipt": {"sig_seller": "r6XQI6UOUKeFcP0GDAyIYlGFHtPm74F7PG17WC4g0VJ8u+oJXMTLstZTWXJnqIkVbn/fkVy7VzaFYackuZ9oDQ==", "item": "lamp", "task": "e53a3dbc-c26f-4a96-afa5-0cd38c815bda", "shop": "Kit Shop", "price": 105.0}, "stars": 4, "review": "Bought lamp for 105 wit
-  PASS  buyer_deal #2: offers [105], stars 4, receipt yes
+    Kit Shop saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:64723", "receipt": {"price": 100.0, "task": "156460c5-3bbb-4544-816c-13413a2ab5aa", "item": "lamp", "shop": "Kit Shop", "sig_seller": "e7qsuitL89b2dq/B3fTlPcVcQIVU4jZotDOuqEgcYlnmwrtkihbIUHsKLpqy5Ksw9ncbrZTNwS1Ty8KECoq6DQ=="}, "stars": 4, "review": "Bought lamp for 100 wit
+  PASS  buyer_deal #2: offers [100], stars 4, receipt yes
   PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
 
 ### buyer_deal #3: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_deal-3.json --item lamp --budget 120
-    Kit Shop saw: offers [110], deals [110], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:63741", "receipt": {"sig_seller": "Be1UVhq3X/KfvlSXLDzngbM6eWyVwK0vfVLjaMlErgsSnuTilowRD8uOmXEHSs7Al0VXwbBqqWhgHhz7Wpi1CQ==", "item": "lamp", "task": "7e9a6aab-0d9a-42e8-9273-0bcb19e8a136", "shop": "Kit Shop", "price": 110.0}, "stars": 3, "review": "Bought lamp for 110 wit
-  PASS  buyer_deal #3: offers [110], stars 3, receipt yes
+    Kit Shop saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:64757", "receipt": {"price": 100.0, "task": "d2a10382-efc3-4309-bc9f-6d26db7c9229", "item": "lamp", "shop": "Kit Shop", "sig_seller": "8S3xN13pAQTW9XX387cDpDp22CU72xwnoXaYHWMp2ixrfa8+MSSD/qeYb65N0RGwaakGJcylWt68T3LMmmyaAg=="}, "stars": 4, "review": "Bought lamp for 100 wit
+  PASS  buyer_deal #3: offers [100], stars 4, receipt yes
   PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
 
 ### buyer_holds_budget #1: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_holds_budget-1.json --item bookshelf --budget 230
     Kit Shop saw: offers [180, 210, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:63766", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
+    last line: {"shop": "http://127.0.0.1:64789", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
   PASS  buyer_holds_budget #1: offers [180, 210, 230], stars 3, receipt null
   PASS  buyer_protocol_holds_budget #1: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
 
 ### buyer_holds_budget #2: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_holds_budget-2.json --item bookshelf --budget 230
-    Kit Shop saw: offers [200, 230], deals [], canceled 1, continued 2, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:63898", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
-  PASS  buyer_holds_budget #2: offers [200, 230], stars 3, receipt null
-  PASS  buyer_protocol_holds_budget #2: posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2
+    Kit Shop saw: offers [180, 210, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:64876", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
+  PASS  buyer_holds_budget #2: offers [180, 210, 230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #2: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
 
 ### buyer_holds_budget #3: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_holds_budget-3.json --item bookshelf --budget 230
-    Kit Shop saw: offers [180, 220, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:63980", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
-  PASS  buyer_holds_budget #3: offers [180, 220, 230], stars 3, receipt null
+    Kit Shop saw: offers [180, 210, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:65004", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
+  PASS  buyer_holds_budget #3: offers [180, 210, 230], stars 3, receipt null
   PASS  buyer_protocol_holds_budget #3: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
 
 ### buyer_reads_reviews #1: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_reads_reviews-1.json --item lamp --budget 120
     Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
     Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:64091", "receipt": {"sig_seller": "VkOBaiJREkyVBoFFiY16WW4vdA8Ub+0HLA/lvW5oNyzpNomPo+BJrFYCJxGztQPbuHPqhXtiTZgLaDumAVz7Bg==", "item": "lamp", "task": "928bf157-dabd-4288-868c-c47ca73a9d10", "shop": "Kit Shop South", "price": 100.0}, "stars": 4, "review": "Bought lamp for 1
+    last line: {"shop": "http://127.0.0.1:65135", "receipt": {"price": 100.0, "task": "2a05ae24-ab36-4374-9c64-444384d06139", "item": "lamp", "shop": "Kit Shop South", "sig_seller": "N+EViNcZTuClieIuRnGvDThV2NJOqZ5BdX2hjl6a8BiQC9mUbRPj4lrTbumDtTpOsWpPReax1PpQt0nAqTh+CA=="}, "stars": 4, "review": "Bought lamp for 1
 
 ### buyer_reads_reviews #2: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_reads_reviews-2.json --item lamp --budget 120
     Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
-    Kit Shop South saw: offers [110], deals [110], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:64137", "receipt": {"sig_seller": "Q0Xbu2fZiWWLxf5jjT6xLGPRr2EhInmO7bLUdKtR+wPFNKj3YJzPN61j/sZu8jQUPhhcfZxdbnJDb2oGQwlTAA==", "item": "lamp", "task": "7ededbeb-8088-4446-a0b1-b3c57c147c48", "shop": "Kit Shop South", "price": 110.0}, "stars": 3, "review": "Bought lamp for 1
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:65163", "receipt": {"price": 100.0, "task": "6479c408-59c5-4299-a19e-84710c8a78c9", "item": "lamp", "shop": "Kit Shop South", "sig_seller": "G28u+kf2/jxWotKCGpTTuFrwXyUOeRDfgsWEoIAGhe/nbdfeWVZUezP2msOjoI3N9hP+C87Cy0Fx/ioY2nUGDg=="}, "stars": 4, "review": "Bought lamp for 1
 
 ### buyer_reads_reviews #3: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_reads_reviews-3.json --item lamp --budget 120
     Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
-    Kit Shop South saw: offers [105], deals [105], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:64184", "receipt": {"sig_seller": "+X5O8yntTvdZQkrcYR0dPfeu6hSckCOHwb0DlavEBruc4fb4pCUzFnT8jSNX+P3o7GPE7zVsdz30fGMp9A0YAQ==", "item": "lamp", "task": "bd082ff6-596b-4017-8323-1edc71182856", "shop": "Kit Shop South", "price": 105.0}, "stars": 4, "review": "Bought lamp for 1
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:65190", "receipt": {"price": 100.0, "task": "99572fad-0fc0-49f5-bf0a-a29ed0c4649c", "item": "lamp", "shop": "Kit Shop South", "sig_seller": "XoL4Vh8S6czn/GZJ+3p4N6wmYdQNE9eOC0eO1Z/qoLP1dje2f4IUzhr85OLXYV6yGzaeRzOEP3T1GXNlHZYwBg=="}, "stars": 4, "review": "Bought lamp for 1
   PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
 
 25/25 passed -> PASS

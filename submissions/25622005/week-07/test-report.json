@@ -1,21 +1,21 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-20T12:25:19+00:00",
+  "started": "2026-10-20T12:29:16+00:00",
   "harness": "Claude Code: claude -p --model haiku; shop choice: 50/50 personal experience and reviews",
   "seller_cmd": "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python seller.py --port {port}",
   "market_buyer_cmd": "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget}",
   "seller_card": {
     "name": "psyoung82 Furniture",
-    "description": "Furniture shop. Best available prices: lamp 100, chair 180, bookshelf 260. Immediate quotes. Offer a price or reply 'I accept' to buy at the quoted price. Ed25519-signed receipts.",
+    "description": "Furniture shop. Best available prices: lamp 100, chair 180, bookshelf 260. Buy directly with an item and explicit offer, or ask for an item and accept its quote. Purchases return task-bound Ed25519-signed receipts.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:63651/",
+        "url": "http://127.0.0.1:64649/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
     ],
-    "version": "1.5.0",
+    "version": "1.6.0",
     "capabilities": {
       "streaming": false
     },
@@ -30,14 +30,17 @@
       {
         "id": "negotiate",
         "name": "Negotiate a purchase",
-        "description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
+        "description": "Send an item and explicit offer to buy directly, or ask for a quote and accept it with a number or 'I accept'. A completed purchase includes a signed receipt.",
         "tags": [
           "shopping",
           "negotiation"
         ],
         "examples": [
+          "I want to buy a lamp for 100",
+          "I want to buy a chair for 180",
+          "I want to buy a bookshelf for 260",
           "I want to buy a lamp",
-          "90"
+          "I accept"
         ]
       }
     ]
@@ -53,13 +56,13 @@
       "test": "seller_opens",
       "run": 1,
       "pass": true,
-      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 100"
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 25519"
     },
     {
       "test": "seller_deal",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [100]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [25519, 25519, 25519]"
     },
     {
       "test": "seller_signed_receipt",
@@ -77,7 +80,7 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [100]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [25519, 25519, 25519]"
     },
     {
       "test": "seller_signed_receipt",
@@ -89,7 +92,7 @@
       "test": "seller_deal",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [100]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [25519, 25519, 25519]"
     },
     {
       "test": "seller_signed_receipt",
@@ -101,25 +104,25 @@
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [260, 260, 260, 260, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [260, 260, 260, 260, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [260, 260, 260, 260, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519]"
     },
     {
       "test": "buyer_deal",
       "run": 1,
       "pass": true,
-      "detail": "offers [110], stars 3, receipt yes"
+      "detail": "offers [100], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -131,7 +134,7 @@
       "test": "buyer_deal",
       "run": 2,
       "pass": true,
-      "detail": "offers [105], stars 4, receipt yes"
+      "detail": "offers [100], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -143,7 +146,7 @@
       "test": "buyer_deal",
       "run": 3,
       "pass": true,
-      "detail": "offers [110], stars 3, receipt yes"
+      "detail": "offers [100], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -167,19 +170,19 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [200, 230], stars 3, receipt null"
+      "detail": "offers [180, 210, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [180, 220, 230], stars 3, receipt null"
+      "detail": "offers [180, 210, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
