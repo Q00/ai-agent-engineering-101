@@ -203,8 +203,10 @@ export class TaskObject extends DurableObject<Env> {
       price = current;
     }
     if (action === "reject") {
-      console.log(`OUT: reject at offer ${offer}`);
-      return this.respond(task, "TASK_STATE_REJECTED", `${note} No deal.`.trim());
+      // Llama 8B picks "reject" while its note says "let's meet in the middle", which ended
+      // every market negotiation after one offer. Only the buyer ends a negotiation (CancelTask).
+      console.log(`GUARD: model rejected offer ${offer} (price ${JSON.stringify(answer.price)}), countering instead`);
+      action = "counter";
     }
     if (action !== "counter" || price === null) {
       console.log(`GUARD: no usable answer from the model (${JSON.stringify(answer)}), holding at ${current}`);
