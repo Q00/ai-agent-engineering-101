@@ -62,6 +62,15 @@ CATALOG = Catalog()
 SHOP_KINDS = 4
 MARKET_ITEMS = ("lamp", "chair", "bookshelf")
 MARKET_NAME = "Fair Furniture"
+# Marshall Field, "give the lady what she wants": other words buyers use for the three items
+SYNONYMS = {"bookcase": "bookshelf", "bookcases": "bookshelf", "bookshelves": "bookshelf",
+            "shelf": "bookshelf", "shelves": "bookshelf", "light": "lamp", "lights": "lamp",
+            "seat": "chair", "seats": "chair"}
+# Ritz-Carlton, solve it on the spot: 111 market replies were "Send your offer as a number".
+# A clear yes takes the current ask; a negation never does; anything else goes to the model.
+YES = re.compile(r"^\W*(yes|yeah|yep|ok|okay|sure|deal|agreed|agree|accepted|i accept|accept|sounds good)\b", re.I)
+NEG = re.compile(r"\b(no|not|never|cannot|can't|cant|won't|wont|don't|dont|decline|too|pass|walk)\b|n't\b", re.I)
+TALKS = Path(__file__).with_name("talks.jsonl")  # kaizen: how every negotiation ended, per item
 MARKET = False
 KEY_FILE = Path(__file__).with_name("shop_key.pem")
 
@@ -110,6 +119,16 @@ def promo_left():
         return 0
     done = SALES.read_text(encoding="utf-8").count('"promo": true') if SALES.exists() else 0
     return max(0, PROMO + PER_LOW_REVIEW * low_reviews() - done)
+
+
+def record_talk(task_id, deal, outcome):
+    if not MARKET or deal is None:
+        return
+    with TALKS.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "task": task_id,
+                            "item": deal["item"]["name"], "outcome": outcome, "rounds": deal["rounds"],
+                            "no_number": deal.get("no_number", 0), "first_ask": deal.get("first_ask"),
+                            "last_ask": deal["ask"], "last_offer": deal.get("last_offer")}, ensure_ascii=False) + "\n")
 
 
 def record_sale(entry):
@@ -223,6 +242,7 @@ async def pick(request):
     if MARKET:  # only the three items an order can name, found by word
         words = re.findall(r"[a-z]+", request.lower())
         name = next((n for n in MARKET_ITEMS if n in words or n + "s" in words), None)
+        name = name or next((SYNONYMS[w] for w in words if w in SYNONYMS), None)
         return CATALOG.by_name.get(name)
     spec = await ask_json(SPEC.format(request=request, kinds=", ".join(CATALOG.kinds)),
                           lambda d: isinstance(d.get("kinds"), list))
@@ -296,12 +316,24 @@ class Seller(AgentExecutor):
             offer = None
         else:
             m = re.search(r"\d+(?:\.\d+)?", text)
-            if m is None:
+            if m is None and not MARKET:
                 await up.requires_input(say(f"Send your offer as a number. Asking {deal['ask']}."))
                 return
-            offer = int(float(m.group()))
             deal["rounds"] += 1
-            deal["history"].append(f"Buyer offers {offer}.")
+            if m is not None:
+                offer = int(float(m.group()))
+                deal["history"].append(f"Buyer offers {offer}.")
+            else:
+                deal["no_number"] = deal.get("no_number", 0) + 1
+                log(f"[no-number] task={task.id[:8]} {text[:200]!r}")
+                if YES.search(text) and not NEG.search(text) and deal["ask"]:
+                    offer = deal["ask"]  # a clear yes to my current ask
+                    log(f"[no-number] read as yes -> offer {offer}")
+                    deal["history"].append(f"Buyer accepts your ask of {offer}.")
+                else:
+                    offer = None  # a question or anything else: the model reads it
+                    deal["history"].append(f"Buyer says (no number): {text[:200]}")
+            deal["last_offer"] = offer if offer is not None else deal.get("last_offer")
 
         item, reserve = deal["item"], deal["item"]["reserve"]
         try:
@@ -357,6 +389,7 @@ class Seller(AgentExecutor):
             # asks for an honest review, never for a score, and nothing depends on the review
             thanks = " New shop: an honest review helps us." if MARKET else ""
             await up.complete(say(f"{message}{thanks} Deal: {item['name']} at {offer}."))
+            record_talk(task.id, deal, "deal")
             if MARKET:
                 record_sale({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "task": task.id, "item": item["name"],
                              "price": int(offer), "reserve": reserve, "first_ask": deal.get("first_ask"),
@@ -364,6 +397,7 @@ class Seller(AgentExecutor):
             del self.open[task.id]
         elif action == "reject":
             await up.reject(say(f"{message} No deal."))
+            record_talk(task.id, deal, "reject")
             del self.open[task.id]
         else:
             deal["ask"] = price
@@ -374,7 +408,7 @@ class Seller(AgentExecutor):
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
-        self.open.pop(task.id, None)
+        record_talk(task.id, self.open.pop(task.id, None), "buyer canceled")
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 
