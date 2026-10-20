@@ -51,6 +51,7 @@ STEP = 0.15       # most a price may move in one cycle
 WINDOW = 3 * 3600 # going prices from the last three hours
 PROMO = "LAUNCH SALE: fair prices for our first customers. Please leave an honest review."
 BENCHMARK = "dragonash"  # the shop the launch sale copies (user's pick, see the Round 1 analysis in REPORT.md)
+ROUND_POLL = 60   # seconds between round checks while waiting for the next cycle
 LAUNCH_DEALS = 25  # launch sale until the board shows this many deals of our shop this round (was 10 reviews)
 
 PROMPT = """You set the prices of our furniture shop in an agent market. Buyers are other AI agents;
@@ -255,9 +256,28 @@ async def cycle(dry_run=False):
                            ensure_ascii=False) + "\n")
 
 
+def market_round():
+    try:
+        return httpx.get(f"{market_intel.MARKET}/api/stats", timeout=10).json()["round"]
+    except (httpx.HTTPError, ValueError, KeyError):
+        return None
+
+
+async def wait(seconds, start_round):
+    """Sleep up to `seconds`, waking at once when the market moves to a new round: the first minutes of a
+    round decide who gets the reviews, so the launch sale must be on before the first buyers pick."""
+    deadline = time.time() + seconds
+    while time.time() < deadline:
+        await asyncio.sleep(min(ROUND_POLL, max(1, deadline - time.time())))
+        r = market_round()
+        if r is not None and start_round is not None and r != start_round:
+            log("META", f"round {start_round} -> {r}, deciding now")
+            return
+
+
 async def main(args):
     if args.wait_first:
-        await asyncio.sleep(args.every)
+        await wait(args.every, market_round())
     while True:
         try:
             await cycle(dry_run=args.dry_run)
@@ -265,7 +285,7 @@ async def main(args):
             log("ERROR", f"cycle failed: {e!r}")
         if args.once:
             return
-        await asyncio.sleep(args.every)
+        await wait(args.every, market_round())
 
 
 if __name__ == "__main__":
