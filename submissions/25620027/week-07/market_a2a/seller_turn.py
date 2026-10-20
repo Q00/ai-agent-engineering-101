@@ -15,6 +15,7 @@ from pydantic import JsonValue, TypeAdapter, ValidationError
 
 from market_a2a.catalog_constraints import compatible
 from market_a2a.models import HarnessError, Product, ToolResult, json_value
+from market_a2a.seller_history import SellerHistory
 from market_a2a.seller_policy import (
     PROMPT,
     TOOLS,
@@ -63,6 +64,7 @@ class Negotiator:
         self.signer: ReceiptSigner | None = signer
         self.negotiations: dict[str, Negotiation] = {}
         self.closed: set[str] = set()
+        self.price_history = SellerHistory()
 
     async def negotiate(self, task: Task, text: str, queue: EventQueue) -> None:
         """Expose retrieval and guarded commercial actions for one model turn."""
@@ -86,6 +88,11 @@ class Negotiator:
             "task_id": task.id,
             "selected": json_value(current.product) if current else None,
             "ask": current.ask if current else None,
+            "coupon_used": current.coupon_used if current else False,
+            "own_price_history": (
+                json_value(self.price_history.snapshot(current.product.sku))
+                if current else None
+            ),
             "rounds": current.rounds if current else 0,
         }
         self.harness.emit(
@@ -122,7 +129,7 @@ class Negotiator:
                                 )
                             )
                         )
-                        return search_result(found)
+                        return search_result(found, self.price_history)
                     case "decide":
                         decision = Decision.model_validate_json(arguments)
                         return await self.commit(
@@ -180,7 +187,8 @@ class Negotiator:
                 data={"error": "Select a retrieved SKU; never switch an open SKU."}
             )
         price_error = price_feedback(
-            product.reserve, decision, current_ask=current.ask if current else None
+            product.reserve, decision, current_ask=current.ask if current else None,
+            coupon_used=current.coupon_used if current else False
         )
         if price_error is not None:
             guard = f"seller.guard task={turn.task_id} code={price_error.code}"
@@ -190,16 +198,34 @@ class Negotiator:
             return ToolResult(data=json_value(price_error))
         match decision.action:
             case "quote":
-                self.negotiations[turn.task_id] = Negotiation(
-                    product, decision.price, current.rounds + 1 if current else 0
+                coupon_applied = (
+                    current is not None
+                    and not current.coupon_used
+                    and decision.price < current.ask
                 )
+                discount = current.ask - decision.price if coupon_applied and current else 0
+                self.negotiations[turn.task_id] = Negotiation(
+                    product, decision.price, current.rounds + 1 if current else 0,
+                    coupon_applied or (current.coupon_used if current else False),
+                )
+                coupon_text = ""
+                if current is None:
+                    coupon_text = (
+                        " R2WELCOME: send a numeric counteroffer for one coupon review, "
+                        "up to 5 price units off, subject to our minimum price."
+                    )
+                elif coupon_applied:
+                    coupon_text = f" R2WELCOME coupon applied: {discount} price units off."
                 message = updater.new_agent_message(
-                    [Part(text=f"{product.name}. Asking price: {decision.price}")],
+                    [Part(text=f"{product.name}.{coupon_text} Asking price: {decision.price}")],
                     metadata={
                         "sku": product.sku,
                         "item": product.kind,
                         "name": product.name,
                         "ask": decision.price,
+                        "coupon_code": "R2WELCOME",
+                        "coupon_discount": discount,
+                        "coupon_applied": "true" if coupon_applied else "false",
                     },
                 )
                 await updater.requires_input(message)
@@ -264,6 +290,7 @@ class Negotiator:
                 )
             case _:
                 assert_never(decision.action)
+        self.price_history.record(decision.action, product.sku, decision.price)
         self.harness.emit(
             "".join(
                 (

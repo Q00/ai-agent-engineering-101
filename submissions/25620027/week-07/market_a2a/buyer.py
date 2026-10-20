@@ -128,10 +128,6 @@ class Negotiation:
             return ToolResult(data=str(exc))
         if offer.price > self.authorization.budget:
             return ToolResult(data="Offer exceeds immutable budget; correct the amount")
-        if self.offer_counts.get(offer.price, 0) >= 2:
-            return ToolResult(
-                data="This amount already failed twice. Choose a new offer or walk away."
-            )
         self.offer_counts[offer.price] = self.offer_counts.get(offer.price, 0) + 1
         self.last_offer = offer.price
         self.task = await self.remote.send(
