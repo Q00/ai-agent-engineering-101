@@ -77,10 +77,13 @@ def buy(url, item, budget):
                 if not prices or any(type(p) not in (int, float) or not 0 <= p <= budget for p in prices):
                     raise ValueError("Missing receipt price or receipt exceeds budget")
                 print(json.dumps({"outcome": "deal", "prices": prices}), flush=True)
-                return
+                receipt = next(p["data"] for a in task.get("artifacts", [])
+                               for p in a.get("parts", [])
+                               if isinstance(p.get("data"), dict) and "price" in p["data"])
+                return {"outcome": "deal", "receipt": receipt, "offers": offers}
             if state in {"TASK_STATE_REJECTED", "TASK_STATE_CANCELED", "TASK_STATE_FAILED"}:
                 print(json.dumps({"outcome": "no_deal", "state": state}), flush=True)
-                return
+                return {"outcome": "no_deal", "receipt": None, "offers": offers}
             if state != "TASK_STATE_INPUT_REQUIRED":
                 raise ValueError(f"Unexpected seller state: {state}")
             if len(offers) >= 8:
@@ -103,6 +106,7 @@ def buy(url, item, budget):
         # Stopping is permitted by the assignment; cancel also informs the seller.
         rpc("CancelTask", {"id": task_id})
         print(json.dumps({"outcome": "walked_away"}), flush=True)
+        return {"outcome": "walked_away", "receipt": None, "offers": offers}
 
 
 if __name__ == "__main__":
