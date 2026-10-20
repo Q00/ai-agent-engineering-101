@@ -11,17 +11,22 @@ What the code enforces (whatever the harness says):
   - an offer at or above the current ask closes the deal (we cannot refuse our own price);
   - the ask is always the last number of an input-required message, and is also in
     the message metadata as {"ask": N};
-  - a task that is finished gets an error (the SDK does this for terminal tasks).
+  - a task that is finished gets an error (the SDK does this for terminal tasks);
+  - week 07: the receipt is {shop, item, price, task} plus sig_seller, an Ed25519 signature
+    with shop_key.pem (or the SHOP_KEY secret when deployed) over its canonical JSON.
 """
 import argparse
 import asyncio
+import base64
 import json
 import math
+import os
 import re
 import sys
 import time
 
 import uvicorn
+from cryptography.hazmat.primitives import serialization
 from starlette.applications import Starlette
 
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
@@ -105,6 +110,25 @@ def clean(msg, tag):
         log(f"[{tag}] GUARD dropped harness sentence with a number in it: {msg!r}")
         return ""
     return msg
+
+
+def canon(d):
+    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def load_shop_key():
+    """The Ed25519 key the market knows for this shop. A deployed shop gets the PEM text in the
+    SHOP_KEY environment variable (a secret); locally it is shop_key.pem next to this file."""
+    pem = os.environ.get("SHOP_KEY")
+    data = pem.encode() if pem else open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "shop_key.pem"), "rb").read()
+    return serialization.load_pem_private_key(data, password=None)
+
+
+def sign_receipt(receipt):
+    """sig_seller over the canonical JSON of {shop, item, price, task}; price must be a whole number."""
+    body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
+    receipt["sig_seller"] = base64.b64encode(SHOP_KEY.sign(canon(body))).decode()
+    return receipt
 
 
 def as_int(v):
@@ -216,7 +240,7 @@ class Seller(AgentExecutor):
         await ask_buyer(f"{note} {offer} is too low. Counteroffer: {new_ask}", new_ask)
 
     async def close(self, up, task_id, item, price, tag):
-        receipt = {"seller": self.cfg["name"], "item": item["id"], "name": item["name"], "price": price}
+        receipt = sign_receipt({"shop": self.cfg["name"], "item": item["id"], "price": int(price), "task": task_id})
         log(f"[{tag}] -> completed, receipt {json.dumps(receipt)}")
         self.open.pop(task_id, None)
         await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
@@ -246,7 +270,7 @@ def build(cfg, port):
             name="Negotiate a purchase",
             description=("Sells: " + ", ".join(cats) + ". Name or describe the item in the first message; "
                          "then send offers as a number on the same task. The current ask is the last number "
-                         "of each reply and in metadata.ask; a deal ends with a receipt artifact {price}."),
+                         "of each reply and in metadata.ask; a deal ends with a signed receipt artifact {shop, item, price, task, sig_seller}."),
             tags=["shopping", "negotiation"] + cats,
             examples=["I want to buy a lamp", "something wooden to keep about 40 books", "90"],
         )],
@@ -266,4 +290,5 @@ if __name__ == "__main__":
         cfg.update(json.load(open(args.config, encoding="utf-8")))
     if args.catalog:
         cfg["catalog"] = args.catalog
+    SHOP_KEY = load_shop_key()
     uvicorn.run(build(cfg, args.port), host="127.0.0.1", port=args.port, log_level="warning")
