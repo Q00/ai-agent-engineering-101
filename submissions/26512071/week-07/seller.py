@@ -337,7 +337,9 @@ class Seller(AgentExecutor):
         if action == "accept":
             receipt = sign_receipt({"shop": NAME, "item": item["name"], "price": int(offer), "task": task.id})
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(say(f"{message} Deal: {item['name']} at {offer}."))
+            # asks for an honest review, never for a score, and nothing depends on the review
+            thanks = " New shop: an honest review helps us." if MARKET else ""
+            await up.complete(say(f"{message}{thanks} Deal: {item['name']} at {offer}."))
             if MARKET:
                 record_sale({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "task": task.id, "item": item["name"],
                              "price": int(offer), "reserve": reserve, "first_ask": deal.get("first_ask"),
