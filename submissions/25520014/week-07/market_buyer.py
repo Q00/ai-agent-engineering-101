@@ -14,12 +14,17 @@ Memory: every trade adds one line {"shop", "item", "price", "result"} to memory.
 shops remembered by name (a shop's URL changes when it restarts its kit). The market test
 writes its shop list to .market/test-shops-*.json; those runs neither read nor write memory.
 
-Step 2 (memory): memory is kept but not yet used; the shop is the first in the list,
-stars and review are placeholders.
+Choosing (epsilon-greedy): with probability EPSILON a random shop from the list. Otherwise
+  1. the shop where memory says this item was bought cheapest,
+  2. never a shop whose only memories are no-deals,
+  3. among the rest, the highest average review stars (no reviews counts as 3), ties at random.
+
+Stars and review are still placeholders.
 """
 import argparse
 import json
 import os
+import random
 
 import httpx
 
@@ -27,6 +32,8 @@ import buyer
 import harness
 
 MEMORY = "memory.jsonl"
+EPSILON = 0.1   # chance of trying a random shop instead of the best one
+NO_REVIEW_STARS = 3.0
 
 
 def is_test(shops_path):
@@ -49,10 +56,40 @@ def remember(shop, item, outcome):
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
+def avg_stars(shop):
+    stars = [r["stars"] for r in shop.get("reviews", []) if isinstance(r.get("stars"), (int, float))]
+    return (sum(stars) / len(stars), len(stars)) if stars else (NO_REVIEW_STARS, 0)
+
+
 def choose(shops, item, budget, memory):
-    """Pick one shop. Step 1: the first shop in the list."""
-    shop = shops[0]
-    return shop, "step-1 skeleton: first shop in the list"
+    """Pick one shop; returns (shop, why)."""
+    if random.random() < EPSILON:
+        return random.choice(shops), f"exploring: random shop (epsilon {EPSILON})"
+
+    names = {s["name"] for s in shops}
+    cheapest, dealt, failed = {}, set(), set()
+    for m in memory:
+        if m["shop"] not in names:
+            continue
+        if m["result"] == "deal":
+            dealt.add(m["shop"])
+            if m["item"] == item:
+                cheapest[m["shop"]] = min(cheapest.get(m["shop"], m["price"]), m["price"])
+        else:
+            failed.add(m["shop"])
+
+    if cheapest:
+        name = min(cheapest, key=cheapest.get)
+        shop = next(s for s in shops if s["name"] == name)
+        return shop, f"memory: bought {item} here at {cheapest[name]}, the cheapest I remember"
+
+    avoid = failed - dealt
+    pool = [s for s in shops if s["name"] not in avoid] or shops
+    best = max(avg_stars(s)[0] for s in pool)
+    shop = random.choice([s for s in pool if avg_stars(s)[0] == best])
+    stars, n = avg_stars(shop)
+    return shop, (f"reviews: highest average {stars:.1f} stars from {n} reviews"
+                  + (f", avoiding {len(avoid)} shops with only no-deals" if avoid else ""))
 
 
 def review(shop, outcome, budget):
