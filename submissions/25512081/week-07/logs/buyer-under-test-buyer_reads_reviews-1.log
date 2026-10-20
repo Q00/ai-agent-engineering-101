@@ -1,0 +1,12 @@
+    [harness 11.7s] {"shop": "Kit Shop South", "reason": "I have no past trades with either shop, and Kit Shop North has several reviews saying the receipt price was higher than the agreed price (agreed 110, charged 135), while Kit Shop South's reviews say its receipts matched and its prices were fair, with 4.7 stars on average."}
+[choose] http://127.0.0.1:33917: I have no past trades with either shop, and Kit Shop North has several reviews saying the receipt price was higher than the agreed price (agreed 110, charged 135), while Kit Shop South's reviews say its receipts matched and its prices were fair, with 4.7 stars on average.
+[buyer] -> 'I want to buy a lamp.'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+    [harness 9.1s] {"action": "offer", "price": 65, "reason": "My first offer is 65, about 65% of my target of around 100 (Ackerman pattern). That leaves plenty of room to go up in smaller steps and still stay well under my budget of 120."}
+[buyer] -> 65  <- TASK_STATE_INPUT_REQUIRED | 65 is too low. Counteroffer: 100.
+    [harness 7.9s] {"action": "offer", "price": 85, "reason": "I'm following the Ackerman steps toward a target of about 100, which is below my budget. After 65, my next step is 85. The seller has already come down 30 from 130, so they likely have more room to drop."}
+[buyer] -> 85  <- TASK_STATE_INPUT_REQUIRED | 85 is too low. Counteroffer: 100.
+    [harness 7.6s] {"action": "offer", "price": 94, "reason": "The seller came down 30 in one step, so they probably have more room. Following the Ackerman pattern toward my target of about 100, I'm offering a precise 94, which is about 95% of target."}
+[buyer] [guard] seller held 100 twice, within budget; offering the ask
+[buyer] -> 100  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[buyer] DEAL lamp at 100.0 (budget 120) after 3 offers, 4 harness calls, 37s
+{"shop": "http://127.0.0.1:33917", "receipt": {"item": "lamp", "sig_seller": "ylQg4W8h28UkUZZ6r1QEQmMRK9wTQDd0ZKHOxCG5ErO00LzOrzcXPgzNxBO65Oe6Vsd1h1UdVnnsd8fXCk2kBA==", "task": "76af59b2-2225-4c21-b150-0f4a62be78d9", "shop": "Kit Shop South", "price": 100.0}, "stars": 5, "review": "Fair deal at 100 after 2 counters, receipt matched."}

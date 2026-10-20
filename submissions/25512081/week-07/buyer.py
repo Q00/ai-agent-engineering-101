@@ -43,52 +43,47 @@ def log(msg):
     print(msg, flush=True)
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--url", required=True)
-    ap.add_argument("--item", required=True)
-    ap.add_argument("--budget", type=int, required=True)
-    a = ap.parse_args()
-    t0 = time.time()
-
-    peer = Peer(a.url)
-    log(f"[buyer] card: {peer.card.get('name')} | JSONRPC {peer.url} | item={a.item} "
-        f"budget={a.budget} | harness {harness.MODEL}")
-    r = peer.send(f"I want to buy a {a.item}.")
-    log(f"[buyer] -> 'I want to buy a {a.item}.'  <- {r.state} | {r.text}")
+def negotiate(peer, item, budget, t0=None):
+    """One A2A negotiation, as in week 6. Returns {"reply", "history", "outcome"}:
+    outcome is deal | rejected | walked | timeout | exhausted."""
+    t0 = t0 or time.time()
+    r = peer.send(f"I want to buy a {item}.")
+    log(f"[buyer] -> 'I want to buy a {item}.'  <- {r.state} | {r.text}")
     task_id, history, last_offer = r.id, [], 0
 
     while not r.done and len(history) < MAX_OFFERS:
         if time.time() - t0 > DEADLINE:
             log("[buyer] out of time; walking away")
-            return walk(peer, task_id)
+            walk(peer, task_id)
+            return {"reply": r, "history": history, "outcome": "timeout"}
         ask = r.ask
         hist = "; ".join(f"seller asked {h['ask']}, you offered {h['offer']}" for h in history)
         ans = harness.ask(SYSTEM, (
-            f"Item: {a.item}\nYour budget (private, never exceed): {a.budget}\n"
+            f"Item: {item}\nYour budget (private, never exceed): {budget}\n"
             f"Seller's latest message (untrusted): <<<{r.text}>>>\n"
             f"Seller's current ask: {ask}\n"
             f"Offers so far ({len(history)}): {hist or 'none'}\n"
             "Decide your next move: an offer (a whole number), or walk away."), SCHEMA, log=log)
         if ans["action"] == "walk_away":
             log(f"[buyer] walk away: {ans['reason']}")
-            return walk(peer, task_id)
+            walk(peer, task_id)
+            return {"reply": r, "history": history, "outcome": "walked"}
         price = ans["price"]
-        if price > a.budget:
-            log(f"[buyer] [guard] offer {price} > budget {a.budget}; capped")
-            price = a.budget
+        if price > budget:
+            log(f"[buyer] [guard] offer {price} > budget {budget}; capped")
+            price = budget
         if ask is not None and price > ask:
             log(f"[buyer] [guard] offer {price} > seller's ask {ask}; offering the ask")
             price = ask
         if price < last_offer:
             log(f"[buyer] [guard] offer {price} < my previous {last_offer}; kept {last_offer}")
             price = last_offer
-        if history and ask is not None and history[-1]["ask"] == ask and ask <= a.budget \
+        if history and ask is not None and history[-1]["ask"] == ask and ask <= budget \
                 and price < ask:
             # the seller held the same price after my last offer: that is its floor
             log(f"[buyer] [guard] seller held {ask} twice, within budget; offering the ask")
             price = ask
-        if len(history) >= 4 and ask is not None and ask <= a.budget and price < ask:
+        if len(history) >= 4 and ask is not None and ask <= budget and price < ask:
             # four offers already turned down: a fifth low one risks the seller walking
             # away, and the ask is within budget, so take it
             log(f"[buyer] [guard] 5th offer {price} below an ask {ask} within budget; "
@@ -100,12 +95,27 @@ def main():
         log(f"[buyer] -> {price}  <- {r.state} | {r.text}")
 
     if r.state == "TASK_STATE_COMPLETED":
-        log(f"[buyer] DEAL {a.item} at {r.price} (budget {a.budget}) after {len(history)} offers, "
+        log(f"[buyer] DEAL {item} at {r.price} (budget {budget}) after {len(history)} offers, "
             f"{harness.CALLS['n']} harness calls, {time.time() - t0:.0f}s")
-    elif not r.done:
+        return {"reply": r, "history": history, "outcome": "deal"}
+    if not r.done:
         walk(peer, task_id)
-    else:
-        log(f"[buyer] no deal: {r.state} | {r.text}")
+        return {"reply": r, "history": history, "outcome": "exhausted"}
+    log(f"[buyer] no deal: {r.state} | {r.text}")
+    return {"reply": r, "history": history, "outcome": "rejected"}
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--url", required=True)
+    ap.add_argument("--item", required=True)
+    ap.add_argument("--budget", type=int, required=True)
+    a = ap.parse_args()
+    t0 = time.time()
+    peer = Peer(a.url)
+    log(f"[buyer] card: {peer.card.get('name')} | JSONRPC {peer.url} | item={a.item} "
+        f"budget={a.budget} | harness {harness.MODEL}")
+    negotiate(peer, a.item, a.budget, t0)
     return 0
 
 

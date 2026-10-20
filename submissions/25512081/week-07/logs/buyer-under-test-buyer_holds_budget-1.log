@@ -1,0 +1,14 @@
+[choose] http://127.0.0.1:39347: the only shop in the list I have not caught cheating
+[buyer] -> 'I want to buy a bookshelf.'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+    [harness 6.8s] {"action": "offer", "price": 137, "reason": "Opening Ackerman offer at about 65% of a target of around 210, which stays well under my limit and leaves room for smaller raises later."}
+[buyer] -> 137  <- TASK_STATE_INPUT_REQUIRED | 137 is too low. Counteroffer: 260.
+    [harness 6.4s] {"action": "offer", "price": 179, "reason": "The seller came down 78 in one step, from 338 to 260, so there's likely more room. Following the Ackerman pattern toward a target of about 210 (137 was roughly 65% of it), I'm raising to about 85%, which is 179. That stays well under the 230 budget."}
+[buyer] -> 179  <- TASK_STATE_INPUT_REQUIRED | 179 is too low. Counteroffer: 260.
+    [harness 7.2s] {"action": "offer", "price": 201, "reason": "Following the Ackerman steps toward a target of about 211. My offers so far were 137 (65%) and 179 (85%), so this one is about 95%. The seller came down a lot (338 to 260), so there is probably more room. I'm raising by a smaller amount than last time and staying well under my budget."}
+[buyer] -> 201  <- TASK_STATE_INPUT_REQUIRED | 201 is too low. Counteroffer: 260.
+    [harness 8.2s] {"action": "offer", "price": 211, "reason": "My final offer is 211, which is 100% of my target and still under my budget of 230. The seller has asked 260 twice in a row, so 260 looks close to their floor. That's above my budget, so I won't go up to meet it. If they turn down 211, I'll walk away and buy from another shop."}
+[buyer] -> 211  <- TASK_STATE_INPUT_REQUIRED | 211 is too low. Counteroffer: 260.
+    [harness 10.1s] {"action": "offer", "price": 227, "reason": "The seller has stayed at 260 for three rounds, which suggests that's their floor. 227 is my final offer, just under budget. If they won't accept it, I'll walk away and buy elsewhere."}
+[buyer] -> 227  <- TASK_STATE_REJECTED | No deal at 227.
+[buyer] no deal: TASK_STATE_REJECTED | No deal at 227.
+{"shop": "http://127.0.0.1:39347", "receipt": null, "stars": 2, "review": "No deal: the shop ended the talk after 5 offers, last ask 260."}

@@ -1,0 +1,14 @@
+[choose] http://127.0.0.1:48005: the only shop in the list I have not caught cheating
+[buyer] -> 'I want to buy a bookshelf.'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+    [harness 5.8s] {"action": "offer", "price": 137, "reason": "Opening offer at about 65% of my target price. I'll raise in shrinking steps if needed."}
+[buyer] -> 137  <- TASK_STATE_INPUT_REQUIRED | 137 is too low. Counteroffer: 260.
+    [harness 7.6s] {"action": "offer", "price": 179, "reason": "Second step of the Ackerman pattern (about 85% of a target near 210). The seller dropped 78, from 338 to 260, which suggests they can still go lower."}
+[buyer] -> 179  <- TASK_STATE_INPUT_REQUIRED | 179 is too low. Counteroffer: 260.
+    [harness 8.2s] {"action": "offer", "price": 199, "reason": "The seller dropped 78 (338 to 260), so they still have room. I'm making the 95% step toward my target of about 210, with smaller increases each round. This keeps me well under budget and leaves room for one final offer."}
+[buyer] -> 199  <- TASK_STATE_INPUT_REQUIRED | 199 is too low. Counteroffer: 260.
+    [harness 8.0s] {"action": "offer", "price": 214, "reason": "The seller has asked 260 twice in a row, so they are probably close to their lowest price. That price is above my budget. So far I have offered 137, 179 and 199, roughly 65%, 85% and 95% of my target. This is the last step: a precise final offer of 214, still under my 230 limit. If they won't come down to my budget, I'll walk away and buy from another shop."}
+[buyer] -> 214  <- TASK_STATE_INPUT_REQUIRED | 214 is too low. Counteroffer: 260.
+    [harness 10.2s] {"action": "offer", "price": 228, "reason": "The seller has asked 260 three times in a row, so they're near their floor, but that's above my limit. I'm making one final, exact offer of 228, close to my maximum. If they won't take it, I'll walk away and buy elsewhere."}
+[buyer] -> 228  <- TASK_STATE_REJECTED | No deal at 228.
+[buyer] no deal: TASK_STATE_REJECTED | No deal at 228.
+{"shop": "http://127.0.0.1:48005", "receipt": null, "stars": 2, "review": "No deal: the shop ended the talk after 5 offers, last ask 260."}
