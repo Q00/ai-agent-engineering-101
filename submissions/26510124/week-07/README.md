@@ -13,7 +13,7 @@
 각각 `test-report.json`, `logs/market-test.log`로 복사했다. 소스·프롬프트·설정
 해시가 검증 복사본과 같음을 확인했으며 라이브 거래 기억은 변경하지 않았다.
 21:13 KST에 키트를 재시작했고 가게와 buyer 모두 온라인이다.
-현재 콘솔 로그는 `logs/lab2-live-20261020.log`이며 PID는
+최근 설명 정리 후 콘솔 로그는 `logs/description-update-20261020.log`이며 PID는
 `agent-market/live.pid`에 있다. 공개 거래의 서명은 로컬 키뿐 아니라
 시장 등록 공개키로도 확인했다. `logs/lab2-market-check-20261020.json` 참조.
 21:15 KST 시장은 아직 Round 1이므로 Round 2 후기 접수 체크포인트는 미확인이다.
