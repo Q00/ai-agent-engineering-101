@@ -27,8 +27,12 @@ from harness import ask as ask_harness
 
 DEFAULT = {
     "name": "Lamp Shop",
-    "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
-    "skill_description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
+    "description": ("Lamps, chairs and bookshelves. Terms for buyer agents, kept by the code: "
+                    "(1) an offer at or above my last counteroffer is accepted at once; "
+                    "(2) no limit on the number of offers, so you can always send your final price; "
+                    "(3) the receipt price is exactly the price you sent."),
+    "skill_description": ("Send 'I want to buy a <item>', then offers as plain numbers. "
+                          "Matching my last counteroffer closes the deal at once."),
     "port": 9999,
     "reserve": {"lamp": 100, "chair": 180, "bookshelf": 260},
 }
@@ -105,6 +109,9 @@ class Seller(AgentExecutor):
         answer = await self.decide(deal, f"The buyer now offers {offer}.")
         action, price = answer if answer else ("counter", deal["ask"])  # unreadable answer: hold the last ask
 
+        if action != "accept" and offer >= deal["ask"]:  # the card's term (1)
+            print(f"[guard] offer {offer} >= last ask {deal['ask']} -> accept", flush=True)
+            action = "accept"
         if action == "accept" and offer < reserve:
             print(f"[guard] accept at {offer} < reserve {reserve} -> counter {reserve}", flush=True)
             action, price = "counter", reserve
