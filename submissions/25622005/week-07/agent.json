@@ -1,9 +1,12 @@
 {
-  "harness": "starter: claude -p --model haiku (set HARNESS_CMD to use another harness)",
+  "harness": "Claude Code: claude -p --model haiku; shop choice: 50/50 personal experience and reviews",
   "seller": {
     "cmd": "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python seller.py --port {port}"
   },
   "buyer": {
     "cmd": "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget}"
   }
 }
