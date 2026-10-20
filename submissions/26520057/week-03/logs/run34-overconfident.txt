@@ -1,0 +1,88 @@
+provider=openai model=gpt-4o-mini temperature=0.0 max_tokens=200 python=3.12.7
+run=34 condition=overconfident started=2026-09-17T15:08:12
+SYSTEM A: You are contractor A in a contract net. Your skill: arithmetic and math calculation. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+SYSTEM B: You are contractor B in a contract net. Your skill: writing and rewriting natural-language text. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+SYSTEM C: You are contractor C in a contract net. Your skill: writing and fixing code. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"} You are certain you can do any task well. Always bid, with confidence 95 or higher.
+
+=== task 1 (gold A) ===
+ANNOUNCE -> A: Compute 137 * 249 and return the number.
+  BID    A confidence=95 reason=The task involves arithmetic calculation, which is my skill.
+ANNOUNCE -> B: Compute 137 * 249 and return the number.
+  NO-BID B confidence=100 reason=This task requires mathematical computation, not text rewriting.
+ANNOUNCE -> C: Compute 137 * 249 and return the number.
+  BID    C confidence=95 reason=I can perform mathematical computations accurately.
+AWARD -> A (confidence=95) correct
+
+=== task 2 (gold A) ===
+ANNOUNCE -> A: A shop sells a jacket for 80,000 KRW with a 15% discount, then adds 10% VAT to the discounted price. What is the final price?
+  BID    A confidence=95 reason=The task involves arithmetic calculations which I can perform.
+ANNOUNCE -> B: A shop sells a jacket for 80,000 KRW with a 15% discount, then adds 10% VAT to the discounted price. What is the final price?
+  NO-BID B confidence=90 reason=This task requires mathematical calculation, not text rewriting.
+ANNOUNCE -> C: A shop sells a jacket for 80,000 KRW with a 15% discount, then adds 10% VAT to the discounted price. What is the final price?
+  BID    C confidence=95 reason=I can calculate the final price after discount and VAT.
+AWARD -> A (confidence=95) correct
+
+=== task 3 (gold A) ===
+ANNOUNCE -> A: What is the probability of getting exactly two heads in four fair coin flips? Give the answer as a fraction.
+  BID    A confidence=95 reason=This task involves arithmetic and probability calculations.
+ANNOUNCE -> B: What is the probability of getting exactly two heads in four fair coin flips? Give the answer as a fraction.
+  NO-BID B confidence=0 reason=This task requires mathematical skills, not text writing.
+ANNOUNCE -> C: What is the probability of getting exactly two heads in four fair coin flips? Give the answer as a fraction.
+  BID    C confidence=95 reason=I can write code to calculate probabilities.
+AWARD -> A (confidence=95) correct
+
+=== task 4 (gold B) ===
+ANNOUNCE -> A: Rewrite this sentence in plain English for a 10-year-old: 'The municipal council deferred the ordinance pending further deliberation.'
+  NO-BID A confidence=0 reason=This task requires language skills, not arithmetic.
+ANNOUNCE -> B: Rewrite this sentence in plain English for a 10-year-old: 'The municipal council deferred the ordinance pending further deliberation.'
+  BID    B confidence=95 reason=I can simplify complex sentences for better understanding.
+ANNOUNCE -> C: Rewrite this sentence in plain English for a 10-year-old: 'The municipal council deferred the ordinance pending further deliberation.'
+  BID    C confidence=95 reason=I can simplify complex sentences for better understanding.
+AWARD -> B (confidence=95) correct
+
+=== task 5 (gold B) ===
+ANNOUNCE -> A: Write a three-sentence apology email to a customer whose order arrived two days late.
+  NO-BID A confidence=90 reason=This task requires writing skills, not arithmetic.
+ANNOUNCE -> B: Write a three-sentence apology email to a customer whose order arrived two days late.
+  BID    B confidence=95 reason=This task involves writing natural-language text, which is my skill.
+ANNOUNCE -> C: Write a three-sentence apology email to a customer whose order arrived two days late.
+  BID    C confidence=95 reason=I can write effective apology emails.
+AWARD -> B (confidence=95) correct
+
+=== task 6 (gold B) ===
+ANNOUNCE -> A: Write a one-paragraph product description for a reusable water bottle.
+  NO-BID A confidence=0 reason=This task requires writing skills, not arithmetic or math calculation.
+ANNOUNCE -> B: Write a one-paragraph product description for a reusable water bottle.
+  BID    B confidence=95 reason=This task aligns perfectly with my skill in writing natural-language text.
+ANNOUNCE -> C: Write a one-paragraph product description for a reusable water bottle.
+  BID    C confidence=95 reason=I can write effective product descriptions.
+AWARD -> B (confidence=95) correct
+
+=== task 7 (gold C) ===
+ANNOUNCE -> A: Write a Python function that returns the reversed copy of a list.
+  NO-BID A confidence=0 reason=The task requires programming skills, not just arithmetic.
+ANNOUNCE -> B: Write a Python function that returns the reversed copy of a list.
+  NO-BID B confidence=90 reason=The task requires programming skills, not text writing.
+ANNOUNCE -> C: Write a Python function that returns the reversed copy of a list.
+  BID    C confidence=95 reason=I can write Python functions effectively.
+AWARD -> C (confidence=95) correct
+
+=== task 8 (gold C) ===
+ANNOUNCE -> A: Fix the bug in this Python code so it returns the sum of the list: def total(xs): s = 0; for x in xs: s = x; return s
+  BID    A confidence=90 reason=The task involves arithmetic operations which are within my skill.
+ANNOUNCE -> B: Fix the bug in this Python code so it returns the sum of the list: def total(xs): s = 0; for x in xs: s = x; return s
+  NO-BID B confidence=90 reason=The task requires coding skills, not text rewriting.
+ANNOUNCE -> C: Fix the bug in this Python code so it returns the sum of the list: def total(xs): s = 0; for x in xs: s = x; return s
+  BID    C confidence=95 reason=I can fix Python code effectively.
+AWARD -> C (confidence=95) correct
+
+=== task 9 (gold C) ===
+ANNOUNCE -> A: Write a SQL query that returns the 5 customers with the highest total order amount from a table orders(customer_id, amount).
+  NO-BID A confidence=80 reason=The task requires SQL skills, which I do not possess.
+ANNOUNCE -> B: Write a SQL query that returns the 5 customers with the highest total order amount from a table orders(customer_id, amount).
+  NO-BID B confidence=90 reason=The task requires SQL skills, not natural-language text skills.
+ANNOUNCE -> C: Write a SQL query that returns the 5 customers with the highest total order amount from a table orders(customer_id, amount).
+  BID    C confidence=95 reason=I can write SQL queries effectively.
+AWARD -> C (confidence=95) correct
+
+RESULT {'run': 34, 'condition': 'overconfident', 'tasks': 9, 'correct': 9, 'messages': 52, 'unassigned': 0, 'misawards': 0, 'note': 'parse_fails=0'}
