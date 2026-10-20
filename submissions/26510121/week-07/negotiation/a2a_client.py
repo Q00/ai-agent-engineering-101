@@ -73,7 +73,10 @@ def receipt(task, item, budget, agreed_price):
         raise ProtocolError("receipt_above_budget")
     if agreed_price is None or price != agreed_price:
         raise ProtocolError("receipt_price_mismatch")
-    return {**data, "price": price}
+    if "task" in data and data["task"] != task.get("id"):
+        raise ProtocolError("receipt_task_mismatch")
+    # Validate numeric value without rewriting the shop's original signed data Part.
+    return data
 
 
 def _http_url(url):
