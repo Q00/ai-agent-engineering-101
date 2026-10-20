@@ -1,14 +1,11 @@
 market buyer: lamp, budget 120 (harness: claude -p --model haiku)
 [memory] 0 past trades (market test: memory off)
-[choose] http://127.0.0.1:49509 (Kit Shop): exploring: random shop (epsilon 0.1)
-seller: 'Kit Shop' at http://127.0.0.1:49509/
+[choose] http://127.0.0.1:51794 (Kit Shop): reviews: highest average 3.0 stars from 0 reviews
+seller: 'Kit Shop' at http://127.0.0.1:51794/
 -> SendMessage 'I want to buy a lamp'
 <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness round 1] 2.8s reply: {"action": "offer", "price": 95}
--> SendMessage '95' taskId=15c2606a
-<- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 112.
-[harness round 2] 4.7s reply: {"action": "offer", "price": 105}
--> SendMessage '105' taskId=15c2606a
-<- TASK_STATE_COMPLETED | Deal: lamp at 105.
-DONE bought: {'sig_seller': 'qgVjVgaa65Lpw8mCGvG8RMjQm1Vq1tXYXUvjfKk66Y+dTOZBQivVzU9vmPj2WAmAqRrQxYocIjujpfqzXUe5DQ==', 'task': '15c2606a-70a9-4515-9921-bae2e72eb3a0', 'item': 'lamp', 'shop': 'Kit Shop', 'price': 105.0}
-{"shop": "http://127.0.0.1:49509", "receipt": {"sig_seller": "qgVjVgaa65Lpw8mCGvG8RMjQm1Vq1tXYXUvjfKk66Y+dTOZBQivVzU9vmPj2WAmAqRrQxYocIjujpfqzXUe5DQ==", "task": "15c2606a-70a9-4515-9921-bae2e72eb3a0", "item": "lamp", "shop": "Kit Shop", "price": 105.0}, "stars": 3, "review": "Deal at 105.0 (budget 120)."}
+[harness round 1] 2.7s reply: {"action": "offer", "price": 100}
+-> SendMessage '100' taskId=ba28e23b
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+DONE bought: {'shop': 'Kit Shop', 'task': 'ba28e23b-dd4e-47b7-be63-f8c5fdc07432', 'item': 'lamp', 'sig_seller': '3DAHYCLNDGAVwakv0kVoj2PMxmJZ0H5tDxpf/06eKX66aCkVEJDUrJ56I+RWahlpyn+XNfOlsL80l2OkGfNUDw==', 'price': 100.0}
+{"shop": "http://127.0.0.1:51794", "receipt": {"shop": "Kit Shop", "task": "ba28e23b-dd4e-47b7-be63-f8c5fdc07432", "item": "lamp", "sig_seller": "3DAHYCLNDGAVwakv0kVoj2PMxmJZ0H5tDxpf/06eKX66aCkVEJDUrJ56I+RWahlpyn+XNfOlsL80l2OkGfNUDw==", "price": 100.0}, "stars": 5, "review": "Fair deal: lamp at 100, below my budget of 120."}
