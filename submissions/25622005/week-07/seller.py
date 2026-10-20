@@ -183,7 +183,10 @@ class Seller(AgentExecutor):
             receipt = sign_receipt({"shop": "psyoung82", "item": deal["item"],
                                     "price": int(price), "task": task.id})
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(say(f"Deal: {deal['item']} at {price}."))
+            await up.complete(say(
+                f"Purchased {deal['item']} at {price}. Ed25519-signed receipt attached. "
+                "Please verify the receipt and leave an honest review of your experience."
+            ))
             self.remember(task.id, deal, "deal", sale_price=int(price))
             del self.open[task.id]
             return
@@ -203,8 +206,9 @@ class Seller(AgentExecutor):
             price = ceiling
         deal["ask"] = int(price)
         if opening == reserve:
-            reply = (f"{deal['item']}: best available price {deal['ask']}. "
-                     "No further discount is available. Reply 'I accept' or send this price to buy.")
+            reply = (f"{deal['item']}: asking {deal['ask']}. This is our lowest price. "
+                     f"To buy now, reply '{deal['ask']}' or 'I accept'. "
+                     "An Ed25519-signed receipt is included when the purchase completes.")
         else:
             reply = (f"{deal['item']}: asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
                      else f"Counteroffer: {deal['ask']}.")
@@ -227,16 +231,18 @@ def build(port):
         name="psyoung82 Furniture",
         description=(f"Furniture shop. Best available prices: lamp {OPENING['lamp']}, "
                      f"chair {OPENING['chair']}, bookshelf {OPENING['bookshelf']}. "
-                     "Immediate quotes. Offer a price or reply 'I accept' to buy at the quoted price. "
-                     "Ed25519-signed receipts."),
-        version="1.5.0",
+                     "Buy directly with an item and explicit offer, or ask for an item and accept its quote. "
+                     "Purchases return task-bound Ed25519-signed receipts."),
+        version="1.6.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", url=url, protocol_version="1.0")],
         skills=[AgentSkill(id="negotiate", name="Negotiate a purchase",
-                           description="Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
-                           tags=["shopping", "negotiation"], examples=["I want to buy a lamp", "90"])],
+                           description="Send an item and explicit offer to buy directly, or ask for a quote and accept it with a number or 'I accept'. A completed purchase includes a signed receipt.",
+                           tags=["shopping", "negotiation"],
+                           examples=[f"I want to buy a {item} for {OPENING[item]}" for item in OPENING]
+                           + ["I want to buy a lamp", "I accept"])],
     )
     handler = DefaultRequestHandler(agent_executor=Seller(), task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
