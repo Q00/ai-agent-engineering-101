@@ -1,0 +1,11 @@
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 150. Send your offer as a number.
+-> 150
+<- TASK_STATE_COMPLETED | Deal: lamp at 150.
+receipt: {'shop': 'dragonash', 'item': 'lamp', 'price': 150, 'task': 'f268e06b-df8d-4312-9eef-00ac7a15b96b', 'sig_seller': 'E79Y1pXVnQADaW2zFwMWYsBbw2r43WP+nmzUSKhbS1oI06rkmkukLdbU0IY0YMHXg9Z6T6lJFFvOdO91S0P5Dg=='}
+  PASS  four keys
+  PASS  task is the A2A task id
+  PASS  whole-number price
+  PASS  sig_seller present
+  PASS  verifies with local shop_key.pem
+  PASS  verifies with the market's key for dragonash
