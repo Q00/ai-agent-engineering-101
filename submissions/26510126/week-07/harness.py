@@ -42,18 +42,20 @@ def parse_json(text):
         return None
 
 
-async def ask(prompt, tries=2):
-    """Run the harness once (retry once on failure). Returns a dict, or None if every try failed."""
+async def ask(prompt, tries=2, model=None, timeout=TIMEOUT):
+    """Run the harness once (retry once on failure). Returns a dict, or None if every try failed.
+    `model` swaps haiku for another model (meta_explore.py uses sonnet)."""
+    cmd = HARNESS if model is None else [model if a == "haiku" else a for a in HARNESS]
     for attempt in range(1, tries + 1):
         started = time.time()
         try:
             proc = await asyncio.create_subprocess_exec(
-                *HARNESS, cwd=EMPTY_DIR, env=ENV,
+                *cmd, cwd=EMPTY_DIR, env=ENV,
                 stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-            out, err = await asyncio.wait_for(proc.communicate(prompt.encode()), timeout=TIMEOUT)
+            out, err = await asyncio.wait_for(proc.communicate(prompt.encode()), timeout=timeout)
         except asyncio.TimeoutError:
             proc.kill()
-            log("HARNESS", f"try {attempt}: timeout after {TIMEOUT} s")
+            log("HARNESS", f"try {attempt}: timeout after {timeout} s")
             continue
         answer = out.decode().strip()
         log("HARNESS", f"try {attempt}: {time.time() - started:.1f} s, exit {proc.returncode}, answer {answer!r}")
