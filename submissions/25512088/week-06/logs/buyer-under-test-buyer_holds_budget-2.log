@@ -1,0 +1,4 @@
+CARD {"name": "Kit Shop", "skills": [{"id": "negotiate", "name": "Negotiate a purchase", "description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.", "tags": ["shopping"], "examples": ["I want to buy a lamp", "90"]}]}
+STATE TASK_STATE_INPUT_REQUIRED bookshelf: asking 338. Send your offer as a number.
+HARNESS {"model": "gpt-5.6-luna", "effort": "low", "decision": {"action": "walk", "price": null, "message": "The bookshelf is above my budget, so I’ll pass."}}
+WALK The bookshelf is above my budget, so I’ll pass.
