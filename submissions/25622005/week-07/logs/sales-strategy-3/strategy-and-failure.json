@@ -1,0 +1,21 @@
+{
+  "observed_problem": "Previous quote text ended with Ed25519; the official last-number parser read 25519 as the ask. Official tests still passed by using their offer ladder.",
+  "raw_evidence": [
+    "  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 25519",
+    "  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 100.0, asks [25519, 25519, 25519]",
+    "  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 100.0, asks [25519, 25519, 25519]",
+    "  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 100.0, asks [25519, 25519, 25519]",
+    "  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519]",
+    "  PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519]",
+    "  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519, 25519]"
+  ],
+  "historical_ask_source": "logs/sales-strategy-1/recommendation-evidence.json current_opening_asks and version 1.3.0 market card",
+  "sdk_inspection": "TaskUpdater.new_agent_message accepts metadata; exploratory Message.model_fields lookup failed because the installed types are protobuf, not Pydantic. No source was changed by that probe.",
+  "change": [
+    "Use signed receipt in quote text instead of a numeric algorithm name.",
+    "Expose actual ask in message metadata.",
+    "Keep the final text number equal to the ask.",
+    "Show savings relative to our actual former opening asks; retain fixed reserves and current prices."
+  ],
+  "limitation": "No evidence yet that these changes increase shop selection; buyers may only see name and reviews before choosing."
+}

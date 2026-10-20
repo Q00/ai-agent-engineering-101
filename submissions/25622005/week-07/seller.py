@@ -30,6 +30,8 @@ from seller_memory import SellerMemory
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 # User-selected sales-volume experiment: publish the lowest permitted prices.
 OPENING = dict(RESERVE)
+# Actual former public asks from version 1.3.0, preserved in market logs.
+PREVIOUS_OPENING = {"lamp": 110, "chair": 200, "bookshelf": 285}
 
 
 def buyer_offer(text, asking_price=None):
@@ -207,15 +209,24 @@ class Seller(AgentExecutor):
         deal["ask"] = int(price)
         if opening == reserve:
             reply = (f"{deal['item']}: asking {deal['ask']}. This is our lowest price. "
-                     f"To buy now, reply '{deal['ask']}' or 'I accept'. "
-                     "An Ed25519-signed receipt is included when the purchase completes.")
+                     f"Previously listed by us at {PREVIOUS_OPENING[deal['item']]}; "
+                     f"save {PREVIOUS_OPENING[deal['item']] - deal['ask']}. "
+                     "Signed receipt included after purchase. Reply 'I accept' "
+                     f"or send the purchase price: {deal['ask']}")
         else:
             reply = (f"{deal['item']}: asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
                      else f"Counteroffer: {deal['ask']}.")
         deal["lines"].append(f"you: {reply}")
         deal["seller_quotes"] += 1
         self.remember(task.id, deal, "open")
-        await up.requires_input(say(reply))
+        # Some buyers use the last number in text; others read metadata.ask.
+        # Both must see the current quote, rather than a signature algorithm ID.
+        await up.requires_input(up.new_agent_message(
+            parts=[new_text_part(reply)],
+            metadata={"ask": deal["ask"], "item": deal["item"],
+                      "accept_message": str(deal["ask"]),
+                      "signed_receipt_on_purchase": True},
+        ))
 
     async def cancel(self, context, event_queue):
         task = context.current_task
@@ -228,12 +239,13 @@ class Seller(AgentExecutor):
 def build(port):
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
-        name="psyoung82 Furniture",
-        description=(f"Furniture shop. Best available prices: lamp {OPENING['lamp']}, "
+        name="psyoung82 Furniture | Direct Price Sale",
+        description=(f"Direct-price sale: lamp {OPENING['lamp']}, "
                      f"chair {OPENING['chair']}, bookshelf {OPENING['bookshelf']}. "
+                     "Our previous opening asks were lamp 110, chair 200, bookshelf 285. "
                      "Buy directly with an item and explicit offer, or ask for an item and accept its quote. "
-                     "Purchases return task-bound Ed25519-signed receipts."),
-        version="1.6.0",
+                     "Quotes include numeric metadata.ask. Purchases return task-bound signed receipts."),
+        version="1.7.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
         capabilities=AgentCapabilities(streaming=False),
