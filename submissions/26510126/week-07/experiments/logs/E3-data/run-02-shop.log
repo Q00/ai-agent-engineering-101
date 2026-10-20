@@ -1,0 +1,12 @@
+[21:05:53] IN: task edf676f9 'I want to buy a lamp'
+[21:05:56] HARNESS: try 1: 2.9 s, exit 0, answer '{"price": 180, "message": "Welcome! This lamp is a beautiful piece with handcrafted brass detailing, and I can offer it to you for 180. I\'m happy to talk about a fair price for you."}'
+[21:05:56] OUT: open lamp at 180
+[21:05:58] IN: task edf676f9 '80'
+[21:06:02] HARNESS: try 1: 3.9 s, exit 0, answer '{"action": "counter", "price": 140, "message": "80 is well below what this lamp is worth to me. I can come down to 140 today."}'
+[21:06:02] OUT: counter 140 to offer 80
+[21:06:05] IN: task edf676f9 '105'
+[21:06:09] HARNESS: try 1: 3.2 s, exit 0, answer '{"action": "counter", "price": 120, "message": "I can\'t go as low as 105, but I can meet you partway at 120 for this lamp. That\'s a fair price for a piece in this condition."}'
+[21:06:09] OUT: counter 120 to offer 105
+[21:06:12] IN: task edf676f9 '112'
+[21:06:16] HARNESS: try 1: 3.8 s, exit 0, answer '{"action": "accept", "price": 112, "message": "Thank you, you have a deal at 112. I\'ll prepare the lamp for you."}'
+[21:06:16] OUT: deal lamp at 112
