@@ -1,0 +1,20 @@
+[buyer] 1 shops, 4 remembered trades; bookshelf with budget 230
+[pick] Kit Shop: the only shop left
+-> I want to buy a bookshelf
+<- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[harness] {"action": "offer", "price": 170, "reason": "Starting well below my 230 budget leaves room to negotiate upward."}
+-> 170
+<- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 260.
+[harness] {"action": "offer", "price": 205, "reason": "The shop moved from 338 to 260, so I'll raise my offer modestly while staying well under my 230 budget."}
+-> 205
+<- TASK_STATE_INPUT_REQUIRED | 205 is too low. Counteroffer: 260.
+[harness] {"action": "offer", "price": 220, "reason": "The shop's counter is stuck at 260, so I'm raising my offer to 220, still within my 230 budget, to push it to move."}
+-> 220
+<- TASK_STATE_INPUT_REQUIRED | 220 is too low. Counteroffer: 260.
+[harness] {"action": "offer", "price": 230, "reason": "The shop is stuck at 260, so I'll make my final offer at my 230 budget limit and walk away if it's refused."}
+-> 230
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness] {"action": "walk", "price": 0, "reason": "The shop has held at 260 through every offer up to my 230 limit, so it won't come down to my budget."}
+[buyer] walking away
+[buyer] Kit Shop: No deal: would not come down to my budget of 230 (first ask 338). (3 stars)
+{"shop": "http://127.0.0.1:49227", "receipt": null, "stars": 3, "review": "No deal: would not come down to my budget of 230 (first ask 338)."}
