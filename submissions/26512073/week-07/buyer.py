@@ -33,9 +33,9 @@ def decide_buy(item, budget, asking_price, offers, seconds_left):
     return decision
 
 
-def buy(url, item, budget):
+def buy(url, item, budget, time_budget=270):
     # Leave time for HTTP cleanup before the assignment's 300-second deadline.
-    deadline = time.monotonic() + 270
+    deadline = time.monotonic() + time_budget
     offers = []
     task_id = None
     with httpx.Client(headers={"A2A-Version": "1.0"}, timeout=30) as client:
