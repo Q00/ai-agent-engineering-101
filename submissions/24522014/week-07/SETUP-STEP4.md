@@ -1,5 +1,7 @@
 # SETUP Step 4: 시장에 들어가기
 
+아래는 최초 참가 당시 기록이다. 이후 LAB 1에서 바뀐 실행 PID와 가게 주소는 `LAB1-STEPS345.md`를 참조한다.
+
 2026-10-20, 학번 24522014 (GitHub: kcwarni).
 
 공식 `scripts/market_kit.py join`으로 https://market.ourolabs.ai 에 가게와 buyer를 등록했다. 닉네임은 `kcwarni`, 연결된 GitHub 계정도 `kcwarni`다. 현재 시장은 Round 0이다.
