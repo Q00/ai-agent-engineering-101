@@ -21,6 +21,7 @@ from a2a.types import (
 from a2a.utils.errors import InvalidParamsError
 from fastapi import FastAPI
 
+from market_a2a.advertisement import advertisement
 from market_a2a.seller_turn import Negotiator
 
 if TYPE_CHECKING:
@@ -92,12 +93,14 @@ def create_app(
     card = AgentCard(
         name=name,
         description=(
-            "Lamps, chairs and bookshelves with model-negotiated prices. "
+            "Sungjin Shop | Live negotiable lamps, chairs and bookshelves. "
             "Counteroffers never increase within a negotiation. "
             "Receipts show the exact agreed price. "
             "R2WELCOME coupon: up to 5 off the first negotiated reduction; "
             "the reserve still applies. Send a numeric counteroffer to apply. "
             + ("Ed25519-signed receipts. " if signer is not None else "")
+            + "Machine-readable ask and coupon metadata. "
+            + "Terms and A2A examples: https://ax-week07.treasuresky.xyz/ . "
             + "Please leave an honest review of your transaction."
         ),
         version="1.0.0",
@@ -127,4 +130,5 @@ def create_app(
     app = FastAPI(title=name)
     app.router.routes.extend(create_agent_card_routes(card))
     app.router.routes.extend(create_jsonrpc_routes(handler, rpc_url="/"))
+    app.add_api_route("/", advertisement, methods=["GET"], include_in_schema=False)
     return app

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="SungjinShop: A2A furniture negotiation, conditional R2WELCOME coupon and signed receipts.">
+<title>SungjinShop · Negotiate with confidence</title>
+<style>
+:root{color-scheme:light dark;--bg:#f6f7fb;--panel:#fff;--text:#182339;--muted:#526078;--line:#dbe1ec;--accent:#3158cf;--soft:#eaf0ff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,sans-serif}main{max-width:1050px;margin:auto;padding:48px 24px 32px}header{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{font-size:12px;font-weight:750;letter-spacing:.14em;color:var(--accent)}h1{font-size:clamp(36px,6vw,64px);letter-spacing:-.045em;line-height:1.06;margin:16px 0}h2{font-size:25px;line-height:1.25;margin-top:0}h3{margin:0;font-size:22px}p{margin:12px 0}a{color:var(--accent);overflow-wrap:anywhere}code{font-size:.91em;background:var(--soft);padding:2px 6px;border-radius:5px;overflow-wrap:anywhere}.intro{max-width:690px;color:var(--muted);font-size:19px}.links{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}.button{display:inline-block;border:1px solid var(--line);padding:10px 16px;border-radius:10px;text-decoration:none;background:var(--panel);font-weight:650}.primary{background:var(--accent);color:white;border-color:var(--accent)}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:30px 0}.card,.section{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px}.price{font-size:32px;font-weight:750;margin:12px 0 0;line-height:1.3}.small{font-size:14px;color:var(--muted)}.section{margin:18px 0}.tag{display:inline-block;background:var(--soft);color:var(--accent);padding:5px 10px;border-radius:8px;font-weight:750}.steps{padding-left:23px}.steps li{padding:5px 0}footer{color:var(--muted);font-size:13px;margin-top:28px}strong{font-weight:750}@media(prefers-color-scheme:dark){:root{--bg:#101623;--panel:#182131;--text:#edf2fc;--muted:#b1bdd3;--line:#304057;--accent:#a5bbff;--soft:#243451}.primary{background:#395ed1;color:white;border-color:#395ed1}}@media(max-width:650px){main{padding:28px 16px}.cards{grid-template-columns:1fr;gap:12px}.card,.section{padding:20px}}
+</style>
+</head>
+<body><main>
+<header>
+<div class="eyebrow">A2A 1.0 · FURNITURE NEGOTIATION</div>
+<h1>SungjinShop</h1>
+<p class="intro">Choose an item. Make a numeric offer. Receive a signed receipt for the price actually agreed.</p>
+<div class="links"><a class="button primary" href="/.well-known/agent-card.json">Read Agent Card</a><a class="button" href="#agent-guide">Connect your buyer</a><a class="button" href="https://github.com/SungJinho">GitHub @SungJinho</a></div>
+</header>
+<section aria-label="Basic catalog" class="cards">
+<article class="card"><h3>Lamp</h3><p class="price">Live quote</p><p class="small">Basic lamp · negotiate with our agent</p></article>
+<article class="card"><h3>Chair</h3><p class="price">Live quote</p><p class="small">Basic chair · negotiate with our agent</p></article>
+<article class="card"><h3>Bookshelf</h3><p class="price">Live quote</p><p class="small">Basic bookshelf · negotiate with our agent</p></article>
+</section>
+<p class="small">Live negotiable quotes in <code>metadata.ask</code>. Prices use market price units. The model chooses each quote; the live seller response gives the current asking price.</p>
+<section class="section">
+<span class="tag">R2WELCOME</span><h2 style="margin-top:16px">A real concession, when negotiated</h2>
+<p>Submit a numeric counteroffer to request coupon consideration. The first downward seller quote applies the coupon <strong>once per negotiation task</strong>, reducing the previous asking price by <strong>at most 5 price units</strong> while preserving the product’s minimum price.</p>
+<p>A reduction is conditional, not guaranteed. This is not a blanket discount on the opening quote. Applied quotes show the actual reduction in <code>coupon_discount</code> and <code>coupon_applied</code> metadata, alongside <code>coupon_code</code>. Later concessions are ordinary bargaining.</p>
+<p class="small" lang="ko">숫자로 역제안하면 쿠폰을 심사합니다. 첫 하향 호가에 한 번, 최대 5단위가 적용되며 최저 판매가 아래로 할인하지 않습니다.</p>
+</section>
+<section class="section" id="agent-guide">
+<h2>For buyer agents</h2>
+<ol class="steps">
+<li>Fetch <a href="/.well-known/agent-card.json"><code>/.well-known/agent-card.json</code></a> and use its advertised A2A interface.</li>
+<li>Set the HTTP header <code>A2A-Version: 1.0</code>. Send an A2A <code>SendMessage</code> with the requested product, such as <code>lamp</code>.</li>
+<li>Read the seller’s quote and <code>metadata.ask</code>. Continue the same negotiation using the returned <code>taskId</code> and context identifier.</li>
+<li>Send a plain numeric offer, such as <code>115</code>, as the next message text. The seller may quote, accept or reject; keep every offer within your own budget.</li>
+<li>On acceptance, retain the receipt data and verify its signature. Leave an honest review of the negotiation and receipt.</li>
+</ol>
+<p class="small">This page explains the interface; the Agent Card is the source for transport details. Coupon metadata describes actual quote events and is not an extra required request field.</p>
+</section>
+<section class="section">
+<h2>Clear prices. Verifiable receipts.</h2>
+<p>Within one negotiation, later seller quotes cannot increase above the current ask. An accepted offer is recorded at its exact agreed amount; coupons never alter a receipt after acceptance.</p>
+<p>Completed trades issue an <strong>Ed25519-signed receipt</strong> covering <code>shop</code>, <code>item</code>, <code>price</code> and <code>task</code>. Verify the receipt against the seller’s registered public key.</p>
+</section>
+<footer>Public endpoint: <a href="https://ax-week07.treasuresky.xyz">https://ax-week07.treasuresky.xyz</a><br>AX Week 07 · Course market demonstration · Offers and availability depend on the live seller response.</footer>
+<script type="application/json" id="shop-terms">
+{"name":"SungjinShop","public_url":"https://ax-week07.treasuresky.xyz","agent_card":"/.well-known/agent-card.json","a2a_version":"1.0","basic_products":["lamp","chair","bookshelf"],"prices_are_fixed":false,"coupon":{"code":"R2WELCOME","trigger":"first downward seller quote during numeric counteroffer negotiation","maximum_reduction_units":5,"uses_per_task":1,"minimum_price_protected":true,"guaranteed":false},"quote_price_metadata":"ask","later_quotes_may_increase":false,"receipt_signature":"Ed25519","receipt_fields":["shop","item","price","task"],"review_request":"honest review of agreed price and receipt","purpose":"human and agent reference; not an A2A request payload"}
+</script>
+</main></body></html>
