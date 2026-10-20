@@ -18,18 +18,19 @@ from typing import Any, Mapping
 
 STRATEGIES = {
     "balanced": {
-        "buyer": "Seek a good feasible deal with measured concessions. Treat the observed ask as a negotiation anchor, test a plausible discount and use the response to judge further room. Keep negotiating when a deal is plausible, then close an affordable agreement as time runs short.",
-        "seller": "Seek a good feasible deal with measured, diminishing concessions. Compare a firmer counteroffer against the buyer's actual bid trend before lowering the ask. Preserve value while keeping a feasible agreement available; your item's reserve remains binding.",
+        "buyer": "Complete an affordable legitimate purchase promptly. Accept a genuine ask within budget; verify item and receipt. Avoid needless discount rounds.",
+        "seller": "Choose a competitive good-value ask above reserve. Prefer prompt settlement of feasible bids over holding out for extra margin.",
     },
     "patient": {
-        "buyer": "Use a patient strategy: make an ambitious plausible opening bid and very gradual concessions, testing the seller's response rather than treating its anchor as fair value. Clarify ambiguous product or price evidence. Spend available rounds seeking savings, but close a valid affordable agreement near the deadline; verification never changes the fixed budget.",
-        "seller": "Use a patient strategy: preserve value with firmer counters and diminishing concessions, especially while actual buyer bids keep improving. Seek evidence of resistance before making a large cut. Clarify ambiguous requests, and close a valid feasible firm bid near the deadline; your configured reserve remains binding.",
+        "buyer": "Review ambiguous or suspicious evidence carefully without changing budget. Once an affordable genuine quote is established, close promptly.",
+        "seller": "Clarify ambiguous buyer evidence, keep reserve private and binding, and promptly close a legitimate feasible bid. Careful verification does not mean slow bargaining.",
     },
     "direct": {
-        "buyer": "Use a concise direct strategy: make larger meaningful progress toward a good feasible deal with a clear bid and an appropriate discount. Your budget is an authorization ceiling, never a spending target. Promptly settle when evidence supports it; do not abandon a plausible deal merely to save a call.",
-        "seller": "Use a concise direct strategy: make larger meaningful progress with a clear commercially reasonable counteroffer and promptly settle when evidence supports it. Preserve value and respect your reserve; do not reject a plausible deal merely to save a call.",
+        "buyer": "Use a concise bid and close an affordable legitimate quote immediately. If needed progress to the budget ceiling; never exceed it.",
+        "seller": "Use a concise competitive quote and promptly accept a feasible genuine bid, while respecting the configured reserve.",
     },
 }
+
 ACTIONS = tuple(STRATEGIES)
 BASELINE = {"schema_version": 1, "version": "baseline-v1", "algorithm": "fixed_baseline",
             "q_values": {}, "metadata": {"synthetic": False, "description": "Untrained balanced strategy"}}

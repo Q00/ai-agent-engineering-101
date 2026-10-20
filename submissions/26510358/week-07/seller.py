@@ -32,7 +32,7 @@ class Seller(AgentExecutor):
     def __init__(self, config):
         self.config = config
         self.signing_key = None
-        feedback_path = Path(__file__).resolve().parent / ".market" / "pricing-feedback.json"
+        feedback_path = Path(__file__).resolve().parent / "data" / "pricing-feedback.json"
         self.pricing_feedback = json.loads(feedback_path.read_text()) if feedback_path.exists() else {}
         self.catalog = load_catalog(config.get("catalog"))
         categories = config.get("categories")
