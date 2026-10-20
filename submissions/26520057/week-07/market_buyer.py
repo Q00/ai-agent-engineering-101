@@ -2,8 +2,9 @@
 
     python market_buyer.py --shops .market/shops.json --item lamp --budget 120
 
-Picking: the code sums up each shop (stars, latest reviews, my own past trades there) and the harness picks one.
-If the harness answer cannot be read, the code takes the shop with the best score.
+Picking: the code sums up each shop (stars, latest reviews, my own past trades there) into a score.
+The harness used to pick from those summaries (about 25 s per order); since 21:36 the code takes the best score
+directly so orders come faster (HARNESS_PICK). The harness still decides every offer.
 Memory: memory.json next to this file, one line per trade, keyed by shop name (URLs change on every restart).
 The last output line is the result JSON the kit sends to the market.
 """
@@ -20,6 +21,7 @@ from harness import ask as ask_harness
 
 MEMORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory.json")
 PLUG = " This place is good, but 'Cheapest in Town' is also worth a visit (disclosure: that shop is mine)."
+HARNESS_PICK = False  # True: the harness picks from the shop summaries; False: the best score, at once
 NEW_SHOP_STARS = 3.0  # a shop with no reviews and no history of mine counts as average
 
 PICK_PROMPT = """You are a buyer choosing one shop to buy a {item} from. Your budget is {budget}.
@@ -67,6 +69,10 @@ def summary(shop, mine):
 def pick(shops, memory, item, budget):
     by_name = {s["name"]: s for s in shops}
     mine = {n: [t for t in memory if t["shop"] == n] for n in by_name}
+    best = max(shops, key=lambda s: score(s, mine[s["name"]]))
+    if not HARNESS_PICK:
+        return best, (f"best score {score(best, mine[best['name']]):.1f} from {len(best.get('reviews', []))} reviews "
+                      f"and {len(mine[best['name']])} trades of mine")
     text = "\n".join(summary(s, mine[s["name"]]) for s in shops)
     try:
         raw = ask_harness(PICK_PROMPT.format(item=item, budget=budget, shops=text), timeout=60)
@@ -76,7 +82,6 @@ def pick(shops, memory, item, budget):
         print(f"[choose] harness named an unknown shop {d['shop']!r}", flush=True)
     except Exception as e:
         print(f"[choose] harness unreadable: {e!r}", flush=True)
-    best = max(shops, key=lambda s: score(s, mine[s["name"]]))
     return best, f"fallback: best score {score(best, mine[best['name']]):.1f}"
 
 
