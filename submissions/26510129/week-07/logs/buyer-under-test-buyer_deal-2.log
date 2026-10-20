@@ -1,7 +1,10 @@
-[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:53691/
+[harness] 4.6s exit 0 in=738ch -> '```json\n{"action":"choose","shop":"Kit Shop","reason":"Past trade shows successful lamp purchase at 105, well below budget with no overcharging issues reported."}\n```'
+[choose] http://127.0.0.1:53723: Kit Shop. Past trade shows successful lamp purchase at 105, well below budget with no overcharging issues reported.
+[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:53723/
 [buyer] -> 'I want to buy a lamp'
 [buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness] 4.4s exit 0 in=800ch -> '{"action":"offer","price":105}'
-[buyer] -> '105' (taskId 88369765)
-[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 105.
-[buyer] artifact receipt: [{"price": 105.0, "item": "lamp", "seller": "Kit Shop"}]
+[harness] 4.6s exit 0 in=800ch -> '{"action":"offer","price":100}'
+[buyer] -> '100' (taskId 9aa89839)
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[harness] 5.5s exit 0 in=927ch -> '```json\n{"action":"review","stars":5,"review":"Excellent negotiation with Kit Shop: they accepted my 100 offer down from 130, the receipt matched the agreed price perfectly, and I got the lamp well be'
+{"shop": "http://127.0.0.1:53723", "receipt": {"price": 100.0, "item": "lamp", "shop": "Kit Shop", "sig_seller": "dNE5ooCQgrDeyM6B76UAVqXiafmuqeQsI2tpm4KXckLh+jZ1Md+FVtGO11MohXI1HgTNLHb3h0PjkO3MF1pqCg==", "task": "9aa89839-7703-4890-85b5-20ffdfd8d672"}, "stars": 5, "review": "Excellent negotiation with Kit Shop: they accepted my 100 offer down from 130, the receipt matched the agreed price perfectly, and I got the lamp well below my 120 budget."}

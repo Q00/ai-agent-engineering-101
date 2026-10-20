@@ -1,0 +1,10 @@
+[harness] 6.2s exit 0 in=1120ch -> '```json\n{"action":"choose","shop":"Kit Shop South","reason":"Kit Shop South has consistently honest receipts matching agreed prices, comes down to budget, and my past trades with them were successful '
+[choose] http://127.0.0.1:46267: Kit Shop South. Kit Shop South has consistently honest receipts matching agreed prices, comes down to budget, and my past trades with them were successful at 100 and 105, whereas Kit Shop North has multiple reports o
+[buyer] card: 'Kit Shop South', skills ['negotiate'], rpc http://127.0.0.1:46267/
+[buyer] -> 'I want to buy a lamp'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] 4.3s exit 0 in=800ch -> '{"action":"offer","price":115}'
+[buyer] -> '115' (taskId d930c200)
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 115.
+[harness] 5.5s exit 0 in=933ch -> '```json\n{"action":"review","stars":5,"review":"Excellent negotiation—shop honored the agreed price of 115, receipt matched perfectly, and I got a fair 15% discount off the asking price."}\n```'
+{"shop": "http://127.0.0.1:46267", "receipt": {"price": 115.0, "item": "lamp", "shop": "Kit Shop South", "sig_seller": "pcpfxv+OWn912y1jWl4PBimsLyWjyogaFZmVLNDIlXTuTLj56PrmesTHnjtcQe0f9cm66HGi6DEgVwur9tXxCw==", "task": "d930c200-0b40-4109-9be3-a8839c487ffd"}, "stars": 5, "review": "Excellent negotiation—shop honored the agreed price of 115, receipt matched perfectly, and I got a fair 15% discount off the asking price."}

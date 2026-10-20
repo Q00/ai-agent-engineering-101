@@ -1,11 +1,15 @@
-[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:45263/
+[harness] 6.3s exit 0 in=811ch -> '```json\n{"action":"choose","shop":"Kit Shop","reason":"Only available shop with a track record of honest transactions matching agreed prices on all completed deals."}\n```'
+[choose] http://127.0.0.1:59627: Kit Shop. Only available shop with a track record of honest transactions matching agreed prices on all completed deals.
+[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:59627/
 [buyer] -> 'I want to buy a bookshelf'
 [buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
-[harness] 5.8s exit 0 in=815ch -> '{"action":"offer","price":155}'
-[buyer] -> '155' (taskId 4b2a9706)
-[buyer] <- TASK_STATE_INPUT_REQUIRED | 155 is too low. Counteroffer: 260.
-[harness] 7.3s exit 0 in=865ch -> '{"action":"offer","price":210}'
-[buyer] -> '210' (taskId 4b2a9706)
-[buyer] <- TASK_STATE_INPUT_REQUIRED | 210 is too low. Counteroffer: 260.
-[harness] 7.4s exit 0 in=915ch -> '{"action":"walk_away"}'
+[harness] 6.7s exit 0 in=815ch -> '```json\n{"action":"offer","price":160}\n```'
+[buyer] -> '160' (taskId 2413fbb1)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 160 is too low. Counteroffer: 260.
+[harness] 7.5s exit 0 in=865ch -> '{"action":"offer","price":200}'
+[buyer] -> '200' (taskId 2413fbb1)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 260.
+[harness] 11.1s exit 0 in=915ch -> '{"action":"walk_away"}'
 [buyer] walking away
+[harness] 8.3s exit 0 in=801ch -> '```json\n{"action":"review","stars":2,"review":"Shop was stubborn with their 260 counteroffer and wouldn\'t negotiate down to a reasonable price within my 230 budget."}\n```'
+{"shop": "http://127.0.0.1:59627", "receipt": null, "stars": 2, "review": "Shop was stubborn with their 260 counteroffer and wouldn't negotiate down to a reasonable price within my 230 budget."}

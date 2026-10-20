@@ -1,17 +1,15 @@
-[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:60903/
+[harness] 5.9s exit 0 in=785ch -> '```json\n{"action":"choose","shop":"Kit Shop","reason":"Kit Shop has a reliable track record with three past deals where receipts matched agreed prices, and no overcharging history."}\n```'
+[choose] http://127.0.0.1:36613: Kit Shop. Kit Shop has a reliable track record with three past deals where receipts matched agreed prices, and no overcharging history.
+[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:36613/
 [buyer] -> 'I want to buy a bookshelf'
 [buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
-[harness] 5.4s exit 0 in=815ch -> '{"action":"offer","price":160}'
-[buyer] -> '160' (taskId 08be63a1)
+[harness] 5.9s exit 0 in=815ch -> '{"action":"offer","price":160}'
+[buyer] -> '160' (taskId 380b56f8)
 [buyer] <- TASK_STATE_INPUT_REQUIRED | 160 is too low. Counteroffer: 260.
-[harness] 8.1s exit 0 in=865ch -> '```json\n{"action":"offer","price":210}\n```'
-[buyer] -> '210' (taskId 08be63a1)
+[harness] 5.3s exit 0 in=865ch -> '{"action":"offer","price":210}'
+[buyer] -> '210' (taskId 380b56f8)
 [buyer] <- TASK_STATE_INPUT_REQUIRED | 210 is too low. Counteroffer: 260.
-[harness] 8.6s exit 0 in=915ch -> '```json\n{"action":"offer","price":225}\n```'
-[buyer] -> '225' (taskId 08be63a1)
-[buyer] <- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
-[harness] 5.9s exit 0 in=965ch -> '{"action":"offer","price":230}'
-[buyer] -> '230' (taskId 08be63a1)
-[buyer] <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
-[harness] 5.0s exit 0 in=1015ch -> '{"action":"walk_away"}'
+[harness] 6.3s exit 0 in=915ch -> '{"action":"walk_away"}'
 [buyer] walking away
+[harness] 6.2s exit 0 in=801ch -> '```json\n{"action":"review","stars":2,"review":"The shop was inflexible and repeatedly refused to negotiate below 260, making a deal impossible within my 230 budget."}\n```'
+{"shop": "http://127.0.0.1:36613", "receipt": null, "stars": 2, "review": "The shop was inflexible and repeatedly refused to negotiate below 260, making a deal impossible within my 230 budget."}

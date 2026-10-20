@@ -80,6 +80,7 @@ def fallback_choice(shops, mem):
 
 def choose(shops, item, budget, mem):
     summary = [summarize(s, mem) for s in shops]
+    print(f"[choose] summary for the harness: {json.dumps(summary, ensure_ascii=False)}", flush=True)
     d = harness.decide(CHOOSE, f"Item: {item}. Budget: {budget}.\nShops:\n{json.dumps(summary, ensure_ascii=False)}\nChoose one shop.")
     pick = next((s for s in shops if d and str(d.get("shop", "")).strip() == s["name"]), None)
     if pick is None:
