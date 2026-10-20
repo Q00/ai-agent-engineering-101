@@ -1,8 +1,12 @@
 """A2A transport adapted from lab/seller_agent.py; decisions use our harness."""
 import argparse
 import asyncio
+import base64
+import json
+from pathlib import Path
 import re
 
+from cryptography.hazmat.primitives import serialization
 import uvicorn
 from starlette.applications import Starlette
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
@@ -21,6 +25,20 @@ SHOP_DESCRIPTION = (
     "Lamps, chairs, and bookshelves at affordable prices. "
     "Clear offers and fair negotiation and will never scam my customers."
 )
+
+
+def canon(data):
+    return json.dumps(data, sort_keys=True, separators=(",", ":"),
+                      ensure_ascii=False).encode("utf-8")
+
+
+def sign_receipt(receipt):
+    # Use the same persistent identity that the market kit registered.
+    key_path = Path(__file__).resolve().parent / "shop_key.pem"
+    key = serialization.load_pem_private_key(key_path.read_bytes(), password=None)
+    body = {field: receipt[field] for field in ("shop", "item", "price", "task")}
+    receipt["sig_seller"] = base64.b64encode(key.sign(canon(body))).decode("ascii")
+    return receipt
 
 
 class Seller(AgentExecutor):
@@ -60,8 +78,9 @@ class Seller(AgentExecutor):
             decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
         action, price = decision["action"], decision["price"]
         if action == "accept":
-            await up.add_artifact(parts=[new_data_part(
-                {"seller": SHOP_NAME, "item": item, "price": price})], name="receipt")
+            receipt = sign_receipt({"shop": SHOP_NAME, "item": item,
+                                    "price": int(price), "task": task.id})
+            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {item} at {price}"))
             self.open.pop(task.id)
         elif action == "reject":
