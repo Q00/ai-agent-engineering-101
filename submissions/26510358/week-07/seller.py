@@ -225,7 +225,7 @@ if __name__ == "__main__":
     parser.add_argument("--config")
     parser.add_argument("--policy")
     args = parser.parse_args()
-    config = {"name": "myeonggi", "port": args.port}
+    config = {"name": "Ssadassa Shop", "port": args.port}
     if args.config:
         config.update(json.loads(Path(args.config).read_text()))
     config["port"] = args.port
