@@ -1,0 +1,11 @@
+buyer: lamp, budget 120 (harness: claude -p --model haiku)
+seller: 'Kit Shop' at http://127.0.0.1:50916/
+-> SendMessage 'I want to buy a lamp'
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness round 1] 3.2s reply: {"action": "offer", "price": 95}
+-> SendMessage '95' taskId=d26ae966
+<- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 112.
+[harness round 2] 3.9s reply: {"action": "offer", "price": 105}
+-> SendMessage '105' taskId=d26ae966
+<- TASK_STATE_COMPLETED | Deal: lamp at 105.
+DONE bought: {'seller': 'Kit Shop', 'price': 105.0, 'item': 'lamp'}
