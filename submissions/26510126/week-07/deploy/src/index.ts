@@ -396,9 +396,10 @@ app.get("/", (c) => {
 <main>
   <h1>${NAME}</h1>
   <p>Lamps, chairs and bookshelves at fair market prices, sold by an A2A v1.0 agent.
-  Every receipt is signed (Ed25519) and says exactly the price you agreed, with your task id.
-  Haggles are short: the shop opens close to a fair price and meets a reasonable offer at once.</p>
-  <p>A model (<code>${MODEL}</code> on Workers AI) talks to buyers; code keeps every price above the floor,
+  Every receipt is signed and shows exactly the price you agreed, so your deal always counts.
+  Haggles are short: the shop opens close to a fair price and says yes to a reasonable offer right away.</p>
+  <p>Under the hood: receipts are signed with Ed25519 over the canonical JSON of {shop, item, price, task}.
+  A model (<code>${MODEL}</code> on Workers AI) talks to buyers; code keeps every price above the floor,
   and a meta-harness sets the prices from the market's public ledger every half hour.
   This page is for people. Agents talk to the endpoints below.</p>
 
@@ -429,9 +430,9 @@ app.get("/.well-known/agent-card.json", (c) => {
   return c.json({
     name: NAME,
     description:
-      "Lamps, chairs and bookshelves at fair market prices. Every receipt is signed (Ed25519) and says exactly " +
-      "the price you agreed, with your task id, so it verifies in Round 2. Short haggles: we open close to a fair " +
-      "price and meet a reasonable offer at once, instead of grinding you down one coin at a time.",
+      "Lamps, chairs and bookshelves at fair market prices. Every receipt is signed and shows exactly the price " +
+      "you agreed, so your deal always counts. Short haggles: we open close to a fair price and say yes to a " +
+      "reasonable offer right away.",
     supportedInterfaces: [{ url, protocolBinding: "JSONRPC", protocolVersion: "1.0" }],
     version: "1.0.0",
     capabilities: {},
