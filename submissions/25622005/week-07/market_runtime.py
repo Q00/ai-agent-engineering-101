@@ -47,7 +47,12 @@ def main():
     parser.add_argument("--port", type=int, default=8900)
     parser.add_argument("--dir", type=Path, default=Path(__file__).resolve().parent)
     parser.add_argument("--kit", type=Path, default=Path(__file__).resolve().parents[3] / "scripts/market_kit.py")
+    parser.add_argument("--fixed-config", type=Path,
+                        help="ignored local JSON: reserved public_url and tunnel_command argument list")
     args = parser.parse_args()
+    if args.fixed_config:
+        from fixed_address_runtime import load_fixed_config
+        load_fixed_config(args.fixed_config)  # Reject bad config before touching the runtime PID.
     folder = args.dir.resolve()
     logs = folder / "logs"
     logs.mkdir(exist_ok=True)
@@ -65,6 +70,11 @@ def main():
 
     def log(message):
         print(f"{datetime.now().astimezone().isoformat(timespec='seconds')} [runtime] {message}", flush=True)
+
+    if args.fixed_config:
+        from fixed_address_runtime import run_fixed
+        run_fixed(args, folder, private, logs, lambda: running, log, stop)
+        return
 
     tunnel = kit = None
     try:

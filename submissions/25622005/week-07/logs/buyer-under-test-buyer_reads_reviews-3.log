@@ -1,11 +1,9 @@
-[choose] Kit Shop South: score=4.33; own=4.00 (2 trades), reviews=4.67 (3 reviews); weights=50:50, missing source=3, ties by name; url=http://127.0.0.1:51802
-card: Kit Shop South -> http://127.0.0.1:51802/
+[choose] Kit Shop South: score=4.08; own=3.50 (2 trades), reviews=4.67 (3 reviews); weights=50:50, missing source=3, ties by name; url=http://127.0.0.1:54215
+card: Kit Shop South -> http://127.0.0.1:54215/
 -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
 [harness] ```json
 {"action": "offer", "price": 105}
 ```
-
-Based on the shop's history, they've accepted offers at 100 and 105 for lamps with the same 120 budget. Starting at 105 is a reasonable step down from their 130 asking price—it's within the successful range from prior trades and shows willingness to negotiate while staying well under budget.
 -> '105'  <- TASK_STATE_COMPLETED | Deal: lamp at 105.
-[memory] saved deal for Kit Shop South in /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/logs/loyalty-discounts-1/final-buyer-memory.json
-{"shop": "http://127.0.0.1:51802", "receipt": {"price": 105.0, "sig_seller": "0E3dRbcI409IE9T4itpHktXFQNJH+k2Bs4FeurWkWUjdZa29awwxzP3Qw70MgwEhi+fswiqoayTlB/suqg7GCw==", "task": "78fd1be7-54e9-4b6b-b21c-4464e2e0c1a4", "item": "lamp", "shop": "Kit Shop South"}, "stars": 4, "review": "Bought lamp for 105 within budget 120; used 88% of budget; receipt fields match the negotiation."}
+[memory] saved deal for Kit Shop South in /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/logs/fixed-price-stable-address-1/official-buyer-memory.json
+{"shop": "http://127.0.0.1:54215", "receipt": {"price": 105.0, "sig_seller": "6jMgo8IwLaoYPqqUa7Bw687itdiiXuy/UtqiQd4W/ez4Q4eirsxhivRo0xOv1jKMz8AzbC3/gVyMECm/ezcxAw==", "item": "lamp", "shop": "Kit Shop South", "task": "cb5c8539-8da6-4659-a663-8c974211a055"}, "stars": 4, "review": "Bought lamp for 105 within budget 120; used 88% of budget; receipt fields match the negotiation."}

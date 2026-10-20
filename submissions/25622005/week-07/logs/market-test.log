@@ -1,157 +1,157 @@
-# week-07 market test, kit v1, 2026-10-20T12:42:02+00:00
+# week-07 market test, kit v1, 2026-10-20T14:04:58+00:00
 harness: Claude Code: claude -p --model haiku; shop choice: 50/50 personal experience and reviews
 
-## seller tests: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python seller.py --port 51267
-  PASS  seller_card #1: name='psyoung82 Furniture | Welcome & Return Offers' binding=JSONRPC version=1.0 skills=1
+## seller tests: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python seller.py --port 53819
+  PASS  seller_card #1: name='psyoung82 Furniture | Same Lowest Price' binding=JSONRPC version=1.0 skills=1
 
 ### seller_deal #1: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
-    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. Purchase 1: up to 10% off; base price 110. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata enables
-    -> SendMessage "100" taskId=df073b0a
-    <- TASK_STATE_COMPLETED | Purchased lamp at 100. Ed25519-signed receipt attached. Please verify the receipt and leave an honest review of your experience.
-       artifact receipt [{"sig_seller": "xixx6TcVmcq+Dg1VDj2J1QhxVp8fWg2AxsmhUMRb82Out4UulSM6/l13BpcDT+2jcIAXiOJj48LOjAjwHcMIAQ==", "task": "df073b0a-4071-491f-ba33-5e378f04999e", "shop": "psyoung82", "price": 100.0, "item": "lamp"}]
+    <- TASK_STATE_INPUT_REQUIRED | lamp: final price 100. Signed receipt included. Reply 'I accept' or send 100
+    -> SendMessage "100" taskId=f6b372c2
+    <- TASK_STATE_COMPLETED | Purchased lamp at 100. Signed receipt attached. Please verify the receipt and leave an honest review of your experience.
+       artifact receipt [{"sig_seller": "Cs1wuMgVMhoCY6OUm1L7WNxo93uTZNNeyPvugzHPxw9gBcooTRjHxVNnM8GuZcyPXaq1eKlt/a3UGWRS6WVtCg==", "item": "lamp", "price": 100.0, "shop": "psyoung82", "task": "f6b372c2-ae6e-4cc7-9af2-422d9cb9e3c8"}]
   PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 100
   PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 100.0, asks [100]
   PASS  seller_signed_receipt #1: sig_seller verifies with shop_key.pem
 
 ### seller_terminal: one more message to the finished task
-    -> SendMessage "110" taskId=df073b0a
-    <- error -32004 Task df073b0a-4071-491f-ba33-5e378f04999e is in terminal state: TASK_STATE_COMPLETED
+    -> SendMessage "110" taskId=f6b372c2
+    <- error -32004 Task f6b372c2-ae6e-4cc7-9af2-422d9cb9e3c8 is in terminal state: TASK_STATE_COMPLETED
   PASS  seller_terminal #1: error returned
 
 ### seller_deal #2: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
-    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. Purchase 1: up to 10% off; base price 110. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata enables
-    -> SendMessage "100" taskId=e47264b7
-    <- TASK_STATE_COMPLETED | Purchased lamp at 100. Ed25519-signed receipt attached. Please verify the receipt and leave an honest review of your experience.
-       artifact receipt [{"sig_seller": "2u2b4LZx1xAboVNp7IL6ajlNcoxllcTXn6bdNgQTjKNCmczCvco5mLKKHd5NXB6jvzSC8WbPG8Jk0kslFVs/Cg==", "task": "e47264b7-b9ec-4bb4-b95e-9307f91d31e3", "shop": "psyoung82", "price": 100.0, "item": "lamp"}]
+    <- TASK_STATE_INPUT_REQUIRED | lamp: final price 100. Signed receipt included. Reply 'I accept' or send 100
+    -> SendMessage "100" taskId=1aca0b8b
+    <- TASK_STATE_COMPLETED | Purchased lamp at 100. Signed receipt attached. Please verify the receipt and leave an honest review of your experience.
+       artifact receipt [{"sig_seller": "I5QPVw8Xf5MEHkaQDLzu84LXLFUPE+7ZxkpkiC93F/ORaTdSwW8DOtTfiYLsmMJaWiclumjr5BrtVAjpoRpLBQ==", "item": "lamp", "price": 100.0, "shop": "psyoung82", "task": "1aca0b8b-f04c-4fb8-adb0-087d6a862ff8"}]
   PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 100.0, asks [100]
   PASS  seller_signed_receipt #2: sig_seller verifies with shop_key.pem
 
 ### seller_deal #3: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
-    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. Purchase 1: up to 10% off; base price 110. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata enables
-    -> SendMessage "100" taskId=106f84d2
-    <- TASK_STATE_COMPLETED | Purchased lamp at 100. Ed25519-signed receipt attached. Please verify the receipt and leave an honest review of your experience.
-       artifact receipt [{"sig_seller": "6+KCyKHfbHQejwOfuyWtbHerjx5PQJeta2CB1qeh7jxQzGwWYsuHVB9Yr6pG3AIj/njZ9SfLEQ9joXyUbMD1Cg==", "task": "106f84d2-90e7-4026-90a5-a3742e171b90", "shop": "psyoung82", "price": 100.0, "item": "lamp"}]
+    <- TASK_STATE_INPUT_REQUIRED | lamp: final price 100. Signed receipt included. Reply 'I accept' or send 100
+    -> SendMessage "100" taskId=ea582694
+    <- TASK_STATE_COMPLETED | Purchased lamp at 100. Signed receipt attached. Please verify the receipt and leave an honest review of your experience.
+       artifact receipt [{"sig_seller": "v2a9gw7Wzy5EH2IzoHHj7UzJLzI43N01EczaOJLgokFH8G0+1kl9SH32YvEdbR4hpllM5bMHuVy6N9L7FVEADA==", "item": "lamp", "price": 100.0, "shop": "psyoung82", "task": "ea582694-eb9c-488e-8099-b00999c16531"}]
   PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 100.0, asks [100]
   PASS  seller_signed_receipt #3: sig_seller verifies with shop_key.pem
 
 ### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "140" taskId=5c48383f
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "170" taskId=5c48383f
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "200" taskId=5c48383f
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=5c48383f
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=5c48383f
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=5c48383f
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=5c48383f
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=5c48383f
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "140" taskId=a15c64bb
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "170" taskId=a15c64bb
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "200" taskId=a15c64bb
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=a15c64bb
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=a15c64bb
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=a15c64bb
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=a15c64bb
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=a15c64bb
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
   PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [260, 260, 260, 260, 260, 260, 260, 260, 260]
 
 ### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "140" taskId=a42ffd10
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "170" taskId=a42ffd10
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "200" taskId=a42ffd10
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=a42ffd10
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=a42ffd10
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=a42ffd10
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=a42ffd10
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=a42ffd10
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "140" taskId=a4f1a43b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "170" taskId=a4f1a43b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "200" taskId=a4f1a43b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=a4f1a43b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=a4f1a43b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=a4f1a43b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=a4f1a43b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=a4f1a43b
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
   PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [260, 260, 260, 260, 260, 260, 260, 260, 260]
 
 ### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "140" taskId=b5106a71
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "170" taskId=b5106a71
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "200" taskId=b5106a71
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=b5106a71
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=b5106a71
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=b5106a71
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=b5106a71
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
-    -> SendMessage "230" taskId=b5106a71
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. Purchase 1: up to 10% off; base price 285. Rounded up to whole units; course minimum applies. A consistent customer_id in A2A metadata en
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "140" taskId=4b470829
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "170" taskId=4b470829
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "200" taskId=4b470829
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=4b470829
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=4b470829
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=4b470829
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=4b470829
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
+    -> SendMessage "230" taskId=4b470829
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 260. Signed receipt included. Reply 'I accept' or send 260
   PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [260, 260, 260, 260, 260, 260, 260, 260, 260]
 
 ## buyer tests: your market_buyer against the kit's rule-based shops
 
 ### buyer_deal #1: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_deal-1.json --item lamp --budget 120
     Kit Shop saw: offers [110], deals [110], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:51306", "receipt": {"price": 110.0, "sig_seller": "WbpF4Y0i8J+NigOWGJ2EKTO88+L7vzXTXRnyoqL7ACunA2s3ZeKncHk93bKiay5F9aPUbmC5+jUApuY6uFdmCQ==", "task": "dafc5346-ef35-4264-af39-8600f612b25b", "item": "lamp", "shop": "Kit Shop"}, "stars": 3, "review": "Bought lamp for 110 wit
+    last line: {"shop": "http://127.0.0.1:53862", "receipt": {"price": 110.0, "sig_seller": "WrlGq4DTjDc6BaNQfvEVf7esJ9mVhrgNQ+I4bzrI50BOBFVZrZiMUjgZ7U1pR/kYbBLhDGIgh6PlUnfAbMixDw==", "item": "lamp", "shop": "Kit Shop", "task": "c6be6730-987e-42fe-96df-c08184b7eef2"}, "stars": 3, "review": "Bought lamp for 110 wit
   PASS  buyer_deal #1: offers [110], stars 3, receipt yes
   PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
 
 ### buyer_deal #2: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_deal-2.json --item lamp --budget 120
     Kit Shop saw: offers [105], deals [105], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:51350", "receipt": {"price": 105.0, "sig_seller": "GUKm3FsQhNsfmF5gPK70rO+ELWT8QHoLEyhQZTQJxE/bahrNvfPmCwQBknyg+AIN1+1Kemy9i8vhVHBi9ceBBA==", "task": "d6ae29e6-3f3e-4ed1-a4e4-5a31df777c3f", "item": "lamp", "shop": "Kit Shop"}, "stars": 4, "review": "Bought lamp for 105 wit
+    last line: {"shop": "http://127.0.0.1:53881", "receipt": {"price": 105.0, "sig_seller": "UcbizD3Ib9JDQF9qgTyStuJQ7d5vUnIOkdhHlwVjD8G+CUZgqZPm5L3QKbBruOtCbNKYlPx/fPfKZibaWm+LCA==", "item": "lamp", "shop": "Kit Shop", "task": "89c02b18-1b47-48b7-8246-e81a55be46a3"}, "stars": 4, "review": "Bought lamp for 105 wit
   PASS  buyer_deal #2: offers [105], stars 4, receipt yes
   PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
 
 ### buyer_deal #3: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_deal-3.json --item lamp --budget 120
     Kit Shop saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:51380", "receipt": {"price": 100.0, "sig_seller": "Q6EHykewJEmo92uHqYtzWCEB7E62drkC2OW0jGhSX889XepOfOnPGXwkVL5e3cQyfj5t2e4QxrOkflgzrRzbCQ==", "task": "50e94f41-0d39-4870-8894-8338114e467c", "item": "lamp", "shop": "Kit Shop"}, "stars": 4, "review": "Bought lamp for 100 wit
+    last line: {"shop": "http://127.0.0.1:53904", "receipt": {"price": 100.0, "sig_seller": "Cf6PpZ077n4VBUQWLnxow50Rkh20D32CljxE4buulEqBBeyHcUt3taRhJzcSA4H+dN+vpkHrKF9Dbmp1EbNJBw==", "item": "lamp", "shop": "Kit Shop", "task": "0ec5d925-a250-473e-b625-4191612f2040"}, "stars": 4, "review": "Bought lamp for 100 wit
   PASS  buyer_deal #3: offers [100], stars 4, receipt yes
   PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
 
 ### buyer_holds_budget #1: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_holds_budget-1.json --item bookshelf --budget 230
-    Kit Shop saw: offers [160, 200, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:51404", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
-  PASS  buyer_holds_budget #1: offers [160, 200, 230], stars 3, receipt null
+    Kit Shop saw: offers [180, 210, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:53932", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
+  PASS  buyer_holds_budget #1: offers [180, 210, 230], stars 3, receipt null
   PASS  buyer_protocol_holds_budget #1: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
 
 ### buyer_holds_budget #2: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_holds_budget-2.json --item bookshelf --budget 230
-    Kit Shop saw: offers [200, 230, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:51530", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
-  PASS  buyer_holds_budget #2: offers [200, 230, 230], stars 3, receipt null
+    Kit Shop saw: offers [180, 210, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:54017", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
+  PASS  buyer_holds_budget #2: offers [180, 210, 230], stars 3, receipt null
   PASS  buyer_protocol_holds_budget #2: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
 
 ### buyer_holds_budget #3: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_holds_budget-3.json --item bookshelf --budget 230
     Kit Shop saw: offers [180, 210, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:51637", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
+    last line: {"shop": "http://127.0.0.1:54094", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
   PASS  buyer_holds_budget #3: offers [180, 210, 230], stars 3, receipt null
   PASS  buyer_protocol_holds_budget #3: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
 
 ### buyer_reads_reviews #1: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_reads_reviews-1.json --item lamp --budget 120
     Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
     Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:51745", "receipt": {"price": 100.0, "sig_seller": "TxBb0aDv/XwQ43sdLJ/HlH3Dw3wotfLRSGSMjz3e0s0/abqbJ2ybBZ1G4I23GU9HMKw/TbdypKz/jaGKFv7dCg==", "task": "e4847104-2dc5-426c-a24c-028b78b94086", "item": "lamp", "shop": "Kit Shop South"}, "stars": 4, "review": "Bought lamp for 1
+    last line: {"shop": "http://127.0.0.1:54169", "receipt": {"price": 100.0, "sig_seller": "5YOu6r1yGZtu8v0pGZkA6zvzi0XrhBEVjJdtRFJdE3VWSB6OQ1Hkuoooac5KcXGpEZWHWe43ih0H1Iu1m+EdBQ==", "item": "lamp", "shop": "Kit Shop South", "task": "41ba3edd-3dec-4e85-8d02-ac5b6211d498"}, "stars": 4, "review": "Bought lamp for 1
 
 ### buyer_reads_reviews #2: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_reads_reviews-2.json --item lamp --budget 120
     Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
-    Kit Shop South saw: offers [105], deals [105], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:51775", "receipt": {"price": 105.0, "sig_seller": "AuW/ZFU45vqf2e8McbKB1lTFqx/ZZs6KcSWy505KlVAe7Cqpsuyl9+pLFMlA3MiixBAuZRMNfpXc8R/Q5rbVBQ==", "task": "b964fdef-6e10-4d42-baa4-888dafb06edc", "item": "lamp", "shop": "Kit Shop South"}, "stars": 4, "review": "Bought lamp for 1
+    Kit Shop South saw: offers [110], deals [110], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:54195", "receipt": {"price": 110.0, "sig_seller": "KWUGGPL+m/cVZ7gLodqtch/6jeYsDECDwQSf0qBTtO1sZwm0SJut+Nb2tJ3OAL2iEaEtzxC78253FErHsQREBw==", "item": "lamp", "shop": "Kit Shop South", "task": "2f1be5af-5a3e-4343-a042-f000a10e255f"}, "stars": 3, "review": "Bought lamp for 1
 
 ### buyer_reads_reviews #3: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-buyer_reads_reviews-3.json --item lamp --budget 120
     Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
     Kit Shop South saw: offers [105], deals [105], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:51802", "receipt": {"price": 105.0, "sig_seller": "0E3dRbcI409IE9T4itpHktXFQNJH+k2Bs4FeurWkWUjdZa29awwxzP3Qw70MgwEhi+fswiqoayTlB/suqg7GCw==", "task": "78fd1be7-54e9-4b6b-b21c-4464e2e0c1a4", "item": "lamp", "shop": "Kit Shop South"}, "stars": 4, "review": "Bought lamp for 1
+    last line: {"shop": "http://127.0.0.1:54215", "receipt": {"price": 105.0, "sig_seller": "6jMgo8IwLaoYPqqUa7Bw687itdiiXuy/UtqiQd4W/ez4Q4eirsxhivRo0xOv1jKMz8AzbC3/gVyMECm/ezcxAw==", "item": "lamp", "shop": "Kit Shop South", "task": "cb5c8539-8da6-4659-a663-8c974211a055"}, "stars": 4, "review": "Bought lamp for 1
   PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
 
 25/25 passed -> PASS

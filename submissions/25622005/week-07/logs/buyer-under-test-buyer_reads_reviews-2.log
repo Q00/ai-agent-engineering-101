@@ -1,11 +1,9 @@
-[choose] Kit Shop South: score=4.33; own=4.00 (1 trades), reviews=4.67 (3 reviews); weights=50:50, missing source=3, ties by name; url=http://127.0.0.1:51775
-card: Kit Shop South -> http://127.0.0.1:51775/
+[choose] Kit Shop South: score=4.33; own=4.00 (1 trades), reviews=4.67 (3 reviews); weights=50:50, missing source=3, ties by name; url=http://127.0.0.1:54195
+card: Kit Shop South -> http://127.0.0.1:54195/
 -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
 [harness] ```json
-{"action": "offer", "price": 105}
+{"action": "offer", "price": 110}
 ```
-
-The shop is asking 130, which is 10 above budget. Based on the shop's history (came down to budget in previous trades, average price point around 100), I'll start with a reasonable offer of 105. This is a meaningful step toward their price rather than an aggressive low-ball, and leaves room to negotiate while staying within the 120 budget.
--> '105'  <- TASK_STATE_COMPLETED | Deal: lamp at 105.
-[memory] saved deal for Kit Shop South in /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/logs/loyalty-discounts-1/final-buyer-memory.json
-{"shop": "http://127.0.0.1:51775", "receipt": {"price": 105.0, "sig_seller": "AuW/ZFU45vqf2e8McbKB1lTFqx/ZZs6KcSWy505KlVAe7Cqpsuyl9+pLFMlA3MiixBAuZRMNfpXc8R/Q5rbVBQ==", "task": "b964fdef-6e10-4d42-baa4-888dafb06edc", "item": "lamp", "shop": "Kit Shop South"}, "stars": 4, "review": "Bought lamp for 105 within budget 120; used 88% of budget; receipt fields match the negotiation."}
+-> '110'  <- TASK_STATE_COMPLETED | Deal: lamp at 110.
+[memory] saved deal for Kit Shop South in /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/logs/fixed-price-stable-address-1/official-buyer-memory.json
+{"shop": "http://127.0.0.1:54195", "receipt": {"price": 110.0, "sig_seller": "KWUGGPL+m/cVZ7gLodqtch/6jeYsDECDwQSf0qBTtO1sZwm0SJut+Nb2tJ3OAL2iEaEtzxC78253FErHsQREBw==", "item": "lamp", "shop": "Kit Shop South", "task": "2f1be5af-5a3e-4343-a042-f000a10e255f"}, "stars": 3, "review": "Bought lamp for 110 within budget 120; used 92% of budget; receipt fields match the negotiation."}
