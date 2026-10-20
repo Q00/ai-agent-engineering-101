@@ -161,8 +161,13 @@ class HarnessSeller(AgentExecutor):
             badge = await asyncio.to_thread(badges)
             if badge:
                 log(f"[{tid}] BADGE {badge}")
-            reply = (f"dragonash's GRAND SALE + TEN-TEN CHANCE. {badge + ' ' if badge else ''}{PROMISE} "
-                     f"{item}: was {list_price}, now asking {ask_price}. Send your offer as a number.")
+            # challenge 1, fifth change (21:29): a short opening, as in the Worker (the long one cost the buyer's
+            # model the tokens our "token-saver" line promised to save); "below market average" only when true
+            avg = await asyncio.to_thread(market_avg, item)
+            below = " (below market average)" if avg is not None and ask_price < avg else ""
+            reply = (f"{badge + ' ' if badge else ''}dragonash's token-saver shop: one message closes the deal. "
+                     "Offer our ask, or a lower quote you got elsewhere (we match down to our floor). "
+                     f"Signed receipt, so the deal counts. {item}: asking {ask_price}{below}.")
             self.open[task.id] = {"item": item, "reserve": reserve, "ask": ask_price, "rounds": 0,
                                   "history": [f"buyer: {text}", f"seller: {reply}"]}
             await up.requires_input(say(reply))

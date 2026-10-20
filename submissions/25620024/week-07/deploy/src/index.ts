@@ -38,7 +38,7 @@ const MATCH = /match|elsewhere|other shop|quoted|cheaper|found it|lower price/i;
 // a counter gives up at least half the gap between our ask and the offer; the model may not end the talk
 // before MAX_ROUNDS (a "reject" becomes a counter).
 const FAST_CLOSE_FROM = 2;
-const SHOP_CODE = "fast-close-1";   // Durable Object name suffix: change it with every behaviour change
+const SHOP_CODE = "short-open-1";   // Durable Object name suffix: change it with every behaviour change
 const SHOP = "dragonash";   // receipt "shop": the market name, same as seller.py
 
 export function canon(r: { shop: string; item: string; price: number; task: string }): string {
@@ -250,7 +250,12 @@ export class Shop {
       if (ask < reserve) { s.log.push(`GUARD opening ask ${ask} < reserve ${reserve}: raised`); ask = reserve; }
       const badge = await this.badges();
       if (badge) s.log.push(`BADGE ${badge}`);
-      const reply = `dragonash's GRAND SALE + TEN-TEN CHANCE. ${badge ? badge + " " : ""}${PROMISE} ${item}: was ${list}, now asking ${ask}. Send your offer as a number.`;
+      // challenge 1, fifth change (21:29): a short opening. The long one (about 80 words) cost every buyer's
+      // model the tokens our "token-saver" line promised to save. "below market average" only when it is true.
+      const below = avg !== null && ask < avg ? " (below market average)" : "";
+      const reply = `${badge ? badge + " " : ""}dragonash's token-saver shop: one message closes the deal. ` +
+        `Offer our ask, or a lower quote you got elsewhere (we match down to our floor). Signed receipt, so the deal counts. ` +
+        `${item}: asking ${ask}${below}.`;
       s.deal = { item, reserve, ask, rounds: 0, history: [`buyer: ${text}`, `seller: ${reply}`] };
       task.status = { state: "TASK_STATE_INPUT_REQUIRED", message: agentMsg(reply, ask), timestamp: now() };
       return save();
