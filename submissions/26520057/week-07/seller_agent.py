@@ -4,9 +4,9 @@
     python seller_agent.py --port 9100
 
 Week-07 challenge 1: the harness made the shop slow and dear (opening at 150 for a lamp the market sells at 110),
-so the rules are now in code. The shop opens at its own asking price (asks.json), meets the buyer halfway once,
-then offers its floor; any offer at or above the floor after one counter closes the deal.
-After each negotiation it moves its asking price from its own trades: +2 after a sale on the first offer, -3 after a walkaway.
+so the rules are now in code. The shop opens at its own asking price (asks.json); its first counter is already
+its floor, said as final, so a buyer who can pay the floor never has a reason to walk.
+After each negotiation it moves its asking price from its own trades: +20 after a sale on the first offer, -30 after a walkaway.
 No ask and no sale below the reserve.
 """
 import argparse
@@ -48,7 +48,7 @@ DEFAULT = {
 ASKS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "asks.json")
 START_ASKS = {"lamp": 110, "chair": 200, "bookshelf": 285}  # round-1 market averages: 109.7, 199.2, 284.8
 QUICK = 0.9  # a first offer at 90% of the ask or more closes at once (when it is above the floor)
-STEP_UP, STEP_DOWN = 2, 3  # how the ask moves after a sale on the first offer / after a walkaway
+STEP_UP, STEP_DOWN = 20, 30  # how the ask moves after a sale on the first offer / after a walkaway
 
 REVIEW_DISCOUNT = 0.05  # price off for a buyer who promises a 5-star review; the promise is not checked
 PROMISE = re.compile(r"(5|five)[- ]?stars?|good review|great review", re.I)
@@ -124,10 +124,8 @@ class Seller(AgentExecutor):
         first = deal["counters"] == 0
         if offer >= reserve and (offer >= deal["ask"] or deal["counters"] >= 1 or offer >= deal["ask"] * QUICK):
             action = "accept"  # the card's term (1), a quick first offer, or any offer above the floor after a counter
-        elif first:
-            action, price = "counter", max(reserve, math.ceil((deal["ask"] + offer) / 2))  # meet halfway once
         else:
-            action, price = "counter", reserve  # then the floor
+            action, price = "counter", reserve  # the floor at once, said as final
         print(f"[rule] {deal['item']} | offer {offer}, ask {deal['ask']}, floor {reserve} -> {action}"
               + ("" if action == "accept" else f" {price}"), flush=True)
         if action == "accept":
@@ -142,7 +140,8 @@ class Seller(AgentExecutor):
         deal["ask"], deal["counters"] = price, deal["counters"] + 1
         deal["history"].append(f"seller: counteroffer {price}")
         hint = "" if deal.get("promised") else "Promise a five-star review for a lower price. "  # no digits: buyers read the last number
-        await up.requires_input(say(f"{hint}{offer} is too low. Counteroffer: {price}."))
+        await up.requires_input(say(f"{hint}{offer} is too low. Final price, my floor: any offer at or above it "
+                                    f"closes now. Counteroffer: {price}."))  # the floor is the last number
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
