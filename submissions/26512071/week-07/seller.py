@@ -40,6 +40,7 @@ import re
 import sys
 import tempfile
 
+import httpx
 import uvicorn
 from cryptography.hazmat.primitives import serialization
 from starlette.applications import Starlette
@@ -64,11 +65,50 @@ MARKET = False
 KEY_FILE = Path(__file__).with_name("shop_key.pem")
 
 
+def low_reviews():
+    """How many low reviews have bought extra opening-price deals so far."""
+    if not SEEN.exists():
+        return 0
+    return json.loads(SEEN.read_text(encoding="utf-8")).get("low", 0)
+
+
+async def check_reviews():
+    """Read this shop's reviews from the registry (at most once a minute); every review
+    not seen before with LOW_STARS or fewer adds PER_LOW_REVIEW opening-price deals.
+    The first read only marks what is already there as seen."""
+    global _last_check
+    if not (MARKET and NICK) or time.time() - _last_check < REVIEW_TTL:
+        return
+    _last_check = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=3) as c:
+            rows = (await c.get(REGISTRY)).json()
+        rows = rows if isinstance(rows, list) else rows.get("shops", [])
+        reviews = next((r.get("reviews", []) for r in rows if r.get("name") == NICK), [])
+    except (httpx.HTTPError, ValueError, AttributeError) as e:
+        log(f"[reviews] registry did not answer: {type(e).__name__}")
+        return
+    state = json.loads(SEEN.read_text(encoding="utf-8")) if SEEN.exists() else None
+    keys = [json.dumps([r.get("stars"), r.get("review"), r.get("round")], ensure_ascii=False) for r in reviews]
+    if state is None:
+        SEEN.write_text(json.dumps({"seen": keys, "low": 0}, ensure_ascii=False), encoding="utf-8")
+        log(f"[reviews] {len(keys)} existing reviews marked as seen")
+        return
+    new = [(k, r) for k, r in zip(keys, reviews) if k not in state["seen"]]
+    low = [r for _, r in new if isinstance(r.get("stars"), (int, float)) and r["stars"] <= LOW_STARS]
+    for r in low:
+        log(f"[reviews] new {r['stars']}-star review {r.get('review', '')[:80]!r} -> {PER_LOW_REVIEW} more opening-price deals")
+    if new:
+        state["seen"] += [k for k, _ in new]
+        state["low"] += len(low)
+        SEEN.write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
+
+
 def promo_left():
     if not (MARKET and PROMO):
         return 0
     done = SALES.read_text(encoding="utf-8").count('"promo": true') if SALES.exists() else 0
-    return max(0, PROMO - done)
+    return max(0, PROMO + PER_LOW_REVIEW * low_reviews() - done)
 
 
 def record_sale(entry):
@@ -102,6 +142,13 @@ def open_shop(n):
 PROMO = int(os.environ.get("SHOP_PROMO", "0"))  # opening-price deals, only when the kit sets it
 PROMO_ASK, OPEN_CAP = 1.05, 1.2  # promo: ask 1.05x reserve and take any offer at the reserve; after: open at most 1.2x
 SALES = Path(__file__).with_name("sales.jsonl")  # every deal, for the before/after numbers
+# Each new review of this shop with LOW_STARS or fewer stars buys PER_LOW_REVIEW more
+# opening-price deals. The shop reads its own reviews from the market registry.
+NICK = os.environ.get("SHOP_NICK")  # the shop's name in the market, set by the kit's caller
+REGISTRY = "https://market.ourolabs.ai/api/shops"
+LOW_STARS, PER_LOW_REVIEW, REVIEW_TTL = 3, 5, 60
+SEEN = Path(__file__).with_name("reviews-seen.json")  # reviews already counted
+_last_check = 0.0
 CLOSE_GAP = 0.97  # accept an offer at or above the reserve within 3% of the current ask
 MAX_ROUNDS = 10  # safety net so a task cannot run forever
 HARNESS = ["claude", "-p", "--model", "sonnet", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
@@ -230,6 +277,7 @@ class Seller(AgentExecutor):
         deal = self.open.get(task.id)
 
         if deal is None:  # first message: which item?
+            await check_reviews()
             item = await pick(text)
             if item is None:
                 await up.reject(say("Sorry, nothing in our catalog fits that."))
