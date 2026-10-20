@@ -59,6 +59,8 @@ Choose one:
 - accept: sell at {offer}
 - counter: ask a new price
 - reject: stop negotiating, no sale
+Rejecting loses this sale for good. Buyers usually raise their offers over several rounds, so keep
+countering while the buyer is still moving up; reject only if the buyer has stopped raising for several rounds.
 Reply with exactly one JSON object and nothing else:
 {{"action": "accept" | "counter" | "reject", "price": <integer, your new ask if you counter>}}"""
 
