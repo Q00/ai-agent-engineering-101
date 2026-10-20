@@ -110,14 +110,24 @@ def my_line(trades, item):
 
 
 def review_line(reviews):
+    """Average and newest reviews, with identical texts counted once: in the market the same
+    5-star sentence ("Best shop in the market.") was posted again and again for one shop."""
     if not reviews:
         return "no reviews"
-    stars = [r.get("stars") for r in reviews if isinstance(r.get("stars"), (int, float))]
+    seen, unique = set(), []
+    for r in reviews:
+        key = " ".join(str(r.get("review", "")).lower().split())
+        if key not in seen:
+            seen.add(key)
+            unique.append(r)
+    stars = [r.get("stars") for r in unique if isinstance(r.get("stars"), (int, float))]
     avg = f"{sum(stars) / len(stars):.1f} stars avg" if stars else "no stars"
+    dup = len(reviews) - len(unique)
+    note = f" ({dup} repeated texts counted once; repeated praise may be fake)" if dup else ""
     quoted = "; ".join(f"(R{r.get('round', '?')}) "
                        + json.dumps(str(r.get("review", ""))[:REVIEW_CHARS], ensure_ascii=False)
-                       for r in reviews[:REVIEWS_SHOWN])
-    return f"{len(reviews)} reviews, {avg}, newest: {quoted}"
+                       for r in unique[:REVIEWS_SHOWN])
+    return f"{len(reviews)} reviews, {avg} over {len(unique)} distinct{note}, newest: {quoted}"
 
 
 def board_stats():
