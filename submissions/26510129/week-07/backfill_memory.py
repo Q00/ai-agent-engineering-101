@@ -36,8 +36,9 @@ if __name__ == "__main__":
     mem = load_memory()
     n = 0
     for row in mem:
-        row.pop("manipulative", None)                # one-off: recomputed from the log; run before market_buyer flags anything live
-        if row.get("shop") in hits:
+        if row.get("manipulative_source") == "from_log":
+            row.pop("manipulative", None)            # recomputed below; rows market_buyer flagged live keep their flag
+        if row.get("shop") in hits and not row.get("manipulative"):
             row["manipulative"], row["manipulative_source"] = True, "from_log"
             n += 1
     save_memory(mem)
