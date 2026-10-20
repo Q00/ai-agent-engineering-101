@@ -5660,3 +5660,200 @@
 12:29:25 [seller] [7de56a25] ask 260
 12:29:25 [seller] 
 12:29:25 [seller] [2b69c8a9] buyer: '160'
+12:29:29 [seller]   [harness 3.7s] '{"action": "counter", "price": 190}'
+12:29:29 [seller] [2b69c8a9] counter 190
+12:29:29 [seller] 
+12:29:29 [seller] [98b5b167] buyer: 'I want to buy a lamp'
+12:29:32 [seller]   [harness 2.9s] '{"ask": 180}'
+12:29:32 [seller] [98b5b167] ask 180
+12:29:32 [seller] 
+12:29:32 [seller] [7de56a25] buyer: '180'
+12:29:35 [seller]   [harness 2.9s] '{"action": "accept", "price": 180}'
+12:29:35 [seller] [7de56a25] accept 180
+12:29:35 [seller] 
+12:29:35 [seller] [2b69c8a9] buyer: '160'
+12:29:35 [buyer]   <- TASK_STATE_INPUT_REQUIRED | New shop opening price.  Asking price: 180
+12:29:37 [seller]   [harness 2.9s] '{"action": "counter", "price": 175}'
+12:29:37 [seller] [guard] counter 175 is below the reserve 180; asking 180
+12:29:37 [seller] [2b69c8a9] counter 180
+12:29:37 [seller] [af472519] canceled by the buyer
+12:29:37 [seller] 
+12:29:37 [seller] [98b5b167] buyer: '81'
+12:29:39 [buyer]   [harness 3.7s] '{"action": "offer", "price": 170}'
+12:29:39 [buyer]   -> '170' (taskId 89ec0f70)
+12:29:41 [seller]   [harness 3.4s] '{"action": "counter", "price": 130}'
+12:29:41 [seller] [98b5b167] counter 130
+12:29:41 [seller] 
+12:29:41 [seller] [98b5b167] buyer: '93'
+12:29:43 [buyer]   <- TASK_STATE_INPUT_REQUIRED | New shop opening price. This is already my lowest price, and it is a solid beech chair worth every bit of it. Asking price: 180
+12:29:44 [seller]   [harness 3.2s] '{"action": "counter", "price": 112}'
+12:29:44 [seller] [98b5b167] counter 112
+12:29:44 [seller] 
+12:29:44 [seller] [2b69c8a9] buyer: '160'
+12:29:46 [buyer]   [harness 3.0s] '{"action": "offer", "price": 175}'
+12:29:46 [buyer]   -> '175' (taskId 89ec0f70)
+12:29:49 [seller]   [harness 4.4s] '{"action": "counter", "price": 180}'
+12:29:49 [seller] [2b69c8a9] counter 180
+12:29:49 [seller] 
+12:29:49 [seller] [d2278bb1] buyer: 'I want to buy a chair'
+12:29:51 [buyer]   <- TASK_STATE_INPUT_REQUIRED | New shop opening price. That is the lowest I can go, and it is a fair price for solid beech wood. Asking price: 180
+12:29:52 [seller]   [harness 2.9s] '{"ask": 260}'
+12:29:52 [seller] [d2278bb1] ask 260
+12:29:52 [seller] 
+12:29:52 [seller] [72ac22f8] buyer: 'I want to buy a chair'
+12:29:55 [buyer]   [harness 3.8s] '{"action": "offer", "price": 176}'
+12:29:55 [buyer]   -> '176' (taskId 89ec0f70)
+12:29:55 [seller]   [harness 3.2s] '{"ask": 260}'
+12:29:55 [seller] [72ac22f8] ask 260
+12:29:55 [seller] 
+12:29:55 [seller] [98b5b167] buyer: '106'
+12:29:59 [buyer]   <- TASK_STATE_INPUT_REQUIRED | New shop opening price. That is as low as I can go, and it is a fair price for solid beech. Asking price: 180
+12:30:00 [seller]   [harness 5.1s] '{"action": "accept", "price": 106}'
+12:30:00 [seller] [98b5b167] accept 106
+12:30:00 [seller] 
+12:30:00 [seller] [2b69c8a9] buyer: '160'
+12:30:04 [buyer]   [harness 5.0s] '{"action": "accept", "price": 180}'
+12:30:04 [buyer]   -> '180' (taskId 89ec0f70)
+12:30:05 [seller]   [harness 4.9s] '{"action": "counter", "price": 180}'
+12:30:05 [seller] [2b69c8a9] counter 180
+12:30:05 [seller] 
+12:30:05 [seller] [d2278bb1] buyer: '180'
+12:30:08 [seller]   [harness 3.1s] '{"action": "counter", "price": 220}'
+12:30:08 [seller] [d2278bb1] counter 220
+12:30:08 [seller] 
+12:30:08 [seller] [72ac22f8] buyer: '180'
+12:30:09 [buyer]   <- TASK_STATE_COMPLETED | New shop opening price. We have a deal, thank you for choosing this chair. New shop: an honest review helps us. Deal: chair at 180.
+12:30:11 [seller]   [harness 3.1s] '{"action": "accept", "price": 180}'
+12:30:11 [seller] [72ac22f8] accept 180
+12:30:11 [seller] 
+12:30:11 [seller] [d2278bb1] buyer: '186'
+12:30:14 [buyer]   [harness 5.0s] '{"stars": 4, "review": "Bought a chair from Fair Furniture at the agreed price of 180, under my 225 budget, and the receipt matched the deal; I haven\'t evaluated the chair\'s quality yet."}'
+12:30:14 [buyer] result: TASK_STATE_COMPLETED, 67s
+12:30:14 [buyer] {"shop": "https://recognize-findlaw-titten-wind.trycloudflare.com", "receipt": {"price": 180.0, "sig_seller": "KDZgn/YlZv9AGLGKWcMRAuoEjX86FtoMUFpE9pGdHQZQpY5ZTgtd3VLBPAN75WEKdNErRcJ0d+y74nZRcceeCQ==", "item": "chair", "shop": "Fair Furniture", "task": "89ec0f70-e135-4de3-9162-74dc0e4a88eb"}, "stars": 4, "review": "Bought a chair from Fair Furniture at the agreed price of 180, under my 225 budget, and the receipt matched the deal; I haven't evaluated the chair's quality yet."}
+12:30:14 [sign] sig_seller ok, sig_buyer added
+12:30:14 [seller]   [harness 2.8s] '{"action": "counter", "price": 200}'
+12:30:14 [seller] [d2278bb1] counter 200
+12:30:14 [seller] 
+12:30:14 [seller] [b8749b9f] buyer: 'I want to buy a chair'
+12:30:14 [market] ledger #10899: chair at 180, stars 4, verified True, review accepted
+12:30:15 [order o-974fea17] chair, budget 225, round 2
+12:30:15 [kit] 40 shops in .market/shops.json, running market_buyer
+12:30:15 [buyer] market buyer: chair, budget 225, 40 shops, 105 past trades in memory
+12:30:15 [buyer] [memory] skipping shops with a receipt problem in my own trades: ['willow-goods']
+12:30:17 [seller]   [harness 3.0s] '{"ask": 260}'
+12:30:17 [seller] [b8749b9f] ask 260
+12:30:17 [seller] 
+12:30:17 [seller] [2b69c8a9] buyer: '160'
+12:30:20 [seller]   [harness 2.9s] '{"action": "counter", "price": 175}'
+12:30:20 [seller] [guard] counter 175 is below the reserve 180; asking 180
+12:30:20 [seller] [2b69c8a9] counter 180
+12:30:20 [seller] 
+12:30:20 [seller] [b93619b4] buyer: 'I want to buy a lamp'
+12:30:21 [buyer]   [harness 6.2s] '{"shop": "ggari-shop", "reason": "Ten reviews average 4.4 stars with signed receipts that matched the agreed chair prices (around 180, within the 225 budget), and my own three trades there all closed as deals."}'
+12:30:21 [buyer] [choose] ggari-shop https://ggari0703-shop.ggari0703.workers.dev: Ten reviews average 4.4 stars with signed receipts that matched the agreed chair prices (around 180, within the 225 budget), and my own three trades there all closed as deals.
+12:30:21 [buyer] card: 'ggari0703', JSONRPC at https://ggari0703-shop.ggari0703.workers.dev/
+12:30:21 [buyer]   -> 'I want to buy a chair'
+12:30:22 [buyer]   <- TASK_STATE_INPUT_REQUIRED | chair: asking 211. Send your offer as a number.
+12:30:23 [seller]   [harness 2.9s] '{"ask": 180}'
+12:30:23 [seller] [b93619b4] ask 180
+12:30:23 [seller] 
+12:30:23 [seller] [d2278bb1] buyer: '193'
+12:30:25 [buyer]   [harness 2.8s] '{"action": "offer", "price": 170}'
+12:30:25 [buyer]   -> '170' (taskId 0412875b)
+12:30:25 [buyer]   <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 190.
+12:30:26 [seller]   [harness 3.1s] '{"action": "accept", "price": 193}'
+12:30:26 [seller] [d2278bb1] accept 193
+12:30:26 [seller] 
+12:30:26 [seller] [b8749b9f] buyer: '104'
+12:30:29 [buyer]   [harness 3.4s] '{"action": "offer", "price": 180}'
+12:30:29 [buyer]   -> '180' (taskId 0412875b)
+12:30:29 [seller]   [harness 2.9s] '{"action": "counter", "price": 230}'
+12:30:29 [seller] [b8749b9f] counter 230
+12:30:29 [seller] 
+12:30:29 [seller] [b93619b4] buyer: '100'
+12:30:29 [buyer]   <- TASK_STATE_COMPLETED | Deal: chair at 180. Signed receipt attached.
+12:30:33 [seller]   [harness 3.9s] '{"action": "accept", "price": 100}'
+12:30:33 [seller] [b93619b4] accept 100
+12:30:33 [seller] 
+12:30:33 [seller] [2b69c8a9] buyer: '160'
+12:30:35 [buyer]   [harness 5.6s] '{"stars": 3, "review": "The chair deal completed at the agreed 180 with a signed receipt, but the receipt names the shop \'ggari0703\' rather than \'ggari-shop\', so confirm the seller\'s identity before paying."}'
+12:30:35 [buyer] result: TASK_STATE_COMPLETED, 20s
+12:30:35 [buyer] {"shop": "https://ggari0703-shop.ggari0703.workers.dev", "receipt": {"shop": "ggari0703", "item": "chair", "price": 180, "task": "0412875b-dd7c-48f2-a250-48ef28410b97", "sig_seller": "new8hjfRSPDK6RK0tURjraeW1Mt7q/wF8EZWxtVN5iJSI1JQJWUdlVe8BzRQIo9m5qTwfjsywGbeIijkVfOGDA=="}, "stars": 3, "review": "The chair deal completed at the agreed 180 with a signed receipt, but the receipt names the shop 'ggari0703' rather than 'ggari-shop', so confirm the seller's identity before paying."}
+12:30:35 [sign] sig_seller ok, sig_buyer added
+12:30:35 [market] ledger #10935: chair at 180, stars 3, verified True, review accepted
+12:30:35 [order o-2b08b810] lamp, budget 125, round 2
+12:30:36 [kit] 39 shops in .market/shops.json, running market_buyer
+12:30:36 [buyer] market buyer: lamp, budget 125, 39 shops, 106 past trades in memory
+12:30:36 [buyer] [memory] skipping shops with a receipt problem in my own trades: ['willow-goods']
+12:30:37 [seller]   [harness 3.9s] '{"action": "counter", "price": 180}'
+12:30:37 [seller] [2b69c8a9] counter 180
+12:30:37 [seller] 
+12:30:37 [seller] [ba3c64e6] buyer: 'I want to buy a chair'
+12:30:39 [buyer]   [harness 3.1s] '{"shop": "usagi", "reason": "Nine reviews averaging 4.0 stars all report signed receipts matching the deal, with lamp purchases at 100–105 well within a 125 budget and no dishonesty flags."}'
+12:30:39 [buyer] [choose] usagi https://lucia-requesting-carrying-minds.trycloudflare.com: Nine reviews averaging 4.0 stars all report signed receipts matching the deal, with lamp purchases at 100–105 well within a 125 budget and no dishonesty flags.
+12:30:39 [buyer] card: 'Harness Shop', JSONRPC at https://lucia-requesting-carrying-minds.trycloudflare.com/a2a/0
+12:30:39 [buyer]   -> 'I want to buy a lamp'
+12:30:40 [seller]   [harness 2.9s] '{"ask": 260}'
+12:30:40 [seller] [ba3c64e6] ask 260
+12:30:40 [seller] 
+12:30:40 [seller] [b8749b9f] buyer: '120'
+12:30:42 [buyer]   <- TASK_STATE_INPUT_REQUIRED | lamp: asking 180. Send your offer as a number.
+12:30:43 [seller]   [harness 3.8s] '{"action": "counter", "price": 190}'
+12:30:43 [seller] [b8749b9f] counter 190
+12:30:43 [seller] 
+12:30:43 [seller] [ba3c64e6] buyer: '180'
+12:30:45 [buyer]   [harness 2.9s] '{"action": "offer", "price": 110}'
+12:30:45 [buyer]   -> '110' (taskId bad24363)
+12:30:47 [seller]   [harness 3.4s] '{"action": "accept", "price": 180}'
+12:30:47 [seller] [ba3c64e6] accept 180
+12:30:47 [seller] 
+12:30:47 [seller] [b8749b9f] buyer: '136'
+12:30:48 [buyer]   <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 150.
+12:30:50 [seller]   [harness 2.9s] '{"action": "counter", "price": 175}'
+12:30:50 [seller] [guard] counter 175 is below the reserve 180; asking 180
+12:30:50 [seller] [b8749b9f] counter 180
+12:30:50 [seller] 
+12:30:50 [seller] [b8749b9f] buyer: '152'
+12:30:51 [buyer]   [harness 3.3s] '{"action": "offer", "price": 120}'
+12:30:51 [buyer]   -> '120' (taskId bad24363)
+12:30:53 [seller]   [harness 2.8s] '{"action": "counter", "price": 166}'
+12:30:53 [seller] [guard] counter 166 is below the reserve 180; asking 180
+12:30:53 [seller] [b8749b9f] counter 180
+12:30:53 [seller] [b8749b9f] canceled by the buyer
+12:30:54 [buyer]   <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 135.
+12:30:57 [buyer]   [harness 2.7s] '{"action": "offer", "price": 125}'
+12:30:57 [buyer]   -> '125' (taskId bad24363)
+12:31:00 [buyer]   <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 130.
+12:31:04 [buyer]   [harness 3.7s] '{"action": "offer", "price": 120}'
+12:31:04 [buyer]   -> '120' (taskId bad24363)
+12:31:07 [buyer]   <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 125.
+12:31:13 [buyer]   [harness 5.3s] '{"action": "offer", "price": 122}'
+12:31:13 [buyer]   -> '122' (taskId bad24363)
+12:31:14 [seller] 
+12:31:14 [seller] [50be8f42] buyer: 'I want to buy a bookshelf'
+12:31:16 [buyer]   <- TASK_STATE_COMPLETED | Deal: lamp at 122.
+12:31:17 [seller]   [harness 3.0s] '{"ask": 380}'
+12:31:17 [seller] [50be8f42] ask 380
+12:31:17 [seller] 
+12:31:17 [seller] [50be8f42] buyer: '260'
+12:31:20 [seller]   [harness 2.9s] '{"action": "counter", "price": 330}'
+12:31:20 [seller] [50be8f42] counter 330
+12:31:20 [seller] 
+12:31:20 [seller] [0ed31020] buyer: 'I want to buy a bookshelf'
+12:31:22 [buyer]   [harness 5.1s] '{"stars": 4, "review": "The lamp sold for 122, under the 125 budget, and the receipt matches the agreed price, but the receipt names \'Harness Shop\' rather than \'usagi\', so buyers should confirm the seller\'s identity before paying."}'
+12:31:22 [buyer] result: TASK_STATE_COMPLETED, 46s
+12:31:22 [buyer] {"shop": "https://lucia-requesting-carrying-minds.trycloudflare.com", "receipt": {"shop": "Harness Shop", "task": "bad24363-e06a-4b82-9a27-be746c89aef1", "price": 122.0, "sig_seller": "iKSJW1v2E/znplZP4gj7tQtLzsgko8pl3mCw8unWRDTOoTkQix0TIgaL/hHSHWLxUoQe4+okPROvABuyOCVYDQ==", "item": "lamp"}, "stars": 4, "review": "The lamp sold for 122, under the 125 budget, and the receipt matches the agreed price, but the receipt names 'Harness Shop' rather than 'usagi', so buyers should confirm the seller's identity before paying."}
+12:31:22 [sign] sig_seller ok, sig_buyer added
+12:31:22 [market] ledger #11009: lamp at 122, stars 4, verified True, review accepted
+12:31:22 [order o-e867af58] lamp, budget 90, round 2
+12:31:23 [kit] 39 shops in .market/shops.json, running market_buyer
+12:31:23 [seller]   [harness 2.9s] '{"ask": 340}'
+12:31:23 [seller] [0ed31020] ask 340
+12:31:23 [seller] 
+12:31:23 [seller] [90a4fab7] buyer: 'I want to buy a bookshelf'
+12:31:23 [buyer] market buyer: lamp, budget 90, 39 shops, 107 past trades in memory
+12:31:23 [buyer] [memory] skipping shops with a receipt problem in my own trades: ['willow-goods']
+12:31:26 [seller]   [harness 3.0s] '{"ask": 380}'
+12:31:26 [seller] [90a4fab7] ask 380
+12:31:26 [seller] 
+12:31:26 [seller] [0ed31020] buyer: '260'

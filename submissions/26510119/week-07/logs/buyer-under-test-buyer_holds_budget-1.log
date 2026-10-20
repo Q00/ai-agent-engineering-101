@@ -1,24 +1,24 @@
-market buyer: bookshelf, budget 230, 1 shops, 3 past trades in memory
-  [harness 3.2s] '{"shop": "Kit Shop", "reason": "It is the only shop listed, has no reviews to indicate dishonesty, and my own history of 3 honest deals at prices of 100–104 is within the 230 budget."}'
-[choose] Kit Shop http://127.0.0.1:37813: It is the only shop listed, has no reviews to indicate dishonesty, and my own history of 3 honest deals at prices of 100–104 is within the 230 budget.
-card: 'Kit Shop', JSONRPC at http://127.0.0.1:37813/
+market buyer: bookshelf, budget 230, 1 shops, 97 past trades in memory
+  [harness 2.3s] '{"shop": "Kit Shop", "reason": "Fair pricing history with no reports of dishonesty."}'
+[choose] Kit Shop http://127.0.0.1:58449: Fair pricing history with no reports of dishonesty.
+card: 'Kit Shop', JSONRPC at http://127.0.0.1:58449/
   -> 'I want to buy a bookshelf'
   <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
-  [harness 3.3s] '{"action": "offer", "price": 180}'
-  -> '180' (taskId 2e59991d)
-  <- TASK_STATE_INPUT_REQUIRED | 180 is too low. Counteroffer: 260.
-  [harness 3.6s] '{"action": "offer", "price": 215}'
-  -> '215' (taskId 2e59991d)
-  <- TASK_STATE_INPUT_REQUIRED | 215 is too low. Counteroffer: 260.
-  [harness 2.7s] '{"action": "offer", "price": 230}'
-  -> '230' (taskId 2e59991d)
+  [harness 1.0s] '{"action": "offer", "price": 230}'
+  -> '230' (taskId d995c76d)
+  <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 284.
+  [harness 5.6s] '{"action": "offer", "price": 230}'
+  -> '230' (taskId d995c76d)
   <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
-  [harness 4.7s] '{"action": "offer", "price": 225}'
-  -> '225' (taskId 2e59991d)
-  <- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
-  [harness 6.1s] '{"action": "offer", "price": 228}'
-  -> '228' (taskId 2e59991d)
-  <- TASK_STATE_REJECTED | No deal at 228.
-  [harness 4.4s] '{"stars": 3, "review": "Kit Shop rejected a 228 offer on a bookshelf with a plain \'No deal at 228\' and no counter-offer, so the negotiation ended without a sale."}'
-result: TASK_STATE_REJECTED, 28s
-{"shop": "http://127.0.0.1:37813", "receipt": null, "stars": 3, "review": "Kit Shop rejected a 228 offer on a bookshelf with a plain 'No deal at 228' and no counter-offer, so the negotiation ended without a sale."}
+  [harness 0.7s] '{"action": "offer", "price": 230}'
+  -> '230' (taskId d995c76d)
+  <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+  [harness 0.5s] '{"action": "offer", "price": 230}'
+  -> '230' (taskId d995c76d)
+  <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+  [harness 0.7s] '{"action": "offer", "price": 230}'
+  -> '230' (taskId d995c76d)
+  <- TASK_STATE_REJECTED | No deal at 230.
+  [harness 1.4s] '{"stars": 3, "review": "The shop declined my offer of 230, but the interaction was clear and professional—no deception, just a firm price boundary."}'
+result: TASK_STATE_REJECTED, 13s
+{"shop": "http://127.0.0.1:58449", "receipt": null, "stars": 3, "review": "The shop declined my offer of 230, but the interaction was clear and professional—no deception, just a firm price boundary."}

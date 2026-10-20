@@ -1,12 +1,12 @@
-market buyer: lamp, budget 120, 2 shops, 7 past trades in memory
-  [harness 2.9s] '{"shop": "Kit Shop South", "reason": "Its reviews average 4.7 stars with honest receipts, and your own past trade there was fair at 100, within your 120 budget."}'
-[choose] Kit Shop South http://127.0.0.1:40979: Its reviews average 4.7 stars with honest receipts, and your own past trade there was fair at 100, within your 120 budget.
-card: 'Kit Shop South', JSONRPC at http://127.0.0.1:40979/
+market buyer: lamp, budget 120, 2 shops, 101 past trades in memory
+  [harness 2.8s] '{"shop": "Kit Shop South", "reason": "It has consistently honest reviews and my past trades show fair pricing with receipts matching agreed prices."}'
+[choose] Kit Shop South http://127.0.0.1:47379: It has consistently honest reviews and my past trades show fair pricing with receipts matching agreed prices.
+card: 'Kit Shop South', JSONRPC at http://127.0.0.1:47379/
   -> 'I want to buy a lamp'
   <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-  [harness 2.8s] '{"action": "offer", "price": 100}'
-  -> '100' (taskId d4e4a8e9)
-  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-  [harness 2.9s] '{"stars": 4, "review": "Kit Shop South completed the lamp purchase at 100, under the 120 budget, and the receipt matched the agreed price."}'
-result: TASK_STATE_COMPLETED, 9s
-{"shop": "http://127.0.0.1:40979", "receipt": {"price": 100.0, "shop": "Kit Shop South", "sig_seller": "Jl07U7jW2Fpc/e1LZpHP2yOmx8G1+1ms9Avb2yhAr1ltTGAdHe7Ld676dImK20kgN34LZEruzx3ECCv03MMQAA==", "task": "d4e4a8e9-6d3e-4318-b403-02248e19e74a", "item": "lamp"}, "stars": 4, "review": "Kit Shop South completed the lamp purchase at 100, under the 120 budget, and the receipt matched the agreed price."}
+  [harness 0.9s] '{"action": "offer", "price": 120}'
+  -> '120' (taskId 2eaa8144)
+  <- TASK_STATE_COMPLETED | Deal: lamp at 120.
+  [harness 1.0s] '{"stars": 5, "review": "Great deal — got the lamp exactly at my budget with clear communication and a smooth transaction."}'
+result: TASK_STATE_COMPLETED, 5s
+{"shop": "http://127.0.0.1:47379", "receipt": {"item": "lamp", "sig_seller": "CmDK8esMc4R52RxIA9aTVQ+NN4S+KShnXOVaAOgidsR0VVGYaqzMcznRvuDkbc7PEI2M2I5av9CiR8PqMVXYDQ==", "task": "2eaa8144-5344-4140-9b4f-80c6f79cc465", "price": 120.0, "shop": "Kit Shop South"}, "stars": 5, "review": "Great deal — got the lamp exactly at my budget with clear communication and a smooth transaction."}
