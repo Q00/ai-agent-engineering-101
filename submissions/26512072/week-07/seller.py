@@ -40,6 +40,23 @@ FLOOR = {"lamp": 115, "chair": 210, "bookshelf": 300}
 MAX_OFFERS = 6        # real limit: the negotiation ends after this many buyer offers
 
 
+CERTS_PER_DAY = 10    # real scarcity: numbered, signed boutique certificates, at most 10 a day
+
+
+def certs_issued_today():
+    if not HISTORY.exists():
+        return 0
+    day, n = time.strftime("%Y-%m-%d"), 0
+    for line in HISTORY.read_text(encoding="utf-8").splitlines():
+        try:
+            h = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if h.get("certificate") and str(h.get("time", "")).startswith(day):
+            n += 1
+    return n
+
+
 BENEFIT_PER_HOUR = 3  # real launch benefit: the first 3 buyers of each item each hour get the launch price
 
 
@@ -151,12 +168,12 @@ Decide your next move. Answer with JSON only, one of:
 {{"action": "reject"}}                              end the negotiation without a deal"""
 
 
-def record(deal, outcome, price=None):
+def record(deal, outcome, price=None, certificate=None):
     with HISTORY.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"time": time.strftime("%Y-%m-%d %H:%M:%S"), "item": deal["item"], "outcome": outcome,
                             "price": price, "opening": deal["opening"], "asks": deal["asks"],
                             "offers": deal["offers"], "policy": "boutique",
-                            "benefit": deal.get("benefit")}) + "\n")
+                            "benefit": deal.get("benefit"), "certificate": certificate}) + "\n")
 
 
 class Seller(AgentExecutor):
@@ -218,9 +235,21 @@ class Seller(AgentExecutor):
             receipt = sign_receipt({"shop": SHOP_NAME, "item": deal["item"], "price": price, "task": task.id}, self.key)
             print(f"[receipt] {json.dumps(receipt)}", flush=True)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+            cert_no, cert_note = certs_issued_today() + 1, ""
+            if cert_no <= CERTS_PER_DAY:   # a separate artifact without "price", so receipt readers ignore it
+                cert = {"certificate": f"{SHOP_NAME} Boutique Certificate No. {cert_no} of {CERTS_PER_DAY}, "
+                                       f"{time.strftime('%Y-%m-%d')}", "item": deal["item"], "task": task.id}
+                cert["sig_seller"] = base64.b64encode(self.key.sign(json.dumps(
+                    cert, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode())).decode()
+                await up.add_artifact(parts=[new_data_part(cert)], name="certificate")
+                cert_note = (f" Your piece carries Boutique Certificate No. {cert_no} of {CERTS_PER_DAY} today, "
+                             f"signed by the shop.")
+                print(f"[certificate] {json.dumps(cert)}", flush=True)
+            else:
+                cert_no = None
             await up.complete(say(f"Deal: {deal['item']} at {price}. Thank you for choosing our boutique; "
-                                  f"your receipt is signed and shows exactly the agreed price."))
-            record(deal, "deal", price)
+                                  f"your receipt is signed and shows exactly the agreed price.{cert_note}"))
+            record(deal, "deal", price, cert_no)
             del self.open[task.id]
             return
         if action != "accept" and len(deal["offers"]) >= MAX_OFFERS:   # the announced limit is kept
@@ -252,7 +281,8 @@ class Seller(AgentExecutor):
             perk = (f"Launch price for you: only {slots_left} of {BENEFIT_PER_HOUR} launch-price slots left this hour. "
                     if deal["benefit"] else "This hour's launch-price slots are taken; boutique price applies. ")
             reply = (f"{deal['item']}: a boutique piece worth its price - signed receipt that always matches the agreed "
-                     f"price, no surprises. {perk}This negotiation closes after {MAX_OFFERS} offers. "
+                     f"price, no surprises. {perk}Only {max(0, CERTS_PER_DAY - certs_issued_today())} numbered Boutique "
+                     f"Certificates left today. This negotiation closes after {MAX_OFFERS} offers. "
                      f"Asking {deal['ask']}. Send your offer as a number.")
         else:
             reply = (f"{'Your next offer is the last one, ' if rounds_left <= 1 else f'{rounds_left} offers left, '}"
@@ -277,6 +307,7 @@ def build(port):
                     f"A coding harness ({CMD.split()[0]}) negotiates. "
                     "Every receipt is signed (Ed25519) and always shows the agreed price. "
                     f"A negotiation closes after {MAX_OFFERS} offers. "
+                    f"The first {CERTS_PER_DAY} buyers each day get a numbered Boutique Certificate signed by the shop. "
                     f"Launch benefit: the first {BENEFIT_PER_HOUR} buyers of each item every hour get our launch price.",
         version="1.0.0",
         default_input_modes=["text/plain"],
