@@ -179,10 +179,6 @@ class Seller(AgentExecutor):
             if item is None:
                 await up.reject(say("We only sell: lamp, chair, bookshelf."))
                 return
-            if stock_left(item) == 0:
-                print(f"[stock] {item} sold out this hour: turned a buyer away", flush=True)
-                await up.reject(say(f"Sold out: every {item} for this hour is gone. Please come back next hour."))
-                return
             opening, note = pricing(item, RESERVE[item])
             slot = sold_this_hour(item) + 1
             benefit = slot <= BENEFIT_PER_HOUR
@@ -250,17 +246,17 @@ class Seller(AgentExecutor):
             price = round(deal["opening"] * 1.1)
         deal["ask"] = int(price)
         deal["asks"].append(deal["ask"])
-        left = stock_left(deal["item"])
         rounds_left = MAX_OFFERS - len(deal["offers"])
         if len(deal["lines"]) == 1:   # truthful scarcity: the stock and the round limit are both enforced above
-            perk = (f"Launch benefit: you are buyer {deal['benefit']} of the first {BENEFIT_PER_HOUR} this hour, so you get "
-                    f"our launch price. " if deal["benefit"] else "")
+            slots_left = max(0, BENEFIT_PER_HOUR - sold_this_hour(deal["item"]))   # real launch-price slots
+            perk = (f"Launch price for you: only {slots_left} of {BENEFIT_PER_HOUR} launch-price slots left this hour. "
+                    if deal["benefit"] else "This hour's launch-price slots are taken; boutique price applies. ")
             reply = (f"{deal['item']}: a boutique piece worth its price - signed receipt that always matches the agreed "
-                     f"price, no surprises. {perk}Only {left} left this hour; this negotiation closes after {MAX_OFFERS} offers. "
+                     f"price, no surprises. {perk}This negotiation closes after {MAX_OFFERS} offers. "
                      f"Asking {deal['ask']}. Send your offer as a number.")
         else:
             reply = (f"{'Your next offer is the last one, ' if rounds_left <= 1 else f'{rounds_left} offers left, '}"
-                     f"{left} in stock this hour. Counteroffer: {deal['ask']}.")
+                     f"Counteroffer: {deal['ask']}.")
         deal["lines"].append(f"you: {reply}")
         await up.requires_input(say(reply))
 
@@ -280,7 +276,7 @@ def build(port):
                     "No surprises: the receipt never differs from the price you agreed. "
                     f"A coding harness ({CMD.split()[0]}) negotiates. "
                     "Every receipt is signed (Ed25519) and always shows the agreed price. "
-                    f"Limited stock: {STOCK_PER_HOUR} of each item per hour; a negotiation closes after {MAX_OFFERS} offers. "
+                    f"A negotiation closes after {MAX_OFFERS} offers. "
                     f"Launch benefit: the first {BENEFIT_PER_HOUR} buyers of each item every hour get our launch price.",
         version="1.0.0",
         default_input_modes=["text/plain"],
