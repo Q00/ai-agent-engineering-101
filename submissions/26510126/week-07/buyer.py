@@ -124,8 +124,9 @@ def as_int(value):
         return None
 
 
-async def shop(base, item, budget, memory=""):
-    """Negotiate one item. `memory` is what market_buyer.py remembers about this shop (empty in week 6)."""
+async def shop(base, item, budget, memory="", max_raise=None):
+    """Negotiate one item. `memory` is what market_buyer.py remembers about this shop (empty in week 6).
+    `max_raise` (market_buyer.py only): raise at most this share of the gap between our last offer and the ask."""
     async with httpx.AsyncClient(timeout=200) as client:
         seller = Shop(client, base)
         card = await seller.read_card()
@@ -173,6 +174,11 @@ async def shop(base, item, budget, memory=""):
                 if not OPTS.no_guard and ask is not None and offer > ask:
                     log("GUARD", f"offer {offer} above the ask {ask}, offering {ask}")
                     offer = ask
+                if max_raise and last_offer is not None and ask is not None and ask > last_offer:
+                    cap = last_offer + max(1, int(max_raise * (ask - last_offer)))
+                    if offer > cap:
+                        log("GUARD", f"offer {offer} jumps more than {max_raise:.0%} of the gap {last_offer}-{ask}, offering {cap}")
+                        offer = cap
 
             history.append(f"You offered {offer}.")
             last_offer = offer

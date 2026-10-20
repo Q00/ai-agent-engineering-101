@@ -56,6 +56,7 @@ MAX_REVIEWS = 3      # recent reviews per shop shown to the harness
 REVIEW_CHARS = 120   # each review is cut to this length
 GOING_WINDOW = 3 * 3600  # going prices from the last three hours
 PAY_CAP = 1.1        # never pay more than this x the market's upper quartile for the item
+MAX_RAISE = 0.4      # raise at most 40% of the gap to the shop's ask per offer (we overshot: 105 -> 115 at an ask of 118)
 
 PICK_PROMPT = """You are a buyer choosing a shop to buy a {item} from. Your budget is {budget}.
 
@@ -276,6 +277,10 @@ async def main(args):
     log("MEMORY", f"{chosen['name']}: {known}")
 
     note = f"What you remember about this shop: {known}.\n" if known != "you never traded here" else ""
+    sold = sorted(records.get(chosen["name"], {}).get("prices", {}).get(args.item, []))
+    if len(sold) >= 3:
+        note += (f"This shop has sold a {args.item} to other buyers for as little as {sold[0]:g} "
+                 f"(median {sold[len(sold) // 2]:g}); start low and try to beat what you paid before.\n")
     limit = args.budget
     if g:
         note += f"In this market a {args.item} goes for about {g['median']:g} (middle half {g['p25']:g}-{g['p75']:g}).\n"
@@ -284,7 +289,7 @@ async def main(args):
             log("GUARD", f"paying at most {cap} ({PAY_CAP} x market upper quartile {g['p75']:g}), below the budget {args.budget}")
             limit = cap
     try:
-        result = await buyer.shop(chosen["url"], args.item, limit, memory=note)
+        result = await buyer.shop(chosen["url"], args.item, limit, memory=note, max_raise=MAX_RAISE)
     except Exception as e:  # the shop is down or answers garbage
         log("ERROR", f"trade with {chosen['name']} failed: {e!r}")
         result = {"state": "error", "asks": [], "offers": []}
