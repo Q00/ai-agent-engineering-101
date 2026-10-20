@@ -12,9 +12,16 @@
  *   - no usable answer: open at 1.3 x reserve, or hold the last ask
  * Every guard that fires is logged with "GUARD:" (see `wrangler tail`).
  *
+ * Strategy (week 7): meta_shop.py, the meta-harness, sets per item an opening ask, a target
+ * and the market's going price. With a strategy the shop opens at its ask (the model only writes
+ * the note) and the counter prompt names the going price and the target. Without one the model
+ * names the opening price as in week 6. The reserve guards above apply either way.
+ *
  * Routes
  *   GET  /.well-known/agent-card.json   Agent Card, url = this deployment's origin
  *   POST /                              JSON-RPC: SendMessage, GetTask, CancelTask
+ *   GET  /admin/strategy                the current strategy   (Authorization: Bearer ADMIN_TOKEN)
+ *   PUT  /admin/strategy                replace the strategy   (Authorization: Bearer ADMIN_TOKEN)
  *
  * State: one Durable Object per task id (TaskObject). Workers are stateless, so the
  * Python server's in-memory task store becomes a Durable Object here.
@@ -26,6 +33,17 @@ const MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
 const RESERVE: Record<string, number> = { lamp: 100, chair: 180, bookshelf: 260 };
 const NAME = "Llama Furniture Shop on Workers";
 
+/** Set by meta_shop.py; kept out of the card and the replies so buyers never see the target. */
+type Strategy = {
+  version: number;
+  open: Record<string, number>;
+  target: Record<string, number>;
+  market: Record<string, number>;
+  reason: string;
+  updated: string;
+};
+const STRATEGY_ID = "__strategy__";
+
 // ---------------------------------------------------------------- prompts (as in seller.py)
 
 const openPrompt = (item: string, reserve: number) => `You are the seller in a furniture shop. A buyer has just asked for a ${item}.
@@ -35,10 +53,14 @@ Name your opening asking price. Leave room to come down, since the buyer will ba
 Answer with one JSON object and nothing else:
 {"price": <integer>, "note": "<one short sentence to the buyer, no digits>"}`;
 
-const counterPrompt = (item: string, reserve: number, history: string, offer: number, ask: number) =>
+const counterPrompt = (item: string, reserve: number, history: string, offer: number, ask: number, strategy: Strategy | null) =>
   `You are the seller in a furniture shop, negotiating the price of a ${item} with a buyer.
 Your reserve, the lowest price you may ever ask or sell for, is ${reserve}. The buyer does not know it.
-
+${
+  strategy?.market[item] && strategy?.target[item]
+    ? `Buyers compare shops: a ${item} goes for about ${strategy.market[item]} in this market. Aim to settle around ${strategy.target[item]}, and come down faster when the buyer is close to it.\n`
+    : ""
+}
 So far:
 ${history}
 The buyer now offers ${offer}. Your current asking price is ${ask}.
@@ -125,11 +147,25 @@ function rpcError(code: number, reason: string, message: string): RpcError {
 
 const textOf = (m: Message) => m.parts.map((p) => p.text ?? "").join(" ");
 
-type Env = { TASKS: DurableObjectNamespace<TaskObject>; AI: Ai };
+type Env = { TASKS: DurableObjectNamespace<TaskObject>; AI: Ai; ADMIN_TOKEN?: string };
 
 // ---------------------------------------------------------------- one task, one Durable Object
 
 export class TaskObject extends DurableObject<Env> {
+  /** The strategy lives in one more object of this class, under STRATEGY_ID. */
+  async getStrategy(): Promise<Strategy | null> {
+    return (await this.ctx.storage.get<Strategy>("strategy")) ?? null;
+  }
+
+  async setStrategy(strategy: Strategy): Promise<Strategy> {
+    await this.ctx.storage.put("strategy", strategy);
+    return strategy;
+  }
+
+  private strategy(): Promise<Strategy | null> {
+    return this.env.TASKS.get(this.env.TASKS.idFromName(STRATEGY_ID)).getStrategy();
+  }
+
   /** First message of a new task: find the item, then the model names the opening price. */
   async open(id: string, contextId: string, msg: Message): Promise<Outcome> {
     const task: Task = { id, contextId, status: { state: "TASK_STATE_INPUT_REQUIRED", timestamp: "" }, history: [] };
@@ -140,8 +176,13 @@ export class TaskObject extends DurableObject<Env> {
       this.respond(task, "TASK_STATE_REJECTED", "We only sell: " + Object.keys(RESERVE).join(", ") + ".");
     } else {
       const reserve = RESERVE[item];
+      const strategy = await this.strategy();
       const answer = await ask(this.env.AI, openPrompt(item, reserve));
       let price = asInt(answer.price);
+      if (strategy?.open[item]) {
+        console.log(`STRATEGY: v${strategy.version} opens ${item} at ${strategy.open[item]} (model said ${price})`);
+        price = strategy.open[item];
+      }
       if (price === null) {
         price = Math.ceil(reserve * 1.3);
         console.log(`GUARD: no usable opening price from the model, asking ${price}`);
@@ -191,7 +232,7 @@ export class TaskObject extends DurableObject<Env> {
       return this.close(task, item, offer, "Agreed.");
     }
 
-    const answer = await ask(this.env.AI, counterPrompt(item, reserve, deal.history.slice(0, -1).join("\n"), offer, current));
+    const answer = await ask(this.env.AI, counterPrompt(item, reserve, deal.history.slice(0, -1).join("\n"), offer, current, await this.strategy()));
     let action = answer.action;
     let price = asInt(answer.price);
     const note = cleanNote(answer.note);
@@ -349,6 +390,29 @@ app.get("/.well-known/agent-card.json", (c) => {
       },
     ],
   });
+});
+
+const strategyStub = (env: Env) => env.TASKS.get(env.TASKS.idFromName(STRATEGY_ID));
+const authorized = (env: Env, header: string | undefined) => !!env.ADMIN_TOKEN && header === `Bearer ${env.ADMIN_TOKEN}`;
+
+app.get("/admin/strategy", async (c) => {
+  if (!authorized(c.env, c.req.header("Authorization"))) return c.json({ error: "unauthorized" }, 401);
+  return c.json(await strategyStub(c.env).getStrategy());
+});
+
+app.put("/admin/strategy", async (c) => {
+  if (!authorized(c.env, c.req.header("Authorization"))) return c.json({ error: "unauthorized" }, 401);
+  const s = (await c.req.json()) as Strategy;
+  // the reserve is the floor whatever the meta-harness sends
+  for (const item of Object.keys(RESERVE)) {
+    for (const key of ["open", "target"] as const) {
+      const v = asInt(s[key]?.[item]);
+      if (v === null || v < RESERVE[item]) return c.json({ error: `${key}.${item} missing or below reserve ${RESERVE[item]}` }, 400);
+      s[key][item] = v;
+    }
+  }
+  console.log(`STRATEGY: set v${s.version} open ${JSON.stringify(s.open)} target ${JSON.stringify(s.target)}`);
+  return c.json(await strategyStub(c.env).setStrategy({ ...s, updated: new Date().toISOString() }));
 });
 
 app.post("/", async (c) => {
