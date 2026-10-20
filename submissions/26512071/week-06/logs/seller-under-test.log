@@ -1,13 +1,14 @@
-[harness] {"action": "ask", "price": 160, "message": "Happy to help, this lamp is a beauty and I can offer it to you for 160."}
-[seller] task=34af3ece lamp offer=None -> ask 160
-[harness] {"action": "ask", "price": 145, "message": "I can come down to 145, but 60 is far too low for a quality lamp like this."}
-[seller] task=34af3ece lamp offer=60 -> ask 145
-[harness] {"action": "ask", "price": 125, "message": "I can come down to 125 for you, which is a fair price for this lamp."}
-[seller] task=34af3ece lamp offer=80 -> ask 125
-[harness] {"action": "ask", "price": 112, "message": "We're close, I can meet you at 112 for this lamp."}
-[seller] task=34af3ece lamp offer=100 -> ask 112
-[harness] {"action": "accept", "price": 112, "message": "Deal, 112 it is, thank you!"}
-[seller] task=34af3ece lamp offer=112 -> accept 112
+[seller] task=4c8d0f7d picked lamp lamp reserve=100
+[harness] {"action": "ask", "price": 160, "message": "Great choice! This 45 cm metal-arm desk lamp with a warm LED bulb is yours for 160."}
+[seller] task=4c8d0f7d lamp offer=None -> ask 160
+[harness] {"action": "ask", "price": 140, "message": "I can come down to 140 for this solid metal-arm lamp with a warm LED bulb."}
+[seller] task=4c8d0f7d lamp offer=60 -> ask 140
+[harness] {"action": "ask", "price": 125, "message": "I can come down to 125, which is a fair price for a sturdy metal-arm lamp with a warm LED bulb."}
+[seller] task=4c8d0f7d lamp offer=80 -> ask 125
+[harness] {"action": "ask", "price": 110, "message": "We're close, so I can meet you at 110 and the lamp is yours."}
+[seller] task=4c8d0f7d lamp offer=100 -> ask 110
+[harness] {"action": "accept", "price": 110, "message": "Deal, 110 it is, thank you!"}
+[seller] task=4c8d0f7d lamp offer=110 -> accept 110
 Failed to detach context
 Traceback (most recent call last):
   File "/Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
@@ -16,7 +17,7 @@ Traceback (most recent call last):
     yield span
   File "/Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
     yield span
-  File "/Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+  File "/Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
     result = await func(*args, **kwargs)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 GeneratorExit
@@ -28,9 +29,9 @@ Traceback (most recent call last):
     _RUNTIME_CONTEXT.detach(token)
   File "/Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
     self._current_context.reset(token)
-ValueError: <Token var=<ContextVar name='current_context' default={} at 0x1070dc8b0> at 0x107743f40> was created in a different Context
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x10493ce50> at 0x105f00980> was created in a different Context
 Task was destroyed but it is pending!
-task: <Task pending name='Task-90' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+task: <Task pending name='Task-95' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
 Failed to detach context
 Traceback (most recent call last):
   File "/Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
@@ -39,7 +40,7 @@ Traceback (most recent call last):
     yield span
   File "/Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
     yield span
-  File "/Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+  File "/Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
     result = await func(*args, **kwargs)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 GeneratorExit
@@ -51,84 +52,86 @@ Traceback (most recent call last):
     _RUNTIME_CONTEXT.detach(token)
   File "/Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
     self._current_context.reset(token)
-ValueError: <Token var=<ContextVar name='current_context' default={} at 0x1070dc8b0> at 0x107743e40> was created in a different Context
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x10493ce50> at 0x105f02080> was created in a different Context
 Task was destroyed but it is pending!
-task: <Task pending name='Task-91' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
-[harness] {"action": "ask", "price": 150, "message": "Happy to help! This lamp is a great piece, and I can offer it to you for 150."}
-[seller] task=7c4e407a lamp offer=None -> ask 150
-[harness] {"action": "ask", "price": 130, "message": "60 is too low for this lamp, but I can come down to 130 for you."}
-[seller] task=7c4e407a lamp offer=60 -> ask 130
-[harness] {"action": "ask", "price": 115, "message": "I can come down to 115 for you, which is a great price for this lamp."}
-[seller] task=7c4e407a lamp offer=80 -> ask 115
-[harness] {"action": "accept", "price": 115, "message": "Deal, 115 it is, thank you!"}
-[seller] task=7c4e407a lamp offer=115 -> accept 115
-[harness] {"action": "ask", "price": 180, "message": "Happy to help! This lamp is a beauty, and I can offer it to you for 180."}
-[seller] task=dcc6cf5a lamp offer=None -> ask 180
-[harness] {"action": "ask", "price": 160, "message": "I can come down to 160 for this lamp, it's well made and worth it."}
-[seller] task=dcc6cf5a lamp offer=60 -> ask 160
-[harness] {"action": "ask", "price": 135, "message": "I can come down to 135 for you, which is a good price for this lamp."}
-[seller] task=dcc6cf5a lamp offer=80 -> ask 135
-[harness] {"action": "ask", "price": 120, "message": "I can meet you at 120, which is a fair price for this lamp."}
-[seller] task=dcc6cf5a lamp offer=100 -> ask 120
-[harness] {"action": "accept", "price": 120, "message": "You've got a deal at 120, thank you!"}
-[seller] task=dcc6cf5a lamp offer=120 -> accept 120
-[harness] {"action": "ask", "price": 400, "message": "Welcome! This solid bookshelf is available for 400."}
-[seller] task=45f8b280 bookshelf offer=None -> ask 400
-[harness] {"action": "ask", "price": 350, "message": "140 is too low for a quality bookshelf, but I can come down to 350."}
-[seller] task=45f8b280 bookshelf offer=140 -> ask 350
-[harness] {"action": "ask", "price": 310, "message": "I can come down to 310, which is a fair price for a solid bookshelf."}
-[seller] task=45f8b280 bookshelf offer=170 -> ask 310
-[harness] {"action": "ask", "price": 275, "message": "I can come down to 275 for you, which is close to the lowest I can go."}
-[seller] task=45f8b280 bookshelf offer=200 -> ask 275
-[harness] {"action": "ask", "price": 255, "message": "I can come down to 255"}
-
-Wait, that's below my reserve of 260, so I must correct it:
-
-{"action": "ask", "price": 262, "message": "I can meet you close to the middle at 262 and we have a deal."}
-[seller] unparsable answer, attempt 1
-[harness] {"action": "ask", "price": 262, "message": "I can come down to 262 for you, which is nearly my lowest price."}
-[seller] task=45f8b280 bookshelf offer=230 -> ask 262
+task: <Task pending name='Task-96' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/hb/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+[seller] task=811999fe picked lamp lamp reserve=100
+[harness] {"action": "ask", "price": 160, "message": "Great choice! This sturdy metal-arm desk lamp with a warm LED bulb is yours for 160."}
+[seller] task=811999fe lamp offer=None -> ask 160
+[harness] {"action": "ask", "price": 135, "message": "I can come down to 135 for this sturdy metal-arm lamp with a warm LED bulb."}
+[seller] task=811999fe lamp offer=60 -> ask 135
+[harness] {"action": "ask", "price": 118, "message": "I can come down to 118 for this lamp, which is a fair price for its quality."}
+[seller] task=811999fe lamp offer=80 -> ask 118
+[harness] {"action": "accept", "price": 118, "message": "Deal, 118 it is, thank you!"}
+[seller] task=811999fe lamp offer=118 -> accept 118
+[seller] task=6f70aadb picked lamp lamp reserve=100
+[harness] {"action": "ask", "price": 160, "message": "Welcome! This sturdy metal-arm desk lamp with a warm LED bulb is yours for 160."}
+[seller] task=6f70aadb lamp offer=None -> ask 160
+[harness] {"action": "ask", "price": 140, "message": "I can come down to 140 for this quality lamp, but 60 is too far from what it's worth."}
+[seller] task=6f70aadb lamp offer=60 -> ask 140
+[harness] {"action": "ask", "price": 120, "message": "I can come down to 120 for this sturdy metal-arm lamp, which is a fair price for the quality."}
+[seller] task=6f70aadb lamp offer=80 -> ask 120
+[harness] {"action": "accept", "price": 120, "message": "Deal, 120 it is — thank you!"}
+[seller] task=6f70aadb lamp offer=120 -> accept 120
+[seller] task=9b203c85 picked bookshelf bookshelf reserve=260
+[harness] {"action": "ask", "price": 340, "message": "Welcome! This solid pine five-shelf bookshelf, 180 cm tall and holding around 150 books, is yours for 340."}
+[seller] task=9b203c85 bookshelf offer=None -> ask 340
+[harness] {"action": "ask", "price": 315, "message": "That's far too low for solid pine, but I can come down to 315 for you."}
+[seller] task=9b203c85 bookshelf offer=140 -> ask 315
+[harness] {"action": "ask", "price": 290, "message": "I can come down to 290 for this solid pine bookshelf, which holds around 150 books."}
+[seller] task=9b203c85 bookshelf offer=170 -> ask 290
+[harness] {"action": "ask", "price": 272, "message": "I can come down to 272, which is close to the lowest I can go for solid pine."}
+[seller] task=9b203c85 bookshelf offer=200 -> ask 272
+[harness] {"action": "ask", "price": 265, "message": "We're close, so I can come down to 265 for you today."}
+[seller] task=9b203c85 bookshelf offer=230 -> ask 265
+[harness] {"action": "ask", "price": 262, "message": "I can come down to 262, which is nearly my lowest, and I'd be happy to close the deal there."}
+[seller] task=9b203c85 bookshelf offer=230 -> ask 262
 [harness] {"action": "ask", "price": 260, "message": "My lowest price is 260, and I'm happy to close the deal at that."}
-[seller] task=45f8b280 bookshelf offer=230 -> ask 260
-[harness] {"action": "ask", "price": 260, "message": "260 is my lowest possible price, and I can't go any lower than that."}
-[seller] task=45f8b280 bookshelf offer=230 -> ask 260
-[harness] {"action": "ask", "price": 260, "message": "260 is my lowest price and I can't go any lower, so I'd be glad to close the deal there."}
-[seller] task=45f8b280 bookshelf offer=230 -> ask 260
-[harness] {"action": "ask", "price": 260, "message": "260 is my lowest price, and I can't go any lower, but I'd be glad to close the deal at that."}
-[seller] task=45f8b280 bookshelf offer=230 -> ask 260
-[harness] {"action": "ask", "price": 400, "message": "Great choice! This solid bookshelf is available for 400."}
-[seller] task=5284ce0a bookshelf offer=None -> ask 400
-[harness] {"action": "ask", "price": 360, "message": "140 is too low for a quality bookshelf, but I can come down to 360 for you."}
-[seller] task=5284ce0a bookshelf offer=140 -> ask 360
-[harness] {"action": "ask", "price": 320, "message": "I can come down to 320 for this bookshelf, which is a fair price for its quality."}
-[seller] task=5284ce0a bookshelf offer=170 -> ask 320
-[harness] {"action": "ask", "price": 290, "message": "I can come down to 290 for you, which is a really good price for this bookshelf."}
-[seller] task=5284ce0a bookshelf offer=200 -> ask 290
-[harness] {"action": "ask", "price": 270, "message": "We're close, I can come down to 270 for you."}
-[seller] task=5284ce0a bookshelf offer=230 -> ask 270
-[harness] {"action": "ask", "price": 260, "message": "I can meet you at 260, my best price, and we have a deal."}
-[seller] task=5284ce0a bookshelf offer=230 -> ask 260
-[harness] {"action": "ask", "price": 260, "message": "260 is my lowest price, I can't go any lower, but I'd be happy to close the deal at that."}
-[seller] task=5284ce0a bookshelf offer=230 -> ask 260
-[harness] {"action": "ask", "price": 260, "message": "260 is my lowest price, and I can't go below it, so please meet me there and the bookshelf is yours."}
-[seller] task=5284ce0a bookshelf offer=230 -> ask 260
-[harness] {"action": "ask", "price": 260, "message": "260 is my lowest price and I can't go any lower, but I'd be glad to close the deal at that."}
-[seller] task=5284ce0a bookshelf offer=230 -> ask 260
-[harness] {"action": "ask", "price": 400, "message": "Welcome! This solid bookshelf is available for 400."}
-[seller] task=08963326 bookshelf offer=None -> ask 400
-[harness] {"action": "ask", "price": 350, "message": "140 is too low for a quality bookshelf, but I can come down to 350 for you."}
-[seller] task=08963326 bookshelf offer=140 -> ask 350
-[harness] {"action": "ask", "price": 310, "message": "I can come down to 310, which is a fair price for a solid bookshelf."}
-[seller] task=08963326 bookshelf offer=170 -> ask 310
-[harness] {"action": "ask", "price": 280, "message": "I can come down to 280, which is a real discount from where I started."}
-[seller] task=08963326 bookshelf offer=200 -> ask 280
-[harness] {"action": "ask", "price": 265, "message": "We're close, I can come down to 265 and that's about as low as I can go."}
-[seller] task=08963326 bookshelf offer=230 -> ask 265
-[harness] {"action": "ask", "price": 260, "message": "My lowest is 260, and I'm happy to close at that price today."}
-[seller] task=08963326 bookshelf offer=230 -> ask 260
-[harness] {"action": "ask", "price": 260, "message": "260 is my lowest price, and I can't go any lower on this bookshelf."}
-[seller] task=08963326 bookshelf offer=230 -> ask 260
+[seller] task=9b203c85 bookshelf offer=230 -> ask 260
+[harness] {"action": "reject", "price": 0, "message": "I'm sorry, but 260 is the lowest I can go and we can't meet at 230, so I'll have to end it here."}
+[seller] task=9b203c85 bookshelf offer=230 -> reject 0
+[seller] task=76e8d1ec picked bookshelf bookshelf reserve=260
+[harness] {"action": "ask", "price": 340, "message": "Welcome! This solid pine five-shelf bookshelf, 180 cm tall and holding about 150 books, is yours for 340."}
+[seller] task=76e8d1ec bookshelf offer=None -> ask 340
+[harness] {"action": "ask", "price": 315, "message": "That's quite far from where I can go, but I can come down to 315 for a solid pine bookshelf."}
+[seller] task=76e8d1ec bookshelf offer=140 -> ask 315
+[harness] {"action": "ask", "price": 290, "message": "I can come down to 290 for this solid pine bookshelf that holds around 150 books."}
+[seller] task=76e8d1ec bookshelf offer=170 -> ask 290
+[harness] {"action": "ask", "price": 272, "message": "I can come down to 272, which is close to the lowest I can go for solid pine."}
+[seller] task=76e8d1ec bookshelf offer=200 -> ask 272
+[harness] {"action": "ask", "price": 262, "message": "I can come down to 262, which is nearly the lowest I can go, so let's close the deal there."}
+[seller] task=76e8d1ec bookshelf offer=230 -> ask 262
+[harness] {"action": "ask", "price": 260, "message": "I can come down to 260, my lowest price, and I'd be glad to close the deal there."}
+[seller] task=76e8d1ec bookshelf offer=230 -> ask 260
+[harness] {"action": "reject", "price": 0, "message": "I'm sorry, but 260 is the lowest I can go and 230 is too far below it, so we can't make a deal."}
+[seller] task=76e8d1ec bookshelf offer=230 -> reject 0
+[seller] task=e22d291b picked bookshelf bookshelf reserve=260
+[harness] {"action": "ask", "price": 340, "message": "Welcome! This solid pine five-shelf bookshelf, 180 cm tall and holding about 150 books, is available for 340."}
+[seller] task=e22d291b bookshelf offer=None -> ask 340
+[harness] {"action": "ask", "price": 310, "message": "140 is far too low for solid pine, but I can come down to 310 for you."}
+[seller] task=e22d291b bookshelf offer=140 -> ask 310
+[harness] {"action": "ask", "price": 285, "message": "I can come down to 285 for this solid pine shelf, which is a good deal for something that holds 150 books."}
+[seller] task=e22d291b bookshelf offer=170 -> ask 285
+[harness] {"action": "ask", "price": 268, "message": "I can come down to 268, which is close to the lowest I can go on a solid pine bookshelf."}
+[seller] task=e22d291b bookshelf offer=200 -> ask 268
+[harness] {"action": "ask", "price": 255, "message": "I can meet you at 262, which is my best price for this solid pine bookshelf."}
+
+Wait, correcting that: the price must not be below my reserve of 260.
+
+{"action": "ask", "price": 262, "message": "I can meet you at 262, which is my best price for this solid pine bookshelf."}
+[seller] unparsable answer, attempt 1
+[harness] {"action": "ask", "price": 258, "message": "I can come down to 262 for you, which is really my best price on this solid pine shelf."}
+
+Wait, that violates my reserve. Corrected:
+
+{"action": "ask", "price": 262, "message": "I can come down to 262 for you, which is really my best price on this solid pine shelf."}
+[seller] unparsable answer, attempt 2
+[seller] task=e22d291b bookshelf offer=230 -> ask 268
+[harness] {"action": "ask", "price": 262, "message": "I can come down to 262, which is nearly my lowest, and I'd be happy to close the deal there."}
+[seller] task=e22d291b bookshelf offer=230 -> ask 262
+[harness] {"action": "ask", "price": 260, "message": "My lowest price is 260, and I'd be glad to close the deal there."}
+[seller] task=e22d291b bookshelf offer=230 -> ask 260
 [harness] {"action": "ask", "price": 260, "message": "260 is my lowest price, and I can't go any lower than that."}
-[seller] task=08963326 bookshelf offer=230 -> ask 260
-[harness] {"action": "ask", "price": 260, "message": "260 is my final price, and I can't go any lower than that."}
-[seller] task=08963326 bookshelf offer=230 -> ask 260
+[seller] task=e22d291b bookshelf offer=230 -> ask 260
+[harness] {"action": "reject", "price": 0, "message": "I'm sorry, but 230 is below the lowest price I can accept, so we can't make a deal."}
+[seller] task=e22d291b bookshelf offer=230 -> reject 0
