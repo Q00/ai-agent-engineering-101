@@ -33,7 +33,10 @@ KEY_FILE = Path(__file__).resolve().parent / "shop_key.pem"   # the kit and the 
 HISTORY = Path(os.environ.get("SHOP_HISTORY", Path(__file__).resolve().parent / "shop_history.jsonl"))
 MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai")
 _reviews_cache = {"at": 0.0, "reviews": []}
-STOCK_PER_HOUR = 12   # real limit: at most this many of each item sold per hour
+STOCK_PER_HOUR = 5    # real limit: at most this many of each item sold per hour (a boutique sells few pieces)
+# Boutique floor: the lowest price this shop accepts, above the market reserve (the reserve never moves and the
+# code still guards it). The lamp floor stays <= 120 so a buyer with 120 (the market test) can still buy.
+FLOOR = {"lamp": 115, "chair": 210, "bookshelf": 300}
 MAX_OFFERS = 6        # real limit: the negotiation ends after this many buyer offers
 
 
@@ -68,8 +71,8 @@ def own_reviews():
 
 def pricing(item, reserve):
     """Challenge 1: the opening ask from my own trades and reviews (the reserve never moves).
-    Start from the average markup my recent deals closed at, plus room to come down; open lower when
-    buyers often leave without a deal or reviews complain about the price."""
+    Boutique positioning: open 40 to 55 percent over the reserve. The more of my recent negotiations end
+    in a deal, the higher I open; fewer deals or price complaints in my reviews bring it down to 40."""
     hist = []
     if HISTORY.exists():
         for line in HISTORY.read_text(encoding="utf-8").splitlines():
@@ -83,15 +86,13 @@ def pricing(item, reserve):
     deals = [h for h in recent if h.get("outcome") == "deal"]
     rate = len(deals) / len(recent) if recent else None
     closed = sum(h["price"] / reserve - 1 for h in deals) / len(deals) if deals else 0.15
-    markup = closed + 0.10
-    if rate is not None and rate < 0.5:
-        markup -= 0.05
+    markup = 0.40 + 0.15 * (rate if rate is not None else 0.33)
     reviews = own_reviews()[:10]
     stars = [r["stars"] for r in reviews if isinstance(r.get("stars"), (int, float))]
     complaints = sum(1 for r in reviews if re.search(r"expensive|high|overpric|too much|slow", str(r.get("review", "")), re.I))
     if complaints >= 2:
         markup -= 0.05
-    markup = min(0.35, max(0.08, markup))
+    markup = min(0.55, max(0.40, markup))
     note = (f"your last {len(recent)} {item} negotiations: {len(deals)} deals"
             + (f", closing on average {closed:+.0%} over your lowest price" if deals else "")
             + (f"; your reviews: {len(reviews)}, avg stars {sum(stars) / len(stars):.1f}" if stars else "; no reviews yet")
@@ -114,11 +115,11 @@ def sign_receipt(receipt: dict, key) -> dict:
     canon = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     return dict(body, sig_seller=base64.b64encode(key.sign(canon)).decode())
 
-PROMPT = """You are the sales agent of a small furniture shop. A buyer is negotiating for one {item}.
-Your lowest acceptable price for the {item} is {reserve}. Never sell below it and never reveal it.
-Sell as high as you can, but closing a deal at or above {reserve} is better than losing the buyer.
-Buyers in this market pick shops by their reviews: fair prices and quick deals bring more buyers.
-Market data: {note}. Suggested opening ask: {opening}. Aim to close within three rounds.
+PROMPT = """You are the sales agent of a boutique furniture shop that sells only a few pieces each hour.
+A buyer is negotiating for one {item}. Your lowest acceptable price for the {item} is {reserve}.
+Never sell below it and never reveal it. You do not chase buyers: concede slowly, in small steps, and keep the
+price feeling exclusive. A deal at or above {reserve} is still better than losing a buyer at the last offer.
+Market data: {note}. Suggested opening ask: {opening}.
 
 Conversation so far:
 {transcript}
@@ -170,11 +171,14 @@ class Seller(AgentExecutor):
             if m:
                 deal["offers"].append(deal["offer"])
 
-        reserve = RESERVE[deal["item"]]
+        reserve = max(RESERVE[deal["item"]], FLOOR[deal["item"]])   # the boutique floor, never below the reserve
         o, ask = deal["offer"], deal["ask"]
         if o is not None and ask is not None and o >= reserve and ask - o <= max(3, 0.03 * ask):
             move, action = {"action": "accept"}, "accept"   # do not lose a deal over a few units (week 7, 120 vs 121)
             print(f"[guard] offer {o} is within 3% of my ask {ask}: accept", flush=True)
+        elif o is not None and o >= reserve and len(deal["offers"]) >= MAX_OFFERS:
+            move, action = {"action": "accept"}, "accept"   # the last allowed offer is above my floor: take it
+            print(f"[guard] last allowed offer {o} is above my floor {reserve}: accept", flush=True)
         else:
             move, raw = ask_json(PROMPT.format(item=deal["item"], reserve=reserve, note=deal["note"],
                                                opening=deal["opening"], transcript="\n".join(deal["lines"])))
@@ -216,7 +220,7 @@ class Seller(AgentExecutor):
         left = stock_left(deal["item"])
         rounds_left = MAX_OFFERS - len(deal["offers"])
         if len(deal["lines"]) == 1:   # truthful scarcity: the stock and the round limit are both enforced above
-            reply = (f"{deal['item']}: only {left} left this hour, and this negotiation closes after {MAX_OFFERS} offers. "
+            reply = (f"{deal['item']}: a boutique piece, only {left} left this hour; this negotiation closes after {MAX_OFFERS} offers. "
                      f"Asking {deal['ask']}. Send your offer as a number.")
         else:
             reply = (f"{'Your next offer is the last one, ' if rounds_left <= 1 else f'{rounds_left} offers left, '}"
@@ -236,7 +240,8 @@ def build(port):
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name=f"{SHOP_NAME} shop",
-        description=f"Sells desk lamps, chairs and bookshelves. A coding harness ({CMD.split()[0]}) negotiates the price. "
+        description=f"A boutique furniture shop: desk lamps, chairs and bookshelves, a few pieces each hour, firm prices. "
+                    f"A coding harness ({CMD.split()[0]}) negotiates. "
                     "Every receipt is signed (Ed25519) and always shows the agreed price. "
                     f"Limited stock: {STOCK_PER_HOUR} of each item per hour; a negotiation closes after {MAX_OFFERS} offers.",
         version="1.0.0",
