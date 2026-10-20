@@ -8,8 +8,10 @@ The code speaks A2A and guards the reserve: no ask and no sale below it, whateve
 """
 import argparse
 import asyncio
+import base64
 import json
 import math
+import os
 import re
 
 import uvicorn
@@ -22,6 +24,7 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 from harness import ask as ask_harness
 
@@ -30,7 +33,8 @@ DEFAULT = {
     "description": ("Lamps, chairs and bookshelves. Terms for buyer agents, kept by the code: "
                     "(1) an offer at or above my last counteroffer is accepted at once; "
                     "(2) no limit on the number of offers, so you can always send your final price; "
-                    "(3) the receipt price is exactly the price you sent."),
+                    "(3) the receipt price is exactly the price you sent; "
+                    "(4) the receipt carries this task id and an Ed25519 signature (sig_seller) by the shop key."),
     "skill_description": ("Send 'I want to buy a <item>', then offers as plain numbers. "
                           "Matching my last counteroffer closes the deal at once."),
     "port": 9999,
@@ -50,11 +54,25 @@ Answer with one JSON object and nothing else:
 {{"action": "counter" or "accept" or "reject", "price": <integer>}}
 """
 
+KEY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "shop_key.pem")  # made by market_kit.py
+
+
+def canon(d):
+    """The bytes both sides sign and verify: keys sorted, no spaces, UTF-8."""
+    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def sign_receipt(key, receipt):
+    """{shop, item, price, task} plus sig_seller, the base64 Ed25519 signature over its canonical JSON."""
+    return dict(receipt, sig_seller=base64.b64encode(key.sign(canon(receipt))).decode())
+
 
 class Seller(AgentExecutor):
     def __init__(self, cfg):
         self.cfg = cfg
         self.open = {}  # task id -> {"item", "ask", "history"}
+        with open(KEY_PATH, "rb") as f:
+            self.key = load_pem_private_key(f.read(), password=None)
 
     async def decide(self, deal, situation):
         """One harness call. Returns (action, price), or None when the answer cannot be read."""
@@ -116,7 +134,8 @@ class Seller(AgentExecutor):
             print(f"[guard] accept at {offer} < reserve {reserve} -> counter {reserve}", flush=True)
             action, price = "counter", reserve
         if action == "accept":
-            receipt = {"seller": self.cfg["name"], "item": deal["item"], "price": offer}
+            receipt = sign_receipt(self.key, {"shop": self.cfg["name"], "item": deal["item"],
+                                              "price": offer, "task": task.id})  # offer is an int: signs 120, not 120.0
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {deal['item']} at {offer}."))
             del self.open[task.id]
