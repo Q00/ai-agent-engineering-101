@@ -133,7 +133,7 @@ type Task = {
   artifacts?: { artifactId: string; name: string; parts: Part[] }[];
   history: Message[];
 };
-type Deal = { item: string; ask: number; history: string[]; offers?: number[] };
+type Deal = { item: string; ask: number; history: string[]; offers?: number[]; discount?: number; tier?: number };
 const MARGIN = 5; // a stuck buyer is accepted only at reserve + MARGIN or more
 type RpcError = { code: number; message: string; data: unknown[] };
 type Outcome = { task: Task } | { error: RpcError };
@@ -178,6 +178,40 @@ async function signReceipt(env: Env, body: { shop: string; item: string; price: 
   return { ...body, sig_seller: btoa(String.fromCharCode(...new Uint8Array(sig))) };
 }
 
+// ---------------------------------------------------------------- loyalty coupons (week 7)
+// Every deal hands out a one-time code, whatever the buyer's review says. The code carries a tier: an order
+// that brings a tier-n code gets LOYALTY[n] off the opening ask and the target (never below reserve + MARGIN)
+// and, when it closes, a tier n+1 code; the more often a buyer comes back, the bigger the discount, up to
+// the last step. The shop cannot tell buyers apart (requests carry no buyer id), so the code is how a
+// returning buyer is recognised. FAIR- + tier letter + 7 random letters + 8 letters of HMAC-SHA256 over
+// the first eight: no digits, because buyers read prices as numbers in the text, and the tier cannot be
+// raised without the key (derived from ADMIN_TOKEN).
+
+const LOYALTY = [0, 0.03, 0.05, 0.07]; // by tier; tier 3 and above stay at the cap
+const COUPON = /FAIR-([A-Z]{8})([A-Z]{8})/i;
+const tierOf = (code: string) => Math.max(1, Math.min(LOYALTY.length - 1, code.charCodeAt(5) - 64));
+const toLetters = (bytes: Uint8Array, n: number) => Array.from(bytes.slice(0, n), (b) => String.fromCharCode(65 + (b % 26))).join("");
+
+async function couponMac(env: Env, nonce: string): Promise<string> {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(`coupon:${env.ADMIN_TOKEN ?? ""}`),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return toLetters(new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(nonce))), 8);
+}
+
+async function newCoupon(env: Env, tier: number): Promise<string> {
+  const t = String.fromCharCode(64 + Math.max(1, Math.min(LOYALTY.length - 1, tier)));
+  const nonce = t + toLetters(crypto.getRandomValues(new Uint8Array(7)), 7);
+  return `FAIR-${nonce}${await couponMac(env, nonce)}`;
+}
+
+/** The coupon in a message if its MAC checks out, else null. */
+async function validCoupon(env: Env, text: string): Promise<string | null> {
+  const m = text.match(COUPON);
+  if (!m || !env.ADMIN_TOKEN) return null;
+  const [nonce, mac] = [m[1].toUpperCase(), m[2].toUpperCase()];
+  return (await couponMac(env, nonce)) === mac ? `FAIR-${nonce}${mac}` : null;
+}
+
 // ---------------------------------------------------------------- one task, one Durable Object
 
 export class TaskObject extends DurableObject<Env> {
@@ -191,6 +225,13 @@ export class TaskObject extends DurableObject<Env> {
     return strategy;
   }
 
+  /** One-time use: true the first time a coupon is redeemed (kept in the strategy object). */
+  async redeem(code: string): Promise<boolean> {
+    if (await this.ctx.storage.get(`used:${code}`)) return false;
+    await this.ctx.storage.put(`used:${code}`, Date.now());
+    return true;
+  }
+
   private strategy(): Promise<Strategy | null> {
     return this.env.TASKS.get(this.env.TASKS.idFromName(STRATEGY_ID)).getStrategy();
   }
@@ -200,7 +241,8 @@ export class TaskObject extends DurableObject<Env> {
     const task: Task = { id, contextId, status: { state: "TASK_STATE_INPUT_REQUIRED", timestamp: "" }, history: [] };
     task.history.push({ ...msg, taskId: id, contextId });
     console.log(`IN: task ${id.slice(0, 8)} ${JSON.stringify(textOf(msg))}`);
-    const item = Object.keys(RESERVE).find((k) => textOf(msg).toLowerCase().includes(k));
+    // a coupon's random letters could spell an item name, so it is taken out before looking for the item
+    const item = Object.keys(RESERVE).find((k) => textOf(msg).replace(new RegExp(COUPON, "gi"), "").toLowerCase().includes(k));
     if (!item) {
       this.respond(task, "TASK_STATE_REJECTED", "We only sell: " + Object.keys(RESERVE).join(", ") + ".");
     } else {
@@ -219,9 +261,24 @@ export class TaskObject extends DurableObject<Env> {
         console.log(`GUARD: opening ask ${price} below reserve ${reserve}, asking ${reserve}`);
         price = reserve;
       }
+      let discount = 0;
+      let tier = 0;
+      let welcome = "";
+      const code = await validCoupon(this.env, textOf(msg));
+      if (code && (await this.env.TASKS.get(this.env.TASKS.idFromName(STRATEGY_ID)).redeem(code))) {
+        tier = tierOf(code);
+        discount = LOYALTY[tier];
+        const lower = Math.max(reserve + MARGIN, Math.round(price * (1 - discount)));
+        console.log(`COUPON: ${code} redeemed, tier ${tier}, opening ${price} -> ${lower}`);
+        price = Math.min(price, lower);
+        welcome = "Welcome back! Your loyalty discount is applied.";
+      } else if (code) {
+        console.log(`COUPON: ${code} was already used`);
+        welcome = "That loyalty code has already been used.";
+      }
       const promo = cleanNote(strategy?.promo);
-      const note = [promo, cleanNote(answer.note)].filter(Boolean).join(" ");
-      await this.ctx.storage.put("deal", { item, ask: price, history: [`You asked ${price}.`] } satisfies Deal);
+      const note = [welcome, promo, cleanNote(answer.note)].filter(Boolean).join(" ");
+      await this.ctx.storage.put("deal", { item, ask: price, history: [`You asked ${price}.`], discount, tier } satisfies Deal);
       console.log(`OUT: open ${item} at ${price}`);
       this.respond(task, "TASK_STATE_INPUT_REQUIRED", `${item}: ${note ? note + " " : ""}Asking ${price}. Send your offer as a number.`);
     }
@@ -264,7 +321,8 @@ export class TaskObject extends DurableObject<Env> {
       return await this.close(task, item, offer, "Agreed.");
     }
     const strategy = await this.strategy();
-    const target = strategy?.target[item];
+    const base = strategy?.target[item];
+    const target = base ? Math.max(reserve + MARGIN, Math.round(base * (1 - (deal.discount ?? 0)))) : undefined;
     if (target && offer >= Math.max(target, reserve)) {
       // a fair offer closes at once: haggling a reached target down by ones loses buyers, and a quick fair deal earns the review
       console.log(`OUT: offer ${offer} reaches target ${target}, accepted by code`);
@@ -329,12 +387,14 @@ export class TaskObject extends DurableObject<Env> {
   }
 
   private async close(task: Task, item: string, price: number, note: string) {
+    const nextTier = ((await this.ctx.storage.get<Deal>("deal"))?.tier ?? 0) + 1;
     const receipt = await signReceipt(this.env, { shop: NAME, item, price: Math.round(price), task: task.id });
     task.artifacts = [{ artifactId: crypto.randomUUID(), name: "receipt", parts: [{ data: receipt }] }];
     console.log(`OUT: deal ${item} at ${price}`);
     // reviews decide who gets the next buyer: thank the buyer and ask for an honest one (as dragonash does)
     this.respond(task, "TASK_STATE_COMPLETED",
-      `${note} Deal: ${item} at ${price}. Thank you! Your signed receipt is attached; an honest review helps us a lot.`.trim());
+      `${note} Deal: ${item} at ${price}. Thank you! Your signed receipt is attached; an honest review helps us a lot. ` +
+        `Loyalty code for your next order, whatever your review says: ${await newCoupon(this.env, nextTier)} (put it in your first message).`.trim());
   }
 
   async get(): Promise<Outcome> {
