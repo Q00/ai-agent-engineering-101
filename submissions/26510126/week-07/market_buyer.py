@@ -42,6 +42,7 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import statistics
 import sys
 import time
@@ -172,10 +173,24 @@ def profile(past, item, budget):
     return "; ".join(notes), bool(cheats) or len(down) == 2
 
 
-def reviews_line(shop):
+AD = re.compile(r"\bAD\b|광고|VIP|limited \d+-?min", re.I)
+
+
+def is_ad(review, shop_name, names):
+    """A review that advertises: an AD tag, or another listed shop's name (mjforge put
+    "[GRAND REVAMP AD — mjforge VIP ...]" into reviews of other shops, ledger #21074)."""
+    text = str(review.get("review", ""))
+    return bool(AD.search(text)) or any(n != shop_name and len(n) > 3 and n.lower() in text.lower() for n in names)
+
+
+def reviews_line(shop, names=()):
     reviews = shop.get("reviews") or []
+    ads = [r for r in reviews if is_ad(r, shop["name"], names)]
+    reviews = [r for r in reviews if r not in ads]
     stars = [r["stars"] for r in reviews if isinstance(r.get("stars"), (int, float))]
     head = f"{len(reviews)} reviews, average {sum(stars) / len(stars):.1f} stars" if stars else "no reviews"
+    if ads:
+        head += f" ({len(ads)} advertising reviews left out)"
     quoted = "; ".join(f"{r.get('stars')}* \"{str(r.get('review', ''))[:REVIEW_CHARS]}\"" for r in reviews[:MAX_REVIEWS])
     return head + (f", recent: {quoted}" if quoted else "")
 
@@ -239,7 +254,8 @@ async def pick(shops, memory, item, budget, going, records, recent=None, rnd=0):
     if len(choices) == 1:
         return choices[0], "the only shop left to choose from", known[choices[0]["name"]][0]
 
-    lines = "\n".join(f"- {s['name']}: {reviews_line(s)}. Market record: {market[s['name']][0]}. Your memory: {known[s['name']][0]}."
+    names = [s["name"] for s in shops]
+    lines = "\n".join(f"- {s['name']}: {reviews_line(s, names)}. Market record: {market[s['name']][0]}. Your memory: {known[s['name']][0]}."
                       for s in choices)
     log("SHOPS", "\n" + lines)
     answer = await harness.ask(PICK_PROMPT.format(item=item, budget=budget, shops=lines)) or {}
