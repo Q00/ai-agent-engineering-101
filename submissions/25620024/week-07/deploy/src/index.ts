@@ -21,6 +21,13 @@ const RESERVE: Record<string, number> = { lamp: 100, chair: 180, bookshelf: 260 
 const MAX_ROUNDS = 6;
 const NAME = "dragonash's GRAND SALE - TEN-TEN CHANCE";   // week 07: "Harness Shop, deployed (25620024)" -> "dragonash's" -> "dragonash's GRAND SALE"
 const SALE = 0.9 * 0.9;   // challenge 1: GRAND SALE 10% off (20:09), then TEN-TEN another 10% (Round 1, 20:33); reserves unchanged
+// challenge 1, third change (21:00): price guarantee. The opening ask is kept below the market's average deal
+// price for the item (/api/stats, current round), and a buyer who says it was quoted a lower price gets that
+// price, down to the reserve. No digits in PROMISE, so the ask stays the last number of every reply.
+const MARKET = "https://market.ourolabs.ai";
+const PROMISE = "Every receipt is signed by the shop, so your deal counts in the market. Price guarantee: " +
+  "our ask stays below the market's average deal price, and we match any lower price you were quoted, down to our floor.";
+const MATCH = /match|elsewhere|other shop|quoted|cheaper|found it|lower price/i;
 const SHOP = "dragonash";   // receipt "shop": the market name, same as seller.py
 
 export function canon(r: { shop: string; item: string; price: number; task: string }): string {
@@ -110,6 +117,20 @@ export class Shop {
   state: any;
   env: any;
   key: Promise<CryptoKey | null> | undefined;
+  avg: { at: number; items: Record<string, number> } | undefined;
+
+  async marketAvg(item: string): Promise<number | null> {
+    if (!this.avg || Date.now() - this.avg.at > 60_000) {
+      try {
+        const r = await fetch(MARKET + "/api/stats", { signal: AbortSignal.timeout(3000) });
+        const st: any = await r.json();
+        const items = st.rounds?.[String(st.round)]?.items ?? {};
+        this.avg = { at: Date.now(), items: Object.fromEntries(Object.entries(items).map(([k, v]: any) => [k, v.mean])) };
+      } catch { return null; }
+    }
+    const m = this.avg.items[item];
+    return Number.isFinite(m) ? m : null;
+  }
   constructor(state: any, env: any) { this.state = state; this.env = env; }
 
   shopKey(): Promise<CryptoKey | null> {
@@ -194,8 +215,10 @@ export class Shop {
       const list = ask;
       ask = Math.round(list * SALE);
       s.log.push(`SALE opening ask ${list} -> ${ask}`);
+      const avg = await this.marketAvg(item);
+      if (avg !== null && ask >= avg) { s.log.push(`GUARANTEE ask ${ask} >= market average ${avg.toFixed(1)}: ${Math.floor(avg) - 1}`); ask = Math.floor(avg) - 1; }
       if (ask < reserve) { s.log.push(`GUARD opening ask ${ask} < reserve ${reserve}: raised`); ask = reserve; }
-      const reply = `GRAND SALE + TEN-TEN CHANCE: 10% off, then another 10% off! Please leave an honest review. ${item}: was ${list}, now asking ${ask}. Send your offer as a number.`;
+      const reply = `dragonash's GRAND SALE + TEN-TEN CHANCE. ${PROMISE} ${item}: was ${list}, now asking ${ask}. Send your offer as a number.`;
       s.deal = { item, reserve, ask, rounds: 0, history: [`buyer: ${text}`, `seller: ${reply}`] };
       task.status = { state: "TASK_STATE_INPUT_REQUIRED", message: agentMsg(reply, ask), timestamp: now() };
       return save();
@@ -212,7 +235,10 @@ export class Shop {
     d.history.push(`buyer: ${text}`);
 
     let action = "counter", price = d.ask;
-    if (offer >= d.ask) {
+    if (offer < d.ask && MATCH.test(text)) {        // price guarantee: match a lower quote, down to the reserve
+      if (offer >= d.reserve) { action = "accept"; price = offer; s.log.push(`PRICE MATCH ${offer} (ask ${d.ask})`); }
+      else { action = "counter"; price = d.reserve; s.log.push(`PRICE MATCH ${offer} below reserve ${d.reserve}: counter at reserve`); }
+    } else if (offer >= d.ask) {
       action = "accept"; price = offer;
       s.log.push(`offer ${offer} >= current ask ${d.ask}: accept without asking the model`);
     } else {
@@ -240,7 +266,7 @@ export class Shop {
         receipt = await signedReceipt(null, d.item, offer, task.id);
       }
       task.artifacts = [{ artifactId: crypto.randomUUID(), name: "receipt", parts: [{ data: receipt }] }];
-      task.status = { state: "TASK_STATE_COMPLETED", message: agentMsg(`Deal: ${d.item} at ${offer}.`), timestamp: now() };
+      task.status = { state: "TASK_STATE_COMPLETED", message: agentMsg(`Deal: ${d.item} at ${offer}. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.`), timestamp: now() };
       s.log.push(`DEAL ${d.item} at ${offer} (reserve ${d.reserve})`);
       return save();
     }

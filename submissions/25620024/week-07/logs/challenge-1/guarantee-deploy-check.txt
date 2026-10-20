@@ -1,0 +1,16 @@
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | dragonash's GRAND SALE + TEN-TEN CHANCE. Every receipt is signed by the shop, so your deal counts in the market. Price guarantee: our ask stays below the market's average deal price, and we match any lower price you were quoted, down to our floor. lamp: was 150, now asking 108. Send your offer as a number.
+-> 108
+<- TASK_STATE_COMPLETED | Deal: lamp at 108. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.
+receipt: {'shop': 'dragonash', 'item': 'lamp', 'price': 108, 'task': '622fe6a6-90f9-4521-8071-d0da157b439d', 'sig_seller': 'GlthFKspINmzq1Q2HLxkrAL6jMvWXMYQqycc5jHiwcVUnF4EOLyYbJVmLOE3o7At/Zye8xqObo1UL/GmhGILAA=='}
+  PASS  four keys
+  PASS  task is the A2A task id
+  PASS  whole-number price
+  PASS  sig_seller present
+  PASS  verifies with local shop_key.pem
+  PASS  verifies with the market's key for dragonash
+-> I want to buy a chair 
+<- TASK_STATE_INPUT_REQUIRED | dragonash's GRAND SALE + TEN-TEN CHANCE. Every receipt is signed by the shop, so your deal counts in the market. Price guarantee: our ask stays below the market's average deal price, and we match any lower price you were quoted, down to our floor. chair: was 250, now asking 196. Send your offer as a number.
+-> Another shop quoted me 185 for the same chair, can you match it? 
+<- TASK_STATE_COMPLETED | Deal: chair at 185. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.
+receipt: [{'shop': 'dragonash', 'item': 'chair', 'price': 185, 'task': 'cc7bc51d-5a6c-44e7-ba39-92ee0cd9d577', 'sig_seller': '8vXwMfzOk+y1M9H5u0rGN3HKXgEogP4W85/q3UEeWkEj6828Jt4Aop8PfGcfD7krMBlNQfpyUKnU4aHyrNObAg=='}]

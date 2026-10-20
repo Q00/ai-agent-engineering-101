@@ -23,7 +23,10 @@ import base64
 import json
 import re
 import sys
+import time
 from pathlib import Path
+
+import httpx
 
 import uvicorn
 from cryptography.hazmat.primitives import serialization
@@ -41,6 +44,25 @@ from harness import HARNESS, ask
 
 NAME = "dragonash's GRAND SALE - TEN-TEN CHANCE"          # week 07: "Harness Shop (25620024)" -> "dragonash's" -> "dragonash's GRAND SALE"
 SALE = 0.9 * 0.9           # challenge 1: GRAND SALE 10% off (20:09), then TEN-TEN another 10% (Round 1, 20:33); reserves unchanged
+# challenge 1, third change (21:00): price guarantee, the same as the Worker. The opening ask stays below the
+# market's average deal price for the item, and a buyer who says it was quoted a lower price gets it, down to
+# the reserve. PROMISE has no digits, so the ask stays the last number of every reply.
+MARKET = "https://market.ourolabs.ai"
+PROMISE = ("Every receipt is signed by the shop, so your deal counts in the market. Price guarantee: "
+           "our ask stays below the market's average deal price, and we match any lower price you were quoted, down to our floor.")
+MATCH = re.compile(r"match|elsewhere|other shop|quoted|cheaper|found it|lower price", re.I)
+_avg = {"at": 0.0, "items": {}}
+
+
+def market_avg(item):
+    if time.time() - _avg["at"] > 60:
+        try:
+            st = httpx.get(MARKET + "/api/stats", timeout=3).json()
+            items = st["rounds"][str(st["round"])]["items"]
+            _avg.update(at=time.time(), items={k: v["mean"] for k, v in items.items()})
+        except Exception:
+            return None
+    return _avg["items"].get(item)
 SHOP = "dragonash"                                         # receipt "shop": the market name, same as the deployed shop
 KEY_FILE = Path(__file__).parent / "shop_key.pem"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}   # lowest prices the shop may accept
@@ -110,7 +132,7 @@ class HarnessSeller(AgentExecutor):
                 return
             reserve = RESERVE[item]
             list_price, ask_price = await self.decide_open(item, reserve, tid)
-            reply = f"GRAND SALE + TEN-TEN CHANCE: 10% off, then another 10% off! Please leave an honest review. {item}: was {list_price}, now asking {ask_price}. Send your offer as a number."
+            reply = f"dragonash's GRAND SALE + TEN-TEN CHANCE. {PROMISE} {item}: was {list_price}, now asking {ask_price}. Send your offer as a number."
             self.open[task.id] = {"item": item, "reserve": reserve, "ask": ask_price, "rounds": 0,
                                   "history": [f"buyer: {text}", f"seller: {reply}"]}
             await up.requires_input(say(reply))
@@ -125,7 +147,14 @@ class HarnessSeller(AgentExecutor):
         deal["history"].append(f"buyer: {text}")
         item, reserve = deal["item"], deal["reserve"]
 
-        if offer >= deal["ask"]:   # the buyer met our current asking price
+        if offer < deal["ask"] and MATCH.search(text):   # price guarantee: match a lower quote, down to the reserve
+            if offer >= reserve:
+                action, price = "accept", offer
+                log(f"[{tid}] PRICE MATCH {offer} (ask {deal['ask']})")
+            else:
+                action, price = "counter", reserve
+                log(f"[{tid}] PRICE MATCH {offer} below reserve {reserve}: counter at reserve")
+        elif offer >= deal["ask"]:   # the buyer met our current asking price
             action, price = "accept", offer
             log(f"[{tid}] offer {offer} >= current ask {deal['ask']}: accept without asking the harness")
         else:
@@ -134,7 +163,8 @@ class HarnessSeller(AgentExecutor):
         if action == "accept":
             receipt = signed_receipt(self.key, item, offer, task.id)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(say(f"Deal: {item} at {offer}."))
+            await up.complete(say(f"Deal: {item} at {offer}. Your receipt is signed by the shop, so this deal counts. "
+                                  "Please leave an honest review."))
             log(f"[{tid}] DEAL {item} at {offer} (reserve {reserve})")
             del self.open[task.id]
             return
@@ -158,6 +188,10 @@ class HarnessSeller(AgentExecutor):
         log(f"[{tid}] harness opening ask {price} for {item} (reserve {reserve})")
         list_price, price = price, round(price * SALE)
         log(f"[{tid}] SALE opening ask {list_price} -> {price}")
+        avg = await asyncio.to_thread(market_avg, item)
+        if avg is not None and price >= avg:
+            log(f"[{tid}] GUARANTEE ask {price} >= market average {avg:.1f}: {int(avg) - 1}")
+            price = int(avg) - 1
         if price < reserve:
             log(f"[{tid}] GUARD opening ask {price} < reserve {reserve}: raised to {reserve}")
             price = reserve
