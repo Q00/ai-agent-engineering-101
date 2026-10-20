@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import json
 import math
 from pathlib import Path
+import ssl
 import sys
 from uuid import uuid4
 
@@ -43,6 +44,10 @@ class MarketTransport(BuyerTransport):
     """Retain the original artifact even when the inherited validation rejects it."""
     last_offer = None
     raw_receipt = None
+
+    def __init__(self, *args, **kwargs):
+        # Use OS-trusted CAs explicitly: trust_env=False ignores SSL_CERT_FILE.
+        super().__init__(*args, verify=ssl.create_default_context(), **kwargs)
 
     def offer(self, price):
         if type(price) is not int or not 0 < price <= self.budget:

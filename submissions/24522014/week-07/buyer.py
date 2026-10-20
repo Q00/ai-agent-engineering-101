@@ -23,7 +23,7 @@ class BuyerError(RuntimeError):
 
 
 class BuyerTransport:
-    def __init__(self, url, item, budget, *, timeout=290, transport=None):
+    def __init__(self, url, item, budget, *, timeout=290, transport=None, verify=True):
         if item not in ("lamp", "chair", "bookshelf"):
             raise ValueError("Unsupported item")
         if type(budget) is not int or budget <= 0:
@@ -44,7 +44,8 @@ class BuyerTransport:
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
         self.log_dir = ROOT / "logs/buyer" / (stamp + "-" + uuid4().hex[:8])
         self.log_dir.mkdir(parents=True)
-        self.client = httpx.Client(headers={"A2A-Version": "1.0"}, trust_env=False, transport=transport)
+        self.client = httpx.Client(headers={"A2A-Version": "1.0"}, trust_env=False, transport=transport,
+                                   verify=verify)
 
     def __enter__(self):
         return self
