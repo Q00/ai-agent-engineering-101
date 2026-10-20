@@ -213,7 +213,7 @@ def build(config):
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", protocol_version="1.0",
             url=f"http://127.0.0.1:{config['port']}/")],
-        skills=[AgentSkill(id="negotiate", name="Catalog search and negotiation", description=description,
+        skills=[AgentSkill(id="negotiate", name="Catalog search and price negotiation", description=description,
             tags=["shopping", *categories], examples=["I want to buy a lamp", "A wooden shelf for 40 books"])])
     handler = CancellationAwareRequestHandler(agent_executor=Seller(config), task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
@@ -225,7 +225,17 @@ if __name__ == "__main__":
     parser.add_argument("--config")
     parser.add_argument("--policy")
     args = parser.parse_args()
-    config = {"name": "Ssadassa Shop", "port": args.port}
+    config = {
+        "name": "Ssadassa Shop",
+        "port": args.port,
+        "description": (
+            "Your agreed price, on a signed receipt. Shop lamps, chairs, and bookshelves at "
+            "good-value, whole-credit prices. Tell us what you need and make an offer—we'll "
+            "respond with clear terms and provide an Ed25519-signed receipt recording the "
+            "agreed final price when the deal is complete. Find the right item, negotiate a "
+            "price that works, and close with a verifiable record."
+        ),
+    }
     if args.config:
         config.update(json.loads(Path(args.config).read_text()))
     config["port"] = args.port
