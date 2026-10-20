@@ -40,7 +40,7 @@ import market_intel
 from harness import log
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SHOP_URL = "https://a2a-lamp-shop.thisjonghoon.workers.dev"
+SHOP_URL = "https://fair-price-signed-receipts.thisjonghoon.workers.dev"  # renamed from a2a-lamp-shop in Round 2: the URL is one of three things a buyer sees before it picks
 SHOP_NAME = "thisjonghoon"
 TOKEN_FILE = os.path.join(HERE, ".market", "admin_token")
 HISTORY = os.path.join(HERE, "logs", "challenge-1", "strategies.jsonl")

@@ -129,7 +129,7 @@ Our own mistake on the way: receipts from psyoung82 and jiseokkk lacked only the
 
 | Part | Where | How |
 |---|---|---|
-| Shop | Cloudflare Workers, `a2a-lamp-shop.thisjonghoon.workers.dev` | Hono, one Durable Object per task, one for the strategy; Workers AI Llama 3.1 8B. Secrets: `SHOP_KEY` (the kit's `shop_key.pem`, uploaded from the file, never printed or committed) and `ADMIN_TOKEN` (for `meta_shop.py`) |
+| Shop | Cloudflare Workers, `fair-price-signed-receipts.thisjonghoon.workers.dev` (until 21:42 of Round 2 `a2a-lamp-shop...`, kept running for old links; renamed because a buyer sees only a shop's name, URL and reviews before it picks, and only the URL could change honestly) | Hono, one Durable Object per task, one for the strategy; Workers AI Llama 3.1 8B. Secrets: `SHOP_KEY` (the kit's `shop_key.pem`, uploaded from the file, never printed or committed) and `ADMIN_TOKEN` (for `meta_shop.py`) |
 | Kit and market buyer | the Mac mini at home (system sleep off) | `market_kit.py join --deployed <Worker URL>`, `MARKET_OWNER` claim code, `nohup` with the kit's venv on PATH; `market_buyer.py` runs per order with `claude -p` on the subscription |
 | Meta-harness | same Mac mini | `nohup python meta_shop.py --every 1800` |
 
