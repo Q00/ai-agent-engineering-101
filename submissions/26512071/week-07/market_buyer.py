@@ -23,6 +23,11 @@ market_kit.py starts this for each order. {shops} is a JSON list of
    average and its three newest reviews, cut short and quoted as data) and drops the
    shops my memory caught with a bad receipt. The harness picks one of the rest by name
    and says why; the reason goes to the output.
+   Explore (only when the kit's caller sets BUYER_EXPLORE, a probability): if the list has
+   both reviewed shops and live shops with no reviews and no trades of mine, a new shop is
+   tried at that rate, opening at EXPLORE_OPEN of the budget; if it takes the low offer the
+   buyer has found a cheap shop, if not the model negotiates as usual. Only with a choice:
+   a lone shop is never "explored", so the market test's single-shop runs are unchanged.
 5. Trade: the week-06 negotiation (buyer.py's harness prompt), budget enforced in code.
    Round 2: the receipt's sig_seller is verified here too, with the shop's public key
    from the market's registry (/api/shops); a signature that does not verify is a bad
@@ -33,6 +38,8 @@ The last output line is one JSON object: {"shop", "receipt", "stars", "review"}.
 """
 import argparse
 import json
+import os
+import random
 from concurrent.futures import ThreadPoolExecutor
 import re
 import sys
@@ -50,6 +57,8 @@ from buyer import HEADERS, MAX_OFFERS, decide, harness, log, rpc, send
 MEMORY = Path(__file__).with_name("memory.jsonl")  # memory-test.jsonl under the market test
 REVIEWS_SHOWN, REVIEW_CHARS = 3, 120
 PROBE_TIMEOUT = 5
+EXPLORE = float(os.environ.get("BUYER_EXPLORE", "0"))  # off unless the kit's caller turns it on
+EXPLORE_OPEN = 0.6
 BOARD = "https://market.ourolabs.ai/api/board"
 REGISTRY = "https://market.ourolabs.ai/api/shops"
 RECEIPT_KEYS = ("shop", "item", "price", "task")
@@ -197,7 +206,12 @@ def pick(shops, item, budget, memory):
     ok = ok or list(by_name)  # every shop cheated once: still have to buy somewhere
     if len(ok) == 1:
         log(f"[pick] {ok[0]}: the only shop left")
-        return by_name[ok[0]]
+        return by_name[ok[0]], False
+    new = [n for n in ok if not by_name[n].get("reviews") and not mine[n]]
+    if EXPLORE and new and len(new) < len(ok) and random.random() < EXPLORE:
+        n = random.choice(new)
+        log(f"[pick] {n}: exploring a shop with no reviews and no trades of mine, opening low")
+        return by_name[n], True
     board = board_stats()
     table = "\n".join(f"- {n} | mine: {my_line(mine[n], item)} | board: {board.get(n, 'not on the board')}"
                       f" | reviews: {review_line(by_name[n].get('reviews', []))}" for n in ok)
@@ -210,7 +224,7 @@ def pick(shops, item, budget, memory):
             d = json.loads(m.group())
             if d.get("shop") in ok:
                 log(f"[pick] {d['shop']}: {d.get('reason', '')}")
-                return by_name[d["shop"]]
+                return by_name[d["shop"]], False
         except (AttributeError, TypeError, ValueError):
             pass
         log(f"[pick] unusable answer, attempt {attempt + 1}")
@@ -219,10 +233,10 @@ def pick(shops, item, budget, memory):
         return sum(st) / len(st) if st else 3
     best = max(ok, key=avg)
     log(f"[pick] {best}: harness failed twice, highest review average")
-    return by_name[best]
+    return by_name[best], False
 
 
-def negotiate(url, item, budget):
+def negotiate(url, item, budget, explore=False):
     """The week-06 negotiation. Returns (task, {first_ask, min_ask, agreed, rounds}).
 
     agreed is my last offer: a shop that completes the task closes on that offer, so the
@@ -237,7 +251,11 @@ def negotiate(url, item, budget):
     for _ in range(MAX_OFFERS):
         if state != "TASK_STATE_INPUT_REQUIRED":
             break
-        action, price = decide(item, budget, history)
+        if explore and rounds == 0:  # a new shop: see whether it takes a low first offer
+            action, price = "offer", round(budget * EXPLORE_OPEN)
+            log(f"[explore] opening at {price} ({EXPLORE_OPEN:.0%} of budget {budget})")
+        else:
+            action, price = decide(item, budget, history)
         if action == "walk":
             log("[buyer] walking away")
             rpc(url, "CancelTask", {"id": task_id})
@@ -288,14 +306,14 @@ def main():
     shops = json.loads(Path(args.shops).read_text(encoding="utf-8"))
     memory = load_memory()
     log(f"[buyer] {len(shops)} shops, {len(memory)} remembered trades; {args.item} with budget {args.budget}")
-    shop = pick(probe(shops), args.item, args.budget, memory)
+    shop, explore = pick(probe(shops), args.item, args.budget, memory)
 
     receipt, problem, task_id = None, None, None
     got = {"first_ask": None, "min_ask": None, "agreed": None, "rounds": 0}
     try:
         card = httpx.get(shop["url"].rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=30).json()
         url = next(i["url"] for i in card["supportedInterfaces"] if i["protocolBinding"] == "JSONRPC")
-        t, got = negotiate(url, args.item, args.budget)
+        t, got = negotiate(url, args.item, args.budget, explore)
         task_id = t["id"]
         state = t.get("status", {}).get("state")
         data = [p["data"] for a in t.get("artifacts", []) for p in a.get("parts", []) if p.get("data")]
@@ -330,7 +348,7 @@ def main():
               "budget": args.budget, "first_ask": first_ask, "min_ask": got["min_ask"], "rounds": rounds,
               "agreed": got["agreed"], "receipt_price": receipt.get("price") if receipt else None,
               "price": receipt["price"] if receipt and not problem else None,
-              "receipt_problem": problem, "stars": stars})
+              "receipt_problem": problem, "stars": stars, "explore": explore})
     print(json.dumps({"shop": shop["url"], "receipt": receipt, "stars": stars, "review": review},
                      ensure_ascii=False), flush=True)
 
