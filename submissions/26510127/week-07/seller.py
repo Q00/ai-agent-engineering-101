@@ -13,6 +13,7 @@ import argparse
 import base64
 import json
 import re
+import sys
 from pathlib import Path
 
 import uvicorn
@@ -29,6 +30,9 @@ from cryptography.hazmat.primitives import serialization
 
 from catalog import Catalog
 from harness import CMD, ask_json
+
+if hasattr(sys.stdout, "reconfigure"):          # Windows: logs are pipes in cp949; write UTF-8 instead
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 SHOP = "Chaewon's Furniture"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}

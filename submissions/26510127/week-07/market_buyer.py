@@ -26,6 +26,9 @@ import httpx
 
 from harness import ask_json
 
+if hasattr(sys.stdout, "reconfigure"):          # Windows: logs are pipes in cp949; write UTF-8 instead
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 HERE = Path(__file__).parent
 MEMORY = HERE / "memory" / "market_memory.json"
 MAX_OFFERS = 8

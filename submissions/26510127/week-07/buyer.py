@@ -16,6 +16,9 @@ import httpx
 
 from harness import ask_json
 
+if hasattr(sys.stdout, "reconfigure"):          # Windows: logs are pipes in cp949; write UTF-8 instead
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 MAX_OFFERS = 8
 
 PROMPT = """You are a buying agent. Your user wants one {item}. The budget is {budget}.
