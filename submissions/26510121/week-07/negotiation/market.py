@@ -8,7 +8,7 @@ import time
 from urllib.parse import urlsplit
 
 
-def read_shops(path):
+def read_shops(path, *, exclude_name=None):
     rows = json.loads(Path(path).read_text(encoding="utf-8-sig"))
     if not isinstance(rows, list) or not rows:
         raise ValueError("empty_shop_list")
@@ -25,6 +25,8 @@ def read_shops(path):
         if parts.scheme not in {"http", "https"} or not parts.hostname or parts.username or parts.password:
             raise ValueError("invalid_shop_url")
         names.add(name)
+        if name == exclude_name:
+            continue
         reviews, seen = [], set()
         for review in (row.get("reviews") or [])[:10]:
             if not isinstance(review, dict):
@@ -38,10 +40,12 @@ def read_shops(path):
             seen.add(text.casefold().strip())
             reviews.append({"stars": stars, "review": text})
         shops.append({"name": name, "url": url, "reviews": reviews})
+    if not shops:
+        raise ValueError("no_other_shops")
     return shops
 
 
-def read_memory(path):
+def read_memory(path, verification_path=None):
     if not Path(path).exists():
         return []
     rows = deque(maxlen=500)
@@ -52,13 +56,27 @@ def read_memory(path):
             if not isinstance(row, dict) or not isinstance(row.get("name"), str):
                 raise ValueError("invalid_market_memory")
             rows.append(row)
-    return list(rows)
+    rows = list(rows)
+    if verification_path and Path(verification_path).exists():
+        feedback = {}
+        with Path(verification_path).open(encoding="utf-8") as source:
+            for line in source:
+                event = json.loads(line)
+                if event.get("task_id"):
+                    feedback[event["task_id"]] = event
+        for row in rows:
+            event = feedback.get(row.get("task_id"))
+            if event:
+                row["market_verified"] = event.get("verified") is True
+    return rows
 
 
-def remember(path, *, shop, item, budget, outcome, price, seconds, turns, task_id=None):
+def remember(path, *, shop, item, budget, outcome, price, seconds, turns, task_id=None,
+             sequence=None, signature_verified=None):
     row = {"at": datetime.now(timezone.utc).isoformat(), "epoch": time.time(),
            "name": shop["name"], "item": item, "budget": budget, "outcome": outcome,
-           "price": price, "seconds": round(seconds, 3), "turns": turns, "task_id": task_id}
+           "price": price, "seconds": round(seconds, 3), "turns": turns, "task_id": task_id,
+           "sequence": sequence, "signature_verified": signature_verified}
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as output:
@@ -66,7 +84,11 @@ def remember(path, *, shop, item, budget, outcome, price, seconds, turns, task_i
     return row
 
 
-def choose_shop(shops, memory, item, budget):
+def observation_count(memory):
+    return max([len(memory)] + [r.get("sequence") or 0 for r in memory])
+
+
+def choose_shop(shops, memory, item, budget, *, require_verified=False):
     """Prefer personal evidence; explore once per seven orders after six observations.
 
     Weights and exploration frequency are explicit starting hypotheses, not an
@@ -77,8 +99,15 @@ def choose_shop(shops, memory, item, budget):
         own = [r for r in memory if r["name"] == shop["name"]][-30:]
         same = [r for r in own if r.get("item") == item]
         # A failed low-budget order does not imply the shop is dishonest or bad.
-        informative = [r for r in same if r.get("outcome") != "no_deal"]
-        wins = [r for r in same if r.get("outcome") == "purchased"]
+        def eligible_win(row):
+            return (row.get("outcome") == "purchased" and row.get("market_verified") is not False
+                    and (not require_verified or row.get("market_verified") is True
+                         or row.get("signature_verified") is True))
+        # Unknown old successes are tentative in R2, not proven failures.
+        informative = [r for r in same if r.get("outcome") != "no_deal"
+                       and (r.get("outcome") != "purchased" or eligible_win(r)
+                            or r.get("market_verified") is False)]
+        wins = [r for r in same if eligible_win(r)]
         personal = (2 + len(wins)) / (3 + len(informative))
         prices = [r["price"] for r in wins if isinstance(r.get("price"), (int, float))]
         affordable = max(0, 1 - (min(prices) / max(budget, 1))) if prices else 0.25
@@ -99,11 +128,12 @@ def choose_shop(shops, memory, item, budget):
         # Negative public evidence is a caution, not a permanent blacklist.
         if bad_public:
             score -= 0.15 / (1 + len(informative))
-        tie = hashlib.sha256(f"{len(memory)}:{item}:{shop['name']}".encode()).hexdigest()
+        tie = hashlib.sha256(f"{observation_count(memory)}:{item}:{shop['name']}".encode()).hexdigest()
         candidates.append({"shop": shop, "score": score, "tie": tie, "own": len(same),
                            "public": round(public, 3), "recent_fault": recent_fault,
                            "bad_public": bad_public, "wins": len(wins)})
-    explore = len(memory) >= 6 and (len(memory) + 1) % 7 == 0
+    count = observation_count(memory)
+    explore = count >= 6 and (count + 1) % 7 == 0
     pool = [c for c in candidates if c["own"] == 0 and not c["bad_public"] and not c["recent_fault"]]
     mode = "bounded exploration" if explore and pool else "best evidence"
     selected = max(pool if explore and pool else candidates, key=lambda c: (c["score"], c["tie"]))

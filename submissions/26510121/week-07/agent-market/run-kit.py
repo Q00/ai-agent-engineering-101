@@ -1,6 +1,7 @@
 """Run the unmodified course kit with visible, bounded tunnel diagnostics."""
 from datetime import datetime
 import importlib.util
+import json
 import os
 from pathlib import Path
 import queue
@@ -18,6 +19,51 @@ REPO = AGENT.parents[2]
 spec = importlib.util.spec_from_file_location("course_market_kit", REPO / "scripts" / "market_kit.py")
 kit = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(kit)
+
+
+original_call = kit.Market.call
+original_handle_order = kit.handle_order
+
+
+def market_call(self, method, path, role="buyer", **kwargs):
+    response = original_call(self, method, path, role=role, **kwargs)
+    if response.status_code != 200:
+        return response
+    if method == "GET" and path == "/api/shops":
+        registry = {row["url"].rstrip("/"): {"name": row["name"], "pubkey": row["pubkey"]}
+                    for row in response.json()["shops"]}
+        target = AGENT / ".market" / "registry-keys.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temporary = target.with_suffix(".tmp")
+        temporary.write_text(json.dumps(registry), encoding="utf-8")
+        temporary.replace(target)
+    elif method == "POST" and path == "/api/results":
+        submitted, result = kwargs.get("json", {}), response.json()
+        receipt = submitted.get("receipt") or {}
+        event = {"at": datetime.now().isoformat(), "order": submitted.get("order"),
+                 "task_id": receipt.get("task"), "shop_url": submitted.get("shop"),
+                 "verified": result.get("verified") is True, "checks": result.get("checks"),
+                 "review_accepted": result.get("review_accepted"), "ledger": result.get("ledger")}
+        memory = AGENT / "memory" / "market-verification.jsonl"
+        memory.parent.mkdir(exist_ok=True)
+        with memory.open("a", encoding="utf-8") as out:
+            out.write(json.dumps(event) + "\n")
+    return response
+
+
+def handle_order(order, *args, **kwargs):
+    names = ("MARKET_ROUND", "MARKET_REGISTRY_KEYS")
+    old = {name: os.environ.get(name) for name in names}
+    os.environ["MARKET_ROUND"] = str(order["round"])
+    os.environ["MARKET_REGISTRY_KEYS"] = str(AGENT / ".market" / "registry-keys.json")
+    try:
+        return original_handle_order(order, *args, **kwargs)
+    finally:
+        for name, value in old.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
 
 
 def open_tunnel(port):
@@ -70,4 +116,6 @@ def open_tunnel(port):
 
 if __name__ == "__main__":
     kit.open_tunnel = open_tunnel
+    kit.Market.call = market_call
+    kit.handle_order = handle_order
     kit.main()

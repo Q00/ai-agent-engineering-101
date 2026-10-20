@@ -1,14 +1,18 @@
 """Market boundaries: changed URLs, untrusted reviews and binding offers."""
 import json
+import base64
 import tempfile
 import time
 import unittest
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
-from market_buyer import BudgetClient
+from market_buyer import BudgetClient, validate_market_receipt
 from negotiation.a2a_client import ProtocolError, receipt
-from negotiation.market import choose_shop, read_shops, review_trade
+from negotiation.market import choose_shop, read_memory, read_shops, review_trade
+from negotiation.receipts import canonical_receipt
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 
 def shop(name, stars=4):
@@ -60,6 +64,38 @@ class MarketSelectionTests(unittest.TestCase):
             parsed = read_shops(path)
         self.assertEqual(len(parsed[0]["reviews"]), 1)
 
+    def test_separate_buyer_role_cannot_select_own_shop(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "shops.json"
+            path.write_text(json.dumps([shop("seochanit"), shop("other")]))
+            self.assertEqual([s["name"] for s in read_shops(path, exclude_name="seochanit")], ["other"])
+            path.write_text(json.dumps([shop("seochanit")]))
+            with self.assertRaisesRegex(ValueError, "no_other_shops"):
+                read_shops(path, exclude_name="seochanit")
+
+    def test_exploration_continues_after_rolling_window_is_full(self):
+        memory = [{"name": "regular", "item": "lamp", "outcome": "purchased", "price": 100,
+                   "sequence": n} for n in range(4, 504)]
+        picked, reason, _ = choose_shop([shop("regular"), shop("new")], memory, "lamp", 120)
+        self.assertEqual(picked["name"], "new")
+        self.assertIn("exploration", reason)
+
+    def test_market_rejection_is_not_learned_as_a_success(self):
+        memory = [{"name": "rejected", "item": "lamp", "outcome": "purchased", "price": 80,
+                   "market_verified": False}] * 5
+        picked, _, _ = choose_shop([shop("rejected"), shop("other")], memory, "lamp", 120,
+                                   require_verified=True)
+        self.assertEqual(picked["name"], "other")
+
+    def test_market_feedback_is_joined_without_rewriting_original_memory(self):
+        with tempfile.TemporaryDirectory() as folder:
+            memory, feedback = Path(folder) / "memory", Path(folder) / "feedback"
+            text = json.dumps({"name": "s", "task_id": "t", "outcome": "purchased"}) + "\n"
+            memory.write_text(text)
+            feedback.write_text(json.dumps({"task_id": "t", "verified": False}) + "\n")
+            self.assertFalse(read_memory(memory, feedback)[0]["market_verified"])
+            self.assertEqual(memory.read_text(), text)
+
     def test_receipt_keeps_original_signed_fields_and_float_type(self):
         data = {"shop": "s", "item": "lamp", "price": 100.0, "task": "t", "sig_seller": "opaque"}
         task = {"id": "t", "status": {"state": "TASK_STATE_COMPLETED"},
@@ -82,6 +118,27 @@ class BudgetBoundaryTests(unittest.IsolatedAsyncioTestCase):
                 send.assert_awaited_once_with("120", "task")
         finally:
             await client.close()
+
+
+class RoundTwoBuyerTests(unittest.TestCase):
+    def test_invalid_signature_unknown_key_and_reused_task_are_rejected(self):
+        selected = shop("registered")
+        key = Ed25519PrivateKey.generate()
+        public = base64.b64encode(key.public_key().public_bytes(serialization.Encoding.Raw,
+                                                               serialization.PublicFormat.Raw)).decode()
+        body = {"shop": "Registered", "item": "lamp", "price": 100.0, "task": "new-task"}
+        signed = {**body, "sig_seller": base64.b64encode(key.sign(canonical_receipt(body))).decode()}
+        with tempfile.TemporaryDirectory() as folder:
+            registry = Path(folder) / "keys.json"
+            registry.write_text(json.dumps({selected["url"]: {"name": selected["name"], "pubkey": public}}))
+            self.assertTrue(validate_market_receipt(signed, selected, [], registry, required=True))
+            with self.assertRaisesRegex(ProtocolError, "signature_invalid"):
+                validate_market_receipt({**signed, "price": 101}, selected, [], registry, required=True)
+            with self.assertRaisesRegex(ProtocolError, "task_reused"):
+                validate_market_receipt(signed, selected, [{"task_id": "new-task", "outcome": "purchased"}],
+                                        registry, required=True)
+            with self.assertRaisesRegex(ProtocolError, "key_unavailable"):
+                validate_market_receipt(signed, selected, [], None, required=True)
 
 
 if __name__ == "__main__":
