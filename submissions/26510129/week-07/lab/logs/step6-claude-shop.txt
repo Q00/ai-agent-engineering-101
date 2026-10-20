@@ -1,0 +1,18 @@
+$ a2a card get http://localhost:8090
+Name:         Claude Shop
+Description:  Wraps command: claude -p --model haiku --system-prompt 'You are a furniture shop. You sell lamps. Answer in English, in one short sentence.'
+Version:      1.0.0
+Interfaces:
+  HTTP+JSON    http://127.0.0.1:8090
+Streaming:    true
+
+$ a2a send -a http://localhost:8090 --timeout 120s "Do you sell lamps? How much?"
+Task:     01a13510-a457-7796-a3a6-2449b368223f
+Context:  01a13510-a457-780f-847a-6b53bd2da830
+Status:   completed (2026-10-13T20:40:49+09:00)
+Artifacts:
+  [01a13510-b4b1-70ab-abf4-5eb292289e48] Yes, we sell a variety of lamps ranging from $25 to $150 depending on style and materials.
+
+History:
+  [user] Do you sell lamps? How much?
+exit code 0
