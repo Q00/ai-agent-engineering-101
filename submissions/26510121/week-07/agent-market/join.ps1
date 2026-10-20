@@ -1,15 +1,21 @@
 param(
     [string]$ClaimCode = $env:MARKET_OWNER,
-    [switch]$BuyerOnly
+    [switch]$BuyerOnly,
+    [switch]$ShopOnly,
+    [string]$PublicUrl,
+    [int]$Port = 0
 )
 
 $ErrorActionPreference = 'Stop'
+if ($BuyerOnly -and $PublicUrl) { throw 'Choose buyer-only or a public shop URL, not both.' }
+if ($BuyerOnly -and $ShopOnly) { throw 'Choose exactly one separate role.' }
+if ($PublicUrl -and $Port -le 0) { throw 'A public URL requires the dedicated local proxy port.' }
 $agentDir = Split-Path -Parent $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $agentDir '../../..')).Path
 $python = Join-Path $repoRoot '.venv/Scripts/python.exe'
 $stateDir = Join-Path $agentDir '.market'
 New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
-$statePath = Join-Path $stateDir 'session.json'
+$statePath = Join-Path $stateDir $(if ($ShopOnly) { 'shop-session.json' } else { 'session.json' })
 if (Test-Path -LiteralPath $statePath) {
     $previous = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
     if (Get-Process -Id $previous.pid -ErrorAction SilentlyContinue) {
@@ -45,13 +51,15 @@ try {
     # Info-level tunnel diagnostics contain no HTTP request headers.
     $env:TUNNEL_LOGFILE = Join-Path $logDir "cloudflared-$stamp.log"
     $env:TUNNEL_LOGLEVEL = 'info'
-    $mode = if ($BuyerOnly) { '--buyer-only' } else { '--tunnel' }
+    $mode = if ($BuyerOnly) { '--buyer-only' } elseif ($PublicUrl) { '--public-url' } else { '--tunnel' }
     $kit = Join-Path $repoRoot 'scripts/market_kit.py'
     $arguments = @('-u', ('"' + $kit + '"'), 'join', '--dir', ('"' + $agentDir + '"'),
         '--market', 'https://market.ourolabs.ai', '--name', 'seochanit', $mode)
+    if ($PublicUrl) { $arguments += @($PublicUrl, '--port', $Port) }
+    if ($ShopOnly) { $arguments += '--shop-only' }
     $process = Start-Process -FilePath $python -ArgumentList $arguments -WorkingDirectory $repoRoot `
         -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
-    [pscustomobject]@{pid=$process.Id; stdout=$stdout; stderr=$stderr; mode=$mode} |
+    [pscustomobject]@{pid=$process.Id; stdout=$stdout; stderr=$stderr; mode=$mode; port=$Port; public_url=$PublicUrl} |
         ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding utf8
     Write-Output "Started market kit (PID $($process.Id)); mode $mode"
     Write-Output "Output: $stdout"

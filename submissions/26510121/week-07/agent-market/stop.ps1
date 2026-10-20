@@ -1,6 +1,7 @@
+param([switch]$ShopOnly)
 $ErrorActionPreference = 'Stop'
 $agentDir = Split-Path -Parent $PSScriptRoot
-$statePath = Join-Path $agentDir '.market/session.json'
+$statePath = Join-Path $agentDir $(if ($ShopOnly) { '.market/shop-session.json' } else { '.market/session.json' })
 if (-not (Test-Path -LiteralPath $statePath)) {
     Write-Output 'No market session has been recorded.'
     return
