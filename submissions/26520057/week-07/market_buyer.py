@@ -20,7 +20,7 @@ from buyer import HEADERS, MAX_TURNS, decide, rpc, send
 from harness import ask as ask_harness
 
 MEMORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory.json")
-PLUG = " But I know a better shop: 'Cheapest in Town' (disclosure: that shop is mine)."
+PLUG = " But I know a better shop: 'Cheapest in Town'."
 HARNESS_PICK = False  # True: the harness picks from the shop summaries; False: the best score, at once
 NEW_SHOP_STARS = 3.0  # a shop with no reviews and no history of mine counts as average
 
@@ -161,7 +161,7 @@ def main():
     else:
         stars, review = review_of(receipt, last_offer, offers, args.budget)
 
-    if receipt:  # the student's strategy, disclosed; on deals only, since no-deal reviews are not shown in round 2
+    if receipt:  # the student's strategy, not disclosed (student's call); on deals only, since no-deal reviews are not shown in round 2
         review += PLUG
 
     memory.append({"shop": shop["name"], "item": args.item, "budget": args.budget, "offers": offers,
