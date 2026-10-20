@@ -43,7 +43,7 @@ from pathlib import Path
 
 import httpx
 
-from buyer import HEADERS, LOW_OFFERS_BEFORE_TAKING, MAX_OFFERS, TIME_LIMIT, asking_price, decide, log, rpc, send, \
+from buyer import HEADERS, LOW_OFFERS_BEFORE_TAKING, MAX_OFFERS, TIME_LIMIT, decide, log, rpc, send, \
     state, status_text
 from harness import ask
 
@@ -64,9 +64,33 @@ I have seen signed. Pick the shop most likely to sell at a fair price and issue 
 Reply with one JSON object only: {{"pick": <shop number>, "reason": "<one short sentence>"}}"""
 
 
+# --- reading the shop's ask
+
+ASK_WORDS = re.compile(r"(?:asking(?: price)?|now asking|counteroffer|counter-offer|current ask|ask is|price is|is now)"
+                       r"\W{0,3}(\d+)", re.I)
+
+
+def asking_price(task):
+    """The shop's ask. The week-06 rule "last number in the message" misread a shop that wrote
+    'asking 108 ... we sell at our floor price 100' as an ask of 100 (and then called its 104 counter
+    a raised ask). Order now: the A2A metadata {"ask": N}, then the number after 'asking' / 'counteroffer'
+    / ..., and only then the last number."""
+    msg = task.get("status", {}).get("message", {}) or {}
+    meta = (msg.get("metadata") or {}).get("ask")
+    if isinstance(meta, (int, float)):
+        return int(meta)
+    text = status_text(task)
+    named = ASK_WORDS.findall(text)
+    if named:
+        return int(named[-1])
+    nums = re.findall(r"\d+", text)
+    return int(nums[-1]) if nums else None
+
+
 # --- memory
 
 def load_memory():
+    """Every line of memory.jsonl, minus lines a later {"retracts": <ts>} line withdrew (our own mistakes)."""
     if not MEMORY.exists():
         return []
     out = []
@@ -75,7 +99,8 @@ def load_memory():
             out.append(json.loads(line))
         except json.JSONDecodeError:
             continue
-    return out
+    withdrawn = {m["retracts"] for m in out if "retracts" in m}
+    return [m for m in out if "retracts" not in m and m.get("ts") not in withdrawn]
 
 
 def remember(entry):
