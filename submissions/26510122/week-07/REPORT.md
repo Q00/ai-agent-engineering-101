@@ -1,12 +1,12 @@
-# Week 07: Agent Market (work in progress)
+# Week 07: Agent Market
 
 This report records observations as of 2026-10-20. The local market test passed
 25/25 before and after the price change and again after the Round 1 memory and
 review update in an isolated copy. The Week 06 compatibility test
 also passed 21/21 in an isolated copy, so its report did not replace the Week
 07 report ([`week06-precheck`](logs/week06-precheck/trade-test.log)). Round 1
-started on 2026-10-20; Round 2 results and the final deployment status must be
-added before submission.
+and Round 2 both started on 2026-10-20. Deployment remains dependent on this
+Mac staying awake and powered through the deadline.
 
 ## 1. Shop choice and memory
 
@@ -96,7 +96,18 @@ marked that shop `avoid`, and submitted a one-star review. The following choice
 excluded `BeliveMe` and produced a verified lamp purchase at 120 from
 `corner-store` with a four-star review; both reviews were accepted by the
 market ([`round1-memory-review.json`](logs/challenge-2/round1-memory-review.json)).
-Round 2 outcomes, including a counted deal, remain to be observed.
+Round 2 opened at about 21:21 KST. The first two orders in the kit log were
+both for a bookshelf, with budgets 325 and 360. The buyer selected
+`dragonash`, offered 281 on each order, received matching signed receipts,
+and the kit added its buyer signature. The market accepted ledger #9813 and
+#9862 as `verified True`, with both five-star reviews shown
+([`market-kit.log`, lines 7970-8030](logs/market-kit.log#L7970)). At the
+21:22:16 KST public-board snapshot, our GitHub-linked buyer and shop were
+both alive; the buyer had three counted Round 2 deals in three orders and the
+shop had one counted sale, at 262
+([`confirmed.json`](logs/round2/confirmed.json)). The board totals are a
+time-specific observation, while the two cited ledger entries show the
+individual signed transactions.
 
 ## 4. Receipt signatures
 
@@ -117,6 +128,10 @@ sig_buyer added` and the market accepted ledger #8293 as `verified True`
 verified a live receipt's seller signature against the local Ed25519 public
 key and checked that its `task` matched the negotiation. This confirms the
 signing path before Round 2; it is not a Round 2 counted deal.
+The same `sig_seller ok, sig_buyer added` sequence appeared in the first two
+Round 2 purchases immediately before the market returned `verified True`
+([`market-kit.log`, lines 8000-8003](logs/market-kit.log#L8000),
+[`market-kit.log`, lines 8029-8030](logs/market-kit.log#L8029)).
 
 ## 5. Required challenges
 
@@ -174,8 +189,8 @@ continuous availability through the deadline.
 The separate tunnel supervisor lives in `agent-market/` outside the submission;
 the kit's live output remains in `logs/market-kit.log`. An additional local
 `caffeinate -i` service prevents idle sleep while this Mac stays open; battery
-exhaustion or closing the lid would still stop it. Both agents were online at
-the last local checker run, but keeping them online through the deadline remains
-required. The checker reported zero counted Round 2 deals at that point. In Round
-0 the kit picks a random shop, so the live
+exhaustion or closing the lid would still stop it. Both agents were online in
+the Round 2 board snapshot, and the buyer had more than the required one
+counted deal, but keeping them online through the deadline remains required.
+In Round 0 the kit picks a random shop, so the live
 `market_buyer` review and memory policy can only be observed from Round 1.
