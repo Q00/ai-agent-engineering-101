@@ -144,16 +144,21 @@ def main():
     shop, reason = pick(shops, memory, args.item, args.budget)
     print(f"[choose] {shop['name']} {shop['url']}: {reason}", flush=True)
 
+    failed = False
     try:
         receipt, last_offer, offers = negotiate(shop["url"], args.item, args.budget)
     except Exception as e:
         print(f"[trade] failed: {e!r}", flush=True)
-        receipt, last_offer, offers = None, None, []
-    stars, review = review_of(receipt, last_offer, offers, args.budget)
+        receipt, last_offer, offers, failed = None, None, [], True
+    if failed:  # the shop did not answer properly: 1 star, so my next pick (and other buyers) can avoid it
+        stars, review = 1, "Shop did not answer properly; the negotiation broke off."
+    else:
+        stars, review = review_of(receipt, last_offer, offers, args.budget)
 
     memory.append({"shop": shop["name"], "item": args.item, "budget": args.budget, "offers": offers,
                    "price": receipt.get("price") if receipt else None,
-                   "result": "deal" if receipt else "no deal", "stars": stars, "ts": int(time.time())})
+                   "result": "failed" if failed else "deal" if receipt else "no deal",
+                   "stars": stars, "ts": int(time.time())})
     save_memory(memory)
     print(json.dumps({"shop": shop["url"], "receipt": receipt, "stars": stars, "review": review},
                      ensure_ascii=False), flush=True)
