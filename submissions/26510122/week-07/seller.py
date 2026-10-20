@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 import re
 from pathlib import Path
 
@@ -66,7 +67,17 @@ class Seller(AgentExecutor):
             }, ["ask"])
             ask = max(reserve, int(answer["price"]))
             if ask != answer["price"]:
-                trace("price_guard", task_id=task.id, reason="ask below reserve", proposed=answer["price"], effective=ask)
+                trace("price_guard", task_id=task.id, reason="ask below reserve",
+                      proposed=answer["price"], effective=ask)
+            policy_file = Path("pricing-policy.json")
+            if policy_file.is_file():
+                policy = json.loads(policy_file.read_text(encoding="utf-8"))
+                ceiling = math.ceil(reserve * float(policy["opening_max_reserve_multiplier"]))
+                original = ask
+                ask = min(ask, ceiling)
+                trace("pricing_policy", task_id=task.id, item=item, original_ask=original,
+                      effective_ask=ask, ceiling=ceiling, feedback=policy["feedback"],
+                      reason=policy["reason"])
             self.open[task.id] = {"item": item, "product_id": product_id, "reserve": reserve, "ask": ask, "history": []}
             trace("seller_open", task_id=task.id, item=item, product_id=product_id, reserve=reserve, ask=ask)
             await updater.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
