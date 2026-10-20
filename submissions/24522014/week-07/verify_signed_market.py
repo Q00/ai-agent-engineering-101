@@ -17,7 +17,7 @@ def main():
     directory = root / "logs/shop-improvement/market-test" / run
     directory.mkdir(parents=True)
     sources = ("seller.py", "buyer.py", "market_buyer.py", "buyer_memory.py", "shop_catalog.py",
-               "harness.py", "agent.json", "shop_policy.json")
+               "harness.py", "agent.json", "shop_policy.json", "review_event.json")
     hashes = {}
     for name in sources:
         shutil.copy2(root / name, directory / name)

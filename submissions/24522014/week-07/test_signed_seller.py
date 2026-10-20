@@ -2,6 +2,7 @@
 
 import base64
 import json
+import re
 import sys
 import unittest
 from unittest.mock import patch
@@ -62,6 +63,24 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("error", payload)
         return payload["result"].get("task", payload["result"])
 
+    async def test_event_visible_in_public_card_with_manual_terms(self):
+        card = (await self.client.get("/.well-known/agent-card.json")).json()
+        self.assertEqual(card["version"], "0.3.0")
+        self.assertIn("4- or 5-star", card["description"])
+        self.assertIn("Payment is manual", card["description"])
+        self.assertIn("no fixed percentage or automatic payout", card["description"])
+
+    async def test_promotion_does_not_break_last_number_asking_price(self):
+        with patch.object(seller, "opening_decision", return_value=decision("ask", 120)):
+            opened = await self.send("lamp")
+        text = opened["status"]["message"]["parts"][0]["text"]
+        self.assertIn("Review cashback event", text)
+        self.assertEqual(re.findall(r"\d+", text)[-1], "120")
+        self.assertTrue(text.endswith("lamp: asking 120"))
+        canceled = await self.client.post("/", json={"jsonrpc": "2.0", "id": str(uuid4()),
+            "method": "CancelTask", "params": {"id": opened["id"]}})
+        self.assertNotIn("error", canceled.json())
+
     async def test_completed_receipt_matches_agreement_and_task(self):
         with patch.object(seller, "opening_decision", return_value=decision("ask", 120)), \
              patch.object(seller, "followup_decision", return_value=decision("accept", 110)):
@@ -72,7 +91,9 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(receipt["task"], opened["id"])
         self.assertEqual(receipt["price"], 110)
         self.assertIn("sig_seller", receipt)
+        self.assertEqual(set(receipt), {"shop", "item", "price", "task", "sig_seller"})
         self.assertIn("agreed price 110", done["status"]["message"]["parts"][0]["text"])
+        self.assertIn("Review cashback event", done["status"]["message"]["parts"][0]["text"])
 
     async def test_rejection_explains_offer_and_quote_without_disclosing_reserve(self):
         with patch.object(seller, "opening_decision", return_value=decision("ask", 300)), \

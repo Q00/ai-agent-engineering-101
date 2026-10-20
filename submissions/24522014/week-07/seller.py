@@ -58,6 +58,20 @@ def opening_reference(item):
     return price
 
 
+def review_event_notice():
+    event = json.loads((ROOT / "review_event.json").read_text(encoding="utf-8"))
+    if not isinstance(event.get("enabled"), bool):
+        raise ValueError("Review event enabled must be a boolean")
+    if not event["enabled"]:
+        return ""
+    if event.get("qualifying_stars") != [4, 5] or event.get("payout") != "manual_external":
+        raise ValueError("Review event must match the approved rating and manual payout rules")
+    notice = event.get("notice")
+    if not isinstance(notice, str) or not notice.strip():
+        raise ValueError("Enabled review event needs explicit public terms")
+    return notice.strip()
+
+
 def requested_item(text):
     matches = [item for item in RESERVES if re.search(r"\b" + item + r"\b", text.lower())]
     if len(matches) != 1:
@@ -142,8 +156,9 @@ def seller_decision(provider, item, buyer_message, task_id, phase, *, offer=None
 
 
 class Seller(AgentExecutor):
-    def __init__(self, provider):
+    def __init__(self, provider, event_notice=""):
         self.provider = provider
+        self.event_notice = event_notice
         self.open = {}
 
     async def execute(self, context, event_queue):
@@ -186,7 +201,11 @@ class Seller(AgentExecutor):
         if decision["action"] == "ask":
             self.open[task.id] = {"item": item, "ask": decision["price"], "history": history}
             # The last number is the ask; the private reason is never copied into this text.
-            await up.requires_input(say(f"{item}: asking {decision['price']}"))
+            quote = f"{item}: asking {decision['price']}"
+            if deal is None and self.event_notice:
+                # Keep the quote last: existing A2A buyers parse the last number.
+                quote = self.event_notice + "\n" + quote
+            await up.requires_input(say(quote))
         elif decision["action"] == "accept":
             try:
                 receipt = sign_receipt({"shop": "Harness Furniture Shop", "item": item,
@@ -197,8 +216,11 @@ class Seller(AgentExecutor):
                 await up.failed(say("Receipt signing unavailable; purchase could not be confirmed."))
                 return
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(say(f"Deal confirmed: {item} at agreed price {decision['price']}. "
-                                  "A signed receipt for this task is attached."))
+            completion = (f"Deal confirmed: {item} at agreed price {decision['price']}. "
+                          "A signed receipt for this task is attached.")
+            if self.event_notice:
+                completion += "\n" + self.event_notice
+            await up.complete(say(completion))
             self.open.pop(task.id, None)
         else:
             await up.reject(say(f"No deal for {item} at your offer {offer}. "
@@ -215,10 +237,14 @@ class Seller(AgentExecutor):
 
 
 def build_app(provider, port):
+    event_notice = review_event_notice()
+    description = f"Negotiates furniture purchases using {provider} ({MODELS[provider]})."
+    if event_notice:
+        description += " " + event_notice
     card = AgentCard(
         name="Harness Furniture Shop",
-        description=f"Negotiates furniture purchases using {provider} ({MODELS[provider]}).",
-        version="0.2.0",
+        description=description,
+        version="0.3.0",
         default_input_modes=["text/plain"], default_output_modes=["text/plain", "application/json"],
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", protocol_version="1.0",
@@ -227,7 +253,7 @@ def build_app(provider, port):
                            description="Ask for an item, then offer a numeric price on the same task.",
                            tags=["shopping", "negotiation"])],
     )
-    handler = DefaultRequestHandler(agent_executor=Seller(provider), task_store=InMemoryTaskStore(), agent_card=card)
+    handler = DefaultRequestHandler(agent_executor=Seller(provider, event_notice), task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
 
