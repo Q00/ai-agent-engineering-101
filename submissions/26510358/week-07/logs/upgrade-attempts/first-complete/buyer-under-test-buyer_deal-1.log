@@ -1,0 +1,18 @@
+{"event": "market_candidates", "item": "lamp", "budget": 120.0, "ranking": [{"name": "Kit Shop", "score": 4.0, "personal_memory": {}, "reviews": []}]}
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 5.532, "queue_seconds": 0.0, "inference_seconds": 5.532}
+{"event": "harness_decision", "decision": {"action": "select_shop", "price": null, "item_id": "Kit Shop", "offer": null, "reason": "Only shop lists lamps and negotiates; no negative review or fraud evidence."}}
+{"event": "market_shop_selected", "shop": "Kit Shop", "url": "http://127.0.0.1:43923", "reason": "Only shop lists lamps and negotiates; no negative review or fraud evidence.", "reviews": [], "personal_memory": {}}
+{"event": "policy_loaded", "policy_sha256": "c7aff42dc6e9ea4750d9237ea620e3b1f6dd872296a438c23f20d5889ba2fba2", "policy_version": "week07-completion-v1"}
+{"event": "agent_card", "base_url": "http://127.0.0.1:43923"}
+{"event": "rpc_request", "endpoint": "http://127.0.0.1:43923/", "version": "1.0"}
+{"event": "rpc_response"}
+{"event": "quote_normalized", "task_id": "831a51b9-1af8-427d-b59a-14df7d6f64a3", "observation": {"ask": 130.0, "item_id": null, "quote_id": null, "currency": null, "quantity": null, "source": "protocol_text", "evidence_sources": {"ask": ["message.text.explicit_protocol_ask"], "item_id": [], "quote_id": [], "currency": [], "quantity": []}, "issues": [], "remote_message": "lamp: asking 130. Send your offer as a number.", "remote_metadata": {}, "remote_task_metadata": {}, "remote_data": []}}
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 3.648, "queue_seconds": 0.0, "inference_seconds": 3.648}
+{"event": "harness_decision", "decision": {"action": "offer", "price": 120, "item_id": "lamp", "offer": null, "stance": "firm", "reason": "The stated ask of 130 exceeds the 120 budget; offering the budget ceiling."}}
+{"event": "rpc_request", "endpoint": "http://127.0.0.1:43923/", "version": "1.0"}
+{"event": "rpc_response"}
+{"event": "receipt_checked", "issues": [], "receipt": {"task": "831a51b9-1af8-427d-b59a-14df7d6f64a3", "sig_seller": "eqIj5MyQvvS6kISgtW75yjoe/TZRcO3ReJiIBilQCiJwukR/UD8rcdjk/bNXpQInGj4brreu+DgvkADLddCsCw==", "shop": "Kit Shop", "item": "lamp", "price": 120.0}}
+{"event": "purchase_completed", "receipt": {"task": "831a51b9-1af8-427d-b59a-14df7d6f64a3", "sig_seller": "eqIj5MyQvvS6kISgtW75yjoe/TZRcO3ReJiIBilQCiJwukR/UD8rcdjk/bNXpQInGj4brreu+DgvkADLddCsCw==", "shop": "Kit Shop", "item": "lamp", "price": 120.0}, "ledger": {"version": 1, "total_budget": 120.0, "committed_total": 120.0, "reserved_total": 0.0, "available_budget": 0.0, "purchases": {"79f37a6784874a78b2210fddde1c4c79": {"purchase_id": "79f37a6784874a78b2210fddde1c4c79", "item_key": "lamp", "expected_item": "lamp", "seller_origin": "http://127.0.0.1:43923", "expected_quote_id": null, "price": 120.0, "state": "committed", "committed": true, "receipt": {"task": "831a51b9-1af8-427d-b59a-14df7d6f64a3", "sig_seller": "eqIj5MyQvvS6kISgtW75yjoe/TZRcO3ReJiIBilQCiJwukR/UD8rcdjk/bNXpQInGj4brreu+DgvkADLddCsCw==", "shop": "Kit Shop", "item": "lamp", "price": 120.0}, "disputed_reasons": []}}}}
+{"shop": "http://127.0.0.1:43923", "receipt": {"task": "831a51b9-1af8-427d-b59a-14df7d6f64a3", "sig_seller": "eqIj5MyQvvS6kISgtW75yjoe/TZRcO3ReJiIBilQCiJwukR/UD8rcdjk/bNXpQInGj4brreu+DgvkADLddCsCw==", "shop": "Kit Shop", "item": "lamp", "price": 120.0}, "stars": 5, "review": "Bought lamp at 120.0 within budget 120.0; seller signature present; registry verification delegated to market kit."}
