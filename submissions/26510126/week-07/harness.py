@@ -24,6 +24,15 @@ def log(tag, text):
 
 def parse_json(text):
     """The first {...} object in the answer, or None."""
+    start = text.find("{")
+    if start >= 0:
+        # a whole object, nested ones included (meta_shop.py asks for {"open": {...}, ...})
+        try:
+            data, _ = json.JSONDecoder().raw_decode(text[start:])
+            if isinstance(data, dict):
+                return data
+        except json.JSONDecodeError:
+            pass
     m = re.search(r"\{.*?\}", text, re.S)
     if m is None:
         return None
