@@ -11,3 +11,6 @@ Final source hashes (parent numeric parsing/type cleanup after worker evidence):
 - market_a2a/remote.py: 790afec22ae54ab22ee120be9bca120785bde60d71be213855e192ea6ef97538
 - market_a2a/market_buyer.py: 8fe489e95fbdebe3cf7b5fa47c685f9114bdae55e0fe3da82e79ef9a0c29df33
 - tests/test_selection_arithmetic.py: 7fc239e8b01d121a7839e4e61c95806d79ece1ca3792cbc36cad6a60c4caa7aa
+
+Final strict typing: basedpyright on the four changed source/test files returned 0 errors, 0 warnings, 0 notes after explicitly typing the observed price vector. Ruff check passed. Earlier invariant list inference errors were preserved in session evidence and were not runtime failures.
+Final market_buyer.py SHA256: c1ee8e98e20f28d3ed641eaac9827672a3dbbf95394b7c5f20f6beb45a0aaad2

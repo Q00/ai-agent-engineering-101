@@ -219,20 +219,21 @@ async def market_buy(
     selection = decision.selection
     selected = shops[selection.index]
     emit("[MARKET SELECTION] " + selection.model_dump_json())
+    observed_prices: list[JsonValue] = [
+        trade.purchase.price
+        for trades in memory.shops.values()
+        for trade in trades
+        if trade.item == item
+        and trade.purchase.completed
+        and trade.purchase.receipt is not None
+        and trade.purchase.price is not None
+        and 0 < trade.purchase.price <= trade.budget
+    ]
     pricing_context: dict[str, JsonValue] = {
         "selected_shop_trades": [
             trade_facts(trade) for trade in memory.shops.get(selected.name, ())[-10:]
         ],
-        "observed_same_item_prices": [
-            trade.purchase.price
-            for trades in memory.shops.values()
-            for trade in trades
-            if trade.item == item
-            and trade.purchase.completed
-            and trade.purchase.receipt is not None
-            and trade.purchase.price is not None
-            and 0 < trade.purchase.price <= trade.budget
-        ][-20:],
+        "observed_same_item_prices": observed_prices[-20:],
     }
     try:
         outcome = await buy_order(
