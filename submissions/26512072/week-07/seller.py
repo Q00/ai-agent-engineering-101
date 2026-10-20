@@ -33,6 +33,24 @@ KEY_FILE = Path(__file__).resolve().parent / "shop_key.pem"   # the kit and the 
 HISTORY = Path(os.environ.get("SHOP_HISTORY", Path(__file__).resolve().parent / "shop_history.jsonl"))
 MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai")
 _reviews_cache = {"at": 0.0, "reviews": []}
+STOCK_PER_HOUR = 12   # real limit: at most this many of each item sold per hour
+MAX_OFFERS = 6        # real limit: the negotiation ends after this many buyer offers
+
+
+def stock_left(item):
+    """How many of this item I can still sell this hour (counted from my own deal history)."""
+    if not HISTORY.exists():
+        return STOCK_PER_HOUR
+    hour = time.strftime("%Y-%m-%d %H")
+    sold = 0
+    for line in HISTORY.read_text(encoding="utf-8").splitlines():
+        try:
+            h = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if h.get("item") == item and h.get("outcome") == "deal" and str(h.get("time", "")).startswith(hour):
+            sold += 1
+    return max(0, STOCK_PER_HOUR - sold)
 
 
 def own_reviews():
@@ -138,6 +156,9 @@ class Seller(AgentExecutor):
             if item is None:
                 await up.reject(say("We only sell: lamp, chair, bookshelf."))
                 return
+            if stock_left(item) == 0:
+                await up.reject(say(f"Sold out: every {item} for this hour is gone. Please come back next hour."))
+                return
             opening, note = pricing(item, RESERVE[item])
             deal = self.open[task.id] = {"item": item, "ask": None, "offer": None, "lines": [f"buyer: {text}"],
                                          "opening": opening, "note": note, "asks": [], "offers": []}
@@ -171,6 +192,11 @@ class Seller(AgentExecutor):
             record(deal, "deal", price)
             del self.open[task.id]
             return
+        if action != "accept" and len(deal["offers"]) >= MAX_OFFERS:   # the announced limit is kept
+            await up.reject(say("No deal: that was the last offer, as announced."))
+            record(deal, "rejected")
+            del self.open[task.id]
+            return
         if action == "reject":
             await up.reject(say("No deal."))
             record(deal, "rejected")
@@ -187,8 +213,14 @@ class Seller(AgentExecutor):
             price = round(deal["opening"] * 1.1)
         deal["ask"] = int(price)
         deal["asks"].append(deal["ask"])
-        reply = (f"{deal['item']}: asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
-                 else f"Counteroffer: {deal['ask']}.")
+        left = stock_left(deal["item"])
+        rounds_left = MAX_OFFERS - len(deal["offers"])
+        if len(deal["lines"]) == 1:   # truthful scarcity: the stock and the round limit are both enforced above
+            reply = (f"{deal['item']}: only {left} left this hour, and this negotiation closes after {MAX_OFFERS} offers. "
+                     f"Asking {deal['ask']}. Send your offer as a number.")
+        else:
+            reply = (f"{'Your next offer is the last one, ' if rounds_left <= 1 else f'{rounds_left} offers left, '}"
+                     f"{left} in stock this hour. Counteroffer: {deal['ask']}.")
         deal["lines"].append(f"you: {reply}")
         await up.requires_input(say(reply))
 
@@ -205,7 +237,8 @@ def build(port):
     card = AgentCard(
         name=f"{SHOP_NAME} shop",
         description=f"Sells desk lamps, chairs and bookshelves. A coding harness ({CMD.split()[0]}) negotiates the price. "
-                    "Every receipt is signed (Ed25519) and always shows the agreed price.",
+                    "Every receipt is signed (Ed25519) and always shows the agreed price. "
+                    f"Limited stock: {STOCK_PER_HOUR} of each item per hour; a negotiation closes after {MAX_OFFERS} offers.",
         version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
