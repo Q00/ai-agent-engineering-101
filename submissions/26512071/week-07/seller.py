@@ -61,7 +61,7 @@ NAME = "Sonnet Shop"
 CATALOG = Catalog()
 SHOP_KINDS = 4
 MARKET_ITEMS = ("lamp", "chair", "bookshelf")
-MARKET_NAME = "Kimchyoungman Furniture"
+MARKET_NAME = "Fair Furniture"
 MARKET = False
 KEY_FILE = Path(__file__).with_name("shop_key.pem")
 
@@ -189,7 +189,8 @@ Negotiation so far:
 {history}
 
 Decide your next move. Answer with one JSON object and nothing else:
-{{"action": "ask" | "accept" | "reject", "price": <integer>, "message": "<one short sentence to the buyer>"}}
+{{"action": "ask" | "accept" | "reject", "price": <integer>, "message": "<one short sentence to the buyer, with no digits>"}}
+The message must not contain any number (no sizes, no prices): the shop adds the price itself.
 - "ask": you name your asking price (an opening price or a counteroffer) in "price".
 - "accept": you accept the buyer's latest offer; "price" is that offer.
 - "reject": you end the negotiation without a deal.
@@ -302,6 +303,10 @@ class Seller(AgentExecutor):
             action, price, message = "ask", deal["ask"] or reserve, ""
         else:
             action, price, message = decision
+        if re.search(r"\d", message):  # 40 of 141 market asks carried sizes like "180 cm ... 150 books ... 340"
+            log(f"[message] dropped, it had numbers: {message!r}")
+            message = {"ask": "Here is my price.", "accept": "Thank you, it is a deal.",
+                       "reject": "Sorry, I cannot go that low."}.get(action, "")
 
         promo = promo_left() > 0
         if promo:  # opening price: low ask, and any offer at or above the reserve closes
