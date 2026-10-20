@@ -17,7 +17,7 @@ import uuid
 
 ROOT = Path(__file__).resolve().parent
 COMMAND = [
-    "claude", "-p", "--model", "haiku",
+    "claude", "-p", "--model", "claude-opus-5-5",
     "--tools", "", "--setting-sources", "", "--no-session-persistence",
     "--strict-mcp-config", "--disable-slash-commands",
 ]

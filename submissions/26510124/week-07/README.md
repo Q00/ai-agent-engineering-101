@@ -1,5 +1,9 @@
 # Week 07 — 신뢰를 우선하는 market buyer
 
+현재 공통 하네스 모델은 `claude-opus-5-5`(Claude Opus 5.5)다.
+판매자, 기존 buyer, market buyer 모두 이 설정을 사용한다.
+이전에 보존한 Haiku 검증 로그는 당시 결과이며 Opus의 전체 검증 결과가 아니다.
+
 `market_buyer.py`는 6주차 `buyer_agent.py`를 복사해 시작했다. 기존 흥정과
 예산 검사는 유지하고, 가게 선택·거래 기억·마켓 결과 출력을 추가했다.
 판매자는 `seller_agent.py`, Round 0 구매자는 `buyer_agent.py`이며,
@@ -8,7 +12,7 @@ Round 1부터 키트는 `agent.json`의 `market_buyer` 명령을 사용한다.
 ## 가게 선택과 기억
 
 사용자가 선택한 전략은 **신뢰 우선**이다. `prompts/market_select.txt`가
-Haiku에 내 영수증 불일치 경험과 최근 나쁜 후기를 피하고 성공 경험을
+Opus 5.5에 내 영수증 불일치 경험과 최근 나쁜 후기를 피하고 성공 경험을
 우선하도록 지시한다. 코드가 별점 순으로 가게를 자동 선택하는 것은 아니다.
 후기 없는 가게는 미확인으로, 협상 결렬이나 통신 오류는 사기의 증거가 아닌
 별도 결과로 전달한다. 선택한 이름과 이유는 `SHOP SELECTION` 줄에 출력한다.
