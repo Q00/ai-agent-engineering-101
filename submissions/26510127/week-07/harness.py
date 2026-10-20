@@ -18,7 +18,7 @@ _CWD = tempfile.mkdtemp(prefix="harness-")
 CALLS = 0
 
 
-def ask(prompt: str, timeout: int = 180, retries: int = 2) -> str:
+def ask(prompt: str, timeout: int = 90, retries: int = 1) -> str:
     global CALLS
     last = ""
     for attempt in range(retries + 1):

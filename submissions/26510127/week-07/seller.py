@@ -85,6 +85,17 @@ def last_number(text):
     return int(float(nums[-1])) if nums else None
 
 
+def fallback_move(deal, reserve):
+    """Rule used only when the harness fails: open at 1.4x reserve, meet the buyer halfway, take a fair offer."""
+    ask, offer = deal["ask"], deal["offer"]
+    if ask is None:
+        return {"action": "counter", "price": round(reserve * 1.4)}
+    if offer is not None and offer >= reserve and offer >= reserve + (ask - reserve) // 2:
+        return {"action": "accept"}
+    target = (ask + offer) // 2 if offer is not None else ask
+    return {"action": "counter", "price": max(reserve, target)}
+
+
 class Seller(AgentExecutor):
     def __init__(self, catalog=None, markup=1.0, name=SHOP):
         self.name = name
@@ -144,9 +155,13 @@ class Seller(AgentExecutor):
             log(f"[rule] offer {deal['offer']} meets our ask {deal['ask']} -> accept")
             action, move = "accept", {}
         else:
-            move, raw = ask_json(PROMPT.format(item=deal["item"], reserve=reserve, n=deal["n"],
-                                               transcript="\n".join(deal["lines"])))
-            log(f"[harness] {raw}")
+            try:
+                move, raw = ask_json(PROMPT.format(item=deal["item"], reserve=reserve, n=deal["n"],
+                                                   transcript="\n".join(deal["lines"])))
+                log(f"[harness] {raw}")
+            except Exception as e:                        # quota / timeout: keep trading by a rule
+                move = fallback_move(deal, reserve)
+                log(f"[fallback] harness failed ({str(e)[:100]}) -> {move}")
             action = (move or {}).get("action")
 
         if action == "accept" and (deal["offer"] is None or deal["offer"] < reserve):
