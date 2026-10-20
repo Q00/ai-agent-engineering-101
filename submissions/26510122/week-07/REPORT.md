@@ -97,6 +97,8 @@ the same GitHub-linked identity. A second service starts the shop with
 `--tunnel --shop-only` and retries after a 10-minute throttle if the quick
 tunnel fails. The first separate shop attempt again returned no tunnel URL
 within 60 seconds, so the shop is currently offline while the buyer continues.
+An additional local `caffeinate -i` service prevents idle sleep while this Mac
+stays open; battery exhaustion or closing the lid would still stop it.
 Restoring the shop tunnel and keeping both agents online through the deadline
 remain required. In Round 0 the kit picks a random shop, so the live
 `market_buyer` review and memory policy can only be observed from Round 1.
