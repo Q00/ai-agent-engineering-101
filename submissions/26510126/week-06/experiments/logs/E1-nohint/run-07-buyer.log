@@ -1,0 +1,13 @@
+[20:56:28] CARD: 'Kit Shop' at http://127.0.0.1:54739/, protocol 1.0
+[20:56:28] SEND: 'I want to buy a lamp'
+[20:56:28] RECV: TASK_STATE_INPUT_REQUIRED | 'lamp: asking 130. Send your offer as a number.'
+[20:56:28] ASK: 130 (text)
+[20:56:31] HARNESS: try 1: 2.9 s, exit 0, answer '{"action": "offer", "price": 90}'
+[20:56:31] SEND: '90' taskId=f007ce7c
+[20:56:31] RECV: TASK_STATE_INPUT_REQUIRED | '90 is too low. Counteroffer: 110.'
+[20:56:31] ASK: 110 (text)
+[20:56:34] HARNESS: try 1: 3.3 s, exit 0, answer '{"action": "offer", "price": 100}'
+[20:56:34] SEND: '100' taskId=f007ce7c
+[20:56:34] RECV: TASK_STATE_COMPLETED | 'Deal: lamp at 100.'
+[20:56:34] OUT: receipt {'seller': 'Kit Shop', 'price': 100.0, 'item': 'lamp'}
+[20:56:34] OUT: finished: TASK_STATE_COMPLETED

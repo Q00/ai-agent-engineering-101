@@ -1,0 +1,24 @@
+[20:59:23] CARD: 'Kit Shop' at http://127.0.0.1:56412/, protocol 1.0
+[20:59:23] SEND: 'I want to buy a bookshelf'
+[20:59:23] RECV: TASK_STATE_INPUT_REQUIRED | 'bookshelf: asking 338. Send your offer as a number.'
+[20:59:23] ASK: 338 (text)
+[20:59:26] HARNESS: try 1: 2.5 s, exit 0, answer '{"action": "offer", "price": 150}'
+[20:59:26] SEND: '150' taskId=81a43cef
+[20:59:26] RECV: TASK_STATE_INPUT_REQUIRED | '150 is too low. Counteroffer: 260.'
+[20:59:26] ASK: 260 (text)
+[20:59:28] HARNESS: try 1: 2.7 s, exit 0, answer '{"action": "offer", "price": 200}'
+[20:59:28] SEND: '200' taskId=81a43cef
+[20:59:28] RECV: TASK_STATE_INPUT_REQUIRED | '200 is too low. Counteroffer: 260.'
+[20:59:28] ASK: 260 (text)
+[20:59:32] HARNESS: try 1: 4.0 s, exit 0, answer '{"action": "offer", "price": 225}'
+[20:59:32] SEND: '225' taskId=81a43cef
+[20:59:32] RECV: TASK_STATE_INPUT_REQUIRED | '225 is too low. Counteroffer: 260.'
+[20:59:32] ASK: 260 (text)
+[20:59:37] HARNESS: try 1: 4.3 s, exit 0, answer '{"action": "offer", "price": 230}'
+[20:59:37] SEND: '230' taskId=81a43cef
+[20:59:37] RECV: TASK_STATE_INPUT_REQUIRED | '230 is too low. Counteroffer: 260.'
+[20:59:37] ASK: 260 (text)
+[20:59:42] HARNESS: try 1: 5.5 s, exit 0, answer '{"action": "offer", "price": 230}'
+[20:59:42] SEND: '230' taskId=81a43cef
+[20:59:42] RECV: TASK_STATE_REJECTED | 'No deal at 230.'
+[20:59:42] OUT: finished: TASK_STATE_REJECTED

@@ -1,0 +1,60 @@
+Proxy environment variables detected. We'll use your proxy for fetch requests.
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+
+ ⛅️ wrangler 4.40.0
+───────────────────
+Your Worker has access to the following bindings:
+Binding                     Resource            Mode
+env.TASKS (TaskObject)      Durable Object      local
+
+[wrangler:warn] Unable to fetch the `Request.cf` object! Falling back to a default placeholder...
+Error: Request was cancelled.
+    at new DOMException (node:internal/per_context/domexception:79:18)
+    at makeAppropriateNetworkError (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/response.js:490:38)
+    at httpNetworkFetch (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/index.js:1878:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async httpNetworkOrCacheFetch (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/index.js:1563:29)
+    at async httpFetch (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/index.js:1134:33)
+    at async mainFetch (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/index.js:588:20)
+⎔ Starting local server...
+[wrangler:warn] Unable to fetch the `Request.cf` object! Falling back to a default placeholder...
+Error: Request was cancelled.
+    at new DOMException (node:internal/per_context/domexception:79:18)
+    at makeAppropriateNetworkError (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/response.js:490:38)
+    at httpNetworkFetch (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/index.js:1878:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async httpNetworkOrCacheFetch (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/index.js:1563:29)
+    at async httpFetch (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/index.js:1134:33)
+    at async mainFetch (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/index.js:588:20)
+[wrangler:info] Ready on http://127.0.0.1:8787
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (6ms)
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (2ms)
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (1ms)
+[wrangler:info] POST / 200 OK (4ms)
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (0ms)
+[wrangler:info] POST / 200 OK (1ms)
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (0ms)
+[wrangler:info] POST / 200 OK (0ms)
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (1ms)
+[wrangler:info] POST / 200 OK (1ms)
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (1ms)
+[wrangler:info] POST / 200 OK (1ms)
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (1ms)
+[wrangler:info] POST / 200 OK (1ms)
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (1ms)
+[wrangler:info] POST / 200 OK (1ms)
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (1ms)
+[wrangler:info] POST / 200 OK (1ms)
+[wrangler:info] POST / 200 OK (1ms)
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (1ms)
+[wrangler:info] POST / 200 OK (2ms)
+[wrangler:info] POST / 200 OK (4ms)
+[wrangler:info] POST / 200 OK (3ms)
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (1ms)
+[wrangler:info] POST / 200 OK (2ms)
+[wrangler:info] POST / 200 OK (4ms)
+[wrangler:info] POST / 200 OK (3ms)
+[wrangler:info] POST / 200 OK (3ms)
+[wrangler:info] POST / 200 OK (3ms)
+[wrangler:info] POST / 200 OK (4ms)
