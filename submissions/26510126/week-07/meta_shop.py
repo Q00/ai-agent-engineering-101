@@ -49,6 +49,7 @@ MARGIN = 5        # the target stays at least this much above the reserve
 UPPER = 1.15      # the opening ask stays within 15% above the market's upper quartile
 STEP = 0.15       # most a price may move in one cycle
 WINDOW = 3 * 3600 # going prices from the last three hours
+PROMO = "LAUNCH SALE: fair prices for our first customers. Please leave an honest review."
 BENCHMARK = "dragonash"  # the shop the launch sale copies (user's pick, see the Round 1 analysis in REPORT.md)
 LAUNCH_DEALS = 25  # launch sale until the board shows this many deals of our shop this round (was 10 reviews)
 
@@ -222,7 +223,7 @@ async def cycle(dry_run=False):
                 open_[k] = max(target[k] + 5, round(g["median"]))
                 notes.append(f"{k}: {BENCHMARK} has {len(prices)} recent deals, using the market's lower quartile")
         proposal = {"reason": f"launch sale: {row.get('deals') or 0} deals this round (< {LAUNCH_DEALS}), "
-                              f"copying {BENCHMARK}'s prices to earn the first reviews"}
+                              f"copying {BENCHMARK}'s prices to earn the first reviews", "promo": PROMO}
         log("META", f"launch sale, {row.get('deals') or 0} deals, {row.get('reviews') or 0} reviews, {row.get('visits') or 0} visits this round")
     else:
         proposal = await harness.ask(prompt) or {}
@@ -234,6 +235,7 @@ async def cycle(dry_run=False):
         "open": open_, "target": target,
         "market": {k: round(g["median"]) for k, g in going.items()},
         "reason": str(proposal.get("reason", "")).strip() or "(no reason from the harness)",
+        "promo": proposal.get("promo", ""),  # only the launch sale sets one; the harness's proposals never do
     }
     log("META", f"v{strategy['version']}: open {open_} target {target}: {strategy['reason']}")
     if dry_run:

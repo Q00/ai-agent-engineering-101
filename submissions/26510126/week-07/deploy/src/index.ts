@@ -41,6 +41,7 @@ type Strategy = {
   market: Record<string, number>;
   reason: string;
   updated: string;
+  promo?: string; // a line before the opening ask (launch sale); digits are stripped so buyers read the ask right
 };
 const STRATEGY_ID = "__strategy__";
 
@@ -216,7 +217,8 @@ export class TaskObject extends DurableObject<Env> {
         console.log(`GUARD: opening ask ${price} below reserve ${reserve}, asking ${reserve}`);
         price = reserve;
       }
-      const note = cleanNote(answer.note);
+      const promo = cleanNote(strategy?.promo);
+      const note = [promo, cleanNote(answer.note)].filter(Boolean).join(" ");
       await this.ctx.storage.put("deal", { item, ask: price, history: [`You asked ${price}.`] } satisfies Deal);
       console.log(`OUT: open ${item} at ${price}`);
       this.respond(task, "TASK_STATE_INPUT_REQUIRED", `${item}: ${note ? note + " " : ""}Asking ${price}. Send your offer as a number.`);
