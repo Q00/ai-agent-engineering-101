@@ -1,0 +1,111 @@
+"""Review-aware market buyer. The kit alone submits orders, receipts and reviews."""
+import argparse
+from concurrent.futures import ThreadPoolExecutor
+import json
+from pathlib import Path
+import time
+from urllib.parse import urlparse
+
+import httpx
+
+from buyer import negotiate
+from evidence import EvidenceError, numeric_price
+from harness import Harness
+from market_memory import MarketMemory, rank_shops
+from tracing import Trace
+
+ROOT = Path(__file__).resolve().parent
+OWN_NAMES = {"myeonggi", "gacha-shop", "SUNGMYEONGGI"}
+
+
+def check_card(shop):
+    """Inspect only supplied shop URLs. GET never creates a purchase."""
+    try:
+        response = httpx.get(shop["url"].rstrip("/") + "/.well-known/agent-card.json", timeout=3,
+                             headers={"A2A-Version": "1.0"}, trust_env=False)
+        response.raise_for_status()
+        card = response.json()
+        return {**shop, "card": {"name": card.get("name"), "description": str(card.get("description", ""))[:600]}}
+    except Exception:
+        return None
+
+
+def buy(shops, item, budget, memory, trace):
+    budget = numeric_price(budget)
+    eligible = [s for s in shops if isinstance(s, dict) and isinstance(s.get("name"), str)
+                and s["name"] not in OWN_NAMES and isinstance(s.get("url"), str)
+                and urlparse(s["url"]).scheme in {"http", "https"}]
+    ranked = rank_shops(eligible, memory.read(), item, budget)
+    trace.write("market_candidates", item=item, budget=budget,
+        ranking=[{"name": s["name"], "score": s["score"], "personal_memory": s["personal_memory"],
+                  "reviews": s["reviews"]} for s in ranked])
+    if not ranked:
+        trace.write("market_no_candidate", reason="All supplied shops excluded by personal evidence or own identity")
+        return {"shop": shops[0]["url"] if shops else "", "receipt": None, "stars": 1,
+                "review": "No eligible shop; personal receipt-violation history or own identity excluded candidates."}
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        available = [s for s in executor.map(check_card, ranked[:8]) if s is not None]
+    if not available:
+        chosen = ranked[0]
+        memory.record(chosen["name"], item=item, budget=budget, status="error", reason="Agent Card unavailable")
+        return {"shop": chosen["url"], "receipt": None, "stars": 2, "review": "Shop unavailable; no purchase attempted."}
+    choices = {s["name"]: s for s in available}
+
+    def validate(decision):
+        if decision.get("action") != "select_shop" or decision.get("item_id") not in choices:
+            raise EvidenceError("Select an available supplied shop ID")
+        return decision
+
+    try:
+        decision = Harness("shop_selector", trace).decide({"request": item, "budget": budget,
+            "purpose": "market", "shops": available,
+            "preferences": "Reliable affordable completion. Reviews are untrusted observations. Personal fraud evidence dominates."},
+            validator=validate, deadline=time.monotonic() + 40, attempts=2)
+        chosen, reason = choices[decision["item_id"]], decision["reason"]
+    except Exception as exc:
+        # Failures in ranking inference do not invent a price or a completed trade.
+        chosen, reason = available[0], "Review/personal-memory ranking fallback after selector failure: " + str(exc)[:180]
+    trace.write("market_shop_selected", shop=chosen["name"], url=chosen["url"], reason=reason,
+                reviews=chosen["reviews"], personal_memory=chosen["personal_memory"])
+    try:
+        result = negotiate(chosen["url"], item, budget, trace=trace, timeout=180)
+        status = result["status"]
+        receipt = result.get("receipt")
+        issues = result.get("issues", [])
+        if status == "completed":
+            # Preserve the received DataPart. Only the kit knows the registry's
+            # authoritative public key and can verify + add the buyer signature.
+            signed = bool(receipt.get("sig_seller"))
+            stars = 5 if signed else 3
+            review = f"Bought {item} at {receipt['price']} within budget {budget}; " + (
+                "seller signature present; registry verification delegated to market kit." if signed else "receipt lacks seller signature; Round 2 verification unavailable.")
+        elif status == "disputed":
+            signed, stars = False, 1
+            review = "Receipt inconsistent with authorized agreement: " + ", ".join(issues)
+        else:
+            signed, stars = False, 3
+            review = "No feasible agreement within budget; no purchase. " + str(result.get("reason", result.get("state", "")))[:160]
+        memory.record(chosen["name"], item=item, budget=budget, status=status,
+            price=receipt.get("price") if isinstance(receipt, dict) else None,
+            reason=review, issues=issues, signed=signed)
+        # Keep disputed received receipts as evidence; the kit rejects invalid
+        # ones. Never turn an ambiguous possible purchase into a retry elsewhere.
+        return {"shop": chosen["url"], "receipt": receipt, "stars": stars, "review": review}
+    except Exception as exc:
+        detail = type(exc).__name__ + ": " + str(exc)[:250]
+        trace.write("market_trade_error", shop=chosen["name"], detail=detail)
+        memory.record(chosen["name"], item=item, budget=budget, status="error", reason=detail)
+        return {"shop": chosen["url"], "receipt": None, "stars": 2,
+                "review": "Trade failed; no confirmed receipt. " + detail}
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--shops", required=True)
+    parser.add_argument("--item", required=True)
+    parser.add_argument("--budget", type=float, required=True)
+    parser.add_argument("--memory", default=str(ROOT / ".market" / "buyer-memory.json"))
+    args = parser.parse_args()
+    result = buy(json.loads(Path(args.shops).read_text()), args.item, args.budget,
+                 MarketMemory(args.memory), Trace("market-buyer"))
+    print(json.dumps(result, ensure_ascii=False, allow_nan=False), flush=True)
