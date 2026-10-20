@@ -1,7 +1,9 @@
-card: Kit Shop -> http://127.0.0.1:54786/
+[choose] Kit Shop: score=3.00; own=3.00 (1 trades), reviews=3.00 (0 reviews); weights=50:50, missing source=3, ties by name; url=http://127.0.0.1:65150
+card: Kit Shop -> http://127.0.0.1:65150/
 -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
 [harness] ```json
-{"action": "offer", "price": 100}
+{"action": "offer", "price": 110}
 ```
--> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-{"state": "TASK_STATE_COMPLETED", "artifacts": [{"artifactId": "5638eb36-0d01-4f7a-971a-f38d427e93ba", "name": "receipt", "parts": [{"data": {"price": 100.0, "seller": "Kit Shop", "item": "lamp"}}]}]}
+-> '110'  <- TASK_STATE_COMPLETED | Deal: lamp at 110.
+[memory] saved deal for Kit Shop in logs/lab1-test-memory.json
+{"shop": "http://127.0.0.1:65150", "receipt": {"task": "96552fb8-98b8-4f7f-ab23-63161a9b04c7", "sig_seller": "1N4bcO1coveDgyVJTIj/a6VBjlqLEveW1EzjlHWb98UynIdI23oRovvqmY7T7/iCfCxMFFkQ9wRTrM/Bpr2NAg==", "shop": "Kit Shop", "price": 110.0, "item": "lamp"}, "stars": 3, "review": "Bought lamp for 110 within budget 120; used 92% of budget; receipt fields match the negotiation."}
