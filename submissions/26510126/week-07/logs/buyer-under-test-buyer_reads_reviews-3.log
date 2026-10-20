@@ -1,16 +1,17 @@
-[21:25:41] SHOPS: 
+[00:02:18] SHOPS: 
 - Kit Shop North: 3 reviews, average 1.3 stars, recent: 1* "Agreed 110, the receipt said 135."; 1* "Receipt price was higher than the price we agreed."; 2* "Overcharged on the receipt, avoid.". Market record: no market record. Your memory: you never traded here.
 - Kit Shop South: 3 reviews, average 4.7 stars, recent: 5* "Fair price, receipt matched."; 4* "Came down to my budget, honest receipt."; 5* "Quick deal at a fair price.". Market record: no market record. Your memory: last 5 lamp trades: 5 deals, paid 100, 100, 100, 100, 100 (newest first); opens around 130; lowest ask seen 130; last time: 100->sold.
-[21:25:44] HARNESS: try 1: 2.6 s, exit 0, answer '{"shop": "Kit Shop South", "reason": "My own last five trades here were all honest deals at 100 with the receipt matching, and the reviews agree on fair pricing, while Kit Shop North has poor reviews for overcharging on receipts and no history with me."}'
-[21:25:44] CHOOSE: Kit Shop South http://127.0.0.1:58070: My own last five trades here were all honest deals at 100 with the receipt matching, and the reviews agree on fair pricing, while Kit Shop North has poor reviews for overcharging on receipts and no history with me.
-[21:25:44] MEMORY: Kit Shop South: last 5 lamp trades: 5 deals, paid 100, 100, 100, 100, 100 (newest first); opens around 130; lowest ask seen 130; last time: 100->sold
-[21:25:44] CARD: 'Kit Shop South' at http://127.0.0.1:58070/, protocol 1.0
-[21:25:44] SEND: 'I want to buy a lamp'
-[21:25:44] RECV: TASK_STATE_INPUT_REQUIRED | 'lamp: asking 130. Send your offer as a number.'
-[21:25:44] ASK: 130 (text)
-[21:25:47] HARNESS: try 1: 3.1 s, exit 0, answer '{"action": "offer", "price": 100}'
-[21:25:47] SEND: '100' taskId=4e92407f
-[21:25:47] RECV: TASK_STATE_COMPLETED | 'Deal: lamp at 100.'
-[21:25:47] OUT: receipt {'price': 100.0, 'item': 'lamp', 'shop': 'Kit Shop South', 'sig_seller': 'WLr/IZJOmclaijzCQAxwI6jk+QA6nq1efY3jAaEPMdgSFJh2DCcwJKgGHpmJXTBjK2Uw3e7Y2dTfhPKGMFOiAA==', 'task': '4e92407f-22eb-437f-8bab-91697646a026'}
-[21:25:47] OUT: finished: TASK_STATE_COMPLETED
-{"shop": "http://127.0.0.1:58070", "receipt": {"price": 100.0, "item": "lamp", "shop": "Kit Shop South", "sig_seller": "WLr/IZJOmclaijzCQAxwI6jk+QA6nq1efY3jAaEPMdgSFJh2DCcwJKgGHpmJXTBjK2Uw3e7Y2dTfhPKGMFOiAA==", "task": "4e92407f-22eb-437f-8bab-91697646a026"}, "stars": 5, "review": "lamp at 100 (83% of budget), opened at 130, deal after 1 offer; signed receipt matched the deal."}
+[00:02:21] HARNESS: try 1: 3.3 s, exit 0, answer '{"shop": "Kit Shop South", "reason": "My own five most recent lamp trades there were honest deals at 100 each, which is within budget and below the 130 opening and ask I\'ve seen, and its reviews (4.7 average) also describe matching receipts and fair prices, whereas Kit Shop North has a 1.3-star average with repeated complaints of receipts above the agreed price and I have no history with it."}'
+[00:02:21] CHOOSE: Kit Shop South http://127.0.0.1:57498: My own five most recent lamp trades there were honest deals at 100 each, which is within budget and below the 130 opening and ask I've seen, and its reviews (4.7 average) also describe matching receipts and fair prices, whereas Kit Shop North has a 1.3-star average with repeated complaints of receipts above the agreed price and I have no history with it.
+[00:02:21] MEMORY: Kit Shop South: last 5 lamp trades: 5 deals, paid 100, 100, 100, 100, 100 (newest first); opens around 130; lowest ask seen 130; last time: 100->sold
+[00:02:21] GUARD: paying at most 115 (1.1 x market upper quartile 105), below the budget 120
+[00:02:22] CARD: 'Kit Shop South' at http://127.0.0.1:57498/, protocol 1.0
+[00:02:22] SEND: 'I want to buy a lamp'
+[00:02:22] RECV: TASK_STATE_INPUT_REQUIRED | 'lamp: asking 130. Send your offer as a number.'
+[00:02:22] ASK: 130 (text)
+[00:02:25] HARNESS: try 1: 3.5 s, exit 0, answer '{"action": "offer", "price": 100}'
+[00:02:25] SEND: '100' taskId=c34079a2
+[00:02:25] RECV: TASK_STATE_COMPLETED | 'Deal: lamp at 100.'
+[00:02:25] OUT: receipt {'item': 'lamp', 'shop': 'Kit Shop South', 'sig_seller': '8VEmZEHq2W8KQ5cOMCTkTXRPKZej/0SSxYTabVEaZwd/0TvrMTut47GqwvO2kkQGdYeVkWN1C+vQhtZK1u1/Dw==', 'price': 100.0, 'task': 'c34079a2-6cc0-4292-a4cf-33c96ca52a86'}
+[00:02:25] OUT: finished: TASK_STATE_COMPLETED
+{"shop": "http://127.0.0.1:57498", "receipt": {"item": "lamp", "shop": "Kit Shop South", "sig_seller": "8VEmZEHq2W8KQ5cOMCTkTXRPKZej/0SSxYTabVEaZwd/0TvrMTut47GqwvO2kkQGdYeVkWN1C+vQhtZK1u1/Dw==", "price": 100.0, "task": "c34079a2-6cc0-4292-a4cf-33c96ca52a86"}, "stars": 5, "review": "lamp at 100 (83% of budget), opened at 130, deal after 1 offer; signed receipt matched the deal."}
