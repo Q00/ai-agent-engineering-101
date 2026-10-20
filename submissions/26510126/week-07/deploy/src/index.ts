@@ -50,6 +50,7 @@ const STRATEGY_ID = "__strategy__";
 const openPrompt = (item: string, reserve: number) => `You are the seller in a furniture shop. A buyer has just asked for a ${item}.
 Your reserve, the lowest price you may ever ask or sell for, is ${reserve}. The buyer does not know it.
 Name your opening asking price. Leave room to come down, since the buyer will bargain.
+Be friendly and honest in your note: never invent other buyers, scarcity or deadlines.
 
 Answer with one JSON object and nothing else:
 {"price": <integer>, "note": "<one short sentence to the buyer, no digits>"}`;
@@ -71,6 +72,7 @@ Decide:
 - "counter": name a new asking price, at or above ${reserve} and no higher than ${ask}.
 - "reject": end the negotiation without a deal.
 A deal at or above your reserve is better than no deal. Concede step by step while the buyer keeps raising.
+Be friendly and honest in your note: never invent other buyers, scarcity or deadlines.
 Reject only when the buyer clearly will not reach your reserve.
 
 Answer with one JSON object and nothing else:
@@ -330,7 +332,9 @@ export class TaskObject extends DurableObject<Env> {
     const receipt = await signReceipt(this.env, { shop: NAME, item, price: Math.round(price), task: task.id });
     task.artifacts = [{ artifactId: crypto.randomUUID(), name: "receipt", parts: [{ data: receipt }] }];
     console.log(`OUT: deal ${item} at ${price}`);
-    this.respond(task, "TASK_STATE_COMPLETED", `${note} Deal: ${item} at ${price}.`.trim());
+    // reviews decide who gets the next buyer: thank the buyer and ask for an honest one (as dragonash does)
+    this.respond(task, "TASK_STATE_COMPLETED",
+      `${note} Deal: ${item} at ${price}. Thank you! Your signed receipt is attached; an honest review helps us a lot.`.trim());
   }
 
   async get(): Promise<Outcome> {
