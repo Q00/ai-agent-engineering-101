@@ -1,12 +1,13 @@
-market buyer: lamp, budget 120, 2 shops, 132 past trades in memory
-  [harness 2.5s] '{"shop": "Kit Shop South", "reason": "Consistently honest receipts and fair prices in reviews and your own trade history."}'
-[choose] Kit Shop South http://127.0.0.1:51113: Consistently honest receipts and fair prices in reviews and your own trade history.
-card: 'Kit Shop South', JSONRPC at http://127.0.0.1:51113/
+market buyer: lamp, budget 120, 2 shops, 501 past trades in memory
+[choose] showing 2 of 2 shops: ['Kit Shop South', 'Kit Shop North']
+  [harness 2.4s] '{"shop": "Kit Shop South", "reason": "High average rating, no warnings, and past purchases show reliable pricing within budget."}'
+[choose] Kit Shop South http://127.0.0.1:55873: High average rating, no warnings, and past purchases show reliable pricing within budget.
+card: 'Kit Shop South', JSONRPC at http://127.0.0.1:55873/
   -> 'I want to buy a lamp'
   <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-  [harness 0.7s] '{"action": "offer", "price": 120}'
-  -> '120' (taskId ddb39c8b)
-  <- TASK_STATE_COMPLETED | Deal: lamp at 120.
-  [harness 1.5s] '{"stars": 5, "review": "Great deal — got the lamp exactly at my budget of 120 with clear communication and a smooth transaction."}'
+  [harness 0.9s] '{"action": "offer", "price": 110}'
+  -> '110' (taskId d9c8483c)
+  <- TASK_STATE_COMPLETED | Deal: lamp at 110.
+  [harness 1.7s] '{"stars": 5, "review": "Great deal on a lamp at Kit Shop South — got exactly what I wanted for under budget with smooth communication and a fair price."}'
 result: TASK_STATE_COMPLETED, 5s
-{"shop": "http://127.0.0.1:51113", "receipt": {"item": "lamp", "shop": "Kit Shop South", "task": "ddb39c8b-319e-419c-b68b-a54f93a8ad6d", "price": 120.0, "sig_seller": "bSqz8CILShugjSpmJTt56JiP5N+jPD1LiRInLQnKCYClJNL0iqfqLB1zK0Pm29Ho7C+GqHQlmGZDrZHQah83Ag=="}, "stars": 5, "review": "Great deal — got the lamp exactly at my budget of 120 with clear communication and a smooth transaction."}
+{"shop": "http://127.0.0.1:55873", "receipt": {"item": "lamp", "sig_seller": "ygNQnQg9cXWValtSU5+rsnXK1PtfeohF3Wnkaf2nXZjXCT4Z9SNf0vokk9SLmNPuJDyBYONi4SlFt0is8jqfDA==", "task": "d9c8483c-37c6-4a1e-b9b4-9fac908fd3ef", "shop": "Kit Shop South", "price": 110.0}, "stars": 5, "review": "Great deal on a lamp at Kit Shop South — got exactly what I wanted for under budget with smooth communication and a fair price."}
