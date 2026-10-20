@@ -1,0 +1,4 @@
+(1) no token: HTTP 401; WWW-Authenticate='Bearer error="invalid_token", error_description="Authentication required", resource_metadata="http://127.0.0.1:8001/.well-known/oauth-protected-resource/mcp"'
+(2) POST http://127.0.0.1:8001/open -> HTTP : 200; body : 'event: message\r\ndata: {"jsonrpc":"2.0","id":1,"result":{"content":[{"text":"Error executing tool propose: token is bound to negotiation 69eccc018f3f, not 8536584a40ab","type":"text"}],"isError":true}}\r\n\r\n'
+(3) POST http://127.0.0.1:8001/open -> HTTP : 200; body : 'event: message\r\ndata: {"jsonrpc":"2.0","id":1,"result":{"content":[{"text":"Error executing tool propose: not seller\'s turn (current turn: buyer)","type":"text"}],"isError":true}}\r\n\r\n'
+(4) POST http://127.0.0.1:8001/open -> HTTP: 200; body: 'event: message\r\ndata: {"jsonrpc":"2.0","id":1,"result":{"content":[{"text":"Error executing tool propose: buyer limit is 90; 91 is above budget","type":"text"}],"isError":true}}\r\n\r\n'

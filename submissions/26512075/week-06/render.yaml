@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: week06-seller
+    runtime: python
+    rootDir: submissions/26512075/week-06
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: P_BASE_URL
+        sync: false
+      - key: HARNESS_BACKEND
+        value: openai
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        sync: false
+      - key: REDIS_URL
+        sync: false
