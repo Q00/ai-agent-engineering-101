@@ -98,3 +98,109 @@ class Catalog:
     def candidates(self, text, k=10):
         """Small catalogs: everything. Large ones: search."""
         return list(self.items) if len(self.items) <= k else self.search(text, k)
+
+
+# ---------------------------------------------------------------- structured search
+NON_ATTR = {"id", "name", "description", "reserve", "category", "material", "color",
+            "style", "tags"}
+
+
+class StructuredCatalog(Catalog):
+    """A large catalog whose items carry attributes the harness can query on.
+
+    Step 1: the harness turns the buyer's words into a query (category,
+            materials, colors, numeric min/max, yes/no flags, keywords), using
+            only the schema below -- it never sees the items.
+    Step 2: the code filters on every constraint; if that leaves fewer than k
+            items it relaxes colors, then flags, then materials, then numbers
+            (never the category), and ranks the rest by keyword score.
+    """
+
+    def __init__(self, items):
+        super().__init__(items)
+        self.categories = sorted({it["category"] for it in items})
+        self.materials = sorted({it["material"] for it in items})
+        self.colors = sorted({it["color"] for it in items})
+        self.numeric, self.flags = {}, set()
+        for it in items:
+            for k, v in it.items():
+                if k in NON_ATTR:
+                    continue
+                if isinstance(v, bool):
+                    self.flags.add(k)
+                elif isinstance(v, (int, float)):
+                    lo, hi = self.numeric.get(k, (v, v))
+                    self.numeric[k] = (min(lo, v), max(hi, v))
+                elif isinstance(v, str):
+                    self.flags.add(f"{k}={v}")
+
+    @staticmethod
+    def is_structured(items):
+        return len(items) > 20 and all("category" in it for it in items[:50])
+
+    def schema_text(self):
+        per_cat = {}
+        for it in self.items:
+            keys = per_cat.setdefault(it["category"], set())
+            keys.update(k for k in it if k not in NON_ATTR)
+        lines = [f"- {c}: " + ", ".join(sorted(per_cat[c])) for c in self.categories]
+        nums = ", ".join(f"{k} {lo}..{hi}" for k, (lo, hi) in sorted(self.numeric.items()))
+        return ("Categories and their attributes:\n" + "\n".join(lines)
+                + f"\nNumeric ranges: {nums}\nMaterials: {', '.join(self.materials)}"
+                + f"\nColors: {', '.join(self.colors)}")
+
+    def query_schema(self):
+        num = {k: {"type": "number"} for k in self.numeric}
+        return {"type": "object", "properties": {
+            "category": {"type": ["string", "null"], "enum": self.categories + [None]},
+            "materials": {"type": "array", "items": {"type": "string", "enum": self.materials}},
+            "colors": {"type": "array", "items": {"type": "string", "enum": self.colors}},
+            "min": {"type": "object", "properties": num, "additionalProperties": False},
+            "max": {"type": "object", "properties": num, "additionalProperties": False},
+            "flags_true": {"type": "array", "items": {"type": "string", "enum": sorted(self.flags)}},
+            "keywords": {"type": "string"}},
+            "required": ["category", "materials", "colors", "min", "max", "flags_true", "keywords"]}
+
+    def _match(self, it, q, use):
+        if q.get("category") and it["category"] != q["category"]:
+            return False
+        if "materials" in use and q.get("materials") and it["material"] not in q["materials"]:
+            return False
+        if "colors" in use and q.get("colors") and it["color"] not in q["colors"]:
+            return False
+        if "flags" in use:
+            for f in q.get("flags_true", []):
+                k, _, v = f.partition("=")
+                if (v and it.get(k) != v) or (not v and it.get(k) is not True):
+                    return False
+        if "numbers" in use:
+            for k, v in (q.get("min") or {}).items():
+                if k in it and it[k] < v:
+                    return False
+            for k, v in (q.get("max") or {}).items():
+                if k in it and it[k] > v:
+                    return False
+        return True
+
+    def query(self, q, k=10):
+        """-> (candidates, which constraints were kept, how many matched all)."""
+        order = ["colors", "flags", "materials", "numbers"]
+        full = [it for it in self.items if self._match(it, q, set(order))]
+        use = set(order)
+        hits = full
+        for drop in order:
+            if len(hits) >= k:
+                break
+            use.discard(drop)
+            hits = [it for it in self.items if self._match(it, q, use)]
+        rank = {it["id"]: i for i, it in
+                enumerate(self.search(q.get("keywords") or "", k=len(self.items)))}
+        hits.sort(key=lambda it: (rank.get(it["id"], 10**9), it["reserve"]))
+        return hits[:k], sorted(use), len(full)
+
+
+def load(path=None):
+    cat, meta = Catalog.load(path)
+    if StructuredCatalog.is_structured(cat.items):
+        cat = StructuredCatalog(cat.items)
+    return cat, meta

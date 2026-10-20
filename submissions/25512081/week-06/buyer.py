@@ -80,6 +80,12 @@ def main():
         if price < last_offer:
             log(f"[buyer] [guard] offer {price} < my previous {last_offer}; kept {last_offer}")
             price = last_offer
+        if len(history) >= 4 and ask is not None and ask <= a.budget and price < ask:
+            # four offers already turned down: a fifth low one risks the seller walking
+            # away, and the ask is within budget, so take it
+            log(f"[buyer] [guard] 5th offer {price} below an ask {ask} within budget; "
+                f"offering the ask")
+            price = ask
         history.append({"ask": ask, "offer": price})
         last_offer = price
         r = peer.send(str(price), task_id)
