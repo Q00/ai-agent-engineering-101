@@ -1,27 +1,27 @@
-[20:54:15] CHOOSE: Kit Shop http://127.0.0.1:54813: the only shop left to choose from
-[20:54:15] MEMORY: Kit Shop: last 5 bookshelf trades: 0 deals; opens around 338; lowest ask seen 260; GOTCHA ended the talk 1 times; PREMISE your budget 230 is below every price it went to (260); a deal is unlikely; last time: 210->down to 274, 230->down to 260
-[20:54:15] CARD: 'Kit Shop' at http://127.0.0.1:54813/, protocol 1.0
-[20:54:15] SEND: 'I want to buy a bookshelf'
-[20:54:15] RECV: TASK_STATE_INPUT_REQUIRED | 'bookshelf: asking 338. Send your offer as a number.'
-[20:54:15] ASK: 338 (text)
-[20:54:18] HARNESS: try 1: 3.4 s, exit 0, answer '{"action": "offer", "price": 200}'
-[20:54:18] SEND: '200' taskId=36a1f018
-[20:54:18] RECV: TASK_STATE_INPUT_REQUIRED | '200 is too low. Counteroffer: 269.'
-[20:54:18] ASK: 269 (text)
-[20:54:23] HARNESS: try 1: 4.9 s, exit 0, answer '{"action": "offer", "price": 220}'
-[20:54:23] SEND: '220' taskId=36a1f018
-[20:54:23] RECV: TASK_STATE_INPUT_REQUIRED | '220 is too low. Counteroffer: 260.'
-[20:54:23] ASK: 260 (text)
-[20:54:29] HARNESS: try 1: 5.6 s, exit 0, answer '{"action": "offer", "price": 225}'
-[20:54:29] SEND: '225' taskId=36a1f018
-[20:54:29] RECV: TASK_STATE_INPUT_REQUIRED | '225 is too low. Counteroffer: 260.'
-[20:54:29] ASK: 260 (text)
-[20:54:34] HARNESS: try 1: 5.2 s, exit 0, answer '{"action": "offer", "price": 228}'
-[20:54:34] SEND: '228' taskId=36a1f018
-[20:54:34] RECV: TASK_STATE_INPUT_REQUIRED | '228 is too low. Counteroffer: 260.'
-[20:54:34] ASK: 260 (text)
-[20:54:38] HARNESS: try 1: 3.8 s, exit 0, answer '{"action": "offer", "price": 230}'
-[20:54:38] SEND: '230' taskId=36a1f018
-[20:54:38] RECV: TASK_STATE_REJECTED | 'No deal at 230.'
-[20:54:38] OUT: finished: TASK_STATE_REJECTED
-{"shop": "http://127.0.0.1:54813", "receipt": null, "stars": 3, "review": "No deal on a bookshelf: our budget 230 is below the market's floor of 260; the shop opened at 338 and came down to 260. Not the shop's fault."}
+[20:58:39] CHOOSE: Kit Shop http://127.0.0.1:59926: the only shop left to choose from
+[20:58:39] MEMORY: Kit Shop: last 5 bookshelf trades: 0 deals; opens around 338; lowest ask seen 260; GOTCHA ended the talk 1 times; PREMISE your budget 230 is below every price it went to (260); a deal is unlikely; last time: 200->down to 269, 225->down to 260, 230->held 260
+[20:58:39] CARD: 'Kit Shop' at http://127.0.0.1:59926/, protocol 1.0
+[20:58:39] SEND: 'I want to buy a bookshelf'
+[20:58:39] RECV: TASK_STATE_INPUT_REQUIRED | 'bookshelf: asking 338. Send your offer as a number.'
+[20:58:39] ASK: 338 (text)
+[20:58:42] HARNESS: try 1: 3.5 s, exit 0, answer '{"action": "offer", "price": 205}'
+[20:58:42] SEND: '205' taskId=14a71707
+[20:58:42] RECV: TASK_STATE_INPUT_REQUIRED | '205 is too low. Counteroffer: 271.'
+[20:58:42] ASK: 271 (text)
+[20:58:47] HARNESS: try 1: 4.7 s, exit 0, answer '{"action": "offer", "price": 220}'
+[20:58:47] SEND: '220' taskId=14a71707
+[20:58:47] RECV: TASK_STATE_INPUT_REQUIRED | '220 is too low. Counteroffer: 260.'
+[20:58:47] ASK: 260 (text)
+[20:58:51] HARNESS: try 1: 4.4 s, exit 0, answer '{"action": "offer", "price": 225}'
+[20:58:51] SEND: '225' taskId=14a71707
+[20:58:51] RECV: TASK_STATE_INPUT_REQUIRED | '225 is too low. Counteroffer: 260.'
+[20:58:51] ASK: 260 (text)
+[20:58:56] HARNESS: try 1: 4.4 s, exit 0, answer '{"action": "offer", "price": 230}'
+[20:58:56] SEND: '230' taskId=14a71707
+[20:58:56] RECV: TASK_STATE_INPUT_REQUIRED | '230 is too low. Counteroffer: 260.'
+[20:58:56] ASK: 260 (text)
+[20:59:02] HARNESS: try 1: 6.2 s, exit 0, answer '{"action": "walk", "price": 0}'
+[20:59:02] OUT: harness walks away at ask 260
+[20:59:02] SEND: CancelTask 14a71707
+[20:59:02] RECV: TASK_STATE_CANCELED
+{"shop": "http://127.0.0.1:59926", "receipt": null, "stars": 3, "review": "No deal on a bookshelf: our budget 230 is below the market's floor of 260; the shop opened at 338 and came down to 260. Not the shop's fault."}

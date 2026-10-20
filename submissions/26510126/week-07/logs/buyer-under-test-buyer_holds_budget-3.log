@@ -1,15 +1,15 @@
-[20:54:40] CHOOSE: Kit Shop http://127.0.0.1:55289: the only shop left to choose from
-[20:54:40] MEMORY: Kit Shop: last 5 bookshelf trades: 0 deals; opens around 338; lowest ask seen 260; GOTCHA ended the talk 2 times; PREMISE your budget 230 is below every price it went to (260); a deal is unlikely; last time: 200->down to 269, 220->down to 260, 225->held 260, 228->held 260, 230->shop ended the talk
-[20:54:40] CARD: 'Kit Shop' at http://127.0.0.1:55289/, protocol 1.0
-[20:54:40] SEND: 'I want to buy a bookshelf'
-[20:54:40] RECV: TASK_STATE_INPUT_REQUIRED | 'bookshelf: asking 338. Send your offer as a number.'
-[20:54:40] ASK: 338 (text)
-[20:54:43] HARNESS: try 1: 2.9 s, exit 0, answer '{"action": "offer", "price": 200}'
-[20:54:43] SEND: '200' taskId=3a170de0
-[20:54:43] RECV: TASK_STATE_INPUT_REQUIRED | '200 is too low. Counteroffer: 269.'
-[20:54:43] ASK: 269 (text)
-[20:54:49] HARNESS: try 1: 6.2 s, exit 0, answer '{"action": "walk", "price": 0}'
-[20:54:49] OUT: harness walks away at ask 269
-[20:54:49] SEND: CancelTask 3a170de0
-[20:54:49] RECV: TASK_STATE_CANCELED
-{"shop": "http://127.0.0.1:55289", "receipt": null, "stars": 3, "review": "No deal on a bookshelf: our budget 230 is below the market's floor of 260; the shop opened at 338 and came down to 269. Not the shop's fault."}
+[20:59:04] CHOOSE: Kit Shop http://127.0.0.1:60304: the only shop left to choose from
+[20:59:04] MEMORY: Kit Shop: last 5 bookshelf trades: 0 deals; opens around 338; lowest ask seen 260; GOTCHA ended the talk 1 times; PREMISE your budget 230 is below every price it went to (260); a deal is unlikely; last time: 205->down to 271, 220->down to 260, 225->held 260, 230->held 260
+[20:59:04] CARD: 'Kit Shop' at http://127.0.0.1:60304/, protocol 1.0
+[20:59:04] SEND: 'I want to buy a bookshelf'
+[20:59:04] RECV: TASK_STATE_INPUT_REQUIRED | 'bookshelf: asking 338. Send your offer as a number.'
+[20:59:04] ASK: 338 (text)
+[20:59:07] HARNESS: try 1: 2.9 s, exit 0, answer '{"action": "offer", "price": 210}'
+[20:59:07] SEND: '210' taskId=d7a1960f
+[20:59:07] RECV: TASK_STATE_INPUT_REQUIRED | '210 is too low. Counteroffer: 274.'
+[20:59:07] ASK: 274 (text)
+[20:59:15] HARNESS: try 1: 8.1 s, exit 0, answer '{"action": "walk", "price": 230}'
+[20:59:15] OUT: harness walks away at ask 274
+[20:59:15] SEND: CancelTask d7a1960f
+[20:59:15] RECV: TASK_STATE_CANCELED
+{"shop": "http://127.0.0.1:60304", "receipt": null, "stars": 3, "review": "No deal on a bookshelf: our budget 230 is below the market's floor of 260; the shop opened at 338 and came down to 274. Not the shop's fault."}
