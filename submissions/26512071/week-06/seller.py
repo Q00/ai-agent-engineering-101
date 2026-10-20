@@ -10,6 +10,11 @@ decision (asking price, counteroffers, accept, reject) comes from the harness:
 The harness answers in JSON. The reserve is in the prompt and is also enforced in code:
 an ask below the reserve is raised to the reserve, and an accept below it becomes a
 counteroffer at the reserve.
+
+Challenge 1: the shop sells from catalog.json (3000 items). A first message that names
+an item exactly ("I want to buy a lamp") goes straight to it. Otherwise search.py
+narrows the catalog to 20 candidates and the harness picks one by id; code checks that
+the id is one of the candidates, and the reserve comes from that catalog entry.
 """
 import argparse
 import asyncio
@@ -29,13 +34,27 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
+from search import Catalog
+
 NAME = "Sonnet Shop"
-RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
+CATALOG = Catalog()
 MAX_ROUNDS = 10  # safety net so a task cannot run forever
 HARNESS = ["claude", "-p", "--model", "sonnet", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
 WORKDIR = tempfile.mkdtemp(prefix="seller-harness-")  # empty dir: no project instructions
 
-PROMPT = """You are a shop owner negotiating the price of one {item} with a buyer.
+PICK = """You are a furniture shop owner. A buyer wrote:
+{request}
+
+These catalog items matched a search for the request (id | description):
+{candidates}
+
+Pick the one item that best fits what the buyer describes, including any sizes or
+amounts they mention. If none of them is the kind of thing they want, pick none.
+Answer with one JSON object and nothing else:
+{{"id": "<one id from the list>" | null, "why": "<one short sentence>"}}
+"""
+
+PROMPT = """You are a shop owner negotiating with a buyer the price of this item: {item}
 Your reserve price is {reserve}: never ask below it and never accept an offer below it.
 Above the reserve, a higher price is better, but a deal is better than no deal.
 
@@ -62,8 +81,33 @@ async def harness(prompt):
     return out.decode()
 
 
+async def pick(request):
+    """The catalog item the buyer asks for, or None."""
+    hit = CATALOG.exact(request)
+    if hit:
+        return hit
+    candidates = CATALOG.search(request)
+    if not candidates:
+        return None
+    log(f"[search] {len(candidates)} candidates: " + " ".join(c["id"] for c in candidates))
+    by_id = {c["id"]: c for c in candidates}
+    prompt = PICK.format(request=request, candidates="\n".join(f"{c['id']} | {c['description']}" for c in candidates))
+    for attempt in range(2):
+        raw = await harness(prompt)
+        log(f"[harness] {raw.strip()}")
+        m = re.search(r"\{.*?\}", raw, re.S)
+        try:
+            d = json.loads(m.group())
+            if d["id"] is None or d["id"] in by_id:  # code-side guard: only a candidate can be sold
+                return by_id.get(d["id"])
+        except (AttributeError, KeyError, TypeError, ValueError):
+            pass
+        log(f"[seller] unusable pick, attempt {attempt + 1}")
+    return None
+
+
 async def decide(item, history):
-    prompt = PROMPT.format(item=item, reserve=RESERVE[item], history="\n".join(history))
+    prompt = PROMPT.format(item=item["description"], reserve=item["reserve"], history="\n".join(history))
     for attempt in range(2):
         raw = await harness(prompt)
         log(f"[harness] {raw.strip()}")
@@ -93,10 +137,11 @@ class Seller(AgentExecutor):
         deal = self.open.get(task.id)
 
         if deal is None:  # first message: which item?
-            item = next((k for k in RESERVE if k in text.lower()), None)
+            item = await pick(text)
             if item is None:
-                await up.reject(say("We only sell: " + ", ".join(RESERVE) + "."))
+                await up.reject(say("Sorry, nothing in our catalog fits that."))
                 return
+            log(f"[seller] task={task.id[:8]} picked {item['id']} {item['name']} reserve={item['reserve']}")
             deal = self.open[task.id] = {"item": item, "ask": None, "rounds": 0,
                                          "history": [f"Buyer: {text}"]}
             offer = None
@@ -109,7 +154,7 @@ class Seller(AgentExecutor):
             deal["rounds"] += 1
             deal["history"].append(f"Buyer offers {offer}.")
 
-        item, reserve = deal["item"], RESERVE[deal["item"]]
+        item, reserve = deal["item"], deal["item"]["reserve"]
         decision = await decide(item, deal["history"])
         if decision is None:  # harness failed twice: hold the current ask
             action, price, message = "ask", deal["ask"] or reserve, ""
@@ -125,12 +170,12 @@ class Seller(AgentExecutor):
             price = reserve
         if action == "ask" and deal["rounds"] >= MAX_ROUNDS:
             action = "reject"
-        log(f"[seller] task={task.id[:8]} {item} offer={offer} -> {action} {price}")
+        log(f"[seller] task={task.id[:8]} {item['id']} offer={offer} -> {action} {price}")
 
         if action == "accept":
-            receipt = {"seller": NAME, "item": item, "price": offer}
+            receipt = {"seller": NAME, "item": item["name"], "id": item["id"], "price": offer}
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(say(f"{message} Deal: {item} at {offer}."))
+            await up.complete(say(f"{message} Deal: {item['name']} at {offer}."))
             del self.open[task.id]
         elif action == "reject":
             await up.reject(say(f"{message} No deal."))
@@ -151,7 +196,8 @@ def build(port):
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name=NAME,
-        description="Sells desk lamps, chairs and bookshelves. A model negotiates the price with the buyer.",
+        description=f"Sells {len(CATALOG.items)} pieces of furniture, from lamps to wardrobes. "
+                    "Describe what you need; a model picks the item and negotiates the price.",
         version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
@@ -162,7 +208,7 @@ def build(port):
             name="Negotiate a purchase",
             description="Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
             tags=["shopping", "negotiation"],
-            examples=["I want to buy a lamp", "90"],
+            examples=["I want to buy a lamp", "something wooden to keep about 40 books", "90"],
         )],
     )
     handler = DefaultRequestHandler(agent_executor=Seller(), task_store=InMemoryTaskStore(), agent_card=card)
