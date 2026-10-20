@@ -39,7 +39,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import HARNESS, ask
 
-NAME = "Harness Shop (25620024)"
+NAME = "dragonash's"                                      # week 07: was "Harness Shop (25620024)"
 SHOP = "dragonash"                                         # receipt "shop": the market name, same as the deployed shop
 KEY_FILE = Path(__file__).parent / "shop_key.pem"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}   # lowest prices the shop may accept

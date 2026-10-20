@@ -19,7 +19,7 @@
 
 const RESERVE: Record<string, number> = { lamp: 100, chair: 180, bookshelf: 260 };
 const MAX_ROUNDS = 6;
-const NAME = "Harness Shop, deployed (25620024)";
+const NAME = "dragonash's";   // week 07: was "Harness Shop, deployed (25620024)"
 const SHOP = "dragonash";   // receipt "shop": the market name, same as seller.py
 
 export function canon(r: { shop: string; item: string; price: number; task: string }): string {
