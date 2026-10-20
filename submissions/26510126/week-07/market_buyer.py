@@ -55,6 +55,7 @@ RECENT = 5           # trades per shop and item that count as current
 MAX_REVIEWS = 3      # recent reviews per shop shown to the harness
 REVIEW_CHARS = 120   # each review is cut to this length
 GOING_WINDOW = 3 * 3600  # going prices from the last three hours
+SIGN_WINDOW = 3600       # whether a shop signs is judged on its last hour
 PAY_CAP = 1.1        # never pay more than this x the market's upper quartile for the item
 MAX_RAISE = 0.4      # raise at most 40% of the gap to the shop's ask per offer (we overshot: 105 -> 115 at an ask of 118)
 
@@ -187,11 +188,13 @@ def score(shop, past):
 # ---------------------------------------------------------------- pick, trade, check, review
 
 def market_view(item):
-    """(going price of the item or None, per-shop records) from the public ledger; empty when offline."""
+    """(going price of the item or None, going prices, per-shop records, recent per-shop records, round)
+    from the public ledger; empty when offline."""
     entries = market_intel.load_ledger(timeout=5.0)
     going, _ = market_intel.summarize(entries, since=time.time() - GOING_WINDOW)
+    _, recent = market_intel.summarize(entries, since=time.time() - SIGN_WINDOW)  # a shop that just began signing counts
     _, shops = market_intel.summarize(entries)
-    return going.get(item), going, shops
+    return going.get(item), going, shops, recent, market_intel.current_round(entries)
 
 
 def expensive(name, item, going, records):
@@ -200,7 +203,7 @@ def expensive(name, item, going, records):
     return bool(g and prices and sorted(prices)[len(prices) // 2] > g["p75"])
 
 
-async def pick(shops, memory, item, budget, going, records):
+async def pick(shops, memory, item, budget, going, records, recent=None, rnd=0):
     known = {s["name"]: profile([m for m in memory if m["shop"] == s["name"]], item, budget) for s in shops}
     market = {s["name"]: market_intel.shop_note(s["name"], item, going, records) for s in shops}
     banned = [name for name, (_, bad) in known.items() if bad]
@@ -210,6 +213,12 @@ async def pick(shops, memory, item, budget, going, records):
     if cheats:
         log("GUARD", f"not offering shops that kept failing the market's checks: {cheats}")
     choices = [s for s in shops if s["name"] not in banned + cheats] or shops
+    if rnd >= 2:
+        # Round 2 counts a deal only with the shop's signature: an unsigned shop's sale is worth nothing
+        nosig = [s["name"] for s in choices if market_intel.unsigned(s["name"], records, recent)]
+        if nosig and len(nosig) < len(choices):
+            log("GUARD", f"Round {rnd}: not offering shops whose recent receipts are unsigned: {nosig}")
+            choices = [s for s in choices if s["name"] not in nosig]
     pricey = [s["name"] for s in choices if expensive(s["name"], item, going, records)]
     if pricey and len(pricey) < len(choices):
         log("GUARD", f"not offering shops priced above the market's upper quartile for a {item}: {pricey}")
@@ -282,8 +291,8 @@ async def main(args):
     with open(args.shops) as f:
         shops = json.load(f)
     memory = load_memory()
-    g, going, records = market_view(args.item)
-    chosen, reason, known = await pick(shops, memory, args.item, args.budget, going, records)
+    g, going, records, recent, rnd = market_view(args.item)
+    chosen, reason, known = await pick(shops, memory, args.item, args.budget, going, records, recent, rnd)
     log("CHOOSE", f"{chosen['name']} {chosen['url']}: {reason}")
     log("MEMORY", f"{chosen['name']}: {known}")
 

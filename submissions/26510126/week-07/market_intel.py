@@ -69,7 +69,7 @@ def summarize(entries, since=None):
         d = e["data"]
         url = (d.get("shop") or "").rstrip("/")
         name = names.get(url) or url.rsplit("/shop/", 1)[-1] or url
-        s = shops.setdefault(name, {"results": 0, "deals": 0, "prices": {}, "failed": {}, "last": 0})
+        s = shops.setdefault(name, {"results": 0, "deals": 0, "signed": 0, "sig_history": [], "prices": {}, "failed": {}, "last": 0})
         s["results"] += 1
         s["last"] = max(s["last"], e["ts"])
         r = d.get("receipt")
@@ -79,6 +79,8 @@ def summarize(entries, since=None):
                 s["failed"][c] = s["failed"].get(c, 0) + 1
         if isinstance(r, dict) and r.get("item") and isinstance(r.get("price"), (int, float)):
             s["deals"] += 1
+            s["signed"] += checks.get("sig_seller_ok") is True
+            s["sig_history"].append(checks.get("sig_seller_ok") is True)  # ledger order: oldest first
             s["prices"].setdefault(r["item"], []).append(r["price"])
             if checks.get("item_matches") is not False and checks.get("price_within_budget") is not False:
                 items.setdefault(r["item"], []).append(r["price"])
@@ -90,12 +92,27 @@ def summarize(entries, since=None):
     return going, shops
 
 
+def current_round(entries):
+    rounds = [e["data"].get("round", e.get("round")) for e in entries if e["kind"] == "round"]
+    return rounds[-1] if rounds else 0
+
+
+SIG_LAST = 5  # a shop's signing is judged on its last five deals, so one that just began signing counts
+
+
+def unsigned(name, shops, recent=None):
+    """True when most of a shop's last SIG_LAST receipts fail the seller-signature check (they do not count in Round 2)."""
+    s = shops.get(name)
+    last = (s or {}).get("sig_history", [])[-SIG_LAST:]
+    return len(last) >= 3 and sum(last) < len(last) / 2
+
+
 def shop_note(name, item, going, shops):
     """One line on a shop from the market's record, for the buyer's pick prompt. (note, dishonest)"""
     s = shops.get(name)
     if not s:
         return "no market record", False
-    parts = [f"{s['deals']} deals in the market"]
+    parts = [f"{s['deals']} deals in the market, {s['signed']} with a verified shop signature"]
     prices = s["prices"].get(item)
     g = going.get(item)
     if prices and g:
