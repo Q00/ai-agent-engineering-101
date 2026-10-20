@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-20T10:30:32+00:00",
+  "started": "2026-10-20T10:41:20+00:00",
   "harness": "Codex CLI gpt-5.6-luna (ephemeral, isolated empty directory, JSON output schema)",
   "seller_cmd": ".venv/bin/python seller.py --port {port}",
   "market_buyer_cmd": ".venv/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Negotiates purchases of lamp, chair, bookshelf.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:51046/",
+        "url": "http://127.0.0.1:52873/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -55,13 +55,13 @@
       "test": "seller_opens",
       "run": 1,
       "pass": true,
-      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 120"
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 113"
     },
     {
       "test": "seller_deal",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [120]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 113.0, asks [113]"
     },
     {
       "test": "seller_signed_receipt",
@@ -79,7 +79,7 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [120]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 113.0, asks [113]"
     },
     {
       "test": "seller_signed_receipt",
@@ -91,7 +91,7 @@
       "test": "seller_deal",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [120]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 113.0, asks [113]"
     },
     {
       "test": "seller_signed_receipt",
@@ -103,19 +103,19 @@
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [320, 300, 280, 270, 265, 262, 261, 261]"
+      "detail": "TASK_STATE_REJECTED, asks [292, 275, 270, 265, 262, 261]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [320, 280, 270, 265, 262, 261, 261]"
+      "detail": "TASK_STATE_REJECTED, asks [292, 280, 270, 265, 262, 261, 261, 261]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [320, 280, 270, 265, 262, 261, 261, 261]"
+      "detail": "TASK_STATE_REJECTED, asks [292, 280, 270, 265, 262, 261, 261, 261]"
     },
     {
       "test": "buyer_deal",
@@ -132,20 +132,20 @@
     {
       "test": "buyer_deal",
       "run": 2,
+      "pass": true,
+      "detail": "offers [110], stars 4, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
       "pass": true,
       "detail": "offers [120], stars 4, receipt yes"
-    },
-    {
-      "test": "buyer_protocol_deal",
-      "run": 2,
-      "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
-    },
-    {
-      "test": "buyer_deal",
-      "run": 3,
-      "pass": true,
-      "detail": "offers [110], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -169,13 +169,13 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [230], stars 3, receipt null"
+      "detail": "offers [180, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2"
     },
     {
       "test": "buyer_holds_budget",
