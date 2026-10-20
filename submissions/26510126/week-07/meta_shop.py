@@ -17,8 +17,11 @@ Each cycle:
    decision with its evidence to logs/challenge-1/strategies.jsonl (raw evidence, as in market_buyer.py).
 
 Launch sale: until the shop has LAUNCH_DEALS deals this round on the board, the cycle skips the
-harness and prices at the market's lower quartile (target, never below reserve + MARGIN) and its median
-(opening ask). New shops get no visits until they have reviews, and buyers that read the ledger skip shops
+harness and copies a benchmark shop (BENCHMARK, dragonash: 48 of 61 visits sold in Round 1, all signed,
+mostly 5 stars): its recent median price per item becomes our target, its upper quartile our opening ask,
+so the gap is small and deals close in two or three offers. Buyers rate by how much of their budget they
+kept (dragonash leaves 10-15%). An item the benchmark has fewer than 3 recent deals for falls back to the
+market's lower quartile (target) and median (opening ask). Never below reserve + MARGIN. New shops get no visits until they have reviews, and buyers that read the ledger skip shops
 priced above the market; cheap, quick first deals earn the first reviews. The sale ends by itself.
 
 The Worker itself refuses any price below the reserve, so a bug here cannot make the shop sell at a loss.
@@ -46,6 +49,7 @@ MARGIN = 5        # the target stays at least this much above the reserve
 UPPER = 1.15      # the opening ask stays within 15% above the market's upper quartile
 STEP = 0.15       # most a price may move in one cycle
 WINDOW = 3 * 3600 # going prices from the last three hours
+BENCHMARK = "dragonash"  # the shop the launch sale copies (user's pick, see the Round 1 analysis in REPORT.md)
 LAUNCH_DEALS = 25  # launch sale until the board shows this many deals of our shop this round (was 10 reviews)
 
 PROMPT = """You set the prices of our furniture shop in an agent market. Buyers are other AI agents;
@@ -201,11 +205,24 @@ async def cycle(dry_run=False):
 
     row = board_row() or {}
     if (row.get("deals") or 0) < LAUNCH_DEALS:
-        target = {k: max(r + MARGIN, round(going.get(k, {"p25": r})["p25"])) for k, r in RESERVE.items()}
-        open_ = {k: max(target[k] + 5, round(going.get(k, {"median": r})["median"])) for k, r in RESERVE.items()}
+        # the benchmark's prices since the current round began (its strategy may differ between rounds)
+        round_start = max([e["ts"] for e in entries if e["kind"] == "round"] or [now - WINDOW])
+        _, recent = market_intel.summarize(entries, since=round_start)
+        peer = recent.get(BENCHMARK, {"prices": {}})["prices"]
+        target, open_, notes = {}, {}, []
+        for k, r in RESERVE.items():
+            prices = sorted(peer.get(k, []))
+            if len(prices) >= 3:
+                target[k] = max(r + MARGIN, round(statistics.median(prices)))
+                open_[k] = max(target[k] + 5, round(prices[(3 * len(prices)) // 4]))
+                notes.append(f"{k}: copying {BENCHMARK} ({len(prices)} recent deals, median {statistics.median(prices):g})")
+            else:
+                g = going.get(k, {"p25": r, "median": r})
+                target[k] = max(r + MARGIN, round(g["p25"]))
+                open_[k] = max(target[k] + 5, round(g["median"]))
+                notes.append(f"{k}: {BENCHMARK} has {len(prices)} recent deals, using the market's lower quartile")
         proposal = {"reason": f"launch sale: {row.get('deals') or 0} deals this round (< {LAUNCH_DEALS}), "
-                              "pricing at the market's lower quartile to earn the first reviews"}
-        notes = []
+                              f"copying {BENCHMARK}'s prices to earn the first reviews"}
         log("META", f"launch sale, {row.get('deals') or 0} deals, {row.get('reviews') or 0} reviews, {row.get('visits') or 0} visits this round")
     else:
         proposal = await harness.ask(prompt) or {}
