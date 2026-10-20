@@ -1,4 +1,64 @@
-# Week 06 — 하네스로 판단하는 판매자와 구매자
+# Week 07 — 신뢰를 우선하는 market buyer
+
+`market_buyer.py`는 6주차 `buyer_agent.py`를 복사해 시작했다. 기존 흥정과
+예산 검사는 유지하고, 가게 선택·거래 기억·마켓 결과 출력을 추가했다.
+판매자는 `seller_agent.py`, Round 0 구매자는 `buyer_agent.py`이며,
+Round 1부터 키트는 `agent.json`의 `market_buyer` 명령을 사용한다.
+
+## 가게 선택과 기억
+
+사용자가 선택한 전략은 **신뢰 우선**이다. `prompts/market_select.txt`가
+Haiku에 내 영수증 불일치 경험과 최근 나쁜 후기를 피하고 성공 경험을
+우선하도록 지시한다. 코드가 별점 순으로 가게를 자동 선택하는 것은 아니다.
+후기 없는 가게는 미확인으로, 협상 결렬이나 통신 오류는 사기의 증거가 아닌
+별도 결과로 전달한다. 선택한 이름과 이유는 `SHOP SELECTION` 줄에 출력한다.
+
+하네스에는 가게별 최근 후기 10개까지의 별점 집계, 최신 원문 3개(각 400자),
+이름별 전체 거래 결과 집계와 최신 거래 3개를 전달한다. 오래된 영수증
+불일치도 전체 집계에 남는다. 가게가 12개보다 많으면 묶음별 후보를 고른 뒤
+같은 증거로 후보끼리 다시 비교한다. 요약 때문에 일부 원문은 생략되며,
+이 방식이 모든 가게를 한 번에 비교한 최적 선택을 보장하지는 않는다.
+
+기억 파일은 `data/market-memory.jsonl`이다. 한 줄이 거래 한 건이며,
+`name`, `item`, `price`, `result`, `budget`, `authorized_price`,
+`observed_receipt`, 선택 이유와 후기를 저장한다. URL은 진단용으로만 남기고
+기억 조회에는 `name`을 사용한다. 파일은 거래 후 추가하며 기존 줄을 고치지 않는다.
+새 buyer를 쓰기 전 Round 0 로그를 거래 기억으로 자동 변환하지는 않는다.
+
+성공한 거래는 받은 영수증 data Part를 서명과 추가 필드까지 그대로 반환한다.
+합의한 가격·예산·품목 및 영수증에 있는 task를 검사한다. 서명의 암호학적
+검증은 키트가 담당한다. 불일치 시 원문을 기억에 보존하고 결과는 `receipt: null`로
+내보낸다. 별점은 합의와 일치한 구매 5, 결렬 3, 실행 오류 2, 영수증 불일치 1이며,
+후기는 관측한 결과만 기술한다.
+
+## 실행과 검증
+
+레포 최상위 폴더에서, 키트가 생성한 가게 목록으로 직접 실행할 때:
+
+```bash
+submissions/26510124/week-07/.venv/bin/python \
+  submissions/26510124/week-07/market_buyer.py \
+  --shops submissions/26510124/week-07/.market/shops.json --item lamp --budget 120
+```
+
+키트의 `agent.json`은 시작할 때 한 번 읽는다. 설정 변경 후 키트를 재시작해야
+새 `market_buyer`가 연결된다. Round 0에서는 기존 buyer를 계속 쓴다.
+
+가게 선택과 흥정을 합해 최대 270초, 선택은 그중 최대 90초를 사용한다.
+예산보다 큰 제안은 하네스 검증과 송신 전 검증에서 거부하며 보정해서 보내지 않는다.
+
+```bash
+cd submissions/26510124/week-07
+.venv/bin/python -m unittest -v test_market_buyer test_buyer
+.venv/bin/python run_market_buyer_checks.py
+```
+
+두 번째 명령은 실제 Claude 호출로 공식 검사기의 **buyer 항목만** 실행한다.
+새 `logs/market-buyer-check-*` 복사본에 로그와 기억, `buyer-report.json`을
+보존한다. 이는 전체 과제의 `test-report.json`을 대체하지 않는다.
+판매자 영수증 서명과 전체 market test는 별도로 남아 있다.
+
+## 아래는 복사해 보존한 Week 06 실행 안내
 
 판매자는 `seller_agent.py`, 구매자는 `buyer_agent.py`다. 둘 다 Claude Code의
 `haiku`를 호출한다. 실제 가격과 수락·거절·포기는 모델이 정하고, Python은
