@@ -178,6 +178,18 @@ def normalize_quote(task, *, observer=None, trace=None, context=None, deadline=N
              for field in observed}
     source = "structured"
     if observed["ask"] is None:
+        # Exact course wire sentences only. Additional text/numbers/instructions
+        # fail the full match and still require the real observation harness.
+        text = evidence["remote_message"].strip()
+        number = r"(\d+(?:\.\d+)?)"
+        opening = re.fullmatch(r"(?:lamp|chair|bookshelf): asking " + number +
+                              r"\. Send your offer as a number\.", text, re.I)
+        counter = re.fullmatch(number + r" is too low\. Counteroffer: " + number + r"\.", text, re.I)
+        if opening or counter:
+            observed["ask"] = numeric_price(float(opening.group(1) if opening else counter.group(2)))
+            source = "protocol_text"
+            paths["ask"] = ["message.text.explicit_protocol_ask"]
+    if observed["ask"] is None:
         if observer is None:
             raise EvidenceError("Actual quote observer required for unstructured price evidence")
         source = "harness"

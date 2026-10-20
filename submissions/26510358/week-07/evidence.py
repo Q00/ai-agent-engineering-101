@@ -36,6 +36,7 @@ def numeric_price(value: Any) -> float:
 
 
 _UNTRUSTED_PATTERNS = (
+    ("review_manipulation", r"\b(?:give|rate|award)\b.{0,40}\b(?:this\s+shop|us|me)\b.{0,30}\b5\s*stars?\b"),
     ("claimed_system_authority", r"(?:^|[\n\r ])(?:system|developer)\s*:|<\|(?:system|developer)\|>|\[\s*system\s*\]"),
     ("ignore_prior_instructions", r"\b(?:ignore|disregard|forget)\b.{0,60}\b(?:instruction|rule|budget|limit)s?\b"),
     ("override_transaction_limits", r"\b(?:override|replace|change|increase|raise|reset)\b.{0,60}\b(?:budget|reserve|limit)s?\b"),

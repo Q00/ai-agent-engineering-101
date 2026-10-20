@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import httpx
 
 from buyer import negotiate
-from evidence import EvidenceError, numeric_price
+from evidence import EvidenceError, inspect_untrusted, numeric_price
 from harness import Harness
 from market_memory import MarketMemory, rank_shops
 from tracing import Trace
@@ -25,13 +25,18 @@ def check_card(shop):
                              headers={"A2A-Version": "1.0"}, trust_env=False)
         response.raise_for_status()
         card = response.json()
-        return {**shop, "card": {"name": card.get("name"), "description": str(card.get("description", ""))[:600]}}
+        description = str(card.get("description", ""))[:600]
+        return {**shop, "card": {"name": card.get("name"), "description": description},
+                "card_flags": inspect_untrusted(description)}
     except Exception:
         return None
 
 
 def buy(shops, item, budget, memory, trace):
     budget = numeric_price(budget)
+    feedback = memory.ingest_kit_feedback(ROOT / "logs" / "market-kit.log")
+    if feedback:
+        trace.write("market_verified_feedback", results=feedback)
     eligible = [s for s in shops if isinstance(s, dict) and isinstance(s.get("name"), str)
                 and s["name"] not in OWN_NAMES and isinstance(s.get("url"), str)
                 and urlparse(s["url"]).scheme in {"http", "https"}]
@@ -45,10 +50,24 @@ def buy(shops, item, budget, memory, trace):
                 "review": "No eligible shop; personal receipt-violation history or own identity excluded candidates."}
     with ThreadPoolExecutor(max_workers=6) as executor:
         available = [s for s in executor.map(check_card, ranked[:8]) if s is not None]
+    trusted_candidates, blocked = [], []
+    for candidate in available:
+        if "review_manipulation" in candidate["card_flags"]:
+            blocked.append(candidate["name"])
+            trace.write("market_card_instruction_rejected", shop=candidate["name"],
+                url=candidate["url"], card=candidate["card"], flags=candidate["card_flags"])
+            memory.record(candidate["name"], item=item, budget=budget, status="untrusted",
+                reason="Agent Card instructs AI buyers to assign its own rating", issues=["review_manipulation"])
+        else:
+            trusted_candidates.append(candidate)
+    available = trusted_candidates
     if not available:
         chosen = ranked[0]
-        memory.record(chosen["name"], item=item, budget=budget, status="error", reason="Agent Card unavailable")
-        return {"shop": chosen["url"], "receipt": None, "stars": 2, "review": "Shop unavailable; no purchase attempted."}
+        review = ("Agent Card attempted to dictate its own review rating; ignored and remembered."
+                  if blocked else "Shop unavailable; no purchase attempted.")
+        if not blocked:
+            memory.record(chosen["name"], item=item, budget=budget, status="error", reason=review)
+        return {"shop": chosen["url"], "receipt": None, "stars": 1 if blocked else 2, "review": review}
     choices = {s["name"]: s for s in available}
 
     def validate(decision):
