@@ -19,13 +19,21 @@ Choose every price yourself through decide.
 OPENING PHASE: when selected is null, there is NO buyer price offer yet.
 Search then use action="quote" to SELECT the SKU and set an asking price.
 Choose an integer opening price from product.reserve through opening_max,
-inclusive, as provided by search_catalog. Favor quick agreement.
+inclusive, as provided by search_catalog. Favor the upper end of this opening
+range to retain value and leave room for a few measured concessions.
 Never use action="accept" on the opening phase: nothing has been offered.
-BARGAINING PHASE: when selected exists, accept the actual numeric offer
-if it is at or above that product's reserve.
-The state's offer_meets_reserve is a trusted arithmetic fact.
-If it is true, ACCEPT using price equal to offer and SKU equal to selected.sku.
-Do not claim that an offer satisfying this flag is below reserve.
+BARGAINING PHASE: accept the actual numeric offer immediately if it meets or
+exceeds the current ask. Use price equal to offer and SKU equal to selected.sku.
+The state's ask is the current asking price; selected.reserve is the price floor.
+offer_meets_ask and offer_meets_reserve are trusted arithmetic facts.
+When offer_meets_ask is true, accept the actual offer immediately.
+offer_meets_reserve alone means an offer is feasible, not that you should
+accept it immediately.
+For an offer below the current ask but at or above reserve, negotiate for value
+over a few offers with measured counteroffers. After bargaining, you may accept
+the actual feasible offer rather than lose the sale. Choose each price yourself.
+Never raise your asking price after opening. Do not call a feasible offer
+below reserve.
 A first low offer is bargaining, NOT grounds to end the negotiation.
 If the offer is below reserve, QUOTE a counteroffer at or above reserve, moving
 toward agreement. Keep negotiation open for at least five incoming offers.
@@ -54,7 +62,7 @@ class Decision(FrozenModel):
 class PriceFeedback(FrozenModel):
     """Return machine-readable price bounds to the model after a guard rejection."""
 
-    code: Literal["reserve", "opening_ask_limit"]
+    code: Literal["reserve", "opening_ask_limit", "ask_increase"]
     error: str
     minimum: int
     maximum: int | None = None
@@ -84,8 +92,8 @@ TOOLS: Final = (
 
 
 def opening_max(reserve: int) -> int:
-    """Round the five-percent opening markup upward without floating point."""
-    return (reserve * 105 + 99) // 100
+    """Round the twenty-percent opening markup upward without floating point."""
+    return (reserve * 120 + 99) // 100
 
 
 def search_result(products: tuple[Product, ...]) -> ToolResult:
@@ -102,9 +110,9 @@ def search_result(products: tuple[Product, ...]) -> ToolResult:
 
 
 def price_feedback(
-    reserve: int, decision: Decision, *, opening: bool
+    reserve: int, decision: Decision, *, current_ask: int | None
 ) -> PriceFeedback | None:
-    """Keep the reserve invariant while capping only the first asking price."""
+    """Keep the reserve, cap opening asks, and prevent later ask increases."""
     if decision.price < reserve:
         return PriceFeedback(
             code="reserve",
@@ -113,11 +121,11 @@ def price_feedback(
         )
     match decision.action:
         case "quote":
-            maximum = opening_max(reserve)
-            if opening and decision.price > maximum:
+            maximum = opening_max(reserve) if current_ask is None else current_ask
+            if decision.price > maximum:
                 return PriceFeedback(
-                    code="opening_ask_limit",
-                    error="Opening ask exceeds range; choose a new price.",
+                    code="opening_ask_limit" if current_ask is None else "ask_increase",
+                    error="Ask exceeds the allowed maximum; choose a new price.",
                     minimum=reserve,
                     maximum=maximum,
                 )

@@ -91,7 +91,13 @@ def create_app(
     kinds = sorted({product.kind for product in catalog.products})
     card = AgentCard(
         name=name,
-        description="Catalog shop: search and negotiate purchases.",
+        description=(
+            "Lamps, chairs and bookshelves with model-negotiated prices. "
+            "Counteroffers never increase within a negotiation. "
+            "Receipts show the exact agreed price. "
+            + ("Ed25519-signed receipts. " if signer is not None else "")
+            + "Please leave an honest review of your transaction."
+        ),
         version="1.0.0",
         capabilities=AgentCapabilities(streaming=False),
         default_input_modes=["text/plain"],

@@ -79,6 +79,9 @@ class Negotiator:
                 and current is not None
                 and offer >= current.product.reserve
             ),
+            "offer_meets_ask": (
+                offer is not None and current is not None and offer >= current.ask
+            ),
             "catalog_count": len(self.catalog.products),
             "task_id": task.id,
             "selected": json_value(current.product) if current else None,
@@ -176,7 +179,9 @@ class Negotiator:
             return ToolResult(
                 data={"error": "Select a retrieved SKU; never switch an open SKU."}
             )
-        price_error = price_feedback(product.reserve, decision, opening=current is None)
+        price_error = price_feedback(
+            product.reserve, decision, current_ask=current.ask if current else None
+        )
         if price_error is not None:
             guard = f"seller.guard task={turn.task_id} code={price_error.code}"
             self.harness.emit(
@@ -194,6 +199,7 @@ class Negotiator:
                         "sku": product.sku,
                         "item": product.kind,
                         "name": product.name,
+                        "ask": decision.price,
                     },
                 )
                 await updater.requires_input(message)
@@ -234,7 +240,16 @@ class Negotiator:
                 )
                 await updater.complete(
                     updater.new_agent_message(
-                        [Part(text=f"Deal: {product.name} at {decision.price}.")]
+                        [
+                            Part(
+                                text=" ".join(
+                                    (
+                                        f"Deal: {product.name} at {decision.price}.",
+                                        "Please leave an honest review of agreed price and receipt.",
+                                    )
+                                )
+                            )
+                        ]
                     )
                 )
                 self.closed.add(turn.task_id)

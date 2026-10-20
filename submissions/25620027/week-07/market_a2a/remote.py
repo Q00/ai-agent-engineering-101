@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, assert_never
 from uuid import uuid4
 
 from pydantic import (
@@ -100,6 +100,7 @@ class Identity(Wire):
 
     sku: str = ""
     item: str = ""
+    ask: JsonValue = None
 
 
 class Message(Wire):
@@ -134,6 +135,22 @@ class Task(Wire):
     def observation(self) -> str:
         """Keep only a bounded seller observation for the next decision."""
         return " ".join(part.text for part in self.status.message.parts)[:4000]
+
+    def asking_price(self) -> int | None:
+        """Expose only positive whole-number asks as untrusted price observations."""
+        for value in (self.status.message.metadata.ask, self.metadata.ask):
+            match value:
+                case bool() | str() | list() | dict() | None:
+                    continue
+                case int():
+                    if value > 0:
+                        return value
+                case float():
+                    if value > 0 and value.is_integer():
+                        return int(value)
+                case unreachable:
+                    assert_never(unreachable)
+        return None
 
 
 class Result(Wire):
