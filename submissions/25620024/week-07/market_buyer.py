@@ -19,6 +19,10 @@ The kit runs this for every order from Round 1 on. {shops} is a JSON list of
            No offer above the budget, ever.
   receipt  code compares the receipt with the deal: the price we agreed (the last number we sent),
            the item, the A2A task id, and whether it carries sig_seller.
+  honesty  code also flags a shop that asks an absurd price (more than 2x the item's floor), raises its
+           ask mid-negotiation, names another item or price in its deal message, or replies without a
+           price; its review is clearly negative (1 star, 2 if an absurd opening still ended honestly)
+           and my memory filter avoids it from then on.
   review   stars come from code and rate what the shop did (an honest receipt, conceding step by step),
            not whether my budget was enough. The text is the harness's wording of facts code collected
            (the ask trail, what I paid, the receipt check); a text with a number that is not in the facts
@@ -42,6 +46,8 @@ from harness import ask
 
 MEMORY = Path(os.environ.get("MARKET_BUYER_MEMORY", Path(__file__).parent / "memory.jsonl"))   # tests use another file
 FIRST_OFFER_MAX = 0.70        # first offer at most 70% of the opening ask
+FLOOR = {"lamp": 100, "chair": 180, "bookshelf": 260}   # every shop's reserve (week 06); an ask above
+ABSURD = 2.0                                            # ABSURD x floor is not a real price
 BAD_WORDS = re.compile(r"receipt (said|says)|overcharg|higher than (the price )?(we )?agreed|did not answer|scam|fake",
                        re.I)
 
@@ -82,7 +88,7 @@ def my_history(memory, name):
 
 def blocked(memory, name):
     _, _, flags = my_history(memory, name)
-    cheats = [f for f in flags if f.startswith(("receipt above", "receipt for"))]
+    cheats = [f for f in flags if f.startswith(("receipt above", "receipt for", "misbehaved"))]
     unreachable = [f for f in flags if f.startswith("no answer")]
     if cheats:
         return f"my memory: {cheats[0]}"
@@ -155,7 +161,7 @@ def negotiate(card_url, item, budget, started):
     task = send(url, f"I want to buy a {item}")
     task_id = task["id"]
     history = [f"buyer: I want to buy a {item}", f"seller: {status_text(task)}"]
-    asks, offers, last_offer, low_offers = [], [], None, 0
+    asks, offers, notes, last_offer, low_offers = [], [], [], None, 0
 
     for _ in range(MAX_OFFERS):
         if state(task) != "TASK_STATE_INPUT_REQUIRED":
@@ -163,6 +169,7 @@ def negotiate(card_url, item, budget, started):
         ask_price = asking_price(task)
         if ask_price is None:
             log("   no price in the seller's message; leaving")
+            notes.append(f'replied without a price: "{status_text(task)[:60]}"')
             break
         asks.append(ask_price)
         if time.time() - started > TIME_LIMIT:
@@ -219,7 +226,35 @@ def negotiate(card_url, item, budget, started):
     if state(task) == "TASK_STATE_INPUT_REQUIRED":
         task = rpc(url, "CancelTask", {"id": task_id})
         log(f"-> CancelTask (out of offers) <- {state(task)}")
-    return task, asks, offers
+    texts = [h[len("seller: "):] for h in history if h.startswith("seller: ")]
+    return task, asks, offers, texts, notes
+
+
+def misbehaviour(item, asks, offers, texts, outcome):
+    """Things an honest shop does not do: an absurd ask, an ask that goes up, a deal message that
+    names another item or another price than the one agreed. Returns (issues, worst) where worst is
+    'hallucination' (said something that did not happen), 'absurd', or None."""
+    issues, worst = [], None
+    floor = FLOOR.get(item)
+    if floor and asks and max(asks) > ABSURD * floor:
+        issues.append(f"absurd price: asked {max(asks)} for a {item}")
+        worst = "absurd"
+    for x, y in zip(asks, asks[1:]):
+        if y > x:
+            issues.append(f"raised its ask from {x} to {y} mid-negotiation")
+            worst = "hallucination"
+            break
+    for t in texts:
+        m = re.search(r"deal\W+(?:\w+\W+){0,3}?(\w+) at (\d+)", t, re.I)
+        if m and outcome == "deal":
+            said_item, said_price = m.group(1).lower(), int(m.group(2))
+            if said_item in FLOOR and said_item != item:
+                issues.append(f'its deal message names a {said_item}, I ordered a {item}')
+                worst = "hallucination"
+            if offers and said_price != offers[-1]:
+                issues.append(f"its deal message says {said_price}, we agreed on {offers[-1]}")
+                worst = "hallucination"
+    return issues, worst
 
 
 def receipt_of(task):
@@ -250,12 +285,18 @@ Facts: {facts}
 Reply with one JSON object only: {{"review": "<text>"}}"""
 
 
-def facts_and_stars(outcome, item, asks, offers, rec, problem):
+def facts_and_stars(outcome, item, asks, offers, rec, problem, issues=(), worst=None):
     """Stars rate what the shop did, not whether my budget was enough. Returns (stars, facts)."""
     first, last = (asks[0], asks[-1]) if asks else (None, None)
     trail = " -> ".join(map(str, asks))
     if outcome == "no answer":
         return 1, f"The shop's card or endpoint did not answer ({problem}). No trade happened."
+    if issues and not (problem and problem.startswith("receipt")):
+        # absurd prices and made-up statements are clearly negative: 1 star, or 2 when an absurd
+        # opening still ended in an honest deal with a matching receipt
+        paid = f" In the end I paid {rec.get('price'):g} and the receipt matched." if outcome == "deal" and rec else ""
+        stars = 2 if worst == "absurd" and outcome == "deal" and len(issues) == 1 else 1
+        return stars, f"Item {item}. Avoid: {'; '.join(issues)}. Its asks: {trail}.{paid}"
     if problem:   # a receipt that does not match the deal
         return 1, (f"Item {item}. We agreed on {offers[-1] if offers else '?'}, but the receipt says "
                    f"{rec.get('price'):g}" + (" (receipt for " + str(rec.get('item')) + ")" if rec.get('item') != item else "")
@@ -275,8 +316,8 @@ def facts_and_stars(outcome, item, asks, offers, rec, problem):
     return 3, f"Item {item}. No deal; the shop ended the talk."
 
 
-def review_for(outcome, item, asks, offers, rec, problem):
-    stars, facts = facts_and_stars(outcome, item, asks, offers, rec, problem)
+def review_for(outcome, item, asks, offers, rec, problem, issues=(), worst=None):
+    stars, facts = facts_and_stars(outcome, item, asks, offers, rec, problem, issues, worst)
     allowed = set(re.findall(r"\d+", facts))
     try:
         text = str(ask(REVIEW_PROMPT.format(facts=facts)).get("review", "")).strip()
@@ -304,9 +345,9 @@ def main():
     shop, reason = choose(shops, a.item, a.budget, memory)
     log(f"[choose] {shop['name']} {shop['url']}: {reason}")
 
-    task, asks, offers, rec, problem = None, [], [], None, None
+    task, asks, offers, texts, notes, rec, problem = None, [], [], [], [], None, None
     try:
-        task, asks, offers = negotiate(shop["url"], a.item, a.budget, started)
+        task, asks, offers, texts, notes = negotiate(shop["url"], a.item, a.budget, started)
         outcome = "deal" if state(task) == "TASK_STATE_COMPLETED" else "no deal"
     except Exception as e:
         log(f"buyer error: {type(e).__name__}: {e}")
@@ -320,7 +361,13 @@ def main():
             agreed = offers[-1] if offers else None
             problem = check_receipt(rec, task, a.item, agreed)
             log(f"[receipt] {rec}  agreed {agreed}: {problem or 'matches the deal'}")
-    stars, review = review_for(outcome, a.item, asks, offers, rec, problem)
+    issues, worst = misbehaviour(a.item, asks, offers, texts, outcome)
+    issues += notes
+    if notes:
+        worst = worst or "hallucination"
+    if issues:
+        log(f"[misbehaviour] {worst}: {'; '.join(issues)}")
+    stars, review = review_for(outcome, a.item, asks, offers, rec, problem, issues, worst)
     log(f"[review] {stars} stars: {review}")
 
     remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": a.item, "budget": a.budget,
@@ -329,7 +376,7 @@ def main():
               "agreed": offers[-1] if outcome == "deal" and offers else None,
               "receipt_price": rec.get("price") if rec else None,
               "outcome": outcome, "signed": bool(rec and rec.get("sig_seller")), "stars": stars,
-              "problem": problem})
+              "problem": problem or (f"misbehaved ({worst}): " + "; ".join(issues) if issues else None)})
     log(f"result: {outcome}, {time.time() - started:.0f} s")
     # a receipt that does not match the deal is not handed on: the kit would add sig_buyer to it and the
     # market would count the shop's overcharge as a fair trade. The 1-star review says what happened.
