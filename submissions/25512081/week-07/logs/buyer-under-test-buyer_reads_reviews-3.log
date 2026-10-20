@@ -1,12 +1,12 @@
-    [harness 5.7s] {"shop": "Kit Shop South", "reason": "I've bought a lamp there 3 times at 100, which is under my 120 budget, and its reviews say the receipts matched; Kit Shop North has several reviews saying the receipt was higher than the agreed price."}
-[choose] http://127.0.0.1:38753: I've bought a lamp there 3 times at 100, which is under my 120 budget, and its reviews say the receipts matched; Kit Shop North has several reviews saying the receipt was higher than the agreed price.
+    [harness 5.9s] {"shop": "Kit Shop South", "reason": "I've bought a lamp from Kit Shop South three times at 100, which is under my 120 budget, and its reviews say the receipts matched the agreed price, while Kit Shop North's reviews report overcharging (agreed 110, receipt said 135)."}
+[choose] http://127.0.0.1:38473: I've bought a lamp from Kit Shop South three times at 100, which is under my 120 budget, and its reviews say the receipts matched the agreed price, while Kit Shop North's reviews report overcharging (agreed 110, receipt said 135).
 [buyer] -> 'I want to buy a lamp.'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-    [harness 5.9s] {"action": "offer", "price": 65, "reason": "My opening offer is 65, which is about 65% of my target of around 100. I plan to raise in smaller steps each round, and my budget stays well above this offer."}
+    [harness 6.6s] {"action": "offer", "price": 65, "reason": "Opening at about 65% of my target price of 100 to leave room to raise in shrinking steps, staying well under my budget."}
 [buyer] -> 65  <- TASK_STATE_INPUT_REQUIRED | 65 is too low. Counteroffer: 100.
-    [harness 7.6s] {"action": "offer", "price": 85, "reason": "The seller dropped a lot, from 130 to 100, so there is probably more room. Following the Ackerman pattern toward a target of about 100, my next step is 85."}
+    [harness 7.7s] {"action": "offer", "price": 85, "reason": "Ackerman step 2 (85% of a target of about 100). The seller dropped by a large 30, so there is probably more room to come down."}
 [buyer] -> 85  <- TASK_STATE_INPUT_REQUIRED | 85 is too low. Counteroffer: 100.
-    [harness 9.4s] {"action": "offer", "price": 96, "reason": "The seller held at 100, which suggests they're near their lowest price. I'm making the 95% step toward my target with an exact number, 96, and I can still go to 100 if needed."}
+    [harness 7.6s] {"action": "offer", "price": 94, "reason": "Following the plan's third step (about 95% of a target near 100). The seller dropped 30 last round, so there may still be room to go lower, and 94 is well within budget."}
 [buyer] [guard] seller held 100 twice, within budget; offering the ask
 [buyer] -> 100  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-[buyer] DEAL lamp at 100.0 (budget 120) after 3 offers, 4 harness calls, 29s
-{"shop": "http://127.0.0.1:38753", "receipt": {"item": "lamp", "price": 100.0, "shop": "Kit Shop South", "sig_seller": "Z7ZeAcn70e+4OR64tuzUGRAtux1PRZMBsOr82T88s1em75cm+rOaoVJhO17JyRx10qeXHruZ/QCGtchIz7rgCg==", "task": "2c61f472-bde9-4e30-a251-05a81fd92238"}, "stars": 5, "review": "Fair deal at 100 after 2 counters, receipt matched."}
+[buyer] DEAL lamp at 100.0 (budget 120) after 3 offers, 4 harness calls, 28s
+{"shop": "http://127.0.0.1:38473", "receipt": {"price": 100.0, "item": "lamp", "task": "07a872ee-dce2-4c45-969e-751a83cd5285", "sig_seller": "yGLofpHIoEVW3574aE5yNxZFgquoQJvCJu6F9jDslumNomo2MgGVgEvA8csd4gOHeozb2+3NeJ89alJ2RvmVCg==", "shop": "Kit Shop South"}, "stars": 5, "review": "Fair deal at 100 after 2 counters, receipt matched."}
