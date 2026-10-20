@@ -88,3 +88,9 @@ The launch script refuses to start a second kit while the recorded process is ru
 ### Status after LAB 1 restart, 2026-10-20 20:25 KST
 
 The original full shop session described above has ended. Subsequent quick-tunnel restarts did not obtain a public URL. Following the official `agent.md` fallback, the current session uses `--buyer-only`; the market confirmed `buyer registered as seochanit, round 0` at 20:25:35. The buyer is running; the shop is currently unreachable. Current session details remain in `.market/session.json`. LAB 1 implementation, test results and remaining R1 live checkpoints are documented in `LAB1.md`.
+
+### Latest status: 2026-10-20 20:42 KST
+
+The market is now R1. The new market buyer has completed live trades and posted accepted reviews. The shop has been restored through a separate Pinggy HTTPS tunnel after Cloudflare continued rejecting quick-tunnel requests with 429. Both shop and buyer were verified ONLINE by the market API at 20:42:19. Details and evidence are in `LAB1.md` and `logs/market-sessions/online-verification-20261020-204219.json`.
+
+The free Pinggy session has a 60-minute timeout; staying online beyond that requires reconnecting and re-registering the new URL or using durable deployment. To restart the shop, stop it with `agent-market/stop.ps1 -ShopOnly`, then use `agent-market/join.ps1 -ShopOnly -TunnelProvider pinggy` with the claim code supplied locally via `MARKET_OWNER`. The buyer stays independent and continues running.

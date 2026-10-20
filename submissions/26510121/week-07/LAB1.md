@@ -75,3 +75,22 @@ The user explicitly approved restoring the shop as well. A shop-only attempt was
 Added `agent-market/run-kit.py`, which imports the unmodified official kit and replaces only its tunnel startup with bounded diagnostics. It verifies that the actual proxy port serves Seochanit Shop, captures all info-level cloudflared output to a fresh log, and stops immediately if the child exits. The wrapper's syntax and the official kit CLI help were checked. Application source and market protocol remain unchanged.
 
 The raw output in `logs/market-sessions/tunnel-raw-20261020-203612-*.log` identified the actual error: **`quick tunnel provisioning failed with status 429`**. This is Cloudflare's provisioning rejection, not a nickname, claim-code or seller-card error. Further automatic quick-tunnel retries were stopped; no attempt was made to evade the rate limit. No reset time was provided in the captured output. SSH to localhost.run port 22 had separately timed out. The independent R1 buyer remains running, while the shop is still offline pending an available public tunnel or a deployed shop URL.
+
+### Shop online again, 2026-10-20 20:42 KST
+
+Following the user's renewed request to restore the shop, one Cloudflare attempt again returned 429. Switched the shop's public transport to the official Pinggy Python SDK 0.3.1, installed only in the ignored repository venv; optional transport dependencies are recorded in `agent-market/requirements.txt`. No Pinggy account, payment, token or extra market identity was created. This is a different public transport, not an attempt to evade Cloudflare's request limit.
+
+`pinggy-tunnel.py` verifies the dedicated local proxy's Seochanit Shop card before exposing it, requests an HTTPS tunnel, and publishes its URL to the existing course kit. The core course scripts remain unmodified. Tunnel child processes do not need OpenAI or market-owner credentials, so the runner now removes those variables from their environment. The seller and buyer retain their authorized credential environments.
+
+At 20:41:46 the market confirmed `shop registered as seochanit, round 1`. At 20:42:19, independent HTTP and market-API checks confirmed:
+
+- Public card: HTTP 200, name Seochanit Shop.
+- Public A2A endpoint: `https://ddkyk-203-246-85-178.run.pinggy-free.link/a2a/0`.
+- Shop `alive=true`, buyer `alive=true`, market `current=1`.
+- Existing buyer continued independently and had 12 R1 deals at that snapshot.
+
+Evidence is saved in `logs/market-sessions/online-verification-20261020-204219.json` and the original session/tunnel logs. Both helper files parsed, the SDK installed successfully, and `pip check` reported no broken requirements. Negotiation source was not changed for this transport repair.
+
+Pinggy documents a **60-minute free-session timeout**, and this launch deliberately leaves SDK automatic reconnection off because a changed public URL must also be re-registered with the market. The shop therefore needs a later reconnect or durable deployment to stay available beyond the free session. The PC and network must remain active. References: https://pinggy.io/help/ and https://pinggy.io/docs/usages_sdk_python/ . API clients reach the tunnel directly; ordinary web browsers can see Pinggy's screening page (https://pinggy.io/docs/http_tunnels/screening/).
+
+Restart the shop later with `agent-market/join.ps1 -ShopOnly -TunnelProvider pinggy` after stopping its session and setting `MARKET_OWNER` locally. Buyer state remains `.market/session.json`; shop state remains `.market/shop-session.json`. Stopping or restarting the shop does not stop the buyer.

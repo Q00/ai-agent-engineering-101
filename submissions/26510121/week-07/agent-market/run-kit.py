@@ -1,10 +1,12 @@
 """Run the unmodified course kit with visible, bounded tunnel diagnostics."""
 from datetime import datetime
 import importlib.util
+import os
 from pathlib import Path
 import queue
 import re
 import subprocess
+import sys
 import threading
 import time
 
@@ -25,10 +27,19 @@ def open_tunnel(port):
     if card.json().get("name") != "Seochanit Shop":
         raise RuntimeError("Refusing to expose an unexpected local service")
     path = AGENT / "logs" / "market-sessions" / datetime.now().strftime("tunnel-raw-%Y%m%d-%H%M%S-%f.log")
-    proc = subprocess.Popen(["cloudflared", "tunnel", "--no-autoupdate", "--edge-ip-version", "4",
-                             "--protocol", "http2", "--url", f"http://127.0.0.1:{port}"],
+    provider = os.environ.get("MARKET_TUNNEL_PROVIDER", "cloudflare")
+    if provider == "pinggy":
+        command = [sys.executable, "-u", str(Path(__file__).with_name("pinggy-tunnel.py")), "--port", str(port)]
+    elif provider == "cloudflare":
+        command = ["cloudflared", "tunnel", "--no-autoupdate", "--edge-ip-version", "4",
+                   "--protocol", "http2", "--url", f"http://127.0.0.1:{port}"]
+    else:
+        raise RuntimeError("Unsupported tunnel provider")
+    proc = subprocess.Popen(command,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            text=True, encoding="utf-8", errors="replace")
+                            text=True, encoding="utf-8", errors="replace",
+                            env={key: value for key, value in os.environ.items()
+                                 if key not in {"OPENAI_API_KEY", "MARKET_OWNER"}})
     lines = queue.Queue()
 
     def capture():
@@ -48,12 +59,13 @@ def open_tunnel(port):
             continue
         if line is None:
             proc.wait()
-            raise RuntimeError(f"cloudflared exited {proc.returncode}; see {path.relative_to(AGENT)}")
-        match = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", line)
+            raise RuntimeError(f"{provider} exited {proc.returncode}; see {path.relative_to(AGENT)}")
+        match = (re.search(r"TUNNEL_URL (https://[^\s]+)", line) if provider == "pinggy"
+                 else re.search(r"(https://[a-z0-9-]+\.trycloudflare\.com)", line))
         if match:
-            return proc, match.group()
+            return proc, match.group(1)
     kit.stop(proc)
-    raise RuntimeError(f"cloudflared did not provision a tunnel; see {path.relative_to(AGENT)}")
+    raise RuntimeError(f"{provider} did not provision a tunnel; see {path.relative_to(AGENT)}")
 
 
 if __name__ == "__main__":

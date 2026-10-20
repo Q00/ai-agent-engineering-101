@@ -3,7 +3,8 @@ param(
     [switch]$BuyerOnly,
     [switch]$ShopOnly,
     [string]$PublicUrl,
-    [int]$Port = 0
+    [int]$Port = 0,
+    [ValidateSet('cloudflare','pinggy')][string]$TunnelProvider = 'cloudflare'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -30,6 +31,7 @@ $oldOwner = $env:MARKET_OWNER
 $oldUtf8 = $env:PYTHONUTF8
 $oldTunnelLog = $env:TUNNEL_LOGFILE
 $oldTunnelLevel = $env:TUNNEL_LOGLEVEL
+$oldProvider = $env:MARKET_TUNNEL_PROVIDER
 try {
     if (-not $env:OPENAI_API_KEY) {
         $credentialFile = Join-Path $agentDir '../week-06/.env'
@@ -51,6 +53,7 @@ try {
     # Info-level tunnel diagnostics contain no HTTP request headers.
     $env:TUNNEL_LOGFILE = Join-Path $logDir "cloudflared-$stamp.log"
     $env:TUNNEL_LOGLEVEL = 'info'
+    $env:MARKET_TUNNEL_PROVIDER = $TunnelProvider
     $mode = if ($BuyerOnly) { '--buyer-only' } elseif ($PublicUrl) { '--public-url' } else { '--tunnel' }
     $kit = Join-Path $PSScriptRoot 'run-kit.py'
     $arguments = @('-u', ('"' + $kit + '"'), 'join', '--dir', ('"' + $agentDir + '"'),
@@ -59,7 +62,7 @@ try {
     if ($ShopOnly) { $arguments += '--shop-only' }
     $process = Start-Process -FilePath $python -ArgumentList $arguments -WorkingDirectory $repoRoot `
         -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
-    [pscustomobject]@{pid=$process.Id; stdout=$stdout; stderr=$stderr; mode=$mode; port=$Port; public_url=$PublicUrl} |
+    [pscustomobject]@{pid=$process.Id; stdout=$stdout; stderr=$stderr; mode=$mode; port=$Port; public_url=$PublicUrl; provider=$TunnelProvider} |
         ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding utf8
     Write-Output "Started market kit (PID $($process.Id)); mode $mode"
     Write-Output "Output: $stdout"
@@ -71,4 +74,5 @@ try {
     $env:PYTHONUTF8 = $oldUtf8
     $env:TUNNEL_LOGFILE = $oldTunnelLog
     $env:TUNNEL_LOGLEVEL = $oldTunnelLevel
+    $env:MARKET_TUNNEL_PROVIDER = $oldProvider
 }
