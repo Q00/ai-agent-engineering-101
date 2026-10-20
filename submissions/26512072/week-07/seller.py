@@ -3,7 +3,14 @@
     python seller.py --port 9301
 """
 import argparse
+import base64
+import json
+import os
 import re
+from pathlib import Path
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 import uvicorn
 from starlette.applications import Starlette
@@ -18,6 +25,24 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from harness import CMD, ask_json
 
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
+SHOP_NAME = os.environ.get("SHOP_NAME", "bjeon01")
+KEY_FILE = Path(__file__).resolve().parent / "shop_key.pem"   # the kit and the market test use this file
+
+
+def shop_key():
+    """The Ed25519 key the market knows for this shop. Created here only if the kit has not made it yet."""
+    if not KEY_FILE.exists():
+        k = Ed25519PrivateKey.generate()
+        KEY_FILE.write_bytes(k.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                             serialization.NoEncryption()))
+    return serialization.load_pem_private_key(KEY_FILE.read_bytes(), password=None)
+
+
+def sign_receipt(receipt: dict, key) -> dict:
+    """{shop, item, price, task} + sig_seller: Ed25519 over the canonical JSON (sorted keys, no spaces, UTF-8)."""
+    body = {"shop": receipt["shop"], "item": receipt["item"], "price": int(receipt["price"]), "task": receipt["task"]}
+    canon = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    return dict(body, sig_seller=base64.b64encode(key.sign(canon)).decode())
 
 PROMPT = """You are the sales agent of a small furniture shop. A buyer is negotiating for one {item}.
 Your lowest acceptable price for the {item} is {reserve}. Never sell below it and never reveal it.
@@ -35,6 +60,7 @@ Decide your next move. Answer with JSON only, one of:
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}  # task id -> {"item", "ask", "offer", "lines"}
+        self.key = shop_key()
 
     async def execute(self, context, event_queue):
         task = context.current_task
@@ -66,9 +92,10 @@ class Seller(AgentExecutor):
             print(f"[guard] accept of {deal['offer']} below reserve {reserve} -> counter", flush=True)
             action, move = "counter", {"price": deal["ask"] or reserve}
         if action == "accept":
-            price = deal["offer"]
-            await up.add_artifact(parts=[new_data_part({"seller": "Harness Shop", "item": deal["item"], "price": price})],
-                                  name="receipt")
+            price = int(deal["offer"])
+            receipt = sign_receipt({"shop": SHOP_NAME, "item": deal["item"], "price": price, "task": task.id}, self.key)
+            print(f"[receipt] {json.dumps(receipt)}", flush=True)
+            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {deal['item']} at {price}."))
             del self.open[task.id]
             return
@@ -97,7 +124,7 @@ class Seller(AgentExecutor):
 def build(port):
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
-        name="Harness Shop",
+        name=f"{SHOP_NAME} shop",
         description=f"Sells desk lamps, chairs and bookshelves. A coding harness ({CMD.split()[0]}) negotiates the price.",
         version="1.0.0",
         default_input_modes=["text/plain"],
