@@ -12,7 +12,11 @@ import tempfile
 from dataclasses import dataclass
 
 
-DEFAULT_COMMAND = "codex exec --skip-git-repo-check -m gpt-6-luna -"
+DEFAULT_COMMAND = (
+    "/usr/bin/env SSL_CERT_FILE=/etc/ssl/cert.pem "
+    "codex exec --ignore-user-config --ephemeral "
+    "--skip-git-repo-check -m gpt-6-luna -"
+)
 
 
 class HarnessResponseError(ValueError):
@@ -94,4 +98,3 @@ class CommandHarness:
         if error:
             record["error"] = error
         print(json.dumps(record, ensure_ascii=False), file=sys.stderr, flush=True)
-
