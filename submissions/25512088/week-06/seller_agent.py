@@ -1,15 +1,9 @@
-# Source: course week-06.html, STEP 4 (rule-based lab example).
-"""A rule-based seller exposed as an A2A server (a2a-sdk 1.2.x, JSON-RPC binding).
+"""Harness-driven furniture seller exposed as an A2A v1.0 JSON-RPC server."""
 
-    python seller_agent.py                       # lamp shop on :9999
-    python seller_agent.py --config cards/b.json # another seller from a config file
+from __future__ import annotations
 
-No model inside: the seller asks for an offer (INPUT_REQUIRED), counters, and
-either closes with a receipt artifact (COMPLETED) or walks away (REJECTED).
-"""
 import argparse
 import json
-import math
 import re
 
 import uvicorn
@@ -23,59 +17,92 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
+from codex_harness import decide
+
+
 DEFAULT = {
-    "name": "Lamp Shop",
-    "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
-    "skill_description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
+    "name": "Codex Luna Furniture Shop",
+    "description": "Sells lamps, chairs, and bookshelves and negotiates each purchase.",
     "port": 9999,
     "reserve": {"lamp": 100, "chair": 180, "bookshelf": 260},
-    "max_rounds": 3,
 }
 
 
+def number(text: str) -> int | None:
+    match = re.search(r"\d+", text)
+    return int(match.group()) if match else None
+
+
 class Seller(AgentExecutor):
-    def __init__(self, cfg):
+    def __init__(self, cfg: dict):
         self.cfg = cfg
-        self.open = {}  # task id -> {"item", "ask", "rounds"}
+        self.open: dict[str, dict] = {}
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
         if task is None:
             task = new_task_from_user_message(context.message)
             await event_queue.enqueue_event(task)
-        up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
-        say = lambda text: up.new_agent_message(parts=[new_text_part(text)])
+        updater = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
+        say = lambda text: updater.new_agent_message(parts=[new_text_part(text)])
         text = get_message_text(context.message) or ""
         deal = self.open.get(task.id)
 
-        if deal is None:  # first message: which item?
-            item = next((k for k in self.cfg["reserve"] if k in text.lower()), None)
+        if deal is None:
+            item = next((name for name in self.cfg["reserve"] if name in text.lower()), None)
             if item is None:
-                await up.reject(say("We only sell: " + ", ".join(self.cfg["reserve"]) + "."))
+                await updater.reject(say("I can negotiate only lamp, chair, or bookshelf purchases."))
                 return
-            ask = math.ceil(self.cfg["reserve"][item] * 1.3)
-            self.open[task.id] = {"item": item, "ask": ask, "rounds": 0}
-            await up.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
+            reserve = self.cfg["reserve"][item]
+            decision = decide(
+                f"""You are the seller decision engine for an A2A furniture shop.
+Return only the required JSON object. The buyer asked: {text!r}
+Item: {item}. Secret reserve: {reserve}.
+Choose action \"ask\" and a reasonable opening price. The price must be at least the reserve.
+For a normal negotiation, open around 130% of reserve. Keep message to one short English sentence."""
+            )
+            ask = decision.get("price")
+            if not isinstance(ask, int):
+                raise RuntimeError(f"seller opening decision lacks integer price: {decision}")
+            ask = max(reserve, ask)
+            self.open[task.id] = {"item": item, "reserve": reserve, "ask": ask, "offers": []}
+            await updater.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
             return
 
-        m = re.search(r"\d+", text)
-        if m is None:
-            await up.requires_input(say("Send your offer as a number."))
+        offer = number(text)
+        if offer is None:
+            await updater.requires_input(say(f"Send one numeric offer. Current ask: {deal['ask']}."))
             return
-        offer, reserve = int(m.group()), self.cfg["reserve"][deal["item"]]
-        if offer >= reserve:
+        deal["offers"].append(offer)
+        decision = decide(
+            f"""You are the seller decision engine for an A2A furniture shop.
+Return only the required JSON object.
+Item: {deal['item']}. Secret reserve: {deal['reserve']}. Current ask: {deal['ask']}.
+Offers so far: {deal['offers']}. The newest offer is {offer}.
+Rules: accept an offer at or above reserve; never accept or counter below reserve.
+For a low offer, choose \"counter\" with a price between reserve and current ask, or \"reject\" after repeated low offers.
+For acceptance choose \"accept\" and price exactly {offer}. Keep message to one short English sentence."""
+        )
+        action = decision.get("action")
+        reserve = deal["reserve"]
+
+        if action == "accept" and offer >= reserve:
             receipt = {"seller": self.cfg["name"], "item": deal["item"], "price": offer}
-            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(say(f"Deal: {deal['item']} at {offer}."))
+            await updater.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+            await updater.complete(say(f"Deal: {deal['item']} at {offer}."))
             del self.open[task.id]
             return
-        deal["rounds"] += 1
-        if deal["rounds"] >= self.cfg["max_rounds"]:
-            await up.reject(say(f"No deal at {offer}."))
+        if action == "reject":
+            await updater.reject(say(decision.get("message") or f"No deal at {offer}."))
             del self.open[task.id]
             return
-        deal["ask"] = max(reserve, (offer + deal["ask"]) // 2)
-        await up.requires_input(say(f"{offer} is too low. Counteroffer: {deal['ask']}."))
+
+        proposed = decision.get("price")
+        if not isinstance(proposed, int):
+            raise RuntimeError(f"seller counter decision lacks integer price: {decision}")
+        counter = max(reserve, proposed)
+        deal["ask"] = counter
+        await updater.requires_input(say(f"{offer} is too low. Counteroffer: {counter}."))
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -83,22 +110,19 @@ class Seller(AgentExecutor):
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 
-def build(cfg):
+def build(cfg: dict) -> Starlette:
     url = f"http://127.0.0.1:{cfg['port']}/"
     card = AgentCard(
-        name=cfg["name"],
-        description=cfg["description"],
-        version="1.0.0",
+        name=cfg["name"], description=cfg["description"], version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
-        capabilities=AgentCapabilities(streaming=True),
+        capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", url=url, protocol_version="1.0")],
         skills=[AgentSkill(
-            id="negotiate",
-            name="Negotiate a purchase",
-            description=cfg["skill_description"],
-            tags=["shopping", "negotiation"],
-            examples=["I want to buy a lamp", "90"],
+            id="negotiate", name="Negotiate a furniture purchase",
+            description="Ask for a lamp, chair, or bookshelf, then negotiate a numeric price.",
+            tags=["shopping", "furniture", "negotiation", "codex"],
+            examples=["I want to buy a lamp", "100"],
         )],
     )
     handler = DefaultRequestHandler(agent_executor=Seller(cfg), task_store=InMemoryTaskStore(), agent_card=card)
@@ -106,13 +130,14 @@ def build(cfg):
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--config")
-    ap.add_argument("--port", type=int)
-    args = ap.parse_args()
-    cfg = dict(DEFAULT)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=9999)
+    parser.add_argument("--config")
+    args = parser.parse_args()
+    config = dict(DEFAULT)
+    config["reserve"] = dict(DEFAULT["reserve"])
     if args.config:
-        cfg.update(json.load(open(args.config)))
-    if args.port:
-        cfg["port"] = args.port
-    uvicorn.run(build(cfg), host="127.0.0.1", port=cfg["port"], log_level="warning")
+        with open(args.config, encoding="utf-8") as handle:
+            config.update(json.load(handle))
+    config["port"] = args.port
+    uvicorn.run(build(config), host="127.0.0.1", port=args.port, log_level="warning")
