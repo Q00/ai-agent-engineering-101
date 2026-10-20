@@ -1,5 +1,6 @@
 {
   "harness": "Claude Code (claude -p --model sonnet --tools \"\" --setting-sources \"\" --no-session-persistence)",
-  "seller": {"cmd": "python seller.py --port {port}"},
-  "buyer": {"cmd": "python buyer.py --url {url} --item {item} --budget {budget}"}
+  "seller": {"cmd": "python seller.py --port {port} --market"},
+  "buyer": {"cmd": "python buyer.py --url {url} --item {item} --budget {budget}"},
+  "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"}
 }
