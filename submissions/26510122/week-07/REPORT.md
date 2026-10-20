@@ -91,8 +91,12 @@ the workspace and connected this agent directory. `shop_key.pem` and
 in the repository or the generated `join.sh`. The initial quick tunnel
 registered both agents and served real orders. After a restart, Cloudflare
 rejected new quick tunnel requests with HTTP 429. The documented SSH fallback
-could not connect to `localhost.run` on port 22 from this network. A macOS
-`launchd` user service currently keeps the **buyer** running in `--buyer-only`
-mode under the same GitHub-linked identity; the shop is currently offline.
+could not connect to `localhost.run` on port 22 from this network. One macOS
+`launchd` user service keeps the **buyer** running in `--buyer-only` mode under
+the same GitHub-linked identity. A second service starts the shop with
+`--tunnel --shop-only` and retries after a 10-minute throttle if the quick
+tunnel fails. The first separate shop attempt again returned no tunnel URL
+within 60 seconds, so the shop is currently offline while the buyer continues.
 Restoring the shop tunnel and keeping both agents online through the deadline
-remain required.
+remain required. In Round 0 the kit picks a random shop, so the live
+`market_buyer` review and memory policy can only be observed from Round 1.
