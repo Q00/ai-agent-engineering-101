@@ -1,5 +1,6 @@
 {
   "harness": "Claude Code, claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence --output-format json",
   "seller": {"cmd": "python seller.py --port {port}"},
-  "buyer": {"cmd": "python buyer.py --url {url} --item {item} --budget {budget}"}
+  "buyer": {"cmd": "python buyer.py --url {url} --item {item} --budget {budget}"},
+  "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"}
 }

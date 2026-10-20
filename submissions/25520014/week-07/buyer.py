@@ -115,6 +115,8 @@ def find_endpoint(base):
 
 
 def negotiate(base, item, budget):
+    """Trade once with the seller at base. Returns what happened, for the market buyer:
+    {"receipt": data Part or None, "end": why it ended, "asks": [...], "offers": [...]}."""
     started = time.time()
     card, url = find_endpoint(base)
     print(f"seller: {card.get('name')!r} at {url}", flush=True)
@@ -122,26 +124,32 @@ def negotiate(base, item, budget):
     task = send(url, f"I want to buy a {item}")
     task_id = task["id"]
     history = [("You", f"asked to buy a {item}")]
+    asks, offers = [], []
+
+    def result(end, rc=None):
+        return {"receipt": rc, "end": end, "asks": asks, "offers": offers}
+
     for n in range(MAX_ROUNDS + 1):
         state, text = task["status"]["state"], status_text(task)
         print(f"<- {state} | {text}", flush=True)
         if state == "TASK_STATE_COMPLETED":
             print(f"DONE bought: {receipt(task)}", flush=True)
-            return
+            return result("deal", receipt(task))
         if state != "TASK_STATE_INPUT_REQUIRED":
             print(f"DONE no deal ({state})", flush=True)
-            return
+            return result(f"seller ended ({state})")
         ask = last_number(text)
         if ask is None:
             walk_away(url, task_id, "no asking price in the seller's message")
-            return
+            return result("walked: no asking price")
+        asks.append(ask)
         history.append(("Seller", f"asked {ask}"))
         if n == MAX_ROUNDS:
             walk_away(url, task_id, f"{MAX_ROUNDS} offers sent")
-            return
+            return result(f"walked: {MAX_ROUNDS} offers sent")
         if time.time() - started > DEADLINE:
             walk_away(url, task_id, f"{DEADLINE} s passed")
-            return
+            return result(f"walked: {DEADLINE} s passed")
 
         prompt = DECIDE_PROMPT.format(item=item, budget=budget, history=render_history(history), ask=ask)
         answer = harness.ask_json(prompt, f"round {n + 1}")
@@ -154,11 +162,12 @@ def negotiate(base, item, budget):
             history.append(("You", f"offered {offer}"))
         else:  # "walk" or anything the prompt did not allow
             walk_away(url, task_id, f"harness chose {action!r}")
-            return
+            return result(f"walked: harness chose {action!r}")
         if offer > budget:
             print(f"GUARD {action} at {offer} > budget {budget} -> offer {budget}", flush=True)
             offer = budget
             history[-1] = ("You", f"offered {offer}")
+        offers.append(offer)
         task = send(url, str(offer), task_id)
 
 
