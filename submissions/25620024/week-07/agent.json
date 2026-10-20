@@ -1,6 +1,10 @@
 {
-  "harness": "Claude Code CLI, model haiku: claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence (run in an empty temp dir, prompt on stdin, JSON answer)",
-  "seller": {"cmd": "python seller.py --port {port}"},
-  "buyer": {"cmd": "python buyer.py --url {url} --item {item} --budget {budget}"},
+  "harness": "OpenRouter free model google/gemma-4-31b-it:free (fallbacks nvidia/nemotron-3-super-120b-a12b:free, minimax/minimax-m3.1-flash:free) via the chat-completions API, temperature 0, JSON answer; HARNESS=claude switches back to claude -p --model haiku (week 06)",
+  "seller": {
+    "cmd": "python seller.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "python buyer.py --url {url} --item {item} --budget {budget}"
+  },
   "deployed": "https://harness-shop-25620024.imajason.workers.dev"
 }
