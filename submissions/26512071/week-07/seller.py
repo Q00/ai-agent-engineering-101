@@ -33,7 +33,9 @@ import argparse
 import asyncio
 import base64
 import json
+import os
 import random
+import time
 import re
 import sys
 import tempfile
@@ -62,6 +64,18 @@ MARKET = False
 KEY_FILE = Path(__file__).with_name("shop_key.pem")
 
 
+def promo_left():
+    if not (MARKET and PROMO):
+        return 0
+    done = SALES.read_text(encoding="utf-8").count('"promo": true') if SALES.exists() else 0
+    return max(0, PROMO - done)
+
+
+def record_sale(entry):
+    with SALES.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
 def canon(d):
     return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
@@ -82,6 +96,12 @@ def open_shop(n):
     NAME = f"Sonnet Shop {n}"
     CATALOG = Catalog(items=[dict(i, reserve=int(i["reserve"] * factor)) for i in full.items if i["kind"] in mine])
     log(f"[shop] {NAME}: {', '.join(mine)}; reserves x{factor:.2f}; {len(CATALOG.items)} items")
+# Challenge 1, pricing from the shop's own trades: in Round 1 it got 1 visit and one
+# 3-star review ("Paid 103.0 of 105."), because it opened at about 1.5x the reserve and
+# closed near the buyer's budget. Shop rank counts deals, not revenue.
+PROMO = int(os.environ.get("SHOP_PROMO", "0"))  # opening-price deals, only when the kit sets it
+PROMO_ASK, OPEN_CAP = 1.05, 1.2  # promo: ask 1.05x reserve and take any offer at the reserve; after: open at most 1.2x
+SALES = Path(__file__).with_name("sales.jsonl")  # every deal, for the before/after numbers
 CLOSE_GAP = 0.97  # accept an offer at or above the reserve within 3% of the current ask
 MAX_ROUNDS = 10  # safety net so a task cannot run forever
 HARNESS = ["claude", "-p", "--model", "sonnet", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
@@ -234,6 +254,15 @@ class Seller(AgentExecutor):
         else:
             action, price, message = decision
 
+        promo = promo_left() > 0
+        if promo:  # opening price: low ask, and any offer at or above the reserve closes
+            if offer is not None and offer >= reserve:
+                action = "accept"
+            elif action == "ask":
+                price = min(price, round(reserve * PROMO_ASK))
+            message = f"New shop opening price. {message}"
+        elif MARKET and offer is None and action == "ask":
+            price = min(price, round(reserve * OPEN_CAP))
         # close a near deal: in the market, buyers walked at offers 205 vs ask 208 and 270 vs 272
         if (action == "ask" and offer is not None and offer >= reserve
                 and offer >= CLOSE_GAP * price):
@@ -248,18 +277,24 @@ class Seller(AgentExecutor):
             price = reserve
         if action == "ask" and deal["rounds"] >= MAX_ROUNDS:
             action = "reject"
-        log(f"[seller] task={task.id[:8]} {item['id']} offer={offer} -> {action} {price}")
+        log(f"[seller] task={task.id[:8]} {item['id']} offer={offer} -> {action} {price}"
+            + (f" [promo, {promo_left()} left]" if promo else ""))
 
         if action == "accept":
             receipt = sign_receipt({"shop": NAME, "item": item["name"], "price": int(offer), "task": task.id})
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"{message} Deal: {item['name']} at {offer}."))
+            if MARKET:
+                record_sale({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "task": task.id, "item": item["name"],
+                             "price": int(offer), "reserve": reserve, "first_ask": deal.get("first_ask"),
+                             "rounds": deal["rounds"], "promo": promo})
             del self.open[task.id]
         elif action == "reject":
             await up.reject(say(f"{message} No deal."))
             del self.open[task.id]
         else:
             deal["ask"] = price
+            deal.setdefault("first_ask", price)
             deal["history"].append(f"You ask {price}.")
             # the asking price goes last: buyers read the last number as the ask
             await up.requires_input(say(f"{message} Asking price: {price}"))
