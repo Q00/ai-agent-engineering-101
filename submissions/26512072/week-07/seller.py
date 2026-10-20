@@ -117,8 +117,10 @@ def sign_receipt(receipt: dict, key) -> dict:
 
 PROMPT = """You are the sales agent of a boutique furniture shop that sells only a few pieces each hour.
 A buyer is negotiating for one {item}. Your lowest acceptable price for the {item} is {reserve}.
-Never sell below it and never reveal it. You do not chase buyers: concede slowly, in small steps, and keep the
-price feeling exclusive. A deal at or above {reserve} is still better than losing a buyer at the last offer.
+Never sell below it and never reveal it. Open high and keep the piece feeling exclusive, but the buyer must leave
+happy: they review you, and reviews bring the next buyers. Make every counteroffer a visible step toward the buyer
+(at least a fifth of the gap between your ask and their offer), and once their offer is at or above {reserve},
+close the deal by their third offer rather than squeezing out a few more units.
 Market data: {note}. Suggested opening ask: {opening}.
 
 Conversation so far:
@@ -192,17 +194,20 @@ class Seller(AgentExecutor):
             receipt = sign_receipt({"shop": SHOP_NAME, "item": deal["item"], "price": price, "task": task.id}, self.key)
             print(f"[receipt] {json.dumps(receipt)}", flush=True)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(say(f"Deal: {deal['item']} at {price}."))
+            await up.complete(say(f"Deal: {deal['item']} at {price}. Thank you for choosing our boutique; "
+                                  f"your receipt is signed and shows exactly the agreed price."))
             record(deal, "deal", price)
             del self.open[task.id]
             return
         if action != "accept" and len(deal["offers"]) >= MAX_OFFERS:   # the announced limit is kept
-            await up.reject(say("No deal: that was the last offer, as announced."))
+            await up.reject(say("That was the last offer, as announced, so we could not close this time. "
+                                "Thank you for your interest; you are welcome back any time."))
             record(deal, "rejected")
             del self.open[task.id]
             return
         if action == "reject":
-            await up.reject(say("No deal."))
+            await up.reject(say("We could not meet on price this time. Thank you for your interest; "
+                                "you are welcome back any time."))
             record(deal, "rejected")
             del self.open[task.id]
             return
@@ -220,7 +225,8 @@ class Seller(AgentExecutor):
         left = stock_left(deal["item"])
         rounds_left = MAX_OFFERS - len(deal["offers"])
         if len(deal["lines"]) == 1:   # truthful scarcity: the stock and the round limit are both enforced above
-            reply = (f"{deal['item']}: a boutique piece, only {left} left this hour; this negotiation closes after {MAX_OFFERS} offers. "
+            reply = (f"{deal['item']}: a boutique piece worth its price - signed receipt that always matches the agreed "
+                     f"price, no surprises. Only {left} left this hour; this negotiation closes after {MAX_OFFERS} offers. "
                      f"Asking {deal['ask']}. Send your offer as a number.")
         else:
             reply = (f"{'Your next offer is the last one, ' if rounds_left <= 1 else f'{rounds_left} offers left, '}"
@@ -240,7 +246,8 @@ def build(port):
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name=f"{SHOP_NAME} shop",
-        description=f"A boutique furniture shop: desk lamps, chairs and bookshelves, a few pieces each hour, firm prices. "
+        description=f"A boutique furniture shop worth its price: desk lamps, chairs and bookshelves, a few pieces each hour. "
+                    "No surprises: the receipt never differs from the price you agreed. "
                     f"A coding harness ({CMD.split()[0]}) negotiates. "
                     "Every receipt is signed (Ed25519) and always shows the agreed price. "
                     f"Limited stock: {STOCK_PER_HOUR} of each item per hour; a negotiation closes after {MAX_OFFERS} offers.",
