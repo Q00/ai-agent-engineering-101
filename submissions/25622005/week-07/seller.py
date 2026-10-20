@@ -32,6 +32,31 @@ RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 OPENING = dict(RESERVE)
 
 
+def buyer_offer(text, asking_price=None):
+    """Read an explicit offer or acceptance, never a budget mentioned in prose."""
+    text = text.strip()
+    if asking_price is not None and re.fullmatch(
+        r"(?:i\s+accept(?:\s+(?:your|the)\s+(?:offer|price))?|accept|deal|"
+        r"agreed|yes|ok(?:ay)?|i(?:'ll|\s+will)\s+take\s+it)[.!\s]*", text, re.I
+    ):
+        return asking_price
+    amount = r"\$?(\d+)(?:\.0+)?"
+    match = re.fullmatch(amount + r"[.!\s]*", text)
+    if match is None:
+        match = re.fullmatch(
+            r"(?:i\s+(?:(?:can|will|would\s+like\s+to)\s+)?)?"
+            r"(?:offer|bid|pay)\s+" + amount + r"(?:\s+for\s+(?:a\s+|the\s+)?(?:lamp|chair|bookshelf))?[.!\s]*",
+            text, re.I,
+        )
+    if match is None:
+        match = re.fullmatch(
+            r"(?:i\s+(?:want\s+to|will|can|would\s+like\s+to)\s+)?buy\s+"
+            r"(?:a\s+|the\s+)?(?:lamp|chair|bookshelf)\s+(?:for|at)\s+" + amount + r"[.!\s]*",
+            text, re.I,
+        )
+    return int(match.group(1)) if match else None
+
+
 def canon(data):
     """LAB 2 step 1: sorted, compact UTF-8 JSON bytes for signing."""
     return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
@@ -121,8 +146,7 @@ class Seller(AgentExecutor):
         else:
             deal["buyer_messages"] += 1
             deal["lines"].append(f"buyer: {text}")
-            m = re.search(r"\d+", text)
-            deal["offer"] = int(m.group()) if m else deal["offer"]
+        deal["offer"] = buyer_offer(text, deal["ask"])
 
         reserve = RESERVE[deal["item"]]
         opening = OPENING[deal["item"]]
@@ -180,7 +204,7 @@ class Seller(AgentExecutor):
         deal["ask"] = int(price)
         if opening == reserve:
             reply = (f"{deal['item']}: best available price {deal['ask']}. "
-                     "No further discount is available. Send this price as a number to buy.")
+                     "No further discount is available. Reply 'I accept' or send this price to buy.")
         else:
             reply = (f"{deal['item']}: asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
                      else f"Counteroffer: {deal['ask']}.")
@@ -203,8 +227,9 @@ def build(port):
         name="psyoung82 Furniture",
         description=(f"Furniture shop. Best available prices: lamp {OPENING['lamp']}, "
                      f"chair {OPENING['chair']}, bookshelf {OPENING['bookshelf']}. "
-                     "Immediate quotes and acceptance at these prices. Ed25519-signed receipts."),
-        version="1.4.0",
+                     "Immediate quotes. Offer a price or reply 'I accept' to buy at the quoted price. "
+                     "Ed25519-signed receipts."),
+        version="1.5.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
         capabilities=AgentCapabilities(streaming=False),
