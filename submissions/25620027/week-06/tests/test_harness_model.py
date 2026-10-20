@@ -31,7 +31,7 @@ class ModelRequest(BaseModel, frozen=True):
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("override", [None, "@cf/zai-org/glm-4.7-flash"])
+@pytest.mark.parametrize("override", [None, "liquid/lfm-2.5-2.6b:free"])
 async def test_model_request_when_default_or_public_override(
     override: str | None,
 ) -> None:
@@ -83,8 +83,9 @@ async def test_model_request_when_default_or_public_override(
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("trailing_slash", ["", "/"])
 async def test_public_serve_when_paid_environment_is_present(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, trailing_slash: str
 ) -> None:
     # Given independent paid experiment credentials and explicit public settings.
     monkeypatch.setenv("OPENAI_API_KEY", "test-only-paid")
@@ -96,11 +97,8 @@ async def test_public_serve_when_paid_environment_is_present(
         {
             "public_url": "https://seller.example/",
             "budget_path": tmp_path / "budget.sqlite",
-            "model_base_url": (
-                "https://api.cloudflare.com/client/v4/accounts/"
-                "0123456789abcdef0123456789abcdef/ai/v1"
-            ),
-            "model": "@cf/zai-org/glm-4.7-flash",
+            "model_base_url": "https://openrouter.ai/api/v1" + trailing_slash,
+            "model": "liquid/lfm-2.5-2.6b:free",
             "model_api_key": "test-only-public",
         }
     )
@@ -137,7 +135,7 @@ async def test_public_serve_when_paid_environment_is_present(
     # Then only the explicit public provider receives its token and model.
     assert len(requests) == 1
     request = requests[0]
-    assert str(request.url) == settings.model_base_url + "/chat/completions"
+    assert str(request.url) == "https://openrouter.ai/api/v1/chat/completions"
     assert request.headers["authorization"] == "Bearer test-only-public"
     assert request.headers.get("openai-organization", "") == ""
     assert request.headers.get("openai-project", "") == ""
@@ -157,11 +155,8 @@ async def test_public_serve_when_custom_headers_are_present(
     settings = public_seller.Settings.model_validate(
         {
             "public_url": "https://seller.example/",
-            "model_base_url": (
-                "https://api.cloudflare.com/client/v4/accounts/"
-                "0123456789abcdef0123456789abcdef/ai/v1"
-            ),
-            "model": "@cf/zai-org/glm-4.7-flash",
+            "model_base_url": "https://openrouter.ai/api/v1",
+            "model": "liquid/lfm-2.5-2.6b:free",
             "model_api_key": "test-only-public",
         }
     )

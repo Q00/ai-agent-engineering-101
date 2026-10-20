@@ -32,11 +32,8 @@ def settings(tmp_path: Path) -> Settings:
         {
             "public_url": "https://seller.example/",
             "budget_path": tmp_path / "budget",
-            "model_base_url": (
-                "https://api.cloudflare.com/client/v4/accounts/"
-                "0123456789abcdef0123456789abcdef/ai/v1"
-            ),
-            "model": "@cf/zai-org/glm-4.7-flash",
+            "model_base_url": "https://openrouter.ai/api/v1",
+            "model": "liquid/lfm-2.5-2.6b:free",
             "model_api_key": "test-only-public",
         }
     )
@@ -111,11 +108,29 @@ def test_settings_when_public_model_config_is_missing(
     ("field", "value"),
     [
         ("model_base_url", "https://api.openai.com/v1"),
-        ("model_base_url", "http://api.cloudflare.com/client/v4/accounts/x/ai/v1"),
-        ("model_base_url", "https://api.cloudflare.com.evil.example/ai/v1"),
-        ("model_base_url", "https://user:secret@api.cloudflare.com/ai/v1"),
+        ("model_base_url", "https://api.cloudflare.com/client/v4/accounts/x/ai/v1"),
+        ("model_base_url", "http://openrouter.ai/api/v1"),
+        ("model_base_url", "https://openrouter.ai.evil.example/api/v1"),
+        ("model_base_url", "https://user:secret@openrouter.ai/api/v1"),
+        ("model_base_url", "https://openrouter.ai:443/api/v1"),
+        ("model_base_url", "https://openrouter.ai/api/v1?model=paid"),
+        ("model_base_url", "https://openrouter.ai/api/v1#fragment"),
+        ("model_base_url", "https://openrouter.ai/api/v1/chat/completions"),
+        ("model_base_url", "https://openrouter.ai/api/v1\n"),
         ("model", "gpt-4.1-nano-2025-04-14"),
-        ("model", "@cf/"),
+        ("model", "@cf/zai-org/glm-4.7-flash"),
+        ("model", "openai/gpt-4.1-nano"),
+        ("model", "liquid/lfm-2.5-2.6b"),
+        ("model", "auto"),
+        ("model", "openrouter/auto"),
+        ("model", "openrouter/free"),
+        ("model", "openrouter/auto:free"),
+        ("model", "openrouter/free:free"),
+        ("model", "/model:free"),
+        ("model", "namespace/:free"),
+        ("model", "namespace/model:free:online"),
+        ("model", "namespace/model:free?plugins=web"),
+        ("model", "namespace/model:free\n"),
         ("model_api_key", ""),
         ("model_api_key", " \n"),
     ],
@@ -129,6 +144,41 @@ def test_settings_when_public_model_config_is_invalid(
     # When parsed, then startup fails closed.
     with pytest.raises(ValidationError):
         _ = Settings.model_validate(values)
+
+
+@pytest.mark.parametrize("field", ["plugins", "provider", "query"])
+def test_settings_when_extra_routing_fields_are_present(
+    field: str, settings: Settings
+) -> None:
+    # Given an attempted add-on or routing override outside the fixed contract.
+    values = settings.model_dump()
+    values[field] = "override"
+    # When configuration is parsed, then unknown options fail closed.
+    with pytest.raises(ValidationError):
+        _ = Settings.model_validate(values)
+
+
+@pytest.mark.anyio
+async def test_default_budget_when_fifty_requests_are_sent(settings: Settings) -> None:
+    # Given the public default allowance and an actual HTTP pre-send budget hook.
+    sent: list[str] = []
+
+    def upstream(request: httpx2.Request) -> httpx2.Response:
+        sent.append(request.url.path)
+        return httpx2.Response(200)
+
+    budget = DailyBudget(settings.budget_path, settings.daily_requests)
+    async with httpx2.AsyncClient(
+        transport=httpx2.MockTransport(upstream),
+        event_hooks={"request": [budget.before_request]},
+    ) as client:
+        for _ in range(50):
+            _ = await client.post("https://openrouter.ai/api/v1/chat/completions")
+        # When a fifty-first request tries to leave the service.
+        # Then the default daily cap blocks it before upstream transport.
+        with pytest.raises(BudgetExhaustedError):
+            _ = await client.post("https://openrouter.ai/api/v1/chat/completions")
+    assert len(sent) == 50
 
 
 def test_settings_error_when_raw_token_is_present(settings: Settings) -> None:

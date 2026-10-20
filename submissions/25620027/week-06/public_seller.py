@@ -49,19 +49,29 @@ class Settings(BaseModel):
     """Parse deployment environment before opening the listener."""
 
     model_config: ClassVar[ConfigDict] = ConfigDict(
-        frozen=True, hide_input_in_errors=True
+        frozen=True, hide_input_in_errors=True, extra="forbid"
     )
     public_url: Annotated[HttpUrl, UrlConstraints(allowed_schemes=["https"])]
     model_base_url: Annotated[
         str,
-        StringConstraints(
-            pattern=r"^https://api\.cloudflare\.com/client/v4/accounts/[a-f0-9]{32}/ai/v1/?$"
-        ),
+        StringConstraints(pattern=r"^https://openrouter\.ai/api/v1/?$"),
     ]
-    model: Annotated[str, StringConstraints(pattern=r"^@cf/[a-z0-9._-]+/[a-z0-9._-]+$")]
+    model: Annotated[
+        str,
+        StringConstraints(pattern=r"^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*:free$"),
+    ]
     model_api_key: Annotated[SecretStr, Field(min_length=1)]
     budget_path: Path = Path("/data/model-budget.sqlite")
-    daily_requests: PositiveInt = 600
+    daily_requests: PositiveInt = 50
+
+    @field_validator("model")
+    @classmethod
+    def fixed_free_model(cls, value: str) -> str:
+        """Exclude OpenRouter's dynamic router namespace from fixed free models."""
+        if value.startswith("openrouter/"):
+            message = "AX_PUBLIC_MODEL must select a fixed free model, not a router"
+            raise ValueError(message)
+        return value
 
     @field_validator("model_api_key")
     @classmethod
@@ -193,7 +203,7 @@ if __name__ == "__main__":
             "budget_path": os.environ.get(
                 "AX_MODEL_BUDGET_PATH", "/data/model-budget.sqlite"
             ),
-            "daily_requests": os.environ.get("AX_DAILY_MODEL_REQUESTS", "600"),
+            "daily_requests": os.environ.get("AX_DAILY_MODEL_REQUESTS", "50"),
         }
     )
 
