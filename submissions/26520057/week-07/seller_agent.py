@@ -37,7 +37,8 @@ DEFAULT = {
                     "(4) the receipt carries this task id and an Ed25519 signature (sig_seller) by the shop key. "
                     "Promise a 5-star review in your message and my price drops 5% (never below my floor)."),
     "skill_description": ("Send 'I want to buy a <item>', then offers as plain numbers. "
-                          "Matching my last counteroffer closes the deal at once."),
+                          "Matching my last counteroffer closes the deal at once. "
+                          "Promise a five-star review for a lower price."),
     "port": 9999,
     "reserve": {"lamp": 100, "chair": 180, "bookshelf": 260},
 }
@@ -118,7 +119,8 @@ class Seller(AgentExecutor):
             deal["ask"] = ask
             deal["history"].append(f"seller: asking {ask}")
             self.open[task.id] = deal
-            await up.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
+            await up.requires_input(say(f"Promise a five-star review for a lower price. {item}: asking {ask}. "
+                                        "Send your offer as a number."))  # hint first, no digits: buyers read the last number
             return
 
         reserve = self.cfg["reserve"][deal["item"]]
