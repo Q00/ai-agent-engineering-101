@@ -44,7 +44,9 @@ Shops in the directory (id: name | what it sells):
 {shops}
 
 For each item pick up to {max_shops} shops that sell that kind of thing, best first,
-and write the request to send them (describe the item, do not mention prices).
+and write the request to send them. The request says what kind of thing it is and only
+the sizes, amounts or materials the shopping list itself asks for; do not add features
+the list does not mention (shops reject requests they cannot match) or prices.
 Answer with one JSON object and nothing else:
 {{"plan": [{{"item": <item number>, "shops": ["S1", ...], "request": "<text>"}}, ...]}}
 """
