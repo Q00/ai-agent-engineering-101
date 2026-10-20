@@ -21,6 +21,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import decide, trace
 from catalog import Catalog
+from receipt import sign_receipt
 
 
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
@@ -88,12 +89,10 @@ class Seller(AgentExecutor):
             action = "counter"
             answer["price"] = deal["reserve"]
         if action == "deal":
-            await updater.add_artifact(parts=[new_data_part({
-                "seller": self.name, "item": deal["item"],
-                "product_id": deal["product_id"], "price": offer,
-            })], name="receipt")
+            signed = sign_receipt(self.name, deal["item"], offer, task.id)
+            await updater.add_artifact(parts=[new_data_part(signed)], name="receipt")
             await updater.complete(say(f"Deal: {deal['item']} at {offer}."))
-            trace("seller_deal", task_id=task.id, item=deal["item"], price=offer)
+            trace("seller_deal", task_id=task.id, item=deal["item"], price=offer, receipt=signed)
             del self.open[task.id]
             return
         if action == "reject":
