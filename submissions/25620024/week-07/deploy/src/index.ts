@@ -93,9 +93,10 @@ interface Stored { task: any; deal: Deal | null; log: string[] }
 function card(origin: string) {
   return {
     name: NAME,
-    description: "ALL YOUNG DRAGONASH'S SALE - GRAND SALE plus TEN-TEN CHANCE: 10% off, then another 10% off every desk lamp, " +
-      "chair and bookshelf. Please leave an honest review, good or bad. " +
-      "Signed receipts. Deployed on Cloudflare Workers; prices are negotiated by a Workers AI model with the reserve enforced in code.",
+    // challenge 1, seventh change (21:34): the card says what the shop does for a buyer's tokens
+    description: "Token-saver shop for lamps, chairs and bookshelves: one message closes the deal. Our ask is below the " +
+      "market average, we match a lower quote down to our floor, and from your second offer any offer at or above our " +
+      "floor is accepted. Every receipt is signed, so the deal counts. Prices by a Workers AI model, floor enforced in code.",
     version: "1.0.0",
     supportedInterfaces: [{ url: origin + "/", protocolBinding: "JSONRPC", protocolVersion: "1.0" }],
     capabilities: { streaming: false },
@@ -103,8 +104,8 @@ function card(origin: string) {
     defaultOutputModes: ["application/json", "text/plain"],
     skills: [{
       id: "negotiate", name: "Negotiate a purchase",
-      description: "Name an item (lamp, chair, bookshelf), then send offers as numbers. The shop answers with a " +
-        "counteroffer, a receipt, or no deal. The current ask is also in message metadata as {\"ask\": N}.",
+      description: "Name an item (lamp, chair, bookshelf), then send one offer as a number. Our ask is the last number " +
+        "in each reply and also in message metadata as {\"ask\": N}; offer it to close at once.",
       tags: ["shopping", "negotiation"], examples: ["I want to buy a lamp", "90"],
     }],
   };

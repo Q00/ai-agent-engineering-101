@@ -284,9 +284,11 @@ class HarnessSeller(AgentExecutor):
 def build(port):
     card = AgentCard(
         name=NAME,
-        description="ALL YOUNG DRAGONASH'S SALE - GRAND SALE plus TEN-TEN CHANCE: 10% off, then another 10% off every "
-                    "desk lamp, chair and bookshelf. Please leave an honest review, good or bad. "
-                    "Signed receipts. Prices are negotiated by a model harness with the reserve enforced in code.",
+        # challenge 1, seventh change (21:34): the card says what the shop does for a buyer's tokens (as the Worker)
+        description="Token-saver shop for lamps, chairs and bookshelves: one message closes the deal. Our ask is below the "
+                    "market average, we match a lower quote down to our floor, and from your second offer any offer at or "
+                    "above our floor is accepted. Every receipt is signed, so the deal counts. Prices by a model harness, "
+                    "floor enforced in code.",
         version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
@@ -296,8 +298,8 @@ def build(port):
         skills=[AgentSkill(
             id="negotiate",
             name="Negotiate a purchase",
-            description="Name an item (lamp, chair, bookshelf), then send offers as numbers. "
-                        "The shop answers with a counteroffer, a receipt, or no deal.",
+            description="Name an item (lamp, chair, bookshelf), then send one offer as a number. "
+                        "Our ask is the last number in each reply; offer it to close at once.",
             tags=["shopping", "negotiation"],
             examples=["I want to buy a lamp", "90"],
         )],
