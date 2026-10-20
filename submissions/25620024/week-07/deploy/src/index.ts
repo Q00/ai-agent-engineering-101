@@ -38,7 +38,11 @@ const MATCH = /match|elsewhere|other shop|quoted|cheaper|found it|lower price/i;
 // a counter gives up at least half the gap between our ask and the offer; the model may not end the talk
 // before MAX_ROUNDS (a "reject" becomes a counter).
 const FAST_CLOSE_FROM = 2;
-const SHOP_CODE = "short-open-1";   // Durable Object name suffix: change it with every behaviour change
+const SHOP_CODE = "deal-msg-1";
+// challenge 1, sixth change (21:31): the deal message says how many offers it took, in words, so a buyer's
+// review can repeat the fact ("closed in one offer"); words, not digits, so the price stays the only number.
+const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+const offersInWords = (n: number) => `${WORDS[n] ?? String(n)} offer${n === 1 ? "" : "s"}`;   // Durable Object name suffix: change it with every behaviour change
 const SHOP = "dragonash";   // receipt "shop": the market name, same as seller.py
 
 export function canon(r: { shop: string; item: string; price: number; task: string }): string {
@@ -309,7 +313,7 @@ export class Shop {
         receipt = await signedReceipt(null, d.item, offer, task.id);
       }
       task.artifacts = [{ artifactId: crypto.randomUUID(), name: "receipt", parts: [{ data: receipt }] }];
-      task.status = { state: "TASK_STATE_COMPLETED", message: agentMsg(`Deal: ${d.item} at ${offer}. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.`), timestamp: now() };
+      task.status = { state: "TASK_STATE_COMPLETED", message: agentMsg(`Deal: ${d.item} at ${offer}. Closed in ${offersInWords(d.rounds)}. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.`), timestamp: now() };
       s.log.push(`DEAL ${d.item} at ${offer} (reserve ${d.reserve})`);
       return save();
     }

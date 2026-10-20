@@ -59,6 +59,12 @@ MATCH = re.compile(r"match|elsewhere|other shop|quoted|cheaper|found it|lower pr
 # fast close, as in the Worker. From the buyer's second offer, any offer at or above the reserve is accepted
 # without the harness; a counter gives up at least half the gap; a "reject" before MAX_ROUNDS becomes a counter.
 FAST_CLOSE_FROM = 2
+# challenge 1, sixth change (21:31): the deal message says how many offers it took, in words (as in the Worker)
+WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
+
+
+def offers_in_words(n):
+    return f"{WORDS[n] if n < len(WORDS) else n} offer{'' if n == 1 else 's'}"
 _avg = {"at": 0.0, "items": {}, "shops": []}
 
 
@@ -201,8 +207,8 @@ class HarnessSeller(AgentExecutor):
         if action == "accept":
             receipt = signed_receipt(self.key, item, offer, task.id)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(say(f"Deal: {item} at {offer}. Your receipt is signed by the shop, so this deal counts. "
-                                  "Please leave an honest review."))
+            await up.complete(say(f"Deal: {item} at {offer}. Closed in {offers_in_words(deal['rounds'])}. "
+                                  "Your receipt is signed by the shop, so this deal counts. Please leave an honest review."))
             log(f"[{tid}] DEAL {item} at {offer} (reserve {reserve})")
             del self.open[task.id]
             return
