@@ -13,7 +13,7 @@ import time
 
 from tracing import Trace
 from inference_queue import QueueStateError, QueueTimeout, inference_slot
-from inference_pool import pool_slot
+from inference_pool import defer_pool, pool_slot
 
 ROOT = Path(__file__).resolve().parent
 MODEL = os.environ.get("A2A_MODEL", "gpt-6-luna")
@@ -27,6 +27,10 @@ SCHEMAS = {"buyer": "buyer-decision.schema.json", "seller": "seller-decision.sch
 
 
 class HarnessError(RuntimeError):
+    pass
+
+
+class HarnessConfigurationError(HarnessError):
     pass
 
 
@@ -175,17 +179,20 @@ class Harness:
                         if ("429" in stderr or "Too Many Requests" in stderr) and attempt < attempts:
                             pause = min(20 * attempt, max(0, (deadline - time.monotonic() - 2) if deadline else 60))
                             self.trace.write("rate_limit_backoff", seconds=pause)
+                            defer_pool(pause)
                             time.sleep(pause)
                         errors = [line for line in stderr.splitlines() if "ERROR:" in line or "error" in line.lower()]
                         detail = errors[-1] if errors else (stderr.strip().splitlines()[-1] if stderr.strip() else "no stderr")
                         if "401 Unauthorized" in stderr or "not supported when using Codex" in stderr:
-                            raise RuntimeError(f"Inference configuration/authentication failure: {detail[-500:]}")
+                            raise HarnessConfigurationError(f"Inference configuration/authentication failure: {detail[-500:]}")
                         raise HarnessError(f"CLI exit {process.returncode}: {detail[-300:]}")
                     decision = json.loads(output.read_text())
                     if validator:
                         decision = validator(decision)
                     self.trace.write("harness_decision", decision=decision)
                     return decision
+                except HarnessConfigurationError:
+                    raise
                 except (ValueError, OSError, HarnessError) as exc:
                     self.trace.write("decision_rejected", detail=str(exc))
                     feedback.append(str(exc))

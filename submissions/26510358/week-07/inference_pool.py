@@ -12,6 +12,37 @@ import time
 from inference_queue import QueueTimeout, inference_gap_seconds
 
 
+def pool_directory(directory=None):
+    root = Path(directory or os.environ.get("A2A_INFERENCE_POOL_DIR",
+        str(Path(__file__).resolve().parent / ".market" / "inference-pool")))
+    root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    return root
+
+
+def defer_pool(seconds, *, directory=None):
+    """Share provider throttling across roles instead of issuing more 429s."""
+    path = pool_directory(directory) / "cooldown"
+    with path.open("a+") as stream:
+        fcntl.flock(stream, fcntl.LOCK_EX)
+        stream.seek(0)
+        raw = stream.read().strip()
+        until = max(float(raw) if raw else 0, time.monotonic() + seconds)
+        stream.seek(0)
+        stream.truncate()
+        stream.write(str(until))
+        stream.flush()
+
+
+def cooldown_remaining(directory):
+    path = directory / "cooldown"
+    if not path.exists():
+        return 0
+    with path.open() as stream:
+        fcntl.flock(stream, fcntl.LOCK_SH)
+        raw = stream.read().strip()
+        return max(0, (float(raw) if raw else 0) - time.monotonic())
+
+
 @contextmanager
 def pool_slot(role, deadline=None, *, directory=None, capacity=None):
     capacity = int(capacity or os.environ.get("A2A_INFERENCE_CAPACITY", "3"))
@@ -20,9 +51,7 @@ def pool_slot(role, deadline=None, *, directory=None, capacity=None):
     # Validate old pacing overrides rather than silently accepting invalid values.
     if "A2A_INFERENCE_GAP_SECONDS" in os.environ:
         inference_gap_seconds()
-    directory = Path(directory or os.environ.get("A2A_INFERENCE_POOL_DIR",
-        str(Path(__file__).resolve().parent / ".market" / "inference-pool")))
-    directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    directory = pool_directory(directory)
     lanes = range(capacity - 1) if role == "seller" else [capacity - 1]
     handles = [os.open(directory / f"lane-{n}.lock", os.O_RDWR | os.O_CREAT, 0o600) for n in lanes]
     acquired = None
@@ -30,6 +59,9 @@ def pool_slot(role, deadline=None, *, directory=None, capacity=None):
         while acquired is None:
             if deadline is not None and time.monotonic() >= deadline:
                 raise QueueTimeout("Inference deadline reached waiting for a pool lane")
+            if cooldown_remaining(directory):
+                time.sleep(0.025)
+                continue
             for handle in handles:
                 try:
                     fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)

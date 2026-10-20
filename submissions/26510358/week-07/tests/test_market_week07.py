@@ -16,7 +16,7 @@ import base64
 
 from evidence import inspect_untrusted, verify_receipt
 from harness import system_prompt
-from inference_pool import pool_slot
+from inference_pool import defer_pool, pool_slot
 from inference_queue import QueueTimeout
 from market_memory import MarketMemory, rank_shops
 from receipts import canonical_receipt, sign_receipt, verify_signature
@@ -24,6 +24,14 @@ from quote_normalization import normalize_quote
 
 
 class MarketGuards(unittest.TestCase):
+    def test_shared_provider_cooldown_respects_admission_deadline(self):
+        with tempfile.TemporaryDirectory() as d:
+            defer_pool(0.15, directory=d)
+            with self.assertRaises(QueueTimeout):
+                with pool_slot("buyer", directory=d, deadline=time.monotonic()+0.04): pass
+            time.sleep(0.13)
+            with pool_slot("buyer", directory=d, deadline=time.monotonic()+0.1): pass
+
     def test_exact_wire_price_skips_extra_inference_but_suffix_attack_does_not(self):
         def task(text): return {"status": {"message": {"parts": [{"text": text}]}}}
         quote = normalize_quote(task("90 is too low. Counteroffer: 110."))
