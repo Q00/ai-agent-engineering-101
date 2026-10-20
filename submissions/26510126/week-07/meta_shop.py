@@ -9,8 +9,9 @@ Each cycle:
 2. Ask the harness (claude -p, haiku) for a new opening ask and target per item, with the
    history of every earlier version and how it did (deals per hour, price, margin over reserve).
 3. Code guards, whatever the harness says (we never sell at a loss and never price far above the market):
-   - target at least reserve + MARGIN, at most the market's upper quartile
-   - opening ask above the target, at most UPPER x the market's upper quartile
+   - target at least the market median (and reserve + MARGIN), at most the market's upper quartile:
+     we do not undercut the market, a race to the bottom only gives margin away
+   - opening ask at least the upper quartile and above the target, at most UPPER x the upper quartile
    - each price moves at most STEP (15%) per cycle, so one bad answer cannot swing the shop
 4. PUT the strategy to the Worker (/admin/strategy, token in .market/admin_token) and append the
    decision with its evidence to logs/challenge-1/strategies.jsonl (raw evidence, as in market_buyer.py).
@@ -45,6 +46,7 @@ PROMPT = """You set the prices of our furniture shop in an agent market. Buyers 
 each picks a shop for its order, haggles, and leaves a review. Many shops sell the same items.
 Our goal: the most profit per hour, where profit is (price - reserve) for every deal.
 Asking too much loses buyers to cheaper shops; asking too little gives away margin.
+Do not undercut the market: settle around the going price, not below it.
 
 Reserves (our cost; never sell below): {reserve}
 
@@ -138,7 +140,8 @@ def guard(proposal, previous, going):
         g = going.get(item, {"p75": reserve * 1.3})
         t = market_intel_int((proposal.get("target") or {}).get(item))
         o = market_intel_int((proposal.get("open") or {}).get(item))
-        lo_t, hi_t = reserve + MARGIN, max(reserve + MARGIN, round(g["p75"]))
+        lo_t = max(reserve + MARGIN, round(g.get("median", 0)))
+        hi_t = max(lo_t, round(g["p75"]))
         if t is None:
             t = previous["target"][item] if previous else round((lo_t + hi_t) / 2)
             notes.append(f"{item}: no target from the harness, keeping {t}")
@@ -148,7 +151,7 @@ def guard(proposal, previous, going):
                 notes.append(f"{item}: target {t} moves more than {STEP:.0%}, clamped")
                 t = min(max(t, step_lo), step_hi)
         if not lo_t <= t <= hi_t:
-            notes.append(f"{item}: target {t} outside [{lo_t}, {hi_t}] (reserve+{MARGIN}, market p75), clamped")
+            notes.append(f"{item}: target {t} outside [{lo_t}, {hi_t}] (market median, market p75), clamped")
             t = min(max(t, lo_t), hi_t)
         hi_o = max(t + 5, round(g["p75"] * UPPER))
         if o is None:
@@ -159,9 +162,11 @@ def guard(proposal, previous, going):
             if not step_lo <= o <= step_hi:
                 notes.append(f"{item}: opening ask {o} moves more than {STEP:.0%}, clamped")
                 o = min(max(o, step_lo), step_hi)
-        if not t + 5 <= o <= hi_o:
-            notes.append(f"{item}: opening ask {o} outside [{t + 5}, {hi_o}] (target+5, {UPPER} x market p75), clamped")
-            o = min(max(o, t + 5), hi_o)
+        lo_o = max(t + 5, round(g["p75"]))
+        hi_o = max(hi_o, lo_o)
+        if not lo_o <= o <= hi_o:
+            notes.append(f"{item}: opening ask {o} outside [{lo_o}, {hi_o}] (market p75 and target+5, {UPPER} x market p75), clamped")
+            o = min(max(o, lo_o), hi_o)
         open_[item], target[item] = o, t
     return open_, target, notes
 
@@ -217,6 +222,8 @@ async def cycle(dry_run=False):
 
 
 async def main(args):
+    if args.wait_first:
+        await asyncio.sleep(args.every)
     while True:
         try:
             await cycle(dry_run=args.dry_run)
@@ -232,4 +239,5 @@ if __name__ == "__main__":
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--dry-run", action="store_true", help="decide and print, change nothing")
     ap.add_argument("--every", type=int, default=1800, help="seconds between cycles")
+    ap.add_argument("--wait-first", action="store_true", help="sleep one interval before the first cycle")
     asyncio.run(main(ap.parse_args()))

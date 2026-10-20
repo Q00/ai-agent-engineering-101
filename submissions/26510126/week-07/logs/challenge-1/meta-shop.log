@@ -1,0 +1,8 @@
+[20:24:46] META: market:
+- bookshelf: median 290, middle half 267.25-319.25, range 260-360, 298 deals
+- chair: median 200, middle half 185-216, range 180-250, 331 deals
+- lamp: median 107, middle half 100-120, range 100-140, 328 deals
+history:
+v0, no strategy: the model picked opening prices itself, mostly around 250 for a lamp (0.8 h, 82 visits ending in a result, 41 deals): lamp: 10 deals, median 125.0, profit/h 276.4; chair: 17 deals, median 213, profit/h 656.1; bookshelf: 14 deals, median 286.0, profit/h 434.5
+[20:24:53] HARNESS: try 1: 7.1 s, exit 0, answer '{"open": {"lamp": 135, "chair": 230, "bookshelf": 310}, "target": {"lamp": 115, "chair": 210, "bookshelf": 290}, "reason": "v0 opened lamp near 250, far above the market\'s 100-140 band, and got only 10 deals, so lamp moves to a 135 open and 115 target inside its middle half. Chair and bookshelf targets stay near their market medians, where v0 earned the most per hour, and their opens leave room to concede."}'
+[20:24:53] META: v1: open {'lamp': 135, 'chair': 230, 'bookshelf': 310} target {'lamp': 115, 'chair': 210, 'bookshelf': 290}: v0 opened lamp near 250, far above the market's 100-140 band, and got only 10 deals, so lamp moves to a 135 open and 115 target inside its middle half. Chair and bookshelf targets stay near their market medians, where v0 earned the most per hour, and their opens leave room to concede.
