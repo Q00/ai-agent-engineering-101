@@ -11,7 +11,8 @@ is chosen by the HARNESS environment variable:
                                   with the prompt on stdin, inside a fresh empty directory.
 
 OPENROUTER_MODELS (comma-separated) overrides the model list. The first model is tried first;
-when it is rate limited (429) or unavailable after the retries, the next one is tried.
+when it is rate limited (429) or has no endpoint, the next one is tried at once. Only when every
+model failed does it wait (2 s, then 4 s) and go through the list again.
 
     python harness.py        # one sample decision, to check the harness works
 """
@@ -36,9 +37,9 @@ CMD = ["claude", "-p", "--model", "haiku", "--tools", "", "--setting-sources", "
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODELS = os.environ.get(
     "OPENROUTER_MODELS",
-    "google/gemma-4-31b-it:free,nvidia/nemotron-3-super-120b-a12b:free,minimax/minimax-m3.1-flash:free",
+    "minimax/minimax-m3.1-flash:free,google/gemma-4-26b-a4b-it:free,google/gemma-4-31b-it:free",
 ).split(",")
-RETRIES = 3                           # tries per model on 429 / 5xx, waiting 2, 4, 8 s
+ROUNDS = 3                            # passes over the whole model list; waits 2, 4 s between passes
 
 HARNESS = "claude -p --model haiku" if HARNESS_KIND == "claude" else f"OpenRouter {MODELS[0]}"
 
@@ -66,27 +67,25 @@ def _ask_openrouter(prompt: str) -> str:
         raise RuntimeError("OPENROUTER_API_KEY is not set")
     headers = {"Authorization": f"Bearer {key}", "X-OpenRouter-Title": "seoultech-agentic week-07"}
     errors = []
-    for model in MODELS:
-        body = {"model": model.strip(), "messages": [{"role": "user", "content": prompt}], "temperature": 0}
-        for attempt in range(RETRIES):
+    for rnd in range(ROUNDS):
+        if rnd:
+            time.sleep(2 ** rnd)      # every model was busy: wait, then try the list again
+        for model in MODELS:
+            body = {"model": model.strip(), "messages": [{"role": "user", "content": prompt}], "temperature": 0}
             try:
                 r = httpx.post(OPENROUTER_URL, json=body, headers=headers, timeout=TIMEOUT)
             except httpx.HTTPError as e:
                 errors.append(f"{model}: {type(e).__name__}")
-                time.sleep(2 ** (attempt + 1))
-                continue
-            if r.status_code == 429 or r.status_code >= 500:
-                errors.append(f"{model}: HTTP {r.status_code}")
-                time.sleep(2 ** (attempt + 1))
                 continue
             if r.status_code != 200:
-                errors.append(f"{model}: HTTP {r.status_code} {r.text[:120]}")
-                break                 # 4xx other than 429 (bad model, policy, limit): next model
+                # 429 (busy), 404 (no endpoint), 5xx: no waiting here, the next model is tried at once
+                errors.append(f"{model}: HTTP {r.status_code}")
+                continue
             data = r.json()
             content = (data.get("choices") or [{}])[0].get("message", {}).get("content")
             if not content:
                 errors.append(f"{model}: empty answer {str(data)[:120]}")
-                break
+                continue
             used = data.get("model", model)
             if used != MODELS[0]:
                 print(f"[harness] answered by {used}", file=sys.stderr, flush=True)
