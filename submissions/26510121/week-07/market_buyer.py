@@ -3,6 +3,7 @@ import argparse
 import asyncio
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 import time
@@ -86,7 +87,8 @@ def main():
     parser.add_argument("--shops", required=True, type=Path)
     parser.add_argument("--item", required=True)
     parser.add_argument("--budget", required=True, type=int)
-    parser.add_argument("--memory", type=Path, default=ROOT / "memory" / "market-trades.jsonl")
+    parser.add_argument("--memory", type=Path,
+                        default=Path(os.environ.get("MARKET_BUYER_MEMORY", ROOT / "memory" / "market-trades.jsonl")))
     args = parser.parse_args()
     if not args.item.strip() or args.budget < 0:
         parser.error("Nonempty item and nonnegative budget required")

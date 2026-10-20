@@ -89,12 +89,16 @@ def choose_shop(shops, memory, item, budget):
                            and time.time() - r.get("epoch", 0) < 1800 for r in own)
         speeds = [r.get("seconds", 60) for r in wins]
         speed = 1 / (1 + (sum(speeds) / len(speeds) if speeds else 60) / 30)
-        score = 0.50 * personal + 0.20 * affordable + 0.20 * public + 0.10 * speed
+        # As direct evidence grows, unverified public ratings lose influence.
+        # Otherwise a burst of bad reviews could outweigh years of good dealings.
+        public_weight = 0.20 / (1 + len(informative))
+        personal_weight = 0.70 - public_weight
+        score = personal_weight * personal + 0.20 * affordable + public_weight * public + 0.10 * speed
         if recent_fault:
             score -= 1
         # Negative public evidence is a caution, not a permanent blacklist.
         if bad_public:
-            score -= 0.15
+            score -= 0.15 / (1 + len(informative))
         tie = hashlib.sha256(f"{len(memory)}:{item}:{shop['name']}".encode()).hexdigest()
         candidates.append({"shop": shop, "score": score, "tie": tie, "own": len(same),
                            "public": round(public, 3), "recent_fault": recent_fault,

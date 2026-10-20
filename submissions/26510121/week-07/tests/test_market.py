@@ -34,6 +34,12 @@ class MarketSelectionTests(unittest.TestCase):
         picked, _, _ = choose_shop([shop("bad", 1), shop("good", 5)], [], "lamp", 120)
         self.assertEqual(picked["name"], "good")
 
+    def test_public_smear_does_not_erase_repeated_personal_success(self):
+        memory = [{"name": "regular", "item": "lamp", "outcome": "purchased",
+                   "price": 100, "seconds": 5}] * 5
+        picked, _, _ = choose_shop([shop("regular", 1), shop("untried", 5)], memory, "lamp", 120)
+        self.assertEqual(picked["name"], "regular")
+
     def test_low_budget_no_deal_is_not_an_integrity_fault(self):
         stars, text = review_trade({"outcome": "stopped"}, None, 90, 4)
         self.assertEqual(stars, 3)
