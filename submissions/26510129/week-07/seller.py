@@ -10,10 +10,12 @@ schema, turns the buyer's words into a query, the code searches, and the harness
 """
 import argparse
 import asyncio
+import base64
 import json
 import re
 
 import uvicorn
+from cryptography.hazmat.primitives import serialization
 from starlette.applications import Starlette
 
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
@@ -30,6 +32,21 @@ import harness
 DEFAULT = {"name": "GPT Lamp Shop", "catalog": "catalog/basic.json", "categories": None, "sample": 1.0, "seed": 0,
            "price_factor": 1.0}
 SHOW_ALL = 20
+SHOP_KEY = "shop_key.pem"   # Ed25519 private key the kit made at join; its public key is registered with the market. Never committed.
+
+
+def canon(d):
+    """The bytes both sides sign and verify: keys sorted, no spaces, UTF-8. Same JSON content -> same bytes."""
+    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def sign_receipt(receipt, key_path=SHOP_KEY):
+    """Adds sig_seller over {shop, item, price, task}. The price is signed as an integer: data Parts carry numbers as
+    floats (120 arrives as 120.0), so the kit and the market turn it back into an integer before verifying."""
+    key = serialization.load_pem_private_key(open(key_path, "rb").read(), password=None)
+    body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
+    receipt["sig_seller"] = base64.b64encode(key.sign(canon(body))).decode()
+    return receipt
 K = 8
 
 PRICE_SYSTEM = (
@@ -146,7 +163,7 @@ class Seller(AgentExecutor):
             print(f"[guard] harness accepted {offer} below the reserve {item['reserve']} of {item['id']}; countering at the reserve", flush=True)
             action, d = "counter", {"action": "counter", "price": item["reserve"]}
         if action == "accept":
-            receipt = {"seller": self.cfg["name"], "item": item["name"], "item_id": item["id"], "price": offer}
+            receipt = sign_receipt({"shop": self.cfg["name"], "item": item["name"], "price": int(offer), "task": task.id})
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {item['name']} at {offer}.", {"offer": offer, "item": item["id"]}))
             print(f"[seller] DEAL task={tid} item={item['id']} reserve={item['reserve']} price={offer}", flush=True)
