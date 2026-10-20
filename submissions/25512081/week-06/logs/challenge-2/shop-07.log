@@ -1,55 +1,62 @@
 [seller] Budget Basics: 338 items, harness model opus
-[b6c6983c] <- "a dimmable desk lamp for reading. I'm looking for the most affordable option you have that fits."
-    [harness 4.4s] {"category": "desk lamp", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["dimmable"], "keywords": "reading, affordable, budget"}
-[b6c6983c] query {"category": "desk lamp", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["dimmable"], "keywords": "reading, affordable, budget"} -> ['DLLA-0200', 'DLLA-0199', 'DLLA-0196', 'DLLA-0194', 'DLLA-0190', 'DLLA-0189', 'DLLA-0184', 'DLLA-0181', 'DLLA-0176', 'DLLA-0174'] (68 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
-[c2d78771] <- "an office chair with armrests. I'm looking for the most affordable option you have that fits."
-    [harness 7.4s] {"item_id": "DLLA-0199", "ask": 24, "reason": "Every candidate is a dimmable desk lamp for reading, so the deciding factor is price. The Knoll modern plastic desk lamp has the lowest reserve (18), and its specs are still good: 800 lumens and 42 cm tall. The opening ask of 24 is about 1.33x the reserve. That leaves room to negotiate, and it's still cheaper than the reserves of most of the other options, which suits a buyer who's watching their budget."}
-[b6c6983c] picked DLLA-0199 (Knoll modern plastic desk lamp, reserve 18) from 10 candidates
-[b6c6983c] -> Knoll modern plastic desk lamp: asking 24. Send your offer as a number.
-[7d23bc67] <- "a rug that is machine washable. I'm looking for the most affordable option you have that fits."
-    [harness 4.2s] {"category": "office chair", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["armrests"], "keywords": "affordable budget armrests"}
-[c2d78771] query {"category": "office chair", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["armrests"], "keywords": "affordable budget armrests"} -> ['OCCH-0200', 'OCCH-0198', 'OCCH-0195', 'OCCH-0188', 'OCCH-0185', 'OCCH-0175', 'OCCH-0172', 'OCCH-0169', 'OCCH-0168', 'OCCH-0164'] (64 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
-    [harness 4.0s] {"category": "rug", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["washable"], "keywords": "machine washable affordable"}
-[7d23bc67] query {"category": "rug", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["washable"], "keywords": "machine washable affordable"} -> ['RRU-0199', 'RRU-0191', 'RRU-0183', 'RRU-0181', 'RRU-0175', 'RRU-0173', 'RRU-0168', 'RRU-0136', 'RRU-0130', 'RRU-0127'] (37 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
-    [harness 5.7s] {"item_id": "OCCH-0172", "ask": 92, "reason": "Every candidate has armrests, so price decides it. The Orla plastic office chair has the lowest reserve by a clear margin (73, against 110 for the next one). The buyer is price-sensitive, so the opening ask sits near the low end of the range at about 1.26x the reserve. That leaves room to negotiate while keeping it the cheapest option."}
-[c2d78771] picked OCCH-0172 (Orla plastic office chair, reserve 73) from 10 candidates
-[c2d78771] -> Orla plastic office chair: asking 92. Send your offer as a number.
-    [harness 5.8s] {"item_id": "RRU-0168", "ask": 47, "reason": "Every candidate is machine washable. The Heath minimal plastic rug has the lowest reserve at 39, so it's the most affordable option that fits. I set the opening ask at the low end of the range, about 1.2 times the reserve, because this buyer cares most about price. 47 is still well above the reserve and stays below the next cheapest washable options, which have reserves of 42 and 45."}
-[7d23bc67] picked RRU-0168 (Heath minimal plastic rug, reserve 39) from 10 candidates
-[7d23bc67] -> Heath minimal plastic rug: asking 47. Send your offer as a number.
-[7d23bc67] <- '30'
-[b6c6983c] <- '14'
-[c2d78771] <- '55'
-    [harness 5.0s] {"action": "counter", "price": 44}
-[7d23bc67] -> 30 is too low for the Heath minimal plastic rug. Counteroffer: 44.
-    [harness 5.5s] {"action": "counter", "price": 87}
-[c2d78771] -> 55 is too low for the Orla plastic office chair. Counteroffer: 87.
-    [harness 7.8s] {"action": "counter", "price": 22}
-[b6c6983c] -> 14 is too low for the Knoll modern plastic desk lamp. Counteroffer: 22.
-[7d23bc67] <- '35'
-[c2d78771] <- '65'
-    [harness 4.2s] {"action": "counter", "price": 42}
-[7d23bc67] -> 35 is too low for the Heath minimal plastic rug. Counteroffer: 42.
-[b6c6983c] <- '17'
-    [harness 4.9s] {"action": "counter", "price": 82}
-[c2d78771] -> 65 is too low for the Orla plastic office chair. Counteroffer: 82.
-    [harness 4.6s] {"action": "counter", "price": 20}
-[b6c6983c] -> 17 is too low for the Knoll modern plastic desk lamp. Counteroffer: 20.
-[7d23bc67] <- '38'
-[c2d78771] <- '72'
-[b6c6983c] <- '18'
-    [harness 5.3s] {"action": "counter", "price": 40}
-[7d23bc67] -> 38 is too low for the Heath minimal plastic rug. Counteroffer: 40.
-    [harness 3.6s] {"action": "counter", "price": 76}
-[c2d78771] -> 72 is too low for the Orla plastic office chair. Counteroffer: 76.
-[7d23bc67] <- '39'
-[c2d78771] <- '74'
-    [harness 7.3s] {"action": "accept", "price": 18}
-[b6c6983c] -> Deal: Knoll modern plastic desk lamp at 18.
-[b6c6983c] DEAL DLLA-0199 at 18 (reserve 18)
-    [harness 4.3s] {"action": "accept", "price": 39}
-[7d23bc67] -> Deal: Heath minimal plastic rug at 39.
-[7d23bc67] DEAL RRU-0168 at 39 (reserve 39)
-    [harness 6.7s] {"action": "accept", "price": 74}
-[c2d78771] -> Deal: Orla plastic office chair at 74.
-[c2d78771] DEAL OCCH-0172 at 74 (reserve 73)
+[c9737df9] <- "a dimmable desk lamp for reading. I'm looking for the most affordable option you have that fits."
+[e863de35] <- "a wooden bookshelf that holds at least 40 books. I'm looking for the most affordable option you have that fits."
+    [harness 4.7s] {"category": "desk lamp", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["dimmable"], "keywords": "reading lamp, affordable, budget"}
+[c9737df9] query {"category": "desk lamp", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["dimmable"], "keywords": "reading lamp, affordable, budget"} -> ['DLLA-0200', 'DLLA-0199', 'DLLA-0196', 'DLLA-0194', 'DLLA-0190', 'DLLA-0189', 'DLLA-0184', 'DLLA-0181', 'DLLA-0176', 'DLLA-0174'] (68 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 5.7s] {"category": "bookshelf", "materials": ["bamboo", "beech", "birch", "oak", "pine", "walnut"], "colors": [], "min": {"capacity_books": 40}, "max": {}, "flags_true": [], "keywords": "wooden bookshelf affordable"}
+[e863de35] query {"category": "bookshelf", "materials": ["bamboo", "beech", "birch", "oak", "pine", "walnut"], "colors": [], "min": {"capacity_books": 40}, "max": {}, "flags_true": [], "keywords": "wooden bookshelf affordable"} -> ['BBO-0183', 'BBO-0178', 'BBO-0164', 'BBO-0151', 'BBO-0137', 'BBO-0125', 'BBO-0116', 'BBO-0090', 'BBO-0021', 'BBO-0156'] (34 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 5.6s] {"item_id": "DLLA-0199", "ask": 23, "reason": "Every candidate is a dimmable desk lamp for reading. The buyer wants the cheapest option that fits, and the Knoll modern plastic lamp has the lowest reserve (18). It is also bright enough for reading at 800 lumens. I'm opening at 23, about 1.3x the reserve. That leaves room to negotiate and stays competitive against the next-cheapest option (reserve 19)."}
+[c9737df9] picked DLLA-0199 (Knoll modern plastic desk lamp, reserve 18) from 10 candidates
+[c9737df9] -> Knoll modern plastic desk lamp: asking 23. Send your offer as a number.
+[ab9fac6d] <- "an office chair with armrests. I'm looking for the most affordable option you have that fits."
+[85dce890] <- "a rug that is machine washable. I'm looking for the most affordable option you have that fits."
+    [harness 6.2s] {"item_id": "BBO-0164", "ask": 130, "reason": "Every candidate is wooden and holds at least 40 books. The Glen pine bookshelf has the lowest reserve (105), so it's the most affordable fit. It's a modern natural pine bookshelf, 164 cm tall with 4 shelves, and holds about 105 books. The opening ask of 130 is about 1.24 times the reserve. That stays near the low end because the buyer cares about price, and it still leaves room to negotiate."}
+[e863de35] picked BBO-0164 (Glen pine bookshelf, reserve 105) from 10 candidates
+[e863de35] -> Glen pine bookshelf: asking 130. Send your offer as a number.
+    [harness 5.1s] {"category": "office chair", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["armrests"], "keywords": "affordable budget armrests"}
+[ab9fac6d] query {"category": "office chair", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["armrests"], "keywords": "affordable budget armrests"} -> ['OCCH-0200', 'OCCH-0198', 'OCCH-0195', 'OCCH-0188', 'OCCH-0185', 'OCCH-0175', 'OCCH-0172', 'OCCH-0169', 'OCCH-0168', 'OCCH-0164'] (64 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 4.9s] {"category": "rug", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["washable"], "keywords": "machine washable rug affordable"}
+[85dce890] query {"category": "rug", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["washable"], "keywords": "machine washable rug affordable"} -> ['RRU-0199', 'RRU-0191', 'RRU-0183', 'RRU-0181', 'RRU-0175', 'RRU-0173', 'RRU-0168', 'RRU-0136', 'RRU-0130', 'RRU-0127'] (37 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 5.8s] {"item_id": "OCCH-0172", "ask": 95, "reason": "Every candidate has armrests. The Orla plastic office chair has the lowest reserve (73), so it's the most affordable fit. I'm opening at 95, about 1.3 times the reserve. That leaves room to negotiate and is still the lowest price on offer."}
+[ab9fac6d] picked OCCH-0172 (Orla plastic office chair, reserve 73) from 10 candidates
+[ab9fac6d] -> Orla plastic office chair: asking 95. Send your offer as a number.
+    [harness 7.6s] {"item_id": "RRU-0168", "ask": 49, "reason": "Every candidate is machine washable. The buyer wants the most affordable one, and Heath minimal plastic rug (RRU-0168) has the lowest reserve at 39. The opening ask of 49 is about 1.26 times the reserve. It's at the lower end of the usual range because this buyer cares most about price, and it still leaves 10 to negotiate down to the reserve."}
+[85dce890] picked RRU-0168 (Heath minimal plastic rug, reserve 39) from 10 candidates
+[85dce890] -> Heath minimal plastic rug: asking 49. Send your offer as a number.
+[c9737df9] <- '14'
+[e863de35] <- '85'
+[ab9fac6d] <- '55'
+    [harness 4.1s] {"action": "counter", "price": 122}
+[e863de35] -> 85 is too low for the Glen pine bookshelf. Counteroffer: 122.
+    [harness 5.0s] {"action": "counter", "price": 21}
+[c9737df9] -> 14 is too low for the Knoll modern plastic desk lamp. Counteroffer: 21.
+    [harness 5.5s] {"action": "counter", "price": 88}
+[ab9fac6d] -> 55 is too low for the Orla plastic office chair. Counteroffer: 88.
+[c9737df9] <- '17'
+[e863de35] <- '95'
+[ab9fac6d] <- '65'
+    [harness 4.0s] {"action": "counter", "price": 19}
+[c9737df9] -> 17 is too low for the Knoll modern plastic desk lamp. Counteroffer: 19.
+    [harness 4.4s] {"action": "counter", "price": 114}
+[e863de35] -> 95 is too low for the Glen pine bookshelf. Counteroffer: 114.
+    [harness 5.3s] {"action": "counter", "price": 82}
+[ab9fac6d] -> 65 is too low for the Orla plastic office chair. Counteroffer: 82.
+[e863de35] <- '103'
+[c9737df9] <- '18'
+    [harness 4.6s] {"action": "counter", "price": 108}
+[e863de35] -> 103 is too low for the Glen pine bookshelf. Counteroffer: 108.
+[ab9fac6d] <- '72'
+    [harness 5.9s] {"action": "accept", "price": 18}
+[c9737df9] -> Deal: Knoll modern plastic desk lamp at 18.
+[c9737df9] DEAL DLLA-0199 at 18 (reserve 18)
+[e863de35] <- '105'
+    [harness 5.6s] {"action": "counter", "price": 76}
+[ab9fac6d] -> 72 is too low for the Orla plastic office chair. Counteroffer: 76.
+[85dce890] canceled by the buyer
+[ab9fac6d] <- '74'
+    [harness 7.2s] {"action": "accept", "price": 105}
+[e863de35] -> Deal: Glen pine bookshelf at 105.
+[e863de35] DEAL BBO-0164 at 105 (reserve 105)
+    [harness 6.0s] {"action": "accept", "price": 74}
+[ab9fac6d] -> Deal: Orla plastic office chair at 74.
+[ab9fac6d] DEAL OCCH-0172 at 74 (reserve 73)

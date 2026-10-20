@@ -1,55 +1,54 @@
 [shopper] 20 shops, 4 items, budget 459, harness opus
-    [harness 6.2s] {"plan": [{"item": "L1", "shops": ["S02", "S07", "S01"]}, {"item": "L2", "shops": ["S04", "S06", "S10"]}, {"item": "L3", "shops": ["S07", "S08", "S10"]}, {"item": "L4", "shops": ["S11", "S07", "S12"]}]}
-[plan] {"L1": ["S02", "S07", "S01"], "L2": ["S04", "S06", "S10"], "L3": ["S07", "S08", "S10"], "L4": ["S11", "S07", "S12"]}
-[Q01] L1@Bright Corner: TASK_STATE_INPUT_REQUIRED | Knoll modern plastic desk lamp: asking 25. Send your offer as a number.
+    [harness 10.5s] {"plan": [{"item": "L1", "shops": ["S02", "S07", "S01"]}, {"item": "L2", "shops": ["S04", "S06", "S07"]}, {"item": "L3", "shops": ["S07", "S19", "S08"]}, {"item": "L4", "shops": ["S11", "S07", "S12"]}]}
+[plan] {"L1": ["S02", "S07", "S01"], "L2": ["S04", "S06", "S07"], "L3": ["S07", "S19", "S08"], "L4": ["S11", "S07", "S12"]}
+[Q02] L1@Budget Basics: TASK_STATE_INPUT_REQUIRED | Knoll modern plastic desk lamp: asking 23. Send your offer as a number.
+[Q01] L1@Bright Corner: TASK_STATE_INPUT_REQUIRED | Knoll modern plastic desk lamp: asking 24. Send your offer as a number.
 [Q03] L1@Lumen & Co: TASK_STATE_INPUT_REQUIRED | Knoll modern plastic desk lamp: asking 30. Send your offer as a number.
-[Q02] L1@Budget Basics: TASK_STATE_INPUT_REQUIRED | Knoll modern plastic desk lamp: asking 24. Send your offer as a number.
+[Q04] L2@Shelf Life: TASK_STATE_INPUT_REQUIRED | Aster coastal birch bookshelf: asking 160. Send your offer as a number.
 [Q05] L2@Timber & Grain: TASK_STATE_INPUT_REQUIRED | Isle pine bookshelf: asking 215. Send your offer as a number.
-[Q06] L2@Office Depot Plus: TASK_STATE_INPUT_REQUIRED | Ulla teak bookshelf: asking 225. Send your offer as a number.
-[Q04] L2@Shelf Life: error -32603 harness failed: exit=1 is_error=None 'Error: --json-schema is not a valid JSON Schema: data/properties/flags_true/items/enum must NOT have fewer than 1 items, d
-[Q07] L3@Budget Basics: TASK_STATE_INPUT_REQUIRED | Orla plastic office chair: asking 92. Send your offer as a number.
-[Q08] L3@SitWell: TASK_STATE_INPUT_REQUIRED | Oslo fabric office chair: asking 155. Send your offer as a number.
+[Q06] L2@Budget Basics: TASK_STATE_INPUT_REQUIRED | Glen pine bookshelf: asking 130. Send your offer as a number.
+[Q08] L3@Outlet Warehouse: TASK_STATE_INPUT_REQUIRED | Orla plastic office chair: asking 100. Send your offer as a number.
+[Q09] L3@SitWell: TASK_STATE_INPUT_REQUIRED | Oslo fabric office chair: asking 155. Send your offer as a number.
+[Q07] L3@Budget Basics: TASK_STATE_INPUT_REQUIRED | Orla plastic office chair: asking 95. Send your offer as a number.
+[Q11] L4@Budget Basics: TASK_STATE_INPUT_REQUIRED | Heath minimal plastic rug: asking 49. Send your offer as a number.
+[Q12] L4@Soft Floors: TASK_STATE_INPUT_REQUIRED | Brook farmhouse plastic rug: asking 72. Send your offer as a number.
 [Q10] L4@Rug Republic: TASK_STATE_INPUT_REQUIRED | Ventor plastic rug: asking 48. Send your offer as a number.
-[Q11] L4@Budget Basics: TASK_STATE_INPUT_REQUIRED | Heath minimal plastic rug: asking 47. Send your offer as a number.
-[Q09] L3@Office Depot Plus: TASK_STATE_INPUT_REQUIRED | Quill plastic office chair: asking 98. Send your offer as a number.
-[Q12] L4@Soft Floors: TASK_STATE_INPUT_REQUIRED | Brook farmhouse plastic rug: asking 71. Send your offer as a number.
-    [harness 6.7s] {"allocation": [{"item": "L1", "order": ["Q02", "Q01", "Q03"], "cap": 28}, {"item": "L2", "order": ["Q05", "Q06"], "cap": 215}, {"item": "L3", "order": ["Q07", "Q09", "Q08"], "cap": 155}, {"item": "L4", "order": ["Q11", "Q10", "Q12"], "cap": 60}]}
-[allocate] {"L1": {"order": ["Q02", "Q01", "Q03"], "cap": 28}, "L2": {"order": ["Q05", "Q06"], "cap": 215}, "L3": {"order": ["Q07", "Q09", "Q08"], "cap": 155}, "L4": {"order": ["Q11", "Q10", "Q12"], "cap": 60}}
-    [harness 4.2s] {"action": "offer", "price": 150}
-    [harness 4.8s] {"action": "offer", "price": 30}
-    [harness 5.2s] {"action": "offer", "price": 14}
-    [harness 5.8s] {"action": "offer", "price": 55}
-[Q05] L2@Timber & Grain: -> 150  <- TASK_STATE_INPUT_REQUIRED | 150 is too low for the Isle pine bookshelf. Counteroffer: 199.
-[Q11] L4@Budget Basics: -> 30  <- TASK_STATE_INPUT_REQUIRED | 30 is too low for the Heath minimal plastic rug. Counteroffer: 44.
-[Q07] L3@Budget Basics: -> 55  <- TASK_STATE_INPUT_REQUIRED | 55 is too low for the Orla plastic office chair. Counteroffer: 87.
-[Q02] L1@Budget Basics: -> 14  <- TASK_STATE_INPUT_REQUIRED | 14 is too low for the Knoll modern plastic desk lamp. Counteroffer: 22.
-    [harness 4.3s] {"action": "offer", "price": 165}
-    [harness 4.1s] {"action": "offer", "price": 35}
-    [harness 5.3s] {"action": "offer", "price": 65}
-[Q05] L2@Timber & Grain: -> 165  <- TASK_STATE_INPUT_REQUIRED | 165 is too low for the Isle pine bookshelf. Counteroffer: 179.
-[Q11] L4@Budget Basics: -> 35  <- TASK_STATE_INPUT_REQUIRED | 35 is too low for the Heath minimal plastic rug. Counteroffer: 42.
-    [harness 5.7s] {"action": "offer", "price": 17}
+    [harness 13.4s] {"allocation": [{"item": "L1", "order": ["Q02", "Q01", "Q03"], "cap": 30}, {"item": "L2", "order": ["Q06", "Q04", "Q05"], "cap": 165}, {"item": "L3", "order": ["Q07", "Q08", "Q09"], "cap": 160}, {"item": "L4", "order": ["Q10", "Q11", "Q12"], "cap": 72}]}
+[allocate] {"L1": {"order": ["Q02", "Q01", "Q03"], "cap": 30}, "L2": {"order": ["Q06", "Q04", "Q05"], "cap": 165}, "L3": {"order": ["Q07", "Q08", "Q09"], "cap": 160}, "L4": {"order": ["Q10", "Q11", "Q12"], "cap": 72}}
+    [harness 4.8s] {"action": "offer", "price": 14}
+    [harness 5.4s] {"action": "offer", "price": 85}
+    [harness 5.9s] {"action": "offer", "price": 55}
+    [harness 6.5s] {"action": "offer", "price": 28}
+[Q06] L2@Budget Basics: -> 85  <- TASK_STATE_INPUT_REQUIRED | 85 is too low for the Glen pine bookshelf. Counteroffer: 122.
+[Q02] L1@Budget Basics: -> 14  <- TASK_STATE_INPUT_REQUIRED | 14 is too low for the Knoll modern plastic desk lamp. Counteroffer: 21.
+[Q07] L3@Budget Basics: -> 55  <- TASK_STATE_INPUT_REQUIRED | 55 is too low for the Orla plastic office chair. Counteroffer: 88.
+[Q10] L4@Rug Republic: -> 28  <- TASK_STATE_INPUT_REQUIRED | 28 is too low for the Ventor plastic rug. Counteroffer: 45.
+    [harness 5.1s] {"action": "offer", "price": 17}
+    [harness 5.8s] {"action": "offer", "price": 95}
+    [harness 4.1s] {"action": "offer", "price": 65}
+    [harness 5.6s] {"action": "offer", "price": 33}
+[Q02] L1@Budget Basics: -> 17  <- TASK_STATE_INPUT_REQUIRED | 17 is too low for the Knoll modern plastic desk lamp. Counteroffer: 19.
+[Q06] L2@Budget Basics: -> 95  <- TASK_STATE_INPUT_REQUIRED | 95 is too low for the Glen pine bookshelf. Counteroffer: 114.
 [Q07] L3@Budget Basics: -> 65  <- TASK_STATE_INPUT_REQUIRED | 65 is too low for the Orla plastic office chair. Counteroffer: 82.
-[Q02] L1@Budget Basics: -> 17  <- TASK_STATE_INPUT_REQUIRED | 17 is too low for the Knoll modern plastic desk lamp. Counteroffer: 20.
-    [harness 5.8s] {"action": "offer", "price": 170}
-    [harness 6.3s] {"action": "offer", "price": 38}
-    [harness 5.8s] {"action": "offer", "price": 72}
-    [harness 6.3s] {"action": "offer", "price": 18}
-[Q11] L4@Budget Basics: -> 38  <- TASK_STATE_INPUT_REQUIRED | 38 is too low for the Heath minimal plastic rug. Counteroffer: 40.
-[Q07] L3@Budget Basics: -> 72  <- TASK_STATE_INPUT_REQUIRED | 72 is too low for the Orla plastic office chair. Counteroffer: 76.
-[Q05] L2@Timber & Grain: -> 170  <- TASK_STATE_INPUT_REQUIRED | 170 is too low for the Isle pine bookshelf. Counteroffer: 174.
-    [harness 5.9s] {"action": "offer", "price": 39}
-    [harness 5.9s] {"action": "offer", "price": 74}
+[Q10] L4@Rug Republic: -> 33  <- TASK_STATE_INPUT_REQUIRED | 33 is too low for the Ventor plastic rug. Counteroffer: 42.
+    [harness 4.3s] {"action": "offer", "price": 103}
+    [harness 6.4s] {"action": "offer", "price": 18}
+[Q06] L2@Budget Basics: -> 103  <- TASK_STATE_INPUT_REQUIRED | 103 is too low for the Glen pine bookshelf. Counteroffer: 108.
+    [harness 8.9s] {"action": "offer", "price": 72}
+    [harness 7.5s] {"action": "offer", "price": 37}
 [Q02] L1@Budget Basics: -> 18  <- TASK_STATE_COMPLETED | Deal: Knoll modern plastic desk lamp at 18.
 [Q01] canceled at Bright Corner
 [Q03] canceled at Lumen & Co
-    [harness 6.2s] {"action": "offer", "price": 172}
-[Q11] L4@Budget Basics: -> 39  <- TASK_STATE_COMPLETED | Deal: Heath minimal plastic rug at 39.
-[Q10] canceled at Rug Republic
+    [harness 6.6s] {"action": "offer", "price": 105}
+[Q07] L3@Budget Basics: -> 72  <- TASK_STATE_INPUT_REQUIRED | 72 is too low for the Orla plastic office chair. Counteroffer: 76.
+[Q10] L4@Rug Republic: -> 37  <- TASK_STATE_COMPLETED | Deal: Ventor plastic rug at 37.
+[Q11] canceled at Budget Basics
 [Q12] canceled at Soft Floors
+    [harness 6.8s] {"action": "offer", "price": 74}
+[Q06] L2@Budget Basics: -> 105  <- TASK_STATE_COMPLETED | Deal: Glen pine bookshelf at 105.
+[Q04] canceled at Shelf Life
+[Q05] canceled at Timber & Grain
 [Q07] L3@Budget Basics: -> 74  <- TASK_STATE_COMPLETED | Deal: Orla plastic office chair at 74.
-[Q09] canceled at Office Depot Plus
-[Q08] canceled at SitWell
-[Q05] L2@Timber & Grain: -> 172  <- TASK_STATE_COMPLETED | Deal: Isle pine bookshelf at 172.
-[Q06] canceled at Office Depot Plus
-[shopper] RESULT {"budget": 459, "spent": 303.0, "bought": {"L1": {"shop": "Budget Basics", "price": 18.0, "quote": "Q02", "receipt": {"item_id": "DLLA-0199", "item": "Knoll modern plastic desk lamp", "price": 18.0, "seller": "Budget Basics"}}, "L4": {"shop": "Budget Basics", "price": 39.0, "quote": "Q11", "receipt": {"item_id": "RRU-0168", "item": "Heath minimal plastic rug", "price": 39.0, "seller": "Budget Basics"}}, "L3": {"shop": "Budget Basics", "price": 74.0, "quote": "Q07", "receipt": {"item_id": "OCCH-0172", "item": "Orla plastic office chair", "price": 74.0, "seller": "Budget Basics"}}, "L2": {"shop": "Timber & Grain", "price": 172.0, "quote": "Q05", "receipt": {"item": "Isle pine bookshelf", "seller": "Timber & Grain", "price": 172.0, "item_id": "BBO-0137"}}}, "missing": [], "harness_calls": 17, "seconds": 83}
+[Q08] canceled at Outlet Warehouse
+[Q09] canceled at SitWell
+[shopper] RESULT {"budget": 459, "spent": 234.0, "bought": {"L1": {"shop": "Budget Basics", "price": 18.0, "quote": "Q02", "receipt": {"item_id": "DLLA-0199", "item": "Knoll modern plastic desk lamp", "price": 18.0, "seller": "Budget Basics"}}, "L4": {"shop": "Rug Republic", "price": 37.0, "quote": "Q10", "receipt": {"seller": "Rug Republic", "price": 37.0, "item_id": "RRU-0156", "item": "Ventor plastic rug"}}, "L2": {"shop": "Budget Basics", "price": 105.0, "quote": "Q06", "receipt": {"item_id": "BBO-0164", "item": "Glen pine bookshelf", "price": 105.0, "seller": "Budget Basics"}}, "L3": {"shop": "Budget Basics", "price": 74.0, "quote": "Q07", "receipt": {"item_id": "OCCH-0172", "item": "Orla plastic office chair", "price": 74.0, "seller": "Budget Basics"}}}, "missing": [], "harness_calls": 16, "seconds": 103}
