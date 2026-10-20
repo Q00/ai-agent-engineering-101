@@ -1,9 +1,10 @@
-[buyer] 1 shops, 10 remembered trades; lamp with budget 120
+[buyer] 1 shops, 19 remembered trades; lamp with budget 120
 [pick] Kit Shop: the only shop left
 -> I want to buy a lamp
 <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness] {"action": "offer", "price": 100, "reason": "Opening below my 120 budget leaves room to negotiate up while staying within my limit."}
+[harness] {"action": "offer", "price": 100, "reason": "Opening below my 120 budget leaves room to negotiate upward while staying within my limit."}
 -> 100
 <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[verify] sig_seller not checked: no registry key
 [buyer] Kit Shop: Deal at 100 for a lamp (asked 130) after 1 offers, signed receipt. (5 stars)
-{"shop": "http://127.0.0.1:52307", "receipt": {"task": "7f24a362-9405-433c-ac51-e7db231168ad", "sig_seller": "E0ydiIsinbWPLerJJmEcFlAnGUF77jpznozhrZzVR1QAHNALX0IvKwbcOb+RKIfJilOxCShmBPiB0F3l+gWQCA==", "item": "lamp", "shop": "Kit Shop", "price": 100}, "stars": 5, "review": "Deal at 100 for a lamp (asked 130) after 1 offers, signed receipt."}
+{"shop": "http://127.0.0.1:50022", "receipt": {"item": "lamp", "price": 100, "sig_seller": "F8z6kwwewOGncWwK4x7u1Nf5EzMYlpzhwLhyugEvuaJrKVh0sbhcKBDuKHe99/2wIB4ZyBJjKaKcrois5f0XCw==", "shop": "Kit Shop", "task": "986d5ccb-a8d7-49ad-bf37-6fc619ba882b"}, "stars": 5, "review": "Deal at 100 for a lamp (asked 130) after 1 offers, signed receipt."}
