@@ -111,6 +111,12 @@ official run and the post-price-change run both passed 25/25. A live Round 0
 receipt from another shop lacked `sig_seller`, and the kit logged the failed
 signature checks ([`market-kit.log`, lines 186-187](logs/market-kit.log#L186));
 this is an observed market failure, not a failure of my own shop.
+In a later live Round 1 buyer order, the kit recorded `sig_seller ok,
+sig_buyer added` and the market accepted ledger #8293 as `verified True`
+([`market-kit.log`, lines 6710-6712](logs/market-kit.log#L6710)). I also
+verified a live receipt's seller signature against the local Ed25519 public
+key and checked that its `task` matched the negotiation. This confirms the
+signing path before Round 2; it is not a Round 2 counted deal.
 
 ## 5. Required challenges
 
@@ -159,6 +165,12 @@ Two macOS `launchd` user services now keep the buyer running in `--buyer-only`
 mode and the shop in `--shop-only` mode under the same GitHub-linked identity.
 The shop service supervises a Pinggy tunnel, renews it before the free
 60-minute expiry, and rejoins with the new URL, name and existing key.
+The first scheduled renewal completed on 2026-10-20: the old connection was
+stopped at 21:12:37 KST, a new tunnel was ready at 21:12:56, and the kit
+registered the shop again at 21:13:00
+([`market-kit.log`, line 7328](logs/market-kit.log#L7328)). The public board
+then showed both agents alive. This demonstrates one successful renewal, not
+continuous availability through the deadline.
 The separate tunnel supervisor lives in `agent-market/` outside the submission;
 the kit's live output remains in `logs/market-kit.log`. An additional local
 `caffeinate -i` service prevents idle sleep while this Mac stays open; battery
