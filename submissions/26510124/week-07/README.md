@@ -101,6 +101,36 @@ week-07 폴더에서 `MARKET_OWNER` 환경변수를 설정한 상태로 실행�
 컴퓨터 잠자기·재부팅 및 무료 터널의 모든 장애까지 방지하는 것은 아니다.
 공개 재검증에서 일시적인 TLS 전송 오류도 관측되어 실패 로그를 보존했다.
 
+### Round 2 준비본 — 아직 시장에 적용하지 않음
+
+사용자 요청에 따라 `agent.json`은 현재 실행 설정으로 유지한다.
+별도 `agent-round2.json`만 seller 명령에 `--sign-receipts`를 추가한다.
+이 모드는 기존 `shop_key.pem`으로 `{shop, item, price, task}`의 정규 JSON에
+Ed25519 서명을 붙인다. 가격은 정수로 서명하고, `task`는 실제 A2A taskId다.
+키가 없거나 Ed25519 키가 아니면 시작을 중단한다. 새 키를 자동 생성하지 않는다.
+buyer가 받은 영수증을 그대로 내보내면 키트가 검증한 뒤 buyer 서명을 추가한다.
+
+실제 Opus로 전체 공식 검사를 독립 복사본에서 실행할 때:
+
+```bash
+.venv/bin/python verify_round2.py
+```
+
+결과와 당시 소스는 `logs/round2-check-*/`에 보존한다. 라이브 거래 기억,
+기존 로그 및 현재 `agent.json`을 덮어쓰지 않는다.
+
+**Round 2 전환 요청을 받은 뒤에만** 현재 실행기를 종료하고, claim code가
+`MARKET_OWNER` 환경변수에 설정된 터미널에서 다음 명령으로 시작한다:
+
+```bash
+.venv/bin/python run_public_market.py --name dyishappy --round2
+```
+
+같은 포트의 실행기를 둘 띄우면 안 된다. 기존 프로세스는 `agent-market/live.pid`로
+확인한다. 자동으로 라운드를 감지해 서명 모드로 바꾸는 기능은 없다.
+최종 제출 시에는 선택한 설정을 `agent.json`으로 전환하고 공식 보고서와
+`check_week07.py`를 그 최종 설정으로 다시 확인해야 한다.
+
 가게 선택과 흥정을 합해 최대 270초, 선택은 그중 최대 90초를 사용한다.
 예산보다 큰 제안은 하네스 검증과 송신 전 검증에서 거부하며 보정해서 보내지 않는다.
 

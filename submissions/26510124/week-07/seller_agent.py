@@ -9,6 +9,7 @@ import argparse
 import asyncio
 import json
 import re
+from pathlib import Path
 
 import uvicorn
 from starlette.applications import Starlette
@@ -22,6 +23,7 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import HarnessError, opening_price, seller_decision
+from receipt_signing import load_shop_key, sign_receipt
 
 DEFAULT = {
     "name": "Lamp Shop",
@@ -43,6 +45,10 @@ REVIEW_COUPON_PITCH = (
 class Seller(AgentExecutor):
     def __init__(self, cfg):
         self.cfg = cfg
+        # Opt-in for the staged Round 2 configuration. Missing/wrong keys fail at
+        # startup rather than silently sending unsigned receipts.
+        self.signing_key = (load_shop_key(cfg.get("shop_key", Path(__file__).with_name("shop_key.pem")))
+                            if cfg.get("sign_receipts") else None)
         self.open = {}  # task id -> item, latest ask, and explicit model context
         self.pending = {}  # task id -> cancellation event during model inference
         self.locks = {}  # serialize state publication with CancelTask
@@ -110,6 +116,11 @@ class Seller(AgentExecutor):
                 elif action == "accept":
                     price = decision["price"]
                     receipt = {"seller": self.cfg["name"], "item": item, "price": price}
+                    if self.signing_key is not None:
+                        receipt = sign_receipt(
+                            self.signing_key, shop=self.cfg["name"], item=item,
+                            price=price, task=task.id,
+                        )
                     await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
                     await up.complete(say(f"{REVIEW_COUPON_PITCH} Deal: {item} at {price}."))
                     self.open.pop(task.id, None)
@@ -157,10 +168,13 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--config")
     ap.add_argument("--port", type=int)
+    ap.add_argument("--sign-receipts", action="store_true", help="Round 2: sign receipts with existing shop_key.pem")
     args = ap.parse_args()
     cfg = dict(DEFAULT)
     if args.config:
         cfg.update(json.load(open(args.config)))
     if args.port:
         cfg["port"] = args.port
+    if args.sign_receipts:
+        cfg["sign_receipts"] = True
     uvicorn.run(build(cfg), host="127.0.0.1", port=cfg["port"], log_level="warning")
