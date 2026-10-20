@@ -85,13 +85,14 @@ class Receipt(Wire):
 
     item: str
     sku: str = ""
+    task: str = ""
 
 
 class Part(Wire):
     """Relevant public text and structured receipt parts."""
 
     text: str = ""
-    data: Receipt | None = None
+    data: dict[str, JsonValue] | None = None
 
 
 class Identity(Wire):
@@ -246,12 +247,14 @@ def purchase(task: Task, authorization: Checkout) -> Purchase:
     if len(receipts) != 1:
         msg = "Completed task must contain exactly one receipt"
         raise HarnessError(msg)
-    receipt = receipts[0]
+    raw_receipt = receipts[0]
+    receipt = Receipt.model_validate(raw_receipt)
     if (
         receipt.price != authorization.price
         or receipt.price > authorization.budget
         or receipt.item != authorization.item
         or receipt.sku != authorization.sku
+        or (bool(receipt.task) and receipt.task != task.id)
     ):
         msg = "Receipt differs from authorized price or product"
         raise HarnessError(msg)
@@ -262,4 +265,5 @@ def purchase(task: Task, authorization: Checkout) -> Purchase:
         price=receipt.price,
         task_id=task.id,
         shop=authorization.shop,
+        receipt=raw_receipt,
     )

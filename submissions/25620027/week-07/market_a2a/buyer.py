@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Protocol
 
 import anyio
@@ -30,6 +31,20 @@ class BuyerHarness(Protocol):
     ) -> ToolResult:
         """Commit one model-selected tool action."""
         ...
+
+
+@dataclass(frozen=True, slots=True)
+class BuyerOrder:
+    """One authorized order, optionally requiring an exact market item name."""
+
+    url: str
+    item: str
+    budget: int
+    exact_item: bool = False
+
+
+class OrderedItemMismatchError(HarnessError):
+    """The seller advertised a different item from the authorized market order."""
 
 
 class Offer(FrozenModel):
@@ -129,7 +144,15 @@ class Negotiation:
 async def buy(
     harness: BuyerHarness, url: str, item: str, budget: int, emit: Callable[[str], None]
 ) -> Purchase:
+    """Preserve the descriptive-item buyer interface for existing callers."""
+    return await buy_order(harness, BuyerOrder(url, item, budget), emit)
+
+
+async def buy_order(
+    harness: BuyerHarness, order: BuyerOrder, emit: Callable[[str], None]
+) -> Purchase:
     """Run one caller-specified purchase with a hard 280-second deadline."""
+    url, item, budget = order.url, order.item, order.budget
     if budget < 1:
         msg = "Purchase budget must be positive"
         raise HarnessError(msg)
@@ -139,6 +162,15 @@ async def buy(
             card = await remote.card(url)
             endpoint = card.endpoint()
             task = await remote.send(endpoint, f"I want to buy {item}")
+            if order.exact_item and any(
+                advertised and advertised != item
+                for advertised in (
+                    task.status.message.metadata.item,
+                    task.metadata.item,
+                )
+            ):
+                msg = "Seller product differs from the authorized market item"
+                raise OrderedItemMismatchError(msg)
             authorization = Checkout(
                 item=task.status.message.metadata.item or task.metadata.item or item,
                 sku=task.status.message.metadata.sku or task.metadata.sku,

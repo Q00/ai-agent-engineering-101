@@ -60,6 +60,7 @@ class Purchase(FrozenModel):
     task_id: str = ""
     shop: str = ""
     failure_observation: str = ""
+    receipt: dict[str, JsonValue] | None = None
 
 
 class ShopCard(FrozenModel):

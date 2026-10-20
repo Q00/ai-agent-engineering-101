@@ -5,6 +5,7 @@
 #   "a2a-sdk[http-server]==1.2.2", "fastapi>=0.115,<1", "uvicorn>=0.34,<1",
 #   "httpx2[http2,brotli,zstd]>=2,<3", "openai==3.8.0",
 #   "pydantic>=2.12,<3", "typer>=0.16,<1", "anyio>=4.9,<5",
+#   "cryptography==50.0.2",
 # ]
 # ///
 # ─── How to run ───
@@ -34,7 +35,9 @@ from http_client import create_client
 from market_a2a.buyer import buy
 from market_a2a.catalog import Catalog
 from market_a2a.harness import MODEL, Harness
+from market_a2a.market_buyer import MarketRequest, market_buy
 from market_a2a.models import FrozenModel, Purchase, ShopCard, ShoppingItem
+from market_a2a.receipts import ReceiptSigner
 from market_a2a.seller import create_app
 from market_a2a.shopping import shop
 
@@ -79,6 +82,7 @@ async def serve(
     first_shop_price_offset: int = 0,
 ) -> None:
     """Own the shared model client until the seller server shuts down."""
+    signer = ReceiptSigner.load(ROOT / "shop_key.pem")
     async with (
         create_client(model=True) as model_http,
         AsyncOpenAI(http_client=model_http) as model,
@@ -91,7 +95,9 @@ async def serve(
                 kind = KINDS[index % len(KINDS)]
                 offset = index * 5 + (first_shop_price_offset if index == 0 else 0)
                 catalog = Catalog(catalog_path, price_offset=offset, kinds=(kind,))
-                child = create_app(base, harness, catalog, f"shop-{index:02d}-{kind}")
+                child = create_app(
+                    base, harness, catalog, f"shop-{index:02d}-{kind}", signer=signer
+                )
                 web.mount(f"/shops/{index:02d}", child)
         else:
             web = create_app(
@@ -99,6 +105,7 @@ async def serve(
                 harness,
                 Catalog(catalog_path),
                 "Sungjin Shop",
+                signer=signer,
             )
         emit(f"HARNESS model={MODEL} source=week05-tool-loop directory={directory}")
         await uvicorn.Server(
@@ -156,6 +163,38 @@ def buyer(
             harness = Harness(model, emit)
             result = await buy(harness, url, item, budget, emit)
             emit("BUYER_RESULT " + result.model_dump_json())
+
+    isolated(run)
+
+
+@app.command("market-buyer")
+def market_buyer(
+    shops: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    item: Annotated[str, typer.Option()],
+    budget: Annotated[int, typer.Option(min=1)],
+    memory: Annotated[Path, typer.Option()] = ROOT / ".market" / "buyer-memory.json",
+) -> None:
+    """Choose a shop using reviews and persistent memory, then negotiate."""
+    shops_path = shops.resolve()
+    memory_path = memory.resolve()
+
+    async def run() -> None:
+        async with (
+            create_client(model=True) as model_http,
+            AsyncOpenAI(http_client=model_http) as model,
+        ):
+            harness = Harness(model, emit)
+            result = await market_buy(
+                harness,
+                MarketRequest(
+                    shops_path=shops_path,
+                    item=item,
+                    budget=budget,
+                    memory_path=memory_path,
+                ),
+                emit,
+            )
+        typer.echo(result.model_dump_json())
 
     isolated(run)
 

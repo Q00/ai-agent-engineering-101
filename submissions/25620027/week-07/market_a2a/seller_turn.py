@@ -14,12 +14,7 @@ from google.protobuf.struct_pb2 import Value
 from pydantic import JsonValue, TypeAdapter, ValidationError
 
 from market_a2a.catalog_constraints import compatible
-from market_a2a.models import (
-    HarnessError,
-    Product,
-    ToolResult,
-    json_value,
-)
+from market_a2a.models import HarnessError, Product, ToolResult, json_value
 from market_a2a.seller_policy import PROMPT, TOOLS, Decision, Search, rejection_feedback
 
 if TYPE_CHECKING:
@@ -27,6 +22,7 @@ if TYPE_CHECKING:
 
     from market_a2a.catalog import Catalog
     from market_a2a.harness import Harness
+    from market_a2a.receipts import ReceiptSigner
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,11 +48,19 @@ class Turn:
 class Negotiator:
     """Own bounded seller summaries and validated model tool actions."""
 
-    def __init__(self, harness: Harness, catalog: Catalog, name: str) -> None:
+    def __init__(
+        self,
+        harness: Harness,
+        catalog: Catalog,
+        name: str,
+        *,
+        signer: ReceiptSigner | None = None,
+    ) -> None:
         """Share one model client while isolating every negotiation."""
         self.harness: Harness = harness
         self.catalog: Catalog = catalog
         self.name: str = name
+        self.signer: ReceiptSigner | None = signer
         self.negotiations: dict[str, Negotiation] = {}
         self.closed: set[str] = set()
 
@@ -217,6 +221,15 @@ class Negotiator:
                     "sku": product.sku,
                     "price": decision.price,
                 }
+                if self.signer is not None:
+                    signed = self.signer.sign(
+                        shop=self.name,
+                        item=product.kind,
+                        price=decision.price,
+                        task=turn.task_id,
+                    )
+                    receipt = signed.model_dump()
+                    receipt["sku"] = product.sku
                 await updater.add_artifact(
                     [
                         Part(

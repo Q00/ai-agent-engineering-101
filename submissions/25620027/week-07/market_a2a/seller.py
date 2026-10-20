@@ -28,14 +28,22 @@ if TYPE_CHECKING:
 
     from market_a2a.catalog import Catalog
     from market_a2a.harness import Harness
+    from market_a2a.receipts import ReceiptSigner
 
 
 class Seller(AgentExecutor):
     """Mutate task summaries under per-task locks; SDK stores wire history."""
 
-    def __init__(self, harness: Harness, catalog: Catalog, name: str) -> None:
+    def __init__(
+        self,
+        harness: Harness,
+        catalog: Catalog,
+        name: str,
+        *,
+        signer: ReceiptSigner | None = None,
+    ) -> None:
         """Share one model client while isolating every negotiation."""
-        self.negotiator: Negotiator = Negotiator(harness, catalog, name)
+        self.negotiator: Negotiator = Negotiator(harness, catalog, name, signer=signer)
         self.locks: dict[str, anyio.Lock] = {}
 
     @override
@@ -71,7 +79,14 @@ class Seller(AgentExecutor):
             await TaskUpdater(event_queue, task.id, task.context_id).cancel()
 
 
-def create_app(base_url: str, harness: Harness, catalog: Catalog, name: str) -> FastAPI:
+def create_app(
+    base_url: str,
+    harness: Harness,
+    catalog: Catalog,
+    name: str,
+    *,
+    signer: ReceiptSigner | None = None,
+) -> FastAPI:
     """Expose SDK routes; base_url is the advertised root or mounted shop URL."""
     kinds = sorted({product.kind for product in catalog.products})
     card = AgentCard(
@@ -99,7 +114,7 @@ def create_app(base_url: str, harness: Harness, catalog: Catalog, name: str) -> 
         ],
     )
     handler = DefaultRequestHandler(
-        Seller(harness, catalog, name), InMemoryTaskStore(), card
+        Seller(harness, catalog, name, signer=signer), InMemoryTaskStore(), card
     )
     app = FastAPI(title=name)
     app.router.routes.extend(create_agent_card_routes(card))
