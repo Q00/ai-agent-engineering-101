@@ -105,6 +105,7 @@ def shop(base_url: str, item: str, budget: int, max_turns: int = 8, compact_hist
             "item": item, "budget": budget, "shop_url": base_url,
             "shop_name": card.get("name"), "state": state(task),
             "offers": offers, "task_id": task.get("id"),
+            "history": history, "final_seller_message": status_text(task),
             "artifacts": task.get("artifacts", []),
         }
         trace("buyer_result", **outcome)
