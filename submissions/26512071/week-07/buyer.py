@@ -95,9 +95,14 @@ def main():
     ap.add_argument("--budget", type=int, required=True)
     args = ap.parse_args()
 
-    card = httpx.get(args.url.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=30).json()
-    iface = next(i for i in card["supportedInterfaces"] if i["protocolBinding"] == "JSONRPC")
-    url = iface["url"]
+    try:  # in the market the other shop may be down: end with no deal instead of a traceback
+        r = httpx.get(args.url.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=30)
+        card = r.json()
+        url = next(i["url"] for i in card["supportedInterfaces"] if i["protocolBinding"] == "JSONRPC")
+    except (httpx.HTTPError, ValueError, KeyError, StopIteration) as e:
+        log(f"[buyer] no usable agent card at {args.url}: {type(e).__name__}, "
+            f"status {getattr(locals().get('r'), 'status_code', None)}; no deal")
+        return 0
     log(f"[buyer] {card['name']} at {url}; buying {args.item} with budget {args.budget}")
 
     t, state, reply = send(url, f"I want to buy a {args.item}")
