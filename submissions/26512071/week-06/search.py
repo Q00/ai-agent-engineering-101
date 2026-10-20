@@ -49,8 +49,8 @@ def attrs(description):
 
 
 class Catalog:
-    def __init__(self, path=Path(__file__).with_name("catalog.json")):
-        self.items = json.loads(Path(path).read_text())
+    def __init__(self, path=Path(__file__).with_name("catalog.json"), items=None):
+        self.items = items if items is not None else json.loads(Path(path).read_text())
         self.by_name = {i["name"].lower(): i for i in self.items}
         self.docs = [Counter(tokens(i["name"] + " " + i["description"])) for i in self.items]
         self.avg = sum(sum(d.values()) for d in self.docs) / len(self.docs)

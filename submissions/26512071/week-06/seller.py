@@ -17,10 +17,16 @@ calls: the first turns the request into a spec (kinds, sizes, books, seats), sea
 keeps the items that fit it and ranks them, and the second picks one of the top 20 by
 id. Code checks that the id is one of the candidates, and the reserve comes from that
 catalog entry.
+
+Challenge 2: `--shop N` (1 to 20) turns this into one shop of a directory. Shop N sells
+4 of the catalog's kinds (every kind is sold by several shops) with its reserves
+multiplied by a seeded factor between 0.9 and 1.4, and its Agent Card says which kinds.
+Without --shop it is the trade test's shop with the whole catalog.
 """
 import argparse
 import asyncio
 import json
+import random
 import re
 import sys
 import tempfile
@@ -40,6 +46,19 @@ from search import Catalog
 
 NAME = "Sonnet Shop"
 CATALOG = Catalog()
+SHOP_KINDS = 4
+
+
+def open_shop(n):
+    """Shop n of the directory: its name, its kinds, and a catalog with its own reserves."""
+    global NAME, CATALOG
+    full = Catalog()
+    kinds = [k for k in full.kinds if k not in ("lamp", "chair", "bookshelf")]  # the trade test's plain items
+    mine = [kinds[(3 * n + j) % len(kinds)] for j in range(SHOP_KINDS)]
+    factor = random.Random(n).uniform(0.9, 1.4)
+    NAME = f"Sonnet Shop {n}"
+    CATALOG = Catalog(items=[dict(i, reserve=int(i["reserve"] * factor)) for i in full.items if i["kind"] in mine])
+    log(f"[shop] {NAME}: {', '.join(mine)}; reserves x{factor:.2f}; {len(CATALOG.items)} items")
 MAX_ROUNDS = 10  # safety net so a task cannot run forever
 HARNESS = ["claude", "-p", "--model", "sonnet", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
 WORKDIR = tempfile.mkdtemp(prefix="seller-harness-")  # empty dir: no project instructions
@@ -219,7 +238,7 @@ def build(port):
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name=NAME,
-        description=f"Sells {len(CATALOG.items)} pieces of furniture, from lamps to wardrobes. "
+        description=f"Sells {len(CATALOG.items)} pieces of furniture: {', '.join(CATALOG.kinds)}. "
                     "Describe what you need; a model picks the item and negotiates the price.",
         version="1.0.0",
         default_input_modes=["text/plain"],
@@ -230,7 +249,7 @@ def build(port):
             id="negotiate",
             name="Negotiate a purchase",
             description="Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
-            tags=["shopping", "negotiation"],
+            tags=["shopping", "negotiation"] + CATALOG.kinds,
             examples=["I want to buy a lamp", "something wooden to keep about 40 books", "90"],
         )],
     )
@@ -241,5 +260,8 @@ def build(port):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=9999)
+    ap.add_argument("--shop", type=int, help="run as shop N of the challenge 2 directory")
     args = ap.parse_args()
+    if args.shop:
+        open_shop(args.shop)
     uvicorn.run(build(args.port), host="127.0.0.1", port=args.port, log_level="warning")
