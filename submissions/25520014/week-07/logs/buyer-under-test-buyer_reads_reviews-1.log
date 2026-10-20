@@ -1,10 +1,11 @@
 market buyer: lamp, budget 120 (harness: claude -p --model haiku)
-[choose] http://127.0.0.1:63852 (Kit Shop North): step-1 skeleton: first shop in the list
-seller: 'Kit Shop North' at http://127.0.0.1:63852/
+[memory] 0 past trades (market test: memory off)
+[choose] http://127.0.0.1:50086 (Kit Shop South): reviews: highest average 4.7 stars from 3 reviews
+seller: 'Kit Shop South' at http://127.0.0.1:50086/
 -> SendMessage 'I want to buy a lamp'
 <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness round 1] 3.1s reply: {"action": "offer", "price": 100}
--> SendMessage '100' taskId=6e649c46
-<- TASK_STATE_COMPLETED | Deal: lamp at 100.
-DONE bought: {'item': 'lamp', 'task': '6e649c46-6bf7-4063-aa97-0060397f6951', 'sig_seller': 'i4VF0H/Bm3ZBDymVNtV8R8Iwa3Is60VbM1ZrSQBhbCYa0ba7dLuT7MZWaSOVgRKgYMnvOB8HUi1Awqgf020PBw==', 'price': 100.0, 'shop': 'Kit Shop North'}
-{"shop": "http://127.0.0.1:63852", "receipt": {"item": "lamp", "task": "6e649c46-6bf7-4063-aa97-0060397f6951", "sig_seller": "i4VF0H/Bm3ZBDymVNtV8R8Iwa3Is60VbM1ZrSQBhbCYa0ba7dLuT7MZWaSOVgRKgYMnvOB8HUi1Awqgf020PBw==", "price": 100.0, "shop": "Kit Shop North"}, "stars": 3, "review": "Deal at 100.0 (budget 120)."}
+[harness round 1] 3.4s reply: {"action": "offer", "price": 105}
+-> SendMessage '105' taskId=53733114
+<- TASK_STATE_COMPLETED | Deal: lamp at 105.
+DONE bought: {'sig_seller': 'bF0RfqYnTxVWzjXdLu/PdkhaEJFSwpOTgnMBBlEoynE61bmVmCYBpzZ3Uy045oZwFCqQA6lrqUM2csgPpim6CA==', 'task': '53733114-d8a2-47a1-a47e-72d42913203c', 'item': 'lamp', 'shop': 'Kit Shop South', 'price': 105.0}
+{"shop": "http://127.0.0.1:50086", "receipt": {"sig_seller": "bF0RfqYnTxVWzjXdLu/PdkhaEJFSwpOTgnMBBlEoynE61bmVmCYBpzZ3Uy045oZwFCqQA6lrqUM2csgPpim6CA==", "task": "53733114-d8a2-47a1-a47e-72d42913203c", "item": "lamp", "shop": "Kit Shop South", "price": 105.0}, "stars": 3, "review": "Deal at 105.0 (budget 120)."}

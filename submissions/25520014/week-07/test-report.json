@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-20T11:19:14+00:00",
+  "started": "2026-10-20T11:25:25+00:00",
   "harness": "Claude Code, claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence --output-format json",
   "seller_cmd": "python seller.py --port {port}",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Sells lamps, chairs and bookshelves. The price is negotiated; a model decides every ask.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:61787/",
+        "url": "http://127.0.0.1:64678/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -53,13 +53,13 @@
       "test": "seller_opens",
       "run": 1,
       "pass": true,
-      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 150"
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 160"
     },
     {
       "test": "seller_deal",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 120]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [160, 120]"
     },
     {
       "test": "seller_signed_receipt",
@@ -77,7 +77,7 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 120]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [150, 110]"
     },
     {
       "test": "seller_signed_receipt",
@@ -89,7 +89,7 @@
       "test": "seller_deal",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 120]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 130, 115]"
     },
     {
       "test": "seller_signed_receipt",
@@ -101,19 +101,19 @@
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [380, 330, 300, 270, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [340, 300, 260, 265, 260, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [380, 300, 280, 270, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [380, 300, 260, 275, 265, 262, 261, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [400, 340, 300, 270, 265, 262, 260, 260, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [340, 300, 260, 260, 260, 260, 260, 260, 260]"
     },
     {
       "test": "buyer_deal",
@@ -131,7 +131,7 @@
       "test": "buyer_deal",
       "run": 2,
       "pass": true,
-      "detail": "offers [105], stars 3, receipt yes"
+      "detail": "offers [100], stars 3, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -143,19 +143,19 @@
       "test": "buyer_deal",
       "run": 3,
       "pass": true,
-      "detail": "offers [100], stars 3, receipt yes"
+      "detail": "offers [95, 105], stars 3, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 3,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2"
     },
     {
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [200, 230, 230], stars 3, receipt null"
+      "detail": "offers [200, 220, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -167,31 +167,31 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [210, 225, 230, 230, 230], stars 3, receipt null"
+      "detail": "offers [215, 225, 228, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
     },
     {
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [200, 220, 225, 230, 230], stars 3, receipt null"
+      "detail": "offers [210, 220, 226, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
     },
     {
       "test": "buyer_reads_reviews",
       "run": 1,
-      "pass": false,
-      "detail": "shop with good reviews in 0 of 3 runs (picks ['bad', 'bad', 'bad']); needs 2"
+      "pass": true,
+      "detail": "shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2"
     }
   ],
   "passed": false
