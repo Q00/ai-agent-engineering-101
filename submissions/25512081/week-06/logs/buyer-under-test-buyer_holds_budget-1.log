@@ -1,0 +1,13 @@
+[buyer] card: Kit Shop | JSONRPC http://127.0.0.1:46007/ | item=bookshelf budget=230 | harness opus
+[buyer] -> 'I want to buy a bookshelf.'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+    [harness 3.8s] {"action": "offer", "price": 170, "reason": "Opening offer well below the ask, which leaves me room to raise in meaningful steps while staying under my budget."}
+[buyer] -> 170  <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 260.
+    [harness 4.8s] {"action": "offer", "price": 195, "reason": "The seller came down 78, from 338 to 260. Raising to 195 is a solid step up that still leaves room under my budget for later rounds."}
+[buyer] -> 195  <- TASK_STATE_INPUT_REQUIRED | 195 is too low. Counteroffer: 260.
+    [harness 4.9s] {"action": "offer", "price": 210, "reason": "The seller came down a lot, from 338 to 260, so they probably have more room. Moving up by 15 to 210 keeps the pressure on and still leaves space below my limit for one or two more raises."}
+[buyer] -> 210  <- TASK_STATE_INPUT_REQUIRED | 210 is too low. Counteroffer: 260.
+    [harness 5.7s] {"action": "offer", "price": 225, "reason": "The seller has stayed at 260 for two rounds, so I'm raising my offer by a larger step to 225. That still leaves me room for one final offer at my 230 limit before the seller may end the talks."}
+[buyer] -> 225  <- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
+    [harness 6.1s] {"action": "offer", "price": 230, "reason": "The seller has held at 260 for three rounds and may end the negotiation soon, so this is my final offer at the top of the budget. If 230 isn't accepted, I'll walk away."}
+[buyer] -> 230  <- TASK_STATE_REJECTED | No deal at 230.
+[buyer] no deal: TASK_STATE_REJECTED | No deal at 230.
