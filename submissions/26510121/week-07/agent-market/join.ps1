@@ -52,7 +52,7 @@ try {
     $env:TUNNEL_LOGFILE = Join-Path $logDir "cloudflared-$stamp.log"
     $env:TUNNEL_LOGLEVEL = 'info'
     $mode = if ($BuyerOnly) { '--buyer-only' } elseif ($PublicUrl) { '--public-url' } else { '--tunnel' }
-    $kit = Join-Path $repoRoot 'scripts/market_kit.py'
+    $kit = Join-Path $PSScriptRoot 'run-kit.py'
     $arguments = @('-u', ('"' + $kit + '"'), 'join', '--dir', ('"' + $agentDir + '"'),
         '--market', 'https://market.ourolabs.ai', '--name', 'seochanit', $mode)
     if ($PublicUrl) { $arguments += @($PublicUrl, '--port', $Port) }

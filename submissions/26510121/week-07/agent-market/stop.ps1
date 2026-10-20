@@ -12,7 +12,7 @@ if (-not $process) {
     Write-Output 'The recorded market kit is no longer running.'
     return
 }
-if ($process.Name -ne 'python.exe' -or $process.CommandLine -notlike '*market_kit.py*') {
+if ($process.Name -ne 'python.exe' -or $process.CommandLine -notmatch '(market_kit|run-kit)\.py') {
     throw 'The recorded PID belongs to a different process; refusing to stop it.'
 }
 & taskkill /T /F /PID $session.pid
