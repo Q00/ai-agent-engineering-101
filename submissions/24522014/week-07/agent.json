@@ -2,5 +2,6 @@
   "profile": "claude",
   "harness": "seller: Claude Code + Haiku; buyer: Claude Code + Haiku",
   "seller": {"harness": "claude", "model": "haiku", "cmd": "python seller.py --mode claude --port {port}"},
-  "buyer": {"harness": "claude", "model": "haiku", "cmd": "python buyer.py --mode claude --url {url} --item {item} --budget {budget}"}
+  "buyer": {"harness": "claude", "model": "haiku", "cmd": "python buyer.py --mode claude --url {url} --item {item} --budget {budget}"},
+  "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"}
 }
