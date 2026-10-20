@@ -31,7 +31,8 @@ import { Hono } from "hono";
 
 const MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
 const RESERVE: Record<string, number> = { lamp: 100, chair: 180, bookshelf: 260 };
-const NAME = "Fair & Square Furniture";
+const MARKET_NAME = "thisjonghoon"; // the name the market lists us under: receipts must carry it (a buyer gave 2 stars for a receipt naming another shop)
+const NAME = `${MARKET_NAME} · Fair & Square Furniture`;
 
 /** Set by meta_shop.py; kept out of the card and the replies so buyers never see the target. */
 type Strategy = {
@@ -429,13 +430,14 @@ export class TaskObject extends DurableObject<Env> {
     const nextTier = Math.min(MAX_TIER, (done?.tier ?? 0) + 1);
     const nextStamps = ((done?.stamps ?? 0) + 1) % STAMP_EVERY;
     await this.env.TASKS.get(this.env.TASKS.idFromName(STRATEGY_ID)).count(`issued:${nextTier}`);
-    const receipt = await signReceipt(this.env, { shop: NAME, item, price: Math.round(price), task: task.id });
+    const receipt = await signReceipt(this.env, { shop: MARKET_NAME, item, price: Math.round(price), task: task.id });
     task.artifacts = [{ artifactId: crypto.randomUUID(), name: "receipt", parts: [{ data: receipt }] }];
     console.log(`OUT: deal ${item} at ${price}`);
-    // reviews decide who gets the next buyer: thank the buyer and ask for an honest one (as dragonash does)
+    // the request for an honest review lives in the opening sale line only, away from the coupon
     this.respond(task, "TASK_STATE_COMPLETED",
-      `${note} Deal: ${item} at ${price}. Thank you! Your signed receipt is attached; an honest review helps us a lot. ` +
-        `Loyalty code for your next order, whatever your review says: ${await newCoupon(this.env, nextTier, nextStamps)} (put it in your first message). ` +
+      // no word about reviews next to the coupon: a buyer read "code, whatever your review says" as paying for reviews
+      `${note} Deal: ${item} at ${price}. Thank you! Your signed receipt is attached. ` +
+        `Loyalty code for your next order: ${await newCoupon(this.env, nextTier, nextStamps)} (put it in your first message). ` +
         `Stamps: ${stampCard(nextStamps === 0 ? STAMP_EVERY : nextStamps)}${nextStamps === STAMP_EVERY - 1 ? " (your next order gets the stamp bonus)" : ""}.`.trim());
   }
 
