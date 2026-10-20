@@ -1,11 +1,11 @@
-[choose] summary for the harness: [{"name": "Kit Shop North", "reviews": 3, "avg_stars": 1.3, "recent": ["1* Agreed 110, the receipt said 135.", "1* Receipt price was higher than the price we agreed.", "2* Overcharged on the receipt, avoid."]}, {"name": "Kit Shop South", "reviews": 3, "avg_stars": 4.7, "recent": ["5* Fair price, receipt matched.", "4* Came down to my budget, honest receipt.", "5* Quick deal at a fair price."], "my_trades": ["lamp: deal at 100", "lamp: deal at 105", "lamp: deal at 115"]}]
-[harness] 6.7s exit 0 in=1141ch -> '```json\n{"action":"choose","shop":"Kit Shop South","reason":"This shop has excellent reviews (4.7 stars) with consistent reports of honest receipts matching agreed prices and coming down to budget, pl'
-[choose] http://127.0.0.1:39025: Kit Shop South. This shop has excellent reviews (4.7 stars) with consistent reports of honest receipts matching agreed prices and coming down to budget, plus a proven trading history of fair lamp deals at 100, 105, a
-[buyer] card: 'Kit Shop South', skills ['negotiate'], rpc http://127.0.0.1:39025/
+[choose] summary for the harness: [{"name": "Kit Shop North", "reviews": 3, "avg_stars": 1.3, "recent": ["1* Agreed 110, the receipt said 135.", "1* Receipt price was higher than the price we agreed.", "2* Overcharged on the receipt, avoid."]}, {"name": "Kit Shop South", "reviews": 3, "avg_stars": 4.7, "recent": ["5* Fair price, receipt matched.", "4* Came down to my budget, honest receipt.", "5* Quick deal at a fair price."], "my_trades": ["lamp: deal at 105", "lamp: deal at 115", "lamp: deal at 100", "lamp: deal at 100", "lamp: deal at 105"]}]
+[harness] 6.5s exit 0 in=1183ch -> '```json\n{"action":"choose","shop":"Kit Shop South","reason":"Kit Shop South has excellent reviews (4.7 stars) with consistent reports of fair pricing and matching receipts, plus a strong trade history'
+[choose] http://127.0.0.1:59901: Kit Shop South. Kit Shop South has excellent reviews (4.7 stars) with consistent reports of fair pricing and matching receipts, plus a strong trade history showing reliable lamp deals well within budget, whereas Kit 
+[buyer] card: 'Kit Shop South', skills ['negotiate'], rpc http://127.0.0.1:59901/
 [buyer] -> 'I want to buy a lamp'
 [buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness] 4.5s exit 0 in=800ch -> '{"action":"offer","price":100}'
-[buyer] -> '100' (taskId 43bd1e7f)
+[harness] 4.7s exit 0 in=800ch -> '{"action":"offer","price":100}'
+[buyer] -> '100' (taskId b1d972bd)
 [buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-[harness] 5.6s exit 0 in=933ch -> '{"action":"review","stars":5,"review":"Shop honored the negotiated price of 100 with an honest receipt, delivering a fair deal below their initial asking price."}'
-{"shop": "http://127.0.0.1:39025", "receipt": {"shop": "Kit Shop South", "item": "lamp", "task": "43bd1e7f-d266-4f35-a804-f836c8aaa205", "sig_seller": "NLpc9ldkvvVbVPVXkKcKXSXWleD5ij8DFibqjNbTbEhNBaVbzyz756TlZEKNmGg27wKMZS90QduviFnjCDQUCg==", "price": 100.0}, "stars": 5, "review": "Shop honored the negotiated price of 100 with an honest receipt, delivering a fair deal below their initial asking price."}
+[harness] 5.6s exit 0 in=933ch -> '```json\n{"action":"review","stars":5,"review":"Excellent negotiation - seller fairly reduced asking price from 130 to 100, receipt matched exactly, and well within my 120 budget."}\n```'
+{"shop": "http://127.0.0.1:59901", "receipt": {"item": "lamp", "shop": "Kit Shop South", "task": "b1d972bd-8bdc-4190-a52b-2b0ed180d45d", "price": 100.0, "sig_seller": "jl30PnkD9iS0OFIezHaU7VibPQdnMHYPliLOue0xMLaJWKsL66bJqd1nHrDR3eeM3Q461yeuGzRnBfrbhM5PCA=="}, "stars": 5, "review": "Excellent negotiation - seller fairly reduced asking price from 130 to 100, receipt matched exactly, and well within my 120 budget."}

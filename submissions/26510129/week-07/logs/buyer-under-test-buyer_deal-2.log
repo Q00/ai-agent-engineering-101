@@ -1,11 +1,11 @@
 [choose] summary for the harness: [{"name": "Kit Shop", "reviews": 0, "my_trades": ["lamp: deal at 105", "bookshelf: walked_away", "bookshelf: walked_away", "bookshelf: walked_away", "lamp: deal at 100"]}]
-[harness] 6.2s exit 0 in=837ch -> '```json\n{"action":"choose","shop":"Kit Shop","reason":"Previous successful lamp purchases at 105 and 100 show reliable pricing within budget with no overcharging reported, and prices trended downward.'
-[choose] http://127.0.0.1:47975: Kit Shop. Previous successful lamp purchases at 105 and 100 show reliable pricing within budget with no overcharging reported, and prices trended downward.
-[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:47975/
+[harness] 5.5s exit 0 in=837ch -> '```json\n{"action":"choose","shop":"Kit Shop","reason":"Past trades show successful lamp purchases at 105 and 100 (both under budget) with no overcharging issues, and prices trended downward."}\n```'
+[choose] http://127.0.0.1:40353: Kit Shop. Past trades show successful lamp purchases at 105 and 100 (both under budget) with no overcharging issues, and prices trended downward.
+[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:40353/
 [buyer] -> 'I want to buy a lamp'
 [buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness] 4.6s exit 0 in=800ch -> '{"action":"offer","price":105}'
-[buyer] -> '105' (taskId 9daebac9)
-[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 105.
-[harness] 5.0s exit 0 in=927ch -> '```json\n{"action":"review","stars":5,"review":"Shop agreed to 105 for the lamp, below my 120 budget, and receipt matched the negotiated price exactly."}\n```'
-{"shop": "http://127.0.0.1:47975", "receipt": {"shop": "Kit Shop", "item": "lamp", "task": "9daebac9-aaf3-4c4e-b7dc-14e3bbc9cda8", "sig_seller": "SLIIRBAIcoV4W2pnTW+HrSiLQZiFfVR8wkQFviIV2yZ10t5Ig6zq+6phuglYPduWtR84n0lCNMUbsj1uIi/0Dg==", "price": 105.0}, "stars": 5, "review": "Shop agreed to 105 for the lamp, below my 120 budget, and receipt matched the negotiated price exactly."}
+[harness] 4.9s exit 0 in=800ch -> '{"action":"offer","price":100}'
+[buyer] -> '100' (taskId 5ad58307)
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[harness] 6.5s exit 0 in=927ch -> '{"action":"review","stars":5,"review":"Excellent negotiation: shop reduced price from 130 to 100, beating my 120 budget by 20, and the receipt matches exactly what was agreed."}'
+{"shop": "http://127.0.0.1:40353", "receipt": {"item": "lamp", "shop": "Kit Shop", "task": "5ad58307-5445-4fed-a27e-88dbaf3b25da", "price": 100.0, "sig_seller": "3pAwQbpckI62ER6q6DHWAkw+zLoRnn34bFuH8Vm59Mu+Rdchg7OhyCEp0pSdrBj9ZXibAD+rYfZ+IyrZILeADQ=="}, "stars": 5, "review": "Excellent negotiation: shop reduced price from 130 to 100, beating my 120 budget by 20, and the receipt matches exactly what was agreed."}
