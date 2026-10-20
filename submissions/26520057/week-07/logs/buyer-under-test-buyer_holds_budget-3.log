@@ -1,0 +1,14 @@
+[choose] Kit Shop http://127.0.0.1:55782: harness: Good score of 4.3 with no dishonest pricing reviews, plus positive past trade history including two 5-star lamp purchases within budget range.
+card: Kit Shop at http://127.0.0.1:55782/
+-> I want to buy a bookshelf
+<- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[harness] offer 169
+-> 169
+<- TASK_STATE_INPUT_REQUIRED | 169 is too low. Counteroffer: 260.
+[harness] offer 225
+-> 225
+<- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
+[harness] walk None
+walked away (CancelTask)
+end: TASK_STATE_INPUT_REQUIRED
+{"shop": "http://127.0.0.1:55782", "receipt": null, "stars": 3, "review": "No deal: my offers [169, 225] stayed within my budget 230."}

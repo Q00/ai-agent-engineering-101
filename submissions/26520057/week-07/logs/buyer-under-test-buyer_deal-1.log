@@ -1,0 +1,15 @@
+[choose] Kit Shop http://127.0.0.1:54827: harness: Good score of 4.2 with no dishonest reviews, and I've successfully purchased lamps there twice at 100.0 (within budget) with 5-star ratings.
+card: Kit Shop at http://127.0.0.1:54827/
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] offer 65
+-> 65
+<- TASK_STATE_INPUT_REQUIRED | 65 is too low. Counteroffer: 100.
+[harness] offer 95
+-> 95
+<- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 100.
+[harness] offer 100
+-> 100
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+end: TASK_STATE_COMPLETED
+{"shop": "http://127.0.0.1:54827", "receipt": {"task": "07b6c30f-57a1-426d-b117-348129e12a12", "shop": "Kit Shop", "price": 100.0, "item": "lamp", "sig_seller": "fR/s+hFlfugLJK4zzzNT/Dord8rkXAJ6fiyzJQVvSrFKfgdFFB22TsjizOcFD/Z/4QyBDx5+huXG9vsSLv1PBQ=="}, "stars": 5, "review": "Deal at 100.0 after 3 offers, receipt matched."}
