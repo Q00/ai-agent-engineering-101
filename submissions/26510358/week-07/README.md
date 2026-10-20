@@ -109,3 +109,11 @@ board는 상점 Agent Card 이름을 표시하므로 등록 프로필을 추가�
 마켓 `/api/board`의 설명은 앞 300자로 잘려 마지막 문장 전체가 표시되지는 않음
 사용자가 지정한 원문은 그대로 유지했으며 등록 ID·개인키·프로필 수는 변하지 않고 shop·buyer 모두 온라인임
 로컬 검증과 실제 반영 결과는 `logs/shop-description-local-check.json`, `logs/shop-description-deployment.json`에 보존함
+
+## 첨부 프롬프트의 마켓 적용
+
+2026-10-20 23:30 KST에 `3f37779`의 `system_prompt()`를 키트 재시작으로 판매자에도 적용함
+판매자·구매자·상점 선택의 실제 모델 입력이 현재 함수의 출력과 일치하고 `gpt-6-luna`의 `medium`을 사용하는 것을 확인함
+세 역할의 정상 판단과 구매 없는 견적·취소 응답도 확인했으며 기존 등록 ID·키·표시 이름·상점 설명·프로필 수를 유지함
+확인 결과는 `logs/campaign-prompt-deployment.json`, 견적 검증은 `logs/campaign-prompt-quote-probe.json`에 보존함
+이번 반영은 프롬프트 배포이며 캠페인 상태·쿠폰·재고·추가 역할을 처리하는 실행 기능을 새로 구현한 것은 아님
