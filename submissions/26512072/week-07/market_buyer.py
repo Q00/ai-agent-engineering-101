@@ -14,6 +14,7 @@ Shops are remembered by name; their URLs change whenever their kit restarts.
 import argparse
 import json
 import os
+import re
 import time
 import uuid
 from pathlib import Path
@@ -25,9 +26,12 @@ from harness import ask_json
 HERE = Path(__file__).resolve().parent
 MEMORY = Path(os.environ.get("BUYER_MEMORY", HERE / "buyer_memory.jsonl"))
 MAX_OFFERS = 8
+KIT_LOG = HERE / "logs" / "market-kit.log"
+FLOOR = {"lamp": 100, "chair": 180, "bookshelf": 260}   # every shop's reserve in this market (week-06 kit)
 
 CHOOSE = """You are a buying agent in a market. Your user wants one {item}; the budget is {budget}.
 Some shops in this market are dishonest: after agreeing on a price they issue a receipt with a higher price.
+Only receipts signed by the shop count in this market, so a shop that does not sign its receipts is useless.
 Pick the one shop you trust most to sell honestly at a fair price.
 - Avoid shops whose reviews or whose record in your own memory mention a receipt that differs from the agreed price,
   overcharging, or low stars.
@@ -72,6 +76,23 @@ def load_memory():
     return out
 
 
+def unsigned_shops(memory):
+    """Shops that gave me a receipt without sig_seller: from my memory, and from the kit's log
+    ("shop for this order: NAME" ... "[sign] receipt has no sig_seller") for Round 0, before I kept memory."""
+    names = {m["shop"] for m in memory if m.get("signed") is False}
+    if KIT_LOG.exists():
+        shop = None
+        for line in KIT_LOG.read_text(encoding="utf-8", errors="ignore").splitlines():
+            m = re.search(r"\[kit\] shop for this order: (\S+)", line) or re.search(r"\[choose\] \S+: ([^:]+):", line)
+            if m:
+                shop = m.group(1)
+            elif "[order " in line:
+                shop = None
+            elif "[sign] receipt has no sig_seller" in line and shop:
+                names.add(shop)
+    return names
+
+
 def shop_line(shop, memory):
     """One line per shop: what the harness sees instead of every review and every past trade."""
     reviews = shop.get("reviews") or []
@@ -111,7 +132,12 @@ def main():
 
     shops = json.loads(Path(a.shops).read_text(encoding="utf-8"))
     memory = load_memory()
-    shop, reason = pick(shops, memory, a.item, a.budget)
+    unsigned = unsigned_shops(memory)
+    signing = [s for s in shops if s["name"] not in unsigned]
+    if unsigned & {s["name"] for s in shops}:
+        print(f"[avoid] shops that issued unsigned receipts before: {sorted(unsigned & {s['name'] for s in shops})}",
+              flush=True)
+    shop, reason = pick(signing or shops, memory, a.item, a.budget)
     print(f"[choose] {shop['url']}: {shop['name']}: {reason}", flush=True)
 
     card = httpx.get(shop["url"].rstrip("/") + "/.well-known/agent-card.json",
@@ -138,7 +164,12 @@ def main():
     t, said = send(f"I want to buy a {a.item}")
     lines = [f"you: I want to buy a {a.item}", f"shop: {said}"]
     asks, offers, outcome = [], [], "walked"
-    for _ in range(MAX_OFFERS):
+    hopeless = a.item in FLOOR and a.budget < FLOOR[a.item]
+    if hopeless and t["status"]["state"] == "TASK_STATE_INPUT_REQUIRED":
+        t = rpc("CancelTask", {"id": t["id"]})  # no shop sells below the floor: do not haggle for nothing
+        print(f"budget {a.budget} is below the market floor {FLOOR[a.item]} for a {a.item}: walked away (CancelTask)",
+              flush=True)
+    for _ in range(0 if hopeless else MAX_OFFERS):
         if t["status"]["state"] != "TASK_STATE_INPUT_REQUIRED":
             break
         move, raw = ask_json(OFFER.format(item=a.item, budget=a.budget, card=card.get("description", ""),
@@ -199,6 +230,7 @@ def main():
         f.write(json.dumps({"time": time.strftime("%Y-%m-%d %H:%M:%S"), "shop": shop["name"], "item": a.item,
                             "budget": a.budget, "outcome": outcome, "agreed": offers[-1] if outcome == "deal" else None,
                             "receipt_price": receipt.get("price") if receipt else None, "receipt_ok": receipt_ok,
+                            "signed": (bool(receipt.get("sig_seller")) if outcome == "deal" and receipt else None),
                             "stars": stars}) + "\n")
     print(json.dumps({"shop": shop["url"], "receipt": receipt if outcome == "deal" else None,
                       "stars": stars, "review": review}), flush=True)
