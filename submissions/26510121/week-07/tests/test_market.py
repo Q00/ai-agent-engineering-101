@@ -87,6 +87,21 @@ class MarketSelectionTests(unittest.TestCase):
                                    require_verified=True)
         self.assertEqual(picked["name"], "other")
 
+    def test_affordable_shop_beats_good_but_unaffordable_history(self):
+        memory = [{"name": name, "item": "lamp", "outcome": "purchased", "price": price,
+                   "seconds": 3} for name, price in [("affordable", 110), ("expensive", 180)] for _ in range(4)]
+        picked, _, _ = choose_shop([shop("expensive"), shop("affordable")], memory, "lamp", 120)
+        self.assertEqual(picked["name"], "affordable")
+
+    def test_failed_larger_budget_is_relevant_but_smaller_budget_is_not(self):
+        candidates = [shop("failed"), shop("untried")]
+        memory = [{"name": "failed", "item": "lamp", "outcome": "no_deal", "budget": 150}] * 5
+        picked, _, _ = choose_shop(candidates, memory, "lamp", 120)
+        self.assertEqual(picked["name"], "untried")
+        memory = [{**row, "budget": 90} for row in memory]
+        _, reason, _ = choose_shop([shop("failed")], memory, "lamp", 120)
+        self.assertIn("budget fit=0.667", reason)
+
     def test_market_feedback_is_joined_without_rewriting_original_memory(self):
         with tempfile.TemporaryDirectory() as folder:
             memory, feedback = Path(folder) / "memory", Path(folder) / "feedback"

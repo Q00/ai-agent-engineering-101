@@ -110,7 +110,11 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False):
         wins = [r for r in same if eligible_win(r)]
         personal = (2 + len(wins)) / (3 + len(informative))
         prices = [r["price"] for r in wins if isinstance(r.get("price"), (int, float))]
-        affordable = max(0, 1 - (min(prices) / max(budget, 1))) if prices else 0.25
+        # Optimize feasible purchases, not the size of the discount. A failure at
+        # a smaller budget says nothing about this order's ability to afford it.
+        comparable_misses = [r for r in same if r.get("outcome") == "no_deal"
+                             and isinstance(r.get("budget"), (int, float)) and r["budget"] >= budget]
+        budget_fit = (2 + sum(price <= budget for price in prices)) / (3 + len(prices) + len(comparable_misses))
         reviews = shop["reviews"]
         public = (6 + sum(r["stars"] for r in reviews)) / (5 * (2 + len(reviews)))
         bad_public = sum(r["stars"] <= 2 for r in reviews) >= 2
@@ -122,7 +126,7 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False):
         # Otherwise a burst of bad reviews could outweigh years of good dealings.
         public_weight = 0.20 / (1 + len(informative))
         personal_weight = 0.70 - public_weight
-        score = personal_weight * personal + 0.20 * affordable + public_weight * public + 0.10 * speed
+        score = personal_weight * personal + 0.20 * budget_fit + public_weight * public + 0.10 * speed
         if recent_fault:
             score -= 1
         # Negative public evidence is a caution, not a permanent blacklist.
@@ -131,14 +135,15 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False):
         tie = hashlib.sha256(f"{observation_count(memory)}:{item}:{shop['name']}".encode()).hexdigest()
         candidates.append({"shop": shop, "score": score, "tie": tie, "own": len(same),
                            "public": round(public, 3), "recent_fault": recent_fault,
-                           "bad_public": bad_public, "wins": len(wins)})
+                           "bad_public": bad_public, "wins": len(wins), "budget_fit": round(budget_fit, 3)})
     count = observation_count(memory)
     explore = count >= 6 and (count + 1) % 7 == 0
     pool = [c for c in candidates if c["own"] == 0 and not c["bad_public"] and not c["recent_fault"]]
     mode = "bounded exploration" if explore and pool else "best evidence"
     selected = max(pool if explore and pool else candidates, key=lambda c: (c["score"], c["tie"]))
     reason = (f"{mode}; item={item}; own successes={selected['wins']}/{selected['own']}; "
-              f"public score={selected['public']}; recent receipt fault={selected['recent_fault']}")
+              f"budget fit={selected['budget_fit']}; public score={selected['public']}; "
+              f"recent receipt fault={selected['recent_fault']}")
     evidence = {"selection_reason": reason, "public_reviews_untrusted": selected["shop"]["reviews"],
                 "own_item_history": [r for r in memory if r["name"] == selected["shop"]["name"]
                                      and r.get("item") == item][-5:]}
@@ -153,4 +158,4 @@ def review_trade(result, error, budget, turns):
         return 3, "No agreement within my budget; no verified purchase. This alone is not evidence of dishonesty."
     price = result["receipt"]["price"]
     stars = 5 if price <= budget * 0.9 and turns <= 4 else 4
-    return stars, f"Verified item and agreed price: paid {price} within budget {budget}; {turns} price messages."
+    return stars, f"Receipt matches item and agreed price: paid {price} within budget {budget}; {turns} price messages."

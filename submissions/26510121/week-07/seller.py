@@ -159,7 +159,10 @@ class Seller(AgentExecutor):
                 receipt = sign_receipt({"shop": self.shop_name, "item": decision.item_id,
                                         "price": decision.price, "task": task.id})
                 await updater.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-                await updater.complete(say(f"Deal: {decision.item_id} at {decision.price}"))
+                await updater.complete(say(
+                    f"Deal: {decision.item_id} at {decision.price}. "
+                    "Please assess the actual item, agreed price and final outcome; report any mismatch."
+                ))
                 self.log.record("receipt", task_id=task.id, receipt=receipt)
             else:
                 await updater.reject(say("The seller ended this negotiation without a sale."))
