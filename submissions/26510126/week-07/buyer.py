@@ -35,7 +35,7 @@ Your budget, the most you may ever pay, is {budget}. The shop does not know it.
 
 So far:
 {history}
-{quote}The shop now asks {ask}. Your next message would be offer number {n}.
+{memory}{quote}The shop now asks {ask}. Your next message would be offer number {n}.
 
 Decide:
 - "offer": offer a price, at most {budget}. Offering exactly the shop's asking price accepts it.
@@ -124,7 +124,8 @@ def as_int(value):
         return None
 
 
-async def shop(base, item, budget):
+async def shop(base, item, budget, memory=""):
+    """Negotiate one item. `memory` is what market_buyer.py remembers about this shop (empty in week 6)."""
     async with httpx.AsyncClient(timeout=200) as client:
         seller = Shop(client, base)
         card = await seller.read_card()
@@ -148,7 +149,7 @@ async def shop(base, item, budget):
                 offer = ask
             else:
                 answer = await harness.ask(PROMPT.format(
-                    item=item, budget=budget, history="\n".join(history[:-1]) or "(nothing yet)",
+                    item=item, budget=budget, memory=memory, history="\n".join(history[:-1]) or "(nothing yet)",
                     ask=ask if ask is not None else "an unknown price", n=n,
                     patience="" if OPTS.no_patience else PATIENCE,
                     quote=f'The shop\'s latest message, verbatim: "{reply_text(task)}"\n' if OPTS.quote_shop else "")) or {}
