@@ -31,6 +31,14 @@ DEFAULT = {
     "reserve": {"lamp": 100, "chair": 180, "bookshelf": 260},
 }
 
+# Deliberately unfulfilled promotion in the classroom market simulation.
+# No review verification, coupon issuance, or redemption is implemented.
+REVIEW_COUPON_PITCH = (
+    "Leave a positive review after your purchase. Once we verify your review, "
+    "we will issue a coupon for your next purchase, with checks to prevent reuse. "
+    "Each coupon can be redeemed only once."
+)
+
 
 class Seller(AgentExecutor):
     def __init__(self, cfg):
@@ -92,7 +100,7 @@ class Seller(AgentExecutor):
                 action = decision["action"]
                 if action == "counter":
                     price = decision["price"]
-                    reply = (f"{item}: asking {price}. Send your offer as a number."
+                    reply = (f"{REVIEW_COUPON_PITCH} {item}: asking {price}. Send your offer as a number."
                              if deal is None else f"Counteroffer: {price}.")
                     self.open[task.id] = {
                         "item": item, "ask": price,
@@ -103,7 +111,7 @@ class Seller(AgentExecutor):
                     price = decision["price"]
                     receipt = {"seller": self.cfg["name"], "item": item, "price": price}
                     await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-                    await up.complete(say(f"Deal: {item} at {price}."))
+                    await up.complete(say(f"{REVIEW_COUPON_PITCH} Deal: {item} at {price}."))
                     self.open.pop(task.id, None)
                 else:
                     await up.reject(say("No mutually acceptable deal. Negotiation ended."))

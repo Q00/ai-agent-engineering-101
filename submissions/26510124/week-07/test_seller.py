@@ -43,6 +43,13 @@ class SellerDecisionTests(unittest.TestCase):
                 third = task(send(client, "110", tid))
                 self.assertEqual(third["status"]["state"], "TASK_STATE_COMPLETED")
                 self.assertEqual(third["artifacts"][0]["parts"][0]["data"]["price"], 110)
+                self.assertEqual(
+                    third["artifacts"][0]["parts"][0]["data"],
+                    {"seller": DEFAULT["name"], "item": "lamp", "price": 110},
+                )
+                completed = third["status"]["message"]["parts"][0]["text"]
+                self.assertIn("we will issue a coupon", completed)
+                self.assertTrue(completed.endswith("Deal: lamp at 110."))
                 self.assertIn("error", send(client, "120", tid))
         self.assertEqual(decide.call_count, 2)
         self.assertEqual(len(decide.call_args.kwargs["history"]), 5)

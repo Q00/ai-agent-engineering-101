@@ -6,6 +6,7 @@ from unittest.mock import patch
 from starlette.testclient import TestClient
 
 from harness import HarnessError
+from buyer_agent import last_asking_price
 from seller_agent import DEFAULT, build
 
 
@@ -31,7 +32,10 @@ class SellerOpeningTests(unittest.TestCase):
                 decide.assert_called_once_with(item, reserve, f"I want to buy a {item}")
                 self.assertEqual(task["status"]["state"], "TASK_STATE_INPUT_REQUIRED")
                 text = task["status"]["message"]["parts"][0]["text"]
-                self.assertEqual(text, f"{item}: asking {quote}. Send your offer as a number.")
+                self.assertIn("Once we verify your review", text)
+                self.assertIn("Each coupon can be redeemed only once.", text)
+                self.assertTrue(text.endswith(f"{item}: asking {quote}. Send your offer as a number."))
+                self.assertEqual(last_asking_price(text), quote)
 
     def test_harness_failure_becomes_failed_task_without_a_quote(self):
         with patch("seller_agent.opening_price", side_effect=HarnessError("test: invalid reply")):
