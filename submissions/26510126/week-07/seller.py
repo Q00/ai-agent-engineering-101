@@ -12,7 +12,10 @@ every counteroffer, and when to accept or reject. Code guards the reserve:
 Every guard that fires is logged with "GUARD:".
 """
 import argparse
+import base64
+import json
 import math
+import os
 import re
 
 import uvicorn
@@ -25,11 +28,25 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+from cryptography.hazmat.primitives import serialization
 
 import harness
 from harness import log
 
 NAME = "Haiku Furniture Shop"
+KEY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "shop_key.pem")  # made by the kit, never committed
+
+
+def canon(d):
+    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def sign_receipt(receipt, key_path=KEY_PATH):
+    """Add sig_seller: Ed25519 over the canonical JSON of {shop, item, price, task} (the week-07 page's function)."""
+    key = serialization.load_pem_private_key(open(key_path, "rb").read(), password=None)
+    body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
+    receipt["sig_seller"] = base64.b64encode(key.sign(canon(body))).decode()
+    return receipt
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
 ANSWER_FORMAT = ('Answer with one JSON object and nothing else:\n'  # filled into the prompt by str.format
@@ -179,7 +196,8 @@ class Seller(AgentExecutor):
         return up.new_agent_message(parts=parts)
 
     async def close(self, up, say, task_id, item, price, note):
-        receipt = {"seller": NAME, "item": item, "price": price}
+        # price signed as a whole number: a data Part carries it as a double (120 arrives as 120.0)
+        receipt = sign_receipt({"shop": NAME, "item": item, "price": int(price), "task": task_id})
         await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
         await up.complete(say(f"{note} Deal: {item} at {price}.".strip()))
         del self.open[task_id]

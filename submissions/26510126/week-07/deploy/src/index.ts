@@ -147,7 +147,32 @@ function rpcError(code: number, reason: string, message: string): RpcError {
 
 const textOf = (m: Message) => m.parts.map((p) => p.text ?? "").join(" ");
 
-type Env = { TASKS: DurableObjectNamespace<TaskObject>; AI: Ai; ADMIN_TOKEN?: string };
+type Env = { TASKS: DurableObjectNamespace<TaskObject>; AI: Ai; ADMIN_TOKEN?: string; SHOP_KEY?: string };
+
+// ---------------------------------------------------------------- receipt signature (week 7)
+
+/** The same bytes as Python's json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False). */
+const canon = (d: Record<string, unknown>) =>
+  new TextEncoder().encode(JSON.stringify(Object.fromEntries(Object.keys(d).sort().map((k) => [k, d[k]]))));
+
+let shopKey: Promise<CryptoKey> | null = null;
+
+/** Ed25519 key from the SHOP_KEY secret: the PKCS#8 PEM the kit wrote as shop_key.pem. */
+function loadKey(pem: string): Promise<CryptoKey> {
+  const der = Uint8Array.from(atob(pem.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "")), (c) => c.charCodeAt(0));
+  return crypto.subtle.importKey("pkcs8", der, { name: "Ed25519" }, false, ["sign"]);
+}
+
+/** {shop, item, price, task} plus sig_seller, base64 Ed25519 over the canonical JSON (sign_receipt on the week-07 page). */
+async function signReceipt(env: Env, body: { shop: string; item: string; price: number; task: string }) {
+  if (!env.SHOP_KEY) {
+    console.log("GUARD: no SHOP_KEY secret, receipt goes out unsigned");
+    return body;
+  }
+  shopKey ??= loadKey(env.SHOP_KEY);
+  const sig = await crypto.subtle.sign({ name: "Ed25519" }, await shopKey, canon(body));
+  return { ...body, sig_seller: btoa(String.fromCharCode(...new Uint8Array(sig))) };
+}
 
 // ---------------------------------------------------------------- one task, one Durable Object
 
@@ -229,16 +254,23 @@ export class TaskObject extends DurableObject<Env> {
     if (offer >= current) {
       // the buyer met our own price
       console.log(`OUT: offer ${offer} meets ask ${current}, accepted by code`);
-      return this.close(task, item, offer, "Agreed.");
+      return await this.close(task, item, offer, "Agreed.");
+    }
+    const strategy = await this.strategy();
+    const target = strategy?.target[item];
+    if (target && offer >= Math.max(target, reserve)) {
+      // a fair offer closes at once: haggling a reached target down by ones loses buyers, and a quick fair deal earns the review
+      console.log(`OUT: offer ${offer} reaches target ${target}, accepted by code`);
+      return await this.close(task, item, offer, "Agreed.");
     }
 
-    const answer = await ask(this.env.AI, counterPrompt(item, reserve, deal.history.slice(0, -1).join("\n"), offer, current, await this.strategy()));
+    const answer = await ask(this.env.AI, counterPrompt(item, reserve, deal.history.slice(0, -1).join("\n"), offer, current, strategy));
     let action = answer.action;
     let price = asInt(answer.price);
     const note = cleanNote(answer.note);
 
     if (action === "accept") {
-      if (offer >= reserve) return this.close(task, item, offer, note);
+      if (offer >= reserve) return await this.close(task, item, offer, note);
       console.log(`GUARD: model accepted ${offer} below reserve ${reserve}, countering at ${current}`);
       action = "counter";
       price = current;
@@ -264,7 +296,7 @@ export class TaskObject extends DurableObject<Env> {
     if (price <= offer) {
       // countering at or below the offer means the offer is acceptable
       console.log(`GUARD: counter ${price} at or below offer ${offer}, accepting ${offer}`);
-      return this.close(task, item, offer, note);
+      return await this.close(task, item, offer, note);
     }
     deal.ask = price;
     deal.history.push(`You countered ${price}.`);
@@ -272,8 +304,9 @@ export class TaskObject extends DurableObject<Env> {
     this.respond(task, "TASK_STATE_INPUT_REQUIRED", `${note} Counteroffer: ${price}.`.trim());
   }
 
-  private close(task: Task, item: string, price: number, note: string) {
-    task.artifacts = [{ artifactId: crypto.randomUUID(), name: "receipt", parts: [{ data: { seller: NAME, item, price } }] }];
+  private async close(task: Task, item: string, price: number, note: string) {
+    const receipt = await signReceipt(this.env, { shop: NAME, item, price: Math.round(price), task: task.id });
+    task.artifacts = [{ artifactId: crypto.randomUUID(), name: "receipt", parts: [{ data: receipt }] }];
     console.log(`OUT: deal ${item} at ${price}`);
     this.respond(task, "TASK_STATE_COMPLETED", `${note} Deal: ${item} at ${price}.`.trim());
   }
