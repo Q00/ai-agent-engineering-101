@@ -378,10 +378,11 @@ export class TaskObject extends DurableObject<Env> {
     let price = asInt(answer.price);
 
     if (action === "accept") {
-      if (offer >= reserve) return await this.close(task, item, offer, "Agreed.");
-      console.log(`GUARD: model accepted ${offer} below reserve ${reserve}, countering at ${current}`);
+      // the deal's floor, not the bare reserve: after the launch sale the model kept accepting 260 bookshelves
+      if (offer >= floor) return await this.close(task, item, offer, "Agreed.");
+      console.log(`GUARD: model accepted ${offer} below the floor ${floor}, countering at ${Math.max(floor, Math.min(current, target ?? current))}`);
       action = "counter";
-      price = current;
+      price = Math.max(floor, Math.min(current, target ?? current));
     }
     if (action === "reject") {
       // Llama 8B picks "reject" while its note says "let's meet in the middle", which ended
