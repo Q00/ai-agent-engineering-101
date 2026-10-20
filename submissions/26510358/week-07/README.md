@@ -48,3 +48,41 @@ tail -n 100 -F submissions/26510358/week-07/logs/market-kit.log
 같은 닉네임과 키를 사용해야 이후 거래가 같은 이력에 쌓임
 `SUNGMYEONGGI`, `gacha-shop`의 이전 거래는 기존 이름에 남고 `myeonggi` 이력은 새로 집계됨
 현재 임시 공개 주소와 로컬 PID는 `.market/session.json`에서 확인함
+
+## 프롬프트 수정과 등록 이름 유지
+
+`harness.py`의 여러 줄 프롬프트는 `textwrap.dedent`로 소스 들여쓰기를 제거함
+역할별 프롬프트 문구는 유지하며 현재 추론 강도는 `medium`임
+`agent.json`의 설명도 같은 설정으로 맞춤
+
+시장 등록 이름은 shop과 buyer 모두 `myeonggi`로 유지함
+기존 키트를 종료한 뒤 저장소 루트에서 다음 명령으로 다시 참가함
+
+```bash
+bash submissions/26510358/week-07/join_market.sh
+```
+
+이 스크립트는 등록 이름을 고정하고 기존 `shop_key.pem`과 `buyer_key.pem`이 없으면 실행을 중단함
+상점의 표시 이름은 `seller.py` 설정의 `name`이며 등록 닉네임과 별개임
+표시 이름을 바꿀 때도 참가 명령의 `--name`과 두 개인키는 유지함
+buyer 이름은 키트의 `--name`을 사용하므로 현재 키트에는 별도 표시 이름 설정이 없음
+이전 닉네임의 프로필은 마켓에 오프라인 기록으로 남으며 현재 키트에는 삭제·병합 기능이 없음
+
+현재 실행 방식은 Cloudflare Quick Tunnel로 로컬 Python 서버를 공개하는 방식임
+Cloudflare Workers에 코드를 업로드한 상태가 아니며 로컬 키트와 터널이 실행 중이어야 함
+재시작하면 공개 터널 주소가 바뀌지만 같은 이름과 키로 기존 등록을 갱신함
+
+`system_prompt`의 실행 중인 역할은 `seller`, `buyer`, `shop_selector`, `budget_allocator`, `quote_observer`임
+새로 작성한 `review`, `memory`/`memory_reputation`, `shop_profile` 프롬프트는 아직 호출 경로와 출력 스키마에 연결되지 않음
+현재 리뷰와 기억은 `market_buyer.py`와 `market_memory.py`의 코드가 처리하고 공개 소개는 `seller.py`의 Agent Card 설정으로 생성함
+쿠폰 발급·사용, 추천인 보상, 적립 수량, 다품목 주문도 프롬프트 문구만으로 실행 기능이 추가되지는 않음
+판매자 프롬프트에 언급한 공개 `message` 필드는 현재 판매자 출력 스키마에 없으며 공개 응답은 기존 판매자 코드가 생성함
+따라서 프롬프트 반영 확인과 위 기능의 구현 완료 여부는 별도로 확인해야 함
+
+board는 공개 Agent Card와 거래 집계를 표시하며 비공개 시스템 프롬프트를 표시하지 않음
+새 프롬프트는 재시작한 판매자와 이후 실행되는 구매자의 판단부터 적용됨
+
+2026-10-20 22:34 KST에 동일 이름·키로 재등록한 뒤 공개 Agent Card의 HTTP 200과 shop·buyer 온라인 상태를 확인함
+기존 세 등록 이름의 집합은 유지됐고 새 프로필이 추가되지 않았으며 board의 갱신 주기는 4초임
+22:39 KST에 판매자·구매자·상점 선택·견적 해석의 실제 입력이 수정된 프롬프트와 일치하고 `medium`을 사용하는 것을 확인함
+시장 역할 검사 14개와 견적 정규화 검사 24개가 통과했으며 확인 결과는 `logs/prompt-update-verification.json`에 보존함
