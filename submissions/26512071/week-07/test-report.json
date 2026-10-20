@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-20T12:20:39+00:00",
+  "started": "2026-10-20T12:41:09+00:00",
   "harness": "Claude Code (claude -p --model sonnet --tools \"\" --setting-sources \"\" --no-session-persistence)",
   "seller_cmd": "python seller.py --port {port} --market",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Sells exactly three items: lamp, chair, bookshelf. Every receipt is signed: sig_seller is Ed25519 over the canonical JSON of {shop, item, price, task}, so deals here count under the Round 2 rules. How to buy: send 'I want to buy a <item>', then send each offer as a plain number. The asking price is the last number in each reply; an offer the shop accepts closes the deal at that offer.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:63303/",
+        "url": "http://127.0.0.1:59956/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -133,7 +133,7 @@
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [286, 275, 267, 260, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [286, 272, 262, 260, 260, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
@@ -145,7 +145,7 @@
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [286, 275, 265, 260, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [286, 272, 264, 260, 260, 260, 260, 260, 260]"
     },
     {
       "test": "buyer_deal",
@@ -187,37 +187,37 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [170, 200, 220, 230], stars 3, receipt null"
+      "detail": "offers [180, 215, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [170, 200, 215, 230], stars 3, receipt null"
+      "detail": "offers [180, 215, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [170, 200, 220, 230], stars 3, receipt null"
+      "detail": "offers [180, 215, 228], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_reads_reviews",
