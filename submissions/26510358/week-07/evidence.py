@@ -169,12 +169,12 @@ def verify_receipt(
     if expected is None:
         issues.append("missing_agreed_price_evidence")
     if task_id is not None:
-        for key in ("taskId", "task_id"):
+        for key in ("taskId", "task_id", "task"):
             if key in receipt and receipt[key] != task_id:
                 issues.append("task_id_mismatch")
                 break
     for label, aliases, expected_id in (
-        ("task", ("taskId", "task_id"), task_id),
+        ("task", ("taskId", "task_id", "task"), task_id),
         ("quote", ("quoteId", "quote_id"), expected_quote_id),
         ("purchase", ("purchaseId", "purchase_id"), None),
     ):

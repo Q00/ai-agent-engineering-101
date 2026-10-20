@@ -25,11 +25,15 @@ from evidence import EvidenceError, inspect_untrusted, validate_seller_decision
 from harness import Harness, HarnessError
 from policy import StrategyPolicy, strategy_instruction
 from tracing import Trace
+from receipts import load_shop_key, sign_receipt
 
 
 class Seller(AgentExecutor):
     def __init__(self, config):
         self.config = config
+        self.signing_key = None
+        feedback_path = Path(__file__).resolve().parent / ".market" / "pricing-feedback.json"
+        self.pricing_feedback = json.loads(feedback_path.read_text()) if feedback_path.exists() else {}
         self.catalog = load_catalog(config.get("catalog"))
         categories = config.get("categories")
         if categories:
@@ -93,7 +97,8 @@ class Seller(AgentExecutor):
                    "round": 0 if opening else deal["round"], "candidates": candidates,
                    "remote_message": text, "untrusted_flags": flags,
                    "history_summary": [] if opening else deal["history"][-8:],
-                   "last_ask": None if opening else deal["ask"]}
+                   "last_ask": None if opening else deal["ask"],
+                   "pricing_feedback": self.pricing_feedback}
         reserve = candidates[0]["reserve"]
         trusted.update(reserve=reserve, offer=plain_offer, flags=flags)
         strategy = self.policy.choose("seller", trusted)
@@ -106,6 +111,8 @@ class Seller(AgentExecutor):
             if observed_offer is not None and plain_offer is None:
                 if not any(float(token) == float(observed_offer) for token in re.findall(r"\d+(?:\.\d+)?", text)):
                     raise EvidenceError("Extracted offer must occur in the quoted buyer message")
+            if decision.get("price") is not None and float(decision["price"]) != int(decision["price"]):
+                raise EvidenceError("Market prices must be whole credits")
             return validate_seller_decision(decision, reserve=selected["reserve"],
                 offer=observed_offer, opening=opening,
                 allowed_item_ids=[p["id"] for p in candidates])
@@ -157,6 +164,10 @@ class Seller(AgentExecutor):
                        "price": decision["price"], "taskId": task.id, "quantity": 1,
                        "currency": "credits", "purchaseId": uuid.uuid4().hex,
                        "quoteId": deal.get("quote_id")}
+            if self.signing_key is None:
+                self.signing_key = load_shop_key(self.config.get("shop_key"))
+            receipt.update(shop=self.config["name"], task=task.id)
+            receipt = sign_receipt(receipt, self.signing_key)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(up.new_agent_message(parts=[new_text_part("Deal completed. See receipt.")]))
             self.open.pop(task.id, None)
@@ -196,7 +207,7 @@ class CancellationAwareRequestHandler(DefaultRequestHandler):
 
 def build(config):
     categories = config.get("categories", ["lamp", "chair", "bookshelf"])
-    description = config.get("description", "Shop selling " + ", ".join(categories) + ". Negotiates prices.")
+    description = config.get("description", "Shop selling " + ", ".join(categories) + ". Good-value offers, whole-credit prices and Ed25519 signed receipts.")
     card = AgentCard(name=config["name"], description=description, version="1.0.0",
         default_input_modes=["text/plain"], default_output_modes=["application/json", "text/plain"],
         capabilities=AgentCapabilities(streaming=False),
@@ -214,7 +225,7 @@ if __name__ == "__main__":
     parser.add_argument("--config")
     parser.add_argument("--policy")
     args = parser.parse_args()
-    config = {"name": "Gacha shop", "port": args.port}
+    config = {"name": "myeonggi", "port": args.port}
     if args.config:
         config.update(json.loads(Path(args.config).read_text()))
     config["port"] = args.port

@@ -90,6 +90,11 @@ def system_prompt(role: str) -> str:
         )
     if role == "budget_allocator":
         return common + (
+            "Allocate total_budget across all requested shopping entries. Return action allocate_budget, "
+            "each entry key once in allocations with a positive budget; sum must not exceed total_budget. "
+            "Respect per-item ceilings. Other price, item_id and offer fields are null. "
+        )
+    return common + (
         "Keep the requested item_id on every decision including walk_away. "
         "Goal: complete a legitimate purchase when the requested item is affordable. "
         "If a genuine current ask is within the trusted budget, prefer accept at exactly that ask "
@@ -104,7 +109,7 @@ def system_prompt(role: str) -> str:
 
 @contextmanager
 def invocation_slot(deadline=None, role=None):
-    """Admit cross-process CLI calls in FIFO order, preserving all decisions."""
+    """Reserve bounded runtime lanes; retain the legacy FIFO adapter for callers."""
     try:
         with (pool_slot(role, deadline) if role is not None else inference_slot(deadline)):
             yield
