@@ -152,6 +152,12 @@ class TradeRules(unittest.TestCase):
         self.assertEqual(record["outcome"], "transport_error")
         self.assertEqual(result["stars"], 3)
 
+    def test_temporary_server_failure_is_not_a_buyer_or_honesty_failure(self):
+        transport = httpx.MockTransport(lambda request: httpx.Response(503, text="Temporary outage"))
+        result, record = market.trade(shop("fixture"), "lamp", 120, transport=transport)
+        self.assertEqual(record["outcome"], "transport_error")
+        self.assertEqual(result["stars"], 3)
+
 
 if __name__ == "__main__":
     unittest.main(testRunner=unittest.TextTestRunner(stream=sys.stdout, verbosity=2))

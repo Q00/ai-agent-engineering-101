@@ -75,6 +75,10 @@ def error_kind(error):
     while cause is not None:
         if isinstance(cause, httpx.TransportError):
             return "transport_error"
+        if isinstance(cause, httpx.HTTPStatusError) and (
+            cause.response.status_code >= 500 or cause.response.status_code in (408, 429)
+        ):
+            return "transport_error"
         cause = cause.__cause__
     return "agent_error"
 
