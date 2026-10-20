@@ -42,6 +42,7 @@ import argparse
 import asyncio
 import json
 import os
+import statistics
 import sys
 import time
 
@@ -198,6 +199,12 @@ def market_view(item):
     return going.get(item), going, shops, recent, market_intel.current_round(entries)
 
 
+def typical(name, item, records, last=10):
+    """The median of a shop's last `last` sale prices for the item, or None."""
+    prices = (records.get(name) or {}).get("prices", {}).get(item, [])[-last:]
+    return statistics.median(prices) if prices else None
+
+
 def expensive(name, item, going, records):
     g, s = going.get(item), records.get(name)
     prices = (s or {}).get("prices", {}).get(item)
@@ -220,6 +227,11 @@ async def pick(shops, memory, item, budget, going, records, recent=None, rnd=0):
         if nosig and len(nosig) < len(choices):
             log("GUARD", f"Round {rnd}: not offering shops whose recent receipts are unsigned: {nosig}")
             choices = [s for s in choices if s["name"] not in nosig]
+    over = [s["name"] for s in choices if (typical(s["name"], item, records) or 0) > budget]
+    if over and len(over) < len(choices):
+        # its recent sales sit above our budget: we would haggle and walk (explorer idea 4, 2026-10-20)
+        log("GUARD", f"not offering shops whose recent {item} sales sit above the budget {budget}: {over}")
+        choices = [s for s in choices if s["name"] not in over]
     pricey = [s["name"] for s in choices if expensive(s["name"], item, going, records)]
     if pricey and len(pricey) < len(choices):
         log("GUARD", f"not offering shops priced above the market's upper quartile for a {item}: {pricey}")
