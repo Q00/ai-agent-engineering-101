@@ -1,6 +1,11 @@
-"""Week 06 — seller.py: the shop as an A2A v1.0 server (JSON-RPC), prices decided by the harness.
+"""Week 07 — seller.py: the shop as an A2A v1.0 server (JSON-RPC), prices decided by the harness.
 
     python seller.py --port 9999
+
+Week 07 change: the receipt is {shop, item, price, task} plus sig_seller, the base64 Ed25519
+signature over the canonical JSON of those four keys (sorted keys, no spaces, UTF-8), made with
+shop_key.pem. That file is created by market_kit.py, and its public key is the one the market has
+registered for this shop, so the seller refuses to start without it instead of making a new key.
 
 Built on the lab's seller_agent.py. The A2A side (task per negotiation, INPUT_REQUIRED,
 receipt artifact, COMPLETED / REJECTED) is the same; the rules are replaced by harness
@@ -14,10 +19,14 @@ calls (harness.ask). The code around the harness does three things the model may
 """
 import argparse
 import asyncio
+import base64
 import json
 import re
+import sys
+from pathlib import Path
 
 import uvicorn
+from cryptography.hazmat.primitives import serialization
 from starlette.applications import Starlette
 
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
@@ -28,9 +37,11 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from harness import ask
+from harness import HARNESS, ask
 
 NAME = "Harness Shop (25620024)"
+SHOP = "dragonash"                                         # receipt "shop": the market name, same as the deployed shop
+KEY_FILE = Path(__file__).parent / "shop_key.pem"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}   # lowest prices the shop may accept
 MAX_ROUNDS = 6                                             # buyer offers before the shop walks away
 
@@ -60,9 +71,25 @@ def log(msg):
     print(msg, flush=True)   # the trade test saves the seller's output under logs/
 
 
+def load_key():
+    if not KEY_FILE.exists():
+        sys.exit(f"{KEY_FILE.name} not found: run market_kit.py join once so the market and this shop share one key")
+    return serialization.load_pem_private_key(KEY_FILE.read_bytes(), password=None)
+
+
+def canon(d):
+    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def signed_receipt(key, item, price, task_id):
+    receipt = {"shop": SHOP, "item": item, "price": int(price), "task": task_id}
+    return dict(receipt, sig_seller=base64.b64encode(key.sign(canon(receipt))).decode())
+
+
 class HarnessSeller(AgentExecutor):
     def __init__(self):
         self.open = {}   # task id -> {"item", "reserve", "ask", "rounds", "history"}
+        self.key = load_key()
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -104,7 +131,7 @@ class HarnessSeller(AgentExecutor):
             action, price = await self.decide_turn(deal, offer, tid)
 
         if action == "accept":
-            receipt = {"seller": NAME, "item": item, "price": offer}
+            receipt = signed_receipt(self.key, item, offer, task.id)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {item} at {offer}."))
             log(f"[{tid}] DEAL {item} at {offer} (reserve {reserve})")
@@ -193,5 +220,5 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=9999)
     port = ap.parse_args().port
-    log(f"{NAME} on http://127.0.0.1:{port}  (harness: claude -p --model haiku)")
+    log(f"{NAME} on http://127.0.0.1:{port}  (harness: {HARNESS}, receipts signed with {KEY_FILE.name})")
     uvicorn.run(build(port), host="127.0.0.1", port=port, log_level="warning")
