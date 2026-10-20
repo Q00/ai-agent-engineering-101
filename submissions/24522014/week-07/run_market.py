@@ -9,6 +9,18 @@ import sys
 import certifi
 
 
+def prevent_automatic_sleep():
+    if os.name != "nt":
+        return None
+    import ctypes
+    kernel = ctypes.windll.kernel32
+    if kernel.SetThreadExecutionState(0x80000001):
+        print("[host] Automatic sleep prevention active while market kit runs.", flush=True)
+        return kernel
+    print("[host] Could not request automatic sleep prevention.", flush=True)
+    return None
+
+
 def main():
     submission = Path(__file__).resolve().parent
     repository = submission.parents[2]
@@ -33,7 +45,12 @@ def main():
     sys.argv = [str(kit), "join", "--dir", str(submission),
                 "--market", "https://market.ourolabs.ai", "--name", "kcwarni",
                 *sys.argv[1:]]
-    runpy.run_path(str(kit), run_name="__main__")
+    power_request = prevent_automatic_sleep()
+    try:
+        runpy.run_path(str(kit), run_name="__main__")
+    finally:
+        if power_request is not None:
+            power_request.SetThreadExecutionState(0x80000000)
 
 
 if __name__ == "__main__":
