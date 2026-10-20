@@ -16,6 +16,11 @@ from seller_decision import decide_opening, decide_offer
 
 
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
+SHOP_NAME = "Afford Shop"
+SHOP_DESCRIPTION = (
+    "Lamps, chairs, and bookshelves at affordable prices. "
+    "Clear offers and fair negotiation and will never scam my customers."
+)
 
 
 class Seller(AgentExecutor):
@@ -56,7 +61,7 @@ class Seller(AgentExecutor):
         action, price = decision["action"], decision["price"]
         if action == "accept":
             await up.add_artifact(parts=[new_data_part(
-                {"seller": "Enkhtulga Shop", "item": item, "price": price})], name="receipt")
+                {"seller": SHOP_NAME, "item": item, "price": price})], name="receipt")
             await up.complete(say(f"Deal: {item} at {price}"))
             self.open.pop(task.id)
         elif action == "reject":
@@ -76,7 +81,7 @@ class Seller(AgentExecutor):
 
 def build(port):
     card = AgentCard(
-        name="Enkhtulga Shop", description="Harness-driven negotiation for furniture and lamps.",
+        name=SHOP_NAME, description=SHOP_DESCRIPTION,
         version="1.0.0", default_input_modes=["text/plain"],
         default_output_modes=["text/plain", "application/json"],
         capabilities=AgentCapabilities(streaming=False),
