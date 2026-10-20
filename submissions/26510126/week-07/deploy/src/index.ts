@@ -44,6 +44,7 @@ type Strategy = {
   updated: string;
   promo?: string; // a line before the opening ask (launch sale); digits are stripped so buyers read the ask right
   loyalty?: number[]; // coupon discount by tier, set by meta_shop.py (small during the launch sale, larger after)
+  margin?: number; // how far above the reserve discounts and quick accepts stop (MARGIN when unset; 0 in a launch sale)
 };
 const STRATEGY_ID = "__strategy__";
 
@@ -290,7 +291,7 @@ export class TaskObject extends DurableObject<Env> {
       let discount = 0;
       let tier = 0;
       let stamps = 0;
-      let floor = reserve + MARGIN;
+      let floor = reserve + (strategy?.margin ?? MARGIN);
       let welcome = "";
       const code = await validCoupon(this.env, textOf(msg));
       if (code && (await this.env.TASKS.get(this.env.TASKS.idFromName(STRATEGY_ID)).redeem(code))) {
@@ -585,6 +586,9 @@ app.put("/admin/strategy", async (c) => {
       if (v === null || v < RESERVE[item]) return c.json({ error: `${key}.${item} missing or below reserve ${RESERVE[item]}` }, 400);
       s[key][item] = v;
     }
+  }
+  if (s.margin !== undefined && !(typeof s.margin === "number" && s.margin >= 0 && s.margin <= 50)) {
+    return c.json({ error: "margin must be a number from 0 to 50 (never below the reserve)" }, 400);
   }
   if (s.loyalty !== undefined) {
     const ok = Array.isArray(s.loyalty) && s.loyalty.length <= MAX_TIER + 1 &&

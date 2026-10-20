@@ -59,6 +59,8 @@ LOYALTY_STEP = 0.03  # most a tier's discount may move in one cycle
 TOP_SHOPS = 6        # competitors shown to the harness
 BENCHMARK = "dragonash"  # the shop the launch sale copies (user's pick, see the Round 1 analysis in REPORT.md)
 ROUND_POLL = 60   # seconds between round checks while waiting for the next cycle
+LAUNCH_MARGIN = 0  # Round 2 opened as a price war at the reserve (dragonash, kimauve at 100/180/260): the launch sale
+                   # may sell at the reserve itself (zero margin, never a loss) to earn its first reviews
 LAUNCH_DEALS = 25  # launch sale until the board shows this many deals of our shop this round (was 10 reviews)
 
 PROMPT = """You set the prices of our furniture shop in an agent market. Buyers are other AI agents;
@@ -291,12 +293,12 @@ async def cycle(dry_run=False):
         for k, r in RESERVE.items():
             prices = sorted(peer.get(k, []))
             if len(prices) >= 3:
-                target[k] = max(r + MARGIN, round(statistics.median(prices)))
+                target[k] = max(r + LAUNCH_MARGIN, round(statistics.median(prices)))
                 open_[k] = max(target[k] + 5, round(prices[(3 * len(prices)) // 4]))
                 notes.append(f"{k}: copying {BENCHMARK} ({len(prices)} recent deals, median {statistics.median(prices):g})")
             else:
                 g = going.get(k, {"p25": r, "median": r})
-                target[k] = max(r + MARGIN, round(g["p25"]))
+                target[k] = max(r + LAUNCH_MARGIN, round(g["p25"]))
                 open_[k] = max(target[k] + 5, round(g["median"]))
                 notes.append(f"{k}: {BENCHMARK} has {len(prices)} recent deals, using the market's lower quartile")
         proposal = {"reason": f"launch sale: {row.get('deals') or 0} deals this round (< {LAUNCH_DEALS}), "
@@ -320,6 +322,7 @@ async def cycle(dry_run=False):
         "promo": PROMO if launch else SALE_PROMO if sale else "",
         "sale": sale,
         "loyalty": loyalty,
+        "margin": LAUNCH_MARGIN if launch else MARGIN,
     }
     log("META", f"v{strategy['version']}: {'launch' if launch else 'sale' if sale else 'normal'}, open {open_} "
                 f"target {target} loyalty {loyalty}: {strategy['reason']}")
@@ -374,6 +377,6 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--dry-run", action="store_true", help="decide and print, change nothing")
-    ap.add_argument("--every", type=int, default=900, help="seconds between cycles")
+    ap.add_argument("--every", type=int, default=600, help="seconds between cycles")
     ap.add_argument("--wait-first", action="store_true", help="sleep one interval before the first cycle")
     asyncio.run(main(ap.parse_args()))
