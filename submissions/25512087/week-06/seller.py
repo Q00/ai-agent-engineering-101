@@ -7,6 +7,7 @@ import asyncio
 import json
 import re
 import sys
+from pathlib import Path
 from typing import Any
 
 import uvicorn
@@ -27,6 +28,8 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import CommandHarness
 from policy import SellerPolicy
+from catalog import CatalogIndex
+from challenge_catalog import select_catalog_product
 
 
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
@@ -38,11 +41,15 @@ def find_item(text: str) -> str | None:
     return next((item for item in RESERVES if item in lowered), None)
 
 
-def build_card(port: int) -> AgentCard:
+def build_card(port: int, name: str = "Harness Furniture Shop", catalog_size: int = 3) -> AgentCard:
     """Build the public Agent Card independently of private reserves."""
     return AgentCard(
-        name="Harness Furniture Shop",
-        description="A harness-driven shop for lamps, chairs, and bookshelves.",
+        name=name,
+        description=(
+            f"A harness-driven shop with {catalog_size} searchable products."
+            if catalog_size > 3
+            else "A harness-driven shop for lamps, chairs, and bookshelves."
+        ),
         version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
@@ -59,7 +66,14 @@ def build_card(port: int) -> AgentCard:
                 id="negotiate-furniture",
                 name="Negotiate a furniture purchase",
                 description="Name a product, then continue the task with numeric offers.",
-                tags=["shopping", "negotiation", "furniture"],
+                tags=[
+                    "shopping",
+                    "negotiation",
+                    "furniture",
+                    "lamp",
+                    "chair",
+                    "bookshelf",
+                ],
                 examples=["I want to buy a lamp", "110"],
             )
         ],
@@ -69,8 +83,15 @@ def build_card(port: int) -> AgentCard:
 class SellerAgent(AgentExecutor):
     """Translate A2A tasks to decisions made by the shared harness adapter."""
 
-    def __init__(self, policy: SellerPolicy) -> None:
+    def __init__(
+        self,
+        policy: SellerPolicy,
+        catalog: CatalogIndex | None = None,
+        name: str = "Harness Furniture Shop",
+    ) -> None:
         self.policy = policy
+        self.catalog = catalog
+        self.name = name
         self.open: dict[str, dict[str, Any]] = {}
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
@@ -89,13 +110,38 @@ class SellerAgent(AgentExecutor):
 
         if deal is None:
             item = find_item(text)
-            if item is None:
+            product_id = item
+            if item is not None:
+                reserve = RESERVES[item]
+            elif self.catalog is not None:
+                selected, candidates = await asyncio.to_thread(
+                    select_catalog_product,
+                    text,
+                    self.catalog,
+                    self.policy.harness,
+                )
+                item = selected.name
+                product_id = selected.product_id
+                reserve = selected.reserve
+                self._log(
+                    task.id,
+                    "catalog_retrieval",
+                    query=text,
+                    candidates=[match.product.product_id for match in candidates],
+                    selected=selected.product_id,
+                )
+            else:
                 await updater.reject(say("We only sell: lamp, chair, bookshelf."))
                 return
-            reserve = RESERVES[item]
             decision = await asyncio.to_thread(self.policy.opening, item, reserve)
             ask = max(reserve, int(decision.price or reserve))
-            self.open[task.id] = {"item": item, "ask": ask, "rounds": 0}
+            self.open[task.id] = {
+                "item": item,
+                "product_id": product_id,
+                "reserve": reserve,
+                "ask": ask,
+                "rounds": 0,
+            }
             self._log(task.id, "opening", item=item, ask=ask, reserve=reserve)
             await updater.requires_input(
                 say(f"{item}: asking {ask}. Send your offer as a number.")
@@ -108,7 +154,7 @@ class SellerAgent(AgentExecutor):
             return
         offer = int(match.group())
         item = str(deal["item"])
-        reserve = RESERVES[item]
+        reserve = int(deal["reserve"])
         decision = await asyncio.to_thread(
             self.policy.respond,
             item,
@@ -127,7 +173,12 @@ class SellerAgent(AgentExecutor):
             decision_price=decision.price,
         )
         if decision.action == "accept":
-            receipt = {"seller": "Harness Furniture Shop", "item": item, "price": offer}
+            receipt = {
+                "seller": self.name,
+                "item": item,
+                "product_id": deal.get("product_id"),
+                "price": offer,
+            }
             await updater.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await updater.complete(say(f"Deal: {item} at {offer}."))
             self.open.pop(task.id, None)
@@ -166,11 +217,17 @@ class SellerAgent(AgentExecutor):
         )
 
 
-def build_app(port: int, harness_command: str | None = None) -> Starlette:
-    card = build_card(port)
+def build_app(
+    port: int,
+    harness_command: str | None = None,
+    name: str = "Harness Furniture Shop",
+    catalog_path: Path | None = None,
+) -> Starlette:
+    catalog = CatalogIndex.load(catalog_path) if catalog_path else None
+    card = build_card(port, name=name, catalog_size=len(catalog.products) if catalog else 3)
     policy = SellerPolicy(CommandHarness(harness_command))
     handler = DefaultRequestHandler(
-        agent_executor=SellerAgent(policy),
+        agent_executor=SellerAgent(policy, catalog=catalog, name=name),
         task_store=InMemoryTaskStore(),
         agent_card=card,
     )
@@ -181,9 +238,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, required=True)
     parser.add_argument("--harness-cmd")
+    parser.add_argument("--name", default="Harness Furniture Shop")
+    parser.add_argument("--catalog", type=Path)
     args = parser.parse_args()
     uvicorn.run(
-        build_app(args.port, args.harness_cmd),
+        build_app(args.port, args.harness_cmd, args.name, args.catalog),
         host="127.0.0.1",
         port=args.port,
         log_level="warning",
@@ -192,4 +251,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

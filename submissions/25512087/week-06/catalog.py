@@ -60,6 +60,11 @@ class CatalogIndex:
     @classmethod
     def load(cls, path: Path) -> "CatalogIndex":
         values = json.loads(path.read_text(encoding="utf-8"))
+        return cls.load_values(values)
+
+    @classmethod
+    def load_values(cls, values: list[dict[str, object]]) -> "CatalogIndex":
+        """Build an index directly from decoded catalog data."""
         return cls([Product.from_dict(value) for value in values])
 
     def search(self, query: str, limit: int = 5) -> list[Match]:
@@ -94,4 +99,3 @@ def catalog_prompt(query: str, matches: list[Match]) -> str:
         f"Buyer description: {query}\nCandidates: "
         + json.dumps(candidates, ensure_ascii=False)
     )
-
