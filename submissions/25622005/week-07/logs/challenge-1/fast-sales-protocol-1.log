@@ -1,0 +1,15 @@
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 110. Send your offer as a number.
+    -> SendMessage "100" taskId=c78f37b7
+    <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+       artifact receipt [{"shop": "psyoung82", "price": 100.0, "sig_seller": "nJWLowz4hJsO+QX90a7jQaMb7XIzmalGmTyUme8pxPsvikxYgGtay2IBP8xwl06cBInvJryHnWVDQ6N/OK8ECQ==", "task": "c78f37b7-a38b-43a3-ad97-e5f471ebd9b9", "item": "lamp"}]
+    -> SendMessage "I want to buy a chair"
+    <- TASK_STATE_INPUT_REQUIRED | chair: asking 200. Send your offer as a number.
+    -> SendMessage "180" taskId=57fd4d06
+    <- TASK_STATE_COMPLETED | Deal: chair at 180.
+       artifact receipt [{"shop": "psyoung82", "price": 180.0, "sig_seller": "4hATgTR2LjwXMT3rxdIBqZuEtyyNHRRnunAyaQh2TlLtQMsuPEHSChTeDjJAGV6e6FFuVbyR1+y5e3N/aLsoCA==", "task": "57fd4d06-a940-4a61-9d74-0f935bb33a2a", "item": "chair"}]
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 285. Send your offer as a number.
+    -> SendMessage "260" taskId=32298961
+    <- TASK_STATE_COMPLETED | Deal: bookshelf at 260.
+       artifact receipt [{"shop": "psyoung82", "price": 260.0, "sig_seller": "/0a/DSB0EePKbwV8dA7zyjREh22+1jsj2oXyZ2owNB0hnRrLGeWATKWMD6H3ZNe3PEWPGrxbSUcEyM0trA5aBQ==", "task": "32298961-8eb8-42da-861c-93dff9cfbdba", "item": "bookshelf"}]
