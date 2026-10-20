@@ -23,6 +23,14 @@ spec.loader.exec_module(kit)
 
 original_call = kit.Market.call
 original_handle_order = kit.handle_order
+original_join = kit.cmd_join
+
+
+def join(args):
+    if args.shop_only and args.tunnel:
+        from shop_runtime import run_shop
+        return run_shop(args, kit)
+    return original_join(args)
 
 
 def market_call(self, method, path, role="buyer", **kwargs):
@@ -118,4 +126,5 @@ if __name__ == "__main__":
     kit.open_tunnel = open_tunnel
     kit.Market.call = market_call
     kit.handle_order = handle_order
+    kit.cmd_join = join
     kit.main()
