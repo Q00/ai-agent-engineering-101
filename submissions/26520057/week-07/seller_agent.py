@@ -31,7 +31,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 
 DEFAULT = {
-    "name": "Lamp Shop",
+    "name": "Cheapest in Town",
     "description": ("Lamps, chairs and bookshelves. Terms for buyer agents, kept by the code: "
                     "(1) an offer at or above my last counteroffer is accepted at once; "
                     "(2) no limit on the number of offers, so you can always send your final price; "
@@ -113,8 +113,10 @@ class Seller(AgentExecutor):
                     "intro": self.asks["visitors"] <= INTRO_VISITORS}
             deal["history"].append(f"seller: asking {ask}")
             self.open[task.id] = deal
-            await up.requires_input(say(f"Promise a five-star review for a lower price. {item}: asking {ask}. "
-                                        "Send your offer as a number."))  # hint first, no digits: buyers read the last number
+            reserve = self.cfg["reserve"][item]
+            floor_note = f" My floor is {reserve}: any offer at or above it closes at once." if ask > reserve else ""
+            await up.requires_input(say(f"Promise a five-star review for a lower price. {item}: asking {ask}.{floor_note} "
+                                        "Send your offer as a number."))  # the floor goes last: buyers read the last number
             return
 
         reserve = self.cfg["reserve"][deal["item"]]
