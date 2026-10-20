@@ -19,7 +19,10 @@ The kit runs this for every order from Round 1 on. {shops} is a JSON list of
            No offer above the budget, ever.
   receipt  code compares the receipt with the deal: the price we agreed (the last number we sent),
            the item, the A2A task id, and whether it carries sig_seller.
-  review   stars and text are written by code from those checks, so the last line is always valid JSON.
+  review   stars come from code and rate what the shop did (an honest receipt, conceding step by step),
+           not whether my budget was enough. The text is the harness's wording of facts code collected
+           (the ask trail, what I paid, the receipt check); a text with a number that is not in the facts
+           is thrown away and the facts themselves are used, so the review never invents anything.
            A receipt that does not match the deal is reported as null (with a 1-star review), so the
            kit never adds our signature to an overcharge.
 """
@@ -144,14 +147,15 @@ def choose(shops, item, budget, memory):
 # --- trading
 
 def negotiate(card_url, item, budget, started):
-    """Week-06 buyer loop with two more guards. Returns (task, first_ask, agreed, counters)."""
+    """Week-06 buyer loop with two more guards. Returns (task, asks, offers): every ask the shop made and
+    every price we sent, oldest first."""
     card = httpx.get(card_url.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=10).json()
     url = next(i for i in card["supportedInterfaces"] if i.get("protocolBinding") == "JSONRPC")["url"]
     log(f"card: {card['name']} | JSONRPC {url} | buying {item} with budget {budget}")
     task = send(url, f"I want to buy a {item}")
     task_id = task["id"]
     history = [f"buyer: I want to buy a {item}", f"seller: {status_text(task)}"]
-    first_ask, last_offer, sent, low_offers, counters = asking_price(task), None, None, 0, 0
+    asks, offers, last_offer, low_offers = [], [], None, 0
 
     for _ in range(MAX_OFFERS):
         if state(task) != "TASK_STATE_INPUT_REQUIRED":
@@ -160,6 +164,7 @@ def negotiate(card_url, item, budget, started):
         if ask_price is None:
             log("   no price in the seller's message; leaving")
             break
+        asks.append(ask_price)
         if time.time() - started > TIME_LIMIT:
             action, price = ("accept", ask_price) if ask_price <= budget else ("walk_away", 0)
             log(f"   time limit: {action}")
@@ -205,17 +210,16 @@ def negotiate(card_url, item, budget, started):
             break
         if action == "accept":
             price = ask_price
-        last_offer = sent = price
+        last_offer = price
+        offers.append(price)
         history.append(f"buyer: {price}")
         task = send(url, str(price), task_id)
         history.append(f"seller: {status_text(task)}")
-        if state(task) == "TASK_STATE_INPUT_REQUIRED":
-            counters += 1
 
     if state(task) == "TASK_STATE_INPUT_REQUIRED":
         task = rpc(url, "CancelTask", {"id": task_id})
         log(f"-> CancelTask (out of offers) <- {state(task)}")
-    return task, first_ask, sent, counters
+    return task, asks, offers
 
 
 def receipt_of(task):
@@ -238,21 +242,51 @@ def check_receipt(rec, task, item, agreed):
     return None
 
 
-def review_for(outcome, item, budget, first_ask, agreed, rec, problem, counters):
+REVIEW_PROMPT = """Write a short, honest customer review (one or two sentences, under 200 characters)
+of a shop, from a buyer agent's own experience. Use only these facts; do not invent anything,
+Keep the prices from the facts (they are what makes a review useful). Do not mention the buyer's budget,
+and do not use any number that is not in the facts.
+Facts: {facts}
+Reply with one JSON object only: {{"review": "<text>"}}"""
+
+
+def facts_and_stars(outcome, item, asks, offers, rec, problem):
+    """Stars rate what the shop did, not whether my budget was enough. Returns (stars, facts)."""
+    first, last = (asks[0], asks[-1]) if asks else (None, None)
+    trail = " -> ".join(map(str, asks))
     if outcome == "no answer":
-        return 1, "The shop did not answer; no trade."
-    if problem:
-        return 1, problem[0].upper() + problem[1:] + "."
-    if outcome != "deal":
-        if first_ask is not None and first_ask > budget:
-            return 3, f"No deal: asked {first_ask} for the {item}, would not come down to my budget."
-        return 3, f"No deal for the {item}."
-    paid = rec.get("price")
-    stars = 5 if paid <= 0.9 * budget else 4
-    note = "signed receipt matched" if rec.get("sig_seller") else "receipt matched but unsigned"
-    if not rec.get("sig_seller"):
-        stars -= 1
-    return stars, f"Paid {paid:g} for the {item} (asked {first_ask}) after {counters} counters; {note}."
+        return 1, f"The shop's card or endpoint did not answer ({problem}). No trade happened."
+    if problem:   # a receipt that does not match the deal
+        return 1, (f"Item {item}. We agreed on {offers[-1] if offers else '?'}, but the receipt says "
+                   f"{rec.get('price'):g}" + (" (receipt for " + str(rec.get('item')) + ")" if rec.get('item') != item else "")
+                   + ". The receipt does not match the deal.")
+    if outcome == "deal":
+        paid = rec.get("price")
+        signed = bool(rec.get("sig_seller"))
+        moved = f"its ask went {trail}" if len(asks) > 1 else f"it asked {first}"
+        return (5 if signed else 4), (f"Item {item}. {moved}; I paid {paid:g}. The receipt shows exactly the agreed "
+                                      f"price" + (" and is signed by the shop." if signed else ", but it is not signed."))
+    # no deal: the shop is fair if it came down step by step; a budget below its floor is not its fault
+    if len(asks) > 1 and last < first:
+        return 4, (f"Item {item}. No deal: its ask came down {trail}, still above what I could pay. "
+                   f"It negotiated in good faith.")
+    if asks:
+        return 3, f"Item {item}. No deal: it asked {first} and did not come down ({trail})."
+    return 3, f"Item {item}. No deal; the shop ended the talk."
+
+
+def review_for(outcome, item, asks, offers, rec, problem):
+    stars, facts = facts_and_stars(outcome, item, asks, offers, rec, problem)
+    allowed = set(re.findall(r"\d+", facts))
+    try:
+        text = str(ask(REVIEW_PROMPT.format(facts=facts)).get("review", "")).strip()
+        made_up = [n for n in re.findall(r"\d+", text) if n not in allowed]
+        if not text or len(text) > 240 or made_up:
+            raise ValueError(f"rejected review {text!r} (numbers not in the facts: {made_up})")
+    except Exception as e:
+        log(f"[review] harness text not used ({e}); writing it from the facts")
+        text = facts
+    return stars, text
 
 
 # --- main
@@ -270,9 +304,9 @@ def main():
     shop, reason = choose(shops, a.item, a.budget, memory)
     log(f"[choose] {shop['name']} {shop['url']}: {reason}")
 
-    task, first_ask, agreed, counters, rec, problem = None, None, None, 0, None, None
+    task, asks, offers, rec, problem = None, [], [], None, None
     try:
-        task, first_ask, agreed, counters = negotiate(shop["url"], a.item, a.budget, started)
+        task, asks, offers = negotiate(shop["url"], a.item, a.budget, started)
         outcome = "deal" if state(task) == "TASK_STATE_COMPLETED" else "no deal"
     except Exception as e:
         log(f"buyer error: {type(e).__name__}: {e}")
@@ -283,12 +317,17 @@ def main():
         if rec is None:
             outcome, problem = "no deal", "completed without a receipt"
         else:
+            agreed = offers[-1] if offers else None
             problem = check_receipt(rec, task, a.item, agreed)
             log(f"[receipt] {rec}  agreed {agreed}: {problem or 'matches the deal'}")
-    stars, review = review_for(outcome, a.item, a.budget, first_ask, agreed, rec, problem, counters)
+    stars, review = review_for(outcome, a.item, asks, offers, rec, problem)
+    log(f"[review] {stars} stars: {review}")
 
     remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": a.item, "budget": a.budget,
-              "first_ask": first_ask, "agreed": agreed, "receipt_price": rec.get("price") if rec else None,
+              "first_ask": asks[0] if asks else None, "last_ask": asks[-1] if asks else None,
+              "last_offer": offers[-1] if offers else None,
+              "agreed": offers[-1] if outcome == "deal" and offers else None,
+              "receipt_price": rec.get("price") if rec else None,
               "outcome": outcome, "signed": bool(rec and rec.get("sig_seller")), "stars": stars,
               "problem": problem})
     log(f"result: {outcome}, {time.time() - started:.0f} s")
