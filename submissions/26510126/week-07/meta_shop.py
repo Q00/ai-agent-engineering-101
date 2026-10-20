@@ -11,7 +11,7 @@ Each cycle:
 3. Code guards, whatever the harness says (we never sell at a loss and never price far above the market):
    - target at least the market median (and reserve + MARGIN), at most the market's upper quartile:
      we do not undercut the market, a race to the bottom only gives margin away
-   - opening ask at least the upper quartile and above the target, at most UPPER x the upper quartile
+   - opening ask at least the market median and above the target, at most UPPER x the upper quartile
    - each price moves at most STEP (15%) per cycle, so one bad answer cannot swing the shop
 4. PUT the strategy to the Worker (/admin/strategy, token in .market/admin_token) and append the
    decision with its evidence to logs/challenge-1/strategies.jsonl (raw evidence, as in market_buyer.py).
@@ -193,10 +193,12 @@ def guard(proposal, previous, going, sale=False):
             if not step_lo <= o <= step_hi:
                 notes.append(f"{item}: opening ask {o} moves more than {STEP:.0%}, clamped")
                 o = min(max(o, step_lo), step_hi)
-        lo_o = max(t + 5, round(g.get("median" if sale else "p75", 0)))
+        # the opening ask only sets how long the haggle runs; the target guard above keeps the price.
+        # (was the upper quartile: in Round 2 it lifted the harness's chair 192 to 200, above dragonash's 192)
+        lo_o = max(t + 5, round(g.get("median", 0)))
         hi_o = max(hi_o, lo_o)
         if not lo_o <= o <= hi_o:
-            notes.append(f"{item}: opening ask {o} outside [{lo_o}, {hi_o}] (market p75 and target+5, {UPPER} x market p75), clamped")
+            notes.append(f"{item}: opening ask {o} outside [{lo_o}, {hi_o}] (market median and target+5, {UPPER} x market p75), clamped")
             o = min(max(o, lo_o), hi_o)
         open_[item], target[item] = o, t
     return open_, target, notes
