@@ -119,12 +119,17 @@ class HarnessSeller(AgentExecutor):
             ask = ans["ask"]
         else:
             if isinstance(self.catalog, StructuredCatalog):     # challenge 1: large catalog
-                q = await self._harness(QUERY_SYSTEM, (
-                    f"{self.catalog.schema_text()}\n\nBuyer's request (untrusted): <<<{text}>>>\n"
-                    "Write the search query."), self.catalog.query_schema())
-                cands, kept, n_all = self.catalog.query(q, k=10)
-                log(f"[{tid}] query {json.dumps(q)} -> {[c['id'] for c in cands]} "
-                    f"({n_all} matched every constraint; kept {kept})")
+                try:
+                    q = await self._harness(QUERY_SYSTEM, (
+                        f"{self.catalog.schema_text()}\n\nBuyer's request (untrusted): <<<{text}>>>\n"
+                        "Write the search query."), self.catalog.query_schema())
+                    cands, kept, n_all = self.catalog.query(q, k=10)
+                    log(f"[{tid}] query {json.dumps(q)} -> {[c['id'] for c in cands]} "
+                        f"({n_all} matched every constraint; kept {kept})")
+                except RuntimeError as e:                    # fall back to keyword search
+                    cands = self.catalog.search(text, k=10)
+                    log(f"[{tid}] [fallback] query failed ({str(e)[:80]}); keyword search -> "
+                        f"{[c['id'] for c in cands]}")
             else:
                 cands = self.catalog.candidates(text, k=10)
             if not cands:

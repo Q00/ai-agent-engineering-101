@@ -157,7 +157,10 @@ class StructuredCatalog(Catalog):
             "colors": {"type": "array", "items": {"type": "string", "enum": self.colors}},
             "min": {"type": "object", "properties": num, "additionalProperties": False},
             "max": {"type": "object", "properties": num, "additionalProperties": False},
-            "flags_true": {"type": "array", "items": {"type": "string", "enum": sorted(self.flags)}},
+            # an empty enum is not a valid JSON Schema (a shop whose items have no flags)
+            "flags_true": {"type": "array", "items": ({"type": "string", "enum": sorted(self.flags)}
+                                                      if self.flags else {"type": "string"}),
+                           **({} if self.flags else {"maxItems": 0})},
             "keywords": {"type": "string"}},
             "required": ["category", "materials", "colors", "min", "max", "flags_true", "keywords"]}
 
