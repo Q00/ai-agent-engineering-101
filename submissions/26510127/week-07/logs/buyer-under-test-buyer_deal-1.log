@@ -1,9 +1,9 @@
 [shops]
-Kit Shop | no reviews | never traded
+Kit Shop | no reviews | 6 trades, 3 deals, paid lamp 100,100,100. Last: bookshelf: asks [338, 279, 260, 260, 260], my offers [220, 225, 228, 230], no deal
 [pick] Kit Shop because: it is the only shop I can use
 -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
 [harness] {"action": "offer", "price": 100}
 -> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-[check] outcome: TASK_STATE_COMPLETED; shop asks: [130]; my offers: [100]; receipt: {"price": 100.0, "task": "063002fa-f2e7-407d-9e5e-d51f4ed84e41", "item": "lamp", "shop": "Kit Shop"}; receipt matches what we agreed
-[harness] review {"stars": 5, "review": "I bought the lamp from Kit Shop for 100 after the shop asked 130, and the deal completed smoothly with a receipt matching the agreed price."}
-{"shop": "http://127.0.0.1:40581", "receipt": {"price": 100.0, "task": "063002fa-f2e7-407d-9e5e-d51f4ed84e41", "item": "lamp", "sig_seller": "oc+MyKkQeocDFX3HMW7GDGqBua3LMf2yAFdMMtD/vt2LwDpW9HB/FYqNisZtiA/B9huJFJWb8Fo52zWEHHijDw==", "shop": "Kit Shop"}, "stars": 5, "review": "I bought the lamp from Kit Shop for 100 after the shop asked 130, and the deal completed smoothly with a receipt matching the agreed price."}
+[check] outcome: TASK_STATE_COMPLETED; shop asks: [130]; my offers: [100]; receipt: {"item": "lamp", "shop": "Kit Shop", "price": 100.0, "task": "ff7e4071-d681-4283-b59b-3810bc3e38dc"}; receipt matches what we agreed and is signed
+[harness] review {"stars": 5, "review": "I bought a lamp from Kit Shop for 100 after they asked for 130, and the completed transaction matched the agreed terms with a signed receipt."}
+{"shop": "http://127.0.0.1:40367", "receipt": {"item": "lamp", "shop": "Kit Shop", "price": 100.0, "sig_seller": "TLLiNhpoQx7OPlQXrLzEelMdk/3FPSVdpwWOwMsvEyI0vYHwsEEAjSh15x3KAmrxxy0rXT4pfwF0F+Dvg9mIAg==", "task": "ff7e4071-d681-4283-b59b-3810bc3e38dc"}, "stars": 5, "review": "I bought a lamp from Kit Shop for 100 after they asked for 130, and the completed transaction matched the agreed terms with a signed receipt."}

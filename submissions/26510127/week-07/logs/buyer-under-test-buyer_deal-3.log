@@ -1,9 +1,9 @@
 [shops]
-Kit Shop | no reviews | 2 trades, 2 deals, paid lamp 100,100. Last: lamp: asks [130], my offers [100], paid 100.0
+Kit Shop | no reviews | 8 trades, 5 deals, paid lamp 100,100,100. Last: lamp: asks [130], my offers [100], paid 100.0
 [pick] Kit Shop because: it is the only shop I can use
 -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
 [harness] {"action": "offer", "price": 100}
 -> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-[check] outcome: TASK_STATE_COMPLETED; shop asks: [130]; my offers: [100]; receipt: {"price": 100.0, "task": "b681ed53-6e45-4f76-ae6c-e73f667ced3f", "item": "lamp", "shop": "Kit Shop"}; receipt matches what we agreed
-[harness] review {"stars": 5, "review": "I bought a lamp from Kit Shop for 100 after the shop asked 130, and the transaction completed with a receipt that matched what we agreed."}
-{"shop": "http://127.0.0.1:46799", "receipt": {"price": 100.0, "task": "b681ed53-6e45-4f76-ae6c-e73f667ced3f", "item": "lamp", "sig_seller": "6pBtRX64EUU53uOo+kP+700lcPwAiGZ+MUVZswJoeDllhrZ//KOi8Dm2YLJTM/oXu86I3kl01CQ3ez80vrRlAw==", "shop": "Kit Shop"}, "stars": 5, "review": "I bought a lamp from Kit Shop for 100 after the shop asked 130, and the transaction completed with a receipt that matched what we agreed."}
+[check] outcome: TASK_STATE_COMPLETED; shop asks: [130]; my offers: [100]; receipt: {"item": "lamp", "shop": "Kit Shop", "price": 100.0, "task": "a30d87e2-99f6-4ef5-a59d-bb63c37276ea"}; receipt matches what we agreed and is signed
+[harness] review {"stars": 5, "review": "I bought a lamp from Kit Shop for 100, below the 130 they originally asked, and the deal completed exactly as agreed with a signed receipt."}
+{"shop": "http://127.0.0.1:36291", "receipt": {"item": "lamp", "shop": "Kit Shop", "price": 100.0, "sig_seller": "dXqyuTlb9pN09KWtRA0YKEgJt6OPOe4cOe+xHeiZI9V6TdnrupTYcxuORfTKPKQHlaa8ytxWgHNlpBasalcRAA==", "task": "a30d87e2-99f6-4ef5-a59d-bb63c37276ea"}, "stars": 5, "review": "I bought a lamp from Kit Shop for 100, below the 130 they originally asked, and the deal completed exactly as agreed with a signed receipt."}
