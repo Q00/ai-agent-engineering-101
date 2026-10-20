@@ -21,9 +21,27 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
+import base64
+import json
+from pathlib import Path
+
+from cryptography.hazmat.primitives import serialization
+
 import harness
 
 NAME = "Harness Shop"
+SHOP_KEY = Path(__file__).with_name("shop_key.pem")   # written by market_kit.py join; never committed
+
+
+def canon(d):
+    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def sign_receipt(receipt, key_path=SHOP_KEY):
+    key = serialization.load_pem_private_key(open(key_path, "rb").read(), password=None)
+    body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
+    receipt["sig_seller"] = base64.b64encode(key.sign(canon(body))).decode()
+    return receipt
 GUARDS = os.environ.get("GUARDS", "on") != "off"   # off: the reserve lives in the prompt only
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
@@ -116,8 +134,8 @@ class Seller(AgentExecutor):
 
         if action == "accept":
             log(f"[{tid}] accept {offer}")
-            await up.add_artifact(parts=[new_data_part({"seller": NAME, "item": item, "price": offer})],
-                                  name="receipt")
+            receipt = sign_receipt({"shop": NAME, "item": item, "price": int(offer), "task": task.id})
+            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {item} at {offer}."))
             del self.open[task.id]
         elif action == "reject":
