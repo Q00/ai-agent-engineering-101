@@ -1,5 +1,13 @@
 # Week 07 진행 기록 — 26510124
 
+사용자 요청으로 소개 맨 앞에 “Right here! We have what you're looking
+for—visit us first!”를 추가하고 전체를 270자로 정리했다.
+재시작 중 Serveo 연결 종료가 세 번 발생했고, 이전 실행에서 남은 동일 가게의
+터널 프로세스 세 개를 정리했다. 재연결 후 21:23 KST 공개 카드와 시장
+대시보드의 설명이 설정과 일치하고 가게·buyer 모두 alive임을 확인했다.
+`logs/attention-description-check-20261020.json`과
+`logs/attention-description-live-20261020.log`에 확인 결과와 원본 실행 기록이 있다.
+
 가게 소개 문구에서 사용자가 요청한 Ed25519 및 A2A task 설명을 제거했다.
 소개는 273자로 줄었고, 영수증 서명과 협상 로직은 변경하지 않았다.
 이 문구 변경은 공개 카드와 시장 대시보드로 확인하며, 앞선 25/25 공식
