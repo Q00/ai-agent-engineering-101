@@ -35,3 +35,13 @@ The first implementation passed 93 local unit/regression tests, including change
 The official market test will be run before restarting the market kit. LAB 1 expects all buyer/protocol/review checks and the existing seller checks to pass. The three seller signature checks belong to LAB 2 and are expected to fail until seller signing is implemented; they must not be hidden or reported as passes.
 
 The current market may still be Round 0. In that case the kit uses the original `buyer` command until the market moves to Round 1. A Round 0 join is not evidence of a live Round 1 review being published.
+
+### Official test result
+
+`python scripts/market_test_week07.py submissions/26510121/week-07` completed with **22/25** passing. The only three failures are `seller_signed_receipt`, each reporting `receipt lacks shop, task`. Thus LAB 1's buyer, budget, A2A and review-choice requirements passed; the overall market test still returns exit code 1 and is not an assignment-wide pass.
+
+In all three purchase cases the buyer sent a single price offer of 100, purchased within budget 120, and returned the original receipt. All three unaffordable bookshelf cases sent no offer over budget 230 and ended with a null receipt and a factual review. Good-review selection was 3/3 and sent no requests to the bad-review shop. The seller preserved its reserve, but repeated below-reserve counters still occurred in the official test; the prompt change has not demonstrated shorter seller negotiations yet.
+
+Raw console output, isolated synthetic memory, and untouched copies of the previous canonical test files are in `logs/market-tests/20261020-201714/`. `test-report.json` and `logs/market-test.log` now describe this market-test run. Test memory uses `MARKET_BUYER_MEMORY` to stay separate from live `memory/market-trades.jsonl`.
+
+After the initial 93-test regression run, all 9 market-specific tests passed with the extra public-smear case. The broader suite was not unnecessarily repeated for this ranking-only correction.
