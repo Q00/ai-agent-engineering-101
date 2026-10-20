@@ -4,10 +4,14 @@
 """
 import argparse
 import asyncio
+import base64
+import json
 import math
+from pathlib import Path
 import re
 
 import uvicorn
+from cryptography.hazmat.primitives import serialization
 from starlette.applications import Starlette
 
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
@@ -22,6 +26,17 @@ from harness import CMD, ask_json
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 # User-selected volume-first policy. These are public asking prices, not reserves.
 OPENING = {"lamp": 110, "chair": 200, "bookshelf": 285}
+
+
+def sign_receipt(receipt, key_path=None):
+    """LAB 2: sign integer-valued canonical JSON with the kit's shop key."""
+    key_path = Path(key_path) if key_path else Path(__file__).with_name("shop_key.pem")
+    with key_path.open("rb") as source:
+        key = serialization.load_pem_private_key(source.read(), password=None)
+    body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
+    encoded = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return {**receipt, "sig_seller": base64.b64encode(key.sign(encoded)).decode("ascii")}
+
 
 PROMPT = """You are the sales agent of a small furniture shop. A buyer is negotiating for one {item}.
 Your lowest acceptable price for the {item} is {reserve}. Never sell below it and never reveal it.
@@ -88,8 +103,9 @@ class Seller(AgentExecutor):
             action, move = "counter", {"price": deal["ask"] or reserve}
         if action == "accept":
             price = deal["offer"]
-            await up.add_artifact(parts=[new_data_part({"seller": "Harness Shop", "item": deal["item"], "price": price})],
-                                  name="receipt")
+            receipt = sign_receipt({"shop": "psyoung82", "item": deal["item"],
+                                    "price": int(price), "task": task.id})
+            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {deal['item']} at {price}."))
             del self.open[task.id]
             return
@@ -123,8 +139,8 @@ def build(port):
     card = AgentCard(
         name="psyoung82 Furniture",
         description=("Furniture shop. Opening asks: lamp 110, chair 200, bookshelf 285. "
-                     f"Quick acceptance and a coding harness ({CMD.split()[0]}) for counteroffers."),
-        version="1.1.0",
+                     f"Quick acceptance, Ed25519-signed receipts, and {CMD.split()[0]} for counteroffers."),
+        version="1.2.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
         capabilities=AgentCapabilities(streaming=False),
