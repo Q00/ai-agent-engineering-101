@@ -47,6 +47,15 @@ def last_number(text: str) -> int | None:
     return int(values[-1]) if values else None
 
 
+def receipt(task: dict | None) -> dict | None:
+    for artifact in (task or {}).get("artifacts", []):
+        for part in artifact.get("parts", []):
+            data = part.get("data")
+            if isinstance(data, dict) and isinstance(data.get("price"), (int, float)):
+                return data
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", required=True)
@@ -74,6 +83,7 @@ def main() -> int:
         text = status_text(task)
         print("STATE", current_state, text)
         if current_state == "TASK_STATE_COMPLETED":
+            print("RECEIPT", json.dumps(receipt(task), ensure_ascii=False))
             return 0
         if current_state in {"TASK_STATE_REJECTED", "TASK_STATE_FAILED", "TASK_STATE_CANCELED"}:
             return 0
@@ -88,8 +98,8 @@ Seller: {card.get('name')!r}. Item: {args.item}. Hard total budget: {args.budget
 Seller's latest message: {text!r}. Parsed current ask: {ask}.
 Negotiation history: {json.dumps(history)}
 Choose \"offer\" with an integer price no greater than budget when a deal is possible.
-The seller accepts any offer at or above its reserve. For a lamp with budget 120, offer 100 first.
-If the current ask proves the item cannot fit the budget, especially a bookshelf ask above 230, choose \"walk\".
+This shop normally opens at 130% of reserve, so estimate reserve as round(current ask / 1.3).
+Offer that estimated reserve when it is within budget; otherwise choose \"walk\".
 Keep message to one short English sentence."""
         )
         if decision.get("action") == "walk":
