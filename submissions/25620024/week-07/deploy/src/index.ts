@@ -33,6 +33,12 @@ const PROMISE = "Beyond anything you imagine. Token-saver shop: one message clos
 const ME = "dragonash";
 const MIN_REVIEWS = 3;
 const MATCH = /match|elsewhere|other shop|quoted|cheaper|found it|lower price/i;
+// challenge 1, fourth change (21:16), from our reviews ("deal after 4-5 offers", "99% of budget" -> 3-4 stars):
+// fast close. From the buyer's second offer, any offer at or above the reserve is accepted without the model;
+// a counter gives up at least half the gap between our ask and the offer; the model may not end the talk
+// before MAX_ROUNDS (a "reject" becomes a counter).
+const FAST_CLOSE_FROM = 2;
+const SHOP_CODE = "fast-close-1";   // Durable Object name suffix: change it with every behaviour change
 const SHOP = "dragonash";   // receipt "shop": the market name, same as seller.py
 
 export function canon(r: { shop: string; item: string; price: number; task: string }): string {
@@ -108,7 +114,9 @@ export default {
     const url = new URL(request.url);
     if (request.method === "GET" && url.pathname === "/.well-known/agent-card.json") return json(card(url.origin));
     if (request.method === "POST" && url.pathname === "/") {
-      const shop = env.SHOP.get(env.SHOP.idFromName("shop"));
+      // The Durable Object kept answering with the code of an older deploy while buyers kept it busy (the
+      // 21:01 and 21:16 deploys did not show up in its replies), so each code change gets a fresh object.
+      const shop = env.SHOP.get(env.SHOP.idFromName("shop-" + SHOP_CODE));
       return shop.fetch(request);
     }
     if (request.method === "GET" && url.pathname === "/") {
@@ -262,6 +270,9 @@ export class Shop {
     if (offer < d.ask && MATCH.test(text)) {        // price guarantee: match a lower quote, down to the reserve
       if (offer >= d.reserve) { action = "accept"; price = offer; s.log.push(`PRICE MATCH ${offer} (ask ${d.ask})`); }
       else { action = "counter"; price = d.reserve; s.log.push(`PRICE MATCH ${offer} below reserve ${d.reserve}: counter at reserve`); }
+    } else if (d.rounds >= FAST_CLOSE_FROM && offer >= d.reserve && offer < d.ask) {
+      action = "accept"; price = offer;
+      s.log.push(`FAST CLOSE offer ${offer} >= reserve ${d.reserve} on offer ${d.rounds} (ask ${d.ask})`);
     } else if (offer >= d.ask) {
       action = "accept"; price = offer;
       s.log.push(`offer ${offer} >= current ask ${d.ask}: accept without asking the model`);
@@ -273,10 +284,13 @@ export class Shop {
       } catch (e: any) { s.log.push(`model error (${e?.message}); holding ask ${d.ask}`); }
       s.log.push(`offer ${offer} -> model ${JSON.stringify({ action, price })}`);
       if (action === "accept" && offer < d.reserve) { s.log.push(`GUARD accept ${offer} < reserve ${d.reserve}: counter at reserve`); action = "counter"; price = d.reserve; }
+      if (action === "reject" && d.rounds < MAX_ROUNDS) { s.log.push(`FAST CLOSE model rejected on offer ${d.rounds}: counter instead`); action = "counter"; price = d.ask; }
       if (!["accept", "counter", "reject"].includes(action)) { s.log.push(`GUARD unknown action ${action}`); action = "counter"; price = d.ask; }
       if (action === "counter") {
         if (price < d.reserve) { s.log.push(`GUARD counter ${price} < reserve ${d.reserve}: raised`); price = d.reserve; }
         if (price > d.ask) { s.log.push(`GUARD counter ${price} above current ask ${d.ask}: kept`); price = d.ask; }
+        const half = Math.max(d.reserve, d.ask - Math.ceil((d.ask - offer) / 2));
+        if (price > half) { s.log.push(`FAST CLOSE counter ${price} gives up less than half the gap: ${half}`); price = half; }
       }
     }
 

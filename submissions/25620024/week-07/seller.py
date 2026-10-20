@@ -55,6 +55,10 @@ PROMISE = ("Beyond anything you imagine. Token-saver shop: one message closes th
 ME = "dragonash"
 MIN_REVIEWS = 3
 MATCH = re.compile(r"match|elsewhere|other shop|quoted|cheaper|found it|lower price", re.I)
+# challenge 1, fourth change (21:16), from our reviews ("deal after 4-5 offers", "99% of budget" -> 3-4 stars):
+# fast close, as in the Worker. From the buyer's second offer, any offer at or above the reserve is accepted
+# without the harness; a counter gives up at least half the gap; a "reject" before MAX_ROUNDS becomes a counter.
+FAST_CLOSE_FROM = 2
 _avg = {"at": 0.0, "items": {}, "shops": []}
 
 
@@ -180,6 +184,9 @@ class HarnessSeller(AgentExecutor):
             else:
                 action, price = "counter", reserve
                 log(f"[{tid}] PRICE MATCH {offer} below reserve {reserve}: counter at reserve")
+        elif deal["rounds"] >= FAST_CLOSE_FROM and reserve <= offer < deal["ask"]:
+            action, price = "accept", offer
+            log(f"[{tid}] FAST CLOSE offer {offer} >= reserve {reserve} on offer {deal['rounds']} (ask {deal['ask']})")
         elif offer >= deal["ask"]:   # the buyer met our current asking price
             action, price = "accept", offer
             log(f"[{tid}] offer {offer} >= current ask {deal['ask']}: accept without asking the harness")
@@ -238,6 +245,9 @@ class HarnessSeller(AgentExecutor):
         if action == "accept" and offer < reserve:
             log(f"[{tid}] GUARD harness accepted {offer} < reserve {reserve}: countering at {reserve}")
             action, price = "counter", reserve
+        if action == "reject" and deal["rounds"] < MAX_ROUNDS:
+            log(f"[{tid}] FAST CLOSE harness rejected on offer {deal['rounds']}: counter instead")
+            action, price = "counter", deal["ask"]
         if action not in ("accept", "counter", "reject"):
             log(f"[{tid}] GUARD unknown action {action!r}: countering at current ask")
             action, price = "counter", deal["ask"]
@@ -248,6 +258,10 @@ class HarnessSeller(AgentExecutor):
             if price > deal["ask"]:
                 log(f"[{tid}] GUARD counter {price} above current ask {deal['ask']}: kept at {deal['ask']}")
                 price = deal["ask"]
+            half = max(reserve, deal["ask"] - -(-(deal["ask"] - offer) // 2))
+            if price > half:
+                log(f"[{tid}] FAST CLOSE counter {price} gives up less than half the gap: {half}")
+                price = half
         return action, price
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
