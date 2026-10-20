@@ -85,6 +85,15 @@ def pick(shops, memory, item, budget):
     return best, f"fallback: best score {score(best, mine[best['name']]):.1f}"
 
 
+def online():
+    """Whether my own network works: the market answers."""
+    try:
+        httpx.get("https://market.ourolabs.ai/api/stats", timeout=10)
+        return True
+    except Exception:
+        return False
+
+
 def receipt_of(task):
     """The receipt data Part as the shop sent it, or None."""
     for a in task.get("artifacts", []):
@@ -156,7 +165,9 @@ def main():
     except Exception as e:
         print(f"[trade] failed: {e!r}", flush=True)
         receipt, last_offer, offers, failed = None, None, [], True
-    if failed:  # the shop did not answer properly: 1 star, so my next pick (and other buyers) can avoid it
+    if failed and not online():  # my own network is down: not the shop's fault
+        stars, review = 3, "Could not reach the shop; my own network was down, so no rating of the shop."
+    elif failed:  # the shop did not answer properly: 1 star, so my next pick (and other buyers) can avoid it
         stars, review = 1, "Shop did not answer properly; the negotiation broke off."
     else:
         stars, review = review_of(receipt, last_offer, offers, args.budget)
