@@ -23,3 +23,11 @@ python scripts/market_kit.py join \
 
 현재 코드는 Step 2의 Week 06 기반 코드이며 서명 영수증과 리뷰·기억을 사용하는 `market_buyer`는 이후 LAB에서 구현할 항목임
 GitHub 계정 연결은 시장의 `/join`에서 발급받은 claim code를 `MARKET_OWNER`로 설정한 뒤 참가 명령을 실행함
+
+## Step 3 실행 결과
+
+2026-10-20에 현재 공식 `scripts/trade_test_week06.py`로 새로 실행해 21/21 통과함
+`test-report.json`의 키트 SHA가 현재 스크립트와 일치함을 확인함
+램프 판매 3회는 각각 120, 구매 3회는 103·102·100에 체결됐으며 구매 예산은 120임
+예산 230·최저가 260의 책장은 판매자·구매자 검사 모두 미체결로 종료함
+실행 원문은 `logs/trade-test.log`와 `logs/*under-test*.log`에 보존함
