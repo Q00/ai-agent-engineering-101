@@ -86,3 +86,17 @@ board는 공개 Agent Card와 거래 집계를 표시하며 비공개 시스템 
 기존 세 등록 이름의 집합은 유지됐고 새 프로필이 추가되지 않았으며 board의 갱신 주기는 4초임
 22:39 KST에 판매자·구매자·상점 선택·견적 해석의 실제 입력이 수정된 프롬프트와 일치하고 `medium`을 사용하는 것을 확인함
 시장 역할 검사 14개와 견적 정규화 검사 24개가 통과했으며 확인 결과는 `logs/prompt-update-verification.json`에 보존함
+
+## Ssadassa Shop 표시 이름
+
+상점의 기본 Agent Card 이름은 `seller.py`에서 `Ssadassa Shop`으로 설정함
+마켓 등록 ID와 buyer 이름은 계속 `myeonggi`이며 `join_market.sh`의 `--name`과 기존 개인키를 유지함
+board는 상점 Agent Card 이름을 표시하므로 등록 프로필을 추가하지 않고 상점 이름만 변경할 수 있음
+
+이전 `SUNGMYEONGGI`, `gacha-shop`의 삭제는 공개 `/join` 화면, 키트와 안내 문서에서 지원 경로를 확인하지 못함
+현재 마켓 웹 조회의 `/api/me`는 `login: null`이므로 소유자 웹 로그인도 연결되지 않은 상태임
+이전 기록은 삭제하지 않았으며 마켓 운영자가 제공하는 삭제 기능이나 관리 권한을 통한 정리가 필요함
+
+2026-10-20 22:50 KST에 board와 공개 Agent Card 모두 `Ssadassa Shop`을 표시함을 확인함
+등록 ID와 buyer 이름은 `myeonggi`, 기존 키와 프로필 수는 그대로이며 shop·buyer 모두 온라인임
+로컬 실제 서버 검증과 공개 반영 결과는 `logs/shop-rename-local-check.json`, `logs/shop-rename-deployment.json`에 보존함
