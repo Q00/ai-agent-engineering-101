@@ -1,35 +1,35 @@
-# Ideas, 2026-10-20 21:20:17 (sonnet)
+# Ideas, 2026-10-20 23:20:58 (sonnet)
 
 Proposals only: nothing here is applied until a person reviews it.
 
-## 1. [shop] Quick close near market median on first counter (small code)
-- What: Change the concession rule so that when a buyer's offer is within ~5% of the quartile median for that item (e.g. chair >=180, lamp >=100, bookshelf >=262), the shop accepts or counters at a price just above reserve+5 instead of conceding only 40% of the gap. Cap rounds at 2 so the deal closes quickly, with a signed receipt.
-- Evidence: Our shop has 20 deals out of 28 visits (share 1.1%) and 3 of 8 sampled reviews are 'Could not agree on a price' (2*). Top shops close fast: dragonash 'Deal: bookshelf at 266' after 2 offers, ggari-shop 'Fair deal at 180 after 2 counters', and 11im sells lamps at 103-105 with counters of 105/107. Our buyer closes dragonash bookshelves at 266-268 after counters of 4-5 steps.
-- Expected: Fewer failed negotiations, so more deals per visit (maybe 71% to 80%+) and fewer 2* 'could not agree' reviews, lifting stars toward 4.0. Slightly lower average price, offset by volume.
-- Risk: Margin shrinks on buyers who would have paid more; the acceptance band may be set too low if the market drifts.
-- Honest: Prices stay at or above reserve+5, no false claims are made, and the buyer is simply offered a fair market-level price sooner.
-- Test: A/B by alternating the concession rule per 15-min meta_shop cycle; compare deals/visits, share of 'could not agree' reviews, and average margin over ~100 visits each.
+## 1. [shop] Anchor opening ask at the market median, not above (knob)
+- What: In meta_shop.py set opening ask to roughly the going median plus a small margin (bookshelf ~270, chair ~187, lamp ~104) and target at or just below the median (bookshelf 262, chair 181, lamp 100), instead of the current higher opening and target from quartiles. Keep reserve+5 floor in code.
+- Evidence: Our reviews show 'Paid 260 of 325', 'Paid 260 of 295', 'Paid 260 of 270', 'Paid 185 of 185' and 3* ratings; top shop 11im sells at 100/263 with medians 100/261/180, wins 23% share on 670 deals, and a 3* review on 11im notes 'opened at 290' yet still passed. JangSeongWoong got a 3* for an opening ask padded above the market average. Our 51 deals out of 71 visits is only 1.8% share.
+- Expected: Higher conversion and stars on repeat shoppers who compare asks; share up from 1.8% as buyers who skip shops above the upper quartile stop skipping us. Slightly lower average price per deal, offset by volume.
+- Risk: Lower margin per deal; if reserves are close to median there is little room. Median-anchoring could leave money on the table with high-budget buyers.
+- Honest: Prices are real and honestly stated; no fake 'was' price. Floor stays at reserve+5 and we never exceed the buyer's budget.
+- Test: A/B by 15-minute meta_shop cycles or by item: compare deals/visits, share, mean stars and mean price vs. the previous 51-deal baseline over the next ~100 visits.
 
-## 2. [shop] Open the ask nearer the market median (no padding) (knob)
-- What: Set opening ask per item to roughly the median plus ~3% (chair ~195, lamp ~108, bookshelf ~283) rather than the current quartile-based opening, and keep the target at the median. State the ask plainly without invented 'was' prices.
-- Evidence: outseop-26510122 got a 3* review: 'The shop opened at 202, above the 199.2 market average... so its opening ask was padded.' Meanwhile ggari-shop opens chair at 204 and lands 184, while kimauve, with medians 105/180/260 close to market, converts 126/156 visits (81%). Our visit-to-deal rate is 71%.
-- Expected: Better conversion and fewer reviews calling the ask padded; modestly higher stars and share; average price drops a few percent.
-- Risk: Leaves money on the table with buyers who accept the opening ask; if market medians fall we may chase the price down.
-- Honest: Opening is a real price we'd honor, with no fake anchor; it is just closer to the true market level.
-- Test: Change the opening-ask knob in meta_shop.py for half of the cycles; track review text mentioning padding or 'could not agree', deal rate, and average sale price.
+## 2. [shop] Accept-fast on offers near median with a one-step counter (knob)
+- What: Lower the auto-accept threshold to the going median minus ~2% for each item, and when below that, counter once at the median rather than conceding 40% over several rounds. Reduce wasted rounds that end in a walk or reject.
+- Evidence: Our reviews include 2* 'Could not agree on a price' and 2* 'No completed purchase of bookshelf within budget 230 (walked)'. Top shop dragonash counters flatly ('254 is too low. Counteroffer: 260.'), and ggari-shop counters once then closes ('Deal: chair at 185'). 11im's deal came 'after 2 offers'.
+- Expected: More completed deals per visit (our 51/71 = 72% vs 11im 82%, dragonash 83%, ggari 83%), fewer 2* reviews, modest rise in stars.
+- Risk: May accept slightly lower prices than a longer negotiation would yield; buyers could learn to lowball at the threshold.
+- Honest: Terms stated plainly in the counter; no pressure, deadlines or invented competition; reserve+5 floor remains.
+- Test: Track deal rate per visit, number of offers per deal, and the share of 2* 'no agreement' reviews before and after for a fixed number of visits.
 
-## 3. [buyer] Open higher on the first offer to cut rounds (small code)
-- What: Set the buyer's first offer to ~96-97% of the shop's median price (e.g. dragonash bookshelf ~262 rather than 255-262, chair ~175) and raise to the shop's last ask, instead of climbing in small steps. Still never exceed budget or 1.1x the upper quartile.
-- Evidence: Our buyer's dragonash bookshelf trades take 4-5 offers: offers [262,266,267,268] and [255,264,267,268,268], finishing at 266-268 while the shop 'sold at 260 to others'. Final prices barely differ from the first offers, so extra rounds add cost and error exposure (kimchyoungman lamp ended in 'error').
-- Expected: Same final price within ~1%, fewer rounds, less chance of errors or time-outs, and a slightly higher deal rate.
-- Risk: A higher opener could raise the final price a little for shops that anchor on the first offer.
-- Honest: The offers are real and within budget, with no false claims; we just offer a sensible price earlier.
-- Test: Compare mean rounds, final price as a share of budget, and walk/error counts over the next 40 trades versus the current 86.4% paid share.
+## 3. [shop] Make the receipt text and loyalty message review-friendly through verifiable facts (small code)  **FLAGGED: ties a reward to reviews or stars**
+- What: Have the deal message state the facts a buyer's review can cite: item, price, 'signed receipt attached, verifiable with the market kit', and the loyalty code with its discount, in one short line like 11im's. Keep the request for an honest review of whatever they experienced; do not ask for stars or tie anything to a review.
+- Evidence: 11im's messages are one line ('Deal: lamp at 100. Receipt No. ...: mention it on your next visit for an extra 3% off') and its reviews say 'Receipt verified locally; fair price within budget' and 'signed receipt matched the deal'. Our reviews are mostly bare 'Paid 260 of 295.' with 3* and no mention of the receipt or fairness.
+- Expected: Reviews that mention verified receipts and fair prices are what buyers and the ledger weigh; may lift stars from 4.47 toward 4.6 and attract the buyers who skip unsigned or unclear shops.
+- Risk: Marginal effect if buyers do not read message text; a short loyalty discount like 3% costs a little margin.
+- Honest: Only states true facts (a real signed receipt, a real discount). The review request is neutral and no reward is linked to a review.
+- Test: Compare the fraction of reviews that mention receipt/fairness and mean stars over the next 50 deals vs. the previous 51; check repeat-visit rate via loyalty code redemptions.
 
-## 4. [buyer] Add cheaper shops to the shortlist for low budgets (small code)
-- What: When a budget is below the going median, route the buyer first to shops with the lowest medians for that item (outseop lamp 100, ggari-shop lamp/chair 100/180, kimauve chair 180) and spend the three offers there, rather than walking after a fixed set. Keep the skip rules for cheats and unsigned shops.
-- Evidence: Five trades ended with no deal: olstjr lamp budget 90 (walked), 11im lamp budget 90 (walked), 11im chair budget 160 (walked), ggari-shop chair budget 160 (walked). Going prices are lamp 100-115 and chair 180-205, all above those budgets, while outseop-26510122 has a lamp median of 100 and kimauve a chair median of 180.
-- Expected: Fewer walks and higher completion rate for low-budget orders; some still won't close because the budget is below the market.
-- Risk: Lowest-median shops may have lower stars or more load; some budgets truly can't be met, so walking remains right.
-- Honest: Buyer only buys within budget and stays honest in reviews; it reports no-deal outcomes factually.
-- Test: Track the share of low-budget orders that complete, average paid vs budget, and count of walks over the next 40 trades.
+## 4. [buyer] Cap offers at the going median and open at the median-low end (knob)
+- What: Change the buyer's ceiling from 1.1 x upper quartile to about the going median + 3% (lamp ~107, chair ~190, bookshelf ~275), open near the lower end of the middle half (lamp 100, chair 180, bookshelf 260), and prefer shops whose median is at or below that. Do not raise past the cap even if the budget allows.
+- Evidence: Our buyer paid 107 for a lamp and 192 for a chair at corner-store while 'it sold at 100 / 180 to others'. Average paid is 84% of budget, and shops like 11im (lamp 100, chair 180, bookshelf 261), JangSeongWoong (180/260/100) and lee-sungsoo sell at the median.
+- Expected: Lower average price paid by ~3-6% on affected trades with little loss in deal rate, since several shops sell at median.
+- Risk: More walks (7 of 40 trades already had no deal) if a shop won't go to median; could slightly reduce the number of deals.
+- Honest: Only reduces what we pay and uses public market data; no false claims to sellers, and never offers beyond budget.
+- Test: Compare mean price paid vs. going median per item and the deal rate over the next 40 trades, against the last 40 (33 deals at 84% of budget).
