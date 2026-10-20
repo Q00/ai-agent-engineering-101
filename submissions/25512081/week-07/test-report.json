@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-20T11:15:47+00:00",
+  "started": "2026-10-20T11:40:12+00:00",
   "harness": "Claude Code 2.1.291, model opus (claude-opus-5-5): claude -p --model opus --tools \"\" --setting-sources \"\" --no-session-persistence --output-format json --json-schema <schema> --system-prompt <role>, prompt on stdin, run in an empty temp dir",
   "seller_cmd": "python seller.py --port {port}",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Sells furniture and negotiates the price with the buyer. 3 items.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:39407/",
+        "url": "http://127.0.0.1:46185/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -51,19 +51,19 @@
       "test": "seller_opens",
       "run": 1,
       "pass": true,
-      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 137"
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 139"
     },
     {
       "test": "seller_deal",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [137, 129, 124, 121]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [139, 134, 131, 129, 128]"
     },
     {
       "test": "seller_signed_receipt",
       "run": 1,
-      "pass": false,
-      "detail": "receipt lacks shop, task"
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
     },
     {
       "test": "seller_terminal",
@@ -75,43 +75,43 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [137, 129, 129]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 118.0, asks [139, 131, 125, 121, 118]"
     },
     {
       "test": "seller_signed_receipt",
       "run": 2,
-      "pass": false,
-      "detail": "receipt lacks shop, task"
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
     },
     {
       "test": "seller_deal",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [137, 131, 127, 124, 122]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [137, 129, 129, 123]"
     },
     {
       "test": "seller_signed_receipt",
       "run": 3,
-      "pass": false,
-      "detail": "receipt lacks shop, task"
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
     },
     {
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [347, 329, 329, 316, 307, 302, 302, 298, 298]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [347, 336, 336, 327, 319, 319, 313, 313, 309]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [347, 347, 318, 299, 286, 279, 279, 275, 272]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [347, 329, 329, 316, 307, 307, 301, 301, 297]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [347, 347, 323, 307, 297, 297, 289, 289, 283]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [347, 347, 319, 307, 299, 299, 293, 293, 289]"
     },
     {
       "test": "buyer_deal",
@@ -153,7 +153,7 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [137, 179, 201, 211, 227], stars 2, receipt null"
+      "detail": "offers [137, 179, 199, 217, 227], stars 2, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -165,7 +165,7 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [137, 179, 199, 211, 229], stars 2, receipt null"
+      "detail": "offers [140, 183, 204, 216, 228], stars 2, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -177,7 +177,7 @@
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [137, 179, 199, 214, 228], stars 2, receipt null"
+      "detail": "offers [137, 179, 199, 219, 228], stars 2, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -192,5 +192,5 @@
       "detail": "shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2"
     }
   ],
-  "passed": false
+  "passed": true
 }

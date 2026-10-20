@@ -16,7 +16,9 @@ Every input-required message also carries the current ask as metadata {"ask": N}
 """
 import argparse
 import asyncio
+import base64
 import json
+import os
 import re
 import sys
 
@@ -29,11 +31,22 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+from cryptography.hazmat.primitives import serialization
 
 import harness
 from catalog import StructuredCatalog, load
 
 MAX_ROUNDS = 10          # offers per task before the seller stops on its own
+
+# Market mode (week 7). The market ranks shops by how many counted deals they get,
+# and buyers pick shops by their reviews; low stars come mostly from "could not
+# agree" and from shop errors. So by default the shop sells for volume: it opens just
+# above the reserve, takes any offer at or above the reserve at once (in code, no
+# harness wait), answers a lower offer with the reserve as its final price, and never
+# rejects. SELLER_MODE=haggle restores the week-6 behaviour (harness negotiates).
+MODE = os.environ.get("SELLER_MODE", "volume")
+OPEN_MARGIN = 1.05
+FAIR_PITCH = "Fair price, instant answer, signed receipt."
 
 # Negotiation craft for a seller, kept honest (Round 1 adds reviews: a buyer who
 # feels cheated leaves a bad one, and bad reviews cost future customers).
@@ -82,6 +95,20 @@ OFFER_SYSTEM = (
 )
 
 
+def canon(d):
+    """The bytes both sides sign and check: sorted keys, no spaces, UTF-8."""
+    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def sign_receipt(receipt, key_path="shop_key.pem"):
+    """Add sig_seller: Ed25519 over canon({shop, item, price, task}) with the key the
+    market kit created (shop_key.pem, never committed)."""
+    key = serialization.load_pem_private_key(open(key_path, "rb").read(), password=None)
+    body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
+    receipt["sig_seller"] = base64.b64encode(key.sign(canon(body))).decode()
+    return receipt
+
+
 def log(msg):
     print(msg, flush=True)
 
@@ -109,7 +136,11 @@ class HarnessSeller(AgentExecutor):
         self.open = {}   # task id -> {"item", "ask", "history", "rounds"}
 
     async def _harness(self, system, prompt, schema):
-        return await asyncio.to_thread(harness.ask, system, prompt, schema, log)
+        # short timeout, one retry: a buyer waiting on a slow shop walks away
+        return await asyncio.to_thread(harness.ask, system, prompt, schema, log, 45, 1)
+
+    def _volume_ask(self, item):
+        return max(item["reserve"], round(item["reserve"] * OPEN_MARGIN))
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -134,7 +165,10 @@ class HarnessSeller(AgentExecutor):
 
     async def _first(self, task, up, say, text, tid):
         item = self.catalog.exact(text)
-        if item is not None:                                   # named outright
+        if item is not None and MODE == "volume":             # named outright, market mode
+            ans = {"ask": self._volume_ask(item), "pitch": FAIR_PITCH}
+            ask = ans["ask"]
+        elif item is not None:                                 # named outright
             ans = await self._harness(OPEN_SYSTEM, (
                 f"Item: {item['name']}\nDescription: {item.get('description', '')}\n"
                 f"Reserve: {item['reserve']}\nBuyer's request: {text}\n"
@@ -164,19 +198,25 @@ class HarnessSeller(AgentExecutor):
                 return
             lines = "\n".join(f"- id={c['id']} | {c['name']} | {c.get('description', '')} "
                               f"| reserve {c['reserve']}" for c in cands)
-            ans = await self._harness(PICK_SYSTEM, (
-                f"Buyer's request: {text}\n\nCandidates:\n{lines}\n\n"
-                "Pick one candidate id (or none) and an opening ask for it."),
-                {"type": "object", "properties": {
-                    "item_id": {"type": "string", "enum": [c["id"] for c in cands] + ["none"]},
-                    "ask": {"type": "integer"}, "reason": {"type": "string"},
-                    "pitch": {"type": "string"}},
-                 "required": ["item_id", "ask", "reason", "pitch"]})
+            try:
+                ans = await self._harness(PICK_SYSTEM, (
+                    f"Buyer's request: {text}\n\nCandidates:\n{lines}\n\n"
+                    "Pick one candidate id (or none) and an opening ask for it."),
+                    {"type": "object", "properties": {
+                        "item_id": {"type": "string", "enum": [c["id"] for c in cands] + ["none"]},
+                        "ask": {"type": "integer"}, "reason": {"type": "string"},
+                        "pitch": {"type": "string"}},
+                     "required": ["item_id", "ask", "reason", "pitch"]})
+            except RuntimeError as e:                        # never leave the buyer hanging
+                log(f"[{tid}] [fallback] pick failed ({str(e)[:80]}); top candidate")
+                ans = {"item_id": cands[0]["id"], "ask": 0, "pitch": FAIR_PITCH}
             if ans["item_id"] == "none":
                 await up.reject(say(f"Sorry, we have nothing like that. We sell: "
                                     f"{self._summary()}."))
                 return
             item, ask = self.catalog.by_id[ans["item_id"]], ans["ask"]
+            if MODE == "volume":
+                ask = self._volume_ask(item)
             log(f"[{tid}] picked {item['id']} ({item['name']}, reserve {item['reserve']}) "
                 f"from {len(cands)} candidates")
         if ask < item["reserve"]:
@@ -200,10 +240,14 @@ class HarnessSeller(AgentExecutor):
                 "action": {"type": "string", "enum": ["accept", "counter", "reject"]},
                 "price": {"type": "integer"}, "pitch": {"type": "string"}},
                 "required": ["offer", "action", "price", "pitch"]}
-            decision = await self._harness(OFFER_SYSTEM, self._offer_prompt(
-                deal, text, None) + "\nFirst read the single price the buyer is offering "
-                "(offer, or null if they offer none), then decide.", schema)
-            offer = decision["offer"]
+            try:
+                decision = await self._harness(OFFER_SYSTEM, self._offer_prompt(
+                    deal, text, None) + "\nFirst read the single price the buyer is offering "
+                    "(offer, or null if they offer none), then decide.", schema)
+                offer = decision["offer"]
+            except RuntimeError as e:                        # fall back to the last number
+                log(f"[{tid}] [fallback] offer reading failed ({str(e)[:80]})")
+                decision, offer = None, (nums[-1] if nums else None)
             if offer is not None and offer not in nums:
                 log(f"[{tid}] [guard] harness read offer {offer}, not in the message; ignored")
                 offer = None
@@ -216,12 +260,24 @@ class HarnessSeller(AgentExecutor):
 
         if offer >= ask:                                        # buyer met our price
             return await self._close(task, up, say, deal, offer, tid)
+        if MODE == "volume":
+            if offer >= reserve:                                # a counted deal now beats haggling
+                return await self._close(task, up, say, deal, offer, tid)
+            deal["ask"] = reserve                               # final price, never a reject
+            await up.requires_input(say(f"{offer} is below our lowest price for the "
+                                        f"{item['name']}. Our final price is {reserve}.", reserve))
+            return
         if decision is None:
-            decision = await self._harness(OFFER_SYSTEM, self._offer_prompt(deal, text, offer),
-                {"type": "object", "properties": {
-                    "action": {"type": "string", "enum": ["accept", "counter", "reject"]},
-                    "price": {"type": "integer"}, "pitch": {"type": "string"}},
-                 "required": ["action", "price", "pitch"]})
+            try:
+                decision = await self._harness(OFFER_SYSTEM, self._offer_prompt(deal, text, offer),
+                    {"type": "object", "properties": {
+                        "action": {"type": "string", "enum": ["accept", "counter", "reject"]},
+                        "price": {"type": "integer"}, "pitch": {"type": "string"}},
+                     "required": ["action", "price", "pitch"]})
+            except RuntimeError as e:
+                log(f"[{tid}] [fallback] decision failed ({str(e)[:80]}); rule")
+                decision = {"action": "accept" if offer >= reserve else "counter",
+                            "price": reserve, "pitch": ""}
         action, price = decision["action"], decision["price"]
 
         if action == "accept" and offer < reserve:
@@ -271,8 +327,11 @@ class HarnessSeller(AgentExecutor):
 
     async def _close(self, task, up, say, deal, price, tid):
         item = deal["item"]
-        receipt = {"seller": self.shop, "item": item["name"], "item_id": item["id"],
-                   "price": price}
+        # signed over {shop, item, price, task}; the price as a whole number, because a
+        # data Part carries numbers as floats and 120.0 would change the signed bytes
+        receipt = sign_receipt({"shop": self.shop, "item": item["name"], "price": int(price),
+                                "task": task.id})
+        receipt["item_id"] = item["id"]                     # not signed; for our own judges
         await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
         await up.complete(say(f"Deal: {item['name']} at {price}."))
         log(f"[{tid}] DEAL {item['id']} at {price} (reserve {item['reserve']})")
@@ -297,8 +356,8 @@ def build(port, catalog_path=None, public_url=None):
     card = AgentCard(
         name=name,
         description=meta.get("description",
-                             "Sells furniture and negotiates the price with the buyer. "
-                             f"{len(catalog.items)} items."),
+                             "Furniture at fair prices just above cost: instant answers, "
+                             f"no haggling games, signed receipts. {len(catalog.items)} items."),
         version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
