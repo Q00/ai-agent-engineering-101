@@ -1,0 +1,21 @@
+[choose] Kit Shop http://127.0.0.1:51554: the only shop left after my memory filter
+card: Kit Shop | JSONRPC http://127.0.0.1:51554/ | buying bookshelf with budget 230
+-> I want to buy a bookshelf
+<- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+   harness: {"action": "offer", "price": 200} (ask 338, budget 230)
+-> 200  (taskId d79fa94f)
+<- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 269.
+   harness: {"action": "offer", "price": 230} (ask 269, budget 230)
+-> 230  (taskId d79fa94f)
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+   harness: {"action": "offer", "price": 230} (ask 260, budget 230)
+-> 230  (taskId d79fa94f)
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+   harness: {"action": "offer", "price": 230} (ask 260, budget 230)
+-> 230  (taskId d79fa94f)
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+   harness: {"action": "offer", "price": 230} (ask 260, budget 230)
+-> 230  (taskId d79fa94f)
+<- TASK_STATE_REJECTED | No deal at 230.
+result: no deal, 18 s
+{"shop": "http://127.0.0.1:51554", "receipt": null, "stars": 3, "review": "No deal: asked 338 for the bookshelf, would not come down to my budget."}
