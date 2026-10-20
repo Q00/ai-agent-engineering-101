@@ -1,9 +1,10 @@
 # Public seller deployment
 
 Status as of 2026-10-20: the owner requested a free API for the public deployment
-only. The original OpenAI experiment configuration remains separate. Cloudflare
-account sign-in and a scoped Workers AI credential are pending; the existing
-tunnel credential does not authorize AI inference. No paid upgrade is authorized.
+only. The owner selected the existing OpenRouter credential. Authentication and
+one real free-model tool call succeeded; copying that key to the VPS still needs
+explicit destination approval. The original OpenAI experiment configuration
+remains separate. No Cloudflare Workers AI account sign-in is needed.
 The configured hostname `ax-week06.treasuresky.xyz` is not a verified live shop.
 Public trades have not been run and `agent.json.deployed` has not been set.
 This preparation does not constitute completion of the deployment extra credit.
@@ -29,21 +30,22 @@ Keep the model environment and tunnel credential files outside this repository.
 Never commit them, include them in a build context, or print expanded Compose
 configuration. Required deployment variables:
 
-- `AX_PUBLIC_MODEL_API_KEY`: a dedicated private Workers AI API token, scoped to
-  Workers AI Read/Edit on the intended account. Do not reuse the original OpenAI
-  experiment key or the Cloudflare account/tunnel-management credential.
-- `AX_PUBLIC_MODEL_BASE_URL`: the explicit
-  `https://api.cloudflare.com/client/v4/accounts/<account-id>/ai/v1` endpoint.
-- `AX_PUBLIC_MODEL=@cf/zai-org/glm-4.7-flash`: the proposed public-only model.
+- `AX_PUBLIC_MODEL_API_KEY`: the private OpenRouter key selected by the owner.
+  Copy only that value into private server configuration, not the source env
+  file or unrelated credentials. Do not put it in a browser or source file.
+- `AX_PUBLIC_MODEL_BASE_URL=https://openrouter.ai/api/v1`.
+- `AX_PUBLIC_MODEL=cohere/north-mini-code:free`: the selected public-only model.
 - `AX_PUBLIC_URL=https://ax-week06.treasuresky.xyz/`.
-- `AX_DAILY_MODEL_REQUESTS=600`: UTC daily maximum outbound model HTTP attempts,
+- `AX_DAILY_MODEL_REQUESTS=50`: UTC daily maximum outbound model HTTP attempts,
   reserved atomically before sending and retained across process restarts.
 - `AX_TUNNEL_CREDENTIALS_FILE`: private credential file for this tunnel only;
   it must be readable by the tunnel container's UID 65532.
 
-Before activation, verify that the account uses **Workers Free** and that the
-chosen model remains available on that plan. Then run from this submission
-directory after arranging private credentials and confirming the runtime limits:
+Before activation, check the exact model's zero input/output price in the
+[official catalog](https://openrouter.ai/api/v1/models) and authenticate with
+`GET /api/v1/key` without logging the key. The existing account reported a daily
+free-model limit of 50. Then run from this submission directory after arranging
+private credentials and confirming the runtime limits:
 
 ```bash
 docker compose --env-file /private/path/model.env \
@@ -61,23 +63,39 @@ also uses one Uvicorn worker, at most eight active requests and the existing
 six-round function-tool loop with 450 output tokens per model call. The public
 entrypoint requires its own explicit model configuration and has no fallback to
 the paid OpenAI experiment settings. The local daily limit counts HTTP attempts,
-not tokens or Neurons; exhaustion prevents further model requests until the next
+not transactions or tokens; exhaustion prevents further model requests until the next
 UTC day. GET discovery remains available.
 For direct execution, unset `OPENAI_CUSTOM_HEADERS`; public startup rejects it
 before creating an HTTP client. Ambient OpenAI organization/project settings are
 also excluded, and model HTTP redirects are refused. Compose passes only the
 dedicated public configuration.
 
-[Cloudflare Workers Free](https://developers.cloudflare.com/workers-ai/platform/pricing/)
-allows 10,000 Neurons per day, resetting at 00:00 UTC (09:00 KST); over-limit
-operations fail on that plan. This is an account-wide allowance, not a guaranteed
-number of negotiations. Do not upgrade to Workers Paid or enable paid fallback.
-The [July 2026 Free-plan notice](https://developers.cloudflare.com/changelog/post/2026-07-28-models-require-workers-paid/)
-explicitly includes GLM-4.7-Flash; its
-[model schema](https://developers.cloudflare.com/workers-ai/models/glm-4.7-flash/)
-documents the required tool-calling fields. Live compatibility and account plan
-have not yet been verified. Free quota exhaustion can make the shop unavailable
-until the next reset, so public availability is not guaranteed by these limits.
+[OpenRouter free variants](https://openrouter.ai/docs/guides/routing/model-variants/free)
+have their own zero-priced catalog entries. The public runtime accepts only an
+explicit fixed model ID ending in `:free`, with no paid fallback list, plugins or
+dynamic router. Unknown configuration fields are rejected. A paid counterpart,
+OpenAI endpoint or model without the free suffix cannot start this public app.
+
+[OpenRouter's free usage limits](https://openrouter.ai/docs/api_reference/limits)
+include 20 requests/minute and the account's daily ceiling. One negotiation can
+need several model requests. The local SQLite allowance counts server HTTP
+attempts and cannot account for calls made elsewhere using the same key. Quota
+exhaustion or provider congestion can interrupt negotiations; no credits purchase
+or paid fallback is authorized. Discovery GETs remain available.
+
+The [selected endpoint metadata](https://openrouter.ai/api/v1/models/cohere/north-mini-code:free/endpoints)
+advertises tools, required tool selection and `max_tokens`, but not
+`max_completion_tokens` or `parallel_tool_calls`. With the unchanged harness
+arguments, one real local A2A lamp negotiation completed at 100 after buyer
+offers of 60, 80 and 100; its receipt and finished-task error passed validation.
+The [local wire logs](../logs/deployment/20261020/local-openrouter-2/) retain five
+model calls and the actual JSON-RPC messages. This does not establish native
+enforcement of every optional parameter or reliable public availability.
+
+An earlier Liquid free-model probe returned a valid tool call and reported cost
+0, but its full local A2A trial failed on repeated upstream HTTP 504 responses.
+Those [failed logs](../logs/deployment/20261020/local-openrouter-1/) are preserved.
+Full public trades remain unverified.
 
 ## Validation and rollback
 

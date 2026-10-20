@@ -259,7 +259,7 @@ uv run --frozen --python 3.12.11 --script challenge_run.py challenge-2 --attempt
 
 2026-10-20 사용자 결정에 따라 **인증 키 배치와 공개 서비스 가동을 보류**했다. 준비된 호스트명은 실제 거래가 가능한 URL로 검증하지 않았고, 공개 거래 로그와 `agent.json`의 `deployed` 항목도 추가하지 않았다. 따라서 **공개 배포 가산점은 아직 완료하지 않았다.** 추후 가동 요청이 있으면 필요한 인증 설정, 외부 Agent Card 조회와 실제 A2A 거래를 검증한 뒤 상태를 갱신한다. 이 준비 과정에서 새 유료 모델 호출은 수행하지 않았다.
 
-### 같은 날 후속 결정: 공개판에만 무료 API 적용
+### 초기 무료 API 후보: Cloudflare — 이후 OpenRouter로 전환
 
 이후 사용자가 공개 배포판에만 무료 API를 연결하고 키를 노출하지 않도록 요청했다. 공개 진입점은 전용 `AX_PUBLIC_MODEL_*` 설정을 필수로 받고, Cloudflare Workers AI의 명시적인 HTTPS 계정 엔드포인트와 `@cf/…` 모델만 허용한다. 기존 구매자·판매자 명령의 OpenAI 모델 기본값은 유지하며, 공개판에는 기존 유료 키·기본 엔드포인트로 돌아가는 경로가 없다. 키의 일반 출력·설정 오류 표시를 가리고, 다른 인증을 포함할 수 있는 `OPENAI_CUSTOM_HEADERS`가 있으면 시작 전에 중단한다. 기존 OpenAI 조직·프로젝트 설정과 HTTP 리디렉션도 공개 요청에 사용하지 않는다.
 
@@ -267,4 +267,16 @@ uv run --frozen --python 3.12.11 --script challenge_run.py challenge-2 --attempt
 
 추가 후 **오프라인 테스트 117개**, Ruff 전체 규칙·소스 포맷·strict basedpyright와 공식 구조 검사를 통과했다. 실제 SDK의 HTTP 요청으로 원래 모델 기본값, 공개 모델 선택, 인증 분리와 리디렉션 거부를 검사했다. 독립 코드 검토에서 발견한 주변 환경 헤더 유입도 수정 후 재검증했다. [구현·검사 기록](.omo/evidence/free-public-model-config/EXECUTOR_REPORT.md) · [독립 검토](.omo/evidence/free-public-config-code-review.md).
 
-**현재는 Cloudflare 로그인·전용 AI 키 생성과 계정의 Workers Free 상태 확인을 기다린다.** 기존 터널 인증은 AI API에 403을 반환했다. 무료 모델의 실제 응답·공개 거래는 아직 실행하지 않았고 `agent.json.deployed`도 추가하지 않았다. 기존 기본 검사 **21/21**은 원래 OpenAI 설정의 실행 근거이며 무료 모델의 합격 증거로 대신하지 않는다. 공개 배포 가산점은 여전히 미완료다.
+이 준비 단계에서는 Cloudflare 로그인·전용 AI 키 생성과 계정의 Workers Free 상태 확인을 기다렸다. 기존 터널 인증으로 AI 모델 목록을 조회했을 때 403을 반환했으며 Cloudflare 모델의 추론·공개 거래는 실행하지 않았다. 이후 아래의 OpenRouter 전환으로 AI용 Cloudflare 로그인 대기를 해소했다. 기존 기본 검사 **21/21**은 원래 OpenAI 설정의 실행 근거이며 무료 모델의 합격 증거로 대신하지 않는다.
+
+### 현행 공개판: 기존 OpenRouter 키와 고정 무료 모델
+
+사용자가 기존 환경 폴더의 OpenRouter 설정을 지정해 공개판을 `https://openrouter.ai/api/v1`와 고정 무료 모델로 전환했다. 후속 로컬 거래를 통과한 현행 선택은 `cohere/north-mini-code:free`다. 공개판은 고정 `:free` 모델만 받으며 유료 모델·동적 라우터·추가 플러그인·다른 API 주소는 시작 전에 거부한다. 기존 실험용 OpenAI 하네스 기본값과 생성 매개변수는 바꾸지 않았다. 공개판의 일일 HTTP 시도 상한은 50이며 사용한 실제 계정의 `GET /api/v1/key`도 무료 모델 일일 한도 50을 반환했다.
+
+공식 [무료 변형 안내](https://openrouter.ai/docs/guides/routing/model-variants/free)와 [엔드포인트 정보](https://openrouter.ai/api/v1/models/liquid/lfm-2.5-2.6b:free/endpoints)에서 입력·출력 가격 0과 필수 도구 호출 지원을 확인했다. 실제 호출 1회는 `quote(price=130)`, 입력 112·출력 59토큰, 보고 비용 0을 반환했다. [프로브 응답 메타데이터](logs/deployment/20261020/openrouter-tool-probe.json). 엔드포인트 목록에는 `parallel_tool_calls` 지원이 명시되지 않아, 이 매개변수를 포함한 단일 성공을 모든 요청의 준수나 안정성 보장으로 해석하지 않는다.
+
+이후 실제 공개 앱의 로컬 ASGI A2A 거래를 실행하자 Liquid는 카탈로그 검색 1회 이후 후속 모델 요청에서 504를 세 번 반환해 `TASK_STATE_FAILED`로 끝났다. 구매나 영수증은 없었다. [실패 원문](logs/deployment/20261020/local-openrouter-1/). [공식 Cohere 무료 엔드포인트](https://openrouter.ai/api/v1/models/cohere/north-mini-code:free/endpoints)의 가격 0·필수 도구 호출 지원을 확인한 뒤 대체 모델로 로컬 램프 거래를 한 번 실행했다. 판매자 호가 130에 구매자가 60→80→100을 제안했고, 실제 영수증은 `lamp`·SKU `lamp`·가격 **100**이었다. 완료 후 재요청의 오류 `-32004`도 확인했다. 모델 호출은 5회, 입력 3,505·출력 1,302토큰이다. [성공 요약](logs/deployment/20261020/local-openrouter-2/summary.json) · [전체 메시지·도구·영수증 원문](logs/deployment/20261020/local-openrouter-2/). 원래 `max_completion_tokens=450`·`parallel_tool_calls=false`를 그대로 보낸 실제 성공이지만 공급자 목록은 이 두 항목을 명시하지 않으므로 모든 요청의 준수를 보장하지 않는다. **이는 로컬 A2A와 실제 무료 모델의 거래 성공이며, 인터넷 공개 배포 거래 성공은 아니다.**
+
+오프라인 **140개 테스트**, Ruff·strict basedpyright·공식 구조 검사를 통과했고 독립 코드 검토도 승인됐다. [구현·검사](.omo/evidence/openrouter-public-config/REPORT.md) · [독립 검토](.omo/evidence/openrouter-public-config-code-review.md) · [연결 준비와 승인 경계](.omo/evidence/openrouter-public-config/ACTIVATION.md).
+
+**실제 공개 가동과 거래 검증은 아직 완료하지 않았다.** 기존 키 중 OpenRouter 키 한 값만 VPS의 비공개 과제 폴더에 전송하도록 최소화했으나, 특정 서버로의 자격증명 전송에 대한 명시적 승인이 없다는 자동 검토 거절로 복사는 실행되지 않았다. 기존 HTTPS 터널의 전용 인증 파일과 이 키를 비공개로 배치한 뒤 공개 거래를 검증해야 하며, `agent.json.deployed`와 가산점 완료 표시는 그 후에 추가한다. 무료 한도·공급자 혼잡에 따른 중단 가능성을 기록하고 유료 대체 경로는 두지 않는다.

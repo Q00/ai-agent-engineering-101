@@ -9,7 +9,7 @@
 
 [최종 보고서](https://github.com/SungJinho/ai-agent-engineering-101/blob/week-06/submissions/25620027/week-06/REPORT.md) · [기본 검사 결과](https://github.com/SungJinho/ai-agent-engineering-101/blob/week-06/submissions/25620027/week-06/test-report.json) · [일반 챌린지 2 로그](https://github.com/SungJinho/ai-agent-engineering-101/tree/week-06/submissions/25620027/week-06/logs/challenge-2/attempt-6) · [실패 유도·재계획 로그](https://github.com/SungJinho/ai-agent-engineering-101/tree/week-06/submissions/25620027/week-06/logs/challenge-2/replanning-attempt-3)
 
-공개 배포용 단일 프로세스 실행 구성·Docker·HTTPS 터널 설정과 외부 거래 검증 도구도 추가했습니다. 공개판에만 Cloudflare Workers AI 무료 모델을 별도 지정하도록 구성했고, 기존 OpenAI 실험 설정은 유지했습니다. 인증 설정·오류 표시·주변 환경 헤더를 분리하고 HTTP 리디렉션을 거부합니다. 추가 구성까지 포함한 오프라인 테스트는 **117개 통과**했습니다. **현재 Cloudflare 로그인·전용 AI 키 생성·계정 Free 상태 확인 대기이며, 무료 모델의 공개 실거래를 검증하지 않아 배포 가산점을 완료했다고 주장하지 않습니다.** [공개 배포 준비 상태](https://github.com/SungJinho/ai-agent-engineering-101/blob/week-06/submissions/25620027/week-06/deployment/README.md)
+공개 배포용 단일 프로세스 실행 구성·Docker·HTTPS 터널 설정과 외부 거래 검증 도구도 추가했습니다. 공개판은 기존 OpenRouter 키와 고정 무료 모델만 사용하도록 구성했고, 기존 OpenAI 실험 설정은 유지했습니다. 오프라인 테스트는 **140개 통과**했습니다. Liquid 무료 모델은 단일 도구 프로브에는 성공했으나 로컬 A2A 거래에서 504로 실패했고, 대체한 `cohere/north-mini-code:free`는 **실제 모델을 사용한 로컬 A2A 램프 거래를 100에 완료**했습니다. 실패·성공 원문 모두 보존했습니다. **VPS에 최소 자격증명을 비공개로 배치하는 승인이 남아 있으며, 인터넷 공개 실거래는 미검증이므로 배포 가산점을 완료했다고 주장하지 않습니다.** [공개 배포 준비 상태](https://github.com/SungJinho/ai-agent-engineering-101/blob/week-06/submissions/25620027/week-06/deployment/README.md)
 
 ## What I tried and discarded
 
@@ -35,7 +35,7 @@ python scripts/trade_test_week06.py submissions/25620027/week-06
 ./run_harness.sh buyer --url http://127.0.0.1:9998/ --item lamp --budget 120
 ```
 
-챌린지 재현 명령과 새 attempt 번호 사용 방법은 REPORT.md에 있습니다. 검증 기록은 [VALIDATION.md](https://github.com/SungJinho/ai-agent-engineering-101/blob/week-06/submissions/25620027/week-06/.omo/evidence/week06-report-followup-20261014/VALIDATION.md)에 정리했습니다. 로컬 공식 검사와 Ruff·포맷·strict basedpyright 검사를 통과했습니다. 기존 필수 과제 후속 검증은 pytest 89개였고, 추가 공개 실행 구성·검증 도구·무료 모델 설정까지 포함한 오프라인 테스트는 현재 117개입니다. 공개 가동이나 무료 모델 거래, 새 유료 기본 검사 재실행을 완료했다는 뜻은 아닙니다.
+챌린지 재현 명령과 새 attempt 번호 사용 방법은 REPORT.md에 있습니다. 검증 기록은 [VALIDATION.md](https://github.com/SungJinho/ai-agent-engineering-101/blob/week-06/submissions/25620027/week-06/.omo/evidence/week06-report-followup-20261014/VALIDATION.md)에 정리했습니다. 로컬 공식 검사와 Ruff·포맷·strict basedpyright 검사를 통과했습니다. 기존 필수 과제 후속 검증은 pytest 89개였고, 공개 실행 구성·검증 도구·OpenRouter 무료 모델 설정까지 포함한 오프라인 테스트는 현재 140개입니다. 공개 가동·무료 모델의 공개 거래·새 유료 기본 검사 재실행을 완료했다는 뜻은 아닙니다.
 
 ## Checklist
 
@@ -46,4 +46,4 @@ python scripts/trade_test_week06.py submissions/25620027/week-06
 - [x] API 키·토큰·환경 파일 없음
 - [x] 실패 이력을 포함한 커밋 기록 보존, squash·history rewrite 없음
 
-- [ ] 선택 공개 배포 가산점: 무료 API 설정 준비, 계정 로그인·전용 키·실제 공개 거래 검증 대기
+- [ ] 선택 공개 배포 가산점: OpenRouter 무료 API 설정 준비, VPS 자격증명 배치 승인·실제 공개 거래 검증 대기
