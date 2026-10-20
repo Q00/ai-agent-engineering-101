@@ -269,7 +269,9 @@ def review(result, item, budget, problem):
     if result.get("state") == "TASK_STATE_COMPLETED" and problem:
         return 1, f"Bad receipt: {problem}."
     if result.get("state") == "error":
-        return 1, f"No deal: the shop did not answer (connection failed)."
+        what = {"ConnectError": "could not be reached", "ConnectTimeout": "could not be reached",
+                "ReadTimeout": "stopped answering"}.get(result.get("error"), "sent a reply that was not valid A2A JSON-RPC")
+        return 1, f"No deal: the shop {what} ({result.get('error', 'error')})."
     if result.get("state") == "TASK_STATE_COMPLETED":
         price = offers[-1]
         stars = 5 if price <= 0.85 * budget else 4 if price <= 0.95 * budget else 3
@@ -312,7 +314,7 @@ async def main(args):
         result = await buyer.shop(chosen["url"], args.item, limit, memory=note, max_raise=MAX_RAISE)
     except Exception as e:  # the shop is down or answers garbage
         log("ERROR", f"trade with {chosen['name']} failed: {e!r}")
-        result = {"state": "error", "asks": [], "offers": []}
+        result = {"state": "error", "asks": [], "offers": [], "error": type(e).__name__}
 
     receipt = result.get("receipt")
     deal = result.get("state") == "TASK_STATE_COMPLETED"
