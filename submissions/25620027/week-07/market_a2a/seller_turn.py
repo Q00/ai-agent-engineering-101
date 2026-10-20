@@ -15,7 +15,16 @@ from pydantic import JsonValue, TypeAdapter, ValidationError
 
 from market_a2a.catalog_constraints import compatible
 from market_a2a.models import HarnessError, Product, ToolResult, json_value
-from market_a2a.seller_policy import PROMPT, TOOLS, Decision, Search, rejection_feedback
+from market_a2a.seller_policy import (
+    PROMPT,
+    TOOLS,
+    Decision,
+    Negotiation,
+    Search,
+    price_feedback,
+    rejection_feedback,
+    search_result,
+)
 
 if TYPE_CHECKING:
     from a2a.server.events import EventQueue
@@ -23,15 +32,6 @@ if TYPE_CHECKING:
     from market_a2a.catalog import Catalog
     from market_a2a.harness import Harness
     from market_a2a.receipts import ReceiptSigner
-
-
-@dataclass(frozen=True, slots=True)
-class Negotiation:
-    """Keep one bounded commercial summary instead of replaying task history."""
-
-    product: Product
-    ask: int
-    rounds: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,9 +119,7 @@ class Negotiator:
                                 )
                             )
                         )
-                        return ToolResult(
-                            data=[json_value(product) for product in found]
-                        )
+                        return search_result(found)
                     case "decide":
                         decision = Decision.model_validate_json(arguments)
                         return await self.commit(
@@ -178,18 +176,13 @@ class Negotiator:
             return ToolResult(
                 data={"error": "Select a retrieved SKU; never switch an open SKU."}
             )
-        if decision.price < product.reserve:
+        price_error = price_feedback(product.reserve, decision, opening=current is None)
+        if price_error is not None:
+            guard = f"seller.guard task={turn.task_id} code={price_error.code}"
             self.harness.emit(
-                "".join(
-                    (
-                        f"seller.guard task={turn.task_id} code=reserve ",
-                        f"price={decision.price} reserve={product.reserve}",
-                    )
-                )
+                f"{guard} price={decision.price} reserve={product.reserve}"
             )
-            return ToolResult(
-                data={"error": "Below reserve; choose a valid price or reject."}
-            )
+            return ToolResult(data=json_value(price_error))
         match decision.action:
             case "quote":
                 self.negotiations[turn.task_id] = Negotiation(
