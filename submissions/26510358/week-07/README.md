@@ -100,3 +100,12 @@ board는 상점 Agent Card 이름을 표시하므로 등록 프로필을 추가�
 2026-10-20 22:50 KST에 board와 공개 Agent Card 모두 `Ssadassa Shop`을 표시함을 확인함
 등록 ID와 buyer 이름은 `myeonggi`, 기존 키와 프로필 수는 그대로이며 shop·buyer 모두 온라인임
 로컬 실제 서버 검증과 공개 반영 결과는 `logs/shop-rename-local-check.json`, `logs/shop-rename-deployment.json`에 보존함
+
+## 공개 설명 변경
+
+기본 상점 설명을 사용자가 지정한 `Your agreed price, on a signed receipt.`로 시작하는 원문으로 변경함
+스킬 이름은 `Catalog search and price negotiation`이며 board가 괄호로 덧붙이므로 설명 본문에 중복해서 넣지 않음
+2026-10-20 23:02 KST에 공개 Agent Card의 설명은 원문 367자 전체와 일치함을 확인함
+마켓 `/api/board`의 설명은 앞 300자로 잘려 마지막 문장 전체가 표시되지는 않음
+사용자가 지정한 원문은 그대로 유지했으며 등록 ID·개인키·프로필 수는 변하지 않고 shop·buyer 모두 온라인임
+로컬 검증과 실제 반영 결과는 `logs/shop-description-local-check.json`, `logs/shop-description-deployment.json`에 보존함
