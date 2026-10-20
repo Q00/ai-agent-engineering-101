@@ -40,6 +40,24 @@ FLOOR = {"lamp": 115, "chair": 210, "bookshelf": 300}
 MAX_OFFERS = 6        # real limit: the negotiation ends after this many buyer offers
 
 
+BENEFIT_PER_HOUR = 3  # real launch benefit: the first 3 buyers of each item each hour get the launch price
+
+
+def sold_this_hour(item):
+    if not HISTORY.exists():
+        return 0
+    hour, sold = time.strftime("%Y-%m-%d %H"), 0
+    for line in HISTORY.read_text(encoding="utf-8").splitlines():
+        try:
+            h = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if (h.get("item") == item and h.get("outcome") == "deal" and h.get("policy") == "boutique"
+                and str(h.get("time", "")).startswith(hour)):
+            sold += 1
+    return sold
+
+
 def stock_left(item):
     """How many of this item I can still sell this hour (counted from my own deal history)."""
     if not HISTORY.exists():
@@ -51,7 +69,8 @@ def stock_left(item):
             h = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if h.get("item") == item and h.get("outcome") == "deal" and str(h.get("time", "")).startswith(hour):
+        if (h.get("item") == item and h.get("outcome") == "deal" and h.get("policy") == "boutique"
+                and str(h.get("time", "")).startswith(hour)):
             sold += 1
     return max(0, STOCK_PER_HOUR - sold)
 
@@ -136,7 +155,8 @@ def record(deal, outcome, price=None):
     with HISTORY.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"time": time.strftime("%Y-%m-%d %H:%M:%S"), "item": deal["item"], "outcome": outcome,
                             "price": price, "opening": deal["opening"], "asks": deal["asks"],
-                            "offers": deal["offers"]}) + "\n")
+                            "offers": deal["offers"], "policy": "boutique",
+                            "benefit": deal.get("benefit")}) + "\n")
 
 
 class Seller(AgentExecutor):
@@ -160,11 +180,19 @@ class Seller(AgentExecutor):
                 await up.reject(say("We only sell: lamp, chair, bookshelf."))
                 return
             if stock_left(item) == 0:
+                print(f"[stock] {item} sold out this hour: turned a buyer away", flush=True)
                 await up.reject(say(f"Sold out: every {item} for this hour is gone. Please come back next hour."))
                 return
             opening, note = pricing(item, RESERVE[item])
+            slot = sold_this_hour(item) + 1
+            benefit = slot <= BENEFIT_PER_HOUR
+            floor = RESERVE[item] if benefit else FLOOR[item]
+            if benefit:   # launch price for the first buyers each hour: they leave happy and their reviews bring more
+                opening = round(RESERVE[item] * 1.15)
+                note += f"; LAUNCH BENEFIT for this buyer (slot {slot} of {BENEFIT_PER_HOUR} this hour): be generous and close fast"
             deal = self.open[task.id] = {"item": item, "ask": None, "offer": None, "lines": [f"buyer: {text}"],
-                                         "opening": opening, "note": note, "asks": [], "offers": []}
+                                         "opening": opening, "note": note, "asks": [], "offers": [],
+                                         "floor": floor, "benefit": slot if benefit else None}
             print(f"[pricing] {item}: opening {opening} ({note})", flush=True)
         else:
             deal["lines"].append(f"buyer: {text}")
@@ -173,7 +201,7 @@ class Seller(AgentExecutor):
             if m:
                 deal["offers"].append(deal["offer"])
 
-        reserve = max(RESERVE[deal["item"]], FLOOR[deal["item"]])   # the boutique floor, never below the reserve
+        reserve = max(RESERVE[deal["item"]], deal["floor"])   # boutique floor (or the reserve for a launch buyer)
         o, ask = deal["offer"], deal["ask"]
         if o is not None and ask is not None and o >= reserve and ask - o <= max(3, 0.03 * ask):
             move, action = {"action": "accept"}, "accept"   # do not lose a deal over a few units (week 7, 120 vs 121)
@@ -225,8 +253,10 @@ class Seller(AgentExecutor):
         left = stock_left(deal["item"])
         rounds_left = MAX_OFFERS - len(deal["offers"])
         if len(deal["lines"]) == 1:   # truthful scarcity: the stock and the round limit are both enforced above
+            perk = (f"Launch benefit: you are buyer {deal['benefit']} of the first {BENEFIT_PER_HOUR} this hour, so you get "
+                    f"our launch price. " if deal["benefit"] else "")
             reply = (f"{deal['item']}: a boutique piece worth its price - signed receipt that always matches the agreed "
-                     f"price, no surprises. Only {left} left this hour; this negotiation closes after {MAX_OFFERS} offers. "
+                     f"price, no surprises. {perk}Only {left} left this hour; this negotiation closes after {MAX_OFFERS} offers. "
                      f"Asking {deal['ask']}. Send your offer as a number.")
         else:
             reply = (f"{'Your next offer is the last one, ' if rounds_left <= 1 else f'{rounds_left} offers left, '}"
@@ -250,7 +280,8 @@ def build(port):
                     "No surprises: the receipt never differs from the price you agreed. "
                     f"A coding harness ({CMD.split()[0]}) negotiates. "
                     "Every receipt is signed (Ed25519) and always shows the agreed price. "
-                    f"Limited stock: {STOCK_PER_HOUR} of each item per hour; a negotiation closes after {MAX_OFFERS} offers.",
+                    f"Limited stock: {STOCK_PER_HOUR} of each item per hour; a negotiation closes after {MAX_OFFERS} offers. "
+                    f"Launch benefit: the first {BENEFIT_PER_HOUR} buyers of each item every hour get our launch price.",
         version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
