@@ -27,7 +27,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 import catalog
 import harness
 
-DEFAULT = {"name": "Han's Lamp Shop", "catalog": "catalog/basic.json", "categories": None, "sample": 1.0, "seed": 0,
+DEFAULT = {"name": "GPT Lamp Shop", "catalog": "catalog/basic.json", "categories": None, "sample": 1.0, "seed": 0,
            "price_factor": 1.0}
 SHOW_ALL = 20
 K = 8
