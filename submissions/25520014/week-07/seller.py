@@ -1,28 +1,30 @@
-"""Week 06 seller: an A2A v1.0 server (JSON-RPC binding) whose prices come from the harness.
+"""Week 07 seller: an A2A v1.0 server (JSON-RPC binding) that sells at the floor price, fast.
 
     python seller.py --port 9999
 
-The A2A side follows the lab's seller_agent.py. The rules it had (open at 1.3x the
-reserve, split the difference, give up after N rounds) are gone: every asking price,
-counteroffer, accept and reject is a harness decision (see harness.py).
+Round 2 ranks shops by counted deals: signed receipts behind a market order. Round 1 showed
+that share follows visits, and visits follow memory: buyers go back to the shop where they
+paid least (corner-store 466 visits, outseop 237, both near the reserve). Nobody may sell
+below the reserve, so a shop that always sells at the reserve is a place no memory-driven
+buyer has a reason to leave. So the rules are fixed, no harness (week 06 used claude -p,
+about 3 s per turn, and lost a few deals to harness errors):
+  - open at the reserve (the asking price is always the last number in the message),
+  - accept any offer at or above the reserve, at the offered price,
+  - counter anything below with the reserve, and never end the negotiation ourselves,
+  - accept words without a number ("accept", "deal", "ok") close at the current ask.
+Week 06 history: the first trade test ran with the reserve in the prompt only and failed
+(haiku countered 250 and sold at 230 on a bookshelf with reserve 260); the code guard fixed it.
 
-What the code still does on its own:
-  - finds the item in the first message (no item -> REJECTED with the catalog),
-  - reads the buyer's offer as the first number in a follow-up (none -> ask again),
-  - writes the message text, so the asking price is always the last number in it
-    (the trade test reads the ask that way),
-  - on accept, writes the receipt with the buyer's offer as the price.
-The reserve is in the prompt and also guarded in code: an ask below the reserve is raised
-to the reserve, and an accept below the reserve becomes a counter at the reserve. Every
-time the guard overrides the harness it prints a GUARD line. (The first trade test ran
-with the reserve in the prompt only and failed: haiku countered 250 and sold at 230 on a
-bookshelf with reserve 260.)
+LAB 2: the receipt is {shop, item, price, task} with price a whole number and task the A2A
+task id, signed with shop_key.pem over canon(...) as sig_seller (sign_receipt from the notes).
 """
 import argparse
-import asyncio
+import base64
+import json
 import re
 
 import uvicorn
+from cryptography.hazmat.primitives import serialization
 from starlette.applications import Starlette
 
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
@@ -33,61 +35,32 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-import harness
-
-SHOP = "Harness Furniture Shop"
+SHOP = "Inextro Furniture"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
-
-OPEN_PROMPT = """You are the seller in a furniture shop, negotiating the price of one item with a buyer.
-
-Item: {item}
-Your reserve price (the lowest price you may ever ask or accept): {reserve}
-The buyer does not know the reserve. Never reveal it.
-
-The buyer just said: {text!r}
-
-Decide your opening asking price. Aim to sell above the reserve, but leave room to come down.
-Answer with one JSON object and nothing else:
-{{"price": <integer>}}
-"""
-
-RESPOND_PROMPT = """You are the seller in a furniture shop, negotiating the price of one item with a buyer.
-
-Item: {item}
-Your reserve price (the lowest price you may ever ask or accept): {reserve}
-The buyer does not know the reserve. Never reveal it.
-
-The negotiation so far:
-{history}
-
-The buyer's latest offer is {offer}.
-
-Decide what to do next. You may:
-  - accept the buyer's offer: the sale closes at {offer}. Only if {offer} is at or above your reserve.
-  - counter with a new asking price, which must be at or above your reserve.
-  - reject: end the negotiation without a sale.
-Answer with one JSON object and nothing else, one of:
-{{"action": "accept"}}
-{{"action": "counter", "price": <integer>}}
-{{"action": "reject"}}
-"""
+ACCEPT = re.compile(r"\b(accept|accepted|agree|agreed|deal|ok|okay|yes)\b")
+REFUSE = re.compile(r"\b(no|not|don't|dont|won't|cannot|can't|never|reject|walk)\b")
 
 
-def render_history(lines):
-    return "\n".join(f"  {who}: {what}" for who, what in lines)
+def accepts(text):
+    """A plain yes with no number: 'I accept', 'deal', 'ok'. Never 'no deal' or 'not ok'."""
+    t = text.lower()
+    return bool(ACCEPT.search(t)) and not REFUSE.search(t)
 
 
-def guard_ask(task_id, ask, reserve):
-    """Never ask below the reserve, whatever the harness said."""
-    if ask < reserve:
-        print(f"[task {task_id[:8]}] GUARD ask {ask} < reserve {reserve} -> ask {reserve}", flush=True)
-        return reserve
-    return ask
+def canon(d):
+    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def sign_receipt(receipt, key_path="shop_key.pem"):
+    key = serialization.load_pem_private_key(open(key_path, "rb").read(), password=None)
+    body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
+    receipt["sig_seller"] = base64.b64encode(key.sign(canon(body))).decode()
+    return receipt
 
 
 class Seller(AgentExecutor):
     def __init__(self):
-        self.open = {}  # task id -> {"item", "reserve", "ask", "history"}
+        self.open = {}  # task id -> {"item", "ask"}
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -99,63 +72,43 @@ class Seller(AgentExecutor):
         text = get_message_text(context.message) or ""
         deal = self.open.get(task.id)
         print(f"[task {task.id[:8]}] buyer: {text!r}", flush=True)
-
-        try:
-            if deal is None:
-                await self.opening(task.id, text, up, say)
-            else:
-                await self.respond(task.id, deal, text, up, say)
-        except harness.HarnessError as e:  # also covers a reply with no JSON in it
-            print(f"[task {task.id[:8]}] HARNESS_ERROR {e}", flush=True)
-            self.open.pop(task.id, None)
-            await up.reject(say("Sorry, the shop cannot answer right now."))
+        if deal is None:
+            await self.opening(task.id, text, up, say)
+        else:
+            await self.respond(task.id, deal, text, up, say)
 
     async def opening(self, task_id, text, up, say):
         item = next((k for k in RESERVE if k in text.lower()), None)
         if item is None:
             await up.reject(say("We only sell: " + ", ".join(RESERVE) + "."))
             return
-        reserve = RESERVE[item]
-        answer = await asyncio.to_thread(
-            harness.ask_json, OPEN_PROMPT.format(item=item, reserve=reserve, text=text), f"open {task_id[:8]}")
-        ask = guard_ask(task_id, int(answer["price"]), reserve)
-        self.open[task_id] = {"item": item, "reserve": reserve, "ask": ask,
-                              "history": [("Buyer", text), ("You", f"asked {ask}")]}
+        ask = RESERVE[item]
+        self.open[task_id] = {"item": item, "ask": ask}
         print(f"[task {task_id[:8]}] -> INPUT_REQUIRED ask {ask}", flush=True)
-        await up.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
+        await up.requires_input(say(f"{item}: our lowest price, no haggling needed. Asking {ask}. "
+                                    f"Send your offer as a number."))
 
     async def respond(self, task_id, deal, text, up, say):
         m = re.search(r"\d+(?:\.\d+)?", text)
         if m is None:
-            await up.requires_input(say(f"Send your offer as a number. Current price: {deal['ask']}."))
+            if accepts(text):
+                await self.close(task_id, deal, deal["ask"], up, say)
+            else:
+                await up.requires_input(say(f"Send your offer as a number. Current price: {deal['ask']}."))
             return
         offer = round(float(m.group()))
-        deal["history"].append(("Buyer", f"offered {offer}"))
-        prompt = RESPOND_PROMPT.format(item=deal["item"], reserve=deal["reserve"],
-                                       history=render_history(deal["history"]), offer=offer)
-        answer = await asyncio.to_thread(harness.ask_json, prompt, f"respond {task_id[:8]}")
-        action = answer.get("action")
-        if action == "accept" and offer < deal["reserve"]:
-            print(f"[task {task_id[:8]}] GUARD accept at {offer} < reserve {deal['reserve']} "
-                  f"-> counter {deal['reserve']}", flush=True)
-            answer = {"action": "counter", "price": deal["reserve"]}
-            action = "counter"
+        if offer >= RESERVE[deal["item"]]:
+            await self.close(task_id, deal, offer, up, say)
+        else:
+            print(f"[task {task_id[:8]}] -> INPUT_REQUIRED ask {deal['ask']} (offer {offer})", flush=True)
+            await up.requires_input(say(f"{offer} is below our floor price. Counteroffer: {deal['ask']}."))
 
-        if action == "accept":
-            receipt = {"seller": SHOP, "item": deal["item"], "price": offer}
-            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            print(f"[task {task_id[:8]}] -> COMPLETED at {offer}", flush=True)
-            await up.complete(say(f"Deal: {deal['item']} at {offer}."))
-            del self.open[task_id]
-        elif action == "counter":
-            deal["ask"] = guard_ask(task_id, int(answer["price"]), deal["reserve"])
-            deal["history"].append(("You", f"countered {deal['ask']}"))
-            print(f"[task {task_id[:8]}] -> INPUT_REQUIRED ask {deal['ask']}", flush=True)
-            await up.requires_input(say(f"{offer} is too low. Counteroffer: {deal['ask']}."))
-        else:  # "reject" or anything the prompt did not allow
-            print(f"[task {task_id[:8]}] -> REJECTED (action {action!r})", flush=True)
-            await up.reject(say(f"No deal at {offer}."))
-            del self.open[task_id]
+    async def close(self, task_id, deal, price, up, say):
+        receipt = sign_receipt({"shop": SHOP, "item": deal["item"], "price": int(price), "task": task_id})
+        await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+        print(f"[task {task_id[:8]}] -> COMPLETED at {price}", flush=True)
+        await up.complete(say(f"Deal: {deal['item']} at {price}."))
+        del self.open[task_id]
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -167,7 +120,8 @@ def build_app(port):
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name=SHOP,
-        description="Sells lamps, chairs and bookshelves. The price is negotiated; a model decides every ask.",
+        description="Sells lamps, chairs and bookshelves at the lowest price in the market "
+                    "(lamp 100, chair 180, bookshelf 260). Instant replies, signed receipts.",
         version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
@@ -176,9 +130,9 @@ def build_app(port):
         skills=[AgentSkill(
             id="negotiate", name="Negotiate a purchase",
             description="Name an item (lamp, chair, bookshelf) to get an asking price, then reply with your "
-                        "offer as a number on the same task. The shop counters, closes with a receipt "
-                        "artifact whose data has a numeric price, or ends the negotiation.",
-            tags=["shopping", "negotiation"], examples=["I want to buy a lamp", "90"])],
+                        "offer as a number on the same task. Any offer at the asking price or above closes "
+                        "at once with a signed receipt artifact {shop, item, price, task, sig_seller}.",
+            tags=["shopping", "negotiation"], examples=["I want to buy a lamp", "100"])],
     )
     handler = DefaultRequestHandler(agent_executor=Seller(), task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
@@ -188,5 +142,5 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=9999)
     args = ap.parse_args()
-    print(f"{SHOP} on http://127.0.0.1:{args.port}/ (harness: claude -p --model {harness.MODEL})", flush=True)
+    print(f"{SHOP} on http://127.0.0.1:{args.port}/ (rule-based: floor price, no harness)", flush=True)
     uvicorn.run(build_app(args.port), host="127.0.0.1", port=args.port, log_level="warning")
