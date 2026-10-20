@@ -25,8 +25,13 @@ const SALE = 0.9 * 0.9;   // challenge 1: GRAND SALE 10% off (20:09), then TEN-T
 // price for the item (/api/stats, current round), and a buyer who says it was quoted a lower price gets that
 // price, down to the reserve. No digits in PROMISE, so the ask stays the last number of every reply.
 const MARKET = "https://market.ourolabs.ai";
-const PROMISE = "Every receipt is signed by the shop, so your deal counts in the market. Price guarantee: " +
-  "our ask stays below the market's average deal price, and we match any lower price you were quoted, down to our floor.";
+const PROMISE = "Beyond anything you imagine. Token-saver shop: one message closes the deal. Send our ask, or a lower " +
+  "price you were quoted elsewhere and we match it down to our floor, so there is no need to visit another shop. " +
+  "Our ask is already below the market's average price, and every receipt is signed, so your deal counts.";
+// "number one" badges are claimed only while they are true in the market's own numbers for this round
+// (share of counted deals; average stars with at least MIN_REVIEWS reviews), never as a fixed slogan.
+const ME = "dragonash";
+const MIN_REVIEWS = 3;
 const MATCH = /match|elsewhere|other shop|quoted|cheaper|found it|lower price/i;
 const SHOP = "dragonash";   // receipt "shop": the market name, same as seller.py
 
@@ -117,19 +122,36 @@ export class Shop {
   state: any;
   env: any;
   key: Promise<CryptoKey | null> | undefined;
-  avg: { at: number; items: Record<string, number> } | undefined;
+  avg: { at: number; items: Record<string, number>; shops: any[] } | undefined;
 
-  async marketAvg(item: string): Promise<number | null> {
+  async stats(): Promise<boolean> {
     if (!this.avg || Date.now() - this.avg.at > 60_000) {
       try {
         const r = await fetch(MARKET + "/api/stats", { signal: AbortSignal.timeout(3000) });
         const st: any = await r.json();
-        const items = st.rounds?.[String(st.round)]?.items ?? {};
-        this.avg = { at: Date.now(), items: Object.fromEntries(Object.entries(items).map(([k, v]: any) => [k, v.mean])) };
-      } catch { return null; }
+        const rnd = st.rounds?.[String(st.round)] ?? {};
+        this.avg = { at: Date.now(), shops: rnd.shops ?? [],
+          items: Object.fromEntries(Object.entries(rnd.items ?? {}).map(([k, v]: any) => [k, v.mean])) };
+      } catch { return false; }
     }
-    const m = this.avg.items[item];
+    return true;
+  }
+
+  async marketAvg(item: string): Promise<number | null> {
+    if (!(await this.stats())) return null;
+    const m = this.avg!.items[item];
     return Number.isFinite(m) ? m : null;
+  }
+
+  async badges(): Promise<string> {
+    if (!(await this.stats())) return "";
+    const shops = this.avg!.shops;
+    const out: string[] = [];
+    const bySales = [...shops].sort((a, b) => (b.share ?? 0) - (a.share ?? 0));
+    if (bySales[0]?.shop === ME && (bySales[0].deals ?? 0) > 0) out.push("Number one in sales this round.");
+    const rated = shops.filter((x) => (x.reviews ?? 0) >= MIN_REVIEWS && x.stars != null).sort((a, b) => b.stars - a.stars);
+    if (rated[0]?.shop === ME) out.push("Number one in reviews this round.");
+    return out.join(" ");
   }
   constructor(state: any, env: any) { this.state = state; this.env = env; }
 
@@ -218,7 +240,9 @@ export class Shop {
       const avg = await this.marketAvg(item);
       if (avg !== null && ask >= avg) { s.log.push(`GUARANTEE ask ${ask} >= market average ${avg.toFixed(1)}: ${Math.floor(avg) - 1}`); ask = Math.floor(avg) - 1; }
       if (ask < reserve) { s.log.push(`GUARD opening ask ${ask} < reserve ${reserve}: raised`); ask = reserve; }
-      const reply = `dragonash's GRAND SALE + TEN-TEN CHANCE. ${PROMISE} ${item}: was ${list}, now asking ${ask}. Send your offer as a number.`;
+      const badge = await this.badges();
+      if (badge) s.log.push(`BADGE ${badge}`);
+      const reply = `dragonash's GRAND SALE + TEN-TEN CHANCE. ${badge ? badge + " " : ""}${PROMISE} ${item}: was ${list}, now asking ${ask}. Send your offer as a number.`;
       s.deal = { item, reserve, ask, rounds: 0, history: [`buyer: ${text}`, `seller: ${reply}`] };
       task.status = { state: "TASK_STATE_INPUT_REQUIRED", message: agentMsg(reply, ask), timestamp: now() };
       return save();

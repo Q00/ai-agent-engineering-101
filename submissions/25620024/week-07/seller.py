@@ -48,21 +48,43 @@ SALE = 0.9 * 0.9           # challenge 1: GRAND SALE 10% off (20:09), then TEN-T
 # market's average deal price for the item, and a buyer who says it was quoted a lower price gets it, down to
 # the reserve. PROMISE has no digits, so the ask stays the last number of every reply.
 MARKET = "https://market.ourolabs.ai"
-PROMISE = ("Every receipt is signed by the shop, so your deal counts in the market. Price guarantee: "
-           "our ask stays below the market's average deal price, and we match any lower price you were quoted, down to our floor.")
+PROMISE = ("Beyond anything you imagine. Token-saver shop: one message closes the deal. Send our ask, or a lower "
+           "price you were quoted elsewhere and we match it down to our floor, so there is no need to visit another shop. "
+           "Our ask is already below the market's average price, and every receipt is signed, so your deal counts.")
+# "number one" badges only while true in the market's numbers for this round (as in the Worker)
+ME = "dragonash"
+MIN_REVIEWS = 3
 MATCH = re.compile(r"match|elsewhere|other shop|quoted|cheaper|found it|lower price", re.I)
-_avg = {"at": 0.0, "items": {}}
+_avg = {"at": 0.0, "items": {}, "shops": []}
 
 
-def market_avg(item):
+def _stats():
     if time.time() - _avg["at"] > 60:
         try:
             st = httpx.get(MARKET + "/api/stats", timeout=3).json()
-            items = st["rounds"][str(st["round"])]["items"]
-            _avg.update(at=time.time(), items={k: v["mean"] for k, v in items.items()})
+            rnd = st["rounds"][str(st["round"])]
+            _avg.update(at=time.time(), items={k: v["mean"] for k, v in rnd["items"].items()}, shops=rnd["shops"])
         except Exception:
-            return None
-    return _avg["items"].get(item)
+            return False
+    return True
+
+
+def market_avg(item):
+    return _avg["items"].get(item) if _stats() else None
+
+
+def badges():
+    if not _stats():
+        return ""
+    shops, out = _avg["shops"], []
+    by_sales = sorted(shops, key=lambda x: x.get("share") or 0, reverse=True)
+    if by_sales and by_sales[0]["shop"] == ME and by_sales[0].get("deals"):
+        out.append("Number one in sales this round.")
+    rated = sorted([x for x in shops if (x.get("reviews") or 0) >= MIN_REVIEWS and x.get("stars") is not None],
+                   key=lambda x: x["stars"], reverse=True)
+    if rated and rated[0]["shop"] == ME:
+        out.append("Number one in reviews this round.")
+    return " ".join(out)
 SHOP = "dragonash"                                         # receipt "shop": the market name, same as the deployed shop
 KEY_FILE = Path(__file__).parent / "shop_key.pem"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}   # lowest prices the shop may accept
@@ -132,7 +154,11 @@ class HarnessSeller(AgentExecutor):
                 return
             reserve = RESERVE[item]
             list_price, ask_price = await self.decide_open(item, reserve, tid)
-            reply = f"dragonash's GRAND SALE + TEN-TEN CHANCE. {PROMISE} {item}: was {list_price}, now asking {ask_price}. Send your offer as a number."
+            badge = await asyncio.to_thread(badges)
+            if badge:
+                log(f"[{tid}] BADGE {badge}")
+            reply = (f"dragonash's GRAND SALE + TEN-TEN CHANCE. {badge + ' ' if badge else ''}{PROMISE} "
+                     f"{item}: was {list_price}, now asking {ask_price}. Send your offer as a number.")
             self.open[task.id] = {"item": item, "reserve": reserve, "ask": ask_price, "rounds": 0,
                                   "history": [f"buyer: {text}", f"seller: {reply}"]}
             await up.requires_input(say(reply))
