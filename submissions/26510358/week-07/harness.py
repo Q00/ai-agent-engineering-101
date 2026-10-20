@@ -152,9 +152,12 @@ class Harness:
                     remaining = min(self.timeout, (deadline - time.monotonic()) if deadline else self.timeout)
                     if remaining <= 2:
                         raise HarnessError("Insufficient inference time after queue admission")
+                    inference_env = os.environ.copy()
+                    # Account ownership is needed by the kit, never by inference.
+                    inference_env.pop("MARKET_OWNER", None)
                     process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE, text=True, cwd=empty,
-                                               start_new_session=True)
+                                               start_new_session=True, env=inference_env)
                     try:
                         stdout, stderr = process.communicate(prompt, timeout=remaining)
                     except subprocess.TimeoutExpired:
