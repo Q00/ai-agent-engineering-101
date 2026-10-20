@@ -1,0 +1,12 @@
+market buyer: lamp, budget 120, 2 shops, 7 past trades in memory
+  [harness 2.9s] '{"shop": "Kit Shop South", "reason": "Its reviews average 4.7 stars with honest receipts, and your own past trade there was fair at 100, within your 120 budget."}'
+[choose] Kit Shop South http://127.0.0.1:40979: Its reviews average 4.7 stars with honest receipts, and your own past trade there was fair at 100, within your 120 budget.
+card: 'Kit Shop South', JSONRPC at http://127.0.0.1:40979/
+  -> 'I want to buy a lamp'
+  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+  [harness 2.8s] '{"action": "offer", "price": 100}'
+  -> '100' (taskId d4e4a8e9)
+  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+  [harness 2.9s] '{"stars": 4, "review": "Kit Shop South completed the lamp purchase at 100, under the 120 budget, and the receipt matched the agreed price."}'
+result: TASK_STATE_COMPLETED, 9s
+{"shop": "http://127.0.0.1:40979", "receipt": {"price": 100.0, "shop": "Kit Shop South", "sig_seller": "Jl07U7jW2Fpc/e1LZpHP2yOmx8G1+1ms9Avb2yhAr1ltTGAdHe7Ld676dImK20kgN34LZEruzx3ECCv03MMQAA==", "task": "d4e4a8e9-6d3e-4318-b403-02248e19e74a", "item": "lamp"}, "stars": 4, "review": "Kit Shop South completed the lamp purchase at 100, under the 120 budget, and the receipt matched the agreed price."}

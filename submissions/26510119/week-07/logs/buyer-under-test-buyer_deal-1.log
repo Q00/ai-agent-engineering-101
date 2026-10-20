@@ -1,8 +1,12 @@
-buyer: lamp, budget 120, seller http://127.0.0.1:37277, harness: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence, budget guard on
-card: 'Kit Shop', JSONRPC at http://127.0.0.1:37277/, skills ['negotiate']
+market buyer: lamp, budget 120, 1 shops, 0 past trades in memory
+  [harness 2.9s] '{"shop": "Kit Shop", "reason": "It has no reviews and no trading history, so it is unknown rather than dishonest, and it is the only shop available to buy from."}'
+[choose] Kit Shop http://127.0.0.1:59269: It has no reviews and no trading history, so it is unknown rather than dishonest, and it is the only shop available to buy from.
+card: 'Kit Shop', JSONRPC at http://127.0.0.1:59269/
   -> 'I want to buy a lamp'
   <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-  [harness 4.8s] '{"action": "offer", "price": 100}'
-  -> '100' (taskId 00d28be3)
+  [harness 2.8s] '{"action": "offer", "price": 100}'
+  -> '100' (taskId cea74146)
   <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-result: TASK_STATE_COMPLETED, bought at 100.0, 5s
+  [harness 3.7s] '{"stars": 5, "review": "Kit Shop agreed to sell the lamp for 100, under my 120 budget, completed the deal, and the receipt matched the agreed price."}'
+result: TASK_STATE_COMPLETED, 10s
+{"shop": "http://127.0.0.1:59269", "receipt": {"price": 100.0, "shop": "Kit Shop", "sig_seller": "bgrgabuoIihSrVe4fasFGKKwjEhresQX0HcEDyl5rMceofODUGrzPrhouE5ikChdP7jSabMhsxp59CX+5YKeDw==", "task": "cea74146-6c8f-40f5-b191-5f2948fa4569", "item": "lamp"}, "stars": 5, "review": "Kit Shop agreed to sell the lamp for 100, under my 120 budget, completed the deal, and the receipt matched the agreed price."}

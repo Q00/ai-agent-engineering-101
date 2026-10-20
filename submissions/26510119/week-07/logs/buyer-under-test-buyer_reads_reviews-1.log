@@ -1,0 +1,15 @@
+market buyer: lamp, budget 120, 2 shops, 6 past trades in memory
+  [harness 2.9s] '{"shop": "Kit Shop South", "reason": "Its reviews consistently report fair prices and honest receipts matching the agreed price, while Kit Shop North has multiple reports of overcharging on receipts."}'
+[choose] Kit Shop South http://127.0.0.1:35357: Its reviews consistently report fair prices and honest receipts matching the agreed price, while Kit Shop North has multiple reports of overcharging on receipts.
+card: 'Kit Shop South', JSONRPC at http://127.0.0.1:35357/
+  -> 'I want to buy a lamp'
+  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+  [harness 2.7s] '{"action": "offer", "price": 95}'
+  -> '95' (taskId f814224a)
+  <- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 112.
+  [harness 3.1s] '{"action": "offer", "price": 100}'
+  -> '100' (taskId f814224a)
+  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+  [harness 3.0s] '{"stars": 4, "review": "Kit Shop South completed the lamp deal at 100, under the 120 budget, and the receipt matches the agreed price, though I can\'t speak to the item\'s quality or delivery beyond that."}'
+result: TASK_STATE_COMPLETED, 12s
+{"shop": "http://127.0.0.1:35357", "receipt": {"price": 100.0, "shop": "Kit Shop South", "sig_seller": "Okp1I7rqjx3wPWoxy2GSSBsLv9FuF0rvZhv3+Qs3c0r/Pv9tpFjp8DBJtfJvmkplJdhgmBt8E9qWuWxQqwYUDQ==", "task": "f814224a-ee7d-475e-89e0-719433a33f2b", "item": "lamp"}, "stars": 4, "review": "Kit Shop South completed the lamp deal at 100, under the 120 budget, and the receipt matches the agreed price, though I can't speak to the item's quality or delivery beyond that."}
