@@ -120,6 +120,11 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False):
         bad_public = sum(r["stars"] <= 2 for r in reviews) >= 2
         recent_fault = any(r.get("outcome") == "integrity_error"
                            and time.time() - r.get("epoch", 0) < 1800 for r in own)
+        # Transport health is shared across items. Do not discover a broken
+        # tunnel separately for lamp, chair and bookshelf on consecutive orders.
+        last_outage = max([0] + [r.get("epoch", 0) for r in own if r.get("outcome") == "unavailable"])
+        last_purchase = max([0] + [r.get("epoch", 0) for r in own if eligible_win(r)])
+        recent_outage = last_outage > last_purchase and time.time() - last_outage < 120
         speeds = [r.get("seconds", 60) for r in wins]
         speed = 1 / (1 + (sum(speeds) / len(speeds) if speeds else 60) / 30)
         # As direct evidence grows, unverified public ratings lose influence.
@@ -129,21 +134,24 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False):
         score = personal_weight * personal + 0.20 * budget_fit + public_weight * public + 0.10 * speed
         if recent_fault:
             score -= 1
+        if recent_outage:
+            score -= 0.5
         # Negative public evidence is a caution, not a permanent blacklist.
         if bad_public:
             score -= 0.15 / (1 + len(informative))
         tie = hashlib.sha256(f"{observation_count(memory)}:{item}:{shop['name']}".encode()).hexdigest()
         candidates.append({"shop": shop, "score": score, "tie": tie, "own": len(same),
-                           "public": round(public, 3), "recent_fault": recent_fault,
+                           "public": round(public, 3), "recent_fault": recent_fault, "recent_outage": recent_outage,
                            "bad_public": bad_public, "wins": len(wins), "budget_fit": round(budget_fit, 3)})
     count = observation_count(memory)
     explore = count >= 6 and (count + 1) % 7 == 0
-    pool = [c for c in candidates if c["own"] == 0 and not c["bad_public"] and not c["recent_fault"]]
+    pool = [c for c in candidates if c["own"] == 0 and not c["bad_public"]
+            and not c["recent_fault"] and not c["recent_outage"]]
     mode = "bounded exploration" if explore and pool else "best evidence"
     selected = max(pool if explore and pool else candidates, key=lambda c: (c["score"], c["tie"]))
     reason = (f"{mode}; item={item}; own successes={selected['wins']}/{selected['own']}; "
               f"budget fit={selected['budget_fit']}; public score={selected['public']}; "
-              f"recent receipt fault={selected['recent_fault']}")
+              f"recent receipt fault={selected['recent_fault']}; recent outage={selected['recent_outage']}")
     evidence = {"selection_reason": reason, "public_reviews_untrusted": selected["shop"]["reviews"],
                 "own_item_history": [r for r in memory if r["name"] == selected["shop"]["name"]
                                      and r.get("item") == item][-5:]}

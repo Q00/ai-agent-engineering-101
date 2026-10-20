@@ -84,8 +84,11 @@ async def run(args):
         error = str(failure)
     except TimeoutError:
         error = "buyer_deadline_exceeded"
-    except httpx.HTTPError:
+    except httpx.HTTPError as failure:
         error = "a2a_network_error"
+        response = getattr(failure, "response", None)
+        log.record("transport_failure", kind=type(failure).__name__,
+                   http_status=response.status_code if response is not None else None)
     except Exception:
         error = "unexpected_market_buyer_error"
     finally:

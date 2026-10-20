@@ -93,6 +93,24 @@ class MarketSelectionTests(unittest.TestCase):
         picked, _, _ = choose_shop([shop("expensive"), shop("affordable")], memory, "lamp", 120)
         self.assertEqual(picked["name"], "affordable")
 
+    def test_transport_failure_cools_down_other_items_and_later_recovers(self):
+        memory = [{"name": "offline", "item": "lamp", "outcome": "unavailable", "epoch": time.time()}]
+        picked, _, _ = choose_shop([shop("offline", 5), shop("alternative", 4)], memory, "chair", 205)
+        self.assertEqual(picked["name"], "alternative")
+        memory[0]["epoch"] -= 121
+        picked, _, _ = choose_shop([shop("offline", 5), shop("alternative", 4)], memory, "chair", 205)
+        self.assertEqual(picked["name"], "offline")
+
+    def test_confirmed_recovery_clears_transport_cooldown(self):
+        now = time.time()
+        memory = [{"name": "recovered", "item": "lamp", "outcome": "unavailable", "epoch": now - 10},
+                  {"name": "recovered", "item": "bookshelf", "outcome": "purchased", "epoch": now,
+                   "price": 260, "signature_verified": True}]
+        picked, reason, _ = choose_shop([shop("recovered", 5), shop("other", 4)], memory, "chair", 205,
+                                       require_verified=True)
+        self.assertEqual(picked["name"], "recovered")
+        self.assertIn("recent outage=False", reason)
+
     def test_failed_larger_budget_is_relevant_but_smaller_budget_is_not(self):
         candidates = [shop("failed"), shop("untried")]
         memory = [{"name": "failed", "item": "lamp", "outcome": "no_deal", "budget": 150}] * 5
