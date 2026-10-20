@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, ClassVar, assert_never
+import re
+from typing import TYPE_CHECKING, ClassVar
 from uuid import uuid4
 
 from pydantic import (
@@ -12,6 +13,7 @@ from pydantic import (
     Field,
     JsonValue,
     TypeAdapter,
+    ValidationError,
     field_validator,
 )
 
@@ -133,24 +135,47 @@ class Task(Wire):
     metadata: Identity = Field(default_factory=Identity)
 
     def observation(self) -> str:
-        """Keep only a bounded seller observation for the next decision."""
+        """Keep bounded raw seller text for logs and failure evidence only."""
         return " ".join(part.text for part in self.status.message.parts)[:4000]
 
     def asking_price(self) -> int | None:
         """Expose only positive whole-number asks as untrusted price observations."""
         for value in (self.status.message.metadata.ask, self.metadata.ask):
-            match value:
-                case bool() | str() | list() | dict() | None:
-                    continue
-                case int():
-                    if value > 0:
-                        return value
-                case float():
-                    if value > 0 and value.is_integer():
-                        return int(value)
-                case unreachable:
-                    assert_never(unreachable)
+            try:
+                amount = TypeAdapter(int | float).validate_python(value, strict=True)
+            except ValidationError:
+                continue
+            if amount > 0 and amount % 1 == 0:
+                return int(amount)
+        first_line = self.observation().split("\n", 1)[0].strip()
+        for pattern in (
+            r"Counteroffer: ([0-9]{1,9})\.",
+            r"[0-9]{1,9} is too low\. Counteroffer: ([0-9]{1,9})\.",
+            (
+                r"[A-Za-z][A-Za-z0-9 _-]{0,79}: asking ([0-9]{1,9})\. "
+                r"Send your offer as a number\."
+            ),
+        ):
+            matched = re.fullmatch(pattern, first_line)
+            if matched is not None and int(matched[1]) > 0:
+                return int(matched[1])
         return None
+
+    def commercial_observation(self) -> dict[str, JsonValue]:
+        """Expose only allowlisted protocol state and a claimed numeric ask."""
+        state = self.status.state
+        if state not in (
+            "TASK_STATE_SUBMITTED",
+            "TASK_STATE_WORKING",
+            "TASK_STATE_INPUT_REQUIRED",
+            "TASK_STATE_COMPLETED",
+            "TASK_STATE_CANCELED",
+            "TASK_STATE_FAILED",
+            "TASK_STATE_REJECTED",
+            "TASK_STATE_AUTH_REQUIRED",
+        ):
+            state = "UNKNOWN"
+        return {"state": state, "ask": self.asking_price()}
 
 
 class Result(Wire):

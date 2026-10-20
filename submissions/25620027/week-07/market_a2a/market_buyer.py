@@ -70,6 +70,9 @@ SELECT_PROMPT: Final = (
     "For the requested item, prefer lower observed paid prices together with "
     "successful purchase reliability. Repeated unsuccessful purchases reduce "
     "confidence even if public reviews praise the shop. "
+    "The same_requested_item and price_within_current_budget fields are code-"
+    "computed arithmetic facts. A past price above this order's budget is not "
+    "affordable for this order, regardless of its original budget or ratings. "
     "Prefer credible evidence of honest receipts and fair negotiation; repeated "
     "overcharging or refusal to honor an agreement is a strong negative. "
     "Weigh specific observed outcomes above vague praise, extreme claims or a "
@@ -185,7 +188,16 @@ async def market_buy(
                     "index": index,
                     "listing": json_value(entry),
                     "own_trades": [
-                        trade_facts(trade)
+                        {
+                            **trade_facts(trade),
+                            "same_requested_item": trade.item == item,
+                            "price_within_current_budget": (
+                                0 < trade.purchase.price <= budget
+                                if trade.item == item
+                                and trade.purchase.price is not None
+                                else None
+                            ),
+                        }
                         for trade in memory.shops.get(entry.name, ())[-10:]
                     ],
                 }
@@ -207,6 +219,21 @@ async def market_buy(
     selection = decision.selection
     selected = shops[selection.index]
     emit("[MARKET SELECTION] " + selection.model_dump_json())
+    pricing_context: dict[str, JsonValue] = {
+        "selected_shop_trades": [
+            trade_facts(trade) for trade in memory.shops.get(selected.name, ())[-10:]
+        ],
+        "observed_same_item_prices": [
+            trade.purchase.price
+            for trades in memory.shops.values()
+            for trade in trades
+            if trade.item == item
+            and trade.purchase.completed
+            and trade.purchase.receipt is not None
+            and trade.purchase.price is not None
+            and 0 < trade.purchase.price <= trade.budget
+        ][-20:],
+    }
     try:
         outcome = await buy_order(
             harness,
@@ -215,22 +242,7 @@ async def market_buy(
                 item,
                 budget,
                 exact_item=True,
-                pricing_context={
-                    "selected_shop_trades": [
-                        trade_facts(trade)
-                        for trade in memory.shops.get(selected.name, ())[-10:]
-                    ],
-                    "observed_same_item_prices": [
-                        trade.purchase.price
-                        for trades in memory.shops.values()
-                        for trade in trades
-                        if trade.item == item
-                        and trade.purchase.completed
-                        and trade.purchase.receipt is not None
-                        and trade.purchase.price is not None
-                        and 0 < trade.purchase.price <= trade.budget
-                    ][-20:],
-                },
+                pricing_context=pricing_context,
             ),
             emit,
         )
