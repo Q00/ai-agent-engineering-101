@@ -12,6 +12,7 @@ from pathlib import Path
 import shlex
 import shutil
 import sys
+import traceback
 import uuid
 
 
@@ -51,12 +52,18 @@ def main():
             self.stream.flush()
             self.log.flush()
 
+        def __getattr__(self, name):
+            return getattr(self.stream, name)
+
     print("Buyer-only snapshot:", run, flush=True)
     original = sys.stdout
     with (run / "console.log").open("x", encoding="utf-8") as out:
         sys.stdout = Tee(original, out)
         try:
             kit.buyer_tests(run, config)
+        except Exception:
+            traceback.print_exc(file=sys.stdout)
+            raise
         finally:
             sys.stdout = original
             passed = bool(kit.RESULTS) and all(r["pass"] for r in kit.RESULTS)
