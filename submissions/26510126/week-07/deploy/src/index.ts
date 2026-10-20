@@ -412,6 +412,11 @@ export class TaskObject extends DurableObject<Env> {
       console.log(`GUARD: buyer below reserve twice (${prev}, ${offer}), countering near the floor at ${reserve + MARGIN}`);
       price = reserve + MARGIN;
     }
+    if (price > offer && price - offer <= Math.max(2, 0.015 * price) && offer >= floor) {
+      // a near miss (JangSeongWoong walked twice at 185 against a counter of 187): two coins are not worth the deal and its review
+      console.log(`GUARD: counter ${price} within a hair of offer ${offer}, accepting ${offer}`);
+      return await this.close(task, item, offer, "Agreed.");
+    }
     if (price <= offer) {
       // countering at or below the offer means the offer is acceptable
       console.log(`GUARD: counter ${price} at or below offer ${offer}, accepting ${offer}`);
