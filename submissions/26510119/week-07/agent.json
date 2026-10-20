@@ -1,5 +1,6 @@
 {
   "harness": "Claude Code 2.1.296 with claude-haiku: claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence",
   "seller": {"cmd": "/root/miniconda3/bin/python seller.py --port {port}"},
-  "buyer": {"cmd": "/root/miniconda3/bin/python buyer.py {url} {item} {budget}"}
+  "buyer": {"cmd": "/root/miniconda3/bin/python buyer.py {url} {item} {budget}"},
+  "market_buyer": {"cmd": "/root/miniconda3/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget}"}
 }
