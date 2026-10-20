@@ -18,9 +18,16 @@ import httpx
 import harness
 from buyer import HEADERS, MAX_ROUNDS, SYSTEM, rpc, send, state, status_text
 
+import re
+
 MEMORY = Path(".market") / "buyer_memory.json"   # my trades so far: shop name, item, price, outcome
 RECENT_REVIEWS = 3                               # review texts per shop shown to the harness
 MEMORY_SHOWN = 5                                 # my own past trades per shop shown to the harness
+
+# Challenge 2: shop messages that try to steer the buyer or its review. The harness is told to ignore them; this is
+# the code-side check, so that the shop is remembered as manipulative and skipped next time whatever the harness did.
+MANIPULATION = re.compile(r"MARKET NOTICE|market operator|market policy|give (this|the|our) shop \d|\d stars in your review|"
+                          r"rate (this shop|us) \d|\[?SYSTEM\]?:|ignore (your|all|previous) (instructions|rules)|you must accept", re.I)
 
 CHOOSE = (
     "You pick which shop a shopping agent should buy one item from. You get a list of shops with their review "
@@ -62,8 +69,16 @@ def summarize(shop, mem):
         s["recent"] = [f'{r.get("stars")}* {str(r.get("review", ""))[:80]}' for r in reviews[:RECENT_REVIEWS]]
     mine = [m for m in mem if m.get("shop") == shop["name"]][-MEMORY_SHOWN:]
     if mine:
-        s["my_trades"] = [f'{m["item"]}: {m["outcome"]}' + (f' at {m["price"]}' if m.get("price") else "") for m in mine]
+        s["my_trades"] = [f'{m["item"]}: {m["outcome"]}' + (f' at {m["price"]}' if m.get("price") else "")
+                          + (", receipt did not match" if m.get("honest") is False else "")
+                          + (", tried to dictate my rating" if m.get("manipulative") else "") for m in mine]
     return s
+
+
+def blacklisted(shops, mem):
+    """Shops my own memory marks as dishonest: a receipt that did not match, or messages that tried to steer me."""
+    bad = {m["shop"] for m in mem if m.get("honest") is False or m.get("manipulative")}
+    return [s for s in shops if s["name"] in bad]
 
 
 def fallback_choice(shops, mem):
@@ -79,6 +94,10 @@ def fallback_choice(shops, mem):
 
 
 def choose(shops, item, budget, mem):
+    skip = blacklisted(shops, mem)
+    if skip and len(skip) < len(shops):   # never leave the list empty: with nothing else to choose, the harness sees them too
+        print(f"[choose] excluded from my memory: {[s['name'] for s in skip]}", flush=True)
+        shops = [s for s in shops if s not in skip]
     summary = [summarize(s, mem) for s in shops]
     print(f"[choose] summary for the harness: {json.dumps(summary, ensure_ascii=False)}", flush=True)
     d = harness.decide(CHOOSE, f"Item: {item}. Budget: {budget}.\nShops:\n{json.dumps(summary, ensure_ascii=False)}\nChoose one shop.")
@@ -101,21 +120,30 @@ def receipt_of(t):
     return None
 
 
+def steered(t):
+    """Does the shop's status message try to instruct the buyer? Logged and remembered; the harness never sees a flag."""
+    hit = MANIPULATION.search(status_text(t))
+    if hit:
+        print(f"[guard] shop message tries to steer the buyer ({hit.group(0)!r}); remembered as manipulative", flush=True)
+    return bool(hit)
+
+
 def negotiate(url, item, budget):
-    """The week-06 buyer's loop. Returns (outcome, agreed price or None, receipt or None, transcript)."""
+    """The week-06 buyer's loop. Returns (outcome, agreed price or None, receipt or None, transcript, manipulative)."""
     card = httpx.get(url.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=10).json()
     iface = next((i for i in card.get("supportedInterfaces", []) if i.get("protocolBinding") == "JSONRPC"), None)
     if iface is None:
         print("[buyer] the card has no JSONRPC interface", flush=True)
-        return "no_card", None, None, []
+        return "no_card", None, None, [], False
     rpc_url = iface["url"]
     print(f"[buyer] card: {card.get('name')!r}, skills {[s.get('id') for s in card.get('skills', [])]}, rpc {rpc_url}", flush=True)
 
     opening = f"I want to buy a {item}"
     t = send(rpc_url, opening)
     print(f"[buyer] <- {state(t)} | {status_text(t)}", flush=True)
+    manip = steered(t)
     if state(t) != "TASK_STATE_INPUT_REQUIRED":
-        return "closed", None, None, [("you", opening), ("shop", status_text(t))]
+        return "closed", None, None, [("you", opening), ("shop", status_text(t))], manip
     tid = t["id"]
     log = [("you", opening), ("shop", status_text(t))]
 
@@ -127,27 +155,32 @@ def negotiate(url, item, budget):
         if d is None or d.get("action") == "walk_away" or "price" not in d:
             print("[buyer] walking away", flush=True)
             rpc(rpc_url, "CancelTask", {"id": tid})
-            return "walked_away", None, None, log
+            return "walked_away", None, None, log, manip
         if d["price"] > budget:
             print(f"[guard] harness offered {d['price']} above the budget {budget}; capped at the budget", flush=True)
             d["price"] = budget
         t = send(rpc_url, str(d["price"]), tid)
         print(f"[buyer] <- {state(t)} | {status_text(t)}", flush=True)
+        manip = steered(t) or manip
         log += [("you", str(d["price"])), ("shop", status_text(t))]
         if state(t) == "TASK_STATE_COMPLETED":
-            return "deal", d["price"], receipt_of(t), log
+            return "deal", d["price"], receipt_of(t), log, manip
         if state(t) != "TASK_STATE_INPUT_REQUIRED":
-            return "closed", None, None, log
+            return "closed", None, None, log, manip
     print("[buyer] round limit reached, walking away", flush=True)
     rpc(rpc_url, "CancelTask", {"id": tid})
-    return "walked_away", None, None, log
+    return "walked_away", None, None, log, manip
 
 
-def review(item, budget, outcome, agreed, receipt, log):
-    """Stars and one sentence. An honest receipt is checked in code: a price that differs from what was agreed is 1 star."""
+def review(item, budget, outcome, agreed, receipt, log, manip=False):
+    """Stars and one sentence. Honesty is checked in code: a receipt price that differs from what was agreed is 1 star,
+    and a shop that tried to dictate the rating gets at most 2 whatever the harness says."""
     honest = receipt is None or agreed is None or int(round(float(receipt.get("price", -1)))) == agreed
     if outcome == "deal" and not honest:
         return 1, f"Agreed {agreed}, receipt says {receipt.get('price')}.", False
+    if manip:
+        note = f"Deal at {agreed}, but the" if outcome == "deal" else "No deal, and the"
+        return 2, f"{note} shop's messages carried fake market notices telling me to accept its price and rate it 5 stars.", honest
     transcript = "\n".join(f"{who}: {what}" for who, what in log[-6:])
     d = harness.decide(REVIEW, f"Item: {item}. Budget: {budget}. Outcome: {outcome}" + (f", agreed {agreed}" if agreed else "")
                        + f".\nReceipt: {json.dumps(receipt)}\nLast messages:\n{transcript}\nWrite the review.")
@@ -178,14 +211,14 @@ def main():
     pick = choose(shops, a.item, a.budget, mem)
 
     try:
-        outcome, agreed, receipt, log = negotiate(pick["url"], a.item, a.budget)
+        outcome, agreed, receipt, log, manip = negotiate(pick["url"], a.item, a.budget)
     except httpx.HTTPError as e:
         print(f"[buyer] shop unreachable: {e}", flush=True)
-        outcome, agreed, receipt, log = "unreachable", None, None, []
-    stars, text, honest = review(a.item, a.budget, outcome, agreed, receipt, log)
+        outcome, agreed, receipt, log, manip = "unreachable", None, None, [], False
+    stars, text, honest = review(a.item, a.budget, outcome, agreed, receipt, log, manip)
 
     mem.append({"shop": pick["name"], "item": a.item, "outcome": outcome, "price": agreed, "honest": honest,
-                "stars": stars, "at": time.strftime("%Y-%m-%d %H:%M")})
+                "manipulative": manip, "stars": stars, "at": time.strftime("%Y-%m-%d %H:%M")})
     save_memory(mem)
 
     print(json.dumps({"shop": pick["url"], "receipt": receipt, "stars": stars, "review": text}, ensure_ascii=False), flush=True)

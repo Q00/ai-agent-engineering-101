@@ -28,6 +28,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 import catalog
 import harness
+import pricing
 
 DEFAULT = {"name": "GPT Lamp Shop", "catalog": "catalog/basic.json", "categories": None, "sample": 1.0, "seed": 0,
            "price_factor": 1.0}
@@ -127,7 +128,12 @@ class Seller(AgentExecutor):
                 await up.reject(say("We have nothing that fits that. We sell: " + ", ".join(cats) + "."))
                 return
             ask = guard(item, d["price"], "opening ask")
+            suggested, why = pricing.suggest(item)   # challenge 1: enough own history -> the data sets the opening ask
+            print(f"[pricing] {why}" + (f"; the harness wanted {ask}" if suggested is not None else ""), flush=True)
+            if suggested is not None:
+                ask = guard(item, suggested, "pricing")
             self.open[task.id] = {"item": item, "ask": ask, "log": [("buyer", text), ("shop", f"asking {ask}")]}
+            pricing.record(kind="open", task=tid, item=item["id"], ask=ask)
             print(f"[seller] OPEN task={tid} item={item['id']} reserve={item['reserve']} ask={ask}", flush=True)
             if item["name"] == item["id"]:  # the trade test's three items keep the lab's wording
                 opening = f"{item['name']}: asking {ask}. Send your offer as a number."
@@ -167,10 +173,12 @@ class Seller(AgentExecutor):
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {item['name']} at {offer}.", {"offer": offer, "item": item["id"]}))
             print(f"[seller] DEAL task={tid} item={item['id']} reserve={item['reserve']} price={offer}", flush=True)
+            pricing.record(kind="deal", task=tid, item=item["id"], price=int(offer))
             del self.open[task.id]
         elif action == "reject":
             await up.reject(say(f"No deal at {offer}.", {"offer": offer, "item": item["id"]}))
             print(f"[seller] REJECT task={tid} item={item['id']} last_offer={offer}", flush=True)
+            pricing.record(kind="reject", task=tid, item=item["id"], price=int(offer))
             del self.open[task.id]
         else:  # counter, or no usable answer: hold the current ask
             if action == "counter" and "price" in d:
@@ -182,8 +190,10 @@ class Seller(AgentExecutor):
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
-        self.open.pop(task.id, None)
+        deal = self.open.pop(task.id, None)
         print(f"[seller] CANCEL task={task.id[:8]}", flush=True)
+        if deal:
+            pricing.record(kind="cancel", task=task.id[:8], item=deal["item"]["id"], ask=deal["ask"])
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 
