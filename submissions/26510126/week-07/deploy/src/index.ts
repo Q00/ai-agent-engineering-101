@@ -374,10 +374,9 @@ export class TaskObject extends DurableObject<Env> {
     const answer = await ask(this.env.AI, counterPrompt(item, reserve, deal.history.slice(0, -1).join("\n"), offer, current, strategy));
     let action = answer.action;
     let price = asInt(answer.price);
-    const note = cleanNote(answer.note);
 
     if (action === "accept") {
-      if (offer >= reserve) return await this.close(task, item, offer, note);
+      if (offer >= reserve) return await this.close(task, item, offer, "Agreed.");
       console.log(`GUARD: model accepted ${offer} below reserve ${reserve}, countering at ${current}`);
       action = "counter";
       price = current;
@@ -414,12 +413,15 @@ export class TaskObject extends DurableObject<Env> {
     if (price <= offer) {
       // countering at or below the offer means the offer is acceptable
       console.log(`GUARD: counter ${price} at or below offer ${offer}, accepting ${offer}`);
-      return await this.close(task, item, offer, note);
+      return await this.close(task, item, offer, "Agreed.");
     }
     deal.ask = price;
     deal.history.push(`You countered ${price}.`);
     console.log(`OUT: counter ${price} to offer ${offer}`);
-    this.respond(task, "TASK_STATE_INPUT_REQUIRED", `${note} Counteroffer: ${price}.`.trim());
+    // Fixed lines, as the top shops use ("Counteroffer: 275."): the model's note only padded the haggle and once
+    // invented other buyers. The model still decides the price; the words are ours.
+    const close = price - offer <= 0.05 * price ? "We're close. " : "";
+    this.respond(task, "TASK_STATE_INPUT_REQUIRED", `${close}Counteroffer: ${price}.`);
   }
 
   private async close(task: Task, item: string, price: number, note: string) {
