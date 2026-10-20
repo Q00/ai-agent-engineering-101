@@ -1,26 +1,29 @@
 # Week 07: Agent Market (work in progress)
 
 This report records observations as of 2026-10-20. The local market test passed
-25/25 both before and after the price change. The Week 06 compatibility test
+25/25 before and after the price change and again after the Round 1 memory and
+review update in an isolated copy. The Week 06 compatibility test
 also passed 21/21 in an isolated copy, so its report did not replace the Week
-07 report ([`week06-precheck`](logs/week06-precheck/trade-test.log)). Live Round
-1 and Round 2 had not
-started at the time of this draft; their results and the final deployment status
-must be added before submission.
+07 report ([`week06-precheck`](logs/week06-precheck/trade-test.log)). Round 1
+started on 2026-10-20; Round 2 results and the final deployment status must be
+added before submission.
 
 ## 1. Shop choice and memory
 
 `market_buyer.py` reads the market kit's `{shops}` JSON, including each shop's
 name, current card URL and newest-first reviews. It computes average stars and
 counts low-star complaints about receipts. If another shop exists, a shop with
-two such complaints or multiple reviews averaging at most two stars is left
-out of the candidate set. The harness chooses one remaining shop ID. This
-keeps an untrusted review from deciding the result by itself. The buyer logs
-its choice and reason as `shop_choice`.
+two such complaints, multiple reviews averaging at most two stars, or a
+receipt trust failure in its own memory is left out of the candidate set. The
+harness chooses one remaining shop ID. This keeps one untrusted review from
+deciding the result by itself while giving first-hand receipt evidence more
+weight. The buyer logs its choice and reason as `shop_choice`.
 
 Its own memory is `state/market-memory.json`, a local, uncommitted JSON object
-keyed by **shop name**, not URL. Each entry records attempts, deals, failures,
-last item, last outcome and last price when a sale happened. A restarted tunnel
+keyed by **shop name**, not URL. Each entry records attempts, deals, ordinary
+no-deals, connection or negotiation errors, receipt trust failures, last item,
+outcome and a compact task/offer/receipt summary. A receipt mismatch or missing
+signature/task marks `avoid`; an ordinary no-deal does not. A restarted tunnel
 changes a URL without erasing that history. A Round 0 experience was imported
 from the market log into memory: `maple-home` issued a bookshelf receipt at
 370 after the buyer offered 325 on an order with budget 325. The observation
@@ -37,7 +40,12 @@ latest seller message and compact task history. External text is supplied as
 task data, not trusted instructions. A local selection check using the actual
 Round 0 shop list and the imported memory chose a shop other than `maple-home`
 ([`selection-check.log`](logs/challenge-2/selection-check.log)); one such
-selection does not establish a reliable avoidance rate.
+selection does not establish a reliable avoidance rate. The public review is
+separate from the selection reason: four stars and the actual sale price for a
+matching receipt, one star with the receipt problem for a mismatch or invalid
+receipt, and a neutral three stars for no agreement or an uncertain execution
+error. It describes this encounter without publishing the private budget or
+another shop's history.
 
 ## 3. Rounds 0, 1 and 2
 
@@ -48,8 +56,18 @@ and later a verified chair purchase at 225
 ([line 306](logs/market-kit.log#L306)). That Round 0 deal did not display a
 review. The first dashboard snapshot of my shop recorded four deals, market
 share 0.08, revenue 677 (average price 169.25), and zero reviews
-([`before.json`](logs/challenge-1/before.json)). Round 1 and Round 2 outcomes,
-including a counted Round 2 deal, remain to be observed.
+([`before.json`](logs/challenge-1/before.json)). In the first Round 1 order, the
+buyer excluded `maple-home` using its own memory, selected `grand-furniture`,
+then made no deal when the seller's counteroffer stayed above the order budget.
+It saved `no_deal`, emitted a neutral three-star review, and the market accepted
+that review ([`round1-avoidance.json`](logs/challenge-2/round1-avoidance.json)).
+In the next order, `BeliveMe` supplied a receipt without the required matching
+task and signature. The buyer kept the receipt details in private memory,
+marked that shop `avoid`, and submitted a one-star review. The following choice
+excluded `BeliveMe` and produced a verified lamp purchase at 120 from
+`corner-store` with a four-star review; both reviews were accepted by the
+market ([`round1-memory-review.json`](logs/challenge-2/round1-memory-review.json)).
+Round 2 outcomes, including a counted deal, remain to be observed.
 
 ## 4. Receipt signatures
 
@@ -72,16 +90,30 @@ deals and there were no reviews yet. `adapt_prices.py` derives a maximum
 opening ask of 1.12 times each reserve from those figures, leaving the
 reserves unchanged. The seller logs the original and effective asks; in the
 post-change local test a lamp opening ask of 120 became 113
-([`seller-under-test.log`](logs/seller-under-test.log)). The before/after
-market share and average sale price comparison still needs a live after
-snapshot once the revised shop is reachable.
+([`seller-under-test.log`](logs/seller-under-test.log)). After reconnecting
+with the revised policy, the dashboard showed 16 cumulative deals, share
+0.014, revenue 2684, and average sale price 167.75
+([`after.json`](logs/challenge-1/after.json)). The earlier snapshot showed
+share 0.08 and average price 169.25 after four deals
+([`before.json`](logs/challenge-1/before.json)). These cumulative figures show
+the observed change, but do not isolate a price-policy effect: three more
+deals happened before the revised seller was reconnected, product mix changed,
+and the market grew between snapshots.
 
 **Dishonest participant.** The `maple-home` receipt exceeded the order budget
 and the buyer's sole offer by 45. The kit refused to countersign it
 ([`market-kit.log`, lines 409-411](logs/market-kit.log#L409)). I recorded this
 under the stable market name and passed it to the shop-choice harness in a
-local selection check. A live Round 1 or 2 choice showing avoidance is still
-needed.
+local selection check. After adding a deterministic exclusion for first-hand
+receipt trust failures, the first live Round 1 `shop_choice` logged
+`excluded ['maple-home']` and selected `grand-furniture`
+([`market-kit.log`, line 1961](logs/market-kit.log#L1961)). That attempt ended
+without a deal, so the buyer recorded an ordinary `no_deal` for the selected
+shop rather than marking it dishonest ([`round1-avoidance.json`](logs/challenge-2/round1-avoidance.json)).
+The later incomplete receipt from `BeliveMe` was independently marked `avoid`
+and excluded on the next order; the log shows the resulting one-star review
+and a subsequent verified purchase from another shop
+([`round1-memory-review.json`](logs/challenge-2/round1-memory-review.json)).
 
 ## 6. Deployment
 
