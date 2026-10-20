@@ -1,0 +1,23 @@
+S603 `subprocess` call: check for execution of untrusted input
+   --> tests/test_price_page.py:156:14
+    |
+154 |     if node is None:
+155 |         pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+156 |     result = subprocess.run(
+    |              ^^^^^^^^^^^^^^
+157 |         [
+158 |             node,
+    |
+
+D107 Missing docstring in `__init__`
+   --> tests/test_price_page.py:174:9
+    |
+172 |     """Inspect parsed HTML structure rather than asserting source text fragments."""
+173 |
+174 |     def __init__(self) -> None:
+    |         ^^^^^^^^
+175 |         super().__init__()
+176 |         self.elements: list[tuple[str, dict[str, str | None]]] = []
+    |
+
+Found 2 errors.

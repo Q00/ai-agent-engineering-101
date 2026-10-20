@@ -13,11 +13,12 @@ import httpx2
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from pydantic import TypeAdapter
 
+from market_a2a.comparison import ComparisonDocument
 from market_a2a.remote import Card, Checkout, Remote, Wire, purchase
 
 BASE_URL: Final = "https://ax-week07.treasuresky.xyz"
 EVIDENCE: Final = (
-    Path(__file__).resolve().parents[1] / ".omo/evidence/review-strategy-deploy"
+    Path(__file__).resolve().parents[1] / ".omo/evidence/price-comparison-rollout"
 )
 
 
@@ -58,7 +59,14 @@ async def main() -> None:
             )
             _ = response.raise_for_status()
             card = VersionedCard.model_validate_json(response.content)
-            assert card.version == "1.1.0"
+            assert card.version == "1.2.0"
+            compared = await client.get(BASE_URL + "/price-comparison.json")
+            _ = compared.raise_for_status()
+            comparison = ComparisonDocument.model_validate_json(compared.content)
+            assert comparison.enabled
+            assert comparison.fresh
+            lamp = next(value for value in comparison.own if value.item == "lamp")
+            assert lamp.observed_shop_count > 0
             listed = await client.get("https://market.ourolabs.ai/api/shops")
             _ = listed.raise_for_status()
             registry = Registry.model_validate_json(listed.content)
@@ -67,7 +75,7 @@ async def main() -> None:
             opening = await remote.send(card.endpoint(), "I want to buy a lamp")
             ask = opening.asking_price()
             assert ask is not None
-            assert 100 <= ask <= 110
+            assert 100 <= ask <= lamp.ceiling
             assert opening.status.state == "TASK_STATE_INPUT_REQUIRED"
             low = await remote.send(card.endpoint(), "1", opening)
             low_ask = low.asking_price()
@@ -101,6 +109,7 @@ async def main() -> None:
                 "registry_name": shop.name,
                 "public_url": BASE_URL,
                 "opening_ask": ask,
+                "comparison": comparison.model_dump(mode="json"),
                 "first_offer": 1,
                 "counter_ask": low_ask,
                 "second_offer": 100,
