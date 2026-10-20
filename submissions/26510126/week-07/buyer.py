@@ -127,16 +127,19 @@ def as_int(value):
 async def shop(base, item, budget):
     async with httpx.AsyncClient(timeout=200) as client:
         seller = Shop(client, base)
-        await seller.read_card()
+        card = await seller.read_card()
+        result = {"shop_name": card.get("name"), "state": None, "receipt": None, "asks": [], "offers": []}
         task = await seller.send(f"I want to buy a {item}")
         if task is None:
-            return
+            return result
         task_id, history, last_offer = task["id"], [], None
+        result["task"] = task_id
 
         for n in range(1, MAX_OFFERS + 1):
             if state(task) != "TASK_STATE_INPUT_REQUIRED":
                 break
             ask = asking_price(task)
+            result["asks"].append(ask)
             log("ASK", f"{ask} ({'data' if OPTS.data_part and data_ask(task) is not None else 'text'})")
             history.append(f"The shop asked {ask}." if ask is not None else f"The shop said: {reply_text(task)}")
 
@@ -153,11 +156,11 @@ async def shop(base, item, budget):
                 if action == "walk":
                     log("OUT", f"harness walks away at ask {ask}")
                     await seller.cancel(task_id)
-                    return
+                    return {**result, "state": "walked"}
                 if action != "offer" or offer is None:
                     log("GUARD", f"no usable answer from the harness ({answer!r}), walking away")
                     await seller.cancel(task_id)
-                    return
+                    return {**result, "state": "walked"}
                 if OPTS.no_guard:
                     pass
                 elif offer > budget:
@@ -172,20 +175,23 @@ async def shop(base, item, budget):
 
             history.append(f"You offered {offer}.")
             last_offer = offer
+            result["offers"].append(offer)
             task = await seller.send(str(offer), task_id)
             if task is None:
-                return
+                return result
         else:
             if state(task) == "TASK_STATE_INPUT_REQUIRED":
                 log("OUT", f"{MAX_OFFERS} offers without a deal, walking away")
                 await seller.cancel(task_id)
-                return
+                return {**result, "state": "walked"}
 
         for a in task.get("artifacts", []):
             for p in a.get("parts", []):
                 if isinstance(p.get("data"), dict):
                     log("OUT", f"receipt {p['data']}")
+                    result["receipt"] = p["data"]
         log("OUT", f"finished: {state(task)}")
+        return {**result, "state": state(task)}
 
 
 if __name__ == "__main__":
