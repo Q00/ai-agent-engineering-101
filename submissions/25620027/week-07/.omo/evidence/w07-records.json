@@ -671,5 +671,121 @@
         "sha256": "ffa399d7a5796a305df91ba1c8a82266b08412b5a81793b29d5e198b7c3a3a3c"
       }
     ]
+  },
+  "price_comparison_rollout_20261021": {
+    "scenario": "Update REPORT15 and SETUP current state plus three existing Vault notes from verified deployment/test/public-smoke artifacts; retain old narrative as dated history.",
+    "invocation": "python3 pathlib/json assertions, fresh-read compare, minimal edits and exact readback; no runtime/API/source edits by recorder.",
+    "commits": [
+      "3d7b1d1",
+      "46e668e",
+      "efc0925"
+    ],
+    "registered_at_kst": "2026-10-21T01:00:59+09:00",
+    "version": "1.2.0",
+    "official_configuration": "AX_PRICE_COMPARISON=0; 25/25 before supplemental parser; no paid rerun after parser",
+    "offline_final": 167,
+    "public_smoke_sequence": [
+      100,
+      1,
+      100,
+      100
+    ],
+    "initial_known_shop_count": 3,
+    "price_kind": "observed_initial_ask",
+    "market_result_submitted": false,
+    "public_review_submitted": false,
+    "deadline_kst": "2026-10-21T09:00:00+09:00",
+    "observed_model_usage_cap": 5000,
+    "artifacts": [
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/parent-validation.md",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/initial-snapshot.json",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/public-smoke.json",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/full-suite-post-parser.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/official-attempt-1.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/ruff-final.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/types-final.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/public-page.json",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/activated-ui-routes.log"
+    ],
+    "records": [
+      {
+        "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/REPORT.md",
+        "sha256_after": "52cc08e2695a32cfc4c95a4069673dae4736ee225ec09377179479f246c833ea"
+      },
+      {
+        "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/SETUP.md",
+        "sha256_after": "e333fda4541326c9aa4d1f6980a2dfa42c2bc0c44b9511c3839e8d6b9abaf153"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256_after": "f45dcc7c5fc09ff5778661f64f27419b207c705ca6939767fc3e6c855e0b1468"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256_after": "e5eb9034a611255be9eb7336e0c6bf430f38a4abb5103f215fef442d44b483b2"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256_after": "ecf80b63c40ab95e18832b9a2aa11e143471d815a2092be1506e4c9e7138ce33"
+      }
+    ],
+    "binary_observables": {
+      "exact_readback": true,
+      "three_anchors": true,
+      "artifact_files_nonempty": true,
+      "old_report_setup_intro_preserved": true
+    },
+    "limits": [
+      "Initial external observations known3/5 only.",
+      "Probe opens A2A tasks and attempts cancellation; may affect peer calls/visits.",
+      "No market-wide lowest/quality/settled-price guarantee; live business effects unmeasured."
+    ],
+    "automatic_refresh": {
+      "snapshot_observed_at": "2026-10-20T16:02:11.332049Z",
+      "expires_at": "2026-10-20T16:17:11.332049Z",
+      "public_observed_at": "2026-10-20T16:02:43.362444+00:00",
+      "shops": {
+        "11im": [
+          110,
+          195,
+          290
+        ],
+        "lee-sungsoo": [
+          100,
+          180,
+          260
+        ],
+        "corner-store": [
+          130,
+          234,
+          338
+        ],
+        "dragonash": [
+          102,
+          185,
+          268
+        ],
+        "JangSeongWoong": [
+          115,
+          195,
+          275
+        ]
+      },
+      "own_ceiling": [
+        100,
+        180,
+        260
+      ],
+      "known_shop_count": 5,
+      "all_three_items_each": true,
+      "html_js_json_http200": true,
+      "browser_auto_refresh_without_reload": "Parent directly confirmed; not independently rendered by recorder",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/public-page.json",
+      "effect_on_sales_ratings_share": "unmeasured"
+    },
+    "activated_ui_routes_pass": 12,
+    "public_a2a_comparison_fields_observed": true,
+    "evidence_commit": "f8dbcc5",
+    "new_pr_or_push": false
   }
 }
