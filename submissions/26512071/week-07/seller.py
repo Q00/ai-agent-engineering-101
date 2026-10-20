@@ -61,6 +61,7 @@ NAME = "Sonnet Shop"
 CATALOG = Catalog()
 SHOP_KINDS = 4
 MARKET_ITEMS = ("lamp", "chair", "bookshelf")
+MARKET_NAME = "Kimchyoungman Furniture"
 MARKET = False
 KEY_FILE = Path(__file__).with_name("shop_key.pem")
 
@@ -325,7 +326,7 @@ class Seller(AgentExecutor):
             price = reserve
         if action == "ask" and deal["rounds"] >= MAX_ROUNDS:
             action = "reject"
-        log(f"[seller] task={task.id[:8]} {item['id']} offer={offer} -> {action} {price}"
+        log(f"[seller] task={task.id[:8]} {item['id']} offer={offer} -> {action} {offer if action == 'accept' else price}"
             + (f" [promo, {promo_left()} left]" if promo else ""))
 
         if action == "accept":
@@ -372,6 +373,20 @@ def build(port):
             examples=["I want to buy a lamp", "something wooden to keep about 40 books", "90"],
         )],
     )
+    if MARKET:  # the market card: plain facts a buyer's model can read at a glance, no instructions
+        card.name = MARKET_NAME
+        card.description = (
+            "Sells exactly three items: lamp, chair, bookshelf. "
+            "Every receipt is signed: sig_seller is Ed25519 over the canonical JSON of {shop, item, price, task}, "
+            "so deals here count under the Round 2 rules. "
+            "How to buy: send 'I want to buy a <item>', then send each offer as a plain number. "
+            "The asking price is the last number in each reply; an offer the shop accepts closes the deal at that offer.")
+        del card.skills[:]  # a protobuf repeated field: clear, then extend
+        card.skills.extend([AgentSkill(
+            id=f"buy-{n}", name=f"Buy a {n}",
+            description=f"Negotiate the price of one {n}; a signed receipt with item '{n}' and a whole-number price closes the deal.",
+            tags=[n, "furniture", "negotiation", "signed-receipt"],
+            examples=[f"I want to buy a {n}", "120"]) for n in MARKET_ITEMS])
     handler = DefaultRequestHandler(agent_executor=Seller(), task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
@@ -384,6 +399,7 @@ if __name__ == "__main__":
     args = ap.parse_args()
     if args.market:
         MARKET = True
+        NAME = MARKET_NAME
         CATALOG = Catalog(items=[i for i in CATALOG.items if i["name"] in MARKET_ITEMS])
     if args.shop:
         open_shop(args.shop)
