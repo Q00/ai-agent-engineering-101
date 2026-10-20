@@ -23,7 +23,7 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from loyalty_pricing import BASE_PRICES, RESERVE, customer_id_from, purchase_quote
+from loyalty_pricing import RESERVE, customer_id_from, purchase_quote
 from seller_memory import SellerMemory
 
 OPENING = {item: purchase_quote(item, 0)["price"] for item in RESERVE}
@@ -116,9 +116,8 @@ class Seller(AgentExecutor):
                 return
             message_metadata = MessageToDict(context.message.metadata)
             customer_id = customer_id_from(message_metadata) or customer_id_from(context.metadata)
-            # A self-reported ID is never treated as authenticated identity.
-            # If history is unavailable, use the welcome offer without claiming
-            # to know this customer's purchase count.
+            # An optional self-reported ID is historical context only. Every
+            # customer receives the same price, regardless of purchase count.
             completed = self.memory.completed_purchases(customer_id) if self.memory and customer_id else 0
             quote = purchase_quote(item, completed)
             deal = self.open[task.id] = {
@@ -135,8 +134,7 @@ class Seller(AgentExecutor):
 
         reserve = RESERVE[deal["item"]]
         opening = deal["quote"]["price"]
-        # Each task keeps its quoted tier, even if another purchase completes.
-        # Confirm the discounted amount rather than charging a higher offered
+        # Confirm the advertised amount rather than charging a higher offered
         # base price. The receipt then matches the buyer's final agreed price.
         action = "accept" if deal["offer"] == opening and opening >= reserve else "counter"
         if action == "accept":
@@ -145,21 +143,15 @@ class Seller(AgentExecutor):
                                     "price": int(price), "task": task.id})
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(
-                f"Purchased {deal['item']} at {price}. Ed25519-signed receipt attached. "
+                f"Purchased {deal['item']} at {price}. Signed receipt attached. "
                 "Please verify the receipt and leave an honest review of your experience."
             ))
             self.remember(task.id, deal, "deal", sale_price=int(price))
             del self.open[task.id]
             return
         deal["ask"] = opening
-        quote = deal["quote"]
-        tier = (f"Purchase {quote['purchase_number']}: up to {quote['discount_percent']}% off"
-                if quote["discount_percent"] else "Standard price after the welcome and return offers")
-        reply = (f"{deal['item']}: asking {opening}. {tier}; base price {quote['base_price']}. "
-                 "Rounded up to whole units; course minimum applies. "
-                 "A consistent customer_id in A2A metadata enables purchase-count tracking. "
-                 "Signed receipt after purchase. Reply 'I accept' or send the purchase price: "
-                 f"{opening}")
+        reply = (f"{deal['item']}: final price {opening}. Signed receipt included. "
+                 f"Reply 'I accept' or send {opening}")
         deal["lines"].append(f"you: {reply}")
         deal["seller_quotes"] += 1
         self.remember(task.id, deal, "open")
@@ -170,9 +162,7 @@ class Seller(AgentExecutor):
             metadata={"ask": deal["ask"], "item": deal["item"],
                       "accept_message": str(deal["ask"]),
                       "signed_receipt_on_purchase": True,
-                      "loyalty": {**deal["quote"],
-                                  "customer_id_provided": deal["customer_id"] is not None,
-                                  "identity_authenticated": False}},
+                      "pricing": deal["quote"]},
         ))
 
     async def cancel(self, context, event_queue):
@@ -186,15 +176,12 @@ class Seller(AgentExecutor):
 def build(port):
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
-        name="psyoung82 Furniture | Welcome & Return Offers",
-        description=(f"First-purchase offers: lamp {OPENING['lamp']}, "
+        name="psyoung82 Furniture | Same Lowest Price",
+        description=(f"Final prices for every buyer and every purchase: lamp {OPENING['lamp']}, "
                      f"chair {OPENING['chair']}, bookshelf {OPENING['bookshelf']}. "
-                     "Up to 10% off the first completed purchase, up to 5% off the second; "
-                     f"base prices lamp {BASE_PRICES['lamp']}, chair {BASE_PRICES['chair']}, "
-                     f"bookshelf {BASE_PRICES['bookshelf']}. Whole-unit rounding and minimum prices apply. "
-                     "Send the same customer_id in A2A metadata for repeat-purchase tracking; "
-                     "anonymous buyers receive the welcome quote. Quotes include metadata.ask; signed receipts."),
-        version="1.8.0",
+                     "No customer ID required. Reply 'I accept' to accept a quote. "
+                     "Numeric metadata.ask and task-bound signed receipts included."),
+        version="1.9.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
         capabilities=AgentCapabilities(streaming=False),

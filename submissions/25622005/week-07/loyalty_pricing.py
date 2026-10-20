@@ -1,12 +1,11 @@
-"""Purchase discounts based on completed sales under a client-supplied ID.
+"""Same lowest permitted price for every purchase.
 
-The ID is a compatibility feature, not authenticated buyer identity. Anonymous
-requests receive the welcome offer; they cannot be linked across tasks.
+The previous loyalty tiers were replaced at the user's request. Keep the
+function interface so historical callers can supply a purchase count safely.
 """
 import re
 
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
-BASE_PRICES = {"lamp": 110, "chair": 200, "bookshelf": 285}
 
 
 def customer_id_from(metadata):
@@ -17,12 +16,5 @@ def customer_id_from(metadata):
 
 
 def purchase_quote(item, completed_purchases):
-    """Round payment up to a whole number, then enforce the course floor."""
-    number = completed_purchases + 1
-    percent = {1: 10, 2: 5}.get(number, 0)
-    base = BASE_PRICES[item]
-    discounted = (base * (100 - percent) + 99) // 100
-    price = max(RESERVE[item], discounted)
-    return {"purchase_number": number, "base_price": base,
-            "discount_percent": percent, "price": price,
-            "floor_applied": price > discounted}
+    """Purchase history never raises the advertised payable price."""
+    return {"price": RESERVE[item], "policy": "same_lowest_for_everyone"}

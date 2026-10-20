@@ -1,4 +1,4 @@
-"""User-selected tiers, rounding, floor limits and completed-sale memory."""
+"""Universal lowest-price policy and completed-sale history compatibility."""
 from pathlib import Path
 import sys
 import tempfile
@@ -9,15 +9,11 @@ from loyalty_pricing import customer_id_from, purchase_quote
 from seller_memory import SellerMemory
 
 
-class LoyaltyTests(unittest.TestCase):
-    def test_price_tiers(self):
-        expected = {"lamp": [100, 105, 110], "chair": [180, 190, 200],
-                    "bookshelf": [260, 271, 285]}
-        for item, prices in expected.items():
-            self.assertEqual([purchase_quote(item, n)["price"] for n in range(3)], prices)
-        self.assertTrue(purchase_quote("lamp", 0)["floor_applied"])
-        self.assertTrue(purchase_quote("bookshelf", 0)["floor_applied"])
-        self.assertFalse(purchase_quote("chair", 0)["floor_applied"])
+class FixedPriceTests(unittest.TestCase):
+    def test_history_never_raises_the_lowest_price(self):
+        for item, price in {"lamp": 100, "chair": 180, "bookshelf": 260}.items():
+            for count in [0, 1, 2, 10, 1000]:
+                self.assertEqual(purchase_quote(item, count)["price"], price)
 
     def test_customer_id_is_optional_and_bounded(self):
         self.assertEqual(customer_id_from({"customer_id": "buyer-82"}), "buyer-82")
