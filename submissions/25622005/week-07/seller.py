@@ -32,14 +32,18 @@ RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 OPENING = {"lamp": 110, "chair": 200, "bookshelf": 285}
 
 
+def canon(data):
+    """LAB 2 step 1: sorted, compact UTF-8 JSON bytes for signing."""
+    return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
 def sign_receipt(receipt, key_path=None):
     """LAB 2: sign integer-valued canonical JSON with the kit's shop key."""
     key_path = Path(key_path) if key_path else Path(__file__).with_name("shop_key.pem")
     with key_path.open("rb") as source:
         key = serialization.load_pem_private_key(source.read(), password=None)
     body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
-    encoded = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    return {**receipt, "sig_seller": base64.b64encode(key.sign(encoded)).decode("ascii")}
+    return {**receipt, "sig_seller": base64.b64encode(key.sign(canon(body))).decode("ascii")}
 
 
 PROMPT = """You are the sales agent of a small furniture shop. A buyer is negotiating for one {item}.
