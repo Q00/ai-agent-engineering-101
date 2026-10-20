@@ -1,9 +1,9 @@
-[choose] Kit Shop: score=3.25; own=3.50 (2 trades), reviews=3.00 (0 reviews); weights=50:50, missing source=3, ties by name; url=http://127.0.0.1:53309
-card: Kit Shop -> http://127.0.0.1:53309/
+[choose] Kit Shop: score=3.25; own=3.50 (2 trades), reviews=3.00 (0 reviews); weights=50:50, missing source=3, ties by name; url=http://127.0.0.1:56375
+card: Kit Shop -> http://127.0.0.1:56375/
 -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
 [harness] ```json
-{"action": "offer", "price": 110}
+{"action": "offer", "price": 100}
 ```
--> '110'  <- TASK_STATE_COMPLETED | Deal: lamp at 110.
-[memory] saved deal for Kit Shop in logs/challenge-1/pricing-test-memory.json
-{"shop": "http://127.0.0.1:53309", "receipt": {"item": "lamp", "sig_seller": "wFkg1olRP4jVWw0kXw/s0SdFJXhi0Izgsb1rPOTiBi3yECh/AadOg2wBCtb9CwI7LgQgGAOsY+CQGQ6J7rKXCQ==", "price": 110.0, "shop": "Kit Shop", "task": "c5ad0a65-84d6-41b2-93d5-559fdbe42bcb"}, "stars": 3, "review": "Bought lamp for 110 within budget 120; used 92% of budget; receipt fields match the negotiation."}
+-> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[memory] saved deal for Kit Shop in logs/seller-memory-buyer-test-1.json
+{"shop": "http://127.0.0.1:56375", "receipt": {"sig_seller": "W9jO+aUeotUFmIciycL7Kbff3vX74QnKkvBQgIP0e2a/CdXffvDqKyCN2b/G60eDJBiO+fVnEXyYB9rYCw7xBg==", "shop": "Kit Shop", "price": 100.0, "task": "a47c6973-5565-4c68-8a65-d301b6cf076e", "item": "lamp"}, "stars": 4, "review": "Bought lamp for 100 within budget 120; used 83% of budget; receipt fields match the negotiation."}
