@@ -1,0 +1,36 @@
+CONTEXT chars=1733 tools=1
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=815 output=49
+MODEL_TOOL round=1 select_shop {"index":0,"reason":"The shop 'Kit Shop' has multiple successful transactions for a lamp at the budget of $120, with matching receipts and positive reviews indicating honesty and proper conduct."}
+TOOL_RESULT select_shop {"index": 0, "reason": "The shop 'Kit Shop' has multiple successful transactions for a lamp at the budget of $120, with matching receipts and positive reviews indicating honesty and proper conduct."}
+[MARKET SELECTION] {"index":0,"reason":"The shop 'Kit Shop' has multiple successful transactions for a lamp at the budget of $120, with matching receipts and positive reviews indicating honesty and proper conduct."}
+HTTP Request: GET http://127.0.0.1:50203/.well-known/agent-card.json "HTTP/1.1 200 OK"
+HTTP GET /.well-known/agent-card.json -> 200
+[A2A HTTP] {"method": "GET", "url": "http://127.0.0.1:50203/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Kit Shop","description":"Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.","supportedInterfaces":[{"url":"http://127.0.0.1:50203/","protocolBinding":"JSONRPC","protocolVersion":"1.0"}],"version":"1.0.0","capabilities":{"streaming":false},"defaultInputModes":["text/plain"],"defaultOutputModes":["application/json","text/plain"],"skills":[{"id":"negotiate","name":"Negotiate a purchase","description":"Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.","tags":["shopping"],"examples":["I want to buy a lamp","90"]}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "d74372d7-74a5-40a9-b8dd-c610f6cd6e24", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "52f1de76-d40e-4c3d-a03d-7f36789aea94", "parts": [{"text": "I want to buy lamp"}]}}}
+HTTP Request: POST http://127.0.0.1:50203/ "HTTP/1.1 200 OK"
+HTTP POST / -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:50203/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"bdd889d2-455d-4388-8d6d-694efd37525b","contextId":"d46fd7a7-0055-4cf6-aba0-7af5dc3a3bb5","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"38872284-dfd8-4cfe-828d-308c4b797349","contextId":"d46fd7a7-0055-4cf6-aba0-7af5dc3a3bb5","taskId":"bdd889d2-455d-4388-8d6d-694efd37525b","role":"ROLE_AGENT","parts":[{"text":"lamp: asking 130. Send your offer as a number."}]},"timestamp":"2026-10-20T11:33:21.243096Z"},"history":[{"messageId":"52f1de76-d40e-4c3d-a03d-7f36789aea94","contextId":"d46fd7a7-0055-4cf6-aba0-7af5dc3a3bb5","taskId":"bdd889d2-455d-4388-8d6d-694efd37525b","role":"ROLE_USER","parts":[{"text":"I want to buy lamp"}]}]}},"id":"d74372d7-74a5-40a9-b8dd-c610f6cd6e24","jsonrpc":"2.0"}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "task_id": "bdd889d2-455d-4388-8d6d-694efd37525b", "item": "lamp", "sku": "", "budget": 120, "rounds": 0, "last_offer": null, "recent_observations": ["lamp: asking 130. Send your offer as a number."]}
+CONTEXT chars=227 tools=2
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=307 output=24
+MODEL_TOOL round=1 offer {"price":120,"reason":"Matching the budget to close the deal."}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "7ba6b71e-548c-4c23-8495-6fa6ed1768a0", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "426dbdd8-8c60-41d8-90df-3bc1ba2d4dfe", "parts": [{"text": "120"}], "taskId": "bdd889d2-455d-4388-8d6d-694efd37525b", "contextId": "d46fd7a7-0055-4cf6-aba0-7af5dc3a3bb5"}}}
+HTTP Request: POST http://127.0.0.1:50203/ "HTTP/1.1 200 OK"
+HTTP POST / -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:50203/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"bdd889d2-455d-4388-8d6d-694efd37525b","contextId":"d46fd7a7-0055-4cf6-aba0-7af5dc3a3bb5","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"9244f3f4-207d-4e8a-b533-6cbf3d5bfef7","contextId":"d46fd7a7-0055-4cf6-aba0-7af5dc3a3bb5","taskId":"bdd889d2-455d-4388-8d6d-694efd37525b","role":"ROLE_AGENT","parts":[{"text":"Deal: lamp at 120."}]},"timestamp":"2026-10-20T11:33:21.963204Z"},"artifacts":[{"artifactId":"3f9af511-2af2-4e7c-8d1a-5c6bc528b716","name":"receipt","parts":[{"data":{"price":120.0,"item":"lamp","task":"bdd889d2-455d-4388-8d6d-694efd37525b","sig_seller":"YhLOyCJi5kywpjrPJbSfwNJ6w/isRiUx7JxRxfKE2cDAkNrAwf1jHozJnJjDkGfbGmuoy9mNM89uKBxg6/CwDg==","shop":"Kit Shop"}}]}],"history":[{"messageId":"52f1de76-d40e-4c3d-a03d-7f36789aea94","contextId":"d46fd7a7-0055-4cf6-aba0-7af5dc3a3bb5","taskId":"bdd889d2-455d-4388-8d6d-694efd37525b","role":"ROLE_USER","parts":[{"text":"I want to buy lamp"}]},{"messageId":"38872284-dfd8-4cfe-828d-308c4b797349","contextId":"d46fd7a7-0055-4cf6-aba0-7af5dc3a3bb5","taskId":"bdd889d2-455d-4388-8d6d-694efd37525b","role":"ROLE_AGENT","parts":[{"text":"lamp: asking 130. Send your offer as a number."}]},{"messageId":"426dbdd8-8c60-41d8-90df-3bc1ba2d4dfe","contextId":"d46fd7a7-0055-4cf6-aba0-7af5dc3a3bb5","taskId":"bdd889d2-455d-4388-8d6d-694efd37525b","role":"ROLE_USER","parts":[{"text":"120"}]}]}},"id":"7ba6b71e-548c-4c23-8495-6fa6ed1768a0","jsonrpc":"2.0"}
+TOOL_RESULT offer "Deal: lamp at 120."
+[NEGOTIATION RESULT] {"completed":true,"item":"lamp","sku":"","price":120,"task_id":"bdd889d2-455d-4388-8d6d-694efd37525b","shop":"http://127.0.0.1:50203/","failure_observation":"","receipt":{"price":120.0,"item":"lamp","task":"bdd889d2-455d-4388-8d6d-694efd37525b","sig_seller":"YhLOyCJi5kywpjrPJbSfwNJ6w/isRiUx7JxRxfKE2cDAkNrAwf1jHozJnJjDkGfbGmuoy9mNM89uKBxg6/CwDg==","shop":"Kit Shop"}}
+CONTEXT chars=690 tools=1
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=421 output=56
+MODEL_TOOL round=1 leave_review {"stars":5,"review":"The transaction for the lamp at $120 was completed successfully, and the receipt matches the authorized product and budget. The shop 'Kit Shop' has a history of positive transactions, indicating honest conduct."}
+TOOL_RESULT leave_review {"stars": 5, "review": "The transaction for the lamp at $120 was completed successfully, and the receipt matches the authorized product and budget. The shop 'Kit Shop' has a history of positive transactions, indicating honest conduct."}
+{"stars":5,"review":"The transaction for the lamp at $120 was completed successfully, and the receipt matches the authorized product and budget. The shop 'Kit Shop' has a history of positive transactions, indicating honest conduct.","shop":"http://127.0.0.1:50203","receipt":{"price":120.0,"item":"lamp","task":"bdd889d2-455d-4388-8d6d-694efd37525b","sig_seller":"YhLOyCJi5kywpjrPJbSfwNJ6w/isRiUx7JxRxfKE2cDAkNrAwf1jHozJnJjDkGfbGmuoy9mNM89uKBxg6/CwDg==","shop":"Kit Shop"}}

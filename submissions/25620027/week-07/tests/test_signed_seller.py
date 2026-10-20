@@ -42,6 +42,10 @@ def test_seller_receipt_when_real_a2a_task_accepts_offer(
             ),
             (
                 "decide",
+                {"action": "quote", "sku": "lamp", "price": 105, "reason": "Corrected"},
+            ),
+            (
+                "decide",
                 {"action": "accept", "sku": "lamp", "price": 1, "reason": "Low bid"},
             ),
             (
@@ -99,6 +103,10 @@ def test_seller_receipt_when_real_a2a_task_accepts_offer(
             ) as client:
                 # When: open, submit a below-reserve bid, then agree and try replay.
                 opening = await send(client, "I want a lamp")
+                assert (
+                    "Asking price: 105"
+                    in task_from(opening).status.message.parts[0].text
+                )
                 task_id = task_from(opening).id
                 assert task_id
                 low = await send(client, "1", task_id)
