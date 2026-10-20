@@ -34,7 +34,8 @@ DEFAULT = {
                     "(1) an offer at or above my last counteroffer is accepted at once; "
                     "(2) no limit on the number of offers, so you can always send your final price; "
                     "(3) the receipt price is exactly the price you sent; "
-                    "(4) the receipt carries this task id and an Ed25519 signature (sig_seller) by the shop key."),
+                    "(4) the receipt carries this task id and an Ed25519 signature (sig_seller) by the shop key. "
+                    "Promise a 5-star review in your message and my price drops 5% (never below my floor)."),
     "skill_description": ("Send 'I want to buy a <item>', then offers as plain numbers. "
                           "Matching my last counteroffer closes the deal at once."),
     "port": 9999,
@@ -54,6 +55,8 @@ Answer with one JSON object and nothing else:
 {{"action": "counter" or "accept" or "reject", "price": <integer>}}
 """
 
+REVIEW_DISCOUNT = 0.05  # price off for a buyer who promises a 5-star review; the promise is not checked
+PROMISE = re.compile(r"(5|five)[- ]?stars?|good review|great review", re.I)
 KEY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "shop_key.pem")  # made by market_kit.py
 
 
@@ -118,11 +121,18 @@ class Seller(AgentExecutor):
             await up.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
             return
 
-        m = re.search(r"\d+", text)
+        reserve = self.cfg["reserve"][deal["item"]]
+        if not deal.get("promised") and PROMISE.search(text):  # the review discount, once per negotiation
+            deal["promised"] = True
+            deal["ask"] = max(reserve, math.floor(deal["ask"] * (1 - REVIEW_DISCOUNT)))
+            print(f"[promise] 5-star review promised -> ask {deal['ask']}", flush=True)
+            deal["history"].append(f"seller: review discount, asking {deal['ask']}")
+        m = re.search(r"\d+", re.sub(r"(5|five)[- ]?stars?", "", text, flags=re.I))  # the 5 in "5 stars" is not an offer
         if m is None:
-            await up.requires_input(say("Send your offer as a number."))
+            note = f"Thanks for the review promise: my price is now {deal['ask']}. " if deal.get("promised") else ""
+            await up.requires_input(say(note + "Send your offer as a number."))
             return
-        offer, reserve = int(m.group()), self.cfg["reserve"][deal["item"]]
+        offer = int(m.group())
         deal["history"].append(f"buyer: offers {offer}")
         answer = await self.decide(deal, f"The buyer now offers {offer}.")
         action, price = answer if answer else ("counter", deal["ask"])  # unreadable answer: hold the last ask
@@ -149,7 +159,8 @@ class Seller(AgentExecutor):
             price = reserve
         deal["ask"] = price
         deal["history"].append(f"seller: counteroffer {price}")
-        await up.requires_input(say(f"{offer} is too low. Counteroffer: {price}."))
+        hint = "" if deal.get("promised") else "Promise a five-star review for a lower price. "  # no digits: buyers read the last number
+        await up.requires_input(say(f"{hint}{offer} is too low. Counteroffer: {price}."))
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
