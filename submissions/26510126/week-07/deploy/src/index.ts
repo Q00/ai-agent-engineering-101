@@ -190,8 +190,9 @@ async function signReceipt(env: Env, body: { shop: string; item: string; price: 
 
 const LOYALTY = [0, 0.03, 0.05, 0.07]; // by tier, when the strategy sets none; tier 3 and above stay at the cap
 const MAX_LOYALTY = 0.15; // the Worker refuses a strategy with a bigger step
+const MAX_TIER = 6; // the meta-harness may add tiers up to this one
 const COUPON = /FAIR-([A-Z]{8})([A-Z]{8})/i;
-const tierOf = (code: string) => Math.max(1, Math.min(LOYALTY.length - 1, code.charCodeAt(5) - 64));
+const tierOf = (code: string) => Math.max(1, Math.min(MAX_TIER, code.charCodeAt(5) - 64));
 const toLetters = (bytes: Uint8Array, n: number) => Array.from(bytes.slice(0, n), (b) => String.fromCharCode(65 + (b % 26))).join("");
 
 async function couponMac(env: Env, nonce: string): Promise<string> {
@@ -201,7 +202,7 @@ async function couponMac(env: Env, nonce: string): Promise<string> {
 }
 
 async function newCoupon(env: Env, tier: number): Promise<string> {
-  const t = String.fromCharCode(64 + Math.max(1, Math.min(LOYALTY.length - 1, tier)));
+  const t = String.fromCharCode(64 + Math.max(1, Math.min(MAX_TIER, tier)));
   const nonce = t + toLetters(crypto.getRandomValues(new Uint8Array(7)), 7);
   return `FAIR-${nonce}${await couponMac(env, nonce)}`;
 }
@@ -231,7 +232,21 @@ export class TaskObject extends DurableObject<Env> {
   async redeem(code: string): Promise<boolean> {
     if (await this.ctx.storage.get(`used:${code}`)) return false;
     await this.ctx.storage.put(`used:${code}`, Date.now());
+    await this.count(`redeemed:${tierOf(code)}`);
     return true;
+  }
+
+  /** Coupon counters for the meta-harness: issued and redeemed per tier. */
+  async count(key: string): Promise<void> {
+    await this.ctx.storage.put(key, ((await this.ctx.storage.get<number>(key)) ?? 0) + 1);
+  }
+
+  async couponStats(): Promise<Record<string, number>> {
+    const out: Record<string, number> = {};
+    for (const prefix of ["issued:", "redeemed:"]) {
+      for (const [k, v] of await this.ctx.storage.list<number>({ prefix })) out[k] = v;
+    }
+    return out;
   }
 
   private strategy(): Promise<Strategy | null> {
@@ -390,7 +405,8 @@ export class TaskObject extends DurableObject<Env> {
   }
 
   private async close(task: Task, item: string, price: number, note: string) {
-    const nextTier = ((await this.ctx.storage.get<Deal>("deal"))?.tier ?? 0) + 1;
+    const nextTier = Math.min(MAX_TIER, ((await this.ctx.storage.get<Deal>("deal"))?.tier ?? 0) + 1);
+    await this.env.TASKS.get(this.env.TASKS.idFromName(STRATEGY_ID)).count(`issued:${nextTier}`);
     const receipt = await signReceipt(this.env, { shop: NAME, item, price: Math.round(price), task: task.id });
     task.artifacts = [{ artifactId: crypto.randomUUID(), name: "receipt", parts: [{ data: receipt }] }];
     console.log(`OUT: deal ${item} at ${price}`);
@@ -529,6 +545,11 @@ app.get("/admin/strategy", async (c) => {
   return c.json(await strategyStub(c.env).getStrategy());
 });
 
+app.get("/admin/coupons", async (c) => {
+  if (!authorized(c.env, c.req.header("Authorization"))) return c.json({ error: "unauthorized" }, 401);
+  return c.json(await strategyStub(c.env).couponStats());
+});
+
 app.put("/admin/strategy", async (c) => {
   if (!authorized(c.env, c.req.header("Authorization"))) return c.json({ error: "unauthorized" }, 401);
   const s = (await c.req.json()) as Strategy;
@@ -541,7 +562,8 @@ app.put("/admin/strategy", async (c) => {
     }
   }
   if (s.loyalty !== undefined) {
-    const ok = Array.isArray(s.loyalty) && s.loyalty.every((v) => typeof v === "number" && v >= 0 && v <= MAX_LOYALTY);
+    const ok = Array.isArray(s.loyalty) && s.loyalty.length <= MAX_TIER + 1 &&
+      s.loyalty.every((v, i) => typeof v === "number" && v >= 0 && v <= MAX_LOYALTY && (i === 0 || v >= s.loyalty![i - 1]));
     if (!ok) return c.json({ error: `loyalty must be a list of discounts between 0 and ${MAX_LOYALTY}` }, 400);
   }
   console.log(`STRATEGY: set v${s.version} open ${JSON.stringify(s.open)} target ${JSON.stringify(s.target)}`);
