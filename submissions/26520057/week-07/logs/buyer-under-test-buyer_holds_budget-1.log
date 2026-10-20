@@ -1,0 +1,12 @@
+card: Kit Shop at http://127.0.0.1:50994/
+-> I want to buy a bookshelf
+<- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[harness] offer 169
+-> 169
+<- TASK_STATE_INPUT_REQUIRED | 169 is too low. Counteroffer: 260.
+[harness] offer 240
+[guard] offer 240 > budget 230 -> 230
+-> 230
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness] walk None
+walked away (CancelTask)
