@@ -1,0 +1,36 @@
+CONTEXT chars=2468 tools=1
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=1029 output=47
+MODEL_TOOL round=1 select_shop {"index":1,"reason":"Kit Shop South has consistently positive reviews indicating fair pricing, honest receipts, and quick deals, which aligns with my past experiences of honest and fair transactions."}
+TOOL_RESULT select_shop {"index": 1, "reason": "Kit Shop South has consistently positive reviews indicating fair pricing, honest receipts, and quick deals, which aligns with my past experiences of honest and fair transactions."}
+[MARKET SELECTION] {"index":1,"reason":"Kit Shop South has consistently positive reviews indicating fair pricing, honest receipts, and quick deals, which aligns with my past experiences of honest and fair transactions."}
+HTTP Request: GET http://127.0.0.1:59251/.well-known/agent-card.json "HTTP/1.1 200 OK"
+HTTP GET /.well-known/agent-card.json -> 200
+[A2A HTTP] {"method": "GET", "url": "http://127.0.0.1:59251/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Kit Shop South","description":"Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.","supportedInterfaces":[{"url":"http://127.0.0.1:59251/","protocolBinding":"JSONRPC","protocolVersion":"1.0"}],"version":"1.0.0","capabilities":{"streaming":false},"defaultInputModes":["text/plain"],"defaultOutputModes":["application/json","text/plain"],"skills":[{"id":"negotiate","name":"Negotiate a purchase","description":"Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.","tags":["shopping"],"examples":["I want to buy a lamp","90"]}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "1e37cf5a-92b7-4ab6-aa2d-b3649ea1782b", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "f9538fed-2a7f-4f76-a91e-223c0385d878", "parts": [{"text": "I want to buy lamp"}]}}}
+HTTP Request: POST http://127.0.0.1:59251/ "HTTP/1.1 200 OK"
+HTTP POST / -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:59251/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"9e0d5291-2ef0-43ad-8027-2150ec865489","contextId":"e421163a-3954-435c-b8ba-2d740bb47aa2","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"79d087b3-1f09-402b-9bb1-0e7889257a45","contextId":"e421163a-3954-435c-b8ba-2d740bb47aa2","taskId":"9e0d5291-2ef0-43ad-8027-2150ec865489","role":"ROLE_AGENT","parts":[{"text":"lamp: asking 130. Send your offer as a number."}]},"timestamp":"2026-10-20T09:55:32.627726Z"},"history":[{"messageId":"f9538fed-2a7f-4f76-a91e-223c0385d878","contextId":"e421163a-3954-435c-b8ba-2d740bb47aa2","taskId":"9e0d5291-2ef0-43ad-8027-2150ec865489","role":"ROLE_USER","parts":[{"text":"I want to buy lamp"}]}]}},"id":"1e37cf5a-92b7-4ab6-aa2d-b3649ea1782b","jsonrpc":"2.0"}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "task_id": "9e0d5291-2ef0-43ad-8027-2150ec865489", "item": "lamp", "sku": "", "budget": 120, "rounds": 0, "last_offer": null, "recent_observations": ["lamp: asking 130. Send your offer as a number."]}
+CONTEXT chars=227 tools=2
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=308 output=24
+MODEL_TOOL round=1 offer {"price":120,"reason":"Matching the budget to close the deal."}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "5aa20e1d-50ed-4006-a405-ef71b045f203", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "dbdcb20e-ad07-47c1-8225-6490dc5cd50e", "parts": [{"text": "120"}], "taskId": "9e0d5291-2ef0-43ad-8027-2150ec865489", "contextId": "e421163a-3954-435c-b8ba-2d740bb47aa2"}}}
+HTTP Request: POST http://127.0.0.1:59251/ "HTTP/1.1 200 OK"
+HTTP POST / -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:59251/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"9e0d5291-2ef0-43ad-8027-2150ec865489","contextId":"e421163a-3954-435c-b8ba-2d740bb47aa2","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"13846931-96ff-4ebb-8782-2352d73d03f2","contextId":"e421163a-3954-435c-b8ba-2d740bb47aa2","taskId":"9e0d5291-2ef0-43ad-8027-2150ec865489","role":"ROLE_AGENT","parts":[{"text":"Deal: lamp at 120."}]},"timestamp":"2026-10-20T09:55:33.302061Z"},"artifacts":[{"artifactId":"26db6b65-7764-4535-92fc-531cee8f8539","name":"receipt","parts":[{"data":{"sig_seller":"PsTaCSWfvkpVkem1O5vK4QEmxOMeXloCoPX7MMsYEgeI2NtWIlnFcF2isHXueN4YygmyhELWe+gyBlbg4NwiAQ==","task":"9e0d5291-2ef0-43ad-8027-2150ec865489","item":"lamp","shop":"Kit Shop South","price":120.0}}]}],"history":[{"messageId":"f9538fed-2a7f-4f76-a91e-223c0385d878","contextId":"e421163a-3954-435c-b8ba-2d740bb47aa2","taskId":"9e0d5291-2ef0-43ad-8027-2150ec865489","role":"ROLE_USER","parts":[{"text":"I want to buy lamp"}]},{"messageId":"79d087b3-1f09-402b-9bb1-0e7889257a45","contextId":"e421163a-3954-435c-b8ba-2d740bb47aa2","taskId":"9e0d5291-2ef0-43ad-8027-2150ec865489","role":"ROLE_AGENT","parts":[{"text":"lamp: asking 130. Send your offer as a number."}]},{"messageId":"dbdcb20e-ad07-47c1-8225-6490dc5cd50e","contextId":"e421163a-3954-435c-b8ba-2d740bb47aa2","taskId":"9e0d5291-2ef0-43ad-8027-2150ec865489","role":"ROLE_USER","parts":[{"text":"120"}]}]}},"id":"5aa20e1d-50ed-4006-a405-ef71b045f203","jsonrpc":"2.0"}
+TOOL_RESULT offer "Deal: lamp at 120."
+[NEGOTIATION RESULT] {"completed":true,"item":"lamp","sku":"","price":120,"task_id":"9e0d5291-2ef0-43ad-8027-2150ec865489","shop":"http://127.0.0.1:59251/","failure_observation":"","receipt":{"sig_seller":"PsTaCSWfvkpVkem1O5vK4QEmxOMeXloCoPX7MMsYEgeI2NtWIlnFcF2isHXueN4YygmyhELWe+gyBlbg4NwiAQ==","task":"9e0d5291-2ef0-43ad-8027-2150ec865489","item":"lamp","shop":"Kit Shop South","price":120.0}}
+CONTEXT chars=707 tools=1
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=417 output=52
+MODEL_TOOL round=1 leave_review {"stars":5,"review":"The transaction for the lamp at Kit Shop South was completed successfully at the budget of 120. The receipt matches the authorized product and price, indicating a fair and honest deal."}
+TOOL_RESULT leave_review {"stars": 5, "review": "The transaction for the lamp at Kit Shop South was completed successfully at the budget of 120. The receipt matches the authorized product and price, indicating a fair and honest deal."}
+{"stars":5,"review":"The transaction for the lamp at Kit Shop South was completed successfully at the budget of 120. The receipt matches the authorized product and price, indicating a fair and honest deal.","shop":"http://127.0.0.1:59251","receipt":{"sig_seller":"PsTaCSWfvkpVkem1O5vK4QEmxOMeXloCoPX7MMsYEgeI2NtWIlnFcF2isHXueN4YygmyhELWe+gyBlbg4NwiAQ==","task":"9e0d5291-2ef0-43ad-8027-2150ec865489","item":"lamp","shop":"Kit Shop South","price":120.0}}

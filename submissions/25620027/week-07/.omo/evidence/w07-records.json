@@ -1,0 +1,139 @@
+{
+  "timestamp": "2026-10-20T19:00:02.472131+09:00",
+  "scope": "Update five existing Week07 academic records; no new Vault note",
+  "invocation": "python3 inline record update and readback assertions (2026-10-20)",
+  "scenarios": [
+    {
+      "scenario": "Official first-run source verification",
+      "invocation": "Parse test-report.json; compare validation-attempt-1 byte snapshots; sum MODEL_USAGE lines",
+      "binary_observable": "25 results all pass; report/log byte equality; 116 calls; 75005 input and 3980 output",
+      "artifacts": [
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/test-report.json",
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-test.log",
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/validation-attempt-1"
+      ]
+    },
+    {
+      "scenario": "Five records updated without unrelated-line changes",
+      "invocation": "Read latest files; exact replacement/append; compare before-write freshness; readback exact equality",
+      "binary_observable": "All five files match intended edits; original source hash table identical; existing initial setup entries retained",
+      "artifacts": [
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/source_manifest.md",
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Study_Raw/10_Courses/11_AX이해와활용/source_manifest.md"
+      ]
+    },
+    {
+      "scenario": "New source links resolve and incomplete submission status preserved",
+      "invocation": "Path.exists for 10 newly referenced artifacts; assert 25/25 plus incomplete status on all five records",
+      "binary_observable": "11/11 references exist; five records include bounded completion status and one structural failure",
+      "artifacts": [
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/source_manifest.md",
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Study_Raw/10_Courses/11_AX이해와활용/source_manifest.md"
+      ]
+    },
+    {
+      "scenario": "Current structural submission status",
+      "invocation": "Read logs/structural-after-25.log; count FAIL lines and verify terminal summary",
+      "binary_observable": "Exactly one failure: logs/market-kit.log absent or missing ledger entry; all other printed structural checks pass",
+      "artifacts": [
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/structural-after-25.log"
+      ]
+    }
+  ],
+  "records": [
+    {
+      "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+      "exists_nonempty": true,
+      "sha256": "61e85b6f9233dc2e637e3fd37b883c96c378778ae79c5dc2c5e2abcd57adba6c",
+      "implementation_record_present": true,
+      "final_structural_pending_count": 1
+    },
+    {
+      "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+      "exists_nonempty": true,
+      "sha256": "f8cff24184884b01abbb83904884ee6117bcf0fb49b2af6b8758ec3cf76ecce2",
+      "implementation_record_present": true,
+      "final_structural_pending_count": 1
+    },
+    {
+      "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+      "exists_nonempty": true,
+      "sha256": "7e91b541dc635dc5185bf205b84e0c16d77472c88e6071cba4a98d5390af4e68",
+      "implementation_record_present": true,
+      "final_structural_pending_count": 1
+    },
+    {
+      "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/source_manifest.md",
+      "exists_nonempty": true,
+      "sha256": "52786cf898e1550c2cfba95f6c1a5ab9046e95d61d7d4ff238ece1b0173b46d2",
+      "implementation_record_present": true,
+      "final_structural_pending_count": 1
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Study_Raw/10_Courses/11_AX이해와활용/source_manifest.md",
+      "exists_nonempty": true,
+      "sha256": "1eafa52aadbb686ac8ddc91ebcc82929cc94d8d70374985b7754753346b64831",
+      "implementation_record_present": true,
+      "final_structural_pending_count": 1
+    }
+  ],
+  "source_artifacts": [
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/REPORT.md",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/test-report.json",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-test.log",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/validation-attempt-1",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/offline-tests-20261020.log",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/lint-20261020.log",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/typecheck-20261020.log",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-code-review.md",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-validation.md",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/SETUP.md",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/structural-after-25.log",
+      "exists": true
+    }
+  ],
+  "usage": {
+    "calls": 116,
+    "input_tokens": 75005,
+    "output_tokens": 3980
+  },
+  "private_key_values_recorded": false,
+  "source_hash_table_preserved": true
+}
