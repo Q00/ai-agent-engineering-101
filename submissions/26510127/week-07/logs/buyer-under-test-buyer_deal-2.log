@@ -1,9 +1,9 @@
 [shops]
-Kit Shop | no reviews | 1 trades, 1 deals, paid lamp 100. Last: lamp: asks [130], my offers [100], paid 100.0
+Kit Shop | no reviews | 7 trades, 4 deals, paid lamp 100,100,100. Last: lamp: asks [130], my offers [100], paid 100.0
 [pick] Kit Shop because: it is the only shop I can use
 -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
 [harness] {"action": "offer", "price": 100}
 -> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-[check] outcome: TASK_STATE_COMPLETED; shop asks: [130]; my offers: [100]; receipt: {"price": 100.0, "task": "82fca4db-6cac-43b2-815e-346af5e36aea", "item": "lamp", "shop": "Kit Shop"}; receipt matches what we agreed
-[harness] review {"stars": 5, "review": "I offered 100 against the lamp's asking price of 130, the sale completed at 100, and the receipt matched what we agreed."}
-{"shop": "http://127.0.0.1:45477", "receipt": {"price": 100.0, "task": "82fca4db-6cac-43b2-815e-346af5e36aea", "item": "lamp", "sig_seller": "ZlNp/I4URVJLlCfDeS47V5wpjFolHYEPLVkUYKVo/R67v0m6DkMYSgglkYFiJlkY+ItyPVAVNLt7YEuyN2ChDw==", "shop": "Kit Shop"}, "stars": 5, "review": "I offered 100 against the lamp's asking price of 130, the sale completed at 100, and the receipt matched what we agreed."}
+[check] outcome: TASK_STATE_COMPLETED; shop asks: [130]; my offers: [100]; receipt: {"item": "lamp", "shop": "Kit Shop", "price": 100.0, "task": "0f8c898f-c701-4ecc-a4be-fb053fb9d191"}; receipt matches what we agreed and is signed
+[harness] review {"stars": 5, "review": "Kit Shop sold me a lamp for 100, my offered price, after asking 130, and the signed receipt matched what we agreed."}
+{"shop": "http://127.0.0.1:49193", "receipt": {"item": "lamp", "shop": "Kit Shop", "price": 100.0, "sig_seller": "w0onl5JYy+77mtpvpVNtWaxFdhxXQfjdu8wn3D2YIVmLv2oqcQqPi5cJODpLe4TWlsFe0n1Qlf7GZtv/Yg2PCQ==", "task": "0f8c898f-c701-4ecc-a4be-fb053fb9d191"}, "stars": 5, "review": "Kit Shop sold me a lamp for 100, my offered price, after asking 130, and the signed receipt matched what we agreed."}

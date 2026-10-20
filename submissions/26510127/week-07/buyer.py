@@ -86,9 +86,10 @@ def main():
         if offer > a.budget:
             print(f"[guard] offer {offer} is above the budget {a.budget} -> {a.budget}", flush=True)
             offer = a.budget
-        t, said = send(str(offer), t["id"])
+        text = f"Final offer: {offer}" if offer >= a.budget else str(offer)   # the shop knows this is the last value
+        t, said = send(text, t["id"])
         offers += 1
-        lines += [f"you: {offer}", f"shop: {said}"]
+        lines += [f"you: {text}", f"shop: {said}"]
     else:
         if t["status"]["state"] == "TASK_STATE_INPUT_REQUIRED":
             rpc("CancelTask", {"id": t["id"]})
