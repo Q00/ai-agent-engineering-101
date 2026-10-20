@@ -161,7 +161,8 @@ def main():
     else:
         stars, review = review_of(receipt, last_offer, offers, args.budget)
 
-    review += PLUG  # the student's strategy, disclosed in the review itself
+    if receipt and stars >= 4:  # the student's strategy, disclosed; only where "this place is good" is true
+        review += PLUG
 
     memory.append({"shop": shop["name"], "item": args.item, "budget": args.budget, "offers": offers,
                    "price": receipt.get("price") if receipt else None,
