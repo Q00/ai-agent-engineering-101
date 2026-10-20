@@ -10,10 +10,35 @@
 // INPUT_REQUIRED message; it is also in the message metadata as {"ask": N} (challenge 3).
 // The harness differs: a `claude` login cannot run on a server (README), so the model is
 // Workers AI (env.MODEL, see wrangler.jsonc). Tasks live in one Durable Object ("shop").
+//
+// Week 07: the receipt is {shop, item, price, task} plus sig_seller, the base64 Ed25519 signature over
+// the canonical JSON of those four keys (sorted keys, no spaces, UTF-8, whole-number price), the same
+// bytes seller.py signs. The private key is the kit's shop_key.pem, whose public key the market has
+// registered for this shop; it reaches the Worker only as the secret SHOP_KEY (the base64 PKCS#8 body
+// of the PEM), never through the repository. Without SHOP_KEY the shop still sells, unsigned, and logs it.
 
 const RESERVE: Record<string, number> = { lamp: 100, chair: 180, bookshelf: 260 };
 const MAX_ROUNDS = 6;
 const NAME = "Harness Shop, deployed (25620024)";
+const SHOP = "dragonash";   // receipt "shop": the market name, same as seller.py
+
+export function canon(r: { shop: string; item: string; price: number; task: string }): string {
+  // keys written in sorted order, no spaces: the same string as Python's
+  // json.dumps(r, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+  return JSON.stringify({ item: r.item, price: r.price, shop: r.shop, task: r.task });
+}
+
+export async function importShopKey(b64: string): Promise<CryptoKey> {
+  const der = Uint8Array.from(atob(b64.replace(/-----[^-]+-----|\s/g, "")), (c) => c.charCodeAt(0));
+  return crypto.subtle.importKey("pkcs8", der, { name: "Ed25519" }, false, ["sign"]);
+}
+
+export async function signedReceipt(key: CryptoKey | null, item: string, price: number, task: string) {
+  const r = { shop: SHOP, item, price: Math.round(price), task };
+  if (!key) return r;
+  const sig = new Uint8Array(await crypto.subtle.sign({ name: "Ed25519" }, key, new TextEncoder().encode(canon(r))));
+  return { ...r, sig_seller: btoa(String.fromCharCode(...sig)) };
+}
 const TERMINAL = ["TASK_STATE_COMPLETED", "TASK_STATE_REJECTED", "TASK_STATE_CANCELED", "TASK_STATE_FAILED"];
 
 const OPEN_PROMPT = (item: string, reserve: number) =>
@@ -82,7 +107,13 @@ export default {
 export class Shop {
   state: any;
   env: any;
+  key: Promise<CryptoKey | null> | undefined;
   constructor(state: any, env: any) { this.state = state; this.env = env; }
+
+  shopKey(): Promise<CryptoKey | null> {
+    this.key ??= this.env.SHOP_KEY ? importShopKey(this.env.SHOP_KEY) : Promise.resolve(null);
+    return this.key;
+  }
 
   async fetch(request: Request): Promise<Response> {
     let body: any;
@@ -195,7 +226,15 @@ export class Shop {
     }
 
     if (action === "accept") {
-      task.artifacts = [{ artifactId: crypto.randomUUID(), name: "receipt", parts: [{ data: { seller: NAME, item: d.item, price: offer } }] }];
+      let receipt: any;
+      try {
+        receipt = await signedReceipt(await this.shopKey(), d.item, offer, task.id);
+        if (!receipt.sig_seller) s.log.push("SHOP_KEY secret not set: receipt unsigned");
+      } catch (e: any) {
+        s.log.push(`signing failed (${e?.message}): receipt unsigned`);
+        receipt = await signedReceipt(null, d.item, offer, task.id);
+      }
+      task.artifacts = [{ artifactId: crypto.randomUUID(), name: "receipt", parts: [{ data: receipt }] }];
       task.status = { state: "TASK_STATE_COMPLETED", message: agentMsg(`Deal: ${d.item} at ${offer}.`), timestamp: now() };
       s.log.push(`DEAL ${d.item} at ${offer} (reserve ${d.reserve})`);
       return save();
