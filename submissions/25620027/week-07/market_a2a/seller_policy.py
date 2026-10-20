@@ -7,9 +7,14 @@ from typing import TYPE_CHECKING, Final, Literal, assert_never
 
 from pydantic import Field
 
+from market_a2a.comparison import compare_price, opening_max
 from market_a2a.models import FrozenModel, Product, ToolResult, ToolSpec, json_value
 
 if TYPE_CHECKING:
+    from a2a.server.tasks import TaskUpdater
+    from pydantic import JsonValue
+
+    from market_a2a.comparison import ComparisonSnapshot
     from market_a2a.seller_history import SellerHistory
 
 MIN_NEGOTIATION_ROUNDS: Final = 4
@@ -28,6 +33,8 @@ Search then use action="quote" to SELECT the SKU and set an asking price.
 Choose an integer opening price from product.reserve through opening_max,
 inclusive, as provided by search_catalog. Favor the upper end of this opening
 range to retain value and leave room for a few measured concessions.
+The comparison fields contain only dated numeric initial-ask observations.
+Their ceiling already respects reserve and freshness; never invent price evidence.
 Never use action="accept" on the opening phase: nothing has been offered.
 BARGAINING PHASE: accept the actual numeric offer immediately if it meets or
 exceeds the current ask. Use price equal to offer and SKU equal to selected.sku.
@@ -91,6 +98,18 @@ class Negotiation:
     incoming_offers: int = 0
 
 
+@dataclass(frozen=True, slots=True)
+class Turn:
+    """Inputs authorized for one tool action in the current negotiation."""
+
+    task_id: str
+    updater: TaskUpdater
+    current: Negotiation | None
+    candidates: dict[str, Product]
+    offer: int | None
+    snapshot: ComparisonSnapshot | None = None
+
+
 TOOLS: Final = (
     ToolSpec(
         name="search_catalog",
@@ -103,11 +122,6 @@ TOOLS: Final = (
         parameters=Decision.model_json_schema(),
     ),
 )
-
-
-def opening_max(reserve: int) -> int:
-    """Round the ten-percent opening markup upward without floating point."""
-    return (reserve * 110 + 99) // 100
 
 
 def settlement_required(current: Negotiation | None, offer: int | None) -> bool:
@@ -152,22 +166,32 @@ def decision_feedback(
             assert_never(decision.action)
 
 
-def search_result(products: tuple[Product, ...], history: SellerHistory) -> ToolResult:
+def search_result(
+    products: tuple[Product, ...],
+    history: SellerHistory,
+    snapshot: ComparisonSnapshot | None = None,
+) -> ToolResult:
     """Attach exact opening limits to the model's bounded catalog retrieval."""
-    return ToolResult(
-        data=[
+    data: list[JsonValue] = []
+    for product in products:
+        comparison = compare_price(product, snapshot)
+        data.append(
             {
                 "product": json_value(product),
-                "opening_max": opening_max(product.reserve),
+                "opening_max": comparison.ceiling,
+                "comparison": json_value(comparison),
                 "own_price_history": json_value(history.snapshot(product.sku)),
             }
-            for product in products
-        ]
-    )
+        )
+    return ToolResult(data=data)
 
 
 def price_feedback(
-    reserve: int, decision: Decision, *, current_ask: int | None
+    reserve: int,
+    decision: Decision,
+    *,
+    current_ask: int | None,
+    opening_limit: int | None = None,
 ) -> PriceFeedback | None:
     """Keep the reserve, cap opening asks, and prevent later ask increases."""
     if decision.price < reserve:
@@ -178,7 +202,12 @@ def price_feedback(
         )
     match decision.action:
         case "quote":
-            maximum = opening_max(reserve) if current_ask is None else current_ask
+            baseline = opening_max(reserve)
+            maximum = (
+                baseline if opening_limit is None else min(baseline, opening_limit)
+            )
+            if current_ask is not None:
+                maximum = current_ask
             if decision.price > maximum:
                 return PriceFeedback(
                     code="opening_ask_limit" if current_ask is None else "ask_increase",

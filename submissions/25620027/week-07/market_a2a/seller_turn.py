@@ -1,27 +1,35 @@
 """Stateful A2A seller whose tool loop owns all commercial decisions."""
 
+# allow: SIZE_OK — one per-task tool/state machine keeps guards before mutation;
+# wire publication is already isolated in seller_messages.py.
+
 from __future__ import annotations
 
-import json
 import re
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from typing import TYPE_CHECKING, Literal, assert_never
 
 from a2a.server.tasks import TaskUpdater
 from a2a.types import Part, Task
-from google.protobuf.json_format import Parse
-from google.protobuf.struct_pb2 import Value
 from pydantic import JsonValue, TypeAdapter, ValidationError
 
 from market_a2a.catalog_constraints import compatible
+from market_a2a.comparison import compare_price
 from market_a2a.models import HarnessError, Product, ToolResult, json_value
 from market_a2a.seller_history import SellerHistory
+from market_a2a.seller_messages import (
+    AgreedSale,
+    QuoteNotice,
+    complete_sale,
+    quote_message,
+)
 from market_a2a.seller_policy import (
     PROMPT,
     TOOLS,
     Decision,
     Negotiation,
     Search,
+    Turn,
     decision_feedback,
     price_feedback,
     search_result,
@@ -32,19 +40,9 @@ if TYPE_CHECKING:
     from a2a.server.events import EventQueue
 
     from market_a2a.catalog import Catalog
+    from market_a2a.comparison import ComparisonFeed
     from market_a2a.harness import Harness
     from market_a2a.receipts import ReceiptSigner
-
-
-@dataclass(frozen=True, slots=True)
-class Turn:
-    """Validated offer and short candidate set for one task action."""
-
-    task_id: str
-    updater: TaskUpdater
-    current: Negotiation | None
-    candidates: dict[str, Product]
-    offer: int | None
 
 
 class Negotiator:
@@ -57,12 +55,14 @@ class Negotiator:
         name: str,
         *,
         signer: ReceiptSigner | None = None,
+        comparison: ComparisonFeed | None = None,
     ) -> None:
         """Share one model client while isolating every negotiation."""
         self.harness: Harness = harness
         self.catalog: Catalog = catalog
         self.name: str = name
         self.signer: ReceiptSigner | None = signer
+        self.comparison: ComparisonFeed | None = comparison
         self.negotiations: dict[str, Negotiation] = {}
         self.closed: set[str] = set()
         self.price_history: SellerHistory = SellerHistory()
@@ -71,6 +71,7 @@ class Negotiator:
         """Expose retrieval and guarded commercial actions for one model turn."""
         updater = TaskUpdater(queue, task.id, task.context_id)
         current = self.negotiations.get(task.id)
+        snapshot = self.comparison.snapshot if self.comparison is not None else None
         candidates: dict[str, Product] = {}
         offer = int(text.strip()) if re.fullmatch(r"[0-9]{1,9}", text.strip()) else None
         if current is not None and offer is not None:
@@ -135,11 +136,14 @@ class Negotiator:
                                 )
                             )
                         )
-                        return search_result(found, self.price_history)
+                        return search_result(found, self.price_history, snapshot)
                     case "decide":
                         decision = Decision.model_validate_json(arguments)
                         return await self.commit(
-                            Turn(task.id, updater, current, candidates, offer), decision
+                            Turn(
+                                task.id, updater, current, candidates, offer, snapshot
+                            ),
+                            decision,
                         )
                     case _:
                         assert_never(tool)
@@ -175,8 +179,6 @@ class Negotiator:
             and not current.coupon_used
             and decision.price < current.ask
         )
-        total_reduction = current.ask - decision.price if current else 0
-        discount = min(5, total_reduction) if coupon_applied else 0
         self.negotiations[turn.task_id] = Negotiation(
             product,
             decision.price,
@@ -184,40 +186,15 @@ class Negotiator:
             coupon_applied or (current.coupon_used if current else False),
             current.incoming_offers if current else 0,
         )
-        coupon_text = ""
-        if current is None:
-            coupon_text = (
-                " R2WELCOME: up to 5 price units of the first negotiated "
-                "reduction are coupon credit. Larger reductions are possible."
-            )
-        elif coupon_applied:
-            coupon_text = (
-                f" R2WELCOME coupon credit: {discount} within a total "
-                f"reduction of {total_reduction} price units."
-            )
-        message = turn.updater.new_agent_message(
-            [
-                Part(
-                    text="".join(
-                        (
-                            product.name,
-                            ".",
-                            coupon_text,
-                            f" Asking price: {decision.price}",
-                        )
-                    )
-                )
-            ],
-            metadata={
-                "sku": product.sku,
-                "item": product.kind,
-                "name": product.name,
-                "ask": decision.price,
-                "coupon_code": "R2WELCOME",
-                "coupon_discount": discount,
-                "total_reduction": total_reduction,
-                "coupon_applied": "true" if coupon_applied else "false",
-            },
+        message = quote_message(
+            turn.updater,
+            QuoteNotice(
+                product,
+                decision.price,
+                current.ask if current else None,
+                coupon_applied,
+                turn.snapshot,
+            ),
         )
         await turn.updater.requires_input(message)
 
@@ -245,7 +222,10 @@ class Negotiator:
                 data={"error": "Select a retrieved SKU; never switch an open SKU."}
             )
         price_error = price_feedback(
-            product.reserve, decision, current_ask=current.ask if current else None
+            product.reserve,
+            decision,
+            current_ask=current.ask if current else None,
+            opening_limit=compare_price(product, turn.snapshot).ceiling,
         )
         if price_error is not None:
             guard = f"seller.guard task={turn.task_id} code={price_error.code}"
@@ -267,44 +247,10 @@ class Negotiator:
                             "error": "No matching offer. Use quote to state a price."
                         },
                     )
-                receipt = {
-                    "seller": self.name,
-                    "item": product.kind,
-                    "sku": product.sku,
-                    "price": decision.price,
-                }
-                if self.signer is not None:
-                    signed = self.signer.sign(
-                        shop=self.name,
-                        item=product.kind,
-                        price=decision.price,
-                        task=turn.task_id,
-                    )
-                    receipt = signed.model_dump()
-                    receipt["sku"] = product.sku
-                await updater.add_artifact(
-                    [
-                        Part(
-                            data=Parse(json.dumps(receipt), Value()),
-                            media_type="application/json",
-                        )
-                    ],
-                    name="receipt",
-                )
-                await updater.complete(
-                    updater.new_agent_message(
-                        [
-                            Part(
-                                text=" ".join(
-                                    (
-                                        f"Deal: {product.name} at {decision.price}.",
-                                        "Please leave an honest review",
-                                        "of the price and receipt.",
-                                    )
-                                )
-                            )
-                        ]
-                    )
+                await complete_sale(
+                    updater,
+                    AgreedSale(product, decision.price, turn.task_id, self.name),
+                    self.signer,
                 )
                 self.closed.add(turn.task_id)
                 _ = self.negotiations.pop(turn.task_id, None)

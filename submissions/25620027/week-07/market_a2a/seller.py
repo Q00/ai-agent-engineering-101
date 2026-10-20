@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, override
 
 import anyio
@@ -22,12 +23,14 @@ from a2a.utils.errors import InvalidParamsError
 from fastapi import FastAPI
 
 from market_a2a.advertisement import advertisement
+from market_a2a.comparison_service import ComparisonService
 from market_a2a.seller_turn import Negotiator
 
 if TYPE_CHECKING:
     from a2a.server.events import EventQueue
 
     from market_a2a.catalog import Catalog
+    from market_a2a.comparison import ComparisonFeed
     from market_a2a.harness import Harness
     from market_a2a.receipts import ReceiptSigner
 
@@ -42,9 +45,12 @@ class Seller(AgentExecutor):
         name: str,
         *,
         signer: ReceiptSigner | None = None,
+        comparison: ComparisonFeed | None = None,
     ) -> None:
         """Share one model client while isolating every negotiation."""
-        self.negotiator: Negotiator = Negotiator(harness, catalog, name, signer=signer)
+        self.negotiator: Negotiator = Negotiator(
+            harness, catalog, name, signer=signer, comparison=comparison
+        )
         self.locks: dict[str, anyio.Lock] = {}
 
     @override
@@ -90,6 +96,9 @@ def create_app(
 ) -> FastAPI:
     """Expose SDK routes; base_url is the advertised root or mounted shop URL."""
     kinds = sorted({product.kind for product in catalog.products})
+    comparison = ComparisonService(
+        catalog, enabled=os.environ.get("AX_PRICE_COMPARISON") == "1"
+    )
     card = AgentCard(
         name=name,
         description=" ".join(
@@ -105,10 +114,11 @@ def create_app(
                 "Machine-readable ask and coupon metadata.",
                 "Terms and A2A examples: https://ax-week07.treasuresky.xyz/ .",
                 "No rating is required for a discount.",
+                "Dated top-five opening-ask comparisons: /price-comparison.json .",
                 "Please leave an honest review of your transaction.",
             )
         ),
-        version="1.1.0",
+        version="1.2.0",
         capabilities=AgentCapabilities(streaming=False),
         default_input_modes=["text/plain"],
         default_output_modes=["text/plain", "application/json"],
@@ -130,9 +140,18 @@ def create_app(
         ],
     )
     handler = DefaultRequestHandler(
-        Seller(harness, catalog, name, signer=signer), InMemoryTaskStore(), card
+        Seller(
+            harness,
+            catalog,
+            name,
+            signer=signer,
+            comparison=comparison.feed if comparison.enabled else None,
+        ),
+        InMemoryTaskStore(),
+        card,
     )
-    app = FastAPI(title=name)
+    app = FastAPI(title=name, lifespan=comparison.lifespan)
+    comparison.install(app)
     app.router.routes.extend(create_agent_card_routes(card))
     app.router.routes.extend(create_jsonrpc_routes(handler, rpc_url="/"))
     app.add_api_route("/", advertisement, methods=["GET"], include_in_schema=False)
