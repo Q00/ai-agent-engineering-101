@@ -183,10 +183,12 @@ def normalize_quote(task, *, observer=None, trace=None, context=None, deadline=N
         text = evidence["remote_message"].strip()
         number = r"(\d+(?:\.\d+)?)"
         opening = re.fullmatch(r"(?:lamp|chair|bookshelf): asking " + number +
-                              r"\. Send your offer as a number\.", text, re.I)
+                              r"(?:\. Send your offer as a number\.|\.?)", text, re.I)
         counter = re.fullmatch(number + r" is too low\. Counteroffer: " + number + r"\.", text, re.I)
-        if opening or counter:
-            observed["ask"] = numeric_price(float(opening.group(1) if opening else counter.group(2)))
+        concise_counter = re.fullmatch(r"Counteroffer: " + number + r"\.", text, re.I)
+        if opening or counter or concise_counter:
+            value = opening.group(1) if opening else counter.group(2) if counter else concise_counter.group(1)
+            observed["ask"] = numeric_price(float(value))
             source = "protocol_text"
             paths["ask"] = ["message.text.explicit_protocol_ask"]
     if observed["ask"] is None:

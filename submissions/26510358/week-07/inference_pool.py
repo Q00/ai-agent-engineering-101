@@ -40,7 +40,10 @@ def cooldown_remaining(directory):
     with path.open() as stream:
         fcntl.flock(stream, fcntl.LOCK_SH)
         raw = stream.read().strip()
-        return max(0, (float(raw) if raw else 0) - time.monotonic())
+        remaining = max(0, (float(raw) if raw else 0) - time.monotonic())
+        # Our backoff is at most 60 s. A timestamp far ahead can survive a
+        # host reboot with a reset monotonic clock; it is not a live cooldown.
+        return remaining if remaining <= 65 else 0
 
 
 @contextmanager
