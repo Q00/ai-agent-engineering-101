@@ -81,7 +81,10 @@ These catalog items matched a search for the request (id | description):
 {candidates}
 
 Pick the one item that best fits what the buyer describes, including any sizes or
-amounts they mention. If none of them is the kind of thing they want, pick none.
+amounts they mention. Listings are short and leave out most features: a feature the
+listing does not mention (lumbar support, armrests, adjustable height) is not a reason
+to pick none, so pick the closest item of the right kind. Pick none only when no
+candidate is the kind of thing they want.
 Answer with one JSON object and nothing else:
 {{"id": "<one id from the list>" | null, "why": "<one short sentence>"}}
 """
