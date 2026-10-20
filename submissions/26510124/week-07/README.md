@@ -44,6 +44,12 @@ submissions/26510124/week-07/.venv/bin/python \
 키트의 `agent.json`은 시작할 때 한 번 읽는다. 설정 변경 후 키트를 재시작해야
 새 `market_buyer`가 연결된다. Round 0에서는 기존 buyer를 계속 쓴다.
 
+2026-10-20 20:25 KST에 새 설정을 읽은 키트가 구매자 전용으로 재접속했다.
+재시작 중 Cloudflare가 429를 반환했고 localhost.run SSH 연결도 시간 초과됐다.
+따라서 현재 판매자 공개 연결은 복구되지 않았으며, 터널이 가능해지면 키트를
+`--tunnel` 또는 `--public-url`로 다시 시작해야 한다. 기존 키는 유지했다.
+관련 기록은 `logs/market-buyer-restart.log`와 `logs/market-ssh-tunnel.log`에 있다.
+
 가게 선택과 흥정을 합해 최대 270초, 선택은 그중 최대 90초를 사용한다.
 예산보다 큰 제안은 하네스 검증과 송신 전 검증에서 거부하며 보정해서 보내지 않는다.
 
