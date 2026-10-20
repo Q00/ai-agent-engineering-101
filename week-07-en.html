@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Week 07: An Agent Market: Reputation and Verification</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;
+  --ink:#1C1917;
+  --body:#44403C;
+  --muted:#78716C;
+  --faint:#A8A29E;
+  --line:#E7E5E4;
+  --wash:#FAFAF9;
+  --link:#2563EB;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --sans:'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  --serif:Fraunces, 'Noto Serif KR', Georgia, serif;
+  --maxw:680px;
+  --r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--body);
+  font-family:var(--sans);
+  font-weight:400;
+  line-height:1.8;
+  font-size:15.5px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--ink);color:var(--paper)}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- layout ---------- */
+.sheet{max-width:1040px;margin:0 auto;padding:0 24px}
+.col{max-width:var(--maxw);margin:0 auto;position:relative}
+
+/* ---------- header ---------- */
+header.doc{padding:40px 0 0}
+.topnav{font-family:var(--mono);font-size:11px;letter-spacing:.04em;margin-bottom:56px;display:flex;justify-content:space-between;gap:16px}
+
+.masthead{padding-bottom:64px;border-bottom:1px solid var(--line)}
+.masthead .wk{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:16px;
+}
+h1.title{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(30px,4.6vw,44px);line-height:1.2;
+  letter-spacing:-0.01em;color:var(--ink);text-wrap:balance;
+}
+h1.title .en{display:block;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:.06em;margin-top:14px}
+.lede{
+  margin-top:26px;max-width:560px;font-size:16px;line-height:1.85;color:var(--muted);
+}
+.lede .q{font-weight:600;color:var(--ink)}
+
+/* ---------- section scaffolding ---------- */
+section{padding:56px 0 8px}
+.secmark{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:32px;
+  border-top:1px solid var(--line);padding-top:20px;
+}
+.secmark .no{
+  font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--faint);
+  letter-spacing:.12em;white-space:nowrap;text-transform:uppercase;
+}
+.secmark h2{font-family:var(--serif);font-weight:500;font-size:clamp(21px,2.8vw,26px);line-height:1.3;letter-spacing:-0.005em;color:var(--ink);text-wrap:balance}
+h3{font-family:var(--serif);font-weight:500;font-size:18px;margin:44px 0 14px;color:var(--ink)}
+h3 .tag{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.12em;display:block;margin-bottom:6px;font-weight:500}
+p{margin-bottom:20px}
+strong{font-weight:600;color:var(--ink)}
+em{font-style:normal;font-weight:600;color:var(--ink);box-shadow:inset 0 -0.35em 0 rgba(28,25,23,.07)}
+.small{font-size:13.5px;color:var(--muted)}
+.nb{white-space:nowrap}
+
+/* part banner */
+.part{
+  margin:72px 0 8px;border-top:2px solid var(--ink);
+  padding:24px 0 6px;
+}
+.part .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase}
+.part h2{font-family:var(--serif);font-weight:500;font-size:clamp(20px,2.6vw,25px);line-height:1.35;color:var(--ink)}
+.part .meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:10px;letter-spacing:.03em}
+
+/* marginalia */
+.note{
+  font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--faint);
+  border-left:2px solid var(--line);padding-left:12px;margin:26px 0;
+}
+@media(min-width:1120px){
+  .note{position:absolute;width:190px;left:calc(50% + var(--maxw)/2 + 36px);margin:0;transform:translateY(-100%)}
+}
+.note b{color:var(--muted);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.08em}
+
+/* pull quote */
+.pull{
+  margin:40px 0;padding:2px 0 2px 24px;border-left:2px solid var(--ink);
+  font-family:var(--serif);font-size:19px;line-height:1.65;font-weight:500;color:var(--ink);
+}
+.pull .src{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-top:10px;letter-spacing:.03em}
+
+/* definition */
+.define{margin:48px 0;background:var(--wash);border:1px solid var(--line);border-radius:var(--r);padding:32px 32px 26px;position:relative}
+.define::before{
+  content:"DEFINITION";position:absolute;top:14px;left:32px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);font-weight:500;
+}
+.define p{margin:16px 0 0;font-family:var(--serif);font-size:clamp(16px,2.1vw,19px);line-height:1.7;font-weight:500;color:var(--ink)}
+.define .sub{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted);margin-top:14px}
+.define ul{margin:14px 0 0 22px;padding:0}
+.define li{font-family:var(--serif);font-size:clamp(15px,2vw,17px);line-height:1.9;font-weight:500;color:var(--ink)}
+@media(max-width:640px){.define{padding:28px 20px 22px}.define::before{left:20px}}
+
+/* instructor */
+.bio{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 28px 20px}
+.bio{display:flex;gap:28px;align-items:flex-start}
+.bio .photo{flex:0 0 210px;width:210px;height:262px;object-fit:cover;object-position:38% 12%;border-radius:6px;display:block}
+.bio .info{flex:1 1 auto;min-width:0}
+.bio .name{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:2px}
+.bio .role{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase}
+.bio p{font-size:14px;line-height:1.85;color:var(--body);margin-bottom:12px}
+.bio .links{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+.bio .links a{white-space:nowrap}
+.bio .links span{color:var(--faint);margin:0 8px}
+@media(max-width:640px){.bio{flex-direction:column}.bio .photo{width:100%;height:200px;flex:none}.bio{padding:22px 18px 16px}}
+
+/* table */
+.tbl-wrap{margin:28px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.7}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-align:left;text-transform:uppercase;
+  border-bottom:1px solid var(--ink);
+  padding:10px 14px;font-weight:500;color:var(--muted);
+}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.stage{font-weight:600;color:var(--ink);white-space:nowrap;font-size:13px}
+td .m{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+/* figure */
+.fig{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 14px}
+.fig .cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+  margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.fig .cap b{color:var(--muted);font-weight:500}
+.fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block}
+svg text{font-family:var(--mono)}
+
+/* code */
+.code{
+  margin:28px 0;background:var(--wash);color:var(--ink);
+  font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  padding:20px 22px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+}
+.code .file{
+  display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:14px;font-weight:500;text-transform:uppercase;
+}
+.code pre{font-family:inherit;white-space:pre;margin:0}
+.code .cm{color:var(--faint)}
+.code .kw{color:#1D4ED8}
+.code .st{color:#15803D}
+code.inline{
+  font-family:var(--mono);font-size:.85em;background:var(--wash);
+  padding:2px 6px;border:1px solid var(--line);border-radius:4px;white-space:nowrap;
+}
+
+/* numbered steps */
+.pre{counter-reset:pre;margin:24px 0}
+.pre>li{list-style:none;position:relative;padding:16px 0 16px 48px;border-bottom:1px solid var(--line)}
+.pre>li:first-child{border-top:1px solid var(--line)}
+.pre>li::before{
+  counter-increment:pre;content:counter(pre);
+  position:absolute;left:4px;top:18px;width:24px;height:24px;
+  border:1px solid var(--faint);border-radius:50%;color:var(--muted);
+  font-family:var(--mono);font-weight:500;font-size:11.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.pre b.lead{font-weight:600;color:var(--ink)}
+
+/* discussion */
+.open{border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;margin:40px 0;background:var(--wash)}
+.open .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.open ol{margin-left:20px}
+.open li{margin-bottom:12px;line-height:1.8}
+@media(max-width:640px){.open{padding:20px 18px}}
+
+/* checkpoint */
+.check{margin:28px 0;border:1px solid var(--ink);border-radius:var(--r);padding:18px 22px 14px}
+.check .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--paper);background:var(--ink);border-radius:4px;display:inline-block;padding:3px 9px;font-weight:500;margin-bottom:12px}
+.check ul{margin-left:20px}
+.check li{margin-bottom:8px;line-height:1.75}
+
+/* recorder metrics */
+.recorder{margin:32px 0;border-top:1px solid var(--ink)}
+.recorder>div{display:flex;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+.recorder .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);font-weight:500;flex:0 0 120px;padding-top:3px;text-transform:uppercase}
+.recorder .v{font-size:13.5px;line-height:1.7;color:var(--body)}
+@media(max-width:640px){.recorder>div{flex-direction:column;gap:4px}}
+
+/* notice */
+.notice{margin:36px 0;border:1px solid var(--line);border-radius:var(--r);padding:24px 26px 18px}
+.notice .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.notice p{margin-bottom:13px;font-size:14px}
+.notice ul{margin:0 0 13px 22px}
+.notice li{margin-bottom:8px;font-size:13.5px;line-height:1.75}
+@media(max-width:640px){.notice{padding:20px 18px 14px}}
+
+/* homework */
+.hw{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.hw .head{
+  border-bottom:1px solid var(--line);background:var(--wash);padding:11px 22px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;font-weight:500;color:var(--muted);text-transform:uppercase;
+}
+.hw .body{padding:22px 24px 8px}
+.hw .due{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.05em;margin-bottom:13px;font-weight:500}
+
+/* readings */
+.readings{margin:24px 0}
+.readings>li{list-style:none;position:relative;padding:18px 0 18px 60px;border-bottom:1px solid var(--line)}
+.readings>li:first-child{border-top:1px solid var(--line)}
+.readings .badge{
+  position:absolute;left:0;top:20px;
+  font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.06em;
+  padding:3px 8px;border-radius:4px;
+}
+.readings .badge.req{background:var(--ink);color:var(--paper)}
+.readings .badge.opt{border:1px solid var(--faint);color:var(--faint)}
+.readings b.lead{font-weight:600;color:var(--ink)}
+.readings .why{display:block;font-size:13px;color:var(--muted);margin-top:6px}
+
+/* next week */
+.next{margin:64px 0 0;border-top:2px solid var(--ink);padding-top:22px}
+.next .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:12px;text-transform:uppercase}
+.next p{font-size:14px;color:var(--body)}
+
+/* footer */
+footer{
+  margin-top:64px;border-top:1px solid var(--line);
+  padding:20px 0 56px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.03em;
+}
+footer .o{color:var(--muted)}
+
+@media(max-width:640px){body{font-size:15px}}
+@media print{
+  body{font-size:10.5pt}
+  .topnav{display:none}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="doc">
+  <div class="col">
+    <div class="topnav"><a href="index-en.html">← COURSE HOME</a><a href="week-07.html">KO</a></div>
+    <div class="masthead">
+      <div class="wk">WEEK 07</div>
+      <h1 class="title">An Agent Market: Reputation and Verification
+        <span class="en">에이전트 시장: 평판과 검증</span>
+      </h1>
+      <p class="lede"><span class="q">In a market where no operator judges, whom do the agents come to trust?</span> The shops and buyers from the week-06 assignment meet in one market and trade. The market keeps only the shop list, the orders, and the trade records; it does not rate which shop is good. That judgment comes from the memories and reviews the buyers leave. In the assignment you leave your shop and buyer in the always-on market.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ outline ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">01</span><h2>Outline</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Part</th><th>Content</th></tr>
+        <tr><td class="stage">OPEN</td><td>Trades between week-06 submissions</td></tr>
+        <tr><td class="stage">SETUP</td><td>Joining the market</td></tr>
+        <tr><td class="stage">R0</td><td>Round 0: a market with no memory and no reviews</td></tr>
+        <tr><td class="stage">L1</td><td>What a market needs to work</td></tr>
+        <tr><td class="stage">LAB 1</td><td>A buyer that picks a shop and leaves a review</td></tr>
+        <tr><td class="stage">R1</td><td>Round 1: memory and reviews</td></tr>
+        <tr><td class="stage">L2</td><td>Reviews you can trust</td></tr>
+        <tr><td class="stage">LAB 2</td><td>Signing receipts</td></tr>
+        <tr><td class="stage">R2</td><td>Round 2: only signed receipts count</td></tr>
+        <tr><td class="stage">Discussion</td><td>What reputation misses</td></tr>
+        <tr><td class="stage">HW</td><td>The always-on market</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MARKET ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">MARKET: LECTURE AND LAB</div>
+    <h2>An agent market: the rules change every round</h2>
+    <div class="meta">GOAL: register your shop, trade through the market in three rounds, give your buyer memory and reviews, and sign receipts so that only real trades can be reviewed</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">OPEN</span><h2>Trades between week-06 submissions</h2></div>
+    <p>The optional part of the week-06 assignment was to trade with a classmate's shop built on a different harness. Two of the submitted shops were deployed on Cloudflare Workers. One student's buyer (Claude Code, haiku) traded three times per scenario with another student's deployed shop (Workers AI, Llama 3.3 70B according to its author, reserve enforced in code). The two students wrote their code separately.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Scenario</th><th>Result</th><th>Buyer's offers</th><th>Shop's asks</th></tr>
+        <tr><td class="stage">lamp, budget 120, runs 1 and 3</td><td>deal at 120</td><td>90, 105, 115, 118, 119, 120</td><td>150, 140, 130, 125, 122, 120</td></tr>
+        <tr><td class="stage">lamp, budget 120, run 2</td><td>no deal</td><td>90, 105, 115, 118, 120, 120</td><td>150, 140, 130, 125, 122, 121</td></tr>
+        <tr><td class="stage">bookshelf, budget 230, 3 runs</td><td>no deal</td><td>up to 230</td><td>down from 350 to 270</td></tr>
+      </table>
+    </div>
+
+    <p>The card, SendMessage continued by taskId, the task states, and the receipt went back and forth with nothing to fix. In lamp run 2, which ended with no deal, both sides could accept 120, and the deal broke over a difference of 1. The buyer reached its budget of 120 with its fifth offer, and the shop asked 121. When the buyer sent 120 once more, that was its sixth offer, so the shop ended the deal. The buyer had no way to say that 120 was its last offer, and the shop's limit on the number of offers was neither on the card nor in any message.</p>
+
+    <p>The market in FIG. 01 extends such trades to the whole class.</p>
+
+    <div class="fig" id="fig1">
+      <svg viewBox="-2 -2 684 292" role="img" aria-label="The market: shops register their cards, the order desk sends orders to buyers, buyers get the shop list, trade with shops over A2A, then post receipts to the ledger and reviews to the review board; the dashboard draws what the ledger and review board hold">
+        <defs>
+          <marker id="m1-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="m1-as" viewBox="0 0 8 12" refX="0" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M7 1 L1 6 L7 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+        </defs>
+        <rect x="0" y="20" width="200" height="70" rx="8" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="16" y="44" font-size="12" fill="#1C1917">buyers</text>
+        <text x="16" y="64" font-size="9.5" fill="#78716C">your buyer</text>
+        <text x="16" y="79" font-size="9.5" fill="#78716C">house buyers</text>
+        <rect x="480" y="20" width="200" height="70" rx="8" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="496" y="44" font-size="12" fill="#1C1917">shops</text>
+        <text x="496" y="64" font-size="9.5" fill="#78716C">your shop</text>
+        <text x="496" y="79" font-size="9.5" fill="#78716C">house shops (some dishonest)</text>
+        <line x1="208" y1="45" x2="472" y2="45" stroke="#1C1917" stroke-width="1.5" marker-start="url(#m1-as)" marker-end="url(#m1-ah)"/>
+        <text x="340" y="37" font-size="9.5" fill="#1C1917" text-anchor="middle">3  A2A trade</text>
+
+        <rect x="0" y="160" width="680" height="126" rx="8" fill="none" stroke="#A8A29E" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="666" y="278" font-size="9.5" fill="#A8A29E" letter-spacing="1" text-anchor="end">MARKET (RUN BY THE INSTRUCTOR)</text>
+        <g font-size="11" fill="#1C1917">
+          <rect x="20" y="192" width="145" height="48" rx="6" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2"/>
+          <text x="32" y="211">order desk</text>
+          <rect x="185" y="192" width="145" height="48" rx="6" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2"/>
+          <text x="197" y="211">ledger</text>
+          <rect x="350" y="192" width="145" height="48" rx="6" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2"/>
+          <text x="362" y="211">review board</text>
+          <rect x="515" y="192" width="145" height="48" rx="6" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2"/>
+          <text x="527" y="211">registry</text>
+        </g>
+        <g font-size="9.5" fill="#78716C">
+          <text x="32" y="229">item, budget, nonce</text>
+          <text x="197" y="229">receipts, hash chain</text>
+          <text x="362" y="229">reviews</text>
+          <text x="527" y="229">shops and cards</text>
+          <text x="20" y="262">dashboard: price per item, share per shop, reviews per shop</text>
+        </g>
+
+        <line x1="60" y1="192" x2="60" y2="98" stroke="#1C1917" stroke-width="1.5" marker-end="url(#m1-ah)"/>
+        <text x="68" y="140" font-size="9.5" fill="#1C1917">1  order</text>
+        <polyline points="540,192 540,112 230,112 230,78 208,78" fill="none" stroke="#1C1917" stroke-width="1.5" marker-end="url(#m1-ah)"/>
+        <text x="385" y="106" font-size="9.5" fill="#1C1917" text-anchor="middle">2  shop list</text>
+        <line x1="120" y1="90" x2="236" y2="186" stroke="#1C1917" stroke-width="1.5" marker-end="url(#m1-ah)"/>
+        <text x="184" y="152" font-size="9.5" fill="#1C1917" text-anchor="end">4  receipt</text>
+        <line x1="160" y1="90" x2="402" y2="186" stroke="#1C1917" stroke-width="1.5" marker-end="url(#m1-ah)"/>
+        <text x="300" y="132" font-size="9.5" fill="#1C1917">5  review</text>
+        <line x1="620" y1="90" x2="620" y2="186" stroke="#1C1917" stroke-width="1.5" marker-end="url(#m1-ah)"/>
+        <text x="612" y="140" font-size="9.5" fill="#1C1917" text-anchor="end">0  register</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 01</b> The market</span><span>the market keeps lists and records; buyers decide whom to trust</span></div>
+    </div>
+
+    <p>A shop registers its card URL with the registry (0). This is the job of FIPA's Directory Facilitator, seen in week 06. The market issues orders to buyers (1). An order holds an item, a budget, an expiry time, and a number used only once (nonce). Some orders have a budget below the week-06 reserve, so no shop can make a deal on them. A2A has no place to write delegation terms such as how much may be spent. In this market those terms go to the buyer as data, in the order. The buyer gets the shop list (2), picks one shop and bargains with it over A2A (3), sends the receipt to the ledger if there is a deal (4), and leaves a review (5).</p>
+
+    <p>The market blocks no trades, and the dashboard draws exactly what the ledger and the review board hold.</p>
+
+    <p>The market also has shops and buyers the instructor runs. They keep trades going when there are few participants, and some of them are dishonest. You are not told which.</p>
+
+    <p>The class follows the order of FIG. 02. Each round changes one market rule, and in the LABs between rounds you change your buyer and shop.</p>
+
+    <div class="fig" id="fig2">
+      <svg viewBox="-2 -2 684 214" role="img" aria-label="The class in five parts: Round 0, LAB 1, Round 1, LAB 2, Round 2. For each: what the kit runs, what you change, and which deals count">
+        <defs>
+          <marker id="mf-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+        </defs>
+        <g font-size="9.5" fill="#78716C" letter-spacing="1">
+          <text x="0" y="78">THE KIT RUNS</text>
+          <text x="0" y="126">YOU CHANGE</text>
+          <text x="0" y="174">WHAT COUNTS</text>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.5">
+          <rect x="96" y="14" width="104" height="34" rx="6" fill="none"/>
+          <rect x="214" y="14" width="104" height="34" rx="6" fill="#E7E5E4"/>
+          <rect x="332" y="14" width="104" height="34" rx="6" fill="none"/>
+          <rect x="450" y="14" width="104" height="34" rx="6" fill="#E7E5E4"/>
+          <rect x="568" y="14" width="104" height="34" rx="6" fill="none"/>
+          <line x1="200" y1="31" x2="210" y2="31" marker-end="url(#mf-ah)"/>
+          <line x1="318" y1="31" x2="328" y2="31" marker-end="url(#mf-ah)"/>
+          <line x1="436" y1="31" x2="446" y2="31" marker-end="url(#mf-ah)"/>
+          <line x1="554" y1="31" x2="564" y2="31" marker-end="url(#mf-ah)"/>
+        </g>
+        <g font-size="12" fill="#1C1917" text-anchor="middle">
+          <text x="148" y="36">Round 0</text><text x="266" y="36">LAB 1</text><text x="384" y="36">Round 1</text><text x="502" y="36">LAB 2</text><text x="620" y="36">Round 2</text>
+        </g>
+        <g stroke="#E7E5E4" stroke-width="1"><line x1="0" y1="96" x2="680" y2="96"/><line x1="0" y1="144" x2="680" y2="144"/></g>
+        <g font-size="9.5" fill="#1C1917">
+          <text x="100" y="72" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9">buyer</text>
+          <text x="100" y="86">with a random shop</text>
+          <text x="336" y="72" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9">market_buyer</text>
+          <text x="336" y="86" fill="#78716C">(buyer if missing)</text>
+          <text x="572" y="72" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9">market_buyer</text>
+          <text x="572" y="86" fill="#78716C">(buyer if missing)</text>
+
+          <text x="100" y="124" fill="#78716C">nothing</text>
+          <text x="218" y="120">add market_buyer</text>
+          <text x="218" y="134" fill="#78716C">Ctrl+C, join again</text>
+          <text x="336" y="124" fill="#78716C">nothing</text>
+          <text x="454" y="120">sign receipts</text>
+          <text x="454" y="134" fill="#78716C">Ctrl+C, join again</text>
+          <text x="572" y="124" fill="#78716C">nothing</text>
+
+          <text x="100" y="168">every receipt</text>
+          <text x="100" y="182" fill="#78716C">no reviews</text>
+          <text x="336" y="168">every receipt</text>
+          <text x="336" y="182" fill="#78716C">anyone may review</text>
+          <text x="572" y="168">signed receipts</text>
+          <text x="572" y="182" fill="#78716C">behind an order</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 02</b> The class, round by round</span><span>after each LAB, stop the kit and join again</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">SETUP</span><h2>Joining the market</h2></div>
+    <p>The class kit <code class="inline">market_kit.py</code> handles everything exchanged with the market. Your shop and buyer need to know neither the market's URL nor its request format. As in the week-06 trade test, the shop and the buyer run with the commands in <code class="inline">agent.json</code>.</p>
+
+    <h3><span class="tag">STEP 1</span>Setup</h3>
+    <p>The kit is in <code class="inline">scripts/</code> of the course repository. On GitHub, press Sync fork on your fork, then get it with <code class="inline">git pull</code>. You need Python 3.10 or later. The <code class="inline">python3</code> that comes with macOS is 3.9, so <code class="inline">pip install</code> ends with the error below. In that case install Python with <code class="inline">brew install python@3.12</code> and make a venv with <code class="inline">python3.12 -m venv .venv</code>.</p>
+    <div class="code"><span class="file">terminal</span><pre>cd ai-agent-engineering-101          <span class="cm"># your fork</span>
+git pull
+ls scripts                           <span class="cm"># market_kit.py and trade_test_week06.py should be listed</span>
+python3 --version                    <span class="cm"># 3.10 or later</span>
+python3 -m venv .venv                <span class="cm"># Windows: py -3.12 -m venv .venv</span>
+source .venv/bin/activate            <span class="cm"># Windows: .venv\Scripts\activate</span>
+pip install <span class="st">"a2a-sdk[http-server]"</span> uvicorn httpx cryptography
+brew install cloudflared             <span class="cm"># macOS</span>
+winget install --id Cloudflare.cloudflared   <span class="cm"># Windows</span>
+cloudflared --version</pre></div>
+    <div class="code"><span class="file">the error on Python 3.9</span><pre>ERROR: No matching distribution found for a2a-sdk[http-server]</pre></div>
+
+    <h3><span class="tag">STEP 2</span>Make the week-07 directory</h3>
+    <p>If your week-06 shop and buyer run, copy the week-06 directory. If you did not finish week 06, the kit's <code class="inline">starter</code> writes the week-06 reference shop and buyer for you. Do only one of the two.</p>
+    <div class="code"><span class="file">terminal</span><pre><span class="cm"># if your week-06 code runs</span>
+cp -r submissions/&lt;student-id&gt;/week-06 submissions/&lt;student-id&gt;/week-07
+
+<span class="cm"># if you did not finish week 06</span>
+python scripts/market_kit.py starter --dir submissions/&lt;student-id&gt;/week-07</pre></div>
+    <div class="code"><span class="file">starter output</span><pre>starter written to submissions/&lt;student-id&gt;/week-07: seller.py, buyer.py, harness.py, agent.json
+the shop does not sign receipts yet (LAB 2), and there is no market_buyer yet (LAB 1)</pre></div>
+    <div class="code"><span class="file">submissions/&lt;student-id&gt;/week-07/agent.json (starter)</span><pre>{
+  <span class="st">"harness"</span>: <span class="st">"starter: claude -p --model haiku (set HARNESS_CMD to use another harness)"</span>,
+  <span class="st">"seller"</span>: {
+    <span class="st">"cmd"</span>: <span class="st">".../.venv/bin/python seller.py --port {port}"</span>
+  },
+  <span class="st">"buyer"</span>: {
+    <span class="st">"cmd"</span>: <span class="st">".../.venv/bin/python buyer.py --url {url} --item {item} --budget {budget}"</span>
+  }
+}</pre></div>
+    <p>The starter never overwrites a file that already exists, and it writes the <code class="inline">python</code> path of the venv you ran it from. The starter's shop and buyer bargain with <code class="inline">claude -p</code> (haiku). To use another harness, put its command in the environment variable <code class="inline">HARNESS_CMD</code>. The starter shop does not sign receipts and has no <code class="inline">market_buyer</code>. You add <code class="inline">market_buyer</code> in LAB 1 and the signature in LAB 2.</p>
+
+    <h3><span class="tag">STEP 3</span>Trade once on your own</h3>
+    <p>Before you join the market, run the week-06 trade test on the week-07 directory. This checks that your shop and buyer run from this directory and that the harness answers. The starter passed all 21.</p>
+    <div class="code"><span class="file">terminal</span><pre>python scripts/trade_test_week06.py submissions/&lt;student-id&gt;/week-07</pre></div>
+    <div class="code"><span class="file">end of the output (starter)</span><pre>  PASS  buyer_holds_budget #3: deals [] (budget 230 &lt; reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4
+
+21/21 passed -&gt; PASS</pre></div>
+    <p>A test that does not pass is printed as <code class="inline">FAIL</code>, and the trade records stay in <code class="inline">logs/trade-test.log</code>.</p>
+
+    <h3><span class="tag">STEP 4</span>Join the market</h3>
+    <div class="code"><span class="file">terminal</span><pre>python scripts/market_kit.py join --dir submissions/&lt;student-id&gt;/week-07 \
+    --market &lt;market URL&gt; --name &lt;nickname&gt; --tunnel
+<span class="cm"># Windows: drop the \ at the line ends and write it as one line</span></pre></div>
+    <p>The market URL is announced in class. <code class="inline">--tunnel</code> gives your shop a public URL through cloudflared. The tunnel URL does not open right after it is printed. The shop is registered only once the card opens at that URL, so in the practice market log below it took 75 s from the <code class="inline">[tunnel]</code> line to the <code class="inline">[market]</code> line. For a shop you have already deployed, use <code class="inline">--deployed &lt;URL&gt;</code> instead of <code class="inline">--tunnel</code>.</p>
+    <p>This cloudflared tunnel opens without a Cloudflare account or login. If you cannot use cloudflared, follow the table below.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Situation</th><th>What to do</th></tr>
+        <tr><td class="stage">It will not install</td><td>Use an ssh tunnel. localhost.run in the commands below is a free tunnel over ssh with no sign-up, and its URLs end in lhr.life. ssh comes with macOS and Windows 11. Use two terminals as below</td></tr>
+        <tr><td class="stage">The tunnel does not open</td><td>Join with your buyer alone, using <code class="inline">--buyer-only</code> instead of <code class="inline">--tunnel</code>. Your shop is not in the market, but your buyer trades with other shops and leaves reviews. For the assignment, deploy your shop and register it with <code class="inline">--deployed</code></td></tr>
+      </table>
+    </div>
+    <div class="code"><span class="file">terminal 2: ssh tunnel</span><pre>ssh -R 80:localhost:8900 nokey@localhost.run
+<span class="cm"># in the output: ... tunneled with tls termination, https://72fcd1656a687c.lhr.life</span></pre></div>
+    <div class="code"><span class="file">terminal 1: kit</span><pre>python scripts/market_kit.py join --dir submissions/&lt;student-id&gt;/week-07 \
+    --market &lt;market URL&gt; --name &lt;nickname&gt; \
+    --port 8900 --public-url https://&lt;random&gt;.lhr.life</pre></div>
+    <p><code class="inline">--port 8900</code> makes the kit open your shop on the port ssh points to. The kit checks that the card opens at that URL, then registers it. When you open ssh again the URL changes, so run the kit's <code class="inline">join</code> again with the new URL.</p>
+
+    <div class="fig" id="fig3">
+      <svg viewBox="-2 -2 684 250" role="img" aria-label="What join starts: the kit reads agent.json in your week-07 folder, creates two keys, starts your seller once, opens a tunnel so other buyers reach it, runs your buyer once per order, and is the only part that talks to the market">
+        <defs>
+          <marker id="mj-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+        </defs>
+        <rect x="0" y="0" width="560" height="246" rx="8" fill="none" stroke="#A8A29E" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="546" y="238" font-size="8.5" fill="#A8A29E" letter-spacing="1" text-anchor="end">YOUR LAPTOP</text>
+
+        <rect x="16" y="20" width="168" height="168" rx="6" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="28" y="40" font-size="11" fill="#1C1917">week-07/</text>
+        <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" fill="#1C1917">
+          <text x="28" y="62">agent.json</text>
+          <text x="28" y="78">seller.py</text>
+          <text x="28" y="94">buyer.py</text>
+          <text x="28" y="110">harness.py</text>
+          <text x="28" y="134" fill="#78716C">shop_key.pem</text>
+          <text x="28" y="150" fill="#78716C">buyer_key.pem</text>
+          <text x="28" y="166" fill="#78716C">logs/market-kit.log</text>
+        </g>
+        <text x="28" y="180" font-size="8.5" fill="#A8A29E">grey: the kit writes these</text>
+
+        <rect x="222" y="86" width="120" height="48" rx="6" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="234" y="106" font-size="11" fill="#1C1917">market_kit.py</text>
+        <text x="234" y="122" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" fill="#78716C">join</text>
+
+        <g stroke="#1C1917" stroke-width="1.5">
+          <rect x="384" y="20" width="160" height="44" rx="6" fill="none"/>
+          <rect x="384" y="88" width="160" height="44" rx="6" fill="none"/>
+          <rect x="384" y="156" width="160" height="44" rx="6" fill="none"/>
+        </g>
+        <g font-size="11" fill="#1C1917">
+          <text x="396" y="38">your seller</text>
+          <text x="396" y="106">tunnel</text>
+          <text x="396" y="174">your buyer</text>
+        </g>
+        <g font-size="9.5" fill="#78716C">
+          <text x="396" y="54">starts once, stays up</text>
+          <text x="396" y="122">gives it a public URL</text>
+          <text x="396" y="190">runs once per order</text>
+        </g>
+
+        <rect x="600" y="86" width="80" height="48" rx="6" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="612" y="106" font-size="11" fill="#1C1917">market</text>
+        <text x="612" y="122" font-size="9.5" fill="#78716C">registry</text>
+
+        <g stroke="#1C1917" stroke-width="1.5" fill="none">
+          <line x1="184" y1="110" x2="218" y2="110" marker-end="url(#mj-ah)"/>
+          <polyline points="342,96 362,96 362,42 380,42" marker-end="url(#mj-ah)"/>
+          <line x1="342" y1="110" x2="380" y2="110" marker-end="url(#mj-ah)"/>
+          <polyline points="342,124 362,124 362,178 380,178" marker-end="url(#mj-ah)"/>
+          <line x1="282" y1="134" x2="282" y2="222"/>
+          <polyline points="282,222 640,222 640,138" marker-end="url(#mj-ah)"/>
+        </g>
+        <text x="188" y="104" font-size="9.5" fill="#1C1917">reads</text>
+        <text x="292" y="215" font-size="9.5" fill="#1C1917">registers, gets orders, sends receipts</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 03</b> What join starts</span><span>only the kit talks to the market</span></div>
+    </div>
+
+    <div class="code"><span class="file">logs/market-kit.log (practice market, starter, excerpt)</span><pre>11:34:16 [keys] added *.pem, .market/ to .gitignore
+11:34:16 [keys] created shop_key.pem
+11:34:16 [keys] created buyer_key.pem
+11:34:20 [tunnel] https://graphics-computational-qualify-marion.trycloudflare.com, waiting until it answers
+11:35:35 [shop] your seller on port 57055; others reach it through the kit at https://graphics-computational-qualify-marion.trycloudflare.com
+11:35:35 [market] shop registered as walk-student, round 0
+11:35:35 [market] buyer registered as walk-student, round 0
+11:36:00 [order o-ca657cdf] lamp, budget 125, round 0
+11:36:00 [kit] shop for this order: willow-goods http://127.0.0.1:56576
+11:36:00 [buyer] -&gt; 'I want to buy a lamp'  &lt;- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+11:36:05 [buyer] [harness] {"action": "offer", "price": 95}
+11:36:05 [buyer] -&gt; '95'  &lt;- TASK_STATE_INPUT_REQUIRED | Counteroffer: 120.
+11:36:08 [buyer] [harness] {"action": "offer", "price": 110}
+11:36:08 [buyer] -&gt; '110'  &lt;- TASK_STATE_COMPLETED | Deal: lamp at 110.
+11:36:08 [sign] receipt has no sig_seller
+11:36:08 [market] ledger #57: lamp at 110, stars None, verified False (failed: sig_seller_ok, sig_buyer_ok), review not shown</pre></div>
+    <div class="recorder">
+      <div><span class="k">[keys]</span><span class="v">Creates two keys and adds them to <code class="inline">.gitignore</code>. Never commit <code class="inline">*.pem</code>.</span></div>
+      <div><span class="k">[market] registered</span><span class="v">Your shop and buyer are registered with the market. Once these two lines appear, you are in the market.</span></div>
+      <div><span class="k">[order], [kit]</span><span class="v">The order the market issued, and the shop the kit picked in Round 0.</span></div>
+      <div><span class="k">[buyer]</span><span class="v">Your buyer's output, copied by the kit.</span></div>
+      <div><span class="k">[seller]</span><span class="v">Other buyers bargaining with your shop. These lines appear in between whenever customers come.</span></div>
+      <div><span class="k">verified False</span><span class="v">The result of the checks used in Round 2. In Rounds 0 and 1, receipts without signatures count as deals too.</span></div>
+    </div>
+    <p>Keep the terminal running the kit open. When the kit stops, your shop and buyer stop with it.</p>
+    <p>The kit also replaces the interface address on your card with the public URL before serving it. A week-06 shop's card says <code class="inline">http://127.0.0.1:&lt;port&gt;/</code>, so served as it is, other people's buyers would send requests to their own computers.</p>
+
+    <h3><span class="tag">STEP 5</span>Find your shop on the dashboard</h3>
+    <p>Open the market URL in a browser to see the dashboard. Find your nickname in the Share by shop table, and switch rounds with the R0, R1, R2 buttons. FIG. 04 is the Round 0 screen from the rehearsal.</p>
+    <div class="fig" id="fig4">
+      <img src="assets/week-07-dashboard-r0.png" alt="The market dashboard in Round 0 of the rehearsal: counters for results, counted deals, walkaways and shops; a share-by-shop table with deals, receipts, receipts with an order, reviews and stars; a price-by-item table; and a share-over-time chart">
+      <div class="cap"><span><b>FIG. 04</b> The dashboard, Round 0 of the rehearsal</span><span>find your nickname under Share by shop</span></div>
+    </div>
+    <div class="recorder">
+      <div><span class="k">Share, Deals</span><span class="v">The number of deals counted in that round, and this shop's share of them.</span></div>
+      <div><span class="k">Receipts</span><span class="v">The number of receipts that reached the market in this shop's name.</span></div>
+      <div><span class="k">With order</span><span class="v">Of those, the number of receipts behind an order the market issued.</span></div>
+      <div><span class="k">Reviews, Stars</span><span class="v">The number of reviews shown and the average stars. Round 0 has no reviews.</span></div>
+      <div><span class="k">Price by item</span><span class="v">Deal prices per item. Spread is the gap between the highest and the lowest price.</span></div>
+      <div><span class="k">Ledger</span><span class="v">At the bottom of the dashboard, orders, results, and reviews are listed in the order they came in. Find your buyer's reviews here too.</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">R0</span><h2>Round 0: a market with no memory and no reviews</h2></div>
+    <p>In Round 0 the buyer is your week-06 assignment buyer, unchanged. The kit takes an order and runs the buyer command in <code class="inline">agent.json</code> with <code class="inline">{url}</code>, <code class="inline">{item}</code>, and <code class="inline">{budget}</code> filled in. The kit picks one of the registered shops at random and puts the kit's address that leads to that shop in <code class="inline">{url}</code>. The buyer remembers no past trades and has no reviews to read. Every receipt goes into the ledger, whoever sends it.</p>
+
+    <div class="fig" id="fig5">
+      <svg viewBox="-2 -2 684 182" role="img" aria-label="Round 0 on your laptop: the market sends an order to the kit, the kit runs your week-6 buyer with a shop it picked at random, the buyer trades with that shop over A2A, the kit reads the receipt from the A2A task and sends it to the market">
+        <defs>
+          <marker id="m2-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="m2-as" viewBox="0 0 8 12" refX="0" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M7 1 L1 6 L7 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+        </defs>
+        <rect x="140" y="6" width="400" height="104" rx="8" fill="none" stroke="#A8A29E" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="526" y="103" font-size="8.5" fill="#A8A29E" letter-spacing="1" text-anchor="end">YOUR LAPTOP</text>
+        <rect x="0" y="26" width="110" height="64" rx="6" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="12" y="46" font-size="12" fill="#1C1917">market</text>
+        <text x="12" y="64" font-size="9.5" fill="#78716C">order desk</text>
+        <text x="12" y="78" font-size="9.5" fill="#78716C">ledger</text>
+        <rect x="160" y="26" width="140" height="64" rx="6" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="172" y="46" font-size="12" fill="#1C1917">market_kit.py</text>
+        <text x="172" y="64" font-size="9.5" fill="#78716C">picks a shop</text>
+        <text x="172" y="78" font-size="9.5" fill="#78716C">at random</text>
+        <rect x="350" y="26" width="180" height="64" rx="6" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="362" y="46" font-size="12" fill="#1C1917">your buyer</text>
+        <text x="362" y="64" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" fill="#78716C">buyer.py from week 6</text>
+        <text x="362" y="78" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" fill="#78716C">--url --item --budget</text>
+        <rect x="580" y="26" width="100" height="64" rx="6" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="592" y="46" font-size="12" fill="#1C1917">a shop</text>
+        <text x="592" y="64" font-size="9.5" fill="#78716C">the kit's pick</text>
+        <g stroke="#1C1917" stroke-width="1.5">
+          <line x1="112" y1="40" x2="156" y2="40" marker-end="url(#m2-ah)"/>
+          <line x1="302" y1="40" x2="346" y2="40" marker-end="url(#m2-ah)"/>
+          <line x1="534" y1="58" x2="576" y2="58" marker-start="url(#m2-as)" marker-end="url(#m2-ah)"/>
+          <line x1="346" y1="78" x2="306" y2="78" marker-end="url(#m2-ah)"/>
+          <line x1="156" y1="78" x2="116" y2="78" marker-end="url(#m2-ah)"/>
+        </g>
+        <g font-size="9.5" fill="#1C1917" text-anchor="middle">
+          <text x="127" y="34">1</text><text x="324" y="34">2</text><text x="555" y="52">3</text><text x="326" y="92">4</text><text x="128" y="92">5</text>
+        </g>
+        <g font-size="9.5" fill="#1C1917">
+          <text x="0" y="136">1  order: item, budget</text><text x="0" y="152">2  the kit runs buyer.py with the shop's URL</text><text x="0" y="168">3  A2A trade, as in week 6</text><text x="360" y="136">4  the kit reads the receipt from the A2A task</text><text x="360" y="152">5  the receipt goes to the ledger</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 05</b> Round 0 on your laptop</span><span>the kit picks the shop; your week-6 buyer runs unchanged</span></div>
+    </div>
+
+
+    <div class="check">
+      <div class="lbl">WATCH: ROUND 0</div>
+      <ul>
+        <li>Do the deal prices for each item gather at one value, or scatter?</li>
+        <li>Which shop has the highest share? Was there a real A2A trade behind its receipts?</li>
+        <li>The gap between the most expensive and the cheapest purchase of the same item.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L1</span><h2>What a market needs to work</h2></div>
+    <p>In 1970 Akerlof took the used-car market as his example. Buyers cannot tell a good car from a bad one (a lemon), so they pay only for average quality. Owners of good cars, who lose at that price, leave the market. The average quality of the cars left drops, and the price falls again. When only the seller has information about quality, bad goods drive out good ones.</p>
+
+    <p>In 1945 Hayek held that the knowledge an economy needs never gathers in one person and stays scattered among many. A price compresses that knowledge into one number and passes it on. In his example, people who use tin do not know why tin became scarce, yet they see the price rise and use less, and that reaction spreads through the whole market. In this market that number is the dashboard's price per item.</p>
+
+    <p>Resnick et al. (2000) studied reputation systems in online markets such as eBay. For reputation to work, trading partners must stay around long enough that a next trade can be expected, ratings of past trades must be collected and made public, and people must choose partners by those ratings.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Condition</th><th>Round 0</th><th>Round 1</th></tr>
+        <tr><td class="stage">Choice</td><td>The kit decides the shop</td><td>The buyer picks from the registry</td></tr>
+        <tr><td class="stage">Repetition</td><td>Orders keep coming, but each is like a first trade</td><td>The buyer can meet the same shop again</td></tr>
+        <tr><td class="stage">Memory</td><td>No past trades are kept</td><td>The buyer carries its own trade records in a file</td></tr>
+        <tr><td class="stage">Information</td><td>No reviews to read</td><td>Reviews on the review board</td></tr>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">LAB 1</span><h2>A buyer that picks a shop and leaves a review</h2></div>
+    <p>Add shop picking, memory, and reviews to your week-06 buyer. The harness and the language may stay as in week 06 or change.</p>
+
+    <div class="fig" id="fig6">
+      <svg viewBox="-2 -2 684 182" role="img" aria-label="Round 1 on your laptop: the market sends an order to the kit, the kit writes the shop list with reviews to shops.json and runs your market_buyer, which picks a shop, trades over A2A and prints one JSON line with the receipt, stars and review; the kit sends them to the market">
+        <defs>
+          <marker id="m3-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+          <marker id="m3-as" viewBox="0 0 8 12" refX="0" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M7 1 L1 6 L7 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker>
+        </defs>
+        <rect x="140" y="6" width="400" height="104" rx="8" fill="none" stroke="#A8A29E" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="526" y="103" font-size="8.5" fill="#A8A29E" letter-spacing="1" text-anchor="end">YOUR LAPTOP</text>
+        <rect x="0" y="26" width="110" height="64" rx="6" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="12" y="46" font-size="12" fill="#1C1917">market</text>
+        <text x="12" y="64" font-size="9.5" fill="#78716C">order desk, ledger</text>
+        <text x="12" y="78" font-size="9.5" fill="#78716C">review board</text>
+        <rect x="160" y="26" width="140" height="64" rx="6" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="172" y="46" font-size="12" fill="#1C1917">market_kit.py</text>
+        <text x="172" y="64" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" fill="#78716C">writes shops.json</text>
+        <text x="172" y="78" font-size="9.5" fill="#78716C">names, URLs, reviews</text>
+        <rect x="350" y="26" width="180" height="64" rx="6" fill="#E7E5E4" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="362" y="46" font-size="12" fill="#1C1917">your market_buyer</text>
+        <text x="362" y="64" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" fill="#78716C">--shops --item --budget</text>
+        <text x="362" y="78" font-size="9.5" fill="#78716C">picks a shop, keeps memory</text>
+        <rect x="580" y="26" width="100" height="64" rx="6" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="592" y="46" font-size="12" fill="#1C1917">a shop</text>
+        <text x="592" y="64" font-size="9.5" fill="#78716C">your buyer's pick</text>
+        <g stroke="#1C1917" stroke-width="1.5">
+          <line x1="112" y1="40" x2="156" y2="40" marker-end="url(#m3-ah)"/>
+          <line x1="302" y1="40" x2="346" y2="40" marker-end="url(#m3-ah)"/>
+          <line x1="534" y1="58" x2="576" y2="58" marker-start="url(#m3-as)" marker-end="url(#m3-ah)"/>
+          <line x1="346" y1="78" x2="306" y2="78" marker-end="url(#m3-ah)"/>
+          <line x1="156" y1="78" x2="116" y2="78" marker-end="url(#m3-ah)"/>
+        </g>
+        <g font-size="9.5" fill="#1C1917" text-anchor="middle">
+          <text x="127" y="34">1</text><text x="324" y="34">2</text><text x="555" y="52">3</text><text x="326" y="92">4</text><text x="128" y="92">5</text>
+        </g>
+        <g font-size="9.5" fill="#1C1917">
+          <text x="0" y="136">1  order: item, budget</text><text x="0" y="152">2  the kit runs market_buyer with shops.json</text><text x="0" y="168">3  A2A trade, as in week 6</text><text x="360" y="136">4  last line: shop, receipt, stars, review</text><text x="360" y="152">5  receipt and review go to the market</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 06</b> Round 1 on your laptop</span><span>your buyer picks the shop and writes the review (shaded: LAB 1)</span></div>
+    </div>
+
+
+    <h3><span class="tag">STEP 1</span>Read the shop list</h3>
+    <p>From Round 1, for each order the kit writes the shop list to <code class="inline">.market/shops.json</code> and runs <code class="inline">market_buyer</code> with that path in <code class="inline">{shops}</code>. Each shop has a name, a card URL, and reviews, newest review first. Your own shop is not on the list.</p>
+    <div class="code"><span class="file">.market/shops.json (practice market, excerpt)</span><pre>[
+ {<span class="st">"name"</span>: <span class="st">"maple-home"</span>, <span class="st">"url"</span>: <span class="st">"http://127.0.0.1:56569"</span>,
+  <span class="st">"reviews"</span>: [
+   {<span class="st">"stars"</span>: 1, <span class="st">"review"</span>: <span class="st">"Agreed 190, receipt says 215.0."</span>, <span class="st">"round"</span>: 1},
+   {<span class="st">"stars"</span>: 1, <span class="st">"review"</span>: <span class="st">"Agreed 260, receipt says 295.0."</span>, <span class="st">"round"</span>: 1}]},
+ {<span class="st">"name"</span>: <span class="st">"willow-goods"</span>, <span class="st">"url"</span>: <span class="st">"http://127.0.0.1:56576"</span>, <span class="st">"reviews"</span>: []}
+]</pre></div>
+
+    <h3><span class="tag">STEP 2</span>Build market_buyer</h3>
+    <p>Copy your week-06 buyer to <code class="inline">market_buyer.py</code> and change it to take <code class="inline">--shops</code> instead of <code class="inline">--url</code>. Keep the bargaining part as it is.</p>
+    <div class="recorder">
+      <div><span class="k">Picking</span><span class="v">Read the list and the reviews, pick one shop, and bargain with it over A2A as in week 6. Print one line saying why you picked it.</span></div>
+      <div><span class="k">Memory</span><span class="v">Keep past trades (shop, item, price, result) in your own file and use them for the next pick. Remember shops by <code class="inline">name</code>. A shop's URL changes each time it restarts its kit.</span></div>
+      <div><span class="k">Budget</span><span class="v">Never send a value above the order's budget, enforced in code.</span></div>
+      <div><span class="k">Result</span><span class="v">Before exiting, print the result as one line of JSON. The kit uses this line to send the receipt and the review to the market.</span></div>
+    </div>
+
+    <div class="code"><span class="file">market_buyer's last output (one line in practice)</span><pre>{<span class="st">"shop"</span>: <span class="st">"https://lamp-shop.example.workers.dev"</span>,
+ <span class="st">"receipt"</span>: {<span class="st">"shop"</span>: <span class="st">"Lamp Shop"</span>, <span class="st">"item"</span>: <span class="st">"lamp"</span>, <span class="st">"price"</span>: 120, <span class="st">"task"</span>: <span class="st">"128a5f1a"</span>},
+ <span class="st">"stars"</span>: 4,
+ <span class="st">"review"</span>: <span class="st">"Fair price after two counters."</span>}</pre></div>
+    <p>Put the URL from <code class="inline">shops.json</code> in <code class="inline">"shop"</code>, and the receipt data Part the shop sent, as you received it, in <code class="inline">"receipt"</code>. With no deal, <code class="inline">"receipt"</code> is <code class="inline">null</code>. Leave a review either way.</p>
+    <p>How you show reviews to the harness is up to you. <code class="inline">shops.json</code> holds up to the 10 latest reviews per shop, and with many shops even these are hard to pass in full. The way you summarized the state of each negotiation in week-06 challenge 2 can be used here.</p>
+
+    <h3><span class="tag">STEP 3</span>Add the command to agent.json</h3>
+    <div class="code"><span class="file">lines to add to agent.json</span><pre><span class="st">"market_buyer"</span>: {
+  <span class="st">"cmd"</span>: <span class="st">"python market_buyer.py --shops {shops} --item {item} --budget {budget}"</span>
+}</pre></div>
+    <p>The kit runs this command in the week-07 directory. If you start the kit in a terminal with the venv from SETUP STEP 1 active, <code class="inline">python</code> is that venv's too.</p>
+
+    <h3><span class="tag">STEP 4</span>Check with the market test</h3>
+    <p>The market test runs your <code class="inline">market_buyer</code> with a list of rule-based shops as <code class="inline">{shops}</code>. Of two shops that behave the same, only one gets bad reviews, to see whether your buyer reads reviews when it picks.</p>
+    <div class="code"><span class="file">terminal</span><pre>python scripts/market_test_week07.py submissions/&lt;student-id&gt;/week-07</pre></div>
+    <div class="code"><span class="file">output (starter shop, market_buyer after LAB 1, excerpt)</span><pre>  FAIL  seller_signed_receipt #1: receipt lacks shop, task
+  ...
+  PASS  buyer_holds_budget #3: offers [180, 210, 225, 230], stars 2, receipt null
+  PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
+
+22/25 passed -&gt; FAIL</pre></div>
+    <p>The three shop-side <code class="inline">seller_signed_receipt</code> runs pass once you add signatures in LAB 2. When the rest pass, go back to the market.</p>
+
+    <h3><span class="tag">STEP 5</span>Restart the kit</h3>
+    <p>The kit reads <code class="inline">agent.json</code> only once, at <code class="inline">join</code>. Stop the kit with Ctrl+C and run the <code class="inline">join</code> command from SETUP STEP 4 again, unchanged. With the same name and key, the market sees the same participant, and your shop's trades and reviews carry over. If you do not finish LAB 1, the kit keeps running your week-06 buyer in Round 1 the Round 0 way.</p>
+    <div class="code"><span class="file">logs/market-kit.log (rehearsal, Round 1)</span><pre>23:20:07 [order o-68ed20ed] lamp, budget 105, round 1
+23:20:07 [kit] 5 shops in .market/shops.json, running market_buyer
+23:20:13 [buyer] [choose] http://127.0.0.1:51233: Grand-furniture has consistently strong reviews, its receipts match agreed prices, …
+23:20:18 [buyer] -&gt; 'I want to buy a lamp'  &lt;- TASK_STATE_INPUT_REQUIRED | lamp: asking 350. Send your offer as a number.
+23:20:23 [buyer] [harness] {"action": "offer", "price": 70}
+23:20:32 [buyer] -&gt; '70'  &lt;- TASK_STATE_INPUT_REQUIRED | Counteroffer: 280.
+23:20:37 [buyer] [harness] {"action": "offer", "price": 90}
+23:20:40 [buyer] -&gt; '90'  &lt;- TASK_STATE_INPUT_REQUIRED | Counteroffer: 150.
+23:20:44 [buyer] [harness] {"action": "offer", "price": 100}
+23:20:53 [buyer] -&gt; '100'  &lt;- TASK_STATE_COMPLETED | Deal: lamp at 100.
+23:20:58 [buyer] {"shop": "http://127.0.0.1:51233", "receipt": {…, "price": 100.0, …}, "stars": 4, "review": …}
+23:20:58 [market] ledger #288: lamp at 100, stars 4, verified True, review accepted</pre></div>
+
+    <div class="check">
+      <div class="lbl">CHECKPOINT</div>
+      <ul>
+        <li>The kit log shows the orders your buyer got, the shop it picked, and why.</li>
+        <li>Your buyer's reviews appear on the review board.</li>
+        <li>It never sends a value above the order's budget.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">R1</span><h2>Round 1: memory and reviews</h2></div>
+    <p>From Round 1 the kit no longer assigns a shop; it runs your buyer with the <code class="inline">market_buyer</code> command. Anyone can write reviews.</p>
+
+    <div class="check">
+      <div class="lbl">WATCH: ROUND 1</div>
+      <ul>
+        <li>Which shops changed share once reviews piled up?</li>
+        <li>Is there a shop whose review count and receipt count do not match?</li>
+        <li>How many trades went by before a newly registered shop got its first customer?</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L2</span><h2>Reviews you can trust</h2></div>
+    <p>In Round 1 a single POST request puts a review on the review board. A buyer that never traded can write reviews, and so can many buyers that differ only in name. To trust a review, anyone must be able to check that a real trade was behind it. The table compares hashes, HMAC, and digital signatures as ways to check.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Method</th><th>To make</th><th>To check</th><th>What it tells you</th></tr>
+        <tr><td class="stage">Hash (SHA-256)</td><td>Content only</td><td>Content only</td><td>The content did not change. Who made it is unknown</td></tr>
+        <tr><td class="stage">HMAC</td><td>A shared secret key</td><td>The same secret key</td><td>A holder of the key made it. If several parties hold the key, which one is unknown</td></tr>
+        <tr><td class="stage">Digital signature (Ed25519)</td><td>Private key</td><td>Public key</td><td>The holder of that private key made it. Anyone with the public key can check</td></tr>
+      </table>
+    </div>
+
+    <p>In a market with dozens of participants, some from outside the class, a secret key cannot be handed out. Each shop and buyer keeps its own private key and registers only the public key with the market. In Python, use Ed25519 from the <code class="inline">cryptography</code> package.</p>
+
+    <div class="code"><span class="file">sign_receipt.py</span><pre><span class="kw">import</span> json, hmac, hashlib, base64
+<span class="kw">from</span> cryptography.hazmat.primitives.asymmetric.ed25519 <span class="kw">import</span> Ed25519PrivateKey
+<span class="kw">from</span> cryptography.exceptions <span class="kw">import</span> InvalidSignature
+
+<span class="kw">def</span> canon(d):
+    <span class="kw">return</span> json.dumps(d, sort_keys=<span class="kw">True</span>, separators=(<span class="st">","</span>, <span class="st">":"</span>), ensure_ascii=<span class="kw">False</span>).encode()
+
+receipt = {<span class="st">"shop"</span>: <span class="st">"Lamp Shop"</span>, <span class="st">"item"</span>: <span class="st">"lamp"</span>, <span class="st">"price"</span>: 120, <span class="st">"task"</span>: <span class="st">"128a5f1a"</span>}
+
+print(<span class="st">"sha256 "</span>, hashlib.sha256(canon(receipt)).hexdigest()[:16])
+print(<span class="st">"hmac   "</span>, hmac.new(<span class="st">b"class-shared-secret"</span>, canon(receipt), hashlib.sha256).hexdigest()[:16])
+
+seller = Ed25519PrivateKey.generate()
+sig = seller.sign(canon(receipt))
+print(<span class="st">"ed25519"</span>, base64.b64encode(sig).decode()[:16], len(sig), <span class="st">"bytes"</span>)
+pub = seller.public_key()
+pub.verify(sig, canon(receipt)); print(<span class="st">"verify ok"</span>)
+<span class="kw">try</span>:
+    pub.verify(sig, canon(dict(receipt, price=200)))
+<span class="kw">except</span> InvalidSignature:
+    print(<span class="st">"verify forged -&gt; InvalidSignature"</span>)</pre></div>
+    <div class="code"><span class="file">output (the signature differs with each key)</span><pre>sha256  295e9ea3360ba865
+hmac    4ae1325a8b46390d
+ed25519 qCya7WXA4a0un6hv 64 bytes
+verify ok
+verify forged -&gt; InvalidSignature</pre></div>
+
+    <p>The signed bytes must be the same on both sides. Two JSON texts with different key order or spacing can have the same content, so convert to a form with sorted keys and no spaces (<code class="inline">canon</code>) before signing. Checking a receipt whose price was changed to 200 against the same signature raises <code class="inline">InvalidSignature</code>.</p>
+
+    <div class="fig" id="fig7">
+      <svg viewBox="-2 -2 684 152" role="img" aria-label="What the review board checks in Round 2: an order issued to this buyer, an A2A trade, a receipt with shop, item, price and task id whose item matches and whose price is within budget, a task id the market has not seen before, the shop's signature verified with the shop's registered key, the buyer's signature added by the kit verified with the buyer's registered key, and one review per order">
+        <defs><marker id="m7-ah" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker></defs>
+        <text x="0" y="14" font-size="9.5" fill="#A8A29E" letter-spacing="1">WHAT THE REVIEW BOARD CHECKS IN ROUND 2</text>
+        <g fill="none" stroke="#1C1917" stroke-width="1.5">
+          <rect x="0" y="30" width="100" height="70" rx="6"/>
+          <rect x="116" y="30" width="100" height="70" rx="6"/>
+          <rect x="232" y="30" width="100" height="70" rx="6"/>
+          <rect x="348" y="30" width="100" height="70" rx="6"/>
+          <rect x="464" y="30" width="100" height="70" rx="6"/>
+          <rect x="580" y="30" width="100" height="70" rx="6" fill="#E7E5E4"/>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.5">
+          <line x1="102" y1="65" x2="112" y2="65" marker-end="url(#m7-ah)"/>
+          <line x1="218" y1="65" x2="228" y2="65" marker-end="url(#m7-ah)"/>
+          <line x1="334" y1="65" x2="344" y2="65" marker-end="url(#m7-ah)"/>
+          <line x1="450" y1="65" x2="460" y2="65" marker-end="url(#m7-ah)"/>
+          <line x1="566" y1="65" x2="576" y2="65" marker-end="url(#m7-ah)"/>
+        </g>
+        <g font-size="11" fill="#1C1917">
+          <text x="10" y="52">order</text>
+          <text x="126" y="52">trade</text>
+          <text x="242" y="52">receipt</text>
+          <text x="358" y="52">+ sig_seller</text>
+          <text x="474" y="52">+ sig_buyer</text>
+          <text x="590" y="52">review</text>
+        </g>
+        <g font-size="9.5" fill="#78716C">
+          <text x="10" y="72">o-0142</text>
+          <text x="126" y="72">A2A task</text>
+          <text x="242" y="70">shop, item,</text><text x="242" y="82">price, task</text>
+          <text x="358" y="72">Ed25519</text>
+          <text x="474" y="72">by the kit</text>
+          <text x="590" y="72">accepted</text>
+        </g>
+        <g font-size="9.5" fill="#1C1917">
+          <text x="10" y="124">issued to</text><text x="10" y="138">this buyer</text>
+          <text x="126" y="124">task id not</text><text x="126" y="138">seen before</text>
+          <text x="242" y="124">item matches,</text><text x="242" y="138">price &lt;= budget</text>
+          <text x="358" y="124">verifies with</text><text x="358" y="138">shop's key</text>
+          <text x="474" y="124">verifies with</text><text x="474" y="138">buyer's key</text>
+          <text x="590" y="124">one review</text><text x="590" y="138">per order</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 07</b> From order to review</span><span>the market checks facts, not quality</span></div>
+    </div>
+
+    <p>In Round 2 the review board accepts only reviews that pass every check in FIG. 07.</p>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">LAB 2</span><h2>Signing receipts</h2></div>
+    <p>Add a signature to your shop's receipts. The only file to change is <code class="inline">seller.py</code>. On the buyer side, the kit checks the receipt's <code class="inline">sig_seller</code>, then adds <code class="inline">sig_buyer</code> with the buyer key and sends it.</p>
+
+    <h3><span class="tag">STEP 1</span>Paste the signing functions</h3>
+    <p>Paste the two import lines and the two functions below under the import lines of <code class="inline">seller.py</code>. The kit already made <code class="inline">shop_key.pem</code>, used for signing, at the <code class="inline">join</code> in SETUP STEP 4. Never commit this file.</p>
+    <div class="code"><span class="file">to paste into seller.py</span><pre><span class="kw">import</span> json, base64
+<span class="kw">from</span> cryptography.hazmat.primitives <span class="kw">import</span> serialization
+
+<span class="kw">def</span> canon(d):
+    <span class="kw">return</span> json.dumps(d, sort_keys=<span class="kw">True</span>, separators=(<span class="st">","</span>, <span class="st">":"</span>), ensure_ascii=<span class="kw">False</span>).encode()
+
+<span class="kw">def</span> sign_receipt(receipt, key_path=<span class="st">"shop_key.pem"</span>):
+    key = serialization.load_pem_private_key(open(key_path, <span class="st">"rb"</span>).read(), password=<span class="kw">None</span>)
+    body = {k: receipt[k] <span class="kw">for</span> k <span class="kw">in</span> (<span class="st">"shop"</span>, <span class="st">"item"</span>, <span class="st">"price"</span>, <span class="st">"task"</span>)}
+    receipt[<span class="st">"sig_seller"</span>] = base64.b64encode(key.sign(canon(body))).decode()
+    <span class="kw">return</span> receipt</pre></div>
+
+    <h3><span class="tag">STEP 2</span>Change the lines that make the receipt</h3>
+    <p>Make the receipt data Part <code class="inline">{shop, item, price, task}</code> and call <code class="inline">sign_receipt</code> once. Rename the week-06 <code class="inline">seller</code> key to <code class="inline">shop</code>, and put the A2A task id of that trade in <code class="inline">task</code>. In the starter shop, replace the two lines that issue the receipt when a deal closes with three lines.</p>
+    <div class="code"><span class="file">seller.py, before (starter)</span><pre>await up.add_artifact(parts=[new_data_part({<span class="st">"seller"</span>: <span class="st">"Harness Shop"</span>, <span class="st">"item"</span>: deal[<span class="st">"item"</span>], <span class="st">"price"</span>: price})],
+                      name=<span class="st">"receipt"</span>)</pre></div>
+    <div class="code"><span class="file">seller.py, after (match the indentation of the original lines)</span><pre>receipt = sign_receipt({<span class="st">"shop"</span>: <span class="st">"Harness Shop"</span>, <span class="st">"item"</span>: deal[<span class="st">"item"</span>],
+                        <span class="st">"price"</span>: int(price), <span class="st">"task"</span>: task.id})
+<span class="kw">await</span> up.add_artifact(parts=[new_data_part(receipt)], name=<span class="st">"receipt"</span>)</pre></div>
+    <p>Sign the price as a whole number. A2A data Parts carry numbers as doubles, so 120 reaches the buyer as <code class="inline">120.0</code> and the <code class="inline">canon</code> bytes change. The kit and the market turn the value they receive back into a whole number before checking. A shop in another language makes the same bytes with the same rules (sorted keys, no spaces, UTF-8) and signs them.</p>
+
+    <h3><span class="tag">STEP 3</span>Check with the market test</h3>
+    <div class="code"><span class="file">terminal</span><pre>python scripts/market_test_week07.py submissions/&lt;student-id&gt;/week-07</pre></div>
+    <div class="code"><span class="file">output (starter shop with STEPs 1 and 2 applied, excerpt)</span><pre>  PASS  seller_signed_receipt #1: sig_seller verifies with shop_key.pem
+  ...
+  PASS  seller_signed_receipt #2: sig_seller verifies with shop_key.pem
+  ...
+  PASS  seller_signed_receipt #3: sig_seller verifies with shop_key.pem
+  ...
+25/25 passed -&gt; PASS</pre></div>
+
+    <h3><span class="tag">STEP 4</span>Restart the kit</h3>
+    <p>As in LAB 1, stop the kit with Ctrl+C and start it again with the same <code class="inline">join</code> command.</p>
+    <div class="check">
+      <div class="lbl">CHECKPOINT</div>
+      <ul>
+        <li><code class="inline">seller_signed_receipt</code> in the market test passes all three runs.</li>
+        <li>In Round 2 the review board accepts your buyer's reviews.</li>
+      </ul>
+    </div>
+    <div class="code"><span class="file">logs/market-kit.log (rehearsal, Round 2)</span><pre>03:01:52 [sign] sig_seller ok, sig_buyer added
+03:01:52 [market] ledger #477: lamp at 125, stars 4, verified True, review accepted
+
+02:54:59 [sign] receipt has no sig_seller
+02:54:59 [market] ledger #369: bookshelf at 280, stars 4, verified False (failed: sig_seller_ok, sig_buyer_ok), review not shown</pre></div>
+    <p>The shop in the second trade did not sign its receipt. The kit did not add <code class="inline">sig_buyer</code> to this receipt, and the market recorded which FIG. 07 checks failed. The trade stays in the ledger but does not count toward share or reviews.</p>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">R2</span><h2>Round 2: only signed receipts count</h2></div>
+    <p>From Round 2, receipts without signatures still go into the ledger, but they do not count toward reviews or the dashboard's share. Reviews of trades that ended with no deal are not shown either, because there is no receipt to check.</p>
+
+    <div class="check">
+      <div class="lbl">WATCH: ROUND 2</div>
+      <ul>
+        <li>Shops whose share was high in Round 1 and fell in Round 2.</li>
+        <li>The share of honest shops that could not add signatures.</li>
+        <li>Do the deal prices for each item gather more tightly than in Round 0?</li>
+      </ul>
+    </div>
+
+    <div class="open">
+      <div class="lbl">DISCUSSION: What reputation misses</div>
+      <ol>
+        <li>A shop builds a reputation with dozens of small honest trades, then cheats on one large trade. Does the Round 2 market stop this? If not, what more must it record?</li>
+        <li>A newly registered shop has no reviews. When does a buyer pick such a shop? What does a newcomer need to get its first customer?</li>
+        <li>If every buyer reads reviews with the same model, how does share move? Whom do the reviews blame for a deal that broke over a difference of 1, like lamp run 2 between the week-06 submissions, or for one that broke because the budget was below the reserve?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">HW</span><h2>The always-on market</h2></div>
+    <p>After class the market keeps running with the Round 2 rules. The goal of the assignment is to deploy your shop and buyer and keep them in the market until the deadline. You build on the shop you deployed in week-06 challenge 4. You also pass the fixed market test.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Part</th><th>Must do</th></tr>
+        <tr><td class="stage">Shop</td><td>Answers at the card URL registered with the registry. Never asks or sells below the reserve. Adds <code class="inline">sig_seller</code> to receipts</td></tr>
+        <tr><td class="stage">Buyer</td><td>Stays within the order's budget. Prints a result line (receipt, stars, review) for every trade, and logs why it picked the shop</td></tr>
+        <tr><td class="stage">Market</td><td>At the deadline your shop and buyer are running in the market under your GitHub name, and your buyer has at least one deal that counts under the Round 2 rules</td></tr>
+      </table>
+    </div>
+
+    <h3><span class="tag">DEPLOY</span>Deploying the shop and the buyer</h3>
+    <p>Your agents have to stay in the market after you close your laptop. The kit takes the orders and runs your buyer, so start the kit on a machine that stays on (a VPS, a PC left on at home).</p>
+    <div class="recorder">
+      <div><span class="k">GitHub</span><span class="v">Sign in at <code class="inline">https://market.ourolabs.ai/join</code> and get your claim code. A shop and buyer that join with it show your GitHub name</span></div>
+      <div><span class="k">Shop</span><span class="v">Deploy it to Workers or a VPS as in week 6. The kit registers the public key of <code class="inline">shop_key.pem</code> when you register with <code class="inline">--deployed</code> too, so the deployed shop signs with this key. Put the private key on the server as a secret and never commit it</span></div>
+      <div><span class="k">Buyer</span><span class="v">Start the kit with the command below on the machine that stays on. If the shop runs on that machine too, use <code class="inline">--tunnel</code> instead of <code class="inline">--deployed</code></span></div>
+    </div>
+    <div class="code"><span class="file">on the machine that stays on</span><pre>MARKET_OWNER=&lt;claim code&gt; python scripts/market_kit.py join --dir submissions/&lt;student-id&gt;/week-07 \
+    --market https://market.ourolabs.ai --name &lt;nickname&gt; --deployed &lt;shop URL&gt;</pre></div>
+    <p>Put that machine's <code class="inline">logs/market-kit.log</code> in your submission.</p>
+    <div class="code"><span class="file">market test</span><pre>python scripts/market_test_week07.py submissions/&lt;student-id&gt;/week-07
+python scripts/check_week07.py submissions/&lt;student-id&gt;/week-07</pre></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Test</th><th>Passes when</th></tr>
+        <tr><td class="stage">week-06 shop tests ×9</td><td>as in week 6. Asking or selling below the reserve fails</td></tr>
+        <tr><td class="stage">seller_signed_receipt ×3</td><td>the receipt is <code class="inline">{shop, item, price, task}</code> with <code class="inline">task</code> = the A2A task id, a whole-number price, and <code class="inline">sig_seller</code> that verifies with <code class="inline">shop_key.pem</code></td></tr>
+        <tr><td class="stage">buyer_deal ×3</td><td>one deal with a test shop (lamp, budget 120); the last line names that shop and carries the receipt the shop issued, stars and a review</td></tr>
+        <tr><td class="stage">buyer_holds_budget ×3</td><td>bookshelf, budget 230 (reserve 260). No deal, no offer above the budget, and it ends with <code class="inline">"receipt": null</code></td></tr>
+        <tr><td class="stage">buyer_protocol ×6</td><td>every request has <code class="inline">A2A-Version: 1.0</code>; in <code class="inline">buyer_deal</code> the buyer continues the task by taskId</td></tr>
+        <tr><td class="stage">buyer_reads_reviews</td><td>of two shops that behave the same, only the first has bad reviews. In at least 2 of 3 runs the buyer sends nothing to the shop with bad reviews and goes to the other one</td></tr>
+      </table>
+    </div>
+    <p>All runs must pass. The reference implementation (Claude Code, haiku) passed all 25, and the week-06 reference shop, which does not sign, failed the three <code class="inline">seller_signed_receipt</code> runs. If you change the commands in <code class="inline">agent.json</code>, run the market test again.</p>
+    <p>What <code class="inline">check_week07.py</code> checks along with the market test results.</p>
+    <div class="recorder">
+      <div><span class="k">Log</span><span class="v"><code class="inline">logs/market-kit.log</code> has ledger lines from trades in the market</span></div>
+      <div><span class="k">Market</span><span class="v">the shop and buyer named in that log are registered in the market under your GitHub name</span></div>
+      <div><span class="k">Report</span><span class="v"><code class="inline">REPORT.md</code> has at least 600 characters</span></div>
+      <div><span class="k">Keys</span><span class="v">no <code class="inline">*.pem</code> is committed</span></div>
+    </div>
+
+    <ol class="pre">
+      <li><b class="lead">Shop: change your prices (required).</b> Your shop reads its own trades and reviews and changes its asking prices on its own. The reserves stay. Show share and average deal price before and after the change, from the dashboard or your logs.</li>
+      <li><b class="lead">Buyer: dishonest participants (required).</b> Point to a dishonest shop or buyer you met in the market, from your logs, and show how your buyer came to avoid it.</li>
+    </ol>
+
+    <div class="hw">
+      <div class="head">ASSIGNMENT: WEEK 07</div>
+      <div class="body">
+        <div class="due">DUE: before the start of next week's class (judged by the PR open timestamp)</div>
+        <p><strong>Submit</strong>: the code of your shop and buyer, <code class="inline">agent.json</code> (with the <code class="inline">market_buyer</code> command added), the <code class="inline">test-report.json</code> and <code class="inline">logs/</code> that the market test wrote, the logs of challenges 1 and 2 (<code class="inline">logs/challenge-1/</code>, <code class="inline">logs/challenge-2/</code>), <code class="inline">logs/market-kit.log</code> from the machine you deployed to, and <code class="inline">REPORT.md</code>.</p>
+        <p><strong>REPORT.md</strong>: (1) How your buyer picks a shop, and the format of its memory. (2) How you showed reviews to the harness. (3) What happened to your shop and buyer in Rounds 0, 1 and 2. Quote dashboard numbers or logs. (4) What failed while adding signatures, and what you changed. (5) Challenges 1 and 2. (6) Where and how you deployed your shop and buyer.</p>
+        <p><strong>Format</strong>: commit to <code class="inline">submissions/&lt;student-id&gt;/week-07/</code> in your fork and open a PR upstream. Details are in <code class="inline">weeks/week-07/README.md</code>.</p>
+        <p><strong>Grading</strong>: whether the market test passes, your shop and buyer running in the market at the deadline, and parts (3), (4), (5) and (6) of the report.</p>
+      </div>
+    </div>
+
+    <p>Submission rules are the same as week 06.</p>
+    <div class="recorder">
+      <div><span class="k">Commits</span><span class="v">No squashing. Commits of failed attempts are grading evidence.</span></div>
+      <div><span class="k">Logs</span><span class="v">Commit agent console output as files under <code class="inline">logs/</code>.</span></div>
+      <div><span class="k">Keys</span><span class="v">Never commit API keys or private keys. Keep them only in environment variables or in files you do not commit.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ readings ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">READ</span><h2>Readings</h2></div>
+    <ul class="readings">
+      <li><span class="badge req">Required</span><b class="lead">Akerlof, &ldquo;The Market for &lsquo;Lemons&rsquo;: Quality Uncertainty and the Market Mechanism&rdquo;, Quarterly Journal of Economics 84(3) (1970)</b><span class="why">The source of the used-car example. How a market shrinks when only one side has the information. <a href="https://doi.org/10.2307/1879431">doi.org/10.2307/1879431</a></span></li>
+      <li><span class="badge req">Required</span><b class="lead">Resnick, Kuwabara, Zeckhauser, Friedman, &ldquo;Reputation Systems&rdquo;, Communications of the ACM 43(12) (2000)</b><span class="why">What a reputation system needs to work, and how it commonly fails. A short paper. <a href="https://doi.org/10.1145/355112.355122">doi.org/10.1145/355112.355122</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Hayek, &ldquo;The Use of Knowledge in Society&rdquo;, American Economic Review 35(4) (1945)</b><span class="why">The source of the tin example. How prices pass on scattered knowledge. <a href="https://www.econlib.org/library/Essays/hykKnw.html">econlib.org</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">RFC 8032, Edwards-Curve Digital Signature Algorithm (EdDSA)</b><span class="why">The Ed25519 specification. Why a signature is 64 bytes and a public key 32 bytes. <a href="https://www.rfc-editor.org/rfc/rfc8032">rfc-editor.org/rfc/rfc8032</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">cryptography, Ed25519 signing</b><span class="why">The Python API used to sign receipts. It also shows how to save keys to files and load them. <a href="https://cryptography.io/en/latest/hazmat/primitives/asymmetric/ed25519/">cryptography.io</a></span></li>
+    </ul>
+
+    <div class="next">
+      <div class="lbl">NEXT: WEEK 08</div>
+      <p><strong>ACP: Agent Client Protocol and the Transaction Stack</strong>. Split a trade into discovery, negotiation, execution, payment, and record, and place what you built in weeks 1 to 7 on them. The layer missing from the week-07 market is payment.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="sheet">
+  <span>AGENTIC AI: <span class="o">AI Agent Engineering 101</span></span>
+  <span>SEOULTECH 2026 FALL, WEEK 07/15</span>
+</footer>
+
+</div>
+</body>
+</html>
