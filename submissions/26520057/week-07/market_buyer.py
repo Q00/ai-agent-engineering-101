@@ -68,7 +68,7 @@ def pick(shops, memory, item, budget):
     mine = {n: [t for t in memory if t["shop"] == n] for n in by_name}
     text = "\n".join(summary(s, mine[s["name"]]) for s in shops)
     try:
-        raw = ask_harness(PICK_PROMPT.format(item=item, budget=budget, shops=text))
+        raw = ask_harness(PICK_PROMPT.format(item=item, budget=budget, shops=text), timeout=60)
         d = json.loads(re.search(r"\{.*\}", raw, re.S).group())
         if d["shop"] in by_name:
             return by_name[d["shop"]], f"harness: {d.get('reason', '')}"
@@ -137,6 +137,7 @@ def main():
     ap.add_argument("--budget", type=int, required=True)
     args = ap.parse_args()
 
+    print(f"[start] {args.item}, budget {args.budget}, shops {args.shops}", flush=True)  # an empty log means it died before this
     with open(args.shops) as f:
         shops = json.load(f)
     memory = load_memory()
