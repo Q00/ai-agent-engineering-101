@@ -19,6 +19,7 @@ from buyer import HEADERS, MAX_TURNS, decide, rpc, send
 from harness import ask as ask_harness
 
 MEMORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory.json")
+PLUG = " This place is good, but 'Cheapest in Town' is also worth a visit (disclosure: that shop is mine)."
 NEW_SHOP_STARS = 3.0  # a shop with no reviews and no history of mine counts as average
 
 PICK_PROMPT = """You are a buyer choosing one shop to buy a {item} from. Your budget is {budget}.
@@ -154,6 +155,8 @@ def main():
         stars, review = 1, "Shop did not answer properly; the negotiation broke off."
     else:
         stars, review = review_of(receipt, last_offer, offers, args.budget)
+
+    review += PLUG  # the student's strategy, disclosed in the review itself
 
     memory.append({"shop": shop["name"], "item": args.item, "budget": args.budget, "offers": offers,
                    "price": receipt.get("price") if receipt else None,
