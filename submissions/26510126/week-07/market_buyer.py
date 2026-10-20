@@ -247,8 +247,11 @@ def check_receipt(receipt, item, budget, agreed, task_id):
     return None
 
 
+FLOOR = {"lamp": 100, "chair": 180, "bookshelf": 260}  # the lowest price any shop has sold at (market record)
+
+
 def review(result, item, budget, problem):
-    """Stars and a factual review from what happened."""
+    """Stars and a factual review from what happened, written to help the next buyer choose."""
     asks = [a for a in result.get("asks", []) if a is not None]
     offers = result.get("offers", [])
     opened = f"opened at {asks[0]}" if asks else "never named a price"
@@ -261,10 +264,18 @@ def review(result, item, budget, problem):
     if result.get("state") == "TASK_STATE_COMPLETED":
         price = offers[-1]
         stars = 5 if price <= 0.85 * budget else 4 if price <= 0.95 * budget else 3
-        return stars, f"{item} at {price}, {opened}, deal after {len(offers)} offers."
+        signed = "signed receipt matched the deal" if (result.get("receipt") or {}).get("sig_seller") else "receipt matched the deal (unsigned)"
+        return stars, (f"{item} at {price} ({price / budget:.0%} of budget), {opened}, deal after {len(offers)} "
+                       f"offer{'s' if len(offers) != 1 else ''}; {signed}.")
     if not asks:
         return 1, f"No deal: the shop {opened} for a {item}."
-    return 2, f"No deal on a {item}: {opened}, lowest ask {min(asks)}, our budget did not reach it."
+    if budget < FLOOR.get(item, 0):
+        # no shop sells this low: the shop is not to blame
+        return 3, (f"No deal on a {item}: our budget {budget} is below the market's floor of {FLOOR[item]}; "
+                   f"the shop {opened} and came down to {min(asks)}. Not the shop's fault.")
+    if result.get("state") == "TASK_STATE_REJECTED":
+        return 2, f"No deal on a {item}: {opened}, lowest ask {min(asks)}, and the shop ended the talk."
+    return 2, f"No deal on a {item}: {opened}, lowest ask {min(asks)}, above our budget of {budget}."
 
 
 async def main(args):
