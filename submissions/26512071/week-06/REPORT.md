@@ -136,12 +136,41 @@ PASS  total 966.0 within budget 1100
 PASS  no item bought twice
 ```
 
-**여기서 보인 문제.** 의자는 S3, S9에서 거절당했습니다. 두 상점 모두 사무용 의자를 파는데도 그랬습니다. 계획 단계의 하니스가 요청을 `with good lumbar support, adjustable height and armrests, and a breathable or well-padded seat`처럼 부풀려 썼고, 판매자의 하니스는 카탈로그 설명에 그런 말이 없다는 이유로 거절했습니다(`logs/challenge-2/shop-9.log`).
+**여기서 보인 문제.** 의자는 S3, S9에서 거절당했습니다. 두 상점 모두 사무용 의자를 파는데도 그랬습니다. 계획 단계의 하니스가 요청을 `with good lumbar support, adjustable height and armrests, and a breathable or well-padded seat`처럼 부풀려 썼고, 판매자의 하니스는 카탈로그 설명에 그런 말이 없다는 이유로 거절했습니다(커밋 `68b0118`의 `logs/challenge-2/shop-9.log`, 상점 로그는 실행마다 덮어씁니다).
 
 ```
 [harness] {"id": null, "why": "None of the listings mention lumbar support, adjustable armrests, height adjustment, or a padded/breathable seat, ..."}
 ```
 
-양쪽 모두 같은 sonnet인데, 한쪽은 친절하게 부풀리고 한쪽은 엄격하게 읽었습니다. 세 번째 상점 S15가 받아 줘서 통과했지만, 후보가 2곳이었다면 실패했을 것입니다. "요청 문장에 카탈로그에 없을 법한 조건을 덧붙이지 말 것"을 계획 프롬프트에 넣거나, 판매자가 "딱 맞는 게 없으면 가장 가까운 것을 제안"하게 바꾸는 방법이 있습니다. 아직 고치지 않았습니다.
+양쪽 모두 같은 sonnet인데, 한쪽은 친절하게 부풀리고 한쪽은 엄격하게 읽었습니다. 이 실행은 세 번째 상점 S15가 받아 줘서 통과했습니다. 그런데 예산을 880으로 조여 다시 돌리자 S15까지 세 곳 모두 거절해 **실패**했습니다(`logs/challenge-2/run-1020-1202-budget880.txt`, 커밋 `28b653e`).
 
-**아직 검증하지 못한 것.** 이번 예산(1100)은 넉넉해서 예산 예약이 실제로 제안을 깎은 일이 없었습니다(로그에 `[guard]` 0회). 예산을 합계 바로 위로 조여서 장치가 동작하는지 따로 확인해야 합니다.
+```
+2. an office chair to work at a desk all day | failed; tried S3 rejected, S9 rejected, S15 rejected
+FAIL  every item bought
+```
+
+양쪽 프롬프트를 모두 고쳤습니다.
+
+- 구매자 계획 프롬프트(`7170899`): 요청에는 쇼핑 목록에 적힌 종류와 크기, 수량, 재질만 쓰고 기능을 덧붙이지 말 것.
+- 판매자 고르기 프롬프트(`8d92277`): 설명은 짧아서 기능 대부분이 빠져 있으니, 언급되지 않은 기능은 거절할 이유가 아니다. 종류가 맞으면 가장 가까운 것을 고르고, 종류가 아예 다를 때만 none.
+
+한쪽만 고치면 다른 구매자의 부풀린 요청이나 내 구매자의 부풀린 요청 중 하나가 남기 때문에 둘 다 고쳤습니다. 고친 뒤 요청은 `office chair for working at a desk all day`처럼 짧아졌고, 예산 880에서 통과했습니다(`logs/challenge-2/run-1020-1205-budget880.txt`). 고친 판매자로 챌린지 1은 6/6, 거래 테스트는 21/21이었습니다.
+
+```
+1. a wooden bookcase for about 40 books | BOUGHT at 356.0 from S6
+2. an office chair to work at a desk all day | BOUGHT at 230.0 from S3
+3. a floor lamp to read by | BOUGHT at 173.0 from S2
+4. a cabinet for shoes by the front door | BOUGHT at 98.0 from S3
+PASS  total 857.0 within budget 880
+```
+
+이 문제는 4절의 이야기와 이어집니다. A2A는 요청을 텍스트로 실어 나를 뿐이라, "요청에 무엇을 적고 그것을 얼마나 엄격하게 읽을지"는 양쪽 프롬프트가 따로 정하고 있었습니다.
+
+**예산 예약은 프롬프트 쪽에서만 작동을 확인했습니다.** 예산 880은 산 물건들의 reserve 합(829)보다 51 많을 뿐이라, 하니스가 상한을 보고 판단한 흔적이 남았습니다.
+
+```
+[item 4] harness: {"action": "offer", "price": 97, "reason": "... which stays within the 144 cap."}
+[item 2] harness: {"action": "offer", "price": 230, "reason": "... well within my 274 cap."}
+```
+
+하지만 하니스가 매번 상한 안에서 불러서, 코드가 상한을 넘는 제안을 깎은 일은 세 번의 실행에서 한 번도 없었습니다(`[guard]` 0회). 코드 쪽 방어선이 실제로 동작하는지는 아직 보지 못했습니다.
