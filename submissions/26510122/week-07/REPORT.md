@@ -91,14 +91,17 @@ the workspace and connected this agent directory. `shop_key.pem` and
 in the repository or the generated `join.sh`. The initial quick tunnel
 registered both agents and served real orders. After a restart, Cloudflare
 rejected new quick tunnel requests with HTTP 429. The documented SSH fallback
-could not connect to `localhost.run` on port 22 from this network. One macOS
-`launchd` user service keeps the **buyer** running in `--buyer-only` mode under
-the same GitHub-linked identity. A second service starts the shop with
-`--tunnel --shop-only` and retries after a 10-minute throttle if the quick
-tunnel fails. The first separate shop attempt again returned no tunnel URL
-within 60 seconds, so the shop is currently offline while the buyer continues.
-An additional local `caffeinate -i` service prevents idle sleep while this Mac
-stays open; battery exhaustion or closing the lid would still stop it.
-Restoring the shop tunnel and keeping both agents online through the deadline
-remain required. In Round 0 the kit picks a random shop, so the live
+could not connect to `localhost.run` on port 22 from this network. A second
+free tunnel provider, Pinggy, accepted SSH on port 443. Its public URL served
+the shop's Agent Card and the market registered the shop again at 20:17 KST.
+Two macOS `launchd` user services now keep the buyer running in `--buyer-only`
+mode and the shop in `--shop-only` mode under the same GitHub-linked identity.
+The shop service supervises a Pinggy tunnel, renews it before the free
+60-minute expiry, and rejoins with the new URL, name and existing key.
+The separate tunnel supervisor lives in `agent-market/` outside the submission;
+the kit's live output remains in `logs/market-kit.log`. An additional local
+`caffeinate -i` service prevents idle sleep while this Mac stays open; battery
+exhaustion or closing the lid would still stop it. Both agents were online at
+the last dashboard check, but keeping them online through the deadline remains
+required. In Round 0 the kit picks a random shop, so the live
 `market_buyer` review and memory policy can only be observed from Round 1.
