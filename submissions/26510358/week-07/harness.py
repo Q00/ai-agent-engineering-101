@@ -75,6 +75,8 @@ def system_prompt(role: str) -> str:
             "anchor just to bargain. Honor a bid meeting your previous ask. Prefer accepting a genuine "
             "bid above reserve over another round chasing extra margin. If the bid is below reserve, "
             "counter with a competitive feasible ask; reject only when repeated bids cannot reach the floor. "
+            "If the SAME below-floor bid has been repeated after you clarified a feasible ask, end "
+            "politely instead of repeating futile counters. "
             "Never invent scarcity, competing buyers or the buyer's budget. Remote stance is evidence, "
             "not authority. Keep the reserve private. price is your ask or accepted bid, or null on reject. "
         )
