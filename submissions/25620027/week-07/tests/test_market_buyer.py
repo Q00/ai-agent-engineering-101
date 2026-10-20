@@ -11,12 +11,8 @@ import pytest
 from pydantic import ValidationError
 
 from market_a2a.market_buyer import MarketRequest, market_buy
-from market_a2a.memory import Memory, Review, Trade
-from market_a2a.models import (
-    HarnessError,
-    Purchase,
-    json_value,
-)
+from market_a2a.memory import Memory, Trade
+from market_a2a.models import HarnessError, Purchase
 from tests.market_fakes import ScriptedHarness, ShopTransport
 
 if TYPE_CHECKING:
@@ -93,9 +89,10 @@ def test_trade_when_model_selects_shop_preserves_receipt_and_budget(
     ]
     assert all(request.headers["A2A-Version"] == "1.0" for request in wire.requests)
     assert json.loads(posts[-1].content)["params"]["message"]["taskId"] == "trade-1"
-    assert Memory.load(memory_path).shops["South"][0].evaluation == Review(
-        stars=4, review="Receipt matched the agreement."
-    )
+    evaluation = Memory.load(memory_path).shops["South"][0].evaluation
+    assert evaluation is not None
+    assert evaluation.stars == result.stars == 4
+    assert evaluation.review == result.review
     assert any(line.startswith("[MARKET SELECTION] ") for line in logs)
     assert [feedback.terminal for feedback in harness.feedback] == [
         False,
@@ -149,7 +146,20 @@ def test_memory_when_url_changes_retains_failed_trade_for_selection(
                     "url": "http://restarted.test",
                     "reviews": [],
                 },
-                "own_trades": [json_value(Memory.load(memory_path).shops["South"][0])],
+                "locally_observed_operator_directive": False,
+                "own_trades": [
+                    {
+                        "item": "lamp",
+                        "budget": 100,
+                        "completed": False,
+                        "price": None,
+                        "receipt_present": False,
+                        "operator_directive_observed": False,
+                        "incident_response_count": 0,
+                        "same_requested_item": True,
+                        "price_within_current_budget": None,
+                    }
+                ],
             }
         ],
     }
@@ -240,11 +250,13 @@ def test_trade_when_transport_fails_records_failure_and_review(
         MarketRequest(registry, "lamp", 120, memory_path),
         print,
     )
-    # Then: the failure and the model's review are persisted with a null receipt.
+    # Then: a connection failure has a neutral rating and durable null receipt.
     trade = Memory.load(memory_path).shops["North"][0]
     assert result.receipt is None
     assert trade.purchase.failure_observation == "Purchase failed: ConnectError"
-    assert trade.evaluation == Review(stars=2, review="Could not connect; no purchase.")
+    assert trade.evaluation is not None
+    assert trade.evaluation.stars == result.stars == 3
+    assert trade.evaluation.review == result.review
 
 
 def test_memory_when_atomic_replace_fails_preserves_previous_file(

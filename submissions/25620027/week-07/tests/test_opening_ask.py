@@ -32,12 +32,12 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     "case",
     [
-        ("lamp", 100, 105, 100),
-        ("lamp", 100, 105, 105),
-        ("chair", 180, 189, 180),
-        ("chair", 180, 189, 189),
-        ("bookshelf", 260, 273, 273),
-        ("lamp", 101, 107, 107),
+        ("lamp", 100, 110, 100),
+        ("lamp", 100, 110, 110),
+        ("chair", 180, 198, 180),
+        ("chair", 180, 198, 198),
+        ("bookshelf", 260, 286, 286),
+        ("lamp", 101, 112, 112),
         ("lamp", 1, 2, 2),
     ],
 )
@@ -153,7 +153,7 @@ class EventCollector(EventQueue):
         self.events.append(event)
 
 
-@pytest.mark.parametrize("price", [99, 106])
+@pytest.mark.parametrize("price", [99, 111])
 def test_invalid_opening_when_guard_leaves_task_and_events_untouched(
     price: int,
 ) -> None:

@@ -50,7 +50,7 @@ def test_seller_receipt_when_real_a2a_task_accepts_offer(
             ),
             (
                 "decide",
-                {"action": "quote", "sku": "lamp", "price": 120, "reason": "Reserve"},
+                {"action": "quote", "sku": "lamp", "price": 105, "reason": "Reserve"},
             ),
             (
                 "decide",

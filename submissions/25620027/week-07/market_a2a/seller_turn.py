@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Literal, assert_never
 
 from a2a.server.tasks import TaskUpdater
@@ -22,9 +22,10 @@ from market_a2a.seller_policy import (
     Decision,
     Negotiation,
     Search,
+    decision_feedback,
     price_feedback,
-    rejection_feedback,
     search_result,
+    settlement_required,
 )
 
 if TYPE_CHECKING:
@@ -64,7 +65,7 @@ class Negotiator:
         self.signer: ReceiptSigner | None = signer
         self.negotiations: dict[str, Negotiation] = {}
         self.closed: set[str] = set()
-        self.price_history = SellerHistory()
+        self.price_history: SellerHistory = SellerHistory()
 
     async def negotiate(self, task: Task, text: str, queue: EventQueue) -> None:
         """Expose retrieval and guarded commercial actions for one model turn."""
@@ -72,9 +73,12 @@ class Negotiator:
         current = self.negotiations.get(task.id)
         candidates: dict[str, Product] = {}
         offer = int(text.strip()) if re.fullmatch(r"[0-9]{1,9}", text.strip()) else None
+        if current is not None and offer is not None:
+            current = replace(current, incoming_offers=current.incoming_offers + 1)
+            self.negotiations[task.id] = current
         state: dict[str, JsonValue] = {
             "phase": "bargaining" if current else "opening",
-            "buyer_text": text[:2000],
+            "buyer_text": text[:2000] if current is None else None,
             "offer": offer,
             "offer_meets_reserve": (
                 offer is not None
@@ -85,15 +89,17 @@ class Negotiator:
                 offer is not None and current is not None and offer >= current.ask
             ),
             "catalog_count": len(self.catalog.products),
-            "task_id": task.id,
             "selected": json_value(current.product) if current else None,
             "ask": current.ask if current else None,
             "coupon_used": current.coupon_used if current else False,
             "own_price_history": (
                 json_value(self.price_history.snapshot(current.product.sku))
-                if current else None
+                if current
+                else None
             ),
             "rounds": current.rounds if current else 0,
+            "incoming_offers": current.incoming_offers if current else 0,
+            "settlement_required": settlement_required(current, offer),
         }
         self.harness.emit(
             "".join(
@@ -161,16 +167,68 @@ class Negotiator:
             self.closed.add(task.id)
             _ = self.negotiations.pop(task.id, None)
 
+    async def quote(self, turn: Turn, product: Product, decision: Decision) -> None:
+        """Publish a guarded quote with transparent coupon accounting."""
+        current = turn.current
+        coupon_applied = (
+            current is not None
+            and not current.coupon_used
+            and decision.price < current.ask
+        )
+        total_reduction = current.ask - decision.price if current else 0
+        discount = min(5, total_reduction) if coupon_applied else 0
+        self.negotiations[turn.task_id] = Negotiation(
+            product,
+            decision.price,
+            current.rounds + 1 if current else 0,
+            coupon_applied or (current.coupon_used if current else False),
+            current.incoming_offers if current else 0,
+        )
+        coupon_text = ""
+        if current is None:
+            coupon_text = (
+                " R2WELCOME: up to 5 price units of the first negotiated "
+                "reduction are coupon credit. Larger reductions are possible."
+            )
+        elif coupon_applied:
+            coupon_text = (
+                f" R2WELCOME coupon credit: {discount} within a total "
+                f"reduction of {total_reduction} price units."
+            )
+        message = turn.updater.new_agent_message(
+            [
+                Part(
+                    text="".join(
+                        (
+                            product.name,
+                            ".",
+                            coupon_text,
+                            f" Asking price: {decision.price}",
+                        )
+                    )
+                )
+            ],
+            metadata={
+                "sku": product.sku,
+                "item": product.kind,
+                "name": product.name,
+                "ask": decision.price,
+                "coupon_code": "R2WELCOME",
+                "coupon_discount": discount,
+                "total_reduction": total_reduction,
+                "coupon_applied": "true" if coupon_applied else "false",
+            },
+        )
+        await turn.updater.requires_input(message)
+
     async def commit(self, turn: Turn, decision: Decision) -> ToolResult:
         """Commit one guarded model action to the authoritative task."""
         updater, current = turn.updater, turn.current
+        feedback = decision_feedback(current, turn.offer, decision)
+        if feedback is not None:
+            return feedback
         match decision.action:
             case "reject":
-                feedback = rejection_feedback(
-                    current.rounds if current else None, turn.offer
-                )
-                if feedback is not None:
-                    return feedback
                 await updater.reject(
                     updater.new_agent_message([Part(text=decision.reason)])
                 )
@@ -187,8 +245,7 @@ class Negotiator:
                 data={"error": "Select a retrieved SKU; never switch an open SKU."}
             )
         price_error = price_feedback(
-            product.reserve, decision, current_ask=current.ask if current else None,
-            coupon_used=current.coupon_used if current else False
+            product.reserve, decision, current_ask=current.ask if current else None
         )
         if price_error is not None:
             guard = f"seller.guard task={turn.task_id} code={price_error.code}"
@@ -198,37 +255,7 @@ class Negotiator:
             return ToolResult(data=json_value(price_error))
         match decision.action:
             case "quote":
-                coupon_applied = (
-                    current is not None
-                    and not current.coupon_used
-                    and decision.price < current.ask
-                )
-                discount = current.ask - decision.price if coupon_applied and current else 0
-                self.negotiations[turn.task_id] = Negotiation(
-                    product, decision.price, current.rounds + 1 if current else 0,
-                    coupon_applied or (current.coupon_used if current else False),
-                )
-                coupon_text = ""
-                if current is None:
-                    coupon_text = (
-                        " R2WELCOME: send a numeric counteroffer for one coupon review, "
-                        "up to 5 price units off, subject to our minimum price."
-                    )
-                elif coupon_applied:
-                    coupon_text = f" R2WELCOME coupon applied: {discount} price units off."
-                message = updater.new_agent_message(
-                    [Part(text=f"{product.name}.{coupon_text} Asking price: {decision.price}")],
-                    metadata={
-                        "sku": product.sku,
-                        "item": product.kind,
-                        "name": product.name,
-                        "ask": decision.price,
-                        "coupon_code": "R2WELCOME",
-                        "coupon_discount": discount,
-                        "coupon_applied": "true" if coupon_applied else "false",
-                    },
-                )
-                await updater.requires_input(message)
+                await self.quote(turn, product, decision)
             case "accept":
                 if (
                     current is None
@@ -271,7 +298,8 @@ class Negotiator:
                                 text=" ".join(
                                     (
                                         f"Deal: {product.name} at {decision.price}.",
-                                        "Please leave an honest review of agreed price and receipt.",
+                                        "Please leave an honest review",
+                                        "of the price and receipt.",
                                     )
                                 )
                             )
