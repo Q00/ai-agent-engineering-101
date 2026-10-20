@@ -393,9 +393,10 @@ export class TaskObject extends DurableObject<Env> {
       console.log(`GUARD: no usable answer from the model (${JSON.stringify(answer)}), holding at ${current}`);
       price = current;
     }
-    if (price < reserve) {
-      console.log(`GUARD: counter ${price} below reserve ${reserve}, countering at ${reserve}`);
-      price = reserve;
+    if (price < floor) {
+      // the deal's floor: reserve + margin, the reserve itself only in a launch sale or on a stamp-bonus order
+      console.log(`GUARD: counter ${price} below the floor ${floor}, countering at ${floor}`);
+      price = floor;
     }
     if (price > current) {
       console.log(`GUARD: counter ${price} above the last ask ${current}, holding at ${current}`);
@@ -403,7 +404,8 @@ export class TaskObject extends DurableObject<Env> {
     }
     if (prev !== undefined && offer > prev && current - price < 0.25 * (current - offer)) {
       // the buyer is raising but the model concedes by ones (141, 142, ...): buyers walk and review it badly
-      const step = Math.max(reserve, Math.round(current - 0.4 * (current - offer)));
+      // it speeds the haggle up, it does not sell cheaper: never below the target (a bookshelf went 280 -> 260 at an offer of 202)
+      const step = Math.max(floor, target ?? floor, Math.round(current - 0.4 * (current - offer)));
       console.log(`GUARD: counter ${price} concedes too little to a rising buyer, countering at ${step}`);
       price = Math.min(price, step);
     }
