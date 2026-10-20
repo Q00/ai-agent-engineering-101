@@ -82,6 +82,7 @@ def open_shop(n):
     NAME = f"Sonnet Shop {n}"
     CATALOG = Catalog(items=[dict(i, reserve=int(i["reserve"] * factor)) for i in full.items if i["kind"] in mine])
     log(f"[shop] {NAME}: {', '.join(mine)}; reserves x{factor:.2f}; {len(CATALOG.items)} items")
+CLOSE_GAP = 0.97  # accept an offer at or above the reserve within 3% of the current ask
 MAX_ROUNDS = 10  # safety net so a task cannot run forever
 HARNESS = ["claude", "-p", "--model", "sonnet", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
 WORKDIR = tempfile.mkdtemp(prefix="seller-harness-")  # empty dir: no project instructions
@@ -233,6 +234,11 @@ class Seller(AgentExecutor):
         else:
             action, price, message = decision
 
+        # close a near deal: in the market, buyers walked at offers 205 vs ask 208 and 270 vs 272
+        if (action == "ask" and offer is not None and offer >= reserve
+                and offer >= CLOSE_GAP * price):
+            log(f"[close] offer {offer} within {1 - CLOSE_GAP:.0%} of ask {price} -> accept")
+            action = "accept"
         # code-side guards on the reserve
         if action == "accept" and (offer is None or offer < reserve):
             log(f"[guard] accept of {offer} below reserve {reserve} -> ask {max(price, reserve)}")
