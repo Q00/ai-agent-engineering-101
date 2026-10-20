@@ -39,8 +39,8 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import HARNESS, ask
 
-NAME = "dragonash's GRAND SALE"                           # week 07: was "Harness Shop (25620024)", then "dragonash's"
-SALE = 0.9                                                 # rebrand sale (challenge 1): opening ask 10% off, reserves unchanged
+NAME = "dragonash's GRAND SALE - TEN-TEN CHANCE"          # week 07: "Harness Shop (25620024)" -> "dragonash's" -> "dragonash's GRAND SALE"
+SALE = 0.9 * 0.9           # challenge 1: GRAND SALE 10% off (20:09), then TEN-TEN another 10% (Round 1, 20:33); reserves unchanged
 SHOP = "dragonash"                                         # receipt "shop": the market name, same as the deployed shop
 KEY_FILE = Path(__file__).parent / "shop_key.pem"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}   # lowest prices the shop may accept
@@ -110,7 +110,7 @@ class HarnessSeller(AgentExecutor):
                 return
             reserve = RESERVE[item]
             list_price, ask_price = await self.decide_open(item, reserve, tid)
-            reply = f"GRAND SALE, 10% off everything! {item}: was {list_price}, now asking {ask_price}. Send your offer as a number."
+            reply = f"GRAND SALE + TEN-TEN CHANCE: 10% off, then another 10% off! Please leave an honest review. {item}: was {list_price}, now asking {ask_price}. Send your offer as a number."
             self.open[task.id] = {"item": item, "reserve": reserve, "ask": ask_price, "rounds": 0,
                                   "history": [f"buyer: {text}", f"seller: {reply}"]}
             await up.requires_input(say(reply))
@@ -199,7 +199,8 @@ class HarnessSeller(AgentExecutor):
 def build(port):
     card = AgentCard(
         name=NAME,
-        description="ALL YOUNG DRAGONASH'S SALE - GRAND SALE: 10% off every desk lamp, chair and bookshelf. "
+        description="ALL YOUNG DRAGONASH'S SALE - GRAND SALE plus TEN-TEN CHANCE: 10% off, then another 10% off every "
+                    "desk lamp, chair and bookshelf. Please leave an honest review, good or bad. "
                     "Signed receipts. Prices are negotiated by a model harness with the reserve enforced in code.",
         version="1.0.0",
         default_input_modes=["text/plain"],
