@@ -1,0 +1,46 @@
+Failed to detach context
+Traceback (most recent call last):
+  File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x75f6d76111c0> at 0x75f6d6e36040> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-65' coro=<EventQueueSource._dispatch_loop() done, defined at /home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x75f6d76111c0> at 0x75f6d6e58240> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-66' coro=<EventQueueSource._dispatch_loop() done, defined at /home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
