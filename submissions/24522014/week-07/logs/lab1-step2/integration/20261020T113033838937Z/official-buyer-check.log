@@ -1,0 +1,54 @@
+
+## buyer tests: your market_buyer against the kit's rule-based shops
+
+### buyer_deal #1: "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Scripts\python.exe" -X utf8 market_buyer.py --shops "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\logs\lab1-step2\integration\20261020T113033838937Z\.market\test-shops-buyer_deal-1.json" --item "lamp" --budget "120"
+    Kit Shop saw: offers [105], deals [105], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:55871", "receipt": {"task": "6ebea897-6b27-47e4-82dd-28dd75e1e4b5", "item": "lamp", "sig_seller": "E9Etga79SXFPw4CPTLRkLxcPqauUel1Ezs+19pK/duC4Pz8ViFKnAH+VbbEBnvX34BTO0bI4VVvC6OnXeiZfDg==", "shop": "Kit Shop", "price": 105.0}, "stars": 5, "review": "Bought lamp at agreed p
+  PASS  buyer_deal #1: offers [105], stars 5, receipt yes
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Scripts\python.exe" -X utf8 market_buyer.py --shops "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\logs\lab1-step2\integration\20261020T113033838937Z\.market\test-shops-buyer_deal-2.json" --item "lamp" --budget "120"
+    Kit Shop saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:55913", "receipt": {"task": "61921d04-24a9-42d5-9d00-68aeca6ed30a", "item": "lamp", "sig_seller": "hzr9WpnM5Ep1aRsLI3Qh989+hJT8M7p/ai2EGrSsuaqkSd1zUlg+nJ0oEifXZZiOhUWIqdaCBLl4t25dGVkZBQ==", "shop": "Kit Shop", "price": 100.0}, "stars": 5, "review": "Bought lamp at agreed p
+  PASS  buyer_deal #2: offers [100], stars 5, receipt yes
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Scripts\python.exe" -X utf8 market_buyer.py --shops "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\logs\lab1-step2\integration\20261020T113033838937Z\.market\test-shops-buyer_deal-3.json" --item "lamp" --budget "120"
+    Kit Shop saw: offers [105], deals [105], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:55966", "receipt": {"task": "28089e21-663d-4db6-afd7-dddb4da4095b", "item": "lamp", "sig_seller": "kexVhojxyJllPMyS71vCna3wHRuNkUTmmBmfD98dfGDjwreQn8ucXHxaJzJaQ6HVxpyS0j/tNWxYteMq32zsBA==", "shop": "Kit Shop", "price": 105.0}, "stars": 5, "review": "Bought lamp at agreed p
+  PASS  buyer_deal #3: offers [105], stars 5, receipt yes
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Scripts\python.exe" -X utf8 market_buyer.py --shops "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\logs\lab1-step2\integration\20261020T113033838937Z\.market\test-shops-buyer_holds_budget-1.json" --item "bookshelf" --budget "230"
+    Kit Shop saw: offers [180, 220, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56003", "receipt": null, "stars": 3, "review": "No deal within budget 230; no dishonesty inferred."}
+  PASS  buyer_holds_budget #1: offers [180, 220, 230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #1: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### buyer_holds_budget #2: "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Scripts\python.exe" -X utf8 market_buyer.py --shops "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\logs\lab1-step2\integration\20261020T113033838937Z\.market\test-shops-buyer_holds_budget-2.json" --item "bookshelf" --budget "230"
+    Kit Shop saw: offers [185, 210, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56148", "receipt": null, "stars": 3, "review": "No deal within budget 230; no dishonesty inferred."}
+  PASS  buyer_holds_budget #2: offers [185, 210, 230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #2: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### buyer_holds_budget #3: "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Scripts\python.exe" -X utf8 market_buyer.py --shops "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\logs\lab1-step2\integration\20261020T113033838937Z\.market\test-shops-buyer_holds_budget-3.json" --item "bookshelf" --budget "230"
+    Kit Shop saw: offers [200, 220, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56312", "receipt": null, "stars": 3, "review": "No deal within budget 230; no dishonesty inferred."}
+  PASS  buyer_holds_budget #3: offers [200, 220, 230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #3: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### buyer_reads_reviews #1: "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Scripts\python.exe" -X utf8 market_buyer.py --shops "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\logs\lab1-step2\integration\20261020T113033838937Z\.market\test-shops-buyer_reads_reviews-1.json" --item "lamp" --budget "120"
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56462", "receipt": {"task": "0423a20e-f149-43a1-9003-b3c72d93e953", "item": "lamp", "sig_seller": "EQy6eIpIoB9NzOGz1e0z8e5KzhwG1IzOQZn6Dc7zBsVpuJ5zz3yX/kRj/j9o5s2q/WW7gI2CZ3/q0WtTG1b6BQ==", "shop": "Kit Shop South", "price": 100.0}, "stars": 5, "review": "Bought lamp at ag
+
+### buyer_reads_reviews #2: "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Scripts\python.exe" -X utf8 market_buyer.py --shops "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\logs\lab1-step2\integration\20261020T113033838937Z\.market\test-shops-buyer_reads_reviews-2.json" --item "lamp" --budget "120"
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56506", "receipt": {"task": "46160ad5-497f-4eb0-b358-a35b05f64aee", "item": "lamp", "sig_seller": "cD9JmRYmRcboQXWjh2Pcne6zGNG04J1rXuXLCGY/CRl9KvzJf7pWSecI9Yw3cKV2TBve891ZynwTpI7fv6WNDg==", "shop": "Kit Shop South", "price": 100.0}, "stars": 5, "review": "Bought lamp at ag
+
+### buyer_reads_reviews #3: "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Scripts\python.exe" -X utf8 market_buyer.py --shops "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\logs\lab1-step2\integration\20261020T113033838937Z\.market\test-shops-buyer_reads_reviews-3.json" --item "lamp" --budget "120"
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56555", "receipt": {"task": "1de8ab1c-fb15-4d42-8fd5-ff37774ea402", "item": "lamp", "sig_seller": "GJBjlRYLccnO2MT0OPy/DauRPt9qYN5RHXYX/b3onWsuf0PdS++tgsk+rwa0aTWEH/N54sC27P5NMg/i61dKAA==", "shop": "Kit Shop South", "price": 100.0}, "stars": 5, "review": "Bought lamp at ag
+  PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
