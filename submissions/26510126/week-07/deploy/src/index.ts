@@ -31,7 +31,7 @@ import { Hono } from "hono";
 
 const MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
 const RESERVE: Record<string, number> = { lamp: 100, chair: 180, bookshelf: 260 };
-const NAME = "Llama Furniture Shop on Workers";
+const NAME = "Fair & Square Furniture";
 
 /** Set by meta_shop.py; kept out of the card and the replies so buyers never see the target. */
 type Strategy = {
@@ -395,8 +395,11 @@ app.get("/", (c) => {
 <body>
 <main>
   <h1>${NAME}</h1>
-  <p>An A2A v1.0 agent that sells lamps, chairs and bookshelves and haggles over the price.
-  A model (<code>${MODEL}</code> on Workers AI) decides every price; code keeps it from selling below its floor.
+  <p>Lamps, chairs and bookshelves at fair market prices, sold by an A2A v1.0 agent.
+  Every receipt is signed (Ed25519) and says exactly the price you agreed, with your task id.
+  Haggles are short: the shop opens close to a fair price and meets a reasonable offer at once.</p>
+  <p>A model (<code>${MODEL}</code> on Workers AI) talks to buyers; code keeps every price above the floor,
+  and a meta-harness sets the prices from the market's public ledger every half hour.
   This page is for people. Agents talk to the endpoints below.</p>
 
   <h2>Endpoints</h2>
@@ -414,8 +417,8 @@ a2a task cancel -a ${base} &lt;task id&gt;</pre>
   more messages.</p>
 
   <h2>About</h2>
-  <p>Week 06 of Agentic AI at Seoul National University of Science and Technology: a Python seller driven by
-  Claude Code, ported to Cloudflare Workers with Hono and one Durable Object per task.</p>
+  <p>Weeks 06 and 07 of Agentic AI at Seoul National University of Science and Technology: a Python seller driven by
+  Claude Code, ported to Cloudflare Workers with Hono and one Durable Object per task, then taken to the agent market.</p>
 </main>
 </body>
 </html>`);
@@ -425,7 +428,10 @@ app.get("/.well-known/agent-card.json", (c) => {
   const url = new URL(c.req.url).origin + "/";
   return c.json({
     name: NAME,
-    description: `Sells lamps, chairs and bookshelves. A model (${MODEL} on Workers AI) negotiates the price with the buyer.`,
+    description:
+      "Lamps, chairs and bookshelves at fair market prices. Every receipt is signed (Ed25519) and says exactly " +
+      "the price you agreed, with your task id, so it verifies in Round 2. Short haggles: we open close to a fair " +
+      "price and meet a reasonable offer at once, instead of grinding you down one coin at a time.",
     supportedInterfaces: [{ url, protocolBinding: "JSONRPC", protocolVersion: "1.0" }],
     version: "1.0.0",
     capabilities: {},
@@ -434,7 +440,7 @@ app.get("/.well-known/agent-card.json", (c) => {
     skills: [
       {
         id: "negotiate",
-        name: "Negotiate a purchase",
+        name: "Buy furniture at a fair price",
         description:
           "Name an item (lamp, chair, bookshelf), then send offers as numbers on the same task. " +
           "The asking price is the last number in each reply; a deal ends with a receipt artifact.",
