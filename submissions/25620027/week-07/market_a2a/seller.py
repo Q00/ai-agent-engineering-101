@@ -92,19 +92,21 @@ def create_app(
     kinds = sorted({product.kind for product in catalog.products})
     card = AgentCard(
         name=name,
-        description=(
-            "Sungjin Shop | Clear quotes and quick numeric bargaining. "
-            "Basic opening quote caps: lamp 110, chair 198, bookshelf 286. "
-            "The actual quote is in metadata.ask; eligible offers settle promptly. "
-            "Counteroffers never increase within a negotiation. "
-            "Receipts show the exact agreed price. "
-            "R2WELCOME: up to 5 of the first negotiated reduction is a coupon; "
-            "larger negotiated reductions are allowed, with the reserve protected. "
-            + ("Ed25519-signed receipts. " if signer is not None else "")
-            + "Machine-readable ask and coupon metadata. "
-            + "Terms and A2A examples: https://ax-week07.treasuresky.xyz/ . "
-            + "No rating is required for a discount. "
-            + "Please leave an honest review of your transaction."
+        description=" ".join(
+            (
+                "Sungjin Shop | Clear quotes and quick numeric bargaining.",
+                "Basic opening quote caps: lamp 110, chair 198, bookshelf 286.",
+                "The actual quote is in metadata.ask; eligible offers settle promptly.",
+                "Counteroffers never increase within a negotiation.",
+                "Receipts show the exact agreed price.",
+                "R2WELCOME: up to 5 of the first negotiated reduction is a coupon;",
+                "larger negotiated reductions are allowed, with the reserve protected.",
+                "Ed25519-signed receipts." if signer is not None else "",
+                "Machine-readable ask and coupon metadata.",
+                "Terms and A2A examples: https://ax-week07.treasuresky.xyz/ .",
+                "No rating is required for a discount.",
+                "Please leave an honest review of your transaction.",
+            )
         ),
         version="1.1.0",
         capabilities=AgentCapabilities(streaming=False),
