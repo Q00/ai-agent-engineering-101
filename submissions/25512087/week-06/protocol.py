@@ -83,6 +83,10 @@ class A2AClient:
         return self
 
     def __exit__(self, *_: object) -> None:
+        self.close()
+
+    def close(self) -> None:
+        """Release the underlying HTTP connection pool."""
         self.client.close()
 
     def discover(self) -> dict[str, Any]:
@@ -110,4 +114,3 @@ class A2AClient:
             raise A2AError(f"{error.get('code')}: {error.get('message', '')}")
         result = body.get("result", {})
         return result.get("task", result)
-
