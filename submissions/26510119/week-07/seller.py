@@ -61,6 +61,8 @@ Choose one:
 - reject: stop negotiating, no sale
 Rejecting loses this sale for good. Buyers usually raise their offers over several rounds, so keep
 countering while the buyer is still moving up; reject only if the buyer has stopped raising for several rounds.
+An offer at or above your lowest acceptable price is a profitable sale. If the buyer repeats the same offer,
+that is probably their limit: accept it rather than lose the sale.
 Reply with exactly one JSON object and nothing else:
 {{"action": "accept" | "counter" | "reject", "price": <integer, your new ask if you counter>}}"""
 
@@ -133,6 +135,9 @@ class Seller(AgentExecutor):
             if GUARDS and price < reserve:
                 log(f"[guard] counter {price} is below the reserve {reserve}; asking {reserve}")
                 price = reserve
+            if price <= offer and offer >= reserve:
+                log(f"[rule] counter {price} is not above the buyer's offer {offer}; that is agreement, accepting {offer}")
+                action = "accept"
 
         if action == "accept":
             log(f"[{tid}] accept {offer}")
