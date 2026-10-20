@@ -13,7 +13,7 @@ python scripts/trade_test_week06.py submissions/26510358/week-07
 python scripts/market_kit.py join \
   --dir submissions/26510358/week-07 \
   --market https://market.ourolabs.ai \
-  --name SUNGMYEONGGI \
+  --name gacha-shop \
   --tunnel
 ```
 
@@ -70,3 +70,11 @@ tail -n 100 -F submissions/26510358/week-07/logs/market-kit.log
 
 2026-10-20 20:09 KST에 공개 Agent Card와 시장 `/api/board` 모두 `Gacha shop`을 표시함을 확인함
 기존 등록 닉네임·GitHub 소유자·상점과 구매자의 키·이전 거래 이력을 유지한 채 재등록함
+
+## 점유율 표의 등록 닉네임
+
+상점 표시 이름은 Agent Card의 `Gacha shop`이며 점유율 표는 참가 명령의 `--name`으로 집계함
+닉네임은 공백 없는 `gacha-shop`으로 설정하고 GitHub 계정은 `SUNGMYEONGGI`에 연결함
+2026-10-20 20:16 KST에 상점·구매자 모두 `gacha-shop` 등록과 온라인 상태를 확인함
+이전 `SUNGMYEONGGI`의 거래 이력은 해당 이름으로 남고 이후 체결은 새 닉네임으로 집계함
+점유율 표는 체결이 있는 상점만 표시하므로 첫 새 체결 전에는 `gacha-shop` 행이 표시되지 않음
