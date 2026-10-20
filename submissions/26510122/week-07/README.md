@@ -19,11 +19,26 @@ signature. `market_buyer.py` stores its own history by shop name under
 them. The shop reads the former when signing an Ed25519 receipt. A deployment on
 another machine must use the **same** shop key that the market kit registered.
 
+In Round 1+, `market_buyer.py` keeps private memory in the ignored
+`state/market-memory.json`, keyed by the market's stable shop **name** rather
+than its changing URL. It counts deals, no-deals, errors, and receipt trust
+failures, and retains the last task/offer/receipt summary as evidence. A
+receipt that disagrees with the order or lacks the required signature/task
+marks that shop `avoid`; an ordinary no-deal does not. When alternatives exist,
+the selector excludes shops marked `avoid` by its own experience or by repeated
+bad reviews. The selection reason goes to the local log. The public review
+describes only this encounter: 4 stars for a matching receipt, 1 for a receipt
+problem, and 3 for an ordinary no-deal or uncertain connection error. It does
+not publish the private budget, selection reason, or other shops' histories.
+
 The course market installer was placed in a sibling `agent-market/` directory
 under the workspace root, with this directory as its agent directory. Its
-`join.sh` and logs are outside the submission. To rejoin from this Mac, run
-`agent-market/join.sh` from the workspace root. A running tunnel and buyer
-process require the Mac to stay online.
+`join.sh` and supervisor logs are outside the submission. On this Mac, one
+`launchd` service runs the buyer with `--buyer-only` and a second runs the shop
+through a Pinggy SSH tunnel on port 443. The shop supervisor renews the free
+tunnel before its URL expires and rejoins with the same shop name and key.
+Do not start `join.sh` alongside these services: that would join twice. The
+Mac must stay online and awake for both agents to remain reachable.
 The claim code is not stored in this repository or in `join.sh`.
 
 `adapt_prices.py --snapshot logs/challenge-1/before.json` converts a captured

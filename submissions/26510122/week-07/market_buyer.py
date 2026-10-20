@@ -43,8 +43,10 @@ def choose_shop(shops: list[dict], item: str, budget: int, memory: dict) -> tupl
     if not shops:
         raise ValueError("market gave no shops")
     candidates = [dict(shop, risk=review_risk(shop.get("reviews", []))) for shop in shops]
-    safe = [shop for shop in candidates if not shop["risk"]["avoid"]]
-    eligible = safe or candidates
+    unflagged_by_memory = [shop for shop in candidates
+                           if not memory["shops"].get(shop["name"], {}).get("avoid", False)]
+    safe = [shop for shop in unflagged_by_memory if not shop["risk"]["avoid"]]
+    eligible = safe or unflagged_by_memory or candidates
     excluded = [shop["name"] for shop in candidates if shop not in eligible]
     actions = [str(i) for i in range(len(eligible))]
     answer = decide("market buyer shop selector", {
@@ -70,7 +72,9 @@ def choose_shop(shops: list[dict], item: str, budget: int, memory: dict) -> tupl
     return chosen, reason
 
 
-def receipt_from_outcome(outcome: dict, item: str, budget: int) -> tuple[dict | None, str]:
+def receipt_from_outcome(outcome: dict, item: str, budget: int) -> tuple[dict | None, str, str, dict]:
+    task_id = outcome.get("task_id")
+    offers = outcome.get("offers", [])
     for artifact in outcome.get("artifacts", []):
         for part in artifact.get("parts", []):
             data = part.get("data")
@@ -79,16 +83,20 @@ def receipt_from_outcome(outcome: dict, item: str, budget: int) -> tuple[dict | 
             price = data["price"]
             if isinstance(price, float) and price.is_integer():
                 price = int(price)
+            evidence = {"task_id": task_id, "receipt_task": data.get("task"),
+                        "receipt_item": data.get("item"), "receipt_price": price,
+                        "offers": offers}
             if (data.get("item") != item or not isinstance(price, int) or isinstance(price, bool)
-                    or price > budget or price not in outcome.get("offers", [])):
-                return None, "receipt disagreed with the item, budget, or my offers"
-            if not data.get("sig_seller") or not data.get("task"):
-                return None, "receipt lacked a shop signature or A2A task id"
-            return data, "receipt matched my offer and budget"
-    return None, "no receipt was issued"
+                    or price > budget or price not in offers):
+                return None, "receipt_mismatch", "receipt disagreed with the item, budget, or my offers", evidence
+            if not data.get("sig_seller") or not task_id or data.get("task") != task_id:
+                return None, "invalid_receipt", "receipt lacked a shop signature or matching A2A task id", evidence
+            return data, "deal", "receipt matched my offer, budget, and task", evidence
+    return None, "no_deal", "no receipt was issued", {"task_id": task_id, "offers": offers}
 
 
-def remember(memory: dict, name: str, item: str, receipt: dict | None, reason: str) -> None:
+def remember(memory: dict, name: str, item: str, receipt: dict | None,
+             status: str, detail: str, evidence: dict) -> None:
     entry = memory["shops"].setdefault(name, {"attempts": 0, "deals": 0, "failures": 0})
     entry["attempts"] += 1
     if receipt:
@@ -96,10 +104,31 @@ def remember(memory: dict, name: str, item: str, receipt: dict | None, reason: s
         entry["last_price"] = receipt["price"]
     else:
         entry["failures"] += 1
+        if status == "no_deal":
+            entry["no_deals"] = entry.get("no_deals", 0) + 1
+        elif status in ("receipt_mismatch", "invalid_receipt"):
+            entry["trust_failures"] = entry.get("trust_failures", 0) + 1
+            entry["avoid"] = True
+        elif status == "shop_error":
+            entry["errors"] = entry.get("errors", 0) + 1
     entry["last_item"] = item
-    entry["last_outcome"] = reason
+    entry["last_status"] = status
+    entry["last_outcome"] = detail
+    entry["last_evidence"] = evidence
     save_memory(memory)
     trace("memory_updated", shop=name, memory=entry)
+
+
+def public_review(item: str, receipt: dict | None, status: str) -> tuple[int, str]:
+    if status == "deal" and receipt:
+        return 4, f"Bought {item} for {int(receipt['price'])}; receipt matched my offer and order."
+    if status == "receipt_mismatch":
+        return 1, f"Receipt for {item} did not match my offer or order."
+    if status == "invalid_receipt":
+        return 1, f"Receipt for {item} lacked a seller signature or matching task ID."
+    if status == "shop_error":
+        return 3, f"No completed trade for {item}; a connection or negotiation error occurred."
+    return 3, f"No agreement on {item}; no receipt was issued."
 
 
 def main() -> None:
@@ -113,13 +142,12 @@ def main() -> None:
     chosen, reason = choose_shop(shops, args.item, args.budget, memory)
     try:
         outcome = negotiate(chosen["url"], args.item, args.budget, compact_history=True)
-        receipt, detail = receipt_from_outcome(outcome, args.item, args.budget)
+        receipt, status, detail, evidence = receipt_from_outcome(outcome, args.item, args.budget)
     except Exception as error:
         trace("shop_error", name=chosen["name"], error=f"{type(error).__name__}: {error}")
-        receipt, detail = None, "shop connection or negotiation failed"
-    remember(memory, chosen["name"], args.item, receipt, detail)
-    stars = 4 if receipt else 1 if "disagreed" in detail else 3
-    review = (f"{detail}; {reason}" if receipt else f"{detail} for {args.item} within {args.budget}; {reason}")
+        receipt, status, detail, evidence = None, "shop_error", "shop connection or negotiation failed", {}
+    remember(memory, chosen["name"], args.item, receipt, status, detail, evidence)
+    stars, review = public_review(args.item, receipt, status)
     print(json.dumps({"shop": chosen["url"], "receipt": receipt,
                       "stars": stars, "review": review}, ensure_ascii=False), flush=True)
 
