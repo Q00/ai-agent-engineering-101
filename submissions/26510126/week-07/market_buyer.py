@@ -332,7 +332,12 @@ async def main(args):
         "asks": result.get("asks", []), "offers": result.get("offers", []),
         "receipt": receipt, "problem": problem, "stars": stars, "reason": reason,
     })
-    print(json.dumps({"shop": chosen["url"], "receipt": receipt if deal else None,
+    # A receipt that disagrees with the deal is not handed on: the kit would add our signature (sig_buyer)
+    # and the market would count a price we never agreed to (maple-home, ledger #4334: agreed 212, receipt 242).
+    co_sign = deal and not (problem and cheated({"outcome": "bad_receipt", "problem": problem}))
+    if deal and not co_sign:
+        log("GUARD", "not passing the bad receipt to the kit, so it is never signed by our buyer key")
+    print(json.dumps({"shop": chosen["url"], "receipt": receipt if co_sign else None,
                       "stars": stars, "review": text}, ensure_ascii=False), flush=True)
 
 
