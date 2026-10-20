@@ -12,7 +12,7 @@ claude -p --model sonnet --tools "" --setting-sources "" --no-session-persistenc
 - `agent.json`
   - 판매자: `python seller.py --port {port}`
   - 구매자: `python buyer.py --url {url} --item {item} --budget {budget}`
-- 거래 테스트는 a2a-sdk 1.2.2가 설치된 venv를 켜고 돌렸습니다.
+- 거래 테스트는 a2a-sdk 1.2.3이 설치된 venv를 켜고 돌렸습니다.
 
 | 실행 | 결과 | 시간 | 하니스 호출 |
 |---|---|---|---|
