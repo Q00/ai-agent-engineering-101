@@ -91,6 +91,20 @@ def remember(entry):
 
 # ---------------------------------------------------------------- derived on read
 
+UNREACHABLE_HOURS = 1  # a shop that failed to answer twice within this window is skipped
+
+
+def cheated(trade):
+    """A receipt that disagrees with the deal (price, item, budget, another task). A receipt that only
+    lacks a field (old unsigned format) is incomplete, not cheating. Judged on read from the raw problem
+    text, so trades recorded before this rule are classified the same way."""
+    problem = trade.get("problem") or ""
+    return trade["outcome"] == "bad_receipt" and not problem.startswith(("no receipt", "receipt task None"))
+
+
+def unreachable(trade):
+    return trade.get("end") == "error" and not trade.get("asks")
+
 def events(trade):
     """How the shop answered each of our offers, as short phrases."""
     asks, offers, out = trade.get("asks", []), trade.get("offers", []), []
@@ -111,18 +125,22 @@ def profile(past, item, budget):
     if not past:
         return "you never traded here", False
     past = sorted(past, key=lambda t: t["time"], reverse=True)
-    cheats = [t for t in past if t["outcome"] == "bad_receipt"]
+    cheats = [t for t in past if cheated(t)]
     notes = []
     if cheats:
         notes.append(f"GOTCHA {len(cheats)} bad receipts, latest: {cheats[0]['problem']}")
+    cutoff = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() - UNREACHABLE_HOURS * 3600))
+    down = [t for t in past[:2] if unreachable(t) and t["time"] >= cutoff]
+    if len(down) == 2:
+        notes.append("GOTCHA did not answer the last two times (shop down)")
 
     same = [t for t in past if t["item"] == item][:RECENT]
     if not same:
         others = sorted({t["item"] for t in past})
         notes.insert(0, f"{len(past)} trades, none for a {item} (only {', '.join(others)}); no price evidence for this item")
-        return "; ".join(notes), bool(cheats)
+        return "; ".join(notes), bool(cheats) or len(down) == 2
 
-    deals = [t for t in same if t["outcome"] == "deal"]
+    deals = [t for t in same if t["outcome"] == "deal" or (t["outcome"] == "bad_receipt" and not cheated(t))]
     opens = [t["asks"][0] for t in same if t.get("asks")]
     lows = [min(a for a in t["asks"] if a is not None) for t in same if any(a is not None for a in t.get("asks", []))]
     head = f"last {len(same)} {item} trades: {len(deals)} deals"
@@ -147,7 +165,7 @@ def profile(past, item, budget):
     recent_events = events(same[0])
     if recent_events:
         notes.append(f"last time: {recent_events}")
-    return "; ".join(notes), bool(cheats)
+    return "; ".join(notes), bool(cheats) or len(down) == 2
 
 
 def reviews_line(shop):
@@ -186,7 +204,7 @@ async def pick(shops, memory, item, budget, going, records):
     market = {s["name"]: market_intel.shop_note(s["name"], item, going, records) for s in shops}
     banned = [name for name, (_, bad) in known.items() if bad]
     if banned:
-        log("GUARD", f"not offering shops our memory caught with bad receipts: {banned}")
+        log("GUARD", f"not offering shops our memory caught with bad receipts or found down twice: {banned}")
     cheats = [name for name, (_, bad) in market.items() if bad and name not in banned]
     if cheats:
         log("GUARD", f"not offering shops that kept failing the market's checks: {cheats}")
@@ -214,6 +232,8 @@ def check_receipt(receipt, item, budget, agreed, task_id):
     """The problem with a receipt, or None when it fits the deal we made."""
     if not isinstance(receipt, dict):
         return "no receipt"
+    if receipt.get("task") is None:
+        return "receipt task None: the receipt has no task id (unsigned old format), so it cannot be verified"
     price = buyer.as_int(receipt.get("price"))
     if receipt.get("item") != item:
         return f"receipt names {receipt.get('item')!r}, ordered {item}"
@@ -231,8 +251,12 @@ def review(result, item, budget, problem):
     asks = [a for a in result.get("asks", []) if a is not None]
     offers = result.get("offers", [])
     opened = f"opened at {asks[0]}" if asks else "never named a price"
+    if result.get("state") == "TASK_STATE_COMPLETED" and problem and problem.startswith("receipt task None"):
+        return 3, f"{item} at {offers[-1]}, {opened}, but the receipt has no task id, so it cannot be verified."
     if result.get("state") == "TASK_STATE_COMPLETED" and problem:
         return 1, f"Bad receipt: {problem}."
+    if result.get("state") == "error":
+        return 1, f"No deal: the shop did not answer (connection failed)."
     if result.get("state") == "TASK_STATE_COMPLETED":
         price = offers[-1]
         stars = 5 if price <= 0.85 * budget else 4 if price <= 0.95 * budget else 3
