@@ -1,15 +1,16 @@
-[harness] 5.9s exit 0 in=785ch -> '```json\n{"action":"choose","shop":"Kit Shop","reason":"Kit Shop has a reliable track record with three past deals where receipts matched agreed prices, and no overcharging history."}\n```'
-[choose] http://127.0.0.1:36613: Kit Shop. Kit Shop has a reliable track record with three past deals where receipts matched agreed prices, and no overcharging history.
-[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:36613/
+[choose] summary for the harness: [{"name": "Kit Shop", "reviews": 0, "my_trades": ["bookshelf: walked_away", "bookshelf: walked_away", "lamp: deal at 100", "lamp: deal at 105", "lamp: deal at 105"]}]
+[harness] 9.4s exit 0 in=837ch -> '```json\n{"action":"choose","shop":"Kit Shop","reason":"Only available option with no negative reviews and demonstrated fair pricing on comparable purchases."}\n```'
+[choose] http://127.0.0.1:47683: Kit Shop. Only available option with no negative reviews and demonstrated fair pricing on comparable purchases.
+[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:47683/
 [buyer] -> 'I want to buy a bookshelf'
 [buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
-[harness] 5.9s exit 0 in=815ch -> '{"action":"offer","price":160}'
-[buyer] -> '160' (taskId 380b56f8)
-[buyer] <- TASK_STATE_INPUT_REQUIRED | 160 is too low. Counteroffer: 260.
-[harness] 5.3s exit 0 in=865ch -> '{"action":"offer","price":210}'
-[buyer] -> '210' (taskId 380b56f8)
-[buyer] <- TASK_STATE_INPUT_REQUIRED | 210 is too low. Counteroffer: 260.
-[harness] 6.3s exit 0 in=915ch -> '{"action":"walk_away"}'
+[harness] 4.4s exit 0 in=815ch -> '{"action":"offer","price":180}'
+[buyer] -> '180' (taskId eb900e8a)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 180 is too low. Counteroffer: 260.
+[harness] 7.2s exit 0 in=865ch -> '{"action":"offer","price":220}'
+[buyer] -> '220' (taskId eb900e8a)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 220 is too low. Counteroffer: 260.
+[harness] 16.0s exit 0 in=915ch -> '{"action":"walk_away"}'
 [buyer] walking away
-[harness] 6.2s exit 0 in=801ch -> '```json\n{"action":"review","stars":2,"review":"The shop was inflexible and repeatedly refused to negotiate below 260, making a deal impossible within my 230 budget."}\n```'
-{"shop": "http://127.0.0.1:36613", "receipt": null, "stars": 2, "review": "The shop was inflexible and repeatedly refused to negotiate below 260, making a deal impossible within my 230 budget."}
+[harness] 6.0s exit 0 in=801ch -> '```json\n{"action":"review","stars":2,"review":"Shop was unwilling to negotiate below 260 despite my budget of 230, leading to a failed negotiation and no sale."}\n```'
+{"shop": "http://127.0.0.1:47683", "receipt": null, "stars": 2, "review": "Shop was unwilling to negotiate below 260 despite my budget of 230, leading to a failed negotiation and no sale."}
