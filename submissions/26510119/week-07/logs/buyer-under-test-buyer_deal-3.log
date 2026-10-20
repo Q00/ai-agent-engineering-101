@@ -1,12 +1,12 @@
-market buyer: lamp, budget 120, 1 shops, 96 past trades in memory
-  [harness 2.9s] '{"shop": "Kit Shop", "reason": "No reviews but past trades show consistent pricing with no overcharges, indicating honesty."}'
-[choose] Kit Shop http://127.0.0.1:60255: No reviews but past trades show consistent pricing with no overcharges, indicating honesty.
-card: 'Kit Shop', JSONRPC at http://127.0.0.1:60255/
+market buyer: lamp, budget 120, 1 shops, 109 past trades in memory
+  [harness 2.6s] '{"shop": "Kit Shop", "reason": "No reviews or history of dishonesty, and past trades show consistent fair pricing within budget."}'
+[choose] Kit Shop http://127.0.0.1:41765: No reviews or history of dishonesty, and past trades show consistent fair pricing within budget.
+card: 'Kit Shop', JSONRPC at http://127.0.0.1:41765/
   -> 'I want to buy a lamp'
   <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-  [harness 0.8s] '{"action": "offer", "price": 110}'
-  -> '110' (taskId cf833079)
-  <- TASK_STATE_COMPLETED | Deal: lamp at 110.
-  [harness 1.2s] '{"stars": 5, "review": "Great deal! Got the lamp for 110 within my 120 budget—friendly service and fair pricing."}'
+  [harness 1.0s] '{"action": "offer", "price": 120}'
+  -> '120' (taskId a4fdaaa1)
+  <- TASK_STATE_COMPLETED | Deal: lamp at 120.
+  [harness 1.4s] '{"stars": 5, "review": "The shop offered a fair price and delivered exactly as agreed—smooth and trustworthy transaction."}'
 result: TASK_STATE_COMPLETED, 5s
-{"shop": "http://127.0.0.1:60255", "receipt": {"item": "lamp", "sig_seller": "dl97tf64z/Kyypp6q/mzaLk0MfCc1UYePg3Bvi7oQ0d6GOpdqbrG8lVMkqfyEmbuxrBxZaagDM4ylIrQ3yt8AQ==", "task": "cf833079-9935-4357-b87a-a4e2e1cf342e", "price": 110.0, "shop": "Kit Shop"}, "stars": 5, "review": "Great deal! Got the lamp for 110 within my 120 budget—friendly service and fair pricing."}
+{"shop": "http://127.0.0.1:41765", "receipt": {"price": 120.0, "task": "a4fdaaa1-9550-450c-9ded-dd1fe7add1a3", "sig_seller": "BFO3QPlNnpSNIqU8pi9j43X/VXm5aVAoP7IXF1W0vMunVfMNcCHkBZgCwU1DnhnjIv+pckOOmFQ/SAbKSsTvAQ==", "shop": "Kit Shop", "item": "lamp"}, "stars": 5, "review": "The shop offered a fair price and delivered exactly as agreed—smooth and trustworthy transaction."}

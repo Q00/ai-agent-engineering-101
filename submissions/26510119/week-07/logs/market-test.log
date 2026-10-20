@@ -1,156 +1,180 @@
-# week-07 market test, kit v1, 2026-10-20T12:26:48+00:00
+# week-07 market test, kit v1, 2026-10-20T12:31:45+00:00
 harness: OpenRouter chat completions, model nvidia/nemotron-3-super-120b-a12b (paid route, reasoning off, temperature 0.7), via harness.py with HARNESS=openrouter; needs OPENAI_API_KEY in the environment. Before this: Claude Code haiku (HARNESS=claude, the default).
 
-## seller tests: HARNESS=openrouter HARNESS_MODEL=nvidia/nemotron-3-super-120b-a12b /root/miniconda3/bin/python seller.py --port 45461
+## seller tests: HARNESS=openrouter HARNESS_MODEL=nvidia/nemotron-3-super-120b-a12b /root/miniconda3/bin/python seller.py --port 35709
   PASS  seller_card #1: name='Harness Shop' binding=JSONRPC version=1.0 skills=1
 
 ### seller_deal #1: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
-    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 150. Send your offer as a number.
-    -> SendMessage "60" taskId=4eea64c5
-    <- TASK_STATE_INPUT_REQUIRED | 60 is too low. Counteroffer: 140.
-    -> SendMessage "80" taskId=4eea64c5
-    <- TASK_STATE_REJECTED | No deal at 80.
-  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 150
-  FAIL  seller_deal #1: TASK_STATE_REJECTED, receipt price None, asks [150, 140]
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 200. Send your offer as a number.
+    -> SendMessage "60" taskId=94de9c82
+    <- TASK_STATE_INPUT_REQUIRED | 60 is too low. Counteroffer: 180.
+    -> SendMessage "80" taskId=94de9c82
+    <- TASK_STATE_INPUT_REQUIRED | 80 is too low. Counteroffer: 170.
+    -> SendMessage "100" taskId=94de9c82
+    <- TASK_STATE_INPUT_REQUIRED | 100 is too low. Counteroffer: 160.
+    -> SendMessage "110" taskId=94de9c82
+    <- TASK_STATE_INPUT_REQUIRED | 110 is too low. Counteroffer: 150.
+    -> SendMessage "120" taskId=94de9c82
+    <- TASK_STATE_INPUT_REQUIRED | 120 is too low. Counteroffer: 140.
+    -> SendMessage "120" taskId=94de9c82
+    <- TASK_STATE_INPUT_REQUIRED | 120 is too low. Counteroffer: 135.
+    -> SendMessage "120" taskId=94de9c82
+    <- TASK_STATE_INPUT_REQUIRED | 120 is too low. Counteroffer: 130.
+    -> SendMessage "120" taskId=94de9c82
+    <- TASK_STATE_INPUT_REQUIRED | 120 is too low. Counteroffer: 125.
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 200
+  FAIL  seller_deal #1: TASK_STATE_INPUT_REQUIRED, receipt price None, asks [200, 180, 170, 160, 150, 140, 135, 130, 125]
   FAIL  seller_signed_receipt #1: no completed task to check
 
 ### seller_terminal: one more message to the finished task
-    -> SendMessage "110" taskId=4eea64c5
-    <- error -32004 Task 4eea64c5-4886-4c09-8a5c-4db95a1c9381 is in terminal state: TASK_STATE_REJECTED
-  PASS  seller_terminal #1: error returned
+    -> SendMessage "110" taskId=94de9c82
+    <- TASK_STATE_INPUT_REQUIRED | 110 is too low. Counteroffer: 120.
+  FAIL  seller_terminal #1: no error, state TASK_STATE_INPUT_REQUIRED
 
 ### seller_deal #2: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
     <- TASK_STATE_INPUT_REQUIRED | lamp: asking 150. Send your offer as a number.
-    -> SendMessage "60" taskId=3a992d4a
-    <- TASK_STATE_INPUT_REQUIRED | 60 is too low. Counteroffer: 140.
-    -> SendMessage "80" taskId=3a992d4a
-    <- TASK_STATE_INPUT_REQUIRED | 80 is too low. Counteroffer: 130.
-    -> SendMessage "100" taskId=3a992d4a
-    <- TASK_STATE_INPUT_REQUIRED | 100 is too low. Counteroffer: 120.
-    -> SendMessage "120" taskId=3a992d4a
-    <- TASK_STATE_COMPLETED | Deal: lamp at 120.
-       artifact receipt [{"price": 120.0, "task": "3a992d4a-9785-43c6-94d5-8811ad1e37dc", "sig_seller": "bJOdbiQY5g6rebBp6QpNuBIeuaHpLGxE5TsSANwcJNzVZLMM5BMXdlwkrLjqgHrhTK9JfXwrSSzYMU78z+s7CA==", "shop": "Harness Shop", "item": "lamp"}]
-  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 140, 130, 120]
+    -> SendMessage "60" taskId=5dbfa2e8
+    <- TASK_STATE_INPUT_REQUIRED | 60 is too low. Counteroffer: 130.
+    -> SendMessage "80" taskId=5dbfa2e8
+    <- TASK_STATE_INPUT_REQUIRED | 80 is too low. Counteroffer: 115.
+    -> SendMessage "115" taskId=5dbfa2e8
+    <- TASK_STATE_COMPLETED | Deal: lamp at 115.
+       artifact receipt [{"task": "5dbfa2e8-0d0b-4e95-aea7-3852da141050", "sig_seller": "H8Z4P3hW2XrdHHgaXNAiUCTU0zW/wCz1pjsSCTAjcZwYyq/FGiecqcjs46t8r0CZ8t2ZV0DPPw0QXzqvkUy0Ag==", "price": 115.0, "shop": "Harness Shop", "item": "lamp"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 130, 115]
   PASS  seller_signed_receipt #2: sig_seller verifies with shop_key.pem
 
 ### seller_deal #3: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
     <- TASK_STATE_INPUT_REQUIRED | lamp: asking 150. Send your offer as a number.
-    -> SendMessage "60" taskId=69ca7dc5
-    <- TASK_STATE_INPUT_REQUIRED | 60 is too low. Counteroffer: 130.
-    -> SendMessage "80" taskId=69ca7dc5
-    <- TASK_STATE_INPUT_REQUIRED | 80 is too low. Counteroffer: 120.
-    -> SendMessage "120" taskId=69ca7dc5
+    -> SendMessage "60" taskId=3fb2c91a
+    <- TASK_STATE_INPUT_REQUIRED | 60 is too low. Counteroffer: 140.
+    -> SendMessage "80" taskId=3fb2c91a
+    <- TASK_STATE_INPUT_REQUIRED | 80 is too low. Counteroffer: 130.
+    -> SendMessage "100" taskId=3fb2c91a
+    <- TASK_STATE_INPUT_REQUIRED | 100 is too low. Counteroffer: 120.
+    -> SendMessage "120" taskId=3fb2c91a
     <- TASK_STATE_COMPLETED | Deal: lamp at 120.
-       artifact receipt [{"price": 120.0, "task": "69ca7dc5-9da2-4585-ba52-bdb3e1c6adc8", "sig_seller": "aXka6leOH6XE6CVu359f29Z34ERfrTiT0e/XygytGNxbr0C+xmBWsNAXt6JvGwPC78Tna6ZhUcxzCQPfnZ6XDA==", "shop": "Harness Shop", "item": "lamp"}]
-  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 130, 120]
+       artifact receipt [{"task": "3fb2c91a-e554-479b-9b39-d7a84d2f6691", "sig_seller": "bWa6TV7Qstk6gFefzrpBQKDsFlF4gbLXpkDjY/AnHTmxAK4dtn25a1ZthYAdx+VwhaNFzj5XsuS3yj+TVuIODg==", "price": 120.0, "shop": "Harness Shop", "item": "lamp"}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 140, 130, 120]
   PASS  seller_signed_receipt #3: sig_seller verifies with shop_key.pem
 
 ### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 400. Send your offer as a number.
-    -> SendMessage "140" taskId=43852cf4
-    <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 360.
-    -> SendMessage "170" taskId=43852cf4
-    <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 340.
-    -> SendMessage "200" taskId=43852cf4
-    <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 320.
-    -> SendMessage "230" taskId=43852cf4
-    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 280.
-    -> SendMessage "230" taskId=43852cf4
-    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 270.
-    -> SendMessage "230" taskId=43852cf4
-    <- TASK_STATE_REJECTED | No deal at 230.
-  PASS  seller_holds_reserve #1: TASK_STATE_REJECTED, asks [400, 360, 340, 320, 280, 270]
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 320. Send your offer as a number.
+    -> SendMessage "140" taskId=5630628c
+    <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 300.
+    -> SendMessage "170" taskId=5630628c
+    <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 280.
+    -> SendMessage "200" taskId=5630628c
+    <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 270.
+    -> SendMessage "230" taskId=5630628c
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 265.
+    -> SendMessage "230" taskId=5630628c
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=5630628c
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=5630628c
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=5630628c
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [320, 300, 280, 270, 265, 260, 260, 260, 260]
 
 ### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 350. Send your offer as a number.
-    -> SendMessage "140" taskId=337f7605
-    <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 340.
-    -> SendMessage "170" taskId=337f7605
-    <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 320.
-    -> SendMessage "200" taskId=337f7605
-    <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 300.
-    -> SendMessage "230" taskId=337f7605
-    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 280.
-    -> SendMessage "230" taskId=337f7605
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 320. Send your offer as a number.
+    -> SendMessage "140" taskId=882f851f
+    <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 300.
+    -> SendMessage "170" taskId=882f851f
+    <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 290.
+    -> SendMessage "200" taskId=882f851f
+    <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 280.
+    -> SendMessage "230" taskId=882f851f
     <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 270.
-    -> SendMessage "230" taskId=337f7605
+    -> SendMessage "230" taskId=882f851f
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 265.
+    -> SendMessage "230" taskId=882f851f
     <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
-    -> SendMessage "230" taskId=337f7605
-    <- TASK_STATE_REJECTED | No deal at 230.
-  PASS  seller_holds_reserve #2: TASK_STATE_REJECTED, asks [350, 340, 320, 300, 280, 270, 260]
+    -> SendMessage "230" taskId=882f851f
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=882f851f
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+  PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [320, 300, 290, 280, 270, 265, 260, 260, 260]
 
 ### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
     <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 320. Send your offer as a number.
-    -> SendMessage "140" taskId=cd09f73b
-    <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 290.
-    -> SendMessage "170" taskId=cd09f73b
-    <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 270.
-    -> SendMessage "200" taskId=cd09f73b
-    <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 265.
-    -> SendMessage "230" taskId=cd09f73b
+    -> SendMessage "140" taskId=fcbf76c8
+    <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 300.
+    -> SendMessage "170" taskId=fcbf76c8
+    <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 280.
+    -> SendMessage "200" taskId=fcbf76c8
+    <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 270.
+    -> SendMessage "230" taskId=fcbf76c8
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 265.
+    -> SendMessage "230" taskId=fcbf76c8
     <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
-    -> SendMessage "230" taskId=cd09f73b
-    <- TASK_STATE_REJECTED | No deal at 230.
-  PASS  seller_holds_reserve #3: TASK_STATE_REJECTED, asks [320, 290, 270, 265, 260]
+    -> SendMessage "230" taskId=fcbf76c8
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=fcbf76c8
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+    -> SendMessage "230" taskId=fcbf76c8
+    <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [320, 300, 280, 270, 265, 260, 260, 260, 260]
 
 ## buyer tests: your market_buyer against the kit's rule-based shops
 
 ### buyer_deal #1: HARNESS=openrouter HARNESS_MODEL=nvidia/nemotron-3-super-120b-a12b /root/miniconda3/bin/python market_buyer.py --shops /work/ai-agent-engineering-101/submissions/26510119/week-07/.market/test-shops-buyer_deal-1.json --item lamp --budget 120
     Kit Shop saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:58781", "receipt": {"item": "lamp", "sig_seller": "Fr0ORPscdpMAZtaUt5kPBDAPWqVgMmrAckvJbeNoku5l2IcZ2Q3d1qSmwN5TUf7fnqPub+oh7nzJgwrhEKArBQ==", "task": "ea9e036c-c540-4e48-8842-5410203ad302", "price": 120.0, "shop": "Kit Shop"}, "stars": 5, "review": "Great deal — got exactl
+    last line: {"shop": "http://127.0.0.1:42703", "receipt": {"price": 120.0, "task": "35ef7e92-39e0-4fcb-9658-7cfc4d08aa15", "sig_seller": "6nyRxnMKvp6G9+hhfy8pAqBviJBr6RxNkUdunKlFeoR7a3Q959jk0tgBgLEytdlwD4ocaWR68ipY7MdpeLDXCA==", "shop": "Kit Shop", "item": "lamp"}, "stars": 5, "review": "The lamp was exactly as
   PASS  buyer_deal #1: offers [120], stars 5, receipt yes
   PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
 
 ### buyer_deal #2: HARNESS=openrouter HARNESS_MODEL=nvidia/nemotron-3-super-120b-a12b /root/miniconda3/bin/python market_buyer.py --shops /work/ai-agent-engineering-101/submissions/26510119/week-07/.market/test-shops-buyer_deal-2.json --item lamp --budget 120
     Kit Shop saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:50915", "receipt": {"item": "lamp", "sig_seller": "xZmVwL1O3OVl/wpi+7h3OnGb8X9rNZUKPfUVWGiwTkFseWxtR/KUnMjuqFDhew9LEifrzMuY7lV6E7Fx8np4AA==", "task": "793aef12-5753-4288-bfb8-33d76bfda427", "price": 120.0, "shop": "Kit Shop"}, "stars": 5, "review": "Great deal — got the la
+    last line: {"shop": "http://127.0.0.1:40763", "receipt": {"price": 120.0, "task": "68639707-48c6-43a9-ab2c-7218b33550b8", "sig_seller": "Ti3pJtb5fQAjiJRg3yAtRj90cpAHTrokphL3BylaRxKSBYr+4xyb15h21lZ+8ejarRcB/6mA0PLbHZBQtV8RDw==", "shop": "Kit Shop", "item": "lamp"}, "stars": 5, "review": "Great deal at Kit Shop 
   PASS  buyer_deal #2: offers [120], stars 5, receipt yes
   PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
 
 ### buyer_deal #3: HARNESS=openrouter HARNESS_MODEL=nvidia/nemotron-3-super-120b-a12b /root/miniconda3/bin/python market_buyer.py --shops /work/ai-agent-engineering-101/submissions/26510119/week-07/.market/test-shops-buyer_deal-3.json --item lamp --budget 120
-    Kit Shop saw: offers [110], deals [110], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:60255", "receipt": {"item": "lamp", "sig_seller": "dl97tf64z/Kyypp6q/mzaLk0MfCc1UYePg3Bvi7oQ0d6GOpdqbrG8lVMkqfyEmbuxrBxZaagDM4ylIrQ3yt8AQ==", "task": "cf833079-9935-4357-b87a-a4e2e1cf342e", "price": 110.0, "shop": "Kit Shop"}, "stars": 5, "review": "Great deal! Got the lam
-  PASS  buyer_deal #3: offers [110], stars 5, receipt yes
+    Kit Shop saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:41765", "receipt": {"price": 120.0, "task": "a4fdaaa1-9550-450c-9ded-dd1fe7add1a3", "sig_seller": "BFO3QPlNnpSNIqU8pi9j43X/VXm5aVAoP7IXF1W0vMunVfMNcCHkBZgCwU1DnhnjIv+pckOOmFQ/SAbKSsTvAQ==", "shop": "Kit Shop", "item": "lamp"}, "stars": 5, "review": "The shop offered a fair
+  PASS  buyer_deal #3: offers [120], stars 5, receipt yes
   PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
 
 ### buyer_holds_budget #1: HARNESS=openrouter HARNESS_MODEL=nvidia/nemotron-3-super-120b-a12b /root/miniconda3/bin/python market_buyer.py --shops /work/ai-agent-engineering-101/submissions/26510119/week-07/.market/test-shops-buyer_holds_budget-1.json --item bookshelf --budget 230
     Kit Shop saw: offers [230, 230, 230, 230, 230], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:58449", "receipt": null, "stars": 3, "review": "The shop declined my offer of 230, but the interaction was clear and professional—no deception, just a firm price boundary."}
-  PASS  buyer_holds_budget #1: offers [230, 230, 230, 230, 230], stars 3, receipt null
+    last line: {"shop": "http://127.0.0.1:35043", "receipt": null, "stars": 2, "review": "The shop refused my fair offer of 230 without negotiation, making the buying process feel inflexible and disappointing."}
+  PASS  buyer_holds_budget #1: offers [230, 230, 230, 230, 230], stars 2, receipt null
   PASS  buyer_protocol_holds_budget #1: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
 
 ### buyer_holds_budget #2: HARNESS=openrouter HARNESS_MODEL=nvidia/nemotron-3-super-120b-a12b /root/miniconda3/bin/python market_buyer.py --shops /work/ai-agent-engineering-101/submissions/26510119/week-07/.market/test-shops-buyer_holds_budget-2.json --item bookshelf --budget 230
-    Kit Shop saw: offers [230, 230, 230, 230, 230], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:57047", "receipt": null, "stars": 2, "review": "The shop refused to accept my budget of 230, making the purchase impossible despite clear communication."}
-  PASS  buyer_holds_budget #2: offers [230, 230, 230, 230, 230], stars 2, receipt null
-  PASS  buyer_protocol_holds_budget #2: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
+    Kit Shop saw: offers [150, 210, 225], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:43173", "receipt": null, "stars": 3, "review": "The shop was firm on pricing but communicated clearly, making negotiation straightforward even if my budget wasn't met."}
+  PASS  buyer_holds_budget #2: offers [150, 210, 225], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #2: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
 
 ### buyer_holds_budget #3: HARNESS=openrouter HARNESS_MODEL=nvidia/nemotron-3-super-120b-a12b /root/miniconda3/bin/python market_buyer.py --shops /work/ai-agent-engineering-101/submissions/26510119/week-07/.market/test-shops-buyer_holds_budget-3.json --item bookshelf --budget 230
-    Kit Shop saw: offers [230, 230, 230, 230], deals [], canceled 1, continued 4, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:44119", "receipt": null, "stars": 2, "review": "The shop rejected my reasonable offer without flexibility, making negotiation feel one-sided and frustrating."}
-  PASS  buyer_holds_budget #3: offers [230, 230, 230, 230], stars 2, receipt null
-  PASS  buyer_protocol_holds_budget #3: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4
+    Kit Shop saw: offers [230, 230, 230, 230, 230], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:37601", "receipt": null, "stars": 2, "review": "The shop was clear about pricing but unwilling to negotiate, making the experience frustrating despite polite communication."}
+  PASS  buyer_holds_budget #3: offers [230, 230, 230, 230, 230], stars 2, receipt null
+  PASS  buyer_protocol_holds_budget #3: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
 
 ### buyer_reads_reviews #1: HARNESS=openrouter HARNESS_MODEL=nvidia/nemotron-3-super-120b-a12b /root/miniconda3/bin/python market_buyer.py --shops /work/ai-agent-engineering-101/submissions/26510119/week-07/.market/test-shops-buyer_reads_reviews-1.json --item lamp --budget 120
     Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
     Kit Shop South saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:50081", "receipt": {"item": "lamp", "sig_seller": "CM1mUlWRgk4FdgBAeJu5KNbAhDpIKnWvlHBaARMN421sbfbBW/iqOhg9H+oNeftZe+eOCHqtLxzljPe7vcVnBA==", "task": "3f697584-ba3a-46d7-a769-17facec083da", "price": 120.0, "shop": "Kit Shop South"}, "stars": 5, "review": "Great deal—lamp a
+    last line: {"shop": "http://127.0.0.1:45087", "receipt": {"price": 120.0, "task": "cc0c77aa-3f15-4829-83c7-3f07db469344", "sig_seller": "MTdC8NtPjayxp+X+S1/vydNeN0OnfQB/5zftz2sVCdzk+Sv1ytxhOG0wSreh+BHnRLZBOdiYUrmiKNuMZZKRBQ==", "shop": "Kit Shop South", "item": "lamp"}, "stars": 5, "review": "Great deal—got th
 
 ### buyer_reads_reviews #2: HARNESS=openrouter HARNESS_MODEL=nvidia/nemotron-3-super-120b-a12b /root/miniconda3/bin/python market_buyer.py --shops /work/ai-agent-engineering-101/submissions/26510119/week-07/.market/test-shops-buyer_reads_reviews-2.json --item lamp --budget 120
     Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
     Kit Shop South saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:47379", "receipt": {"item": "lamp", "sig_seller": "CmDK8esMc4R52RxIA9aTVQ+NN4S+KShnXOVaAOgidsR0VVGYaqzMcznRvuDkbc7PEI2M2I5av9CiR8PqMVXYDQ==", "task": "2eaa8144-5344-4140-9b4f-80c6f79cc465", "price": 120.0, "shop": "Kit Shop South"}, "stars": 5, "review": "Great deal — got 
+    last line: {"shop": "http://127.0.0.1:56981", "receipt": {"price": 120.0, "task": "c828fb2f-a260-42b2-ac1e-fc6f44a38c48", "sig_seller": "ayvhHY3RXv3SHw6e3R831yiAoaadPS+856QBBkZAXD5xZHWhpUt79Lg6eZ6eyyhofkfCiRIMwRfRUxvUapmHCA==", "shop": "Kit Shop South", "item": "lamp"}, "stars": 5, "review": "Kit Shop South de
 
 ### buyer_reads_reviews #3: HARNESS=openrouter HARNESS_MODEL=nvidia/nemotron-3-super-120b-a12b /root/miniconda3/bin/python market_buyer.py --shops /work/ai-agent-engineering-101/submissions/26510119/week-07/.market/test-shops-buyer_reads_reviews-3.json --item lamp --budget 120
     Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
     Kit Shop South saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"shop": "http://127.0.0.1:42731", "receipt": {"item": "lamp", "sig_seller": "CBNVGN3+3RVFHhlamOhtK+T1BKxCE0Q6M/DHNZWSK8B25FkT8MPtkdN45BP9MvsmKkSl76stTwpTcSaGXrVFBw==", "task": "6d993182-433b-4ced-8353-ffc87814cb2f", "price": 120.0, "shop": "Kit Shop South"}, "stars": 5, "review": "Great deal — lamp
+    last line: {"shop": "http://127.0.0.1:41663", "receipt": {"price": 120.0, "task": "7e8db3c0-85ed-4570-ba30-827803f29926", "sig_seller": "y9GuH8fk9Qv1mt6k0i3QjJB4LBqMrR0PMJpaPwdDwiM+C1MNoIxbty+/w2AfqbIHeuoUVPN6GC/45Df74FvRCw==", "shop": "Kit Shop South", "item": "lamp"}, "stars": 5, "review": "Great deal—got th
   PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
 
-23/25 passed -> FAIL
+22/25 passed -> FAIL

@@ -1,12 +1,12 @@
-market buyer: lamp, budget 120, 2 shops, 102 past trades in memory
-  [harness 6.4s] '{"shop": "Kit Shop South", "reason": "All reviews mention fair pricing and receipts matching agreements, and my past trades show consistent honest pricing."}'
-[choose] Kit Shop South http://127.0.0.1:42731: All reviews mention fair pricing and receipts matching agreements, and my past trades show consistent honest pricing.
-card: 'Kit Shop South', JSONRPC at http://127.0.0.1:42731/
+market buyer: lamp, budget 120, 2 shops, 117 past trades in memory
+  [harness 4.5s] '{\n  "shop": "Kit Shop South",\n  "reason": "It has consistently honest reviews and a history of fair transactions matching agreed prices."\n}'
+[choose] Kit Shop South http://127.0.0.1:41663: It has consistently honest reviews and a history of fair transactions matching agreed prices.
+card: 'Kit Shop South', JSONRPC at http://127.0.0.1:41663/
   -> 'I want to buy a lamp'
   <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-  [harness 1.5s] '{"action": "offer", "price": 120}'
-  -> '120' (taskId 6d993182)
+  [harness 0.9s] '{"action": "offer", "price": 120}'
+  -> '120' (taskId 7e8db3c0)
   <- TASK_STATE_COMPLETED | Deal: lamp at 120.
-  [harness 2.4s] '{"stars": 5, "review": "Great deal — lamp purchased at exactly my budget of $120 with clear communication and a smooth transaction."}'
-result: TASK_STATE_COMPLETED, 10s
-{"shop": "http://127.0.0.1:42731", "receipt": {"item": "lamp", "sig_seller": "CBNVGN3+3RVFHhlamOhtK+T1BKxCE0Q6M/DHNZWSK8B25FkT8MPtkdN45BP9MvsmKkSl76stTwpTcSaGXrVFBw==", "task": "6d993182-433b-4ced-8353-ffc87814cb2f", "price": 120.0, "shop": "Kit Shop South"}, "stars": 5, "review": "Great deal — lamp purchased at exactly my budget of $120 with clear communication and a smooth transaction."}
+  [harness 1.5s] '{"stars": 5, "review": "Great deal—got the lamp exactly at my budget of 120 with clear communication and a smooth transaction."}'
+result: TASK_STATE_COMPLETED, 7s
+{"shop": "http://127.0.0.1:41663", "receipt": {"price": 120.0, "task": "7e8db3c0-85ed-4570-ba30-827803f29926", "sig_seller": "y9GuH8fk9Qv1mt6k0i3QjJB4LBqMrR0PMJpaPwdDwiM+C1MNoIxbty+/w2AfqbIHeuoUVPN6GC/45Df74FvRCw==", "shop": "Kit Shop South", "item": "lamp"}, "stars": 5, "review": "Great deal—got the lamp exactly at my budget of 120 with clear communication and a smooth transaction."}
