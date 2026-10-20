@@ -1,13 +1,13 @@
-[buyer] card: Kit Shop | JSONRPC http://127.0.0.1:37255/ | item=lamp budget=120 | harness opus
+[buyer] card: Kit Shop | JSONRPC http://127.0.0.1:40507/ | item=lamp budget=120 | harness opus
 [buyer] -> 'I want to buy a lamp.'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-    [harness 3.8s] {"action": "offer", "price": 80, "reason": "Opening well below the 130 ask to leave room to raise in meaningful steps while staying under budget."}
+    [harness 4.0s] {"action": "offer", "price": 80, "reason": "I'm opening well below the 130 ask so there's room to raise my offer in real steps and see how far the seller will drop."}
 [buyer] -> 80  <- TASK_STATE_INPUT_REQUIRED | 80 is too low. Counteroffer: 105.
-    [harness 5.0s] {"action": "offer", "price": 89, "reason": "The seller came down 25 in one step, from 130 to 105, so there's probably more room. Going up 9 is a real move without chasing their ask, and it keeps us well under the 120 budget."}
-[buyer] -> 89  <- TASK_STATE_INPUT_REQUIRED | 89 is too low. Counteroffer: 100.
-    [harness 4.4s] {"action": "offer", "price": 94, "reason": "Seller's concessions are shrinking (130\u2192105\u2192100), so they are likely close to their floor. Offering 94 moves meaningfully toward them while staying well under budget."}
-[buyer] -> 94  <- TASK_STATE_INPUT_REQUIRED | 94 is too low. Counteroffer: 100.
-    [harness 6.4s] {"action": "offer", "price": 97, "reason": "The seller's price drops are getting smaller (130, 105, 100), so they're near their floor. 97 tries to save a little more, and 100 is still within budget if they refuse."}
+    [harness 5.1s] {"action": "offer", "price": 90, "reason": "The seller came down 25 in one step, so they likely have more room. I'm moving up 10 to 90 to show good faith while leaving space to meet in the middle, which is still well under budget."}
+[buyer] -> 90  <- TASK_STATE_INPUT_REQUIRED | 90 is too low. Counteroffer: 100.
+    [harness 5.1s] {"action": "offer", "price": 95, "reason": "The seller's drops are getting smaller (130 to 105, then 105 to 100), so they're probably close to their lowest price. Offering 95 splits the difference and could still save a bit, while staying well under budget."}
+[buyer] -> 95  <- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 100.
+    [harness 7.6s] {"action": "offer", "price": 97, "reason": "The seller is near their floor (their ask fell only 5, from 105 to 100). One small step up to 97 tries to close slightly below their ask, and accepting 100 is still a safe fallback within the 120 budget."}
 [buyer] -> 97  <- TASK_STATE_INPUT_REQUIRED | 97 is too low. Counteroffer: 100.
-    [harness 6.3s] {"action": "offer", "price": 100, "reason": "The seller has held at 100 twice, so they've probably stopped dropping. Another low offer could end the negotiation, so I'm accepting 100, which is under the 120 budget."}
+    [harness 8.0s] {"action": "offer", "price": 100, "reason": "The seller has held firm at 100 after two counteroffers, and four low offers have already been made, so the negotiation may end soon. 100 is well within the 120 budget, so accepting closes the deal safely."}
 [buyer] -> 100  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-[buyer] DEAL lamp at 100.0 (budget 120) after 5 offers, 5 harness calls, 26s
+[buyer] DEAL lamp at 100.0 (budget 120) after 5 offers, 5 harness calls, 30s
