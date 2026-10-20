@@ -5,6 +5,8 @@
 Plain BM25 over each item's name and description, standard library only. It only
 casts the net: numbers ("40 books", "not taller than my desk") are left to the
 harness, which sees the top candidates with their descriptions and picks one.
+At most PER_KIND candidates come from one kind, so a word that only describes the
+buyer's room ("not taller than my desk") cannot fill the list with desk lamps.
 An exact item name (the trade test's "lamp") skips the search.
 """
 import json
@@ -15,6 +17,7 @@ from collections import Counter
 from pathlib import Path
 
 K1, B = 1.5, 0.75
+PER_KIND = 5
 STOP = {"a", "an", "the", "to", "i", "my", "me", "for", "of", "in", "and", "or", "with", "want",
         "buy", "something", "about", "than", "not", "is", "it", "that", "can", "some", "would", "like"}
 ALIAS = {"wooden": "wood", "shelves": "shelf", "couch": "sofa", "light": "lamp", "seat": "chair"}
@@ -57,7 +60,14 @@ class Catalog:
             if s > 0:
                 scored.append((s, item))
         scored.sort(key=lambda x: -x[0])
-        return [item for _, item in scored[:k]]
+        out, per = [], Counter()
+        for _, item in scored:
+            if per[item["kind"]] < PER_KIND:
+                per[item["kind"]] += 1
+                out.append(item)
+            if len(out) == k:
+                break
+        return out
 
 
 if __name__ == "__main__":

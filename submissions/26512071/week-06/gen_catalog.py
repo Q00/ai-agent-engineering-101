@@ -14,11 +14,11 @@ from pathlib import Path
 
 SEED = 6
 FIXED = [
-    {"id": "lamp", "name": "lamp", "reserve": 100,
+    {"id": "lamp", "name": "lamp", "kind": "lamp", "reserve": 100,
      "description": "A plain desk lamp with a metal arm and a warm LED bulb. 45 cm tall."},
-    {"id": "chair", "name": "chair", "reserve": 180,
+    {"id": "chair", "name": "chair", "kind": "chair", "reserve": 180,
      "description": "A plain dining chair in beech wood with a straight back. Seat 46 cm high."},
-    {"id": "bookshelf", "name": "bookshelf", "reserve": 260,
+    {"id": "bookshelf", "name": "bookshelf", "kind": "bookshelf", "reserve": 260,
      "description": "A plain five-shelf bookshelf in pine. 180 cm tall, holds about 150 books."},
 ]
 
@@ -86,7 +86,7 @@ def generate(n=3000):
         article = "An" if style[0] in "AEIOUaeiou" else "A"
         desc = (f"{article} {style} {kind} in {color} {feel}, {purpose}. "
                 f"{h} cm tall, {w} cm wide. {extra(kind, h, w, rng)}")
-        items.append({"id": f"item-{len(items):04d}", "name": name, "reserve": max(10, reserve), "description": desc})
+        items.append({"id": f"item-{len(items):04d}", "name": name, "kind": kind, "reserve": max(10, reserve), "description": desc})
     return items
 
 
