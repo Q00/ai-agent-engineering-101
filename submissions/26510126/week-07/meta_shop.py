@@ -63,6 +63,23 @@ Answer with one JSON object and nothing else:
 {{"open": {{"lamp": <int>, "chair": <int>, "bookshelf": <int>}}, "target": {{"lamp": <int>, "chair": <int>, "bookshelf": <int>}}, "reason": "<one or two sentences>"}}"""
 
 
+def board_row():
+    """Our shop's row on the market board (deals, share, visits), or None."""
+    try:
+        board = httpx.get(f"{market_intel.MARKET}/api/board", timeout=10).json()
+        return next((r for r in board["shops"] if r["name"] == SHOP_NAME), None)
+    except (httpx.HTTPError, ValueError, KeyError):
+        return None
+
+
+def first_result(entries):
+    """When our shop's first result landed: the start of the no-strategy baseline (version 0)."""
+    names = {e["data"]["url"].rstrip("/"): e["data"]["name"] for e in entries
+             if e["kind"] == "join" and e["data"].get("role") == "shop" and e["data"].get("url")}
+    ts = [e["ts"] for e in entries if e["kind"] == "result" and names.get((e["data"].get("shop") or "").rstrip("/")) == SHOP_NAME]
+    return min(ts) if ts else None
+
+
 def load_history():
     try:
         with open(HISTORY) as f:
@@ -95,7 +112,14 @@ def outcome(entries, start, end):
 
 def history_text(history, entries, now):
     if not history:
-        return "(none yet: the shop has run with no strategy; the model picked opening prices itself)"
+        start = first_result(entries)
+        if start is None:
+            return "(none yet: the shop has not sold anything)"
+        o = outcome(entries, start, now)
+        items = "; ".join(f"{k}: {o['items'][k]['deals']} deals, median {o['items'][k]['median_price']}, "
+                          f"profit/h {o['items'][k]['profit_per_hour']}" for k in RESERVE)
+        return (f"v0, no strategy: the model picked opening prices itself, mostly around 250 for a lamp "
+                f"({o['hours']} h, {o['results']} visits ending in a result, {o['deals']} deals): {items}")
     lines = []
     for i, v in enumerate(history):
         end = history[i + 1]["time"] if i + 1 < len(history) else now
@@ -187,7 +211,8 @@ async def cycle(dry_run=False):
     os.makedirs(os.path.dirname(HISTORY), exist_ok=True)
     with open(HISTORY, "a") as f:
         f.write(json.dumps({**strategy, "time": now, "proposal": proposal, "guards": notes,
-                            "going": going, "before": outcome(entries, previous["time"], now) if previous else None},
+                            "going": going, "board": {k: v for k, v in (board_row() or {}).items() if k in ("deals", "share", "visits", "revenue", "stars", "reviews")},
+                            "before": outcome(entries, previous["time"] if previous else (first_result(entries) or now - 1), now)},
                            ensure_ascii=False) + "\n")
 
 

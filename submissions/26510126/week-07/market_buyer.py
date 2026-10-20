@@ -12,7 +12,14 @@
    stay within the budget and carry the task id of this negotiation.
 4. Remember. One JSON line per trade goes to memory.jsonl, keyed by shop name
    (a shop's URL changes each time it restarts its kit).
-5. Review. Stars and review are written by code from what happened, so they are facts.
+5. Review. Stars and review are written by code from what happened, so they are facts:
+   a shop that sent a fake receipt gets one star and the exact mismatch, which lowers its reputation.
+
+The market's public ledger (market_intel.py) adds what every buyer saw, not only us:
+  - a shop that failed the market's checks again and again (wrong item, over budget) is not offered
+  - a shop whose prices for this item sit above the market's upper quartile is not offered
+    when there is a cheaper choice, and the buyer never pays more than PAY_CAP x that quartile
+  - the going price goes into the negotiation prompt
 
 Memory follows LongMemEval-V2 (Wu et al., 2026): memory is there to make the buyer an
 experienced colleague of this market, not to replay history.
@@ -40,12 +47,15 @@ import time
 
 import buyer
 import harness
+import market_intel
 from harness import log
 
 MEMORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory.jsonl")
 RECENT = 5           # trades per shop and item that count as current
 MAX_REVIEWS = 3      # recent reviews per shop shown to the harness
 REVIEW_CHARS = 120   # each review is cut to this length
+GOING_WINDOW = 3 * 3600  # going prices from the last three hours
+PAY_CAP = 1.1        # never pay more than this x the market's upper quartile for the item
 
 PICK_PROMPT = """You are a buyer choosing a shop to buy a {item} from. Your budget is {budget}.
 
@@ -157,16 +167,39 @@ def score(shop, past):
 
 # ---------------------------------------------------------------- pick, trade, check, review
 
-async def pick(shops, memory, item, budget):
+def market_view(item):
+    """(going price of the item or None, per-shop records) from the public ledger; empty when offline."""
+    entries = market_intel.load_ledger(timeout=5.0)
+    going, _ = market_intel.summarize(entries, since=time.time() - GOING_WINDOW)
+    _, shops = market_intel.summarize(entries)
+    return going.get(item), going, shops
+
+
+def expensive(name, item, going, records):
+    g, s = going.get(item), records.get(name)
+    prices = (s or {}).get("prices", {}).get(item)
+    return bool(g and prices and sorted(prices)[len(prices) // 2] > g["p75"])
+
+
+async def pick(shops, memory, item, budget, going, records):
     known = {s["name"]: profile([m for m in memory if m["shop"] == s["name"]], item, budget) for s in shops}
+    market = {s["name"]: market_intel.shop_note(s["name"], item, going, records) for s in shops}
     banned = [name for name, (_, bad) in known.items() if bad]
     if banned:
         log("GUARD", f"not offering shops our memory caught with bad receipts: {banned}")
-    choices = [s for s in shops if s["name"] not in banned] or shops
+    cheats = [name for name, (_, bad) in market.items() if bad and name not in banned]
+    if cheats:
+        log("GUARD", f"not offering shops that kept failing the market's checks: {cheats}")
+    choices = [s for s in shops if s["name"] not in banned + cheats] or shops
+    pricey = [s["name"] for s in choices if expensive(s["name"], item, going, records)]
+    if pricey and len(pricey) < len(choices):
+        log("GUARD", f"not offering shops priced above the market's upper quartile for a {item}: {pricey}")
+        choices = [s for s in choices if s["name"] not in pricey]
     if len(choices) == 1:
         return choices[0], "the only shop left to choose from", known[choices[0]["name"]][0]
 
-    lines = "\n".join(f"- {s['name']}: {reviews_line(s)}. Your memory: {known[s['name']][0]}." for s in choices)
+    lines = "\n".join(f"- {s['name']}: {reviews_line(s)}. Market record: {market[s['name']][0]}. Your memory: {known[s['name']][0]}."
+                      for s in choices)
     log("SHOPS", "\n" + lines)
     answer = await harness.ask(PICK_PROMPT.format(item=item, budget=budget, shops=lines)) or {}
     chosen = next((s for s in choices if s["name"] == answer.get("shop")), None)
@@ -213,13 +246,21 @@ async def main(args):
     with open(args.shops) as f:
         shops = json.load(f)
     memory = load_memory()
-    chosen, reason, known = await pick(shops, memory, args.item, args.budget)
+    g, going, records = market_view(args.item)
+    chosen, reason, known = await pick(shops, memory, args.item, args.budget, going, records)
     log("CHOOSE", f"{chosen['name']} {chosen['url']}: {reason}")
     log("MEMORY", f"{chosen['name']}: {known}")
 
     note = f"What you remember about this shop: {known}.\n" if known != "you never traded here" else ""
+    limit = args.budget
+    if g:
+        note += f"In this market a {args.item} goes for about {g['median']:g} (middle half {g['p25']:g}-{g['p75']:g}).\n"
+        cap = int(g["p75"] * PAY_CAP)
+        if cap < limit:
+            log("GUARD", f"paying at most {cap} ({PAY_CAP} x market upper quartile {g['p75']:g}), below the budget {args.budget}")
+            limit = cap
     try:
-        result = await buyer.shop(chosen["url"], args.item, args.budget, memory=note)
+        result = await buyer.shop(chosen["url"], args.item, limit, memory=note)
     except Exception as e:  # the shop is down or answers garbage
         log("ERROR", f"trade with {chosen['name']} failed: {e!r}")
         result = {"state": "error", "asks": [], "offers": []}
