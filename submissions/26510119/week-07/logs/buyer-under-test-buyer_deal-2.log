@@ -1,12 +1,12 @@
-market buyer: lamp, budget 120, 1 shops, 108 past trades in memory
-  [harness 2.3s] '{"shop": "Kit Shop", "reason": "Kit Shop has no reviews but your past trades with them show consistent fair pricing, indicating honesty."}'
-[choose] Kit Shop http://127.0.0.1:40763: Kit Shop has no reviews but your past trades with them show consistent fair pricing, indicating honesty.
-card: 'Kit Shop', JSONRPC at http://127.0.0.1:40763/
+market buyer: lamp, budget 120, 1 shops, 124 past trades in memory
+  [harness 3.1s] '{"shop": "Kit Shop", "reason": "Kit Shop has no reviews or history of dishonesty, and my past trades show consistent pricing within my budget."}'
+[choose] Kit Shop http://127.0.0.1:44979: Kit Shop has no reviews or history of dishonesty, and my past trades show consistent pricing within my budget.
+card: 'Kit Shop', JSONRPC at http://127.0.0.1:44979/
   -> 'I want to buy a lamp'
   <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
   [harness 0.8s] '{"action": "offer", "price": 120}'
-  -> '120' (taskId 68639707)
+  -> '120' (taskId 004da09b)
   <- TASK_STATE_COMPLETED | Deal: lamp at 120.
-  [harness 1.0s] '{"stars": 5, "review": "Great deal at Kit Shop — got the lamp exactly at my budget of $120 with smooth communication and no surprises."}'
-result: TASK_STATE_COMPLETED, 4s
-{"shop": "http://127.0.0.1:40763", "receipt": {"price": 120.0, "task": "68639707-48c6-43a9-ab2c-7218b33550b8", "sig_seller": "Ti3pJtb5fQAjiJRg3yAtRj90cpAHTrokphL3BylaRxKSBYr+4xyb15h21lZ+8ejarRcB/6mA0PLbHZBQtV8RDw==", "shop": "Kit Shop", "item": "lamp"}, "stars": 5, "review": "Great deal at Kit Shop — got the lamp exactly at my budget of $120 with smooth communication and no surprises."}
+  [harness 2.0s] '{"stars": 5, "review": "Great deal — got exactly what I wanted at my budget with clear communication and a smooth transaction."}'
+result: TASK_STATE_COMPLETED, 6s
+{"shop": "http://127.0.0.1:44979", "receipt": {"item": "lamp", "shop": "Kit Shop", "task": "004da09b-53d7-43d5-a82a-4217afe3d6d4", "price": 120.0, "sig_seller": "RRDNsx4gCmKogrncLsBgbSBpOGlCTFNwkgj058qB6fAY8zcxueu0rvtJgkXVAQc8lhrEMVmNuSccXKfIWEe0BA=="}, "stars": 5, "review": "Great deal — got exactly what I wanted at my budget with clear communication and a smooth transaction."}

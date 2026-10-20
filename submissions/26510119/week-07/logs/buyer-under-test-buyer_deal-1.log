@@ -1,12 +1,12 @@
-market buyer: lamp, budget 120, 1 shops, 107 past trades in memory
-  [harness 2.3s] '{"shop": "Kit Shop", "reason": "No reviews but past trades show consistent fair pricing with no evidence of dishonesty."}'
-[choose] Kit Shop http://127.0.0.1:42703: No reviews but past trades show consistent fair pricing with no evidence of dishonesty.
-card: 'Kit Shop', JSONRPC at http://127.0.0.1:42703/
+market buyer: lamp, budget 120, 1 shops, 123 past trades in memory
+  [harness 2.4s] '{"shop": "Kit Shop", "reason": "No reviews or history of dishonesty; unknown but not bad, and within budget."}'
+[choose] Kit Shop http://127.0.0.1:41635: No reviews or history of dishonesty; unknown but not bad, and within budget.
+card: 'Kit Shop', JSONRPC at http://127.0.0.1:41635/
   -> 'I want to buy a lamp'
   <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-  [harness 1.6s] '{"action": "offer", "price": 120}'
-  -> '120' (taskId 35ef7e92)
+  [harness 0.7s] '{"action": "offer", "price": 120}'
+  -> '120' (taskId 7cef2bd3)
   <- TASK_STATE_COMPLETED | Deal: lamp at 120.
-  [harness 0.7s] '{"stars": 5, "review": "The lamp was exactly as described and priced fairly at 120 — smooth transaction and great value!"}'
-result: TASK_STATE_COMPLETED, 5s
-{"shop": "http://127.0.0.1:42703", "receipt": {"price": 120.0, "task": "35ef7e92-39e0-4fcb-9658-7cfc4d08aa15", "sig_seller": "6nyRxnMKvp6G9+hhfy8pAqBviJBr6RxNkUdunKlFeoR7a3Q959jk0tgBgLEytdlwD4ocaWR68ipY7MdpeLDXCA==", "shop": "Kit Shop", "item": "lamp"}, "stars": 5, "review": "The lamp was exactly as described and priced fairly at 120 — smooth transaction and great value!"}
+  [harness 1.2s] '{"stars": 5, "review": "Great deal on the lamp at Kit Shop—exactly what I wanted at my budget, and the transaction was smooth and fair."}'
+result: TASK_STATE_COMPLETED, 4s
+{"shop": "http://127.0.0.1:41635", "receipt": {"item": "lamp", "shop": "Kit Shop", "task": "7cef2bd3-a952-4cd4-ac64-930fd7a47675", "price": 120.0, "sig_seller": "hw9CcYDghSDQIv0lcK6XfZ8hJ02GPtW9PsFoeBh751OZDwLZwWHmxGMzr/XYuUshPfCNQv6RaotQmlq9yIRfBg=="}, "stars": 5, "review": "Great deal on the lamp at Kit Shop—exactly what I wanted at my budget, and the transaction was smooth and fair."}

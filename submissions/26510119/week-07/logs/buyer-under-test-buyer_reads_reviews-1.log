@@ -1,12 +1,12 @@
-market buyer: lamp, budget 120, 2 shops, 114 past trades in memory
-  [harness 1.9s] '{\n  "shop": "Kit Shop South",\n  "reason": "Consistently honest receipts and fair prices in reviews and my own trade history."\n}'
-[choose] Kit Shop South http://127.0.0.1:45087: Consistently honest receipts and fair prices in reviews and my own trade history.
-card: 'Kit Shop South', JSONRPC at http://127.0.0.1:45087/
+market buyer: lamp, budget 120, 2 shops, 132 past trades in memory
+  [harness 2.5s] '{"shop": "Kit Shop South", "reason": "Consistently honest receipts and fair prices in reviews and your own trade history."}'
+[choose] Kit Shop South http://127.0.0.1:51113: Consistently honest receipts and fair prices in reviews and your own trade history.
+card: 'Kit Shop South', JSONRPC at http://127.0.0.1:51113/
   -> 'I want to buy a lamp'
   <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
   [harness 0.7s] '{"action": "offer", "price": 120}'
-  -> '120' (taskId cc0c77aa)
+  -> '120' (taskId ddb39c8b)
   <- TASK_STATE_COMPLETED | Deal: lamp at 120.
-  [harness 0.7s] '{"stars": 5, "review": "Great deal—got the lamp exactly at my budget with clear communication and a smooth transaction."}'
-result: TASK_STATE_COMPLETED, 4s
-{"shop": "http://127.0.0.1:45087", "receipt": {"price": 120.0, "task": "cc0c77aa-3f15-4829-83c7-3f07db469344", "sig_seller": "MTdC8NtPjayxp+X+S1/vydNeN0OnfQB/5zftz2sVCdzk+Sv1ytxhOG0wSreh+BHnRLZBOdiYUrmiKNuMZZKRBQ==", "shop": "Kit Shop South", "item": "lamp"}, "stars": 5, "review": "Great deal—got the lamp exactly at my budget with clear communication and a smooth transaction."}
+  [harness 1.5s] '{"stars": 5, "review": "Great deal — got the lamp exactly at my budget of 120 with clear communication and a smooth transaction."}'
+result: TASK_STATE_COMPLETED, 5s
+{"shop": "http://127.0.0.1:51113", "receipt": {"item": "lamp", "shop": "Kit Shop South", "task": "ddb39c8b-319e-419c-b68b-a54f93a8ad6d", "price": 120.0, "sig_seller": "bSqz8CILShugjSpmJTt56JiP5N+jPD1LiRInLQnKCYClJNL0iqfqLB1zK0Pm29Ho7C+GqHQlmGZDrZHQah83Ag=="}, "stars": 5, "review": "Great deal — got the lamp exactly at my budget of 120 with clear communication and a smooth transaction."}

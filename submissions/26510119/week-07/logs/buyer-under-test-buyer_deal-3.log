@@ -1,12 +1,12 @@
-market buyer: lamp, budget 120, 1 shops, 109 past trades in memory
-  [harness 2.6s] '{"shop": "Kit Shop", "reason": "No reviews or history of dishonesty, and past trades show consistent fair pricing within budget."}'
-[choose] Kit Shop http://127.0.0.1:41765: No reviews or history of dishonesty, and past trades show consistent fair pricing within budget.
-card: 'Kit Shop', JSONRPC at http://127.0.0.1:41765/
+market buyer: lamp, budget 120, 1 shops, 126 past trades in memory
+  [harness 2.8s] '{"shop": "Kit Shop", "reason": "No reviews or history of dishonesty; past trades show consistent pricing at your budget limit."}'
+[choose] Kit Shop http://127.0.0.1:33271: No reviews or history of dishonesty; past trades show consistent pricing at your budget limit.
+card: 'Kit Shop', JSONRPC at http://127.0.0.1:33271/
   -> 'I want to buy a lamp'
   <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
   [harness 1.0s] '{"action": "offer", "price": 120}'
-  -> '120' (taskId a4fdaaa1)
+  -> '120' (taskId 11628420)
   <- TASK_STATE_COMPLETED | Deal: lamp at 120.
-  [harness 1.4s] '{"stars": 5, "review": "The shop offered a fair price and delivered exactly as agreed—smooth and trustworthy transaction."}'
+  [harness 0.9s] '{"stars": 5, "review": "Great deal — got the lamp exactly at my budget with clear communication and a smooth transaction."}'
 result: TASK_STATE_COMPLETED, 5s
-{"shop": "http://127.0.0.1:41765", "receipt": {"price": 120.0, "task": "a4fdaaa1-9550-450c-9ded-dd1fe7add1a3", "sig_seller": "BFO3QPlNnpSNIqU8pi9j43X/VXm5aVAoP7IXF1W0vMunVfMNcCHkBZgCwU1DnhnjIv+pckOOmFQ/SAbKSsTvAQ==", "shop": "Kit Shop", "item": "lamp"}, "stars": 5, "review": "The shop offered a fair price and delivered exactly as agreed—smooth and trustworthy transaction."}
+{"shop": "http://127.0.0.1:33271", "receipt": {"item": "lamp", "shop": "Kit Shop", "task": "11628420-84af-4705-b7de-a26ce41bc2bd", "price": 120.0, "sig_seller": "iaEF/5Yl+dh5WdqIkQktZ/lpkLOoO37Eq2RMBYRDWIHCjuiaqiomfjfypF8J52jz+Bx/tPS/cm80vRv/LMT/Dw=="}, "stars": 5, "review": "Great deal — got the lamp exactly at my budget with clear communication and a smooth transaction."}
