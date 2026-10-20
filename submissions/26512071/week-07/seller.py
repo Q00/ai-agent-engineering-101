@@ -22,9 +22,16 @@ Challenge 2: `--shop N` (1 to 20) turns this into one shop of a directory. Shop 
 4 of the catalog's kinds (every kind is sold by several shops) with its reserves
 multiplied by a seeded factor between 0.9 and 1.4, and its Agent Card says which kinds.
 Without --shop it is the trade test's shop with the whole catalog.
+
+Week 07: every receipt is {shop, item, price, task} plus sig_seller, an Ed25519
+signature with shop_key.pem (made by market_kit.py or the market test) over the
+canonical JSON of the four fields. `--market` sells only lamp, chair and bookshelf,
+found by word in the first message: a market receipt counts only when its item is
+the ordered item's name, so a catalog name like "... desk lamp 45x20" would not.
 """
 import argparse
 import asyncio
+import base64
 import json
 import random
 import re
@@ -32,6 +39,7 @@ import sys
 import tempfile
 
 import uvicorn
+from cryptography.hazmat.primitives import serialization
 from starlette.applications import Starlette
 
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
@@ -42,11 +50,26 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
+from pathlib import Path
+
 from search import Catalog
 
 NAME = "Sonnet Shop"
 CATALOG = Catalog()
 SHOP_KINDS = 4
+MARKET_ITEMS = ("lamp", "chair", "bookshelf")
+MARKET = False
+KEY_FILE = Path(__file__).with_name("shop_key.pem")
+
+
+def canon(d):
+    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def sign_receipt(receipt):
+    """{shop, item, price, task} plus sig_seller over their canonical JSON."""
+    key = serialization.load_pem_private_key(KEY_FILE.read_bytes(), password=None)
+    return dict(receipt, sig_seller=base64.b64encode(key.sign(canon(receipt))).decode())
 
 
 def open_shop(n):
@@ -121,6 +144,10 @@ async def pick(request):
     hit = CATALOG.exact(request)
     if hit:
         return hit
+    if MARKET:  # only the three items an order can name, found by word
+        words = re.findall(r"[a-z]+", request.lower())
+        name = next((n for n in MARKET_ITEMS if n in words or n + "s" in words), None)
+        return CATALOG.by_name.get(name)
     spec = await ask_json(SPEC.format(request=request, kinds=", ".join(CATALOG.kinds)),
                           lambda d: isinstance(d.get("kinds"), list))
     log(f"[spec] {json.dumps(spec)}")
@@ -218,7 +245,7 @@ class Seller(AgentExecutor):
         log(f"[seller] task={task.id[:8]} {item['id']} offer={offer} -> {action} {price}")
 
         if action == "accept":
-            receipt = {"seller": NAME, "item": item["name"], "id": item["id"], "price": offer}
+            receipt = sign_receipt({"shop": NAME, "item": item["name"], "price": int(offer), "task": task.id})
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"{message} Deal: {item['name']} at {offer}."))
             del self.open[task.id]
@@ -264,7 +291,11 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=9999)
     ap.add_argument("--shop", type=int, help="run as shop N of the challenge 2 directory")
+    ap.add_argument("--market", action="store_true", help="sell only lamp, chair and bookshelf")
     args = ap.parse_args()
+    if args.market:
+        MARKET = True
+        CATALOG = Catalog(items=[i for i in CATALOG.items if i["name"] in MARKET_ITEMS])
     if args.shop:
         open_shop(args.shop)
     uvicorn.run(build(args.port), host="127.0.0.1", port=args.port, log_level="warning")
