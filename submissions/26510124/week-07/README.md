@@ -60,15 +60,46 @@ submissions/26510124/week-07/.venv/bin/python \
 관련 기록은 `logs/market-buyer-restart.log`와 `logs/market-ssh-tunnel.log`에 있다.
 
 2026-10-20 20:39 KST에는 Serveo SSH 443 터널로 가게를 다시 등록했다.
-공개 주소는 https://b38e4d02fbc10cd9-203-246-85-178.serveousercontent.com 이다.
+당시 공개 주소는 https://b38e4d02fbc10cd9-203-246-85-178.serveousercontent.com 이었다.
 터널은 로컬 8900 포트로 전달하고, 판매자 키트는 `--public-url <주소>
 --port 8900 --shop-only`로 실행한다. buyer 키트는 기존 거래의 결과 제출을
 확인한 뒤 `--deployed <주소>`로 재시작해 자기 가게를 후보에서 제외한다.
 두 키트와 SSH는 터미널과 분리된 백그라운드 프로세스다.
 `agent-market/kit.pid`, `shop-kit.pid`, `tunnel.pid`에 각각 PID를 보관한다.
-이 컴퓨터와 네트워크가 유지되어야 하며, 재부팅·터널 단절 시 자동 복구하지 않는다.
+이 초기 실행에는 터널 갱신 기능이 없었다.
 실행 기록은 `logs/round1-shop-start.log`, `logs/round1-serveo-live-20261020T203624.log`,
 `logs/market-kit.log`와 `logs/round1-online-check-20261020.json`에 있다.
+
+### 공개 협상 오류 수정 및 현재 실행
+
+카드만 조회하면 정상이어도, Serveo는 응답 시작까지 약 5초 이상 걸린
+협상 POST에 빈 HTTP 502를 반환했다. `public_market.py`는 공식 키트의
+프록시를 확장해 JSON 앞의 공백을 1초마다 전송한다. 최종 JSON-RPC와
+영수증 원문은 그대로 전달하며, 상류 오류는 JSON-RPC 오류로 보낸다.
+로컬 seller나 공용 `scripts/`를 수정하지 않는다. 공개 주소에서 7~9초가
+걸리는 요청과 같은 taskId의 거래 완료 영수증을 확인했다.
+
+2026-10-20 20:52 KST부터는 `run_public_market.py`가 가게와 buyer를 함께
+관리한다. 익명 터널이 약 10분 후 만료되는 것이 관측돼, 생성 후 180초가
+지나면 현재 주문 처리 후 새 터널을 열고 시장에 새 주소를 등록한다.
+판매자는 계속 실행해 협상 상태를 유지하고 직전 터널도 잠시 유지한다.
+buyer는 새 주소를 자기 가게로 제외한다. 키·거래 기억은 그대로 사용한다.
+
+week-07 폴더에서 `MARKET_OWNER` 환경변수를 설정한 상태로 실행한다
+(claim code는 파일이나 커밋에 넣지 않는다).
+
+```bash
+.venv/bin/python run_public_market.py --name dyishappy
+.venv/bin/python check_public_shop.py
+.venv/bin/python -m unittest test_public_market -v
+```
+
+현재 실행 PID는 `agent-market/live.pid`, 최신 가게 주소는
+`agent-market/shop-url`에 있다. 실행 로그는 `logs/managed-market-20261020.log`,
+터널 원본 로그는 `logs/managed-tunnel-*.log`다. 진단기는 시장 후기나 결과를
+제출하지 않고 가게의 제시 가격을 수락해 영수증을 확인한다.
+컴퓨터 잠자기·재부팅 및 무료 터널의 모든 장애까지 방지하는 것은 아니다.
+공개 재검증에서 일시적인 TLS 전송 오류도 관측되어 실패 로그를 보존했다.
 
 가게 선택과 흥정을 합해 최대 270초, 선택은 그중 최대 90초를 사용한다.
 예산보다 큰 제안은 하네스 검증과 송신 전 검증에서 거부하며 보정해서 보내지 않는다.
