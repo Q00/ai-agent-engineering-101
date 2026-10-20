@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+import base64
 from datetime import datetime, timezone
 import json
 import logging
@@ -11,6 +12,8 @@ import time
 from uuid import uuid4
 
 import uvicorn
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from starlette.applications import Starlette
 
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
@@ -27,6 +30,32 @@ from harness import HarnessError, MODELS, parse_response, run_harness, select_ha
 ROOT = Path(__file__).resolve().parent
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 LOGGER = logging.getLogger(__name__)
+
+
+def canon(data):
+    return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def sign_receipt(receipt, key_path=None):
+    """Sign exactly the Round 2 receipt fields using the existing shop identity."""
+    body = {field: receipt[field] for field in ("shop", "item", "price", "task")}
+    if type(body["price"]) is not int or body["price"] <= 0:
+        raise ValueError("Receipt price must be a positive integer before signing")
+    if any(not isinstance(body[field], str) or not body[field] for field in ("shop", "item", "task")):
+        raise ValueError("Receipt identity fields must be nonempty strings")
+    path = Path(key_path) if key_path is not None else ROOT / "shop_key.pem"
+    key = serialization.load_pem_private_key(path.read_bytes(), password=None)
+    if not isinstance(key, Ed25519PrivateKey):
+        raise ValueError("Shop signing key must be Ed25519")
+    return {**body, "sig_seller": base64.b64encode(key.sign(canon(body))).decode("ascii")}
+
+
+def opening_reference(item):
+    policy = json.loads((ROOT / "shop_policy.json").read_text(encoding="utf-8"))
+    price = policy["opening_reference"][item]
+    if type(price) is not int or price < RESERVES[item]:
+        raise ValueError("Opening reference must be a whole number at or above reserve")
+    return price
 
 
 def requested_item(text):
@@ -71,7 +100,8 @@ def seller_decision(provider, item, buyer_message, task_id, phase, *, offer=None
     instructions = (ROOT / "prompts/seller.txt").read_text(encoding="utf-8")
     context = {"phase": phase, "item": item, "reserve": RESERVES[item],
                "buyer_message": buyer_message, "current_offer": offer, "current_ask": ask,
-               "history": history if history is not None else []}
+               "history": history if history is not None else [],
+               "opening_reference": opening_reference(item)}
     prompt = instructions + "\nInput data:\n" + json.dumps(context, ensure_ascii=False)
     record = {"task_id": task_id, "phase": phase, "provider": provider, "model": MODELS[provider],
               "item": item, "reserve": RESERVES[item], "attempts": [], "status": "failed"}
@@ -158,12 +188,22 @@ class Seller(AgentExecutor):
             # The last number is the ask; the private reason is never copied into this text.
             await up.requires_input(say(f"{item}: asking {decision['price']}"))
         elif decision["action"] == "accept":
-            receipt = {"seller": "Harness Furniture Shop", "item": item, "price": decision["price"]}
+            try:
+                receipt = sign_receipt({"shop": "Harness Furniture Shop", "item": item,
+                                        "price": decision["price"], "task": task.id})
+            except (OSError, ValueError, TypeError) as error:
+                self.open.pop(task.id, None)
+                LOGGER.error("Could not sign receipt for task %s: %s", task.id, type(error).__name__)
+                await up.failed(say("Receipt signing unavailable; purchase could not be confirmed."))
+                return
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(say(f"Deal: {item} at {decision['price']}"))
+            await up.complete(say(f"Deal confirmed: {item} at agreed price {decision['price']}. "
+                                  "A signed receipt for this task is attached."))
             self.open.pop(task.id, None)
         else:
-            await up.reject(say("No deal. Negotiation closed."))
+            await up.reject(say(f"No deal for {item} at your offer {offer}. "
+                                f"We could not agree; the last quoted price was {deal['ask']}. "
+                                "No purchase was completed."))
             self.open.pop(task.id, None)
 
     async def cancel(self, context, event_queue):
