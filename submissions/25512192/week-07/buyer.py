@@ -7,7 +7,9 @@ What the code enforces (whatever the harness says):
   - no offer above the budget (clamped down), accepting means offering the ask and is
     only allowed when the ask is within the budget;
   - every request carries A2A-Version: 1.0, follow-ups carry the task's taskId;
-  - at most MAX_TURNS offers, then CancelTask; walking away also sends CancelTask.
+  - at most MAX_TURNS offers, then CancelTask; walking away also sends CancelTask;
+  - week 07: walking away from an ask within the budget becomes accepting it (haiku did that once
+    in the market test, ask 100 on budget 120).
 """
 import argparse
 import json
@@ -71,6 +73,9 @@ def negotiate(shop, request, item, budget, log=log, tag="buyer", notes=None):
             price = int(round(float(price)))
         except (TypeError, ValueError):
             price = None
+        if action == "walk" and ask is not None and ask <= budget:
+            log(f"[{tag}] GUARD harness walked away from ask {ask} within budget {budget}; accepting it")
+            action = "accept"
         if action == "accept":
             if ask is not None and ask <= budget:
                 price = ask
