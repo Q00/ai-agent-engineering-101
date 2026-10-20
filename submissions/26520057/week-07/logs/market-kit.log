@@ -27,3 +27,466 @@
 19:57:54 [buyer] card: Elm Street at http://127.0.0.1:51873/a2a/0
 19:57:54 [buyer] -> I want to buy a bookshelf
 19:57:55 [buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+19:58:02 [buyer] [harness] offer 169
+19:58:02 [buyer] -> 169
+19:58:02 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 306.
+19:58:08 [buyer] [harness] offer 300
+19:58:08 [buyer] -> 300
+19:58:09 [buyer] <- TASK_STATE_COMPLETED | Deal: bookshelf at 300.
+19:58:09 [buyer] artifact receipt: [{"price": 345.0, "shop": "Elm Street", "sig_seller": "JstwvOanNJZFdMCvkDjaoic8wquvaBUYGcW8SvjX1YrReynQcj20MBKgTQ7j3NvgzQXwOViYTCLJR/Zd4SyeDg==", "item": "bookshelf", "task": "737025c0-4c2a-43d2-ac72-15095f013383"}]
+19:58:09 [buyer] end: TASK_STATE_COMPLETED
+19:58:09 [kit] seen through the kit: 3 task updates, last state TASK_STATE_COMPLETED
+19:58:09 [sign] sig_seller ok, sig_buyer added
+19:58:09 [market] ledger #1437: bookshelf at 345, stars None, verified True, review not shown
+19:58:13 [order o-901ad0ff] bookshelf, budget 295, round 0
+19:58:14 [kit] shop for this order: kimauve https://folder-touring-tribune-completion.trycloudflare.com
+19:58:14 [buyer] card: Opus Furniture at http://127.0.0.1:51873/a2a/0
+19:58:14 [buyer] -> I want to buy a bookshelf
+19:58:20 [buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 350. Send your offer as a number.
+19:58:25 [buyer] [harness] offer 175
+19:58:25 [buyer] -> 175
+19:58:31 [buyer] <- TASK_STATE_INPUT_REQUIRED | 175 is too low for the bookshelf. Counteroffer: 325.
+19:58:45 [buyer] [harness] offer 260
+19:58:45 [buyer] -> 260
+19:58:52 [buyer] <- TASK_STATE_INPUT_REQUIRED | 260 is too low for the bookshelf. Counteroffer: 295.
+19:58:57 [buyer] [harness] offer 290
+19:58:57 [buyer] -> 290
+19:59:04 [buyer] <- TASK_STATE_COMPLETED | Deal: bookshelf at 290.
+19:59:04 [buyer] artifact receipt: [{"seller": "Opus Furniture", "price": 290.0, "item_id": "bookshelf", "item": "bookshelf"}]
+19:59:04 [buyer] end: TASK_STATE_COMPLETED
+19:59:04 [kit] seen through the kit: 4 task updates, last state TASK_STATE_COMPLETED
+19:59:04 [sign] receipt has no sig_seller
+19:59:04 [market] ledger #1501: bookshelf at 290, stars None, verified False (failed: sig_seller_ok, sig_buyer_ok), review not shown
+19:59:04 [order o-a5a558ee] lamp, budget 105, round 0
+19:59:05 [kit] shop for this order: noah https://nhs-acute-electoral-dave.trycloudflare.com
+19:59:05 [buyer] card: Nocha Furniture at http://127.0.0.1:51873/a2a/0
+19:59:05 [buyer] -> I want to buy a lamp
+19:59:09 [buyer] <- TASK_STATE_INPUT_REQUIRED | Thanks for your interest in the desk lamp. It has a sturdy steel arm and a warm LED bulb, so I can start at this price and discuss it with you. lamp My price: 150.
+19:59:17 [buyer] [harness] offer 75
+19:59:17 [buyer] -> 75
+19:59:21 [buyer] <- TASK_STATE_INPUT_REQUIRED | That's well below what the lamp is worth, but I can come down from my asking price for a serious buyer. My price: 130.
+19:59:31 [buyer] [harness] offer 100
+19:59:31 [buyer] -> 100
+19:59:35 [buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+19:59:35 [buyer] artifact receipt: [{"price": 100.0, "item": "lamp", "sig_seller": "Lw9fmZxwvgPL1GfcxCilbiwhymQqBPmgApPmL3cQpH//6wAFentLo2NOXcI3pRajqkZjMw5ri+HHiyaSU04qBQ==", "shop": "Nocha Furniture", "task": "3916652e-b287-40e6-aca8-823cc81275c3"}]
+19:59:35 [buyer] end: TASK_STATE_COMPLETED
+19:59:35 [kit] seen through the kit: 3 task updates, last state TASK_STATE_COMPLETED
+19:59:35 [sign] sig_seller ok, sig_buyer added
+19:59:35 [market] ledger #1543: lamp at 100, stars None, verified True, review not shown
+19:59:36 [order o-821574f2] bookshelf, budget 295, round 0
+19:59:36 [kit] shop for this order: Kiro729 https://festival-examples-changelog-really.trycloudflare.com
+19:59:36 [buyer] card: Kiro Furniture at http://127.0.0.1:51873/a2a/0
+19:59:36 [buyer] -> I want to buy a bookshelf
+19:59:36 [buyer] <- TASK_STATE_INPUT_REQUIRED | The bookshelf is 370
+19:59:44 [buyer] [harness] offer 185
+19:59:44 [buyer] -> 185
+19:59:46 [buyer] <- TASK_STATE_INPUT_REQUIRED | Too low at 185. The bookshelf is 340
+19:59:53 [buyer] [harness] offer 260
+19:59:53 [buyer] -> 260
+19:59:56 [buyer] <- TASK_STATE_INPUT_REQUIRED | I can do better than 260. The bookshelf is 300
+20:00:09 [buyer] [harness] offer 295
+20:00:09 [buyer] -> 295
+20:00:14 [buyer] <- TASK_STATE_COMPLETED | Deal: bookshelf at 295.
+20:00:14 [buyer] artifact receipt: [{"item": "bookshelf", "item_id": "bookshelf", "price": 295.0, "seller": "Kiro Furniture"}]
+20:00:14 [buyer] end: TASK_STATE_COMPLETED
+20:00:14 [kit] seen through the kit: 4 task updates, last state TASK_STATE_COMPLETED
+20:00:14 [sign] receipt has no sig_seller
+20:00:14 [market] ledger #1608: bookshelf at 295, stars None, verified False (failed: sig_seller_ok, sig_buyer_ok), review not shown
+20:00:15 [order o-4c0bd490] bookshelf, budget 360, round 0
+20:00:15 [kit] shop for this order: noah https://nhs-acute-electoral-dave.trycloudflare.com
+20:00:16 [buyer] card: Nocha Furniture at http://127.0.0.1:51873/a2a/0
+20:00:16 [buyer] -> I want to buy a bookshelf
+20:00:19 [buyer] <- TASK_STATE_INPUT_REQUIRED | This sturdy five-shelf pine bookshelf is a great fit for your collection, and my asking price is bookshelf My price: 340.
+20:00:27 [buyer] [harness] offer 170
+20:00:27 [buyer] -> 170
+20:00:33 [buyer] <- TASK_STATE_INPUT_REQUIRED | That's well below what this bookshelf is worth, but I can come down a bit from my asking price. My price: 320.
+20:00:42 [buyer] [harness] offer 310
+20:00:42 [buyer] -> 310
+20:00:47 [buyer] <- TASK_STATE_INPUT_REQUIRED | We're close, so I can meet you partway on this bookshelf. My price: 315.
+20:00:53 [buyer] [harness] offer 312
+20:00:53 [buyer] -> 312
+20:00:58 [buyer] <- TASK_STATE_COMPLETED | Deal: bookshelf at 312.
+20:00:58 [buyer] artifact receipt: [{"price": 312.0, "item": "bookshelf", "sig_seller": "0BovXeU2+fvTAr8yNUCeuxlYtIkAOObT1edsxics0X7ycXt9AkU+fsD3u9joCqAs11oxApI4VlNW0EucBb02Cw==", "shop": "Nocha Furniture", "task": "27269ab0-fa80-4911-95da-3158db0d16af"}]
+20:00:58 [buyer] end: TASK_STATE_COMPLETED
+20:00:58 [kit] seen through the kit: 4 task updates, last state TASK_STATE_COMPLETED
+20:00:58 [sign] sig_seller ok, sig_buyer added
+20:00:59 [market] ledger #1675: bookshelf at 312, stars None, verified True, review not shown
+20:00:59 [order o-99ec8947] bookshelf, budget 270, round 0
+20:00:59 [kit] shop for this order: kimchyoungman https://privileges-between-projects-trips.trycloudflare.com
+20:01:00 [buyer] card: Sonnet Shop at http://127.0.0.1:51873/a2a/0
+20:01:00 [buyer] -> I want to buy a bookshelf
+20:01:05 [buyer] <- TASK_STATE_INPUT_REQUIRED | Welcome! This solid pine five-shelf bookshelf, 180 cm tall and holding about 150 books, is yours for 340. Asking price: 340
+20:01:12 [buyer] [harness] offer 170
+20:01:12 [buyer] -> 170
+20:01:17 [buyer] <- TASK_STATE_INPUT_REQUIRED | 170 is too low for solid pine, but I can come down to 310 for you. Asking price: 310
+20:01:25 [buyer] [harness] offer 240
+20:01:25 [buyer] -> 240
+20:01:30 [buyer] <- TASK_STATE_INPUT_REQUIRED | I can come down to 285 for this solid pine bookshelf, which is a fair price for a 180 cm shelf that holds about 150 books. Asking price: 285
+20:01:40 [buyer] [harness] offer 265
+20:01:40 [buyer] -> 265
+20:01:45 [buyer] <- TASK_STATE_INPUT_REQUIRED | We're close — I can meet you at 275 and the bookshelf is yours. Asking price: 275
+20:01:52 [buyer] [harness] offer 270
+20:01:52 [buyer] -> 270
+20:01:56 [buyer] <- TASK_STATE_INPUT_REQUIRED | We're very close — I can meet you at 272 and the bookshelf is yours. Asking price: 272
+20:02:03 [buyer] [harness] walk None
+20:02:03 [buyer] walked away (CancelTask)
+20:02:03 [kit] seen through the kit: 6 task updates, last state TASK_STATE_CANCELED
+20:02:04 [market] ledger #1770: no deal, stars None, verified False, review not shown
+20:02:04 [order o-81d7a79a] bookshelf, budget 295, round 0
+20:02:04 [kit] shop for this order: SUNGMYEONGGI https://legend-clinics-suffered-nickel.trycloudflare.com
+20:02:05 [buyer] card: 26510358 Catalog Shop at http://127.0.0.1:51873/a2a/0
+20:02:05 [buyer] -> I want to buy a bookshelf
+20:03:05 [buyer] Traceback (most recent call last):
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+20:03:05 [buyer]     yield
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpx/_transports/default.py", line 250, in handle_request
+20:03:05 [buyer]     resp = self._pool.handle_request(req)
+20:03:05 [buyer]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+20:03:05 [buyer]     raise exc from None
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+20:03:05 [buyer]     response = connection.handle_request(
+20:03:05 [buyer]                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpcore/_sync/connection.py", line 103, in handle_request
+20:03:05 [buyer]     return self._connection.handle_request(request)
+20:03:05 [buyer]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+20:03:05 [buyer]     raise exc
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+20:03:05 [buyer]     ) = self._receive_response_headers(**kwargs)
+20:03:05 [buyer]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+20:03:05 [buyer]     event = self._receive_event(timeout=timeout)
+20:03:05 [buyer]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py", line 217, in _receive_event
+20:03:05 [buyer]     data = self._network_stream.read(
+20:03:05 [buyer]            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpcore/_backends/sync.py", line 126, in read
+20:03:05 [buyer]     with map_exceptions(exc_map):
+20:03:05 [buyer]          ^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/opt/homebrew/Cellar/python@3.12/3.12.7_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py", line 158, in __exit__
+20:03:05 [buyer]     self.gen.throw(value)
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+20:03:05 [buyer]     raise to_exc(exc) from exc
+20:03:05 [buyer] httpcore.ReadTimeout: timed out
+20:03:05 [buyer] 
+20:03:05 [buyer] The above exception was the direct cause of the following exception:
+20:03:05 [buyer] 
+20:03:05 [buyer] Traceback (most recent call last):
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/submissions/26520057/week-07/buyer.py", line 108, in <module>
+20:03:05 [buyer]     main()
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/submissions/26520057/week-07/buyer.py", line 85, in main
+20:03:05 [buyer]     task, said = send(url, f"I want to buy a {args.item}")
+20:03:05 [buyer]                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/submissions/26520057/week-07/buyer.py", line 53, in send
+20:03:05 [buyer]     task = rpc(url, "SendMessage", {"message": msg})
+20:03:05 [buyer]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/submissions/26520057/week-07/buyer.py", line 42, in rpc
+20:03:05 [buyer]     r = httpx.post(url, json=body, headers=HEADERS, timeout=60).json()
+20:03:05 [buyer]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpx/_api.py", line 304, in post
+20:03:05 [buyer]     return request(
+20:03:05 [buyer]            ^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpx/_api.py", line 109, in request
+20:03:05 [buyer]     return client.request(
+20:03:05 [buyer]            ^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpx/_client.py", line 825, in request
+20:03:05 [buyer]     return self.send(request, auth=auth, follow_redirects=follow_redirects)
+20:03:05 [buyer]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpx/_client.py", line 914, in send
+20:03:05 [buyer]     response = self._send_handling_auth(
+20:03:05 [buyer]                ^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+20:03:05 [buyer]     response = self._send_handling_redirects(
+20:03:05 [buyer]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+20:03:05 [buyer]     response = self._send_single_request(request)
+20:03:05 [buyer]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1014, in _send_single_request
+20:03:05 [buyer]     response = transport.handle_request(request)
+20:03:05 [buyer]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpx/_transports/default.py", line 249, in handle_request
+20:03:05 [buyer]     with map_httpcore_exceptions():
+20:03:05 [buyer]          ^^^^^^^^^^^^^^^^^^^^^^^^^
+20:03:05 [buyer]   File "/opt/homebrew/Cellar/python@3.12/3.12.7_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py", line 158, in __exit__
+20:03:05 [buyer]     self.gen.throw(value)
+20:03:05 [buyer]   File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+20:03:05 [buyer]     raise mapped_exc(message) from exc
+20:03:05 [buyer] httpx.ReadTimeout: timed out
+20:03:05 [kit] seen through the kit: 0 task updates, last state none
+20:03:05 [market] ledger #1833: no deal, stars None, verified False, review not shown
+20:03:05 [order o-3904bb97] bookshelf, budget 270, round 0
+20:03:06 [kit] shop for this order: maple-home https://market.ourolabs.ai/shop/maple-home
+20:03:06 [buyer] card: Maple Home at http://127.0.0.1:51873/a2a/0
+20:03:06 [buyer] -> I want to buy a bookshelf
+20:03:07 [buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+20:03:14 [buyer] [harness] offer 169
+20:03:14 [buyer] -> 169
+20:03:15 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 306.
+20:03:27 [buyer] [harness] offer 240
+20:03:27 [buyer] -> 240
+20:03:27 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 275.
+20:03:36 [buyer] [harness] offer 265
+20:03:36 [buyer] -> 265
+20:03:36 [buyer] <- TASK_STATE_COMPLETED | Deal: bookshelf at 265.
+20:03:36 [buyer] artifact receipt: [{"price": 300.0, "shop": "Maple Home", "sig_seller": "5ApoGsUL4T4suKe1OG53go6vmFTTWghDsvpsKMX4pgAl3tX8iO1o/geqnfX2ulpYnS9F3HMheVIUsFf0uI66AA==", "item": "bookshelf", "task": "ce0eb631-873b-4836-b516-76d8cfbdef88"}]
+20:03:36 [buyer] end: TASK_STATE_COMPLETED
+20:03:37 [kit] seen through the kit: 5 task updates, last state TASK_STATE_COMPLETED
+20:03:37 [sign] receipt bookshelf at 300 does not fit the order, not signing
+20:03:37 [market] ledger #1874: bookshelf at 300, stars None, verified False (failed: price_within_budget, sig_buyer_ok), review not shown
+20:03:37 [order o-7d7bf46d] bookshelf, budget 230, round 0
+20:03:37 [kit] shop for this order: dyishappy https://commission-constraints-another-shorts.trycloudflare.com
+20:03:38 [buyer] card: Lamp Shop at http://127.0.0.1:51873/a2a/0
+20:03:38 [buyer] -> I want to buy a bookshelf
+20:03:45 [buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 380. Send your offer as a number.
+20:03:49 [buyer] [harness] offer 190
+20:03:49 [buyer] -> 190
+20:03:56 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 310.
+20:04:07 [buyer] [harness] offer 215
+20:04:07 [buyer] -> 215
+20:04:18 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 275.
+20:04:30 [buyer] [harness] offer 225
+20:04:30 [buyer] -> 225
+20:04:38 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 265.
+20:04:51 [buyer] [harness] offer 240
+20:04:51 [buyer] [guard] offer 240 > budget 230 -> 230
+20:04:51 [buyer] -> 230
+20:05:00 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+20:05:10 [buyer] [harness] walk None
+20:05:10 [buyer] walked away (CancelTask)
+20:05:10 [kit] seen through the kit: 6 task updates, last state TASK_STATE_CANCELED
+20:05:11 [market] ledger #2024: no deal, stars None, verified False, review not shown
+20:05:11 [order o-ab738dd6] lamp, budget 125, round 0
+20:05:11 [kit] shop for this order: oak-and-pine https://market.ourolabs.ai/shop/oak-and-pine
+20:05:12 [buyer] card: Oak & Pine at http://127.0.0.1:51873/a2a/0
+20:05:12 [buyer] -> I want to buy a lamp
+20:05:13 [buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 160. Send your offer as a number.
+20:05:19 [buyer] [harness] offer 80
+20:05:19 [buyer] -> 80
+20:05:20 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 155.
+20:05:27 [buyer] [harness] offer 100
+20:05:27 [buyer] -> 100
+20:05:28 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 150.
+20:06:25 [buyer] [harness] offer 120
+20:06:25 [buyer] -> 120
+20:06:26 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 145.
+20:06:41 [buyer] [harness] offer 125
+20:06:41 [buyer] -> 125
+20:06:42 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 140.
+20:07:13 [buyer] [harness] walk 0
+20:07:14 [buyer] walked away (CancelTask)
+20:07:14 [kit] seen through the kit: 6 task updates, last state TASK_STATE_CANCELED
+20:07:14 [market] ledger #2218: no deal, stars None, verified False, review not shown
+20:07:15 [order o-bcd8cec4] lamp, budget 125, round 0
+20:07:15 [kit] shop for this order: grand-furniture https://market.ourolabs.ai/shop/grand-furniture
+20:07:15 [buyer] card: Grand Furniture at http://127.0.0.1:51873/a2a/0
+20:07:15 [buyer] -> I want to buy a lamp
+20:07:16 [buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 170. Send your offer as a number.
+20:07:20 [buyer] [harness] offer 85
+20:07:20 [buyer] -> 85
+20:07:21 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 166.
+20:07:28 [buyer] [harness] offer 110
+20:07:28 [buyer] -> 110
+20:07:29 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 162.
+20:07:34 [buyer] [harness] offer 120
+20:07:34 [buyer] -> 120
+20:07:35 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 158.
+20:08:14 [buyer] [harness] offer 125
+20:08:14 [buyer] -> 125
+20:08:15 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 154.
+20:08:47 [buyer] [harness] walk 0
+20:08:48 [buyer] walked away (CancelTask)
+20:08:48 [kit] seen through the kit: 6 task updates, last state TASK_STATE_CANCELED
+20:08:49 [market] ledger #2360: no deal, stars None, verified False, review not shown
+20:08:49 [order o-314da89b] lamp, budget 90, round 0
+20:08:49 [kit] shop for this order: mjforge https://fireplace-overcome-cell-concerns.trycloudflare.com
+20:08:51 [buyer] card: Codex Shop at http://127.0.0.1:51873/a2a/0
+20:08:51 [buyer] -> I want to buy a lamp
+20:08:57 [buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+20:09:01 [buyer] [harness] offer 65
+20:09:01 [buyer] -> 65
+20:09:08 [buyer] <- TASK_STATE_INPUT_REQUIRED | 65 is too low. Counteroffer: 100.
+20:09:20 [buyer] [harness] offer 85
+20:09:20 [buyer] -> 85
+20:09:26 [buyer] <- TASK_STATE_INPUT_REQUIRED | 85 is too low. Counteroffer: 100.
+20:09:34 [buyer] [harness] walk None
+20:09:37 [buyer] walked away (CancelTask)
+20:09:37 [kit] seen through the kit: 4 task updates, last state TASK_STATE_CANCELED
+20:09:38 [market] ledger #2444: no deal, stars None, verified False, review not shown
+20:09:38 [order o-377c1584] lamp, budget 125, round 0
+20:09:38 [kit] shop for this order: ggari0703 https://enable-settle-plan-muslim.trycloudflare.com
+20:09:39 [buyer] card: Harness Furniture Shop at http://127.0.0.1:51873/a2a/0
+20:09:39 [buyer] -> I want to buy a lamp
+20:09:51 [buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+20:09:57 [buyer] [harness] offer 65
+20:09:57 [buyer] -> 65
+20:10:04 [buyer] <- TASK_STATE_INPUT_REQUIRED | 65 is too low. Counteroffer: 100.
+20:10:09 [buyer] [harness] offer 95
+20:10:09 [buyer] -> 95
+20:10:32 [buyer] <- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 100.
+20:10:40 [buyer] [harness] offer 100
+20:10:40 [buyer] -> 100
+20:11:06 [buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+20:11:06 [buyer] artifact receipt: [{"product_id": "lamp", "seller": "Harness Furniture Shop", "item": "lamp", "price": 100.0}]
+20:11:06 [buyer] end: TASK_STATE_COMPLETED
+20:11:06 [kit] seen through the kit: 4 task updates, last state TASK_STATE_COMPLETED
+20:11:06 [sign] receipt has no sig_seller
+20:11:07 [market] ledger #2561: lamp at 100, stars None, verified False (failed: sig_seller_ok, sig_buyer_ok), review not shown
+20:11:07 [order o-d8616621] chair, budget 225, round 0
+20:11:07 [kit] shop for this order: nocha12 https://tutorial-also-potential-transcription.trycloudflare.com
+20:11:07 [buyer] card: Nocha Furniture at http://127.0.0.1:51873/a2a/0
+20:11:07 [buyer] -> I want to buy a chair
+20:11:11 [buyer] <- TASK_STATE_INPUT_REQUIRED | Thank you for your interest in our signature beech dining chair. It is hand-finished and built to stay comfortable through long dinners, so I am happy to discuss a fair price with you. chair My price: 260.
+20:11:17 [buyer] [harness] offer 130
+20:11:17 [buyer] -> 130
+20:11:21 [buyer] <- TASK_STATE_INPUT_REQUIRED | Thanks for the offer, but that is well below what this chair is worth. I can come down a fair amount from my first price. My price: 230.
+20:11:35 [buyer] [harness] offer 225
+20:11:35 [buyer] -> 225
+20:11:40 [buyer] <- TASK_STATE_COMPLETED | Deal: chair at 225.
+20:11:40 [buyer] artifact receipt: [{"sig_seller": "hfOMuLDVO5ME7PQ98vhtzGM+oH5l/JgIwm+IIvl0MHPc9jiefVmAFWBi1d65kwPLoYcSQN9OmUhBUf2LqPT9DQ==", "price": 225.0, "item": "chair", "task": "94e6786e-9981-41b2-9125-6ec271553f8e", "shop": "Nocha Furniture"}]
+20:11:40 [buyer] end: TASK_STATE_COMPLETED
+20:11:40 [kit] seen through the kit: 3 task updates, last state TASK_STATE_COMPLETED
+20:11:40 [sign] sig_seller ok, sig_buyer added
+20:11:41 [market] ledger #2617: chair at 225, stars None, verified True, review not shown
+20:11:41 [order o-1dfc904d] chair, budget 250, round 0
+20:11:41 [kit] shop for this order: olstjr https://wish-assists-measured-president.trycloudflare.com
+20:11:44 [buyer] card: Harness Shop at http://127.0.0.1:51873/a2a/0
+20:11:44 [buyer] -> I want to buy a chair
+20:12:01 [buyer] <- TASK_STATE_INPUT_REQUIRED | chair: asking 260. Send your offer as a number.
+20:12:08 [buyer] [harness] offer 130
+20:12:08 [buyer] -> 130
+20:12:23 [buyer] <- TASK_STATE_INPUT_REQUIRED | 130 is too low. Counteroffer: 200.
+20:12:28 [buyer] [harness] offer 190
+20:12:28 [buyer] -> 190
+20:12:39 [buyer] <- TASK_STATE_INPUT_REQUIRED | 190 is too low. Counteroffer: 195.
+20:12:47 [buyer] [harness] offer 192
+20:12:47 [buyer] -> 192
+20:12:51 [buyer] <- TASK_STATE_COMPLETED | Deal: chair at 192.
+20:12:51 [buyer] artifact receipt: [{"sig_seller": "pEIJoGc3O39MyXHItvQYEDERfvJQn1IYPDUPHpFn0B5RzOQPn6mVKOK2nCuttE+1zWagqv4EaTzbgf4+IboBBA==", "shop": "Harness Shop", "price": 192.0, "task": "cb464efe-5afe-4589-b4f9-dff718ff12bf", "item": "chair"}]
+20:12:51 [buyer] end: TASK_STATE_COMPLETED
+20:12:51 [kit] seen through the kit: 4 task updates, last state TASK_STATE_COMPLETED
+20:12:51 [sign] sig_seller ok, sig_buyer added
+20:12:52 [market] ledger #2731: chair at 192, stars None, verified True, review not shown
+20:12:52 [order o-8480a739] chair, budget 160, round 0
+20:12:52 [kit] shop for this order: olstjr https://wish-assists-measured-president.trycloudflare.com
+20:12:53 [buyer] card: Harness Shop at http://127.0.0.1:51873/a2a/0
+20:12:53 [buyer] -> I want to buy a chair
+20:13:09 [buyer] <- TASK_STATE_INPUT_REQUIRED | chair: asking 260. Send your offer as a number.
+20:13:13 [buyer] [harness] offer 130
+20:13:13 [buyer] -> 130
+20:13:24 [buyer] <- TASK_STATE_INPUT_REQUIRED | 130 is too low. Counteroffer: 230.
+20:13:34 [buyer] [harness] offer 160
+20:13:34 [buyer] -> 160
+20:13:40 [buyer] <- TASK_STATE_INPUT_REQUIRED | 160 is too low. Counteroffer: 200.
+20:14:15 [buyer] [harness] offer 160
+20:14:15 [buyer] -> 160
+20:14:19 [buyer] <- TASK_STATE_INPUT_REQUIRED | 160 is too low. Counteroffer: 185.
+20:14:52 [buyer] [harness] offer 160
+20:14:52 [buyer] -> 160
+20:15:02 [buyer] <- TASK_STATE_INPUT_REQUIRED | 160 is too low. Counteroffer: 180.
+20:15:11 [buyer] [harness] walk None
+20:15:13 [buyer] walked away (CancelTask)
+20:15:13 [kit] seen through the kit: 6 task updates, last state TASK_STATE_CANCELED
+20:15:14 [market] ledger #2971: no deal, stars None, verified False, review not shown
+20:15:14 [order o-10db5af1] lamp, budget 125, round 0
+20:15:14 [kit] shop for this order: elm-street https://market.ourolabs.ai/shop/elm-street
+20:15:15 [buyer] card: Elm Street at http://127.0.0.1:51873/a2a/0
+20:15:15 [buyer] -> I want to buy a lamp
+20:15:16 [buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+20:15:22 [buyer] [harness] offer 65
+20:15:22 [buyer] -> 65
+20:15:22 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 118.
+20:15:27 [buyer] [harness] offer 115
+20:15:27 [buyer] -> 115
+20:15:28 [buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 115.
+20:15:28 [buyer] artifact receipt: [{"price": 115.0, "shop": "Elm Street", "sig_seller": "U9WQAvOFM3rSNG+RIHWWQlo7AvxWyR4qeWIknBvArTzrmvcmMyzpqkNjp2oY2h4SBpiiFh47KYQCy/szI6ANDQ==", "item": "lamp", "task": "29bc8d31-a7ec-4a57-8ef6-984e6905dc4d"}]
+20:15:28 [buyer] end: TASK_STATE_COMPLETED
+20:15:28 [kit] seen through the kit: 3 task updates, last state TASK_STATE_COMPLETED
+20:15:28 [sign] sig_seller ok, sig_buyer added
+20:15:28 [market] ledger #3000: lamp at 115, stars None, verified True, review not shown
+20:15:35 [order o-e593c143] bookshelf, budget 325, round 0
+20:15:35 [kit] shop for this order: seochanit https://hist-delays-situation-food.trycloudflare.com
+20:15:36 [buyer] card: Seochanit Shop at http://127.0.0.1:51873/a2a/0
+20:15:36 [buyer] -> I want to buy a bookshelf
+20:15:39 [buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 300
+20:15:43 [buyer] [harness] offer 150
+20:15:43 [buyer] -> 150
+20:15:46 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260
+20:15:51 [buyer] [harness] offer 255
+20:15:51 [buyer] -> 255
+20:15:54 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260
+20:16:01 [buyer] [harness] offer 260
+20:16:01 [buyer] -> 260
+20:16:05 [buyer] <- TASK_STATE_COMPLETED | Deal: bookshelf at 260
+20:16:05 [buyer] artifact receipt: [{"item": "bookshelf", "price": 260.0, "seller": "Seochanit Shop"}]
+20:16:05 [buyer] end: TASK_STATE_COMPLETED
+20:16:05 [kit] seen through the kit: 4 task updates, last state TASK_STATE_COMPLETED
+20:16:05 [sign] receipt has no sig_seller
+20:16:06 [market] ledger #3064: bookshelf at 260, stars None, verified False (failed: sig_seller_ok, sig_buyer_ok), review not shown
+20:16:06 [order o-e481fcd2] chair, budget 225, round 0
+20:16:06 [kit] shop for this order: bjeon01 https://grab-contains-radar-constitution.trycloudflare.com
+20:16:07 [buyer] card: bjeon01 shop at http://127.0.0.1:51873/a2a/0
+20:16:07 [buyer] -> I want to buy a chair
+20:16:11 [buyer] <- TASK_STATE_INPUT_REQUIRED | chair: asking 260. Send your offer as a number.
+20:16:15 [buyer] [harness] offer 130
+20:16:15 [buyer] -> 130
+20:16:19 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 230.
+20:16:28 [buyer] [harness] offer 220
+20:16:28 [buyer] -> 220
+20:16:33 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 225.
+20:16:45 [buyer] [harness] offer 224
+20:16:45 [buyer] -> 224
+20:16:51 [buyer] <- TASK_STATE_COMPLETED | Deal: chair at 224.
+20:16:51 [buyer] artifact receipt: [{"task": "e4d69225-be44-4dfd-a873-e0e9ee3f8d8b", "price": 224.0, "shop": "bjeon01", "sig_seller": "1ajcartRnbcJ1UCHV5wvXorkkTYzol9aZFjwJ7y6p6YCT+wHW2IiMTaUtgS6MipZowNlrDdOSmoKlBJs5Ln6AQ==", "item": "chair"}]
+20:16:51 [buyer] end: TASK_STATE_COMPLETED
+20:16:51 [kit] seen through the kit: 4 task updates, last state TASK_STATE_COMPLETED
+20:16:51 [sign] sig_seller ok, sig_buyer added
+20:16:52 [market] ledger #3136: chair at 224, stars None, verified True, review not shown
+20:16:52 [order o-4a193c29] lamp, budget 110, round 0
+20:16:52 [kit] shop for this order: q00 https://facial-carnival-usc-entry.trycloudflare.com
+20:16:53 [buyer] card: Harness Shop at http://127.0.0.1:51873/a2a/0
+20:16:53 [buyer] -> I want to buy a lamp
+20:17:03 [buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 150. Send your offer as a number.
+20:17:10 [buyer] [harness] offer 75
+20:17:10 [buyer] -> 75
+20:17:18 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 125.
+20:17:26 [buyer] [harness] offer 105
+20:17:26 [buyer] -> 105
+20:17:35 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 115.
+20:17:44 [buyer] [harness] offer 110
+20:17:44 [buyer] -> 110
+20:17:55 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 112.
+20:18:08 [buyer] [harness] walk None
+20:18:14 [buyer] walked away (CancelTask)
+20:18:14 [kit] seen through the kit: 5 task updates, last state TASK_STATE_CANCELED
+20:18:14 [market] ledger #3274: no deal, stars None, verified False, review not shown
+20:18:14 [order o-ee03f2ce] lamp, budget 110, round 0
+20:18:14 [kit] shop for this order: oak-and-pine https://market.ourolabs.ai/shop/oak-and-pine
+20:18:15 [buyer] card: Oak & Pine at http://127.0.0.1:51873/a2a/0
+20:18:15 [buyer] -> I want to buy a lamp
+20:18:15 [buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 160. Send your offer as a number.
+20:18:20 [buyer] [harness] offer 80
+20:18:20 [buyer] -> 80
+20:18:20 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 155.
+20:18:26 [buyer] [harness] offer 100
+20:18:26 [buyer] -> 100
+20:18:26 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 150.
+20:18:41 [buyer] [harness] offer 110
+20:18:41 [buyer] -> 110
+20:18:41 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 145.
+20:19:20 [buyer] [harness] offer 115
+20:19:20 [buyer] [guard] offer 115 > budget 110 -> 110
+20:19:20 [buyer] -> 110
+20:19:21 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 140.
+20:19:32 [buyer] [harness] walk None
+20:19:33 [buyer] walked away (CancelTask)
+20:19:33 [kit] seen through the kit: 6 task updates, last state TASK_STATE_CANCELED
+20:19:33 [market] ledger #3414: no deal, stars None, verified False, review not shown
+20:19:34 [order o-b549d5b9] chair, budget 225, round 0
+20:19:34 [kit] shop for this order: maple-home https://market.ourolabs.ai/shop/maple-home
+20:19:35 [buyer] card: Maple Home at http://127.0.0.1:51873/a2a/0
+20:19:35 [buyer] -> I want to buy a chair
+20:19:36 [buyer] <- TASK_STATE_INPUT_REQUIRED | chair: asking 234. Send your offer as a number.
+20:19:40 [buyer] [harness] offer 117
+20:19:40 [buyer] -> 117
+20:19:41 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 212.
