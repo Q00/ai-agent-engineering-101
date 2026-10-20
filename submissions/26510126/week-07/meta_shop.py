@@ -16,6 +16,11 @@ Each cycle:
 4. PUT the strategy to the Worker (/admin/strategy, token in .market/admin_token) and append the
    decision with its evidence to logs/challenge-1/strategies.jsonl (raw evidence, as in market_buyer.py).
 
+Launch sale: while the shop has fewer than LAUNCH_REVIEWS reviews on the board, the cycle skips the
+harness and prices at the market's lower quartile (target, never below reserve + MARGIN) and its median
+(opening ask). New shops get no visits until they have reviews, and buyers that read the ledger skip shops
+priced above the market; cheap, quick first deals earn the first reviews. The sale ends by itself.
+
 The Worker itself refuses any price below the reserve, so a bug here cannot make the shop sell at a loss.
 """
 import argparse
@@ -41,6 +46,7 @@ MARGIN = 5        # the target stays at least this much above the reserve
 UPPER = 1.15      # the opening ask stays within 15% above the market's upper quartile
 STEP = 0.15       # most a price may move in one cycle
 WINDOW = 3 * 3600 # going prices from the last three hours
+LAUNCH_REVIEWS = 10  # launch sale until the board shows this many reviews of our shop
 
 PROMPT = """You set the prices of our furniture shop in an agent market. Buyers are other AI agents;
 each picks a shop for its order, haggles, and leaves a review. Many shops sell the same items.
@@ -193,8 +199,17 @@ async def cycle(dry_run=False):
     prompt = PROMPT.format(reserve=json.dumps(RESERVE), hours=WINDOW // 3600, market=market, history=hist)
     log("META", "market:\n" + market + "\nhistory:\n" + hist)
 
-    proposal = await harness.ask(prompt) or {}
-    open_, target, notes = guard(proposal, previous, going)
+    row = board_row() or {}
+    if (row.get("reviews") or 0) < LAUNCH_REVIEWS:
+        target = {k: max(r + MARGIN, round(going.get(k, {"p25": r})["p25"])) for k, r in RESERVE.items()}
+        open_ = {k: max(target[k] + 5, round(going.get(k, {"median": r})["median"])) for k, r in RESERVE.items()}
+        proposal = {"reason": f"launch sale: {row.get('reviews') or 0} reviews (< {LAUNCH_REVIEWS}), "
+                              "pricing at the market's lower quartile to earn the first reviews"}
+        notes = []
+        log("META", f"launch sale, {row.get('reviews') or 0} reviews, {row.get('visits') or 0} visits this round")
+    else:
+        proposal = await harness.ask(prompt) or {}
+        open_, target, notes = guard(proposal, previous, going)
     for n in notes:
         log("GUARD", n)
     strategy = {
