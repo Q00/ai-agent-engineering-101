@@ -26,6 +26,7 @@ from negotiation.contracts import SellerContext
 from negotiation.harness import HarnessError, ModelHarness
 from negotiation.runlog import RunLog
 from negotiation.state import SellerMemory
+from negotiation.receipts import sign_receipt
 from negotiation.catalog import Catalog, matches
 from negotiation.catalog_contracts import NeedContext, SelectionContext
 from negotiation.price_reading import PriceContext
@@ -155,7 +156,8 @@ class Seller(AgentExecutor):
                 await updater.update_status(TaskState.TASK_STATE_INPUT_REQUIRED, message=message,
                                             metadata={"ask": decision.price})
             elif decision.action == "accept":
-                receipt = {"seller": self.shop_name, "item": decision.item_id, "price": decision.price}
+                receipt = sign_receipt({"shop": self.shop_name, "item": decision.item_id,
+                                        "price": decision.price, "task": task.id})
                 await updater.add_artifact(parts=[new_data_part(receipt)], name="receipt")
                 await updater.complete(say(f"Deal: {decision.item_id} at {decision.price}"))
                 self.log.record("receipt", task_id=task.id, receipt=receipt)
