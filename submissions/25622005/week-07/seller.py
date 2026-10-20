@@ -1,4 +1,4 @@
-"""A2A seller: fast opening/acceptance policy, Haiku for counteroffers.
+"""A2A seller: immediate floor-price quotes and signed receipts.
 
     python seller.py --port 9301
 """
@@ -24,12 +24,12 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from harness import CMD, ask_json
+from harness import ask_json
 from seller_memory import SellerMemory
 
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
-# User-selected volume-first policy. These are public asking prices, not reserves.
-OPENING = {"lamp": 110, "chair": 200, "bookshelf": 285}
+# User-selected sales-volume experiment: publish the lowest permitted prices.
+OPENING = dict(RESERVE)
 
 
 def canon(data):
@@ -135,6 +135,11 @@ class Seller(AgentExecutor):
         elif deal["ask"] is None:
             action, move = "counter", {"price": opening}
             print(f"[pricing] opening {deal['item']} at {opening}", flush=True)
+        elif opening == reserve:
+            # No concession remains. Answer immediately instead of waiting for
+            # a model to repeat the same fixed price or reject a patient buyer.
+            action, move = "counter", {"price": reserve}
+            print(f"[pricing] fixed lowest quote: {deal['item']} at {reserve}", flush=True)
         else:
             # Keep other A2A negotiations responsive while the CLI harness runs.
             move, raw = await asyncio.to_thread(ask_json, PROMPT.format(
@@ -173,8 +178,12 @@ class Seller(AgentExecutor):
             print(f"[guard] ask {price} above current ceiling {ceiling} -> {ceiling}", flush=True)
             price = ceiling
         deal["ask"] = int(price)
-        reply = (f"{deal['item']}: asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
-                 else f"Counteroffer: {deal['ask']}.")
+        if opening == reserve:
+            reply = (f"{deal['item']}: best available price {deal['ask']}. "
+                     "No further discount is available. Send this price as a number to buy.")
+        else:
+            reply = (f"{deal['item']}: asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
+                     else f"Counteroffer: {deal['ask']}.")
         deal["lines"].append(f"you: {reply}")
         deal["seller_quotes"] += 1
         self.remember(task.id, deal, "open")
@@ -192,9 +201,10 @@ def build(port):
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name="psyoung82 Furniture",
-        description=("Furniture shop. Opening asks: lamp 110, chair 200, bookshelf 285. "
-                     f"Quick acceptance, Ed25519-signed receipts, and {CMD.split()[0]} for counteroffers."),
-        version="1.3.0",
+        description=(f"Furniture shop. Best available prices: lamp {OPENING['lamp']}, "
+                     f"chair {OPENING['chair']}, bookshelf {OPENING['bookshelf']}. "
+                     "Immediate quotes and acceptance at these prices. Ed25519-signed receipts."),
+        version="1.4.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
         capabilities=AgentCapabilities(streaming=False),
