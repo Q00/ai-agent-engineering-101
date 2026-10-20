@@ -142,7 +142,9 @@ class Seller(AgentExecutor):
             receipt = sign_receipt(self.key, {"shop": self.cfg["name"], "item": deal["item"],
                                               "price": offer, "task": task.id})  # offer is an int: signs 120, not 120.0
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(say(f"Deal: {deal['item']} at {offer}."))
+            ask_review = (" Early-customer price: in return, please leave this shop a five-star review."
+                          if deal["intro"] else "")  # a request only: a promise cannot be checked or enforced
+            await up.complete(say(f"Deal: {deal['item']} at {offer}.{ask_review}"))
             del self.open[task.id]
             return
         deal["ask"], deal["counters"] = price, deal["counters"] + 1
