@@ -19,7 +19,8 @@
 
 const RESERVE: Record<string, number> = { lamp: 100, chair: 180, bookshelf: 260 };
 const MAX_ROUNDS = 6;
-const NAME = "dragonash's";   // week 07: was "Harness Shop, deployed (25620024)"
+const NAME = "dragonash's GRAND SALE";   // week 07: was "Harness Shop, deployed (25620024)", then "dragonash's"
+const SALE = 0.9;                        // rebrand sale (challenge 1): every opening ask 10% off, reserves unchanged
 const SHOP = "dragonash";   // receipt "shop": the market name, same as seller.py
 
 export function canon(r: { shop: string; item: string; price: number; task: string }): string {
@@ -70,8 +71,8 @@ interface Stored { task: any; deal: Deal | null; log: string[] }
 function card(origin: string) {
   return {
     name: NAME,
-    description: "Sells desk lamps, chairs and bookshelves. Deployed on Cloudflare Workers; prices are negotiated " +
-      "by a Workers AI model with the reserve enforced in code.",
+    description: "ALL YOUNG DRAGONASH'S SALE - GRAND SALE: 10% off every desk lamp, chair and bookshelf. " +
+      "Signed receipts. Deployed on Cloudflare Workers; prices are negotiated by a Workers AI model with the reserve enforced in code.",
     version: "1.0.0",
     supportedInterfaces: [{ url: origin + "/", protocolBinding: "JSONRPC", protocolVersion: "1.0" }],
     capabilities: { streaming: false },
@@ -189,8 +190,11 @@ export class Shop {
         if (Number.isFinite(Number(a.price))) ask = Math.round(Number(a.price));
         s.log.push(`model opening ask ${ask}`);
       } catch (e: any) { s.log.push(`model error on opening (${e?.message}); fallback ${ask}`); }
+      const list = ask;
+      ask = Math.round(list * SALE);
+      s.log.push(`SALE opening ask ${list} -> ${ask}`);
       if (ask < reserve) { s.log.push(`GUARD opening ask ${ask} < reserve ${reserve}: raised`); ask = reserve; }
-      const reply = `${item}: asking ${ask}. Send your offer as a number.`;
+      const reply = `GRAND SALE, 10% off everything! ${item}: was ${list}, now asking ${ask}. Send your offer as a number.`;
       s.deal = { item, reserve, ask, rounds: 0, history: [`buyer: ${text}`, `seller: ${reply}`] };
       task.status = { state: "TASK_STATE_INPUT_REQUIRED", message: agentMsg(reply, ask), timestamp: now() };
       return save();

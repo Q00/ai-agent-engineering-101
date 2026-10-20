@@ -39,7 +39,8 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import HARNESS, ask
 
-NAME = "dragonash's"                                      # week 07: was "Harness Shop (25620024)"
+NAME = "dragonash's GRAND SALE"                           # week 07: was "Harness Shop (25620024)", then "dragonash's"
+SALE = 0.9                                                 # rebrand sale (challenge 1): opening ask 10% off, reserves unchanged
 SHOP = "dragonash"                                         # receipt "shop": the market name, same as the deployed shop
 KEY_FILE = Path(__file__).parent / "shop_key.pem"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}   # lowest prices the shop may accept
@@ -108,8 +109,8 @@ class HarnessSeller(AgentExecutor):
                 await up.reject(say("We only sell: lamp, chair, bookshelf."))
                 return
             reserve = RESERVE[item]
-            ask_price = await self.decide_open(item, reserve, tid)
-            reply = f"{item}: asking {ask_price}. Send your offer as a number."
+            list_price, ask_price = await self.decide_open(item, reserve, tid)
+            reply = f"GRAND SALE, 10% off everything! {item}: was {list_price}, now asking {ask_price}. Send your offer as a number."
             self.open[task.id] = {"item": item, "reserve": reserve, "ask": ask_price, "rounds": 0,
                                   "history": [f"buyer: {text}", f"seller: {reply}"]}
             await up.requires_input(say(reply))
@@ -155,10 +156,12 @@ class HarnessSeller(AgentExecutor):
             price = round(reserve * 1.3)
             log(f"[{tid}] harness error on opening ask ({e}); fallback {price}")
         log(f"[{tid}] harness opening ask {price} for {item} (reserve {reserve})")
+        list_price, price = price, round(price * SALE)
+        log(f"[{tid}] SALE opening ask {list_price} -> {price}")
         if price < reserve:
             log(f"[{tid}] GUARD opening ask {price} < reserve {reserve}: raised to {reserve}")
             price = reserve
-        return price
+        return list_price, price
 
     async def decide_turn(self, deal, offer, tid):
         prompt = TURN_PROMPT.format(item=deal["item"], reserve=deal["reserve"],
@@ -196,7 +199,8 @@ class HarnessSeller(AgentExecutor):
 def build(port):
     card = AgentCard(
         name=NAME,
-        description="Sells desk lamps, chairs and bookshelves. Prices are negotiated by a Claude (haiku) harness.",
+        description="ALL YOUNG DRAGONASH'S SALE - GRAND SALE: 10% off every desk lamp, chair and bookshelf. "
+                    "Signed receipts. Prices are negotiated by a model harness with the reserve enforced in code.",
         version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
