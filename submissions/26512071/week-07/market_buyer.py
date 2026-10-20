@@ -8,17 +8,21 @@ market_kit.py starts this for each order. {shops} is a JSON list of
 1. Memory: memory.jsonl next to this file, one line per trade this buyer made
    (shop name, item, budget, first ask, final price or no deal, receipt check, stars).
    Shops are remembered by name; their URLs change when their kits restart.
-2. Pick: code turns each shop into one line (my own trades with it, then its review
+2. Probe: every shop's Agent Card is fetched at once with a short timeout, and shops
+   that do not answer with a card are dropped (in Round 0 most failed orders were dead
+   shops). If none answers, the whole list is kept.
+3. Pick: code turns each shop into one line (my own trades with it, then its review
    average and its three newest reviews, cut short and quoted as data) and drops the
    shops my memory caught with a bad receipt. The harness picks one of the rest by name
    and says why; the reason goes to the output.
-3. Trade: the week-06 negotiation (buyer.py's harness prompt), budget enforced in code.
-4. Review: stars and review come from code, from what happened, so a shop's text cannot
+4. Trade: the week-06 negotiation (buyer.py's harness prompt), budget enforced in code.
+5. Review: stars and review come from code, from what happened, so a shop's text cannot
    talk the buyer into a better review.
 The last output line is one JSON object: {"shop", "receipt", "stars", "review"}.
 """
 import argparse
 import json
+from concurrent.futures import ThreadPoolExecutor
 import re
 import sys
 import time
@@ -30,6 +34,7 @@ from buyer import HEADERS, MAX_OFFERS, decide, harness, log, rpc, send
 
 MEMORY = Path(__file__).with_name("memory.jsonl")
 REVIEWS_SHOWN, REVIEW_CHARS = 3, 120
+PROBE_TIMEOUT = 5
 
 PICK = """You are a buyer in a market. You need one {item} and your budget is {budget}.
 Pick one shop to buy from.
@@ -83,6 +88,26 @@ def review_line(reviews):
     quoted = "; ".join(json.dumps(str(r.get("review", ""))[:REVIEW_CHARS], ensure_ascii=False)
                        for r in reviews[:REVIEWS_SHOWN])
     return f"{len(reviews)} reviews, {avg}, newest: {quoted}"
+
+
+def alive(shop):
+    """True when the shop answers with an Agent Card that has a JSON-RPC interface."""
+    try:
+        r = httpx.get(shop["url"].rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS,
+                      timeout=PROBE_TIMEOUT)
+        return any(i.get("protocolBinding") == "JSONRPC" for i in r.json().get("supportedInterfaces", []))
+    except (httpx.HTTPError, ValueError, AttributeError):
+        return False
+
+
+def probe(shops):
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        up = list(pool.map(alive, shops))
+    dead = [s["name"] for s, ok in zip(shops, up) if not ok]
+    if dead:
+        log(f"[probe] no card from {len(dead)} of {len(shops)} shops, skipping: {', '.join(dead)}")
+    live = [s for s, ok in zip(shops, up) if ok]
+    return live or shops
 
 
 def pick(shops, item, budget, memory):
@@ -174,7 +199,7 @@ def main():
     shops = json.loads(Path(args.shops).read_text(encoding="utf-8"))
     memory = load_memory()
     log(f"[buyer] {len(shops)} shops, {len(memory)} remembered trades; {args.item} with budget {args.budget}")
-    shop = pick(shops, args.item, args.budget, memory)
+    shop = pick(probe(shops), args.item, args.budget, memory)
 
     receipt, problem, first_ask, rounds, task_id = None, None, None, 0, None
     try:
