@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
+import sys
 import unittest
 from unittest.mock import patch
 from uuid import uuid4
@@ -86,6 +87,8 @@ class TradeRules(unittest.TestCase):
     def setUp(self):
         self.requests = []
         directory = buyer.ROOT / "logs/lab1-step2/unit-runs" / uuid4().hex
+        (directory / "prompts").mkdir(parents=True)
+        (directory / "prompts/buyer.txt").write_bytes((buyer.ROOT / "prompts/buyer.txt").read_bytes())
         root_patch = patch.object(buyer, "ROOT", directory)
         root_patch.start()
         self.addCleanup(root_patch.stop)
@@ -151,4 +154,4 @@ class TradeRules(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2)
+    unittest.main(testRunner=unittest.TextTestRunner(stream=sys.stdout, verbosity=2))
