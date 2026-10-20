@@ -1,0 +1,49 @@
+name: ax-week07-25620027
+services:
+  seller:
+    image: ax-week07-25620027-seller:1.2.0
+    build:
+      context: ../..
+      dockerfile: deploy/vps/Dockerfile
+    environment:
+      AX_TUNNEL_ENABLED: ${AX_TUNNEL_ENABLED:-1}
+    restart: "on-failure:3"
+    init: true
+    cpus: 1.0
+    mem_limit: 768m
+    pids_limit: 128
+    stop_grace_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    volumes:
+      - type: bind
+        source: ${AX_WEEK07_PRIVATE_DIR:?Set absolute private directory}
+        target: /run/private
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${AX_WEEK07_DATA_DIR:?Set absolute persistent data directory}
+        target: /data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${AX_WEEK07_MARKET_DIR:?Set absolute persistent market directory}
+        target: /app/.market
+        bind:
+          create_host_path: false
+    tmpfs:
+      - /run/runtime:mode=0700,uid=10001,gid=10001,size=1m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8900/.well-known/agent-card.json', timeout=3).read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
