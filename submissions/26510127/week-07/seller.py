@@ -10,7 +10,10 @@ Code-side rules (logged as [guard] / [rule] when they fire):
 Everything else is the harness's decision.
 """
 import argparse
+import base64
+import json
 import re
+from pathlib import Path
 
 import uvicorn
 from starlette.applications import Starlette
@@ -21,6 +24,8 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+
+from cryptography.hazmat.primitives import serialization
 
 from catalog import Catalog
 from harness import CMD, ask_json
@@ -56,13 +61,29 @@ kind of item or a hard constraint fails for all of them. Answer with one JSON ob
 {{"action": "none"}}"""
 
 
+KEY_PATH = Path(__file__).with_name("shop_key.pem")
+
+
+def canon(d):
+    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def sign_receipt(receipt, key_path=KEY_PATH):
+    """Add sig_seller: base64 Ed25519 over canon({shop, item, price, task}). The price must be a whole number."""
+    key = serialization.load_pem_private_key(Path(key_path).read_bytes(), password=None)
+    body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
+    receipt["sig_seller"] = base64.b64encode(key.sign(canon(body))).decode()
+    return receipt
+
+
 def last_number(text):
     nums = re.findall(r"\d+(?:\.\d+)?", text.replace(",", ""))
     return int(float(nums[-1])) if nums else None
 
 
 class Seller(AgentExecutor):
-    def __init__(self, catalog=None, markup=1.0):
+    def __init__(self, catalog=None, markup=1.0, name=SHOP):
+        self.name = name
         self.open = {}  # task id -> {"item", "reserve", "ask", "offer", "lines", "n"}
         self.catalog, self.markup = catalog, markup
 
@@ -128,9 +149,9 @@ class Seller(AgentExecutor):
             log(f"[guard] accept of {deal['offer']} is below reserve {reserve} -> counter instead")
             action, move = "counter", {"price": deal["ask"] or reserve}
         if action == "accept":
-            price = deal["offer"]
-            await up.add_artifact(parts=[new_data_part({"seller": SHOP, "item": deal["item"], "price": price})],
-                                  name="receipt")
+            price = int(deal["offer"])
+            receipt = sign_receipt({"shop": self.name, "item": deal["item"], "price": price, "task": task.id})
+            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: one {deal['item']} for {price}. Receipt attached."))
             log(f"DEAL {deal['item']} at {price}")
             del self.open[task.id]
@@ -184,7 +205,7 @@ def build(port, catalog=None, name=SHOP, markup=1.0, categories=None):
                            tags=["furniture", "negotiation"] + sorted({i["category"] for i in catalog.items} if catalog else RESERVE),
                            examples=["I want to buy a lamp", "90"])],
     )
-    handler = DefaultRequestHandler(agent_executor=Seller(catalog, markup), task_store=InMemoryTaskStore(),
+    handler = DefaultRequestHandler(agent_executor=Seller(catalog, markup, name), task_store=InMemoryTaskStore(),
                                     agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
