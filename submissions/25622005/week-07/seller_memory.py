@@ -72,3 +72,9 @@ class SellerMemory:
                         ("outcome", "opening_ask", "last_ask", "last_offer", "sale_price",
                          "buyer_messages", "seller_quotes", "elapsed_seconds")} for row in recent],
         }
+
+    def completed_purchases(self, customer_id: str) -> int:
+        """Only completed tasks count, across all items; snapshots count once."""
+        with self._lock:
+            return sum(row["outcome"] == "deal" and row.get("customer_id") == customer_id
+                       for row in self.latest.values())
