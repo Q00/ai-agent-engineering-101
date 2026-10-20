@@ -1,9 +1,10 @@
 # Public deployment readiness — 2026-10-19
 
-Current status (2026-10-20): FREE PUBLIC CONFIG PREPARED; the owner subsequently
-requested a free API for the public variant only. Cloudflare sign-in, a dedicated
-AI credential and account Free-plan confirmation are pending. No public trade
-success is claimed in this record. Earlier deferral below is historical.
+This is the historical preparation record. Current status (2026-10-20): LIVE
+with OpenRouter free Cohere and four public cases passed. See
+../openrouter-public-config/PUBLIC_VALIDATION.md for approval, activation and
+actual HTTPS evidence. Preparation/deferral statements below describe earlier
+stages and do not indicate an outstanding activation or sign-in requirement.
 
 ## Observed checks
 

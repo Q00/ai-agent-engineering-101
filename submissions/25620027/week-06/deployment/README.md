@@ -1,13 +1,13 @@
 # Public seller deployment
 
-Status as of 2026-10-20: the owner requested a free API for the public deployment
-only. The owner selected the existing OpenRouter credential. Authentication and
-one real free-model tool call succeeded; copying that key to the VPS still needs
-explicit destination approval. The original OpenAI experiment configuration
-remains separate. No Cloudflare Workers AI account sign-in is needed.
-The configured hostname `ax-week06.treasuresky.xyz` is not a verified live shop.
-Public trades have not been run and `agent.json.deployed` has not been set.
-This preparation does not constitute completion of the deployment extra credit.
+Status as of 2026-10-20: **LIVE and four public scenarios verified** at
+https://ax-week06.treasuresky.xyz/. The owner approved private credential placement
+and free public operation. Agent Card discovery returned HTTP 200; purchases
+completed at lamp 100, chair 180 and bookshelf 260. A bookshelf budget of 230
+produced no receipt and remained INPUT_REQUIRED. `agent.json.deployed` is set.
+The [public verification record](../.omo/evidence/openrouter-public-config/PUBLIC_VALIDATION.md)
+links the actual wire logs and observed limits. The original OpenAI experiment
+configuration remains separate; the instructor determines extra-credit grading.
 
 ## Architecture
 
@@ -56,6 +56,12 @@ docker compose --env-file /private/path/model.env \
   -f deployment/compose.yaml -f deployment/compose.tunnel.yaml up -d --build
 ```
 
+If setting `--project-directory` explicitly, point it at `deployment/`, not its
+parent. The build context `..` and NGINX/cloudflared relative bind mounts resolve
+from that directory. The first activation used the parent incorrectly; the
+seller became healthy but the ingress mount failed. Correcting the project
+directory fixed startup without changing the application or unrelated services.
+
 The seller binds host loopback for administration. NGINX and the tunnel publish
 no host ports. NGINX limits request bodies to 16 KiB, permits at most eight active
 connections and admits 30 requests/minute with a burst of 30. The model wrapper
@@ -95,14 +101,19 @@ enforcement of every optional parameter or reliable public availability.
 An earlier Liquid free-model probe returned a valid tool call and reported cost
 0, but its full local A2A trial failed on repeated upstream HTTP 504 responses.
 Those [failed logs](../logs/deployment/20261020/local-openrouter-1/) are preserved.
-Full public trades remain unverified.
+All four actual public cases subsequently passed; see the verification record
+above. Neither the local nor public sample establishes a general success rate.
 
 ## Validation and rollback
 
 ```bash
 python verify_deployment.py --url https://ax-week06.treasuresky.xyz/ \
-  --output logs/deployment/20261020/attempt-1
+  --output logs/deployment/20261020/new-attempt
 ```
+
+The completed public attempt used a four-second HTTP pacing hook around this
+same verifier. Its exact invocation and results are in the public verification
+record. Do not rerun into the existing `public-attempt-1` directory.
 
 This fixed counterpart checks the public card, three successful purchases,
 one below-reserve no-deal, exact offered-price receipts, task/context continuity,
@@ -112,4 +123,6 @@ version headers and finished-task errors. It is separate from the original
 If public discovery or receipt validation fails, preserve the attempt logs before
 changing the service. Stop only this Compose project, keep its budget volume and
 restore the previous image/configuration before restarting. Do not restart or
-change unrelated VPS services. There is no previous deployed seller release yet.
+change unrelated VPS services. The initial deployed image is
+`ax-week06-25620027:openrouter-20261020`; earlier prepared images were not live
+releases. Keep the initial working image/configuration for rollback.

@@ -9,11 +9,15 @@
 
 [최종 보고서](https://github.com/SungJinho/ai-agent-engineering-101/blob/week-06/submissions/25620027/week-06/REPORT.md) · [기본 검사 결과](https://github.com/SungJinho/ai-agent-engineering-101/blob/week-06/submissions/25620027/week-06/test-report.json) · [일반 챌린지 2 로그](https://github.com/SungJinho/ai-agent-engineering-101/tree/week-06/submissions/25620027/week-06/logs/challenge-2/attempt-6) · [실패 유도·재계획 로그](https://github.com/SungJinho/ai-agent-engineering-101/tree/week-06/submissions/25620027/week-06/logs/challenge-2/replanning-attempt-3)
 
-공개 배포용 단일 프로세스 실행 구성·Docker·HTTPS 터널 설정과 외부 거래 검증 도구도 추가했습니다. 공개판은 기존 OpenRouter 키와 고정 무료 모델만 사용하도록 구성했고, 기존 OpenAI 실험 설정은 유지했습니다. 오프라인 테스트는 **140개 통과**했습니다. Liquid 무료 모델은 단일 도구 프로브에는 성공했으나 로컬 A2A 거래에서 504로 실패했고, 대체한 `cohere/north-mini-code:free`는 **실제 모델을 사용한 로컬 A2A 램프 거래를 100에 완료**했습니다. 실패·성공 원문 모두 보존했습니다. **VPS에 최소 자격증명을 비공개로 배치하는 승인이 남아 있으며, 인터넷 공개 실거래는 미검증이므로 배포 가산점을 완료했다고 주장하지 않습니다.** [공개 배포 준비 상태](https://github.com/SungJinho/ai-agent-engineering-101/blob/week-06/submissions/25620027/week-06/deployment/README.md)
+**공개 판매자도 배포하고 실제 HTTPS A2A 검증 4/4를 통과했습니다.** [공개 URL](https://ax-week06.treasuresky.xyz/) · [Agent Card](https://ax-week06.treasuresky.xyz/.well-known/agent-card.json). 공개판은 OpenRouter의 `cohere/north-mini-code:free`를 사용하며 램프 100·의자 180·책장 260에 체결됐습니다. 예산 230의 책장은 영수증 없이 `INPUT_REQUIRED`로 남았습니다. 실제 제안과 같은 영수증 가격·task/context·버전 헤더·완료 후 오류를 검사했고 `agent.json.deployed`에 등록했습니다. [공개 원본 로그](https://github.com/SungJinho/ai-agent-engineering-101/tree/week-06/submissions/25620027/week-06/logs/deployment/20261020/public-attempt-1) · [검증 절차·한계](https://github.com/SungJinho/ai-agent-engineering-101/blob/week-06/submissions/25620027/week-06/.omo/evidence/openrouter-public-config/PUBLIC_VALIDATION.md).
+
+오프라인 테스트는 **140개 통과**했습니다. 공개 서비스는 성적 발표까지 운영하도록 구성했으며 계정 전체 무료 호출 한도는 일 50회입니다. 공개 네 사례는 원래 OpenAI 기본 검사 21개와 별도 근거이고, 무료 한도·공급자 혼잡에 따른 중단 가능성과 가산점 최종 채점은 구분합니다.
 
 ## What I tried and discarded
 
 초기 기본 검사의 조기 협상 종료·존재하지 않는 제안 수락 문제를 수정했습니다. 이후 쇼핑에서 동일한 실패 계획 반복, 품목별 한도 부족, 잘못된 상품군 선택을 관찰하고 실패 가게·한도·공개 관찰을 다음 계획에 전달하도록 보완했습니다. 실패 시도와 수정 커밋, 원본 로그를 모두 보존했습니다. 기존 plain/inflated 24회 실험도 별도 보고서와 원본 자료로 남겼습니다.
+
+무료 공개판의 초기 Liquid 모델은 단일 도구 프로브에 성공했으나 로컬 A2A 거래에서 504로 실패했습니다. 대체한 Cohere 모델은 로컬 램프 거래와 이후 공개 네 사례를 통과했습니다. 첫 서버 가동의 Compose 기준 경로 오류와 수정도 기록했으며 실패 로그를 성공본으로 덮어쓰지 않았습니다.
 
 해석의 한계도 보고서에 명시했습니다. 챌린지 1의 6개 요청은 코드 필터 뒤 후보가 각각 1개이므로 일반적인 다중 후보 선택 능력을 입증하지 않습니다. 예산 안전성에는 코드 가드가 기여하며, 실제 재계획 성공 2회로 일반적인 복구 신뢰도나 최저가를 주장하지 않습니다. 원격 체결 여부가 불명인 통신 오류 복구와 다른 학생 하네스 간 교차 검증은 이번 검증 범위 밖입니다.
 
@@ -35,7 +39,7 @@ python scripts/trade_test_week06.py submissions/25620027/week-06
 ./run_harness.sh buyer --url http://127.0.0.1:9998/ --item lamp --budget 120
 ```
 
-챌린지 재현 명령과 새 attempt 번호 사용 방법은 REPORT.md에 있습니다. 검증 기록은 [VALIDATION.md](https://github.com/SungJinho/ai-agent-engineering-101/blob/week-06/submissions/25620027/week-06/.omo/evidence/week06-report-followup-20261014/VALIDATION.md)에 정리했습니다. 로컬 공식 검사와 Ruff·포맷·strict basedpyright 검사를 통과했습니다. 기존 필수 과제 후속 검증은 pytest 89개였고, 공개 실행 구성·검증 도구·OpenRouter 무료 모델 설정까지 포함한 오프라인 테스트는 현재 140개입니다. 공개 가동·무료 모델의 공개 거래·새 유료 기본 검사 재실행을 완료했다는 뜻은 아닙니다.
+챌린지 재현 명령과 새 attempt 번호 사용 방법은 REPORT.md에 있습니다. 기존 후속 검증 기록은 [VALIDATION.md](https://github.com/SungJinho/ai-agent-engineering-101/blob/week-06/submissions/25620027/week-06/.omo/evidence/week06-report-followup-20261014/VALIDATION.md)에 있습니다. 로컬 공식 검사와 Ruff·포맷·strict basedpyright 검사를 통과했습니다. 기존 필수 과제 후속 검증은 pytest 89개였고, 공개 실행 구성·검증 도구·OpenRouter 무료 모델 설정까지 포함한 오프라인 테스트는 현재 140개입니다. 공개 검증은 동일 검증기에 4초 HTTP 간격을 둔 네 사례이며 새 유료 기본 검사 재실행은 수행하지 않았습니다.
 
 ## Checklist
 
@@ -46,4 +50,4 @@ python scripts/trade_test_week06.py submissions/25620027/week-06
 - [x] API 키·토큰·환경 파일 없음
 - [x] 실패 이력을 포함한 커밋 기록 보존, squash·history rewrite 없음
 
-- [ ] 선택 공개 배포 가산점: OpenRouter 무료 API 설정 준비, VPS 자격증명 배치 승인·실제 공개 거래 검증 대기
+- [x] 선택 공개 배포 요건: 공개 Agent Card·A2A URL·실거래 4/4 확인, `agent.json.deployed` 등록, 성적 발표까지 운영 구성

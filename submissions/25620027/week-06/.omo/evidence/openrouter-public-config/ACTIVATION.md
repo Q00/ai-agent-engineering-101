@@ -1,5 +1,10 @@
 # OpenRouter activation preflight — 2026-10-20
 
+Current status: LIVE; the owner subsequently approved both private credential
+transfers and free public operation. All four real public cases passed. This
+file preserves the earlier preflight and approval boundary; final results are
+in PUBLIC_VALIDATION.md.
+
 The owner selected OpenRouter and explicitly directed the executor to the
 existing private environment configuration. No credential value is in this record.
 

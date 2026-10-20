@@ -251,17 +251,17 @@ uv run --frozen --python 3.12.11 --script challenge_run.py challenge-2 --attempt
 
 실제 receipt와 task·헤더·예산 원장을 검증했다. 보완 전 정적 검사·타입 검사·회귀 결과는 `logs/current-*-final.log`에, 후속 검증 명령·출력은 앞서 연결한 `VALIDATION.md`에 남겼다. 보조 AST 검사에서 하네스의 두 match는 마지막 패턴이 아니라 분기 뒤 assert_never를 사용해 형식 경고가 남는다. 모든 분기는 continue 또는 raise로 끝나며 strict 타입 검사는 누락 변형이 없음을 확인한다. 진단을 끄는 지시는 추가하지 않았다.
 
-선택 챌린지 3·공개 서비스 가동·다른 학생의 가게 거래는 수행하지 않았다. **공식 기본 21/21·챌린지 1 고정 설명 6/6·최신 일반 챌린지 2 전 품목 구매를 확인했고, 최신 두 실행에서 실제 미체결 후 복구 성공을 관찰했다.** 통신 오류·체결 여부 불명 상황의 복구는 미검증이다. 현재 상태는 [GitHub PR #293 제출 완료](https://github.com/Q00/ai-agent-engineering-101/pull/293)이며, 제출 시각은 2026-10-14 15:20:44 KST다. 제출 시점은 교수 명세대로 7주차 수업 시작 전 PR 생성 시간으로 판단된다. PR 제출과 자동 검사 통과는 교수자의 최종 채점·승인을 뜻하지 않는다.
+선택 챌린지 3·다른 학생의 가게 거래는 수행하지 않았다. 공개 배포 후속 결과는 아래 6절에서 별도로 다룬다. **공식 기본 21/21·챌린지 1 고정 설명 6/6·최신 일반 챌린지 2 전 품목 구매를 확인했고, 최신 두 실행에서 실제 미체결 후 복구 성공을 관찰했다.** 통신 오류·체결 여부 불명 상황의 복구는 미검증이다. 현재 상태는 [GitHub PR #293 제출 완료](https://github.com/Q00/ai-agent-engineering-101/pull/293)이며, 제출 시각은 2026-10-14 15:20:44 KST다. 제출 시점은 교수 명세대로 7주차 수업 시작 전 PR 생성 시간으로 판단된다. PR 제출과 자동 검사 통과는 교수자의 최종 채점·승인을 뜻하지 않는다.
 
 ## 6. 공개 배포 준비·무료 API 분리 — 2026-10-20
 
 기존 하네스·판매자 판단 코드를 그대로 불러오는 [공개 실행 진입점](public_seller.py), [Docker·HTTPS 터널 구성과 운영 설명](deployment/README.md), [외부 거래 검증 도구](verify_deployment.py)를 추가했다. 추가 후 오프라인 테스트 **100개**, Ruff·strict basedpyright가 통과했고 Linux 이미지 빌드·모듈 로딩·NGINX 설정 문법도 확인했다. 검증 도구는 영수증 가격이 예산 이내인지뿐 아니라 구매자가 실제 제안한 금액과 같은지도 검사한다. 코드·검사 근거는 [배포 준비 기록](.omo/evidence/public-deploy-20261019/PREDEPLOY.md)에 있다.
 
-2026-10-20 사용자 결정에 따라 **인증 키 배치와 공개 서비스 가동을 보류**했다. 준비된 호스트명은 실제 거래가 가능한 URL로 검증하지 않았고, 공개 거래 로그와 `agent.json`의 `deployed` 항목도 추가하지 않았다. 따라서 **공개 배포 가산점은 아직 완료하지 않았다.** 추후 가동 요청이 있으면 필요한 인증 설정, 외부 Agent Card 조회와 실제 A2A 거래를 검증한 뒤 상태를 갱신한다. 이 준비 과정에서 새 유료 모델 호출은 수행하지 않았다.
+첫 준비 단계에서는 사용자 결정에 따라 인증 키 배치와 공개 서비스 가동을 보류했다. 당시 준비된 호스트명은 실제 거래 URL로 검증하지 않았고 공개 거래 로그와 `agent.json.deployed`도 추가하지 않았다. 이는 아래의 추가 승인·가동 이전 이력이며, 당시에는 공개 배포 가산점 요건을 완료하지 않은 상태였다. 이 준비 과정에서 새 유료 모델 호출은 수행하지 않았다.
 
 ### 초기 무료 API 후보: Cloudflare — 이후 OpenRouter로 전환
 
-이후 사용자가 공개 배포판에만 무료 API를 연결하고 키를 노출하지 않도록 요청했다. 공개 진입점은 전용 `AX_PUBLIC_MODEL_*` 설정을 필수로 받고, Cloudflare Workers AI의 명시적인 HTTPS 계정 엔드포인트와 `@cf/…` 모델만 허용한다. 기존 구매자·판매자 명령의 OpenAI 모델 기본값은 유지하며, 공개판에는 기존 유료 키·기본 엔드포인트로 돌아가는 경로가 없다. 키의 일반 출력·설정 오류 표시를 가리고, 다른 인증을 포함할 수 있는 `OPENAI_CUSTOM_HEADERS`가 있으면 시작 전에 중단한다. 기존 OpenAI 조직·프로젝트 설정과 HTTP 리디렉션도 공개 요청에 사용하지 않는다.
+이후 사용자가 공개 배포판에만 무료 API를 연결하고 키를 노출하지 않도록 요청했다. 초기 준비판은 전용 `AX_PUBLIC_MODEL_*` 설정을 필수로 받고, Cloudflare Workers AI의 HTTPS 계정 엔드포인트와 `@cf/…` 모델만 허용하도록 구성했다. 원래 구매자·판매자 명령의 OpenAI 모델 기본값은 유지했다. 키의 일반 출력·설정 오류 표시를 가리고 `OPENAI_CUSTOM_HEADERS`가 있으면 시작 전에 중단하며, 주변 환경의 OpenAI 조직·프로젝트 설정과 HTTP 리디렉션을 배제하는 방어는 후속 OpenRouter 판에도 유지했다.
 
 공개판 후보는 `@cf/zai-org/glm-4.7-flash`다. [공식 무료 플랜 안내](https://developers.cloudflare.com/changelog/post/2026-07-28-models-require-workers-paid/)에 포함되어 있고 [모델 명세](https://developers.cloudflare.com/workers-ai/models/glm-4.7-flash/)는 현재 하네스가 사용하는 도구 호출 필드를 지원한다. [Workers Free 한도](https://developers.cloudflare.com/workers-ai/platform/pricing/)는 계정 전체 하루 10,000 Neurons이며 00:00 UTC에 초기화되고, 초과 시 요청이 실패한다. 유료 플랜 전환은 승인되지 않았다.
 
@@ -279,4 +279,21 @@ uv run --frozen --python 3.12.11 --script challenge_run.py challenge-2 --attempt
 
 오프라인 **140개 테스트**, Ruff·strict basedpyright·공식 구조 검사를 통과했고 독립 코드 검토도 승인됐다. [구현·검사](.omo/evidence/openrouter-public-config/REPORT.md) · [독립 검토](.omo/evidence/openrouter-public-config-code-review.md) · [연결 준비와 승인 경계](.omo/evidence/openrouter-public-config/ACTIVATION.md).
 
-**실제 공개 가동과 거래 검증은 아직 완료하지 않았다.** 기존 키 중 OpenRouter 키 한 값만 VPS의 비공개 과제 폴더에 전송하도록 최소화했으나, 특정 서버로의 자격증명 전송에 대한 명시적 승인이 없다는 자동 검토 거절로 복사는 실행되지 않았다. 기존 HTTPS 터널의 전용 인증 파일과 이 키를 비공개로 배치한 뒤 공개 거래를 검증해야 하며, `agent.json.deployed`와 가산점 완료 표시는 그 후에 추가한다. 무료 한도·공급자 혼잡에 따른 중단 가능성을 기록하고 유료 대체 경로는 두지 않는다.
+이 단계에서 자격증명 전송은 두 차례 자동 검토로 거절되어 실행되지 않았다. 이후 사용자가 아래와 같이 특정 VPS로의 최소 인증정보 전송과 무료 공개 가동을 명시적으로 승인했다. 이 거절은 승인 전 이력으로 보존한다.
+
+### 승인 후 공개 가동·실제 HTTPS A2A 검증 완료
+
+2026-10-20 사용자의 명시적 승인 후 OpenRouter 키 한 값과 과제 전용 터널 인증만 비공개 과제 폴더에 배치했다. 공개 주소는 **https://ax-week06.treasuresky.xyz/**이며 `/.well-known/agent-card.json`이 HTTP 200으로 이름·skill과 동일 공개 URL의 `JSONRPC`·`protocolVersion: 1.0` 인터페이스를 반환했다. `agent.json.deployed`에도 등록했다. 첫 가동에서는 Compose 기준 폴더를 잘못 지정해 NGINX 파일 마운트가 실패했으며, 기준을 `deployment/`로 바로잡아 가동했다. 인증값은 이미지·Git·거래 로그에 넣지 않았다.
+
+| 공개 검증 | 예산 | 실제 결과 |
+|---|---:|---|
+| 램프 | 120 | 영수증 가격 **100**, 완료 |
+| 의자 | 200 | 영수증 가격 **180**, 완료 |
+| 책장 | 300 | 영수증 가격 **260**, 완료 |
+| 책장·하한 260 미달 | 230 | 영수증·체결 없음. 8회 제안 후 `TASK_STATE_INPUT_REQUIRED` 유지 |
+
+공개 검증은 **4/4 PASS**였고 성공 세 task의 완료 후 재요청 오류 `-32004`도 확인했다. HTTP 응답 25개·POST 원문 24개·유효 `A2A-Version` 헤더 25개, task/context 연속성과 상품·SKU·하한·예산·실제 최종 제안과 같은 영수증 가격을 검사했다. 마지막 사례를 종결 거절로 해석하지 않는다. [공개 원본 메시지·영수증·요약](logs/deployment/20261020/public-attempt-1/) · [절차·서버 관찰·요건 대조](.omo/evidence/openrouter-public-config/PUBLIC_VALIDATION.md).
+
+서버는 실제 Cohere 무료 모델 호출 25회·재시도 0회와 영속 예산 사용 25를 기록했다. 계정 무료 한도는 검증 전 사용 7·잔여 43에서 검증 후 사용 32·잔여 18로 바뀌었고 API의 `usage_daily` 보고값은 0이었다. 청구서 감사 결과는 아니다. 검증 클라이언트에는 분당 무료 한도를 지키도록 HTTP 요청 전 4초 대기를 넣었으며 부하 시험은 하지 않았다. 이 네 사례는 원래 OpenAI **21/21 기본 검사**의 재실행이 아니고, 무료 공개판의 별도 실행 근거다.
+
+현재는 공개 URL·Agent Card·실제 거래·`deployed` 등록이라는 배포 요건을 확인한 상태다. 서비스는 기존 VPS에서 독립 실행하며 `unless-stopped` 재시작 정책으로 성적 발표까지 운영한다. 다만 일 50회 한도는 대화 수가 아닌 계정 전체 모델 요청 수이고, 소진·공급자 혼잡 시 거래가 중단될 수 있다. 하루·장기간 가용성이나 모든 입력의 성공률은 검증하지 않았다. 가산점 최종 부여는 교수자의 판단이며, 과거 실패·이전 실험·기존 필수 과제의 근거는 보존한다.
