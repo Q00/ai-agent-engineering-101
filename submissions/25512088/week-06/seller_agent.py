@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from pathlib import Path
 
 import uvicorn
 from starlette.applications import Starlette
@@ -18,6 +19,7 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from codex_harness import decide
+from catalog_search import load_catalog, search
 
 
 DEFAULT = {
@@ -49,11 +51,30 @@ class Seller(AgentExecutor):
         deal = self.open.get(task.id)
 
         if deal is None:
-            item = next((name for name in self.cfg["reserve"] if name in text.lower()), None)
-            if item is None:
-                await updater.reject(say("I can negotiate only lamp, chair, or bookshelf purchases."))
-                return
-            reserve = self.cfg["reserve"][item]
+            if self.cfg.get("catalog"):
+                candidates = search(self.cfg["catalog"], text)
+                choice = decide(
+                    f"""You select a product for a large-catalog A2A seller.
+The buyer described what they need as: {text!r}
+Choose exactly one item_id from these retrieved candidates, based only on fit:
+{json.dumps(candidates, ensure_ascii=False)}
+Return the required JSON object with item_id and a brief reason.""",
+                    schema=Path(__file__).with_name("selection.schema.json"),
+                )
+                product = next((p for p in candidates if p["id"] == choice.get("item_id")), None)
+                if product is None:
+                    raise RuntimeError(f"harness selected an item outside retrieved candidates: {choice}")
+                item, reserve = product["name"], int(product["reserve"])
+                print("CATALOG_SELECTION", json.dumps({
+                    "query": text, "candidates": [p["id"] for p in candidates],
+                    "selected": product["id"], "reserve": reserve,
+                }, ensure_ascii=False), flush=True)
+            else:
+                item = next((name for name in self.cfg["reserve"] if name in text.lower()), None)
+                if item is None:
+                    await updater.reject(say("I can negotiate only lamp, chair, or bookshelf purchases."))
+                    return
+                reserve = self.cfg["reserve"][item]
             decision = decide(
                 f"""You are the seller decision engine for an A2A furniture shop.
 Return only the required JSON object. The buyer asked: {text!r}
@@ -133,11 +154,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=9999)
     parser.add_argument("--config")
+    parser.add_argument("--catalog")
     args = parser.parse_args()
     config = dict(DEFAULT)
     config["reserve"] = dict(DEFAULT["reserve"])
     if args.config:
         with open(args.config, encoding="utf-8") as handle:
             config.update(json.load(handle))
+    if args.catalog:
+        config["catalog"] = load_catalog(args.catalog)
+        config["description"] = (
+            f"A large-catalog furniture shop with {len(config['catalog'])} products; "
+            "describe the object you need and negotiate its price."
+        )
     config["port"] = args.port
     uvicorn.run(build(config), host="127.0.0.1", port=args.port, log_level="warning")

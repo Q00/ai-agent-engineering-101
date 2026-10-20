@@ -11,10 +11,10 @@ from pathlib import Path
 
 MODEL = os.getenv("WEEK06_MODEL", "gpt-5.6-luna")
 EFFORT = os.getenv("WEEK06_REASONING_EFFORT", "low")
-SCHEMA = Path(__file__).with_name("decision.schema.json")
+DEFAULT_SCHEMA = Path(__file__).with_name("decision.schema.json")
 
 
-def decide(prompt: str, *, timeout: int = 180) -> dict:
+def decide(prompt: str, *, schema: Path = DEFAULT_SCHEMA, timeout: int = 180) -> dict:
     """Ask Codex for one decision and return the schema-validated JSON object."""
     with tempfile.TemporaryDirectory(prefix="week06-codex-") as run_dir:
         answer = Path(run_dir) / "answer.json"
@@ -22,7 +22,7 @@ def decide(prompt: str, *, timeout: int = 180) -> dict:
             "codex", "exec", "--skip-git-repo-check", "--ephemeral",
             "--ignore-user-config", "--ignore-rules", "--sandbox", "read-only",
             "--model", MODEL, "--config", f'model_reasoning_effort="{EFFORT}"',
-            "--output-schema", str(SCHEMA), "--output-last-message", str(answer),
+            "--output-schema", str(schema), "--output-last-message", str(answer),
             "--cd", run_dir, "-",
         ]
         result = subprocess.run(
