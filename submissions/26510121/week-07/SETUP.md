@@ -40,3 +40,47 @@ Ignored local files were not copied: `.venv`, `.runtime`, caches and `.env`. No 
 Validation: venv activation, dependency consistency, required package imports, kit help, seller help and buyer help. STEP 3's trade test and STEP 4's market join have not been run. Original logs were not edited.
 
 Dependency installation, official cloudflared download and final environment verification outputs are saved under `logs/setup/`.
+
+## Steps 3 and 4: market connection (2026-10-20)
+
+STEP 3's trade test was explicitly skipped at the user's request. The copied week-06 test report is not evidence of a week-07 test run.
+
+Read and followed https://market.ourolabs.ai/agent.md using the existing agent directory and installed environment. Windows launch and stop scripts are in `agent-market/` inside this submission, keeping repository writes within the student's submission directory. Agent source code was not changed.
+
+The user approved reuse of the existing week-06 OpenAI credential. `agent-market/join.ps1` reads it without printing it and passes it to the child process through its environment. It does not copy or write the credential to a file. The supplied market claim code is also passed through the environment and is not embedded in the scripts or logs.
+
+At 19:39:15 KST, the kit confirmed both:
+
+```text
+[market] shop registered as seochanit, round 0
+[market] buyer registered as seochanit, round 0
+```
+
+The public agent card returned HTTP 200 at:
+https://hist-delays-situation-food.trycloudflare.com/.well-known/agent-card.json
+
+The tunnel initially needed about one minute for DNS and HTTP access to become available. The kit then received its first market order. Registration is not a claim that the market test or Round 2 deal requirements have passed.
+
+The first live order bought a chair for 210 within its budget of 225. The market recorded `ledger #192`, `verified True`; the kit verified the other shop's seller signature and added the buyer signature. This was a Round 0 trade, not a trade-test run. The next order had budget 160 and ended without a deal (`ledger #211`). Raw records are in `logs/market-kit.log` and the corresponding buyer logs.
+
+- Leaderboard: https://market.ourolabs.ai/board
+- Continuous kit log: `logs/market-kit.log`
+- Per-session stdout and stderr: `logs/market-sessions/`
+- Current PID and log paths: `.market/session.json` (ignored by Git)
+- Local signing keys: `shop_key.pem` and `buyer_key.pem` (ignored by Git; retain them to keep the same identity)
+
+The kit, seller and tunnel run in the background on this PC. The PC must stay on and connected to keep them available. No automatic startup service was installed.
+
+Stop the current session from the repository root:
+
+```powershell
+.\submissions\26510121\week-07\agent-market\stop.ps1
+```
+
+To restart after stopping, provide the claim code locally through `MARKET_OWNER`, then run:
+
+```powershell
+.\submissions\26510121\week-07\agent-market\join.ps1
+```
+
+The launch script refuses to start a second kit while the recorded process is running. A restarted quick tunnel receives a new public URL. Keep the existing signing keys and nickname.
