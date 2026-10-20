@@ -134,7 +134,7 @@ type Task = {
   artifacts?: { artifactId: string; name: string; parts: Part[] }[];
   history: Message[];
 };
-type Deal = { item: string; ask: number; history: string[]; offers?: number[]; discount?: number; tier?: number };
+type Deal = { item: string; ask: number; history: string[]; offers?: number[]; discount?: number; tier?: number; stamps?: number };
 const MARGIN = 5; // a stuck buyer is accepted only at reserve + MARGIN or more
 type RpcError = { code: number; message: string; data: unknown[] };
 type Outcome = { task: Task } | { error: RpcError };
@@ -193,6 +193,12 @@ const MAX_LOYALTY = 0.15; // the Worker refuses a strategy with a bigger step
 const MAX_TIER = 6; // the meta-harness may add tiers up to this one
 const COUPON = /FAIR-([A-Z]{8})([A-Z]{8})/i;
 const tierOf = (code: string) => Math.max(1, Math.min(MAX_TIER, code.charCodeAt(5) - 64));
+// Stamp card: the code's second letter counts the buyer's deals so far, modulo STAMP_EVERY (signed with the
+// rest), and every STAMP_EVERY-th order gets STAMP_BONUS more off, still never below reserve + MARGIN.
+const STAMP_EVERY = 8;
+const STAMP_BONUS = 0.08;
+const stampsOf = (code: string) => (code.charCodeAt(6) - 65) % STAMP_EVERY;
+const stampCard = (n: number) => "★".repeat(n) + "☆".repeat(STAMP_EVERY - n); // no digits: buyers read numbers as prices
 const toLetters = (bytes: Uint8Array, n: number) => Array.from(bytes.slice(0, n), (b) => String.fromCharCode(65 + (b % 26))).join("");
 
 async function couponMac(env: Env, nonce: string): Promise<string> {
@@ -201,9 +207,10 @@ async function couponMac(env: Env, nonce: string): Promise<string> {
   return toLetters(new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(nonce))), 8);
 }
 
-async function newCoupon(env: Env, tier: number): Promise<string> {
+async function newCoupon(env: Env, tier: number, stamps: number): Promise<string> {
   const t = String.fromCharCode(64 + Math.max(1, Math.min(MAX_TIER, tier)));
-  const nonce = t + toLetters(crypto.getRandomValues(new Uint8Array(7)), 7);
+  const st = String.fromCharCode(65 + (stamps % STAMP_EVERY));
+  const nonce = t + st + toLetters(crypto.getRandomValues(new Uint8Array(6)), 6);
   return `FAIR-${nonce}${await couponMac(env, nonce)}`;
 }
 
@@ -280,23 +287,28 @@ export class TaskObject extends DurableObject<Env> {
       }
       let discount = 0;
       let tier = 0;
+      let stamps = 0;
       let welcome = "";
       const code = await validCoupon(this.env, textOf(msg));
       if (code && (await this.env.TASKS.get(this.env.TASKS.idFromName(STRATEGY_ID)).redeem(code))) {
         tier = tierOf(code);
+        stamps = stampsOf(code);
         const table = strategy?.loyalty?.length ? strategy.loyalty : LOYALTY;
         discount = Math.min(MAX_LOYALTY, table[Math.min(tier, table.length - 1)] ?? 0);
+        const full = stamps === STAMP_EVERY - 1; // this order is the STAMP_EVERY-th
+        if (full) discount += STAMP_BONUS;
         const lower = Math.max(reserve + MARGIN, Math.round(price * (1 - discount)));
-        console.log(`COUPON: ${code} redeemed, tier ${tier}, opening ${price} -> ${lower}`);
+        console.log(`COUPON: ${code} redeemed, tier ${tier}, stamps ${stamps}${full ? " (stamp bonus)" : ""}, opening ${price} -> ${lower}`);
         price = Math.min(price, lower);
-        welcome = "Welcome back! Your loyalty discount is applied.";
+        welcome = full ? "Welcome back! Your stamp card is full: loyalty discount plus the stamp bonus applied."
+          : "Welcome back! Your loyalty discount is applied.";
       } else if (code) {
         console.log(`COUPON: ${code} was already used`);
         welcome = "That loyalty code has already been used.";
       }
       const promo = cleanNote(strategy?.promo);
       const note = [welcome, promo, cleanNote(answer.note)].filter(Boolean).join(" ");
-      await this.ctx.storage.put("deal", { item, ask: price, history: [`You asked ${price}.`], discount, tier } satisfies Deal);
+      await this.ctx.storage.put("deal", { item, ask: price, history: [`You asked ${price}.`], discount, tier, stamps } satisfies Deal);
       console.log(`OUT: open ${item} at ${price}`);
       this.respond(task, "TASK_STATE_INPUT_REQUIRED", `${item}: ${note ? note + " " : ""}Asking ${price}. Send your offer as a number.`);
     }
@@ -405,7 +417,9 @@ export class TaskObject extends DurableObject<Env> {
   }
 
   private async close(task: Task, item: string, price: number, note: string) {
-    const nextTier = Math.min(MAX_TIER, ((await this.ctx.storage.get<Deal>("deal"))?.tier ?? 0) + 1);
+    const done = await this.ctx.storage.get<Deal>("deal");
+    const nextTier = Math.min(MAX_TIER, (done?.tier ?? 0) + 1);
+    const nextStamps = ((done?.stamps ?? 0) + 1) % STAMP_EVERY;
     await this.env.TASKS.get(this.env.TASKS.idFromName(STRATEGY_ID)).count(`issued:${nextTier}`);
     const receipt = await signReceipt(this.env, { shop: NAME, item, price: Math.round(price), task: task.id });
     task.artifacts = [{ artifactId: crypto.randomUUID(), name: "receipt", parts: [{ data: receipt }] }];
@@ -413,7 +427,8 @@ export class TaskObject extends DurableObject<Env> {
     // reviews decide who gets the next buyer: thank the buyer and ask for an honest one (as dragonash does)
     this.respond(task, "TASK_STATE_COMPLETED",
       `${note} Deal: ${item} at ${price}. Thank you! Your signed receipt is attached; an honest review helps us a lot. ` +
-        `Loyalty code for your next order, whatever your review says: ${await newCoupon(this.env, nextTier)} (put it in your first message).`.trim());
+        `Loyalty code for your next order, whatever your review says: ${await newCoupon(this.env, nextTier, nextStamps)} (put it in your first message). ` +
+        `Stamps: ${stampCard(nextStamps === 0 ? STAMP_EVERY : nextStamps)}${nextStamps === STAMP_EVERY - 1 ? " (your next order gets the stamp bonus)" : ""}.`.trim());
   }
 
   async get(): Promise<Outcome> {
