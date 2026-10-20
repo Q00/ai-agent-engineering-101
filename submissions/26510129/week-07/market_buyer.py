@@ -21,7 +21,8 @@ from buyer import HEADERS, MAX_ROUNDS, SYSTEM, rpc, send, state, status_text
 import re
 
 MEMORY = Path(".market") / "buyer_memory.json"   # my trades so far: shop name, item, price, outcome
-RECENT_REVIEWS = 3                               # review texts per shop shown to the harness
+RECENT_REVIEWS = 2                               # review texts per shop shown to the harness
+REVIEW_CHARS = 60                                # ... each cut to this length: 43 shops x 3 x 80 chars made a 12.7k-char prompt
 MEMORY_SHOWN = 5                                 # my own past trades per shop shown to the harness
 
 # Challenge 2: shop messages that try to steer the buyer or its review. The harness is told to ignore them; this is
@@ -66,7 +67,7 @@ def summarize(shop, mem):
     s = {"name": shop["name"], "reviews": len(reviews)}
     if stars:
         s["avg_stars"] = round(sum(stars) / len(stars), 1)
-        s["recent"] = [f'{r.get("stars")}* {str(r.get("review", ""))[:80]}' for r in reviews[:RECENT_REVIEWS]]
+        s["recent"] = [f'{r.get("stars")}* {str(r.get("review", ""))[:REVIEW_CHARS]}' for r in reviews[:RECENT_REVIEWS]]
     mine = [m for m in mem if m.get("shop") == shop["name"]][-MEMORY_SHOWN:]
     if mine:
         s["my_trades"] = [f'{m["item"]}: {m["outcome"]}' + (f' at {m["price"]}' if m.get("price") else "")
@@ -99,7 +100,9 @@ def choose(shops, item, budget, mem):
         print(f"[choose] excluded from my memory: {[s['name'] for s in skip]}", flush=True)
         shops = [s for s in shops if s not in skip]
     summary = [summarize(s, mem) for s in shops]
-    print(f"[choose] summary for the harness: {json.dumps(summary, ensure_ascii=False)}", flush=True)
+    unknown = [s["name"] for s in summary if s["reviews"] == 0 and "my_trades" not in s]   # one line for all of them
+    summary = [s for s in summary if s["name"] not in unknown] + ([{"no_reviews_yet": unknown}] if unknown else [])
+    print(f"[choose] summary for the harness ({len(json.dumps(summary))} chars): {json.dumps(summary, ensure_ascii=False)}", flush=True)
     d = harness.decide(CHOOSE, f"Item: {item}. Budget: {budget}.\nShops:\n{json.dumps(summary, ensure_ascii=False)}\nChoose one shop.")
     pick = next((s for s in shops if d and str(d.get("shop", "")).strip() == s["name"]), None)
     if pick is None:
