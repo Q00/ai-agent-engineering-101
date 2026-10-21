@@ -295,13 +295,16 @@ class CancellationAwareRequestHandler(DefaultRequestHandler):
 
 def build(config):
     categories = config.get("categories", ["lamp", "chair", "bookshelf"])
-    description = config.get("description", "Shop selling " + ", ".join(categories) + ". Good-value offers, whole-credit prices and Ed25519 signed receipts.")
+    description = config.get("description", "Shop selling " + ", ".join(categories) +
+        ". Request a current quote; completed purchases include an Ed25519-signed receipt.")
     card = AgentCard(name=config["name"], description=description, version="1.0.0",
         default_input_modes=["text/plain"], default_output_modes=["application/json", "text/plain"],
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", protocol_version="1.0",
             url=f"http://127.0.0.1:{config['port']}/")],
-        skills=[AgentSkill(id="negotiate", name="Catalog search and price negotiation", description=description,
+        skills=[AgentSkill(id="negotiate", name="Catalog search and price negotiation", description=(
+            "Name an item to receive a quote. Reply with a numeric offer on the same task; "
+            "the shop responds with a counteroffer, a signed receipt, or a rejection."),
             tags=["shopping", *categories], examples=["I want to buy a lamp", "A wooden shelf for 40 books"])])
     handler = CancellationAwareRequestHandler(agent_executor=Seller(config), task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
@@ -317,10 +320,9 @@ if __name__ == "__main__":
         "name": "Ssadassa Shop",
         "port": args.port,
         "description": (
-            "Promotion: lamp 100/chair 180/bookshelf 260 credits. Recovery (top 3): "
-            "120/200/290. In recovery only, request item + REVIEW10 in your first "
-            "message for 10% off: 108/180/261. Offer the exact final quote on the same "
-            "task for an Ed25519-signed receipt. No fees; existing quotes honored."
+            "Lamps, chairs and bookshelves. Request a current quote, then send your offer "
+            "as a number on the same task. Agreed purchases receive an Ed25519-signed "
+            "receipt showing the item and exact agreed price."
         ),
     }
     if args.config:
