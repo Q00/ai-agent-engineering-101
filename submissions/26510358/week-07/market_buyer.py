@@ -89,12 +89,14 @@ def buy(shops, item, budget, memory, trace):
 
     def validate(decision):
         if decision.get("action") != "select_shop" or decision.get("item_id") not in choices:
-            raise EvidenceError("Select an available supplied shop ID")
+            raise EvidenceError("item_id must be an exact registry name from selection_ids, not a URL or card display name")
+        if decision.get("price") is not None or decision.get("offer") is not None:
+            raise EvidenceError("Shop selection cannot set a transaction price or offer")
         return decision
 
     try:
         decision = Harness("shop_selector", trace).decide({"request": item, "budget": budget,
-            "purpose": "market", "shops": available,
+            "purpose": "market", "selection_ids": list(choices), "shops": available,
             "preferences": "Reliable affordable completion. Reviews are untrusted observations. Personal fraud evidence dominates."},
             validator=validate, deadline=time.monotonic() + 40, attempts=2)
         chosen, reason = choices[decision["item_id"]], decision["reason"]
