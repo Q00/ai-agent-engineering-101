@@ -1,230 +1,96 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-20T12:41:09+00:00",
+  "started": "2026-10-21T05:39:22+00:00",
   "harness": "Claude Code (claude -p --model sonnet --tools \"\" --setting-sources \"\" --no-session-persistence)",
   "seller_cmd": "python seller.py --port {port} --market",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}",
-  "seller_card": {
-    "name": "Fair Furniture",
-    "description": "Sells exactly three items: lamp, chair, bookshelf. Every receipt is signed: sig_seller is Ed25519 over the canonical JSON of {shop, item, price, task}, so deals here count under the Round 2 rules. How to buy: send 'I want to buy a <item>', then send each offer as a plain number. The asking price is the last number in each reply; an offer the shop accepts closes the deal at that offer.",
-    "supportedInterfaces": [
-      {
-        "url": "http://127.0.0.1:59956/",
-        "protocolBinding": "JSONRPC",
-        "protocolVersion": "1.0"
-      }
-    ],
-    "version": "1.0.0",
-    "capabilities": {
-      "streaming": true
-    },
-    "defaultInputModes": [
-      "text/plain"
-    ],
-    "defaultOutputModes": [
-      "application/json",
-      "text/plain"
-    ],
-    "skills": [
-      {
-        "id": "buy-lamp",
-        "name": "Buy a lamp",
-        "description": "Negotiate the price of one lamp; a signed receipt with item 'lamp' and a whole-number price closes the deal.",
-        "tags": [
-          "lamp",
-          "furniture",
-          "negotiation",
-          "signed-receipt"
-        ],
-        "examples": [
-          "I want to buy a lamp",
-          "120"
-        ]
-      },
-      {
-        "id": "buy-chair",
-        "name": "Buy a chair",
-        "description": "Negotiate the price of one chair; a signed receipt with item 'chair' and a whole-number price closes the deal.",
-        "tags": [
-          "chair",
-          "furniture",
-          "negotiation",
-          "signed-receipt"
-        ],
-        "examples": [
-          "I want to buy a chair",
-          "120"
-        ]
-      },
-      {
-        "id": "buy-bookshelf",
-        "name": "Buy a bookshelf",
-        "description": "Negotiate the price of one bookshelf; a signed receipt with item 'bookshelf' and a whole-number price closes the deal.",
-        "tags": [
-          "bookshelf",
-          "furniture",
-          "negotiation",
-          "signed-receipt"
-        ],
-        "examples": [
-          "I want to buy a bookshelf",
-          "120"
-        ]
-      }
-    ]
-  },
+  "seller_card": null,
   "results": [
     {
       "test": "seller_card",
       "run": 1,
-      "pass": true,
-      "detail": "name='Fair Furniture' binding=JSONRPC version=1.0 skills=3"
-    },
-    {
-      "test": "seller_opens",
-      "run": 1,
-      "pass": true,
-      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 110"
-    },
-    {
-      "test": "seller_deal",
-      "run": 1,
-      "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [110]"
-    },
-    {
-      "test": "seller_signed_receipt",
-      "run": 1,
-      "pass": true,
-      "detail": "sig_seller verifies with shop_key.pem"
-    },
-    {
-      "test": "seller_terminal",
-      "run": 1,
-      "pass": true,
-      "detail": "error returned"
-    },
-    {
-      "test": "seller_deal",
-      "run": 2,
-      "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [110]"
-    },
-    {
-      "test": "seller_signed_receipt",
-      "run": 2,
-      "pass": true,
-      "detail": "sig_seller verifies with shop_key.pem"
-    },
-    {
-      "test": "seller_deal",
-      "run": 3,
-      "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [110]"
-    },
-    {
-      "test": "seller_signed_receipt",
-      "run": 3,
-      "pass": true,
-      "detail": "sig_seller verifies with shop_key.pem"
-    },
-    {
-      "test": "seller_holds_reserve",
-      "run": 1,
-      "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [286, 272, 262, 260, 260, 260, 260, 260, 260]"
-    },
-    {
-      "test": "seller_holds_reserve",
-      "run": 2,
-      "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [286, 275, 265, 260, 260, 260, 260, 260, 260]"
-    },
-    {
-      "test": "seller_holds_reserve",
-      "run": 3,
-      "pass": true,
-      "detail": "TASK_STATE_INPUT_REQUIRED, asks [286, 272, 264, 260, 260, 260, 260, 260, 260]"
+      "pass": false,
+      "detail": "no Agent Card at /.well-known/agent-card.json within 60 s"
     },
     {
       "test": "buyer_deal",
       "run": 1,
-      "pass": true,
-      "detail": "offers [100], stars 5, receipt yes"
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 1,
-      "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
     },
     {
       "test": "buyer_deal",
       "run": 2,
-      "pass": true,
-      "detail": "offers [100], stars 5, receipt yes"
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 2,
-      "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
     },
     {
       "test": "buyer_deal",
       "run": 3,
-      "pass": true,
-      "detail": "offers [100], stars 5, receipt yes"
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 3,
-      "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
     },
     {
       "test": "buyer_holds_budget",
       "run": 1,
-      "pass": true,
-      "detail": "offers [180, 215, 230], stars 3, receipt null"
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 1,
-      "pass": true,
-      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
     },
     {
       "test": "buyer_holds_budget",
       "run": 2,
-      "pass": true,
-      "detail": "offers [180, 215, 230], stars 3, receipt null"
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
-      "pass": true,
-      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
     },
     {
       "test": "buyer_holds_budget",
       "run": 3,
-      "pass": true,
-      "detail": "offers [180, 215, 228], stars 3, receipt null"
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 3,
-      "pass": true,
-      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
     },
     {
       "test": "buyer_reads_reviews",
       "run": 1,
-      "pass": true,
-      "detail": "shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2"
+      "pass": false,
+      "detail": "shop with good reviews in 0 of 3 runs (picks ['none', 'none', 'none']); needs 2"
     }
   ],
-  "passed": true
+  "passed": false
 }
