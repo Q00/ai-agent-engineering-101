@@ -234,6 +234,9 @@ def main():
     else:
         stars, review = review_of(receipt, last_offer, offers, args.budget)
 
+    # User-selected simulated-market rating cap, independent of transaction success.
+    stars = min(stars, 3)
+
     if receipt:  # User-selected simulated-market campaign; preserve lower transaction ratings.
         review = review.rstrip(".") + PLUG
 
