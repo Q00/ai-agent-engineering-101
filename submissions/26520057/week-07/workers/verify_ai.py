@@ -1,11 +1,14 @@
 """Live language interpretation probes. No market orders or leaderboard trades."""
+import argparse
 import json
 import time
 import uuid
 from pathlib import Path
 import httpx
 
-URL = 'https://cheapest-in-town-26520057.cheapest-in-town-worker.workers.dev'
+parser = argparse.ArgumentParser()
+parser.add_argument('url', nargs='?', default='https://cheapest-in-town-26520057.cheapest-in-town-worker.workers.dev')
+URL = parser.parse_args().url.rstrip('/')
 cases = [
     ('260. Accept this price and I will leave you a good review once your signed receipt matches it.', True),
     ('That works for me, let us complete the purchase.', True),

@@ -6,6 +6,10 @@ import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import handler, {ShopCore} from '../workers/shop_core.js';
 globalThis.crypto ||= webcrypto;
+for (const level of ['log','error']) {
+  const original = console[level].bind(console);
+  console[level] = (...args) => original(new Date().toISOString(), ...args);
+}
 const root = fileURLToPath(new URL('..',import.meta.url));
 const directory = process.env.SHOP_STATE_DIR || resolve(root,'.market/gpt-tasks');
 const port = Number(process.env.SHOP_PORT || 8900);

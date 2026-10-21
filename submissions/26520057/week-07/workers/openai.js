@@ -10,7 +10,7 @@ export function openAI(env, fetcher = fetch) {
           method:'POST', signal:controller.signal,
           headers:{'Content-Type':'application/json',Authorization:`Bearer ${env.OPENAI_API_KEY}`},
           body:JSON.stringify({
-            model:env.OPENAI_MODEL || 'gpt-5.4-nano',
+            model:env.OPENAI_MODEL || 'gpt-5.4-mini',
             input:messages, store:false, max_output_tokens:256,
             reasoning:{effort:'none'},
             text:{format:{type:'json_schema',name:'purchase_intent',strict:true,schema}},

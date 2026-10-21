@@ -77,6 +77,7 @@ export class ShopCore {
       const price = FLOORS[record.item];
       const receipt = await this.sign({shop:NAME,item:record.item,price,task:record.task.id});
       record.task.artifacts = [{artifactId:crypto.randomUUID(),name:'receipt',parts:[{data:receipt}]}];
+      console.log('[checkout]', JSON.stringify({task:record.task.id,item:record.item,price}));
       setStatus('TASK_STATE_COMPLETED',`Deal: ${record.item} at ${price}. Zero added fees; your signed receipt records this exact item, price and task. Same listed price on your next visit. Please review your actual experience.`);
     };
     if (method === 'CancelTask') {
