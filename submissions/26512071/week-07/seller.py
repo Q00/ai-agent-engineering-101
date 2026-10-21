@@ -38,6 +38,7 @@ import random
 import time
 import re
 import shutil
+from collections import deque
 import sys
 import tempfile
 
@@ -122,6 +123,14 @@ def promo_left():
     return max(0, PROMO + PER_LOW_REVIEW * low_reviews() - done)
 
 
+def opening_mult():
+    """The opening ask over the reserve: LIST when busy, 1.0 when quiet, linear in between."""
+    now = time.time()
+    while _visits and now - _visits[0] > DEMAND_WINDOW:
+        _visits.popleft()
+    return 1 + (LIST - 1) * min(1.0, max(0.0, (len(_visits) - QUIET) / (BUSY - QUIET)))
+
+
 def record_talk(task_id, deal, outcome):
     if not (MARKET and NICK) or deal is None:  # NICK is set only by the market's caller, not by the tests
         return
@@ -161,7 +170,15 @@ def open_shop(n):
 # 3-star review ("Paid 103.0 of 105."), because it opened at about 1.5x the reserve and
 # closed near the buyer's budget. Shop rank counts deals, not revenue.
 PROMO = int(os.environ.get("SHOP_PROMO", "0"))  # opening-price deals, only when the kit sets it
-PROMO_ASK, OPEN_CAP = 1.05, 1.1  # opening asks: 1.05x reserve during the promo, at most 1.1x after
+PROMO_ASK = 1.05  # opening ask during the promo
+# 10-21, back after 6 hours offline at rank 20: a price list on the market card, so a buyer's
+# model can hold it against its budget before it visits (other cards only say "negotiable"),
+# and under the list the opening ask follows demand: the list price when buyers keep coming,
+# down to the reserve when the shop is quiet. Rank counts deals, so the list is the ceiling.
+LIST = 1.05                   # list price over the reserve, shown on the card; no ask is above it
+BUSY, QUIET = 30, 5           # visits in the last DEMAND_WINDOW s: at BUSY open at the list, at QUIET at the reserve
+DEMAND_WINDOW = 600
+_visits = deque()             # time of each first message
 # Fair-price mode in the market, from 264 market reviews: shown ratings come from deals,
 # 5-star deals were paid at about 0.81 of the buyer's budget and 4-star at 0.91, and the
 # 2-star ones say the shop "held firm". So: any offer at or above the reserve closes,
@@ -311,7 +328,9 @@ class Seller(AgentExecutor):
             if item is None:
                 await up.reject(say("Sorry, nothing in our catalog fits that."))
                 return
-            log(f"[seller] task={task.id[:8]} picked {item['id']} {item['name']} reserve={item['reserve']}")
+            _visits.append(time.time())
+            log(f"[seller] task={task.id[:8]} picked {item['id']} {item['name']} reserve={item['reserve']}"
+                + (f" demand={len(_visits)}/{DEMAND_WINDOW // 60}min open={opening_mult():.3f}x" if MARKET else ""))
             deal = self.open[task.id] = {"item": item, "ask": None, "rounds": 0,
                                          "history": [f"Buyer: {text}"]}
             offer = None
@@ -344,7 +363,7 @@ class Seller(AgentExecutor):
             log(f"[harness] no answer in {HARNESS_WAIT} s, the code moves")
             decision = None
         if decision is None:  # harness failed or was slow: the fair-price rules below make the move
-            action, price, message = "ask", deal["ask"] or round(reserve * OPEN_CAP), ""
+            action, price, message = "ask", deal["ask"] or round(reserve * LIST), ""
         else:
             action, price, message = decision
         if re.search(r"\d", message):  # 40 of 141 market asks carried sizes like "180 cm ... 150 books ... 340"
@@ -362,7 +381,7 @@ class Seller(AgentExecutor):
             if action == "ask":
                 step = max(1, round(reserve * STEP))
                 if deal["ask"] is None:
-                    price = min(price, round(reserve * (PROMO_ASK if promo else OPEN_CAP)))
+                    price = min(price, round(reserve * (PROMO_ASK if promo else opening_mult())))
                 elif price > deal["ask"] - step:       # asks only come down, by at least one step
                     price = deal["ask"] - step
             if promo:
@@ -434,8 +453,11 @@ def build(port):
     )
     if MARKET:  # the market card: plain facts a buyer's model can read at a glance, no instructions
         card.name = MARKET_NAME
+        prices = ", ".join(f"{i['name']} {round(i['reserve'] * LIST)}" for i in CATALOG.items)
         card.description = (
             "Sells exactly three items: lamp, chair, bookshelf. "
+            f"List prices: {prices}. The shop never asks more than the list price, and opens lower when it is quiet. "
+            "An offer at or above the list price always closes at once. "
             "Every receipt is signed: sig_seller is Ed25519 over the canonical JSON of {shop, item, price, task}, "
             "so deals here count under the Round 2 rules. "
             "How to buy: send 'I want to buy a <item>', then send each offer as a plain number. "
