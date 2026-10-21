@@ -19,7 +19,7 @@ from market_a2a.security_review import public_review_signals
         (True, True, 5, 1),
         (False, True, 5, 1),
         (False, False, 1, 3),
-        (True, False, 4, 4),
+        (True, False, 4, 3),
     ],
 )
 def test_review_when_own_incident_is_distinct_from_ordinary_no_deal(

@@ -1,0 +1,12 @@
+PLC0415 `import` should be at the top-level of a file
+   --> tests/test_strict_review.py:185:5
+    |
+183 | def test_selection_facts_when_own_public_rating_changes_are_identical() -> None:
+184 |     # Given: identical own trade facts with different historical public evaluations.
+185 |     from market_a2a.strict_review import trade_facts
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+186 |
+187 |     trade = Trade(
+    |
+
+Found 1 error.

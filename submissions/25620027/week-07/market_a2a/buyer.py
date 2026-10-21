@@ -234,6 +234,12 @@ async def buy_order(
                         f"{final_task.status.state}: {final_task.observation()}"
                     ),
                 )
-            result = result.model_copy(update={"safety": events.snapshot()})
+            result = result.model_copy(
+                update={
+                    "safety": events.snapshot(),
+                    "initial_ask": task.asking_price(),
+                    "offer_count": negotiation.rounds,
+                }
+            )
             emit("[NEGOTIATION RESULT] " + result.model_dump_json())
             return result

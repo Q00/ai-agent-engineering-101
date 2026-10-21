@@ -70,6 +70,8 @@ class Purchase(FrozenModel):
     failure_observation: str = ""
     receipt: dict[str, JsonValue] | None = None
     safety: SafetyObservation = Field(default_factory=SafetyObservation)
+    initial_ask: int | None = Field(default=None, strict=True, ge=1)
+    offer_count: int | None = Field(default=None, strict=True, ge=0)
 
 
 class ShopCard(FrozenModel):

@@ -91,7 +91,7 @@ def test_trade_when_model_selects_shop_preserves_receipt_and_budget(
     assert json.loads(posts[-1].content)["params"]["message"]["taskId"] == "trade-1"
     evaluation = Memory.load(memory_path).shops["South"][0].evaluation
     assert evaluation is not None
-    assert evaluation.stars == result.stars == 4
+    assert evaluation.stars == result.stars == 3
     assert evaluation.review == result.review
     assert any(line.startswith("[MARKET SELECTION] ") for line in logs)
     assert [feedback.terminal for feedback in harness.feedback] == [
