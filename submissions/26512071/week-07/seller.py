@@ -123,7 +123,7 @@ def promo_left():
 
 
 def record_talk(task_id, deal, outcome):
-    if not MARKET or deal is None:
+    if not (MARKET and NICK) or deal is None:  # NICK is set only by the market's caller, not by the tests
         return
     with TALKS.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "task": task_id,
@@ -391,7 +391,7 @@ class Seller(AgentExecutor):
             thanks = " New shop: an honest review helps us." if MARKET else ""
             await up.complete(say(f"{message}{thanks} Deal: {item['name']} at {offer}."))
             record_talk(task.id, deal, "deal")
-            if MARKET:
+            if MARKET and NICK:  # the market test runs --market too; its deals stay out
                 record_sale({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "task": task.id, "item": item["name"],
                              "price": int(offer), "reserve": reserve, "first_ask": deal.get("first_ask"),
                              "rounds": deal["rounds"], "promo": promo})
