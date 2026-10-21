@@ -7,6 +7,7 @@ week-05/market/host.py. Transport-specific MCP calls become typed local dispatch
 from __future__ import annotations
 
 import json
+from time import monotonic
 from typing import TYPE_CHECKING, Final, assert_never, final
 
 import anyio
@@ -35,6 +36,7 @@ MAX_MODEL_ROUNDS: Final = 6
 RETRY_STATUS: Final = 429
 SERVER_ERROR: Final = 500
 RETRY_DELAYS: Final = (1.0, 2.0, 4.0)
+FREE_CALL_INTERVAL: Final = 3.1
 
 
 def assistant_message(
@@ -94,7 +96,8 @@ class Harness:
         self.calls = 0
         self.input_tokens = 0
         self.output_tokens = 0
-        self.limit = anyio.CapacityLimiter(5)
+        self.limit = anyio.CapacityLimiter(1 if self.model == FREE_MODEL else 5)
+        self.next_call_at = 0.0
 
     async def run(
         self,
@@ -166,6 +169,8 @@ class Harness:
             try:
                 async with self.limit:
                     if self.model == FREE_MODEL:
+                        await anyio.sleep(max(0.0, self.next_call_at - monotonic()))
+                        self.next_call_at = monotonic() + FREE_CALL_INTERVAL
                         completion = await self.client.chat.completions.create(
                             model=self.model,
                             temperature=0,

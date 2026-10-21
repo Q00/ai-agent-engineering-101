@@ -1,12 +1,13 @@
 name: ax-week07-25620027
 services:
   seller:
-    image: ax-week07-25620027-seller:1.4.0-limit10000
+    image: ax-week07-25620027-seller:1.4.0-openrouter-limit10000
     build:
       context: ../..
       dockerfile: deploy/vps/Dockerfile
     environment:
       AX_TUNNEL_ENABLED: ${AX_TUNNEL_ENABLED:-1}
+      AX_MODEL_ENV_FILE: /run/private/openrouter.env
     restart: "on-failure:3"
     init: true
     cpus: 1.0

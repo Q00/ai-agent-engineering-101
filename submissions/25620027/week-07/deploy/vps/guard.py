@@ -202,7 +202,8 @@ def main() -> int:
     try:
         commands = {
             'seller': ['uv', 'run', '--offline', '--no-project', '--no-sync',
-                       '--env-file', '/run/private/openai.env',
+                       '--env-file', os.environ.get('AX_MODEL_ENV_FILE',
+                                                    '/run/private/openai.env'),
                        'python', '/app/deploy/vps/serve_public.py'],
             'cloudflared': ['cloudflared', 'tunnel', '--no-autoupdate', '--config',
                            '/run/private/cloudflared.yml', 'run'],

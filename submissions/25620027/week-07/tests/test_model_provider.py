@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from time import monotonic
 
 import anyio
 import httpx2
@@ -53,10 +54,12 @@ def test_sdk_request_uses_correct_host_model_and_zero_price_constraint(
     monkeypatch.setenv("OPENROUTER_API_KEY", "offline-openrouter")
     monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
     observed: list[dict[str, JsonValue]] = []
+    request_times: list[float] = []
 
     def respond(request: httpx2.Request) -> httpx2.Response:
         body = TypeAdapter(dict[str, JsonValue]).validate_json(request.content)
         observed.append(body)
+        request_times.append(monotonic())
         if provider == "openrouter-free":
             assert request.url.host == "openrouter.ai"
             assert request.headers["authorization"] == "Bearer offline-openrouter"
@@ -118,5 +121,12 @@ def test_sdk_request_uses_correct_host_model_and_zero_price_constraint(
             assert harness.output_tokens == 5
             assert len(observed) == 1
             assert json.dumps(observed)
+            if provider == "openrouter-free":
+                _ = await harness.complete(
+                    [{"role": "user", "content": "Second offline request"}],
+                    [{"type": "function", "function": {"name": "accept"}}],
+                )
+                assert len(request_times) == 2
+                assert request_times[1] - request_times[0] >= 3
 
     anyio.run(scenario)
