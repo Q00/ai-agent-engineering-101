@@ -95,12 +95,11 @@ short = [row for row in ads if ad_version(row) == 'short_price_notice']
 short_start = min(row['ts'] for row in short)
 short_incoming = [row for row in incoming if row['ts'] >= short_start]
 
-# Validate every apparent referral claim against the preserved operator wire.
+# Attribute claims only when the preserved operator wire establishes identity.
 claims = read(HERE / 'referral-claim-events.json')
 wire = [json.loads(line) for line in (LOGS / 'buyer-access-20261021T105709Z/referral-public-wire.jsonl').read_text().splitlines()]
 canceled_probe_ids = {row['request']['params']['id'] for row in wire if row['request']['method'] == 'CancelTask'}
 claim_ids = {row['task_id'] for row in claims}
-assert claim_ids <= canceled_probe_ids
 assert not claim_ids.intersection((row['data'].get('receipt') or {}).get('task') for row in verified)
 
 comparison = []
@@ -120,7 +119,9 @@ summary = {'analysis_cutoff_utc': manifest['analysis_cutoff_utc'],
            'incoming_all_buyers': dict(Counter(row['data']['buyer'] for row in incoming_all)),
            'incoming_verified_stars': dict(Counter(row['data']['stars'] for row in incoming)),
            'referral_claim_tasks': len(claim_ids), 'operator_quote_cancel_claims': len(claim_ids & canceled_probe_ids),
-           'nonoperator_referral_claims_observed': len(claim_ids - canceled_probe_ids),
+           'unattributed_referral_claims': len(claim_ids - canceled_probe_ids),
+           'unattributed_claim_task_ids': sorted(claim_ids - canceled_probe_ids),
+           'confirmed_referral_code_deals': 0,
            'short_ad_observation_minutes': (cutoff - short_start)/60,
            'short_ad_verified_incoming_deals': len(short_incoming),
            'shop_comparison': comparison,
@@ -132,6 +133,7 @@ summary = {'analysis_cutoff_utc': manifest['analysis_cutoff_utc'],
                        'Prices, public URLs, service reliability, shop description and buyer restrictions also changed.',
                        'Anonymous callers cannot be linked to ledger buyer names or attributed to a review read.',
                        'REVIEW10 was not available in the acquisition phase; absence of code use cannot rule out ad influence.',
+                       'Five code-claim tasks match canceled operator probes. One quote during an interrupted operator check has no completed wire response, so its source is left unclassified; none has a verified purchase.',
                        'The short advertisement has too little observation time for a reliable effect estimate.']}
 (HERE / 'effect-summary.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2))
 evidence = [{'seq': row['seq'], 'ts': row['ts'], 'buyer': row['data']['buyer'],
