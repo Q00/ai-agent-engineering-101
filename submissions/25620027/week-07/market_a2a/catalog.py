@@ -13,6 +13,7 @@ from pydantic import TypeAdapter
 from market_a2a.models import Product
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
 
 ALIASES: Final = {
@@ -213,18 +214,26 @@ class Catalog:
         except KeyError as error:
             raise MissingProductError(sku) from error
 
-    def search(self, query: str, limit: int = 6) -> tuple[Product, ...]:
-        """Return at most six relevant products, never the entire catalog."""
-        constraints = Constraints.parse(query)
+    def search(
+        self,
+        query: str,
+        limit: int = 6,
+        *,
+        constraints: Callable[[Product], bool] | None = None,
+    ) -> tuple[Product, ...]:
+        """Apply request constraints before ranking a bounded candidate set."""
+        parsed = Constraints.parse(query)
         scored: list[tuple[float, str, Product]] = []
         for item in self.products:
-            if not constraints.matches(item):
+            if not parsed.matches(item) or (
+                constraints is not None and not constraints(item)
+            ):
                 continue
-            overlap = constraints.words & self._terms[item.sku]
+            overlap = parsed.words & self._terms[item.sku]
             if not overlap:
                 continue
             score = sum(self._weights[word] for word in overlap)
-            if item.sku == item.kind and constraints.words == frozenset((item.kind,)):
+            if item.sku == item.kind and parsed.words == frozenset((item.kind,)):
                 score += 100
             scored.append((score, item.sku, item))
         scored.sort(key=lambda row: (-row[0], row[1]))

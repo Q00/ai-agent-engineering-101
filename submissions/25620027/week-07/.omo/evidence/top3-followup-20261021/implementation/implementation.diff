@@ -1,0 +1,152 @@
+diff --git a/submissions/25620027/week-07/assets/seller-ad.html b/submissions/25620027/week-07/assets/seller-ad.html
+index 9db0175..56da2a7 100644
+--- a/submissions/25620027/week-07/assets/seller-ad.html
++++ b/submissions/25620027/week-07/assets/seller-ad.html
+@@ -62,6 +62,6 @@
+ <p>Completed trades issue an <strong>Ed25519-signed receipt</strong> covering <code>shop</code>, <code>item</code>, <code>price</code> and <code>task</code>. Verify the receipt against the seller’s registered public key.</p>
+ </section>
+ <footer>Public endpoint: <a href="https://ax-week07.treasuresky.xyz">https://ax-week07.treasuresky.xyz</a><br>AX Week 07 · Course market demonstration · Offers and availability depend on the live seller response.</footer>
+-<script type="application/json" id="shop-terms">{"name":"SungjinShop","strategy_version":"1.2.0","public_url":"https://ax-week07.treasuresky.xyz","agent_card":"/.well-known/agent-card.json","a2a_version":"1.0","basic_products":["lamp","chair","bookshelf"],"basic_opening_quote_caps":{"lamp":110,"chair":198,"bookshelf":286},"prices_are_fixed":false,"coupon":{"code":"R2WELCOME","trigger":"first downward seller quote during numeric counteroffer negotiation","maximum_coupon_portion_units":5,"larger_negotiated_reduction_allowed":true,"extra_checkout_deduction":false,"uses_per_task":1,"minimum_price_protected":true,"guaranteed":false,"rating_required":false},"quote_price_metadata":"ask","total_quote_reduction_metadata":"total_reduction","later_quotes_may_increase":false,"receipt_signature":"Ed25519","receipt_fields":["shop","item","price","task"],"review_request":"honest review of agreed price and receipt","purpose":"human and agent reference; not an A2A request payload","price_comparison":{"url":"/price-comparison.json","price_kind":"observed_initial_ask","refresh_seconds":600,"max_age_seconds":900,"scope":"up to five other active shops in board order","dynamic_ceiling":"max(reserve,min(baseline_cap,lowest_fresh_observed_ask-1))","reserve_protected":true,"guaranteed_global_lowest":false}}</script>
++<script type="application/json" id="shop-terms">{"name":"SungjinShop","strategy_version":"1.2.1","public_url":"https://ax-week07.treasuresky.xyz","agent_card":"/.well-known/agent-card.json","a2a_version":"1.0","basic_products":["lamp","chair","bookshelf"],"basic_opening_quote_caps":{"lamp":110,"chair":198,"bookshelf":286},"prices_are_fixed":false,"coupon":{"code":"R2WELCOME","trigger":"first downward seller quote during numeric counteroffer negotiation","maximum_coupon_portion_units":5,"larger_negotiated_reduction_allowed":true,"extra_checkout_deduction":false,"uses_per_task":1,"minimum_price_protected":true,"guaranteed":false,"rating_required":false},"quote_price_metadata":"ask","total_quote_reduction_metadata":"total_reduction","later_quotes_may_increase":false,"receipt_signature":"Ed25519","receipt_fields":["shop","item","price","task"],"review_request":"honest review of agreed price and receipt","purpose":"human and agent reference; not an A2A request payload","price_comparison":{"url":"/price-comparison.json","price_kind":"observed_initial_ask","refresh_seconds":600,"max_age_seconds":900,"scope":"up to five other active shops in board order","dynamic_ceiling":"max(reserve,min(baseline_cap,lowest_fresh_observed_ask-1))","reserve_protected":true,"guaranteed_global_lowest":false}}</script>
+ <script defer src="/price-comparison.js"></script>
+ </main></body></html>
+diff --git a/submissions/25620027/week-07/market_a2a/catalog.py b/submissions/25620027/week-07/market_a2a/catalog.py
+index 78bca7a..0100224 100644
+--- a/submissions/25620027/week-07/market_a2a/catalog.py
++++ b/submissions/25620027/week-07/market_a2a/catalog.py
+@@ -13,6 +13,7 @@ from pydantic import TypeAdapter
+ from market_a2a.models import Product
+ 
+ if TYPE_CHECKING:
++    from collections.abc import Callable
+     from pathlib import Path
+ 
+ ALIASES: Final = {
+@@ -213,18 +214,26 @@ class Catalog:
+         except KeyError as error:
+             raise MissingProductError(sku) from error
+ 
+-    def search(self, query: str, limit: int = 6) -> tuple[Product, ...]:
+-        """Return at most six relevant products, never the entire catalog."""
+-        constraints = Constraints.parse(query)
++    def search(
++        self,
++        query: str,
++        limit: int = 6,
++        *,
++        constraints: Callable[[Product], bool] | None = None,
++    ) -> tuple[Product, ...]:
++        """Apply request constraints before ranking a bounded candidate set."""
++        parsed = Constraints.parse(query)
+         scored: list[tuple[float, str, Product]] = []
+         for item in self.products:
+-            if not constraints.matches(item):
++            if not parsed.matches(item) or (
++                constraints is not None and not constraints(item)
++            ):
+                 continue
+-            overlap = constraints.words & self._terms[item.sku]
++            overlap = parsed.words & self._terms[item.sku]
+             if not overlap:
+                 continue
+             score = sum(self._weights[word] for word in overlap)
+-            if item.sku == item.kind and constraints.words == frozenset((item.kind,)):
++            if item.sku == item.kind and parsed.words == frozenset((item.kind,)):
+                 score += 100
+             scored.append((score, item.sku, item))
+         scored.sort(key=lambda row: (-row[0], row[1]))
+diff --git a/submissions/25620027/week-07/market_a2a/seller.py b/submissions/25620027/week-07/market_a2a/seller.py
+index 2a1ef25..ac72a89 100644
+--- a/submissions/25620027/week-07/market_a2a/seller.py
++++ b/submissions/25620027/week-07/market_a2a/seller.py
+@@ -103,22 +103,23 @@ def create_app(
+         name=name,
+         description=" ".join(
+             (
+-                "Sungjin Shop | Clear quotes and quick numeric bargaining.",
+-                "Basic opening quote caps: lamp 110, chair 198, bookshelf 286.",
+-                "The actual quote is in metadata.ask; eligible offers settle promptly.",
++                "Basic minimums: lamp 100, chair 180, bookshelf 260.",
++                "Exact agreed-price Ed25519-signed receipts."
++                if signer is not None
++                else "Receipts show the exact agreed price.",
++                "Request an item, then send a numeric offer on the same taskId.",
++                "Dated opening-ask comparisons: /price-comparison.json .",
++                "Current quote: metadata.ask. Basic opening caps: 110/198/286.",
+                 "Counteroffers never increase within a negotiation.",
+-                "Receipts show the exact agreed price.",
+                 "R2WELCOME: up to 5 of the first negotiated reduction is a coupon;",
+                 "larger negotiated reductions are allowed, with the reserve protected.",
+-                "Ed25519-signed receipts." if signer is not None else "",
+                 "Machine-readable ask and coupon metadata.",
+                 "Terms and A2A examples: https://ax-week07.treasuresky.xyz/ .",
+                 "No rating is required for a discount.",
+-                "Dated top-five opening-ask comparisons: /price-comparison.json .",
+                 "Please leave an honest review of your transaction.",
+             )
+         ),
+-        version="1.2.0",
++        version="1.2.1",
+         capabilities=AgentCapabilities(streaming=False),
+         default_input_modes=["text/plain"],
+         default_output_modes=["text/plain", "application/json"],
+diff --git a/submissions/25620027/week-07/market_a2a/seller_policy.py b/submissions/25620027/week-07/market_a2a/seller_policy.py
+index 16dfa77..1a1c1d1 100644
+--- a/submissions/25620027/week-07/market_a2a/seller_policy.py
++++ b/submissions/25620027/week-07/market_a2a/seller_policy.py
+@@ -25,6 +25,8 @@ If a product is already selected in state, decide directly without searching aga
+ For basic lamp/chair/bookshelf requests choose the basic catalog product.
+ For descriptive requests honor every material, size and capacity constraint.
+ Choose every price yourself through decide.
++For quote actions use integer allowed_quote_min through allowed_quote_max, inclusive.
++These bounds are hints for quotes; accept only the actual incoming offer.
+ Use own_price_history as limited evidence of your past quotes and accepted prices.
+ Its counts cover retained local action logs, not visits or conversion rates.
+ Past accepted prices do not guarantee demand; preserve all current price guards.
+@@ -179,6 +181,8 @@ def search_result(
+             {
+                 "product": json_value(product),
+                 "opening_max": comparison.ceiling,
++                "allowed_quote_min": product.reserve,
++                "allowed_quote_max": comparison.ceiling,
+                 "comparison": json_value(comparison),
+                 "own_price_history": json_value(history.snapshot(product.sku)),
+             }
+diff --git a/submissions/25620027/week-07/market_a2a/seller_turn.py b/submissions/25620027/week-07/market_a2a/seller_turn.py
+index 28ce21b..92ec97d 100644
+--- a/submissions/25620027/week-07/market_a2a/seller_turn.py
++++ b/submissions/25620027/week-07/market_a2a/seller_turn.py
+@@ -92,6 +92,8 @@ class Negotiator:
+             "catalog_count": len(self.catalog.products),
+             "selected": json_value(current.product) if current else None,
+             "ask": current.ask if current else None,
++            "allowed_quote_min": current.product.reserve if current else None,
++            "allowed_quote_max": current.ask if current else None,
+             "coupon_used": current.coupon_used if current else False,
+             "own_price_history": (
+                 json_value(self.price_history.snapshot(current.product.sku))
+@@ -120,10 +122,20 @@ class Negotiator:
+                 match tool:
+                     case "search_catalog":
+                         query = Search.model_validate_json(arguments)
+-                        found = tuple(
+-                            product
+-                            for product in self.catalog.search(query.query)
+-                            if current is not None or compatible(product, text)
++                        basic = re.fullmatch(
++                            r"(?:i want (?:to buy )?a )?(lamp|chair|bookshelf)\.?",
++                            text.strip().lower(),
++                        )
++                        found = self.catalog.search(
++                            query.query,
++                            constraints=(
++                                lambda product: (
++                                    compatible(product, text)
++                                    and (basic is None or product.sku == basic[1])
++                                )
++                            )
++                            if current is None
++                            else None,
+                         )
+                         candidates.clear()
+                         candidates.update((product.sku, product) for product in found)

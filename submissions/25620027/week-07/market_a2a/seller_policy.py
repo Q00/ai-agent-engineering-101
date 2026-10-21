@@ -25,6 +25,8 @@ If a product is already selected in state, decide directly without searching aga
 For basic lamp/chair/bookshelf requests choose the basic catalog product.
 For descriptive requests honor every material, size and capacity constraint.
 Choose every price yourself through decide.
+For quote actions use integer allowed_quote_min through allowed_quote_max, inclusive.
+These bounds are hints for quotes; accept only the actual incoming offer.
 Use own_price_history as limited evidence of your past quotes and accepted prices.
 Its counts cover retained local action logs, not visits or conversion rates.
 Past accepted prices do not guarantee demand; preserve all current price guards.
@@ -179,6 +181,8 @@ def search_result(
             {
                 "product": json_value(product),
                 "opening_max": comparison.ceiling,
+                "allowed_quote_min": product.reserve,
+                "allowed_quote_max": comparison.ceiling,
                 "comparison": json_value(comparison),
                 "own_price_history": json_value(history.snapshot(product.sku)),
             }

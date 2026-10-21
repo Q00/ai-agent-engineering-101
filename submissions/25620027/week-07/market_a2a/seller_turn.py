@@ -92,6 +92,8 @@ class Negotiator:
             "catalog_count": len(self.catalog.products),
             "selected": json_value(current.product) if current else None,
             "ask": current.ask if current else None,
+            "allowed_quote_min": current.product.reserve if current else None,
+            "allowed_quote_max": current.ask if current else None,
             "coupon_used": current.coupon_used if current else False,
             "own_price_history": (
                 json_value(self.price_history.snapshot(current.product.sku))
@@ -120,10 +122,20 @@ class Negotiator:
                 match tool:
                     case "search_catalog":
                         query = Search.model_validate_json(arguments)
-                        found = tuple(
-                            product
-                            for product in self.catalog.search(query.query)
-                            if current is not None or compatible(product, text)
+                        basic = re.fullmatch(
+                            r"(?:i want (?:to buy )?a )?(lamp|chair|bookshelf)\.?",
+                            text.strip().lower(),
+                        )
+                        found = self.catalog.search(
+                            query.query,
+                            constraints=(
+                                lambda product: (
+                                    compatible(product, text)
+                                    and (basic is None or product.sku == basic[1])
+                                )
+                            )
+                            if current is None
+                            else None,
                         )
                         candidates.clear()
                         candidates.update((product.sku, product) for product in found)

@@ -103,22 +103,23 @@ def create_app(
         name=name,
         description=" ".join(
             (
-                "Sungjin Shop | Clear quotes and quick numeric bargaining.",
-                "Basic opening quote caps: lamp 110, chair 198, bookshelf 286.",
-                "The actual quote is in metadata.ask; eligible offers settle promptly.",
+                "Basic minimums: lamp 100, chair 180, bookshelf 260.",
+                "Exact agreed-price Ed25519-signed receipts."
+                if signer is not None
+                else "Receipts show the exact agreed price.",
+                "Request an item, then send a numeric offer on the same taskId.",
+                "Dated opening-ask comparisons: /price-comparison.json .",
+                "Current quote: metadata.ask. Basic opening caps: 110/198/286.",
                 "Counteroffers never increase within a negotiation.",
-                "Receipts show the exact agreed price.",
                 "R2WELCOME: up to 5 of the first negotiated reduction is a coupon;",
                 "larger negotiated reductions are allowed, with the reserve protected.",
-                "Ed25519-signed receipts." if signer is not None else "",
                 "Machine-readable ask and coupon metadata.",
                 "Terms and A2A examples: https://ax-week07.treasuresky.xyz/ .",
                 "No rating is required for a discount.",
-                "Dated top-five opening-ask comparisons: /price-comparison.json .",
                 "Please leave an honest review of your transaction.",
             )
         ),
-        version="1.2.0",
+        version="1.2.1",
         capabilities=AgentCapabilities(streaming=False),
         default_input_modes=["text/plain"],
         default_output_modes=["text/plain", "application/json"],
