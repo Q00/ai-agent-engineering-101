@@ -17,12 +17,12 @@ with httpx.Client(timeout=15,trust_env=False) as client:
     shops=client.get('https://market.ourolabs.ai/api/shops').json()
     card_response=client.get(url+'/.well-known/agent-card.json');card_response.raise_for_status()
     health=client.get(url+'/healthz');health.raise_for_status()
-(HERE/'board-after.json').write_text(json.dumps(board,ensure_ascii=False,indent=2))
-(HERE/'shops-after.json').write_text(json.dumps(shops,ensure_ascii=False,indent=2))
-(HERE/'card-after.json').write_text(json.dumps(card_response.json(),ensure_ascii=False,indent=2))
+(HERE/'board-verified.json').write_text(json.dumps(board,ensure_ascii=False,indent=2))
+(HERE/'shops-verified.json').write_text(json.dumps(shops,ensure_ascii=False,indent=2))
+(HERE/'card-verified.json').write_text(json.dumps(card_response.json(),ensure_ascii=False,indent=2))
 profiles={}
 for role in ('shops','buyers'):
-    owned=lambda b:sorted((r['name'],r['joined']) for r in b[role] if r.get('owner',{}).get('login')=='SUNGMYEONGGI')
+    owned=lambda b:sorted((r['name'],r['joined']) for r in b[role] if (r.get('owner') or {}).get('login')=='SUNGMYEONGGI')
     assert owned(before)==owned(board),(role,owned(before),owned(board))
     row=next(r for r in board[role] if r['name']=='myeonggi')
     assert row['alive'] and row['owner']['login']=='SUNGMYEONGGI'
