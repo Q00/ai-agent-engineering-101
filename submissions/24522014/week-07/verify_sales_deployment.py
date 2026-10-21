@@ -27,7 +27,7 @@ def main():
     for item,price in prices.items():
         with MarketTransport(shop['url'],item,price) as buyer:
             try:
-                task=buyer.open();text=seller_message(task)
+                task=buyer.open();text=seller_message(task).strip()
                 assert text==f'{item}: asking {price}',text
                 assert re.findall(r'\d+',text)==[str(price)]
                 parts=task['status']['message']['parts']
