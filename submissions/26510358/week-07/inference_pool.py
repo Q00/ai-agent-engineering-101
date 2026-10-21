@@ -3,7 +3,7 @@
 Kernel locks are released on process death. A burst of remote shop visitors
 cannot occupy the buyer lane. This controls execution, never trade decisions.
 """
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 import fcntl
 import json
 import math
@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 import time
 
-from inference_queue import QueueTimeout, inference_gap_seconds
+from inference_queue import InferenceQueue, QueueTimeout, inference_gap_seconds
 
 
 def pool_directory(directory=None):
@@ -36,6 +36,7 @@ def defer_pool(seconds, *, directory=None):
         previous = float(wall_path.read_text()) if wall_path.exists() else 0
         until = max(previous, time.time() + seconds)
         wall_path.write_text(str(until))
+        path.with_name("throttled-at").write_text(str(time.time()))
         stream.seek(0)
         stream.truncate()
         # Old generations may still be finishing quotes during a live reload.
@@ -64,6 +65,28 @@ def cooldown_remaining(directory):
         wall_path = path.with_name("cooldown-wall")
         wall_remaining = max(0, float(wall_path.read_text()) - time.time()) if wall_path.exists() else 0
         return max(_remaining(raw), wall_remaining)
+
+
+def recovering(directory):
+    path = directory / "throttled-at"
+    if not path.exists():
+        return False
+    with (directory / "cooldown").open() as stream:
+        fcntl.flock(stream, fcntl.LOCK_SH)
+        return 0 <= time.time() - float(path.read_text()) < 60
+
+
+@contextmanager
+def recovery_slot(directory, deadline):
+    """After a 429, probe serially in FIFO order instead of releasing a burst."""
+    gate = (InferenceQueue(directory / "recovery-queue.json", interval=1).slot(deadline)
+            if recovering(directory) else nullcontext())
+    with gate:
+        while cooldown_remaining(directory):
+            if deadline is not None and time.monotonic() >= deadline:
+                raise QueueTimeout("Inference deadline reached during provider recovery")
+            time.sleep(0.025)
+        yield
 
 
 @contextmanager
@@ -97,7 +120,8 @@ def pool_slot(role, deadline=None, *, directory=None, capacity=None):
                     pass
             if acquired is None:
                 time.sleep(min(0.025, max(0, deadline - time.monotonic())) if deadline else 0.025)
-        yield
+        with recovery_slot(directory, deadline):
+            yield
     finally:
         if acquired is not None:
             fcntl.flock(acquired, fcntl.LOCK_UN)

@@ -183,7 +183,7 @@ class Seller(AgentExecutor):
             decision = await asyncio.to_thread(self.harness.decide, trusted, strategy=strategy,
                 instruction=strategy_instruction("seller", strategy), validator=validate,
                 # Bound queue + model + retries together, below public proxy timeouts.
-                deadline=time.monotonic() + 35, attempts=2)
+                deadline=time.monotonic() + 35, attempts=3)
         except (HarnessError, EvidenceError) as exc:
             async with self.publication_locks.setdefault(task.id, asyncio.Lock()):
                 if task.id in self.terminal:
