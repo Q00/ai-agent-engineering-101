@@ -56,3 +56,17 @@ def review_notice(rule):
     return (" Ad (my shop): Ssadassa Shop / myeonggi, code " + rule["code"] +
             " for " + str(rule["percent"]) + "% off new recovery-mode lamp/chair/bookshelf quotes; "
             "include item + code in the first message. Acquisition prices excluded.")
+
+
+def append_review_notice(review, notice, *, limit=400):
+    """Reserve room for the entire disclosed ad in every public review result."""
+    if not notice:
+        return review
+    footer = notice.strip()
+    body = review.rstrip()
+    if body.endswith(footer):
+        body = body[:-len(footer)].rstrip()
+    room = max(0, limit - len(footer) - 1)
+    if len(body) > room:
+        body = body[:room - 3].rstrip() + "..." if room >= 3 else body[:room]
+    return (body + " " + footer).lstrip()
