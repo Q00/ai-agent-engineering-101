@@ -95,6 +95,8 @@ def validate_followup(decision, reserve, offer):
     parse_response(json.dumps(decision))
     if decision["action"] not in ("ask", "accept", "reject"):
         raise ValueError("Seller must ask, accept, or reject")
+    if offer >= reserve and decision["action"] != "accept":
+        raise ValueError("Accept an affordable offer immediately instead of adding negotiation turns")
     if decision["action"] == "reject":
         return
     if decision["price"] < reserve:
@@ -132,6 +134,8 @@ def seller_decision(provider, item, buyer_message, task_id, phase, *, offer=None
                 entry["response"] = decision
                 if phase == "opening":
                     validate_opening(decision, RESERVES[item])
+                    if decision["price"] != context["opening_reference"]:
+                        raise ValueError("Use the experiment's exact opening reference")
                 else:
                     validate_followup(decision, RESERVES[item], offer)
             except (ValueError, HarnessError) as error:
@@ -200,12 +204,13 @@ class Seller(AgentExecutor):
         say = lambda message: up.new_agent_message(parts=[new_text_part(message)])
         if decision["action"] == "ask":
             self.open[task.id] = {"item": item, "ask": decision["price"], "history": history}
-            # The last number is the ask; the private reason is never copied into this text.
+            # The only number in quote text is the ask. Dates and rating terms
+            # stay in a separate data Part and in the public card/completion.
             quote = f"{item}: asking {decision['price']}"
+            quote_data = {"kind": "quote", "item": item, "price": decision["price"]}
             if deal is None and self.event_notice:
-                # Keep the quote last: existing A2A buyers parse the last number.
-                quote = self.event_notice + "\n" + quote
-            await up.requires_input(say(quote))
+                quote_data["event_terms"] = self.event_notice
+            await up.requires_input(up.new_agent_message(parts=[new_text_part(quote), new_data_part(quote_data)]))
         elif decision["action"] == "accept":
             try:
                 receipt = sign_receipt({"shop": "Harness Furniture Shop", "item": item,
@@ -244,7 +249,7 @@ def build_app(provider, port):
     card = AgentCard(
         name="Harness Furniture Shop",
         description=description,
-        version="0.3.0",
+        version="0.4.0",
         default_input_modes=["text/plain"], default_output_modes=["text/plain", "application/json"],
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", protocol_version="1.0",

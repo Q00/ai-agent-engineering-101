@@ -30,7 +30,7 @@ def main():
         "shop_alive": participants["shops"]["alive"],
         "buyer_alive": participants["buyers"]["alive"],
         "owner_preserved": all(row["owner"]["login"] == "kcwarni" for row in participants.values()),
-        "public_version": card["version"] == "0.3.0",
+        "public_version": card["version"] == "0.4.0",
         "public_notice": notice in card["description"],
         "registered_notice": notice in participants["shops"]["card"]["description"],
         "homepage_has_r2": "2" in stats["rounds"],

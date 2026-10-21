@@ -46,6 +46,14 @@ class SignatureChecks(unittest.TestCase):
             with self.assertRaises(ValueError):
                 seller.validate_followup(decision("accept", reserve - 1), reserve, reserve - 1)
 
+    def test_affordable_offers_close_without_counter_or_reject(self):
+        for reserve in seller.RESERVES.values():
+            for offer in (reserve, reserve + 5):
+                seller.validate_followup(decision("accept", offer), reserve, offer)
+                for action, price in (("ask", offer + 5), ("reject", None)):
+                    with self.subTest(reserve=reserve, offer=offer, action=action), self.assertRaises(ValueError):
+                        seller.validate_followup(decision(action, price), reserve, offer)
+
 
 class SellerProtocol(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -65,7 +73,7 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
 
     async def test_event_visible_in_public_card_with_manual_terms(self):
         card = (await self.client.get("/.well-known/agent-card.json")).json()
-        self.assertEqual(card["version"], "0.3.0")
+        self.assertEqual(card["version"], "0.4.0")
         self.assertIn("4- or 5-star", card["description"])
         self.assertIn("Payment is manual", card["description"])
         self.assertIn("no fixed rate/auto payout", card["description"])
@@ -74,13 +82,17 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
         self.assertIn("10-28 09:51 KST", card["description"])
         self.assertLessEqual(len(card["description"]), 300)
 
-    async def test_promotion_does_not_break_last_number_asking_price(self):
-        with patch.object(seller, "opening_decision", return_value=decision("ask", 120)):
+    async def test_promotion_does_not_break_first_or_last_number_asking_price(self):
+        with patch.object(seller, "opening_decision", return_value=decision("ask", 105)):
             opened = await self.send("lamp")
         text = opened["status"]["message"]["parts"][0]["text"]
-        self.assertIn("Review cashback event", text)
-        self.assertEqual(re.findall(r"\d+", text)[-1], "120")
-        self.assertTrue(text.endswith("lamp: asking 120"))
+        self.assertEqual(text, "lamp: asking 105")
+        self.assertEqual(re.findall(r"\d+", text), ["105"])
+        quoted = opened["status"]["message"]["parts"][1]["data"]
+        self.assertEqual(quoted["kind"], "quote")
+        self.assertEqual(quoted["item"], "lamp")
+        self.assertEqual(quoted["price"], 105)
+        self.assertIn("Review cashback event", quoted["event_terms"])
         canceled = await self.client.post("/", json={"jsonrpc": "2.0", "id": str(uuid4()),
             "method": "CancelTask", "params": {"id": opened["id"]}})
         self.assertNotIn("error", canceled.json())
