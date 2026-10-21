@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 import unittest
+from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('vps_guard', HERE / 'guard.py')
@@ -19,6 +20,16 @@ EVIDENCE = Path(os.environ.get('VPS_TEST_EVIDENCE', HERE / '.omo/evidence/guard'
 
 
 class GuardTests(unittest.TestCase):
+    def test_authorized_daily_mode_keeps_cumulative_telemetry_without_old_stop(self):
+        self.baseline.write_text('{"model_usage_count": 10001}')
+        guard.DEADLINE = time.time() + .2
+        with patch.dict(os.environ, {'AX_OPENAI_FALLBACK': '1'}):
+            code, state = self.run_guard(self.commands('import time; time.sleep(30)'))
+        self.assertEqual((code, state['reason'], state['model_usage_count']),
+                         (0, 'deadline', 10001))
+        self.assertIsNone(state['limit'])
+        self.assertEqual(state['paid_daily_limit'], 5000)
+
     def setUp(self):
         self.directory = EVIDENCE / self._testMethodName
         self.directory.mkdir(parents=True, exist_ok=False)

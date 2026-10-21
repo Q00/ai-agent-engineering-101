@@ -37,13 +37,18 @@ from market_a2a.models import HarnessError, ToolDispatch, ToolResult, ToolSpec
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from openai.types.chat import ChatCompletion
     from pydantic import JsonValue
+
+    from market_a2a.paid_fallback import OpenAIFallback
 
 MODEL: Final = DEFAULT_MODEL
 MAX_MODEL_ROUNDS: Final = 6
 RETRY_STATUS: Final = 429
 SERVER_ERROR: Final = 500
 NOT_FOUND: Final = 404
+PAYMENT_REQUIRED: Final = 402
+FREE_RECHECK_SECONDS: Final = 60
 RETRY_DELAYS: Final = (1.0, 2.0, 4.0)
 FREE_CALL_INTERVAL: Final = 3.1
 
@@ -91,6 +96,7 @@ class Harness:
         emit: Callable[[str], None],
         *,
         model: str | None = None,
+        fallback: OpenAIFallback | None = None,
     ) -> None:
         """Own observability counters while the caller owns the API client."""
         self.client = client
@@ -107,6 +113,8 @@ class Harness:
         self.output_tokens = 0
         self.limit = anyio.CapacityLimiter(1 if self.model in FREE_MODELS else 5)
         self.next_call_at = 0.0
+        self.fallback = fallback
+        self.free_retry_at = 0.0
 
     async def run(
         self,
@@ -174,44 +182,21 @@ class Harness:
         tools: list[ChatCompletionToolParam],
     ) -> ChatCompletionMessage:
         """Retry transient API errors without replacing the model's decision."""
+        if self.fallback is not None and monotonic() < self.free_retry_at:
+            return await self._paid_complete(messages, tools)
         route = request_model(self.model, datetime.now(UTC))
         for attempt, delay in enumerate(RETRY_DELAYS):
             try:
-                async with self.limit:
-                    if self.model in FREE_MODELS:
-                        await anyio.sleep(max(0.0, self.next_call_at - monotonic()))
-                        self.next_call_at = monotonic() + FREE_CALL_INTERVAL
-                        completion = await self.client.chat.completions.create(
-                            model=route,
-                            temperature=0,
-                            messages=messages,
-                            tools=tools,
-                            tool_choice="auto",
-                            max_tokens=4096,
-                            extra_body={
-                                "provider": {
-                                    "require_parameters": True,
-                                    "max_price": {
-                                        "prompt": 0, "completion": 0, "request": 0,
-                                    },
-                                },
-                                "reasoning": {"effort": "low"},
-                            },
-                        )
-                    else:
-                        completion = await self.client.chat.completions.create(
-                            model=self.model,
-                            temperature=0,
-                            messages=messages,
-                            tools=tools,
-                            tool_choice="required",
-                            parallel_tool_calls=False,
-                            max_completion_tokens=450,
-                        )
+                completion = await self._complete_once(messages, tools, route)
             except APIStatusError as exc:
                 if exc.status_code == NOT_FOUND and route == FREE_MODEL:
                     route = FREE_ROUTER
                     self.emit("MODEL_FREE_FALLBACK route=openrouter/free")
+                elif (
+                    self.fallback is not None and self.model in FREE_MODELS
+                    and exc.status_code in (PAYMENT_REQUIRED, NOT_FOUND)
+                ):
+                    return await self._paid_complete(messages, tools)
                 elif exc.status_code != RETRY_STATUS and exc.status_code < SERVER_ERROR:
                     raise
                 self.emit(f"MODEL_RETRY status={exc.status_code} attempt={attempt + 1}")
@@ -220,21 +205,60 @@ class Harness:
                     f"MODEL_RETRY kind={type(exc).__name__} attempt={attempt + 1}"
                 )
             else:
-                self.calls += 1
-                usage = completion.usage
-                if usage is not None:
-                    self.input_tokens += usage.prompt_tokens
-                    self.output_tokens += usage.completion_tokens
-                    self.emit(
-                        "".join(
-                            (
-                                f"MODEL_USAGE model={completion.model} route={route} ",
-                                f"input={usage.prompt_tokens} ",
-                                f"output={usage.completion_tokens}",
-                            ),
-                        ),
-                    )
-                return completion.choices[0].message
+                return self._observe_completion(completion, route)
             await anyio.sleep(delay)
+        if self.fallback is not None and self.model in FREE_MODELS:
+            return await self._paid_complete(messages, tools)
         message = "Transient API retries exhausted"
         raise HarnessError(message)
+
+    async def _complete_once(
+        self, messages: list[ChatCompletionMessageParam],
+        tools: list[ChatCompletionToolParam], route: str,
+    ) -> ChatCompletion:
+        async with self.limit:
+            if self.model in FREE_MODELS:
+                await anyio.sleep(max(0.0, self.next_call_at - monotonic()))
+                self.next_call_at = monotonic() + FREE_CALL_INTERVAL
+                return await self.client.chat.completions.create(
+                    model=route, temperature=0, messages=messages, tools=tools,
+                    tool_choice="auto", max_tokens=4096,
+                    extra_body={
+                        "provider": {"require_parameters": True,
+                                     "max_price": {"prompt": 0, "completion": 0,
+                                                   "request": 0}},
+                        "reasoning": {"effort": "low"},
+                    },
+                )
+            return await self.client.chat.completions.create(
+                model=self.model, temperature=0, messages=messages, tools=tools,
+                tool_choice="required", parallel_tool_calls=False,
+                max_completion_tokens=450,
+            )
+
+    async def _paid_complete(
+        self, messages: list[ChatCompletionMessageParam],
+        tools: list[ChatCompletionToolParam],
+    ) -> ChatCompletionMessage:
+        fallback = self.fallback
+        if fallback is None:
+            message = "Paid fallback has not been configured"
+            raise HarnessError(message)
+        self.free_retry_at = monotonic() + FREE_RECHECK_SECONDS
+        async with self.limit:
+            completion = await fallback.complete(messages, tools, self.emit)
+        return self._observe_completion(completion, DEFAULT_MODEL)
+
+    def _observe_completion(
+        self, completion: ChatCompletion, route: str,
+    ) -> ChatCompletionMessage:
+        self.calls += 1
+        usage = completion.usage
+        if usage is not None:
+            self.input_tokens += usage.prompt_tokens
+            self.output_tokens += usage.completion_tokens
+            self.emit("".join((
+                f"MODEL_USAGE model={completion.model} route={route} ",
+                f"input={usage.prompt_tokens} output={usage.completion_tokens}",
+            )))
+        return completion.choices[0].message

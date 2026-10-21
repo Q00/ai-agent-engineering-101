@@ -102,16 +102,21 @@ def supervise(data: Path, baseline_file: Path, commands: dict[str, list[str]],
             stopped = True
 
         def record(reason: str):
+            daily = os.environ.get('AX_OPENAI_FALLBACK') == '1'
             atomic_json(data / 'guard-state.json', {
                 'reason': reason, 'baseline': baseline, 'model_usage_count': used,
-                'limit': CALL_LIMIT, 'deadline': '2026-10-21T21:00:00+09:00',
+                'limit': None if daily else CALL_LIMIT,
+                'limit_mode': 'openai_daily' if daily else 'cumulative',
+                'paid_daily_limit': 5000 if daily else None,
+                'deadline': dt.datetime.fromtimestamp(
+                    DEADLINE, dt.timezone(dt.timedelta(hours=9))).isoformat(),
                 'recorded_at': dt.datetime.now(dt.timezone.utc).isoformat(),
             })
 
         def stop_reason():
             if time.time() >= DEADLINE:
                 return 'deadline'
-            if used >= CALL_LIMIT:
+            if used >= CALL_LIMIT and os.environ.get('AX_OPENAI_FALLBACK') != '1':
                 return 'model_usage_limit'
             if stopped:
                 return 'signal'
@@ -200,10 +205,13 @@ def prepare_key() -> None:
 
 def main() -> int:
     try:
+        environments = ['--env-file', os.environ.get('AX_MODEL_ENV_FILE',
+                                                    '/run/private/openai.env')]
+        if os.environ.get('AX_OPENAI_FALLBACK') == '1':
+            environments = ['--env-file', '/run/private/openai.env'] + environments
         commands = {
             'seller': ['uv', 'run', '--offline', '--no-project', '--no-sync',
-                       '--env-file', os.environ.get('AX_MODEL_ENV_FILE',
-                                                    '/run/private/openai.env'),
+                       *environments,
                        'python', '/app/deploy/vps/serve_public.py'],
             'cloudflared': ['cloudflared', 'tunnel', '--no-autoupdate', '--config',
                            '/run/private/cloudflared.yml', 'run'],
