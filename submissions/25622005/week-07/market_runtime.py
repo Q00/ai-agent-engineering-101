@@ -1,4 +1,4 @@
-"""Keep the SSH tunnel and market kit together when the public URL changes.
+"""Keep the tunnel and market kit together when the public URL changes.
 
 MARKET_OWNER is inherited from the environment, never written to disk.
 This manages processes only; shop choice and trading stay in the agents.
@@ -14,6 +14,33 @@ import sys
 import threading
 import time
 from datetime import datetime
+
+
+class TunnelWatchdog:
+    """A running process can still hold a revoked or unreachable tunnel."""
+
+    def __init__(self, now, probe):
+        self.started = now
+        self.probe = probe
+        self.url = None
+        self.next_probe = now
+        self.failures = 0
+
+    def restart_reason(self, line, now, url):
+        if "unauthorized: tunnel not found" in line.lower():
+            return "provider revoked the tunnel"
+        if not url:
+            return "no public URL within 120 seconds" if now - self.started >= 120 else None
+        if url != self.url:
+            self.url = url
+            self.next_probe = now + 45  # Allow the kit and public DNS to start.
+            self.failures = 0
+        if now >= self.next_probe:
+            self.next_probe = now + 30
+            self.failures = 0 if self.probe(url) else self.failures + 1
+            if self.failures >= 3:
+                return "public card failed three consecutive checks"
+        return None
 
 
 def stop(proc):
@@ -45,6 +72,8 @@ def main():
     parser.add_argument("--name", required=True)
     parser.add_argument("--market", default="https://market.ourolabs.ai")
     parser.add_argument("--port", type=int, default=8900)
+    parser.add_argument("--cloudflared", type=Path,
+                        help="use this cloudflared executable instead of the SSH tunnel")
     parser.add_argument("--dir", type=Path, default=Path(__file__).resolve().parent)
     parser.add_argument("--kit", type=Path, default=Path(__file__).resolve().parents[3] / "scripts/market_kit.py")
     parser.add_argument("--fixed-config", type=Path,
@@ -88,13 +117,20 @@ def main():
                            "-o", "ServerAliveInterval=20", "-o", "ServerAliveCountMax=3",
                            "-o", "ExitOnForwardFailure=yes", "-R",
                            f"80:localhost:{args.port}", "nokey@localhost.run"]
+                if args.cloudflared:
+                    command = [str(args.cloudflared.resolve()), "tunnel", "--no-autoupdate",
+                               "--url", f"http://127.0.0.1:{args.port}", "--protocol", "http2"]
                 tunnel = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                           stderr=subprocess.STDOUT, text=True, bufsize=1, start_new_session=True)
                 threading.Thread(target=forward_lines, args=(tunnel, messages), daemon=True).start()
                 current_url = None
                 retry_kit_at = 0.0
-                # Preserve raw SSH output, including failures, without editing it.
-                with (logs / "ssh-runtime.log").open("a", encoding="utf-8") as ssh_log:
+                from fixed_address_runtime import public_card_healthy
+                watchdog = TunnelWatchdog(time.monotonic(),
+                                          lambda url: public_card_healthy(url, args.name))
+                # Preserve raw tunnel output, including failures, without editing it.
+                tunnel_log = "cloudflared-runtime.log" if args.cloudflared else "ssh-runtime.log"
+                with (logs / tunnel_log).open("a", encoding="utf-8") as ssh_log:
                     while running:
                         try:
                             line = messages.get(timeout=1)
@@ -105,7 +141,7 @@ def main():
                         if line:
                             ssh_log.write(line)
                             ssh_log.flush()
-                        found = re.search(r"https://[a-z0-9]+\.lhr\.life", line)
+                        found = re.search(r"https://(?:[a-z0-9]+\.lhr\.life|[a-z0-9-]+\.trycloudflare\.com)", line)
                         if found and found.group() != current_url:
                             current_url = found.group()
                             log(f"public URL changed to {current_url}; restarting kit with the same keys")
@@ -121,12 +157,16 @@ def main():
                             (private / "kit.pid").write_text(str(kit.pid) + "\n")
                             retry_kit_at = time.monotonic() + 30
                             log(f"kit started, pid {kit.pid}")
+                        reason = watchdog.restart_reason(line, time.monotonic(), current_url)
+                        if reason:
+                            log(f"{reason}; creating a fresh tunnel and re-registering with the same keys")
+                            break
                 stop(kit)
                 kit = None
                 stop(tunnel)
                 tunnel = None
                 if running:
-                    log("SSH connection ended; retrying in 10 seconds")
+                    log("tunnel connection ended; retrying in 10 seconds")
                     for _ in range(10):
                         if not running:
                             break
