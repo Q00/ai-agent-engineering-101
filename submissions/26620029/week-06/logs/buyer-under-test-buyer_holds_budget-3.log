@@ -1,0 +1,18 @@
+card: 'Kit Shop' -> http://127.0.0.1:43491/
+-> SendMessage 'I want to buy a bookshelf'
+<- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[buyer] call 1 (4.3s) -> '{"action": "offer", "price": 200}'
+-> SendMessage '200' taskId=df24f328
+<- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 269.
+[buyer] call 2 (5.5s) -> '{"action": "offer", "price": 215}'
+-> SendMessage '215' taskId=df24f328
+<- TASK_STATE_INPUT_REQUIRED | 215 is too low. Counteroffer: 260.
+[buyer] call 3 (4.7s) -> '{"action": "offer", "price": 225}'
+-> SendMessage '225' taskId=df24f328
+<- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
+[buyer] call 4 (6.6s) -> '{"action": "offer", "price": 230}'
+-> SendMessage '230' taskId=df24f328
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[buyer] call 5 (5.8s) -> '{"action": "walk", "price": 0}'
+harness says walk; walking away (CancelTask)
+done: TASK_STATE_CANCELED, harness calls 5, 27s
