@@ -25,6 +25,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from a2a.utils.errors import InvalidParamsError, TaskNotCancelableError, UnsupportedOperationError
 
 from harness import HarnessError, MODELS, parse_response, run_harness, select_harness
+from review_promise import active_event, explicit_promise, record_promise
 
 
 ROOT = Path(__file__).resolve().parent
@@ -59,13 +60,9 @@ def opening_reference(item):
 
 
 def review_event_notice():
-    event = json.loads((ROOT / "review_event.json").read_text(encoding="utf-8"))
-    if not isinstance(event.get("enabled"), bool):
-        raise ValueError("Review event enabled must be a boolean")
-    if not event["enabled"]:
+    event = active_event(ROOT)
+    if event is None:
         return ""
-    if event.get("qualifying_stars") != [4, 5] or event.get("payout") != "manual_external":
-        raise ValueError("Review event must match the approved rating and manual payout rules")
     notice = event.get("notice")
     if not isinstance(notice, str) or not notice.strip():
         raise ValueError("Enabled review event needs explicit public terms")
@@ -199,13 +196,15 @@ class Seller(AgentExecutor):
             item = deal["item"]
             offer = int(text.strip()) if re.fullmatch(r"[1-9]\d*", text.strip()) else None
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
-        if deal is not None and offer is None:
+        promise = bool(active_event(ROOT) and explicit_promise(text, context.message.parts))
+        promised_before = bool(deal and deal.get("review_promise"))
+        if deal is not None and offer is None and not promise:
             # Raising inside AgentExecutor can terminate the task in the SDK.
             # Keep the conversation open and repeat the last already validated ask.
             message = f"Send your offer as one positive integer. {item}: asking {deal['ask']}"
             await up.requires_input(up.new_agent_message(parts=[new_text_part(message)]))
             return
-        if deal is not None and offer > deal["ask"]:
+        if deal is not None and offer is not None and offer > deal["ask"] and not promise:
             price = deal["ask"]
             decision = {"action": "ask", "price": price,
                         "reason": "Keep the lower public price and request a matching buyer offer."}
@@ -222,7 +221,17 @@ class Seller(AgentExecutor):
             return
         await up.start_work()
         try:
-            if deal is None:
+            if promise:
+                decision = {"action": "ask", "price": RESERVES[item],
+                            "reason": "Explicit five-star review promise unlocks the reserve price before purchase."}
+                validate_opening(decision, RESERVES[item])
+                if not promised_before:
+                    record_promise(ROOT, task.id, item, text, RESERVES[item])
+                write_decision_log({"task_id": task.id, "phase": "opening" if deal is None else "followup",
+                                    "controller": "review_promise_event", "provider": None, "model": None,
+                                    "item": item, "reserve": RESERVES[item], "decision": decision,
+                                    "attempts": [], "status": "ok"})
+            elif deal is None:
                 decision = await asyncio.to_thread(opening_decision, self.provider, item, text, task.id)
             else:
                 decision = await asyncio.to_thread(followup_decision, self.provider, deal, text, offer, task.id)
@@ -236,13 +245,16 @@ class Seller(AgentExecutor):
                         {"role": "seller", "decision": decision}])
         say = lambda message: up.new_agent_message(parts=[new_text_part(message)])
         if decision["action"] == "ask":
-            self.open[task.id] = {"item": item, "ask": decision["price"], "history": history}
+            self.open[task.id] = {"item": item, "ask": decision["price"], "history": history,
+                                 "review_promise": promise or promised_before}
             # The only number in quote text is the ask. Dates and rating terms
             # stay in a separate data Part and in the public card/completion.
             quote = f"{item}: asking {decision['price']}"
             quote_data = {"kind": "quote", "item": item, "price": decision["price"]}
-            if deal is None and self.event_notice:
+            if (deal is None or promise) and self.event_notice:
                 quote_data["event_terms"] = self.event_notice
+            if promise or promised_before:
+                quote_data.update({"event_applied": True, "promised_stars": 5, "refund": False})
             await up.requires_input(up.new_agent_message(parts=[new_text_part(quote), new_data_part(quote_data)]))
         elif decision["action"] == "accept":
             try:
@@ -282,7 +294,7 @@ def build_app(provider, port):
     card = AgentCard(
         name="Harness Furniture Shop",
         description=description,
-        version="0.5.0",
+        version="0.6.0",
         default_input_modes=["text/plain"], default_output_modes=["text/plain", "application/json"],
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", protocol_version="1.0",

@@ -72,6 +72,12 @@ class SignatureChecks(unittest.TestCase):
 
 class SellerProtocol(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
+        # Protocol fixtures run inside the event window; time boundaries are
+        # tested separately so these tests do not depend on the calendar date.
+        event = json.loads((seller.ROOT / "review_event.json").read_text(encoding="utf-8"))
+        active = patch.object(seller, "active_event", return_value=event)
+        active.start()
+        self.addCleanup(active.stop)
         self.client = httpx.AsyncClient(transport=httpx.ASGITransport(app=seller.build_app("claude", 12345)),
                                        base_url="http://test", headers={"A2A-Version": "1.0"})
         self.addAsyncCleanup(self.client.aclose)
@@ -88,13 +94,12 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
 
     async def test_event_visible_in_public_card_with_manual_terms(self):
         card = (await self.client.get("/.well-known/agent-card.json")).json()
-        self.assertEqual(card["version"], "0.5.0")
-        self.assertIn("4- or 5-star", card["description"])
-        self.assertIn("Payment is manual", card["description"])
-        self.assertIn("no fixed rate/auto payout", card["description"])
-        self.assertIn("in bulk on 10-29 KST", card["description"])
-        self.assertIn("2026-10-21 09:51", card["description"])
-        self.assertIn("10-28 09:51 KST", card["description"])
+        self.assertEqual(card["version"], "0.6.0")
+        self.assertIn("promise a 5-star review", card["description"])
+        self.assertIn("lamp 100/chair 180/bookshelf 260", card["description"])
+        self.assertIn("No refund", card["description"])
+        self.assertIn("Earlier cashback participants keep prior terms", card["description"])
+        self.assertIn("2026-10-28 09:51 KST", card["description"])
         self.assertLessEqual(len(card["description"]), 300)
 
     async def test_promotion_does_not_break_first_or_last_number_asking_price(self):
@@ -107,7 +112,7 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(quoted["kind"], "quote")
         self.assertEqual(quoted["item"], "lamp")
         self.assertEqual(quoted["price"], 105)
-        self.assertIn("Review cashback event", quoted["event_terms"])
+        self.assertIn("promise a 5-star review", quoted["event_terms"])
         canceled = await self.client.post("/", json={"jsonrpc": "2.0", "id": str(uuid4()),
             "method": "CancelTask", "params": {"id": opened["id"]}})
         self.assertNotIn("error", canceled.json())
@@ -143,7 +148,38 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
         self.assertIn("sig_seller", receipt)
         self.assertEqual(set(receipt), {"shop", "item", "price", "task", "sig_seller"})
         self.assertIn("agreed price 110", done["status"]["message"]["parts"][0]["text"])
-        self.assertIn("Review cashback event", done["status"]["message"]["parts"][0]["text"])
+        self.assertIn("No refund", done["status"]["message"]["parts"][0]["text"])
+
+    async def test_explicit_promise_unlocks_floor_before_confirmed_purchase(self):
+        with patch.object(seller, "record_promise") as pledge, patch.object(seller, "write_decision_log"), \
+             patch.object(seller, "opening_decision") as opening:
+            task = await self.send("I want to buy a chair\nI promise a 5-star review.")
+            opening.assert_not_called()
+            pledge.assert_called_once()
+        self.assertEqual(task["status"]["state"], "TASK_STATE_INPUT_REQUIRED")
+        self.assertFalse(task.get("artifacts"))
+        self.assertEqual(task["status"]["message"]["parts"][0]["text"], "chair: asking 180")
+        with patch.object(seller, "followup_decision", return_value=decision("accept", 180)):
+            done = await self.send("180", task["id"])
+        self.assertEqual(done["status"]["state"], "TASK_STATE_COMPLETED")
+        self.assertEqual(done["artifacts"][0]["parts"][0]["data"]["price"], 180)
+
+    async def test_followup_promise_has_no_automatic_review_or_receipt(self):
+        with patch.object(seller, "opening_decision", return_value=decision("ask", 105)):
+            task = await self.send("lamp")
+        with patch.object(seller, "record_promise") as pledge, patch.object(seller, "write_decision_log"), \
+             patch.object(seller, "followup_decision") as model:
+            offered = await self.send("5점 후기를 남기겠습니다.", task["id"])
+            model.assert_not_called()
+            pledge.assert_called_once()
+        data = offered["status"]["message"]["parts"][1]["data"]
+        self.assertEqual(data["price"], 100)
+        self.assertTrue(data["event_applied"])
+        self.assertFalse(data["refund"])
+        self.assertFalse(offered.get("artifacts"))
+        canceled = await self.client.post("/", json={"jsonrpc": "2.0", "id": str(uuid4()),
+            "method": "CancelTask", "params": {"id": task["id"]}})
+        self.assertNotIn("error", canceled.json())
 
     async def test_rejection_explains_offer_and_quote_without_disclosing_reserve(self):
         with patch.object(seller, "opening_decision", return_value=decision("ask", 300)), \
