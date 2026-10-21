@@ -32,6 +32,7 @@ from market_a2a.seller_policy import (
     Search,
     Turn,
     decision_feedback,
+    opening_settlement_feedback,
     price_feedback,
     search_result,
     settlement_required,
@@ -287,12 +288,15 @@ class Negotiator:
             current_ask=current.ask if current else None,
             opening_limit=compare_price(product, turn.snapshot).ceiling,
         )
+        feedback = opening_settlement_feedback(turn, product, decision)
         if price_error is not None:
             guard = f"seller.guard task={turn.task_id} code={price_error.code}"
             self.harness.emit(
                 f"{guard} price={decision.price} reserve={product.reserve}"
             )
-            return ToolResult(data=json_value(price_error))
+            feedback = ToolResult(data=json_value(price_error))
+        if feedback is not None:
+            return feedback
         match decision.action:
             case "quote":
                 await self.quote(turn, product, decision)

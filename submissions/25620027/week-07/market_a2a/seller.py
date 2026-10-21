@@ -132,7 +132,7 @@ def create_app(
                 "Please leave an honest review of your transaction.",
             )
         ),
-        version="1.3.0",
+        version="1.3.1",
         capabilities=AgentCapabilities(streaming=False),
         default_input_modes=["text/plain"],
         default_output_modes=["text/plain", "application/json"],

@@ -88,21 +88,25 @@ def test_opening_offer_when_not_explicit_is_not_money(text: str) -> None:
     assert parsed is None
 
 
-@pytest.mark.parametrize("text", ["offer lamp 100", "buy lamp for 100"])
+@pytest.mark.parametrize(
+    ("text", "price"),
+    [("offer lamp 100", 100), ("buy lamp for 100", 100), ("offer lamp 125", 125)],
+)
 def test_first_offer_when_explicit_completes_signed_sale(
     monkeypatch: pytest.MonkeyPatch,
     text: str,
+    price: int,
 ) -> None:
     # Given: a model must retrieve, preserve SKU and amount, and correct bad actions.
     _ = scripted(
         monkeypatch,
         [
-            action("reject", 100),
-            action("accept", 100),
+            action("reject", price),
             ("search_catalog", {"query": "lamp"}),
-            action("accept", 100, "chair"),
-            action("accept", 101),
-            action("accept", 100),
+            action("quote", 100),
+            action("accept", price, "chair"),
+            action("accept", price + 1),
+            action("accept", price),
         ],
     )
     catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
@@ -124,24 +128,24 @@ def test_first_offer_when_explicit_completes_signed_sale(
                 # When: one explicit offer reaches the real A2A route.
                 wire = await send(client, text)
                 task = task_from(wire)
-                replay = await send(client, "100", task.id)
+                replay = await send(client, str(price), task.id)
                 # Then: exact amount is signed once and terminal replay is rejected.
                 assert task.status.state == TaskState.TASK_STATE_COMPLETED
                 raw = TypeAdapter(JsonValue).validate_json(
                     MessageToJson(task.artifacts[0].parts[0].data)
                 )
                 assert isinstance(raw, dict)
-                assert raw["price"] == 100
+                assert raw["price"] == price
                 receipt = SignedReceipt.model_validate(
                     {
                         **{
                             field: raw[field]
                             for field in ("shop", "item", "task", "sig_seller")
                         },
-                        "price": 100,
+                        "price": price,
                     }
                 )
-                assert receipt.price == 100
+                assert receipt.price == price
                 assert raw["sku"] == "lamp"
                 assert receipt.task == task.id
                 key.public_key().verify(

@@ -119,6 +119,29 @@ class Turn:
     explicit_offer_sku: str | None = None
 
 
+def opening_settlement_feedback(
+    turn: Turn, product: Product, decision: Decision
+) -> ToolResult | None:
+    """Require the model to accept a retrieved, feasible explicit opening offer."""
+    if (
+        turn.current is None
+        and turn.explicit_offer_sku == product.sku
+        and turn.offer is not None
+        and turn.offer >= product.reserve
+        and decision.action == "quote"
+    ):
+        return ToolResult(
+            data={
+                "code": "settlement_required",
+                "error": "Accept the actual feasible opening offer without delay.",
+                "required_action": "accept",
+                "price": turn.offer,
+                "sku": product.sku,
+            }
+        )
+    return None
+
+
 TOOLS: Final = (
     ToolSpec(
         name="search_catalog",

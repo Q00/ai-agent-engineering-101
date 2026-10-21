@@ -42,7 +42,7 @@ class InspectServer:
                 if path.endswith('agent-card.json'):
                     card = response.json()
                     (EVIDENCE / 'public-card.json').write_text(json.dumps(card, indent=2) + '\n')
-                    assert card['version'] == '1.3.0'
+                    assert card['version'] == '1.3.1'
                     interfaces = card.get('supportedInterfaces', card.get('supported_interfaces'))
                     assert interfaces[0]['url'] == public.PUBLIC_URL
                 if path == '/price-comparison.json':
@@ -60,4 +60,4 @@ if __name__ == '__main__':
          patch.dict(os.environ, {'AX_PRICE_COMPARISON': '1',
                                 'AX_SELLER_STATE_DB': str(Path(state_dir) / 'state.sqlite3')}):
         anyio.run(public.serve)
-    print('PASS: wrapper binds loopback:8900; real card version 1.3.0 advertises existing HTTPS URL; all four public routes return 200; comparison enabled; isolated persistent state; no model/network calls')
+    print('PASS: wrapper binds loopback:8900; real card version 1.3.1 advertises existing HTTPS URL; all four public routes return 200; comparison enabled; isolated persistent state; no model/network calls')
