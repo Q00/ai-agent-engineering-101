@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 import math
+import os
 import re
 from pathlib import Path
 
@@ -22,6 +23,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import decide, trace
 from catalog import Catalog
+from pricing import PricingRecorder
 from receipt import sign_receipt
 
 
@@ -29,11 +31,22 @@ RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
 
 class Seller(AgentExecutor):
-    def __init__(self, name: str, reserves: dict[str, int], catalog: Catalog | None = None) -> None:
+    def __init__(self, name: str, reserves: dict[str, int], catalog: Catalog | None = None,
+                 recorder: PricingRecorder | None = None) -> None:
         self.name = name
         self.reserves = reserves
         self.catalog = catalog
         self.open: dict[str, dict] = {}
+        self.recorder = recorder
+
+    def observe(self, method: str, *args: object) -> None:
+        """A telemetry failure must never change a negotiation or receipt."""
+        if self.recorder is None:
+            return
+        try:
+            getattr(self.recorder, method)(*args)
+        except Exception as error:
+            trace("pricing_record_error", method=method, error=str(error))
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -60,11 +73,17 @@ class Seller(AgentExecutor):
                     await updater.reject(say("We sell: " + ", ".join(self.reserves) + "."))
                     return
                 reserve, product_id = self.reserves[item], item
-            answer = await asyncio.to_thread(decide, "seller", {
-                "phase": "opening", "item": item, "private_reserve": reserve,
-                "buyer_message": message,
-                "objective": "Choose a reasonable opening ask near the reserve. A buyer with a modest budget should have a path to a deal.",
-            }, ["ask"])
+            self.observe("start", task.id, item, reserve)
+            self.observe("model_call", task.id)
+            try:
+                answer = await asyncio.to_thread(decide, "seller", {
+                    "phase": "opening", "item": item, "private_reserve": reserve,
+                    "buyer_message": message,
+                    "objective": "Choose a reasonable opening ask near the reserve. A buyer with a modest budget should have a path to a deal.",
+                }, ["ask"])
+            except Exception as error:
+                self.observe("close", task.id, "INFRA_ERROR", f"opening model call: {type(error).__name__}")
+                raise
             ask = max(reserve, int(answer["price"]))
             if ask != answer["price"]:
                 trace("price_guard", task_id=task.id, reason="ask below reserve",
@@ -81,6 +100,7 @@ class Seller(AgentExecutor):
             self.open[task.id] = {"item": item, "product_id": product_id, "reserve": reserve, "ask": ask, "history": []}
             trace("seller_open", task_id=task.id, item=item, product_id=product_id, reserve=reserve, ask=ask)
             await updater.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
+            self.observe("opening_sent", task.id, ask)
             return
 
         offered = re.fullmatch(r"\s*(\d+)\s*", message)
@@ -88,12 +108,18 @@ class Seller(AgentExecutor):
             await updater.requires_input(say(f"Please send one whole-number offer. Current ask: {deal['ask']}"))
             return
         offer = int(offered.group(1))
+        self.observe("offer_received", task.id, offer)
         deal["history"].append({"buyer_offer": offer, "seller_ask": deal["ask"]})
-        answer = await asyncio.to_thread(decide, "seller", {
-            "phase": "follow_up", "item": deal["item"], "private_reserve": deal["reserve"],
-            "current_ask": deal["ask"], "buyer_offer": offer, "history": deal["history"],
-            "objective": "Accept a fair offer at or above reserve promptly. Otherwise counter above reserve or reject if agreement is hopeless.",
-        }, ["deal", "counter", "reject"])
+        self.observe("model_call", task.id)
+        try:
+            answer = await asyncio.to_thread(decide, "seller", {
+                "phase": "follow_up", "item": deal["item"], "private_reserve": deal["reserve"],
+                "current_ask": deal["ask"], "buyer_offer": offer, "history": deal["history"],
+                "objective": "Accept a fair offer at or above reserve promptly. Otherwise counter above reserve or reject if agreement is hopeless.",
+            }, ["deal", "counter", "reject"])
+        except Exception as error:
+            self.observe("close", task.id, "INFRA_ERROR", f"follow-up model call: {type(error).__name__}")
+            raise
         action = answer["action"]
         if action == "deal" and offer < deal["reserve"]:
             trace("price_guard", task_id=task.id, reason="deal below reserve", offered=offer)
@@ -102,12 +128,14 @@ class Seller(AgentExecutor):
         if action == "deal":
             signed = sign_receipt(self.name, deal["item"], offer, task.id)
             await updater.add_artifact(parts=[new_data_part(signed)], name="receipt")
+            self.observe("receipt", task.id, offer)
             await updater.complete(say(f"Deal: {deal['item']} at {offer}."))
             trace("seller_deal", task_id=task.id, item=deal["item"], price=offer, receipt=signed)
             del self.open[task.id]
             return
         if action == "reject":
             await updater.reject(say(f"No deal for {deal['item']} at {offer}."))
+            self.observe("close", task.id, "REJECTED", "seller explicitly rejected the offer")
             trace("seller_reject", task_id=task.id, item=deal["item"], offer=offer)
             del self.open[task.id]
             return
@@ -118,11 +146,13 @@ class Seller(AgentExecutor):
         deal["ask"] = ask
         trace("seller_counter", task_id=task.id, item=deal["item"], offer=offer, ask=ask)
         await updater.requires_input(say(f"Counteroffer: {ask}."))
+        self.observe("counter_sent", task.id, ask)
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
         self.open.pop(task.id, None)
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
+        self.observe("close", task.id, "CANCELLED", "A2A task cancellation")
 
 
 def build(port: int, profile: dict | None = None, catalog: Catalog | None = None) -> Starlette:
@@ -151,7 +181,12 @@ def build(port: int, profile: dict | None = None, catalog: Catalog | None = None
             examples=["I want to buy a lamp", "110"],
         )],
     )
-    handler = DefaultRequestHandler(agent_executor=Seller(name, reserves, catalog), task_store=InMemoryTaskStore(), agent_card=card)
+    try:
+        recorder = PricingRecorder(os.environ.get("PRICING_STATE_PATH", "state/pricing_state.sqlite"))
+    except Exception as error:
+        trace("pricing_record_error", method="init", error=str(error))
+        recorder = None
+    handler = DefaultRequestHandler(agent_executor=Seller(name, reserves, catalog, recorder), task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
 

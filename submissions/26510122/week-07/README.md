@@ -50,3 +50,44 @@ The claim code is not stored in this repository or in `join.sh`.
 `adapt_prices.py --snapshot logs/challenge-1/before.json` converts a captured
 dashboard snapshot to `pricing-policy.json`. The shop reloads that policy at
 each new negotiation, caps its opening ask, and never lowers its reserve.
+
+## Seller V1 observation phase
+
+`pricing.py` records **new** seller tasks in the ignored
+`state/pricing_state.sqlite`. It does not choose a price. Opening asks still come
+from the seller model and the existing 1.12× reserve cap. Each task stores the
+actual opening ask, numeric buyer offers, model-call count, receipt price and
+status. All new tasks are labeled `legacy_cap_1.12`; historical log-only tasks
+are not inserted into this experiment database.
+The legacy cap uses floating-point multiplication and `ceil`; for a lamp reserve
+of 100 it currently evaluates to 113, so its label is a policy name rather
+than an exact price arm. A later randomized experiment must define exact
+integer rounding separately and verify every emitted ask.
+
+An exposed task remains `UNRESOLVED` after its last counter until stronger
+evidence arrives. An issued seller receipt is `RECEIPT_PENDING`, never a counted
+sale by itself. Explicit seller rejection, A2A cancellation and model-call
+failure have separate statuses. `TIMED_OUT` requires an independently verified
+market/A2A deadline; this version does not assign it automatically. A restart
+preserves recorded rows, although the existing Seller's in-memory active
+negotiations do not resume after a restart.
+
+To reconcile issued receipts with the official Round 2 ledger, run:
+
+```bash
+.venv/bin/python reconcile_pricing.py
+.venv/bin/python pricing.py --item lamp
+```
+
+The command scans ledger entries after a durable cursor, matches the receipt's
+task, shop, item and price, and records `DEAL_COUNTED` or
+`RECEIPT_NOT_COUNTED`. The first run seeks to an hour before the earliest new
+local attempt; later runs are incremental. It is currently a manual command, so
+unreconciled receipts stay pending. Tests can use `PRICING_STATE_PATH` to place
+their database outside the live `state/` directory.
+
+Low/Mid/High randomization and UCB are **not active**. Before testing those arms,
+verify the recorded ask equals the buyer-visible ask, choose a justified rule
+for unresolved and infrastructure-error outcomes, and run simultaneous
+per-item assignment while keeping follow-up negotiation fixed. Baseline trades
+and randomized trades must be analyzed separately.
