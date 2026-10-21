@@ -27,6 +27,7 @@ from policy import StrategyPolicy, strategy_instruction
 from tracing import Trace
 from receipts import load_shop_key, sign_receipt
 from rank_pricing import RankPricing
+from buyer_access import BuyerAccess
 
 
 class Seller(AgentExecutor):
@@ -44,6 +45,7 @@ class Seller(AgentExecutor):
         if offset:
             self.catalog = [{**p, "reserve": p["reserve"] + offset} for p in self.catalog]
         self.trace = Trace("seller", config.get("log_dir"))
+        self.buyer_access = BuyerAccess(config.get("buyer_access"))
         self.rank_pricing = RankPricing(self.price_policy, self.trace,
                                        state_path=config.get("pricing_state"))
         self.harness = Harness("seller", self.trace)
@@ -75,6 +77,21 @@ class Seller(AgentExecutor):
         lock = self.locks.setdefault(task.id, asyncio.Lock())
         async with lock:
             if task.id in self.terminal:
+                return
+            message_metadata = MessageToDict(context.message.metadata) if context.message is not None else {}
+            call_context = getattr(context, "call_context", None)
+            denied = self.buyer_access.match(user=getattr(call_context, "user", None),
+                message_metadata=message_metadata, request_metadata=getattr(context, "metadata", None))
+            if denied:
+                async with self.publication_locks.setdefault(task.id, asyncio.Lock()):
+                    if task.id not in self.terminal:
+                        up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
+                        await up.reject(up.new_agent_message(parts=[new_text_part(
+                            "This shop is unavailable to this buyer under its local access policy.")]))
+                        self.open.pop(task.id, None)
+                        self.terminal[task.id] = "rejected"
+                        self.trace.write("buyer_access_denied", task_id=task.id,
+                                         policy_version=self.buyer_access.version, **denied)
                 return
             await self._turn(task, context, event_queue)
 
