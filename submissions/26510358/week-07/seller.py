@@ -320,7 +320,7 @@ if __name__ == "__main__":
         "name": "Ssadassa Shop",
         "port": args.port,
         "description": (
-            "Lamps, chairs and bookshelves. Request a current quote, then send your offer "
+            "Ssadassa Shop by myeonggi : Lamps, chairs and bookshelves. Request a current quote, then send your offer "
             "as a number on the same task. Agreed purchases receive an Ed25519-signed "
             "receipt showing the item and exact agreed price."
         ),
