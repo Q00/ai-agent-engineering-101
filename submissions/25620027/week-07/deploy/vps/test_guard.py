@@ -67,7 +67,7 @@ class GuardTests(unittest.TestCase):
 
     def test_absolute_deadline_prevents_child_launch(self):
         guard.DEADLINE = self.deadline
-        self.assertEqual(self.deadline, guard.dt.datetime.fromisoformat('2026-10-21T09:00:00+09:00').timestamp())
+        self.assertEqual(self.deadline, guard.dt.datetime.fromisoformat('2026-10-21T21:00:00+09:00').timestamp())
         guard.DEADLINE = time.time() - 1
         code, state = self.run_guard(self.commands("raise RuntimeError('must not start')"))
         self.assertEqual((code, state['reason']), (0, 'deadline'))

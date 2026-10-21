@@ -13,7 +13,7 @@ import signal
 import subprocess
 import time
 
-DEADLINE = dt.datetime.fromisoformat('2026-10-21T09:00:00+09:00').timestamp()
+DEADLINE = dt.datetime.fromisoformat('2026-10-21T21:00:00+09:00').timestamp()
 CALL_LIMIT = 5000
 USAGE_PREFIX = b'MODEL_USAGE model='
 
@@ -104,7 +104,7 @@ def supervise(data: Path, baseline_file: Path, commands: dict[str, list[str]],
         def record(reason: str):
             atomic_json(data / 'guard-state.json', {
                 'reason': reason, 'baseline': baseline, 'model_usage_count': used,
-                'limit': CALL_LIMIT, 'deadline': '2026-10-21T09:00:00+09:00',
+                'limit': CALL_LIMIT, 'deadline': '2026-10-21T21:00:00+09:00',
                 'recorded_at': dt.datetime.now(dt.timezone.utc).isoformat(),
             })
 
