@@ -26,6 +26,7 @@ from harness import Harness, HarnessError
 from policy import StrategyPolicy, strategy_instruction
 from tracing import Trace
 from receipts import load_shop_key, sign_receipt
+from rank_pricing import RankPricing
 
 
 class Seller(AgentExecutor):
@@ -43,6 +44,8 @@ class Seller(AgentExecutor):
         if offset:
             self.catalog = [{**p, "reserve": p["reserve"] + offset} for p in self.catalog]
         self.trace = Trace("seller", config.get("log_dir"))
+        self.rank_pricing = RankPricing(self.price_policy, self.trace,
+                                       state_path=config.get("pricing_state"))
         self.harness = Harness("seller", self.trace)
         self.policy = StrategyPolicy(config.get("policy"))
         self.trace.write("policy_loaded", policy_sha256=self.policy.sha256,
@@ -56,11 +59,12 @@ class Seller(AgentExecutor):
         self.trace.write("seller_started", name=config["name"], catalog_size=len(self.catalog),
                          policy_version=self.policy.version, price_policy=self.price_policy["version"])
 
-    def opening_cap(self, item):
-        """Highest allowed open/counter: reserve plus the benchmarked margin."""
-        margin = self.price_policy["opening_margin"].get(item["id"])
+    def opening_cap(self, item, quote_policy=None):
+        """Highest allowed quote under this task's original pricing phase."""
+        quote_policy = quote_policy or self.rank_pricing.quote_policy()
+        margin = quote_policy["opening_margin"].get(item["id"])
         if margin is None:
-            margin = max(1, round(item["reserve"] * self.price_policy["default_margin_rate"]))
+            margin = max(1, round(item["reserve"] * quote_policy["default_margin_rate"]))
         return int(round(item["reserve"] + margin))
 
     async def execute(self, context, event_queue):
@@ -83,6 +87,8 @@ class Seller(AgentExecutor):
         flags = inspect_untrusted(text)
         deal = self.open.get(task.id)
         opening = deal is None
+        quote_policy = (await asyncio.to_thread(self.rank_pricing.refresh)
+                        if opening else deal.get("quote_policy", self.rank_pricing.quote_policy()))
         candidates = search_catalog(text, self.catalog, limit=8) if opening else [deal["item"]]
         # A request naming a catalog ID is an exact product lookup, not a request for a cheaper variant.
         exact = re.fullmatch(r"(?:I want to buy (?:a |an )?)?([A-Za-z0-9_-]+)[.!]?", text.strip(), re.I)
@@ -91,7 +97,7 @@ class Seller(AgentExecutor):
             if named:
                 candidates = named
         if opening:
-            candidates = [{**p, "max_opening_ask": self.opening_cap(p)} for p in candidates]
+            candidates = [{**p, "max_opening_ask": self.opening_cap(p, quote_policy)} for p in candidates]
         self.trace.write("remote_message", task_id=task.id, message=text, flags=flags,
                          candidates=[p["id"] for p in candidates], remote_stance=remote_stance)
         if not candidates:
@@ -108,7 +114,9 @@ class Seller(AgentExecutor):
                    "remote_message": text, "untrusted_flags": flags,
                    "history_summary": [] if opening else deal["history"][-8:],
                    "last_ask": None if opening else deal["ask"],
-                   "price_policy": self.price_policy["version"]}
+                   "price_policy": self.price_policy["version"],
+                   "pricing_phase": quote_policy["phase"],
+                   "accept_floor_bids": quote_policy["accept_floor_bids"]}
         reserve = candidates[0]["reserve"]
         trusted.update(reserve=reserve, offer=plain_offer, flags=flags)
         strategy = self.policy.choose("seller", trusted)
@@ -127,7 +135,7 @@ class Seller(AgentExecutor):
                 offer=observed_offer, opening=opening,
                 allowed_item_ids=[p["id"] for p in candidates],
                 max_ask=selected.get("max_opening_ask"), last_ask=None if opening else deal["ask"],
-                accept_floor_bids=self.price_policy["accept_floor_bids"])
+                accept_floor_bids=quote_policy["accept_floor_bids"])
 
         try:
             decision = await asyncio.to_thread(self.harness.decide, trusted, strategy=strategy,
@@ -148,13 +156,15 @@ class Seller(AgentExecutor):
                 self.trace.write("terminal_decision_discarded", task_id=task.id,
                                  state=self.terminal[task.id])
                 return
-            await self._publish_decision(task, up, candidates, deal, opening, text, decision)
+            await self._publish_decision(task, up, candidates, deal, opening, text, decision,
+                                         quote_policy=quote_policy)
 
-    async def _publish_decision(self, task, up, candidates, deal, opening, text, decision):
+    async def _publish_decision(self, task, up, candidates, deal, opening, text, decision, *, quote_policy=None):
         """Apply one validated decision while cancellation cannot interleave events."""
         item = next(p for p in candidates if p["id"] == decision["item_id"])
         if opening:
-            deal = {"item": item, "ask": decision["price"], "round": 0, "history": []}
+            deal = {"item": item, "ask": decision["price"], "round": 0, "history": [],
+                    "quote_policy": quote_policy or self.rank_pricing.quote_policy()}
             self.open[task.id] = deal
         deal["round"] += 1
         deal["history"].append({"remote": text, "action": decision["action"], "price": decision["price"]})
@@ -243,10 +253,10 @@ if __name__ == "__main__":
         "name": "Ssadassa Shop",
         "port": args.port,
         "description": (
-            "Opening asks: lamp 101, chair 183, bookshelf 265 credits or less. Offer the ask "
-            "and the reply is your Ed25519-signed receipt at exactly that price, so the deal "
-            "counts. Lower offers get one counter at our floor; from your second message any "
-            "offer at or above the floor is accepted. Whole-credit prices, no add-ons."
+            "Promotion quotes when active: lamp 100, chair 180, bookshelf 260 credits. "
+            "Standard opening quotes: 101, 183, 265 respectively. Request the current quote, "
+            "then offer it on the same task for an exact Ed25519-signed receipt. "
+            "Existing quotes are honored; no added fees."
         ),
     }
     if args.config:

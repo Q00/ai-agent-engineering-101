@@ -119,6 +119,9 @@ def validate_seller_decision(
             raise EvidenceError("a follow-up bid at or above the floor must be accepted at exactly that bid")
         if incoming < floor and action == "counter" and numeric_price(price) != floor:
             raise EvidenceError("counter a below-floor bid once, at exactly the reserve")
+    if not opening and incoming is not None and last_ask is not None \
+            and incoming >= numeric_price(last_ask) and action != "accept":
+        raise EvidenceError("a bid meeting the existing quote must be accepted")
     if action == "accept":
         if incoming is None:
             raise EvidenceError("acceptance requires evidence of an incoming offer")

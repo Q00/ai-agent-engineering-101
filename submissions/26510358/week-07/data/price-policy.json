@@ -1,11 +1,29 @@
 {
-  "version": "benchmark-v1",
-  "source": "Benchmark of 11im, lee-sungsoo and dragonash on 2026-10-21 (logs/benchmark-pricing-before.json): top shops open at or just above the floor and close in one or two messages; buyers mark down opening asks above the market average (chair 188).",
+  "version": "rank-cycle-v1",
+  "source": "Owner rule: recover margin at rank 1-3 on the current round's Deals board; resume acquisition at rank 4 or below. Mandatory reserves stay unchanged. Recovery initially restores benchmark-v1 opening margins; reserves are not treated as actual costs.",
   "opening_margin": {
     "lamp": 1,
     "chair": 3,
     "bookshelf": 5
   },
   "default_margin_rate": 0.02,
-  "accept_floor_bids": true
+  "accept_floor_bids": true,
+  "rank_cycle": {
+    "enabled": true,
+    "registry_name": "myeonggi",
+    "market_url": "https://market.ourolabs.ai",
+    "round": 2,
+    "top_n": 3,
+    "poll_seconds": 60,
+    "phases": {
+      "acquisition": {
+        "opening_margin": {"lamp": 0, "chair": 0, "bookshelf": 0},
+        "accept_floor_bids": true
+      },
+      "recovery": {
+        "opening_margin": {"lamp": 1, "chair": 3, "bookshelf": 5},
+        "accept_floor_bids": false
+      }
+    }
+  }
 }
