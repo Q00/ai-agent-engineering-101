@@ -1,16 +1,16 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-21T12:46:33+00:00",
+  "started": "2026-10-21T14:07:56+00:00",
   "harness": "Codex CLI 0.162.0-alpha.17.2 / gpt-6-luna / medium reasoning / real structured decisions / bounded role lanes",
   "seller_cmd": "python3 seller.py --port {port}",
   "market_buyer_cmd": "python3 market_buyer.py --shops {shops} --item {item} --budget {budget}",
   "seller_card": {
     "name": "Ssadassa Shop",
-    "description": "Ssadassa Shop by myeonggi : Lamps, chairs and bookshelves. Request a current quote, then send your offer as a number on the same task. Agreed purchases receive an Ed25519-signed receipt showing the item and exact agreed price.",
+    "description": "Ssadassa Shop by myeonggi. Latest base quotes: lamp 100, chair 180, bookshelf 260 credits. Request a current quote, then send that number on the same task for an Ed25519-signed receipt at the exact agreed price. lamp: warm LED, adjustable shade, 45 cm high; chair: oak wood, 85 cm high; bookshelf: oak wood, 3 shelves, about 40 books, 90 cm high. Prices can change between orders; request your current quote.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:37091/",
+        "url": "http://127.0.0.1:41763/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -28,18 +28,45 @@
     ],
     "skills": [
       {
-        "id": "negotiate",
-        "name": "Catalog search and price negotiation",
-        "description": "Name an item to receive a quote. Reply with a numeric offer on the same task; the shop responds with a counteroffer, a signed receipt, or a rejection.",
+        "id": "buy-lamp",
+        "name": "Classic Reading Lamp / 기본 독서 램프",
+        "description": "Latest base quote: 100 credits. warm LED, adjustable shade, 45 cm high. Request a current quote, then offer that number on the same task for a signed receipt.",
         "tags": [
           "shopping",
-          "lamp",
-          "chair",
-          "bookshelf"
+          "furniture",
+          "lamp"
         ],
         "examples": [
           "I want to buy a lamp",
-          "A wooden shelf for 40 books"
+          "100"
+        ]
+      },
+      {
+        "id": "buy-chair",
+        "name": "Classic Dining Chair / 기본 원목 의자",
+        "description": "Latest base quote: 180 credits. oak wood, 85 cm high. Request a current quote, then offer that number on the same task for a signed receipt.",
+        "tags": [
+          "shopping",
+          "furniture",
+          "chair"
+        ],
+        "examples": [
+          "I want to buy a chair",
+          "180"
+        ]
+      },
+      {
+        "id": "buy-bookshelf",
+        "name": "Classic Oak Bookshelf / 기본 원목 책장",
+        "description": "Latest base quote: 260 credits. oak wood, 3 shelves, about 40 books, 90 cm high. Request a current quote, then offer that number on the same task for a signed receipt.",
+        "tags": [
+          "shopping",
+          "furniture",
+          "bookshelf"
+        ],
+        "examples": [
+          "I want to buy a bookshelf",
+          "260"
         ]
       }
     ]
@@ -49,7 +76,7 @@
       "test": "seller_card",
       "run": 1,
       "pass": true,
-      "detail": "name='Ssadassa Shop' binding=JSONRPC version=1.0 skills=1"
+      "detail": "name='Ssadassa Shop' binding=JSONRPC version=1.0 skills=3"
     },
     {
       "test": "seller_opens",
@@ -103,21 +130,21 @@
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_FAILED, asks [260]"
+      "detail": "TASK_STATE_REJECTED, asks [260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
-      "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [260, 260]"
-    },
-    {
-      "test": "seller_holds_reserve",
-      "run": 3,
       "pass": true,
       "detail": "TASK_STATE_REJECTED, asks [260, 260, 260]"
     },
     {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [260, 260]"
+    },
+    {
       "test": "buyer_deal",
       "run": 1,
       "pass": true,
@@ -169,13 +196,13 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [230], stars 3, receipt null"
+      "detail": "offers [230, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2"
     },
     {
       "test": "buyer_holds_budget",
