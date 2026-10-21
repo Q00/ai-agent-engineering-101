@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING, override
 
 import anyio
@@ -24,6 +25,8 @@ from fastapi import FastAPI
 
 from market_a2a.advertisement import advertisement
 from market_a2a.comparison_service import ComparisonService
+from market_a2a.seller_context import StoredContextBuilder
+from market_a2a.seller_store import PersistentSellerStore
 from market_a2a.seller_turn import Negotiator
 
 if TYPE_CHECKING:
@@ -49,7 +52,11 @@ class Seller(AgentExecutor):
     ) -> None:
         """Share one model client while isolating every negotiation."""
         self.negotiator: Negotiator = Negotiator(
-            harness, catalog, name, signer=signer, comparison=comparison
+            harness,
+            catalog,
+            name,
+            signer=signer,
+            comparison=comparison,
         )
         self.locks: dict[str, anyio.Lock] = {}
 
@@ -81,8 +88,7 @@ class Seller(AgentExecutor):
         async with self.locks.setdefault(task.id, anyio.Lock()):
             if task.id in self.negotiator.closed:
                 raise InvalidParamsError(message="The negotiation is finished.")
-            _ = self.negotiator.negotiations.pop(task.id, None)
-            self.negotiator.closed.add(task.id)
+            await self.negotiator.mark_closed(task.id)
             await TaskUpdater(event_queue, task.id, task.context_id).cancel()
 
 
@@ -95,9 +101,15 @@ def create_app(
     signer: ReceiptSigner | None = None,
 ) -> FastAPI:
     """Expose SDK routes; base_url is the advertised root or mounted shop URL."""
-    kinds = sorted({product.kind for product in catalog.products})
     comparison = ComparisonService(
         catalog, enabled=os.environ.get("AX_PRICE_COMPARISON") == "1"
+    )
+    state_path = os.environ.get("AX_SELLER_STATE_DB")
+    journal = PersistentSellerStore(Path(state_path)) if state_path else None
+    instructions = (
+        "Name an item; send a whole-number offer on its taskId.",
+        "Read metadata.ask; completion requires a signed receipt.",
+        "Or begin with an explicit offer such as offer lamp 100.",
     )
     card = AgentCard(
         name=name,
@@ -111,15 +123,16 @@ def create_app(
                 "Dated opening-ask comparisons: /price-comparison.json .",
                 "Current quote: metadata.ask. Basic opening caps: 110/198/286.",
                 "Counteroffers never increase within a negotiation.",
-                "R2WELCOME: up to 5 of the first negotiated reduction is a coupon;",
-                "larger negotiated reductions are allowed, with the reserve protected.",
+                "A final-price quote cannot be discounted further.",
+                "R2WELCOME credit is part of an actual reduction, never extra.",
+                "Explicit first offer: offer lamp 100 or buy lamp for 100.",
                 "Machine-readable ask and coupon metadata.",
                 "Terms and A2A examples: https://ax-week07.treasuresky.xyz/ .",
                 "No rating is required for a discount.",
                 "Please leave an honest review of your transaction.",
             )
         ),
-        version="1.2.1",
+        version="1.3.0",
         capabilities=AgentCapabilities(streaming=False),
         default_input_modes=["text/plain"],
         default_output_modes=["text/plain", "application/json"],
@@ -132,7 +145,8 @@ def create_app(
             AgentSkill(
                 id="negotiate",
                 name="Catalog purchases",
-                description=f"Find and negotiate catalog products: {', '.join(kinds)}.",
+                description=" ".join(instructions),
+                examples=["I want to buy a chair", "offer lamp 100"],
                 tags=[
                     "shopping",
                     *sorted({product.kind for product in catalog.products}),
@@ -140,16 +154,24 @@ def create_app(
             )
         ],
     )
+    executor = Seller(
+        harness,
+        catalog,
+        name,
+        signer=signer,
+        comparison=comparison.feed if comparison.enabled else None,
+    )
+    if journal is not None:
+        opened, closed = journal.restore()
+        executor.negotiator.journal = journal
+        executor.negotiator.negotiations.update(opened)
+        executor.negotiator.closed.update(closed)
+    task_store = journal if journal is not None else InMemoryTaskStore()
     handler = DefaultRequestHandler(
-        Seller(
-            harness,
-            catalog,
-            name,
-            signer=signer,
-            comparison=comparison.feed if comparison.enabled else None,
-        ),
-        InMemoryTaskStore(),
+        executor,
+        task_store,
         card,
+        request_context_builder=StoredContextBuilder(task_store),
     )
     app = FastAPI(title=name, lifespan=comparison.lifespan)
     comparison.install(app)

@@ -1,6 +1,6 @@
 """Stateful A2A seller whose tool loop owns all commercial decisions."""
 
-# allow: SIZE_OK — one per-task tool/state machine keeps guards before mutation;
+# noqa: SIZE_OK — one per-task tool/state machine keeps guards before mutation;
 # wire publication is already isolated in seller_messages.py.
 
 from __future__ import annotations
@@ -23,6 +23,7 @@ from market_a2a.seller_messages import (
     complete_sale,
     quote_message,
 )
+from market_a2a.seller_offer import opening_offer
 from market_a2a.seller_policy import (
     PROMPT,
     TOOLS,
@@ -43,12 +44,13 @@ if TYPE_CHECKING:
     from market_a2a.comparison import ComparisonFeed
     from market_a2a.harness import Harness
     from market_a2a.receipts import ReceiptSigner
+    from market_a2a.seller_store import PersistentSellerStore
 
 
 class Negotiator:
     """Own bounded seller summaries and validated model tool actions."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - independent optional adapter capabilities
         self,
         harness: Harness,
         catalog: Catalog,
@@ -56,11 +58,13 @@ class Negotiator:
         *,
         signer: ReceiptSigner | None = None,
         comparison: ComparisonFeed | None = None,
+        journal: PersistentSellerStore | None = None,
     ) -> None:
         """Share one model client while isolating every negotiation."""
         self.harness: Harness = harness
         self.catalog: Catalog = catalog
         self.name: str = name
+        self.journal: PersistentSellerStore | None = journal
         self.signer: ReceiptSigner | None = signer
         self.comparison: ComparisonFeed | None = comparison
         self.negotiations: dict[str, Negotiation] = {}
@@ -73,7 +77,14 @@ class Negotiator:
         current = self.negotiations.get(task.id)
         snapshot = self.comparison.snapshot if self.comparison is not None else None
         candidates: dict[str, Product] = {}
-        offer = int(text.strip()) if re.fullmatch(r"[0-9]{1,9}", text.strip()) else None
+        explicit = opening_offer(text) if current is None else None
+        offer = (
+            explicit.price
+            if explicit is not None
+            else int(text.strip())
+            if current is not None and re.fullmatch(r"[0-9]{1,9}", text.strip())
+            else None
+        )
         if current is not None and offer is not None:
             current = replace(current, incoming_offers=current.incoming_offers + 1)
             self.negotiations[task.id] = current
@@ -81,6 +92,8 @@ class Negotiator:
             "phase": "bargaining" if current else "opening",
             "buyer_text": text[:2000] if current is None else None,
             "offer": offer,
+            "explicit_offer_sku": explicit.sku if explicit else None,
+            "price_final": current.ask == current.product.reserve if current else False,
             "offer_meets_reserve": (
                 offer is not None
                 and current is not None
@@ -121,6 +134,10 @@ class Negotiator:
                 )
                 match tool:
                     case "search_catalog":
+                        if current is not None:
+                            return ToolResult(
+                                data={"error": "SKU already selected; use decide."}
+                            )
                         query = Search.model_validate_json(arguments)
                         basic = re.fullmatch(
                             r"(?:i want (?:to buy )?a )?(lamp|chair|bookshelf)\.?",
@@ -132,6 +149,9 @@ class Negotiator:
                                 lambda product: (
                                     compatible(product, text)
                                     and (basic is None or product.sku == basic[1])
+                                    and (
+                                        explicit is None or product.sku == explicit.sku
+                                    )
                                 )
                             )
                             if current is None
@@ -153,7 +173,13 @@ class Negotiator:
                         decision = Decision.model_validate_json(arguments)
                         return await self.commit(
                             Turn(
-                                task.id, updater, current, candidates, offer, snapshot
+                                task.id,
+                                updater,
+                                current,
+                                candidates,
+                                offer,
+                                snapshot,
+                                explicit.sku if explicit else None,
                             ),
                             decision,
                         )
@@ -165,23 +191,34 @@ class Negotiator:
                 )
 
         phase = (
-            "OPENING: no offer exists; search and QUOTE the initial asking price."
+            "OPENING: search; accept only an explicit actual offer or quote an ask."
             if current is None
             else "BARGAINING: use the selected product and the actual numeric offer."
         )
         try:
-            _ = await self.harness.run(phase + "\n" + PROMPT, state, TOOLS, dispatch)
+            _ = await self.harness.run(
+                phase + "\n" + PROMPT,
+                state,
+                TOOLS if current is None else TOOLS[1:],
+                dispatch,
+            )
         except HarnessError:
             self.harness.emit(
                 f"seller.failure task={task.id} code=model_loop_exhausted"
             )
+            await self.mark_closed(task.id)
             await updater.failed(
                 updater.new_agent_message(
                     [Part(text="Unable to choose a valid action.")]
                 )
             )
-            self.closed.add(task.id)
-            _ = self.negotiations.pop(task.id, None)
+
+    async def mark_closed(self, task_id: str) -> None:
+        """Persist terminal authority before publishing any terminal wire events."""
+        if self.journal is not None:
+            await self.journal.close(task_id)
+        self.closed.add(task_id)
+        _ = self.negotiations.pop(task_id, None)
 
     async def quote(self, turn: Turn, product: Product, decision: Decision) -> None:
         """Publish a guarded quote with transparent coupon accounting."""
@@ -191,13 +228,16 @@ class Negotiator:
             and not current.coupon_used
             and decision.price < current.ask
         )
-        self.negotiations[turn.task_id] = Negotiation(
+        updated = Negotiation(
             product,
             decision.price,
             current.rounds + 1 if current else 0,
             coupon_applied or (current.coupon_used if current else False),
             current.incoming_offers if current else 0,
         )
+        if self.journal is not None:
+            await self.journal.save_negotiation(turn.task_id, updated)
+        self.negotiations[turn.task_id] = updated
         message = quote_message(
             turn.updater,
             QuoteNotice(
@@ -213,16 +253,24 @@ class Negotiator:
     async def commit(self, turn: Turn, decision: Decision) -> ToolResult:
         """Commit one guarded model action to the authoritative task."""
         updater, current = turn.updater, turn.current
-        feedback = decision_feedback(current, turn.offer, decision)
+        feedback = decision_feedback(
+            current,
+            turn.offer,
+            decision,
+            explicit_available=(
+                current is None
+                and any(p.sku == turn.explicit_offer_sku for p in self.catalog.products)
+            ),
+        )
         if feedback is not None:
             return feedback
         match decision.action:
             case "reject":
+                await self.mark_closed(turn.task_id)
                 await updater.reject(
                     updater.new_agent_message([Part(text=decision.reason)])
                 )
-                self.closed.add(turn.task_id)
-                _ = self.negotiations.pop(turn.task_id, None)
+
                 return ToolResult(data={"state": "rejected"}, terminal=True)
             case "quote" | "accept":
                 pass
@@ -250,7 +298,7 @@ class Negotiator:
                 await self.quote(turn, product, decision)
             case "accept":
                 if (
-                    current is None
+                    (current is None and turn.explicit_offer_sku != product.sku)
                     or turn.offer is None
                     or decision.price != turn.offer
                 ):
@@ -259,13 +307,13 @@ class Negotiator:
                             "error": "No matching offer. Use quote to state a price."
                         },
                     )
+                await self.mark_closed(turn.task_id)
                 await complete_sale(
                     updater,
                     AgreedSale(product, decision.price, turn.task_id, self.name),
                     self.signer,
                 )
-                self.closed.add(turn.task_id)
-                _ = self.negotiations.pop(turn.task_id, None)
+
                 self.harness.emit(
                     "".join(
                         (

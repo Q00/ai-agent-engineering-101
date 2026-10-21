@@ -49,7 +49,8 @@ def quote_message(updater: TaskUpdater, notice: QuoteNotice) -> Message:
     )
     discount = min(5, reduction) if notice.coupon_applied else 0
     coupon_text = ""
-    if notice.previous_ask is None:
+    price_final = notice.price == notice.product.reserve
+    if notice.previous_ask is None and not price_final:
         coupon_text = (
             " R2WELCOME: up to 5 price units of the first negotiated "
             "reduction are coupon credit. Larger reductions are possible."
@@ -80,6 +81,12 @@ def quote_message(updater: TaskUpdater, notice: QuoteNotice) -> Message:
                         ".",
                         coupon_text,
                         comparison_text,
+                        (
+                            " Final price; no further discount or coupon is available."
+                            if price_final
+                            else ""
+                        ),
+                        f" Reply with exactly {notice.price} to complete the purchase.",
                         f" Asking price: {notice.price}",
                     )
                 )
@@ -90,6 +97,7 @@ def quote_message(updater: TaskUpdater, notice: QuoteNotice) -> Message:
             "item": notice.product.kind,
             "name": notice.product.name,
             "ask": notice.price,
+            "price_final": price_final,
             "coupon_code": "R2WELCOME",
             "coupon_discount": discount,
             "total_reduction": reduction,

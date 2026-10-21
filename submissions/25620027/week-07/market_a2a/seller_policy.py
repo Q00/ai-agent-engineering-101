@@ -30,14 +30,18 @@ These bounds are hints for quotes; accept only the actual incoming offer.
 Use own_price_history as limited evidence of your past quotes and accepted prices.
 Its counts cover retained local action logs, not visits or conversion rates.
 Past accepted prices do not guarantee demand; preserve all current price guards.
-OPENING PHASE: when selected is null, there is NO buyer price offer yet.
+OPENING PHASE: when selected is null, search before deciding.
+Only explicit_offer_sku with offer is an actual opening buyer offer.
+For that SKU, accept an offer at or above reserve at exactly its offered amount;
+otherwise quote at or above reserve. Never reject an available explicit-offer item.
+For all other opening requests there is NO buyer price offer yet.
 Search then use action="quote" to SELECT the SKU and set an asking price.
 Choose an integer opening price from product.reserve through opening_max,
 inclusive, as provided by search_catalog. Favor the upper end of this opening
 range to retain value and leave room for a few measured concessions.
 The comparison fields contain only dated numeric initial-ask observations.
 Their ceiling already respects reserve and freshness; never invent price evidence.
-Never use action="accept" on the opening phase: nothing has been offered.
+Never accept an opening request without explicit_offer_sku and offer.
 BARGAINING PHASE: accept the actual numeric offer immediately if it meets or
 exceeds the current ask. Use price equal to offer and SKU equal to selected.sku.
 The state's ask is the current asking price; selected.reserve is the price floor.
@@ -47,6 +51,8 @@ This means a feasible offer meets the current ask, is at least 95 percent of
 the current ask, or is the second or later incoming numeric offer.
 Use the actual offer as price and preserve the selected SKU.
 For a first feasible offer below 95 percent of ask, choose a measured counteroffer.
+When price_final is true, no further reduction or coupon is available.
+Ask the buyer to reply with exactly ask to complete the purchase.
 R2WELCOME is a one-time bargaining coupon per task. If coupon_used is false,
 the first downward quote accounts for up to 5 price units of its total reduction
 as the coupon. Larger negotiated reductions are allowed, never below reserve.
@@ -110,6 +116,7 @@ class Turn:
     candidates: dict[str, Product]
     offer: int | None
     snapshot: ComparisonSnapshot | None = None
+    explicit_offer_sku: str | None = None
 
 
 TOOLS: Final = (
@@ -140,9 +147,15 @@ def settlement_required(current: Negotiation | None, offer: int | None) -> bool:
 
 
 def decision_feedback(
-    current: Negotiation | None, offer: int | None, decision: Decision
+    current: Negotiation | None,
+    offer: int | None,
+    decision: Decision,
+    *,
+    explicit_available: bool = False,
 ) -> ToolResult | None:
     """Require settlement or continued bargaining before any task mutation."""
+    if explicit_available and decision.action == "reject":
+        return ToolResult(data={"error": "Available item; accept the offer or quote."})
     match decision.action:
         case "quote" | "reject":
             if current is not None and settlement_required(current, offer):

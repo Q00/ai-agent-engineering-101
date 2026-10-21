@@ -178,7 +178,7 @@ def test_card_frontloads_verified_terms(catalog: Catalog, *, signed: bool) -> No
                 response = await client.get("/.well-known/agent-card.json")
                 assert response.status_code == 200
                 card = TypeAdapter(dict[str, JsonValue]).validate_json(response.content)
-                assert card["version"] == "1.2.1"
+                assert card["version"] == "1.3.0"
                 description = card["description"]
                 assert isinstance(description, str)
                 first = description[:300]

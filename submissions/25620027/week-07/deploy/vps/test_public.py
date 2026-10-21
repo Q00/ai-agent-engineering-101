@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import importlib.util
 import json
 import os
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -14,7 +15,7 @@ HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('serve_public', HERE / 'serve_public.py')
 public = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(public)
-EVIDENCE = HERE / '.omo/evidence'
+EVIDENCE = Path(os.environ.get('VPS_PUBLIC_TEST_EVIDENCE', HERE / '.omo/evidence'))
 
 
 @asynccontextmanager
@@ -41,7 +42,7 @@ class InspectServer:
                 if path.endswith('agent-card.json'):
                     card = response.json()
                     (EVIDENCE / 'public-card.json').write_text(json.dumps(card, indent=2) + '\n')
-                    assert card['version'] == '1.2.0'
+                    assert card['version'] == '1.3.0'
                     interfaces = card.get('supportedInterfaces', card.get('supported_interfaces'))
                     assert interfaces[0]['url'] == public.PUBLIC_URL
                 if path == '/price-comparison.json':
@@ -51,9 +52,12 @@ class InspectServer:
 
 if __name__ == '__main__':
     signer = public.ReceiptSigner(Ed25519PrivateKey.generate())
-    with patch.object(public, 'AsyncOpenAI', fake_model), \
+    EVIDENCE.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='week07-public-') as state_dir, \
+         patch.object(public, 'AsyncOpenAI', fake_model), \
          patch.object(public.ReceiptSigner, 'load', return_value=signer), \
          patch.object(public.uvicorn, 'Server', InspectServer), \
-         patch.dict(os.environ, {'AX_PRICE_COMPARISON': '1'}):
+         patch.dict(os.environ, {'AX_PRICE_COMPARISON': '1',
+                                'AX_SELLER_STATE_DB': str(Path(state_dir) / 'state.sqlite3')}):
         anyio.run(public.serve)
-    print('PASS: wrapper binds loopback:8900; real card version 1.2.0 advertises existing HTTPS URL; all four public routes return 200; comparison enabled; no model/network calls')
+    print('PASS: wrapper binds loopback:8900; real card version 1.3.0 advertises existing HTTPS URL; all four public routes return 200; comparison enabled; isolated persistent state; no model/network calls')

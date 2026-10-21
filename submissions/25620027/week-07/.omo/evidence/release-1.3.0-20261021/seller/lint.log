@@ -1,0 +1,31 @@
+FLY002 Consider f-string instead of string join
+  --> market_a2a/seller_offer.py:22:9
+   |
+20 |       """Accept only 'offer ITEM N' or 'buy ITEM for N', ignoring outer whitespace."""
+21 |       matched = re.fullmatch(
+22 | /         "".join(
+23 | |             (
+24 | |                 r"(?:offer (lamp|chair|bookshelf) ([0-9]{1,9})|",
+25 | |                 r"buy (lamp|chair|bookshelf) for ([0-9]{1,9}))",
+26 | |             )
+27 | |         ),
+   | |_________^
+28 |           text.strip(),
+29 |           flags=re.IGNORECASE,
+   |
+help: Replace with f-string
+   |
+21 |     matched = re.fullmatch(
+   -         "".join(
+   -             (
+   -                 r"(?:offer (lamp|chair|bookshelf) ([0-9]{1,9})|",
+   -                 r"buy (lamp|chair|bookshelf) for ([0-9]{1,9}))",
+   -             )
+   -         ),
+22 +         r"(?:offer (lamp|chair|bookshelf) ([0-9]{1,9})|buy (lamp|chair|bookshelf) for ([0-9]{1,9}))",
+23 |         text.strip(),
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+Found 1 error.
+1 unsafe fix available with `--fix --unsafe-fixes`.

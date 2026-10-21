@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 import sys
 
@@ -23,6 +24,7 @@ PORT = 8900
 
 
 async def serve() -> None:
+    os.environ.setdefault('AX_SELLER_STATE_DB', '/data/seller-state.sqlite3')
     signer = ReceiptSigner.load(ROOT / 'shop_key.pem')
     async with create_client(model=True) as model_http:
         async with AsyncOpenAI(http_client=model_http) as model:
