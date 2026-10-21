@@ -37,6 +37,7 @@ import os
 import random
 import time
 import re
+import shutil
 import sys
 import tempfile
 
@@ -177,7 +178,7 @@ SEEN = Path(__file__).with_name("reviews-seen.json")  # reviews already counted
 _last_check = 0.0
 CLOSE_GAP = 0.97  # accept an offer at or above the reserve within 3% of the current ask
 MAX_ROUNDS = 10  # safety net so a task cannot run forever
-HARNESS = ["claude", "-p", "--model", "sonnet", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
+HARNESS = [shutil.which("claude") or "claude", "-p", "--model", "sonnet", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
 WORKDIR = tempfile.mkdtemp(prefix="seller-harness-")  # empty dir: no project instructions
 
 SPEC = """You work at a furniture shop. A buyer wrote:

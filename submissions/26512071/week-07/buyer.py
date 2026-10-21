@@ -16,13 +16,14 @@ import argparse
 import json
 import re
 import subprocess
+import shutil
 import sys
 import tempfile
 import uuid
 
 import httpx
 
-HARNESS = ["claude", "-p", "--model", "sonnet", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
+HARNESS = [shutil.which("claude") or "claude", "-p", "--model", "sonnet", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
 WORKDIR = tempfile.mkdtemp(prefix="buyer-harness-")  # empty dir: no project instructions
 MAX_OFFERS = 8  # safety net; the program must exit within 300 s
 HEADERS = {"A2A-Version": "1.0"}
@@ -46,7 +47,7 @@ def log(*a):
 
 
 def harness(prompt):
-    out = subprocess.run(HARNESS, input=prompt, capture_output=True, text=True, cwd=WORKDIR, timeout=120)
+    out = subprocess.run(HARNESS, input=prompt, capture_output=True, text=True, encoding="utf-8", cwd=WORKDIR, timeout=120)
     return out.stdout
 
 
