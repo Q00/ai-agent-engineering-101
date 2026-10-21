@@ -1,0 +1,33 @@
+[project]
+name = "ax-week04-acl"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["openai==3.8.0", "pydantic>=2.12,<3", "typer>=0.16,<1"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.12", "basedpyright>=1.31"]
+
+[tool.basedpyright]
+typeCheckingMode = "all"
+pythonVersion = "3.12"
+include = ["acl_lab", "run.py", "run_hybrid.py", "tests"]
+reportUnnecessaryComparison = "none"
+reportUnusedCallResult = "none"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["COM812", "ISC001", "D203", "D213", "CPY001", "FBT001", "FBT002", "D107"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "D", "ARG", "PLR2004", "INP001", "SLF001"]
+"run.py" = ["T201", "INP001"]
+"run_hybrid.py" = ["T201", "INP001"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-config", "--strict-markers"]

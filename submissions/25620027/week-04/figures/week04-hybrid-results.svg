@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 360" role="img" aria-labelledby="title desc">
+  <title id="title">기존 세 조건과 하이브리드 확장 결과 비교</title>
+  <desc id="desc">각 12개 에피소드에서 정답, 거래, 위반, 평균 턴, 해석과 합의 확인 호출, 전체 API 시도를 비교한 표</desc>
+  <defs><style>.ko{font-family:"Noto Sans KR",Pretendard,"Apple SD Gothic Neo",sans-serif}.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}.head{fill:#1C1917;font-size:12px;font-weight:600}.body{fill:#44403C;font-size:10.5px}.meta{fill:#78716C;font-size:9px}.cap{fill:#A8A29E;font-size:10.5px;letter-spacing:.04em}.capnum{fill:#78716C;font-weight:500}</style></defs>
+  <rect x="0.75" y="0.75" width="678.5" height="358.5" rx="8" fill="#FFFFFF" stroke="#E7E5E4" stroke-width="1.5"/>
+  <text x="24" y="29" class="ko meta">각 조건 12개 에피소드 · 같은 모델과 시나리오</text>
+  <line x1="24" y1="48" x2="656" y2="48" stroke="#1C1917" stroke-width="1.5"/>
+  <text x="70" y="69" text-anchor="middle" class="ko head">조건</text>
+  <text x="185" y="69" text-anchor="middle" class="ko head">정답</text>
+  <text x="255" y="69" text-anchor="middle" class="ko head">거래</text>
+  <text x="325" y="69" text-anchor="middle" class="ko head">위반</text>
+  <text x="405" y="69" text-anchor="middle" class="ko head">평균 턴</text>
+  <text x="515" y="62" text-anchor="middle" class="ko head">reader +</text>
+  <text x="515" y="75" text-anchor="middle" class="ko head">settlement</text>
+  <text x="620" y="69" text-anchor="middle" class="ko head">API 시도</text>
+  <g stroke="#E7E5E4" stroke-width="1"><line x1="24" y1="83" x2="656" y2="83"/><line x1="24" y1="124" x2="656" y2="124"/><line x1="24" y1="165" x2="656" y2="165"/><line x1="24" y1="206" x2="656" y2="206"/><line x1="24" y1="247" x2="656" y2="247"/></g>
+  <rect x="24" y="207" width="632" height="40" fill="#FAFAF9"/>
+  <g class="mono body" text-anchor="middle">
+    <text x="70" y="108">free</text><text x="185" y="108">6/12</text><text x="255" y="108">7</text><text x="325" y="108">4</text><text x="405" y="108">6.25</text><text x="515" y="108">75 + 0</text><text x="620" y="108">150</text>
+    <text x="70" y="149">tagged</text><text x="185" y="149">10/12</text><text x="255" y="149">4</text><text x="325" y="149">0</text><text x="405" y="149">6.00</text><text x="515" y="149">34 + 0</text><text x="620" y="149">106</text>
+    <text x="70" y="190">structured</text><text x="185" y="190">5/12</text><text x="255" y="190">4</text><text x="325" y="190">4</text><text x="405" y="190">6.75</text><text x="515" y="190">0 + 0</text><text x="620" y="190">81</text>
+    <text x="70" y="231">hybrid</text><text x="185" y="231">8/12</text><text x="255" y="231">2</text><text x="325" y="231">0*</text><text x="405" y="231">6.50</text><text x="515" y="231">42 + 16</text><text x="620" y="231">136</text>
+  </g>
+  <text x="24" y="275" class="ko body">hybrid는 거래 불가능 상황을 6/6 안전하게 처리했지만, 거래 가능 상황은 2/6만 성사했다.</text>
+  <text x="24" y="296" class="ko body">* 위반 0건은 모델의 자율 판단이 아니라 로컬 guard가 위험한 settlement 5건을 차단한 결과다.</text>
+  <text x="24" y="317" class="ko meta">reader 호출만 줄여도 settlement 확인 16회가 추가되어 전체 API 시도는 tagged보다 30회 많았다.</text>
+  <line x1="22" y1="336" x2="658" y2="336" stroke="#E7E5E4" stroke-width="1"/>
+  <text x="24" y="351" class="mono cap"><tspan class="capnum">FIG. 03</tspan><tspan> Baseline vs. hybrid extension</tspan></text>
+  <text x="656" y="351" text-anchor="end" class="ko cap">안전성과 거래 성사율은 별도 지표</text>
+</svg>
