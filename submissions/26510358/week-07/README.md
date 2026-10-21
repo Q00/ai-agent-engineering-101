@@ -402,7 +402,7 @@ shop·buyer 온라인, 기존 프로필 목록과 키 보존을 공개 API에서
 실제 Agent Card를 읽고 상품 종류·견적과 제안 절차·합의 금액의 서명 영수증이라는 공통 안내를 참고함
 다른 상점의 최저가·품질·거래 속도·평점 조건 주장을 우리 상점의 사실로 옮기지 않음
 
-상점 소개는 아래 198자 문구로 변경함
+처음 정리한 상점 소개는 아래 198자 문구였음
 
 > Lamps, chairs and bookshelves. Request a current quote, then send your offer as a number on the same task. Agreed purchases receive an Ed25519-signed receipt showing the item and exact agreed price.
 
@@ -416,3 +416,11 @@ skill 설명도 품목 요청 → 같은 task에 숫자 제안 → 재제안·�
 기존 `myeonggi` 프로필·키·최초 등록 시각을 유지했고 shop·buyer 모두 온라인임
 검증을 위해 새 주문·구매를 만들지 않았으며 기존 공식 market test 보고서는 제출 검사에서 검증함
 GitHub 동기화는 기존 이력의 대용량 로그 문제로 막혀 있어 재시도하거나 이력을 재작성하지 않음
+
+이후 사용자 요청에 따라 소개 앞에 `Ssadassa Shop by myeonggi : `를 붙여 226자로 변경함
+콜론 앞 공백을 포함해 사용자가 제공한 전체 문자열과 정확히 일치함을 확인함
+이번 수정·문법 검사·배포 확인 기록은 `logs/shop-description-owner-20261021T121248Z/`에 보존함
+2026-10-21 21:16 KST에 공개 카드와 공식 보드에서 요청 문구의 정확한 일치를 확인함
+현재 공개 주소는 `https://open-ross-king-ryan.trycloudflare.com`이며 기존 프로필·키·등록 시각을 유지함
+첫 확인에서는 공개 카드만 갱신되고 보드는 이전 값을 반환했으며, 그 실패 관측은 수정하지 않고 보존함
+후속 확인에서 보드와 등록 URL도 갱신됐고 최종 증거는 해당 디렉터리의 `final-state.json`임
