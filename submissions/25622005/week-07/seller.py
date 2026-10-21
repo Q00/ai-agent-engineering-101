@@ -14,6 +14,8 @@ import time
 import uvicorn
 from cryptography.hazmat.primitives import serialization
 from starlette.applications import Starlette
+from starlette.responses import JSONResponse
+from starlette.routing import Route
 from google.protobuf.json_format import MessageToDict
 
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
@@ -27,6 +29,27 @@ from loyalty_pricing import RESERVE, customer_id_from, purchase_quote
 from seller_memory import SellerMemory
 
 OPENING = {item: purchase_quote(item, 0)["price"] for item in RESERVE}
+GUARANTEE_PATH = "/.well-known/quality-guarantee.json"
+
+
+def quality_guarantee():
+    """Publish checkable transaction promises and the receipt verification key."""
+    key = serialization.load_pem_private_key(
+        Path(__file__).with_name("shop_key.pem").read_bytes(), password=None)
+    public_key = key.public_key().public_bytes(
+        serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+    return {
+        "shop": "psyoung82", "version": "1.0", "scope": "transaction quality",
+        "guarantees": ["Receipt item matches the accepted quote",
+                       "Receipt price equals the advertised final price; no added charges",
+                       "Receipt identifies this purchase task and carries the seller signature"],
+        "final_prices": OPENING,
+        "verification": {"algorithm": "Ed25519", "public_key_base64": base64.b64encode(public_key).decode("ascii"),
+                         "signed_fields": ["shop", "item", "price", "task"],
+                         "canonical_json": "sorted keys, compact separators, UTF-8; price is an integer",
+                         "trust_anchor": "Compare this public key with psyoung82's registered market shop key"},
+        "claim_boundary": "This guarantee covers trade accuracy and receipt authenticity, not physical product testing",
+    }
 
 
 def buyer_offer(text, asking_price=None):
@@ -143,14 +166,16 @@ class Seller(AgentExecutor):
                                     "price": int(price), "task": task.id})
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(
-                f"Purchased {deal['item']} at {price}. Signed receipt attached. "
+                f"Purchased {deal['item']} at {price}. Quality guarantee: your signed receipt "
+                "records the agreed item and final price with no added charges. "
                 "Please verify the receipt and leave an honest review of your experience."
             ))
             self.remember(task.id, deal, "deal", sale_price=int(price))
             del self.open[task.id]
             return
         deal["ask"] = opening
-        reply = (f"{deal['item']}: final price {opening}. Signed receipt included. "
+        reply = (f"{deal['item']}: final price {opening}. Quality you can verify: "
+                 "agreed item and price, no added charges, signed receipt. "
                  f"Reply 'I accept' or send {opening}")
         deal["lines"].append(f"you: {reply}")
         deal["seller_quotes"] += 1
@@ -162,6 +187,7 @@ class Seller(AgentExecutor):
             metadata={"ask": deal["ask"], "item": deal["item"],
                       "accept_message": str(deal["ask"]),
                       "signed_receipt_on_purchase": True,
+                      "quality_guarantee": GUARANTEE_PATH,
                       "pricing": deal["quote"]},
         ))
 
@@ -176,24 +202,29 @@ class Seller(AgentExecutor):
 def build(port):
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
-        name="psyoung82 Furniture | Same Lowest Price",
-        description=(f"Final prices for every buyer and every purchase: lamp {OPENING['lamp']}, "
+        name="psyoung82 Furniture | Quality & Trust",
+        description=("Quality you can verify: your signed receipt records exactly the item and price you accept. "
+                     "No surprise charges. Fast checkout, clear quotes, and the same fair final prices for everyone: "
+                     f"lamp {OPENING['lamp']}, "
                      f"chair {OPENING['chair']}, bookshelf {OPENING['bookshelf']}. "
                      "No customer ID required. Reply 'I accept' to accept a quote. "
-                     "Numeric metadata.ask and task-bound signed receipts included."),
-        version="1.9.0",
+                     f"Check our transaction quality guarantee at {GUARANTEE_PATH}."),
+        version="1.10.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", url=url, protocol_version="1.0")],
         skills=[AgentSkill(id="negotiate", name="Negotiate a purchase",
-                           description="Send an item and explicit offer to buy directly, or ask for a quote and accept it with a number or 'I accept'. A completed purchase includes a signed receipt.",
-                           tags=["shopping", "negotiation"],
+                           description="Get a clear final quote, accept in one reply, and verify the agreed item and price on your signed receipt. No added charges. Public transaction quality guarantee available.",
+                           tags=["shopping", "negotiation", "quality-guarantee", "signed-receipt"],
                            examples=[f"I want to buy a {item} for {OPENING[item]}" for item in OPENING]
                            + ["I want to buy a lamp", "I accept"])],
     )
     handler = DefaultRequestHandler(agent_executor=Seller(), task_store=InMemoryTaskStore(), agent_card=card)
-    return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
+    async def guarantee(request):
+        return JSONResponse(quality_guarantee())
+    return Starlette(routes=[Route(GUARANTEE_PATH, guarantee)]
+                     + create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
 
 if __name__ == "__main__":
