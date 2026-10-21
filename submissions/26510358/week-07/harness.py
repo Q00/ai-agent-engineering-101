@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from contextlib import contextmanager
 import os
+import re
 from pathlib import Path
 import shlex
 import signal
@@ -26,11 +27,21 @@ SCHEMAS = {"buyer": "buyer-decision.schema.json", "seller": "seller-decision.sch
            "quote_observer": "quote-observation.schema.json"}
 
 
+def throttle_delay(stderr: str, attempt: int) -> float:
+    """Honor an explicit provider delay; otherwise use bounded 5/10/20 s retries."""
+    match = re.search(r"(?:retry[- ]after\s*[:=]\s*|retry in\s+)(\d+(?:\.\d+)?)", stderr, re.I)
+    return float(match[1]) if match else min(5 * 2 ** (attempt - 1), 60)
+
+
 class HarnessError(RuntimeError):
     pass
 
 
 class HarnessConfigurationError(HarnessError):
+    pass
+
+
+class HarnessThrottleError(HarnessError):
     pass
 
 
@@ -543,11 +554,14 @@ class Harness:
                                  inference_seconds=round(time.monotonic() - admitted, 3))
                 try:
                     if process.returncode:
-                        if ("429" in stderr or "Too Many Requests" in stderr) and attempt < attempts:
-                            pause = min(20 * attempt, max(0, (deadline - time.monotonic() - 2) if deadline else 60))
-                            self.trace.write("rate_limit_backoff", seconds=pause)
+                        if "429" in stderr or "Too Many Requests" in stderr:
+                            pause = throttle_delay(stderr, attempt)
+                            # Publish once and let admission wait on the shared clock.
+                            # Sleeping here too made each caller manage its own wait.
                             defer_pool(pause)
-                            time.sleep(pause)
+                            self.trace.write("rate_limit_backoff", seconds=pause, shared=True)
+                            if deadline and deadline - time.monotonic() <= pause + 2:
+                                raise HarnessThrottleError("Provider retry delay exceeds remaining inference deadline")
                         errors = [line for line in stderr.splitlines() if "ERROR:" in line or "error" in line.lower()]
                         detail = errors[-1] if errors else (stderr.strip().splitlines()[-1] if stderr.strip() else "no stderr")
                         if "401 Unauthorized" in stderr or "not supported when using Codex" in stderr:
@@ -558,7 +572,7 @@ class Harness:
                         decision = validator(decision)
                     self.trace.write("harness_decision", decision=decision)
                     return decision
-                except HarnessConfigurationError:
+                except (HarnessConfigurationError, HarnessThrottleError):
                     raise
                 except (ValueError, OSError, HarnessError) as exc:
                     self.trace.write("decision_rejected", detail=str(exc))

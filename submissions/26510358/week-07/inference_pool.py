@@ -5,6 +5,8 @@ cannot occupy the buyer lane. This controls execution, never trade decisions.
 """
 from contextlib import contextmanager
 import fcntl
+import json
+import math
 import os
 from pathlib import Path
 import time
@@ -21,16 +23,35 @@ def pool_directory(directory=None):
 
 def defer_pool(seconds, *, directory=None):
     """Share provider throttling across roles instead of issuing more 429s."""
+    if not math.isfinite(seconds) or seconds < 0:
+        raise ValueError("Provider cooldown must be finite and nonnegative")
     path = pool_directory(directory) / "cooldown"
     with path.open("a+") as stream:
         fcntl.flock(stream, fcntl.LOCK_EX)
         stream.seek(0)
         raw = stream.read().strip()
-        until = max(float(raw) if raw else 0, time.monotonic() + seconds)
+        # Wall time permits long Retry-After values and survives host restarts.
+        # The legacy monotonic-only format is read until every process upgrades.
+        wall_path = path.with_name("cooldown-wall")
+        previous = float(wall_path.read_text()) if wall_path.exists() else 0
+        until = max(previous, time.time() + seconds)
+        wall_path.write_text(str(until))
         stream.seek(0)
         stream.truncate()
-        stream.write(str(until))
+        # Old generations may still be finishing quotes during a live reload.
+        stream.write(str(max(_remaining(raw) + time.monotonic(),
+                             time.monotonic() + min(seconds, 60))))
         stream.flush()
+
+
+def _remaining(raw):
+    if not raw:
+        return 0
+    value = json.loads(raw)
+    if isinstance(value, dict):
+        return max(0, value["until_unix"] - time.time())
+    remaining = max(0, float(value) - time.monotonic())
+    return remaining if remaining <= 65 else 0
 
 
 def cooldown_remaining(directory):
@@ -40,10 +61,9 @@ def cooldown_remaining(directory):
     with path.open() as stream:
         fcntl.flock(stream, fcntl.LOCK_SH)
         raw = stream.read().strip()
-        remaining = max(0, (float(raw) if raw else 0) - time.monotonic())
-        # Our backoff is at most 60 s. A timestamp far ahead can survive a
-        # host reboot with a reset monotonic clock; it is not a live cooldown.
-        return remaining if remaining <= 65 else 0
+        wall_path = path.with_name("cooldown-wall")
+        wall_remaining = max(0, float(wall_path.read_text()) - time.time()) if wall_path.exists() else 0
+        return max(_remaining(raw), wall_remaining)
 
 
 @contextmanager
@@ -68,6 +88,9 @@ def pool_slot(role, deadline=None, *, directory=None, capacity=None):
             for handle in handles:
                 try:
                     fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    if cooldown_remaining(directory):
+                        fcntl.flock(handle, fcntl.LOCK_UN)
+                        break
                     acquired = handle
                     break
                 except BlockingIOError:
