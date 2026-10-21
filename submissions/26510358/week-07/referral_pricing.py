@@ -53,9 +53,12 @@ def review_notice(rule):
     """Clearly separate our own advertisement from a review of another shop."""
     if not rule or not rule.get("enabled"):
         return ""
-    return (" Ad (my shop): Ssadassa Shop / myeonggi, code " + rule["code"] +
-            " for " + str(rule["percent"]) + "% off new recovery-mode lamp/chair/bookshelf quotes; "
-            "include item + code in the first message. Acquisition prices excluded.")
+    # The public reader's identity is unavailable, so do not invent a name.
+    return ("Ad (my shop): Hey there—looking sharp! I may collapse before the chairs do!\n\n"
+            "Ssadassa Shop / myeonggi: lamps light rooms, chairs support your behind, "
+            "bookshelves make you look well-read!\n\n" + rule["code"] + ": " + str(rule["percent"]) +
+            "% off new recovery quotes; item + code in first message. Acquisition excluded. "
+            "Owner’s emotional damage: 100%!\n\nPlace it later. Look first!")
 
 
 def append_review_notice(review, notice, *, limit=400):
@@ -66,7 +69,8 @@ def append_review_notice(review, notice, *, limit=400):
     body = review.rstrip()
     if body.endswith(footer):
         body = body[:-len(footer)].rstrip()
-    room = max(0, limit - len(footer) - 1)
+    body = " ".join(body.split())
+    room = max(0, limit - len(footer) - 2)
     if len(body) > room:
         body = body[:room - 3].rstrip() + "..." if room >= 3 else body[:room]
-    return (body + " " + footer).lstrip()
+    return (body + "\n\n" + footer).lstrip()

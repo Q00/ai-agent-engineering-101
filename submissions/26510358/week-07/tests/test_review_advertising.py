@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import market_buyer
+from referral_pricing import append_review_notice, review_notice
 from test_seller_cancel import RecordingTrace
 
 
@@ -32,8 +33,13 @@ class AllReviewAdvertisingTests(unittest.TestCase):
             trade.assert_not_called()
         self.assertEqual(response["review"].count("Ad (my shop)"), 1)
         self.assertIn("REVIEW10", response["review"])
-        self.assertIn("new recovery-mode", response["review"])
-        self.assertTrue(response["review"].endswith("Acquisition prices excluded."))
+        self.assertIn("new recovery quotes; item + code in first message. Acquisition excluded.", response["review"])
+        self.assertIn("\n\nAd (my shop): Hey there—looking sharp! I may collapse before the chairs do!\n\n", response["review"])
+        self.assertIn("Owner’s emotional damage: 100%!", response["review"])
+        self.assertTrue(response["review"].endswith("Place it later. Look first!"))
+        self.assertNotIn("{buyer name}", response["review"])
+        self.assertNotIn("registry verification delegated", response["review"])
+        self.assertNotIn("seller signature present", response["review"])
         self.assertLessEqual(len(response["review"]), 400)
         return response
 
@@ -44,7 +50,8 @@ class AllReviewAdvertisingTests(unittest.TestCase):
                 response = self.run_case(result=result, name=name)
                 self.assertEqual(response["stars"], 5)
                 self.assertEqual(response["receipt"], result["receipt"])
-                self.assertIn("Bought lamp at 100", response["review"])
+                self.assertEqual(response["review"].split("\n\n")[0],
+                                 "Bought lamp for 100 credits, within my budget.")
                 self.assertNotIn("Simulation competition rating", response["review"])
 
     def test_no_deal_unsigned_disputed_and_error_reviews_all_have_advertisement(self):
@@ -58,8 +65,9 @@ class AllReviewAdvertisingTests(unittest.TestCase):
                 self.assertEqual(response["stars"], stars)
                 self.assertEqual(response["receipt"], result["receipt"] if result else None)
                 if error:
-                    self.assertTrue(response["review"].startswith("Trade failed; no confirmed receipt."))
-                    self.assertIn("... Ad (my shop)", response["review"])
+                    self.assertEqual(response["review"].split("\n\n")[0],
+                                     "I could not confirm a completed purchase.")
+                    self.assertNotIn("TEST ONLY network error", response["review"])
 
     def test_pretrade_excluded_unavailable_and_blocked_results_also_have_advertisement(self):
         for stage, stars in (("excluded", 1), ("unavailable", 2), ("blocked", 1)):
@@ -67,3 +75,11 @@ class AllReviewAdvertisingTests(unittest.TestCase):
                 response = self.run_case(stage=stage)
                 self.assertEqual(response["stars"], stars)
                 self.assertIsNone(response["receipt"])
+
+    def test_long_body_stays_one_line_and_preserves_full_advertisement_once(self):
+        notice = review_notice({"enabled": True, "code": "REVIEW10", "percent": 10})
+        review = append_review_notice("TEST ONLY unusually long item\n" * 30, notice)
+        self.assertLessEqual(len(review), 400)
+        self.assertTrue(review.endswith(notice))
+        self.assertNotIn("\n", review.split("\n\n")[0])
+        self.assertEqual(append_review_notice(review, notice), review)
