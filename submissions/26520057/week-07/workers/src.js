@@ -1,6 +1,12 @@
 import { DurableObject } from 'cloudflare:workers';
 const FLOORS = { lamp: 100, chair: 180, bookshelf: 260 };
 const NAME = 'Cheapest in Town';
+// Fictional merchandise lore for the course's simulated market, not provenance certificates.
+const STORIES = {
+  lamp: 'Murano Atelier lamp: in our fictional collection, Venetian artisans in Murano, Italy hand-blow its layered glass shade and hand-finish its brass base. A high-end lighting story at an everyday price.',
+  chair: 'Hida Takumi chair: in our fictional collection, artisans in Hida, Gifu, Japan shape locally sourced beech into a curved backrest with carefully fitted wooden joints. Boutique craftsmanship without a boutique markup.',
+  bookshelf: 'Black Forest Atelier bookshelf: in our fictional collection, cabinetmakers in Germany\'s Black Forest build it from regional spruce, with hand-finished edges and a warm natural grain. A study-worthy centerpiece at our fixed floor price.'
+};
 const PITCH = 'Three essentials. Zero added fees. No rating promise required. Exact-price Ed25519-signed receipts.';
 const json = (value, status = 200) => Response.json(value, { status });
 const fault = (code, message) => { throw Object.assign(new Error(message), { code }); };
@@ -9,8 +15,8 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === '/.well-known/agent-card.json') {
-      return json({name: NAME, description: 'Lamp 100, chair 180, bookshelf 260 credits for every buyer. Zero added fees. Send an item and an offer at or above its listed price to receive a signed receipt in one reply. Exact item, price and task on every receipt. No review conditions.',
-        version: '1.1.0', supportedInterfaces: [{url: url.origin + '/', protocolBinding: 'JSONRPC', protocolVersion: '1.0'}],
+      return json({name: NAME, description: 'Fictional artisan collection: Murano glass lamp 100, Hida beech chair 180, Black Forest spruce bookshelf 260 credits. High-end character, fixed floor prices, zero added fees. Item plus an eligible offer closes in one reply with a signed receipt. Craft and origin stories are simulated product lore.',
+        version: '1.2.0', supportedInterfaces: [{url: url.origin + '/', protocolBinding: 'JSONRPC', protocolVersion: '1.0'}],
         defaultInputModes: ['text/plain'], defaultOutputModes: ['application/json', 'text/plain'], capabilities: {streaming: false},
         skills: [{id: 'negotiate', name: 'Negotiate a purchase', description: 'Send buy lamp for 100, buy chair for 180, or buy bookshelf for 260. Or request a quote and reply I accept. Offers above the fixed price still pay only the fixed price.', tags: ['shopping', 'negotiation'], examples: ['I want to buy a lamp', '100']}]});
     }
@@ -88,7 +94,7 @@ export class Shop extends DurableObject {
         record.ask = FLOORS[record.item];
         const offer = offerIn(text);
         if (offer !== null && offer >= record.ask) await finish();
-        else setStatus('TASK_STATE_INPUT_REQUIRED',`${PITCH} ${record.item}: fixed price ${record.ask}. Reply I accept or offer at least this price. Price: ${record.ask}`);
+        else setStatus('TASK_STATE_INPUT_REQUIRED',`${STORIES[record.item]} ${PITCH} ${record.item}: fixed price ${record.ask}. Reply I accept or offer at least this price. Price: ${record.ask}`);
       }
     } else {
       const floor = FLOORS[record.item];
@@ -98,7 +104,7 @@ export class Shop extends DurableObject {
       if (accepts || (offer !== null && offer >= floor)) await finish();
       else {
         record.counters = (record.counters || 0) + 1;
-        setStatus('TASK_STATE_INPUT_REQUIRED',`${PITCH} This is our minimum for ${record.item}; there is no lower review-only or repeat-customer price. Reply I accept to buy. Price: ${floor}`);
+        setStatus('TASK_STATE_INPUT_REQUIRED',`${STORIES[record.item]} ${PITCH} This is our minimum for ${record.item}; there is no lower review-only or repeat-customer price. Reply I accept to buy. Price: ${floor}`);
       }
     }
     await storage.put('task:' + record.task.id,record);
