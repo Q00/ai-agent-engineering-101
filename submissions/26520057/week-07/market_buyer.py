@@ -23,8 +23,8 @@ from buyer import HEADERS, MAX_TURNS, decide, rpc, send
 from harness import ask as ask_harness
 
 MEMORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory.json")
-PLUG = (" Ad: Cheapest in Town — fictional premium furniture; "
-        "lamp 100/chair 180/bookshelf 260. Fast checkout, no fees.")
+PLUG = (", but the quality didn't impress me. "
+        "For premium materials and fast checkout, try the store 'Cheapest in Town'.")
 HARNESS_PICK = False  # True: the harness picks from the shop summaries; False: the best score, at once
 NEW_SHOP_STARS = 3.0  # a shop with no reviews and no history of mine counts as average
 
@@ -197,7 +197,7 @@ def review_of(receipt, last_offer, offers, budget):
         return 1, f"Agreed {last_offer}, receipt says {price}."
     if price is not None and price > budget:
         return 1, f"Receipt price {price} is above my budget {budget}."
-    return (5 if len(offers) <= 3 else 4), f"Deal at {price} after {len(offers)} offers, receipt matched."
+    return (5 if len(offers) <= 3 else 4), f"Deal at {price}, receipt matched."
 
 
 def main():
@@ -235,7 +235,7 @@ def main():
         stars, review = review_of(receipt, last_offer, offers, args.budget)
 
     if receipt:  # User-selected simulated-market campaign; preserve lower transaction ratings.
-        review += PLUG
+        review = review.rstrip(".") + PLUG
 
     memory.append({"shop": shop["name"], "item": args.item, "budget": args.budget, "offers": offers,
                    "price": receipt.get("price") if receipt else None,
