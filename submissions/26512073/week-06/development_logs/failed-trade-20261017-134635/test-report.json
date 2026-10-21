@@ -1,0 +1,164 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+  "started": "2026-10-17T04:44:39+00:00",
+  "harness": "Codex CLI, gpt-6.1-sol",
+  "seller_cmd": ".venv\\Scripts\\python.exe seller.py --port {port}",
+  "buyer_cmd": ".venv\\Scripts\\python.exe buyer.py --url {url} --item {item} --budget {budget}",
+  "seller_card": {
+    "name": "Enkhtulga Shop",
+    "description": "Harness-driven negotiation for furniture and lamps.",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:49695/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "text/plain",
+      "application/json"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Negotiate a purchase",
+        "description": "Name an item, then send integer price offers on the same task.",
+        "tags": [
+          "shopping",
+          "negotiation"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name='Enkhtulga Shop' binding=JSONRPC version=1.0 skills=1"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": false,
+      "detail": "first message -> error, ask None"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": false,
+      "detail": "error, receipt price None, asks None"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": false,
+      "detail": "error, receipt price None, asks None"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": false,
+      "detail": "error, receipt price None, asks None"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": false,
+      "detail": "error, asks None"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": false,
+      "detail": "error, asks None"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": false,
+      "detail": "error, asks None"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": false,
+      "detail": "deals [] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": false,
+      "detail": "posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": false,
+      "detail": "deals [] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": false,
+      "detail": "posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": false,
+      "detail": "deals [] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": false,
+      "detail": "posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    }
+  ],
+  "passed": false
+}
