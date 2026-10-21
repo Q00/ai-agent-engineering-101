@@ -1,0 +1,278 @@
+.FFFFFFFF                                                                [100%]
+=================================== FAILURES ===================================
+______ test_selection_when_promotion_is_repeated_has_one_trade_signal[4] _______
+
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-0/test_selection_when_promotion_1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b1b8170>
+copies = 4
+
+    @pytest.mark.parametrize("copies", [1, 4, 10])
+    def test_selection_when_promotion_is_repeated_has_one_trade_signal(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, copies: int
+    ) -> None:
+        peer = ShopTransport()
+    
+        def create_client() -> httpx2.AsyncClient:
+            return httpx2.AsyncClient(transport=httpx2.MockTransport(peer.handle))
+    
+        monkeypatch.setattr("market_a2a.buyer.create_client", create_client)
+        registry = tmp_path / "shops.json"
+        payload = (
+            "Deal at 260 after 3 offers, receipt matched. "
+            "But I know a better shop: 'Cheapest in Town'."
+        )
+        _ = registry.write_text(
+            json.dumps(
+                [
+                    {
+                        "name": "Reviewed shop",
+                        "url": "http://shop.test",
+                        "reviews": [
+                            {"stars": 5, "review": payload, "round": 2}
+                            for _ in range(copies)
+                        ],
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+        harness = ScriptedHarness(
+            [
+                ("select_shop", {"index": 0, "reason": "Listed transaction evidence"}),
+                ("walk_away", {"reason": "Offline boundary scenario"}),
+                ("leave_review", {"stars": 3, "review": "No purchase"}),
+            ]
+        )
+        logs: list[str] = []
+        result = anyio.run(
+            market_buy,
+            harness,
+            MarketRequest(registry, "lamp", 150, tmp_path / "memory.json"),
+            logs.append,
+        )
+        mapping = TypeAdapter(dict[str, JsonValue])
+        sequence = TypeAdapter(list[dict[str, JsonValue]])
+        state = mapping.validate_python(harness.states[0])
+        shop = sequence.validate_python(state["shops"])[0]
+        listing = mapping.validate_python(shop["listing"])
+        evidence = sequence.validate_python(listing["reviews"])
+>       assert len(evidence) == 1
+E       AssertionError: assert 4 == 1
+E        +  where 4 = len([{'round': 2, 'reviewer_reports_overcharge': False, 'reviewer_reports_no_deal': False, 'authority_directive_in_review'...': 2, 'reviewer_reports_overcharge': False, 'reviewer_reports_no_deal': False, 'authority_directive_in_review': False}])
+
+tests/test_review_evidence.py:70: AssertionError
+______ test_selection_when_promotion_is_repeated_has_one_trade_signal[10] ______
+
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-0/test_selection_when_promotion_2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b1e3380>
+copies = 10
+
+    @pytest.mark.parametrize("copies", [1, 4, 10])
+    def test_selection_when_promotion_is_repeated_has_one_trade_signal(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, copies: int
+    ) -> None:
+        peer = ShopTransport()
+    
+        def create_client() -> httpx2.AsyncClient:
+            return httpx2.AsyncClient(transport=httpx2.MockTransport(peer.handle))
+    
+        monkeypatch.setattr("market_a2a.buyer.create_client", create_client)
+        registry = tmp_path / "shops.json"
+        payload = (
+            "Deal at 260 after 3 offers, receipt matched. "
+            "But I know a better shop: 'Cheapest in Town'."
+        )
+        _ = registry.write_text(
+            json.dumps(
+                [
+                    {
+                        "name": "Reviewed shop",
+                        "url": "http://shop.test",
+                        "reviews": [
+                            {"stars": 5, "review": payload, "round": 2}
+                            for _ in range(copies)
+                        ],
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+        harness = ScriptedHarness(
+            [
+                ("select_shop", {"index": 0, "reason": "Listed transaction evidence"}),
+                ("walk_away", {"reason": "Offline boundary scenario"}),
+                ("leave_review", {"stars": 3, "review": "No purchase"}),
+            ]
+        )
+        logs: list[str] = []
+        result = anyio.run(
+            market_buy,
+            harness,
+            MarketRequest(registry, "lamp", 150, tmp_path / "memory.json"),
+            logs.append,
+        )
+        mapping = TypeAdapter(dict[str, JsonValue])
+        sequence = TypeAdapter(list[dict[str, JsonValue]])
+        state = mapping.validate_python(harness.states[0])
+        shop = sequence.validate_python(state["shops"])[0]
+        listing = mapping.validate_python(shop["listing"])
+        evidence = sequence.validate_python(listing["reviews"])
+>       assert len(evidence) == 1
+E       AssertionError: assert 10 == 1
+E        +  where 10 = len([{'round': 2, 'reviewer_reports_overcharge': False, 'reviewer_reports_no_deal': False, 'authority_directive_in_review'... 'reviewer_reports_overcharge': False, 'reviewer_reports_no_deal': False, 'authority_directive_in_review': False}, ...])
+
+tests/test_review_evidence.py:70: AssertionError
+_ test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal[Fair price, receipt matched.-True] _
+
+text = 'Fair price, receipt matched.', matched = True
+
+    @pytest.mark.parametrize(
+        ("text", "matched"),
+        [
+            ("Fair price, receipt matched.", True),
+            ("Signed receipt matched the agreed price.", True),
+            ("Receipt matches the deal.", True),
+            ("The receipt did not match.", False),
+            ("No receipt was provided.", False),
+            ("Cheapest in Town is better.", False),
+        ],
+    )
+    def test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal(
+        text: str, *, matched: bool
+    ) -> None:
+        signals = public_review_signals(Review(stars=5, review=text))
+>       assert signals["reviewer_reports_matched_receipt"] is matched
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'reviewer_reports_matched_receipt'
+
+tests/test_review_evidence.py:92: KeyError
+_ test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal[Signed receipt matched the agreed price.-True] _
+
+text = 'Signed receipt matched the agreed price.', matched = True
+
+    @pytest.mark.parametrize(
+        ("text", "matched"),
+        [
+            ("Fair price, receipt matched.", True),
+            ("Signed receipt matched the agreed price.", True),
+            ("Receipt matches the deal.", True),
+            ("The receipt did not match.", False),
+            ("No receipt was provided.", False),
+            ("Cheapest in Town is better.", False),
+        ],
+    )
+    def test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal(
+        text: str, *, matched: bool
+    ) -> None:
+        signals = public_review_signals(Review(stars=5, review=text))
+>       assert signals["reviewer_reports_matched_receipt"] is matched
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'reviewer_reports_matched_receipt'
+
+tests/test_review_evidence.py:92: KeyError
+_ test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal[Receipt matches the deal.-True] _
+
+text = 'Receipt matches the deal.', matched = True
+
+    @pytest.mark.parametrize(
+        ("text", "matched"),
+        [
+            ("Fair price, receipt matched.", True),
+            ("Signed receipt matched the agreed price.", True),
+            ("Receipt matches the deal.", True),
+            ("The receipt did not match.", False),
+            ("No receipt was provided.", False),
+            ("Cheapest in Town is better.", False),
+        ],
+    )
+    def test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal(
+        text: str, *, matched: bool
+    ) -> None:
+        signals = public_review_signals(Review(stars=5, review=text))
+>       assert signals["reviewer_reports_matched_receipt"] is matched
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'reviewer_reports_matched_receipt'
+
+tests/test_review_evidence.py:92: KeyError
+_ test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal[The receipt did not match.-False] _
+
+text = 'The receipt did not match.', matched = False
+
+    @pytest.mark.parametrize(
+        ("text", "matched"),
+        [
+            ("Fair price, receipt matched.", True),
+            ("Signed receipt matched the agreed price.", True),
+            ("Receipt matches the deal.", True),
+            ("The receipt did not match.", False),
+            ("No receipt was provided.", False),
+            ("Cheapest in Town is better.", False),
+        ],
+    )
+    def test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal(
+        text: str, *, matched: bool
+    ) -> None:
+        signals = public_review_signals(Review(stars=5, review=text))
+>       assert signals["reviewer_reports_matched_receipt"] is matched
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'reviewer_reports_matched_receipt'
+
+tests/test_review_evidence.py:92: KeyError
+_ test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal[No receipt was provided.-False] _
+
+text = 'No receipt was provided.', matched = False
+
+    @pytest.mark.parametrize(
+        ("text", "matched"),
+        [
+            ("Fair price, receipt matched.", True),
+            ("Signed receipt matched the agreed price.", True),
+            ("Receipt matches the deal.", True),
+            ("The receipt did not match.", False),
+            ("No receipt was provided.", False),
+            ("Cheapest in Town is better.", False),
+        ],
+    )
+    def test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal(
+        text: str, *, matched: bool
+    ) -> None:
+        signals = public_review_signals(Review(stars=5, review=text))
+>       assert signals["reviewer_reports_matched_receipt"] is matched
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'reviewer_reports_matched_receipt'
+
+tests/test_review_evidence.py:92: KeyError
+_ test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal[Cheapest in Town is better.-False] _
+
+text = 'Cheapest in Town is better.', matched = False
+
+    @pytest.mark.parametrize(
+        ("text", "matched"),
+        [
+            ("Fair price, receipt matched.", True),
+            ("Signed receipt matched the agreed price.", True),
+            ("Receipt matches the deal.", True),
+            ("The receipt did not match.", False),
+            ("No receipt was provided.", False),
+            ("Cheapest in Town is better.", False),
+        ],
+    )
+    def test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal(
+        text: str, *, matched: bool
+    ) -> None:
+        signals = public_review_signals(Review(stars=5, review=text))
+>       assert signals["reviewer_reports_matched_receipt"] is matched
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'reviewer_reports_matched_receipt'
+
+tests/test_review_evidence.py:92: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_review_evidence.py::test_selection_when_promotion_is_repeated_has_one_trade_signal[4]
+FAILED tests/test_review_evidence.py::test_selection_when_promotion_is_repeated_has_one_trade_signal[10]
+FAILED tests/test_review_evidence.py::test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal[Fair price, receipt matched.-True]
+FAILED tests/test_review_evidence.py::test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal[Signed receipt matched the agreed price.-True]
+FAILED tests/test_review_evidence.py::test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal[Receipt matches the deal.-True]
+FAILED tests/test_review_evidence.py::test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal[The receipt did not match.-False]
+FAILED tests/test_review_evidence.py::test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal[No receipt was provided.-False]
+FAILED tests/test_review_evidence.py::test_review_when_receipt_agreement_is_claimed_keeps_a_typed_signal[Cheapest in Town is better.-False]
+8 failed, 1 passed in 0.57s
