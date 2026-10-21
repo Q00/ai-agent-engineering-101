@@ -1,35 +1,35 @@
-# Ideas, 2026-10-21 14:26:21 (sonnet)
+# Ideas, 2026-10-21 22:29:10 (sonnet)
 
 Proposals only: nothing here is applied until a person reviews it.
 
-## 1. [shop] Mention-us returning-buyer discount like 11im (small code)  **FLAGGED: sells below the reserve**
-- What: Add a true, signed follow-up incentive in the deal message: 'mention receipt No. X on your next visit for an extra 3% off', honored by code through the existing one-time loyalty code (never below reserve + 5). Use a flat 3% on the second visit, separate from the 1-6 tier table, and apply it only when the resulting price stays above the floor.
-- Evidence: 11im (4801 deals, 20.8% share) ends every deal with 'Receipt No. ...: mention it on your next visit for an extra 3% off', while our share is 1.9% on 703 visits and our reviews show buyers returning at 105 on repeat rounds.
-- Expected: Higher repeat visits and conversion per visit (445 deals / 703 visits is 63%, vs 11im 78%); modest share gain, small price give-up of about 3% on returns only.
-- Risk: Margin loss on repeat buyers who would have paid full price anyway; overlap with tier discounts could stack below floor if the code doesn't cap it.
-- Honest: The discount is real, honored by code, and stated exactly; no review is requested in exchange or conditioned on it, and the floor stays at reserve + 5.
-- Test: A/B by receipt parity for 2 days: half get the 3% line. Compare return-visit rate, deals per visit and average margin.
+## 1. [shop] Open at the going price, fixed and firm (knob)
+- What: Set opening ask equal to the market median (bookshelf 260, chair 180, lamp 100) with target equal to the ask. Keep the reserve+5 floor. Reply with the exact number to close, as lee-sungsoo and 25620027 do, so a buyer can accept in one message.
+- Evidence: lee-sungsoo (17.8% share, 4.43 stars) asks 260/180 and 'a single reply of yes closes the deal'; our chair reviews show 192->190->185 negotiations, and one 2* review says we held 185 against a 160 budget. Going chair median is 180 with middle half 180-182, yet we close at 185-192.
+- Expected: Higher win rate against buyers who skip shops above the upper quartile, fewer walk-aways; deals and share up, small per-deal margin loss (~3-5%) on chairs.
+- Risk: Gives up margin on buyers who would have paid more. Matching median may not beat shops that already match it.
+- Honest: Only lowers our own asking price. Every quote is a price we actually charge, and no claims are made about others.
+- Test: A/B by 15-minute meta_shop cycles: alternate current opener vs median opener per item for 2 hours. Compare deals/visits, average price, stars.
 
-## 2. [shop] Match the going lamp/chair/bookshelf price exactly on first counter (knob)
-- What: Set opening ask and counter for each item to the middle-half lower bound (lamp 100, chair 180, bookshelf 260) after the first offer, rather than conceding 40% of the gap in steps. Keep a slightly higher opening ask only on bookshelf where the quartile range is 260-270, and quote one fixed 'listed price' that we really charge.
-- Evidence: Going prices: lamp 100, chair 180, bookshelf 260. Top shops 11im, lee-sungsoo, dragonash, ggari-shop and nocha12 all counter at exactly 100/180/260, and corner-store, which sits above (chair 187, lamp 104), has only 6.1% share. Our reviews show lamp deals at 110 and bookshelf at 275, above the median.
-- Expected: Fewer walk-aways and fewer multi-round negotiations (reviews note 2-3 rounds); likely a bump in share with about 5% lower average price on bookshelf and lamp.
-- Risk: Gives up margin on buyers who would have paid 105-110; collapses to price parity with no differentiation.
-- Honest: Prices are real, no fake 'was' price or scarcity claims; reserve + 5 floor is untouched.
-- Test: Change meta_shop.py targets for 24 hours; compare deals per visit, average price paid and share against the previous 24 hours.
+## 2. [shop] Truthful 'quality' line in the ad per item (small code)
+- What: Put one verifiable product fact (material, warranty, assembly) into the opening message only if the shop really offers it. For example state the exact-price signed receipt and the loyalty code mechanism, which we already provide. Do not invent warranty terms.
+- Evidence: lee-sungsoo's top-share replies state '2-year warranty', 'solid hardwood', 'signed receipt on closing'. nocha12 and JangSeongWoong got 3* reviews saying 'quality didn't impress me'. Our visit-to-deal ratio is 699/1055 (66%) versus lee-sungsoo 77% and dragonash 79%.
+- Expected: Visit-to-deal rate moves toward 75%; marginal stars gain.
+- Risk: If the warranty or material claim is not backed by what the shop actually offers, it becomes a false claim; the line is only usable with real terms.
+- Honest: Only states facts the shop can honor, and the signed receipt is already what we issue.
+- Test: Compare conversion (deals/visits) for the 3 hours before and after the template change, same items.
 
-## 3. [shop] Short, fixed-price replies to cut buyer-side failures and latency (small code)
-- What: Have code, not the Llama 8B, produce the counteroffer and deal text from templates ('X is too low. Counteroffer: N.' / 'Deal: lamp at N. Receipt No. ...'), and call the model only for an optional one-line description. Return quickly and avoid heavy model calls per turn.
-- Evidence: Winners dragonash, ggari-shop, 11im and JangSeongWoong use terse templated replies ('89 is too low. Counteroffer: 100.'; 'Deal: lamp at 100.'). Our reviews include two 1* 'Failed to trade' entries after harness failures, and 4* reviews that mention speed ('quick deal (1s)').
-- Expected: Fewer failed trades and 1* reviews, a slightly higher star average (4.42 toward 4.48) and a higher conversion rate.
-- Risk: Plainer text may lose some of the warm tone that buyers' review prompts appreciate; template bugs could mis-state a price.
-- Honest: Every number in the reply is computed by the same pricing code, so the message always matches the receipt.
-- Test: Compare the rate of error/1* reviews and the mean response time for 500 visits before and after the change.
+## 3. [buyer] Open with a spread-aware first offer near the going median (small code)  **FLAGGED: pays above the budget**
+- What: For each item, make the first offer at about 95-97% of the going median (bookshelf ~250, chair ~172, lamp ~96) instead of budget-proportional, then raise up to 40% of the gap, and never go over budget or 1.1 x upper quartile. Walk only after three offers.
+- Evidence: Going prices have very tight middle-half bands (chair 180-182, lamp 100-103) and top shops like dragonash and lee-sungsoo close at 180/260/100. Our buyer paid only 84.1% of budget on average but 10 of the last 40 trades ended without a deal, several 'walked' at budget 160 on chair against a 180 median.
+- Expected: Fewer pointless walks, with price paid near the market median; deal rate up from 75%.
+- Risk: A low budget (160 for a chair) cannot reach 180, so those trades stay no-deals; a median-based opener could overpay buyers with budget slack.
+- Honest: Offers are our own real bids within budget, no false claims about other offers.
+- Test: Run 40 trades with the new opener vs the last 40; compare deal rate and price/median.
 
-## 4. [buyer] Avoid shops with repeated walk-aways and cap budgets by item median (small code)
-- What: Add a short per-shop memory: after one walk against a shop for an item at a budget below its floor, skip that shop for that item and budget band for a few hours, and go to a shop whose observed median is at or below budget (e.g. 11im/lee-sungsoo for chair only when budget is at least 180). When budget is under the going median, go straight to the cheapest shop with a lower-than-median report, such as 25620027 for lamp at 100.
-- Evidence: Our buyer's 7 non-deals: lee-sungsoo chair budget 160 walked three times, 11im lamp budget 90 walked, 25620027 bookshelf walked/error. Going prices (chair 180, lamp 100) are above those budgets, and the buyer paid 84.1% of budget on average.
-- Expected: Fewer wasted trades (7 of 40 failed), more deals per trade; no change in the price paid.
-- Risk: Some budgets are simply below market, so no shop will sell; a skip list can wrongly exclude a shop whose prices dropped later.
-- Honest: Uses only our own observed outcomes and public prices; no deception or pressure on shops, and the buyer never offers above budget.
-- Test: Run the buyer for the next 40 trades with the skip rule and compare the no-deal rate with the 7/40 baseline.
+## 4. [buyer] Skip shops with a no-deal history for the same budget band (small code)
+- What: Add to buyer memory a per-shop, per-item record of walk-aways at a given budget. When the budget is below the shop's lowest recent deal price for that item, route to a shop that has closed at or under that budget (e.g. ggari-shop, psyoung82, corner-store lamp at 105) instead of trying shops that held the floor.
+- Evidence: Our buyer walked at lee-sungsoo chair budget 160 twice, dragonash chair 160, fair-furniture bookshelf 230 twice. 11im lamp budget 110 got None. These repeated failures cost trades, while public ledgers show deals at various prices.
+- Expected: Fewer repeated walks; deal count up; no change to price paid.
+- Risk: Ledger data may be stale; fewer trials of cheaper shops could hide price changes.
+- Honest: Uses only our own memory and the public ledger; no deception.
+- Test: Count repeated (shop, item, budget) walk-aways in the next 40 trades versus 10 now; track deal rate.
