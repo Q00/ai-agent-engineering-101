@@ -1,6 +1,6 @@
 """Print every trade result at my shop as it lands in the market ledger: buyer, item, price, stars, review.
 
-    python watch_reviews.py                          # my current tunnel URL
+    python watch_reviews.py                          # deployed shop URL
     python watch_reviews.py --url <shop URL>         # after the URL changes
 
 The ledger names the shop by the URL the buyer used, so results are matched on that URL.
@@ -13,7 +13,7 @@ import httpx
 MARKET = "https://market.ourolabs.ai"
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--url", default="https://var-securities-printed-ciao.trycloudflare.com")
+ap.add_argument("--url", default="https://cheapest-in-town-26520057.cheapest-in-town-worker.workers.dev")
 ap.add_argument("--every", type=int, default=20, help="seconds between polls")
 args = ap.parse_args()
 

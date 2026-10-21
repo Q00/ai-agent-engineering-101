@@ -59,3 +59,11 @@ Workers 영수증·흥정 상태는 재배포 후에도 남지만 예전 Python 
 ## 2026-10-21 진행 기록
 - 로컬 세 품목: 하한가, 서명, 변조 거부, 완료 task 재사용 거부, GetTask 및 취소 통과.
 - 첫 배포 시도: Cloudflare 오류 10034, 이메일 인증 필요. 배포 성공 전 상태.
+
+## 이메일 인증 후 배포 결과
+- 공개 주소: https://cheapest-in-town-26520057.cheapest-in-town-worker.workers.dev
+- 기존 가게 개인키를 Cloudflare secret으로 설치했다. 개인키 내용은 로그/소스에 남기지 않았다.
+- 실제 공개 주소에서 세 품목의 하한가, 서명, 변조 거부, 완료 후 메시지 거부, GetTask, 취소를 확인했다.
+- 공개 주소 검증에 새 흥정 4건을 사용했다. 이들은 시장의 거래·후기로 제출하지 않았다.
+- `agent.json`의 deployed와 후기 감시 기본 주소를 위 주소로 변경했다.
+- buyer/키트는 Mac에서 --deployed로 계속 실행한다. 가게만 Cloudflare로 이전했다.
