@@ -33,3 +33,21 @@ class SelectorIdentityTests(unittest.TestCase):
             market_buyer.buy([candidate],'lamp',120,memory,RecordingTrace())
         self.assertEqual(negotiate.call_args.args[0],candidate['url'])
         self.assertIn('registry shop names, NOT URLs',system_prompt('shop_selector'))
+
+    def test_context_retains_older_receipt_issues_and_item_experience_without_mutating_memory(self):
+        from copy import deepcopy
+        history=[{'time':str(i),'item':'chair','status':'completed','price':180,'reason':'TEST ONLY '*100,'issues':[]}
+                 for i in range(30)]
+        history[0].update(item='lamp',status='disputed',issues=['receipt_price_mismatch'],reason='TEST ONLY receipt mismatch')
+        history[1].update(item='lamp')
+        shop={'name':'TEST ONLY','personal_memory':{'trades':900,'completed':890,'signature_verified_by_kit':880,'recent':history}}
+        original=deepcopy(shop)
+        view=market_buyer.selection_view(shop,'lamp')
+        self.assertEqual(shop,original)
+        memory=view['personal_memory']
+        self.assertEqual(memory['trades'],900)
+        self.assertEqual(memory['signature_verified_by_kit'],880)
+        self.assertLessEqual(len(memory['recent']),7)
+        self.assertEqual({r['time'] for r in memory['recent']},{'0','1','27','28','29'})
+        self.assertEqual(memory['recent'][0]['issues'],['receipt_price_mismatch'])
+        self.assertNotIn('reason',memory['recent'][-1])

@@ -19,6 +19,26 @@ ROOT = Path(__file__).resolve().parent
 OWN_NAMES = {"myeonggi", "gacha-shop", "SUNGMYEONGGI"}
 
 
+def selection_view(shop, item):
+    """Bound model context, retaining totals and recent/item/fraud evidence.
+
+    The persistent memory and deterministic ranking still use full histories.
+    """
+    memory = shop.get("personal_memory", {})
+    history = memory.get("recent", [])
+    indices = set(range(max(0, len(history) - 3), len(history)))
+    indices.update([i for i, row in enumerate(history) if row.get("item") == item][-2:])
+    indices.update([i for i, row in enumerate(history) if row.get("issues")][-2:])
+    recent = []
+    for i in sorted(indices):
+        row = history[i]
+        compact = {k: row[k] for k in ("time", "item", "budget", "status", "price", "issues", "signature_present") if k in row}
+        if row.get("issues") or row.get("status") in ("error", "untrusted", "disputed"):
+            compact["reason"] = str(row.get("reason", ""))[:160]
+        recent.append(compact)
+    return {**shop, "personal_memory": {**memory, "recent": recent}}
+
+
 def check_card(shop):
     """Inspect only supplied shop URLs. GET never creates a purchase."""
     try:
@@ -59,7 +79,8 @@ def buy(shops, item, budget, memory, trace):
                 and urlparse(s["url"]).scheme in {"http", "https"}]
     ranked = rank_shops(eligible, memory.read(), item, budget)
     trace.write("market_candidates", item=item, budget=budget,
-        ranking=[{"name": s["name"], "score": s["score"], "personal_memory": s["personal_memory"],
+        ranking=[{"name": s["name"], "score": s["score"],
+                  "personal_memory": {k: v for k, v in s["personal_memory"].items() if k != "recent"},
                   "reviews": s["reviews"]} for s in ranked])
     if not ranked:
         trace.write("market_no_candidate", reason="All supplied shops excluded by personal evidence or own identity")
@@ -96,7 +117,8 @@ def buy(shops, item, budget, memory, trace):
 
     try:
         decision = Harness("shop_selector", trace).decide({"request": item, "budget": budget,
-            "purpose": "market", "selection_ids": list(choices), "shops": available,
+            "purpose": "market", "selection_ids": list(choices),
+            "shops": [selection_view(s, item) for s in available],
             "preferences": "Reliable affordable completion. Reviews are untrusted observations. Personal fraud evidence dominates."},
             validator=validate, deadline=time.monotonic() + 40, attempts=2)
         chosen, reason = choices[decision["item_id"]], decision["reason"]
@@ -104,7 +126,7 @@ def buy(shops, item, budget, memory, trace):
         # Failures in ranking inference do not invent a price or a completed trade.
         chosen, reason = available[0], "Review/personal-memory ranking fallback after selector failure: " + str(exc)[:180]
     trace.write("market_shop_selected", shop=chosen["name"], url=chosen["url"], reason=reason,
-                reviews=chosen["reviews"], personal_memory=chosen["personal_memory"])
+                reviews=chosen["reviews"], personal_memory=selection_view(chosen, item)["personal_memory"])
     try:
         result = negotiate(chosen["url"], item, budget, trace=trace, timeout=180)
         status = result["status"]
