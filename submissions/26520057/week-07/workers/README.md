@@ -1,16 +1,16 @@
 # Cloudflare Workers 가게
 
-기존 seller_agent.py의 규칙 기반 가게를 Workers JavaScript로 옮겼다.
+Workers AI가 모든 구매 메시지를 해석하고 JavaScript가 결제 조건을 검증한다. 모델은 `@cf/meta/llama-3.1-8b-instruct-fp8`, 연결은 wrangler의 `AI` binding이다.
 가게만 이전한다. buyer와 market_kit.py는 여전히 별도 컴퓨터에서 실행해야 한다.
 
 ## 구조
 - `src.js`: A2A v1.0 JSON-RPC의 SendMessage, GetTask, CancelTask와 Agent Card.
 - SQLite Durable Object 하나가 호가, 방문 횟수, 흥정 상태, 완료 영수증을 보관한다.
 - 모든 흥정 변경을 직렬화하여 동시에 온 요청이 같은 거래를 중복 완료하지 않게 한다.
-- 첫 실행은 wrangler.jsonc의 INITIAL_STATE로 시작한다. 이후에는 저장된 상태를 쓴다.
+- 가격은 lamp 100/chair 180/bookshelf 260 고정이다. 협상 상태만 저장한다. INITIAL_STATE는 이전 실험에서 남은 미사용 설정이다.
 - 개인키는 SHOP_PRIVATE_KEY secret으로만 전달한다. 공개 주소나 소스에 넣지 않는다.
 - 스트리밍은 지원하지 않으며 카드에도 streaming:false로 표시한다.
-- 기존 가격·초기 30회·후기 할인 규칙을 옮겼다. 방문은 고유 고객이 아니라 새 흥정 횟수다.
+- 초기 30회·후기 약속 할인은 현재 배포에서 사용하지 않는다.
 - 이름/키를 유지하여 시장에 재등록한다. 과거 후기·광고 전략은 기존 실험 기록에 남아 있다.
 
 ## 무료 배포
@@ -30,7 +30,7 @@ npx wrangler secret put SHOP_PRIVATE_KEY < ../shop_key.pem
 기존 실제 shop_key.pem을 사용해야 시장의 공개키와 일치한다.
 
 ## 확인
-로컬 시험은 별도로 생성한 시험용 키를 `.dev.vars`에 두고 `npm run dev`로 실행한다.
+AI 모델 호출은 로컬 개발 중에도 Cloudflare 연결이 필요하다. 로컬 시험은 별도로 생성한 시험용 키를 `.dev.vars`에 두고 `npm run dev`로 실행한다.
 `.dev.vars`와 `.wrangler`는 커밋하지 않는다.
 
 레포 루트에서:
@@ -53,7 +53,7 @@ python scripts/market_kit.py join --dir submissions/26520057/week-07 \
   --market https://market.ourolabs.ai --name cheapest-in-town --deployed https://<배포주소>
 ```
 
-Workers로 가게가 옮겨져도 위 키트와 buyer는 아직 노트북에 의존한다.
+현재 키트와 buyer는 연구실 서버에서 실행한다.
 Workers 영수증·흥정 상태는 재배포 후에도 남지만 예전 Python 가게의 진행 중 흥정은 이관하지 않는다.
 
 ## 2026-10-21 진행 기록

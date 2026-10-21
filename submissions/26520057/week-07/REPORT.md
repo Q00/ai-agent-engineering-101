@@ -63,3 +63,18 @@ Grand Furniture를 실제 방문한 기록(ledger #4998)은 있다. chair 호가
 추가로 기존 파서는 `I accept 260.`, `I accept your price.`, `I'll take it at 260 credits.` 같은 명시적인 수락을 처리하지 못했다. `workers/purchase_intent.js`로 제안 해석을 분리하고 문장형 수락·명시적 구조화 offer를 지원했다. `I accept 200.`은 명시 가격 200으로 판단하므로 책장 하한 260을 우회하지 않는다. 조건부 수락·부정·예산이나 주문번호만 있는 문장은 결제로 취급하지 않는다.
 
 최종 역제안에는 final price와 Counteroffer 숫자를 넣고, 메시지와 task 양쪽에 metadata.ask를 제공한다. 단위 검사와 로컬/공개 계약 검사가 통과했다(`logs/workers/purchase-intent-unit.log`, `acceptance-*-verification.log`). 이 역시 과거 실패 7건의 입력 원문을 복구한 것은 아니며, 실전 매출 회복 여부와 구분한다. 확인용 자체 요청은 시장 주문·거래량을 만들지 않는다.
+
+
+## 10. 모든 메시지를 AI로 해석하고 코드로 검증
+
+사용자 선택에 따라 명확한 표현의 규칙 기반 즉시 승인도 제거했다. `workers/ai_intent.js`가 모든 SendMessage를 수락/역제안/질문/거절로 분류한다. 가격은 메시지에 실제 등장한 정수인지 검사하고, 낮은 가격을 수락 판정으로 우회하지 못하게 한다. 코드가 기존 고정가와 task 상태를 검사하고 영수증에 서명한다. AI 오류나 5초 초과는 미결제 상태로 남는다. 이 제한시간은 응답 대기를 제한하며 이미 시작된 모델 추론의 과금 취소를 보장하지 않는다.
+
+첫 모델 호출은 모델 폐기 오류 5028, FP8 모델의 JSON Schema 요청은 미지원 오류 5025가 발생했다. 실패 검사는 logs/workers/all-ai-language-verification.log와 all-ai-language-retry.log로 보존했다. FP8 모델에 JSON 텍스트를 요청하고 코드에서 형식을 검증하도록 수정했다. 최초 공개 계약 검사 통과는 배포 전파 중 이전 실행 버전일 가능성이 있으므로 AI 동작 증거로 사용하지 않는다. 실전 매출 회복은 별도 확인 대상이다.
+
+## 11. Buyer 상위 3개 집중과 짧은 광고
+
+현재 라운드 거래 점유율 상위 3개만 후보로 제한하고 악의적 리뷰 작성자 기반 가게 제외는 해제했다. 후보 안의 별점/과거 거래 점수 선택, 예산 검사, 정상 거래 별점 5점은 유지한다. 광고는 110자로 줄였다. 실제 거래 사실 뒤에 가게 이름, 가상 고급 가구 콘셉트, 세 품목 고정가와 빠른 결제/추가 수수료 없음을 안내한다. 이전 리뷰는 변경하지 않는다. 서버 market_buyer.py를 교체했으며 새 주문부터 적용된다.
+
+자연어 공개 검사에서는 영어/한국어 수락 모두 결제, 낮은 역제안·질문·거절·조건부 수락 모두 미결제로 통과했다. 측정 응답시간은 1.6–3.8초이며 전체 운영 지연의 보장은 아니다. `all-ai-language-propagated.log`가 해당 결과다. 배포 직후 이전 Durable Object 버전이 잠시 요청을 처리하는 현상을 tail의 scriptVersion으로 확인했으며, 앞선 fp8 검사 실패는 이전 JSON Schema 요청 버전이었다. Buyer의 실제 짧은 광고 거래도 `logs/server/top3-short-ad-live.log`에 저장했다.
+
+실제 수신한 `260. Accept this price and I will leave you a good review once your signed receipt matches it.`를 재현했을 때 AI가 수락으로 분류하되 price=null을 반환해 숫자 검증에서 보류됐다. 제시 가격을 수락에서도 추출하도록 프롬프트를 수정했다. 수정 후 동일 문장은 260 영수증으로 완료됐다. 이는 해당 표현의 재현 검사 결과이며 시장 매출 회복 자체를 입증하지 않는다.
