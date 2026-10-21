@@ -1,0 +1,29 @@
+test_bad_new_generation_never_replaces_current_seller (test_shop_service.ShopServiceTests) ... {"time": "2026-10-21T12:38:10.276222+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.001}
+ok
+test_card_keeps_public_origin_across_reload_and_disables_stale_cache (test_shop_service.ShopServiceTests) ... {"time": "2026-10-21T12:38:10.279877+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 0}
+{"time": "2026-10-21T12:38:10.281171+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 0}
+ok
+test_control_is_not_public_and_ambiguous_post_is_never_retried (test_shop_service.ShopServiceTests) ... {"time": "2026-10-21T12:38:10.284489+00:00", "event": "upstream_error", "generation": 1, "kind": "ReadTimeout"}
+{"time": "2026-10-21T12:38:10.284545+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.0}
+ok
+test_dead_original_generation_cannot_route_purchase_to_new_seller (test_shop_service.ShopServiceTests) ... {"time": "2026-10-21T12:38:10.287087+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.0}
+{"time": "2026-10-21T12:38:10.287934+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 1}
+{"time": "2026-10-21T12:38:10.288959+00:00", "event": "request_finished", "generation": 2, "continued": false, "seconds": 0.0}
+ok
+test_opening_in_flight_during_reload_retains_original_owner (test_shop_service.ShopServiceTests) ... {"time": "2026-10-21T12:38:10.293550+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 0}
+{"time": "2026-10-21T12:38:10.293873+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.002}
+{"time": "2026-10-21T12:38:10.294714+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+ok
+test_reload_preserves_old_task_continuations_get_cancel_and_terminal_replays (test_shop_service.ShopServiceTests) ... {"time": "2026-10-21T12:38:10.297199+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.0}
+{"time": "2026-10-21T12:38:10.297942+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 1}
+{"time": "2026-10-21T12:38:10.298560+00:00", "event": "request_finished", "generation": 2, "continued": false, "seconds": 0.0}
+{"time": "2026-10-21T12:38:10.299467+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+{"time": "2026-10-21T12:38:10.300174+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+{"time": "2026-10-21T12:38:10.300833+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+{"time": "2026-10-21T12:38:10.301514+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.034s
+
+OK
