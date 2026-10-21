@@ -7,7 +7,6 @@ import unittest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from catalog import load_catalog
 from rank_pricing import opening_ask
-from referral_pricing import review_notice
 from shopfront import public_items, public_description, public_skills
 from test_seller_cancel_http import actual_sdk_server
 import httpx
@@ -34,14 +33,13 @@ class ShopfrontTests(unittest.TestCase):
             self.assertNotIn(unsupported,description)
 
     def test_coupon_advertising_matches_actual_phase_and_full_ten_percent(self):
-        rule=self.quotes('acquisition')['review_referral']
         acquisition=public_items(load_catalog(),self.quotes('acquisition'))
-        self.assertNotIn('REVIEW10',review_notice(rule,offers=acquisition))
+        self.assertNotIn('REVIEW10',public_description(acquisition))
         recovery=public_items(load_catalog(),self.quotes('recovery'))
         self.assertEqual([x['discount']['price'] for x in recovery],[108,180,261])
-        self.assertIn('REVIEW10',review_notice(rule,offers=recovery))
-        self.assertLess(len(review_notice(rule,offers=acquisition)),200)
-        self.assertLess(len(review_notice(rule,offers=recovery)),350)
+        self.assertIn('REVIEW10',public_description(recovery))
+        self.assertLessEqual(len(public_description(acquisition)),300)
+        self.assertLessEqual(len(public_description(recovery)),300)
 
     def test_actual_sdk_discovery_updates_prices_without_model_or_network(self):
         with actual_sdk_server(public_profile=True) as state:
