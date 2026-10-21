@@ -61,6 +61,7 @@ class BuyerDiscoveryTests(unittest.TestCase):
                 return kwargs['validator']({'action':'select_shop','item_id':'TEST_ALTERNATIVE','price':None,'offer':None,'reason':'TEST ONLY direct experience diversification'})
             model=Mock();model.decide.side_effect=choose
             with patch.object(market_buyer,'rank_shops',return_value=[primary,alternative]), \
+                    patch.object(memory,'ingest_kit_feedback',return_value=[]), \
                     patch.object(market_buyer,'check_card',side_effect=lambda s:s), \
                     patch.object(market_buyer,'Harness',return_value=model), \
                     patch.object(market_buyer,'negotiate',return_value={'status':'no_deal','receipt':None}) as trade:
