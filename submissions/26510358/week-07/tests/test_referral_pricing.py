@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from referral_pricing import code_claim, referral_terms, review_notice
+from referral_pricing import code_claim, referral_terms
 from a2a.helpers import new_text_part
 from a2a.server.agent_execution import RequestContext
 from a2a.server.context import ServerCallContext
@@ -59,10 +59,6 @@ class ReferralPricingTests(unittest.TestCase):
         for text in ("I read your review", "lamp TESTCODE100", "lamp XTESTCODE10", "lamp TESTCODE10_extra"):
             self.assertIsNone(code_claim(text, {}, RULE))
         self.assertIsNone(code_claim("TESTCODE10", {}, {}))
-        notice = review_notice(RULE)
-        self.assertIn("Ad (my shop)", notice)
-        self.assertIn("eligible standard quotes", notice)
-        self.assertIn("Promotional prices excluded", notice)
 
 
 class ReferralSellerTests(unittest.IsolatedAsyncioTestCase):
@@ -152,8 +148,8 @@ class HonestReferralReviewTests(unittest.TestCase):
                     patch.object(market_buyer, "negotiate", return_value=deepcopy(result)):
                 response = market_buyer.buy([candidate], "lamp", 120, memory, RecordingTrace())
             self.assertEqual(response["receipt"], result["receipt"])
-            self.assertTrue(response["review"].startswith("Bought lamp for 100 credits, within my budget.\n\n"))
-            self.assertIn("Ad (my shop)", response["review"])
+            self.assertEqual(response["review"], "Bought lamp for 100 credits (budget 120); the receipt matched our agreement.")
+            self.assertNotIn("Ad (my shop)", response["review"])
             self.assertNotIn("black", response["review"].lower())
             responses.append(response)
         self.assertEqual(responses[0]["stars"], responses[1]["stars"])

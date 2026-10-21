@@ -13,10 +13,6 @@ from evidence import EvidenceError, inspect_untrusted, numeric_price
 from harness import Harness
 from market_memory import MarketMemory, rank_shops
 from tracing import Trace
-from referral_pricing import append_review_notice, review_notice
-from catalog import load_catalog
-from rank_pricing import RankPricing
-from shopfront import public_items
 from buyer_discovery import discovery_pool
 
 ROOT = Path(__file__).resolve().parent
@@ -59,24 +55,13 @@ def check_card(shop):
 
 def buy(shops, item, budget, memory, trace):
     budget = numeric_price(budget)
-    # Read campaign text before attempting a purchase; configuration failure
-    # must not cause a successfully received receipt to be discarded afterward.
-    try:
-        price_policy = json.loads((ROOT / "data" / "price-policy.json").read_text())
-        quote_policy = RankPricing(price_policy, trace).quote_policy()
-        notice = review_notice(price_policy.get("review_referral"),
-                               offers=public_items(load_catalog(), quote_policy))
-        if len(notice.strip()) >= 400:
-            raise ValueError("Review advertisement must fit within the public review limit")
-    except (OSError, ValueError, KeyError, TypeError) as exc:
-        notice = ""
-        trace.write("review_referral_notice_unavailable", detail=str(exc))
-
     def report(shop, receipt, stars, review):
-        # All outcomes share the same advertising path, independently of rank,
-        # success and signatures. Publication eligibility remains the kit's job.
+        # State observed transaction facts only. The kit controls publication.
+        review = " ".join(review.split())[:400]
+        trace.write("market_review_prepared", style="concise_transaction_facts_v1",
+                    advertising=False, stars=stars, characters=len(review))
         return {"shop": shop, "receipt": receipt, "stars": stars,
-                "review": append_review_notice(review, notice)}
+                "review": review}
 
     feedback = memory.ingest_kit_feedback(ROOT / "logs" / "market-kit.log")
     if feedback:
@@ -158,13 +143,16 @@ def buy(shops, item, budget, memory, trace):
             # authoritative public key and can verify + add the buyer signature.
             signed = bool(receipt.get("sig_seller"))
             stars = 5 if signed else 3
-            review = f"Bought {item} for {numeric_price(receipt['price']):g} credits, within my budget."
+            receipt_note = ("the receipt matched our agreement" if signed else
+                            "the receipt lacked a seller signature")
+            review = (f"Bought {item} for {numeric_price(receipt['price']):g} credits "
+                      f"(budget {budget:g}); {receipt_note}.")
         elif status == "disputed":
             signed, stars = False, 1
-            review = "The receipt did not match our agreed purchase."
+            review = f"The {item} receipt did not match our agreed purchase."
         else:
             signed, stars = False, 3
-            review = "Could not agree on a purchase within my budget."
+            review = f"No deal for {item} within my {budget:g}-credit budget."
         memory.record(chosen["name"], item=item, budget=budget, status=status,
             price=receipt.get("price") if isinstance(receipt, dict) else None,
             reason=str(result.get("reason", result.get("state", review)))[:250],
@@ -176,7 +164,7 @@ def buy(shops, item, budget, memory, trace):
         detail = type(exc).__name__ + ": " + str(exc)[:250]
         trace.write("market_trade_error", shop=chosen["name"], detail=detail)
         memory.record(chosen["name"], item=item, budget=budget, status="error", reason=detail)
-        return report(chosen["url"], None, 2, "I could not confirm a completed purchase.")
+        return report(chosen["url"], None, 2, f"I could not confirm a completed {item} purchase.")
 
 
 if __name__ == "__main__":

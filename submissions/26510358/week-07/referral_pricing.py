@@ -49,32 +49,3 @@ def referral_terms(item, reference_price, quote_policy, claim_source):
     return terms
 
 
-def review_notice(rule, *, offers=None):
-    """Clearly separate our own advertisement from a review of another shop."""
-    if not rule or not rule.get("enabled"):
-        return ""
-    text = "Ad (my shop): Ssadassa Shop / myeonggi — "
-    if offers:
-        text += ", ".join(f"{item['id']} {item['price']}" for item in offers) + " credits. "
-    else:
-        text += "lamps, chairs and bookshelves. "
-    text += "Ask for a current quote; exact-price Ed25519-signed receipt."
-    if offers is None or any(item.get("discount") for item in offers):
-        text += (" " + rule["code"] + ": " + str(rule["percent"]) +
-                 "% off eligible standard quotes; item + code in first message. Promotional prices excluded.")
-    return text
-
-
-def append_review_notice(review, notice, *, limit=400):
-    """Reserve room for the entire disclosed ad in every public review result."""
-    if not notice:
-        return review
-    footer = notice.strip()
-    body = review.rstrip()
-    if body.endswith(footer):
-        body = body[:-len(footer)].rstrip()
-    body = " ".join(body.split())
-    room = max(0, limit - len(footer) - 2)
-    if len(body) > room:
-        body = body[:room - 3].rstrip() + "..." if room >= 3 else body[:room]
-    return (body + "\n\n" + footer).lstrip()
