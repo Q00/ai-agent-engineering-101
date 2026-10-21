@@ -75,7 +75,7 @@ class SimulationReviewPolicy:
                          observed_at=datetime.now(timezone.utc).isoformat(), shop_rank=shop_rank,
                          own_rank=own_rank, transaction_stars=transaction_stars, stars=stars,
                          ranked_higher=higher, ranking_order="deals_desc_stars_desc")
-        note = (f" Simulation competition rating: shop rank {shop_rank} is above my shop rank "
-                f"{own_rank}; {stars} stars reflects simulation strategy, not a product-quality finding."
+        note = (f" Simulation competition rating: {stars}/5 (rank {shop_rank}, ours {own_rank}); "
+                "not a product-quality finding."
                 if higher else "")
         return stars, note

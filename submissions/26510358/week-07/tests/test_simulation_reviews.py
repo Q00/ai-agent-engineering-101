@@ -109,6 +109,8 @@ class SimulationReviewTests(unittest.TestCase):
         self.assertIn("Bought lamp at 100", response["review"])
         self.assertIn("Simulation competition rating", response["review"])
         self.assertIn("Ad (my shop)", response["review"])
+        self.assertLessEqual(len(response["review"]), 400, "Public review must retain complete referral terms")
+        self.assertTrue(response["review"].endswith("Acquisition prices excluded."))
         memory.record.assert_called_once()
         self.assertEqual(memory.record.call_args.kwargs["status"], "completed")
         self.assertEqual(memory.record.call_args.kwargs["issues"], [])
