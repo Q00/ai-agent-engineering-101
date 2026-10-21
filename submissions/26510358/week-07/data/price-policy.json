@@ -1,6 +1,6 @@
 {
-  "version": "rank-cycle-v1",
-  "source": "Owner rule: recover margin at rank 1-3 on the current round's Deals board; resume acquisition at rank 4 or below. Mandatory reserves stay unchanged. Recovery initially restores benchmark-v1 opening margins; reserves are not treated as actual costs.",
+  "version": "rank-cycle-referral-v2",
+  "source": "Owner rule: rank 1-3 uses genuine recovery quotes 120/200/290 with a disclosed review-code discount of exactly 10%; rank 4+ keeps acquisition 100/180/260. Existing quotes and mandatory reserves stay unchanged. Review stars remain based on actual transactions, never competitor rank.",
   "opening_margin": {
     "lamp": 1,
     "chair": 3,
@@ -8,6 +8,14 @@
   },
   "default_margin_rate": 0.02,
   "accept_floor_bids": true,
+  "review_referral": {
+    "enabled": true,
+    "code": "REVIEW10",
+    "percent": 10,
+    "phases": ["recovery"],
+    "item_ids": ["lamp", "chair", "bookshelf"],
+    "claim_rule": "Include item + REVIEW10 in the first message, or message.metadata.referralCode. This is an openly reusable promotion code, not proof of reading a review. No stacking or retroactive changes."
+  },
   "rank_cycle": {
     "enabled": true,
     "registry_name": "myeonggi",
@@ -21,7 +29,7 @@
         "accept_floor_bids": true
       },
       "recovery": {
-        "opening_margin": {"lamp": 1, "chair": 3, "bookshelf": 5},
+        "opening_margin": {"lamp": 20, "chair": 20, "bookshelf": 30},
         "accept_floor_bids": false
       }
     }

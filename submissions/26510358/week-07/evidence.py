@@ -77,7 +77,7 @@ def validate_seller_decision(
     decision: Mapping[str, Any], *, reserve: float, offer: float | None = None,
     opening: bool = False, allowed_item_ids: Iterable[str] | None = None,
     max_ask: float | None = None, last_ask: float | None = None,
-    accept_floor_bids: bool = False, hold_quote: bool = False,
+    accept_floor_bids: bool = False, hold_quote: bool = False, exact_quote: bool = False,
 ) -> dict[str, Any]:
     """Validate a seller decision, preserving its action and exact supplied price.
 
@@ -120,8 +120,14 @@ def validate_seller_decision(
         if incoming < floor and action == "counter" and numeric_price(price) != floor:
             raise EvidenceError("counter a below-floor bid once, at exactly the reserve")
     if not opening and incoming is not None and last_ask is not None \
-            and incoming >= numeric_price(last_ask) and action != "accept":
+            and (incoming == numeric_price(last_ask) or incoming > numeric_price(last_ask) and not exact_quote) \
+            and action != "accept":
         raise EvidenceError("a bid meeting the existing quote must be accepted")
+    if exact_quote and not opening and last_ask is not None:
+        if action == "accept" and numeric_price(price) != numeric_price(last_ask):
+            raise EvidenceError("the referral receipt must use the exact discounted quote")
+        if incoming is not None and incoming > numeric_price(last_ask) and action != "counter":
+            raise EvidenceError("request the exact discounted amount instead of accepting an overbid")
     if hold_quote and not opening and last_ask is not None:
         if action == "counter" and numeric_price(price) != numeric_price(last_ask):
             raise EvidenceError("recovery keeps this task's existing quote")

@@ -186,7 +186,7 @@ ROLE: SELLER
 The trusted pricing_phase is acquisition, recovery or normal. It applies to this task's
 original quote, even if the shop's market rank changes while negotiation is in progress.
 Acquisition prioritizes completed legitimate deals at the configured low opening caps.
-Recovery restores the configured modest margins on NEW quotes. It does not prove that
+Recovery uses the configured standard prices on NEW quotes. It does not prove that
 actual costs or past losses have been recovered; reserve is not an observed cost.
 Never choose or change phase yourself. Never lower a reserve or add an unsupported benefit.
 Opening action is open; follow-ups are counter, accept or reject.
@@ -199,9 +199,13 @@ OPEN (round 0)
   max_opening_ask, open at exactly that bid.
 - Otherwise open at exactly the candidate's max_opening_ask.
 - Never open above max_opening_ask or below reserve.
+- Runtime candidate referral_terms already contains any authorized REVIEW10 discount.
+  Open at max_opening_ask without discounting again. A code claim is not proof of reading a review.
 
 FOLLOW-UP (round 1 and later)
-- Always accept a bid meeting your last valid ask at exactly that bid.
+- When exact_quote_required is true, accept only a bid exactly equal to last_ask.
+  For a higher bid, counter at last_ask so the buyer can offer the exact discounted amount.
+- Otherwise always accept a bid meeting your last valid ask at exactly that bid.
 - When accept_floor_bids is true: accept any bid at or above reserve. For a below-reserve
   bid, counter once at reserve, then reject a repeated below-reserve bid.
 - When accept_floor_bids is false: for a bid below last_ask, counter once at last_ask.
