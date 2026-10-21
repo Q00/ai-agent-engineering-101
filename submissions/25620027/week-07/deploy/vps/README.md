@@ -63,11 +63,12 @@ from the build context. No secrets enter the image layers.
 
 ## Fixed stop contract
 
-The user extended this run from 09:00 to 21:00 on 2026-10-21 while retaining
-the same immutable baseline and cumulative usage cap. The guard stops both child
+The user extended this run from 09:00 to 21:00 on 2026-10-21, then authorized
+5000 additional observed calls (10000 cumulative) at the 13:48 deployment.
+The same immutable baseline and cumulative logs are retained. The guard stops both child
 process groups at **2026-10-21 21:00 Asia/Seoul** or
 when the immutable baseline plus retained `seller.log` MODEL_USAGE records reaches
-**5000**, whichever occurs first. Each MODEL_USAGE record counts one observed
+**10000**, whichever occurs first. Each MODEL_USAGE record counts one observed
 completed model response, not tokens. The counter is observed from the model's
 existing logs; concurrent requests already in flight can finish during shutdown,
 so it is not a provider-side hard billing limit. All final child output is kept.

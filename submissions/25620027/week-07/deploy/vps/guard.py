@@ -14,7 +14,7 @@ import subprocess
 import time
 
 DEADLINE = dt.datetime.fromisoformat('2026-10-21T21:00:00+09:00').timestamp()
-CALL_LIMIT = 5000
+CALL_LIMIT = 10000
 USAGE_PREFIX = b'MODEL_USAGE model='
 
 

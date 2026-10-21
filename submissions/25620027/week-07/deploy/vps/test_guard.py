@@ -24,7 +24,7 @@ class GuardTests(unittest.TestCase):
         self.directory.mkdir(parents=True, exist_ok=False)
         self.data = self.directory / 'data'
         self.baseline = self.directory / 'input-baseline.json'
-        self.baseline.write_text(json.dumps({'model_usage_count': 4998}))
+        self.baseline.write_text(json.dumps({'model_usage_count': 9998}))
         self.deadline = guard.DEADLINE
         guard.DEADLINE = time.time() + 30
 
@@ -49,11 +49,11 @@ class GuardTests(unittest.TestCase):
         commands = self.commands("import time; print('MODEL_USAGE model=fake input=1 output=2'); print('MODEL_USAGE model=fake input=1 output=2'); time.sleep(30)")
         code, state = self.run_guard(commands)
         self.assertEqual((code, state['reason'], state['model_usage_count']),
-                         (0, 'model_usage_limit', 5000))
+                         (0, 'model_usage_limit', 10000))
         log = (self.data / 'seller.log').read_bytes()
         self.assertEqual(guard.count_usage(self.data / 'seller.log'), 2)
         code, state = self.run_guard(commands)
-        self.assertEqual((code, state['model_usage_count']), (0, 5000))
+        self.assertEqual((code, state['model_usage_count']), (0, 10000))
         self.assertEqual((self.data / 'seller.log').read_bytes(), log)
 
     def test_existing_persistent_usage_counts_on_restart(self):
@@ -61,7 +61,7 @@ class GuardTests(unittest.TestCase):
         (self.data / 'baseline.json').write_text(self.baseline.read_text())
         (self.data / 'seller.log').write_text('MODEL_USAGE model=prior input=1 output=1\n')
         code, state = self.run_guard(self.commands("import time; print('MODEL_USAGE model=next input=1 output=1'); time.sleep(30)"))
-        self.assertEqual((code, state['model_usage_count']), (0, 5000))
+        self.assertEqual((code, state['model_usage_count']), (0, 10000))
         self.assertIn(b'model=prior', (self.data / 'seller.log').read_bytes())
         self.assertIn(b'model=next', (self.data / 'seller.log').read_bytes())
 
@@ -100,7 +100,7 @@ class GuardTests(unittest.TestCase):
         self.data.mkdir()
         (self.data / 'baseline.json').write_text(self.baseline.read_text())
         (self.data / 'seller.log').write_text('')
-        (self.data / 'guard-state.json').write_text('{"model_usage_count": 4999}')
+        (self.data / 'guard-state.json').write_text('{"model_usage_count": 9999}')
         with self.assertRaises(ValueError):
             self.run_guard(self.commands('raise SystemExit(1)'))
         (self.directory / 'rejection.txt').write_text('PASS: log truncation rejected against persisted usage floor before child launch\n')
@@ -108,7 +108,7 @@ class GuardTests(unittest.TestCase):
     def test_deleted_log_cannot_reduce_persistent_count(self):
         self.data.mkdir()
         (self.data / 'baseline.json').write_text(self.baseline.read_text())
-        (self.data / 'guard-state.json').write_text('{"model_usage_count": 4999}')
+        (self.data / 'guard-state.json').write_text('{"model_usage_count": 9999}')
         with self.assertRaises(ValueError):
             self.run_guard(self.commands('raise SystemExit(1)'))
         (self.directory / 'rejection.txt').write_text('PASS: missing log rejected against persisted usage floor before child launch\n')
@@ -126,11 +126,26 @@ class GuardTests(unittest.TestCase):
 
     def test_replaced_baseline_fails_closed(self):
         self.data.mkdir()
-        (self.data / 'baseline.json').write_text('{"model_usage_count": 4999}')
+        (self.data / 'baseline.json').write_text('{"model_usage_count": 9999}')
         with self.assertRaises(ValueError):
             self.run_guard(self.commands('raise SystemExit(1)'))
         (self.directory / 'rejection.txt').write_text('PASS: changed baseline rejected before child launch\n')
         self.assertFalse((self.data / 'seller.log').exists())
+
+    def test_extended_cap_resumes_old_limit_without_counter_reset(self):
+        self.baseline.write_text('{"model_usage_count": 4998}')
+        self.data.mkdir()
+        (self.data / 'baseline.json').write_text(self.baseline.read_text())
+        (self.data / 'seller.log').write_text(
+            'MODEL_USAGE model=prior input=1 output=1\n' * 2)
+        (self.data / 'guard-state.json').write_text('{"model_usage_count": 5000}')
+        guard.DEADLINE = time.time() + 0.4
+        code, state = self.run_guard(self.commands(
+            "import time; print('MODEL_USAGE model=continued input=1 output=1'); time.sleep(30)"))
+        self.assertEqual((code, state['reason'], state['baseline'],
+                          state['model_usage_count'], state['limit']),
+                         (0, 'deadline', 4998, 5001, 10000))
+        self.assertIn(b'model=continued', (self.data / 'seller.log').read_bytes())
 
     def test_lost_baseline_fails_closed(self):
         self.data.mkdir()
