@@ -97,13 +97,16 @@ function parseJson(text: string): Answer | null {
 }
 
 /** One model call, retried once on an error or an unparseable answer. Returns {} if every try failed. */
-async function ask(ai: Ai, prompt: string, tries = 2): Promise<Answer> {
+const AI_TIMEOUT_MS = 4500; // a buyer timed out on us (ReadTimeout); past this the code guards answer instead
+
+async function ask(ai: Ai, prompt: string, tries = 1): Promise<Answer> {
   for (let attempt = 1; attempt <= tries; attempt++) {
     const started = Date.now();
     try {
-      const out = (await ai.run(MODEL, { messages: [{ role: "user", content: prompt }], max_tokens: 200 })) as {
-        response?: unknown;
-      };
+      const out = (await Promise.race([
+        ai.run(MODEL, { messages: [{ role: "user", content: prompt }], max_tokens: 200 }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`no answer in ${AI_TIMEOUT_MS} ms`)), AI_TIMEOUT_MS)),
+      ])) as { response?: unknown };
       const answer = typeof out.response === "string" ? out.response : JSON.stringify(out.response ?? "");
       console.log(`HARNESS: try ${attempt}: ${Date.now() - started} ms, answer ${JSON.stringify(answer)}`);
       const data = parseJson(answer);
@@ -275,7 +278,9 @@ export class TaskObject extends DurableObject<Env> {
     } else {
       const reserve = RESERVE[item];
       const strategy = await this.strategy();
-      const answer = await ask(this.env.AI, openPrompt(item, reserve));
+      // with a strategy the opening price is set already and the model would only write a greeting: skip the call
+      // (about 3 s and a share of the daily Workers AI allowance on every visit)
+      const answer: Answer = strategy?.open[item] ? {} : await ask(this.env.AI, openPrompt(item, reserve));
       let price = asInt(answer.price);
       if (strategy?.open[item]) {
         console.log(`STRATEGY: v${strategy.version} opens ${item} at ${strategy.open[item]} (model said ${price})`);
