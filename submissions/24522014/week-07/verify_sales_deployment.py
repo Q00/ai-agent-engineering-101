@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import ssl
+import time
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 import httpx
@@ -27,24 +28,32 @@ def main():
     for item,price in prices.items():
         with MarketTransport(shop['url'],item,price) as buyer:
             try:
+                started=time.monotonic()
                 task=buyer.open();text=seller_message(task).strip()
+                opening_seconds=time.monotonic()-started
                 assert text==f'{item}: asking {price}',text
                 assert re.findall(r'\d+',text)==[str(price)]
                 parts=task['status']['message']['parts']
                 data=next(p['data'] for p in parts if 'data' in p)
                 assert data['item']==item and data['price']==price and data['kind']=='quote'
                 assert 'in bulk on 10-29 KST' in data['event_terms']
-                result={'item':item,'opening':price,'task':buyer.task_id,'quote_text':text,'buyer_log':str(buyer.log_dir)}
+                result={'item':item,'opening':price,'opening_seconds':opening_seconds,
+                        'task':buyer.task_id,'quote_text':text,'buyer_log':str(buyer.log_dir)}
                 if item=='lamp':
-                    buyer.offer(100)
+                    buyer.offer(price+10)
+                    assert buyer.state=='TASK_STATE_INPUT_REQUIRED'
+                    assert buyer.raw_receipt is None
+                    assert re.findall(r'\d+',seller_message(buyer.task))==[str(price)]
+                    result['overbid_reconfirmed_without_receipt']=True
+                    buyer.offer(price)
                     assert buyer.state=='TASK_STATE_COMPLETED'
                     receipt=buyer.raw_receipt
                     assert set(receipt)=={'shop','item','price','task','sig_seller'}
                     body={k:receipt[k] for k in ('shop','item','price','task')};body['price']=int(body['price'])
-                    assert body['price']==100
+                    assert body['price']==price
                     Ed25519PublicKey.from_public_bytes(base64.b64decode(shop['pubkey'])).verify(
                         base64.b64decode(receipt['sig_seller']),canon(body))
-                    result.update({'one_offer_completion':True,'receipt':receipt,'signature_verified':True})
+                    result.update({'confirmed_public_quote':True,'receipt':receipt,'signature_verified':True})
                 else:
                     buyer.cancel();result['canceled_without_purchase']=True
                 results.append(result)
