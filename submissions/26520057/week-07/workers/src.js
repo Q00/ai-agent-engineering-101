@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import { purchaseIntent } from './purchase_intent.js';
+import { resolveIntent } from './ai_intent.js';
 const FLOORS = { lamp: 100, chair: 180, bookshelf: 260 };
 const NAME = 'Cheapest in Town';
 // Fictional merchandise lore for the course's simulated market, not provenance certificates.
@@ -17,7 +17,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/.well-known/agent-card.json') {
       return json({name: NAME, description: 'Fictional artisan collection: Murano glass lamp 100, Hida beech chair 180, Black Forest spruce bookshelf 260 credits. High-end character, fixed floor prices, zero added fees. Item plus an eligible offer closes in one reply with a signed receipt. Craft and origin stories are simulated product lore.',
-        version: '1.3.0', supportedInterfaces: [{url: url.origin + '/', protocolBinding: 'JSONRPC', protocolVersion: '1.0'}],
+        version: '1.4.0', supportedInterfaces: [{url: url.origin + '/', protocolBinding: 'JSONRPC', protocolVersion: '1.0'}],
         defaultInputModes: ['text/plain'], defaultOutputModes: ['application/json', 'text/plain'], capabilities: {streaming: false},
         skills: [{id: 'negotiate', name: 'Negotiate a purchase', description: 'Send buy lamp for 100, buy chair for 180, or buy bookshelf for 260. Or request a quote and reply I accept. Offers above the fixed price still pay only the fixed price.', tags: ['shopping', 'negotiation'], examples: ['I want to buy a lamp', '100']}]});
     }
@@ -69,7 +69,9 @@ export class Shop extends DurableObject {
       record.task.status = {state, timestamp:new Date().toISOString(), message:{role:'ROLE_AGENT', messageId:crypto.randomUUID(), taskId:record.task.id, contextId:record.task.contextId, parts:[{text}], metadata:record.item ? {ask:FLOORS[record.item]} : {}}};
     };
     const text = (msg?.parts || []).map(p => p.text || '').join(' ');
-    const intent = purchaseIntent(text, msg?.parts || []);
+    const item = record?.item || Object.keys(FLOORS).find(k => new RegExp('\\b' + k + '\\b', 'i').test(text));
+    const intent = method === 'SendMessage' ? await resolveIntent(text, msg.parts,
+      {item, quote:FLOORS[item], quoted:Boolean(record)}, this.env.AI) : {offer:null,accept:false};
     console.log('[negotiation]', JSON.stringify({task:id || null, text:text.slice(0,350), ...intent}));
     const finish = async () => {
       const price = FLOORS[record.item];

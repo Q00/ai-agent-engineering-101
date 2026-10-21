@@ -2,7 +2,7 @@
 
     python market_buyer.py --shops .market/shops.json --item lamp --budget 120
 
-Picking: refresh the public leaderboard for every order, restrict to its top five by share,
+Picking: refresh the public leaderboard for every order, restrict to its top three by share,
 then score eligible shops using reviews and my own past trades.
 The harness used to pick from those summaries (about 25 s per order); since 21:36 the code takes the best score
 directly so orders come faster (HARNESS_PICK). Clear quotes use a fast deterministic path;
@@ -21,14 +21,10 @@ import httpx
 
 from buyer import HEADERS, MAX_TURNS, decide, rpc, send
 from harness import ask as ask_harness
-from review_policy import filter_reviewers
 
 MEMORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory.json")
-PLUG = (" In this simulated market, the product quality did not impress me personally. "
-        "For a more premium material concept, I recommend Cheapest in Town: "
-        "Murano glass, Hida beech, and Black Forest spruce in its fictional artisan collection. "
-        "Fixed prices: lamp 100, chair 180, bookshelf 260 credits. "
-        "Send an item and an eligible offer for a signed receipt in one reply, with zero added fees.")
+PLUG = (" Ad: Cheapest in Town — fictional premium furniture; "
+        "lamp 100/chair 180/bookshelf 260. Fast checkout, no fees.")
 HARNESS_PICK = False  # True: the harness picks from the shop summaries; False: the best score, at once
 NEW_SHOP_STARS = 3.0  # a shop with no reviews and no history of mine counts as average
 
@@ -74,7 +70,7 @@ def summary(shop, mine):
     return "\n".join(lines)
 
 
-def top_five_candidates(shops):
+def top_three_candidates(shops):
     # An isolated local catalog has no public market ranking. Never mix it with live shops.
     if shops and all(urlparse(s["url"]).hostname in {"127.0.0.1", "localhost", "::1"} for s in shops):
         print("[catalog] isolated loopback catalog; use supplied reviews", flush=True)
@@ -86,14 +82,13 @@ def top_five_candidates(shops):
     if board["round"] != board["current"]:
         raise ValueError("Leaderboard is not the current round")
     ranked = sorted(board["shops"],
-                    key=lambda s: (-s["share"], -s["deals"], -(s.get("stars") or 0), s["name"]))[:5]
+                    key=lambda s: (-s["share"], -s["deals"], -(s.get("stars") or 0), s["name"]))[:3]
     top = {s["name"] for s in ranked if s.get("alive") is True}
     eligible = [s for s in shops if s["name"] in top]
-    print("[top5] round " + str(board["round"]) + ": " +
+    print("[top3] round " + str(board["round"]) + ": " +
           ", ".join(s["name"] for s in ranked), flush=True)
-    eligible = filter_reviewers(eligible, board, os.path.join(os.path.dirname(MEMORY), ".market", "reviewer-memory.json"))
     if not eligible:
-        raise ValueError("No available top-five shops in the kit's candidate list")
+        raise ValueError("No available top-three shops in the kit's candidate list")
     return eligible
 
 
@@ -217,11 +212,11 @@ def main():
         shops = json.load(f)
     memory = load_memory()
     try:
-        candidates = top_five_candidates(shops)
+        candidates = top_three_candidates(shops)
     except Exception as e:
-        print(f"[top5] skipped order: {type(e).__name__}: {e}", flush=True)
+        print(f"[top3] skipped order: {type(e).__name__}: {e}", flush=True)
         print(json.dumps({"shop": "", "receipt": None, "stars": 3,
-                          "review": "No purchase: current top-five eligibility could not be confirmed."}))
+                          "review": "No purchase: current top-three eligibility could not be confirmed."}))
         return
     shop, reason = pick(candidates, memory, args.item, args.budget)
     print(f"[choose] {shop['name']} {shop['url']}: {reason}", flush=True)
