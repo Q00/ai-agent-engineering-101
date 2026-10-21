@@ -46,7 +46,7 @@ class ShopfrontTests(unittest.TestCase):
     def test_actual_sdk_discovery_updates_prices_without_model_or_network(self):
         with actual_sdk_server(public_profile=True) as state:
             first=httpx.get(state.url+'/.well-known/agent-card.json').json()
-            self.assertIn('lamp 130',first['description'])
+            self.assertIn('lamp 1100',first['description'])  # TEST ONLY policy has a 1000-credit opening margin.
             self.assertEqual(first['supportedInterfaces'][0]['protocolVersion'],'1.0')
             self.assertEqual(len(state.model_contexts),0)
             previous=state.executor.rank_pricing.quote_policy

@@ -46,11 +46,13 @@ def public_description(offers):
     text = ('Ssadassa Shop by myeonggi. Latest base quotes: ' + price_line(offers) + ' credits. '
             'Request a current quote, then send that number on the same task for an '
             'Ed25519-signed receipt at the exact agreed price. ')
-    text += '; '.join(item['id'] + ': ' + ', '.join(item['features']) for item in offers) + '. '
+    features = [item['id'] + ': ' + ', '.join(item['features']) for item in offers if item['features']]
+    if features:
+        text += '; '.join(features) + '. '
     discounts = [item for item in offers if item.get('discount')]
     if discounts:
         text += 'REVIEW10: 10% off eligible standard quotes; item + code in the first message. '
-    return text + 'Quotes can change between orders; no purchase or rating promise is needed to ask.'
+    return text + 'Prices can change between orders; request your current quote.'
 
 
 def public_skills(offers):
