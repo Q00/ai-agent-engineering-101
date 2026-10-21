@@ -5,7 +5,8 @@
 Picking: refresh the public leaderboard for every order, restrict to its top five by share,
 then score eligible shops using reviews and my own past trades.
 The harness used to pick from those summaries (about 25 s per order); since 21:36 the code takes the best score
-directly so orders come faster (HARNESS_PICK). The harness still decides every offer.
+directly so orders come faster (HARNESS_PICK). Clear quotes use a fast deterministic path;
+the harness handles unclear replies.
 Memory: memory.json next to this file, one line per trade, keyed by shop name (URLs change on every restart).
 The last output line is the result JSON the kit sends to the market.
 """
@@ -122,6 +123,31 @@ def receipt_of(task):
     return None
 
 
+def quick_offer(task, said, item, budget, offers):
+    """Try the known market floor once, then accept an explicit affordable quote."""
+    floors = {"lamp": 100, "chair": 180, "bookshelf": 260}
+    if not offers and item in floors and budget >= floors[item]:
+        return ("offer", floors[item])
+    message = task.get("status", {}).get("message", {})
+    quote = None
+    for metadata in (message.get("metadata", {}), task.get("metadata", {})):
+        value = metadata.get("ask") if isinstance(metadata, dict) else None
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0 and value == int(value):
+            quote = int(value)
+            break
+    if quote is None:
+        matches = re.findall(r"\b(?:counteroffer|asking|final price|fixed price|price)\s*(?:is|:)?\s*([0-9]+(?:\.[0-9]+)?)\b", said, re.I)
+        if matches:
+            value = float(matches[-1])
+            if value > 0 and value.is_integer():
+                quote = int(value)
+    if quote is None:
+        return None  # ambiguous reply: keep the existing harness
+    if quote > budget or (offers and offers[-1] == quote):
+        return ("walk", None)
+    return ("offer", quote)
+
+
 def negotiate(shop_url, item, budget):
     """The week-06 negotiation. Returns (receipt or None, my last offer or None, offers made)."""
     card = httpx.get(shop_url.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=10).json()
@@ -133,7 +159,11 @@ def negotiate(shop_url, item, budget):
     for _ in range(MAX_TURNS):
         if task["status"]["state"] != "TASK_STATE_INPUT_REQUIRED":
             break
-        answer = decide(item, budget, history)
+        answer = quick_offer(task, said, item, budget, offers)
+        if answer is None:
+            answer = decide(item, budget, history)
+        else:
+            print(f"[fast] {answer[0]} {answer[1]}", flush=True)
         if answer is None or answer[0] != "offer" or answer[1] is None:
             break
         price = answer[1]
