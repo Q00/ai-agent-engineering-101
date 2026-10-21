@@ -73,6 +73,10 @@ class EvidenceTests(unittest.TestCase):
         accepted = decision("accept", 100, offer=100)
         self.assertEqual(validate_seller_decision(accepted, reserve=100, offer=100,
                                                 last_ask=100, accept_floor_bids=False), accepted)
+        for action in ["accept", "counter"]:
+            with self.subTest(action=action), self.assertRaises(EvidenceError):
+                validate_seller_decision(decision(action, 100, offer=100), reserve=100,
+                                        offer=100, last_ask=101, hold_quote=True)
 
     def test_opening_requires_harness_selected_catalog_candidate(self):
         opened = decision("open", 130)

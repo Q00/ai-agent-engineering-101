@@ -135,7 +135,8 @@ class Seller(AgentExecutor):
                 offer=observed_offer, opening=opening,
                 allowed_item_ids=[p["id"] for p in candidates],
                 max_ask=selected.get("max_opening_ask"), last_ask=None if opening else deal["ask"],
-                accept_floor_bids=quote_policy["accept_floor_bids"])
+                accept_floor_bids=quote_policy["accept_floor_bids"],
+                hold_quote=quote_policy["phase"] == "recovery")
 
         try:
             decision = await asyncio.to_thread(self.harness.decide, trusted, strategy=strategy,

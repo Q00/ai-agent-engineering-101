@@ -77,7 +77,7 @@ def validate_seller_decision(
     decision: Mapping[str, Any], *, reserve: float, offer: float | None = None,
     opening: bool = False, allowed_item_ids: Iterable[str] | None = None,
     max_ask: float | None = None, last_ask: float | None = None,
-    accept_floor_bids: bool = False,
+    accept_floor_bids: bool = False, hold_quote: bool = False,
 ) -> dict[str, Any]:
     """Validate a seller decision, preserving its action and exact supplied price.
 
@@ -122,6 +122,11 @@ def validate_seller_decision(
     if not opening and incoming is not None and last_ask is not None \
             and incoming >= numeric_price(last_ask) and action != "accept":
         raise EvidenceError("a bid meeting the existing quote must be accepted")
+    if hold_quote and not opening and last_ask is not None:
+        if action == "counter" and numeric_price(price) != numeric_price(last_ask):
+            raise EvidenceError("recovery keeps this task's existing quote")
+        if action == "accept" and incoming is not None and incoming < numeric_price(last_ask):
+            raise EvidenceError("recovery cannot accept below this task's existing quote")
     if action == "accept":
         if incoming is None:
             raise EvidenceError("acceptance requires evidence of an incoming offer")
