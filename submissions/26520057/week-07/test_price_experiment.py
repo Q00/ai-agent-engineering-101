@@ -14,10 +14,10 @@ assert o('lamp', 110, .01) == 110
 assert o('lamp', 100, .01) is None
 assert o('unknown', 500, .01) is None
 assert r({'price':125}, [125], 125, 'lamp', 140)[0] == 2
-assert 'I chose a higher offer' in r({'price':125}, [125], 125, 'lamp', 140)[1]
+assert 'I paid 125' in r({'price':125}, [125], 125, 'lamp', 140)[1]
 assert r({'price':100}, [125], 125, 'lamp', 140) is None
 assert r({'price':150}, [125], 125, 'lamp', 140) is None
 assert r({'price':125}, [125], None, 'lamp', 140) is None
 assert r(None, [125], 125, 'lamp', 140) is None
 assert r({'price':125}, [], 125, 'lamp', 140) is None
-print('PASS 10% boundary, budget cap, reference-price guard, experiment disclosure, no-deal and receipt-error preservation')
+print('PASS 10% boundary, budget cap, reference-price guard, actual receipt price, no-deal and receipt-error preservation')

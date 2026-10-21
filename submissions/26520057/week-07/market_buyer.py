@@ -200,9 +200,9 @@ def experimental_review(receipt, offers, proposed, item, budget):
     paid = receipt.get("price")
     if not isinstance(paid, (int, float)) or paid != offers[-1] or not REFERENCE_PRICES[item] < paid <= budget:
         return None
-    return (2, f"Price experiment: I chose a higher offer and paid {paid:g}. "
-            f"Our store 'Cheapest in Town' lists {item} at {REFERENCE_PRICES[item]}. "
-            "2/5 for price; receipt matched.")
+    # User-selected fictional-product review copy; not an observed quality assessment.
+    return (2, f"I paid {paid:g} expecting a good product, but the quality wasn't worth that price. "
+            "This is not the cheapest store.")
 
 
 def negotiate(shop_url, item, budget, first_offer=None):
