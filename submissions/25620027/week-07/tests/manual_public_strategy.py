@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import sys
 from pathlib import Path
 from typing import Final
 
@@ -10,7 +11,7 @@ import httpx2
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from market_a2a.receipts import SignedReceipt
-from market_a2a.remote import Checkout, Remote, purchase
+from market_a2a.remote import Checkout, Remote, Response, Task, purchase
 from tests.manual_public_smoke import BASE_URL, Registry, VersionedCard
 
 EVIDENCE: Final = (
@@ -19,7 +20,9 @@ EVIDENCE: Final = (
 
 
 async def main() -> None:
-    with (EVIDENCE / "public-trades.log").open("x", encoding="utf-8") as trace:
+    resume = "--resume" in sys.argv[1:]
+    trace_name = "public-trades-resume.log" if resume else "public-trades.log"
+    with (EVIDENCE / trace_name).open("x", encoding="utf-8") as trace:
         async with httpx2.AsyncClient(
             timeout=60, follow_redirects=True, trust_env=False
         ) as client:
@@ -42,14 +45,34 @@ async def main() -> None:
             )
             records: list[dict[str, str | int | bool]] = []
             for floor_offer in (True, False):
-                opening = await remote.send(
-                    card.endpoint(), "I want to buy a bookshelf"
-                )
+                closed: Task | None = None
+                if floor_offer and resume:
+                    responses = [
+                        Response.model_validate_json(
+                            line.removeprefix("[A2A RESPONSE] ")
+                        )
+                        for line in (EVIDENCE / "public-trades.log")
+                        .read_text(encoding="utf-8")
+                        .splitlines()
+                        if line.startswith("[A2A RESPONSE] ")
+                    ]
+                    assert len(responses) == 2
+                    first, last = responses
+                    assert first.result is not None
+                    assert last.result is not None
+                    opening = first.result.task
+                    closed = last.result.task
+                else:
+                    opening = await remote.send(
+                        card.endpoint(), "I want to buy a bookshelf"
+                    )
                 ask = opening.asking_price()
                 assert ask is not None
                 assert 260 <= ask <= 286
                 price = 260 if floor_offer else ask
-                closed = await remote.send(card.endpoint(), str(price), opening)
+                if not (floor_offer and resume):
+                    closed = await remote.send(card.endpoint(), str(price), opening)
+                assert closed is not None
                 assert closed.status.state == "TASK_STATE_COMPLETED"
                 result = purchase(
                     closed,
@@ -63,10 +86,14 @@ async def main() -> None:
                 )
                 receipt = result.receipt
                 assert receipt is not None
+                assert receipt["price"] == price
                 signed = SignedReceipt.model_validate(
                     {
-                        key: receipt[key]
-                        for key in ("shop", "item", "price", "task", "sig_seller")
+                        **{
+                            key: receipt[key]
+                            for key in ("shop", "item", "task", "sig_seller")
+                        },
+                        "price": price,
                     }
                 )
                 public_key.verify(
@@ -82,6 +109,7 @@ async def main() -> None:
                         "receipt_price": signed.price,
                         "signed_with_registered_key": True,
                         "first_counter_completed": True,
+                        "reused_saved_response": floor_offer and resume,
                         "market_result_submitted": False,
                         "public_review_submitted": False,
                     }
