@@ -1,0 +1,75 @@
+{
+  "case": "declared-nested-owner",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "957ec71080c24706b6bd683fb9297a79",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "messageId": "a334c61636f945268b64cc4c639afd14",
+        "role": "ROLE_USER",
+        "parts": [
+          {
+            "text": "lamp"
+          }
+        ],
+        "metadata": {
+          "verificationOnly": true,
+          "probeLabel": "Operator access-policy test; self-declared identity, not a real market buyer.",
+          "buyer": {
+            "owner": {
+              "login": "danayoou"
+            }
+          }
+        }
+      }
+    }
+  },
+  "response": {
+    "result": {
+      "task": {
+        "id": "a8d3e2b0-f1f4-463e-a9ef-bfe24b083e69",
+        "contextId": "4e207426-1c43-49bd-a452-cc31710d1b06",
+        "status": {
+          "state": "TASK_STATE_REJECTED",
+          "message": {
+            "messageId": "a0c76e33-20d1-47ae-a4d1-c689e6927dd6",
+            "contextId": "4e207426-1c43-49bd-a452-cc31710d1b06",
+            "taskId": "a8d3e2b0-f1f4-463e-a9ef-bfe24b083e69",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "This shop is unavailable to this buyer under its local access policy."
+              }
+            ]
+          },
+          "timestamp": "2026-10-21T11:59:06.305376Z"
+        },
+        "history": [
+          {
+            "messageId": "a334c61636f945268b64cc4c639afd14",
+            "contextId": "4e207426-1c43-49bd-a452-cc31710d1b06",
+            "taskId": "a8d3e2b0-f1f4-463e-a9ef-bfe24b083e69",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "lamp"
+              }
+            ],
+            "metadata": {
+              "verificationOnly": true,
+              "buyer": {
+                "owner": {
+                  "login": "danayoou"
+                }
+              },
+              "probeLabel": "Operator access-policy test; self-declared identity, not a real market buyer."
+            }
+          }
+        ]
+      }
+    },
+    "id": "957ec71080c24706b6bd683fb9297a79",
+    "jsonrpc": "2.0"
+  }
+}
