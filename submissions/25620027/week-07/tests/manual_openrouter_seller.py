@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import sys
 from pathlib import Path
 from typing import Final
 
@@ -15,13 +16,16 @@ from pydantic import JsonValue, TypeAdapter
 from http_client import create_client
 from market_a2a.catalog import Catalog
 from market_a2a.harness import Harness
-from market_a2a.model_provider import FREE_MODEL, create_model_client
+from market_a2a.model_provider import FREE_MODELS, FREE_ROUTER, create_model_client
 from market_a2a.receipts import ReceiptSigner, SignedReceipt
 from market_a2a.seller import create_app
 from tests.test_signed_seller import send, task_from
 
 ROOT: Final = Path(__file__).resolve().parents[1]
-EVIDENCE: Final = ROOT / ".omo/evidence/openrouter-funded-20261021"
+EVIDENCE: Final = ROOT / (
+    ".omo/evidence/openrouter-week-20261021/router"
+    if "--router" in sys.argv else ".omo/evidence/openrouter-funded-20261021"
+)
 CALL_LIMIT: Final = 20
 
 
@@ -38,8 +42,10 @@ async def main() -> None:
             create_client(model=True) as http,
             create_model_client(http) as model,
         ):
-            harness = Harness(model, emit)
-            assert harness.model == FREE_MODEL
+            harness = Harness(
+                model, emit, model=FREE_ROUTER if "--router" in sys.argv else None,
+            )
+            assert harness.model in FREE_MODELS
             app = create_app(
                 "http://seller/", harness, Catalog(ROOT / "catalog.json"),
                 "Local Free Model Test", signer=signer,

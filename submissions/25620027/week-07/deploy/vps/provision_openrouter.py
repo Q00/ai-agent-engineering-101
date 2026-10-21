@@ -16,11 +16,12 @@ def main(source: Path, destination: Path) -> None:
             continue
         name, _, raw = line.partition("=")
         name = name.removeprefix("export ").strip()
-        if name in {"OPENROUTER_API_KEY", "OPENAI_API_KEY"}:
+        if name in {"OPENROUTER_API_KEY", "OPENAI_API_KEY", "AX_PUBLIC_MODEL_API_KEY"}:
             tokens = shlex.split(raw)
             if tokens:
                 values[name] = tokens[0]
-    key = values.get("OPENROUTER_API_KEY") or values.get("OPENAI_API_KEY")
+    key = (values.get("OPENROUTER_API_KEY") or values.get("OPENAI_API_KEY")
+           or values.get("AX_PUBLIC_MODEL_API_KEY"))
     if not key or not key.startswith("sk-or-") or "\n" in key:
         message = "Expected one existing OpenRouter credential"
         raise ValueError(message)

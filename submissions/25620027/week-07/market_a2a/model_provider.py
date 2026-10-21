@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Final
 
 from openai import AsyncOpenAI
@@ -14,7 +15,15 @@ if TYPE_CHECKING:
 
 DEFAULT_MODEL: Final = "gpt-4.1-nano-2025-04-14"
 FREE_MODEL: Final = "minimax/minimax-m3.1-flash:free"
+FREE_ROUTER: Final = "openrouter/free"
+FREE_MODELS: Final = (FREE_MODEL, FREE_ROUTER)
+PROMOTION_END: Final = datetime(2026, 10, 22, 12, tzinfo=UTC)
 OPENROUTER_URL: Final = "https://openrouter.ai/api/v1"
+
+
+def request_model(model: str, now: datetime) -> str:
+    """Use only the free router after the fixed MiniMax promotion expires."""
+    return FREE_ROUTER if model == FREE_MODEL and now >= PROMOTION_END else model
 
 
 def configured_model() -> str:
@@ -32,7 +41,7 @@ def configured_model() -> str:
 def create_model_client(http_client: httpx2.AsyncClient) -> AsyncOpenAI:
     """Keep the existing OpenAI environment unless free routing is explicit."""
     model = configured_model()
-    if model == FREE_MODEL:
+    if model in FREE_MODELS:
         key = os.environ.get("OPENROUTER_API_KEY")
         if not key:
             message = "OPENROUTER_API_KEY is required for openrouter-free"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, timedelta
 from time import monotonic
 
 import anyio
@@ -10,7 +11,14 @@ from openai import AsyncOpenAI
 from pydantic import JsonValue, TypeAdapter
 
 from market_a2a.harness import MODEL, Harness
-from market_a2a.model_provider import FREE_MODEL, configured_model, create_model_client
+from market_a2a.model_provider import (
+    FREE_MODEL,
+    FREE_ROUTER,
+    PROMOTION_END,
+    configured_model,
+    create_model_client,
+    request_model,
+)
 from market_a2a.models import HarnessError
 
 
@@ -27,6 +35,61 @@ def test_unknown_provider_and_missing_key_fail_closed(
         async with httpx2.AsyncClient() as client:
             with pytest.raises(HarnessError, match="OPENROUTER_API_KEY"):
                 _ = create_model_client(client)
+
+    anyio.run(scenario)
+
+
+@pytest.mark.parametrize(
+    ("model", "now", "expected"),
+    [
+        (FREE_MODEL, PROMOTION_END - timedelta(seconds=1), FREE_MODEL),
+        (FREE_MODEL, PROMOTION_END, FREE_ROUTER),
+        (FREE_MODEL, PROMOTION_END + timedelta(days=5), FREE_ROUTER),
+        (MODEL, datetime(2026, 10, 28, tzinfo=UTC), MODEL),
+    ],
+)
+def test_expired_promotion_uses_only_free_router(
+    model: str, now: datetime, expected: str,
+) -> None:
+    assert request_model(model, now) == expected
+
+
+def test_missing_free_endpoint_falls_back_only_to_free_router(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AX_MODEL_PROVIDER", "openrouter-free")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "offline-openrouter")
+    requested: list[str] = []
+
+    def respond(request: httpx2.Request) -> httpx2.Response:
+        body = TypeAdapter(dict[str, JsonValue]).validate_json(request.content)
+        route = TypeAdapter(str).validate_python(body["model"])
+        requested.append(route)
+        assert body["provider"] == {
+            "require_parameters": True,
+            "max_price": {"prompt": 0, "completion": 0, "request": 0},
+        }
+        if route == FREE_MODEL:
+            return httpx2.Response(404, json={"error": {"message": "Free retired"}})
+        assert route == FREE_ROUTER
+        return httpx2.Response(200, json={
+            "id": "free-router", "object": "chat.completion", "created": 0,
+            "model": "offline-free-model",
+            "choices": [{"index": 0, "finish_reason": "stop",
+                         "message": {"role": "assistant", "content": "ok"}}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1,
+                      "total_tokens": 2},
+        })
+
+    async def scenario() -> None:
+        async with (
+            httpx2.AsyncClient(transport=httpx2.MockTransport(respond)) as http,
+            create_model_client(http) as client,
+        ):
+            harness = Harness(client, print)
+            _ = await harness.complete([{"role": "user", "content": "test"}], [])
+            assert requested == [FREE_MODEL, FREE_ROUTER]
+            assert harness.calls == 1
 
     anyio.run(scenario)
 

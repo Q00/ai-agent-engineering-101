@@ -13,7 +13,7 @@ import signal
 import subprocess
 import time
 
-DEADLINE = dt.datetime.fromisoformat('2026-10-21T21:00:00+09:00').timestamp()
+DEADLINE = dt.datetime.fromisoformat('2026-10-28T17:15:00+09:00').timestamp()
 CALL_LIMIT = 10000
 USAGE_PREFIX = b'MODEL_USAGE model='
 

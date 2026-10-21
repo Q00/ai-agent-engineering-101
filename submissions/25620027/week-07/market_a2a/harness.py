@@ -7,6 +7,7 @@ week-05/market/host.py. Transport-specific MCP calls become typed local dispatch
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from time import monotonic
 from typing import TYPE_CHECKING, Final, assert_never, final
 
@@ -23,7 +24,14 @@ from openai.types.chat import (
 )
 from openai.types.shared_params import FunctionDefinition
 
-from market_a2a.model_provider import DEFAULT_MODEL, FREE_MODEL, configured_model
+from market_a2a.model_provider import (
+    DEFAULT_MODEL,
+    FREE_MODEL,
+    FREE_MODELS,
+    FREE_ROUTER,
+    configured_model,
+    request_model,
+)
 from market_a2a.models import HarnessError, ToolDispatch, ToolResult, ToolSpec
 
 if TYPE_CHECKING:
@@ -35,6 +43,7 @@ MODEL: Final = DEFAULT_MODEL
 MAX_MODEL_ROUNDS: Final = 6
 RETRY_STATUS: Final = 429
 SERVER_ERROR: Final = 500
+NOT_FOUND: Final = 404
 RETRY_DELAYS: Final = (1.0, 2.0, 4.0)
 FREE_CALL_INTERVAL: Final = 3.1
 
@@ -87,16 +96,16 @@ class Harness:
         self.client = client
         self.emit = emit
         self.model = configured_model() if model is None else model
-        if client.base_url.host == "openrouter.ai" and self.model != FREE_MODEL:
+        if client.base_url.host == "openrouter.ai" and self.model not in FREE_MODELS:
             message = "OpenRouter integration permits only the explicit free model"
             raise HarnessError(message)
-        if self.model == FREE_MODEL and client.base_url.host != "openrouter.ai":
+        if self.model in FREE_MODELS and client.base_url.host != "openrouter.ai":
             message = "The free model requires the OpenRouter endpoint"
             raise HarnessError(message)
         self.calls = 0
         self.input_tokens = 0
         self.output_tokens = 0
-        self.limit = anyio.CapacityLimiter(1 if self.model == FREE_MODEL else 5)
+        self.limit = anyio.CapacityLimiter(1 if self.model in FREE_MODELS else 5)
         self.next_call_at = 0.0
 
     async def run(
@@ -165,14 +174,15 @@ class Harness:
         tools: list[ChatCompletionToolParam],
     ) -> ChatCompletionMessage:
         """Retry transient API errors without replacing the model's decision."""
+        route = request_model(self.model, datetime.now(UTC))
         for attempt, delay in enumerate(RETRY_DELAYS):
             try:
                 async with self.limit:
-                    if self.model == FREE_MODEL:
+                    if self.model in FREE_MODELS:
                         await anyio.sleep(max(0.0, self.next_call_at - monotonic()))
                         self.next_call_at = monotonic() + FREE_CALL_INTERVAL
                         completion = await self.client.chat.completions.create(
-                            model=self.model,
+                            model=route,
                             temperature=0,
                             messages=messages,
                             tools=tools,
@@ -199,7 +209,10 @@ class Harness:
                             max_completion_tokens=450,
                         )
             except APIStatusError as exc:
-                if exc.status_code != RETRY_STATUS and exc.status_code < SERVER_ERROR:
+                if exc.status_code == NOT_FOUND and route == FREE_MODEL:
+                    route = FREE_ROUTER
+                    self.emit("MODEL_FREE_FALLBACK route=openrouter/free")
+                elif exc.status_code != RETRY_STATUS and exc.status_code < SERVER_ERROR:
                     raise
                 self.emit(f"MODEL_RETRY status={exc.status_code} attempt={attempt + 1}")
             except (APIConnectionError, APITimeoutError) as exc:
@@ -215,7 +228,7 @@ class Harness:
                     self.emit(
                         "".join(
                             (
-                                f"MODEL_USAGE model={self.model} ",
+                                f"MODEL_USAGE model={completion.model} route={route} ",
                                 f"input={usage.prompt_tokens} ",
                                 f"output={usage.completion_tokens}",
                             ),
