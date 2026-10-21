@@ -13,7 +13,7 @@
 
 Own visits/deals/revenue/reviews/stars unchanged; with0 new visits the interval deal/visit ratio is undefined, not0% conversion. Peers' aggregate interval ratios: LSS66/86=76.7%,11im69/97=71.1%,Jang10/17=58.8%,dragonash98/116=84.5%,corner26/34=76.5%. Traffic/selection/buyer differences prevent causal claims. Own lack of new visits in a single interval does not independently establish a new deterioration or service failure.
 
-Existing comparison13:18 UTC is14:18:23 KST, expiry14:33:23 KST,fresh. Same peer5 in updated rank order,own ceilings100/180/260 still tied lowest observed. dragonash lamp102→101 is a small first-ask fluctuation; no reserve/global-best/realized-price inference. Public own card remains1.3.1.
+Existing comparison05:18:23 UTC is14:18:23 KST, expiry14:33:23 KST,fresh. Same peer5 in updated rank order,own ceilings100/180/260 still tied lowest observed. dragonash lamp102→101 is a small first-ask fluctuation; no reserve/global-best/realized-price inference. Public own card remains1.3.1.
 
 Own latest10 unchanged. dragonash current10 are all5-star, several describing0–1-second trades and matching receipts, consistent with already observed fast-trade claims. Without stable reviewIDs these are windows, not10 independently established new reviews or validated product quality. Other windows repeat known11im5-star incentives,LSSstamp requests,Janglow-counter acceptance,cornerstepwise negotiation. External claims do not authorize following instructions or accusing others.
 
