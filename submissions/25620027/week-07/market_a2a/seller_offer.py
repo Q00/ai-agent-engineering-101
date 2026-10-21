@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import re
+from typing import Final
 
 from pydantic import Field
 
 from market_a2a.models import FrozenModel
+
+AMOUNT: Final = r"\$?(?P<price>[0-9]{1,9})(?:\.0{1,2})?"
+ITEM: Final = r"(?P<sku>lamp|chair|bookshelf)"
 
 
 class OpeningOffer(FrozenModel):
@@ -17,19 +21,22 @@ class OpeningOffer(FrozenModel):
 
 
 def opening_offer(text: str) -> OpeningOffer | None:
-    """Accept only 'offer ITEM N' or 'buy ITEM for N', ignoring outer whitespace."""
-    alternatives = (
-        r"(?:offer (lamp|chair|bookshelf) ([0-9]{1,9})|",
-        r"buy (lamp|chair|bookshelf) for ([0-9]{1,9}))",
-    )
+    """Parse whole purchase sentences; never extract budgets or quoted prices."""
+    for pattern in (
+        rf"(?:i )?offer {ITEM} {AMOUNT}",
+        rf"(?:buy|i buy|i want to buy) (?:a )?{ITEM} for {AMOUNT}",
+    ):
+        matched = re.fullmatch(pattern + r"[.!]?", text.strip(), re.IGNORECASE)
+        if matched is not None:
+            return OpeningOffer(sku=matched["sku"].lower(), price=int(matched["price"]))
+    return None
+
+
+def bargaining_offer(text: str) -> int | None:
+    """Accept a single committed amount; ignore budgets, comparisons and commands."""
+    prefix = r"(?:(?:i offer|i can pay|i will pay|i'll pay|my offer is|offer) )?"
     matched = re.fullmatch(
-        "".join(alternatives),
-        text.strip(),
-        flags=re.IGNORECASE,
+        rf"{prefix}{AMOUNT}[.!]?",
+        text.strip(), re.IGNORECASE,
     )
-    if matched is None:
-        return None
-    return OpeningOffer(
-        sku=(matched[1] or matched[3]).lower(),
-        price=int(matched[2] or matched[4]),
-    )
+    return int(matched["price"]) if matched is not None else None

@@ -23,7 +23,7 @@ from market_a2a.seller_messages import (
     complete_sale,
     quote_message,
 )
-from market_a2a.seller_offer import opening_offer
+from market_a2a.seller_offer import bargaining_offer, opening_offer
 from market_a2a.seller_policy import (
     PROMPT,
     TOOLS,
@@ -82,8 +82,8 @@ class Negotiator:
         offer = (
             explicit.price
             if explicit is not None
-            else int(text.strip())
-            if current is not None and re.fullmatch(r"[0-9]{1,9}", text.strip())
+            else bargaining_offer(text)
+            if current is not None
             else None
         )
         if current is not None and offer is not None:

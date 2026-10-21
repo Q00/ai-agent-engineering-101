@@ -52,13 +52,12 @@ def quote_message(updater: TaskUpdater, notice: QuoteNotice) -> Message:
     price_final = notice.price == notice.product.reserve
     if notice.previous_ask is None and not price_final:
         coupon_text = (
-            " R2WELCOME: up to 5 price units of the first negotiated "
-            "reduction are coupon credit. Larger reductions are possible."
+            " R2WELCOME: up to 5 of a negotiated reduction, not extra."
+            " Larger reductions are possible."
         )
     elif notice.coupon_applied:
         coupon_text = (
-            f" R2WELCOME coupon credit: {discount} within a total "
-            f"reduction of {reduction} price units."
+            f" Reduction {reduction}; R2WELCOME portion {discount}, not extra."
         )
     comparison = compare_price(notice.product, notice.snapshot)
     comparison_text = ""
@@ -67,17 +66,13 @@ def quote_message(updater: TaskUpdater, notice: QuoteNotice) -> Message:
         market_text = "".join((
             f" Market R{comparison.market_round} completed-trade mean ",
             f"{comparison.market_trade_mean:g} (N={comparison.market_trade_count}); ",
-            f"our current ask {notice.price}. ",
-            "This is a trade-price benchmark, separate from opening-ask observations.",
+            "completed trades, not peer opening asks.",
         ))
     if notice.previous_ask is None and comparison.observed_shop_count:
         comparison_text = "".join(
             (
-                f" Observed opening-ask comparison: {comparison.observed_shop_count} ",
-                f"other active shops; observed minimum {comparison.lowest_peer_ask}; ",
-                f"our new-opening ceiling {comparison.ceiling}. ",
-                "Dated comparison: ",
-                "https://ax-week07.treasuresky.xyz/#price-comparison .",
+                f" Peer openings: {comparison.observed_shop_count} observed shops, ",
+                f"minimum {comparison.lowest_peer_ask}. Details in metadata.",
             )
         )
     return updater.new_agent_message(
@@ -86,7 +81,7 @@ def quote_message(updater: TaskUpdater, notice: QuoteNotice) -> Message:
                 text="".join(
                     (
                         notice.product.name,
-                        ".",
+                        f". Current ask {notice.price}; exact-price receipt.",
                         (
                             f" Fixed minimum: {notice.price}; no lower bids."
                             if price_final

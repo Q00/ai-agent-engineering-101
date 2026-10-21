@@ -115,11 +115,12 @@ def create_app(
         name=name,
         description=" ".join(
             (
-                "Basic minimums: lamp 100, chair 180, bookshelf 260.",
+                "Quick checkout: offer lamp 100.",
+                "Also: offer chair 180, or offer bookshelf 260.",
                 "Exact agreed-price Ed25519-signed receipts."
                 if signer is not None
                 else "Receipts show the exact agreed price.",
-                "Request an item, then send a numeric offer on the same taskId.",
+                "Or request an item; send a numeric offer on the same taskId.",
                 "Dated opening-ask comparisons: /price-comparison.json .",
                 "Current quote: metadata.ask. Basic opening caps: 110/198/286.",
                 "Counteroffers never increase within a negotiation.",
@@ -127,14 +128,14 @@ def create_app(
                 "Fresh quotes and current-round trade means bound opening margins.",
                 "A final-price quote cannot be discounted further.",
                 "R2WELCOME credit is part of an actual reduction, never extra.",
-                "Explicit first offer: offer lamp 100 or buy lamp for 100.",
+                "Whole offers such as 'I can pay 100' also work after a quote.",
                 "Machine-readable ask and coupon metadata.",
                 "Terms and A2A examples: https://ax-week07.treasuresky.xyz/ .",
                 "No rating is required for a discount.",
                 "Please leave an honest review of your transaction.",
             )
         ),
-        version="1.4.1",
+        version="1.5.0",
         capabilities=AgentCapabilities(streaming=False),
         default_input_modes=["text/plain"],
         default_output_modes=["text/plain", "application/json"],
