@@ -19,7 +19,7 @@ from typing import Any, Mapping
 STRATEGIES = {
     "balanced": {
         "buyer": "Complete an affordable legitimate purchase promptly. Accept a genuine ask within budget; verify item and receipt. Avoid needless discount rounds.",
-        "seller": "Follow this task's configured pricing phase and opening cap. Honor a bid meeting the current quote promptly; accept floor bids when the quote policy requires it.",
+        "seller": "Follow this task's configured pricing phase and opening cap, never below reserve. Honor a bid meeting the current quote promptly; accept floor bids when the quote policy requires it.",
     },
     "patient": {
         "buyer": "Review ambiguous or suspicious evidence carefully without changing budget. Once an affordable genuine quote is established, close promptly.",

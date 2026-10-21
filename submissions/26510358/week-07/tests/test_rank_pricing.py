@@ -10,10 +10,13 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from a2a.types import Task, TaskState, TaskStatus
+from a2a.helpers import new_text_part
+from a2a.server.agent_execution import RequestContext
+from a2a.server.context import ServerCallContext
+from a2a.types import Message, Role, SendMessageRequest, Task, TaskState, TaskStatus
 import seller
 from rank_pricing import RankPricing
-from test_seller_cancel import ITEM, RecordingQueue, RecordingTrace, StubPolicy, request_context
+from test_seller_cancel import ITEM, RecordingQueue, RecordingTrace, StubPolicy
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY = json.loads((ROOT / "data/price-policy.json").read_text())
@@ -23,6 +26,14 @@ def board(rank):
     shops = [{"name": "peer-" + str(i), "deals": 100 - i, "stars": 4} for i in range(1, 6)]
     shops.insert(rank - 1, {"name": "myeonggi", "deals": 100 - rank, "stars": 5})
     return {"round": 2, "current": 2, "shops": shops}
+
+
+def request_context(text, *, task):
+    return RequestContext(call_context=ServerCallContext(), task=task,
+                          task_id=task.id, context_id=task.context_id,
+                          request=SendMessageRequest(message=Message(
+                              message_id="test-only-message", role=Role.ROLE_USER,
+                              parts=[new_text_part(text)])))
 
 
 class RankPricingTests(unittest.TestCase):
