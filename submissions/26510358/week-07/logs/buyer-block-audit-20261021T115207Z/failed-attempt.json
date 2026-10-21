@@ -1,0 +1,8 @@
+{
+  "attempt": "Initial access guard regression run",
+  "result": "197 tests; 1 failure in test fixture layout",
+  "cause": "An existing continuation test block was accidentally placed after an already rejected task in the new mid-inference restriction test; the SDK correctly refused to continue a terminal task.",
+  "fix": "Restore continuation assertions to the original nonterminal quote test; keep mid-inference test focused on rejection before publication.",
+  "failed_source_snapshot": "failed-test-layout.py.txt",
+  "production_change_after_this_failure": "None; fixture placement corrected."
+}

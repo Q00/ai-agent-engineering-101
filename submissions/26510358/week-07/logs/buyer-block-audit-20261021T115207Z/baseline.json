@@ -1,0 +1,65 @@
+{
+  "captured_at": "2026-10-21T11:54:15.909943+00:00",
+  "implementation_before": "e580155ea892701f0e3967416be9ff0d58706b33",
+  "kit_pid": 3277865,
+  "processes": [
+    {
+      "pid": 3277870,
+      "ppid": 3277865,
+      "command": "/bin/sh -c python3 seller.py --port 48225"
+    },
+    {
+      "pid": 3277872,
+      "ppid": 3277870,
+      "command": "python3 seller.py --port 48225"
+    },
+    {
+      "pid": 3277902,
+      "ppid": 3277865,
+      "command": "cloudflared tunnel --no-autoupdate --url http://127.0.0.1:37507"
+    },
+    {
+      "pid": 3420282,
+      "ppid": 3277865,
+      "command": "/bin/sh -c python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/shops.json --item bookshelf --budget 230"
+    }
+  ],
+  "public_url": "https://pending-surround-congratulations-openings.trycloudflare.com",
+  "key_sha256": {
+    "shop_key.pem": "8d1b96a9e63438c07b2442deb9ddcd6bd2c3d7f54f80a34b69f9905e1397b6b4",
+    "buyer_key.pem": "b6307a7296082012a64238e56c9bc55b075cd4f3caf9d01fbb6118dc7406d506"
+  },
+  "profile_names_and_joined": {
+    "shops": [
+      {
+        "name": "myeonggi",
+        "joined": 1792497637
+      },
+      {
+        "name": "SUNGMYEONGGI",
+        "joined": 1792493688
+      },
+      {
+        "name": "gacha-shop",
+        "joined": 1792494801
+      }
+    ],
+    "buyers": [
+      {
+        "name": "myeonggi",
+        "joined": 1792497637
+      },
+      {
+        "name": "SUNGMYEONGGI",
+        "joined": 1792493688
+      },
+      {
+        "name": "gacha-shop",
+        "joined": 1792494801
+      }
+    ]
+  },
+  "owner_choice": "Block only cheapest-in-town; preserve anonymous requests and sales to other buyers.",
+  "known_limitation": "Anonymous requests do not identify the registry buyer. Selective anonymous blocking cannot be guaranteed.",
+  "prior_read_command_error": "Initial /proc stat parsing failed on a process name containing spaces; audit rerun with PPid from /proc/status."
+}
