@@ -16,7 +16,8 @@ from tests.manual_public_smoke import BASE_URL, Registry, VersionedCard
 
 EVIDENCE: Final = (
     Path(__file__).resolve().parents[1] / (
-        ".omo/evidence/openai-fallback-20261021" if "--fallback" in sys.argv
+        ".omo/evidence/market-trade-prices-20261021" if "--market-stats" in sys.argv
+        else ".omo/evidence/openai-fallback-20261021" if "--fallback" in sys.argv
         else ".omo/evidence/openrouter-week-20261021"
     )
 )
@@ -33,7 +34,8 @@ async def main() -> None:
             response = await client.get(BASE_URL + "/.well-known/agent-card.json")
             _ = response.raise_for_status()
             card = VersionedCard.model_validate_json(response.content)
-            assert card.version == "1.4.0"
+            expected = "1.4.1" if "--market-stats" in sys.argv else "1.4.0"
+            assert card.version == expected
             response = await client.get("https://market.ourolabs.ai/api/shops")
             _ = response.raise_for_status()
             registry = Registry.model_validate_json(response.content)
@@ -43,6 +45,10 @@ async def main() -> None:
             ask = opening.asking_price()
             assert ask is not None
             assert 100 <= ask <= 110
+            benchmark_text = opening.observation()
+            if "--market-stats" in sys.argv:
+                assert "completed-trade mean" in benchmark_text
+                assert "(N=" in benchmark_text
             closed = await remote.send(card.endpoint(), "100", opening)
             assert closed.status.state == "TASK_STATE_COMPLETED"
             result = purchase(
@@ -64,6 +70,7 @@ async def main() -> None:
             public_key.verify(base64.b64decode(signed.sig_seller), signed.canonical())
             summary = {"url": BASE_URL, "version": card.version,
                        "registry_name": shop.name, "ask": ask, "offer": 100,
+                       "opening_text": benchmark_text,
                        "receipt": signed.model_dump(),
                        "registered_key_signature_verified": True,
                        "market_result_submitted": False,

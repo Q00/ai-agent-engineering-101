@@ -408,7 +408,7 @@ def test_refresh_when_no_cache_and_registry_fails_returns_expired_empty(
     assert not list(tmp_path.iterdir())
 
 
-def test_run_when_registry_stays_down_stops_after_sixty_refreshes(
+def test_run_when_registry_stays_down_stops_after_one_week(
     tmp_path: Path, wire: MarketTransport, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # Given: the registry remains unavailable throughout a monitor lifetime.
@@ -421,9 +421,9 @@ def test_run_when_registry_stays_down_stops_after_sixty_refreshes(
     monkeypatch.setattr("market_a2a.price_monitor.anyio.sleep", sleep)
     # When: the complete bounded loop runs without real waiting or network I/O.
     anyio.run(PriceMonitor(ComparisonFeed(), tmp_path / "cache").run)
-    # Then: it survives all failures, keeps ten-minute spacing and stops at 60.
-    assert len(wire.requests) == 60
-    assert waits == [600] * 60
+    # Then: a week of failures retains ten-minute spacing and a finite bound.
+    assert len(wire.requests) == 1008
+    assert waits == [600] * 1008
     assert not wire.openings
 
 

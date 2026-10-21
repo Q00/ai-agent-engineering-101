@@ -19,6 +19,7 @@ from market_a2a.comparison import (
     ComparedShop,
     ComparisonFeed,
     ComparisonSnapshot,
+    TradePrice,
     is_fresh,
 )
 from market_a2a.price_probe import TIMEOUT_SECONDS, create_monitor_client, sample_shop
@@ -27,7 +28,8 @@ from market_a2a.remote import Wire
 LOGGER: Final = logging.getLogger(__name__)
 BOARD_URL: Final = "https://market.ourolabs.ai/api/board"
 SHOPS_URL: Final = "https://market.ourolabs.ai/api/shops"
-MAX_REFRESHES: Final = 60
+STATS_URL: Final = "https://market.ourolabs.ai/api/stats"
+MAX_REFRESHES: Final = 7 * 24 * 6
 MAX_SHOPS: Final = 5
 
 
@@ -43,6 +45,20 @@ class Board(Wire):
     """Preserve the board's supplied ranking order."""
 
     shops: tuple[BoardShop, ...]
+    market_round: int | None = Field(default=None, alias="round")
+
+
+class RoundStats(Wire):
+    """Retain only typed price aggregates from the public dashboard response."""
+
+    items: dict[str, TradePrice]
+
+
+class Stats(Wire):
+    """Bind price aggregates to the board's currently active round."""
+
+    market_round: int = Field(alias="round")
+    rounds: dict[str, RoundStats]
 
 
 class Listing(Wire):
@@ -122,6 +138,7 @@ class PriceMonitor:
                     observed_at=now, expires_at=now, shops=()
                 )
             selected = select_shops(board, registry)
+            trade_prices = await self._trade_prices(client, board.market_round)
             results: dict[int, ComparedShop] = {}
             limiter = anyio.CapacityLimiter(3)
 
@@ -136,6 +153,8 @@ class PriceMonitor:
             observed_at=started,
             expires_at=started + dt.timedelta(seconds=MAX_AGE_SECONDS),
             shops=tuple(results[shop.rank] for shop in selected),
+            market_round=board.market_round,
+            trade_prices=trade_prices,
         )
         self.feed.snapshot = snapshot
         try:
@@ -144,6 +163,26 @@ class PriceMonitor:
             LOGGER.info("price_monitor cache_error=write_failed")
         LOGGER.info("price_monitor refreshed shops=%s", len(snapshot.shops))
         return snapshot
+
+    async def _trade_prices(
+        self, client: httpx2.AsyncClient, market_round: int | None,
+    ) -> dict[str, TradePrice]:
+        if market_round is None:
+            return {}
+        try:
+            with anyio.fail_after(TIMEOUT_SECONDS):
+                reply = await client.get(STATS_URL)
+                _ = reply.raise_for_status()
+                stats = Stats.model_validate_json(reply.content)
+            current = stats.rounds.get(str(market_round))
+            if stats.market_round != market_round or current is None:
+                return {}
+            return {item: value for item, value in current.items.items()
+                    if item in ("lamp", "chair", "bookshelf")
+                    and value.min <= value.mean <= value.max}
+        except (httpx2.HTTPError, ValidationError, TimeoutError):
+            LOGGER.info("price_monitor trade_stats=unavailable")
+            return {}
 
     def save_cache(self, snapshot: ComparisonSnapshot) -> None:
         """Atomically replace the cache without leaving a partial snapshot."""
@@ -161,7 +200,7 @@ class PriceMonitor:
                 temporary.unlink(missing_ok=True)
 
     async def run(self) -> None:
-        """Reuse fresh cache, then refresh every ten minutes at most sixty times."""
+        """Refresh every ten minutes within the week's independently guarded runtime."""
         try:
             cached = await anyio.Path(self.cache_path).read_text(encoding="utf-8")
             self.feed.snapshot = ComparisonSnapshot.model_validate_json(cached)

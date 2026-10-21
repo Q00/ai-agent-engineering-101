@@ -124,7 +124,7 @@ def create_app(
                 "Current quote: metadata.ask. Basic opening caps: 110/198/286.",
                 "Counteroffers never increase within a negotiation.",
                 "Offers meeting the product minimum settle on the first counteroffer.",
-                "Fresh observed prices may allow a small near-lowest opening margin.",
+                "Fresh quotes and current-round trade means bound opening margins.",
                 "A final-price quote cannot be discounted further.",
                 "R2WELCOME credit is part of an actual reduction, never extra.",
                 "Explicit first offer: offer lamp 100 or buy lamp for 100.",
@@ -134,7 +134,7 @@ def create_app(
                 "Please leave an honest review of your transaction.",
             )
         ),
-        version="1.4.0",
+        version="1.4.1",
         capabilities=AgentCapabilities(streaming=False),
         default_input_modes=["text/plain"],
         default_output_modes=["text/plain", "application/json"],

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import datetime as dt
+from math import floor
 from typing import Final, Literal
 
-from pydantic import AwareDatetime, Field
+from pydantic import AwareDatetime, Field, FiniteFloat
 
 from market_a2a.models import FrozenModel, Product
 
@@ -13,6 +14,16 @@ REFRESH_SECONDS: Final = 600
 MAX_AGE_SECONDS: Final = 900
 BASIC_ITEMS: Final = ("lamp", "chair", "bookshelf")
 MIN_NEAR_LOWEST_SHOPS: Final = 3
+MIN_TRADE_SAMPLES: Final = 100
+
+
+class TradePrice(FrozenModel):
+    """Numeric completed-trade aggregates, distinct from observed opening asks."""
+
+    n: int = Field(ge=0, strict=True)
+    min: FiniteFloat = Field(ge=0)
+    max: FiniteFloat = Field(ge=0)
+    mean: FiniteFloat = Field(ge=0)
 
 
 class ObservedQuote(FrozenModel):
@@ -42,6 +53,8 @@ class ComparisonSnapshot(FrozenModel):
     shops: tuple[ComparedShop, ...] = Field(max_length=5)
     ranking_source: str = "https://market.ourolabs.ai/api/board"
     price_kind: Literal["observed_initial_ask"] = "observed_initial_ask"
+    market_round: int | None = None
+    trade_prices: dict[str, TradePrice] = Field(default_factory=dict, max_length=3)
 
 
 class ComparisonFeed:
@@ -61,8 +74,13 @@ class OwnComparison(FrozenModel):
     lowest_peer_ask: int | None
     observed_shop_count: int
     relation: Literal["lower", "equal", "higher", "unavailable"]
-    pricing_policy: Literal["baseline", "undercut_lowest", "near_lowest"] = "baseline"
+    pricing_policy: Literal[
+        "baseline", "undercut_lowest", "near_lowest", "market_trade_mean"
+    ] = "baseline"
     second_lowest_peer_ask: int | None = None
+    market_trade_mean: float | None = None
+    market_trade_count: int = 0
+    market_round: int | None = None
 
 
 class ComparisonDocument(FrozenModel):
@@ -132,7 +150,9 @@ def compare_price(
         if len(observations) >= MIN_NEAR_LOWEST_SHOPS
         else None
     )
-    policy: Literal["baseline", "undercut_lowest", "near_lowest"] = (
+    policy: Literal[
+        "baseline", "undercut_lowest", "near_lowest", "market_trade_mean"
+    ] = (
         "undercut_lowest" if lowest is not None else "baseline"
     )
     ceiling = (
@@ -144,6 +164,13 @@ def compare_price(
         premium = max(1, product.reserve * 2 // 100)
         ceiling = max(product.reserve, min(baseline, second - 1, lowest + premium))
         policy = "near_lowest"
+    trade = _trade_benchmark(product, snapshot, current)
+    if trade is not None and lowest is not None and second is not None:
+        premium = max(1, product.reserve * 2 // 100)
+        ceiling = max(
+            product.reserve, min(baseline, lowest + premium, floor(trade.mean)),
+        )
+        policy = "market_trade_mean"
     relation: Literal["lower", "equal", "higher", "unavailable"] = "unavailable"
     if lowest is not None:
         if ceiling < lowest:
@@ -161,4 +188,21 @@ def compare_price(
         relation=relation,
         pricing_policy=policy,
         second_lowest_peer_ask=second,
+        market_trade_mean=trade.mean if trade is not None else None,
+        market_trade_count=trade.n if trade is not None else 0,
+        market_round=snapshot.market_round if snapshot is not None and trade else None,
     )
+
+
+def _trade_benchmark(
+    product: Product, snapshot: ComparisonSnapshot | None, now: dt.datetime,
+) -> TradePrice | None:
+    if (product.sku not in BASIC_ITEMS or snapshot is None
+            or snapshot.market_round is None or not is_fresh(snapshot, now)):
+        return None
+    trade = snapshot.trade_prices.get(product.sku)
+    if (trade is None or trade.n < MIN_TRADE_SAMPLES
+            or not trade.min <= trade.mean <= trade.max
+            or trade.mean < product.reserve):
+        return None
+    return trade

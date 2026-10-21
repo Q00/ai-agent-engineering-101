@@ -62,6 +62,14 @@ def quote_message(updater: TaskUpdater, notice: QuoteNotice) -> Message:
         )
     comparison = compare_price(notice.product, notice.snapshot)
     comparison_text = ""
+    market_text = ""
+    if (notice.previous_ask is None and comparison.market_trade_mean is not None):
+        market_text = "".join((
+            f" Market R{comparison.market_round} completed-trade mean ",
+            f"{comparison.market_trade_mean:g} (N={comparison.market_trade_count}); ",
+            f"our current ask {notice.price}. ",
+            "This is a trade-price benchmark, separate from opening-ask observations.",
+        ))
     if notice.previous_ask is None and comparison.observed_shop_count:
         comparison_text = "".join(
             (
@@ -86,6 +94,7 @@ def quote_message(updater: TaskUpdater, notice: QuoteNotice) -> Message:
                         ),
                         coupon_text,
                         comparison_text,
+                        market_text,
                         (
                             " Final price; no further discount or coupon is available."
                             if price_final

@@ -38,7 +38,8 @@ Search then use action="quote" to SELECT the SKU and set an asking price.
 Choose an integer opening price from product.reserve through opening_max,
 inclusive, as provided by search_catalog. Favor the upper end of this opening
 range to retain value and leave room for a few measured concessions.
-The comparison fields contain only dated numeric initial-ask observations.
+The comparison distinguishes dated opening asks from current-round trade means.
+Trade means summarize completed transactions, not another seller's current offer.
 Their ceiling already respects reserve and freshness; never invent price evidence.
 Never accept an opening request without explicit_offer_sku and offer.
 BARGAINING PHASE: accept the actual numeric offer immediately if it meets or
