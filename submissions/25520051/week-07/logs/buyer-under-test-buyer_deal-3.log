@@ -1,0 +1,19 @@
+[buyer] order: lamp, budget 120, 1 shops, reference price 100.0
+[pick] +1.75  Kit Shop: 5/5 deals, paid [100, 100, 100, 101, 101]; no reviews
+[buyer] picked Kit Shop (http://127.0.0.1:65419): highest score (5/5 deals, paid [100, 100, 100, 101, 101]; no reviews)
+[buyer] -> 'I want to buy a lamp'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] raw: '```json\n{"action": "offer", "price": 78, "reason": "anchoring below their ask of 130 to establish lower negotiation range; within allowed band"}\n```'
+[harness] {'action': 'offer', 'price': 78, 'reason': 'anchoring below their ask of 130 to establish lower negotiation range; within allowed band'}
+[buyer] offer 78: harness: anchoring below their ask of 130 to establish lower negotiation range; within allowed band
+[buyer] -> '78' taskId=398ce11d
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 78 is too low. Counteroffer: 104.
+[harness] raw: '```json\n{"action": "offer", "price": 99, "reason": "Nibble toward shop\'s 104 counteroffer, staying within budget and deal viability"}\n```'
+[harness] {'action': 'offer', 'price': 99, 'reason': "Nibble toward shop's 104 counteroffer, staying within budget and deal viability"}
+[buyer] offer 99: harness: Nibble toward shop's 104 counteroffer, staying within budget and deal viability
+[buyer] -> '99' taskId=398ce11d
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 99 is too low. Counteroffer: 101.
+[buyer] accept 101: ask 101 is within budget and close to our last 99
+[buyer] -> '101' taskId=398ce11d
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 101.
+{"shop": "http://127.0.0.1:65419", "receipt": {"task": "398ce11d-ae35-4259-b1af-d71ddb4aa764", "item": "lamp", "sig_seller": "fcXAvAQEq27nbEL7Lr8ZsQa6dQtGvZxWQo+zMZrGCo9VcA7rFW1KHVA9SyU43631rWlzz1sp41EoK2cSfvzgAA==", "shop": "Kit Shop", "price": 101.0}, "stars": 4, "review": "[deal] lamp at 101 | price 3/5 (median 100) | speed 4/5 (3 offers) | receipt 5/5 (matched, signed) | conduct 5/5 -> 4 stars"}

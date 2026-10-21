@@ -1,0 +1,21 @@
+[buyer] order: lamp, budget 120, 2 shops, reference price 100
+[pick] +2.25  Kit Shop South: 5/5 deals, paid [100, 100, 100, 100, 101]; 3 reviews, avg 4.7, 0 complaints
+[pick] -1.42  Kit Shop North: never traded (curiosity bonus); 3 reviews, avg 1.3, 3 complaints
+[harness] raw: '```json\n{"shop": 0, "reason": "Kit Shop South has 5 successful past trades with consistent fair pricing, perfect receipt accuracy, and zero complaints, whereas Kit Shop North shows a clear pattern of receipt fraud across all 3 reviews with prices substantially higher than agreed."}\n```'
+[buyer] picked Kit Shop South (http://127.0.0.1:57829): harness: Kit Shop South has 5 successful past trades with consistent fair pricing, perfect receipt accuracy, and zero complaints, whereas Kit Shop North shows a clear pattern of receipt fraud across all 3 revi (5/5 deals, paid [100, 100, 100, 100, 101]; 3 reviews, avg 4.7, 0 complaints)
+[buyer] -> 'I want to buy a lamp'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] raw: '```json\n{"action": "offer", "price": 78, "reason": "Opening anchor below asking price (130) while staying within allowed band (69-87). Creates negotiation room toward budget max of 120."}\n```'
+[harness] {'action': 'offer', 'price': 78, 'reason': 'Opening anchor below asking price (130) while staying within allowed band (69-87). Creates negotiation room toward budget max of 120.'}
+[buyer] offer 78: harness: Opening anchor below asking price (130) while staying within allowed band (69-87). Creates negotiation room toward budge
+[buyer] -> '78' taskId=56c06567
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 78 is too low. Counteroffer: 104.
+[harness] raw: '```json\n{"action": "offer", "price": 99, "reason": "Nibble move within allowed band; shop descended from 130 to 104, so 99 is a reasonable counter to close the deal while capturing further concession"}\n```'
+[harness] {'action': 'offer', 'price': 99, 'reason': 'Nibble move within allowed band; shop descended from 130 to 104, so 99 is a reasonable counter to close the deal while capturing further concession'}
+[buyer] offer 99: harness: Nibble move within allowed band; shop descended from 130 to 104, so 99 is a reasonable counter to close the deal while c
+[buyer] -> '99' taskId=56c06567
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 99 is too low. Counteroffer: 101.
+[buyer] accept 101: ask 101 is within budget and close to our last 99
+[buyer] -> '101' taskId=56c06567
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 101.
+{"shop": "http://127.0.0.1:57829", "receipt": {"task": "56c06567-c7ed-45ea-be27-7cf9b004086a", "item": "lamp", "sig_seller": "CNZkVPyAwNQTUO5dcGq0DxZzUCYEdtULy00UNBjb+0dYxNFncXJr64o9QISEgeUjS8YlTAgNm5RJcgiZJjj8Bw==", "shop": "Kit Shop South", "price": 101.0}, "stars": 4, "review": "[deal] lamp at 101 | price 3/5 (median 100) | speed 4/5 (3 offers) | receipt 5/5 (matched, signed) | conduct 5/5 -> 4 stars"}

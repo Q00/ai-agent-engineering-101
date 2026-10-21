@@ -1,0 +1,21 @@
+[buyer] order: lamp, budget 120, 2 shops, reference price 100
+[pick] +2.25  Kit Shop South: 5/5 deals, paid [100, 100, 100, 100, 100]; 3 reviews, avg 4.7, 0 complaints
+[pick] -1.42  Kit Shop North: never traded (curiosity bonus); 3 reviews, avg 1.3, 3 complaints
+[harness] raw: '```json\n{"shop": 0, "reason": "Kit Shop South has a strong positive score, consistent honest pricing with matched receipts, and no complaints, while Kit Shop North has multiple complaints about receipt overcharges—the strongest warning indicator."}\n```'
+[buyer] picked Kit Shop South (http://127.0.0.1:49299): harness: Kit Shop South has a strong positive score, consistent honest pricing with matched receipts, and no complaints, while Kit Shop North has multiple complaints about receipt overcharges—the strongest war (5/5 deals, paid [100, 100, 100, 100, 100]; 3 reviews, avg 4.7, 0 complaints)
+[buyer] -> 'I want to buy a lamp'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] raw: '```json\n{"action": "offer", "price": 78, "reason": "Anchor low per plan; shop at 130 vs budget 120"}\n```'
+[harness] {'action': 'offer', 'price': 78, 'reason': 'Anchor low per plan; shop at 130 vs budget 120'}
+[buyer] offer 78: harness: Anchor low per plan; shop at 130 vs budget 120
+[buyer] -> '78' taskId=f4fd6d92
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 78 is too low. Counteroffer: 104.
+[harness] raw: '```json\n{"action": "offer", "price": 99, "reason": "Shop moved from 130→104; offering 99 shows good-faith movement (27% up from my 78) while staying safely under budget. Closes gap without risking deal."}\n```'
+[harness] {'action': 'offer', 'price': 99, 'reason': 'Shop moved from 130→104; offering 99 shows good-faith movement (27% up from my 78) while staying safely under budget. Closes gap without risking deal.'}
+[buyer] offer 99: harness: Shop moved from 130→104; offering 99 shows good-faith movement (27% up from my 78) while staying safely under budget. Cl
+[buyer] -> '99' taskId=f4fd6d92
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 99 is too low. Counteroffer: 101.
+[buyer] accept 101: ask 101 is within budget and close to our last 99
+[buyer] -> '101' taskId=f4fd6d92
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 101.
+{"shop": "http://127.0.0.1:49299", "receipt": {"task": "f4fd6d92-d6b2-45ba-88d5-3f88febc92d4", "item": "lamp", "sig_seller": "JRi3/utHJ/lybFWcSbidiDbwVHmPKrkxqHpXybRT0VxqTkvAOueCsgIDxJN5GxEIXNiVrnPAVgmmbuKDjhWxBA==", "shop": "Kit Shop South", "price": 101.0}, "stars": 4, "review": "[deal] lamp at 101 | price 3/5 (median 100) | speed 4/5 (3 offers) | receipt 5/5 (matched, signed) | conduct 5/5 -> 4 stars"}
