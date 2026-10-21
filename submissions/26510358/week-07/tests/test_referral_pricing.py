@@ -154,7 +154,6 @@ class HonestReferralReviewTests(unittest.TestCase):
             self.assertEqual(response["receipt"], result["receipt"])
             self.assertTrue(response["review"].startswith("Bought lamp for 100 credits, within my budget.\n\n"))
             self.assertIn("Ad (my shop)", response["review"])
-                self.assertIn("Ad (my shop)", response["review"])
             self.assertNotIn("black", response["review"].lower())
             responses.append(response)
         self.assertEqual(responses[0]["stars"], responses[1]["stars"])
