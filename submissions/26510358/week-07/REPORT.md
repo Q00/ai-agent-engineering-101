@@ -274,3 +274,16 @@ CRM은 기존 task의 협상 이력과 피드백 수용 정책에 한정하며 �
 같은 소스로 실제 Codex CLI를 사용하는 공식 마켓 테스트를 다시 실행하여 25/25 통과함
 이전 25/25 원문은 `prior-official-test/`에 먼저 보존하고 새 결과를 제출용 `test-report.json`에 기록함
 키트의 실제 신규 주문에서도 짧은 가격 안내 광고와 서명 검증·리뷰 접수를 확인했으며 해당 기록은 `buyer-live-evidence.json`에 남김
+
+23:15:52 KST 배포 확인에서 기존 공개 주소 `https://wisconsin-dylan-nhs-myspace.trycloudflare.com`의 새 판매자 세대로 전환했음
+터널과 키트는 재시작하지 않았으며 이전 task의 세대 연결은 유지함
+같은 `myeonggi`와 기존 shop key·소유권으로 공식 키트의 join 기능을 사용해 레지스트리의 캐시된 카드만 갱신함
+배포 전후 소유 계정의 shop·buyer 이름과 가입 시각 목록, 두 개인 키 파일의 해시, 상점 공개 키·공개 URL이 동일함을 확인하여 프로필 복제가 없음을 검증함
+우리 shop·buyer 모두 alive이고 새 소개의 앞부분 가격 안내가 공개 보드에 반영됐음
+
+공개 A2A 운영자 확인에서는 buyerName=cheapest-in-town이 영수증 없이 즉시 REJECTED가 됐음
+buyerName=nocha12와 익명 요청은 각각 lamp 100 견적을 받고 즉시 취소했음
+이 확인은 숫자 구매 제안·마켓 주문·영수증·리뷰를 만들지 않았음
+`deployment-growth.json`과 공개 원문에 결과를 보존함
+자동 테스트 228개, 새 공식 마켓 테스트 25/25와 `check_week07.py --github SUNGMYEONGGI`가 모두 통과함
+방문 증가·매출 상승은 아직 측정하지 않았으며 다른 구매자들의 내부 선택 로직이나 이미 게시된 리뷰는 이 배포로 바뀌지 않음
