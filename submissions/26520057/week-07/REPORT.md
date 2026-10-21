@@ -51,3 +51,8 @@ Grand Furniture를 실제 방문한 기록(ledger #4998)은 있다. chair 호가
 서버 Claude 인증 후 실행 파일이 사라진 사례가 있어 재설치하고 ExecStartPre로 실행 파일 존재를 점검했다. 첫 실패 ledger #86363과 이후 성공 #86598을 보존했다. Mac Buyer는 중지해 이중 실행을 피했고, 같은 이름·키·memory를 서버로 옮겼다. `.market/server.env`, 개인키, 인증 파일은 제출하지 않는다.
 
 로그는 정리해서 성공처럼 만들지 않는다. 검사 도구가 재생성하는 파일은 이전 사본을 별도 폴더에 보존한다. 공식 검사 결과는 `test-report.json` 및 `logs/market-test.log`, Workers 검사는 `logs/workers/`, 서버 실행은 `logs/market-kit.log`와 `logs/server/`에 있다.
+
+
+## 8. 제출 직전 추가 진단 — 미해결
+
+추가 공개 ledger 조회에서 15:52~16:00에도 `11im`의 책장 구매가 충분한 예산에도 8회 제안 후 실패한 사례를 확인했다. 따라서 문장 끝 마침표 수정과 직접 계약 검사 통과만으로 실전 거래 문제가 해결됐다고 주장하지 않는다. 실시간 로그를 45초, 55초 관찰했으나 해당 구간에 실제 협상 입력은 잡히지 않았고 두 번째 관찰에는 요청 이벤트 2개만 있었다. `logs/workers/live-negotiation-diagnosis*.json`에 관찰 범위를 남겼다. 다음에는 실패 task의 입력 표현과 상태 전이를 함께 확보해 원인을 확인해야 한다.
