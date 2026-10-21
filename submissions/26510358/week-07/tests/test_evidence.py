@@ -65,6 +65,15 @@ class EvidenceTests(unittest.TestCase):
         with self.assertRaises(EvidenceError):
             validate_seller_decision(accepted, reserve=100)
 
+    def test_recovery_must_honor_an_existing_quote(self):
+        for action, price in [("counter", 101), ("reject", None)]:
+            with self.subTest(action=action), self.assertRaises(EvidenceError):
+                validate_seller_decision(decision(action, price, offer=100), reserve=100,
+                                        offer=100, last_ask=100, accept_floor_bids=False)
+        accepted = decision("accept", 100, offer=100)
+        self.assertEqual(validate_seller_decision(accepted, reserve=100, offer=100,
+                                                last_ask=100, accept_floor_bids=False), accepted)
+
     def test_opening_requires_harness_selected_catalog_candidate(self):
         opened = decision("open", 130)
         self.assertEqual(validate_seller_decision(opened, reserve=100, opening=True,
