@@ -59,6 +59,11 @@ REVIEWS_SHOWN, REVIEW_CHARS = 3, 120
 PROBE_TIMEOUT = 5
 EXPLORE = float(os.environ.get("BUYER_EXPLORE", "0"))  # off unless the kit's caller turns it on
 EXPLORE_OPEN = 0.6
+# Alliance with a friend's shop, approved by the instructor (10-21) and stated on our shop's card:
+# when an ally is on the list, live, and not caught with a bad receipt, it is picked at ALLY_RATE
+# without asking the model. Budget, receipt checks and the review from code stay the same.
+ALLIES = [n.strip() for n in os.environ.get("BUYER_ALLIES", "").split(",") if n.strip()]  # off unless set
+ALLY_RATE = float(os.environ.get("BUYER_ALLY_RATE", "0.5"))
 BOARD = "https://market.ourolabs.ai/api/board"
 REGISTRY = "https://market.ourolabs.ai/api/shops"
 RECEIPT_KEYS = ("shop", "item", "price", "task")
@@ -207,6 +212,14 @@ def pick(shops, item, budget, memory):
     if len(ok) == 1:
         log(f"[pick] {ok[0]}: the only shop left")
         return by_name[ok[0]], False
+    # an ally whose lowest ask for this item was already above my budget would only end in no deal
+    allies = [n for n in ALLIES if n in ok
+              and not any(isinstance(t.get("min_ask"), int) and t["min_ask"] > budget
+                          for t in mine[n] if t.get("item") == item)]
+    if allies and random.random() < ALLY_RATE:
+        n = random.choice(allies)
+        log(f"[pick] {n}: ally (BUYER_ALLIES), picked at rate {ALLY_RATE}")
+        return by_name[n], False
     new = [n for n in ok if not by_name[n].get("reviews") and not mine[n]]
     if EXPLORE and new and len(new) < len(ok) and random.random() < EXPLORE:
         n = random.choice(new)

@@ -180,6 +180,7 @@ BUSY = int(os.environ.get("SHOP_BUSY", "30"))  # visits in the last DEMAND_WINDO
 QUIET = 5                     # at QUIET or fewer open at the reserve; a huge SHOP_BUSY keeps every opening near the reserve
 DEMAND_WINDOW = 600
 _visits = deque()             # time of each first message
+ALLIES = os.environ.get("SHOP_ALLIES", "")  # the alliance, disclosed on the card; same names as BUYER_ALLIES
 # Fair-price mode in the market, from 264 market reviews: shown ratings come from deals,
 # 5-star deals were paid at about 0.81 of the buyer's budget and 4-star at 0.91, and the
 # 2-star ones say the shop "held firm". So: any offer at or above the reserve closes,
@@ -459,6 +460,8 @@ def build(port):
             "Sells exactly three items: lamp, chair, bookshelf. "
             f"List prices: {prices}. The shop never asks more than the list price, and opens lower when it is quiet. "
             "An offer at or above the list price always closes at once. "
+            + (f"Alliance, approved by the instructor: this shop's buyer prefers {ALLIES}; "
+               "prices, budgets and reviews are not part of it. " if ALLIES else "") +
             "Every receipt is signed: sig_seller is Ed25519 over the canonical JSON of {shop, item, price, task}, "
             "so deals here count under the Round 2 rules. "
             "How to buy: send 'I want to buy a <item>', then send each offer as a plain number. "
