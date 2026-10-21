@@ -1,4 +1,11 @@
-# Week07 VPS seller (1.4.1)
+# Week07 VPS seller (1.5.0)
+
+Release1.5.0 adds bounded whole-sentence offers and shorter price messages.
+The public registry card was refreshed once under the same name,URL,key and
+GitHub owner; automatic registration and buying remain off. Offline282 checks
+and two live signed virtual purchases passed. See
+[top-five comparison](../../.omo/evidence/top5-upgrade-20261021/RESEARCH.md)
+and [deployment evidence](../../.omo/evidence/top5-upgrade-20261021/RESULTS.md).
 
 Current runtime ends2026-10-28 17:15KST. It uses zero-price OpenRouter routes
 first,then the explicitly authorized original OpenAI model with at most5000

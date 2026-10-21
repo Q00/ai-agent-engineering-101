@@ -1,0 +1,103 @@
+ISC003 [*] Explicitly concatenated string should be implicitly concatenated
+   --> market_a2a/seller.py:118:17
+    |
+116 |           description=" ".join(
+117 |               (
+118 | /                 "Quick checkout: offer lamp 100, offer chair 180, " +
+119 | |                 "or offer bookshelf 260.",
+    | |_________________________________________^
+120 |                   "Exact agreed-price Ed25519-signed receipts."
+121 |                   if signer is not None
+    |
+help: Remove redundant '+' operator to implicitly concatenate
+    |
+117 |             (
+    -                 "Quick checkout: offer lamp 100, offer chair 180, " +
+118 +                 "Quick checkout: offer lamp 100, offer chair 180, "
+119 |                 "or offer bookshelf 260.",
+    |
+
+ISC003 [*] Explicitly concatenated string should be implicitly concatenated
+  --> market_a2a/seller_offer.py:38:9
+   |
+36 |       """Accept a single committed amount; ignore budgets, comparisons and commands."""
+37 |       matched = re.fullmatch(
+38 | /         r"(?:(?:i offer|i can pay|i will pay|i'll pay|my offer is|offer) )?" +
+39 | |         rf"{AMOUNT}[.!]?",
+   | |_________________________^
+40 |           text.strip(), re.IGNORECASE,
+41 |       )
+   |
+help: Remove redundant '+' operator to implicitly concatenate
+   |
+37 |     matched = re.fullmatch(
+   -         r"(?:(?:i offer|i can pay|i will pay|i'll pay|my offer is|offer) )?" +
+38 +         r"(?:(?:i offer|i can pay|i will pay|i'll pay|my offer is|offer) )?"
+39 |         rf"{AMOUNT}[.!]?",
+   |
+
+D101 Missing docstring in public class
+  --> tests/manual_public_top5.py:23:7
+   |
+23 | class ListedCard(Wire):
+   |       ^^^^^^^^^^
+24 |     version: str
+25 |     description: str
+   |
+
+D101 Missing docstring in public class
+  --> tests/manual_public_top5.py:28:7
+   |
+28 | class Owner(Wire):
+   |       ^^^^^
+29 |     login: str
+   |
+
+D101 Missing docstring in public class
+  --> tests/manual_public_top5.py:32:7
+   |
+32 | class ListedShop(Wire):
+   |       ^^^^^^^^^^
+33 |     name: str
+34 |     card: ListedCard
+   |
+
+D101 Missing docstring in public class
+  --> tests/manual_public_top5.py:39:7
+   |
+39 | class Board(Wire):
+   |       ^^^^^
+40 |     shops: tuple[ListedShop, ...]
+   |
+
+D101 Missing docstring in public class
+  --> tests/manual_public_top5.py:43:7
+   |
+43 | class Joined(Wire):
+   |       ^^^^^^
+44 |     name: str
+45 |     round: int
+   |
+
+PT018 Assertion should be broken down into multiple parts
+  --> tests/manual_public_top5.py:53:5
+   |
+51 |     before = next(row for row in Board.model_validate_json(response.content).shops
+52 |                   if row.name == "25620027")
+53 |     assert before.owner is not None and before.owner.login == "SungJinho"
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+54 |     shop = next(row for row in registry.shops if row.name == "25620027")
+55 |     assert shop.url.rstrip("/") == BASE_URL
+   |
+help: Break down assertion into multiple parts
+   |
+52 |                   if row.name == "25620027")
+   -     assert before.owner is not None and before.owner.login == "SungJinho"
+53 +     assert before.owner is not None
+54 +     assert before.owner.login == "SungJinho"
+55 |     shop = next(row for row in registry.shops if row.name == "25620027")
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+Found 8 errors.
+[*] 2 fixable with `--fix` (1 unsafe fix available with `--fix --unsafe-fixes`).

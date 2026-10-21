@@ -45,22 +45,27 @@ class _Joined(Wire):
     round: int
 
 
-async def refresh_listing(client: httpx2.AsyncClient, registry: Registry) -> None:
+async def refresh_listing(
+    client: httpx2.AsyncClient, registry: Registry, *, submit: bool,
+) -> None:
     response = await client.get(MARKET + "/api/board")
     _ = response.raise_for_status()
-    before = next(row for row in _Board.model_validate_json(response.content).shops
+    original = response.content if submit else (EVIDENCE / "board.raw").read_bytes()
+    before = next(row for row in _Board.model_validate_json(original).shops
                   if row.name == "25620027")
     assert before.owner is not None
     assert before.owner.login == "SungJinho"
     shop = next(row for row in registry.shops if row.name == "25620027")
     assert shop.url.rstrip("/") == BASE_URL
-    response = await client.post(MARKET + "/api/join", json={
-        "role": "shop", "name": shop.name, "url": shop.url,
-        "pubkey": shop.pubkey,
-    })
-    _ = response.raise_for_status()
-    joined = _Joined.model_validate_json(response.content)
-    assert joined.name == shop.name
+    joined: _Joined | None = None
+    if submit:
+        response = await client.post(MARKET + "/api/join", json={
+            "role": "shop", "name": shop.name, "url": shop.url,
+            "pubkey": shop.pubkey,
+        })
+        _ = response.raise_for_status()
+        joined = _Joined.model_validate_json(response.content)
+        assert joined.name == shop.name
     response = await client.get(MARKET + "/api/board")
     _ = response.raise_for_status()
     after = next(row for row in _Board.model_validate_json(response.content).shops
@@ -72,12 +77,18 @@ async def refresh_listing(client: httpx2.AsyncClient, registry: Registry) -> Non
     _ = response.raise_for_status()
     current = next(row for row in Registry.model_validate_json(response.content).shops
                    if row.name == shop.name)
-    assert current == shop
-    record = {"name": shop.name, "round": joined.round,
+    baseline_registry = Registry.model_validate_json(
+        (EVIDENCE / "shops.raw").read_bytes(),
+    )
+    original_shop = next(row for row in baseline_registry.shops
+                         if row.name == shop.name)
+    assert current == shop == original_shop
+    record = {"name": shop.name, "round": joined.round if joined else None,
               "before": before.model_dump(), "after": after.model_dump(),
               "same_url_public_key_and_owner": True,
               "credential_read": False, "join_token_saved": False,
-              "automatic_rejoin_started": False, "buyer_started": False}
+              "automatic_rejoin_started": False, "buyer_started": False,
+              "join_submitted_this_run": submit}
     _ = (EVIDENCE / "listing-refresh.json").write_text(json.dumps(record, indent=2))
     print(json.dumps(record))
 
@@ -87,8 +98,10 @@ async def main() -> None:
         response = await client.get(MARKET + "/api/shops")
         _ = response.raise_for_status()
         registry = Registry.model_validate_json(response.content)
-        if "--refresh-listing" in sys.argv:
-            await refresh_listing(client, registry)
+        if "--refresh-listing" in sys.argv or "--verify-listing" in sys.argv:
+            await refresh_listing(
+                client, registry, submit="--refresh-listing" in sys.argv,
+            )
             return
         shop = next(row for row in registry.shops if row.name == "25620027")
         key = Ed25519PublicKey.from_public_bytes(base64.b64decode(shop.pubkey))
