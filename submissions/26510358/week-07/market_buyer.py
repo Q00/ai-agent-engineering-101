@@ -14,7 +14,6 @@ from harness import Harness
 from market_memory import MarketMemory, rank_shops
 from tracing import Trace
 from referral_pricing import append_review_notice, review_notice
-from simulation_reviews import SimulationReviewPolicy
 
 ROOT = Path(__file__).resolve().parent
 OWN_NAMES = {"myeonggi", "gacha-shop", "SUNGMYEONGGI"}
@@ -34,7 +33,7 @@ def check_card(shop):
         return None
 
 
-def buy(shops, item, budget, memory, trace, *, review_policy=None):
+def buy(shops, item, budget, memory, trace):
     budget = numeric_price(budget)
     # Read campaign text before attempting a purchase; configuration failure
     # must not cause a successfully received receipt to be discarded afterward.
@@ -116,20 +115,6 @@ def buy(shops, item, budget, memory, trace, *, review_policy=None):
             stars = 5 if signed else 3
             review = f"Bought {item} at {receipt['price']} within budget {budget}; " + (
                 "seller signature present; registry verification delegated to market kit." if signed else "receipt lacks seller signature; Round 2 verification unavailable.")
-            if signed:
-                if review_policy is not None:
-                    # Rating/config/network errors must never discard a receipt
-                    # for a purchase that has already completed.
-                    try:
-                        strategic_stars, strategy_note = review_policy.evaluate(chosen["name"], stars)
-                        if isinstance(strategic_stars, bool) or not isinstance(strategic_stars, int) \
-                                or not 1 <= strategic_stars <= 5 or not isinstance(strategy_note, str):
-                            raise ValueError("Review policy returned an invalid rating or note")
-                        stars = strategic_stars
-                        review += strategy_note
-                    except Exception as exc:
-                        trace.write("simulation_review_policy_failed", shop=chosen["name"],
-                                    detail=type(exc).__name__ + ": " + str(exc))
         elif status == "disputed":
             signed, stars = False, 1
             review = "Receipt inconsistent with authorized agreement: " + ", ".join(issues)
@@ -155,10 +140,8 @@ if __name__ == "__main__":
     parser.add_argument("--item", required=True)
     parser.add_argument("--budget", type=float, required=True)
     parser.add_argument("--memory", default=str(ROOT / ".market" / "buyer-memory.json"))
-    parser.add_argument("--review-policy")
     args = parser.parse_args()
     trace = Trace("market-buyer")
-    review_policy = SimulationReviewPolicy(trace, args.review_policy)
     result = buy(json.loads(Path(args.shops).read_text()), args.item, args.budget,
-                 MarketMemory(args.memory), trace, review_policy=review_policy)
+                 MarketMemory(args.memory), trace)
     print(json.dumps(result, ensure_ascii=False, allow_nan=False), flush=True)

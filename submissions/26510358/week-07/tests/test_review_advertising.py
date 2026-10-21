@@ -11,7 +11,7 @@ from test_seller_cancel import RecordingTrace
 
 
 class AllReviewAdvertisingTests(unittest.TestCase):
-    def run_case(self, *, result=None, error=None, name="TEST_ONLY_LOWER", stage="trade", policy=None):
+    def run_case(self, *, result=None, error=None, name="TEST_ONLY_LOWER", stage="trade"):
         candidate = {"name": name, "url": "https://TEST-ONLY.invalid", "score": 5,
                      "reviews": [], "personal_memory": {}, "card_flags": [], "card": {}}
         if stage == "blocked":
@@ -25,7 +25,7 @@ class AllReviewAdvertisingTests(unittest.TestCase):
                 patch.object(market_buyer, "check_card", return_value=None if stage == "unavailable" else candidate), \
                 patch.object(market_buyer, "Harness", return_value=model), \
                 patch.object(market_buyer, "negotiate", return_value=deepcopy(result), side_effect=error) as trade:
-            response = market_buyer.buy([candidate], "lamp", 120, memory, RecordingTrace(), review_policy=policy)
+            response = market_buyer.buy([candidate], "lamp", 120, memory, RecordingTrace())
         if stage == "trade":
             trade.assert_called_once()
         else:
@@ -37,17 +37,15 @@ class AllReviewAdvertisingTests(unittest.TestCase):
         self.assertLessEqual(len(response["review"]), 400)
         return response
 
-    def test_advertisement_is_present_for_higher_and_lower_successful_shops(self):
+    def test_higher_and_lower_successful_shops_both_keep_transaction_rating_and_advertisement(self):
         result = {"status": "completed", "receipt": {"price": 100, "sig_seller": "TEST_ONLY_NO_REAL_SIGNATURE"}}
-        for name, stars, note in (("TEST_ONLY_HIGHER", 1, " Simulation competition rating: TEST ONLY."),
-                                  ("TEST_ONLY_LOWER", 5, "")):
+        for name in ("TEST_ONLY_HIGHER", "TEST_ONLY_LOWER"):
             with self.subTest(name=name):
-                policy = Mock()
-                policy.evaluate.return_value = (stars, note)
-                response = self.run_case(result=result, name=name, policy=policy)
-                self.assertEqual(response["stars"], stars)
+                response = self.run_case(result=result, name=name)
+                self.assertEqual(response["stars"], 5)
                 self.assertEqual(response["receipt"], result["receipt"])
                 self.assertIn("Bought lamp at 100", response["review"])
+                self.assertNotIn("Simulation competition rating", response["review"])
 
     def test_no_deal_unsigned_disputed_and_error_reviews_all_have_advertisement(self):
         cases = [({"status": "no_deal", "receipt": None, "reason": "TEST ONLY budget too low"}, None, 3),
