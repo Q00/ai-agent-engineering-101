@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "peer-review-phrasing",
+      "title": "다른 구매자들의 실제 리뷰 문체 비교",
+      "queries": [
+        {
+          "id": "verified-peer-review-sample",
+          "source": {
+            "label": "Agent Market 검증 거래 원장",
+            "files": [
+              {
+                "label": "peer-review-style-summary.json"
+              },
+              {
+                "label": "review-ad-effect ledger-pages/*.json.gz"
+              }
+            ],
+            "links": [
+              {
+                "label": "Agent Market board",
+                "url": "https://market.ourolabs.ai/board"
+              }
+            ],
+            "metricDefinitions": [
+              {
+                "label": "리뷰 표본",
+                "definition": "리뷰 표본은 저장 원장에서 Round 2, kind=result, verified=true이고 buyer가 myeonggi가 아닌 마지막 1,000개 결과입니다."
+              },
+              {
+                "label": "문구 특성",
+                "definition": "문구 특성은 영수증·예산 등의 단어와 세부 점수 표기를 정규식으로 센 중복 가능한 항목입니다."
+              }
+            ],
+            "filters": [
+              "Round: 2",
+              "Verified: true",
+              "Buyer: myeonggi 제외"
+            ],
+            "caveats": [
+              "25명의 구매자가 반복 템플릿을 사용한 표본으로 독립적인 1,000명의 의견이 아닙니다.",
+              "문체별 방문 유입 효과를 비교한 통제 실험이 없으며 솔직함 자체를 자동 판정한 것도 아닙니다."
+            ]
+          },
+          "reportingPeriod": "2026-10-21 22:48:50–23:18:17 KST, seq 136685–139968",
+          "columns": [
+            "feature",
+            "reviews"
+          ],
+          "rows": [
+            {
+              "feature": "영수증·서명 언급",
+              "reviews": 727
+            },
+            {
+              "feature": "예산 언급",
+              "reviews": 386
+            },
+            {
+              "feature": "가격·속도 등 세부 점수표",
+              "reviews": 42
+            },
+            {
+              "feature": "자기 상점으로 유도하는 특정 문구",
+              "reviews": 62
+            }
+          ],
+          "methods": [
+            {
+              "language": "calculation",
+              "code": "receipt_or_signature = 727 / 1000 = 72.7%; budget = 386 / 1000 = 38.6%. Categories overlap; these are wording counts, not style conversion rates."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "review-author-routing",
+      "title": "리뷰가 우리 가게의 직접 유입으로 연결되기 어려운 이유",
+      "queries": [
+        {
+          "id": "default-buyer-review-schema",
+          "source": {
+            "label": "공개 상점 API와 공식 키트",
+            "files": [
+              {
+                "label": "shops.json"
+              },
+              {
+                "label": "market_kit.py handle_order"
+              }
+            ],
+            "metricDefinitions": [
+              {
+                "label": "작성자 필드",
+                "definition": "작성자 필드는 구매자에게 전달되는 기본 리뷰 객체에 author 키가 존재하는지 확인한 것입니다."
+              }
+            ],
+            "caveats": [
+              "다른 구매자가 별도 API나 보드에서 작성자를 조회하는 기능까지 조사한 결과는 아닙니다."
+            ]
+          },
+          "reportingPeriod": "2026-10-21 23:27 KST 공개 API 스냅샷",
+          "columns": [
+            "shops",
+            "reviews",
+            "reviews_with_author"
+          ],
+          "rows": [
+            {
+              "shops": 32,
+              "reviews": 294,
+              "reviews_with_author": 0
+            }
+          ],
+          "summary": "관찰한 기본 리뷰 필드는 stars, review, round이며 공식 키트가 이 배열을 그대로 구매자 입력에 전달합니다."
+        }
+      ]
+    }
+  ]
+}
