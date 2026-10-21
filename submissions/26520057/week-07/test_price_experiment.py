@@ -8,9 +8,13 @@ selected = [n for n in source.body if
 ns = {}
 exec(compile(ast.Module(body=selected, type_ignores=[]), '<policy>', 'exec'), ns)
 o, r = ns['experimental_offer'], ns['experimental_review']
-assert o('lamp', 140, .0999) == 125
+assert o('lamp', 140, .0999) == 120
 assert o('lamp', 140, .10) is None
-assert o('lamp', 110, .01) == 110
+assert o('lamp', 110, .01) is None
+assert o('lamp', 119, .01) is None
+assert o('lamp', 120, .01) == 120
+assert o('chair', 225, .01) == 200
+assert o('bookshelf', 295, .01) == 280
 assert o('lamp', 100, .01) is None
 assert o('unknown', 500, .01) is None
 assert r({'price':125}, [125], 125, 'lamp', 140)[0] == 2
