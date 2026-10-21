@@ -91,3 +91,36 @@ verify the recorded ask equals the buyer-visible ask, choose a justified rule
 for unresolved and infrastructure-error outcomes, and run simultaneous
 per-item assignment while keeping follow-up negotiation fixed. Baseline trades
 and randomized trades must be analyzed separately.
+
+### V1 record validation and offline experiment preparation
+
+The SQLite schema now keeps `negotiation_status` and `ledger_status`
+independently. `last_activity_at` tracks Seller-side negotiation activity;
+`ledger_result_at` and the ledger observation table track market results. The
+`events` table preserves opening asks, Buyer offers, Seller counters and receipt
+events in insertion order. Incoming numeric offers and counters use the A2A
+message ID for duplicate detection. Older rows remain in place; receipt-issued
+rows are not called completed without an explicit `seller_deal` trace.
+
+```bash
+.venv/bin/python pricing_audit.py --log logs/market-kit.log
+.venv/bin/python pricing_audit.py --log logs/market-kit.log --apply-completions
+.venv/bin/python reconcile_pricing.py --backfill
+.venv/bin/python pricing_report.py --legacy-log logs/market-kit.log
+.venv/bin/python pricing_report.py --json
+.venv/bin/python pricing_simulator.py
+.venv/bin/python -m unittest discover -s tests -p 'test_pricing*.py'
+```
+
+`--apply-completions` uses only matching `seller_deal` log lines. A missing
+completion remains unresolved. `--backfill` rechecks official ledger entries
+since the first local task, keeping the durable cursor monotonic. The report
+shows the new SQLite cohort separately from the first 600 historical log tasks.
+Historical tasks with no explicit outcome stay `UNKNOWN`.
+
+`pricing_simulator.py` is offline-only and is not imported by `seller.py`. It
+uses exact decimal ceiling rules for 1.06, 1.09 and 1.12 times reserve and
+balanced, seeded blocks per item. It can read a JSON list of task IDs, items
+and reserves with `--tasks`; it never invents transaction results. It verifies
+an `opening_ask_actual` if supplied. Its unit-test outcome fixtures are not
+market observations and never enter the live database.
