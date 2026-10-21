@@ -287,3 +287,6 @@ buyerName=nocha12와 익명 요청은 각각 lamp 100 견적을 받고 즉시 �
 `deployment-growth.json`과 공개 원문에 결과를 보존함
 자동 테스트 228개, 새 공식 마켓 테스트 25/25와 `check_week07.py --github SUNGMYEONGGI`가 모두 통과함
 방문 증가·매출 상승은 아직 측정하지 않았으며 다른 구매자들의 내부 선택 로직이나 이미 게시된 리뷰는 이 배포로 바뀌지 않음
+배포와 검증 후 `git push origin week-07`을 시도했으나 기존 이력의 `logs/market-kit.log` 163.73MB가 GitHub 100MB 제한에 걸려 GH001로 거절됨
+현재 변경과 실패 원문 `git-push.log`는 로컬 커밋에 보존함
+이는 실행 중인 마켓 배포와 별개의 GitHub 제출 미완료 항목이며, 저장소 지침의 이력 재작성 금지 때문에 과거 커밋을 정리하지 않음
