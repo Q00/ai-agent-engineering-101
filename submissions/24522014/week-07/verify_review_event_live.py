@@ -49,7 +49,8 @@ def main():
               "url": url, "checks": checks, "participants": participants, "public_card": card,
               "homepage_r2": stats["rounds"].get("2"),
               "public_key_fingerprints": fingerprints}
-    output = root / "logs/review-event/live-verification.json"
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    output = root / "logs/review-event" / f"live-verification-{stamp}.json"
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"url": url, "checks": checks,
                       "shop_deals": participants["shops"]["deals"],
