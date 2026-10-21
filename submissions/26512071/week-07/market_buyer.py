@@ -144,6 +144,22 @@ def review_line(reviews):
     return f"{len(reviews)} reviews, {avg} over {len(unique)} distinct{note}, newest: {quoted}"
 
 
+PROMO_WORDS = re.compile(r"\b(try|visit|check out|go to|head to|recommend|instead)\b", re.I)
+
+
+def norm(s):
+    return " ".join(re.findall(r"[a-z0-9]+", str(s).lower()))
+
+
+def ads_in(text, shop, names):
+    """Other shops a review names while telling the reader to go somewhere. On 10-21 one buyer
+    posted the same 3-star review on 14 shops: "... try the store 'Cheapest in Town'." (its own)."""
+    if not PROMO_WORDS.search(str(text)):
+        return []
+    t = f" {norm(text)} "
+    return [n for n in names if n != shop and len(norm(n)) >= 6 and f" {norm(n)} " in t]
+
+
 def board_stats():
     """{shop name: line} from the market dashboard, or {} when it does not answer."""
     try:
@@ -226,8 +242,26 @@ def pick(shops, item, budget, memory):
         log(f"[pick] {n}: exploring a shop with no reviews and no trades of mine, opening low")
         return by_name[n], True
     board = board_stats()
+    # reviews that advertise another shop are dropped from that shop's line; the advertised shop is
+    # marked, not dropped, since anyone could write a competitor's name into a review to sink it
+    clean, dropped, advertised = {}, {}, {}
+    for n, s in by_name.items():
+        clean[n] = []
+        for r in s.get("reviews", []):
+            ads = ads_in(r.get("review", ""), n, list(by_name))
+            for a in ads:
+                advertised[a] = advertised.get(a, 0) + 1
+            if ads:
+                dropped[n] = dropped.get(n, 0) + 1
+            else:
+                clean[n].append(r)
+
+    def extra(n):
+        return ((f" | {dropped[n]} of its reviews advertise another shop (dropped)" if n in dropped else "")
+                + (f" | ADVERTISED inside {advertised[n]} reviews of other shops (self-promotion is a dishonest sign)"
+                   if n in advertised else ""))
     table = "\n".join(f"- {n} | mine: {my_line(mine[n], item)} | board: {board.get(n, 'not on the board')}"
-                      f" | reviews: {review_line(by_name[n].get('reviews', []))}" for n in ok)
+                      f" | reviews: {review_line(clean[n])}{extra(n)}" for n in ok)
     log("[pick] table:\n" + table)
     for attempt in range(2):
         raw = harness(PICK.format(item=item, budget=budget, table=table))
