@@ -13,6 +13,7 @@ from evidence import EvidenceError, inspect_untrusted, numeric_price
 from harness import Harness
 from market_memory import MarketMemory, rank_shops
 from tracing import Trace
+from referral_pricing import review_notice
 
 ROOT = Path(__file__).resolve().parent
 OWN_NAMES = {"myeonggi", "gacha-shop", "SUNGMYEONGGI"}
@@ -34,6 +35,13 @@ def check_card(shop):
 
 def buy(shops, item, budget, memory, trace):
     budget = numeric_price(budget)
+    # Read campaign text before attempting a purchase; configuration failure
+    # must not cause a successfully received receipt to be discarded afterward.
+    try:
+        notice = review_notice(json.loads((ROOT / "data" / "price-policy.json").read_text()).get("review_referral"))
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        notice = ""
+        trace.write("review_referral_notice_unavailable", detail=str(exc))
     feedback = memory.ingest_kit_feedback(ROOT / "logs" / "market-kit.log")
     if feedback:
         trace.write("market_verified_feedback", results=feedback)
@@ -98,6 +106,8 @@ def buy(shops, item, budget, memory, trace):
             stars = 5 if signed else 3
             review = f"Bought {item} at {receipt['price']} within budget {budget}; " + (
                 "seller signature present; registry verification delegated to market kit." if signed else "receipt lacks seller signature; Round 2 verification unavailable.")
+            if signed:
+                review += notice
         elif status == "disputed":
             signed, stars = False, 1
             review = "Receipt inconsistent with authorized agreement: " + ", ".join(issues)

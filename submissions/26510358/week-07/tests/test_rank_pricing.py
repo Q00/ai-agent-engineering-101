@@ -48,7 +48,7 @@ class RankPricingTests(unittest.TestCase):
             observed[0] = board(3); clock[0] = 61
             recovery = control.refresh()
             self.assertEqual(recovery["phase"], "recovery")
-            self.assertEqual(recovery["opening_margin"], {"lamp": 1, "chair": 3, "bookshelf": 5})
+            self.assertEqual(recovery["opening_margin"], {"lamp": 20, "chair": 20, "bookshelf": 30})
             self.assertFalse(recovery["accept_floor_bids"])
             self.assertEqual(old_quote["phase"], "acquisition", "An issued quote's policy must stay frozen")
             observed[0] = board(4); clock[0] = 122
@@ -118,7 +118,7 @@ class ExistingQuoteTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(shop.open[original.id]["ask"], 100)
             observed[0] = board(3); clock[0] = 61
             await shop.execute(request_context("lamp", task=higher), queue)
-            self.assertEqual(shop.open[higher.id]["ask"], 101)
+            self.assertEqual(shop.open[higher.id]["ask"], 120)
             await shop.execute(request_context("100", task=original), queue)
             self.assertEqual(shop.terminal[original.id], "completed")
             self.assertEqual(contexts[-1]["pricing_phase"], "acquisition")
@@ -126,9 +126,9 @@ class ExistingQuoteTests(unittest.IsolatedAsyncioTestCase):
             await shop.execute(request_context("lamp", task=later), queue)
             self.assertEqual(shop.open[later.id]["ask"], 100)
             await shop.execute(request_context("100", task=higher), queue)
-            self.assertEqual(shop.open[higher.id]["ask"], 101)
+            self.assertEqual(shop.open[higher.id]["ask"], 120)
             self.assertEqual(contexts[-1]["pricing_phase"], "recovery")
-            await shop.execute(request_context("101", task=higher), queue)
+            await shop.execute(request_context("120", task=higher), queue)
             self.assertEqual(shop.terminal[higher.id], "completed")
 
 

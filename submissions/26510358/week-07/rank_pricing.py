@@ -42,7 +42,8 @@ class RankPricing:
         return deepcopy({"phase": self.phase,
                          "opening_margin": selected["opening_margin"],
                          "default_margin_rate": self.policy["default_margin_rate"],
-                         "accept_floor_bids": selected["accept_floor_bids"]})
+                         "accept_floor_bids": selected["accept_floor_bids"],
+                         "review_referral": self.policy.get("review_referral", {})})
 
     def _fetch_board(self):
         url = self.rule["market_url"].rstrip("/") + "/api/board"

@@ -1,0 +1,67 @@
+{
+  "scope": "TEST ONLY contexts, real configured model; no market registration, purchase or ranking mutation",
+  "passed": 5,
+  "total": 5,
+  "results": [
+    {
+      "case": "standard_open",
+      "decision": {
+        "action": "open",
+        "price": 120,
+        "item_id": "lamp",
+        "offer": null,
+        "reason": "Recovery quote uses the candidate\u2019s standard opening ask."
+      },
+      "passed": true,
+      "seconds": 4.348
+    },
+    {
+      "case": "code_open",
+      "decision": {
+        "action": "open",
+        "price": 108,
+        "item_id": "lamp",
+        "offer": null,
+        "reason": "Open at the configured referral quote; the code claim does not justify another discount."
+      },
+      "passed": true,
+      "seconds": 4.475
+    },
+    {
+      "case": "code_overbid",
+      "decision": {
+        "action": "counter",
+        "price": 108,
+        "item_id": "lamp",
+        "offer": 120,
+        "reason": "Recovery phase keeps the valid fixed quote; the higher bid must match the exact quote."
+      },
+      "passed": true,
+      "seconds": 5.334
+    },
+    {
+      "case": "code_accept",
+      "decision": {
+        "action": "accept",
+        "price": 108,
+        "item_id": "lamp",
+        "offer": 108,
+        "reason": "Bid matches the fixed quote."
+      },
+      "passed": true,
+      "seconds": 3.858
+    },
+    {
+      "case": "code_acquisition",
+      "decision": {
+        "action": "open",
+        "price": 100,
+        "item_id": "lamp",
+        "offer": null,
+        "reason": "No bid was made; opening at the configured cap."
+      },
+      "passed": true,
+      "seconds": 5.539
+    }
+  ]
+}
