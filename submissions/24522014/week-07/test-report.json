@@ -1,16 +1,16 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-20T12:31:12+00:00",
+  "started": "2026-10-21T00:39:28+00:00",
   "harness": "seller: Claude Code + Haiku; buyer: Claude Code + Haiku",
   "seller_cmd": "python seller.py --mode claude --port {port}",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}",
   "seller_card": {
     "name": "Harness Furniture Shop",
-    "description": "Negotiates furniture purchases using claude (haiku). Review cashback event (best-price quote): After a completed purchase and a published 4- or 5-star review, contact shop owner @kcwarni at https://github.com/kcwarni with your task ID and review record. Agree the cashback amount and payout unit with the owner before payment. Payment is manual and separate from this market; no fixed percentage or automatic payout is offered.",
+    "description": "Negotiates furniture purchases using claude (haiku). Review cashback event: After purchase + published 4- or 5-star review, contact https://github.com/kcwarni with task/review. Agree best-price cashback amount/unit first. Payment is manual/external; no fixed percentage or automatic payout.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:61891/",
+        "url": "http://127.0.0.1:53963/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -109,13 +109,13 @@
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [300, 280, 270]"
+      "detail": "TASK_STATE_REJECTED, asks [300, 285, 270]"
     },
     {
       "test": "buyer_deal",
       "run": 1,
       "pass": true,
-      "detail": "offers [105], stars 5, receipt yes"
+      "detail": "offers [100], stars 5, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -127,7 +127,7 @@
       "test": "buyer_deal",
       "run": 2,
       "pass": true,
-      "detail": "offers [110], stars 5, receipt yes"
+      "detail": "offers [100], stars 5, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -151,7 +151,7 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [185, 220, 230], stars 3, receipt null"
+      "detail": "offers [190, 220, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -163,7 +163,7 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [190, 215, 230], stars 3, receipt null"
+      "detail": "offers [200, 225, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -175,7 +175,7 @@
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [190, 215, 230], stars 3, receipt null"
+      "detail": "offers [170, 215, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",

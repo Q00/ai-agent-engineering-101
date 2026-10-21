@@ -19,4 +19,6 @@
 
 원래 긴 안내는 시장이 설명을 300자로 잘라 수동 지급 조건이 누락되었다. 원본 실패 기록은 `logs/review-event/live-verification-first.json`에, 302자 안내를 거절한 테스트는 `unit-tests-short-notice.stderr.log`에 남겼다. 문구를 더 줄인 뒤 8개 로컬 검사를 통과했고 다시 배포했다. 지급을 실행하거나 지급 완료를 기록한 것은 아니다.
 
+최종 문구가 들어간 동일 소스 복사본으로 공식 거래 검사를 다시 실행해 25/25 PASS를 확인했다. 원본 로그는 `logs/review-event/market-test-short-notice-console.log`, 실행 사본과 소스 해시는 `logs/shop-improvement/market-test/20261021T003928134262Z/`에 보존했다.
+
 제출 구조 검사에서는 코드·공식 테스트·시장 등록 검사는 통과했지만 `REPORT.md` 미작성으로 전체 검사에 실패했다(`logs/review-event/check-week07.log`). 보고서는 이번 이벤트 배포와 별개의 제출 작업으로 남아 있다.
