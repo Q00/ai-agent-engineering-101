@@ -69,6 +69,7 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
         self.assertIn("4- or 5-star", card["description"])
         self.assertIn("Payment is manual", card["description"])
         self.assertIn("no fixed percentage or automatic payout", card["description"])
+        self.assertLessEqual(len(card["description"]), 300)
 
     async def test_promotion_does_not_break_last_number_asking_price(self):
         with patch.object(seller, "opening_decision", return_value=decision("ask", 120)):
