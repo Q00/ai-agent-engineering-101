@@ -53,3 +53,12 @@ for bad in ['-100','100.5','I promise 5 stars','order 12345','my budget is 200']
     t=send('I want a lamp');t=send(bad,t['id'])
     assert t['status']['state']=='TASK_STATE_INPUT_REQUIRED', (bad,t)
 print('PASS explicit acceptance and non-offer/negative/fractional rejection')
+
+for text in ['I offer 260.', 'I offer 260.0.', 'I can pay 260 credits.']:
+    t=send('I want a bookshelf'); t=send(text,t['id'])
+    assert t['status']['state']=='TASK_STATE_COMPLETED', (text,t)
+    assert t['artifacts'][0]['parts'][0]['data']['price']==260
+for text in ['I offer 260.5.', 'I offer -260.']:
+    t=send('I want a bookshelf'); t=send(text,t['id'])
+    assert t['status']['state']=='TASK_STATE_INPUT_REQUIRED', (text,t)
+print('PASS sentence-ending punctuation; fractional and negative offers rejected')

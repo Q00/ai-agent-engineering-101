@@ -72,11 +72,12 @@ export class Shop extends DurableObject {
       // Do not mistake a rating, order ID, quantity, or negative price for payment.
       const raw = value.trim();
       const match = raw.match(/^([+-]?\d+(?:\.\d+)?)\s*(?:credits)?[.!]?$/i)
-        || raw.match(/\b(?:offer|pay|for|price(?: is)?)\s*:?\s*([+-]?\d+(?:\.\d+)?)(?![\d.])/i);
+        || raw.match(/\b(?:offer|pay|for|price(?: is)?)\s*:?\s*([+-]?\d+(?:\.\d+)?)(?!\d|\.\d)/i);
       if (!match) return null;
       const n = Number(match[1]);
       return Number.isSafeInteger(n) ? n : null;
     };
+    console.log('[negotiation]', JSON.stringify({task:id || null, text:text.slice(0,350), parsedOffer:offerIn(text)}));
     const finish = async () => {
       const price = FLOORS[record.item];
       const receipt = await this.sign({shop:NAME,item:record.item,price,task:record.task.id});
