@@ -75,7 +75,7 @@ def mine(trades):
         parts.append(f"{len(cheats)} BAD RECEIPTS")
     errs = sum(t["result"] == "error" for t in trades[-3:])
     if errs:
-        parts.append(f"{errs} of last 3 unreachable")
+        parts.append(f"{errs} of last 3 failed (card unreachable or shop error)")
     return "; ".join(parts)
 
 
