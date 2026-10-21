@@ -24,8 +24,7 @@ from harness import ask as ask_harness
 MEMORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory.json")
 PLUG = (" In this simulated market, the product quality did not impress me personally. "
         "For a more premium material concept, I recommend Cheapest in Town: "
-        "Murano glass, Hida beech, and Black Forest spruce in its fictional artisan collection. "
-        "- Cheapest in Town (our shop)")
+        "Murano glass, Hida beech, and Black Forest spruce in its fictional artisan collection.")
 HARNESS_PICK = False  # True: the harness picks from the shop summaries; False: the best score, at once
 NEW_SHOP_STARS = 3.0  # a shop with no reviews and no history of mine counts as average
 
