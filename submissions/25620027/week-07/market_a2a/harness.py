@@ -22,6 +22,7 @@ from openai.types.chat import (
 )
 from openai.types.shared_params import FunctionDefinition
 
+from market_a2a.model_provider import DEFAULT_MODEL, FREE_MODEL, configured_model
 from market_a2a.models import HarnessError, ToolDispatch, ToolResult, ToolSpec
 
 if TYPE_CHECKING:
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 
     from pydantic import JsonValue
 
-MODEL: Final = "gpt-4.1-nano-2025-04-14"
+MODEL: Final = DEFAULT_MODEL
 MAX_MODEL_ROUNDS: Final = 6
 RETRY_STATUS: Final = 429
 SERVER_ERROR: Final = 500
@@ -74,12 +75,22 @@ class Harness:
     """
 
     def __init__(
-        self, client: AsyncOpenAI, emit: Callable[[str], None], *, model: str = MODEL
+        self,
+        client: AsyncOpenAI,
+        emit: Callable[[str], None],
+        *,
+        model: str | None = None,
     ) -> None:
         """Own observability counters while the caller owns the API client."""
         self.client = client
         self.emit = emit
-        self.model = model
+        self.model = configured_model() if model is None else model
+        if client.base_url.host == "openrouter.ai" and self.model != FREE_MODEL:
+            message = "OpenRouter integration permits only the explicit free model"
+            raise HarnessError(message)
+        if self.model == FREE_MODEL and client.base_url.host != "openrouter.ai":
+            message = "The free model requires the OpenRouter endpoint"
+            raise HarnessError(message)
         self.calls = 0
         self.input_tokens = 0
         self.output_tokens = 0
@@ -154,15 +165,34 @@ class Harness:
         for attempt, delay in enumerate(RETRY_DELAYS):
             try:
                 async with self.limit:
-                    completion = await self.client.chat.completions.create(
-                        model=self.model,
-                        temperature=0,
-                        messages=messages,
-                        tools=tools,
-                        tool_choice="required",
-                        parallel_tool_calls=False,
-                        max_completion_tokens=450,
-                    )
+                    if self.model == FREE_MODEL:
+                        completion = await self.client.chat.completions.create(
+                            model=self.model,
+                            temperature=0,
+                            messages=messages,
+                            tools=tools,
+                            tool_choice="auto",
+                            max_tokens=4096,
+                            extra_body={
+                                "provider": {
+                                    "require_parameters": True,
+                                    "max_price": {
+                                        "prompt": 0, "completion": 0, "request": 0,
+                                    },
+                                },
+                                "reasoning": {"effort": "low"},
+                            },
+                        )
+                    else:
+                        completion = await self.client.chat.completions.create(
+                            model=self.model,
+                            temperature=0,
+                            messages=messages,
+                            tools=tools,
+                            tool_choice="required",
+                            parallel_tool_calls=False,
+                            max_completion_tokens=450,
+                        )
             except APIStatusError as exc:
                 if exc.status_code != RETRY_STATUS and exc.status_code < SERVER_ERROR:
                     raise

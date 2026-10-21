@@ -28,14 +28,14 @@ import anyio
 import typer
 import uvicorn
 from fastapi import FastAPI
-from openai import AsyncOpenAI
 from pydantic import TypeAdapter
 
 from http_client import create_client
 from market_a2a.buyer import buy
 from market_a2a.catalog import Catalog
-from market_a2a.harness import MODEL, Harness
+from market_a2a.harness import Harness
 from market_a2a.market_buyer import MarketRequest, market_buy
+from market_a2a.model_provider import create_model_client
 from market_a2a.models import FrozenModel, Purchase, ShopCard, ShoppingItem
 from market_a2a.receipts import ReceiptSigner
 from market_a2a.seller import create_app
@@ -85,7 +85,7 @@ async def serve(
     signer = ReceiptSigner.load(ROOT / "shop_key.pem")
     async with (
         create_client(model=True) as model_http,
-        AsyncOpenAI(http_client=model_http) as model,
+        create_model_client(model_http) as model,
     ):
         harness = Harness(model, emit)
         if directory:
@@ -107,7 +107,10 @@ async def serve(
                 "Sungjin Shop",
                 signer=signer,
             )
-        emit(f"HARNESS model={MODEL} source=week05-tool-loop directory={directory}")
+        emit(
+            " ".join((f"HARNESS model={harness.model}",
+                      f"source=week05-tool-loop directory={directory}"))
+        )
         await uvicorn.Server(
             uvicorn.Config(web, host="127.0.0.1", port=port, log_level="warning"),
         ).serve()
@@ -158,7 +161,7 @@ def buyer(
     async def run() -> None:
         async with (
             create_client(model=True) as model_http,
-            AsyncOpenAI(http_client=model_http) as model,
+            create_model_client(model_http) as model,
         ):
             harness = Harness(model, emit)
             result = await buy(harness, url, item, budget, emit)
@@ -181,7 +184,7 @@ def market_buyer(
     async def run() -> None:
         async with (
             create_client(model=True) as model_http,
-            AsyncOpenAI(http_client=model_http) as model,
+            create_model_client(model_http) as model,
         ):
             harness = Harness(model, emit)
             result = await market_buy(
@@ -211,7 +214,7 @@ def shopping(
     async def run() -> None:
         async with (
             create_client(model=True) as model_http,
-            AsyncOpenAI(http_client=model_http) as model,
+            create_model_client(model_http) as model,
         ):
             harness = Harness(model, emit)
             purchases = await shop(harness, cards, request.items, request.budget, emit)
