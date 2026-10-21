@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 import re
 from uuid import uuid4
+from google.protobuf.json_format import MessageToDict
+from google.protobuf.message import Message
 
 PLEDGES = {
     "i promise a 5-star review",
@@ -25,6 +27,8 @@ def explicit_promise(text, parts=()):
             return True
     for part in parts:
         data = getattr(getattr(part, "root", part), "data", None)
+        if isinstance(data, Message):
+            data = MessageToDict(data)
         if (isinstance(data, dict) and data.get("kind") == "review_promise"
                 and type(data.get("stars")) in (int, float) and data["stars"] == 5
                 and data.get("agreed") is True):

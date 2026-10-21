@@ -82,8 +82,8 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
                                        base_url="http://test", headers={"A2A-Version": "1.0"})
         self.addAsyncCleanup(self.client.aclose)
 
-    async def send(self, text, task_id=None):
-        msg = {"role": "ROLE_USER", "messageId": str(uuid4()), "parts": [{"text": text}]}
+    async def send(self, text, task_id=None, extra_parts=()):
+        msg = {"role": "ROLE_USER", "messageId": str(uuid4()), "parts": [{"text": text}, *extra_parts]}
         if task_id:
             msg["taskId"] = task_id
         response = await self.client.post("/", json={"jsonrpc": "2.0", "id": str(uuid4()),
@@ -177,6 +177,16 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(data["event_applied"])
         self.assertFalse(data["refund"])
         self.assertFalse(offered.get("artifacts"))
+        canceled = await self.client.post("/", json={"jsonrpc": "2.0", "id": str(uuid4()),
+            "method": "CancelTask", "params": {"id": task["id"]}})
+        self.assertNotIn("error", canceled.json())
+
+    async def test_structured_promise_survives_jsonrpc_sdk_conversion(self):
+        with patch.object(seller, "record_promise"), patch.object(seller, "write_decision_log"):
+            task = await self.send("bookshelf", extra_parts=[
+                {"data": {"kind": "review_promise", "stars": 5, "agreed": True}}])
+        self.assertEqual(task["status"]["message"]["parts"][1]["data"]["price"], 260)
+        self.assertFalse(task.get("artifacts"))
         canceled = await self.client.post("/", json={"jsonrpc": "2.0", "id": str(uuid4()),
             "method": "CancelTask", "params": {"id": task["id"]}})
         self.assertNotIn("error", canceled.json())
