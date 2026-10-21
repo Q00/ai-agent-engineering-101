@@ -62,7 +62,7 @@ class ReferralPricingTests(unittest.TestCase):
         notice = review_notice(RULE)
         self.assertIn("Ad (my shop)", notice)
         self.assertIn("recovery", notice)
-        self.assertIn("Acquisition prices excluded", notice)
+        self.assertIn("Acquisition excluded", notice)
 
 
 class ReferralSellerTests(unittest.IsolatedAsyncioTestCase):
@@ -152,7 +152,7 @@ class HonestReferralReviewTests(unittest.TestCase):
                     patch.object(market_buyer, "negotiate", return_value=deepcopy(result)):
                 response = market_buyer.buy([candidate], "lamp", 120, memory, RecordingTrace())
             self.assertEqual(response["receipt"], result["receipt"])
-            self.assertIn("seller signature present; registry verification delegated", response["review"])
+            self.assertTrue(response["review"].startswith("Bought lamp for 100 credits, within my budget.\n\n"))
             self.assertIn("Ad (my shop)", response["review"])
             self.assertIn("REVIEW10", response["review"])
             self.assertNotIn("black", response["review"].lower())

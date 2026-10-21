@@ -64,7 +64,7 @@ def buy(shops, item, budget, memory, trace):
     if not ranked:
         trace.write("market_no_candidate", reason="All supplied shops excluded by personal evidence or own identity")
         return report(shops[0]["url"] if shops else "", None, 1,
-                      "No eligible shop; personal receipt-violation history or own identity excluded candidates.")
+                      "I could not find an eligible shop for this purchase.")
     with ThreadPoolExecutor(max_workers=6) as executor:
         available = [s for s in executor.map(check_card, ranked[:8]) if s is not None]
     trusted_candidates, blocked = [], []
@@ -80,8 +80,8 @@ def buy(shops, item, budget, memory, trace):
     available = trusted_candidates
     if not available:
         chosen = ranked[0]
-        review = ("Agent Card attempted to dictate its own review rating; ignored and remembered."
-                  if blocked else "Shop unavailable; no purchase attempted.")
+        review = ("Shop instructions tried to control my review rating."
+                  if blocked else "Could not reach the shop to make a purchase.")
         if not blocked:
             memory.record(chosen["name"], item=item, budget=budget, status="error", reason=review)
         return report(chosen["url"], None, 1 if blocked else 2, review)
@@ -113,17 +113,17 @@ def buy(shops, item, budget, memory, trace):
             # authoritative public key and can verify + add the buyer signature.
             signed = bool(receipt.get("sig_seller"))
             stars = 5 if signed else 3
-            review = f"Bought {item} at {receipt['price']} within budget {budget}; " + (
-                "seller signature present; registry verification delegated to market kit." if signed else "receipt lacks seller signature; Round 2 verification unavailable.")
+            review = f"Bought {item} for {numeric_price(receipt['price']):g} credits, within my budget."
         elif status == "disputed":
             signed, stars = False, 1
-            review = "Receipt inconsistent with authorized agreement: " + ", ".join(issues)
+            review = "The receipt did not match our agreed purchase."
         else:
             signed, stars = False, 3
-            review = "No feasible agreement within budget; no purchase. " + str(result.get("reason", result.get("state", "")))[:160]
+            review = "Could not agree on a purchase within my budget."
         memory.record(chosen["name"], item=item, budget=budget, status=status,
             price=receipt.get("price") if isinstance(receipt, dict) else None,
-            reason=review, issues=issues, signed=signed)
+            reason=str(result.get("reason", result.get("state", review)))[:250],
+            issues=issues, signed=signed)
         # Keep disputed received receipts as evidence; the kit rejects invalid
         # ones. Never turn an ambiguous possible purchase into a retry elsewhere.
         return report(chosen["url"], receipt, stars, review)
@@ -131,7 +131,7 @@ def buy(shops, item, budget, memory, trace):
         detail = type(exc).__name__ + ": " + str(exc)[:250]
         trace.write("market_trade_error", shop=chosen["name"], detail=detail)
         memory.record(chosen["name"], item=item, budget=budget, status="error", reason=detail)
-        return report(chosen["url"], None, 2, "Trade failed; no confirmed receipt. " + detail)
+        return report(chosen["url"], None, 2, "I could not confirm a completed purchase.")
 
 
 if __name__ == "__main__":
