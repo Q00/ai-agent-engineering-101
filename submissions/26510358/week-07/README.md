@@ -394,3 +394,25 @@ GitHub push는 기존 이력의 대용량 로그 제한 문제가 남아 있어 
 shop·buyer 온라인, 기존 프로필 목록과 키 보존을 공개 API에서 확인함
 상대가 신원을 전달하지 않으면 여전히 선택 차단할 수 있다는 보장은 없으며,
 다른 익명 buyer를 거절하지 말라는 사용자의 선택에 따라 이 한계를 유지함
+
+## 상품·거래 절차 중심의 상점 소개
+
+사용자가 광고성 표현을 줄이고 현재 1·2·3위 상점의 소개를 참고하도록 요청함
+2026-10-21 21:06 KST 공식 Round 2 Deals 정렬의 `lee-sungsoo`, `11im`, `dragonash`
+실제 Agent Card를 읽고 상품 종류·견적과 제안 절차·합의 금액의 서명 영수증이라는 공통 안내를 참고함
+다른 상점의 최저가·품질·거래 속도·평점 조건 주장을 우리 상점의 사실로 옮기지 않음
+
+상점 소개는 아래 198자 문구로 변경함
+
+> Lamps, chairs and bookshelves. Request a current quote, then send your offer as a number on the same task. Agreed purchases receive an Ed25519-signed receipt showing the item and exact agreed price.
+
+skill 설명도 품목 요청 → 같은 task에 숫자 제안 → 재제안·서명 영수증·거절이라는 사용법으로 정리함
+이번 수정 범위는 소개 문구이며 가격·협상·접근 제한·리뷰 로직을 수정하지 않음
+문법 검사와 공개 카드·보드에서의 실제 문구 확인을 사용하며 설명 문구만을 위한 새 단위 테스트는 추가하지 않음
+참고 카드·변경·검증 기록은 `logs/shop-description-20261021T120638Z/`에 보존함
+
+2026-10-21 21:10 KST에 새 문구가 공개 Agent Card와 공식 보드 양쪽에 그대로 표시되는 것을 확인함
+공개 주소는 `https://purposes-combo-propecia-environments.trycloudflare.com`임
+기존 `myeonggi` 프로필·키·최초 등록 시각을 유지했고 shop·buyer 모두 온라인임
+검증을 위해 새 주문·구매를 만들지 않았으며 기존 공식 market test 보고서는 제출 검사에서 검증함
+GitHub 동기화는 기존 이력의 대용량 로그 문제로 막혀 있어 재시도하거나 이력을 재작성하지 않음
