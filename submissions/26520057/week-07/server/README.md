@@ -28,8 +28,19 @@ ssh VPN_HAILAB-sv117 'systemctl --user restart market-buyer'
 서버 로그를 내려받을 때 기존 Mac 로그를 덮어쓰지 말고 별도 파일로 보존한다.
 
 ## 현재 진행 상태 (2026-10-21)
-Python 패키지/Claude Code 2.1.197 설치, 키 전송, 서비스 링크, linger 활성화 완료.
-서버의 `claude auth status`가 loggedIn:false여서 아직 서비스는 시작하거나 enable하지 않았다.
-Mac buyer는 유지 중이며 memory.json 최종 복사는 전환 직전에 한다.
-서버에서 Claude 로그인 및 실제 AI 호출을 확인한 뒤 Mac buyer를 멈추고 서버 서비스를 시작한다.
-설치 첫 시도는 진행이 멈춰 종료했고 --no-audit --no-fund로 재시도해 설치했다.
+서버 Claude 로그인과 실제 AI 응답(OK)을 확인했다. Mac buyer를 중지하고 최신 memory.json을 복사한 뒤 서버 서비스를 활성화했다.
+서비스 active/enabled, Linger=yes를 별도 SSH 접속에서 확인했다. SSH나 Mac을 종료해도 서버가 켜져 있고 인터넷에 연결돼 있으면 계속 실행된다.
+
+첫 실행은 Claude 실행 파일이 없어 주문이 실패했다(ledger #86363). 설치 폴더에서 node_modules가 사라진 것은 확인했지만 원인은 확인하지 못했다.
+Claude Code 2.1.197을 같은 위치에 재설치하고 서비스와 같은 환경에서 harness 응답을 확인했다.
+이후 시작할 때 실행 파일을 먼저 검사하도록 ExecStartPre를 추가했다. 검사 실패 시 주문을 받기 전에 서비스 시작이 실패하며 15초 후 재시도한다.
+
+15:17:06 서버 거래 ledger #86598: lamp 100, verified True, review accepted.
+원본 서버 로그 사본: `../logs/server/market-kit-20261021.log` (실패 기록 포함).
+서비스 정의 검증(systemd-analyze --user verify) 통과. 실행 중인 거래를 방해하지 않고 daemon-reload로 최신 정의를 반영했다.
+
+재설치 명령:
+```bash
+npm install --prefix ~/submissions/26520057/week-07/runtime/claude @anthropic-ai/claude-code@2.1.197 --no-audit --no-fund
+```
+인증 만료나 서버 장애가 생기면 추가 조치가 필요하다. 기존 로그는 수정하지 않는다.

@@ -7,6 +7,7 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=%h/submissions/26520057/week-07
 EnvironmentFile=%h/submissions/26520057/week-07/.market/server.env
+ExecStartPre=%h/submissions/26520057/week-07/runtime/claude/node_modules/.bin/claude --version
 ExecStart=%h/submissions/26520057/week-07/runtime/venv/bin/python -u runtime/market_kit.py join --dir . --market https://market.ourolabs.ai --name cheapest-in-town --deployed https://cheapest-in-town-26520057.cheapest-in-town-worker.workers.dev
 Restart=always
 RestartSec=15
