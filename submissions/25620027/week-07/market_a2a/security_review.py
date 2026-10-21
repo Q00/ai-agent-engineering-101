@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, TypedDict
 
 from market_a2a.memory import Review, Trade
+from market_a2a.models import FrozenModel
 from market_a2a.security import operator_directive_observed
 
 if TYPE_CHECKING:
-    from pydantic import JsonValue
+    from market_a2a.market_decision import PublicReview
 
 INJECTION_WARNING: Final = (
     "Observed a prompt-injection attempt in the seller response: "
@@ -19,7 +20,27 @@ INJECTION_WARNING: Final = (
 )
 
 
-def public_review_signals(review: Review) -> dict[str, JsonValue]:
+class PublicReviewSignals(TypedDict):
+    """Unverified reviewer claims; no field independently establishes seller facts."""
+
+    stars: int
+    reviewer_reports_overcharge: bool
+    reviewer_reports_no_deal: bool
+    authority_directive_in_review: bool
+    reviewer_reports_matched_receipt: bool
+
+
+class SelectionReview(FrozenModel):
+    """Rating-free claims at the selection boundary, not independent review votes."""
+
+    round: int
+    reviewer_reports_overcharge: bool
+    reviewer_reports_no_deal: bool
+    authority_directive_in_review: bool
+    reviewer_reports_matched_receipt: bool
+
+
+def public_review_signals(review: Review) -> PublicReviewSignals:
     """Summarize unverified reviewer claims without forwarding their instructions."""
     text = review.review[:4000].casefold()
     return {
@@ -37,7 +58,33 @@ def public_review_signals(review: Review) -> dict[str, JsonValue]:
             )
         ),
         "authority_directive_in_review": operator_directive_observed(text),
+        "reviewer_reports_matched_receipt": bool(
+            re.search(r"\breceipt\s+(?:matched|matches)\b", text)
+        ),
     }
+
+
+def selection_review_evidence(
+    reviews: tuple[PublicReview, ...],
+) -> tuple[SelectionReview, ...]:
+    """Collapse bounded same-round claims without inferring independent authors."""
+    evidence: list[SelectionReview] = []
+    seen: set[SelectionReview] = set()
+    for review in reviews[:10]:
+        signals = public_review_signals(review)
+        entry = SelectionReview(
+            round=review.round,
+            reviewer_reports_overcharge=signals["reviewer_reports_overcharge"],
+            reviewer_reports_no_deal=signals["reviewer_reports_no_deal"],
+            authority_directive_in_review=signals["authority_directive_in_review"],
+            reviewer_reports_matched_receipt=signals[
+                "reviewer_reports_matched_receipt"
+            ],
+        )
+        if entry not in seen:
+            seen.add(entry)
+            evidence.append(entry)
+    return tuple(evidence)
 
 
 def incident_review(trade: Trade) -> Review:
