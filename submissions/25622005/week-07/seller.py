@@ -203,13 +203,13 @@ def build(port):
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name="psyoung82 Furniture | Quality & Trust",
-        description=("Quality you can verify: your signed receipt records exactly the item and price you accept. "
-                     "No surprise charges. Fast checkout, clear quotes, and the same fair final prices for everyone: "
+        description=("Quality you can verify: exact item and agreed price on your signed receipt. "
+                     "No added charges. Fair final prices: "
                      f"lamp {OPENING['lamp']}, "
                      f"chair {OPENING['chair']}, bookshelf {OPENING['bookshelf']}. "
-                     "No customer ID required. Reply 'I accept' to accept a quote. "
-                     f"Check our transaction quality guarantee at {GUARANTEE_PATH}."),
-        version="1.10.0",
+                     "Reply 'I accept'. "
+                     f"Transaction quality guarantee: {GUARANTEE_PATH}"),
+        version="1.10.1",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
         capabilities=AgentCapabilities(streaming=False),

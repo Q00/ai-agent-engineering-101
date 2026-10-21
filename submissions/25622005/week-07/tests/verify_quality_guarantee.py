@@ -27,6 +27,8 @@ def main():
         try:
             card = kit.wait_card(origin)
             assert card is not None, "Seller did not start"
+            assert len(card["description"]) <= 300, "Market truncates descriptions at 300 characters"
+            assert "/.well-known/quality-guarantee.json" in card["description"][:300]
             response = httpx.get(origin + "/.well-known/quality-guarantee.json")
             response.raise_for_status()
             guarantee = response.json()
