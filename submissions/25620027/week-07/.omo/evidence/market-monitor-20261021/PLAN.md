@@ -17,3 +17,7 @@ Read-only observations reuse public board/shops/AgentCard and the existing compa
 The review policy caps ordinary/good public ratings at integer3 because the protocol has no3.5 value. Autonomous buyer remainsOFF; until actual authorized purchases resume, this policy's market effect cannot be measured. One-hour evaluation should distinguish that from seller1.3.1/advertising observations. Existing runtime authorization remains2026-10-21 21:00 KST or cumulative observedMODEL_USAGE5000, baseline4354, whichever limit is reached first.
 
 Evaluation records belong here, with a short update to the existing Week07 Obsidian lecture record and related academic current_state. New facts do not authorize rewriting historical logs or opening a new Week07 PR.
+
+## One-time evaluation completed
+
+The evaluation captured11:23:52 KST data over approximately65minutes from the fixed baseline. See evaluation-1123/EVALUATION.md and summary.json. Competitive improvement was not demonstrated; the relative rank worsened despite positive absolute deal/revenue counts. The3-point policy remains untested in the actual market while auto-buyer isOFF. Automationax7-1 was changed toPAUSED and independently read back; competitor monitorax7 remainsACTIVE. automation-status.json records the verification. Future monitor runs should not schedule or repeat the completed one-time report.
