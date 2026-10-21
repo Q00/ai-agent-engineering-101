@@ -176,7 +176,8 @@ PROMO_ASK = 1.05  # opening ask during the promo
 # and under the list the opening ask follows demand: the list price when buyers keep coming,
 # down to the reserve when the shop is quiet. Rank counts deals, so the list is the ceiling.
 LIST = 1.05                   # list price over the reserve, shown on the card; no ask is above it
-BUSY, QUIET = 30, 5           # visits in the last DEMAND_WINDOW s: at BUSY open at the list, at QUIET at the reserve
+BUSY = int(os.environ.get("SHOP_BUSY", "30"))  # visits in the last DEMAND_WINDOW s that open at the list;
+QUIET = 5                     # at QUIET or fewer open at the reserve; a huge SHOP_BUSY keeps every opening near the reserve
 DEMAND_WINDOW = 600
 _visits = deque()             # time of each first message
 # Fair-price mode in the market, from 264 market reviews: shown ratings come from deals,
