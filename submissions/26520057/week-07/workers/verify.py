@@ -62,3 +62,11 @@ for text in ['I offer 260.5.', 'I offer -260.']:
     t=send('I want a bookshelf'); t=send(text,t['id'])
     assert t['status']['state']=='TASK_STATE_INPUT_REQUIRED', (text,t)
 print('PASS sentence-ending punctuation; fractional and negative offers rejected')
+
+for text in ['I accept 260.', 'I accept the price of 260.', "I'll take it at 260 credits.", 'I accept your price.']:
+    t=send('I want a bookshelf'); assert t['metadata']['ask']==260
+    t=send(text,t['id']);assert t['status']['state']=='TASK_STATE_COMPLETED',(text,t)
+for text in ['I accept 200.', 'I do not accept', 'I accept if you reduce it']:
+    t=send('I want a bookshelf'); t=send(text,t['id'])
+    assert t['status']['state']=='TASK_STATE_INPUT_REQUIRED',(text,t)
+print('PASS expanded acceptance, task quote metadata, and low/conditional offer guards')

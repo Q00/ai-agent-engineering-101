@@ -56,3 +56,10 @@ Grand Furniture를 실제 방문한 기록(ledger #4998)은 있다. chair 호가
 ## 8. 제출 직전 추가 진단 — 미해결
 
 추가 공개 ledger 조회에서 15:52~16:00에도 `11im`의 책장 구매가 충분한 예산에도 8회 제안 후 실패한 사례를 확인했다. 따라서 문장 끝 마침표 수정과 직접 계약 검사 통과만으로 실전 거래 문제가 해결됐다고 주장하지 않는다. 실시간 로그를 45초, 55초 관찰했으나 해당 구간에 실제 협상 입력은 잡히지 않았고 두 번째 관찰에는 요청 이벤트 2개만 있었다. `logs/workers/live-negotiation-diagnosis*.json`에 관찰 범위를 남겼다. 다음에는 실패 task의 입력 표현과 상태 전이를 함께 확보해 원인을 확인해야 한다.
+
+
+## 9. 수락 표현 호환성 보완
+
+추가로 기존 파서는 `I accept 260.`, `I accept your price.`, `I'll take it at 260 credits.` 같은 명시적인 수락을 처리하지 못했다. `workers/purchase_intent.js`로 제안 해석을 분리하고 문장형 수락·명시적 구조화 offer를 지원했다. `I accept 200.`은 명시 가격 200으로 판단하므로 책장 하한 260을 우회하지 않는다. 조건부 수락·부정·예산이나 주문번호만 있는 문장은 결제로 취급하지 않는다.
+
+최종 역제안에는 final price와 Counteroffer 숫자를 넣고, 메시지와 task 양쪽에 metadata.ask를 제공한다. 단위 검사와 로컬/공개 계약 검사가 통과했다(`logs/workers/purchase-intent-unit.log`, `acceptance-*-verification.log`). 이 역시 과거 실패 7건의 입력 원문을 복구한 것은 아니며, 실전 매출 회복 여부와 구분한다. 확인용 자체 요청은 시장 주문·거래량을 만들지 않는다.
