@@ -1,0 +1,311 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+  "started": "2026-10-17T05:35:04+00:00",
+  "harness": "Claude Code: claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence (run in an empty temp dir)",
+  "seller_cmd": "python seller.py --port {port}",
+  "buyer_cmd": "python buyer.py --url {url} --item {item} --budget {budget}",
+  "seller_card": {
+    "name": "Haiku Furniture Shop",
+    "description": "Sells furniture from a catalog of about 3000 items. A model negotiates the price.",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:51775/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Negotiate a purchase",
+        "description": "Ask for an item by name or describe what you need, then send a price. The shop answers with a counteroffer (metadata 'ask'; also the last number in short mode), a receipt artifact, or a rejection.",
+        "tags": [
+          "shopping",
+          "negotiation"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "something wooden to keep about 40 books, not taller than my desk",
+          "90"
+        ]
+      },
+      {
+        "id": "bed-frame",
+        "name": "Sell bed frame",
+        "description": "176 bed frame items in bamboo, birch, fabric, metal, oak, pine, walnut.",
+        "tags": [
+          "bed frame"
+        ]
+      },
+      {
+        "id": "bookshelf",
+        "name": "Sell bookshelf",
+        "description": "177 bookshelf items in bamboo, birch, metal, oak, particleboard, pine, walnut.",
+        "tags": [
+          "bookshelf"
+        ]
+      },
+      {
+        "id": "coat-rack",
+        "name": "Sell coat rack",
+        "description": "176 coat rack items in bamboo, birch, metal, oak, pine, walnut.",
+        "tags": [
+          "coat rack"
+        ]
+      },
+      {
+        "id": "coffee-table",
+        "name": "Sell coffee table",
+        "description": "176 coffee table items in bamboo, birch, glass, marble, metal, oak, pine, walnut.",
+        "tags": [
+          "coffee table"
+        ]
+      },
+      {
+        "id": "desk",
+        "name": "Sell desk",
+        "description": "176 desk items in bamboo, birch, glass, metal, oak, particleboard, pine, walnut.",
+        "tags": [
+          "desk"
+        ]
+      },
+      {
+        "id": "desk-lamp",
+        "name": "Sell desk lamp",
+        "description": "177 desk lamp items in bamboo, ceramic, glass, metal, oak, plastic.",
+        "tags": [
+          "desk lamp"
+        ]
+      },
+      {
+        "id": "dining-chair",
+        "name": "Sell dining chair",
+        "description": "177 dining chair items in fabric, leather, mesh, metal, oak, pine, plastic.",
+        "tags": [
+          "dining chair"
+        ]
+      },
+      {
+        "id": "floor-lamp",
+        "name": "Sell floor lamp",
+        "description": "176 floor lamp items in bamboo, ceramic, glass, metal, oak, plastic.",
+        "tags": [
+          "floor lamp"
+        ]
+      },
+      {
+        "id": "mirror",
+        "name": "Sell mirror",
+        "description": "176 mirror items in frameless, metal, oak, rattan.",
+        "tags": [
+          "mirror"
+        ]
+      },
+      {
+        "id": "office-chair",
+        "name": "Sell office chair",
+        "description": "176 office chair items in fabric, leather, mesh, metal, oak, pine, plastic.",
+        "tags": [
+          "office chair"
+        ]
+      },
+      {
+        "id": "plant-stand",
+        "name": "Sell plant stand",
+        "description": "176 plant stand items in bamboo, birch, ceramic, metal, oak, pine, walnut.",
+        "tags": [
+          "plant stand"
+        ]
+      },
+      {
+        "id": "rug",
+        "name": "Sell rug",
+        "description": "176 rug items in cotton, jute, silk, synthetic, wool.",
+        "tags": [
+          "rug"
+        ]
+      },
+      {
+        "id": "shoe-cabinet",
+        "name": "Sell shoe cabinet",
+        "description": "176 shoe cabinet items in bamboo, birch, metal, oak, particleboard, pine, walnut.",
+        "tags": [
+          "shoe cabinet"
+        ]
+      },
+      {
+        "id": "side-table",
+        "name": "Sell side table",
+        "description": "176 side table items in bamboo, birch, glass, marble, metal, oak, pine, walnut.",
+        "tags": [
+          "side table"
+        ]
+      },
+      {
+        "id": "sofa",
+        "name": "Sell sofa",
+        "description": "176 sofa items in fabric, leather, linen, velvet.",
+        "tags": [
+          "sofa"
+        ]
+      },
+      {
+        "id": "stool",
+        "name": "Sell stool",
+        "description": "176 stool items in fabric, leather, mesh, metal, oak, pine, plastic.",
+        "tags": [
+          "stool"
+        ]
+      },
+      {
+        "id": "wardrobe",
+        "name": "Sell wardrobe",
+        "description": "176 wardrobe items in bamboo, birch, oak, particleboard, pine, walnut.",
+        "tags": [
+          "wardrobe"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name='Haiku Furniture Shop' binding=JSONRPC version=1.0 skills=18"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 130"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [130, 115]"
+    },
+    {
+      "test": "seller_terminal",
+      "run": 1,
+      "pass": true,
+      "detail": "error returned"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [130, 115]"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [130, 120]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [320, 300, 280, 270, 260, 260, 260, 260, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [320, 290, 275, 265, 260, 260, 260, 260, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [325, 260, 260, 260, 260, 260, 260, 260, 260]"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [105] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
+    }
+  ],
+  "passed": true
+}

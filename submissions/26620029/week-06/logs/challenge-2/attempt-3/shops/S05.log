@@ -1,0 +1,17 @@
+Door & Hall: 415 items, port 38573, chatty=False
+[seller 789a22a2] <- 'a wooden bookshelf for about 60 books'
+[seller 0eb68970] <- 'a shoe cabinet for at least 20 pairs of shoes'
+[seller 789a22a2] call 2 (9.3s) -> '{"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "books", "about 60"]}'
+[seller 789a22a2] query {"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "books", "about 60"]} -> 8 candidates
+[seller 0eb68970] call 3 (9.4s) -> '{"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "shoe rack", "entryway"]}'
+[seller 0eb68970] query {"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "shoe rack", "entryway"]} -> 8 candidates
+[seller 0eb68970] call 4 (8.4s) -> '{"sku": "SHO-10007", "price": 98, "say": "This grey particleboard cabinet holds exactly 20 pairs, which meets your requirement at our most economical price point."}'
+[seller 0eb68970] -> item SHO-10007 (search+pick), reserve 77, open ask 98
+[seller 789a22a2] call 4 (8.6s) -> '{"sku": "BOO-00092", "price": 225, "say": "Our white pine bookshelf holds your collection well and is made of solid wood."}'
+[seller 789a22a2] -> item BOO-00092 (search+pick), reserve 152, open ask 225
+[seller 0eb68970] <- '75'
+[seller 0eb68970] call 5 (5.7s) -> '{"buyer_offer": 75, "action": "counter", "price": 86, "say": "I can\'t go as low as that, but I can meet you partway on the shoe cabinet at a price that still reflects its quality."}'
+[seller 0eb68970] -> counter 86
+[seller 0eb68970] <- '80'
+[seller 0eb68970] call 6 (4.3s) -> '{"buyer_offer": 80, "action": "accept", "price": 80, "say": "Thank you, we have a deal on the shoe cabinet at that price."}'
+[deal] Door & Hall | SHO-10007 | 80 | task 0eb68970-797d-4df3-a8bb-0c38b4e91a1c
