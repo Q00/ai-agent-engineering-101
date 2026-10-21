@@ -1,4 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
+import { purchaseIntent } from './purchase_intent.js';
 const FLOORS = { lamp: 100, chair: 180, bookshelf: 260 };
 const NAME = 'Cheapest in Town';
 // Fictional merchandise lore for the course's simulated market, not provenance certificates.
@@ -16,7 +17,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/.well-known/agent-card.json') {
       return json({name: NAME, description: 'Fictional artisan collection: Murano glass lamp 100, Hida beech chair 180, Black Forest spruce bookshelf 260 credits. High-end character, fixed floor prices, zero added fees. Item plus an eligible offer closes in one reply with a signed receipt. Craft and origin stories are simulated product lore.',
-        version: '1.2.0', supportedInterfaces: [{url: url.origin + '/', protocolBinding: 'JSONRPC', protocolVersion: '1.0'}],
+        version: '1.3.0', supportedInterfaces: [{url: url.origin + '/', protocolBinding: 'JSONRPC', protocolVersion: '1.0'}],
         defaultInputModes: ['text/plain'], defaultOutputModes: ['application/json', 'text/plain'], capabilities: {streaming: false},
         skills: [{id: 'negotiate', name: 'Negotiate a purchase', description: 'Send buy lamp for 100, buy chair for 180, or buy bookshelf for 260. Or request a quote and reply I accept. Offers above the fixed price still pay only the fixed price.', tags: ['shopping', 'negotiation'], examples: ['I want to buy a lamp', '100']}]});
     }
@@ -64,20 +65,12 @@ export class Shop extends DurableObject {
     if (method === 'GetTask') return record.task;
     if (record && record.task.status.state !== 'TASK_STATE_INPUT_REQUIRED') fault(-32002,'Task is already finished');
     const setStatus = (state, text) => {
+      record.task.metadata = record.item ? {ask:FLOORS[record.item]} : {};
       record.task.status = {state, timestamp:new Date().toISOString(), message:{role:'ROLE_AGENT', messageId:crypto.randomUUID(), taskId:record.task.id, contextId:record.task.contextId, parts:[{text}], metadata:record.item ? {ask:FLOORS[record.item]} : {}}};
     };
     const text = (msg?.parts || []).map(p => p.text || '').join(' ');
-    const offerIn = (value) => {
-      // Parse only a complete numeric reply or an explicit purchase offer.
-      // Do not mistake a rating, order ID, quantity, or negative price for payment.
-      const raw = value.trim();
-      const match = raw.match(/^([+-]?\d+(?:\.\d+)?)\s*(?:credits)?[.!]?$/i)
-        || raw.match(/\b(?:offer|pay|for|price(?: is)?)\s*:?\s*([+-]?\d+(?:\.\d+)?)(?!\d|\.\d)/i);
-      if (!match) return null;
-      const n = Number(match[1]);
-      return Number.isSafeInteger(n) ? n : null;
-    };
-    console.log('[negotiation]', JSON.stringify({task:id || null, text:text.slice(0,350), parsedOffer:offerIn(text)}));
+    const intent = purchaseIntent(text, msg?.parts || []);
+    console.log('[negotiation]', JSON.stringify({task:id || null, text:text.slice(0,350), ...intent}));
     const finish = async () => {
       const price = FLOORS[record.item];
       const receipt = await this.sign({shop:NAME,item:record.item,price,task:record.task.id});
@@ -93,19 +86,19 @@ export class Shop extends DurableObject {
       if (!record.item) setStatus('TASK_STATE_REJECTED','We sell lamp, chair and bookshelf.');
       else {
         record.ask = FLOORS[record.item];
-        const offer = offerIn(text);
+        const offer = intent.offer;
         if (offer !== null && offer >= record.ask) await finish();
         else setStatus('TASK_STATE_INPUT_REQUIRED',`${STORIES[record.item]} ${PITCH} ${record.item}: fixed price ${record.ask}. Reply I accept or offer at least this price. Price: ${record.ask}`);
       }
     } else {
       const floor = FLOORS[record.item];
       record.ask = floor;
-      const offer = offerIn(text);
-      const accepts = /^(?:i accept|accept|ok|okay|yes|deal|agreed)[.!]?$/i.test(text.trim());
+      const offer = intent.offer;
+      const accepts = intent.accept;
       if (accepts || (offer !== null && offer >= floor)) await finish();
       else {
         record.counters = (record.counters || 0) + 1;
-        setStatus('TASK_STATE_INPUT_REQUIRED',`${STORIES[record.item]} ${PITCH} This is our minimum for ${record.item}; there is no lower review-only or repeat-customer price. Reply I accept to buy. Price: ${floor}`);
+        setStatus('TASK_STATE_INPUT_REQUIRED',`${STORIES[record.item]} ${PITCH} This is my final price for ${record.item}; no further discount is possible. Reply with ${floor} or I accept to complete the purchase. Counteroffer: ${floor}`);
       }
     }
     await storage.put('task:' + record.task.id,record);
