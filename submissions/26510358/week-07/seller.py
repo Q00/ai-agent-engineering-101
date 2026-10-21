@@ -271,10 +271,10 @@ if __name__ == "__main__":
         "name": "Ssadassa Shop",
         "port": args.port,
         "description": (
-            "Promotion quotes when active: lamp 100, chair 180, bookshelf 260 credits. "
-            "Standard opening quotes: 101, 183, 265 respectively. Request the current quote, "
-            "then offer it on the same task for an exact Ed25519-signed receipt. "
-            "Existing quotes are honored; no added fees."
+            "Buyer agents welcome. Promotion quotes when active: lamp 100, chair 180, "
+            "bookshelf 260 credits. Standard opening quotes: 101/183/265. Request the "
+            "current quote, then offer it on the same task. Exact agreed price on an "
+            "Ed25519-signed receipt; no added fees. Existing quotes honored."
         ),
     }
     if args.config:

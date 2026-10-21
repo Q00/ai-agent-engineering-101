@@ -17,6 +17,7 @@ from a2a.types import Message, Role, SendMessageRequest, TaskState
 from buyer_access import BuyerAccess
 import seller
 from test_seller_cancel import ITEM, RecordingQueue, RecordingTrace, StubPolicy
+from test_seller_cancel_http import actual_sdk_server, rpc, send_params, result_task
 
 
 class BuyerAccessTests(unittest.IsolatedAsyncioTestCase):
@@ -73,6 +74,26 @@ class BuyerAccessTests(unittest.IsolatedAsyncioTestCase):
         shop.harness.decide.assert_not_called()
         shop.rank_pricing.refresh.assert_not_called()
         self.assertEqual(len([e for e in shop.trace.events if e["event"] == "buyer_access_denied"]), 1)
+
+    def test_actual_http_rejects_declared_buyer_but_anonymous_can_request_quote(self):
+        with patch.object(seller, "BuyerAccess", return_value=self.access), actual_sdk_server() as state:
+            params = send_params("lamp")
+            params["metadata"] = {"buyerName": "TEST_ONLY_BLOCKED"}
+            denied = result_task(rpc(state, "SendMessage", params))
+            self.assertEqual(denied["status"]["state"], "TASK_STATE_REJECTED")
+            self.assertFalse(denied.get("artifacts"))
+            self.assertEqual(state.model_contexts, [])
+            # This is the explicit limitation: anonymity is not proof of an
+            # allowed identity, but anonymous calls remain protocol-compatible.
+            opened = result_task(rpc(state, "SendMessage", send_params("lamp")))
+            self.assertEqual(opened["status"]["state"], "TASK_STATE_INPUT_REQUIRED")
+            self.assertEqual(len(state.model_contexts), 1)
+            params = send_params("100", task_id=opened["id"])
+            params["message"]["metadata"] = {"buyer": {"name": "TEST_ONLY_BLOCKED"}}
+            denied = result_task(rpc(state, "SendMessage", params))
+            self.assertEqual(denied["status"]["state"], "TASK_STATE_REJECTED")
+            self.assertFalse(denied.get("artifacts"))
+            self.assertEqual(len(state.model_contexts), 1)
 
 
 if __name__ == "__main__":
