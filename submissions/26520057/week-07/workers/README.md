@@ -1,3 +1,5 @@
+> 현재 실제 가게는 연구실 서버의 GPT-5.4 mini로 이전했다. 아래 Workers 배포 내용은 이전 실험 기록이며, 현재 운영은 `../server/README.md`를 따른다. `shop_core.js`, `ai_intent.js`, `openai.js`는 Node 서버와 공유한다.
+
 # Cloudflare Workers 가게
 
 Workers AI가 모든 구매 메시지를 해석하고 JavaScript가 결제 조건을 검증한다. 모델은 `@cf/meta/llama-3.1-8b-instruct-fp8`, 연결은 wrangler의 `AI` binding이다.
