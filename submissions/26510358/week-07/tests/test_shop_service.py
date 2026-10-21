@@ -3,6 +3,7 @@ import asyncio
 import json
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 import unittest
 from unittest.mock import AsyncMock, patch
 
@@ -21,7 +22,8 @@ class ShopServiceTests(unittest.IsolatedAsyncioTestCase):
         self.block_opening = False
         self.fail_upstream = False
         self.service = ShopService('https://stable.example')
-        self.one, self.two = Generation(1, 'http://127.0.0.1:1111'), Generation(2, 'http://127.0.0.1:2222')
+        self.one = Generation(1, 'http://127.0.0.1:1111', SimpleNamespace(pid=1111, returncode=None))
+        self.two = Generation(2, 'http://127.0.0.1:2222', SimpleNamespace(pid=2222, returncode=None))
         self.service.generations = [self.one]
         self.service.active = self.one
 
