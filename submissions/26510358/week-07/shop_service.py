@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-from contextlib import asynccontextmanager
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
@@ -272,9 +272,6 @@ async def serve(args):
             for generation in service.generations:
                 await service.stop_generation(generation)
             control_socket.unlink(missing_ok=True)
-
-
-from contextlib import contextmanager
 
 
 @contextmanager

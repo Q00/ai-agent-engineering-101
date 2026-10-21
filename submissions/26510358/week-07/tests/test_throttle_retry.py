@@ -65,5 +65,37 @@ class ThrottleRetryTests(unittest.TestCase):
         self.assertEqual(len(self.run_fake_cli(time.monotonic() + 4)), 1)
 
 
+class ProviderRecoveryTests(unittest.TestCase):
+    def test_recovery_serializes_roles_and_releases_after_completion(self):
+        from concurrent.futures import ThreadPoolExecutor
+        import threading
+        from inference_pool import pool_slot
+        from inference_queue import QueueTimeout
+        entered, release = threading.Event(), threading.Event()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            # A 429 with zero retry delay still activates the recovery gate.
+            defer_pool(0, directory=root)
+            def seller_probe():
+                with pool_slot('seller', directory=root):
+                    entered.set()
+                    release.wait(2)
+            with ThreadPoolExecutor(max_workers=1) as workers:
+                future = workers.submit(seller_probe)
+                self.assertTrue(entered.wait(1))
+                try:
+                    # Buyer has its own role lane; only recovery serializes it.
+                    with self.assertRaises(QueueTimeout):
+                        with pool_slot('buyer', directory=root, deadline=time.monotonic()+0.08):
+                            self.fail('Provider recovery must not start parallel requests')
+                finally:
+                    release.set()
+                future.result(timeout=2)
+            # Explicitly mark the test recovery window expired (no production override).
+            (root/'throttled-at').write_text(str(time.time()-61))
+            with pool_slot('buyer', directory=root, deadline=time.monotonic()+0.1):
+                pass
+
+
 if __name__ == '__main__':
     unittest.main()

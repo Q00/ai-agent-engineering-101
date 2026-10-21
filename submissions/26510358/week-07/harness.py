@@ -544,8 +544,16 @@ class Harness:
                             stdout, stderr = process.communicate()
                         self.trace.write("harness_timeout", attempt=attempt, seconds=remaining,
                                          stdout=stdout, stderr=stderr)
+                        if "429" in stderr or "Too Many Requests" in stderr:
+                            defer_pool(throttle_delay(stderr, attempt))
                         feedback.append("Harness timeout; return a concise decision promptly")
                         continue
+                    pause = None
+                    if process.returncode and ("429" in stderr or "Too Many Requests" in stderr):
+                        pause = throttle_delay(stderr, attempt)
+                        # Publish before releasing the recovery gate, so the next
+                        # caller observes the provider delay before issuing a request.
+                        defer_pool(pause)
                 self.trace.directory.joinpath(f"{self.trace.role}-{self.trace.run_id}-{uuid_token()}.stdout.txt").write_text(stdout)
                 self.trace.directory.joinpath(f"{self.trace.role}-{self.trace.run_id}-{uuid_token()}.stderr.txt").write_text(stderr)
                 self.trace.write("harness_exit", code=process.returncode,
@@ -554,11 +562,9 @@ class Harness:
                                  inference_seconds=round(time.monotonic() - admitted, 3))
                 try:
                     if process.returncode:
-                        if "429" in stderr or "Too Many Requests" in stderr:
-                            pause = throttle_delay(stderr, attempt)
+                        if pause is not None:
                             # Publish once and let admission wait on the shared clock.
                             # Sleeping here too made each caller manage its own wait.
-                            defer_pool(pause)
                             self.trace.write("rate_limit_backoff", seconds=pause, shared=True)
                             if deadline and deadline - time.monotonic() <= pause + 2:
                                 raise HarnessThrottleError("Provider retry delay exceeds remaining inference deadline")
