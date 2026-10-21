@@ -1,0 +1,13 @@
+{
+  "harness": "Claude Code (claude -p), model haiku",
+  "seller": {
+    "cmd": "python seller_agent.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "python buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"
+  },
+  "deployed": "https://cheapest-in-town-26520057.cheapest-in-town-worker.workers.dev"
+}

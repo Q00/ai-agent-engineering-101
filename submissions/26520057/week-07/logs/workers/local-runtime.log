@@ -1,0 +1,60 @@
+(node:38551) ExperimentalWarning: Support for loading ES Module in require() is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ ⛅️ wrangler 4.151.3
+────────────────────
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+Using secrets defined in .dev.vars
+Your Worker has access to the following bindings:
+Binding                                                                Resource                  Mode
+env.SHOP (Shop)                                                        Durable Object            local
+env.INITIAL_STATE ("{"lamp": 125, "chair": 209, "bookshel...")         Environment Variable      local
+env.SHOP_PRIVATE_KEY ("(hidden)")                                      Environment Variable      local
+
+⎔ Starting local server...
+[wrangler:info] Ready on http://localhost:8988
+Wrangler detected this dev session is running in an AI agent.
+The Local Explorer API is available at http://localhost:8988/cdn-cgi/local/explorer/api
+Useful routes:
+  GET http://localhost:8988/cdn-cgi/local/explorer/api/local/workers - local Workers and bindings
+  POST http://localhost:8988/cdn-cgi/local/explorer/api/local/scheduled?worker=<name> - invoke a Worker's scheduled handler; cron is required (see the OpenAPI schema for the full request)
+  GET http://localhost:8988/cdn-cgi/local/explorer/api/storage/kv/namespaces - KV namespaces
+  GET http://localhost:8988/cdn-cgi/local/explorer/api/d1/database - D1 databases
+  GET http://localhost:8988/cdn-cgi/local/explorer/api/r2/buckets - R2 buckets
+  GET http://localhost:8988/cdn-cgi/local/explorer/api/workers/durable_objects/namespaces - Durable Object namespaces
+  GET http://localhost:8988/cdn-cgi/local/explorer/api/workflows - Workflows
+  POST http://localhost:8988/cdn-cgi/local/explorer/api/local/observability/query - run a read-only SQL query (SELECT/WITH only) over captured request traces and console logs. Tables: spans, logs (read attributes via json(attributes)). Example:
+    curl -X POST http://localhost:8988/cdn-cgi/local/explorer/api/local/observability/query -H 'Content-Type: application/json' -d '{"sql":"SELECT service, name, outcome, duration_ms FROM spans WHERE parent_id IS NULL LIMIT 20"}'
+  POST http://localhost:8988/cdn-cgi/local/explorer/api/local/observability/clear - clear all captured traces and logs
+If the routes above don't cover what you need, fetch the full OpenAPI schema (large - use only as a last resort):
+  GET http://localhost:8988/cdn-cgi/local/explorer/api - OpenAPI schema
+[wrangler:info] GET /.well-known/agent-card.json 200 OK (16ms)
+[wrangler:info] POST / 200 OK (8ms)
+[wrangler:info] POST / 200 OK (3ms)
+[wrangler:info] POST / 200 OK (4ms)
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mRPC failure -32002 Task is already finished[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mRPC failure -32002 Task is already finished[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mRPC failure -32002 Task is already finished[0m
+
+
+[price] bookshelf 293 273
+[wrangler:info] POST / 200 OK (4ms)
+[wrangler:info] POST / 200 OK (2ms)
+[wrangler:info] POST / 200 OK (2ms)
+[wrangler:info] POST / 200 OK (2ms)
+[wrangler:info] POST / 200 OK (2ms)
+[wrangler:info] POST / 200 OK (2ms)
+[wrangler:info] POST / 200 OK (2ms)
+[wrangler:info] POST / 200 OK (1ms)
+[wrangler:info] POST / 200 OK (4ms)
+[wrangler:info] POST / 200 OK (3ms)
+[wrangler:info] POST / 200 OK (3ms)
+[wrangler:info] POST / 200 OK (2ms)
+[wrangler:info] POST / 200 OK (4ms)
+[wrangler:info] POST / 200 OK (3ms)
+🪵  Logs were written to "/Users/yudana/Library/Preferences/.wrangler/logs/wrangler-2026-10-21_05-53-25_046.log"

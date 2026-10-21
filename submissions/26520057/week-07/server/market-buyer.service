@@ -1,0 +1,21 @@
+[Unit]
+Description=Week 07 market buyer for cheapest-in-town
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/submissions/26520057/week-07
+EnvironmentFile=%h/submissions/26520057/week-07/.market/server.env
+ExecStartPre=%h/submissions/26520057/week-07/runtime/claude/node_modules/.bin/claude --version
+ExecStart=%h/submissions/26520057/week-07/runtime/venv/bin/python -u runtime/market_kit.py join --dir . --market https://market.ourolabs.ai --name cheapest-in-town --deployed https://cheapest-in-town-26520057.cheapest-in-town-worker.workers.dev
+Restart=always
+RestartSec=15
+KillSignal=SIGINT
+TimeoutStopSec=30
+UMask=0077
+StandardOutput=append:%h/submissions/26520057/week-07/logs/server-console.log
+StandardError=append:%h/submissions/26520057/week-07/logs/server-console.log
+
+[Install]
+WantedBy=default.target
