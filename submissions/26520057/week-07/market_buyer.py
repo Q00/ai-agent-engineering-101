@@ -189,9 +189,9 @@ REFERENCE_PRICES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 def experimental_offer(item, budget, draw):
     """Occasional high offer, bounded by budget; reference is our own listed price."""
     reference = REFERENCE_PRICES.get(item)
-    if reference is None or budget <= reference or draw >= EXPERIMENT_RATE:
+    if reference is None or budget < reference + 20 or draw >= EXPERIMENT_RATE:
         return None
-    return min(budget, round(reference * 1.25))
+    return reference + 20
 
 
 def experimental_review(receipt, offers, proposed, item, budget):
