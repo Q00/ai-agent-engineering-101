@@ -127,11 +127,28 @@ market observations and never enter the live database.
 
 ### Pricing data tool boundary
 
-`PricingRecorder` is the Python tool for transaction data: Seller calls named
-recording methods, reconciliation calls ledger-observation methods, and the
-report calls read-only methods including `ledger_timing_rows()`. Only
-`pricing.py` contains production SQLite queries. The negotiation model does
-not execute SQL or invoke this tool; the isolated Codex harness currently
-instructs it not to call tools. Recording, matching and aggregation remain
-deterministic Python operations, while the model continues to decide only
-negotiation actions. This boundary does not change the live price policy.
+`PricingRecorder` is the Python boundary for transaction data: Seller calls
+named recording methods, reconciliation calls ledger-observation methods, and
+the report calls read-only methods. Only `pricing.py` contains production SQLite
+queries. The model cannot submit SQL.
+
+`pricing_tool.py` exposes one read-only MCP function, `get_price_stats(item)`,
+with `lamp`, `chair`, and `bookshelf` as the only inputs. It opens the SQLite
+database in read-only mode and returns small policy-level aggregates, keeping
+pending and unresolved outcomes visible. It returns no task IDs, raw trades,
+credentials, or SQL. The Codex CLI harness can connect this tool for **Seller
+opening decisions only** with `WEEK07_PRICING_STATS_TOOL=1`; the default is off.
+The database is selected by the operator's `PRICING_STATE_PATH`, never by the
+model. No extra API key is needed when using the signed-in Codex CLI. A tool
+call still adds the returned summary to the model context and consumes tokens.
+
+For an isolated opt-in check using a test database, run:
+
+```bash
+WEEK07_PRICING_STATS_TOOL=1 PRICING_STATE_PATH=/absolute/path/to/test.sqlite \
+  .venv/bin/python seller.py --port 9999
+```
+
+The running market Seller has **not** enabled this flag. The opt-in may affect
+the model's opening ask, although the same reserve guard and 1.12× cap remain
+in place. It is separate from the unstarted Low/Mid/High experiment.
