@@ -2,8 +2,9 @@
 
     python market_buyer.py --shops .market/shops.json --item lamp --budget 120
 
-Picking: refresh the public leaderboard for every order, restrict to its top three by share,
-then score eligible shops using reviews and my own past trades.
+Picking: refresh the public leaderboard for every order, restrict to live shops
+with strictly higher share than our shop, then choose uniformly at random.
+The isolated loopback catalog retains its review-based selection.
 The harness used to pick from those summaries (about 25 s per order); since 21:36 the code takes the best score
 directly so orders come faster (HARNESS_PICK). Clear quotes use a fast deterministic path;
 the harness handles unclear replies.
@@ -14,6 +15,7 @@ import argparse
 import json
 import os
 import re
+import random
 import time
 from urllib.parse import urlparse
 
@@ -70,7 +72,7 @@ def summary(shop, mine):
     return "\n".join(lines)
 
 
-def top_three_candidates(shops):
+def higher_share_candidates(shops):
     # An isolated local catalog has no public market ranking. Never mix it with live shops.
     if shops and all(urlparse(s["url"]).hostname in {"127.0.0.1", "localhost", "::1"} for s in shops):
         print("[catalog] isolated loopback catalog; use supplied reviews", flush=True)
@@ -81,18 +83,24 @@ def top_three_candidates(shops):
     board = response.json()
     if board["round"] != board["current"]:
         raise ValueError("Leaderboard is not the current round")
-    ranked = sorted(board["shops"],
-                    key=lambda s: (-s["share"], -s["deals"], -(s.get("stars") or 0), s["name"]))[:3]
-    top = {s["name"] for s in ranked if s.get("alive") is True}
-    eligible = [s for s in shops if s["name"] in top]
-    print("[top3] round " + str(board["round"]) + ": " +
-          ", ".join(s["name"] for s in ranked), flush=True)
+    own = next((s for s in board["shops"] if s["name"] == "cheapest-in-town"
+                and s.get("owner", {}).get("login") == "danayoou"), None)
+    if own is None:
+        raise ValueError("Our shop was not found in the current leaderboard")
+    higher = {s["name"] for s in board["shops"]
+              if s.get("alive") is True and s["share"] > own["share"]
+              and s["name"] != own["name"]}
+    eligible = list({s["name"]: s for s in shops if s["name"] in higher}.values())
+    print(f"[higher-share] round {board['round']}, own share {own['share']}, "
+          f"{len(eligible)} eligible: " + ", ".join(s["name"] for s in eligible), flush=True)
     if not eligible:
-        raise ValueError("No available top-three shops in the kit's candidate list")
+        raise ValueError("No available shops with strictly higher share than ours")
     return eligible
 
 
 def pick(shops, memory, item, budget):
+    if not all(urlparse(s["url"]).hostname in {"127.0.0.1", "localhost", "::1"} for s in shops):
+        return random.choice(shops), f"uniform random choice from {len(shops)} higher-share shops"
     by_name = {s["name"]: s for s in shops}
     mine = {n: [t for t in memory if t["shop"] == n] for n in by_name}
     best = max(shops, key=lambda s: score(s, mine[s["name"]]))
@@ -212,11 +220,11 @@ def main():
         shops = json.load(f)
     memory = load_memory()
     try:
-        candidates = top_three_candidates(shops)
+        candidates = higher_share_candidates(shops)
     except Exception as e:
-        print(f"[top3] skipped order: {type(e).__name__}: {e}", flush=True)
+        print(f"[higher-share] skipped order: {type(e).__name__}: {e}", flush=True)
         print(json.dumps({"shop": "", "receipt": None, "stars": 3,
-                          "review": "No purchase: current top-three eligibility could not be confirmed."}))
+                          "review": "No purchase: current higher-share eligibility could not be confirmed."}))
         return
     shop, reason = pick(candidates, memory, args.item, args.budget)
     print(f"[choose] {shop['name']} {shop['url']}: {reason}", flush=True)
