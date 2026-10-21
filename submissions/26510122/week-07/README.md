@@ -152,3 +152,25 @@ WEEK07_PRICING_STATS_TOOL=1 PRICING_STATE_PATH=/absolute/path/to/test.sqlite \
 The running market Seller has **not** enabled this flag. The opt-in may affect
 the model's opening ask, although the same reserve guard and 1.12× cap remain
 in place. It is separate from the unstarted Low/Mid/High experiment.
+
+### Agent Card draft for a later discovery experiment
+
+The default `WEEK07_CARD_VARIANT=baseline` preserves the current Card. A
+`transparent` variant is implemented but not enabled in the running market:
+
+```bash
+WEEK07_CARD_VARIANT=transparent .venv/bin/python seller.py --port 9999
+```
+
+It describes the actual protocol: negotiable asks, whole-number offers, and a
+signed receipt on completed deals. It makes no cheapest-price or guaranteed
+reliability claim. The shop name, A2A interface URL, protocol version,
+capabilities, and `negotiate` skill ID remain unchanged. Changing the flag for
+the market requires restarting the Seller/kit; do this only as a separate Card
+comparison after holding the price policy fixed.
+
+The market's `shops.json` contains name, URL, and reviews, not Card description
+or skills. Our own `market_buyer` chooses a shop from that list before its A2A
+buyer fetches the Card. A Card effect on shop selection requires evidence that
+other Buyers read Cards before choosing. Health checks and post-selection
+Card reads alone do not establish that exposure.

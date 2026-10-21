@@ -161,6 +161,9 @@ def build(port: int, profile: dict | None = None, catalog: Catalog | None = None
     profile = profile or {}
     name = profile.get("name", "Luna Shop")
     reserves = profile.get("reserve", RESERVES)
+    card_variant = os.environ.get("WEEK07_CARD_VARIANT", "baseline")
+    if card_variant not in {"baseline", "transparent"}:
+        raise ValueError("WEEK07_CARD_VARIANT must be baseline or transparent")
     description = profile.get("description", "Negotiates purchases of " + ", ".join(reserves) + ".")
     if catalog:
         description = f"Negotiates a catalog of {len(catalog.products)} furniture products from natural-language descriptions."
@@ -168,6 +171,19 @@ def build(port: int, profile: dict | None = None, catalog: Catalog | None = None
         "Describe the furniture you need; the shop selects a matching product, then negotiates a numeric offer."
         if catalog else "Ask for " + ", ".join(reserves) + "; continue with a numeric offer."
     )
+    skill_name = "Negotiate a purchase"
+    skill_tags = ["shopping", *reserves]
+    if card_variant == "transparent":
+        items = f"{len(catalog.products)} catalog-listed furniture products" if catalog else ", ".join(reserves)
+        description = (
+            f"Sells {items} with negotiable asking prices and signed receipts for completed deals."
+        )
+        skill_name = "Negotiate an item price"
+        skill_description = (
+            "Ask for an item, then send whole-number price offers. The shop may counter, "
+            "reject, or accept with a signed receipt."
+        )
+        skill_tags = ["shopping", "negotiation", "signed-receipt", *reserves]
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name=name,
@@ -177,9 +193,9 @@ def build(port: int, profile: dict | None = None, catalog: Catalog | None = None
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", url=url, protocol_version="1.0")],
         skills=[AgentSkill(
-            id="negotiate", name="Negotiate a purchase",
+            id="negotiate", name=skill_name,
             description=skill_description,
-            tags=["shopping", *reserves],
+            tags=skill_tags,
             examples=["I want to buy a lamp", "110"],
         )],
     )
