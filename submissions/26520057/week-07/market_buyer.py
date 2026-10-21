@@ -2,7 +2,8 @@
 
     python market_buyer.py --shops .market/shops.json --item lamp --budget 120
 
-Picking: the code sums up each shop (stars, latest reviews, my own past trades there) into a score.
+Picking: refresh the public leaderboard for every order, restrict to its top five by share,
+then score eligible shops using reviews and my own past trades.
 The harness used to pick from those summaries (about 25 s per order); since 21:36 the code takes the best score
 directly so orders come faster (HARNESS_PICK). The harness still decides every offer.
 Memory: memory.json next to this file, one line per trade, keyed by shop name (URLs change on every restart).
@@ -64,6 +65,24 @@ def summary(shop, mine):
     for t in mine[-3:]:
         lines.append(f"    my trade: {t['item']} {t['result']} at {t['price']}, I gave {t['stars']} stars")
     return "\n".join(lines)
+
+
+def top_five_candidates(shops):
+    # Public ranking only; orders, signatures and result submission stay in the kit.
+    response = httpx.get("https://market.ourolabs.ai/api/board", timeout=15)
+    response.raise_for_status()
+    board = response.json()
+    if board["round"] != board["current"]:
+        raise ValueError("Leaderboard is not the current round")
+    ranked = sorted(board["shops"],
+                    key=lambda s: (-s["share"], -s["deals"], -(s.get("stars") or 0), s["name"]))[:5]
+    top = {s["name"] for s in ranked if s.get("alive") is True}
+    eligible = [s for s in shops if s["name"] in top]
+    print("[top5] round " + str(board["round"]) + ": " +
+          ", ".join(s["name"] for s in ranked), flush=True)
+    if not eligible:
+        raise ValueError("No available top-five shops in the kit's candidate list")
+    return eligible
 
 
 def pick(shops, memory, item, budget):
@@ -156,7 +175,14 @@ def main():
     with open(args.shops) as f:
         shops = json.load(f)
     memory = load_memory()
-    shop, reason = pick(shops, memory, args.item, args.budget)
+    try:
+        candidates = top_five_candidates(shops)
+    except Exception as e:
+        print(f"[top5] skipped order: {type(e).__name__}: {e}", flush=True)
+        print(json.dumps({"shop": "", "receipt": None, "stars": 3,
+                          "review": "No purchase: current top-five eligibility could not be confirmed."}))
+        return
+    shop, reason = pick(candidates, memory, args.item, args.budget)
     print(f"[choose] {shop['name']} {shop['url']}: {reason}", flush=True)
 
     failed = False
