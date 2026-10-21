@@ -5,10 +5,20 @@ import unittest
 from unittest.mock import Mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from market_runtime import TunnelWatchdog
+from market_runtime import TunnelWatchdog, public_url_from_line
 
 
 class TunnelWatchdogTests(unittest.TestCase):
+    def test_provider_api_failure_is_not_a_public_tunnel(self):
+        self.assertIsNone(public_url_from_line(
+            'failed to request quick Tunnel: Post "https://api.trycloudflare.com/tunnel": timeout'))
+        self.assertEqual(public_url_from_line(
+            'INF | https://grab-marking-relating-alpha.trycloudflare.com |'),
+            'https://grab-marking-relating-alpha.trycloudflare.com')
+        self.assertEqual(public_url_from_line('https://324bf083803a15.lhr.life'),
+                         'https://324bf083803a15.lhr.life')
+        self.assertIsNone(public_url_from_line('https://shop.trycloudflare.com.example.org'))
+
     def test_revoked_tunnel_restarts_without_waiting_for_process_exit(self):
         probe = Mock()
         watchdog = TunnelWatchdog(0, probe)

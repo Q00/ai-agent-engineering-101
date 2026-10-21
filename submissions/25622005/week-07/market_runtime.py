@@ -16,6 +16,16 @@ import time
 from datetime import datetime
 
 
+def public_url_from_line(line):
+    """Provider API errors are not announcements of a usable shop address."""
+    for match in re.finditer(
+        r"https://(?:[a-z0-9]+\.lhr\.life|[a-z0-9-]+\.trycloudflare\.com)(?![a-z0-9.-])", line
+    ):
+        if match.group() != "https://api.trycloudflare.com":
+            return match.group()
+    return None
+
+
 class TunnelWatchdog:
     """A running process can still hold a revoked or unreachable tunnel."""
 
@@ -141,9 +151,9 @@ def main():
                         if line:
                             ssh_log.write(line)
                             ssh_log.flush()
-                        found = re.search(r"https://(?:[a-z0-9]+\.lhr\.life|[a-z0-9-]+\.trycloudflare\.com)", line)
-                        if found and found.group() != current_url:
-                            current_url = found.group()
+                        found = public_url_from_line(line)
+                        if found and found != current_url:
+                            current_url = found
                             log(f"public URL changed to {current_url}; restarting kit with the same keys")
                             stop(kit)
                             kit = None
