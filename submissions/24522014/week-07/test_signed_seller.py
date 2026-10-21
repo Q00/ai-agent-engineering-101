@@ -54,6 +54,21 @@ class SignatureChecks(unittest.TestCase):
                     with self.subTest(reserve=reserve, offer=offer, action=action), self.assertRaises(ValueError):
                         seller.validate_followup(decision(action, price), reserve, offer)
 
+    def test_opening_uses_validated_config_without_model_inference(self):
+        with patch.object(seller, "run_harness") as model, patch.object(seller, "write_decision_log") as log:
+            for item in seller.RESERVES:
+                opened = seller.opening_decision("claude", item, "fixture", "synthetic-opening")
+                self.assertEqual(opened["price"], seller.opening_reference(item))
+            model.assert_not_called()
+            self.assertEqual(log.call_count, 3)
+            self.assertEqual(log.call_args.args[0]["controller"], "configured_price")
+
+    def test_overbid_validation_requires_lower_quote_confirmation(self):
+        seller.validate_followup(decision("ask", 105), 100, 115, 105)
+        for action, price in (("accept", 115), ("accept", 105), ("ask", 110), ("reject", None)):
+            with self.subTest(action=action, price=price), self.assertRaises(ValueError):
+                seller.validate_followup(decision(action, price), 100, 115, 105)
+
 
 class SellerProtocol(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -73,7 +88,7 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
 
     async def test_event_visible_in_public_card_with_manual_terms(self):
         card = (await self.client.get("/.well-known/agent-card.json")).json()
-        self.assertEqual(card["version"], "0.4.0")
+        self.assertEqual(card["version"], "0.5.0")
         self.assertIn("4- or 5-star", card["description"])
         self.assertIn("Payment is manual", card["description"])
         self.assertIn("no fixed rate/auto payout", card["description"])
@@ -96,6 +111,25 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
         canceled = await self.client.post("/", json={"jsonrpc": "2.0", "id": str(uuid4()),
             "method": "CancelTask", "params": {"id": opened["id"]}})
         self.assertNotIn("error", canceled.json())
+
+    async def test_overbid_has_no_receipt_until_buyer_confirms_lower_price(self):
+        with patch.object(seller, "opening_decision", return_value=decision("ask", 105)):
+            opened = await self.send("lamp")
+        with patch.object(seller, "followup_decision") as model, patch.object(seller, "write_decision_log"):
+            for _ in range(2):
+                pending = await self.send("115", opened["id"])
+                self.assertEqual(pending["status"]["state"], "TASK_STATE_INPUT_REQUIRED")
+                self.assertFalse(pending.get("artifacts"))
+                message = pending["status"]["message"]
+                self.assertEqual(re.findall(r"\d+", message["parts"][0]["text"]), ["105"])
+                self.assertTrue(message["parts"][1]["data"]["confirmation_required"])
+            model.assert_not_called()
+        with patch.object(seller, "followup_decision", return_value=decision("accept", 105)):
+            done = await self.send("105", opened["id"])
+        self.assertEqual(done["status"]["state"], "TASK_STATE_COMPLETED")
+        receipt = done["artifacts"][0]["parts"][0]["data"]
+        self.assertEqual(receipt["price"], 105)
+        self.assertEqual(receipt["task"], opened["id"])
 
     async def test_completed_receipt_matches_agreement_and_task(self):
         with patch.object(seller, "opening_decision", return_value=decision("ask", 120)), \
