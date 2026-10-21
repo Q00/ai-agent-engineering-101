@@ -1,5 +1,7 @@
 # AX7 one-hour evaluation and competitor monitoring
 
+Current automation status: PAUSED at the user's explicit request on2026-10-21 after snapshot-1608. Do not resume15-minute observations unless the user requests them. This stops the Codex trend heartbeat only; it does not stop or extend the independently guarded VPS seller or its existing comparison collector. The following scheduling description is historical.
+
 Configured by Codex on 2026-10-21 at approximately 10:20 KST at the user's explicit request. The two app automations were created successfully and read back as ACTIVE, both attached to this existing thread.
 
 - `ax7-1`: AX7 1시간 뒤 개선 평가. First evaluation expected around 11:19 KST, approximately one hour after creation at 10:19:15 KST. It reports once and pauses itself after that attempt. It must not continue hourly after completing the requested one-off evaluation.

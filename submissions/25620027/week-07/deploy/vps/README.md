@@ -1,4 +1,13 @@
-# Week07 VPS seller (1.3.1)
+# Week07 VPS seller (1.4.0)
+
+Release1.4.0 adds a bounded near-lowest opening margin with at least3 usable
+shop-name observations, and accepts the first actual reserve-feasible counter.
+The model still selects all commercial tool actions. Comparison output can mark
+our ceiling as above the observed minimum; no lowest-price guarantee is made.
+Final quotes expose non-negotiability and omit inactive coupon codes.
+See [release evidence](../../.omo/evidence/seller-strategy-20261021/RESULTS.md).
+The Codex15-minute trend heartbeat is PAUSED at the user's request; the existing
+server price collector remains within the same21:00 KST/10000-call guard.
 
 This package runs the existing seller and price comparison monitor, with a named
 Cloudflare tunnel in the same container. `serve_public.py` uses the existing
