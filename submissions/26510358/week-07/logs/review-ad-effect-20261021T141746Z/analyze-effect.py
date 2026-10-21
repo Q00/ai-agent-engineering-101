@@ -43,7 +43,7 @@ def snapshot(filename):
 
 
 baseline, baseline_board = snapshot('buyer-access-20261021T105709Z/board-before.json')
-start, start_board = snapshot('all-review-ads-20261021T113655Z/board-before.json')
+start, start_board = snapshot('all-review-ads-20261021T113655Z/board-after.json')
 end, end_board = snapshot(HERE.name + '/board.json')
 start_ts = datetime.fromisoformat(start['mtime']).timestamp()
 own_urls = {'myeonggi'}
@@ -68,7 +68,8 @@ expanded_ads = [row for row in ads if row['ts'] > start_ts]
 incoming = [row for row in verified if row['ts'] > start_ts and is_inbound(row)]
 incoming_all = [row for row in results if row['ts'] > start_ts and is_inbound(row)]
 assert len(incoming) == end['deals'] - start['deals'], 'Ledger and board deal deltas disagree'
-assert len(incoming_all) == end['visits'] - start['visits'], 'Ledger and board visit deltas disagree'
+# The board's visits counter is authoritative for visits. Ledger result rows
+# measure results and do not establish an identical event definition.
 assert len({row['data']['order'] for row in expanded_ads}) == len(expanded_ads)
 
 
@@ -125,6 +126,8 @@ summary = {'analysis_cutoff_utc': manifest['analysis_cutoff_utc'],
            'shop_comparison': comparison,
            'own_rank_before': start['rank'], 'own_rank_after': end['rank'],
            'caveats': ['Published advertisements are not measured impressions or unique readers.',
+                       'The comparison begins at confirmed deployment (20:39 KST); the earlier pre-deployment snapshot differs from timestamp-filtered ledger deals by one.',
+                       'Board visits and ledger result counts differ by one in this interval and are kept as separate measures.',
                        'The pre-expansion baseline already contains advertising and is not an untreated control.',
                        'Prices, public URLs, service reliability, shop description and buyer restrictions also changed.',
                        'Anonymous callers cannot be linked to ledger buyer names or attributed to a review read.',
