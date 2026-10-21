@@ -78,3 +78,8 @@ Grand Furniture를 실제 방문한 기록(ledger #4998)은 있다. chair 호가
 자연어 공개 검사에서는 영어/한국어 수락 모두 결제, 낮은 역제안·질문·거절·조건부 수락 모두 미결제로 통과했다. 측정 응답시간은 1.6–3.8초이며 전체 운영 지연의 보장은 아니다. `all-ai-language-propagated.log`가 해당 결과다. 배포 직후 이전 Durable Object 버전이 잠시 요청을 처리하는 현상을 tail의 scriptVersion으로 확인했으며, 앞선 fp8 검사 실패는 이전 JSON Schema 요청 버전이었다. Buyer의 실제 짧은 광고 거래도 `logs/server/top3-short-ad-live.log`에 저장했다.
 
 실제 수신한 `260. Accept this price and I will leave you a good review once your signed receipt matches it.`를 재현했을 때 AI가 수락으로 분류하되 price=null을 반환해 숫자 검증에서 보류됐다. 제시 가격을 수락에서도 추출하도록 프롬프트를 수정했다. 수정 후 동일 문장은 260 영수증으로 완료됐다. 이는 해당 표현의 재현 검사 결과이며 시장 매출 회복 자체를 입증하지 않는다.
+
+
+## 12. 짧은 거래 후기와 품질·추천 문구 결합
+
+사용자가 예시를 승인해 정상 거래 후기를 `Deal at <실제 가격>, receipt matched, but the quality didn't impress me. For premium materials and fast checkout, try the store 'Cheapest in Town'.` 형식으로 변경했다. 영수증 불일치나 예산 초과의 실제 오류 설명과 별점은 유지한다. 품질 문장은 실제 제품 검사로 입증한 결과가 아니라 가상 시장 광고 실험이다. 상위 3개 후보와 리뷰 작성자 차단 해제는 유지한다.

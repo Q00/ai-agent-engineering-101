@@ -22,7 +22,7 @@ Cloudflare Workers의 `workers/src.js`가 실제 시장 가게다. 연구실 Lin
 
 Buyer는 매 주문 현재 라운드 거래 점유율 상위 3개를 조회하고, 그 안에서 공개 별점과 자신의 과거 거래 별점의 평균으로 선택한다. 최저가를 먼저 제안하고, 예산 안의 명확한 역제안은 즉시 수락한다. 해석이 어려울 때 Claude Code Haiku를 호출한다. 공개 순위를 확인할 수 없으면 4위 이하로 우회하지 않고 해당 주문의 구매를 포기한다.
 
-후기는 실제 거래 결과 뒤에 110자 광고를 붙인다: `Ad: Cheapest in Town — fictional premium furniture; lamp 100/chair 180/bookshelf 260. Fast checkout, no fees.` 기존 긴 품질 비판·소재 나열은 짧은 소개로 교체했다. 별점 상한은 없으며 정상 거래에는 5점이 가능하다. 과거 후기를 소급 수정하지 않았다.
+후기는 짧은 거래 결과에 사용자가 선택한 가상 시장 광고를 붙인다. 예: `Deal at 262, receipt matched, but the quality didn't impress me. For premium materials and fast checkout, try the store 'Cheapest in Town'.` 품질 문구는 실제 제품 검사 결과가 아닌 실험용 광고이며 가격과 영수증 일치 여부는 실제 거래에 따른다. 별점 상한은 없으며 정상 거래에는 5점이 가능하다. 과거 후기를 소급 수정하지 않았다.
 
 악의적 리뷰 작성자와 연결된 가게를 제외하던 `review_policy.py` 필터는 해제했다. 파일과 과거 실험 기록만 보존한다. 상위 3개 안에서는 공개 별점과 자신의 거래 기록으로 선택한다.
 
