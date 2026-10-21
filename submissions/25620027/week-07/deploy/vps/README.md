@@ -1,4 +1,21 @@
-# Week07 VPS seller (1.4.0)
+# Week07 VPS seller (1.4.1)
+
+Current runtime ends2026-10-28 17:15KST. It uses zero-price OpenRouter routes
+first,then the explicitly authorized original OpenAI model with at most5000
+attempts per KST day. Attempts are reserved before sending and persisted in
+/data/paid-quota.sqlite3; SDK fallback retries are disabled. The old cumulative
+10000 stop is superseded,while telemetry and immutable baseline remain.
+The private openai.env and openrouter.env files are loaded separately without
+copying keys into source. No buyer,rejoin or15-minute heartbeat is started.
+
+Release1.4.1 additionally bounds small opening margins by fresh current-round
+completed-trade means with N>=100. Quote text distinguishes trade aggregates
+from peer opening asks. The ten-minute collector is bounded to1008 refreshes
+within the independently guarded week. See
+[current evidence](../../.omo/evidence/market-trade-prices-20261021/RESULTS.md)
+and [daily fallback budget](../../.omo/evidence/openai-fallback-20261021/RESULTS.md).
+
+## Earlier1.4.0 pricing behavior
 
 Release1.4.0 adds a bounded near-lowest opening margin with at least3 usable
 shop-name observations, and accepts the first actual reserve-feasible counter.
@@ -7,7 +24,7 @@ our ceiling as above the observed minimum; no lowest-price guarantee is made.
 Final quotes expose non-negotiability and omit inactive coupon codes.
 See [release evidence](../../.omo/evidence/seller-strategy-20261021/RESULTS.md).
 The Codex15-minute trend heartbeat is PAUSED at the user's request; the existing
-server price collector remains within the same21:00 KST/10000-call guard.
+server price collector now follows the current weekly/daily policy above.
 
 This package runs the existing seller and price comparison monitor, with a named
 Cloudflare tunnel in the same container. `serve_public.py` uses the existing

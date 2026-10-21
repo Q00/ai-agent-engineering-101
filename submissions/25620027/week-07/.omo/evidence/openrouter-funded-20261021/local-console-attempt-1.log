@@ -1,0 +1,29 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "<frozen runpy>", line 287, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "tests/manual_openrouter_seller.py", line 90, in <module>
+    anyio.run(main)
+  File "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py", line 83, in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2548, in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2531, in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+  File "tests/manual_openrouter_seller.py", line 74, in main
+    replay = task_from(await send(client, str(floor), opening.id))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/tests/test_signed_seller.py", line 192, in task_from
+    result = response["result"]
+             ~~~~~~~~^^^^^^^^^^
+KeyError: 'result'

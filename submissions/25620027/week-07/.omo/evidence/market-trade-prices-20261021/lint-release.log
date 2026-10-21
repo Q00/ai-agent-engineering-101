@@ -1,0 +1,12 @@
+E501 Line too long (89 > 88)
+  --> tests/manual_public_openrouter.py:37:89
+   |
+35 |             _ = response.raise_for_status()
+36 |             card = VersionedCard.model_validate_json(response.content)
+37 |             assert card.version == ("1.4.1" if "--market-stats" in sys.argv else "1.4.0")
+   |                                                                                         ^
+38 |             response = await client.get("https://market.ourolabs.ai/api/shops")
+39 |             _ = response.raise_for_status()
+   |
+
+Found 1 error.

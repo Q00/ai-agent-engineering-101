@@ -1,0 +1,105 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> market_a2a/harness.py:7:1
+   |
+ 5 |   """
+ 6 |
+ 7 | / from __future__ import annotations
+ 8 | |
+ 9 | | import json
+10 | | from datetime import UTC, datetime
+11 | | from time import monotonic
+12 | | from typing import TYPE_CHECKING, Final, assert_never, final
+13 | |
+14 | | import anyio
+15 | | from openai import APIConnectionError, APIStatusError, APITimeoutError, AsyncOpenAI
+16 | | from openai.types.chat import (
+17 | |     ChatCompletionAssistantMessageParam,
+18 | |     ChatCompletionFunctionToolParam,
+19 | |     ChatCompletionMessage,
+20 | |     ChatCompletionMessageFunctionToolCallParam,
+21 | |     ChatCompletionMessageParam,
+22 | |     ChatCompletionToolMessageParam,
+23 | |     ChatCompletionToolParam,
+24 | | )
+25 | | from openai.types.shared_params import FunctionDefinition
+26 | |
+27 | | from market_a2a.model_provider import (
+28 | |     DEFAULT_MODEL, FREE_MODEL, FREE_MODELS, FREE_ROUTER, configured_model, request_model,
+29 | | )
+30 | | from market_a2a.models import HarnessError, ToolDispatch, ToolResult, ToolSpec
+   | |______________________________________________________________________________^
+31 |
+32 |   if TYPE_CHECKING:
+   |
+help: Organize imports
+   |
+27 | from market_a2a.model_provider import (
+   -     DEFAULT_MODEL, FREE_MODEL, FREE_MODELS, FREE_ROUTER, configured_model, request_model,
+28 +     DEFAULT_MODEL,
+29 +     FREE_MODEL,
+30 +     FREE_MODELS,
+31 +     FREE_ROUTER,
+32 +     configured_model,
+33 +     request_model,
+34 | )
+   |
+
+E501 Line too long (89 > 88)
+  --> market_a2a/harness.py:28:89
+   |
+27 | from market_a2a.model_provider import (
+28 |     DEFAULT_MODEL, FREE_MODEL, FREE_MODELS, FREE_ROUTER, configured_model, request_model,
+   |                                                                                         ^
+29 | )
+30 | from market_a2a.models import HarnessError, ToolDispatch, ToolResult, ToolSpec
+   |
+
+PLR2004 Magic value used in comparison, consider replacing `404` with a constant variable
+   --> market_a2a/harness.py:206:39
+    |
+204 |                         )
+205 |             except APIStatusError as exc:
+206 |                 if exc.status_code == 404 and route == FREE_MODEL:
+    |                                       ^^^
+207 |                     route = FREE_ROUTER
+208 |                     self.emit("MODEL_FREE_FALLBACK route=openrouter/free")
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_model_provider.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | import json
+ 4 | | from datetime import UTC, datetime, timedelta
+ 5 | | from time import monotonic
+ 6 | |
+ 7 | | import anyio
+ 8 | | import httpx2
+ 9 | | import pytest
+10 | | from openai import AsyncOpenAI
+11 | | from pydantic import JsonValue, TypeAdapter
+12 | |
+13 | | from market_a2a.harness import MODEL, Harness
+14 | | from market_a2a.model_provider import (
+15 | |     FREE_MODEL, FREE_ROUTER, PROMOTION_END, configured_model,
+16 | |     create_model_client, request_model,
+17 | | )
+18 | | from market_a2a.models import HarnessError
+   | |__________________________________________^
+help: Organize imports
+   |
+14 | from market_a2a.model_provider import (
+   -     FREE_MODEL, FREE_ROUTER, PROMOTION_END, configured_model,
+   -     create_model_client, request_model,
+15 +     FREE_MODEL,
+16 +     FREE_ROUTER,
+17 +     PROMOTION_END,
+18 +     configured_model,
+19 +     create_model_client,
+20 +     request_model,
+21 | )
+   |
+
+Found 4 errors.
+[*] 2 fixable with `--fix`.
