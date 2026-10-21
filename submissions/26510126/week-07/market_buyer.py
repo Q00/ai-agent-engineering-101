@@ -173,14 +173,20 @@ def profile(past, item, budget):
     return "; ".join(notes), bool(cheats) or len(down) == 2
 
 
-AD = re.compile(r"\bAD\b|광고|VIP|limited \d+-?min", re.I)
+AD = re.compile(r"\bAD\b|광고|VIP|limited \d+-?min|try the store", re.I)
 
 
 def is_ad(review, shop_name, names):
     """A review that advertises: an AD tag, or another listed shop's name (mjforge put
     "[GRAND REVAMP AD — mjforge VIP ...]" into reviews of other shops, ledger #21074)."""
-    text = str(review.get("review", ""))
-    return bool(AD.search(text)) or any(n != shop_name and len(n) > 3 and n.lower() in text.lower() for n in names)
+    raw = str(review.get("review", ""))
+    text = squash(raw)
+    return bool(AD.search(raw)) or any(n != shop_name and len(n) > 3 and squash(n) in text for n in names)
+
+
+def squash(s):
+    """Lower case, separators dropped: 'cheapest-in-town' must match "the store 'Cheapest in Town'" (ledger #97675)."""
+    return re.sub(r"[\s_\-]+", "", s.lower())
 
 
 def reviews_line(shop, names=()):
