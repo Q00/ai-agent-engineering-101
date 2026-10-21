@@ -14,7 +14,7 @@ class SelectorIdentityTests(unittest.TestCase):
     def test_validated_selection_uses_registry_name_and_rejects_url_and_price(self):
         candidate={'name':'test-only-registry','url':'https://test-only.invalid',
                    'card':{'name':'Different TEST ONLY display name'},'reviews':[],
-                   'personal_memory':{},'card_flags':[]}
+                   'personal_memory':{},'card_flags':[], 'score':5}
         memory=Mock();memory.ingest_kit_feedback.return_value=[];memory.read.return_value={}
         def select(context, **kwargs):
             self.assertEqual(context['selection_ids'],['test-only-registry'])
