@@ -9,7 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import sqlite3
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
@@ -378,7 +378,26 @@ class PricingRecorder:
 
     def stats(self, item: str | None = None) -> list[dict]:
         """Descriptive counts only; unknown outcomes stay visible in the denominator."""
-        rows = [row for row in self.all_trades() if item is None or row["item"] == item]
+        return self._stats_rows(self.all_trades(), item)
+
+    @staticmethod
+    def readonly_stats(path: str | Path, item: str) -> list[dict]:
+        """Fixed, read-only query for the model-facing statistics tool."""
+        if not isinstance(item, str) or item not in {"lamp", "chair", "bookshelf"}:
+            raise ValueError("item must be lamp, chair, or bookshelf")
+        uri = Path(path).resolve().as_uri() + "?mode=ro"
+        with closing(sqlite3.connect(uri, uri=True, timeout=5)) as db:
+            db.row_factory = sqlite3.Row
+            db.execute("PRAGMA query_only=ON")
+            rows = [dict(row) for row in db.execute(
+                "SELECT item, assigned_arm, opening_ask_actual, receipt_issued, "
+                "ledger_status, final_price, reserve, model_calls, negotiation_status "
+                "FROM trades WHERE item=?", (item,))]
+        return PricingRecorder._stats_rows(rows, item)
+
+    @staticmethod
+    def _stats_rows(rows: list[dict], item: str | None = None) -> list[dict]:
+        rows = [row for row in rows if item is None or row["item"] == item]
         groups: dict[tuple[str, str], dict] = {}
         for row in rows:
             key = (row["item"], row["assigned_arm"])
