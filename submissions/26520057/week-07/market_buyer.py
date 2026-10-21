@@ -90,7 +90,8 @@ def higher_share_candidates(shops):
     higher = {s["name"] for s in board["shops"]
               if s.get("alive") is True and s["share"] > own["share"]
               and s["name"] != own["name"]}
-    eligible = list({s["name"]: s for s in shops if s["name"] in higher}.values())
+    eligible = list({s["name"]: dict(s, _market_round=board["round"])
+                     for s in shops if s["name"] in higher}.values())
     print(f"[higher-share] round {board['round']}, own share {own['share']}, "
           f"{len(eligible)} eligible: " + ", ".join(s["name"] for s in eligible), flush=True)
     if not eligible:
@@ -100,7 +101,26 @@ def higher_share_candidates(shops):
 
 def pick(shops, memory, item, budget):
     if not all(urlparse(s["url"]).hostname in {"127.0.0.1", "localhost", "::1"} for s in shops):
-        return random.choice(shops), f"uniform random choice from {len(shops)} higher-share shops"
+        candidates = list(shops)
+        random.shuffle(candidates)
+        for shop in candidates:
+            try:
+                response = httpx.get("https://market.ourolabs.ai/api/shop-reviews",
+                                     params={"shop":shop["name"], "round":shop["_market_round"]}, timeout=10)
+                response.raise_for_status()
+                reviews = response.json()
+                if not isinstance(reviews, list):
+                    raise ValueError("Invalid review list")
+                recent = sorted(reviews, key=lambda r: r["ts"], reverse=True)[:10]
+                own_count = sum((r.get("owner") or {}).get("login", "").casefold() == "danayoou"
+                                for r in recent)
+                print(f"[review-cap] {shop['name']}: ours {own_count}/{len(recent)} latest reviews", flush=True)
+                if own_count >= 5:
+                    continue
+                return shop, f"random higher-share shop; own reviews {own_count}/10, below cap 5"
+            except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError) as e:
+                print(f"[review-cap] skip {shop['name']}: review check failed ({type(e).__name__})", flush=True)
+        raise ValueError("No higher-share shop passed the latest-review cap")
     by_name = {s["name"]: s for s in shops}
     mine = {n: [t for t in memory if t["shop"] == n] for n in by_name}
     best = max(shops, key=lambda s: score(s, mine[s["name"]]))
@@ -221,12 +241,12 @@ def main():
     memory = load_memory()
     try:
         candidates = higher_share_candidates(shops)
+        shop, reason = pick(candidates, memory, args.item, args.budget)
     except Exception as e:
         print(f"[higher-share] skipped order: {type(e).__name__}: {e}", flush=True)
         print(json.dumps({"shop": "", "receipt": None, "stars": 3,
                           "review": "No purchase: current higher-share eligibility could not be confirmed."}))
         return
-    shop, reason = pick(candidates, memory, args.item, args.budget)
     print(f"[choose] {shop['name']} {shop['url']}: {reason}", flush=True)
 
     failed = False
