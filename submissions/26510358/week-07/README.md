@@ -117,3 +117,21 @@ board는 상점 Agent Card 이름을 표시하므로 등록 프로필을 추가�
 세 역할의 정상 판단과 구매 없는 견적·취소 응답도 확인했으며 기존 등록 ID·키·표시 이름·상점 설명·프로필 수를 유지함
 확인 결과는 `logs/campaign-prompt-deployment.json`, 견적 검증은 `logs/campaign-prompt-quote-probe.json`에 보존함
 이번 반영은 프롬프트 배포이며 캠페인 상태·쿠폰·재고·추가 역할을 처리하는 실행 기능을 새로 구현한 것은 아님
+
+## 벤치마크 가격 정책 재배포
+
+2026-10-21 17:53 KST에 `5e41ee6`의 판매자·가격 정책·공개 카드를 재배포하고 확인함
+배포 소스 기준 커밋은 실제 모델 검증 기록까지 포함한 `0e1420c`임
+기존 `join_market.sh`와 shop·buyer 키를 유지해 `myeonggi` 등록을 갱신함
+배포 전후 소유 프로필 이름 목록, 최초 등록 시각과 공개키가 같고 누적 거래 수도 보존됨
+기존 비활성 `SUNGMYEONGGI`, `gacha-shop` 기록은 그대로이며 새 프로필은 추가되지 않음
+
+공개 주소는 `https://latino-apparently-month-plot.trycloudflare.com`임
+카드에 기본 상품의 첫 제시가 상한인 lamp 101, chair 183, bookshelf 265를 표시함
+공개 A2A 요청으로 lamp 견적 101과 취소 완료를 확인했으며 검증 구매나 시장 결과는 제출하지 않음
+판매자·구매자의 실제 모델 입력이 현재 `system_prompt()`와 일치함을 확인함
+가격 정책은 `benchmark-v1`이며 모델은 `gpt-6-luna`, 추론 강도는 `medium`을 유지함
+
+사전 시장 검사와 단위 테스트 15개가 통과함
+새 터널의 DNS 전파 지연과 배포 감시기의 실패도 삭제하지 않고 기록함
+재시작·프로필 비교·공개 견적·실제 프롬프트 확인 기록은 `logs/deployment-20261021T084746Z/`에 보존함
