@@ -47,13 +47,17 @@ def main():
     urls=set(baseline['urls'])|{deployment['url']}
     urls.update(e['data']['url'] for e in entries if e['kind']=='join' and e['data'].get('name')=='kcwarni' and e['data'].get('role')=='shop')
     rows=[e for e in entries if e['kind']=='result' and e['round']==2 and e['data'].get('shop') in urls]
-    before=[e for e in rows if e['seq']<=cutoff]
+    # The running seller reads price/prompt files per decision. Exclude the
+    # validation interval, when those files may already contain new settings.
+    baseline_time=datetime.fromisoformat(deployment['baseline_at']).timestamp()
+    before=[e for e in rows if e['seq']<=cutoff and e['ts']<=baseline_time]
     after=[e for e in rows if e['seq']>cutoff and e['data']['shop']==deployment['url']]
     orders={e['data']['order']:e['data'] for e in entries if e['kind']=='order'}
     ids={e['data'].get('order') for e in rows}
     stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
     out=ROOT/'logs/sales-experiment'/f'measurement-{stamp}';out.mkdir()
     summary={'checked_at':datetime.now(timezone.utc).isoformat(),'cutoff_seq':cutoff,'last_seq':last,
+             'transition_results_excluded':sum(e['seq']<=cutoff and e['ts']>baseline_time for e in rows),
              'before':summarize(before,orders),'after':summarize(after,orders),
              'after_by_item':{item:summarize([e for e in after if orders.get(e['data'].get('order'),{}).get('item')==item],orders) for item in RESERVES},
              'limitations':'Before and after buyers/budgets differ. Small samples and cumulative averages do not prove improvement. Price-minus-reserve excludes model costs and cashback.'}
