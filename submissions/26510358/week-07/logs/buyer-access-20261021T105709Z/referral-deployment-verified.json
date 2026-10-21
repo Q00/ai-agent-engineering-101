@@ -1,0 +1,162 @@
+{
+  "checked_at": "2026-10-21T11:10:48.773276+00:00",
+  "public_url": "https://pending-surround-congratulations-openings.trycloudflare.com",
+  "implementation_commit": "eb4131839fea92ab954124bc94fb05cb736f3fe1",
+  "scope": "Synthetic declared-identity rejection and quote/cancel only; no purchase or market result submission.",
+  "limitations": [
+    "Anonymous buyer identity is unavailable; named-denial probe does not prove real buyer identity.",
+    "A referral code claim does not verify a real review read.",
+    "Live phase follows actual rank; recovery model cases used TEST ONLY contexts."
+  ],
+  "card": {
+    "name": "Ssadassa Shop",
+    "description": "Promotion: lamp 100/chair 180/bookshelf 260 credits. Recovery (top 3): 120/200/290. In recovery only, request item + REVIEW10 in your first message for 10% off: 108/180/261. Offer the exact final quote on the same task for an Ed25519-signed receipt. No fees; existing quotes honored.",
+    "supportedInterfaces": [
+      {
+        "url": "https://pending-surround-congratulations-openings.trycloudflare.com/a2a/0",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Catalog search and price negotiation",
+        "description": "Promotion: lamp 100/chair 180/bookshelf 260 credits. Recovery (top 3): 120/200/290. In recovery only, request item + REVIEW10 in your first message for 10% off: 108/180/261. Offer the exact final quote on the same task for an Ed25519-signed receipt. No fees; existing quotes honored.",
+        "tags": [
+          "shopping",
+          "lamp",
+          "chair",
+          "bookshelf"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "A wooden shelf for 40 books"
+        ]
+      }
+    ]
+  },
+  "declared_identity_probe": {
+    "state": "TASK_STATE_REJECTED",
+    "no_artifacts": true,
+    "real_buyer_identity_verified": false
+  },
+  "quotes": [
+    {
+      "item": "lamp",
+      "code_claimed": false,
+      "ask": 100.0,
+      "expected": 100,
+      "phase": "acquisition",
+      "pricing_state": {
+        "policy_version": "rank-cycle-referral-v2",
+        "phase": "acquisition",
+        "rank": 10,
+        "round": 2,
+        "observed_at": "2026-10-21T11:10:50.481164+00:00"
+      },
+      "state": "TASK_STATE_INPUT_REQUIRED",
+      "referral": null,
+      "cancel_state": "TASK_STATE_CANCELED"
+    },
+    {
+      "item": "lamp",
+      "code_claimed": true,
+      "ask": 100.0,
+      "expected": 100,
+      "phase": "acquisition",
+      "pricing_state": {
+        "policy_version": "rank-cycle-referral-v2",
+        "phase": "acquisition",
+        "rank": 10,
+        "round": 2,
+        "observed_at": "2026-10-21T11:10:50.481164+00:00"
+      },
+      "state": "TASK_STATE_INPUT_REQUIRED",
+      "referral": {
+        "fixed_quote": false,
+        "claimed": true,
+        "code": "REVIEW10",
+        "applied": false,
+        "claim_source": "message.text",
+        "reason": "not_available_for_phase_or_item",
+        "price": 100.0,
+        "read_verified": false
+      },
+      "cancel_state": "TASK_STATE_CANCELED"
+    },
+    {
+      "item": "chair",
+      "code_claimed": true,
+      "ask": 180.0,
+      "expected": 180,
+      "phase": "acquisition",
+      "pricing_state": {
+        "policy_version": "rank-cycle-referral-v2",
+        "phase": "acquisition",
+        "rank": 10,
+        "round": 2,
+        "observed_at": "2026-10-21T11:10:50.481164+00:00"
+      },
+      "state": "TASK_STATE_INPUT_REQUIRED",
+      "referral": {
+        "fixed_quote": false,
+        "claimed": true,
+        "code": "REVIEW10",
+        "applied": false,
+        "claim_source": "message.text",
+        "reason": "not_available_for_phase_or_item",
+        "price": 180.0,
+        "read_verified": false
+      },
+      "cancel_state": "TASK_STATE_CANCELED"
+    },
+    {
+      "item": "bookshelf",
+      "code_claimed": true,
+      "ask": 260.0,
+      "expected": 260,
+      "phase": "acquisition",
+      "pricing_state": {
+        "policy_version": "rank-cycle-referral-v2",
+        "phase": "acquisition",
+        "rank": 10,
+        "round": 2,
+        "observed_at": "2026-10-21T11:10:50.481164+00:00"
+      },
+      "state": "TASK_STATE_INPUT_REQUIRED",
+      "referral": {
+        "fixed_quote": false,
+        "claimed": true,
+        "code": "REVIEW10",
+        "applied": false,
+        "claim_source": "message.text",
+        "reason": "not_available_for_phase_or_item",
+        "price": 260.0,
+        "read_verified": false
+      },
+      "cancel_state": "TASK_STATE_CANCELED"
+    }
+  ],
+  "shops_online": true,
+  "buyers_online": true,
+  "profiles_unchanged": true,
+  "keys_unchanged": true,
+  "source_matches_deployment": true,
+  "kit_pids": [
+    3277865
+  ],
+  "passed": true,
+  "finished_at": "2026-10-21T11:11:28.278484+00:00"
+}
