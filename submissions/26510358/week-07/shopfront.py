@@ -30,7 +30,8 @@ def public_items(catalog, quote_policy):
             features.append(str(attrs['height_cm']) + ' cm high')
         terms = referral_terms(item, price, quote_policy, 'public_code_preview')
         # Only public quotes and real attributes leave the pricing boundary.
-        offer = {'id': item_id, 'name': item['name'], 'price': price, 'features': features,
+        # Catalogue names contain an English title followed by a Korean alias.
+        offer = {'id': item_id, 'name': item['name'].partition(' / ')[0], 'price': price, 'features': features,
                  'attributes': dict(attrs)}
         if terms.get('applied'):
             offer['discount'] = {key: terms[key] for key in ('code', 'percent', 'price')}
@@ -44,15 +45,12 @@ def price_line(offers):
 
 def public_description(offers):
     text = ('Ssadassa Shop by myeonggi. Latest base quotes: ' + price_line(offers) + ' credits. '
-            'Request a current quote, then send that number on the same task for an '
-            'Ed25519-signed receipt at the exact agreed price. ')
-    features = [item['id'] + ': ' + ', '.join(item['features']) for item in offers if item['features']]
-    if features:
-        text += '; '.join(features) + '. '
+            'Request a current quote, then offer that price on the same task for an '
+            'Ed25519-signed receipt at the agreed price.')
     discounts = [item for item in offers if item.get('discount')]
     if discounts:
-        text += 'REVIEW10: 10% off eligible standard quotes; item + code in the first message. '
-    return text + 'Prices can change between orders; request your current quote.'
+        text += ' REVIEW10: 10% off eligible standard quotes; item + code in the first message.'
+    return text
 
 
 def public_skills(offers):
