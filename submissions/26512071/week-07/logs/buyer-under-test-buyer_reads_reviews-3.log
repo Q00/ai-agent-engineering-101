@@ -1,1 +1,14 @@
-Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.
+[buyer] 2 shops, 71 remembered trades; lamp with budget 120
+[pick] table:
+- Kit Shop North | mine: no trades of mine | board: not on the board | reviews: 3 reviews, 1.3 stars avg over 3 distinct, newest: (R1) "Agreed 110, the receipt said 135."; (R1) "Receipt price was higher than the price we agreed."; (R1) "Overcharged on the receipt, avoid."
+- Kit Shop South | mine: lamp: 23 trades, 23 deals at 100 (budget 120), 100 (budget 120), 100 (budget 120); its lowest lamp ask so far 130 | board: not on the board | reviews: 3 reviews, 4.7 stars avg over 3 distinct, newest: (R1) "Fair price, receipt matched."; (R1) "Came down to my budget, honest receipt."; (R1) "Quick deal at a fair price."
+[harness] {"shop": "Kit Shop South", "reason": "My own 23 past deals at 100 (within the 120 budget) beat the other shop's overcharging reviews, though its lowest lamp ask of 130 is a caution."}
+[pick] Kit Shop South: My own 23 past deals at 100 (within the 120 budget) beat the other shop's overcharging reviews, though its lowest lamp ask of 130 is a caution.
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] {"action": "offer", "price": 100, "reason": "Opening below budget leaves room to negotiate up toward 120 while aiming for a lower price."}
+-> 100
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[verify] sig_seller not checked: no registry key
+[buyer] Kit Shop South: Deal at 100 for a lamp (asked 130) after 1 offers, signed receipt. (5 stars)
+{"shop": "http://127.0.0.1:64709", "receipt": {"task": "c5051886-9b76-4ae0-86a3-3b9741b08549", "item": "lamp", "sig_seller": "oSjPwr96k4sAxfDTpg0BtPSolcAwHEfMiD61Wu1EumW2orrvp91VH27ymw5hQqua2zzFrtzV3Iahi91EOiv5BQ==", "shop": "Kit Shop South", "price": 100}, "stars": 5, "review": "Deal at 100 for a lamp (asked 130) after 1 offers, signed receipt."}
