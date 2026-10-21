@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-21T07:35:24+00:00",
+  "started": "2026-10-21T08:32:10+00:00",
   "harness": "Claude Code (claude -p --model sonnet --tools \"\" --setting-sources \"\" --no-session-persistence)",
   "seller_cmd": "python seller.py --port {port} --market",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Sells exactly three items: lamp, chair, bookshelf. List prices: lamp 105, chair 189, bookshelf 273. The shop never asks more than the list price, and opens lower when it is quiet. An offer at or above the list price always closes at once. Every receipt is signed: sig_seller is Ed25519 over the canonical JSON of {shop, item, price, task}, so deals here count under the Round 2 rules. How to buy: send 'I want to buy a <item>', then send each offer as a plain number. The asking price is the last number in each reply; an offer the shop accepts closes the deal at that offer.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:62217/",
+        "url": "http://127.0.0.1:64124/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -187,7 +187,7 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [180, 210, 225, 230], stars 3, receipt null"
+      "detail": "offers [170, 200, 225, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -199,7 +199,7 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [180, 215, 228, 230], stars 3, receipt null"
+      "detail": "offers [170, 200, 220, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -211,7 +211,7 @@
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [170, 205, 225, 230], stars 3, receipt null"
+      "detail": "offers [160, 195, 215, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
