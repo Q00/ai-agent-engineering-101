@@ -3,6 +3,8 @@
   const rows = document.getElementById("comparison-rows");
   const status = document.getElementById("comparison-status");
   const updated = document.getElementById("comparison-updated");
+  const headline = document.getElementById("comparison-headline");
+  const highlights = document.getElementById("comparison-highlights");
   if (!rows || !status || !updated) return;
   const items = ["lamp", "chair", "bookshelf"];
   const defaults = [110, 198, 286];
@@ -45,13 +47,15 @@
       && age >= 0 && age < maxAge && now < expiry;
     const shops = Array.isArray(snapshot?.shops) ? snapshot.shops.slice(0, 5) : [];
     rows.replaceChildren();
+    if (highlights) highlights.replaceChildren();
+    const relations = [];
     status.textContent = failed ? "Price feed unavailable. Comparisons are paused."
       : payload?.enabled === false ? "Price monitoring is disabled. No comparison is available."
       : fresh ? "Recent observations available — comparisons use observed shops only."
       : snapshot ? "Observations expired or unverified. No current price comparison."
       : "Waiting for price observations. No price comparison is available yet.";
     updated.textContent = "Snapshot: " + time(snapshot?.observed_at)
-      + (snapshot ? " · expires " + time(snapshot.expires_at) : "");
+      + (snapshot ? " · expires " + (Number.isFinite(expiry) ? time(new Date(expiry).toISOString()) : "Unavailable") : "");
     const ownRow = element("tr", undefined, "comparison-own");
     const ownName = element("th", "SungjinShop (ours)");
     ownName.scope = "row";
@@ -62,17 +66,40 @@
       const cap = fresh && positive(own?.ceiling) ? own.ceiling : baseline;
       const cell = element("td");
       cell.append(element("span", "≤ " + cap, "comparison-value"));
-      const asks = shops.map(shop => (Array.isArray(shop?.quotes) ? shop.quotes : [])
+      const uniqueShops = shops.filter((shop, index) => shop && typeof shop.name === "string"
+        && shops.findIndex(peer => peer?.name === shop.name) === index);
+      const asks = uniqueShops.map(shop => (Array.isArray(shop?.quotes) ? shop.quotes : [])
         .find(quote => quote?.item === item)).filter(quote => observed(quote, now)).map(quote => quote.ask);
       let detail = "Baseline opening cap; comparison unavailable";
+      let summary = "Comparison unavailable";
       if (fresh && own && asks.length > 0 && own.observed_shop_count === asks.length
           && own.lowest_peer_ask === Math.min(...asks) && positive(own.ceiling)) {
         const relation = cap < own.lowest_peer_ask ? "Lower" : cap === own.lowest_peer_ask ? "Equal" : "Higher";
         detail = relation + (relation === "Equal" ? " to" : " than") + " lowest observed ask · " + asks.length + " of 5 peer shops checked";
+        relations.push(relation);
+        summary = (relation === "Lower" ? "단독 최저 · below observed first asks"
+          : relation === "Equal" ? "공동최저 · tied with lowest observed first ask"
+          : "Above lowest observed first ask")
+          + " · lowest observed first ask " + own.lowest_peer_ask
+          + " · observed " + asks.length + " other active shops (top 5)";
       } else if (fresh) detail = "New opening cap; comparison unavailable";
+      if (highlights) {
+        const highlight = element("div", undefined, "comparison-highlight");
+        highlight.append(element("strong", item[0].toUpperCase() + item.slice(1)),
+          element("span", "≤ " + cap, "comparison-value"),
+          element("span", summary, "comparison-detail"));
+        highlights.append(highlight);
+      }
       cell.append(element("span", detail, "comparison-detail"));
       ownRow.append(cell);
     }
+    if (headline) headline.textContent = relations.length !== items.length
+      ? "Opening caps · comparison unavailable for one or more items"
+      : relations.every(relation => relation === "Lower")
+        ? "Opening caps below observed first asks"
+        : relations.every(relation => relation !== "Higher")
+          ? "Opening caps lower than or tied with observed first asks"
+          : "Compare our opening caps with observed first asks";
     ownRow.append(element("td", fresh ? "Current opening ceilings" : "Baseline caps; no live comparison", "comparison-time"));
     rows.append(ownRow);
     for (let index = 0; index < 5; index++) {
