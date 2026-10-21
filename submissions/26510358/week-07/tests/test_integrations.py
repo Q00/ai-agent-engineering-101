@@ -143,7 +143,7 @@ def real_seller_server():
     sock.listen(128)
     port = sock.getsockname()[1]
     with tempfile.TemporaryDirectory() as directory, patch.object(seller, "Trace", RecordingTrace):
-        app = seller.build({"name": "TEST ONLY integration shop", "port": port, "log_dir": directory})
+        app = seller.build({"name": "TEST ONLY integration shop", "port": port, "log_dir": directory, "price_policy": str(Path(__file__).with_name("price-policy-test-only.json"))})
         server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port,
                                               log_level="error", access_log=False))
         thread = threading.Thread(target=server.run, kwargs={"sockets": [sock]}, daemon=True)

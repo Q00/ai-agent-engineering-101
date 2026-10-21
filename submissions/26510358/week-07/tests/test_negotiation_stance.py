@@ -171,7 +171,7 @@ class SellerStanceTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(seller, "Trace", RecordingTrace), \
                 patch.object(seller, "StrategyPolicy", StubPolicy), \
                 patch.object(seller, "load_catalog", return_value=[deepcopy(ITEM)]):
-            executor = seller.Seller({"name": "TEST ONLY stance seller"})
+            executor = seller.Seller({"name": "TEST ONLY stance seller", "price_policy": str(Path(__file__).with_name("price-policy-test-only.json"))})
         task = Task(id="stance-task", context_id="stance-context",
                     status=TaskStatus(state=TaskState.TASK_STATE_INPUT_REQUIRED))
         executor.open[task.id] = {"item": deepcopy(ITEM), "ask": 130, "round": 1,

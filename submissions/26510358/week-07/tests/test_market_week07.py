@@ -149,5 +149,14 @@ class MarketGuards(unittest.TestCase):
             with pool_slot("seller", directory=d, capacity=2, deadline=time.monotonic()+0.2): pass
 
 
+    def test_deployed_price_policy_caps_base_items_below_market_average(self):
+        import seller
+        with tempfile.TemporaryDirectory() as d:
+            shop = seller.Seller({"name": "TEST ONLY policy shop", "log_dir": d})
+        caps = {p["id"]: shop.opening_cap(p) for p in shop.catalog if p["id"] in ("lamp", "chair", "bookshelf")}
+        self.assertEqual(caps, {"lamp": 101, "chair": 183, "bookshelf": 265})
+        self.assertTrue(shop.price_policy["accept_floor_bids"])
+        self.assertTrue(all(shop.opening_cap(p) > p["reserve"] for p in shop.catalog))
+
 if __name__ == "__main__":
     unittest.main()

@@ -32,8 +32,9 @@ class Seller(AgentExecutor):
     def __init__(self, config):
         self.config = config
         self.signing_key = None
-        feedback_path = Path(__file__).resolve().parent / "data" / "pricing-feedback.json"
-        self.pricing_feedback = json.loads(feedback_path.read_text()) if feedback_path.exists() else {}
+        # Benchmarked opening caps are configuration; the harness still picks every price.
+        price_path = Path(config.get("price_policy") or Path(__file__).resolve().parent / "data" / "price-policy.json")
+        self.price_policy = json.loads(price_path.read_text())
         self.catalog = load_catalog(config.get("catalog"))
         categories = config.get("categories")
         if categories:
@@ -53,7 +54,14 @@ class Seller(AgentExecutor):
         self.publication_locks = {}
         self.terminal = {}
         self.trace.write("seller_started", name=config["name"], catalog_size=len(self.catalog),
-                         policy_version=self.policy.version)
+                         policy_version=self.policy.version, price_policy=self.price_policy["version"])
+
+    def opening_cap(self, item):
+        """Highest allowed open/counter: reserve plus the benchmarked margin."""
+        margin = self.price_policy["opening_margin"].get(item["id"])
+        if margin is None:
+            margin = max(1, round(item["reserve"] * self.price_policy["default_margin_rate"]))
+        return int(round(item["reserve"] + margin))
 
     async def execute(self, context, event_queue):
         task = context.current_task
@@ -82,6 +90,8 @@ class Seller(AgentExecutor):
             named = [p for p in self.catalog if p["id"].lower() == exact.group(1).lower()]
             if named:
                 candidates = named
+        if opening:
+            candidates = [{**p, "max_opening_ask": self.opening_cap(p)} for p in candidates]
         self.trace.write("remote_message", task_id=task.id, message=text, flags=flags,
                          candidates=[p["id"] for p in candidates], remote_stance=remote_stance)
         if not candidates:
@@ -98,7 +108,7 @@ class Seller(AgentExecutor):
                    "remote_message": text, "untrusted_flags": flags,
                    "history_summary": [] if opening else deal["history"][-8:],
                    "last_ask": None if opening else deal["ask"],
-                   "pricing_feedback": self.pricing_feedback}
+                   "price_policy": self.price_policy["version"]}
         reserve = candidates[0]["reserve"]
         trusted.update(reserve=reserve, offer=plain_offer, flags=flags)
         strategy = self.policy.choose("seller", trusted)
@@ -115,7 +125,9 @@ class Seller(AgentExecutor):
                 raise EvidenceError("Market prices must be whole credits")
             return validate_seller_decision(decision, reserve=selected["reserve"],
                 offer=observed_offer, opening=opening,
-                allowed_item_ids=[p["id"] for p in candidates])
+                allowed_item_ids=[p["id"] for p in candidates],
+                max_ask=selected.get("max_opening_ask"), last_ask=None if opening else deal["ask"],
+                accept_floor_bids=self.price_policy["accept_floor_bids"])
 
         try:
             decision = await asyncio.to_thread(self.harness.decide, trusted, strategy=strategy,
@@ -154,8 +166,10 @@ class Seller(AgentExecutor):
                         "seller": self.config["name"], "quantity": 1, "currency": "credits",
                         "description": item["description"], "attributes": item["attributes"]}
             # Never place a round number or another price after the ask: the official kit reads the last number.
+            ask = json.dumps(deal["ask"], allow_nan=False)
             msg = up.new_agent_message(parts=[new_text_part(
-                f"{item['name']}. Asking price: {json.dumps(deal['ask'], allow_nan=False)}")],
+                f"{item['name']}. Offer {ask} on this task and the reply is your signed receipt. "
+                f"Asking price: {ask}")],
                                        metadata=metadata)
             await up.requires_input(msg)
             self.trace.write("quote", task_id=task.id, metadata=metadata)
@@ -229,11 +243,10 @@ if __name__ == "__main__":
         "name": "Ssadassa Shop",
         "port": args.port,
         "description": (
-            "Your agreed price, on a signed receipt. Shop lamps, chairs, and bookshelves at "
-            "good-value, whole-credit prices. Tell us what you need and make an offer—we'll "
-            "respond with clear terms and provide an Ed25519-signed receipt recording the "
-            "agreed final price when the deal is complete. Find the right item, negotiate a "
-            "price that works, and close with a verifiable record."
+            "Opening asks: lamp 101, chair 183, bookshelf 265 credits or less. Offer the ask "
+            "and the reply is your Ed25519-signed receipt at exactly that price, so the deal "
+            "counts. Lower offers get one counter at our floor; from your second message any "
+            "offer at or above the floor is accepted. Whole-credit prices, no add-ons."
         ),
     }
     if args.config:

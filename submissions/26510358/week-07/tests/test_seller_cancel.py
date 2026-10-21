@@ -74,7 +74,7 @@ class SellerCancelTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(seller, "Trace", RecordingTrace), \
                 patch.object(seller, "load_catalog", return_value=[deepcopy(ITEM)]), \
                 patch.object(seller, "StrategyPolicy", StubPolicy):
-            return seller.Seller({"name": "TEST ONLY cancellation seller"})
+            return seller.Seller({"name": "TEST ONLY cancellation seller", "price_policy": str(Path(__file__).with_name("price-policy-test-only.json"))})
 
     async def cancel_during_model(self, action, *, fail=False, queued_turn=False):
         executor, queue = self.make_seller(), RecordingQueue()

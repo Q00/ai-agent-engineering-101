@@ -29,6 +29,29 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(numeric_price(100), 100.0)
         self.assertEqual(numeric_price(100.5), 100.5)
 
+    def test_benchmark_seller_guards(self):
+        caps = {"max_ask": 101, "accept_floor_bids": True}
+        self.assertEqual(validate_seller_decision(decision("open", 101), reserve=100, opening=True, **caps)["price"], 101)
+        rejected = [
+            (decision("open", 110), {"opening": True}),                       # above the benchmarked cap
+            (decision("open", 101, offer=100), {"opening": True, "offer": 100}),  # must open at the feasible bid
+            (decision("counter", 101, offer=100), {"offer": 100, "last_ask": 101}),  # feasible bid must be accepted
+            (decision("reject", None, offer=100), {"offer": 100, "last_ask": 101}),
+            (decision("counter", 101, offer=90), {"offer": 90, "last_ask": 101}),    # counter only at the floor
+        ]
+        for invalid, kwargs in rejected:
+            with self.subTest(decision=invalid):
+                with self.assertRaises(EvidenceError):
+                    validate_seller_decision(invalid, reserve=100, **caps, **kwargs)
+        self.assertEqual(validate_seller_decision(decision("open", 100, offer=100), reserve=100,
+                                                  opening=True, offer=100, **caps)["price"], 100)
+        self.assertEqual(validate_seller_decision(decision("accept", 100, offer=100), reserve=100,
+                                                  offer=100, last_ask=101, **caps)["action"], "accept")
+        self.assertEqual(validate_seller_decision(decision("counter", 100, offer=90), reserve=100,
+                                                  offer=90, last_ask=101, **caps)["price"], 100)
+        with self.assertRaises(EvidenceError):
+            validate_seller_decision(decision("counter", 101), reserve=100, last_ask=100, **caps)
+
     def test_seller_guards_never_repair_a_price(self):
         invalid = decision("counter", 90)
         original = copy.deepcopy(invalid)

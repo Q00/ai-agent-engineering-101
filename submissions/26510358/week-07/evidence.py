@@ -76,8 +76,14 @@ def _decision(decision: Mapping[str, Any]) -> dict[str, Any]:
 def validate_seller_decision(
     decision: Mapping[str, Any], *, reserve: float, offer: float | None = None,
     opening: bool = False, allowed_item_ids: Iterable[str] | None = None,
+    max_ask: float | None = None, last_ask: float | None = None,
+    accept_floor_bids: bool = False,
 ) -> dict[str, Any]:
-    """Validate a seller decision, preserving its action and exact supplied price."""
+    """Validate a seller decision, preserving its action and exact supplied price.
+
+    max_ask/last_ask cap quotes and accept_floor_bids requires accepting any
+    follow-up bid at or above the floor; none of them ever repair a price.
+    """
     result = _decision(decision)
     floor = numeric_price(reserve)
     incoming = numeric_price(offer) if offer is not None else None
@@ -100,6 +106,19 @@ def validate_seller_decision(
             raise EvidenceError("quote or acceptance requires a numeric price")
         if numeric_price(price) < floor:
             raise EvidenceError("seller price is below the item's reserve")
+    if action in {"open", "counter"}:
+        if max_ask is not None and numeric_price(price) > numeric_price(max_ask):
+            raise EvidenceError(f"quote must not exceed the configured max_opening_ask {max_ask}")
+        if action == "counter" and last_ask is not None and numeric_price(price) > numeric_price(last_ask):
+            raise EvidenceError("a counter must not raise the previous ask")
+        if opening and accept_floor_bids and incoming is not None and incoming >= floor \
+                and numeric_price(price) > incoming:
+            raise EvidenceError("open at the buyer's feasible bid (or lower) so it can be accepted next")
+    if accept_floor_bids and not opening and incoming is not None:
+        if incoming >= floor and action != "accept":
+            raise EvidenceError("a follow-up bid at or above the floor must be accepted at exactly that bid")
+        if incoming < floor and action == "counter" and numeric_price(price) != floor:
+            raise EvidenceError("counter a below-floor bid once, at exactly the reserve")
     if action == "accept":
         if incoming is None:
             raise EvidenceError("acceptance requires evidence of an incoming offer")
