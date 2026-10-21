@@ -69,7 +69,7 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
         self.assertIn("4- or 5-star", card["description"])
         self.assertIn("Payment is manual", card["description"])
         self.assertIn("no fixed rate/auto payout", card["description"])
-        self.assertIn("in bulk after event", card["description"])
+        self.assertIn("in bulk on 10-29 KST", card["description"])
         self.assertIn("2026-10-21 09:51", card["description"])
         self.assertIn("10-28 09:51 KST", card["description"])
         self.assertLessEqual(len(card["description"]), 300)
