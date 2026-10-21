@@ -12,6 +12,8 @@ import uuid
 import uvicorn
 from google.protobuf.json_format import MessageToDict
 from starlette.applications import Starlette
+from starlette.responses import JSONResponse
+from starlette.routing import Route
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
 from a2a.server.agent_execution import AgentExecutor
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -26,7 +28,8 @@ from harness import Harness, HarnessError
 from policy import StrategyPolicy, strategy_instruction
 from tracing import Trace
 from receipts import load_shop_key, sign_receipt
-from rank_pricing import RankPricing
+from rank_pricing import RankPricing, opening_ask
+from shopfront import public_items, public_description, public_skills
 from buyer_access import BuyerAccess
 from referral_pricing import code_claim, item_query, referral_terms
 
@@ -65,10 +68,7 @@ class Seller(AgentExecutor):
     def opening_cap(self, item, quote_policy=None):
         """Highest allowed quote under this task's original pricing phase."""
         quote_policy = quote_policy or self.rank_pricing.quote_policy()
-        margin = quote_policy["opening_margin"].get(item["id"])
-        if margin is None:
-            margin = max(1, round(item["reserve"] * quote_policy["default_margin_rate"]))
-        return int(round(item["reserve"] + margin))
+        return opening_ask(item, quote_policy)
 
     async def execute(self, context, event_queue):
         task = context.current_task
@@ -295,6 +295,7 @@ class CancellationAwareRequestHandler(DefaultRequestHandler):
 
 
 def build(config):
+    executor = Seller(config)
     categories = config.get("categories", ["lamp", "chair", "bookshelf"])
     description = config.get("description", "Shop selling " + ", ".join(categories) +
         ". Request a current quote; completed purchases include an Ed25519-signed receipt.")
@@ -307,8 +308,19 @@ def build(config):
             "Name an item to receive a quote. Reply with a numeric offer on the same task; "
             "the shop responds with a counteroffer, a signed receipt, or a rejection."),
             tags=["shopping", *categories], examples=["I want to buy a lamp", "A wooden shelf for 40 books"])])
-    handler = CancellationAwareRequestHandler(agent_executor=Seller(config), task_store=InMemoryTaskStore(), agent_card=card)
-    return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
+    handler = CancellationAwareRequestHandler(agent_executor=executor, task_store=InMemoryTaskStore(), agent_card=card)
+    routes = create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/")
+    if config.get("public_profile"):
+        async def public_card(_request):
+            # No network/model call on discovery. The cached phase is the latest
+            # observed phase; a fresh negotiation always obtains its own quote.
+            offers = public_items(executor.catalog, executor.rank_pricing.quote_policy())
+            body = MessageToDict(card)
+            body["description"] = config.get("description") or public_description(offers)
+            body["skills"] = public_skills(offers)
+            return JSONResponse(body, headers={"Cache-Control": "no-store"})
+        routes.insert(0, Route("/.well-known/agent-card.json", public_card, methods=["GET"]))
+    return Starlette(routes=routes)
 
 
 if __name__ == "__main__":
@@ -320,11 +332,7 @@ if __name__ == "__main__":
     config = {
         "name": "Ssadassa Shop",
         "port": args.port,
-        "description": (
-            "Ssadassa Shop by myeonggi : Lamps, chairs and bookshelves. Request a current quote, then send your offer "
-            "as a number on the same task. Agreed purchases receive an Ed25519-signed "
-            "receipt showing the item and exact agreed price."
-        ),
+        "public_profile": True,
     }
     if args.config:
         config.update(json.loads(Path(args.config).read_text()))

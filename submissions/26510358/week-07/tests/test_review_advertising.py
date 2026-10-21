@@ -22,9 +22,13 @@ class AllReviewAdvertisingTests(unittest.TestCase):
         memory.read.return_value = {}
         model = Mock()
         model.decide.return_value = {"action": "select_shop", "item_id": name, "reason": "TEST ONLY"}
+        rank = Mock()
+        rank.quote_policy.return_value = {"phase": "acquisition", "opening_margin": {"lamp":0,"chair":0,"bookshelf":0},
+            "default_margin_rate":0.02,"accept_floor_bids":True,"review_referral":{}}
         with patch.object(market_buyer, "rank_shops", return_value=[] if stage == "excluded" else [candidate]), \
                 patch.object(market_buyer, "check_card", return_value=None if stage == "unavailable" else candidate), \
                 patch.object(market_buyer, "Harness", return_value=model), \
+                patch.object(market_buyer, "RankPricing", return_value=rank), \
                 patch.object(market_buyer, "negotiate", return_value=deepcopy(result), side_effect=error) as trade:
             response = market_buyer.buy([candidate], "lamp", 120, memory, RecordingTrace())
         if stage == "trade":
@@ -32,11 +36,10 @@ class AllReviewAdvertisingTests(unittest.TestCase):
         else:
             trade.assert_not_called()
         self.assertEqual(response["review"].count("Ad (my shop)"), 1)
-        self.assertIn("REVIEW10", response["review"])
-        self.assertIn("new recovery quotes; item + code in first message. Acquisition excluded.", response["review"])
-        self.assertIn("\n\nAd (my shop): Hey there—looking sharp! I may collapse before the chairs do!\n\n", response["review"])
-        self.assertIn("Owner’s emotional damage: 100%!", response["review"])
-        self.assertTrue(response["review"].endswith("Place it later. Look first!"))
+        self.assertNotIn("REVIEW10", response["review"])
+        self.assertIn("lamp 100, chair 180, bookshelf 260 credits", response["review"])
+        self.assertIn("\n\nAd (my shop): Ssadassa Shop / myeonggi", response["review"])
+        self.assertTrue(response["review"].endswith("exact-price Ed25519-signed receipt."))
         self.assertNotIn("{buyer name}", response["review"])
         self.assertNotIn("registry verification delegated", response["review"])
         self.assertNotIn("seller signature present", response["review"])

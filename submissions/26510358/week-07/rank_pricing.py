@@ -17,6 +17,14 @@ import time
 import urllib.request
 
 
+def opening_ask(item, quote_policy):
+    """One shared calculation for the seller's public, enforceable quote cap."""
+    margin = quote_policy["opening_margin"].get(item["id"])
+    if margin is None:
+        margin = max(1, round(item["reserve"] * quote_policy["default_margin_rate"]))
+    return int(round(item["reserve"] + margin))
+
+
 class RankPricing:
     def __init__(self, policy, trace, *, state_path=None, fetch_board=None, clock=time.monotonic):
         self.policy = policy
