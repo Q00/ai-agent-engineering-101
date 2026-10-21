@@ -83,7 +83,7 @@ def result_task(body):
 
 
 @contextmanager
-def actual_sdk_server(*, block_opening=False, gate_receipt=False):
+def actual_sdk_server(*, block_opening=False, gate_receipt=False, public_profile=False):
     """Use production build/routes/store/TaskUpdater, replacing only test model/config."""
     state = SimpleNamespace(model_started=threading.Event(), model_release=threading.Event(),
         model_finished=threading.Event(), cancel_entered=threading.Event(),
@@ -131,7 +131,7 @@ def actual_sdk_server(*, block_opening=False, gate_receipt=False):
             patch.object(seller, "load_catalog", return_value=[deepcopy(ITEM)]), \
             patch.object(Harness, "decide", stub_model), \
             patch.object(TaskUpdater, "add_artifact", gated_add_artifact):
-        app = seller.build({"name": "TEST ONLY cancellation HTTP shop", "port": port, "price_policy": str(Path(__file__).with_name("price-policy-test-only.json"))})
+        app = seller.build({"name": "TEST ONLY cancellation HTTP shop", "port": port, "public_profile": public_profile, "price_policy": str(Path(__file__).with_name("price-policy-test-only.json"))})
         server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, loop="asyncio",
             log_level="error", access_log=False, timeout_graceful_shutdown=2))
         thread = threading.Thread(target=server.run, kwargs={"sockets": [sock]}, daemon=True)

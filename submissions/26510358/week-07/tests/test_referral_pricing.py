@@ -61,8 +61,8 @@ class ReferralPricingTests(unittest.TestCase):
         self.assertIsNone(code_claim("TESTCODE10", {}, {}))
         notice = review_notice(RULE)
         self.assertIn("Ad (my shop)", notice)
-        self.assertIn("recovery", notice)
-        self.assertIn("Acquisition excluded", notice)
+        self.assertIn("eligible standard quotes", notice)
+        self.assertIn("Promotional prices excluded", notice)
 
 
 class ReferralSellerTests(unittest.IsolatedAsyncioTestCase):

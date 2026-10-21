@@ -49,16 +49,20 @@ def referral_terms(item, reference_price, quote_policy, claim_source):
     return terms
 
 
-def review_notice(rule):
+def review_notice(rule, *, offers=None):
     """Clearly separate our own advertisement from a review of another shop."""
     if not rule or not rule.get("enabled"):
         return ""
-    # The public reader's identity is unavailable, so do not invent a name.
-    return ("Ad (my shop): Hey there—looking sharp! I may collapse before the chairs do!\n\n"
-            "Ssadassa Shop / myeonggi: lamps light rooms, chairs support your behind, "
-            "bookshelves make you look well-read!\n\n" + rule["code"] + ": " + str(rule["percent"]) +
-            "% off new recovery quotes; item + code in first message. Acquisition excluded. "
-            "Owner’s emotional damage: 100%!\n\nPlace it later. Look first!")
+    text = "Ad (my shop): Ssadassa Shop / myeonggi — "
+    if offers:
+        text += ", ".join(f"{item['id']} {item['price']}" for item in offers) + " credits. "
+    else:
+        text += "lamps, chairs and bookshelves. "
+    text += "Ask for a current quote; exact-price Ed25519-signed receipt."
+    if offers is None or any(item.get("discount") for item in offers):
+        text += (" " + rule["code"] + ": " + str(rule["percent"]) +
+                 "% off eligible standard quotes; item + code in first message. Promotional prices excluded.")
+    return text
 
 
 def append_review_notice(review, notice, *, limit=400):

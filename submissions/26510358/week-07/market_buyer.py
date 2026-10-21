@@ -14,6 +14,9 @@ from harness import Harness
 from market_memory import MarketMemory, rank_shops
 from tracing import Trace
 from referral_pricing import append_review_notice, review_notice
+from catalog import load_catalog
+from rank_pricing import RankPricing
+from shopfront import public_items
 
 ROOT = Path(__file__).resolve().parent
 OWN_NAMES = {"myeonggi", "gacha-shop", "SUNGMYEONGGI"}
@@ -58,7 +61,10 @@ def buy(shops, item, budget, memory, trace):
     # Read campaign text before attempting a purchase; configuration failure
     # must not cause a successfully received receipt to be discarded afterward.
     try:
-        notice = review_notice(json.loads((ROOT / "data" / "price-policy.json").read_text()).get("review_referral"))
+        price_policy = json.loads((ROOT / "data" / "price-policy.json").read_text())
+        quote_policy = RankPricing(price_policy, trace).quote_policy()
+        notice = review_notice(price_policy.get("review_referral"),
+                               offers=public_items(load_catalog(), quote_policy))
         if len(notice.strip()) >= 400:
             raise ValueError("Review advertisement must fit within the public review limit")
     except (OSError, ValueError, KeyError, TypeError) as exc:
