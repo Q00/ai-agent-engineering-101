@@ -79,22 +79,29 @@ class Seller(AgentExecutor):
         async with lock:
             if task.id in self.terminal:
                 return
-            message_metadata = MessageToDict(context.message.metadata) if context.message is not None else {}
-            call_context = getattr(context, "call_context", None)
-            denied = self.buyer_access.match(user=getattr(call_context, "user", None),
-                message_metadata=message_metadata, request_metadata=getattr(context, "metadata", None))
+            denied = self._buyer_access_denial(context)
             if denied:
                 async with self.publication_locks.setdefault(task.id, asyncio.Lock()):
-                    if task.id not in self.terminal:
-                        up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
-                        await up.reject(up.new_agent_message(parts=[new_text_part(
-                            "This shop is unavailable to this buyer under its local access policy.")]))
-                        self.open.pop(task.id, None)
-                        self.terminal[task.id] = "rejected"
-                        self.trace.write("buyer_access_denied", task_id=task.id,
-                                         policy_version=self.buyer_access.version, **denied)
+                    await self._reject_buyer(task, event_queue, denied)
                 return
             await self._turn(task, context, event_queue)
+
+    def _buyer_access_denial(self, context):
+        metadata = MessageToDict(context.message.metadata) if context.message is not None else {}
+        call_context = getattr(context, "call_context", None)
+        return self.buyer_access.match(user=getattr(call_context, "user", None),
+            message_metadata=metadata, request_metadata=getattr(context, "metadata", None))
+
+    async def _reject_buyer(self, task, event_queue, denied):
+        """Caller holds the publication lock, so denial cannot race a receipt."""
+        if task.id not in self.terminal:
+            up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
+            await up.reject(up.new_agent_message(parts=[new_text_part(
+                "This shop is unavailable to this buyer under its local access policy.")]))
+            self.open.pop(task.id, None)
+            self.terminal[task.id] = "rejected"
+            self.trace.write("buyer_access_denied", task_id=task.id,
+                             policy_version=self.buyer_access.version, **denied)
 
     async def _turn(self, task, context, event_queue):
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
@@ -190,6 +197,10 @@ class Seller(AgentExecutor):
             if task.id in self.terminal:
                 self.trace.write("terminal_decision_discarded", task_id=task.id,
                                  state=self.terminal[task.id])
+                return
+            denied = self._buyer_access_denial(context)
+            if denied:
+                await self._reject_buyer(task, event_queue, denied)
                 return
             await self._publish_decision(task, up, candidates, deal, opening, text, decision,
                                          quote_policy=quote_policy)
