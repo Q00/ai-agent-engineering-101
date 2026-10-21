@@ -1,4 +1,4 @@
-# Week07 VPS seller (1.2.0)
+# Week07 VPS seller (1.2.1)
 
 This package runs the existing seller and price comparison monitor, with a named
 Cloudflare tunnel in the same container. `serve_public.py` uses the existing
@@ -61,7 +61,9 @@ from the build context. No secrets enter the image layers.
 
 ## Fixed stop contract
 
-The guard stops both child process groups at **2026-10-21 09:00 Asia/Seoul** or
+The user extended this run from 09:00 to 21:00 on 2026-10-21 while retaining
+the same immutable baseline and cumulative usage cap. The guard stops both child
+process groups at **2026-10-21 21:00 Asia/Seoul** or
 when the immutable baseline plus retained `seller.log` MODEL_USAGE records reaches
 **5000**, whichever occurs first. Each MODEL_USAGE record counts one observed
 completed model response, not tokens. The counter is observed from the model's

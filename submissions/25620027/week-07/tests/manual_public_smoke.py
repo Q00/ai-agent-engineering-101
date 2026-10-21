@@ -18,7 +18,7 @@ from market_a2a.remote import Card, Checkout, Remote, Wire, purchase
 
 BASE_URL: Final = "https://ax-week07.treasuresky.xyz"
 EVIDENCE: Final = (
-    Path(__file__).resolve().parents[1] / ".omo/evidence/price-comparison-rollout"
+    Path(__file__).resolve().parents[1] / ".omo/evidence/top3-followup-20261021"
 )
 
 
@@ -59,7 +59,7 @@ async def main() -> None:
             )
             _ = response.raise_for_status()
             card = VersionedCard.model_validate_json(response.content)
-            assert card.version == "1.2.0"
+            assert card.version == "1.2.1"
             compared = await client.get(BASE_URL + "/price-comparison.json")
             _ = compared.raise_for_status()
             comparison = ComparisonDocument.model_validate_json(compared.content)
