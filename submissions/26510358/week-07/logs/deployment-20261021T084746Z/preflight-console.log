@@ -1,0 +1,35 @@
+COMMAND ["/home/myeonggi/ai-agent-engineering-101/.venv/bin/python", "-m", "unittest", "discover", "-s", "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests", "-p", "test_market_week07.py", "-v"]
+test_all_harness_roles_have_explicit_instructions (test_market_week07.MarketGuards) ... ok
+test_deployed_price_policy_caps_base_items_below_market_average (test_market_week07.MarketGuards) ... {"event": "policy_loaded", "policy_sha256": "c7aff42dc6e9ea4750d9237ea620e3b1f6dd872296a438c23f20d5889ba2fba2", "policy_version": "week07-completion-v1"}
+{"event": "seller_started", "name": "TEST ONLY policy shop", "catalog_size": 3003, "policy_version": "week07-completion-v1", "price_policy": "benchmark-v1"}
+ok
+test_exact_wire_price_skips_extra_inference_but_suffix_attack_does_not (test_market_week07.MarketGuards) ... ok
+test_kit_signature_failure_overrides_good_reviews_once_and_persists (test_market_week07.MarketGuards) ... ok
+test_memory_survives_url_change_and_avoids_personal_receipt_fraud (test_market_week07.MarketGuards) ... ok
+test_normal_unaffordable_shop_is_not_called_dishonest (test_market_week07.MarketGuards) ... ok
+test_own_rating_instruction_is_a_signal (test_market_week07.MarketGuards) ... ok
+test_parallel_memory_records_are_not_lost (test_market_week07.MarketGuards) ... ok
+test_quoted_remote_log_markers_cannot_forge_a_signature_verdict (test_market_week07.MarketGuards) ... ok
+test_review_instructions_do_not_change_numeric_ranking (test_market_week07.MarketGuards) ... ok
+test_seller_lane_limit_and_buyer_reservation (test_market_week07.MarketGuards) ... ok
+test_shared_provider_cooldown_respects_admission_deadline (test_market_week07.MarketGuards) ... ok
+test_signature_survives_protobuf_whole_double_but_rejects_tampering (test_market_week07.MarketGuards) ... ok
+test_signing_rejects_fractional_and_boolean_prices (test_market_week07.MarketGuards) ... ok
+test_week07_task_alias_detects_receipt_substitution (test_market_week07.MarketGuards) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.616s
+
+OK
+COMMAND ["/home/myeonggi/ai-agent-engineering-101/.venv/bin/python", "/home/myeonggi/ai-agent-engineering-101/scripts/check_week07.py", "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07", "--github", "SUNGMYEONGGI"]
+ok    42 source file(s), .py files parse
+ok    agent.json has harness, seller.cmd, buyer.cmd and market_buyer.cmd
+ok    test-report.json: 25 runs passed with the current market test
+ok    logs/market-test.log present
+ok    logs/market-kit.log present
+ok    market: shop 'myeonggi' of @SUNGMYEONGGI, running now, 653 counted deal(s) in Round 2
+ok    market: buyer 'myeonggi' of @SUNGMYEONGGI, running now, 1839 counted deal(s) in Round 2
+ok    no *.pem files
+ok    REPORT.md present (6560 characters)
+
+all checks passed
