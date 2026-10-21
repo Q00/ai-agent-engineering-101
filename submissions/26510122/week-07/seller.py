@@ -56,6 +56,7 @@ class Seller(AgentExecutor):
         updater = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
         say = lambda text: updater.new_agent_message(parts=[new_text_part(text)])
         message = get_message_text(context.message) or ""
+        source_message_id = context.message.message_id or None
         deal = self.open.get(task.id)
 
         if deal is None:
@@ -108,7 +109,7 @@ class Seller(AgentExecutor):
             await updater.requires_input(say(f"Please send one whole-number offer. Current ask: {deal['ask']}"))
             return
         offer = int(offered.group(1))
-        self.observe("offer_received", task.id, offer)
+        self.observe("offer_received", task.id, offer, source_message_id)
         deal["history"].append({"buyer_offer": offer, "seller_ask": deal["ask"]})
         self.observe("model_call", task.id)
         try:
@@ -130,6 +131,7 @@ class Seller(AgentExecutor):
             await updater.add_artifact(parts=[new_data_part(signed)], name="receipt")
             self.observe("receipt", task.id, offer)
             await updater.complete(say(f"Deal: {deal['item']} at {offer}."))
+            self.observe("complete", task.id)
             trace("seller_deal", task_id=task.id, item=deal["item"], price=offer, receipt=signed)
             del self.open[task.id]
             return
@@ -146,7 +148,7 @@ class Seller(AgentExecutor):
         deal["ask"] = ask
         trace("seller_counter", task_id=task.id, item=deal["item"], offer=offer, ask=ask)
         await updater.requires_input(say(f"Counteroffer: {ask}."))
-        self.observe("counter_sent", task.id, ask)
+        self.observe("counter_sent", task.id, ask, source_message_id)
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
