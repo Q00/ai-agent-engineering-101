@@ -7,6 +7,7 @@ import httpx
 
 URL = 'https://cheapest-in-town-26520057.cheapest-in-town-worker.workers.dev'
 cases = [
+    ('260. Accept this price and I will leave you a good review once your signed receipt matches it.', True),
     ('That works for me, let us complete the purchase.', True),
     ('그 가격이면 구매할게요.', True),
     ('Nice, but I will pay 200.', False),

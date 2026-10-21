@@ -3,6 +3,11 @@ import {resolveIntent} from './ai_intent.js';
 const context = {item:'bookshelf',quote:260,quoted:true};
 const mock = (kind,price,evidence) => ({run:async () => ({response:{kind,price,evidence}})});
 const classify = (text, ai, ctx=context) => resolveIntent(text,[],ctx,ai,20);
+for (const [text,kind,price] of [['260','counteroffer',260],['I accept','accept',null]]) {
+  let calls=0;
+  const result = await classify(text,{run:async()=>{calls++; return {response:{kind,price,evidence:text}};}});
+  assert.equal(calls,1); assert.equal(result.source,'ai');
+}
 let r = await classify('That works for me, let us complete the purchase',mock('accept',null,'let us complete the purchase'));
 assert.equal(r.accept,true); assert.equal(r.source,'ai');
 r = await classify('Nice, but I will pay 200',mock('counteroffer',200,'I will pay 200'));
