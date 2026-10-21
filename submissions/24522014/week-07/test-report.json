@@ -1,8 +1,8 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-21T07:52:47+00:00",
-  "harness": "seller: Claude Code + Haiku; buyer: Claude Code + Haiku",
+  "started": "2026-10-21T15:39:52+00:00",
+  "harness": "seller: configured opening and quote protection, Claude Code + Haiku for negotiation; buyer: Claude Code + Haiku",
   "seller_cmd": "python seller.py --mode claude --port {port}",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}",
   "seller_card": {
@@ -10,12 +10,12 @@
     "description": "Negotiates furniture purchases using claude (haiku). Review cashback event: 2026-10-21 09:51–10-28 09:51 KST. Buy + post 4- or 5-star review in period. github.com/kcwarni: task/review, agree best-price amount/unit. Payment is manual/external in bulk on 10-29 KST; no fixed rate/auto payout.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:53704/",
+        "url": "http://127.0.0.1:62589/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
     ],
-    "version": "0.4.0",
+    "version": "0.5.0",
     "capabilities": {
       "streaming": false
     },
@@ -115,22 +115,22 @@
       "test": "buyer_deal",
       "run": 1,
       "pass": true,
-      "detail": "offers [100], stars 5, receipt yes"
-    },
-    {
-      "test": "buyer_protocol_deal",
-      "run": 1,
-      "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
-    },
-    {
-      "test": "buyer_deal",
-      "run": 2,
-      "pass": true,
       "detail": "offers [105], stars 5, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "offers [100], stars 5, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
       "run": 2,
       "pass": true,
       "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
@@ -151,7 +151,7 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [200, 225, 230], stars 3, receipt null"
+      "detail": "offers [200, 220, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -163,19 +163,19 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [185, 220, 230], stars 3, receipt null"
+      "detail": "offers [190, 225], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
     },
     {
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [200, 220, 230], stars 3, receipt null"
+      "detail": "offers [180, 220, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
