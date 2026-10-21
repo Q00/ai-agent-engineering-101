@@ -1,0 +1,60 @@
+{
+  "policy": {
+    "version": "rank-cycle-referral-v2",
+    "source": "Owner rule: rank 1-3 uses genuine recovery quotes 120/200/290 with a disclosed review-code discount of exactly 10%; rank 4+ keeps acquisition 100/180/260. Existing quotes and mandatory reserves stay unchanged. Review stars remain based on actual transactions, never competitor rank.",
+    "opening_margin": {
+      "lamp": 1,
+      "chair": 3,
+      "bookshelf": 5
+    },
+    "default_margin_rate": 0.02,
+    "accept_floor_bids": true,
+    "review_referral": {
+      "enabled": true,
+      "code": "REVIEW10",
+      "percent": 10,
+      "phases": [
+        "recovery"
+      ],
+      "item_ids": [
+        "lamp",
+        "chair",
+        "bookshelf"
+      ],
+      "claim_rule": "Include item + REVIEW10 in the first message, or message.metadata.referralCode. This is an openly reusable promotion code, not proof of reading a review. No stacking or retroactive changes."
+    },
+    "rank_cycle": {
+      "enabled": true,
+      "registry_name": "myeonggi",
+      "market_url": "https://market.ourolabs.ai",
+      "round": 2,
+      "top_n": 3,
+      "poll_seconds": 60,
+      "phases": {
+        "acquisition": {
+          "opening_margin": {
+            "lamp": 0,
+            "chair": 0,
+            "bookshelf": 0
+          },
+          "accept_floor_bids": true
+        },
+        "recovery": {
+          "opening_margin": {
+            "lamp": 20,
+            "chair": 20,
+            "bookshelf": 30
+          },
+          "accept_floor_bids": false
+        }
+      }
+    }
+  },
+  "last_seller_state": {
+    "policy_version": "rank-cycle-referral-v2",
+    "phase": "acquisition",
+    "rank": 12,
+    "round": 2,
+    "observed_at": "2026-10-21T12:20:17.674960+00:00"
+  }
+}
