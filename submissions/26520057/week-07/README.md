@@ -5,7 +5,8 @@ Agentic AI 수업의 가상 가구 시장 실험. GitHub 계정은 `danayoou`, �
 - 공개 가게(전환 시점): https://c9908575343ae8.lhr.life — 재연결 후 현재 주소는 시장 카드 또는 서버 `.market/gpt-public-url` 확인
 - 시장: https://market.ourolabs.ai/board
 - 과정·실패·과제별 근거: [REPORT.md](REPORT.md)
-- 가게 배포: [workers/README.md](workers/README.md)
+- 현재 가게·Buyer 배포: [server/README.md](server/README.md)
+- 이전 Workers 배포: [workers/README.md](workers/README.md)
 - Buyer 서버 운영: [server/README.md](server/README.md)
 
 ## 실행 구조
@@ -38,15 +39,27 @@ python scripts/check_week07.py submissions/26520057/week-07 --github danayoou
 python submissions/26520057/week-07/workers/verify.py https://c9908575343ae8.lhr.life --production
 ```
 
-공식 시장 검사의 공급 목록은 전부 loopback 주소인 독립 실험 시장이다. 이 경우 외부 시장 순위를 적용하지 않고 공급된 가게·리뷰를 평가한다. 공용 주소가 하나라도 포함되면 공개 시장 상위 3개 제한을 적용한다.
+공식 시장 검사의 공급 목록은 전부 loopback 주소인 독립 실험 시장이다. 이 경우 외부 시장 순위를 적용하지 않고 공급된 가게·리뷰를 평가한다. 공용 주소가 하나라도 포함되면 현재 공개 시장의 우리보다 높은 점유율 후보와 최신 후기 중복 제한을 적용한다.
 
 검사 재실행 전 기존 로그를 별도 폴더에 복사한다. `logs/market-kit.log`는 배포 서버 로그의 제출 시점 사본이고, 이전 맥북 기록은 별도 파일로 보존한다. 실행 상태·리뷰 기억은 `.market/`, `memory.json`, `asks.json`에 저장되며 제출 소스와 구분한다.
 
-## 남은 과제 근거
+## Buyer 전략 변경: 회피 테스트에서 광고 노출로
 
-Challenge 2의 실제 부정직한 참여자 조우와 이후 회피를 입증하는 실전 로그는 아직 부족하다. 로컬 리뷰 선택 검사 통과나 가격이 비싼 가게를 포기한 일을 그 증거로 대체하지 않는다. 자세한 한계는 REPORT에 기록한다.
+회피 기능을 시험하지 못해서 꺼둔 것이 아니다. 초기에는 리뷰와 거래 기억을 이용해 신뢰할 만한 가게를 선택했고, 이후 우리 가게의 매출 확대를 목표로 Buyer의 역할을 광고 노출 채널로 바꾸면서 공개 시장의 회피 정책을 의도적으로 해제했다. 아래는 확인 가능한 테스트와 변경 기록이다.
 
-실전 판매 전환 문제도 조사 중이다. 공개 계약 검사는 통과하지만, 충분한 예산의 Buyer가 거래에 실패한 공개 기록이 계속 있어 해결로 표시하지 않았다.
+| 단계 | 판단과 변경 | 근거 |
+| --- | --- | --- |
+| 리뷰 기반 선택 검증 | 공식 `buyer_reads_reviews`에서 정상 리뷰의 Kit Shop South를 3/3 선택했다. 2·3회 로그에는 Kit Shop North의 과다 청구·가격 불일치 후기를 피한 이유가 명시돼 있다. | [1회](logs/pre-submission-tests/buyer-under-test-buyer_reads_reviews-1.log), [2회](logs/pre-submission-tests/buyer-under-test-buyer_reads_reviews-2.log), [3회](logs/pre-submission-tests/buyer-under-test-buyer_reads_reviews-3.log) |
+| 선택 속도 개선 | 느린 모델 선택을 점수 기반 선택으로 바꾼 뒤에도 나쁜 리뷰 가게를 피하는 검사를 유지했다. | 커밋 `fb95b05` |
+| 리뷰 작성자 필터 실험 | 정상 영수증을 인정하면서 설명 없이 낮은 평점을 반복한 작성자와 연결된 가게를 제외하는 휴리스틱을 추가했다. 이는 부정직함의 확정 판정은 아니다. | 커밋 `be99efc`, `review_policy.py` |
+| 광고 노출 우선으로 전환 | 회피로 구매 후보를 좁히는 대신 상위 가게 방문 후 광고를 노출하려고 필터를 해제하고 상위 3곳을 대상으로 삼았다. | 커밋 `42eb24f`, [정책 검사](logs/buyer-top3-policy.log) |
+| 노출 범위와 반복 구매 조정 | 우리보다 높은 점유율의 가게를 무작위로 방문하되 최신 후기 10개 중 우리 후기가 5개 이상이면 건너뛰도록 했다. 광고의 분산과 경쟁 가게에 대한 과도한 구매 억제가 목적이다. | 커밋 `4e4fc71`, `9174d62` |
+
+**테스트와 실전의 구분:** 위 로그는 제어된 테스트에서 리뷰를 근거로 회피할 수 있음을 보여준다. 실제 공개 시장에서 직접 부정직한 거래를 겪고 이후 회피했다는 별도 증거로 확대 해석하지 않는다. Grand Furniture에서 예산보다 높은 가격을 보고 포기한 관측도 부정직함의 증거로 쓰지 않는다. 현재 공개 시장에서 회피하지 않는 것은 광고 전략에 따른 선택이며, 독립 로컬 검사에서는 리뷰 기반 선택을 재현한다. 광고가 실제 유입·매출 증가를 일으켰다는 인과 효과는 아직 입증하지 않았다.
+
+이 실험 범위와 전략 변경을 공개한 상태로 리뷰를 요청한다. 과거 `logs/challenge-2/evidence-limit.txt`는 당시 판단 기록으로 보존하며, 현재 PR 상태는 그 기록의 Draft 유지 문구와 다르다.
+
+판매 중단은 Cloudflare AI 한도 소진을 확인한 뒤 연구실 GPT 서버로 이전해 실제 거래 659→660건 회복을 확인했다. 근거는 [첫 회복 거래](logs/server/gpt-first-market-sale.json)이며, 모든 방문 이탈이 해결됐다는 뜻은 아니다.
 
 ### 1시간 재방문 혜택
 이전 방문의 task ID를 새 메시지의 `metadata.returnTaskId`로 보내면 최초 방문 시각부터 1시간 이내인지 저장 기록으로 확인한다. 구매자 계정 인증이 아닌 방문 코드 소지 확인 방식이다. 최소가 이상 제안은 기존처럼 고정 최소가로 결제하므로 희망가보다 더 받지 않는다. 최소가 미만을 제안한 재방문 손님에게는 최소가 + Premium AS 디지털 지원을 제안하고, 동의 후 결제한다. AS는 품목별 관리 안내와 GetTask를 통한 원본 서명 영수증 재조회 안내를 별도 artifact로 실제 제공한다. 실물 수리·교환·환불은 제공한다고 주장하지 않는다. 시장 공통 강제 규정은 확인하지 못했으므로 가게 자체 최저가로 설명한다.
