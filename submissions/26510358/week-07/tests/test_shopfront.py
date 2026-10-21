@@ -8,7 +8,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from catalog import load_catalog
 from rank_pricing import opening_ask
 from referral_pricing import review_notice
-from shopfront import public_items, public_description
+from shopfront import public_items, public_description, public_skills
 from test_seller_cancel_http import actual_sdk_server
 import httpx
 
@@ -29,7 +29,7 @@ class ShopfrontTests(unittest.TestCase):
         self.assertNotIn('reserve',json.dumps(offers))
         description=public_description(offers)
         self.assertIn('lamp 100, chair 180, bookshelf 260',description[:150])
-        self.assertIn('about 40 books',description)
+        self.assertIn('about 40 books',json.dumps(public_skills(offers)))
         for unsupported in ('handmade','2-year warranty','1+1','five-star','guaranteed lowest'):
             self.assertNotIn(unsupported,description)
 
