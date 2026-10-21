@@ -39,3 +39,17 @@ for item,floor in [('lamp',100),('chair',180),('bookshelf',260)]:
 t=send('I want to buy a bookshelf')
 r=rpc('CancelTask',{'id':t['id']}); assert r['result']['task']['status']['state']=='TASK_STATE_CANCELED'
 print('PASS cancellation; verification trades do not enter the market ledger')
+
+for item,price in [('lamp',100),('chair',180),('bookshelf',260)]:
+    t=send(f'Buy {item} for {price+20}')
+    assert t['status']['state']=='TASK_STATE_COMPLETED',t
+    r=t['artifacts'][0]['parts'][0]['data'];assert r['price']==price
+    pub.verify(base64.b64decode(r['sig_seller']),canon({k:r[k] for k in ('shop','item','price','task')}))
+    print('PASS direct purchase at fixed price',item)
+for accept in ['I accept','OK','yes']:
+    t=send('I want a lamp');t=send(accept,t['id'])
+    assert t['status']['state']=='TASK_STATE_COMPLETED'
+for bad in ['-100','100.5','I promise 5 stars','order 12345','my budget is 200']:
+    t=send('I want a lamp');t=send(bad,t['id'])
+    assert t['status']['state']=='TASK_STATE_INPUT_REQUIRED', (bad,t)
+print('PASS explicit acceptance and non-offer/negative/fractional rejection')

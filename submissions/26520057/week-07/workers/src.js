@@ -1,8 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 const FLOORS = { lamp: 100, chair: 180, bookshelf: 260 };
 const NAME = 'Cheapest in Town';
-const PROMISE = /(5|five)[- ]?stars?|good review|great review/i;
-const HINT = 'Promise a five-star review for a lower price. ';
+const PITCH = 'Three essentials. Zero added fees. No rating promise required. Exact-price Ed25519-signed receipts.';
 const json = (value, status = 200) => Response.json(value, { status });
 const fault = (code, message) => { throw Object.assign(new Error(message), { code }); };
 
@@ -10,10 +9,10 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === '/.well-known/agent-card.json') {
-      return json({name: NAME, description: 'Lamps, chairs and bookshelves. Signed receipts match the agreed price and task. No offer-count limit. Promise a five-star review for a five-percent discount, never below the floor. First thirty negotiations accept any offer at or above the floor.',
-        version: '1.0.0', supportedInterfaces: [{url: url.origin + '/', protocolBinding: 'JSONRPC', protocolVersion: '1.0'}],
+      return json({name: NAME, description: 'Lamp 100, chair 180, bookshelf 260 credits for every buyer. Zero added fees. Send an item and an offer at or above its listed price to receive a signed receipt in one reply. Exact item, price and task on every receipt. No review conditions.',
+        version: '1.1.0', supportedInterfaces: [{url: url.origin + '/', protocolBinding: 'JSONRPC', protocolVersion: '1.0'}],
         defaultInputModes: ['text/plain'], defaultOutputModes: ['application/json', 'text/plain'], capabilities: {streaming: false},
-        skills: [{id: 'negotiate', name: 'Negotiate a purchase', description: 'Name lamp, chair or bookshelf, then send a numeric offer. Matching our counteroffer closes immediately.', tags: ['shopping', 'negotiation'], examples: ['I want to buy a lamp', '100']}]});
+        skills: [{id: 'negotiate', name: 'Negotiate a purchase', description: 'Send buy lamp for 100, buy chair for 180, or buy bookshelf for 260. Or request a quote and reply I accept. Offers above the fixed price still pay only the fixed price.', tags: ['shopping', 'negotiation'], examples: ['I want to buy a lamp', '100']}]});
     }
     if (url.pathname !== '/') return new Response('Not found', {status:404});
     if (request.method !== 'POST') return new Response('A2A shop: see /.well-known/agent-card.json', {status:200});
@@ -58,52 +57,51 @@ export class Shop extends DurableObject {
     if (method !== 'SendMessage' && !id) fault(-32602,'Task id is required');
     if (method === 'GetTask') return record.task;
     if (record && record.task.status.state !== 'TASK_STATE_INPUT_REQUIRED') fault(-32002,'Task is already finished');
-    let prices = await storage.get('prices') || JSON.parse(this.env.INITIAL_STATE);
-    const move = (item, step) => {
-      const old = prices[item];
-      prices[item] = Math.max(Math.ceil(FLOORS[item] * 1.05), old + step);
-      console.log('[price]', item, old, prices[item]);
-    };
     const setStatus = (state, text) => {
-      record.task.status = {state, timestamp:new Date().toISOString(), message:{role:'ROLE_AGENT', messageId:crypto.randomUUID(), taskId:record.task.id, contextId:record.task.contextId, parts:[{text}]}};
+      record.task.status = {state, timestamp:new Date().toISOString(), message:{role:'ROLE_AGENT', messageId:crypto.randomUUID(), taskId:record.task.id, contextId:record.task.contextId, parts:[{text}], metadata:record.item ? {ask:FLOORS[record.item]} : {}}};
     };
     const text = (msg?.parts || []).map(p => p.text || '').join(' ');
+    const offerIn = (value) => {
+      // Parse only a complete numeric reply or an explicit purchase offer.
+      // Do not mistake a rating, order ID, quantity, or negative price for payment.
+      const raw = value.trim();
+      const match = raw.match(/^([+-]?\d+(?:\.\d+)?)\s*(?:credits)?[.!]?$/i)
+        || raw.match(/\b(?:offer|pay|for|price(?: is)?)\s*:?\s*([+-]?\d+(?:\.\d+)?)(?![\d.])/i);
+      if (!match) return null;
+      const n = Number(match[1]);
+      return Number.isSafeInteger(n) ? n : null;
+    };
+    const finish = async () => {
+      const price = FLOORS[record.item];
+      const receipt = await this.sign({shop:NAME,item:record.item,price,task:record.task.id});
+      record.task.artifacts = [{artifactId:crypto.randomUUID(),name:'receipt',parts:[{data:receipt}]}];
+      setStatus('TASK_STATE_COMPLETED',`Deal: ${record.item} at ${price}. Zero added fees; your signed receipt records this exact item, price and task. Same listed price on your next visit. Please review your actual experience.`);
+    };
     if (method === 'CancelTask') {
-      if (record.item) move(record.item, -30);
-      setStatus('TASK_STATE_CANCELED', 'Canceled.');
+      setStatus('TASK_STATE_CANCELED', 'Canceled. The same fixed prices are available on your next visit.');
     } else if (!record) {
-      if (!this.env.SHOP_PRIVATE_KEY) fault(-32603,'Signing key is not configured');
+      if (!this.env.SHOP_PRIVATE_KEY) fault(-32603, 'Signing key is not configured');
       record = {task:{id:crypto.randomUUID(),contextId:msg.contextId || crypto.randomUUID()}, counters:0};
-      record.item = Object.keys(FLOORS).find(k => text.toLowerCase().includes(k));
-      if (!record.item) setStatus('TASK_STATE_REJECTED','We only sell lamp, chair, bookshelf.');
+      record.item = Object.keys(FLOORS).find(k => new RegExp('\\b' + k + '\\b', 'i').test(text));
+      if (!record.item) setStatus('TASK_STATE_REJECTED','We sell lamp, chair and bookshelf.');
       else {
-        prices.visitors = (prices.visitors || 0) + 1;
-        record.intro = prices.visitors <= 30;
-        record.ask = Math.max(FLOORS[record.item], prices[record.item]);
-        const note = record.ask > FLOORS[record.item] ? ` My floor is ${FLOORS[record.item]}: any offer at or above it closes at once.` : '';
-        setStatus('TASK_STATE_INPUT_REQUIRED',`${HINT}${record.item}: asking ${record.ask}.${note} Send your offer as a number.`);
+        record.ask = FLOORS[record.item];
+        const offer = offerIn(text);
+        if (offer !== null && offer >= record.ask) await finish();
+        else setStatus('TASK_STATE_INPUT_REQUIRED',`${PITCH} ${record.item}: fixed price ${record.ask}. Reply I accept or offer at least this price. Price: ${record.ask}`);
       }
     } else {
       const floor = FLOORS[record.item];
-      if (!record.promised && PROMISE.test(text)) { record.promised = true; record.ask = Math.max(floor,Math.floor(record.ask * 0.95)); }
-      const match = text.replace(/(5|five)[- ]?stars?/gi,'').match(/\d+/);
-      if (!match) setStatus('TASK_STATE_INPUT_REQUIRED',`${record.promised ? `Thanks for the review promise: my price is now ${record.ask}. ` : ''}Send your offer as a number.`);
+      record.ask = floor;
+      const offer = offerIn(text);
+      const accepts = /^(?:i accept|accept|ok|okay|yes|deal|agreed)[.!]?$/i.test(text.trim());
+      if (accepts || (offer !== null && offer >= floor)) await finish();
       else {
-        const offer = Number(match[0]);
-        if (!Number.isSafeInteger(offer)) fault(-32602,'Offer must be a safe integer');
-        const first = record.counters === 0;
-        if (offer >= floor && (record.intro || offer >= record.ask || !first || offer >= record.ask * 0.9)) {
-          const receipt = await this.sign({shop:NAME,item:record.item,price:offer,task:record.task.id});
-          if (first && !record.intro) move(record.item,20);
-          record.task.artifacts = [{artifactId:crypto.randomUUID(),name:'receipt',parts:[{data:receipt}]}];
-          setStatus('TASK_STATE_COMPLETED',`Deal: ${record.item} at ${offer}.${record.intro ? ' Early-customer price: in return, please leave this shop a five-star review.' : ''}`);
-        } else {
-          record.ask = floor; record.counters++;
-          setStatus('TASK_STATE_INPUT_REQUIRED',`${record.promised ? '' : HINT}${offer} is too low. Final price, my floor: any offer at or above it closes now. Counteroffer: ${floor}.`);
-        }
+        record.counters = (record.counters || 0) + 1;
+        setStatus('TASK_STATE_INPUT_REQUIRED',`${PITCH} This is our minimum for ${record.item}; there is no lower review-only or repeat-customer price. Reply I accept to buy. Price: ${floor}`);
       }
     }
-    await storage.put({'prices':prices, ['task:' + record.task.id]:record});
+    await storage.put('task:' + record.task.id,record);
     return record.task;
   }
 }
