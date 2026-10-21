@@ -79,6 +79,11 @@ def quote_message(updater: TaskUpdater, notice: QuoteNotice) -> Message:
                     (
                         notice.product.name,
                         ".",
+                        (
+                            f" Fixed minimum: {notice.price}; no lower bids."
+                            if price_final
+                            else ""
+                        ),
                         coupon_text,
                         comparison_text,
                         (
@@ -98,7 +103,9 @@ def quote_message(updater: TaskUpdater, notice: QuoteNotice) -> Message:
             "name": notice.product.name,
             "ask": notice.price,
             "price_final": price_final,
-            "coupon_code": "R2WELCOME",
+            "negotiable": not price_final,
+            "minimum_acceptable_offer": notice.price if price_final else None,
+            "coupon_code": "R2WELCOME" if discount or not price_final else "",
             "coupon_discount": discount,
             "total_reduction": reduction,
             "coupon_applied": "true" if notice.coupon_applied else "false",

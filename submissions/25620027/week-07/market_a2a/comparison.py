@@ -12,6 +12,7 @@ from market_a2a.models import FrozenModel, Product
 REFRESH_SECONDS: Final = 600
 MAX_AGE_SECONDS: Final = 900
 BASIC_ITEMS: Final = ("lamp", "chair", "bookshelf")
+MIN_NEAR_LOWEST_SHOPS: Final = 3
 
 
 class ObservedQuote(FrozenModel):
@@ -60,6 +61,8 @@ class OwnComparison(FrozenModel):
     lowest_peer_ask: int | None
     observed_shop_count: int
     relation: Literal["lower", "equal", "higher", "unavailable"]
+    pricing_policy: Literal["baseline", "undercut_lowest", "near_lowest"] = "baseline"
+    second_lowest_peer_ask: int | None = None
 
 
 class ComparisonDocument(FrozenModel):
@@ -94,7 +97,7 @@ def compare_price(
     snapshot: ComparisonSnapshot | None,
     now: dt.datetime | None = None,
 ) -> OwnComparison:
-    """Undercut observed basic asks where feasible; never cut below the reserve."""
+    """Bound near-lowest openings by fresh quotes, reserve and the baseline cap."""
     baseline = opening_max(product.reserve)
     current = now if now is not None else dt.datetime.now(dt.UTC)
     observations: list[int] = []
@@ -124,11 +127,23 @@ def compare_price(
             if quote is not None and quote.ask is not None:
                 observations.append(quote.ask)
     lowest = min(observations) if observations else None
+    second = (
+        sorted(observations)[1]
+        if len(observations) >= MIN_NEAR_LOWEST_SHOPS
+        else None
+    )
+    policy: Literal["baseline", "undercut_lowest", "near_lowest"] = (
+        "undercut_lowest" if lowest is not None else "baseline"
+    )
     ceiling = (
         max(product.reserve, min(baseline, lowest - 1))
         if lowest is not None
         else baseline
     )
+    if lowest is not None and second is not None and second > lowest:
+        premium = max(1, product.reserve * 2 // 100)
+        ceiling = max(product.reserve, min(baseline, second - 1, lowest + premium))
+        policy = "near_lowest"
     relation: Literal["lower", "equal", "higher", "unavailable"] = "unavailable"
     if lowest is not None:
         if ceiling < lowest:
@@ -144,4 +159,6 @@ def compare_price(
         lowest_peer_ask=lowest,
         observed_shop_count=len(observations),
         relation=relation,
+        pricing_policy=policy,
+        second_lowest_peer_ask=second,
     )

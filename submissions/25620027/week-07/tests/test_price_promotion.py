@@ -163,7 +163,7 @@ def test_actual_release_page_puts_observations_before_baseline_catalog() -> None
     document = cast("dict[str, object]", json.loads(terms.split("</script>")[0]))
     comparison = cast("dict[str, object]", document["price_comparison"])
     coupon = cast("dict[str, object]", document["coupon"])
-    assert document["strategy_version"] == "1.3.0"
+    assert document["strategy_version"] == "1.4.0"
     assert comparison["refresh_seconds"] == 600
     assert comparison["max_age_seconds"] == 900
     assert coupon["guaranteed"] is False

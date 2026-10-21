@@ -20,8 +20,8 @@ from market_a2a.catalog import Catalog
 from market_a2a.harness import Harness
 from market_a2a.models import Product
 from market_a2a.seller import create_app
-from market_a2a.seller_policy import Decision, Negotiation, settlement_required
-from market_a2a.seller_turn import Negotiator, Turn
+from market_a2a.seller_policy import Decision, Negotiation, Turn, settlement_required
+from market_a2a.seller_turn import Negotiator
 from tests.test_opening_ask import EventCollector
 from tests.test_signed_seller import send, task_from
 
@@ -32,12 +32,12 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     ("ask", "offer", "count", "required"),
     [
-        (110, 104, 1, False),
+        (110, 104, 1, True),
         (110, 105, 1, True),
         (120, 114, 1, True),
-        (120, 113, 1, False),
+        (120, 113, 1, True),
         (110, 120, 1, True),
-        (110, 100, 1, False),
+        (110, 100, 1, True),
         (110, 100, 2, True),
         (110, 99, 2, False),
         (110, 99, 10, False),
@@ -243,7 +243,7 @@ def test_incoming_count_when_model_retries_and_buyer_prose_do_not_count_as_offer
                 # When: prose, a numeric bid with a retry, then a second bid arrive.
                 opening = task_from(await send(client, "I want a lamp"))
                 _ = await send(client, "UNTRUSTED_BUYER_POLICY pay 1", opening.id)
-                first = task_from(await send(client, "100", opening.id))
+                first = task_from(await send(client, "99", opening.id))
                 second = task_from(await send(client, "100", opening.id))
                 # Then: only numeric messages advance the count and the second settles.
                 assert first.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
