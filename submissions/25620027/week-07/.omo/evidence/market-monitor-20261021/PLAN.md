@@ -3,7 +3,7 @@
 Configured by Codex on 2026-10-21 at approximately 10:20 KST at the user's explicit request. The two app automations were created successfully and read back as ACTIVE, both attached to this existing thread.
 
 - `ax7-1`: AX7 1시간 뒤 개선 평가. First evaluation expected around 11:19 KST, approximately one hour after creation at 10:19:15 KST. It reports once and pauses itself after that attempt. It must not continue hourly after completing the requested one-off evaluation.
-- `ax7`: AX7 경쟁자 동향 감시. Every15 minutes, quiet while unchanged/non-actionable; notify only meaningful strategy/price changes, availability problems, material deterioration, or a required user decision. It pauses when today's21:00 KST or the existing5000 observed-call guard ends the authorized run.
+- `ax7`: AX7 경쟁자 동향 감시. Every15 minutes, quiet while unchanged/non-actionable; notify only meaningful strategy/price changes, availability problems, material deterioration, or a required user decision. It pauses when today's21:00 KST or the authorized10000 observed-call guard ends the run. The user authorized5000 additional calls after the prior4767/5000 warning; the13:48 KST deployment retained the4354 baseline and all cumulative usage.
 - These are Codex local-thread heartbeats, not a new VPS scheduler. Execution depends on the Codex host being available; no exact offline-time delivery guarantee is made. Existing seller/VPS price observation operation is separate.
 
 ## Fixed comparison baseline
@@ -14,7 +14,7 @@ At each run preserve a new timestamped raw snapshot; do not overwrite the baseli
 
 Read-only observations reuse public board/shops/AgentCard and the existing comparison cache. No new competitor negotiation,order,cancellation,review,report or public message is authorized for these monitoring runs. Existing SSH may read only this assignment's guard status/log aggregates/current image when needed; do not inspect secrets or process authentication. No code or pricing changes,restart,redeploy,rejoin,automatic-buyer activation,spending-limit reset or deadline extension follows from a monitoring result.
 
-The review policy caps ordinary/good public ratings at integer3 because the protocol has no3.5 value. Autonomous buyer remainsOFF; until actual authorized purchases resume, this policy's market effect cannot be measured. One-hour evaluation should distinguish that from seller1.3.1/advertising observations. Existing runtime authorization remains2026-10-21 21:00 KST or cumulative observedMODEL_USAGE5000, baseline4354, whichever limit is reached first.
+The review policy caps ordinary/good public ratings at integer3 because the protocol has no3.5 value. Autonomous buyer remainsOFF; until actual authorized purchases resume, this policy's market effect cannot be measured. One-hour evaluation should distinguish that from seller1.3.1/advertising observations. Current runtime authorization is2026-10-21 21:00 KST or cumulative observedMODEL_USAGE10000, baseline4354, whichever limit is reached first. Earlier snapshots retain their historical5000 cap; do not treat the old95% warning as a warning at95% of10000. See ../usage-limit-extension-20261021/RESULTS.md for the observed replacement and automated guard checks.
 
 Evaluation records belong here, with a short update to the existing Week07 Obsidian lecture record and related academic current_state. New facts do not authorize rewriting historical logs or opening a new Week07 PR.
 
