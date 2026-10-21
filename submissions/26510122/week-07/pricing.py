@@ -346,6 +346,20 @@ class PricingRecorder:
             rows = db.execute("SELECT * FROM events WHERE task_id=? ORDER BY id", (task_id,)).fetchall()
         return [{**dict(row), "data": json.loads(row["data"])} for row in rows]
 
+    def ledger_timing_rows(self) -> list[dict]:
+        """Return only the official result applied to each locally issued receipt."""
+        with self._connect() as db:
+            rows = db.execute("""
+                SELECT o.task_id, o.ledger_ts, o.observed_at, e.receipt_at
+                FROM ledger_observations AS o
+                JOIN (SELECT task_id, MIN(at) AS receipt_at FROM events
+                      WHERE kind='receipt_issued' GROUP BY task_id) AS e ON e.task_id=o.task_id
+                JOIN trades AS t ON t.task_id=o.task_id
+                  AND t.ledger_evidence='ledger seq ' || o.seq
+                WHERE t.ledger_status IN ('COUNTED','NOT_COUNTED')
+            """).fetchall()
+        return [dict(row) for row in rows]
+
     def ledger_cursor(self) -> int:
         with self._connect() as db:
             row = db.execute("SELECT value FROM metadata WHERE key='ledger_cursor'").fetchone()

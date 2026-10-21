@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import sqlite3
 import statistics
-from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 from collections import OrderedDict
@@ -50,18 +48,8 @@ def summarize(rows: list[dict]) -> dict:
     }
 
 
-def ledger_lag(path: Path) -> dict:
-    with closing(sqlite3.connect(path)) as db:
-        db.row_factory = sqlite3.Row
-        rows = db.execute("""
-            SELECT o.task_id, o.ledger_ts, o.observed_at, e.receipt_at
-            FROM ledger_observations AS o
-            JOIN (SELECT task_id, MIN(at) AS receipt_at FROM events
-                  WHERE kind='receipt_issued' GROUP BY task_id) AS e ON e.task_id=o.task_id
-            JOIN trades AS t ON t.task_id=o.task_id
-              AND t.ledger_evidence='ledger seq ' || o.seq
-            WHERE t.ledger_status IN ('COUNTED','NOT_COUNTED')
-        """).fetchall()
+def ledger_lag(recorder: PricingRecorder) -> dict:
+    rows = recorder.ledger_timing_rows()
     market_delays = []
     polling_delays = []
     for row in rows:
@@ -130,7 +118,7 @@ def report(recorder: PricingRecorder, legacy_log: Path | None = None,
         "by_item_arm": {f"{item}/{arm}": summarize(
             [row for row in rows if row["item"] == item and row["assigned_arm"] == arm])
             for item, arm in arms},
-        "ledger_lag": ledger_lag(recorder.path),
+        "ledger_lag": ledger_lag(recorder),
         "notes": [
             "Negotiation and ledger status are independent; their counts can overlap.",
             "Rates show both recorded-attempt and actual-exposure denominators; unknowns are retained.",

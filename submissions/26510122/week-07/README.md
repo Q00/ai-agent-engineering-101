@@ -124,3 +124,14 @@ balanced, seeded blocks per item. It can read a JSON list of task IDs, items
 and reserves with `--tasks`; it never invents transaction results. It verifies
 an `opening_ask_actual` if supplied. Its unit-test outcome fixtures are not
 market observations and never enter the live database.
+
+### Pricing data tool boundary
+
+`PricingRecorder` is the Python tool for transaction data: Seller calls named
+recording methods, reconciliation calls ledger-observation methods, and the
+report calls read-only methods including `ledger_timing_rows()`. Only
+`pricing.py` contains production SQLite queries. The negotiation model does
+not execute SQL or invoke this tool; the isolated Codex harness currently
+instructs it not to call tools. Recording, matching and aggregation remain
+deterministic Python operations, while the model continues to decide only
+negotiation actions. This boundary does not change the live price policy.
