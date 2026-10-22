@@ -13,10 +13,10 @@ ROOT = Path(__file__).resolve().parent
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('phase', choices=['before', 'live'])
-    parser.add_argument('--profile', choices=['marketing', 'purchase'], default='marketing')
+    parser.add_argument('--profile', choices=['marketing', 'purchase', 'refund'], default='marketing')
     args = parser.parse_args()
     phase = args.phase
-    directory = 'marketing' if args.profile == 'marketing' else 'purchase-experience'
+    directory = {'marketing':'marketing', 'purchase':'purchase-experience', 'refund':'satisfaction-refund'}[args.profile]
     (ROOT / 'logs' / directory).mkdir(exist_ok=True)
     with httpx.Client(verify=ssl.create_default_context(), timeout=45) as client:
         response = client.get('https://market.ourolabs.ai/api/board?round=2')

@@ -74,10 +74,13 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         # Protocol fixtures run inside the event window; time boundaries are
         # tested separately so these tests do not depend on the calendar date.
-        event = json.loads((seller.ROOT / "review_event.json").read_text(encoding="utf-8"))
+        event = json.loads((seller.ROOT / "review_event_promise_legacy.json").read_text(encoding="utf-8"))
         active = patch.object(seller, "active_event", return_value=event)
         active.start()
         self.addCleanup(active.stop)
+        refund = patch.object(seller, 'refund_policy', return_value=None)
+        refund.start()
+        self.addCleanup(refund.stop)
         self.client = httpx.AsyncClient(transport=httpx.ASGITransport(app=seller.build_app("claude", 12345)),
                                        base_url="http://test", headers={"A2A-Version": "1.0"})
         self.addAsyncCleanup(self.client.aclose)
@@ -94,7 +97,7 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
 
     async def test_event_visible_in_public_card_with_manual_terms(self):
         card = (await self.client.get("/.well-known/agent-card.json")).json()
-        self.assertEqual(card["version"], "0.8.0")
+        self.assertEqual(card["version"], "0.9.0")
         self.assertTrue(card["description"].startswith("Fast first quotes. Public-price protection. Signed receipts."))
         self.assertIn("promise a 5-star review", card["description"])
         self.assertIn("lamp 100/chair 180/bookshelf 260", card["description"])

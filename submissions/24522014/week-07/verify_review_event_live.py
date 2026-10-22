@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives import serialization
 
 def main():
     root = Path(__file__).resolve().parent
-    notice = json.loads((root / "review_event.json").read_text(encoding="utf-8"))["notice"]
+    notice = json.loads((root / "satisfaction_event.json").read_text(encoding="utf-8"))["notice"]
     with httpx.Client(verify=ssl.create_default_context(), timeout=40) as client:
         board = client.get("https://market.ourolabs.ai/api/board?round=2")
         board.raise_for_status()
@@ -30,8 +30,9 @@ def main():
         "shop_alive": participants["shops"]["alive"],
         "buyer_alive": participants["buyers"]["alive"],
         "owner_preserved": all(row["owner"]["login"] == "kcwarni" for row in participants.values()),
-        "public_version": card["version"] == "0.8.0",
-        "buyer_benefits_visible": card["description"].startswith("Fast first quotes. Public-price protection. Signed receipts."),
+        "public_version": card["version"] == "0.9.0",
+        "refund_visible": '100% refund' in card['description'] and 'regardless of rating' in card['description'],
+        "old_promise_ad_removed": 'promise a 5-star' not in card['description'],
         "public_notice": notice in card["description"],
         "registered_notice": notice in participants["shops"]["card"]["description"],
         "homepage_has_r2": "2" in stats["rounds"],

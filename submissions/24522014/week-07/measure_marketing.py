@@ -14,9 +14,9 @@ RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--profile', choices=['marketing', 'purchase'], default='marketing')
+    parser.add_argument('--profile', choices=['marketing', 'purchase', 'refund'], default='marketing')
     args = parser.parse_args()
-    directory = 'marketing' if args.profile == 'marketing' else 'purchase-experience'
+    directory = {'marketing':'marketing', 'purchase':'purchase-experience', 'refund':'satisfaction-refund'}[args.profile]
     deployment = json.loads((ROOT / '.market' / f'{args.profile}-deployment.json').read_text(encoding="utf-8"))
     started = datetime.fromisoformat(deployment["started_at"]).astimezone(timezone.utc)
     cutoff = deployment["cutoff_seq"]

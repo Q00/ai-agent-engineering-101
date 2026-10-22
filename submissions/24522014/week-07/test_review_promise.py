@@ -30,9 +30,12 @@ class ReviewPromiseTests(unittest.TestCase):
             self.assertFalse(explicit_promise("", [new_data_part(data)]))
 
     def test_event_end_is_exclusive(self):
-        self.assertIsNotNone(active_event(ROOT, datetime(2026,10,23,tzinfo=timezone.utc)))
-        self.assertIsNone(active_event(ROOT, datetime(2026,10,20,tzinfo=timezone.utc)))
-        self.assertIsNone(active_event(ROOT, datetime(2026,10,28,0,51,tzinfo=timezone.utc)))
+        archived=(ROOT / 'review_event_promise_legacy.json').read_text(encoding='utf-8')
+        with patch.object(Path, 'read_text', return_value=archived):
+            self.assertIsNotNone(active_event(ROOT, datetime(2026,10,23,tzinfo=timezone.utc)))
+            self.assertIsNone(active_event(ROOT, datetime(2026,10,20,tzinfo=timezone.utc)))
+            self.assertIsNone(active_event(ROOT, datetime(2026,10,28,0,51,tzinfo=timezone.utc)))
+        self.assertIsNone(active_event(ROOT, datetime(2026,10,23,tzinfo=timezone.utc)))
 
     def test_promise_audit_never_claims_a_published_review(self):
         payloads=[]
