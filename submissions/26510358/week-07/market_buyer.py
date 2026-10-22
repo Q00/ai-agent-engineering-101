@@ -13,6 +13,7 @@ from evidence import EvidenceError, inspect_untrusted, numeric_price
 from harness import Harness
 from market_memory import MarketMemory, rank_shops
 from tracing import Trace
+from trade_funnel import emit_stage
 
 ROOT = Path(__file__).resolve().parent
 OWN_NAMES = {"myeonggi", "gacha-shop", "SUNGMYEONGGI"}
@@ -69,6 +70,19 @@ def buy(shops, item, budget, memory, trace):
     feedback = memory.ingest_kit_feedback(ROOT / "logs" / "market-kit.log")
     if feedback:
         trace.write("market_verified_feedback", results=feedback)
+        for result in feedback:
+            task_id = result.get("task")
+            if not isinstance(task_id, str) or not task_id:
+                continue
+            if result.get("verified") is True and result.get("signature") == "verified":
+                emit_stage(trace, "market_verified", side="buyer", task_id=task_id,
+                           item=result.get("item"), shop=result.get("shop"),
+                           price=result.get("price"), outcome="verified",
+                           evidence="market_kit_feedback")
+            else:
+                emit_stage(trace, "ended", side="buyer", task_id=task_id,
+                           item=result.get("item"), shop=result.get("shop"),
+                           outcome="unresolved", reason_code="market_verification_failed")
     eligible = [s for s in shops if isinstance(s, dict) and isinstance(s.get("name"), str)
                 and s["name"] not in OWN_NAMES and isinstance(s.get("url"), str)
                 and urlparse(s["url"]).scheme in {"http", "https"}]
