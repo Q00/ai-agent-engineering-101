@@ -2,9 +2,11 @@
 
 The caller supplies trusted local priority. This scheduler only chooses who may
 try a kernel-locked lane; it never makes a price, eligibility or trade decision.
-Two consecutive completions yield to the oldest normal waiter. A normal waiter
-also ages into the next available admission after fifteen seconds. Running work
-is never preempted, and time limits apply to waiting rather than lane ownership.
+Two consecutive completions yield to the oldest normal waiter. After fifteen
+seconds, the oldest normal waiter also gets preference, with at most one such
+normal admission in succession while completion waits. These are guarantees
+about admission opportunities, not maximum latency. Running work is never
+preempted, and time limits apply to waiting rather than lane ownership.
 """
 from contextlib import contextmanager
 import fcntl
@@ -40,8 +42,10 @@ class SellerAdmission(InferenceQueue):
     def _load(self):
         state = super()._load()
         burst = state.setdefault("completion_burst", 0)
+        completion_turn = state.setdefault("yield_to_completion", False)
         if (isinstance(burst, bool) or not isinstance(burst, int)
-                or not 0 <= burst <= COMPLETION_BURST_LIMIT or state["owner"] is not None):
+                or not 0 <= burst <= COMPLETION_BURST_LIMIT or state["owner"] is not None
+                or not isinstance(completion_turn, bool)):
             raise QueueStateError("Invalid seller admission state")
         for entry in state["queue"]:
             if entry.get("priority") not in ("normal", "completion"):
@@ -57,7 +61,8 @@ class SellerAdmission(InferenceQueue):
         completion = next((entry for entry in state["queue"] if entry["priority"] == "completion"), None)
         if normal is not None and (completion is None
                 or state["completion_burst"] >= COMPLETION_BURST_LIMIT
-                or now - normal["enqueued_at"] >= self.max_wait_seconds):
+                or (now - normal["enqueued_at"] >= self.max_wait_seconds
+                    and not state["yield_to_completion"])):
             return normal
         return completion
 
@@ -106,9 +111,14 @@ class SellerAdmission(InferenceQueue):
                                 acquired = None
                                 break
                             normal_waiting = any(entry["priority"] == "normal" for entry in state["queue"])
+                            completion_waiting = any(entry["priority"] == "completion" for entry in state["queue"])
                             state["completion_burst"] = (min(COMPLETION_BURST_LIMIT,
                                 state["completion_burst"] + 1)
                                 if priority == "completion" and normal_waiting else 0)
+                            # An old quote backlog must not erase completion
+                            # priority. After any normal admission while both
+                            # classes wait, give completion its next opportunity.
+                            state["yield_to_completion"] = priority == "normal" and completion_waiting
                             state["queue"] = [entry for entry in state["queue"] if entry["ticket"] != ticket_id]
                             changed = True
                             break
@@ -136,8 +146,9 @@ class SellerAdmission(InferenceQueue):
                     if queued != state["queue"]:
                         state["queue"] = queued
                         changed = True
-                    if not queued and state["completion_burst"]:
+                    if not queued and (state["completion_burst"] or state["yield_to_completion"]):
                         state["completion_burst"] = 0
+                        state["yield_to_completion"] = False
                         changed = True
                     if changed:
                         self._save(state)
