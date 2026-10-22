@@ -32,6 +32,7 @@ from receipts import canonical_receipt, load_shop_key, sign_receipt
 from pricing import PricePolicy, opening_ask
 from shopfront import public_items, public_description, public_skills
 from buyer_access import BuyerAccess
+from trade_funnel import emit_stage
 
 
 class Seller(AgentExecutor):
@@ -70,6 +71,11 @@ class Seller(AgentExecutor):
         quote_policy = quote_policy or self.pricing.quote_policy()
         return opening_ask(item, quote_policy)
 
+    def stage(self, task, stage, **fields):
+        """Record observed progress without adding remote text or private limits."""
+        emit_stage(self.trace, stage, side="seller", task_id=task.id,
+                   shop=self.config["name"], **fields)
+
     async def execute(self, context, event_queue):
         task = context.current_task
         if task is None:
@@ -84,7 +90,11 @@ class Seller(AgentExecutor):
                 async with self.publication_locks.setdefault(task.id, asyncio.Lock()):
                     await self._reject_buyer(task, event_queue, denied)
                 return
-            await self._turn(task, context, event_queue)
+            try:
+                await self._turn(task, context, event_queue)
+            except Exception:
+                self.stage(task, "ended", outcome="error", reason_code="seller_execution_error")
+                raise
 
     def _buyer_access_denial(self, context):
         metadata = MessageToDict(context.message.metadata) if context.message is not None else {}
@@ -102,6 +112,7 @@ class Seller(AgentExecutor):
             self.terminal[task.id] = "rejected"
             self.trace.write("buyer_access_denied", task_id=task.id,
                              policy_version=self.buyer_access.version, **denied)
+            self.stage(task, "ended", outcome="rejected", reason_code="access_policy")
 
     async def _turn(self, task, context, event_queue):
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
@@ -112,6 +123,8 @@ class Seller(AgentExecutor):
         flags = inspect_untrusted(text)
         deal = self.open.get(task.id)
         opening = deal is None
+        if opening:
+            self.stage(task, "negotiation_started")
         quote_policy = (self.pricing.refresh()
                         if opening else deal.get("quote_policy", self.pricing.quote_policy()))
         query = text
@@ -131,6 +144,7 @@ class Seller(AgentExecutor):
                 if task.id not in self.terminal:
                     await up.reject(up.new_agent_message(parts=[new_text_part("No matching catalog item.")]))
                     self.terminal[task.id] = "rejected"
+                    self.stage(task, "ended", outcome="rejected", reason_code="no_matching_item")
             return
         plain_offer = actual_offer(text)
         message_id = getattr(context.message, "message_id", "")
@@ -141,6 +155,10 @@ class Seller(AgentExecutor):
             offer_ids.add(message_id)
         if not opening:
             deal.update(offer_count=offer_count, offer_ids=offer_ids)
+        if plain_offer is not None:
+            self.stage(task, "offer_received", item=candidates[0]["id"], price=plain_offer,
+                       quote_id=None if opening else deal.get("quote_id"),
+                       quantity=1, offer_number=offer_count)
         trusted = {"role": "seller", "opening": opening, "task_id": task.id,
                    # A public stance is an untrusted claim, never budget proof.
                    "remote_stance": remote_stance,
@@ -155,6 +173,14 @@ class Seller(AgentExecutor):
         reserve = candidates[0]["reserve"]
         trusted.update(reserve=reserve, offer=plain_offer, flags=flags)
         strategy = self.policy.choose("seller", trusted)
+        # Priority is derived from our own open task and verified numeric bid.
+        # Remote metadata, claimed budget or a low bid cannot buy queue priority.
+        can_close = (not opening and plain_offer is not None and plain_offer >= reserve
+                     and (plain_offer >= deal["ask"] or quote_policy["accept_floor_bids"]
+                          or offer_count >= 2))
+        admission = {"priority": "completion"} if can_close else {}
+        self.trace.write("seller_admission_priority", task_id=task.id,
+                         priority="completion" if can_close else "normal")
 
         def validate(decision):
             selected = next((p for p in candidates if p["id"] == decision.get("item_id")), None)
@@ -176,7 +202,7 @@ class Seller(AgentExecutor):
             decision = await asyncio.to_thread(self.harness.decide, trusted, strategy=strategy,
                 instruction=strategy_instruction("seller", strategy), validator=validate,
                 # Bound queue + model + retries together, below public proxy timeouts.
-                deadline=time.monotonic() + 35, attempts=3)
+                deadline=time.monotonic() + 35, attempts=3, **admission)
         except (HarnessError, EvidenceError) as exc:
             async with self.publication_locks.setdefault(task.id, asyncio.Lock()):
                 if task.id in self.terminal:
@@ -186,6 +212,7 @@ class Seller(AgentExecutor):
                 self.trace.write("negotiation_failed", task_id=task.id, detail=str(exc))
                 await up.failed(up.new_agent_message(parts=[new_text_part("Harness could not return a valid decision.")]))
                 self.terminal[task.id] = "failed"
+                self.stage(task, "ended", outcome="error", reason_code="negotiation_failed")
             return
         async with self.publication_locks.setdefault(task.id, asyncio.Lock()):
             if task.id in self.terminal:
@@ -226,7 +253,11 @@ class Seller(AgentExecutor):
                                        metadata=metadata)
             await up.requires_input(msg)
             self.trace.write("quote", task_id=task.id, metadata=metadata)
+            self.stage(task, "quote_issued", item=item["id"], quote_id=deal["quote_id"],
+                       price=deal["ask"], quantity=1)
         elif action == "accept":
+            self.stage(task, "offer_accepted", item=item["id"], quote_id=deal.get("quote_id"),
+                       price=decision["price"], quantity=1, evidence="validated_decision")
             receipt = {"seller": self.config["name"], "item": item["id"], "itemId": item["id"],
                        "price": decision["price"], "taskId": task.id, "quantity": 1,
                        "currency": "credits", "purchaseId": uuid.uuid4().hex,
@@ -243,8 +274,12 @@ class Seller(AgentExecutor):
                 await up.failed(up.new_agent_message(parts=[new_text_part("Receipt validation failed; settlement is unresolved.")]))
                 self.open.pop(task.id, None)
                 self.terminal[task.id] = "failed"
+                self.stage(task, "ended", item=item["id"], outcome="unresolved",
+                           reason_code="receipt_validation_failed")
                 return
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+            self.stage(task, "receipt_issued", item=item["id"], quote_id=deal.get("quote_id"),
+                       price=decision["price"], quantity=1, evidence="local_signature")
             await up.complete(up.new_agent_message(parts=[new_text_part(
                 f"{item['id']} x 1 accepted, total {decision['price']} credits. "
                 "Signed receipt issued; market validation pending.")]))
@@ -253,11 +288,15 @@ class Seller(AgentExecutor):
             self.trace.write("sale_completed", task_id=task.id, receipt=receipt,
                              receipt_signature_checked=True, market_verified=False,
                              offer_count=deal.get("offer_count", 0))
+            self.stage(task, "ended", item=item["id"], outcome="completed",
+                       reason_code="local_receipt_issued")
         else:
             await up.reject(up.new_agent_message(parts=[new_text_part("Negotiation ended without a deal.")]))
             self.open.pop(task.id, None)
             self.terminal[task.id] = "rejected"
             self.trace.write("sale_rejected", task_id=task.id)
+            self.stage(task, "ended", item=item["id"], outcome="rejected",
+                       reason_code="negotiation_rejected")
 
     async def cancel(self, context, event_queue):
         task = context.current_task
@@ -274,6 +313,7 @@ class Seller(AgentExecutor):
                 self.open.pop(task.id, None)
                 await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
                 self.trace.write("sale_canceled", task_id=task.id)
+                self.stage(task, "ended", outcome="canceled", reason_code="caller_canceled")
 
 
 class CancellationAwareRequestHandler(DefaultRequestHandler):

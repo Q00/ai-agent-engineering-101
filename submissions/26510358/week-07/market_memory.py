@@ -114,7 +114,10 @@ class MarketMemory:
                                 row.update(status="completed", verified=True, ledger=feedback_id,
                                            order=pending.get("order"))
                                 break
-                    imported.append({"shop": name, "signature": verdict, "verified": verified, "market_result": line})
+                    imported.append({"shop": name, "signature": verdict, "verified": verified,
+                                     "task": pending.get("task"), "item": pending.get("item"),
+                                     "order": pending.get("order"), "ledger": feedback_id,
+                                     "price": pending.get("price"), "market_result": line})
                     pending = {}
             data["kit_log_offset"] = offset + end
             data["kit_pending"] = pending
