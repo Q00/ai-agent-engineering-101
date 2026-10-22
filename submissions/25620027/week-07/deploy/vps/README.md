@@ -1,5 +1,12 @@
 # Week07 VPS seller (1.6.0)
 
+2026-10-22 14:39KST: image `1.6.0-buyer-outreach` also packages the market
+buyer promotion option, `agent.json`, and its launcher. The configured market
+buyer introduces our public shop once in its opening request. The supervised
+production service still runs only the seller and tunnel; automatic buying is
+OFF, so packaging/deployment is not evidence that outreach was delivered.
+See [buyer outreach implementation and rollout](../../.omo/evidence/buyer-outreach-20261022/RESULTS.md).
+
 Release1.6.0 preloads only unambiguous basic products into the existing model
 tool loop, recognizes unconditional assent at the current quote, shortens wire
 quotes, and includes actual offer counts in completed-sale messages. Attributes
