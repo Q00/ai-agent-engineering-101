@@ -60,6 +60,24 @@ reload는 새 판매자의 준비를 확인한 뒤 신규 요청을 전환하며
 상점 등록 정보 갱신에는 기존 소유권·이름·키를 사용함. 중복 키트는 실행하지 않음.
 이 배포는 현재 머신·프로세스·터널이 살아 있어야 유지됨.
 
+buyer 운영에는 `market_runtime.py join`을 사용함. 공식 키트를 그대로 호출하되
+`POST /api/orders`의 연결 오류·시간 초과만 1초부터 최대 30초 간격으로 재시도함.
+거래 결과 제출이나 상점 요청은 이 실행기가 재전송하지 않음.
+기존 GitHub claim code는 `.market/owner.env`의 `MARKET_OWNER=...`에 저장함.
+파일이 비어 있으면 등록을 시도하지 않고 15초 간격으로 코드 입력을 기다림.
+코드는 로그나 buyer·모델 하위 프로세스의 환경변수에 넣지 않음.
+
+현재 머신에서는 systemd 사용자 서비스 `week07-myeonggi-buyer.service`가 이 실행기를
+관리하며, 종료 시 15초 뒤 재시작함. 아래 명령으로 상태와 중단을 관리함.
+
+```bash
+systemctl --user status week07-myeonggi-buyer.service
+systemctl --user stop week07-myeonggi-buyer.service
+```
+
+서비스가 실행 중이어도 `waiting_for_owner`이면 buyer가 시장에 접속한 상태는 아님.
+이 임시 서비스는 호스트 재부팅 뒤 자동 복원되지 않음.
+
 새 참가가 필요하고 실행 중인 키트가 없을 때만 기존 `MARKET_OWNER` 환경변수를 사용해
 `bash submissions/26510358/week-07/join_market.sh`를 실행함.
 이 명령은 새 quick tunnel을 만들 수 있으므로 정상 배포의 코드 갱신에는 reload를 사용함.
