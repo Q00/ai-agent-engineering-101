@@ -27,7 +27,7 @@ def main():
     assert shop['url']==deployment['url']
     results=[]
     for item,price in prices.items():
-        with MarketTransport(shop['url'],item,price) as buyer:
+        with MarketTransport(shop['url'],item,price+10) as buyer:
             try:
                 started=time.monotonic()
                 task=buyer.open();text=seller_message(task).strip()
