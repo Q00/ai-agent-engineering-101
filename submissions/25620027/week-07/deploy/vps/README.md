@@ -1,5 +1,17 @@
 # Week07 VPS seller (1.6.0)
 
+2026-10-22 15:04KST: user-authorized purchasing is now ON in the separate
+`buyer-compose.yml` service using image `1.6.0-buyer-active`. It retains buyer
+25620027 and its existing memory/key, excludes our shop, sends one introduction
+per negotiation, and uses the original course kit (SHA256
+`7d03ef5615bba4684777c6aeca389e7ea4bfb6f513393390cc64d433b92cba0b`).
+Its existing private market.env and buyer_key.pem are mounted read-only.
+The buyer shares `/data/paid-quota.sqlite3` with the seller, uses free routes
+first, and stops at the earlier of 600 cumulative market orders or
+2026-10-28 17:15KST. At launch 68 orders were already assigned, leaving532.
+It has no automatic restart or rejoin. The seller service remains unchanged.
+See [actual purchases and outreach](../../.omo/evidence/buyer-outreach-20261022/RUNTIME.md).
+
 2026-10-22 14:39KST: image `1.6.0-buyer-outreach` also packages the market
 buyer promotion option, `agent.json`, and its launcher. The configured market
 buyer introduces our public shop once in its opening request. The supervised
@@ -26,7 +38,8 @@ attempts per KST day. Attempts are reserved before sending and persisted in
 /data/paid-quota.sqlite3; SDK fallback retries are disabled. The old cumulative
 10000 stop is superseded,while telemetry and immutable baseline remain.
 The private openai.env and openrouter.env files are loaded separately without
-copying keys into source. No buyer,rejoin or15-minute heartbeat is started.
+copying keys into source. The seller guard starts no buyer or rejoin; the
+separate buyer service above is now active. The15-minute heartbeat stays off.
 
 Release1.4.1 additionally bounds small opening margins by fresh current-round
 completed-trade means with N>=100. Quote text distinguishes trade aggregates
