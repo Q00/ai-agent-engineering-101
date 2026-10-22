@@ -16,7 +16,7 @@ import tempfile
 import time
 
 CMD = ["claude", "-p", "--model", "haiku", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
-TIMEOUT = 90          # seconds per harness call
+TIMEOUT = 60          # seconds per harness call; the kit stops a buyer after 300 s, so 1 + RETRIES calls must fit
 RETRIES = 2           # extra attempts when the answer is not one JSON object
 
 EMPTY_DIR = tempfile.mkdtemp(prefix="a2a-harness-")
@@ -29,8 +29,12 @@ def _env():
 
 def call(system: str, situation: str) -> str:
     t0, size = time.time(), len(system) + len(situation)
-    r = subprocess.run(CMD + ["--system-prompt", system], input=situation, capture_output=True, text=True,
-                       timeout=TIMEOUT, cwd=EMPTY_DIR, env=_env())
+    try:
+        r = subprocess.run(CMD + ["--system-prompt", system], input=situation, capture_output=True, text=True,
+                           timeout=TIMEOUT, cwd=EMPTY_DIR, env=_env())
+    except subprocess.TimeoutExpired:   # day 1 in the market: 6 buyer runs died of this with a traceback
+        print(f"[harness] no answer in {TIMEOUT}s (in={size}ch); treated as no answer", file=sys.stderr, flush=True)
+        return ""
     out = r.stdout.strip()
     print(f"[harness] {time.time() - t0:.1f}s exit {r.returncode} in={size}ch -> {out[:200]!r}", file=sys.stderr, flush=True)
     if r.returncode != 0:

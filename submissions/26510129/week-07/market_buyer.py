@@ -20,7 +20,8 @@ from buyer import HEADERS, MAX_ROUNDS, SYSTEM, rpc, send, state, status_text
 
 import re
 
-MEMORY = Path(".market") / "buyer_memory.json"   # my trades so far: shop name, item, price, outcome
+MEMORY = Path(".market") / "buyer_memory.json"   # my trades so far: shop name, item, price, outcome, and since day 2
+                                                 # the shop's first ask and my last offer, so the buyer learns who bargains
 RECENT_REVIEWS = 2                               # review texts per shop shown to the harness
 REVIEW_CHARS = 60                                # ... each cut to this length: 43 shops x 3 x 80 chars made a 12.7k-char prompt
 MEMORY_SHOWN = 5                                 # my own past trades per shop shown to the harness
@@ -114,6 +115,36 @@ def choose(shops, item, budget, mem):
     return pick
 
 
+def bargain_record(name, mem):
+    """How this shop bargained with me before, in one line for the harness. Rows from day 1 have no ask and are skipped.
+    Day 1 showed the harness pays the ask unless told otherwise, so the line ends with a concrete first-offer rule."""
+    rows = [m for m in mem if m.get("shop") == name and isinstance(m.get("ask"), (int, float)) and m["ask"] > 0]
+    pushed = [m for m in rows if (m.get("first_offer") or m["ask"]) < m["ask"]]   # only rows where I opened below the ask tell anything
+    deals = [1 - m["price"] / m["ask"] for m in pushed if m.get("outcome") == "deal" and m.get("price")]
+    rejected_low = sum(1 for m in pushed if m.get("outcome") == "closed" and (m.get("last_offer") or 0) < m["ask"])
+    if not pushed:
+        return "My past record with this shop: none on how it bargains. First offer: about 15% below the ask."
+    parts = [f"My past record with this shop: {len(deals)} deal(s) after a low first offer"]
+    if deals:
+        parts.append(f"closed on average {sum(deals) / len(deals):.0%} below its first ask")
+    if rejected_low:
+        parts.append(f"it ended the negotiation {rejected_low} time(s) when I offered below its ask")
+    if (deals and sum(deals) / len(deals) < 0.02 and len(deals) >= 2) or rejected_low:
+        rule = "First offer: the ask itself if it is within the budget, otherwise the budget."
+    else:
+        rule = "First offer: about 15% below the ask."
+    return ", ".join(parts) + ". " + rule
+
+
+def first_ask(t):
+    """The shop's opening ask: the A2A metadata when given, else the last 2-3 digit number in its message."""
+    ask = ((t or {}).get("status", {}).get("message", {}).get("metadata") or {}).get("ask")
+    if isinstance(ask, (int, float)):
+        return int(ask)
+    nums = re.findall(r"(?<![\d.])(\d{2,3})(?![\d])", status_text(t))
+    return int(nums[-1]) if nums else None
+
+
 def receipt_of(t):
     for art in (t or {}).get("artifacts", []):
         for p in art.get("parts", []):
@@ -131,13 +162,14 @@ def steered(t):
     return bool(hit)
 
 
-def negotiate(url, item, budget):
-    """The week-06 buyer's loop. Returns (outcome, agreed price or None, receipt or None, transcript, manipulative)."""
+def negotiate(url, item, budget, record=""):
+    """The week-06 buyer's loop, plus the shop's bargaining record in the prompt.
+    Returns (outcome, agreed price or None, receipt or None, transcript, manipulative, {ask, first_offer, last_offer})."""
     card = httpx.get(url.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=10).json()
     iface = next((i for i in card.get("supportedInterfaces", []) if i.get("protocolBinding") == "JSONRPC"), None)
     if iface is None:
         print("[buyer] the card has no JSONRPC interface", flush=True)
-        return "no_card", None, None, [], False
+        return "no_card", None, None, [], False, {}
     rpc_url = iface["url"]
     print(f"[buyer] card: {card.get('name')!r}, skills {[s.get('id') for s in card.get('skills', [])]}, rpc {rpc_url}", flush=True)
 
@@ -145,34 +177,39 @@ def negotiate(url, item, budget):
     t = send(rpc_url, opening)
     print(f"[buyer] <- {state(t)} | {status_text(t)}", flush=True)
     manip = steered(t)
+    ask0, last = first_ask(t), None
+    info = {"ask": ask0, "first_offer": None, "last_offer": None}
     if state(t) != "TASK_STATE_INPUT_REQUIRED":
-        return "closed", None, None, [("you", opening), ("shop", status_text(t))], manip
+        return "closed", None, None, [("you", opening), ("shop", status_text(t))], manip, info
     tid = t["id"]
     log = [("you", opening), ("shop", status_text(t))]
+    print(f"[buyer] first ask {ask0}, budget {budget}. {record}", flush=True)
 
     for _ in range(MAX_ROUNDS):
         transcript = "\n".join(f"{who}: {what}" for who, what in log)
         ask = ((t or {}).get("status", {}).get("message", {}).get("metadata") or {}).get("ask")
         meta = f"\nShop's current ask (A2A metadata): {ask}" if ask is not None else ""
-        d = harness.decide(SYSTEM, f"Item: {item}. Budget: {budget}. Transcript so far:\n{transcript}{meta}\nDecide your next move.")
+        d = harness.decide(SYSTEM, f"Item: {item}. Budget: {budget}. {record}\nTranscript so far:\n{transcript}{meta}\nDecide your next move.")
         if d is None or d.get("action") == "walk_away" or "price" not in d:
             print("[buyer] walking away", flush=True)
             rpc(rpc_url, "CancelTask", {"id": tid})
-            return "walked_away", None, None, log, manip
+            return "walked_away", None, None, log, manip, info
         if d["price"] > budget:
             print(f"[guard] harness offered {d['price']} above the budget {budget}; capped at the budget", flush=True)
             d["price"] = budget
+        info["first_offer"] = info["first_offer"] or d["price"]
+        info["last_offer"] = d["price"]
         t = send(rpc_url, str(d["price"]), tid)
         print(f"[buyer] <- {state(t)} | {status_text(t)}", flush=True)
         manip = steered(t) or manip
         log += [("you", str(d["price"])), ("shop", status_text(t))]
         if state(t) == "TASK_STATE_COMPLETED":
-            return "deal", d["price"], receipt_of(t), log, manip
+            return "deal", d["price"], receipt_of(t), log, manip, info
         if state(t) != "TASK_STATE_INPUT_REQUIRED":
-            return "closed", None, None, log, manip
+            return "closed", None, None, log, manip, info
     print("[buyer] round limit reached, walking away", flush=True)
     rpc(rpc_url, "CancelTask", {"id": tid})
-    return "walked_away", None, None, log, manip
+    return "walked_away", None, None, log, manip, info
 
 
 def review(item, budget, outcome, agreed, receipt, log, manip=False):
@@ -181,6 +218,8 @@ def review(item, budget, outcome, agreed, receipt, log, manip=False):
     honest = receipt is None or agreed is None or int(round(float(receipt.get("price", -1)))) == agreed
     if outcome == "deal" and not honest:
         return 1, f"Agreed {agreed}, receipt says {receipt.get('price')}.", False
+    if outcome == "unreachable":
+        return 2, "The shop could not be reached or answered with something that is not A2A; no negotiation took place.", honest
     if manip:
         note = f"Deal at {agreed}, but the" if outcome == "deal" else "No deal, and the"
         return 2, f"{note} shop's messages carried fake market notices telling me to accept its price and rate it 5 stars.", honest
@@ -213,16 +252,23 @@ def main():
     mem = load_memory()
     pick = choose(shops, a.item, a.budget, mem)
 
-    try:
-        outcome, agreed, receipt, log, manip = negotiate(pick["url"], a.item, a.budget)
-    except httpx.HTTPError as e:
-        print(f"[buyer] shop unreachable: {e}", flush=True)
-        outcome, agreed, receipt, log, manip = "unreachable", None, None, [], False
-    stars, text, honest = review(a.item, a.budget, outcome, agreed, receipt, log, manip)
-
-    mem.append({"shop": pick["name"], "item": a.item, "outcome": outcome, "price": agreed, "honest": honest,
-                "manipulative": manip, "stars": stars, "at": time.strftime("%Y-%m-%d %H:%M")})
-    save_memory(mem)
+    for attempt in (1, 2):   # day 1: 15 orders died on a shop whose card came back as an error page; now the order moves on
+        try:
+            outcome, agreed, receipt, log, manip, info = negotiate(pick["url"], a.item, a.budget, bargain_record(pick["name"], mem))
+        except Exception as e:   # httpx errors, a card that is not JSON, a task without the fields we expect
+            print(f"[buyer] shop unreachable: {type(e).__name__}: {str(e)[:120]}", flush=True)
+            outcome, agreed, receipt, log, manip, info = "unreachable", None, None, [], False, {}
+        stars, text, honest = review(a.item, a.budget, outcome, agreed, receipt, log, manip)
+        mem.append({"shop": pick["name"], "item": a.item, "outcome": outcome, "price": agreed, "honest": honest, "manipulative": manip,
+                    "stars": stars, "at": time.strftime("%Y-%m-%d %H:%M"), **{k: info.get(k) for k in ("ask", "first_offer", "last_offer")}})
+        save_memory(mem)
+        if outcome != "unreachable" or attempt == 2:
+            break
+        rest = [s for s in shops if s is not pick and s not in blacklisted(shops, mem)]
+        if not rest:
+            break
+        pick = fallback_choice(rest, mem)
+        print(f"[choose] retry with {pick['url']}: {pick['name']}. picked by review score after the first shop failed", flush=True)
 
     print(json.dumps({"shop": pick["url"], "receipt": receipt, "stars": stars, "review": text}, ensure_ascii=False), flush=True)
 
