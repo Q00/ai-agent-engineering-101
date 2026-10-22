@@ -1,0 +1,51 @@
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpcore/_sync/connection.py", line 101, in handle_request
+    raise exc
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpcore/_sync/connection.py", line 78, in handle_request
+    stream = self._connect(request)
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpcore/_sync/connection.py", line 124, in _connect
+    stream = self._network_backend.connect_tcp(**kwargs)
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpcore/_backends/sync.py", line 207, in connect_tcp
+    with map_exceptions(exc_map):
+  File "/usr/lib/python3.10/contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectTimeout: timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/scripts/market_kit.py", line 515, in <module>
+    main()
+  File "/home/myeonggi/ai-agent-engineering-101/scripts/market_kit.py", line 511, in main
+    cmd_join(a)
+  File "/home/myeonggi/ai-agent-engineering-101/scripts/market_kit.py", line 439, in cmd_join
+    r = market.call("POST", "/api/orders")
+  File "/home/myeonggi/ai-agent-engineering-101/scripts/market_kit.py", line 264, in call
+    return self.c.request(method, f"{self.base}{path}",
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpx/_client.py", line 825, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+  File "/usr/lib/python3.10/contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/home/myeonggi/ai-agent-engineering-101/.venv/lib/python3.10/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectTimeout: timed out
