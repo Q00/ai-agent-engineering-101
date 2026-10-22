@@ -18,8 +18,18 @@
 
 직전 관측의 결렬 22건은 예산 부족 13건, buyer 모델 429 실패 5건, 나머지 서비스 요구를 포함한 협상 결렬 4건이었다. 이번 수정은 대화 형식과 안내를 개선한다. 예산 부족을 할인으로 해결하거나 다른 buyer의 API 제한을 수정한 것은 아니다. 서비스 안내가 구매자 기대를 충족하여 결렬을 없앤다고 보장하지 않는다.
 
-로컬 검사 38개가 통과했다. 실제 JSON-RPC/SDK 경로에서 서비스 질문 → 안내 → 명시적 구매 확인 → 영수증, 조건부·부정·예산 메시지의 미구매, 문장형 초과 제안 보호, 기존 협상 경로, 서명·예산·이벤트 동작을 확인했다. 공식 거래 검사와 공개 배포 검증은 진행 중이다.
+로컬 검사 38개, 공식 거래 검사 25/25, 제출 구조 검사가 통과했다. 실제 JSON-RPC/SDK 경로에서 서비스 질문 → 안내 → 명시적 구매 확인 → 영수증, 조건부·부정·예산 메시지의 미구매, 문장형 초과 제안 보호, 기존 협상 경로, 서명·예산·이벤트 동작을 확인했다. 공식 검사 원본은 `logs/shop-improvement/market-test/20261022T071144984292Z/`에 있다.
 
 자체 공개 진단은 시장 주문·결과·별점으로 제출하지 않으며 진단 task는 분석에서 제외한다. 이전 홍보 측정 경계를 보존하기 위해 새 배포는 `.market/purchase-deployment.json`에 별도로 기록한다. 기존 `.market/marketing-deployment.json`을 새 URL로 덮어쓰지 않는다.
 
 배포 이후 조회는 `measure_marketing.py --profile purchase`로 별도 스냅샷을 남긴다. 이벤트 약속과 구매율을 구분하며, 진단 task를 제외한다. 이전 홍보 구간은 기본 profile로 계속 조회할 수 있다.
+
+## 실제 배포
+
+2026-10-22 16:23:44 KST에 동일 PC에서 PID 38676으로 재시작했다. 공개 주소는 https://posters-papers-claimed-concord.trycloudflare.com 이다. R2와 공개 카드 모두 0.8.0, shop/buyer 생존·owner·기존 공개키·재시작 직전 구매 기억 유지를 확인했다. 전환 경계 seq는 242128이며 원본은 `logs/purchase-experience/transition-before-20261022T071849239025Z.json`, `transition-live-20261022T072402630795Z.json`에 있다. 서버 구독이나 다른 호스트 변경은 없다.
+
+공개 진단에서 조건부 보증 제안에 영수증이 나오지 않고 지원 범위를 안내한 뒤, 별도의 `I accept the quoted price.` 확인으로 chair 195의 정상 서명 영수증이 나오는 것을 확인했다. 이 확인 요청은 한 차례 측정에서 약 0.057초였다. 전체 buyer 지연이나 판매 개선을 보장하는 수치는 아니다. 세 품목 초기 가격, lamp 초과 제안 보호와 약속 후 100 구매도 검증했다. 원본은 `logs/purchase-experience/public-diagnostic-fixed.*.log` 및 `logs/sales-experiment/public-diagnostic-20261022T0725*.json`에 있다.
+
+첫 공개 진단은 문장형 확인을 송신하면서 진단용 MarketTransport의 `last_offer`를 설정하지 않아, 판매자의 정상 완료 후 진단 도구 자체가 ReceiptProblem을 발생시켰다. 판매 코드 변경 없이 진단의 명시적 동의 가격을 기록하도록 수정한 뒤 통과했다. 실패 원본 `public-diagnostic.*.log`와 해당 transport 세션도 보존했으며 실패·성공 진단 task 모두 참여·구매 집계에서 제외했다. 이후 진단은 task ID를 먼저 별도 기록하여 중간 실패도 측정에 섞이지 않게 한다.
+
+16:26:16 KST 첫 측정에서는 진단 제외 실제 문의·구매가 아직 0건이다. 기능 검증은 완료했지만 결렬률·별점이 개선됐다는 시장 결과는 아직 없다. 측정 원본은 `logs/purchase-experience/measurement-20261022T072616311047Z/`에 있다.

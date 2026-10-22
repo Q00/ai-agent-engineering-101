@@ -34,6 +34,12 @@ def main():
             try:
                 started=time.monotonic()
                 task=buyer.open();text=seller_message(task).strip()
+                # Register diagnostic tasks before assertions or follow-up trades,
+                # so failed diagnostics also remain excluded from measurements.
+                diagnostic_stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+                (ROOT/'logs/sales-experiment'/f'public-diagnostic-{diagnostic_stamp}-task.json').write_text(
+                    json.dumps({'scope':'own-shop diagnostic only; never a market result or event participant',
+                                'url':shop['url'], 'results':[{'task':buyer.task_id,'item':item}]}, indent=2), encoding='utf-8')
                 opening_seconds=time.monotonic()-started
                 assert text.splitlines()[0]==f'{item}: asking {price}',text
                 assert 'Promise a five-star review to unlock our lowest price.' in text
@@ -78,6 +84,9 @@ def main():
                     assert 'not configured' in seller_message(buyer.task)
                     result['conditional_service_offer_not_accepted'] = True
                     started = time.monotonic()
+                    # This diagnostic explicitly consents to the current quote.
+                    # MarketTransport normally records this in offer(price).
+                    buyer.last_offer = price
                     buyer._rpc('SendMessage', {'message': {'role':'ROLE_USER',
                         'messageId':uuid4().hex, 'taskId':buyer.task_id,
                         'parts':[{'text':'I accept the quoted price.'}]}})
