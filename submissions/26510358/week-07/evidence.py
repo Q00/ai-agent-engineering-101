@@ -53,6 +53,20 @@ def inspect_untrusted(text: str) -> list[str]:
             if re.search(pattern, text, flags=re.IGNORECASE)]
 
 
+def actual_offer(text: str) -> int | None:
+    """Count only an unambiguous current bid, never arbitrary numbers in prose."""
+    match = re.fullmatch(
+        r"\s*(?:(?:I\s+(?:offer|bid|can pay|will pay)|offer|bid|I'll pay|can you do)\s*:?\s*)?"
+        r"(\d+(?:\.0+)?)\s*(?:credits?)?\s*[.!?]?\s*", text, re.I)
+    if not match:
+        return None
+    try:
+        value = numeric_price(float(match[1]))
+    except EvidenceError:
+        return None
+    return int(value)
+
+
 def _decision(decision: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(decision, Mapping):
         raise EvidenceError("harness decision must be an object")
@@ -78,6 +92,7 @@ def validate_seller_decision(
     opening: bool = False, allowed_item_ids: Iterable[str] | None = None,
     max_ask: float | None = None, last_ask: float | None = None,
     accept_floor_bids: bool = False, hold_quote: bool = False, exact_quote: bool = False,
+    offer_count: int = 0,
 ) -> dict[str, Any]:
     """Validate a seller decision, preserving its action and exact supplied price.
 
@@ -119,6 +134,10 @@ def validate_seller_decision(
             raise EvidenceError("a follow-up bid at or above the floor must be accepted at exactly that bid")
         if incoming < floor and action == "counter" and numeric_price(price) != floor:
             raise EvidenceError("counter a below-floor bid once, at exactly the reserve")
+    if not opening and type(offer_count) is int and offer_count >= 2 \
+            and incoming is not None and incoming >= floor and not exact_quote \
+            and action != "accept":
+        raise EvidenceError("the second eligible actual bid must be accepted")
     if not opening and incoming is not None and last_ask is not None \
             and (incoming == numeric_price(last_ask) or incoming > numeric_price(last_ask) and not exact_quote) \
             and action != "accept":
@@ -131,7 +150,7 @@ def validate_seller_decision(
     if hold_quote and not opening and last_ask is not None:
         if action == "counter" and numeric_price(price) != numeric_price(last_ask):
             raise EvidenceError("recovery keeps this task's existing quote")
-        if action == "accept" and incoming is not None and incoming < numeric_price(last_ask):
+        if action == "accept" and incoming is not None and incoming < numeric_price(last_ask) and offer_count < 2:
             raise EvidenceError("recovery cannot accept below this task's existing quote")
     if action == "accept":
         if incoming is None:

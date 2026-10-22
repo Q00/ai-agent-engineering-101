@@ -68,10 +68,13 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
     purchase_id = uuid.uuid4().hex
     reserved = False
     history, expected_price = [], None
+    response_seconds = []
     task_id = None
     expected_item, quoted_item, expected_quote_id = requested_item_id or item, None, None
     try:
+        sent_at = time.monotonic()
         task = client.send(f"I want to buy a {item}")
+        response_seconds.append(round(time.monotonic() - sent_at, 3))
         task_id = task.get("id")
         if not task_id:
             raise ProtocolError("Seller did not return a task ID")
@@ -95,8 +98,10 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                 if not reserved:
                     raise EvidenceError("Unsolicited completed purchase without our authorized offer")
                 ledger.commit(purchase_id, receipt)
-                trace.write("purchase_completed", receipt=receipt, ledger=ledger.snapshot())
-                return {"status": "completed", "receipt": receipt}
+                trace.write("purchase_receipt_matched", receipt=receipt, ledger=ledger.snapshot(),
+                            signature_verified=False, market_verified=False)
+                return {"status": "completed", "receipt": receipt, "offer_count": len(history),
+                        "response_seconds": response_seconds, "market_verified": False}
             if state in ("TASK_STATE_REJECTED", "TASK_STATE_CANCELED", "TASK_STATE_FAILED"):
                 if _has_terminal_receipt_evidence(task):
                     # A peer may fail after publishing a purchase artifact. Its
@@ -111,7 +116,8 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                     ledger.release(purchase_id)
                     reserved = False
                 trace.write("walked_away", state=state)
-                return {"status": "no_deal", "state": state}
+                return {"status": "no_deal", "state": state, "offer_count": len(history),
+                        "response_seconds": response_seconds}
             if state != "TASK_STATE_INPUT_REQUIRED":
                 raise ProtocolError(f"Unsupported task state: {state}")
             if round_number > 8:
@@ -168,7 +174,8 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                     ledger.release(purchase_id)
                     reserved = False
                 trace.write("walked_away", reason=decision["reason"])
-                return {"status": "no_deal", "reason": decision["reason"]}
+                return {"status": "no_deal", "reason": decision["reason"], "offer_count": len(history),
+                        "response_seconds": response_seconds}
             price = decision["price"]
             if reserved:
                 ledger.release(purchase_id)
@@ -189,7 +196,9 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                 stance = decision.get("stance")
                 if stance in ("negotiable", "firm"):
                     send_options["stance"] = stance
+            sent_at = time.monotonic()
             task = client.send(json.dumps(price, allow_nan=False), task_id, **send_options)
+            response_seconds.append(round(time.monotonic() - sent_at, 3))
         if reserved:
             ledger.release(purchase_id)
             reserved = False

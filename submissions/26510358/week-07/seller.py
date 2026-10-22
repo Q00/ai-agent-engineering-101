@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import json
 from pathlib import Path
 import re
@@ -23,15 +24,14 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill, 
 from a2a.utils.errors import TaskNotCancelableError
 
 from catalog import load_catalog, search_catalog
-from evidence import EvidenceError, inspect_untrusted, validate_seller_decision
+from evidence import EvidenceError, actual_offer, inspect_untrusted, validate_seller_decision
 from harness import Harness, HarnessError
 from policy import StrategyPolicy, strategy_instruction
 from tracing import Trace
-from receipts import load_shop_key, sign_receipt
+from receipts import canonical_receipt, load_shop_key, sign_receipt
 from rank_pricing import RankPricing, opening_ask
 from shopfront import public_items, public_description, public_skills
 from buyer_access import BuyerAccess
-from referral_pricing import code_claim, item_query, referral_terms
 
 
 class Seller(AgentExecutor):
@@ -112,11 +112,9 @@ class Seller(AgentExecutor):
         flags = inspect_untrusted(text)
         deal = self.open.get(task.id)
         opening = deal is None
-        quote_policy = (await asyncio.to_thread(self.rank_pricing.refresh)
+        quote_policy = (self.rank_pricing.refresh()
                         if opening else deal.get("quote_policy", self.rank_pricing.quote_policy()))
-        referral_rule = quote_policy.get("review_referral") or {}
-        claim_source = code_claim(text, metadata, referral_rule)
-        query = item_query(text, referral_rule) if opening and claim_source else text
+        query = text
         candidates = search_catalog(query, self.catalog, limit=8) if opening else [deal["item"]]
         # A request naming a catalog ID is an exact product lookup, not a request for a cheaper variant.
         exact = re.fullmatch(r"(?:I want to buy (?:a |an )?)?([A-Za-z0-9_-]+)[.!]?", query.strip(), re.I)
@@ -125,15 +123,7 @@ class Seller(AgentExecutor):
             if named:
                 candidates = named
         if opening:
-            candidates = [{**p, "referral_terms": referral_terms(
-                p, self.opening_cap(p, quote_policy), quote_policy, claim_source)} for p in candidates]
-            candidates = [{**p, "max_opening_ask": p["referral_terms"]["price"]} for p in candidates]
-            if claim_source:
-                self.trace.write("review_referral_claimed", task_id=task.id, phase=quote_policy["phase"],
-                                 source=claim_source, read_verified=False)
-        elif claim_source:
-            self.trace.write("review_referral_existing_quote_unchanged", task_id=task.id,
-                             read_verified=False)
+            candidates = [{**p, "max_opening_ask": self.opening_cap(p, quote_policy)} for p in candidates]
         self.trace.write("remote_message", task_id=task.id, message=text, flags=flags,
                          candidates=[p["id"] for p in candidates], remote_stance=remote_stance)
         if not candidates:
@@ -142,7 +132,15 @@ class Seller(AgentExecutor):
                     await up.reject(up.new_agent_message(parts=[new_text_part("No matching catalog item.")]))
                     self.terminal[task.id] = "rejected"
             return
-        plain_offer = float(text.strip()) if re.fullmatch(r"\d+(?:\.\d+)?", text.strip()) else None
+        plain_offer = actual_offer(text)
+        message_id = getattr(context.message, "message_id", "")
+        offer_ids = set() if opening else deal.setdefault("offer_ids", set())
+        offer_count = 0 if opening else deal.get("offer_count", 0)
+        if plain_offer is not None and (not message_id or message_id not in offer_ids):
+            offer_count += 1
+            offer_ids.add(message_id)
+        if not opening:
+            deal.update(offer_count=offer_count, offer_ids=offer_ids)
         trusted = {"role": "seller", "opening": opening, "task_id": task.id,
                    # A public stance is an untrusted claim, never budget proof.
                    "remote_stance": remote_stance,
@@ -152,7 +150,7 @@ class Seller(AgentExecutor):
                    "last_ask": None if opening else deal["ask"],
                    "price_policy": self.price_policy["version"],
                    "pricing_phase": quote_policy["phase"],
-                   "exact_quote_required": bool(not opening and deal.get("referral_terms", {}).get("applied")),
+                   "observed_offer": plain_offer, "offer_count": offer_count,
                    "accept_floor_bids": quote_policy["accept_floor_bids"]}
         reserve = candidates[0]["reserve"]
         trusted.update(reserve=reserve, offer=plain_offer, flags=flags)
@@ -162,22 +160,17 @@ class Seller(AgentExecutor):
             selected = next((p for p in candidates if p["id"] == decision.get("item_id")), None)
             if selected is None:
                 raise EvidenceError("Select item_id from the supplied candidates")
-            observed_offer = plain_offer if plain_offer is not None else decision.get("offer")
-            if observed_offer is not None and plain_offer is None:
-                if not any(float(token) == float(observed_offer) for token in re.findall(r"\d+(?:\.\d+)?", text)):
-                    raise EvidenceError("Extracted offer must occur in the quoted buyer message")
+            observed_offer = plain_offer
+            if decision.get("offer") != observed_offer:
+                raise EvidenceError("offer must equal the runtime-verified actual bid or null")
             if decision.get("price") is not None and float(decision["price"]) != int(decision["price"]):
                 raise EvidenceError("Market prices must be whole credits")
-            if opening and selected.get("referral_terms", {}).get("fixed_quote") \
-                    and decision.get("price") != selected["max_opening_ask"]:
-                raise EvidenceError("Open at this configured genuine standard or referral quote exactly")
             return validate_seller_decision(decision, reserve=selected["reserve"],
                 offer=observed_offer, opening=opening,
                 allowed_item_ids=[p["id"] for p in candidates],
                 max_ask=selected.get("max_opening_ask"), last_ask=None if opening else deal["ask"],
                 accept_floor_bids=quote_policy["accept_floor_bids"],
-                hold_quote=quote_policy["phase"] == "recovery",
-                exact_quote=trusted["exact_quote_required"])
+                offer_count=offer_count)
 
         try:
             decision = await asyncio.to_thread(self.harness.decide, trusted, strategy=strategy,
@@ -204,40 +197,32 @@ class Seller(AgentExecutor):
                 await self._reject_buyer(task, event_queue, denied)
                 return
             await self._publish_decision(task, up, candidates, deal, opening, text, decision,
-                                         quote_policy=quote_policy)
+                                         quote_policy=quote_policy, offer_count=offer_count, offer_ids=offer_ids)
 
-    async def _publish_decision(self, task, up, candidates, deal, opening, text, decision, *, quote_policy=None):
+    async def _publish_decision(self, task, up, candidates, deal, opening, text, decision, *,
+                                quote_policy=None, offer_count=0, offer_ids=None):
         """Apply one validated decision while cancellation cannot interleave events."""
         item = next(p for p in candidates if p["id"] == decision["item_id"])
         if opening:
             deal = {"item": item, "ask": decision["price"], "round": 0, "history": [],
                     "quote_policy": quote_policy or self.rank_pricing.quote_policy(),
-                    "referral_terms": item.get("referral_terms", {})}
+                    "offer_count": offer_count, "offer_ids": offer_ids or set()}
             self.open[task.id] = deal
         deal["round"] += 1
         deal["history"].append({"remote": text, "action": decision["action"], "price": decision["price"]})
         action = decision["action"]
         if action in ("open", "counter"):
+            changed = deal["ask"] != decision["price"]
             deal["ask"] = decision["price"]
-            deal["quote_id"] = uuid.uuid4().hex
+            if changed or not deal.get("quote_id"):
+                deal["quote_id"] = uuid.uuid4().hex
             metadata = {"ask": deal["ask"], "itemId": item["id"], "quoteId": deal["quote_id"],
                         "seller": self.config["name"], "quantity": 1, "currency": "credits",
                         "description": item["description"], "attributes": item["attributes"]}
             # Never place a round number or another price after the ask: the official kit reads the last number.
             ask = json.dumps(deal["ask"], allow_nan=False)
-            terms = deal.get("referral_terms", {})
-            notice = ""
-            if terms.get("claimed"):
-                metadata["reviewReferral"] = terms
-                if terms.get("applied"):
-                    notice = (f"{terms['code']}: {terms['percent']}% off the standard quote "
-                              f"{terms['reference_price']}; saving {terms['saving']}. "
-                              "Offer the exact final amount. ")
-                else:
-                    notice = "Referral discount is unavailable on this quote; the quoted price is unchanged. "
             msg = up.new_agent_message(parts=[new_text_part(
-                f"{item['name']}. {notice}Offer {ask} on this task and the reply is your signed receipt. "
-                f"Asking price: {ask}")],
+                f"{item['id']} x 1, total {ask} credits. Offer that total on this task. Asking price: {ask}")],
                                        metadata=metadata)
             await up.requires_input(msg)
             self.trace.write("quote", task_id=task.id, metadata=metadata)
@@ -246,22 +231,28 @@ class Seller(AgentExecutor):
                        "price": decision["price"], "taskId": task.id, "quantity": 1,
                        "currency": "credits", "purchaseId": uuid.uuid4().hex,
                        "quoteId": deal.get("quote_id")}
-            if self.signing_key is None:
-                self.signing_key = load_shop_key(self.config.get("shop_key"))
             receipt.update(shop=self.config["name"], task=task.id)
-            terms = deal.get("referral_terms", {})
-            if terms.get("applied"):
-                receipt["reviewReferral"] = {k: terms[k] for k in
-                    ("code", "reference_price", "percent", "saving", "read_verified")}
-            receipt = sign_receipt(receipt, self.signing_key)
+            try:
+                if self.signing_key is None:
+                    self.signing_key = load_shop_key(self.config.get("shop_key"))
+                receipt = sign_receipt(receipt, self.signing_key)
+                self.signing_key.public_key().verify(base64.b64decode(receipt["sig_seller"]),
+                                                     canonical_receipt(receipt))
+            except Exception as exc:
+                self.trace.write("receipt_validation_failed", task_id=task.id, detail=str(exc))
+                await up.failed(up.new_agent_message(parts=[new_text_part("Receipt validation failed; settlement is unresolved.")]))
+                self.open.pop(task.id, None)
+                self.terminal[task.id] = "failed"
+                return
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(up.new_agent_message(parts=[new_text_part("Deal completed. See receipt.")]))
+            await up.complete(up.new_agent_message(parts=[new_text_part(
+                f"{item['id']} x 1 accepted, total {decision['price']} credits. "
+                "Signed receipt issued; market validation pending.")]))
             self.open.pop(task.id, None)
             self.terminal[task.id] = "completed"
-            self.trace.write("sale_completed", task_id=task.id, receipt=receipt)
-            if terms.get("applied"):
-                self.trace.write("review_referral_redeemed", task_id=task.id, price=decision["price"],
-                                 **receipt["reviewReferral"])
+            self.trace.write("sale_completed", task_id=task.id, receipt=receipt,
+                             receipt_signature_checked=True, market_verified=False,
+                             offer_count=deal.get("offer_count", 0))
         else:
             await up.reject(up.new_agent_message(parts=[new_text_part("Negotiation ended without a deal.")]))
             self.open.pop(task.id, None)

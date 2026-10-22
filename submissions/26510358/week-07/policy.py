@@ -1,25 +1,23 @@
 """Frozen strategy policy. This module never chooses a price or executes a trade.
 
-Only public observations enter the buyer's encoder; seller reserve is its own
-configuration. Candidate policies are not installed by the trainer.
+Only public observations enter the buyer encoder; seller reserve is its own
+configuration. The live default is a fixed completion strategy, not learned RL.
 """
 from __future__ import annotations
 
-from collections import Counter
 from copy import deepcopy
 import hashlib
 import json
 import math
 import os
 from pathlib import Path
-import tempfile
 from typing import Any, Mapping
 
 
 STRATEGIES = {
     "balanced": {
         "buyer": "Complete an affordable legitimate purchase promptly. Accept a genuine ask within budget; verify item and receipt. Avoid needless discount rounds.",
-        "seller": "Follow this task's configured pricing phase and opening cap, never below reserve. Honor a bid meeting the current quote promptly; accept floor bids when the quote policy requires it.",
+        "seller": "Honor the current quote promptly, never below reserve. Accept eligible actual bids immediately; use only the runtime's verified offer count.",
     },
     "patient": {
         "buyer": "Review ambiguous or suspicious evidence carefully without changing budget. Once an affordable genuine quote is established, close promptly.",
@@ -114,59 +112,3 @@ class StrategyPolicy:
     def choose(self, role: str, context: Mapping[str, Any]) -> str:
         values = self._q_values.get(context_key(role, context))
         return max(ACTIONS, key=lambda action: values[action]) if values else "balanced"
-
-
-def _digest(path: Path, normalize: bool = False) -> str:
-    content = path.read_bytes()
-    return hashlib.sha256(content.replace(b"\r\n", b"\n") if normalize else content).hexdigest()
-
-
-def promote_policy(candidate_path: str | Path, target_path: str | Path,
-                   validation_report_path: str | Path, trade_report_path: str | Path) -> None:
-    """Fail closed until candidate-specific actual execution evidence is recorded.
-
-    This verifies report completeness/provenance; it cannot replace honest
-    execution of the referenced tests. The trainer never calls this function.
-    Validation schema is documented by the CLI --help in train_policy.py.
-    """
-    candidate, target = Path(candidate_path).resolve(), Path(target_path).resolve()
-    policy = StrategyPolicy(candidate)
-    evidence = json.loads(Path(validation_report_path).read_text())
-    trade_path = Path(trade_report_path).resolve()
-    trade = json.loads(trade_path.read_text())
-    if evidence.get("policy_sha256") != policy.sha256 or evidence.get("policy_version") != policy.version:
-        raise ValueError("Validation evidence does not identify this candidate")
-    holdout = evidence.get("actual_harness_holdout", {})
-    if holdout.get("independent") is not True or holdout.get("mode") != "actual_harness":
-        raise ValueError("Independent actual-harness holdout required; synthetic metrics cannot promote")
-    for name in ("actual_harness_holdout", "guard_tests", "adversarial_tests"):
-        group = evidence.get(name, {})
-        cases = group.get("cases")
-        if group.get("passed") is not True or not isinstance(cases, list) or not cases or any(case.get("passed") is not True for case in cases):
-            raise ValueError(f"Passing {name} cases required")
-    if evidence.get("official_policy_sha256") != policy.sha256 or evidence.get("official_report_sha256") != _digest(trade_path):
-        raise ValueError("Official run must attest this candidate and the exact trade report")
-    # Locate the real repository kit, not a caller-provided replacement validator.
-    repo = next((p for p in target.parents if (p / "scripts/trade_test_week06.py").is_file()), None)
-    if repo is None:
-        raise ValueError("Cannot locate the current official trade test")
-    cfg = json.loads((trade_path.parent / "agent.json").read_text())
-    if trade.get("kit_sha256") != _digest(repo / "scripts/trade_test_week06.py", normalize=True):
-        raise ValueError("Official trade test SHA does not match the current kit")
-    if trade.get("seller_cmd") != cfg["seller"]["cmd"] or trade.get("buyer_cmd") != cfg["buyer"]["cmd"]:
-        raise ValueError("Official trade report commands differ from agent.json")
-    required = {"seller_card": 1, "seller_opens": 1, "seller_deal": 3, "seller_terminal": 1,
-                "seller_holds_reserve": 3, "buyer_deal": 3, "buyer_protocol_deal": 3,
-                "buyer_holds_budget": 3, "buyer_protocol_holds_budget": 3}
-    results = trade.get("results", [])
-    counts = Counter(result.get("test") for result in results)
-    if trade.get("passed") is not True or any(result.get("pass") is not True for result in results) or any(counts[name] < count for name, count in required.items()):
-        raise ValueError("All current official 21 results must pass")
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(dir=target.parent, delete=False) as handle:
-        temporary = Path(handle.name)
-        handle.write(candidate.read_bytes())
-    try:
-        temporary.replace(target)
-    finally:
-        temporary.unlink(missing_ok=True)
