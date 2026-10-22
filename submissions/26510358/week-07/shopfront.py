@@ -1,6 +1,5 @@
 """Public merchandising from actual catalogue facts and existing pricing rules."""
 from rank_pricing import opening_ask
-from referral_pricing import referral_terms
 
 BASE_IDS = ('lamp', 'chair', 'bookshelf')
 
@@ -28,13 +27,10 @@ def public_items(catalog, quote_policy):
             features.append('about ' + str(attrs['capacity_books']) + ' books')
         if attrs.get('height_cm'):
             features.append(str(attrs['height_cm']) + ' cm high')
-        terms = referral_terms(item, price, quote_policy, 'public_code_preview')
         # Only public quotes and real attributes leave the pricing boundary.
         # Catalogue names contain an English title followed by a Korean alias.
         offer = {'id': item_id, 'name': item['name'].partition(' / ')[0], 'price': price, 'features': features,
                  'attributes': dict(attrs)}
-        if terms.get('applied'):
-            offer['discount'] = {key: terms[key] for key in ('code', 'percent', 'price')}
         offers.append(offer)
     return offers
 
@@ -44,17 +40,17 @@ def price_line(offers):
 
 
 def public_description(offers):
-    text = ('Ssadassa Shop by myeonggi. Latest base quotes: ' + price_line(offers) + ' credits. '
-            'Request a current quote, then offer that price on the same task for an '
-            'Ed25519-signed receipt at the agreed price.')
-    discounts = [item for item in offers if item.get('discount')]
-    if discounts:
-        text += ' REVIEW10: 10% off eligible standard quotes; item + code in the first message.'
-    return text
+    return ('Ssadassa Shop: ' + price_line(offers) + ' credits each. '
+            'Clear quotes, prompt acceptance and Ed25519-signed receipts matching the agreed item and price. '
+            'Request a current quote, then offer that total on the same task. '
+            '(Catalog search and price negotiation)')
 
 
 def public_skills(offers):
-    return [{'id': 'buy-' + item['id'], 'name': item['name'],
+    return [{'id': 'negotiate', 'name': 'Catalog search and price negotiation',
+             'description': 'Request a current single-unit quote and offer that total on the same task.',
+             'tags': ['shopping', 'catalog', 'negotiation']}] + [
+            {'id': 'buy-' + item['id'], 'name': item['name'],
              'description': (f"Latest base quote: {item['price']} credits. " + ', '.join(item['features']) +
                              '. Request a current quote, then offer that number on the same task for a signed receipt.'),
              'tags': ['shopping', 'furniture', item['id']],

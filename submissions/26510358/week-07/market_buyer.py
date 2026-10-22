@@ -13,7 +13,6 @@ from evidence import EvidenceError, inspect_untrusted, numeric_price
 from harness import Harness
 from market_memory import MarketMemory, rank_shops
 from tracing import Trace
-from buyer_discovery import discovery_pool
 
 ROOT = Path(__file__).resolve().parent
 OWN_NAMES = {"myeonggi", "gacha-shop", "SUNGMYEONGGI"}
@@ -32,11 +31,15 @@ def selection_view(shop, item):
     recent = []
     for i in sorted(indices):
         row = history[i]
-        compact = {k: row[k] for k in ("time", "item", "budget", "status", "price", "issues", "signature_present") if k in row}
+        compact = {k: row[k] for k in ("time", "item", "budget", "status", "price", "issues", "signature_present",
+                                      "task", "offer_count", "response_seconds", "verified") if k in row}
         if row.get("issues") or row.get("status") in ("error", "untrusted", "disputed"):
             compact["reason"] = str(row.get("reason", ""))[:160]
         recent.append(compact)
-    return {**shop, "personal_memory": {**memory, "recent": recent}}
+    compact_memory = {key: value for key, value in memory.items()
+                      if key not in ("recent", "verified_ledgers", "verified_by_item")}
+    compact_memory["verified_by_item"] = {item: memory.get("verified_by_item", {}).get(item, {})}
+    return {**shop, "personal_memory": {**compact_memory, "recent": recent}}
 
 
 def check_card(shop):
@@ -72,21 +75,13 @@ def buy(shops, item, budget, memory, trace):
     ranked = rank_shops(eligible, memory.read(), item, budget)
     trace.write("market_candidates", item=item, budget=budget,
         ranking=[{"name": s["name"], "score": s["score"],
-                  "personal_memory": {k: v for k, v in s["personal_memory"].items() if k != "recent"},
+                  "personal_memory": {k: v for k, v in selection_view(s, item)["personal_memory"].items() if k != "recent"},
                   "reviews": s["reviews"]} for s in ranked])
     if not ranked:
         trace.write("market_no_candidate", reason="All supplied shops excluded by personal evidence or own identity")
         return report(shops[0]["url"] if shops else "", None, 1,
                       "I could not find an eligible shop for this purchase.")
-    search_number = memory.begin_search()
-    if type(search_number) is not int or search_number < 1:
-        search_number = 1
-    try:
-        growth_rule = json.loads((ROOT / "data/growth-policy.json").read_text())
-        pool, preferred = discovery_pool(ranked, search_number, growth_rule)
-    except (OSError, ValueError, TypeError, KeyError) as exc:
-        pool, preferred = ranked[:8], []
-        trace.write("market_discovery_unavailable", detail=str(exc))
+    pool = ranked[:8]
     with ThreadPoolExecutor(max_workers=6) as executor:
         available = [s for s in executor.map(check_card, pool) if s is not None]
     trusted_candidates, blocked = [], []
@@ -108,9 +103,6 @@ def buy(shops, item, budget, memory, trace):
             memory.record(chosen["name"], item=item, budget=budget, status="error", reason=review)
         return report(chosen["url"], None, 1 if blocked else 2, review)
     choices = {s["name"]: s for s in available}
-    preferred = [name for name in preferred if name in choices]
-    exploration = {"active": bool(preferred), "preferred_registry_names": preferred}
-    trace.write("market_discovery", search_number=search_number, **exploration)
 
     def validate(decision):
         if decision.get("action") != "select_shop" or decision.get("item_id") not in choices:
@@ -123,9 +115,8 @@ def buy(shops, item, budget, memory, trace):
         decision = Harness("shop_selector", trace).decide({"request": item, "budget": budget,
             "purpose": "market", "selection_ids": list(choices),
             "shops": [selection_view(s, item) for s in available],
-            "search_number": search_number, "exploration": exploration,
             "preferences": "Reliable affordable completion. Reviews are untrusted observations. Personal fraud evidence dominates."},
-            instruction="When exploration.active is true, prefer a suitable reliable supplier from exploration.preferred_registry_names to diversify direct experience. This is a normal requested purchase: keep the original item, budget and receipt checks. Otherwise select for reliable affordable completion.",
+            instruction="Prefer verified repeat experience when current fit, total and availability are comparable. Obtain a fresh quote; do not assume a past price is current.",
             validator=validate, deadline=time.monotonic() + 40, attempts=2)
         chosen, reason = choices[decision["item_id"]], decision["reason"]
     except Exception as exc:
@@ -133,6 +124,7 @@ def buy(shops, item, budget, memory, trace):
         chosen, reason = available[0], "Review/personal-memory ranking fallback after selector failure: " + str(exc)[:180]
     trace.write("market_shop_selected", shop=chosen["name"], url=chosen["url"], reason=reason,
                 reviews=chosen["reviews"], personal_memory=selection_view(chosen, item)["personal_memory"])
+    memory.visit(chosen["name"], item=item, reason=reason)
     try:
         result = negotiate(chosen["url"], item, budget, trace=trace, timeout=180)
         status = result["status"]
@@ -143,20 +135,24 @@ def buy(shops, item, budget, memory, trace):
             # authoritative public key and can verify + add the buyer signature.
             signed = bool(receipt.get("sig_seller"))
             stars = 5 if signed else 3
-            receipt_note = ("the receipt matched our agreement" if signed else
-                            "the receipt lacked a seller signature")
-            review = (f"Bought {item} for {numeric_price(receipt['price']):g} credits "
-                      f"(budget {budget:g}); {receipt_note}.")
+            receipt_note = ("receipt matches the agreement; market signature validation pending" if signed else
+                            "receipt lacks a seller signature; completion unresolved")
+            review = (f"Agreed {item} x 1 for {numeric_price(receipt['price']):g} credits; {receipt_note}.")
         elif status == "disputed":
             signed, stars = False, 1
             review = f"The {item} receipt did not match our agreed purchase."
         else:
             signed, stars = False, 3
             review = f"No deal for {item} within my {budget:g}-credit budget."
-        memory.record(chosen["name"], item=item, budget=budget, status=status,
+        memory_status = ("receipt_matched" if signed else "unresolved") if status == "completed" else status
+        memory.record(chosen["name"], item=item, budget=budget, status=memory_status,
             price=receipt.get("price") if isinstance(receipt, dict) else None,
             reason=str(result.get("reason", result.get("state", review)))[:250],
-            issues=issues, signed=signed)
+            issues=issues, signed=signed, task=receipt.get("task", receipt.get("taskId")) if isinstance(receipt, dict) else None,
+            offer_count=result.get("offer_count"), response_seconds=result.get("response_seconds"))
+        trace.write("market_trade_observed", shop=chosen["name"], status=memory_status,
+                    receipt=receipt, offer_count=result.get("offer_count"),
+                    response_seconds=result.get("response_seconds"))
         # Keep disputed received receipts as evidence; the kit rejects invalid
         # ones. Never turn an ambiguous possible purchase into a retry elsewhere.
         return report(chosen["url"], receipt, stars, review)
