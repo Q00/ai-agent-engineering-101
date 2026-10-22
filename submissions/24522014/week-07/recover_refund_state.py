@@ -8,7 +8,7 @@ ROOT=Path(__file__).resolve().parent
 
 def main():
     process=json.loads((ROOT/'.market/process.json').read_text(encoding='utf-8-sig'))
-    verification=sorted((ROOT/'logs/review-event').glob('live-verification-*.json'))[-1]
+    verification=sorted((ROOT/'logs/review-event').glob('live-verification-20*.json'))[-1]
     live=json.loads(verification.read_text(encoding='utf-8'))
     assert all(live['checks'].values())
     before=ROOT/f"logs/satisfaction-refund/memory-before-recovery-{process['started']}.jsonl"

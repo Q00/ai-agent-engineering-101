@@ -47,7 +47,7 @@ def main():
     entries = {row["seq"]: row for page in pages for row in page if cutoff < row["seq"] <= last}
     assert len(entries) == last - cutoff
     rows = [row for row in entries.values() if row["round"] == 2 and row["kind"] == "result"
-            and row["data"].get("shop") == deployment["url"]]
+            and row["data"].get("shop") in deployment.get('urls', [deployment['url']])]
     purchases = [row["data"] for row in rows if row["data"].get("verified")]
     promised_purchases = [row for row in purchases if row["receipt"]["task"] in pledges]
     ratings = [row["stars"] for row in purchases if type(row.get("stars")) in (int, float)]
