@@ -216,6 +216,7 @@ def build(port: int, profile: dict | None = None, catalog: Catalog | None = None
     reserves = profile.get("reserve", RESERVES)
     card_variant = os.environ.get("WEEK07_CARD_VARIANT", "baseline")
     time_sale = os.environ.get("WEEK07_TIME_SALE", "0") == "1"
+    card_promo = os.environ.get("WEEK07_CARD_PROMO", "0") == "1"
     if card_variant not in {"baseline", "transparent"}:
         raise ValueError("WEEK07_CARD_VARIANT must be baseline or transparent")
     description = profile.get("description", "Negotiates purchases of " + ", ".join(reserves) + ".")
@@ -238,7 +239,7 @@ def build(port: int, profile: dict | None = None, catalog: Catalog | None = None
             "reject, or accept with a signed receipt."
         )
         skill_tags = ["shopping", "negotiation", "signed-receipt", *reserves]
-    if time_sale and SALE_START_KST <= datetime.now(ZoneInfo("Asia/Seoul")) < SALE_END_KST:
+    if card_promo and SALE_START_KST <= datetime.now(ZoneInfo("Asia/Seoul")) < SALE_END_KST:
         description = f"{description} {CARD_NOTICE}"
         skill_description = f"{skill_description} {CARD_NOTICE}"
     url = f"http://127.0.0.1:{port}/"
