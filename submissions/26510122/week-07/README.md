@@ -134,8 +134,8 @@ per-exposure mean plus a fixed exploration bonus. These defaults are safety
 gates for this randomized experiment, not evidence that UCB already works.
 With `WEEK07_PRICE_UCB_AUTO=1`, the Seller uses its recommendation on a canary
 task only if the latest full ledger reconciliation finished within ten minutes.
-Otherwise it keeps the randomized arm. The local supervisor enables this gate,
-but no UCB arm is selected until enough verified observations exist per item.
+Otherwise it keeps the randomized arm. The local supervisor currently disables
+this gate while the dated sale runs.
 
 `pricing_experiment.py` provides a deterministic traffic split for collecting
 real Low/Mid/High observations. `WEEK07_PRICE_EXPERIMENT_PERCENT=0` is the
@@ -147,9 +147,23 @@ its opening ask; follow-up decisions, reserve guard, signed receipt and A2A
 format are unchanged. The actual emitted ask is recorded and later compared
 with the assignment. Once both gates pass, UCB replaces the randomized arm on
 selected canary tasks only; it does not change the other 95%.
-The local Pinggy shop supervisor currently sets this traffic split to 5% for
-new market tasks; the other 95% retain the legacy opening policy. This is a
-small concurrent data-collection experiment, not proof that one arm is better.
+The local Pinggy shop supervisor previously used a 5% traffic split, but now
+sets it to 0% while the sale runs. Earlier Low/Mid/High observations
+remain in SQLite as a separate cohort; they are not merged with sale data.
+
+`WEEK07_TIME_SALE=1` makes Python read the current Asia/Seoul time once when
+a new negotiation starts. From 2026-10-22 00:00 through 2026-10-28 23:59:59
+KST, the exact integer opening ask is ceiling(1.06 × reserve); afterward it is
+ceiling(1.09 × reserve). A negotiation retains its opening cohort if the clock
+crosses the campaign deadline mid-task. The opening model still runs, but its suggested first ask
+is replaced by this deterministic tool output. Follow-up negotiation, reserve
+checks, signed receipts and A2A formats are unchanged. SQLite records
+`campaign_sale_1.06` and `campaign_regular_1.09` separately. This before/after
+comparison is observational: buyer traffic and order mix can vary by date, so
+it cannot by itself prove the sale caused a change in market share.
+An hourly :00–:19 proposal briefly ran on 2026-10-22 before the campaign
+replaced it; its `hourly_regular_1.09` rows remain in SQLite and are not
+silently relabeled as campaign observations.
 
 `pricing_simulator.py` provides the shared exact price calculation and an
 offline-only simulator. It uses decimal ceiling rules for 1.06, 1.09 and 1.12 times reserve and
@@ -188,7 +202,7 @@ in place. It is separate from the unstarted Low/Mid/High experiment.
 
 ### Agent Card draft for a later discovery experiment
 
-The default `WEEK07_CARD_VARIANT=baseline` preserves the current Card. A
+The default `WEEK07_CARD_VARIANT=baseline` preserves the base Card. A
 `transparent` variant is implemented but not enabled in the running market:
 
 ```bash
@@ -201,6 +215,12 @@ reliability claim. The shop name, A2A interface URL, protocol version,
 capabilities, and `negotiate` skill ID remain unchanged. Changing the flag for
 the market requires restarting the Seller/kit; do this only as a separate Card
 comparison after holding the price policy fixed.
+
+When `WEEK07_TIME_SALE=1` during the campaign, the live Card's description and
+skill description disclose "Time Sale Now!" and the KST end date. This is an
+opening-price policy, not a promised final transaction price. The campaign
+notice is omitted from Cards created after the deadline. The buyer-selection model in
+our code is not supplied with the current time.
 
 The market's `shops.json` contains name, URL, and reviews, not Card description
 or skills. Our own `market_buyer` chooses a shop from that list before its A2A
