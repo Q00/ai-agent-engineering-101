@@ -61,6 +61,8 @@ BENCHMARK = "dragonash"  # the shop the launch sale copies (user's pick, see the
 ROUND_POLL = 60   # seconds between round checks while waiting for the next cycle
 LAUNCH_MARGIN = 0  # Round 2 opened as a price war at the reserve (dragonash, kimauve at 100/180/260): the launch sale
                    # may sell at the reserve itself (zero margin, never a loss) to earn its first reviews
+STALL_WINDOW = 3600  # a stall: fewer than STALL_DEALS of our deals in the last hour while the market trades
+STALL_DEALS = 3      # (Round 2 converged on shops selling at the reserve and ours sat at 0 for two hours)
 LAUNCH_DEALS = 25  # launch sale until the board shows this many deals of our shop this round (was 10 reviews)
 
 PROMPT = """You set the prices of our furniture shop in an agent market. Buyers are other AI agents;
@@ -171,7 +173,8 @@ def guard(proposal, previous, going, sale=False):
         g = going.get(item, {"p75": reserve * 1.3})
         t = market_intel_int((proposal.get("target") or {}).get(item))
         o = market_intel_int((proposal.get("open") or {}).get(item))
-        lo_t = max(reserve + MARGIN, round(g.get("p25" if sale else "median", 0)))
+        # a sale may go down to the reserve itself (user's call, 2026-10-22: no margin, never a loss)
+        lo_t = max(reserve + (0 if sale else MARGIN), round(g.get("p25" if sale else "median", 0)))
         hi_t = max(lo_t, round(g["p75"]))
         if t is None:
             t = previous["target"][item] if previous else round((lo_t + hi_t) / 2)
@@ -307,6 +310,15 @@ async def cycle(dry_run=False):
                               f"copying {BENCHMARK}'s prices to earn the first reviews"}
         log("META", f"launch sale, {row.get('deals') or 0} deals, {row.get('reviews') or 0} reviews, {row.get('visits') or 0} visits this round")
         sale, loyalty = True, LOYALTY_LAUNCH
+    elif our_results(entries, now - STALL_WINDOW, now + 1)["deals"] < STALL_DEALS:
+        # stall sale, set by code: match the market's lower quartile (the reserve when everyone sells there)
+        recent_deals = our_results(entries, now - STALL_WINDOW, now + 1)["deals"]
+        target = {k: max(r, round(going.get(k, {"p25": r})["p25"])) for k, r in RESERVE.items()}
+        open_ = {k: max(target[k] + 5, round(going.get(k, {"median": r})["median"])) for k, r in RESERVE.items()}
+        notes = [f"stall: {recent_deals} deals in the last {STALL_WINDOW // 60} min, selling at the market's lower quartile"]
+        proposal = {"reason": f"stall sale: {recent_deals} of our deals in the last hour (< {STALL_DEALS}); "
+                              "prices down to the market's lower quartile, the reserve at most"}
+        sale, loyalty = True, (previous or {}).get("loyalty") or LOYALTY_NORMAL
     else:
         proposal = await harness.ask(prompt) or {}
         sale = proposal.get("sale") is True
@@ -324,7 +336,7 @@ async def cycle(dry_run=False):
         "promo": PROMO if launch else SALE_PROMO if sale else "",
         "sale": sale,
         "loyalty": loyalty,
-        "margin": LAUNCH_MARGIN if launch else MARGIN,
+        "margin": 0 if (launch or sale) else MARGIN,  # every sale may reach the reserve; normal prices keep the margin
     }
     log("META", f"v{strategy['version']}: {'launch' if launch else 'sale' if sale else 'normal'}, open {open_} "
                 f"target {target} loyalty {loyalty}: {strategy['reason']}")
