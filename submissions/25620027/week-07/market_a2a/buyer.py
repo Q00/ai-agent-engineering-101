@@ -11,6 +11,7 @@ from pydantic import Field, JsonValue, ValidationError
 
 from http_client import create_client
 from market_a2a.models import FrozenModel, HarnessError, Purchase, ToolResult, ToolSpec
+from market_a2a.promotion import SHOP_NOTICE
 from market_a2a.remote import Checkout, Remote, Task, purchase
 from market_a2a.security import SecurityEvents
 
@@ -44,6 +45,7 @@ class BuyerOrder:
     exact_item: bool = False
     pricing_context: JsonValue = None
     security_events: SecurityEvents | None = None
+    promote_shop: bool = False
 
 
 class OrderedItemMismatchError(HarnessError):
@@ -185,7 +187,12 @@ async def buy_order(
             remote = Remote(client, emit, events)
             card = await remote.card(url)
             endpoint = card.endpoint()
-            task = await remote.send(endpoint, f"I want to buy {item}")
+            request_text = f"I want to buy {item}"
+            if order.promote_shop:
+                request_text += "\n\n" + SHOP_NOTICE
+            task = await remote.send(endpoint, request_text)
+            if order.promote_shop:
+                emit("[BUYER PROMOTION SENT] " + url)
             if order.exact_item and any(
                 advertised and advertised != item
                 for advertised in (

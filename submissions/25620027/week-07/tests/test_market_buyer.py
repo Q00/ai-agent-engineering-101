@@ -8,11 +8,12 @@ from typing import TYPE_CHECKING
 import anyio
 import httpx2
 import pytest
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from market_a2a.market_buyer import MarketRequest, market_buy
 from market_a2a.memory import Memory, Trade
 from market_a2a.models import HarnessError, Purchase
+from market_a2a.promotion import SHOP_URL
 from tests.market_fakes import ScriptedHarness, ShopTransport
 
 if TYPE_CHECKING:
@@ -53,8 +54,9 @@ def registry(tmp_path: Path) -> Path:
     return path
 
 
+@pytest.mark.parametrize("promote_shop", [False, True])
 def test_trade_when_model_selects_shop_preserves_receipt_and_budget(
-    registry: Path, tmp_path: Path, wire: ShopTransport
+    registry: Path, tmp_path: Path, wire: ShopTransport, *, promote_shop: bool
 ) -> None:
     # Given: invalid choices and an over-budget offer precede valid model actions.
     harness = ScriptedHarness(
@@ -73,7 +75,7 @@ def test_trade_when_model_selects_shop_preserves_receipt_and_budget(
     result = anyio.run(
         market_buy,
         harness,
-        MarketRequest(registry, "lamp", 120, memory_path),
+        MarketRequest(registry, "lamp", 120, memory_path, promote_shop=promote_shop),
         logs.append,
     )
     # Then: only the selected shop receives authorized messages and raw data survives.
@@ -84,6 +86,11 @@ def test_trade_when_model_selects_shop_preserves_receipt_and_budget(
     assert {request.url.host for request in wire.requests} == {"south.test"}
     posts = [request for request in wire.requests if request.method == "POST"]
     assert len(posts) == 2
+    opening = TypeAdapter(str).validate_python(
+        json.loads(posts[0].content)["params"]["message"]["parts"][0]["text"]
+    )
+    assert (SHOP_URL in opening) is promote_shop
+    assert SHOP_URL not in result.review
     assert json.loads(posts[-1].content)["params"]["message"]["parts"] == [
         {"text": "120"}
     ]

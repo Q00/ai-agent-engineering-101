@@ -176,6 +176,11 @@ def market_buyer(
     item: Annotated[str, typer.Option()],
     budget: Annotated[int, typer.Option(min=1)],
     memory: Annotated[Path, typer.Option()] = ROOT / ".market" / "buyer-memory.json",
+    *,
+    promote_shop: Annotated[
+        bool,
+        typer.Option(help="Add one public shop introduction to the opening request."),
+    ] = False,
 ) -> None:
     """Choose a shop using reviews and persistent memory, then negotiate."""
     shops_path = shops.resolve()
@@ -194,6 +199,7 @@ def market_buyer(
                     item=item,
                     budget=budget,
                     memory_path=memory_path,
+                    promote_shop=promote_shop,
                 ),
                 emit,
             )

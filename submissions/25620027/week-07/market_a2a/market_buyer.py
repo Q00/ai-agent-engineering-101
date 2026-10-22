@@ -42,6 +42,7 @@ class MarketRequest:
     item: str
     budget: int
     memory_path: Path
+    promote_shop: bool = False
 
 
 class MarketResult(Review):
@@ -178,6 +179,7 @@ async def market_buy(
                 exact_item=True,
                 pricing_context=pricing_context,
                 security_events=security_events,
+                promote_shop=request.promote_shop,
             ),
             emit,
         )
