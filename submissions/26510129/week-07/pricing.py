@@ -9,9 +9,16 @@ skipped silently when the market is unreachable (the market test runs the shop o
 The rule, in code so that it can be read back from the logs:
     base      = median of the last RECENT deal prices for the item
     ask       = base * ANCHOR                 buyers come up from their first offer, so open a little above what they paid
-    * 0.95    when fewer than half of the opens for the item ended in a deal (buyers walk: the ask is too high)
+    * 0.95    when fewer than CLOSE_FLOOR of the last WINDOW opens for the item ended in a deal (buyers walk: too high)
     * 0.95    when my reviews that name the item average under 3.5 stars (the buyers who did buy felt squeezed)
     clamped to [reserve * 1.05, reserve * 1.5], whole number
+
+Day 2 change (ANCHOR 1.12 -> 1.06, the close rate over a window with a 70% floor instead of all-time with 50%):
+after a day with ANCHOR 1.12 the shop had 1173 opens and closed 64% of them, against 77-79% for the shops at the top
+of the board; 143 buyers left at the opening ask without an offer, and the asks ratcheted (lamp 112 -> 136) because
+the buyers who pay the ask without bargaining pushed the median of recent deals up, which raised the next ask. Reviews
+said "Lamp at 110, above the 105 I usually pay". The old close-rate rule never fired at 64%. The board's share counts
+deals, not revenue, so the ask opens closer to what buyers actually pay.
 """
 import base64
 import json
@@ -28,7 +35,9 @@ MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai").rstrip("/")
 SHOP_KEY = "shop_key.pem"
 RECENT = 10          # deal prices per item that count
 MIN_DEALS = 3        # below this the harness opens as before
-ANCHOR = 1.12
+ANCHOR = 1.06        # day 1 ran at 1.12; see the docstring
+WINDOW = 40          # the close rate is measured over the last WINDOW opens of the item, so it reacts within hours
+CLOSE_FLOOR = 0.70   # below this the ask drops 5%; the shops at the top of the board close 77-79% of their visits
 REVIEW_TTL = 600
 
 _reviews = {"at": 0.0, "list": []}
@@ -76,16 +85,19 @@ def suggest(item):
     iid, reserve = item["id"], item["reserve"]
     rows = [r for r in load() if r.get("item") == iid]
     deals = [r["price"] for r in rows if r.get("kind") == "deal" and isinstance(r.get("price"), (int, float))][-RECENT:]
-    opens = sum(1 for r in rows if r.get("kind") == "open")
+    opens = [r for r in rows if r.get("kind") == "open"][-WINDOW:]
     if len(deals) < MIN_DEALS:
         return None, f"{iid}: {len(deals)} deal(s) on record, need {MIN_DEALS}; the harness opens"
     base = statistics.median(deals)
     ask = base * ANCHOR
     why = [f"median of last {len(deals)} deals {base:.0f} x {ANCHOR}"]
-    close_rate = len([r for r in rows if r.get("kind") == "deal"]) / opens if opens else 1.0
-    if close_rate < 0.5:
+    tasks = {r.get("task") for r in opens}
+    closed = sum(1 for r in rows if r.get("kind") == "deal" and r.get("task") in tasks)
+    close_rate = closed / len(opens) if opens else 1.0
+    why.append(f"close rate {close_rate:.0%} of the last {len(opens)} opens")
+    if close_rate < CLOSE_FLOOR:
         ask *= 0.95
-        why.append(f"close rate {close_rate:.0%} -> -5%")
+        why[-1] += " -> -5%"
     stars = [r["stars"] for r in reviews() if isinstance(r.get("stars"), int) and re.search(rf"\b{re.escape(item['name'])}\b", str(r.get("review", "")), re.I)]
     if stars and sum(stars) / len(stars) < 3.5:
         ask *= 0.95

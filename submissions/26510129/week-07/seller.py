@@ -165,6 +165,15 @@ class Seller(AgentExecutor):
         deal["log"].append(("buyer", str(offer)))
         print(f"[seller] READ task={tid} offer={offer} from {nums}", flush=True)
         action = (d or {}).get("action")
+        offers = [int(what) for who, what in deal["log"] if who == "buyer" and what.isdigit()]
+        if action == "reject" and offer >= item["reserve"]:   # a reject above the reserve is a deal thrown away
+            print(f"[guard] harness rejected {offer}, at or above the reserve {item['reserve']} of {item['id']}; accepting", flush=True)
+            action = "accept"
+        elif action == "reject" and len(offers) >= 2 and offers[-1] > offers[-2]:
+            # day 1: 146 rejects, all below the reserve, many while the buyer was still coming up (104, 120, 136, 152 on a
+            # reserve of 180). A reject ends the task; a counter at the reserve costs one more round and may close.
+            print(f"[guard] harness rejected {offer} while the buyer is still coming up {offers[-3:]}; countering at the reserve instead", flush=True)
+            action, d = "counter", {"action": "counter", "price": item["reserve"]}
         if action == "accept" and offer < item["reserve"]:
             print(f"[guard] harness accepted {offer} below the reserve {item['reserve']} of {item['id']}; countering at the reserve", flush=True)
             action, d = "counter", {"action": "counter", "price": item["reserve"]}
