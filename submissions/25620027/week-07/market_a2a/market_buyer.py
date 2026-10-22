@@ -19,6 +19,7 @@ from market_a2a.models import (
     ToolSpec,
     json_value,
 )
+from market_a2a.promotion import SHOP_URL
 from market_a2a.security import SecurityEvents
 from market_a2a.security_review import selection_review_evidence
 from market_a2a.strict_review import (
@@ -92,6 +93,8 @@ async def market_buy(
     shops = TypeAdapter(tuple[MarketShop, ...]).validate_json(
         await anyio.Path(request.shops_path).read_text(encoding="utf-8")
     )
+    if request.promote_shop:
+        shops = tuple(shop for shop in shops if shop.url.rstrip("/") != SHOP_URL)
     if not shops:
         msg = "Market registry contains no shops"
         raise HarnessError(msg)

@@ -10,6 +10,7 @@ COPY agent.json run_harness.sh ./
 COPY market_a2a ./market_a2a
 COPY assets ./assets
 COPY deploy/vps/guard.py deploy/vps/serve_public.py /app/deploy/vps/
+COPY deploy/vps/start_buyer.sh deploy/vps/buyer-agent.json /app/deploy/vps/
 RUN uv export --frozen --script /app/harness_app.py --format requirements.txt --output-file /tmp/requirements.txt \
     && uv pip install --system --require-hashes --no-deps -r /tmp/requirements.txt \
     && rm /tmp/requirements.txt \

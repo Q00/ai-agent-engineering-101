@@ -1,0 +1,31 @@
+name: ax-week07-25620027-buyer
+services:
+  buyer:
+    image: ax-week07-25620027-seller:1.6.0-buyer-active
+    entrypoint: ["sh", "/app/deploy/vps/start_buyer.sh"]
+    environment:
+      AX_OPENAI_FALLBACK: "1"
+      AX_PAID_QUOTA_PATH: /data/paid-quota.sqlite3
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      UV_CACHE_DIR: /tmp/uv-cache
+    restart: "no"
+    init: true
+    read_only: true
+    cpus: 0.5
+    mem_limit: 512m
+    pids_limit: 128
+    stop_grace_period: 20s
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    volumes:
+      - /docker/ax-week07-25620027/private:/run/private:ro
+      - /docker/ax-week07-25620027/data:/data
+      - /docker/ax-week07-25620027/market_kit-20261022.py:/run/kit/market_kit.py:ro
+    tmpfs:
+      - /tmp:mode=1777,size=64m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from contextlib import AsyncExitStack
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Annotated, Final
@@ -28,6 +29,7 @@ import anyio
 import typer
 import uvicorn
 from fastapi import FastAPI
+from openai import AsyncOpenAI
 from pydantic import TypeAdapter
 
 from http_client import create_client
@@ -36,7 +38,14 @@ from market_a2a.catalog import Catalog
 from market_a2a.harness import Harness
 from market_a2a.market_buyer import MarketRequest, market_buy
 from market_a2a.model_provider import create_model_client
-from market_a2a.models import FrozenModel, Purchase, ShopCard, ShoppingItem
+from market_a2a.models import (
+    FrozenModel,
+    HarnessError,
+    Purchase,
+    ShopCard,
+    ShoppingItem,
+)
+from market_a2a.paid_fallback import DailyQuota, OpenAIFallback
 from market_a2a.receipts import ReceiptSigner
 from market_a2a.seller import create_app
 from market_a2a.shopping import shop
@@ -189,9 +198,25 @@ def market_buyer(
     async def run() -> None:
         async with (
             create_client(model=True) as model_http,
-            create_model_client(model_http) as model,
+            AsyncExitStack() as stack,
         ):
-            harness = Harness(model, emit)
+            model = await stack.enter_async_context(create_model_client(model_http))
+            fallback = None
+            if os.environ.get("AX_OPENAI_FALLBACK") == "1":
+                quota_path = Path(os.environ["AX_PAID_QUOTA_PATH"])
+                if not await anyio.Path(quota_path).is_file():
+                    message = "Existing shared paid quota ledger is required"
+                    raise HarnessError(message)
+                paid = await stack.enter_async_context(
+                    AsyncOpenAI(
+                        base_url="https://api.openai.com/v1",
+                        api_key=os.environ["OPENAI_API_KEY"],
+                        http_client=model_http,
+                        max_retries=0,
+                    )
+                )
+                fallback = OpenAIFallback(paid, DailyQuota(quota_path))
+            harness = Harness(model, emit, fallback=fallback)
             result = await market_buy(
                 harness,
                 MarketRequest(
