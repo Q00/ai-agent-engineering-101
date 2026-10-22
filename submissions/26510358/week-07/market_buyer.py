@@ -74,6 +74,10 @@ def buy(shops, item, budget, memory, trace):
             task_id = result.get("task")
             if not isinstance(task_id, str) or not task_id:
                 continue
+            if result.get("task_linkage") != "runtime":
+                trace.write("trade_feedback_unlinked", reason_code="missing_runtime_task",
+                            shop=result.get("shop"), ledger=result.get("ledger"))
+                continue
             if result.get("verified") is True and result.get("signature") == "verified":
                 emit_stage(trace, "market_verified", side="buyer", task_id=task_id,
                            item=result.get("item"), shop=result.get("shop"),
@@ -82,7 +86,8 @@ def buy(shops, item, budget, memory, trace):
             else:
                 emit_stage(trace, "ended", side="buyer", task_id=task_id,
                            item=result.get("item"), shop=result.get("shop"),
-                           outcome="unresolved", reason_code="market_verification_failed")
+                           outcome="unresolved", reason_code=("local_contract_failed" if result.get("market_verified")
+                                                              else "market_verification_failed"))
     eligible = [s for s in shops if isinstance(s, dict) and isinstance(s.get("name"), str)
                 and s["name"] not in OWN_NAMES and isinstance(s.get("url"), str)
                 and urlparse(s["url"]).scheme in {"http", "https"}]
@@ -162,18 +167,23 @@ def buy(shops, item, budget, memory, trace):
         memory.record(chosen["name"], item=item, budget=budget, status=memory_status,
             price=receipt.get("price") if isinstance(receipt, dict) else None,
             reason=str(result.get("reason", result.get("state", review)))[:250],
-            issues=issues, signed=signed, task=receipt.get("task", receipt.get("taskId")) if isinstance(receipt, dict) else None,
+            issues=issues, signed=signed, task=result.get("task_id"),
             offer_count=result.get("offer_count"), response_seconds=result.get("response_seconds"))
         trace.write("market_trade_observed", shop=chosen["name"], status=memory_status,
-                    receipt=receipt, offer_count=result.get("offer_count"),
+                    receipt=receipt, task_id=result.get("task_id"), offer_count=result.get("offer_count"),
                     response_seconds=result.get("response_seconds"))
-        # Keep disputed received receipts as evidence; the kit rejects invalid
-        # ones. Never turn an ambiguous possible purchase into a retry elsewhere.
-        return report(chosen["url"], receipt, stars, review)
+        # The kit does not know our agreed price/quote or prior task snapshots.
+        # Keep disputed artifacts in the trace, never submit them for countersigning.
+        return report(chosen["url"], receipt if status == "completed" else None, stars, review)
     except Exception as exc:
         detail = type(exc).__name__ + ": " + str(exc)[:250]
         trace.write("market_trade_error", shop=chosen["name"], detail=detail)
-        memory.record(chosen["name"], item=item, budget=budget, status="error", reason=detail)
+        uncertain = bool(getattr(exc, "purchase_uncertain", False))
+        memory.record(chosen["name"], item=item, budget=budget,
+            status="unresolved" if uncertain else "error", reason=detail,
+            task=getattr(exc, "task_id", None), offer_count=getattr(exc, "offer_count", None),
+            response_seconds=getattr(exc, "response_seconds", None),
+            issues=["purchase_outcome_uncertain"] if uncertain else [])
         return report(chosen["url"], None, 2, f"I could not confirm a completed {item} purchase.")
 
 

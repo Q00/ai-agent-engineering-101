@@ -59,7 +59,7 @@ class TransactionReviewTests(unittest.TestCase):
             with self.subTest(result=result, error=bool(error)):
                 response = self.run_case(result=result, error=error)
                 self.assertEqual(response["stars"], stars)
-                self.assertEqual(response["receipt"], result["receipt"] if result else None)
+                self.assertEqual(response["receipt"], result["receipt"] if result and result["status"] == "completed" else None)
                 if error:
                     self.assertEqual(response["review"],
                                      "I could not confirm a completed lamp purchase.")

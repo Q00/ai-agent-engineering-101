@@ -131,7 +131,7 @@ class BuyerRoundBoundaryTests(unittest.TestCase):
 
     def test_eighth_counter_has_no_ninth_decision_and_releases_unused_reservation(self):
         result, ledger, _ = self.run_fixture(quote())
-        self.assertEqual(result, {"status": "no_deal", "reason": "round limit"})
+        self.assertEqual((result["status"], result["reason"], result["offer_count"]), ("no_deal", "round limit", 8))
         snapshot = ledger.snapshot()
         self.assertEqual((snapshot["committed_total"], snapshot["reserved_total"], snapshot["available_budget"]),
                          (0, 0, 120))
