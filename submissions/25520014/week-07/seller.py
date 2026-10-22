@@ -1,26 +1,28 @@
-"""Week 07 seller: an A2A v1.0 server (JSON-RPC binding) priced against the market, fast.
+"""Week 07 seller: an A2A v1.0 server (JSON-RPC binding) whose opening asks haiku sets from the shop's own record.
 
     python seller.py --port 9999
 
-Round 2 ranks shops by counted deals: signed receipts behind a market order. Round 1 showed
-that share follows visits, and visits follow memory: buyers go back to the shop where they
-paid least (corner-store 466 visits, outseop 237, both near the reserve). So the shop stays
-at or under the cheapest price in the market, with fixed rules and no harness (week 06 used
-claude -p, about 3 s per turn, and lost a few deals to harness errors).
+Round 2 ranks shops by counted deals: signed receipts behind a market order. Until 10-22 the shop
+opened at the cheapest verified sale by other shops in the last 30 minutes. Every other shop also
+sold at the reserve, so that price was always the reserve (100/180/260), buyers offered below it,
+and 100% of our Round 2 sales closed at the reserve (challenge 1).
 
-Market price: a background thread reads the public ledger every minute and keeps, per item,
-the lowest verified sale by another shop in the current round over the last 30 minutes.
-No data (or no market) -> the reserve.
+Pricing desk: a background thread reads the public ledger every minute and keeps the shop's own
+verified sales with their stars and reviews; the seller keeps its own visits (how far each one got).
+Every 10 minutes haiku reads the last hour of both and sets the opening ask per item, with a
+one-sentence reason in the log. Code guards: the opening ask stays within reserve .. 1.5 x reserve
+and moves at most 10% of the reserve per decision. Without data or a harness the last ask stays
+(the reserve at start).
 
 The ladder, never below the reserve:
-  0. open at the market price,
-  1. "too expensive" (an offer below the reserve, or words without a number) -> market price - 1,
-     with the fact that it is below every verified sale in the last half hour,
-  2. still below the reserve -> the reserve, as the final price, repeated from then on.
-  Any offer at or above the reserve closes at once at the offered price; accept words
-  without a number ("accept", "deal", "ok") close at the current ask. The shop never walks away.
-  The asking price is the only number in each message, so buyers that read the first or the
-  last number both read the ask.
+  0. open at the desk's ask,
+  1. an offer below it -> one counter halfway between the ask and the offer (or the reserve);
+     an offer at or above the ask closes at once,
+  2. after the counter any offer at or above the reserve closes; below it -> the reserve, as the
+     final price, repeated from then on.
+  Accept words without a number ("accept", "deal", "ok") close at the current ask. The shop never
+  walks away. The asking price is the only number in each message, so buyers that read the first
+  or the last number both read the ask.
 Week 06 history: the first trade test ran with the reserve in the prompt only and failed
 (haiku countered 250 and sold at 230 on a bookshelf with reserve 260); the code guard fixed it.
 
@@ -113,23 +115,30 @@ def write_reply(item, price, situation, buyer_text, template):
 
 
 MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai")
-WINDOW = 30 * 60   # seconds of verified sales that set the market price
-REFRESH = 60       # seconds between ledger reads
+REFRESH = 60          # seconds between ledger reads
+DESK_EVERY = 10 * 60  # seconds between pricing decisions
+LOOKBACK = 60 * 60    # seconds of own sales and visits the desk reads
+MAX_OPEN = 1.5        # the opening ask stays within reserve .. 1.5 x reserve
+MAX_MOVE = 0.1        # and moves at most 10% of the reserve per decision
+STEPS = ("at the opening ask", "after the counter", "at the reserve")
 
 
-class MarketPrices:
-    """Lowest verified sale per item by other shops, current round, last WINDOW seconds."""
+class Book:
+    """The shop's own record: verified sales and reviews from the ledger, visits from this process."""
 
     def __init__(self):
-        self.after, self.round, self.sales = 0, None, []   # sales: (ts, item, price)
+        self.after, self.round, self.ready = 0, None, False
+        self.sales = []    # (ts, item, price, stars, review), current round
+        self.visits = {}   # task id -> {"ts", "item", "ask", "price", "step"}
         self.lock = threading.Lock()
 
     def poll(self):
         while True:
             try:
                 self.read_new()
-            except Exception as e:  # the shop keeps selling at the reserve without the feed
-                print(f"[prices] ledger read failed: {type(e).__name__}", flush=True)
+                self.ready = True
+            except Exception as e:  # the shop keeps its last asks without the feed
+                print(f"[book] ledger read failed: {type(e).__name__}", flush=True)
             time.sleep(REFRESH)
 
     def read_new(self):
@@ -142,21 +151,103 @@ class MarketPrices:
                     if e["round"] != self.round:
                         self.round, self.sales = e["round"], []
                     rc = e["data"].get("receipt") if e["kind"] == "result" else None
-                    if rc and e["data"].get("verified") and rc.get("shop") != SHOP and rc.get("item") in RESERVE:
-                        self.sales.append((e["ts"], rc["item"], round(float(rc["price"]))))
+                    if rc and e["data"].get("verified") and rc.get("shop") == SHOP and rc.get("item") in RESERVE:
+                        self.sales.append((e["ts"], rc["item"], round(float(rc["price"])), e["data"].get("stars"),
+                                           (e["data"].get("review") or "")[:160]))
                 self.after = batch[-1]["seq"]
             if len(batch) < 500:
                 break
-        print(f"[prices] round {self.round}: " + ", ".join(f"{i} {self.lowest(i)}" for i in RESERVE), flush=True)
 
-    def lowest(self, item):
-        cutoff = time.time() - WINDOW
+    def visit(self, task_id, item, ask):
         with self.lock:
-            prices = [p for ts, i, p in self.sales if i == item and ts >= cutoff]
-        return min(prices) if prices else None
+            self.visits[task_id] = {"ts": time.time(), "item": item, "ask": ask, "price": None, "step": None}
+
+    def closed(self, task_id, price, step):
+        with self.lock:
+            if task_id in self.visits:
+                self.visits[task_id].update(price=price, step=step)
+
+    def facts(self, item):
+        """The last LOOKBACK seconds for one item, in words for the desk."""
+        cutoff = time.time() - LOOKBACK
+        with self.lock:
+            sales = [s for s in self.sales if s[1] == item and s[0] >= cutoff]
+            visits = [v for v in self.visits.values() if v["item"] == item and v["ts"] >= cutoff]
+        deals = [v for v in visits if v["price"] is not None]
+        lines = [f"  visits to the shop: {len(visits)}, deals {len(deals)}, left without a deal or still "
+                 f"talking {len(visits) - len(deals)}"]
+        if deals:
+            by_step = ", ".join(f"{sum(v['step'] == i for v in deals)} {STEPS[i]}" for i in range(3))
+            asks = sorted({v["ask"] for v in visits})
+            lines.append(f"  deals closed {by_step}; opening asks used {asks}; "
+                         f"average deal price {sum(v['price'] for v in deals) / len(deals):.0f}")
+        if sales:
+            stars = [s[3] for s in sales if s[3] is not None]
+            lines.append(f"  verified sales on the market ledger: {len(sales)}, prices {sorted(s[2] for s in sales)}"
+                         + (f", stars average {sum(stars) / len(stars):.1f}" if stars else ""))
+            lines += [f"  review: {s[3]} stars, {s[4]!r}" for s in sales[-5:]]
+        else:
+            lines.append("  verified sales on the market ledger: none")
+        return lines
 
 
-PRICES = MarketPrices()
+BOOK = Book()
+
+
+class Desk:
+    """haiku sets the opening ask per item from the shop's own sales, reviews and visits."""
+
+    def __init__(self):
+        self.ask = dict(RESERVE)
+
+    def run(self):
+        while not BOOK.ready:
+            time.sleep(5)
+        while True:
+            try:
+                self.decide()
+            except Exception as e:  # timeout, rate limit, bad JSON: the last asks stay
+                print(f"[desk] no decision: {type(e).__name__}: {str(e)[:200]}", flush=True)
+            time.sleep(DESK_EVERY)
+
+    def decide(self):
+        facts = []
+        for item, reserve in RESERVE.items():
+            facts += [f"{item}: reserve {reserve}, current opening ask {self.ask[item]}"] + BOOK.facts(item)
+        prompt = (
+            f"You set the opening asking prices of {SHOP}, a furniture shop in a market of about thirty shops "
+            "that sell the same three items to AI buyers. Each buyer has a budget, remembers the shop where it "
+            "paid least, and reads the shops' reviews; many offer below whatever the shop asks.\n"
+            "How a negotiation goes: the shop opens at your ask; an offer below it gets one counter halfway "
+            "between the ask and the offer; after that any offer at or above the reserve closes. The reserve "
+            "is the lowest price the shop may sell at and cannot change.\n\n"
+            "The shop's own record over the last hour:\n" + "\n".join(facts) + "\n\n"
+            "Choose the opening ask per item for the next ten minutes to earn the most: more deals and higher "
+            "prices both count, and a buyer driven away goes to another shop. Raise an ask when buyers pay it "
+            "and review well; lower it toward the reserve when deals or stars fall. Each ask must be between "
+            f"the reserve and {MAX_OPEN} times the reserve.\n"
+            'Reply with JSON only: {"lamp": {"open": <whole number>, "why": "<one sentence>"}, '
+            '"chair": {...}, "bookshelf": {...}}')
+        t0 = time.time()
+        reply = harness.call(prompt, timeout=90)
+        m = re.search(r"\{.*\}", reply, re.S)
+        if m is None:
+            raise ValueError(f"no JSON in {reply[:200]!r}")
+        data = json.loads(m.group())
+        for item, reserve in RESERVE.items():
+            want = (data.get(item) or {}).get("open")
+            if not isinstance(want, (int, float)):
+                print(f"[desk] {item}: no ask in the reply, stays {self.ask[item]}", flush=True)
+                continue
+            step = MAX_MOVE * reserve
+            new = round(min(max(want, self.ask[item] - step, reserve), self.ask[item] + step, MAX_OPEN * reserve))
+            print(f"[desk] {item}: {self.ask[item]} -> {new} (haiku {want}): {(data[item].get('why') or '')[:200]}",
+                  flush=True)
+            self.ask[item] = new
+        print(f"[desk] {time.time() - t0:.1f}s; facts: " + " | ".join(f.strip() for f in facts), flush=True)
+
+
+DESK = Desk()
 
 
 def canon(d):
@@ -172,7 +263,7 @@ def sign_receipt(receipt, key_path="shop_key.pem"):
 
 class Seller(AgentExecutor):
     def __init__(self):
-        self.open = {}  # task id -> {"item", "ask", "step", "market"}
+        self.open = {}  # task id -> {"item", "ask", "step"}
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -200,10 +291,10 @@ class Seller(AgentExecutor):
         if item is None:
             await up.reject(say("We only sell: " + ", ".join(RESERVE) + "."))
             return
-        market = PRICES.lowest(item)
-        ask = max(RESERVE[item], market or 0)
-        self.open[task_id] = {"item": item, "ask": ask, "step": 0, "market": market}
-        print(f"[task {task_id[:8]}] -> INPUT_REQUIRED ask {ask} (market {market})", flush=True)
+        ask = max(RESERVE[item], DESK.ask[item])
+        self.open[task_id] = {"item": item, "ask": ask, "step": 0}
+        BOOK.visit(task_id, item, ask)
+        print(f"[task {task_id[:8]}] -> INPUT_REQUIRED ask {ask} (desk)", flush=True)
         msg = await self.words(item, ask, f"First reply: the asking price is {ask}; ask for their offer as a number.",
                                text, f"{item}: asking {ask}. {SERVICE} Send your offer as a number.")
         await up.requires_input(say(msg))
@@ -214,21 +305,22 @@ class Seller(AgentExecutor):
             await self.close(task_id, deal, deal["ask"], text, up, say)
             return
         offer = round(float(m.group())) if m else None
-        if offer is not None and offer >= RESERVE[deal["item"]]:
+        if offer is not None and offer >= RESERVE[deal["item"]] and (offer >= deal["ask"] or deal["step"] > 0):
             await self.close(task_id, deal, offer, text, up, say)
             return
         await self.step_down(task_id, deal, offer, text, up, say)
 
     async def step_down(self, task_id, deal, offer, text, up, say):
-        """Too expensive: market price - 1 first, then the reserve as the final price."""
-        item, reserve, market = deal["item"], RESERVE[deal["item"]], deal["market"]
-        under = max(reserve, market - 1) if market else reserve
-        if deal["step"] == 0 and under < deal["ask"] and under > reserve:
-            deal["step"], deal["ask"] = 1, under
-            msg = (f"{item}: {under}, below every verified {item} sale in this market in the last half hour. "
-                   f"Asking {under}.")
-            situation = (f"Their offer was too low. The shop comes down to {under}, below every verified "
-                         f"{item} sale in this market in the last half hour.")
+        """Below the ask: one counter halfway to the offer (or the reserve), then the reserve as final."""
+        item, reserve = deal["item"], RESERVE[deal["item"]]
+        counter = round((deal["ask"] + max(reserve, offer or 0)) / 2)
+        if deal["step"] == 0 and offer is not None and offer >= reserve and counter - offer <= 1:
+            await self.close(task_id, deal, offer, text, up, say)
+            return
+        if deal["step"] == 0 and reserve < counter < deal["ask"]:
+            deal["step"], deal["ask"] = 1, counter
+            msg = f"{item}: we can meet you partway. Asking {counter}."
+            situation = f"Their offer was below the asking price. The shop comes down to {counter}."
         else:
             deal["step"], deal["ask"] = 2, reserve
             msg = f"{item}: final price, the lowest we can go. Asking {reserve}."
@@ -240,7 +332,8 @@ class Seller(AgentExecutor):
     async def close(self, task_id, deal, price, text, up, say):
         receipt = sign_receipt({"shop": SHOP, "item": deal["item"], "price": int(price), "task": task_id})
         await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-        print(f"[task {task_id[:8]}] -> COMPLETED at {price}", flush=True)
+        BOOK.closed(task_id, int(price), deal["step"])
+        print(f"[task {task_id[:8]}] -> COMPLETED at {price} step {deal['step']}", flush=True)
         msg = await self.words(deal["item"], int(price), f"Deal closed at {price}; the signed receipt is attached.",
                                text, f"Deal: {deal['item']} at {price}. {SERVICE}")
         await up.complete(say(msg))
@@ -256,8 +349,8 @@ def build_app(port):
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name=SHOP,
-        description="Sells lamps, chairs and bookshelves, priced at the cheapest recent verified sale in "
-                    "this market or below. " + SERVICE + " Answers every question, signed receipts.",
+        description="Sells lamps, chairs and bookshelves at fair prices and meets buyers partway. " + SERVICE
+                    + " Answers every question, signed receipts.",
         version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
@@ -278,7 +371,9 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=9999)
     args = ap.parse_args()
-    print(f"{SHOP} on http://127.0.0.1:{args.port}/ (rule-based market price ladder; haiku replies to requests)",
+    print(f"{SHOP} on http://127.0.0.1:{args.port}/ (haiku pricing desk from own sales and reviews; "
+          "haiku replies to requests)",
           flush=True)
-    threading.Thread(target=PRICES.poll, daemon=True).start()
+    threading.Thread(target=BOOK.poll, daemon=True).start()
+    threading.Thread(target=DESK.run, daemon=True).start()
     uvicorn.run(build_app(args.port), host="127.0.0.1", port=args.port, log_level="warning")

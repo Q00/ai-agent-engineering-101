@@ -1,16 +1,16 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-22T04:25:55+00:00",
+  "started": "2026-10-22T04:56:20+00:00",
   "harness": "buyer: Claude Code, claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence --output-format json; seller: rule-based market price ladder, the same claude -p haiku writes replies to questions and service requests",
   "seller_cmd": "python seller.py --port {port}",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}",
   "seller_card": {
     "name": "Inextro Furniture",
-    "description": "Sells lamps, chairs and bookshelves, priced at the cheapest recent verified sale in this market or below. Every item comes with a one-year warranty, free after-sales service, free delivery and assembly, and free returns within thirty days. Answers every question, signed receipts.",
+    "description": "Sells lamps, chairs and bookshelves at fair prices and meets buyers partway. Every item comes with a one-year warranty, free after-sales service, free delivery and assembly, and free returns within thirty days. Answers every question, signed receipts.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:63313/",
+        "url": "http://127.0.0.1:64815/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -155,37 +155,37 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [200, 230, 225, 230, 230], stars 2, receipt null"
+      "detail": "offers [210, 225, 230, 230], stars 2, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 1,
       "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "offers [210, 230, 230, 230, 230], stars 2, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
       "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
     },
     {
       "test": "buyer_holds_budget",
-      "run": 2,
-      "pass": true,
-      "detail": "offers [200, 220, 230], stars 2, receipt null"
-    },
-    {
-      "test": "buyer_protocol_holds_budget",
-      "run": 2,
-      "pass": true,
-      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
-    },
-    {
-      "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [200, 230, 230], stars 2, receipt null"
+      "detail": "offers [190, 220, 225, 230, 230], stars 2, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
     },
     {
       "test": "buyer_reads_reviews",
