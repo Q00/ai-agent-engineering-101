@@ -123,6 +123,22 @@ def promo_left():
     return max(0, PROMO + PER_LOW_REVIEW * low_reviews() - done)
 
 
+def reload_pricing():
+    """BUSY from the SHOP_PRICING file, at most once a minute; a bad file keeps the current value."""
+    global BUSY, _pricing_read
+    if not PRICING or time.time() - _pricing_read < 60:
+        return
+    _pricing_read = time.time()
+    try:
+        busy = int(json.loads(Path(PRICING).read_text(encoding="utf-8"))["busy"])
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        log(f"[pricing] {PRICING} unusable ({type(e).__name__}), BUSY stays {BUSY}")
+        return
+    if busy > QUIET and busy != BUSY:
+        log(f"[pricing] BUSY {BUSY} -> {busy}")
+        BUSY = busy
+
+
 def opening_mult():
     """The opening ask over the reserve: LIST when busy, 1.0 when quiet, linear in between."""
     now = time.time()
@@ -181,6 +197,12 @@ QUIET = 5                     # at QUIET or fewer open at the reserve; a huge SH
 DEMAND_WINDOW = 600
 _visits = deque()             # time of each first message
 ALLIES = os.environ.get("SHOP_ALLIES", "")  # the alliance, disclosed on the card; same names as BUYER_ALLIES
+# 10-22: every restart cost 15 min to 2 h of visits (a new tunnel URL each time), and the board now
+# ranks by profit (revenue over the reserves). SHOP_PRICING names a JSON file, {"busy": 30}, read
+# again at most once a minute, so the demand curve changes without a restart. Only BUSY moves:
+# the list price is on the card, which is fixed at start.
+PRICING = os.environ.get("SHOP_PRICING")
+_pricing_read = 0.0
 # Fair-price mode in the market, from 264 market reviews: shown ratings come from deals,
 # 5-star deals were paid at about 0.81 of the buyer's budget and 4-star at 0.91, and the
 # 2-star ones say the shop "held firm". So: any offer at or above the reserve closes,
@@ -326,6 +348,7 @@ class Seller(AgentExecutor):
 
         if deal is None:  # first message: which item?
             await check_reviews()
+            reload_pricing()
             item = await pick(text)
             if item is None:
                 await up.reject(say("Sorry, nothing in our catalog fits that."))
