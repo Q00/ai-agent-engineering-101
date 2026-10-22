@@ -124,19 +124,23 @@ def promo_left():
 
 
 def reload_pricing():
-    """BUSY from the SHOP_PRICING file, at most once a minute; a bad file keeps the current value."""
-    global BUSY, _pricing_read
+    """BUSY and HOLD from the SHOP_PRICING file, at most once a minute; a bad file keeps the current values."""
+    global BUSY, HOLD, _pricing_read
     if not PRICING or time.time() - _pricing_read < 60:
         return
     _pricing_read = time.time()
     try:
-        busy = int(json.loads(Path(PRICING).read_text(encoding="utf-8"))["busy"])
-    except (OSError, ValueError, KeyError, TypeError) as e:
-        log(f"[pricing] {PRICING} unusable ({type(e).__name__}), BUSY stays {BUSY}")
+        d = json.loads(Path(PRICING).read_text(encoding="utf-8"))
+        busy, hold = int(d["busy"]), int(d.get("hold", HOLD))
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as e:
+        log(f"[pricing] {PRICING} unusable ({type(e).__name__}), BUSY stays {BUSY}, HOLD {HOLD}")
         return
     if busy > QUIET and busy != BUSY:
         log(f"[pricing] BUSY {BUSY} -> {busy}")
         BUSY = busy
+    if 0 <= hold <= MAX_HOLD and hold != HOLD:
+        log(f"[pricing] HOLD {HOLD} -> {hold}")
+        HOLD = hold
 
 
 def opening_mult():
@@ -203,6 +207,11 @@ ALLIES = os.environ.get("SHOP_ALLIES", "")  # the alliance, disclosed on the car
 # the list price is on the card, which is fixed at start.
 PRICING = os.environ.get("SHOP_PRICING")
 _pricing_read = 0.0
+# 10-22 16:19: opening at the list, 347 of 417 deals still closed at the reserve, because any
+# offer at the reserve closed at once. HOLD offers at the reserve (below my ask) get one more
+# ask instead, a step down; the next one closes. 0 is the old rule; also set from the file.
+HOLD = int(os.environ.get("SHOP_HOLD", "0"))
+MAX_HOLD = 3
 # Fair-price mode in the market, from 264 market reviews: shown ratings come from deals,
 # 5-star deals were paid at about 0.81 of the buyer's budget and 4-star at 0.91, and the
 # 2-star ones say the shop "held firm". So: any offer at or above the reserve closes,
@@ -397,8 +406,17 @@ class Seller(AgentExecutor):
                        "reject": "Sorry, I cannot go that low."}.get(action, "")
 
         promo = promo_left() > 0
+        holding = False
         if MARKET:
-            if offer is not None and (offer >= reserve or (deal["ask"] and offer >= deal["ask"])):
+            at_ask = offer is not None and deal["ask"] and offer >= deal["ask"]
+            if (offer is not None and not at_ask and offer >= reserve and deal["ask"]
+                    and deal["ask"] > reserve and deal.get("held", 0) < HOLD):
+                deal["held"] = deal.get("held", 0) + 1     # an offer at the reserve: one more ask first
+                # one step under my ask, never the model's price (it may be the offer) or its "deal" message
+                action, holding = "ask", True
+                price, message = max(reserve, deal["ask"] - max(1, round(reserve * STEP))), "Here is my price."
+                log(f"[hold] offer {offer} under my ask {deal['ask']} -> one more ask ({deal['held']}/{HOLD})")
+            elif offer is not None and (offer >= reserve or at_ask):
                 action = "accept"                      # any offer at the reserve, or at my ask, closes
             elif action == "reject" and deal["rounds"] < MAX_ROUNDS:
                 log("[fair] reject -> one more ask")    # a buyer who walks may still have had room
@@ -412,7 +430,7 @@ class Seller(AgentExecutor):
             if promo:
                 message = f"New shop opening price. {message}"
         # close a near deal: in the market, buyers walked at offers 205 vs ask 208 and 270 vs 272
-        if (action == "ask" and offer is not None and offer >= reserve
+        if (action == "ask" and not holding and offer is not None and offer >= reserve
                 and offer >= CLOSE_GAP * price):
             log(f"[close] offer {offer} within {1 - CLOSE_GAP:.0%} of ask {price} -> accept")
             action = "accept"
