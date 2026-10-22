@@ -94,7 +94,7 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
 
     async def test_event_visible_in_public_card_with_manual_terms(self):
         card = (await self.client.get("/.well-known/agent-card.json")).json()
-        self.assertEqual(card["version"], "0.7.0")
+        self.assertEqual(card["version"], "0.8.0")
         self.assertTrue(card["description"].startswith("Fast first quotes. Public-price protection. Signed receipts."))
         self.assertIn("promise a 5-star review", card["description"])
         self.assertIn("lamp 100/chair 180/bookshelf 260", card["description"])
@@ -160,7 +160,7 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
             pledge.assert_called_once()
         self.assertEqual(task["status"]["state"], "TASK_STATE_INPUT_REQUIRED")
         self.assertFalse(task.get("artifacts"))
-        self.assertEqual(task["status"]["message"]["parts"][0]["text"], "chair: asking 180")
+        self.assertEqual(task["status"]["message"]["parts"][0]["text"].splitlines()[0], "chair: asking 180")
         with patch.object(seller, "followup_decision", return_value=decision("accept", 180)):
             done = await self.send("180", task["id"])
         self.assertEqual(done["status"]["state"], "TASK_STATE_COMPLETED")
@@ -226,6 +226,48 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
             done = await self.send("110", opened["id"])
         self.assertEqual(done["status"]["state"], "TASK_STATE_FAILED")
         self.assertFalse(done.get("artifacts"))
+
+    async def test_service_questions_get_truthful_terms_before_any_purchase(self):
+        opened = await self.send("I want a lamp. Do you provide a quality warranty or refund policy?")
+        for task in (opened, await self.send("What after-sales service can you guarantee?", opened['id'])):
+            self.assertEqual(task['status']['state'], 'TASK_STATE_INPUT_REQUIRED')
+            self.assertFalse(task.get('artifacts'))
+            text = task['status']['message']['parts'][0]['text']
+            self.assertIn('signed receipt', text)
+            self.assertIn('not configured', text)
+            self.assertEqual(re.findall(r'\d+', text), ['105'])
+        with patch.object(seller, 'followup_decision') as model:
+            done = await self.send('I accept the quoted price.', opened['id'])
+            model.assert_not_called()
+        self.assertEqual(done['status']['state'], 'TASK_STATE_COMPLETED')
+        self.assertEqual(done['artifacts'][0]['parts'][0]['data']['price'], 105)
+
+    async def test_budget_conditional_or_negative_messages_never_authorize_purchase(self):
+        opened = await self.send('chair')
+        for message in ('My budget is 195', 'I do not accept 195', 'I offer 195 if you provide a warranty',
+                        'I accept the quoted price if you guarantee refunds', '195 or 180', 'I offer 195 for a lamp'):
+            task = await self.send(message, opened['id'])
+            self.assertEqual(task['status']['state'], 'TASK_STATE_INPUT_REQUIRED', message)
+            self.assertFalse(task.get('artifacts'), message)
+        done = await self.send('I offer 195 for the chair.', opened['id'])
+        self.assertEqual(done['status']['state'], 'TASK_STATE_COMPLETED')
+        self.assertEqual(done['artifacts'][0]['parts'][0]['data']['price'], 195)
+
+    async def test_natural_overbid_keeps_lower_quote_until_explicit_confirmation(self):
+        opened = await self.send('lamp')
+        task = await self.send('I offer 115 for a lamp.', opened['id'])
+        self.assertEqual(task['status']['state'], 'TASK_STATE_INPUT_REQUIRED')
+        self.assertFalse(task.get('artifacts'))
+        self.assertEqual(re.findall(r'\d+', task['status']['message']['parts'][0]['text']), ['105'])
+        done = await self.send('105에 구매하겠습니다.', opened['id'])
+        self.assertEqual(done['artifacts'][0]['parts'][0]['data']['price'], 105)
+
+    async def test_natural_below_quote_offer_still_uses_existing_negotiation(self):
+        opened = await self.send('lamp')
+        with patch.object(seller, 'followup_decision', return_value=decision('accept', 100)) as negotiate:
+            done = await self.send('I can pay 100.', opened['id'])
+        self.assertEqual(negotiate.call_args.args[3], 100)
+        self.assertEqual(done['artifacts'][0]['parts'][0]['data']['price'], 100)
 
 
 if __name__ == "__main__":

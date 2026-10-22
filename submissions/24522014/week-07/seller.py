@@ -31,6 +31,33 @@ from review_promise import active_event, explicit_promise, record_promise
 ROOT = Path(__file__).resolve().parent
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 LOGGER = logging.getLogger(__name__)
+SERVICE_INFO = (
+    "We confirm the agreed item and price and attach a signed receipt for this task. "
+    "Product warranties, delivery, repairs and product returns are not configured for this simulated market. "
+    "Earlier cashback participants keep their published terms."
+)
+
+
+def service_question(text):
+    return bool(re.search(r"warrant|guarantee|after.sales|refund|repair|return policy|service|보증|환불|사후", text, re.I))
+
+
+def purchase_offer(text, item, ask):
+    """Only exact, unconditional offer/acceptance forms authorize a purchase."""
+    normalized = text.strip().rstrip('.!').strip()
+    if re.fullmatch(r"[1-9]\d*", normalized):
+        return int(normalized)
+    match = re.fullmatch(
+        r"(?:I offer|I can pay|I accept|I agree to pay)\s+([1-9]\d*)"
+        + rf"(?:\s+for (?:the |a )?{re.escape(item)})?", normalized, re.I)
+    if match:
+        return int(match.group(1))
+    match = re.fullmatch(r"([1-9]\d*)에 구매하겠습니다", normalized)
+    if match:
+        return int(match.group(1))
+    if re.fullmatch(r"I accept (?:the|your) (?:quoted price|quote)", normalized, re.I):
+        return ask
+    return None
 
 
 def canon(data):
@@ -194,15 +221,23 @@ class Seller(AgentExecutor):
             if deal is None:
                 raise UnsupportedOperationError("This task has no open negotiation.")
             item = deal["item"]
-            offer = int(text.strip()) if re.fullmatch(r"[1-9]\d*", text.strip()) else None
+            offer = purchase_offer(text, item, deal['ask'])
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
         promise = bool(active_event(ROOT) and explicit_promise(text, context.message.parts))
         promised_before = bool(deal and deal.get("review_promise"))
         if deal is not None and offer is None and not promise:
             # Raising inside AgentExecutor can terminate the task in the SDK.
             # Keep the conversation open and repeat the last already validated ask.
-            message = f"Send your offer as one positive integer. {item}: asking {deal['ask']}"
-            await up.requires_input(up.new_agent_message(parts=[new_text_part(message)]))
+            message = f"{item}: asking {deal['ask']}\n"
+            if service_question(text):
+                message += SERVICE_INFO + "\n"
+            message += "To buy, send the quoted price alone or say: I accept the quoted price. Otherwise send an unconditional numeric offer."
+            write_decision_log({"task_id": task.id, "phase": "clarification", "controller": "purchase_guidance",
+                                "provider": None, "model": None, "item": item, "buyer_message": text,
+                                "status": "input_required", "price": deal['ask']})
+            await up.requires_input(up.new_agent_message(parts=[new_text_part(message), new_data_part(
+                {"kind": "quote", "item": item, "price": deal['ask'], "confirmation_required": True,
+                 "signed_receipt": True, "product_warranty": False, "product_returns": False})]))
             return
         if deal is not None and offer is not None and offer > deal["ask"] and not promise:
             price = deal["ask"]
@@ -233,6 +268,13 @@ class Seller(AgentExecutor):
                                     "attempts": [], "status": "ok"})
             elif deal is None:
                 decision = await asyncio.to_thread(opening_decision, self.provider, item, text, task.id)
+            elif offer == deal['ask']:
+                decision = {"action": "accept", "price": offer,
+                            "reason": "Buyer explicitly confirmed the current validated quote."}
+                validate_followup(decision, RESERVES[item], offer, deal['ask'])
+                write_decision_log({"task_id": task.id, "phase": "followup", "controller": "quote_confirmation",
+                                    "provider": None, "model": None, "item": item, "buyer_message": text,
+                                    "buyer_offer": offer, "decision": decision, "attempts": [], "status": "ok"})
             else:
                 decision = await asyncio.to_thread(followup_decision, self.provider, deal, text, offer, task.id)
         except HarnessError as error:
@@ -250,6 +292,10 @@ class Seller(AgentExecutor):
             # The only number in quote text is the ask. Dates and rating terms
             # stay in a separate data Part and in the public card/completion.
             quote = f"{item}: asking {decision['price']}"
+            if service_question(text):
+                quote += "\n" + SERVICE_INFO
+            if deal is None:
+                quote += "\nTo buy, send the quoted price alone or say: I accept the quoted price."
             if deal is None and self.event_notice and not promise:
                 # Spelling the rating keeps the ask as the only numeric value
                 # in text, while exposing the offer to text-only buyers.
@@ -298,7 +344,7 @@ def build_app(provider, port):
     card = AgentCard(
         name="Harness Furniture Shop",
         description=description,
-        version="0.7.0",
+        version="0.8.0",
         default_input_modes=["text/plain"], default_output_modes=["text/plain", "application/json"],
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", protocol_version="1.0",

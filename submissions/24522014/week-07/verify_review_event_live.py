@@ -30,7 +30,7 @@ def main():
         "shop_alive": participants["shops"]["alive"],
         "buyer_alive": participants["buyers"]["alive"],
         "owner_preserved": all(row["owner"]["login"] == "kcwarni" for row in participants.values()),
-        "public_version": card["version"] == "0.7.0",
+        "public_version": card["version"] == "0.8.0",
         "buyer_benefits_visible": card["description"].startswith("Fast first quotes. Public-price protection. Signed receipts."),
         "public_notice": notice in card["description"],
         "registered_notice": notice in participants["shops"]["card"]["description"],
