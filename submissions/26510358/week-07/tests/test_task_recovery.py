@@ -257,6 +257,46 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(result["issues"], ["terminal_receipt_conflict"])
         self.assert_held(snapshot)
 
+    def test_pending_receipt_cannot_be_erased_by_later_no_deal_state(self):
+        pending = {**completed(), "status": {"state": "TASK_STATE_WORKING"}}
+        for state in ("TASK_STATE_REJECTED", "TASK_STATE_CANCELED", "TASK_STATE_FAILED"):
+            for initial in (True, False):
+                with self.subTest(state=state, initial=initial), RecoveryPeer(
+                        pending if initial else None,
+                        reads=[task(state)] if initial else [pending, task(state)]) as peer:
+                    result, snapshot, trace, _ = self.run_buyer(peer)
+                self.assertEqual(result["status"], "disputed")
+                self.assertEqual(result["issues"], ["terminal_receipt_conflict"])
+                self.assertTrue(any(event.get("prior_artifacts") for event in trace.events))
+                self.assert_held(snapshot)
+
+    def test_empty_named_pending_receipt_still_blocks_terminal_no_deal(self):
+        pending = task("TASK_STATE_WORKING")
+        pending["artifacts"] = [{"name": "receipt", "parts": []}]
+        with RecoveryPeer(pending, reads=[task("TASK_STATE_FAILED")]) as peer:
+            result, snapshot, _, _ = self.run_buyer(peer)
+        self.assertEqual(result["issues"], ["terminal_receipt_conflict"])
+        self.assert_held(snapshot)
+
+    def test_final_receipt_cannot_replace_changed_pending_receipt_data(self):
+        for earlier in (completed(price=101), completed(item="chair"),
+                        completed(task="different-task"), completed(quoteId="old-quote")):
+            earlier["status"] = {"state": "TASK_STATE_WORKING"}
+            with self.subTest(earlier=earlier), RecoveryPeer(reads=[earlier, completed()]) as peer:
+                result, snapshot, _, _ = self.run_buyer(peer)
+            self.assertEqual(result["status"], "disputed")
+            self.assertIn("prior_receipt_changed", result["issues"])
+            self.assert_held(snapshot)
+
+    def test_matching_pending_receipt_requires_a_valid_final_receipt(self):
+        pending = {**completed(), "status": {"state": "TASK_STATE_WORKING"}}
+        with RecoveryPeer(pending, reads=[completed()]) as peer:
+            result, snapshot, _, _ = self.run_buyer(peer)
+        self.assertEqual((result["status"], snapshot["committed_total"]), ("completed", 100))
+        with RecoveryPeer(pending, reads=[task("TASK_STATE_COMPLETED")]) as peer:
+            _, snapshot, _, _ = self.run_buyer(peer, expect_error=ProtocolError)
+        self.assert_held(snapshot)
+
     def test_protocol_mismatch_in_send_response_is_never_treated_as_transient(self):
         with RecoveryPeer({**completed(), "wrong_rpc_id": True}, reads=[completed()]) as peer:
             _, snapshot, _, reads = self.run_buyer(peer, expect_error=ProtocolError)
