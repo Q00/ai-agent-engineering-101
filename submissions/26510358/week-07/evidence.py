@@ -60,11 +60,11 @@ def actual_offer(text: str) -> int | None:
         r"(\d+(?:\.0+)?)\s*(?:credits?)?\s*[.!?]?\s*", text, re.I)
     if not match:
         return None
-    try:
-        value = numeric_price(float(match[1]))
-    except EvidenceError:
+    value = int(match[1].partition('.')[0])
+    # A2A DataPart numbers are doubles; never round a buyer's actual bid.
+    if not 1 <= value <= 2**53 - 1:
         return None
-    return int(value)
+    return value
 
 
 def _decision(decision: Mapping[str, Any]) -> dict[str, Any]:

@@ -95,6 +95,13 @@ class MarketMemory:
                     ledger = re.search(r"ledger #(\d+)", entry)
                     feedback_id = ledger[1] if ledger else None
                     seen = shop.setdefault("verified_ledgers", [])
+                    if not verified:
+                        for row in reversed(shop.get("recent", [])):
+                            if pending.get("task") and row.get("task") == pending["task"]:
+                                row.update(status="unresolved", verified=False, ledger=feedback_id,
+                                           order=pending.get("order"))
+                                row["issues"] = list(dict.fromkeys([*row.get("issues", []), "market_verification_failed"]))
+                                break
                     if verified and feedback_id and feedback_id not in seen:
                         seen.append(feedback_id)
                         shop["verified_completions"] = shop.get("verified_completions", 0) + 1
@@ -104,7 +111,8 @@ class MarketMemory:
                         product["completed"] += 1
                         for row in reversed(shop.get("recent", [])):
                             if pending.get("task") and row.get("task") == pending["task"]:
-                                row.update(status="completed", verified=True, ledger=feedback_id)
+                                row.update(status="completed", verified=True, ledger=feedback_id,
+                                           order=pending.get("order"))
                                 break
                     imported.append({"shop": name, "signature": verdict, "verified": verified, "market_result": line})
                     pending = {}
