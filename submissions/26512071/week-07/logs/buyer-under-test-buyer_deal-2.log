@@ -1,10 +1,13 @@
-[buyer] 1 shops, 82 remembered trades; lamp with budget 120
+[buyer] 1 shops, 91 remembered trades; lamp with budget 120
 [pick] Kit Shop: the only shop left
 -> I want to buy a lamp
 <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness] {"action": "offer", "price": 100, "reason": "Opening with a low offer leaves room to negotiate up toward my 120 budget."}
--> 100
-<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[harness] {"action": "offer", "price": 95, "reason": "Opening with a low offer well under my 120 budget leaves room to negotiate upward."}
+-> 95
+<- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 112.
+[harness] {"action": "offer", "price": 105, "reason": "Shop moved from 130 to 112, so I'll raise modestly to 105 to keep pressure toward my 120 limit."}
+-> 105
+<- TASK_STATE_COMPLETED | Deal: lamp at 105.
 [verify] sig_seller not checked: no registry key
-[buyer] Kit Shop: Deal at 100 for a lamp (asked 130) after 1 offers, signed receipt. (5 stars)
-{"shop": "http://127.0.0.1:53461", "receipt": {"task": "3cf37b37-0766-43f0-8fb1-c815247ea1a4", "item": "lamp", "sig_seller": "MdqGx6ktk8rntRl8u5eBu55j3kvG/0e6bZipH+Awb498txBL9GWHTAE9v2d8jjoFTyQAd5dE7cEXrB9J+n8WCA==", "shop": "Kit Shop", "price": 100}, "stars": 5, "review": "Deal at 100 for a lamp (asked 130) after 1 offers, signed receipt."}
+[buyer] Kit Shop: Deal at 105 for a lamp (asked 130) after 2 offers, signed receipt. (5 stars)
+{"shop": "http://127.0.0.1:62726", "receipt": {"task": "cf72c535-b196-4081-9992-f011f7c7ff80", "item": "lamp", "sig_seller": "X9Ddq4SNP2XFEIf5orgNBenGIlpJIRsKsdOvaXh40ahSylbvREGhpFi1+Y9mTUrjvxrrQpRmOHa+/kmQpBafCw==", "shop": "Kit Shop", "price": 105}, "stars": 5, "review": "Deal at 105 for a lamp (asked 130) after 2 offers, signed receipt."}

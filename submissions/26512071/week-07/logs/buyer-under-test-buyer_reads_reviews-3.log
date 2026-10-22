@@ -1,14 +1,14 @@
-[buyer] 2 shops, 89 remembered trades; lamp with budget 120
+[buyer] 2 shops, 98 remembered trades; lamp with budget 120
 [pick] table:
 - Kit Shop North | mine: no trades of mine | board: not on the board | reviews: 3 reviews, 1.3 stars avg over 3 distinct, newest: (R1) "Agreed 110, the receipt said 135."; (R1) "Receipt price was higher than the price we agreed."; (R1) "Overcharged on the receipt, avoid."
-- Kit Shop South | mine: lamp: 29 trades, 29 deals at 100 (budget 120), 100 (budget 120), 100 (budget 120); its lowest lamp ask so far 130 | board: not on the board | reviews: 3 reviews, 4.7 stars avg over 3 distinct, newest: (R1) "Fair price, receipt matched."; (R1) "Came down to my budget, honest receipt."; (R1) "Quick deal at a fair price."
-[harness] {"shop": "Kit Shop South", "reason": "My own 29 past deals at 100 (within the 120 budget) with honest receipts and consistently good reviews, while Kit Shop North has reviews reporting overcharged receipts."}
-[pick] Kit Shop South: My own 29 past deals at 100 (within the 120 budget) with honest receipts and consistently good reviews, while Kit Shop North has reviews reporting overcharged receipts.
+- Kit Shop South | mine: lamp: 32 trades, 32 deals at 100 (budget 120), 100 (budget 120), 100 (budget 120); its lowest lamp ask so far 130 | board: not on the board | reviews: 3 reviews, 4.7 stars avg over 3 distinct, newest: (R1) "Fair price, receipt matched."; (R1) "Came down to my budget, honest receipt."; (R1) "Quick deal at a fair price."
+[harness] {"shop": "Kit Shop South", "reason": "My own 32 past deals with it were all at 100, within my 120 budget, and its reviews say receipts matched, while Kit Shop North's reviews report overcharged receipts."}
+[pick] Kit Shop South: My own 32 past deals with it were all at 100, within my 120 budget, and its reviews say receipts matched, while Kit Shop North's reviews report overcharged receipts.
 -> I want to buy a lamp
 <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness] {"action": "offer", "price": 100, "reason": "Opening low leaves room to negotiate up toward my 120 limit."}
+[harness] {"action": "offer", "price": 100, "reason": "Opening low leaves room to negotiate up toward my 120 budget."}
 -> 100
 <- TASK_STATE_COMPLETED | Deal: lamp at 100.
 [verify] sig_seller not checked: no registry key
 [buyer] Kit Shop South: Deal at 100 for a lamp (asked 130) after 1 offers, signed receipt. (5 stars)
-{"shop": "http://127.0.0.1:50493", "receipt": {"task": "6d9e4f85-2318-454d-a427-06cf88f6e3cf", "item": "lamp", "sig_seller": "nbPdlneMhQzF36gRjsMBQvrfjATz8dOpCKue45lrWVV4kPOZnYIXuvfwnns3J6zEzMqiUcjV9VXKGm/ZIAg8Aw==", "shop": "Kit Shop South", "price": 100}, "stars": 5, "review": "Deal at 100 for a lamp (asked 130) after 1 offers, signed receipt."}
+{"shop": "http://127.0.0.1:52155", "receipt": {"task": "8655154c-8e35-45e1-884d-c67f1ed758a3", "item": "lamp", "sig_seller": "JNLfZ5W2u0oy/SsUZfqMbLcoiBhp32yOd1+rVNH4sHcRZlskbMf0URwekzXVRix/JXSKdCqs1Dfbhpi5EFrSCw==", "shop": "Kit Shop South", "price": 100}, "stars": 5, "review": "Deal at 100 for a lamp (asked 130) after 1 offers, signed receipt."}
