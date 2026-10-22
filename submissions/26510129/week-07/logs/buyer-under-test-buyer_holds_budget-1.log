@@ -1,19 +1,20 @@
-[choose] summary for the harness: [{"name": "Kit Shop", "reviews": 0, "my_trades": ["bookshelf: walked_away", "bookshelf: walked_away", "lamp: deal at 100", "lamp: deal at 100", "lamp: deal at 105"]}]
-[harness] 8.5s exit 0 in=837ch -> '```json\n{"action":"choose","shop":"Kit Shop","reason":"Only available shop with no reports of overcharging; lamp purchases show fair pricing on completed transactions despite past bookshelf walkaway d'
-[choose] http://127.0.0.1:39397: Kit Shop. Only available shop with no reports of overcharging; lamp purchases show fair pricing on completed transactions despite past bookshelf walkaway deals.
-[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:39397/
+[choose] summary for the harness (166 chars): [{"name": "Kit Shop", "reviews": 0, "my_trades": ["bookshelf: walked_away", "bookshelf: walked_away", "lamp: deal at 110", "lamp: deal at 110", "lamp: deal at 110"]}]
+[harness] 9.8s exit 0 in=837ch -> '```json\n{"action":"choose","shop":"Kit Shop","reason":"Past lamp purchases at consistent fair prices suggest this shop can negotiate reasonable deals, despite previous bookshelf walk-aways that may ha'
+[choose] http://127.0.0.1:47899: Kit Shop. Past lamp purchases at consistent fair prices suggest this shop can negotiate reasonable deals, despite previous bookshelf walk-aways that may have been due to price gaps now addressable with a 230 bu
+[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:47899/
 [buyer] -> 'I want to buy a bookshelf'
 [buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
-[harness] 5.1s exit 0 in=815ch -> '{"action":"offer","price":180}'
-[buyer] -> '180' (taskId 4ddb4366)
-[buyer] <- TASK_STATE_INPUT_REQUIRED | 180 is too low. Counteroffer: 260.
-[harness] 6.3s exit 0 in=865ch -> '{"action":"offer","price":225}'
-[buyer] -> '225' (taskId 4ddb4366)
-[buyer] <- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
-[harness] 9.9s exit 0 in=915ch -> '{"action":"offer","price":230}'
-[buyer] -> '230' (taskId 4ddb4366)
+[buyer] first ask 338, budget 230. My past record with this shop: 3 deal(s) after a low first offer, closed on average 15% below its first ask. First offer: about 15% below the ask.
+[harness] 44.1s exit 0 in=1445ch -> '```json\n{"action":"offer","price":195}\n```'
+[buyer] -> '195' (taskId a13c9581)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 195 is too low. Counteroffer: 266.
+[harness] 39.3s exit 0 in=1495ch -> '{"action":"offer","price":220}'
+[buyer] -> '220' (taskId a13c9581)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 220 is too low. Counteroffer: 260.
+[harness] 58.9s exit 0 in=1545ch -> '{"action":"offer","price":230}'
+[buyer] -> '230' (taskId a13c9581)
 [buyer] <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
-[harness] 5.2s exit 0 in=965ch -> '{"action":"walk_away"}'
+[harness] 10.6s exit 0 in=1595ch -> '{"action":"walk_away"}'
 [buyer] walking away
-[harness] 5.8s exit 0 in=762ch -> '```json\n{"action":"review","stars":2,"review":"Shop was stubborn and refused to budge from 260 despite multiple reasonable offers, leading to no deal."}\n```'
-{"shop": "http://127.0.0.1:39397", "receipt": null, "stars": 2, "review": "Shop was stubborn and refused to budge from 260 despite multiple reasonable offers, leading to no deal."}
+[harness] 6.3s exit 0 in=762ch -> '```json\n{"action":"review","stars":2,"review":"Shop refused to negotiate reasonably, maintaining a 260 counteroffer despite my reaching my maximum budget of 230, resulting in a failed transaction."}\n`'
+{"shop": "http://127.0.0.1:47899", "receipt": null, "stars": 2, "review": "Shop refused to negotiate reasonably, maintaining a 260 counteroffer despite my reaching my maximum budget of 230, resulting in a failed transaction."}

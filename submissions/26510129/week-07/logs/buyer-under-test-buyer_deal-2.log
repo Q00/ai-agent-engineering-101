@@ -1,11 +1,12 @@
-[choose] summary for the harness: [{"name": "Kit Shop", "reviews": 0, "my_trades": ["lamp: deal at 105", "bookshelf: walked_away", "bookshelf: walked_away", "bookshelf: walked_away", "lamp: deal at 100"]}]
-[harness] 5.5s exit 0 in=837ch -> '```json\n{"action":"choose","shop":"Kit Shop","reason":"Past trades show successful lamp purchases at 105 and 100 (both under budget) with no overcharging issues, and prices trended downward."}\n```'
-[choose] http://127.0.0.1:40353: Kit Shop. Past trades show successful lamp purchases at 105 and 100 (both under budget) with no overcharging issues, and prices trended downward.
-[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:40353/
+[choose] summary for the harness (171 chars): [{"name": "Kit Shop", "reviews": 0, "my_trades": ["lamp: deal at 105", "bookshelf: walked_away", "bookshelf: walked_away", "bookshelf: walked_away", "lamp: deal at 110"]}]
+[harness] 6.5s exit 0 in=837ch -> '```json\n{"action":"choose","shop":"Kit Shop","reason":"Kit Shop is the only option and has successfully completed lamp purchases at 105 and 110, both within the 120 budget with prices that matched agr'
+[choose] http://127.0.0.1:52423: Kit Shop. Kit Shop is the only option and has successfully completed lamp purchases at 105 and 110, both within the 120 budget with prices that matched agreed deals.
+[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:52423/
 [buyer] -> 'I want to buy a lamp'
 [buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness] 4.9s exit 0 in=800ch -> '{"action":"offer","price":100}'
-[buyer] -> '100' (taskId 5ad58307)
-[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-[harness] 6.5s exit 0 in=927ch -> '{"action":"review","stars":5,"review":"Excellent negotiation: shop reduced price from 130 to 100, beating my 120 budget by 20, and the receipt matches exactly what was agreed."}'
-{"shop": "http://127.0.0.1:40353", "receipt": {"item": "lamp", "shop": "Kit Shop", "task": "5ad58307-5445-4fed-a27e-88dbaf3b25da", "price": 100.0, "sig_seller": "3pAwQbpckI62ER6q6DHWAkw+zLoRnn34bFuH8Vm59Mu+Rdchg7OhyCEp0pSdrBj9ZXibAD+rYfZ+IyrZILeADQ=="}, "stars": 5, "review": "Excellent negotiation: shop reduced price from 130 to 100, beating my 120 budget by 20, and the receipt matches exactly what was agreed."}
+[buyer] first ask 130, budget 120. My past record with this shop: 1 deal(s) after a low first offer, closed on average 15% below its first ask. First offer: about 15% below the ask.
+[harness] 10.2s exit 0 in=1430ch -> '```json\n{"action":"offer","price":110}\n```'
+[buyer] -> '110' (taskId 81be51cf)
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 110.
+[harness] 6.0s exit 0 in=927ch -> '```json\n{"action":"review","stars":5,"review":"Excellent negotiation - successfully reduced lamp price from 130 to 110, well below budget, with receipt matching the agreed amount exactly."}\n```'
+{"shop": "http://127.0.0.1:52423", "receipt": {"shop": "Kit Shop", "sig_seller": "lKVGz1TTU+3CaM8Ko6mrvQ1DJvOKJd/K7UElgvWiAL3v1cDSMN9hX4WiinerxJEtNELjFClhGW9KO4jJgyZJBQ==", "task": "81be51cf-1c9b-4266-9fe5-9416d7e8bc58", "price": 110.0, "item": "lamp"}, "stars": 5, "review": "Excellent negotiation - successfully reduced lamp price from 130 to 110, well below budget, with receipt matching the agreed amount exactly."}
