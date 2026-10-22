@@ -2,7 +2,6 @@
 from contextlib import nullcontext
 import json
 import multiprocessing
-import os
 from pathlib import Path
 import queue
 import sys
@@ -205,8 +204,9 @@ class CompletionPriorityHarnessTests(unittest.TestCase):
 
     def test_harness_priority_is_explicit_and_does_not_read_remote_metadata(self):
         for requested, expected in (("normal", {}), ("completion", {"priority": "completion"})):
-            with self.subTest(requested=requested):
-                trace = SimpleNamespace(write=Mock())
+            with self.subTest(requested=requested), tempfile.TemporaryDirectory() as directory:
+                trace = SimpleNamespace(write=Mock(), directory=Path(directory),
+                                        role="test-only", run_id="test")
                 def process(cmd, **kwargs):
                     output = Path(cmd[cmd.index("--output-last-message") + 1])
                     output.write_text(json.dumps({"action": "reject", "price": None, "offer": None,
