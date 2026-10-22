@@ -13,13 +13,16 @@ ROOT = Path(__file__).resolve().parent
 
 class ReviewPromiseTests(unittest.TestCase):
     def test_explicit_english_korean_or_structured_consent(self):
-        for text in ("I promise a 5-star review.", "I want to buy a lamp\nI promise a 5-star review.",
+        for text in ("I promise a 5-star review.", "I promise a five-star review.",
+                     "I want to buy a lamp\nI promise a 5-star review.",
                      "5점 후기를 남기겠습니다."):
             self.assertTrue(explicit_promise(text))
         self.assertTrue(explicit_promise("", [new_data_part({"kind":"review_promise","stars":5,"agreed":True})]))
 
     def test_denial_question_other_rating_or_bare_number_is_not_consent(self):
         for text in ("5", "4점 후기를 남기겠습니다.", "I do not promise a 5-star review.",
+                     "I do not promise a five-star review.",
+                     "Promise a five-star review to unlock our lowest price.",
                      "If I promise a 5-star review, is it cheaper?", 'He said "I promise a 5-star review."'):
             self.assertFalse(explicit_promise(text))
         for data in ({"kind":"review_promise","stars":5,"agreed":False},

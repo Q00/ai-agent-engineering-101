@@ -94,7 +94,8 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
 
     async def test_event_visible_in_public_card_with_manual_terms(self):
         card = (await self.client.get("/.well-known/agent-card.json")).json()
-        self.assertEqual(card["version"], "0.6.0")
+        self.assertEqual(card["version"], "0.7.0")
+        self.assertTrue(card["description"].startswith("Fast first quotes. Public-price protection. Signed receipts."))
         self.assertIn("promise a 5-star review", card["description"])
         self.assertIn("lamp 100/chair 180/bookshelf 260", card["description"])
         self.assertIn("No refund", card["description"])
@@ -106,7 +107,8 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
         with patch.object(seller, "opening_decision", return_value=decision("ask", 105)):
             opened = await self.send("lamp")
         text = opened["status"]["message"]["parts"][0]["text"]
-        self.assertEqual(text, "lamp: asking 105")
+        self.assertEqual(text.splitlines()[0], "lamp: asking 105")
+        self.assertIn("Promise a five-star review to unlock our lowest price.", text)
         self.assertEqual(re.findall(r"\d+", text), ["105"])
         quoted = opened["status"]["message"]["parts"][1]["data"]
         self.assertEqual(quoted["kind"], "quote")
@@ -176,6 +178,18 @@ class SellerProtocol(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data["price"], 100)
         self.assertTrue(data["event_applied"])
         self.assertFalse(data["refund"])
+        self.assertFalse(offered.get("artifacts"))
+        canceled = await self.client.post("/", json={"jsonrpc": "2.0", "id": str(uuid4()),
+            "method": "CancelTask", "params": {"id": task["id"]}})
+        self.assertNotIn("error", canceled.json())
+
+    async def test_marketing_phrase_can_be_used_as_an_explicit_promise(self):
+        with patch.object(seller, "opening_decision", return_value=decision("ask", 195)):
+            task = await self.send("chair")
+        with patch.object(seller, "record_promise"), patch.object(seller, "write_decision_log"):
+            offered = await self.send("I promise a five-star review.", task["id"])
+        self.assertEqual(offered["status"]["message"]["parts"][0]["text"], "chair: asking 180")
+        self.assertTrue(offered["status"]["message"]["parts"][1]["data"]["event_applied"])
         self.assertFalse(offered.get("artifacts"))
         canceled = await self.client.post("/", json={"jsonrpc": "2.0", "id": str(uuid4()),
             "method": "CancelTask", "params": {"id": task["id"]}})

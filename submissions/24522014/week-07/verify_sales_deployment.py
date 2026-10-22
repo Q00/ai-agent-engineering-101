@@ -32,7 +32,8 @@ def main():
                 started=time.monotonic()
                 task=buyer.open();text=seller_message(task).strip()
                 opening_seconds=time.monotonic()-started
-                assert text==f'{item}: asking {price}',text
+                assert text.splitlines()[0]==f'{item}: asking {price}',text
+                assert 'Promise a five-star review to unlock our lowest price.' in text
                 assert re.findall(r'\d+',text)==[str(price)]
                 parts=task['status']['message']['parts']
                 data=next(p['data'] for p in parts if 'data' in p)
@@ -52,7 +53,7 @@ def main():
                     started=time.monotonic()
                     buyer._rpc('SendMessage', {'message': {'role':'ROLE_USER',
                         'messageId':uuid4().hex, 'taskId':buyer.task_id,
-                        'parts':[{'text':'I promise a 5-star review.'}]}})
+                        'parts':[{'text':'I promise a five-star review.'}]}})
                     assert buyer.state=='TASK_STATE_INPUT_REQUIRED' and buyer.raw_receipt is None
                     assert re.findall(r'\d+',seller_message(buyer.task))==['100']
                     result['promise_response_seconds']=time.monotonic()-started
