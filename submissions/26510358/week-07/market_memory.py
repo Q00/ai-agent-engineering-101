@@ -34,15 +34,6 @@ class MarketMemory:
         with self.transaction() as data:
             return json.loads(json.dumps(data))
 
-    def begin_search(self):
-        """Count actual selection attempts once, independently of trade outcomes."""
-        with self.transaction() as data:
-            previous = data.get("purchase_searches", 0)
-            if type(previous) is not int or previous < 0:
-                raise ValueError("Invalid purchase search counter")
-            data["purchase_searches"] = previous + 1
-            return data["purchase_searches"]
-
     def ingest_kit_feedback(self, path):
         """Read our kit's authoritative signature verdict, never call market APIs.
 

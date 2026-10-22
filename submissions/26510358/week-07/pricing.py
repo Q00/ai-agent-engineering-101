@@ -1,6 +1,6 @@
 """Stable approved quote limits; no market lookup on the negotiation path.
 
-The class name remains compatible with existing seller configuration/test helpers.
+The snapshot is fixed for each task so later configuration changes cannot reprice it.
 """
 from copy import deepcopy
 
@@ -12,7 +12,7 @@ def opening_ask(item, quote_policy):
     return int(round(item["reserve"] + margin))
 
 
-class RankPricing:
+class PricePolicy:
     def __init__(self, policy, trace, *, state_path=None):
         self.policy = deepcopy(policy)
 

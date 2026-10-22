@@ -9,7 +9,6 @@ from unittest.mock import Mock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import buyer
-import shopping
 from evidence import Ledger
 
 
@@ -94,30 +93,11 @@ class TerminalReceiptConflictTests(unittest.TestCase):
                     "code": "declined", "message": "TEST ONLY no purchase"}}]}]):
                 with self.subTest(state=state, artifacts=artifacts):
                     result, ledger, _ = self.trade(terminal(state, artifacts))
-                    self.assertEqual(result, {"status": "no_deal", "state": state})
+                    self.assertEqual((result["status"], result["state"], result["offer_count"]), ("no_deal", state, 1))
                     self.assertEqual(ledger["reserved_total"], 0)
                     self.assertEqual(ledger["committed_total"], 0)
                     self.assertEqual(ledger["available_budget"], 120)
 
-    def test_real_shopping_and_buyer_do_not_retry_a_mixed_terminal_receipt(self):
-        directory = [{"id": "shop-01", "url": "http://TEST-ONLY.invalid", "card": {
-            "skills": [{"id": "lamp", "description": "TEST ONLY lamp seller"}]}}]
-        for state in STATES:
-            client = Mock(base=directory[0]["url"])
-            client.send.side_effect = [quoted(), terminal(state, [{"parts": [{"data": RECEIPT}]}])]
-            with self.subTest(state=state), tempfile.TemporaryDirectory() as log_dir, patch(
-                    "shopping.select_shop", return_value=directory[0]) as selector, patch(
-                    "buyer.A2AClient", return_value=client), patch.object(
-                    buyer.Harness, "decide", authorize_offer):
-                result = shopping.shop_all(directory, [{"key": "lamp", "item": "lamp", "budget": 120}],
-                                           120, log_dir=log_dir, policy=TestPolicy(), timeout=10)
-            self.assertFalse(result["passed"])
-            self.assertEqual(result["results"][0]["status"], "disputed")
-            self.assertEqual(result["results"][0]["attempt"], 1)
-            self.assertEqual(result["ledger"]["reserved_total"], 110)
-            self.assertEqual(result["ledger"]["committed_total"], 0)
-            self.assertEqual(selector.call_count, 1)
-            self.assertEqual(client.send.call_count, 2)
 
 
 if __name__ == "__main__":

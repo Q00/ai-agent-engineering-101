@@ -29,7 +29,7 @@ from harness import Harness, HarnessError
 from policy import StrategyPolicy, strategy_instruction
 from tracing import Trace
 from receipts import canonical_receipt, load_shop_key, sign_receipt
-from rank_pricing import RankPricing, opening_ask
+from pricing import PricePolicy, opening_ask
 from shopfront import public_items, public_description, public_skills
 from buyer_access import BuyerAccess
 
@@ -50,7 +50,7 @@ class Seller(AgentExecutor):
             self.catalog = [{**p, "reserve": p["reserve"] + offset} for p in self.catalog]
         self.trace = Trace("seller", config.get("log_dir"))
         self.buyer_access = BuyerAccess(config.get("buyer_access"))
-        self.rank_pricing = RankPricing(self.price_policy, self.trace,
+        self.pricing = PricePolicy(self.price_policy, self.trace,
                                        state_path=config.get("pricing_state"))
         self.harness = Harness("seller", self.trace)
         self.policy = StrategyPolicy(config.get("policy"))
@@ -67,7 +67,7 @@ class Seller(AgentExecutor):
 
     def opening_cap(self, item, quote_policy=None):
         """Highest allowed quote under this task's original pricing phase."""
-        quote_policy = quote_policy or self.rank_pricing.quote_policy()
+        quote_policy = quote_policy or self.pricing.quote_policy()
         return opening_ask(item, quote_policy)
 
     async def execute(self, context, event_queue):
@@ -112,8 +112,8 @@ class Seller(AgentExecutor):
         flags = inspect_untrusted(text)
         deal = self.open.get(task.id)
         opening = deal is None
-        quote_policy = (self.rank_pricing.refresh()
-                        if opening else deal.get("quote_policy", self.rank_pricing.quote_policy()))
+        quote_policy = (self.pricing.refresh()
+                        if opening else deal.get("quote_policy", self.pricing.quote_policy()))
         query = text
         candidates = search_catalog(query, self.catalog, limit=8) if opening else [deal["item"]]
         # A request naming a catalog ID is an exact product lookup, not a request for a cheaper variant.
@@ -205,7 +205,7 @@ class Seller(AgentExecutor):
         item = next(p for p in candidates if p["id"] == decision["item_id"])
         if opening:
             deal = {"item": item, "ask": decision["price"], "round": 0, "history": [],
-                    "quote_policy": quote_policy or self.rank_pricing.quote_policy(),
+                    "quote_policy": quote_policy or self.pricing.quote_policy(),
                     "offer_count": offer_count, "offer_ids": offer_ids or set()}
             self.open[task.id] = deal
         deal["round"] += 1
@@ -305,7 +305,7 @@ def build(config):
         async def public_card(_request):
             # No network/model call on discovery. The cached phase is the latest
             # observed phase; a fresh negotiation always obtains its own quote.
-            offers = public_items(executor.catalog, executor.rank_pricing.quote_policy())
+            offers = public_items(executor.catalog, executor.pricing.quote_policy())
             body = MessageToDict(card)
             body["description"] = config.get("description") or public_description(offers)
             body["skills"] = public_skills(offers)
