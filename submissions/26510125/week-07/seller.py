@@ -17,8 +17,12 @@ import argparse
 import base64
 import json
 import math
+import os
 import re
+import statistics
 import sys
+import time
+import urllib.request
 from pathlib import Path
 
 import uvicorn
@@ -62,8 +66,81 @@ def sign_receipt(key, shop: str, item: str, price: int, task: str) -> dict:
     return body
 
 
+# ---------------------------------------------------------------- pricing from own trades and reviews (challenge 1)
+
+class Pricing:
+    """The shop reads its own trades (shop_trades.json, written here after every negotiation) and
+    its reviews on the market board, and moves the OPENING-ASK factor per item. Reserves never move,
+    and `ask >= reserve` is still enforced in code after the harness answers. The factor goes down
+    when recent negotiations for the item ended without a deal or reviews are poor, and follows the
+    price level at which deals actually closed. Network trouble never stops the shop."""
+    BASE, LOW, HIGH = 1.5, 1.05, 1.9
+
+    def __init__(self, name, path, market):
+        self.name = name
+        self.path = Path(path or "shop_trades.json")
+        self.market = (market or "https://market.ourolabs.ai").rstrip("/")
+        self._reviews, self._reviews_at = None, 0.0
+
+    def trades(self):
+        try:
+            return json.loads(self.path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return []
+
+    def record(self, item, deal, outcome, price):
+        t = self.trades()
+        t.append({"when": time.strftime("%Y-%m-%dT%H:%M:%S"), "item": item["name"], "reserve": item["reserve"],
+                  "opening": deal.get("opening"), "final_ask": deal.get("ask"), "rounds": deal.get("rounds", 0),
+                  "outcome": outcome, "price": price})
+        try:
+            self.path.write_text(json.dumps(t, ensure_ascii=False, indent=1), encoding="utf-8")
+        except OSError:
+            pass
+
+    def reviews(self):
+        if time.time() - self._reviews_at < 600 and self._reviews is not None:
+            return self._reviews
+        try:
+            with urllib.request.urlopen(f"{self.market}/api/board?round=2", timeout=5) as r:
+                board = json.load(r)
+            self._reviews = [x for x in board.get("reviews", []) if x.get("shop") == self.name]
+        except Exception:
+            self._reviews = self._reviews or []
+        self._reviews_at = time.time()
+        return self._reviews
+
+    def suggest(self, item):
+        """(low, high, why): the opening-ask range to give the harness, and the reasons."""
+        recent = [t for t in self.trades() if t["item"] == item["name"]][-6:]
+        f, why = self.BASE, []
+        if recent:
+            deals = [t for t in recent if t["outcome"] == "deal" and t.get("price")]
+            lost = len(recent) - len(deals)
+            if deals:
+                ratio = statistics.mean(t["price"] / t["reserve"] for t in deals)
+                f = (f + ratio * 1.1) / 2                      # drift toward where deals actually close
+                why.append(f"{len(deals)} deal(s) closed at ~{ratio:.2f}x reserve")
+            if lost >= 2 and lost >= len(deals):
+                f -= 0.15 * lost                                # a streak of no-deals: open lower
+                why.append(f"{lost} of the last {len(recent)} ended without a deal")
+        rs = self.reviews() or []
+        stars = [x["stars"] for x in rs if isinstance(x.get("stars"), (int, float))]
+        if stars:
+            avg = statistics.mean(stars)
+            if avg < 3:
+                f -= 0.1
+            why.append(f"my reviews average {avg:.1f} over {len(stars)}")
+        f = max(self.LOW, min(self.HIGH, f))
+        low = math.ceil(item["reserve"] * max(self.LOW, f - 0.1))
+        high = math.ceil(item["reserve"] * (f + 0.1))
+        return low, high, "; ".join(why) or "no past trades for this item yet"
+
+
 DEFAULT = {
     "key": "shop_key.pem",
+    "trades": "shop_trades.json",
+    "market_url": "https://market.ourolabs.ai",
     "name": "Haiku Furniture",
     "description": "Sells lamps, chairs, bookshelves, desks, tables and more from a large catalog. Negotiates the price.",
     "skill_description": "Name an item or describe what you need, then send a price. The shop answers with a counteroffer or a receipt.",
@@ -159,15 +236,21 @@ def choose_item(candidates, text):
     return (candidates[0], "fallback: top search hit") if candidates else (None, "none")
 
 
-def opening_ask(item):
+def opening_ask(item, pricing=None):
+    hint, low = "", None
+    if pricing is not None:                                  # challenge 1: own trades + reviews -> opening range
+        low, high, why = pricing.suggest(item)
+        log(f"    [price] {item['name']}: suggested opening {low}-{high} ({why})")
+        hint = (f" Your recent experience with this item: {why}. Based on it, open between {low} and {high} "
+                f"unless you have a strong reason not to.")
     data = harness.ask_json(
         f"You are the seller of a used {item['name']} ({item['description']}). "
-        f"Your reserve price is {item['reserve']}: you must never ask or sell below it, and you want clearly more. "
-        f"Choose an opening asking price. Reply with exactly one JSON object: {{\"ask\": <integer>}}.", log)
+        f"Your reserve price is {item['reserve']}: you must never ask or sell below it, and you want clearly more."
+        f"{hint} Choose an opening asking price. Reply with exactly one JSON object: {{\"ask\": <integer>}}.", log)
     ask = _int(data and data.get("ask"))
     if ask is None:
         harness.CALLS["fallbacks"] += 1
-        ask = math.ceil(item["reserve"] * 1.3)
+        ask = low or math.ceil(item["reserve"] * 1.3)
     return max(ask, item["reserve"])            # code enforces the reserve
 
 
@@ -210,6 +293,7 @@ class Seller(AgentExecutor):
         self.cfg = cfg
         self.catalog = load_catalog(cfg)
         self.key = load_key(cfg["key"])
+        self.pricing = Pricing(cfg["name"], cfg.get("trades"), cfg.get("market_url"))
         self.open = {}   # task id -> deal
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
@@ -230,8 +314,9 @@ class Seller(AgentExecutor):
                 log(f"[{task.id[:8]}] no item matches; rejecting")
                 await up.reject(say("Sorry, nothing in the catalog matches that."))
                 return
-            ask = opening_ask(item)
-            self.open[task.id] = {"item": item, "ask": ask, "rounds": 0, "history": [], "max_rounds": self.cfg["max_rounds"]}
+            ask = opening_ask(item, self.pricing)
+            self.open[task.id] = {"item": item, "ask": ask, "opening": ask, "rounds": 0, "history": [],
+                                  "max_rounds": self.cfg["max_rounds"]}
             log(f"[{task.id[:8]}] item={item['name']!r} ({how}, reserve {item['reserve']}) opening ask {ask}")
             await up.requires_input(say(f"{item['name']}: asking {ask}."))
             return
@@ -253,9 +338,11 @@ class Seller(AgentExecutor):
             log(f"[{task.id[:8]}] receipt signed: {json.dumps({k: receipt[k] for k in ('shop', 'item', 'price', 'task')})}")
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {item['name']} at {offer}."))
+            self.pricing.record(item, deal, "deal", offer)
             del self.open[task.id]
         elif action == "reject" or deal["rounds"] >= deal["max_rounds"]:
             await up.reject(say(f"No deal. Final ask was {deal['ask']}."))
+            self.pricing.record(item, deal, "no_deal", None)
             del self.open[task.id]
         else:
             deal["ask"] = price
@@ -263,7 +350,9 @@ class Seller(AgentExecutor):
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
-        self.open.pop(task.id, None)
+        deal = self.open.pop(task.id, None)
+        if deal:
+            self.pricing.record(deal["item"], deal, "walked", None)
         log(f"[{task.id[:8]}] canceled by the buyer")
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
