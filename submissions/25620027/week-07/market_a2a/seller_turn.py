@@ -5,8 +5,8 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import replace
+from time import monotonic
 from typing import TYPE_CHECKING, Literal, assert_never
 
 from a2a.server.tasks import TaskUpdater
@@ -23,7 +23,12 @@ from market_a2a.seller_messages import (
     complete_sale,
     quote_message,
 )
-from market_a2a.seller_offer import bargaining_offer, opening_offer
+from market_a2a.seller_offer import (
+    accepts_quote,
+    bargaining_offer,
+    basic_request,
+    opening_offer,
+)
 from market_a2a.seller_policy import (
     PROMPT,
     TOOLS,
@@ -75,10 +80,12 @@ class Negotiator:
     async def negotiate(self, task: Task, text: str, queue: EventQueue) -> None:
         """Expose retrieval and guarded commercial actions for one model turn."""
         updater = TaskUpdater(queue, task.id, task.context_id)
+        started = monotonic()
         current = self.negotiations.get(task.id)
         snapshot = self.comparison.snapshot if self.comparison is not None else None
         candidates: dict[str, Product] = {}
         explicit = opening_offer(text) if current is None else None
+        basic_sku = explicit.sku if explicit else basic_request(text)
         offer = (
             explicit.price
             if explicit is not None
@@ -86,6 +93,15 @@ class Negotiator:
             if current is not None
             else None
         )
+        if current is not None and offer is None and accepts_quote(text):
+            offer = current.ask
+        if current is None and basic_sku is not None:
+            candidates.update(
+                (product.sku, product)
+                for product in self.catalog.search(
+                    basic_sku, constraints=lambda product: product.sku == basic_sku,
+                )
+            )
         if current is not None and offer is not None:
             current = replace(current, incoming_offers=current.incoming_offers + 1)
             self.negotiations[task.id] = current
@@ -104,6 +120,12 @@ class Negotiator:
                 offer is not None and current is not None and offer >= current.ask
             ),
             "catalog_count": len(self.catalog.products),
+            "catalog_candidates": (
+                search_result(
+                    tuple(candidates.values()), self.price_history, snapshot,
+                ).data
+                if candidates else None
+            ),
             "selected": json_value(current.product) if current else None,
             "ask": current.ask if current else None,
             "allowed_quote_min": current.product.reserve if current else None,
@@ -140,16 +162,12 @@ class Negotiator:
                                 data={"error": "SKU already selected; use decide."}
                             )
                         query = Search.model_validate_json(arguments)
-                        basic = re.fullmatch(
-                            r"(?:i want (?:to buy )?a )?(lamp|chair|bookshelf)\.?",
-                            text.strip().lower(),
-                        )
                         found = self.catalog.search(
-                            query.query,
+                            basic_sku if basic_sku is not None else query.query,
                             constraints=(
                                 lambda product: (
-                                    compatible(product, text)
-                                    and (basic is None or product.sku == basic[1])
+                                    (basic_sku is not None or compatible(product, text))
+                                    and (basic_sku is None or product.sku == basic_sku)
                                     and (
                                         explicit is None or product.sku == explicit.sku
                                     )
@@ -192,7 +210,7 @@ class Negotiator:
                 )
 
         phase = (
-            "OPENING: search; accept only an explicit actual offer or quote an ask."
+            "OPENING: use catalog_candidates if present; otherwise search."
             if current is None
             else "BARGAINING: use the selected product and the actual numeric offer."
         )
@@ -200,7 +218,7 @@ class Negotiator:
             _ = await self.harness.run(
                 phase + "\n" + PROMPT,
                 state,
-                TOOLS if current is None else TOOLS[1:],
+                TOOLS if current is None and not candidates else TOOLS[1:],
                 dispatch,
             )
         except HarnessError:
@@ -212,6 +230,11 @@ class Negotiator:
                 updater.new_agent_message(
                     [Part(text="Unable to choose a valid action.")]
                 )
+            )
+        finally:
+            elapsed = monotonic() - started
+            self.harness.emit(
+                f"seller.turn_elapsed task={task.id} seconds={elapsed:.3f}"
             )
 
     async def mark_closed(self, task_id: str) -> None:
@@ -314,7 +337,10 @@ class Negotiator:
                 await self.mark_closed(turn.task_id)
                 await complete_sale(
                     updater,
-                    AgreedSale(product, decision.price, turn.task_id, self.name),
+                    AgreedSale(
+                        product, decision.price, turn.task_id, self.name,
+                        current.incoming_offers if current else 1,
+                    ),
                     self.signer,
                 )
 

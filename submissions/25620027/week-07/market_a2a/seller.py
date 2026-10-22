@@ -108,7 +108,7 @@ def create_app(
     journal = PersistentSellerStore(Path(state_path)) if state_path else None
     instructions = (
         "Name an item; send a whole-number offer on its taskId.",
-        "Read metadata.ask; completion requires a signed receipt.",
+        "Read metadata.ask; reply with that amount or 'I accept'.",
         "Or begin with an explicit offer such as offer lamp 100.",
     )
     card = AgentCard(
@@ -120,7 +120,7 @@ def create_app(
                 "Exact agreed-price Ed25519-signed receipts."
                 if signer is not None
                 else "Receipts show the exact agreed price.",
-                "Or request an item; send a numeric offer on the same taskId.",
+                "Or request an item, then reply 'I accept' on the same taskId.",
                 "Dated opening-ask comparisons: /price-comparison.json .",
                 "Current quote: metadata.ask. Basic opening caps: 110/198/286.",
                 "Counteroffers never increase within a negotiation.",
@@ -135,7 +135,7 @@ def create_app(
                 "Please leave an honest review of your transaction.",
             )
         ),
-        version="1.5.0",
+        version="1.6.0",
         capabilities=AgentCapabilities(streaming=False),
         default_input_modes=["text/plain"],
         default_output_modes=["text/plain", "application/json"],

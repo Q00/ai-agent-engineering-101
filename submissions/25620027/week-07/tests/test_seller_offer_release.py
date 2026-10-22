@@ -202,7 +202,8 @@ def test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search(
                 assert isinstance(metadata, dict)
                 assert metadata["price_final"] is (ask == 100)
                 wording = quote.status.message.parts[0].text
-                assert ("Larger reductions are possible" in wording) is (ask > 100)
+                assert ("no further discount" in wording) is (ask == 100)
+                assert metadata["coupon_code"] == ("R2WELCOME" if ask > 100 else "")
                 assert f"Reply with exactly {ask}" in wording
                 assert last_integer == str(ask)
                 assert task_from(final).status.state == TaskState.TASK_STATE_COMPLETED

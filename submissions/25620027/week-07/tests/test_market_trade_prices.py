@@ -7,6 +7,7 @@ import anyio
 import httpx2
 import pytest
 from a2a.server.tasks import TaskUpdater
+from google.protobuf.json_format import MessageToDict
 from pydantic import JsonValue, TypeAdapter
 
 from market_a2a.catalog import Catalog
@@ -84,7 +85,16 @@ def test_quote_states_trade_mean_scope_without_changing_last_ask() -> None:
             snapshot=snapshot("lamp", 100, 102.8),
         ),
     )
-    assert "Market R2 completed-trade mean 102.8 (N=100)" in message.parts[0].text
+    metadata = TypeAdapter(dict[str, JsonValue]).validate_python(
+        MessageToDict(message.metadata),
+    )
+    comparison = metadata["price_comparison"]
+    assert isinstance(comparison, dict)
+    assert comparison["market_round"] == 2
+    assert comparison["market_trade_mean"] == 102.8
+    assert comparison["market_trade_count"] == 100
+    assert comparison["observed_shop_count"] == 5
+    assert "completed-trade mean" not in message.parts[0].text
     assert message.parts[0].text.endswith("Asking price: 102")
 
 

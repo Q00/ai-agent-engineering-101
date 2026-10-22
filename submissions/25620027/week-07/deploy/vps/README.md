@@ -1,4 +1,10 @@
-# Week07 VPS seller (1.5.0)
+# Week07 VPS seller (1.6.0)
+
+Release1.6.0 preloads only unambiguous basic products into the existing model
+tool loop, recognizes unconditional assent at the current quote, shortens wire
+quotes, and includes actual offer counts in completed-sale messages. Attributes
+still use catalog search; every commercial action still requires model decide.
+See [leader comparison and release evidence](../../.omo/evidence/dragonash-upgrade-20261022/RESULTS.md).
 
 Release1.5.0 adds bounded whole-sentence offers and shorter price messages.
 The public registry card was refreshed once under the same name,URL,key and

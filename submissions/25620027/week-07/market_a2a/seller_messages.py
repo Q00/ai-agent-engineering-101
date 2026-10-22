@@ -40,6 +40,7 @@ class AgreedSale:
     price: int
     task_id: str
     shop: str
+    incoming_offers: int = 0
 
 
 def quote_message(updater: TaskUpdater, notice: QuoteNotice) -> Message:
@@ -50,52 +51,25 @@ def quote_message(updater: TaskUpdater, notice: QuoteNotice) -> Message:
     discount = min(5, reduction) if notice.coupon_applied else 0
     coupon_text = ""
     price_final = notice.price == notice.product.reserve
-    if notice.previous_ask is None and not price_final:
-        coupon_text = (
-            " R2WELCOME: up to 5 of a negotiated reduction, not extra."
-            " Larger reductions are possible."
-        )
-    elif notice.coupon_applied:
+    if notice.coupon_applied:
         coupon_text = (
             f" Reduction {reduction}; R2WELCOME portion {discount}, not extra."
         )
     comparison = compare_price(notice.product, notice.snapshot)
-    comparison_text = ""
-    market_text = ""
-    if (notice.previous_ask is None and comparison.market_trade_mean is not None):
-        market_text = "".join((
-            f" Market R{comparison.market_round} completed-trade mean ",
-            f"{comparison.market_trade_mean:g} (N={comparison.market_trade_count}); ",
-            "completed trades, not peer opening asks.",
-        ))
-    if notice.previous_ask is None and comparison.observed_shop_count:
-        comparison_text = "".join(
-            (
-                f" Peer openings: {comparison.observed_shop_count} observed shops, ",
-                f"minimum {comparison.lowest_peer_ask}. Details in metadata.",
-            )
-        )
     return updater.new_agent_message(
         [
             Part(
                 text="".join(
                     (
                         notice.product.name,
-                        f". Current ask {notice.price}; exact-price receipt.",
-                        (
-                            f" Fixed minimum: {notice.price}; no lower bids."
-                            if price_final
-                            else ""
-                        ),
-                        coupon_text,
-                        comparison_text,
-                        market_text,
+                        ". Exact-price receipt.",
                         (
                             " Final price; no further discount or coupon is available."
                             if price_final
                             else ""
                         ),
-                        f" Reply with exactly {notice.price} to complete the purchase.",
+                        coupon_text,
+                        f" Reply with exactly {notice.price} or 'I accept' to buy.",
                         f" Asking price: {notice.price}",
                     )
                 )
@@ -153,6 +127,10 @@ async def complete_sale(
                     text=" ".join(
                         (
                             f"Deal: {sale.product.name} at {sale.price}.",
+                            f"Completed in {sale.incoming_offers} buyer offer(s).",
+                            "Seller-signed receipt matches the agreed price."
+                            if signer is not None
+                            else "Receipt matches the agreed price.",
                             "Please leave an honest review of the price and receipt.",
                         )
                     )

@@ -178,7 +178,7 @@ def test_card_frontloads_verified_terms(catalog: Catalog, *, signed: bool) -> No
                 response = await client.get("/.well-known/agent-card.json")
                 assert response.status_code == 200
                 card = TypeAdapter(dict[str, JsonValue]).validate_json(response.content)
-                assert card["version"] == "1.5.0"
+                assert card["version"] == "1.6.0"
                 description = card["description"]
                 assert isinstance(description, str)
                 first = description[:300]
@@ -186,7 +186,7 @@ def test_card_frontloads_verified_terms(catalog: Catalog, *, signed: bool) -> No
                     "lamp 100",
                     "chair 180",
                     "bookshelf 260",
-                    "numeric offer",
+                    "'I accept'",
                     "same taskId",
                     "/price-comparison.json",
                     "Dated",
