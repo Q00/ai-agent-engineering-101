@@ -118,6 +118,36 @@ since the first local task, keeping the durable cursor monotonic. The report
 shows the new SQLite cohort separately from the first 600 historical log tasks.
 Historical tasks with no explicit outcome stay `UNKNOWN`.
 
+`reconcile_pricing.py` is an incremental command, not a Seller background
+thread. A separate local launchd job now runs it periodically. If the job is
+stopped, its stored ledger cursor falls behind and issued receipts remain
+`PENDING`; the market board can still count those deals. The board also includes
+earlier trades that predate this SQLite database, so its cumulative deal total
+should not equal this database's count even after reconciliation.
+
+`pricing_ucb.py` is an **offline-only** UCB readiness check. Run
+`.venv/bin/python pricing_ucb.py --item lamp` (or `chair`/`bookshelf`). It excludes
+the historical `legacy_cap_1.12` cohort and recommends no arm until each
+Low/Mid/High arm has at least 30 buyer-visible asks, no ask mismatch, and at
+most 5% pending/unknown outcomes. Counted margin is normalized by reserve and
+capped at 1; no-deals receive zero. The score uses a conservative
+per-exposure mean plus a fixed exploration bonus. These defaults are safety
+gates for a future randomized experiment, not evidence that UCB already works.
+The live Seller does not import or call this module.
+
+`pricing_experiment.py` provides a deterministic traffic split for collecting
+real Low/Mid/High observations. `WEEK07_PRICE_EXPERIMENT_PERCENT=0` is the
+default and keeps every opening under the legacy policy. A nonzero integer
+percentage selects that fraction of new task IDs, then hashes each selected
+task to one of the three arms within its item. The model still makes the same
+opening call, but on a selected task the tool's exact candidate price replaces
+its opening ask; follow-up decisions, reserve guard, signed receipt and A2A
+format are unchanged. The actual emitted ask is recorded and later compared
+with the assignment. There is no automatic UCB price change yet.
+The local Pinggy shop supervisor currently sets this traffic split to 5% for
+new market tasks; the other 95% retain the legacy opening policy. This is a
+small concurrent data-collection experiment, not proof that one arm is better.
+
 `pricing_simulator.py` is offline-only and is not imported by `seller.py`. It
 uses exact decimal ceiling rules for 1.06, 1.09 and 1.12 times reserve and
 balanced, seeded blocks per item. It can read a JSON list of task IDs, items

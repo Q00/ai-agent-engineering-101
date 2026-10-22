@@ -24,6 +24,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from harness import decide, trace
 from catalog import Catalog
 from pricing import PricingRecorder
+from pricing_experiment import assign_price
 from receipt import sign_receipt
 
 
@@ -74,7 +75,23 @@ class Seller(AgentExecutor):
                     await updater.reject(say("We sell: " + ", ".join(self.reserves) + "."))
                     return
                 reserve, product_id = self.reserves[item], item
-            self.observe("start", task.id, item, reserve)
+            planned_ask = None
+            try:
+                arm, planned_ask = assign_price(
+                    task.id, item, reserve, int(os.environ.get("WEEK07_PRICE_EXPERIMENT_PERCENT", "0")))
+            except ValueError as error:
+                trace("pricing_experiment_error", task_id=task.id, error=str(error))
+                arm = "legacy_cap_1.12"
+            if planned_ask is not None and self.recorder is not None:
+                try:
+                    self.recorder.start(task.id, item, reserve, arm)
+                except Exception as error:
+                    trace("pricing_record_error", method="start_experiment", error=str(error))
+                    planned_ask = None
+                    self.observe("start", task.id, item, reserve)
+            else:
+                planned_ask = None
+                self.observe("start", task.id, item, reserve)
             self.observe("model_call", task.id)
             try:
                 answer = await asyncio.to_thread(decide, "seller", {
@@ -89,6 +106,7 @@ class Seller(AgentExecutor):
             if ask != answer["price"]:
                 trace("price_guard", task_id=task.id, reason="ask below reserve",
                       proposed=answer["price"], effective=ask)
+            ceiling = math.ceil(reserve * 1.12)
             policy_file = Path("pricing-policy.json")
             if policy_file.is_file():
                 policy = json.loads(policy_file.read_text(encoding="utf-8"))
@@ -98,6 +116,12 @@ class Seller(AgentExecutor):
                 trace("pricing_policy", task_id=task.id, item=item, original_ask=original,
                       effective_ask=ask, ceiling=ceiling, feedback=policy["feedback"],
                       reason=policy["reason"])
+            if planned_ask is not None:
+                if not reserve <= planned_ask <= ceiling:
+                    raise ValueError("experimental ask violates the current price policy")
+                trace("pricing_experiment", task_id=task.id, item=item, arm=arm,
+                      model_policy_ask=ask, planned_ask=planned_ask)
+                ask = planned_ask
             self.open[task.id] = {"item": item, "product_id": product_id, "reserve": reserve, "ask": ask, "history": []}
             trace("seller_open", task_id=task.id, item=item, product_id=product_id, reserve=reserve, ask=ask)
             await updater.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
