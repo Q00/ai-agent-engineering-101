@@ -28,6 +28,7 @@ from pricing_experiment import assign_price
 from pricing_simulator import candidate_price
 from pricing_ucb import evaluate_ucb
 from receipt import sign_receipt
+from time_sale import CARD_NOTICE, choose_hourly_price
 
 
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
@@ -35,12 +36,13 @@ RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
 class Seller(AgentExecutor):
     def __init__(self, name: str, reserves: dict[str, int], catalog: Catalog | None = None,
-                 recorder: PricingRecorder | None = None) -> None:
+                 recorder: PricingRecorder | None = None, hourly_sale: bool = False) -> None:
         self.name = name
         self.reserves = reserves
         self.catalog = catalog
         self.open: dict[str, dict] = {}
         self.recorder = recorder
+        self.hourly_sale = hourly_sale
 
     def observe(self, method: str, *args: object) -> None:
         """A telemetry failure must never change a negotiation or receipt."""
@@ -79,15 +81,21 @@ class Seller(AgentExecutor):
                 reserve, product_id = self.reserves[item], item
             planned_ask = None
             selection_mode = "legacy"
-            try:
-                arm, planned_ask = assign_price(
-                    task.id, item, reserve, int(os.environ.get("WEEK07_PRICE_EXPERIMENT_PERCENT", "0")))
-            except ValueError as error:
-                trace("pricing_experiment_error", task_id=task.id, error=str(error))
-                arm = "legacy_cap_1.12"
+            local_at = None
+            if self.hourly_sale:
+                arm, planned_ask, local_at = choose_hourly_price(reserve)
+                selection_mode = "hourly_sale" if arm == "hourly_sale_1.06" else "hourly_regular"
+            else:
+                try:
+                    arm, planned_ask = assign_price(
+                        task.id, item, reserve, int(os.environ.get("WEEK07_PRICE_EXPERIMENT_PERCENT", "0")))
+                except ValueError as error:
+                    trace("pricing_experiment_error", task_id=task.id, error=str(error))
+                    arm = "legacy_cap_1.12"
             if planned_ask is not None and self.recorder is not None:
-                selection_mode = "randomized"
-                if os.environ.get("WEEK07_PRICE_UCB_AUTO") == "1":
+                if not self.hourly_sale:
+                    selection_mode = "randomized"
+                if not self.hourly_sale and os.environ.get("WEEK07_PRICE_UCB_AUTO") == "1":
                     try:
                         if self.recorder.reconciliation_fresh():
                             evaluation = evaluate_ucb(self.recorder.all_trades(), item)
@@ -103,10 +111,12 @@ class Seller(AgentExecutor):
                     self.recorder.start(task.id, item, reserve, arm)
                 except Exception as error:
                     trace("pricing_record_error", method="start_experiment", error=str(error))
-                    planned_ask = None
+                    if not self.hourly_sale:
+                        planned_ask = None
                     self.observe("start", task.id, item, reserve)
             else:
-                planned_ask = None
+                if not self.hourly_sale:
+                    planned_ask = None
                 self.observe("start", task.id, item, reserve)
             self.observe("model_call", task.id)
             try:
@@ -134,9 +144,10 @@ class Seller(AgentExecutor):
                       reason=policy["reason"])
             if planned_ask is not None:
                 if not reserve <= planned_ask <= ceiling:
-                    raise ValueError("experimental ask violates the current price policy")
-                trace("pricing_experiment", task_id=task.id, item=item, arm=arm,
-                      selection_mode=selection_mode, model_policy_ask=ask, planned_ask=planned_ask)
+                    raise ValueError("planned ask violates the current price policy")
+                trace("hourly_price" if self.hourly_sale else "pricing_experiment",
+                      task_id=task.id, item=item, arm=arm, selection_mode=selection_mode,
+                      model_policy_ask=ask, planned_ask=planned_ask, local_at=local_at)
                 ask = planned_ask
             self.open[task.id] = {"item": item, "product_id": product_id, "reserve": reserve, "ask": ask, "history": []}
             trace("seller_open", task_id=task.id, item=item, product_id=product_id, reserve=reserve, ask=ask)
@@ -202,6 +213,7 @@ def build(port: int, profile: dict | None = None, catalog: Catalog | None = None
     name = profile.get("name", "Luna Shop")
     reserves = profile.get("reserve", RESERVES)
     card_variant = os.environ.get("WEEK07_CARD_VARIANT", "baseline")
+    hourly_sale = os.environ.get("WEEK07_HOURLY_SALE", "0") == "1"
     if card_variant not in {"baseline", "transparent"}:
         raise ValueError("WEEK07_CARD_VARIANT must be baseline or transparent")
     description = profile.get("description", "Negotiates purchases of " + ", ".join(reserves) + ".")
@@ -224,6 +236,9 @@ def build(port: int, profile: dict | None = None, catalog: Catalog | None = None
             "reject, or accept with a signed receipt."
         )
         skill_tags = ["shopping", "negotiation", "signed-receipt", *reserves]
+    if hourly_sale:
+        description = f"{description} {CARD_NOTICE}"
+        skill_description = f"{skill_description} {CARD_NOTICE}"
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name=name,
@@ -244,7 +259,7 @@ def build(port: int, profile: dict | None = None, catalog: Catalog | None = None
     except Exception as error:
         trace("pricing_record_error", method="init", error=str(error))
         recorder = None
-    handler = DefaultRequestHandler(agent_executor=Seller(name, reserves, catalog, recorder), task_store=InMemoryTaskStore(), agent_card=card)
+    handler = DefaultRequestHandler(agent_executor=Seller(name, reserves, catalog, recorder, hourly_sale), task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
 
