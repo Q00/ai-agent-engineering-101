@@ -19,7 +19,7 @@ ROOT=Path(__file__).resolve().parent
 
 
 def main():
-    deployment=json.loads((ROOT/'.market/experiment-deployment.json').read_text(encoding='utf-8'))
+    deployment=json.loads((ROOT/'.market/review-promise-deployment.json').read_text(encoding='utf-8'))
     prices=json.loads((ROOT/'shop_policy.json').read_text(encoding='utf-8'))['opening_reference']
     with httpx.Client(verify=ssl.create_default_context(),timeout=30) as http:
         r=http.get('https://market.ourolabs.ai/api/shops');r.raise_for_status()
