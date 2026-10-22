@@ -23,7 +23,7 @@ export CLAUDE_BIN="${CLAUDE_BIN:-$(ls -d "$HOME"/.vscode-server/extensions/anthr
 unset ANTHROPIC_API_KEY OPENAI_API_KEY OPENAI_BASE_URL         # the harness is claude -p on the subscription
 
 MARKET="${MARKET_URL:-https://market.ourolabs.ai}"
-NAME="${MARKET_NAME:-YS-SHOP}"
+NAME="${MARKET_NAME:-yeonsong2}"                              # the GitHub login, as the market's agent.md suggests
 PORT="${KIT_PORT:-8900}"                                       # the kit's proxy port the tunnel forwards to
 mkdir -p logs
 note() { echo "$(date '+%F %T') [run_kit] $*" >> logs/run_kit.log; }
