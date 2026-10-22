@@ -12,6 +12,7 @@ from pathlib import Path
 import time
 
 from inference_queue import InferenceQueue, QueueTimeout, inference_gap_seconds
+from completion_priority import SellerAdmission, validate_priority
 
 
 def pool_directory(directory=None):
@@ -90,7 +91,8 @@ def recovery_slot(directory, deadline):
 
 
 @contextmanager
-def pool_slot(role, deadline=None, *, directory=None, capacity=None):
+def pool_slot(role, deadline=None, *, directory=None, capacity=None, priority="normal"):
+    validate_priority(priority)
     capacity = int(capacity or os.environ.get("A2A_INFERENCE_CAPACITY", "3"))
     if not 2 <= capacity <= 8:
         raise ValueError("A2A_INFERENCE_CAPACITY must be between 2 and 8")
@@ -102,6 +104,12 @@ def pool_slot(role, deadline=None, *, directory=None, capacity=None):
     handles = [os.open(directory / f"lane-{n}.lock", os.O_RDWR | os.O_CREAT, 0o600) for n in lanes]
     acquired = None
     try:
+        if role == "seller":
+            with SellerAdmission(directory).lane(handles, deadline, priority=priority,
+                    ready=lambda: not cooldown_remaining(directory)):
+                with recovery_slot(directory, deadline):
+                    yield
+            return
         while acquired is None:
             if deadline is not None and time.monotonic() >= deadline:
                 raise QueueTimeout("Inference deadline reached waiting for a pool lane")
