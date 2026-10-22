@@ -1,5 +1,6 @@
 """Read-only observation of marketing exposure, genuine pledges, and sales."""
 from concurrent.futures import ThreadPoolExecutor
+import argparse
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -12,7 +13,11 @@ RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
 
 def main():
-    deployment = json.loads((ROOT / ".market/marketing-deployment.json").read_text(encoding="utf-8"))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--profile', choices=['marketing', 'purchase'], default='marketing')
+    args = parser.parse_args()
+    directory = 'marketing' if args.profile == 'marketing' else 'purchase-experience'
+    deployment = json.loads((ROOT / '.market' / f'{args.profile}-deployment.json').read_text(encoding="utf-8"))
     started = datetime.fromisoformat(deployment["started_at"]).astimezone(timezone.utc)
     cutoff = deployment["cutoff_seq"]
     diagnostics = set()
@@ -58,7 +63,7 @@ def main():
               "price_minus_reserve_total": sum(row["receipt"]["price"] - RESERVES[row["receipt"]["item"]] for row in purchases),
               "limitations": "Opening tasks and finished market results are different denominators; in-flight tasks may remain. Pledges are not published reviews. Costs/cashback are excluded. Buyer mix changes prevent causal attribution."}
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-    out = ROOT / "logs/marketing" / f"measurement-{stamp}"
+    out = ROOT / 'logs' / directory / f"measurement-{stamp}"
     out.mkdir()
     (out / "summary.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     (out / "evidence.json").write_text(json.dumps({"results": rows, "pledges": list(pledges.values()),
