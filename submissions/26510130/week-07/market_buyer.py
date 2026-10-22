@@ -149,6 +149,34 @@ def pick_shop(shops, item, budget, mem):
     return allowed[i], why
 
 
+ACCUSE = re.compile(r"receipt\b.{0,40}\b(did not|didn.t|not) match|overcharg|"
+                    r"higher than (the )?(price|agreed)|agreed \d+.{0,40}receipt (said |was |showed |of )?\d+|"
+                    r"wrong item|never sign|unsigned", re.I)
+
+
+def record_pick(shops, item, budget, mem, picked, why, shops_path=""):
+    """Challenge 2 evidence: what this buyer was offered, what it was warned
+    about, and what it chose. The kit overwrites the shop list on every order,
+    so without this the only list on disk is the last one -- and "offered and
+    avoided" cannot be shown from a single order."""
+    if "test-shops" in str(shops_path):                 # never during the market test
+        return
+    rows = []
+    for s in shops:
+        revs = s.get("reviews") or []
+        rows.append({"name": s.get("name"), "stars": star_avg(revs),
+                     "accused": [r.get("review", "")[:140] for r in revs
+                                 if ACCUSE.search(r.get("review", ""))][:3],
+                     "blacklisted": mem["shops"].get(s.get("name"), {}).get("cheated", 0) > 0})
+    out = Path("logs/challenge-2")
+    out.mkdir(parents=True, exist_ok=True)
+    import datetime
+    with (out / "picks.jsonl").open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"ts": datetime.datetime.now().isoformat(timespec="seconds"),
+                            "item": item, "budget": budget, "picked": picked, "why": why,
+                            "offered": rows}, ensure_ascii=False) + "\n")
+
+
 # ------------------------------------------------------------------- trading
 
 class Shop:
@@ -261,6 +289,7 @@ def main():
     shop, why = pick_shop(shops, args.item, args.budget, mem)
     name, url = shop.get("name"), shop.get("url")
     log(f"[buyer] picked {name!r} ({url}) because: {why}")
+    record_pick(shops, args.item, args.budget, mem, name, why, args.shops)
 
     result = {"shop": url, "receipt": None, "stars": 3, "review": ""}
     agreed = None

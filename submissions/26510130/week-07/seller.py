@@ -161,20 +161,36 @@ def pick_item(catalog: list, text: str, log) -> dict | None:
     return cands[i]
 
 
+def open_cap(item: dict) -> float:
+    """Challenge 1: the opening cap comes from pricing.json, which reprice.py
+    writes from this shop's own trades and reviews. Without the file the shop
+    behaves as it did in week 06."""
+    p = Path("pricing.json")
+    if not p.exists():
+        return OPEN_MULT_MAX
+    try:
+        table = json.loads(p.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return OPEN_MULT_MAX
+    kind = item.get("kind") or item["name"]
+    return float(table.get(item["name"], table.get(kind, table.get("_default", OPEN_MULT_MAX))))
+
+
 def opening_ask(item: dict, log) -> int:
     reserve = item["reserve"]
+    cap = open_cap(item)
     d = harness.ask(
         "You are a shop deciding its opening asking price.\n"
         f"Item: {item['name']} - {item['description']}\n"
         f"Your reserve (the lowest you may ever accept) is {reserve}. "
-        f"Open above it, with room to come down, and no higher than {int(reserve * OPEN_MULT_MAX)}.\n"
+        f"Open above it, with room to come down, and no higher than {int(reserve * cap)}.\n"
         'Reply with one JSON object and nothing else: {"ask": <whole number>}.',
         want=("ask",), tag=" open")
     ask = harness.as_int(d.get("ask"))
     if ask is None:
-        ask = math.ceil(reserve * 1.3)
+        ask = math.ceil(reserve * min(1.3, cap))
         log(f"[seller] no usable ask from the harness; falling back to {ask}")
-    clamped = max(reserve, min(ask, int(reserve * OPEN_MULT_MAX)))
+    clamped = max(reserve, min(ask, int(reserve * cap)))
     if clamped != ask:
         log(f"[seller] clamped opening ask {ask} -> {clamped} (reserve {reserve})")
     return clamped
