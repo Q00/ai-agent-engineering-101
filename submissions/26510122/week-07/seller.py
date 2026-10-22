@@ -86,7 +86,7 @@ class Seller(AgentExecutor):
             local_at = None
             if self.time_sale:
                 arm, planned_ask, local_at = choose_campaign_price(reserve)
-                selection_mode = "campaign_sale" if arm == "campaign_sale_1.06" else "campaign_regular"
+                selection_mode = "campaign_sale" if arm == "campaign_sale_1.09" else "campaign_regular"
             else:
                 try:
                     arm, planned_ask = assign_price(

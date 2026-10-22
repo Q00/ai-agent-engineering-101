@@ -153,17 +153,18 @@ remain in SQLite as a separate cohort; they are not merged with sale data.
 
 `WEEK07_TIME_SALE=1` makes Python read the current Asia/Seoul time once when
 a new negotiation starts. From 2026-10-22 00:00 through 2026-10-28 23:59:59
-KST, the exact integer opening ask is ceiling(1.06 × reserve); afterward it is
-ceiling(1.09 × reserve). A negotiation retains its opening cohort if the clock
+KST, the exact integer opening ask is ceiling(1.09 × reserve); afterward it is
+ceiling(1.12 × reserve). A negotiation retains its opening cohort if the clock
 crosses the campaign deadline mid-task. The opening model still runs, but its suggested first ask
 is replaced by this deterministic tool output. Follow-up negotiation, reserve
 checks, signed receipts and A2A formats are unchanged. SQLite records
-`campaign_sale_1.06` and `campaign_regular_1.09` separately. This before/after
+`campaign_sale_1.09` and `campaign_regular_1.12` separately. This before/after
 comparison is observational: buyer traffic and order mix can vary by date, so
 it cannot by itself prove the sale caused a change in market share.
-An hourly :00–:19 proposal briefly ran on 2026-10-22 before the campaign
-replaced it; its `hourly_regular_1.09` rows remain in SQLite and are not
-silently relabeled as campaign observations.
+An hourly :00–:19 proposal and an initial 1.06× campaign briefly ran on
+2026-10-22 before this higher-price campaign replaced them. Their
+`hourly_regular_1.09` and `campaign_sale_1.06` rows remain in SQLite and are
+not silently relabeled as the new campaign observations.
 
 `pricing_simulator.py` provides the shared exact price calculation and an
 offline-only simulator. It uses decimal ceiling rules for 1.06, 1.09 and 1.12 times reserve and
@@ -217,8 +218,9 @@ the market requires restarting the Seller/kit; do this only as a separate Card
 comparison after holding the price policy fixed.
 
 When `WEEK07_TIME_SALE=1` during the campaign, the live Card's description and
-skill description disclose "Time Sale Now!" and the KST end date. This is an
-opening-price policy, not a promised final transaction price. The campaign
+skill description disclose "Time Sale Now!" and the KST end date without
+revealing the price ratios or private reserve. This is an opening-price
+policy, not a promised final transaction price. The campaign
 notice is omitted from Cards created after the deadline. The buyer-selection model in
 our code is not supplied with the current time.
 
