@@ -14,7 +14,7 @@ import time
 
 from tracing import Trace
 from inference_queue import QueueStateError, QueueTimeout, inference_slot
-from inference_pool import defer_pool, pool_slot
+from inference_pool import defer_pool, pool_slot, validate_priority
 
 ROOT = Path(__file__).resolve().parent
 MODEL = os.environ.get("A2A_MODEL", "gpt-6-luna")
@@ -138,10 +138,12 @@ item_id and quote_id. A general new price list does not replace an existing vali
 
 
 @contextmanager
-def invocation_slot(deadline=None, role=None):
+def invocation_slot(deadline=None, role=None, *, priority="normal"):
     """Reserve bounded runtime lanes; retain the legacy FIFO adapter for callers."""
     try:
-        with (pool_slot(role, deadline) if role is not None else inference_slot(deadline)):
+        validate_priority(priority)
+        options = {"priority": priority} if priority != "normal" else {}
+        with (pool_slot(role, deadline, **options) if role is not None else inference_slot(deadline)):
             yield
     except (QueueTimeout, QueueStateError, OSError, ValueError) as exc:
         raise HarnessError(str(exc)) from exc
@@ -154,7 +156,9 @@ class Harness:
         self.role, self.trace, self.timeout = role, trace, timeout
 
     def decide(self, context: dict, *, strategy: str = "balanced", instruction: str = "",
-               validator=None, deadline: float | None = None, attempts: int = 4) -> dict:
+               validator=None, deadline: float | None = None, attempts: int = 4,
+               priority: str = "normal") -> dict:
+        validate_priority(priority)
         feedback = []
         for attempt in range(1, attempts + 1):
             remaining = min(self.timeout, (deadline - time.monotonic()) if deadline else self.timeout)
@@ -169,9 +173,10 @@ class Harness:
                 cmd = command_for(self.role)
                 cmd += ["--output-last-message", str(output), "-"]
                 self.trace.write("harness_request", model=MODEL, strategy=strategy, attempt=attempt,
-                                 context=context, prompt=prompt, command=cmd)
+                                 context=context, prompt=prompt, command=cmd, priority=priority)
                 started = time.monotonic()
-                with invocation_slot(deadline, self.role):
+                admission_options = {"priority": priority} if priority != "normal" else {}
+                with invocation_slot(deadline, self.role, **admission_options):
                     admitted = time.monotonic()
                     remaining = min(self.timeout, (deadline - time.monotonic()) if deadline else self.timeout)
                     if remaining <= 2:
