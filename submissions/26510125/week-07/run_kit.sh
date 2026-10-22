@@ -49,10 +49,16 @@ EOF
 }
 
 while true; do
+  # the market refuses joins without a claim code (401), so wait for ~/.market_owner before trying
+  if [ ! -s "$HOME/.market_owner" ]; then
+    [ -z "${WAITED:-}" ] && note "no ~/.market_owner yet (claim code from $MARKET/join); waiting before joining" && WAITED=1
+    sleep 20; continue
+  fi
+  WAITED=""
   if [ -z "$TUNNEL_PID" ] || ! kill -0 "$TUNNEL_PID" 2>/dev/null; then
     start_tunnel || { sleep 20; continue; }
   fi
-  [ -f "$HOME/.market_owner" ] && export MARKET_OWNER="$(tr -d '[:space:]' < "$HOME/.market_owner")" || unset MARKET_OWNER
+  export MARKET_OWNER="$(tr -d '[:space:]' < "$HOME/.market_owner")"
   note "starting market_kit join as $NAME via $URL (owner: ${MARKET_OWNER:+set}${MARKET_OWNER:-not set})"
   python "$REPO/scripts/market_kit.py" join --dir "$HERE" --market "$MARKET" --name "$NAME" \
     --port "$PORT" --public-url "$URL" ${MARKET_OWNER:+--owner "$MARKET_OWNER"} >> logs/run_kit.log 2>&1
