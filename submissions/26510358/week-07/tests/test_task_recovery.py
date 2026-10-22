@@ -51,10 +51,11 @@ class RecordingTrace:
 
 
 class RecoveryPeer:
-    def __init__(self, continuation=None, reads=(), *, opening=None, on_reply=None):
+    def __init__(self, continuation=None, reads=(), *, opening=None, on_reply=None, trickle=None):
         self.sends = [opening or task("TASK_STATE_INPUT_REQUIRED"), continuation]
         self.reads, self.requests = list(reads), []
         self.on_reply = on_reply
+        self.trickle, self.disconnected = trickle, threading.Event()
         peer = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -63,14 +64,31 @@ class RecoveryPeer:
 
             def emit(self, body, status=200):
                 data = json.dumps(body).encode()
+                if getattr(self, "rpc_method", None) == "GetTask" and peer.trickle == "headers":
+                    try:
+                        self.wfile.write(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n")
+                        for _ in range(25):
+                            self.wfile.write(b"X-Test-Only-Trickle: yes\r\n")
+                            self.wfile.flush()
+                            time.sleep(0.02)
+                        self.wfile.write(f"Content-Length: {len(data)}\r\n\r\n".encode() + data)
+                    except (BrokenPipeError, ConnectionResetError):
+                        peer.disconnected.set()
+                    return
                 self.send_response(status)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
                 try:
-                    self.wfile.write(data)
+                    if getattr(self, "rpc_method", None) == "GetTask" and peer.trickle == "body":
+                        for offset in range(0, len(data), 20):
+                            self.wfile.write(data[offset:offset + 20])
+                            self.wfile.flush()
+                            time.sleep(0.02)
+                    else:
+                        self.wfile.write(data)
                 except (BrokenPipeError, ConnectionResetError):
-                    pass  # Expected when a bounded read times out before this scripted response.
+                    peer.disconnected.set()  # The cancelled read closed its HTTP transport.
 
             def do_GET(self):
                 self.emit({"name": "TEST ONLY recovery peer", "supportedInterfaces": [{
@@ -80,6 +98,7 @@ class RecoveryPeer:
                 request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
                 peer.requests.append({"version": self.headers.get("A2A-Version"), **request})
                 method = request["method"]
+                self.rpc_method = method
                 if method == "SendMessage":
                     response = peer.sends.pop(0) if peer.sends else {"error": {
                         "code": -32600, "message": "TEST ONLY duplicate message forbidden"}}
@@ -213,6 +232,19 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(len(reads), 2)
         self.assert_held(snapshot)
 
+    def test_trickling_headers_or_body_cannot_extend_total_recovery_budget(self):
+        for trickle in ("headers", "body"):
+            with self.subTest(trickle=trickle), RecoveryPeer(
+                    reads=[completed()] * 3, trickle=trickle) as peer, patch.object(
+                    buyer, "_RECOVERY_SECONDS", 0.12), patch.object(buyer, "_RECOVERY_READ_SECONDS", 0.08):
+                started = time.monotonic()
+                _, snapshot, _, reads = self.run_buyer(peer, expect_error=TimeoutError)
+                elapsed = time.monotonic() - started
+                self.assertTrue(peer.disconnected.wait(0.3), "The cancelled request must close its connection")
+            self.assertLess(elapsed, 0.3)
+            self.assertEqual(len(reads), 1)
+            self.assert_held(snapshot)
+
     def test_changed_task_and_rpc_ids_stop_reads_and_hold_reservation(self):
         for reply in ({**completed(), "id": "TEST-ONLY-other-task"},
                       {**completed(), "wrong_rpc_id": True}):
@@ -316,13 +348,18 @@ class RecoveryTests(unittest.TestCase):
 
     def test_recovery_completion_received_after_deadline_is_still_validated(self):
         clock = {"now": 100.0}
+        parse_result = buyer.A2AClient._rpc_result
 
-        def cross_deadline(request, response):
+        def cross_deadline(client, request, response):
             if request["method"] == "GetTask":
+                # The complete reply is already buffered inside the total read
+                # bound. Parsing must preserve it even if validation runs late.
                 clock["now"] = 111.0
+            return parse_result(client, request, response)
 
-        with RecoveryPeer(reads=[completed()], on_reply=cross_deadline) as peer, patch.object(
-                buyer.time, "monotonic", side_effect=lambda: clock["now"]):
+        with RecoveryPeer(reads=[completed()]) as peer, patch.object(
+                buyer.time, "monotonic", side_effect=lambda: clock["now"]), patch.object(
+                buyer.A2AClient, "_rpc_result", cross_deadline):
             result, snapshot, _, reads = self.run_buyer(peer, timeout=10)
         self.assertEqual((result["status"], len(reads), snapshot["committed_total"]), ("completed", 1, 100))
 
