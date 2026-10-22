@@ -33,7 +33,7 @@ import httpx
 TRADES = Path(".market") / "shop_trades.json"
 MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai").rstrip("/")
 SHOP_KEY = "shop_key.pem"
-RECENT = 10          # deal prices per item that count
+RECENT = 20          # deal prices per item that count; 10 swung with one busy hour (lamp median 118 over 10, 110 over 20)
 MIN_DEALS = 3        # below this the harness opens as before
 ANCHOR = 1.06        # day 1 ran at 1.12; see the docstring
 WINDOW = 40          # the close rate is measured over the last WINDOW opens of the item, so it reacts within hours
