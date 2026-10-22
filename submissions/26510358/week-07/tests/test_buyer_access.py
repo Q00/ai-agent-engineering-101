@@ -84,7 +84,7 @@ class BuyerAccessTests(unittest.IsolatedAsyncioTestCase):
             shop = seller.Seller({"name": "TEST ONLY access shop", "buyer_access": str(self.path),
                 "price_policy": str(Path(__file__).with_name("price-policy-test-only.json"))})
         shop.harness.decide = Mock(side_effect=AssertionError("TEST ONLY model must not run"))
-        shop.rank_pricing.refresh = Mock(side_effect=AssertionError("TEST ONLY rank lookup must not run"))
+        shop.pricing.refresh = Mock(side_effect=AssertionError("TEST ONLY rank lookup must not run"))
         context = RequestContext(call_context=ServerCallContext(), task_id="TEST_ONLY_ACCESS_TASK",
             context_id="TEST_ONLY_ACCESS_CONTEXT", request=SendMessageRequest(message=Message(
                 role=Role.ROLE_USER, message_id="TEST_ONLY_MESSAGE", parts=[new_text_part("lamp")],
@@ -98,7 +98,7 @@ class BuyerAccessTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(shop.signing_key)
         self.assertEqual(shop.open, {})
         shop.harness.decide.assert_not_called()
-        shop.rank_pricing.refresh.assert_not_called()
+        shop.pricing.refresh.assert_not_called()
         self.assertEqual(len([e for e in shop.trace.events if e["event"] == "buyer_access_denied"]), 1)
 
     def test_actual_http_rejects_declared_buyer_but_anonymous_can_request_quote(self):

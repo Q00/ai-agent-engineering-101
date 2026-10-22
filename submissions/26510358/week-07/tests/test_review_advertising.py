@@ -47,7 +47,7 @@ class TransactionReviewTests(unittest.TestCase):
                 self.assertEqual(response["stars"], 5)
                 self.assertEqual(response["receipt"], result["receipt"])
                 self.assertEqual(response["review"],
-                                 "Bought lamp for 100 credits (budget 120); the receipt matched our agreement.")
+                                 "Agreed lamp x 1 for 100 credits; receipt matches the agreement; market signature validation pending.")
                 self.assertNotIn("Simulation competition rating", response["review"])
 
     def test_no_deal_unsigned_disputed_and_error_reviews_preserve_actual_outcome(self):
@@ -69,7 +69,7 @@ class TransactionReviewTests(unittest.TestCase):
                 elif result["status"] == "disputed":
                     self.assertIn("did not match our agreed purchase", response["review"])
                 elif not result["receipt"].get("sig_seller"):
-                    self.assertIn("lacked a seller signature", response["review"])
+                    self.assertIn("lacks a seller signature", response["review"])
 
     def test_pretrade_excluded_unavailable_and_blocked_results_have_no_ads(self):
         for stage, stars in (("excluded", 1), ("unavailable", 2), ("blocked", 1)):

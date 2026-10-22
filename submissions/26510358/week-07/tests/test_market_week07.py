@@ -77,7 +77,7 @@ class MarketGuards(unittest.TestCase):
             self.assertNotIn("avoid_until", shop)
 
     def test_all_harness_roles_have_explicit_instructions(self):
-        for role in ["seller", "buyer", "shop_selector", "budget_allocator", "quote_observer"]:
+        for role in ["seller", "buyer", "shop_selector", "quote_observer"]:
             self.assertIsInstance(system_prompt(role), str)
             self.assertGreater(len(system_prompt(role)), 100)
 
@@ -156,7 +156,7 @@ class MarketGuards(unittest.TestCase):
                                   "pricing_state": str(Path(d) / "pricing-state.json")})
         caps = {p["id"]: shop.opening_cap(p) for p in shop.catalog if p["id"] in ("lamp", "chair", "bookshelf")}
         self.assertEqual(caps, {"lamp": 100, "chair": 180, "bookshelf": 260})
-        self.assertTrue(shop.rank_pricing.quote_policy()["accept_floor_bids"])
+        self.assertTrue(shop.pricing.quote_policy()["accept_floor_bids"])
         self.assertTrue(all(shop.opening_cap(p) >= p["reserve"] for p in shop.catalog))
 
 if __name__ == "__main__":

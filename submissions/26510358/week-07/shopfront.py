@@ -1,5 +1,5 @@
 """Public merchandising from actual catalogue facts and existing pricing rules."""
-from rank_pricing import opening_ask
+from pricing import opening_ask
 
 BASE_IDS = ('lamp', 'chair', 'bookshelf')
 

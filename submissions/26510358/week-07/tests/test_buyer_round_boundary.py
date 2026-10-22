@@ -122,7 +122,7 @@ class BuyerRoundBoundaryTests(unittest.TestCase):
         snapshot = ledger.snapshot()
         self.assertEqual((snapshot["committed_total"], snapshot["reserved_total"]), (115, 0))
         self.assertEqual(sum(p["state"] == "committed" for p in snapshot["purchases"].values()), 1)
-        self.assertEqual(sum(e["event"] == "purchase_completed" for e in trace.events), 1)
+        self.assertEqual(sum(e["event"] == "purchase_receipt_matched" for e in trace.events), 1)
 
     def test_received_final_completion_is_checked_even_if_deadline_just_expired(self):
         result, ledger, _ = self.run_fixture(terminal(), expire_on_last=True)
@@ -139,7 +139,7 @@ class BuyerRoundBoundaryTests(unittest.TestCase):
 
     def test_eighth_explicit_failure_releases_without_committing(self):
         result, ledger, _ = self.run_fixture(terminal("TASK_STATE_FAILED"))
-        self.assertEqual(result, {"status": "no_deal", "state": "TASK_STATE_FAILED"})
+        self.assertEqual((result["status"], result["state"], result["offer_count"]), ("no_deal", "TASK_STATE_FAILED", 8))
         self.assertEqual(ledger.snapshot()["available_budget"], 120)
         self.assertEqual(ledger.commit_calls, 0)
 

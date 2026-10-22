@@ -190,7 +190,7 @@ class ProtocolTests(unittest.TestCase):
                 buyer.Harness, "decide", decide):
             result = buyer.negotiate("http://shop", "lamp", 120, ledger=ledger,
                                      policy=TestPolicy(), trace=SilentTrace(), timeout=5)
-        self.assertEqual(result, {"status": "completed", "receipt": receipt})
+        self.assertEqual((result["status"], result["receipt"], result["offer_count"], result["market_verified"]), ("completed", receipt, 1, False))
         self.assertEqual(ledger.snapshot()["committed_total"], 110)
         self.assertEqual(ledger.snapshot()["reserved_total"], 0)
         self.assertEqual(len(judgments), 1)

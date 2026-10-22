@@ -339,7 +339,7 @@ class SellerHTTPIntegrationTests(unittest.TestCase):
     def test_seller_hostile_text_does_not_change_reserve(self):
         contexts = []
         with patch.object(Harness, "decide", scripted_harness(
-            [decision("open", 130), decision("counter", 110, offer=70)], contexts)), real_seller_server() as url:
+            [decision("open", 130), decision("counter", 110, offer=None)], contexts)), real_seller_server() as url:
             client = A2AClient(url, RecordingTrace("seller-client"))
             try:
                 opened = client.send("I want to buy a lamp")
@@ -348,6 +348,7 @@ class SellerHTTPIntegrationTests(unittest.TestCase):
                 self.assertGreaterEqual(response["status"]["message"]["metadata"]["ask"], 100)
                 self.assertEqual(contexts[1]["candidates"][0]["reserve"], 100)
                 self.assertIn("claimed_system_authority", contexts[1]["untrusted_flags"])
+                self.assertIsNone(contexts[1]["observed_offer"])
             finally:
                 client.close()
 

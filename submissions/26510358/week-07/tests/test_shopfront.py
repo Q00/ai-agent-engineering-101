@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from catalog import load_catalog
-from rank_pricing import opening_ask
+from pricing import opening_ask
 from shopfront import public_items, public_description, public_skills
 from test_seller_cancel_http import actual_sdk_server
 import httpx
@@ -15,10 +15,9 @@ ROOT=Path(__file__).resolve().parents[1]
 
 
 class ShopfrontTests(unittest.TestCase):
-    def quotes(self,phase):
+    def quotes(self, phase="normal"):
         policy=json.loads((ROOT/'data/price-policy.json').read_text())
-        return {'phase':phase,**policy['rank_cycle']['phases'][phase],
-                'default_margin_rate':policy['default_margin_rate'],'review_referral':policy['review_referral']}
+        return {'phase':phase, **policy}
 
     def test_public_quotes_share_seller_caps_and_do_not_expose_reserves(self):
         catalog=load_catalog();policy=self.quotes('acquisition')
@@ -32,14 +31,11 @@ class ShopfrontTests(unittest.TestCase):
         for unsupported in ('handmade','2-year warranty','1+1','five-star','guaranteed lowest'):
             self.assertNotIn(unsupported,description)
 
-    def test_coupon_advertising_matches_actual_phase_and_full_ten_percent(self):
-        acquisition=public_items(load_catalog(),self.quotes('acquisition'))
-        self.assertNotIn('REVIEW10',public_description(acquisition))
-        recovery=public_items(load_catalog(),self.quotes('recovery'))
-        self.assertEqual([x['discount']['price'] for x in recovery],[108,180,261])
-        self.assertIn('REVIEW10',public_description(recovery))
-        self.assertLessEqual(len(public_description(acquisition)),300)
-        self.assertLessEqual(len(public_description(recovery)),300)
+    def test_exact_owner_profile_has_no_inactive_promotion(self):
+        description=public_description(public_items(load_catalog(), self.quotes()))
+        self.assertEqual(description, "Ssadassa Shop: lamp 100, chair 180, bookshelf 260 credits each. Clear quotes, prompt acceptance and Ed25519-signed receipts matching the agreed item and price. Request a current quote, then offer that total on the same task. (Catalog search and price negotiation)")
+        self.assertNotIn('REVIEW10', description)
+        self.assertLessEqual(len(description), 300)
 
     def test_actual_sdk_discovery_updates_prices_without_model_or_network(self):
         with actual_sdk_server(public_profile=True) as state:
@@ -47,9 +43,9 @@ class ShopfrontTests(unittest.TestCase):
             self.assertIn('lamp 1100',first['description'])  # TEST ONLY policy has a 1000-credit opening margin.
             self.assertEqual(first['supportedInterfaces'][0]['protocolVersion'],'1.0')
             self.assertEqual(len(state.model_contexts),0)
-            previous=state.executor.rank_pricing.quote_policy
-            state.executor.rank_pricing.quote_policy=lambda:{**previous(),'opening_margin':{'lamp':0}}
+            previous=state.executor.pricing.quote_policy
+            state.executor.pricing.quote_policy=lambda:{**previous(),'opening_margin':{'lamp':0}}
             second=httpx.get(state.url+'/.well-known/agent-card.json').json()
             self.assertIn('lamp 100',second['description'])
-            self.assertEqual(second['skills'][0]['id'],'buy-lamp')
+            self.assertEqual(second['skills'][0]['id'],'negotiate')
             self.assertEqual(len(state.model_contexts),0)
