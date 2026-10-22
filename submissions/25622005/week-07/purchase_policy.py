@@ -60,16 +60,18 @@ def inspect_public_price(shop, item):
                 except (httpx.HTTPError, ValueError, TypeError, AttributeError):
                     pass
             if info['public_price'] is None:
-                match = re.search(r'\b' + re.escape(item) + r'\b\s*[:=$]?\s*(\d+)(?:\.0+)?\b',
+                match = re.search(r'\b' + re.escape(item)
+                                  + r'\b\s*[:=]?\s*\$?(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?(?!\w|\.\d|,\d)',
                                   str(card.get('description', '')), re.I)
-                if match:
-                    info.update(public_price=int(match.group(1)), source='advertised card text')
+                if match and (not match.group(2) or set(match.group(2)) == {'0'}):
+                    info.update(public_price=int(match.group(1).replace(',', '')), source='advertised card text')
     except (httpx.HTTPError, ValueError, TypeError) as error:
         info['error'] = f'{type(error).__name__}: {str(error)[:160]}'
     return info
 
 
-def compare_shops(shops, memory, item, budget, *, limit=MAX_CANDIDATES, now=None, inspect=None):
+def compare_shops(shops, memory, item, budget, *, limit=MAX_CANDIDATES, now=None, inspect=None,
+                  inspection_failures=None):
     """Return one selected shop, its public card, and transparent decision evidence."""
     if not 1 <= limit <= MAX_CANDIDATES:
         raise ValueError('compare-shops must be between 1 and 3')
@@ -84,11 +86,16 @@ def compare_shops(shops, memory, item, budget, *, limit=MAX_CANDIDATES, now=None
         if reviews and review_mean < MIN_REVIEW_MEAN:
             reason = 'recent review mean below 3'
         if any(r.get('outcome') == 'invalid_receipt' and
-               age_seconds(r, now) < RECEIPT_COOLDOWN_SECONDS for r in personal[-20:]):
+               age_seconds(r, now) < RECEIPT_COOLDOWN_SECONDS for r in personal):
             reason = 'receipt mismatch within cooldown'
         if (len(personal) >= 2 and all(r.get('outcome') == 'unavailable' for r in personal[-2:])
                 and age_seconds(personal[-1], now) < CONNECTION_COOLDOWN_SECONDS):
             reason = 'repeated connection failures within cooldown'
+        failed_lookup = (inspection_failures or {}).get(shop['name'], {})
+        if (isinstance(failed_lookup, dict) and type(failed_lookup.get('failures')) is int
+                and failed_lookup['failures'] >= 2
+                and age_seconds(failed_lookup, now) < CONNECTION_COOLDOWN_SECONDS):
+            reason = 'repeated public lookup failures within cooldown'
         if reason:
             excluded.append({'name': shop['name'], 'reason': reason})
             continue
@@ -128,5 +135,21 @@ def compare_shops(shops, memory, item, budget, *, limit=MAX_CANDIDATES, now=None
         return None, None, evidence
     chosen = min(available, key=lambda row: price_key(row, 'expected_price'))
     evidence['selected'] = chosen['shop']['name']
-    evidence['reason'] = 'lowest affordable known item price among reachable trusted candidates; quality breaks ties'
+    evidence['reason'] = 'affordable known item prices first, unknown prices next; lower price then experience/reviews break ties'
     return chosen['shop'], chosen['card'], evidence
+
+
+def update_lookup_failures(cache, comparison, now=None):
+    """Track public GET failures separately from actual purchase memory."""
+    now = now or datetime.now(timezone.utc)
+    for row in comparison['comparisons']:
+        name = row['name']
+        if row['reachable']:
+            cache.pop(name, None)
+        else:
+            old = cache.get(name, {})
+            count = old.get('failures', 0) if isinstance(old, dict) else 0
+            if type(count) is not int or age_seconds(old, now) >= CONNECTION_COOLDOWN_SECONDS:
+                count = 0
+            cache[name] = {'time': now.isoformat(), 'failures': count + 1}
+    return cache

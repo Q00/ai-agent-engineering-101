@@ -4,13 +4,14 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import httpx
 
 from negotiation import negotiate
 from shop_catalog import load_shops
-from purchase_policy import compare_shops
+from purchase_policy import compare_shops, update_lookup_failures
 from trade_memory import evaluate_trade, load_memory, remember
 
 
@@ -25,25 +26,40 @@ def main():
     args = parser.parse_args()
     if args.budget <= 0:
         parser.error("budget must be positive")
+    cache_path = args.memory.parent / '.market' / (args.memory.stem + '-quote-failures.json')
+    try:
+        cache = json.loads(cache_path.read_text()) if cache_path.exists() else {}
+        if not isinstance(cache, dict):
+            raise ValueError('quote cache must be an object')
+    except (OSError, ValueError) as error:
+        print(f'[quote-cache-error] {error}; existing cache retained', file=sys.stderr)
+        cache = None
     try:
         shops = load_shops(args.shops)
         memory = load_memory(args.memory)
         shop, card, comparison = compare_shops(shops, memory, args.item, args.budget,
-                                               limit=args.compare_shops)
+                                               limit=args.compare_shops, inspection_failures=cache)
     except (OSError, ValueError) as error:
         parser.error(str(error))
     print('[compare] ' + json.dumps(comparison, ensure_ascii=False), flush=True)
+    if cache is not None:
+        temporary = None
+        try:
+            cache_path.parent.mkdir(exist_ok=True, parents=True)
+            fd, temporary = tempfile.mkstemp(dir=cache_path.parent, prefix='quote-cache-')
+            with os.fdopen(fd, 'w') as output:
+                json.dump(update_lookup_failures(cache, comparison), output)
+            os.replace(temporary, cache_path)
+        except OSError as error:
+            print(f'[quote-cache-error] {error}; trading continues', file=sys.stderr)
+        finally:
+            if temporary and os.path.exists(temporary):
+                os.unlink(temporary)
     if shop is None:
         # A failed public lookup is a connection failure, not dishonesty.
         attempted = comparison['comparisons']
         fallback = next((s for s in shops if attempted and s['name'] == attempted[0]['name']), None)
         review = 'No reachable trusted candidate; no purchase attempted.'
-        if fallback is not None:
-            try:
-                remember(args.memory, shop_name=fallback['name'], item=args.item, budget=args.budget,
-                         receipt=None, outcome='unavailable', stars=2, review=review)
-            except (OSError, ValueError) as error:
-                print(f'[memory-error] {error}; previous memory retained', file=sys.stderr)
         print(json.dumps({'shop': fallback['url'] if fallback else '', 'receipt': None,
                           'stars': 2, 'review': review}, ensure_ascii=False), flush=True)
         return

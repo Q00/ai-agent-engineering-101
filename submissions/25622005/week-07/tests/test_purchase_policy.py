@@ -8,7 +8,7 @@ from unittest.mock import patch
 import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from purchase_policy import compare_shops, inspect_public_price
+from purchase_policy import compare_shops, inspect_public_price, update_lookup_failures
 
 NOW = datetime(2026, 10, 22, 1, tzinfo=timezone.utc)
 
@@ -117,6 +117,24 @@ class PurchasePolicyTests(unittest.TestCase):
         rows += [memory('a', None, outcome='no_deal')] * 20
         chosen, _, _ = compare_shops([shop('a')], rows, 'lamp', 150, now=NOW, inspect=inspect({}))
         self.assertIsNone(chosen)
+
+    def test_failed_public_lookup_cools_down_even_when_another_shop_works(self):
+        comparisons = {'comparisons': [{'name': 'a', 'reachable': False}, {'name': 'b', 'reachable': True}]}
+        cache = update_lookup_failures({}, comparisons, NOW)
+        cache = update_lookup_failures(cache, comparisons, NOW)
+        called = []
+        def get(s, item):
+            called.append(s['name'])
+            return inspect({})(s, item)
+        chosen, _, _ = compare_shops([shop('a'), shop('b')], [], 'lamp', 150,
+                                      now=NOW, inspect=get, inspection_failures=cache)
+        self.assertEqual(chosen['name'], 'b')
+        self.assertEqual(called, ['b'])
+        self.assertNotIn('b', cache)
+        called.clear()
+        compare_shops([shop('a'), shop('b')], [], 'lamp', 150, now=NOW + timedelta(seconds=901),
+                      inspect=get, inspection_failures=cache)
+        self.assertEqual(set(called), {'a', 'b'})
 
 
 if __name__ == '__main__':
