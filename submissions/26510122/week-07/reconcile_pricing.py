@@ -79,6 +79,8 @@ def reconcile(recorder: PricingRecorder, market: str, shop: str, max_pages: int 
         if len(page) < 500:
             complete = True
             break
+    if complete:
+        recorder.mark_reconciliation_complete()
     return {"cursor": cursor, **result, "complete": complete}
 
 

@@ -1,4 +1,4 @@
-"""Offline-only balanced price-arm assignment; never imported by the Seller."""
+"""Price-arm rounding helper and offline balanced assignment simulator."""
 
 from __future__ import annotations
 

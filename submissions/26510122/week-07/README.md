@@ -54,15 +54,15 @@ each new negotiation, caps its opening ask, and never lowers its reserve.
 ## Seller V1 observation phase
 
 `pricing.py` records **new** seller tasks in the ignored
-`state/pricing_state.sqlite`. It does not choose a price. Opening asks still come
-from the seller model and the existing 1.12× reserve cap. Each task stores the
+`state/pricing_state.sqlite`. It does not choose a price. Legacy opening asks
+come from the seller model and the existing 1.12× reserve cap. Each task stores the
 actual opening ask, numeric buyer offers, model-call count, receipt price and
-status. All new tasks are labeled `legacy_cap_1.12`; historical log-only tasks
-are not inserted into this experiment database.
+status. Non-experimental tasks are labeled `legacy_cap_1.12`; historical
+log-only tasks are not inserted into this experiment database.
 The legacy cap uses floating-point multiplication and `ceil`; for a lamp reserve
 of 100 it currently evaluates to 113, so its label is a policy name rather
-than an exact price arm. A later randomized experiment must define exact
-integer rounding separately and verify every emitted ask.
+than an exact price arm. The randomized experiment uses exact decimal
+rounding and verifies every emitted ask.
 
 An exposed task remains `UNRESOLVED` after its last counter until stronger
 evidence arrives. An issued seller receipt is `RECEIPT_PENDING`, never a counted
@@ -82,15 +82,14 @@ To reconcile issued receipts with the official Round 2 ledger, run:
 The command scans ledger entries after a durable cursor, matches the receipt's
 task, shop, item and price, and records `DEAL_COUNTED` or
 `RECEIPT_NOT_COUNTED`. The first run seeks to an hour before the earliest new
-local attempt; later runs are incremental. It is currently a manual command, so
-unreconciled receipts stay pending. Tests can use `PRICING_STATE_PATH` to place
+local attempt; later runs are incremental. A local launchd job runs this command
+every three minutes; if it stops, unreconciled receipts stay pending. Tests can use `PRICING_STATE_PATH` to place
 their database outside the live `state/` directory.
 
-Low/Mid/High randomization and UCB are **not active**. Before testing those arms,
-verify the recorded ask equals the buyer-visible ask, choose a justified rule
-for unresolved and infrastructure-error outcomes, and run simultaneous
-per-item assignment while keeping follow-up negotiation fixed. Baseline trades
-and randomized trades must be analyzed separately.
+A 5% live canary assigns Low/Mid/High opening asks among new tasks. The other
+95% use the legacy policy. UCB can choose an arm only inside the canary and
+only after the readiness and ledger-freshness gates below pass. Baseline and
+experimental trades must be analyzed separately.
 
 ### V1 record validation and offline experiment preparation
 
@@ -125,15 +124,18 @@ stopped, its stored ledger cursor falls behind and issued receipts remain
 earlier trades that predate this SQLite database, so its cumulative deal total
 should not equal this database's count even after reconciliation.
 
-`pricing_ucb.py` is an **offline-only** UCB readiness check. Run
+`pricing_ucb.py` evaluates UCB readiness; its CLI only reports results. Run
 `.venv/bin/python pricing_ucb.py --item lamp` (or `chair`/`bookshelf`). It excludes
 the historical `legacy_cap_1.12` cohort and recommends no arm until each
 Low/Mid/High arm has at least 30 buyer-visible asks, no ask mismatch, and at
 most 5% pending/unknown outcomes. Counted margin is normalized by reserve and
 capped at 1; no-deals receive zero. The score uses a conservative
 per-exposure mean plus a fixed exploration bonus. These defaults are safety
-gates for a future randomized experiment, not evidence that UCB already works.
-The live Seller does not import or call this module.
+gates for this randomized experiment, not evidence that UCB already works.
+With `WEEK07_PRICE_UCB_AUTO=1`, the Seller uses its recommendation on a canary
+task only if the latest full ledger reconciliation finished within ten minutes.
+Otherwise it keeps the randomized arm. The local supervisor enables this gate,
+but no UCB arm is selected until enough verified observations exist per item.
 
 `pricing_experiment.py` provides a deterministic traffic split for collecting
 real Low/Mid/High observations. `WEEK07_PRICE_EXPERIMENT_PERCENT=0` is the
@@ -143,13 +145,14 @@ task to one of the three arms within its item. The model still makes the same
 opening call, but on a selected task the tool's exact candidate price replaces
 its opening ask; follow-up decisions, reserve guard, signed receipt and A2A
 format are unchanged. The actual emitted ask is recorded and later compared
-with the assignment. There is no automatic UCB price change yet.
+with the assignment. Once both gates pass, UCB replaces the randomized arm on
+selected canary tasks only; it does not change the other 95%.
 The local Pinggy shop supervisor currently sets this traffic split to 5% for
 new market tasks; the other 95% retain the legacy opening policy. This is a
 small concurrent data-collection experiment, not proof that one arm is better.
 
-`pricing_simulator.py` is offline-only and is not imported by `seller.py`. It
-uses exact decimal ceiling rules for 1.06, 1.09 and 1.12 times reserve and
+`pricing_simulator.py` provides the shared exact price calculation and an
+offline-only simulator. It uses decimal ceiling rules for 1.06, 1.09 and 1.12 times reserve and
 balanced, seeded blocks per item. It can read a JSON list of task IDs, items
 and reserves with `--tasks`; it never invents transaction results. It verifies
 an `opening_ask_actual` if supplied. Its unit-test outcome fixtures are not

@@ -144,6 +144,7 @@ class PricingRecorderTest(unittest.TestCase):
         self.assertEqual(trace.call_args.args[0], "pricing_record_error")
 
     def test_reconcile_matches_task_and_receipt_not_other_shops(self):
+        self.assertFalse(self.rec.reconciliation_fresh())
         self.rec.start("own", "lamp", 100)
         self.rec.opening_sent("own", 112)
         self.rec.receipt("own", 103)
@@ -168,6 +169,11 @@ class PricingRecorderTest(unittest.TestCase):
                                   "receipt_recovered": 0, "complete": True})
         self.assertEqual(self.rec.get("own")["terminal_status"], "DEAL_COUNTED")
         self.assertEqual(PricingRecorder(self.path).ledger_cursor(), 2)
+        self.assertTrue(PricingRecorder(self.path).reconciliation_fresh())
+        with sqlite3.connect(self.path) as db:
+            db.execute("UPDATE metadata SET value='2020-01-01T00:00:00+00:00' "
+                       "WHERE key='ledger_reconciled_at'")
+        self.assertFalse(self.rec.reconciliation_fresh())
 
 
 if __name__ == "__main__":

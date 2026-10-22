@@ -25,6 +25,8 @@ from harness import decide, trace
 from catalog import Catalog
 from pricing import PricingRecorder
 from pricing_experiment import assign_price
+from pricing_simulator import candidate_price
+from pricing_ucb import evaluate_ucb
 from receipt import sign_receipt
 
 
@@ -76,6 +78,7 @@ class Seller(AgentExecutor):
                     return
                 reserve, product_id = self.reserves[item], item
             planned_ask = None
+            selection_mode = "legacy"
             try:
                 arm, planned_ask = assign_price(
                     task.id, item, reserve, int(os.environ.get("WEEK07_PRICE_EXPERIMENT_PERCENT", "0")))
@@ -83,6 +86,19 @@ class Seller(AgentExecutor):
                 trace("pricing_experiment_error", task_id=task.id, error=str(error))
                 arm = "legacy_cap_1.12"
             if planned_ask is not None and self.recorder is not None:
+                selection_mode = "randomized"
+                if os.environ.get("WEEK07_PRICE_UCB_AUTO") == "1":
+                    try:
+                        if self.recorder.reconciliation_fresh():
+                            evaluation = evaluate_ucb(self.recorder.all_trades(), item)
+                            if evaluation["ready"]:
+                                arm = evaluation["recommended_arm"]
+                                planned_ask = candidate_price(reserve, arm)
+                                selection_mode = "ucb"
+                                trace("pricing_ucb_selection", task_id=task.id, item=item,
+                                      arm=arm, scores=evaluation["scores"])
+                    except Exception as error:
+                        trace("pricing_ucb_error", task_id=task.id, error=str(error))
                 try:
                     self.recorder.start(task.id, item, reserve, arm)
                 except Exception as error:
@@ -120,7 +136,7 @@ class Seller(AgentExecutor):
                 if not reserve <= planned_ask <= ceiling:
                     raise ValueError("experimental ask violates the current price policy")
                 trace("pricing_experiment", task_id=task.id, item=item, arm=arm,
-                      model_policy_ask=ask, planned_ask=planned_ask)
+                      selection_mode=selection_mode, model_policy_ask=ask, planned_ask=planned_ask)
                 ask = planned_ask
             self.open[task.id] = {"item": item, "product_id": product_id, "reserve": reserve, "ask": ask, "history": []}
             trace("seller_open", task_id=task.id, item=item, product_id=product_id, reserve=reserve, ask=ask)

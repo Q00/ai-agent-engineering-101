@@ -1,7 +1,8 @@
-"""Offline UCB readiness check for randomized opening-price arms.
+"""UCB readiness check for randomized opening-price arms.
 
-This module does not assign live prices. Legacy observations are excluded because
-they were not randomized across Low, Mid and High.
+The evaluator is pure and assigns no prices itself. The live Seller may use a
+recommendation only after its separate ledger-freshness gate passes. Legacy
+observations are excluded because they were not randomized across arms.
 """
 
 from __future__ import annotations
@@ -57,7 +58,7 @@ def evaluate_ucb(rows: list[dict], item: str, *, minimum_exposed: int = 30,
             reasons.append(f"{name}: too many pending or unknown outcomes")
         if arm["ask_mismatches"]:
             reasons.append(f"{name}: assigned ask differs from actual ask or invalid receipt")
-    result = {"item": item, "mode": "offline only", "ready": not reasons,
+    result = {"item": item, "mode": "readiness evaluation", "ready": not reasons,
               "reasons": reasons, "arms": arms, "recommended_arm": None,
               "scores": None,
               "method": "Counted normalized margin is capped at 1; confirmed no-deals and unknowns contribute zero to a conservative per-exposure mean. UCB is withheld while unknowns exceed the gate."}
@@ -75,7 +76,7 @@ def evaluate_ucb(rows: list[dict], item: str, *, minimum_exposed: int = 30,
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Offline UCB readiness; never changes the Seller")
+    parser = argparse.ArgumentParser(description="Inspect UCB readiness without changing the Seller")
     parser.add_argument("--db", default="state/pricing_state.sqlite")
     parser.add_argument("--item", required=True, choices=["lamp", "chair", "bookshelf"])
     parser.add_argument("--minimum-exposed", type=int, default=30)

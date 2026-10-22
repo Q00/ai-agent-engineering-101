@@ -376,6 +376,20 @@ class PricingRecorder:
                        "ON CONFLICT(key) DO UPDATE SET value=CAST(MAX(CAST(value AS INTEGER), "
                        "CAST(excluded.value AS INTEGER)) AS TEXT)", (str(cursor),))
 
+    def mark_reconciliation_complete(self) -> None:
+        """Record freshness only after a scan reaches the end of the ledger."""
+        with self._connect() as db:
+            db.execute("INSERT INTO metadata(key, value) VALUES ('ledger_reconciled_at', ?) "
+                       "ON CONFLICT(key) DO UPDATE SET value=excluded.value", (now(),))
+
+    def reconciliation_fresh(self, max_age_seconds: int = 600) -> bool:
+        with self._connect() as db:
+            row = db.execute("SELECT value FROM metadata WHERE key='ledger_reconciled_at'").fetchone()
+        if row is None:
+            return False
+        age = (datetime.now(timezone.utc) - datetime.fromisoformat(row["value"])).total_seconds()
+        return 0 <= age <= max_age_seconds
+
     def stats(self, item: str | None = None) -> list[dict]:
         """Descriptive counts only; unknown outcomes stay visible in the denominator."""
         return self._stats_rows(self.all_trades(), item)
