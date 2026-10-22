@@ -156,7 +156,8 @@ class Seller(AgentExecutor):
         if not opening:
             deal.update(offer_count=offer_count, offer_ids=offer_ids)
         if plain_offer is not None:
-            self.stage(task, "offer_received", item=candidates[0]["id"], price=plain_offer,
+            observed_item = deal["item"]["id"] if not opening else candidates[0]["id"] if len(candidates) == 1 else None
+            self.stage(task, "offer_received", item=observed_item, price=plain_offer,
                        quote_id=None if opening else deal.get("quote_id"),
                        quantity=1, offer_number=offer_count)
         trusted = {"role": "seller", "opening": opening, "task_id": task.id,

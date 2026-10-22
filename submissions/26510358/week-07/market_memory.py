@@ -71,9 +71,17 @@ class MarketMemory:
                         continue
                     if event.get("event") == "market_shop_selected":
                         pending["name"] = event.get("shop")
+                    if event.get("event") == "trade_stage" and event.get("side") == "buyer" \
+                            and event.get("stage") == "negotiation_started":
+                        pending["runtime_task"] = event.get("task_id")
                     if event.get("event") in ("market_trade_observed", "purchase_completed", "purchase_receipt_matched"):
                         receipt = event.get("receipt") or {}
-                        pending["task"] = receipt.get("task", receipt.get("taskId"))
+                        pending["receipt_task"] = receipt.get("task", receipt.get("taskId"))
+                        if event.get("task_id"):
+                            pending["runtime_task"] = event["task_id"]
+                        pending["task"] = pending.get("runtime_task") or pending["receipt_task"]
+                        if event.get("status"):
+                            pending["local_status"] = event["status"]
                         pending["price"] = receipt.get("price")
                 if entry.startswith("[sign] "):
                     if "sig_seller ok" in line:
@@ -91,7 +99,11 @@ class MarketMemory:
                         shop["signature_failures"] = shop.get("signature_failures", 0) + 1
                         shop["avoid_until"] = time.time() + (86400 if verdict == "invalid" else 1800)
                         shop["avoid_reason"] = "Kit reports " + verdict + " seller signature; incompatibility alone does not prove intent"
-                    verified = verdict == "verified" and bool(re.search(r"\bverified True(?:,|$)", entry))
+                    market_verified = verdict == "verified" and bool(re.search(r"\bverified True(?:,|$)", entry))
+                    runtime_task = pending.get("runtime_task")
+                    local_contract_ok = (not runtime_task or runtime_task == pending.get("receipt_task")) \
+                        and pending.get("local_status") not in {"disputed", "unresolved", "error", "no_deal", "untrusted"}
+                    verified = market_verified and local_contract_ok
                     ledger = re.search(r"ledger #(\d+)", entry)
                     feedback_id = ledger[1] if ledger else None
                     seen = shop.setdefault("verified_ledgers", [])
@@ -100,7 +112,8 @@ class MarketMemory:
                             if pending.get("task") and row.get("task") == pending["task"]:
                                 row.update(status="unresolved", verified=False, ledger=feedback_id,
                                            order=pending.get("order"))
-                                row["issues"] = list(dict.fromkeys([*row.get("issues", []), "market_verification_failed"]))
+                                failure = "local_contract_failed" if market_verified else "market_verification_failed"
+                                row["issues"] = list(dict.fromkeys([*row.get("issues", []), failure]))
                                 break
                     if verified and feedback_id and feedback_id not in seen:
                         seen.append(feedback_id)
@@ -116,6 +129,9 @@ class MarketMemory:
                                 break
                     imported.append({"shop": name, "signature": verdict, "verified": verified,
                                      "task": pending.get("task"), "item": pending.get("item"),
+                                     "task_linkage": "runtime" if runtime_task else "receipt_only",
+                                     "receipt_task": pending.get("receipt_task"),
+                                     "market_verified": market_verified, "local_contract_ok": local_contract_ok,
                                      "order": pending.get("order"), "ledger": feedback_id,
                                      "price": pending.get("price"), "market_result": line})
                     pending = {}

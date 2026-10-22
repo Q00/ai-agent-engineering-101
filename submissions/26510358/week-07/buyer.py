@@ -17,6 +17,7 @@ from policy import StrategyPolicy, strategy_instruction
 from protocol import A2AClient, ProtocolError, receipt_from
 from quote_normalization import contract_issues, normalize_quote
 from tracing import Trace
+from trade_funnel import emit_stage
 
 
 _PENDING_TASK_STATES = {"TASK_STATE_SUBMITTED", "TASK_STATE_WORKING"}
@@ -170,13 +171,25 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
     receipt_evidence = []
     task_id = None
     expected_item, quoted_item, expected_quote_id = requested_item_id or item, None, None
+
+    def stage(name, **fields):
+        if isinstance(task_id, str) and task_id:
+            emit_stage(trace, name, side="buyer", task_id=task_id, item=expected_item,
+                       quote_id=expected_quote_id, **fields)
+
+    def finish(result, outcome, reason_code):
+        stage("ended", outcome=outcome, reason_code=reason_code)
+        return {**result, "task_id": task_id, "offer_count": len(history),
+                "response_seconds": response_seconds}
+
     try:
         sent_at = time.monotonic()
         task = client.send(f"I want to buy a {item}")
         response_seconds.append(round(time.monotonic() - sent_at, 3))
         task_id = task.get("id")
-        if not task_id:
+        if not isinstance(task_id, str) or not task_id.strip():
             raise ProtocolError("Seller did not return a task ID")
+        stage("negotiation_started")
         # Eight decisions can produce eight replies. Drain the final reply's
         # terminal evidence before applying the decision limit or deadline.
         for round_number in range(1, 10):
@@ -202,14 +215,16 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                 if issues:
                     if reserved:
                         ledger.mark_disputed(purchase_id, "; ".join(issues))
-                    return {"status": "disputed", "issues": issues, "receipt": receipt}
+                    return finish({"status": "disputed", "issues": issues, "receipt": receipt},
+                                  "unresolved", "receipt_contract_failed")
                 if not reserved:
                     raise EvidenceError("Unsolicited completed purchase without our authorized offer")
                 ledger.commit(purchase_id, receipt)
                 trace.write("purchase_receipt_matched", receipt=receipt, ledger=ledger.snapshot(),
                             signature_verified=False, market_verified=False)
-                return {"status": "completed", "receipt": receipt, "offer_count": len(history),
-                        "response_seconds": response_seconds, "market_verified": False}
+                stage("receipt_matched", price=expected_price, quantity=1, evidence="receipt_contract")
+                return finish({"status": "completed", "receipt": receipt, "market_verified": False},
+                              "completed", "local_receipt_matched")
             if state in ("TASK_STATE_REJECTED", "TASK_STATE_CANCELED", "TASK_STATE_FAILED"):
                 if _has_terminal_receipt_evidence(task) or receipt_evidence:
                     # A peer may fail after publishing a purchase artifact. Its
@@ -219,14 +234,15 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                     trace.write("terminal_receipt_conflict", state=state, reserved=reserved,
                                 artifacts=task.get("artifacts", []),
                                 prior_artifacts=[observed.get("artifacts", []) for observed in receipt_evidence])
-                    return {"status": "disputed", "state": state,
-                            "issues": ["terminal_receipt_conflict"]}
+                    return finish({"status": "disputed", "state": state,
+                                   "issues": ["terminal_receipt_conflict"]},
+                                  "unresolved", "terminal_receipt_conflict")
                 if reserved:
                     ledger.release(purchase_id)
                     reserved = False
                 trace.write("walked_away", state=state)
-                return {"status": "no_deal", "state": state, "offer_count": len(history),
-                        "response_seconds": response_seconds}
+                outcome = {"TASK_STATE_CANCELED": "canceled", "TASK_STATE_FAILED": "error"}.get(state, "rejected")
+                return finish({"status": "no_deal", "state": state}, outcome, "seller_terminal_no_deal")
             if state != "TASK_STATE_INPUT_REQUIRED":
                 raise ProtocolError(f"Unsupported task state: {state}")
             if round_number > 8:
@@ -256,6 +272,8 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                     raise EvidenceError("Seller substituted a different explicitly requested catalog item")
                 quoted_item = remote_item
                 expected_item = quoted_item
+            if ask is not None:
+                stage("quote_observed", price=ask, quantity=1)
             # Public observations enter the frozen policy only after format normalization.
             context = {"role": "buyer", "item": expected_item, "request": item, "budget": budget,
                        "remote_message": text, "remote_metadata": metadata, "ask": ask,
@@ -283,8 +301,8 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                     ledger.release(purchase_id)
                     reserved = False
                 trace.write("walked_away", reason=decision["reason"])
-                return {"status": "no_deal", "reason": decision["reason"], "offer_count": len(history),
-                        "response_seconds": response_seconds}
+                return finish({"status": "no_deal", "reason": decision["reason"]},
+                              "rejected", "buyer_walked_away")
             price = decision["price"]
             if reserved:
                 ledger.release(purchase_id)
@@ -306,6 +324,7 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                 if stance in ("negotiable", "firm"):
                     send_options["stance"] = stance
             sent_at = time.monotonic()
+            stage("offer_sent", price=price, quantity=1, offer_number=len(history), reason_code="dispatch_attempt")
             try:
                 task = client.send(json.dumps(price, allow_nan=False), task_id, **send_options)
             except Exception as exc:
@@ -318,12 +337,18 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
             ledger.release(purchase_id)
             reserved = False
         trace.write("walked_away", reason="round limit")
-        return {"status": "no_deal", "reason": "round limit"}
+        return finish({"status": "no_deal", "reason": "round limit"}, "rejected", "round_limit")
     except Exception as exc:
         # A lost response may conceal a completed sale. Do not release funds and buy again blindly.
         if reserved:
             ledger.mark_disputed(purchase_id, str(exc))
         trace.write("buyer_failed", detail=str(exc), task_id=task_id)
+        stage("ended", outcome="unresolved" if reserved else "error",
+              reason_code="purchase_outcome_uncertain" if reserved else "buyer_execution_error")
+        exc.task_id = task_id
+        exc.purchase_uncertain = reserved
+        exc.offer_count = len(history)
+        exc.response_seconds = response_seconds
         raise
     finally:
         client.close()
