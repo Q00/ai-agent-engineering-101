@@ -33,7 +33,8 @@ def _transient_transport_failure(exc):
         408, 429, 500, 502, 503, 504}
 
 
-def _recover_task(client, task_id, *, trace, deadline, failure=None, allow_input_required=False):
+def _recover_task(client, task_id, *, trace, deadline, failure=None, allow_input_required=False,
+                  receipt_evidence=None):
     """Reconcile only the known task using a short, read-only polling window.
 
     INPUT_REQUIRED from a recovery read may be a stale pre-offer snapshot. It
@@ -51,6 +52,7 @@ def _recover_task(client, task_id, *, trace, deadline, failure=None, allow_input
     trace.write("task_recovery_started", task_id=task_id, cause=cause,
                 max_reads=_RECOVERY_MAX_READS, read_only=True)
     last_error = failure
+    receipt_evidence = receipt_evidence if receipt_evidence is not None else []
     for attempt in range(1, _RECOVERY_MAX_READS + 1):
         remaining = recovery_deadline - time.monotonic()
         if remaining <= 0:
@@ -79,6 +81,8 @@ def _recover_task(client, task_id, *, trace, deadline, failure=None, allow_input
                 return task
             if state not in _PENDING_TASK_STATES:
                 raise ProtocolError(f"Task recovery outcome unresolved: {state}")
+            if _has_terminal_receipt_evidence(task):
+                receipt_evidence.append(deepcopy(task))
             if inspect_untrusted(json.dumps(task, ensure_ascii=False)):
                 raise ProtocolError("Pending task contains untrusted instructions; recovery stopped")
         if attempt < _RECOVERY_MAX_READS:
@@ -113,6 +117,28 @@ def _has_terminal_receipt_evidence(task):
     return False
 
 
+def _prior_receipt_issues(receipt, observed_tasks):
+    """A final receipt may fill missing fields, but cannot erase prior evidence."""
+    issues = []
+    for observed in observed_tasks:
+        prior_data = []
+        for artifact in observed.get("artifacts", []):
+            if not isinstance(artifact, dict):
+                continue
+            named_receipt = isinstance(artifact.get("name"), str) and artifact["name"].strip().casefold() == "receipt"
+            parts = artifact.get("parts", [])
+            if not isinstance(parts, list):
+                continue
+            prior_data.extend(part["data"] for part in parts if isinstance(part, dict)
+                and isinstance(part.get("data"), dict) and (named_receipt or "price" in part["data"]))
+        if len(prior_data) > 1:
+            issues.append("prior_ambiguous_receipt_evidence")
+        if any(key not in receipt or receipt[key] != value
+               for data in prior_data for key, value in data.items()):
+            issues.append("prior_receipt_changed")
+    return list(dict.fromkeys(issues))
+
+
 def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, trace=None,
               timeout=240, expected_item_id=None, coordination_context=None):
     if not isinstance(item, str) or not item.strip():
@@ -141,6 +167,7 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
     reserved = False
     history, expected_price = [], None
     response_seconds = []
+    receipt_evidence = []
     task_id = None
     expected_item, quoted_item, expected_quote_id = requested_item_id or item, None, None
     try:
@@ -157,10 +184,12 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                 raise ProtocolError("Counterpart changed task ID during negotiation")
             state = task.get("status", {}).get("state")
             if state in _PENDING_TASK_STATES:
+                if _has_terminal_receipt_evidence(task):
+                    receipt_evidence.append(deepcopy(task))
                 if inspect_untrusted(json.dumps(task, ensure_ascii=False)):
                     raise ProtocolError("Pending task contains untrusted instructions; recovery stopped")
                 task = _recover_task(client, task_id, trace=trace, deadline=deadline,
-                                     allow_input_required=not reserved)
+                                     allow_input_required=not reserved, receipt_evidence=receipt_evidence)
                 state = task.get("status", {}).get("state")
             if state == "TASK_STATE_COMPLETED":
                 receipt = receipt_from(task)
@@ -168,6 +197,7 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                                         expected_price=expected_price, task_id=task_id,
                                         expected_quote_id=expected_quote_id)
                 issues.extend(contract_issues(receipt))
+                issues.extend(_prior_receipt_issues(receipt, receipt_evidence))
                 trace.write("receipt_checked", issues=issues, receipt=receipt)
                 if issues:
                     if reserved:
@@ -181,13 +211,14 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                 return {"status": "completed", "receipt": receipt, "offer_count": len(history),
                         "response_seconds": response_seconds, "market_verified": False}
             if state in ("TASK_STATE_REJECTED", "TASK_STATE_CANCELED", "TASK_STATE_FAILED"):
-                if _has_terminal_receipt_evidence(task):
+                if _has_terminal_receipt_evidence(task) or receipt_evidence:
                     # A peer may fail after publishing a purchase artifact. Its
                     # terminal label cannot prove the prior offer was unspent.
                     if reserved:
                         ledger.mark_disputed(purchase_id, "terminal_receipt_conflict")
                     trace.write("terminal_receipt_conflict", state=state, reserved=reserved,
-                                artifacts=task.get("artifacts", []))
+                                artifacts=task.get("artifacts", []),
+                                prior_artifacts=[observed.get("artifacts", []) for observed in receipt_evidence])
                     return {"status": "disputed", "state": state,
                             "issues": ["terminal_receipt_conflict"]}
                 if reserved:
@@ -280,7 +311,8 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
             except Exception as exc:
                 if not _transient_transport_failure(exc):
                     raise
-                task = _recover_task(client, task_id, trace=trace, deadline=deadline, failure=exc)
+                task = _recover_task(client, task_id, trace=trace, deadline=deadline, failure=exc,
+                                     receipt_evidence=receipt_evidence)
             response_seconds.append(round(time.monotonic() - sent_at, 3))
         if reserved:
             ledger.release(purchase_id)
