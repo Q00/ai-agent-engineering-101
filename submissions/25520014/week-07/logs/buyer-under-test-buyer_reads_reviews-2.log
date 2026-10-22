@@ -1,14 +1,11 @@
 market buyer: lamp, budget 120 (harness: claude -p --model haiku)
 [memory] 0 past trades (market test: memory off)
-[choose] http://127.0.0.1:57969 (Kit Shop South): reviews: highest average 4.7 stars from 3 reviews
-seller: 'Kit Shop South' at http://127.0.0.1:57969/
+[choose] http://127.0.0.1:63711 (Kit Shop South): reviews: highest average 4.7 stars from 3 reviews
+seller: 'Kit Shop South' at http://127.0.0.1:63711/
 -> SendMessage 'I want to buy a lamp'
 <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness round 1] 2.8s reply: {"action": "offer", "price": 95}
--> SendMessage '95' taskId=55f3572d
-<- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 112.
-[harness round 2] 3.0s reply: {"action": "offer", "price": 105}
--> SendMessage '105' taskId=55f3572d
-<- TASK_STATE_COMPLETED | Deal: lamp at 105.
-DONE bought: {'sig_seller': '/yV7di6rArLnYIunkX4FLL9JulAkECTFZ1ErSwq5tshQ1/ekyAlKPh4MCFsZU19qnX6igAc9CfOOCJ4fpuyeCw==', 'shop': 'Kit Shop South', 'item': 'lamp', 'task': '55f3572d-df09-4025-b084-eed10f7332d9', 'price': 105.0}
-{"shop": "http://127.0.0.1:57969", "receipt": {"sig_seller": "/yV7di6rArLnYIunkX4FLL9JulAkECTFZ1ErSwq5tshQ1/ekyAlKPh4MCFsZU19qnX6igAc9CfOOCJ4fpuyeCw==", "shop": "Kit Shop South", "item": "lamp", "task": "55f3572d-df09-4025-b084-eed10f7332d9", "price": 105.0}, "stars": 5, "review": "Fair deal: lamp at 105, below my budget of 120."}
+[harness round 1] 2.8s reply: {"action": "offer", "price": 100}
+-> SendMessage '100' taskId=d1465691
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+DONE bought: {'task': 'd1465691-e3c5-4fac-86fa-e1833f03c130', 'price': 100.0, 'sig_seller': '9r2INX9qdZTxarv5Ak5HRVfjOhmzo37mOqkERBG+OY88llHcZAcKKtEKEBRxU3BjBtGAfR9TyD48KstEthrMAQ==', 'item': 'lamp', 'shop': 'Kit Shop South'}
+{"shop": "http://127.0.0.1:63711", "receipt": {"task": "d1465691-e3c5-4fac-86fa-e1833f03c130", "price": 100.0, "sig_seller": "9r2INX9qdZTxarv5Ak5HRVfjOhmzo37mOqkERBG+OY88llHcZAcKKtEKEBRxU3BjBtGAfR9TyD48KstEthrMAQ==", "item": "lamp", "shop": "Kit Shop South"}, "stars": 5, "review": "Fair deal: lamp at 100, below my budget of 120."}

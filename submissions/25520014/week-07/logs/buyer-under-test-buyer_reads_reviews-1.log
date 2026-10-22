@@ -1,11 +1,11 @@
 market buyer: lamp, budget 120 (harness: claude -p --model haiku)
 [memory] 0 past trades (market test: memory off)
-[choose] http://127.0.0.1:57935 (Kit Shop South): reviews: highest average 4.7 stars from 3 reviews
-seller: 'Kit Shop South' at http://127.0.0.1:57935/
+[choose] http://127.0.0.1:63686 (Kit Shop South): reviews: highest average 4.7 stars from 3 reviews
+seller: 'Kit Shop South' at http://127.0.0.1:63686/
 -> SendMessage 'I want to buy a lamp'
 <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness round 1] 2.9s reply: {"action": "offer", "price": 100}
--> SendMessage '100' taskId=96327e59
+[harness round 1] 2.8s reply: {"action": "offer", "price": 100}
+-> SendMessage '100' taskId=cde64efc
 <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-DONE bought: {'sig_seller': '3aZwTj7a2ONuGmXJhVbw2xtoHKkQsKxV9nHREyOYN+bpA+f0+3+RanDHUMvLPHgQLZNiIfXO+xWjAOSZv79BDw==', 'shop': 'Kit Shop South', 'item': 'lamp', 'task': '96327e59-282f-4cea-af54-aa5a46b26251', 'price': 100.0}
-{"shop": "http://127.0.0.1:57935", "receipt": {"sig_seller": "3aZwTj7a2ONuGmXJhVbw2xtoHKkQsKxV9nHREyOYN+bpA+f0+3+RanDHUMvLPHgQLZNiIfXO+xWjAOSZv79BDw==", "shop": "Kit Shop South", "item": "lamp", "task": "96327e59-282f-4cea-af54-aa5a46b26251", "price": 100.0}, "stars": 5, "review": "Fair deal: lamp at 100, below my budget of 120."}
+DONE bought: {'task': 'cde64efc-155c-42a7-b41b-920987248dbf', 'price': 100.0, 'sig_seller': '1YKWAW6Z+cIyeUf6z8EiaBG7c2V1M/QPAfLfloFiuHTmgTkcgBIb3gMb3DD7BLxnG3zoT3Md63DSgi36p6w5Cg==', 'item': 'lamp', 'shop': 'Kit Shop South'}
+{"shop": "http://127.0.0.1:63686", "receipt": {"task": "cde64efc-155c-42a7-b41b-920987248dbf", "price": 100.0, "sig_seller": "1YKWAW6Z+cIyeUf6z8EiaBG7c2V1M/QPAfLfloFiuHTmgTkcgBIb3gMb3DD7BLxnG3zoT3Md63DSgi36p6w5Cg==", "item": "lamp", "shop": "Kit Shop South"}, "stars": 5, "review": "Fair deal: lamp at 100, below my budget of 120."}

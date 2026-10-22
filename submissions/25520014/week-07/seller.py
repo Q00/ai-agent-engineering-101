@@ -24,10 +24,21 @@ The ladder, never below the reserve:
 Week 06 history: the first trade test ran with the reserve in the prompt only and failed
 (haiku countered 250 and sold at 230 on a bookshelf with reserve 260); the code guard fixed it.
 
+Replies: Round 2 visits stopped at 02:15 UTC on 10-21 when one buyer gave four 3-star reviews in
+a row, "very low price with no explicit warranty or after-sales service mentioned": it asks about
+service in its first message and the rule-based shop answered with a price only. So every message
+now states the service terms, and a message that asks or requests something (a question mark,
+a service word, or more than eight words) gets its reply written by haiku through claude -p:
+yes to every request that is not about price, with the price the ladder chose. The code still
+picks the price; a reply with any number other than that price, or without it, is thrown away
+for the template. Plain offers and accepts stay on the template (claude -p costs about 36k tokens
+a call and the buyer shares the account).
+
 LAB 2: the receipt is {shop, item, price, task} with price a whole number and task the A2A
 task id, signed with shop_key.pem over canon(...) as sig_seller (sign_receipt from the notes).
 """
 import argparse
+import asyncio
 import base64
 import json
 import os
@@ -48,6 +59,8 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
+import harness
+
 SHOP = "Inextro Furniture"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 ACCEPT = re.compile(r"\b(accept|accepted|agree|agreed|deal|ok|okay|yes)\b")
@@ -58,6 +71,45 @@ def accepts(text):
     """A plain yes with no number: 'I accept', 'deal', 'ok'. Never 'no deal' or 'not ok'."""
     t = text.lower()
     return bool(ACCEPT.search(t)) and not REFUSE.search(t)
+
+
+# In words: buyers that read the first or the last number in a message must only find the price.
+SERVICE = ("Every item comes with a one-year warranty, free after-sales service, free delivery and "
+           "assembly, and free returns within thirty days.")
+REQUEST = re.compile(r"\?|warrant|guarant|service|support|quality|deliver|ship|return|refund|assembl|"
+                     r"install|repair|material|durab|condition|gift|wrap|insur")
+REPLY_TIMEOUT = 10  # seconds; past this the template answers
+
+
+def asks_something(text):
+    """A question, a request about anything but the price, or more than a bare offer."""
+    return bool(REQUEST.search(text.lower())) or len(re.findall(r"[A-Za-z']+", text)) > 8
+
+
+def write_reply(item, price, situation, buyer_text, template):
+    """haiku writes the reply; the template answers when it fails or names another number."""
+    prompt = (
+        f"You are the sales clerk of {SHOP}, a furniture shop. A customer wants a {item}.\n"
+        f"The shop's service: {SERVICE}\n"
+        f"Situation: {situation}\n"
+        f"Customer's message: {buyer_text!r}\n\n"
+        "Write the shop's reply in at most three short sentences. Say yes to every request that is not "
+        "about the price (warranty, service, delivery, quality, returns, anything else) and promise it at "
+        f"no extra cost. The price is {price}: write it once as digits, and write no other digits or "
+        "numbers anywhere (say 'one-year', not '1-year'). Never offer any other price. "
+        "Reply with the message text only.")
+    t0 = time.time()
+    try:
+        reply = harness.call(prompt, timeout=REPLY_TIMEOUT).strip()
+    except Exception as e:  # timeout, auth, rate limit: the template still sells
+        print(f"[reply] harness failed after {time.time() - t0:.1f}s: {type(e).__name__}", flush=True)
+        return template
+    numbers = re.findall(r"\d+(?:\.\d+)?", reply)
+    if not reply or not numbers or any(float(n) != price for n in numbers):
+        print(f"[reply] {time.time() - t0:.1f}s rejected (numbers {numbers}): {reply[:200]!r}", flush=True)
+        return template
+    print(f"[reply] {time.time() - t0:.1f}s haiku: {reply[:300]!r}", flush=True)
+    return reply
 
 
 MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai")
@@ -137,6 +189,12 @@ class Seller(AgentExecutor):
         else:
             await self.respond(task.id, deal, text, up, say)
 
+    async def words(self, item, price, situation, text, template):
+        """The template, or haiku's reply when the buyer asked or requested something."""
+        if not asks_something(text):
+            return template
+        return await asyncio.to_thread(write_reply, item, price, situation, text, template)
+
     async def opening(self, task_id, text, up, say):
         item = next((k for k in RESERVE if k in text.lower()), None)
         if item is None:
@@ -146,20 +204,22 @@ class Seller(AgentExecutor):
         ask = max(RESERVE[item], market or 0)
         self.open[task_id] = {"item": item, "ask": ask, "step": 0, "market": market}
         print(f"[task {task_id[:8]}] -> INPUT_REQUIRED ask {ask} (market {market})", flush=True)
-        await up.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
+        msg = await self.words(item, ask, f"First reply: the asking price is {ask}; ask for their offer as a number.",
+                               text, f"{item}: asking {ask}. {SERVICE} Send your offer as a number.")
+        await up.requires_input(say(msg))
 
     async def respond(self, task_id, deal, text, up, say):
         m = re.search(r"\d+(?:\.\d+)?", text)
         if m is None and accepts(text):
-            await self.close(task_id, deal, deal["ask"], up, say)
+            await self.close(task_id, deal, deal["ask"], text, up, say)
             return
         offer = round(float(m.group())) if m else None
         if offer is not None and offer >= RESERVE[deal["item"]]:
-            await self.close(task_id, deal, offer, up, say)
+            await self.close(task_id, deal, offer, text, up, say)
             return
-        await self.step_down(task_id, deal, offer, up, say)
+        await self.step_down(task_id, deal, offer, text, up, say)
 
-    async def step_down(self, task_id, deal, offer, up, say):
+    async def step_down(self, task_id, deal, offer, text, up, say):
         """Too expensive: market price - 1 first, then the reserve as the final price."""
         item, reserve, market = deal["item"], RESERVE[deal["item"]], deal["market"]
         under = max(reserve, market - 1) if market else reserve
@@ -167,18 +227,23 @@ class Seller(AgentExecutor):
             deal["step"], deal["ask"] = 1, under
             msg = (f"{item}: {under}, below every verified {item} sale in this market in the last half hour. "
                    f"Asking {under}.")
+            situation = (f"Their offer was too low. The shop comes down to {under}, below every verified "
+                         f"{item} sale in this market in the last half hour.")
         else:
             deal["step"], deal["ask"] = 2, reserve
             msg = f"{item}: final price, the lowest we can go. Asking {reserve}."
+            situation = f"Their offer was too low. {reserve} is the final price, the lowest the shop can go."
         print(f"[task {task_id[:8]}] -> INPUT_REQUIRED ask {deal['ask']} step {deal['step']} (offer {offer})",
               flush=True)
-        await up.requires_input(say(msg))
+        await up.requires_input(say(await self.words(item, deal["ask"], situation, text, msg)))
 
-    async def close(self, task_id, deal, price, up, say):
+    async def close(self, task_id, deal, price, text, up, say):
         receipt = sign_receipt({"shop": SHOP, "item": deal["item"], "price": int(price), "task": task_id})
         await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
         print(f"[task {task_id[:8]}] -> COMPLETED at {price}", flush=True)
-        await up.complete(say(f"Deal: {deal['item']} at {price}."))
+        msg = await self.words(deal["item"], int(price), f"Deal closed at {price}; the signed receipt is attached.",
+                               text, f"Deal: {deal['item']} at {price}. {SERVICE}")
+        await up.complete(say(msg))
         del self.open[task_id]
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
@@ -192,7 +257,7 @@ def build_app(port):
     card = AgentCard(
         name=SHOP,
         description="Sells lamps, chairs and bookshelves, priced at the cheapest recent verified sale in "
-                    "this market or below. Instant replies, signed receipts.",
+                    "this market or below. " + SERVICE + " Answers every question, signed receipts.",
         version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
@@ -213,6 +278,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=9999)
     args = ap.parse_args()
-    print(f"{SHOP} on http://127.0.0.1:{args.port}/ (rule-based: market price ladder, no harness)", flush=True)
+    print(f"{SHOP} on http://127.0.0.1:{args.port}/ (rule-based market price ladder; haiku replies to requests)",
+          flush=True)
     threading.Thread(target=PRICES.poll, daemon=True).start()
     uvicorn.run(build_app(args.port), host="127.0.0.1", port=args.port, log_level="warning")
