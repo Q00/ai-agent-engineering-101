@@ -1,0 +1,46 @@
+warning: Invalid `# noqa` directive on market_a2a/seller_turn.py:3: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+FLY002 Consider f-string instead of string join
+  --> market_a2a/seller_offer.py:56:9
+   |
+54 |       """Treat only an unconditional whole-message assent as the current ask."""
+55 |       return re.fullmatch(
+56 | /         "".join((
+57 | |             r"(?:ok|okay|yes|agreed|deal|accept|i accept|i agree|",
+58 | |             r"i accept (?:your|the) (?:offer|quote|price|current ask))[.!]?",
+59 | |         )),
+   | |__________^
+60 |           text.strip(), re.IGNORECASE,
+61 |       ) is not None
+   |
+help: Replace with f-string
+   |
+55 |     return re.fullmatch(
+   -         "".join((
+   -             r"(?:ok|okay|yes|agreed|deal|accept|i accept|i agree|",
+   -             r"i accept (?:your|the) (?:offer|quote|price|current ask))[.!]?",
+   -         )),
+56 +         r"(?:ok|okay|yes|agreed|deal|accept|i accept|i agree|i accept (?:your|the) (?:offer|quote|price|current ask))[.!]?",
+57 |         text.strip(), re.IGNORECASE,
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+ISC003 [*] Explicitly concatenated string should be implicitly concatenated
+   --> market_a2a/seller_turn.py:236:17
+    |
+234 |           finally:
+235 |               self.harness.emit(
+236 | /                 f"seller.turn_elapsed task={task.id} "
+237 | |                 + f"seconds={monotonic() - started:.3f}"
+    | |________________________________________________________^
+238 |               )
+    |
+help: Remove redundant '+' operator to implicitly concatenate
+    |
+236 |                 f"seller.turn_elapsed task={task.id} "
+    -                 + f"seconds={monotonic() - started:.3f}"
+237 +                  f"seconds={monotonic() - started:.3f}"
+238 |             )
+    |
+
+Found 2 errors.
+[*] 1 fixable with `--fix` (1 unsafe fix available with `--fix --unsafe-fixes`).
