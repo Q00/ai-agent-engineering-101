@@ -39,7 +39,7 @@ def main():
     pledges = [json.loads(path.read_text(encoding='utf-8')) for path in (ROOT / 'logs/review-promises').glob('*.json')]
     genuine = {row['task']: row for row in pledges if row['task'] not in diagnostics}
     rows = [row for row in entries if row['round'] == 2 and row['kind'] == 'result'
-            and row['data'].get('shop') in urls and row['data'].get('receipt', {}).get('task') not in diagnostics]
+            and row['data'].get('shop') in urls and (row['data'].get('receipt') or {}).get('task') not in diagnostics]
     orders = {row['data']['order']: row['data'] for row in entries if row['kind'] == 'order'}
     post = [row for row in rows if row['seq'] > marketing['cutoff_seq'] and row['data']['shop'] == marketing['url']]
     pre = [row for row in rows if event_cutoff < row['seq'] <= marketing['cutoff_seq']
