@@ -122,6 +122,33 @@ class CompletionPriorityProcessTests(unittest.TestCase):
         self.assertEqual(self.events.get(timeout=3)[:2], ("quote", "entered"))
         self.wait_queue(0)
 
+    def test_aged_quote_backlog_cannot_starve_completion_across_two_lanes(self):
+        release = self.context.Event()
+        self.start("running-1", hold=release, capacity=3)
+        self.start("running-2", hold=release, capacity=3)
+        self.assertEqual({event[0] for event in self.observed(2)}, {"running-1", "running-2"})
+        normals = [f"aged-normal-{index}" for index in range(5)]
+        completions = [f"completion-{index}" for index in range(3)]
+        for index, label in enumerate(normals + completions, start=1):
+            self.start(label, capacity=3,
+                       priority="completion" if label in completions else "normal")
+            self.wait_queue(index)
+        with self.admission._control():
+            state = self.admission._load()
+            for entry in state["queue"]:
+                if entry["priority"] == "normal":
+                    entry["enqueued_at"] = time.monotonic() - 16
+            self.admission._save(state)
+        release.set()
+        labels = [event[0] for event in self.observed(len(normals) + len(completions))]
+        self.assertEqual([label for label in labels if label in normals], normals)
+        self.assertEqual([label for label in labels if label in completions], completions)
+        # Aging changes admission opportunities, never interrupts running work
+        # or promises a wall-clock maximum. While both queues have work, neither
+        # may monopolize the next two available seller lane opportunities.
+        self.assertEqual(labels[:6], [value for pair in zip(normals, completions) for value in pair])
+        self.wait_queue(0)
+
     def test_killed_completion_waiter_is_pruned(self):
         release = self.context.Event()
         self.start("running", hold=release)
