@@ -6,6 +6,7 @@ COPY --from=tunnel /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 ENV UV_PYTHON_DOWNLOADS=never UV_CACHE_DIR=/tmp/uv-cache PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 AX_PRICE_COMPARISON=1
 WORKDIR /app
 COPY harness_app.py harness_app.py.lock http_client.py catalog.json ./
+COPY agent.json run_harness.sh ./
 COPY market_a2a ./market_a2a
 COPY assets ./assets
 COPY deploy/vps/guard.py deploy/vps/serve_public.py /app/deploy/vps/
