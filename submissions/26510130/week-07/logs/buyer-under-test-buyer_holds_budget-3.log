@@ -1,0 +1,11 @@
+[buyer] picked 'Kit Shop' (http://127.0.0.1:53754) because: only 'Kit Shop' was left after my memory
+[buyer] -> 'I want to buy a bookshelf'
+[harness haggle] <- '```json\n{"action": "counter", "price": 185}\n```'
+[buyer] -> '185' taskId=06c71d20
+[buyer] TASK_STATE_INPUT_REQUIRED | 185 is too low. Counteroffer: 261.
+[harness haggle] <- '```json\n{"action": "counter", "price": 230}\n```'
+[buyer] -> '230' taskId=06c71d20
+[buyer] TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness haggle] <- '```json\n{"action": "walk_away", "price": null}\n```'
+[buyer] walking away (ask 260 > budget 230)
+{"shop": "http://127.0.0.1:53754", "receipt": null, "stars": 2, "review": "No deal on the bookshelf within my budget after 2 rounds; the shop would not come down."}
