@@ -8,6 +8,8 @@ import re
 import time
 import uuid
 
+import httpx
+
 from catalog import CATEGORY_TERMS
 from evidence import EvidenceError, Ledger, inspect_untrusted, validate_buyer_decision, verify_receipt
 from harness import Harness
@@ -15,6 +17,76 @@ from policy import StrategyPolicy, strategy_instruction
 from protocol import A2AClient, ProtocolError, receipt_from
 from quote_normalization import contract_issues, normalize_quote
 from tracing import Trace
+
+
+_PENDING_TASK_STATES = {"TASK_STATE_SUBMITTED", "TASK_STATE_WORKING"}
+_RECOVERY_MAX_READS = 3
+_RECOVERY_SECONDS = 2.0
+_RECOVERY_READ_SECONDS = 0.6
+
+
+def _transient_transport_failure(exc):
+    """Application/protocol errors never authorize retrying a purchase."""
+    if isinstance(exc, (TimeoutError, httpx.TransportError)):
+        return True
+    return isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code in {
+        408, 429, 500, 502, 503, 504}
+
+
+def _recover_task(client, task_id, *, trace, deadline, failure=None, allow_input_required=False):
+    """Reconcile only the known task using a short, read-only polling window.
+
+    INPUT_REQUIRED from a recovery read may be a stale pre-offer snapshot. It
+    cannot prove the authorized bid was rejected, so it never releases funds or
+    starts another negotiation. Terminal outcomes still pass the ordinary
+    receipt/conflicting-artifact checks in negotiate().
+    """
+    # Require an implemented method, not a dynamically fabricated Mock attribute.
+    if not callable(getattr(type(client), "get_task", None)):
+        if failure is not None:
+            raise failure
+        raise ProtocolError("Pending task outcome unresolved: GetTask unavailable")
+    recovery_deadline = min(deadline, time.monotonic() + _RECOVERY_SECONDS)
+    cause = type(failure).__name__ if failure is not None else "pending_task"
+    trace.write("task_recovery_started", task_id=task_id, cause=cause,
+                max_reads=_RECOVERY_MAX_READS, read_only=True)
+    last_error = failure
+    for attempt in range(1, _RECOVERY_MAX_READS + 1):
+        remaining = recovery_deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        started = time.monotonic()
+        try:
+            task = client.get_task(task_id, timeout=min(_RECOVERY_READ_SECONDS, remaining))
+        except Exception as exc:
+            last_error = exc
+            trace.write("task_recovery_read_failed", task_id=task_id, attempt=attempt,
+                        detail=str(exc), transient=_transient_transport_failure(exc),
+                        response_seconds=round(time.monotonic() - started, 3))
+            if not _transient_transport_failure(exc):
+                raise
+        else:
+            if not isinstance(task, dict) or task.get("id") != task_id:
+                raise ProtocolError("Task recovery changed the authorized task ID")
+            status = task.get("status")
+            state = status.get("state") if isinstance(status, dict) else None
+            trace.write("task_recovery_observed", task_id=task_id, attempt=attempt, state=state,
+                        response_seconds=round(time.monotonic() - started, 3))
+            if state in {"TASK_STATE_COMPLETED", "TASK_STATE_REJECTED",
+                         "TASK_STATE_CANCELED", "TASK_STATE_FAILED"}:
+                return task
+            if state == "TASK_STATE_INPUT_REQUIRED" and allow_input_required:
+                return task
+            if state not in _PENDING_TASK_STATES:
+                raise ProtocolError(f"Task recovery outcome unresolved: {state}")
+            if inspect_untrusted(json.dumps(task, ensure_ascii=False)):
+                raise ProtocolError("Pending task contains untrusted instructions; recovery stopped")
+        if attempt < _RECOVERY_MAX_READS:
+            remaining = recovery_deadline - time.monotonic()
+            if remaining > 0:
+                time.sleep(min(0.1, remaining))
+    trace.write("task_recovery_unresolved", task_id=task_id, cause=cause)
+    raise TimeoutError("Task outcome unresolved after bounded read-only recovery") from last_error
 
 
 def _has_terminal_receipt_evidence(task):
@@ -84,6 +156,12 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
             if task.get("id") != task_id:
                 raise ProtocolError("Counterpart changed task ID during negotiation")
             state = task.get("status", {}).get("state")
+            if state in _PENDING_TASK_STATES:
+                if inspect_untrusted(json.dumps(task, ensure_ascii=False)):
+                    raise ProtocolError("Pending task contains untrusted instructions; recovery stopped")
+                task = _recover_task(client, task_id, trace=trace, deadline=deadline,
+                                     allow_input_required=not reserved)
+                state = task.get("status", {}).get("state")
             if state == "TASK_STATE_COMPLETED":
                 receipt = receipt_from(task)
                 issues = verify_receipt(receipt, item=expected_item, budget=budget,
@@ -197,7 +275,12 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                 if stance in ("negotiable", "firm"):
                     send_options["stance"] = stance
             sent_at = time.monotonic()
-            task = client.send(json.dumps(price, allow_nan=False), task_id, **send_options)
+            try:
+                task = client.send(json.dumps(price, allow_nan=False), task_id, **send_options)
+            except Exception as exc:
+                if not _transient_transport_failure(exc):
+                    raise
+                task = _recover_task(client, task_id, trace=trace, deadline=deadline, failure=exc)
             response_seconds.append(round(time.monotonic() - sent_at, 3))
         if reserved:
             ledger.release(purchase_id)

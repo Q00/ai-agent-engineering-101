@@ -47,10 +47,15 @@ class A2AClient:
             raise TimeoutError("A2A request deadline reached")
         return min(self.timeout, remaining)
 
-    def rpc(self, method, params):
+    def rpc(self, method, params, *, timeout=None):
         request = {"jsonrpc": "2.0", "id": uuid.uuid4().hex, "method": method, "params": params}
         self.trace.write("rpc_request", endpoint=self.url, request=request, version="1.0")
-        response = self.http.post(self.url, json=request, timeout=self._remaining_timeout())
+        request_timeout = self._remaining_timeout()
+        if timeout is not None:
+            if timeout <= 0:
+                raise TimeoutError("A2A request deadline reached")
+            request_timeout = min(request_timeout, timeout)
+        response = self.http.post(self.url, json=request, timeout=request_timeout)
         response.raise_for_status()
         # Receiving a reply may cross the deadline after the peer has completed
         # an authorized purchase. Preserve and validate that evidence; every new
@@ -81,6 +86,15 @@ class A2AClient:
         if stance is not None:
             message["metadata"] = {"negotiationStance": stance}
         return self.rpc("SendMessage", {"message": message})
+
+    def get_task(self, task_id, *, timeout=None):
+        """Read an existing task without reauthorizing or replaying a message."""
+        if not isinstance(task_id, str) or not task_id.strip():
+            raise ProtocolError("GetTask requires the existing task ID")
+        task = self.rpc("GetTask", {"id": task_id}, timeout=timeout)
+        if task.get("id") != task_id:
+            raise ProtocolError("GetTask returned a different task ID")
+        return task
 
     def close(self):
         self.http.close()
