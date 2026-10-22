@@ -1,6 +1,7 @@
 """Small A2A v1.0 JSON-RPC client, keeping card/interface/continuation evidence."""
 from __future__ import annotations
 
+import asyncio
 import uuid
 import time
 from urllib.parse import urlparse
@@ -47,9 +48,13 @@ class A2AClient:
             raise TimeoutError("A2A request deadline reached")
         return min(self.timeout, remaining)
 
-    def rpc(self, method, params, *, timeout=None):
+    def _request(self, method, params):
         request = {"jsonrpc": "2.0", "id": uuid.uuid4().hex, "method": method, "params": params}
         self.trace.write("rpc_request", endpoint=self.url, request=request, version="1.0")
+        return request
+
+    def rpc(self, method, params, *, timeout=None):
+        request = self._request(method, params)
         request_timeout = self._remaining_timeout()
         if timeout is not None:
             if timeout <= 0:
@@ -60,7 +65,9 @@ class A2AClient:
         # Receiving a reply may cross the deadline after the peer has completed
         # an authorized purchase. Preserve and validate that evidence; every new
         # request still checks the deadline before making its HTTP call.
-        body = response.json()
+        return self._rpc_result(request, response.json())
+
+    def _rpc_result(self, request, body):
         if not isinstance(body, dict) or body.get("jsonrpc") != "2.0":
             raise ProtocolError("Expected a JSON-RPC 2.0 response object")
         if body.get("id") != request["id"]:
@@ -88,10 +95,44 @@ class A2AClient:
         return self.rpc("SendMessage", {"message": message})
 
     def get_task(self, task_id, *, timeout=None):
-        """Read an existing task without reauthorizing or replaying a message."""
+        """Read a known task under a cancellable total request-time limit.
+
+        HTTPX's ordinary timeout bounds inactivity in each transport phase.
+        GetTask additionally bounds the entire asynchronous request, including
+        trickling headers/body, and closes its transport before returning.
+        """
         if not isinstance(task_id, str) or not task_id.strip():
             raise ProtocolError("GetTask requires the existing task ID")
-        task = self.rpc("GetTask", {"id": task_id}, timeout=timeout)
+        request_timeout = self._remaining_timeout()
+        if timeout is not None:
+            if timeout <= 0:
+                raise TimeoutError("A2A request deadline reached")
+            request_timeout = min(request_timeout, timeout)
+        # The buyer is synchronous. Refuse nested event loops instead of leaving
+        # a background thread/task running beyond its negotiation deadline.
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            pass
+        else:
+            raise ProtocolError("GetTask recovery requires a synchronous buyer context")
+        request = self._request("GetTask", {"id": task_id})
+
+        async def query():
+            async with httpx.AsyncClient(headers={"A2A-Version": "1.0"},
+                    timeout=request_timeout, trust_env=False) as client:
+                response = await client.post(self.url, json=request)
+                response.raise_for_status()
+                return response.json()
+
+        async def bounded_query():
+            return await asyncio.wait_for(query(), timeout=request_timeout)
+
+        try:
+            body = asyncio.run(bounded_query())
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError("GetTask total request time exceeded") from exc
+        task = self._rpc_result(request, body)
         if task.get("id") != task_id:
             raise ProtocolError("GetTask returned a different task ID")
         return task
