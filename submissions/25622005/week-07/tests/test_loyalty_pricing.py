@@ -1,19 +1,21 @@
-"""Universal lowest-price policy and completed-sale history compatibility."""
+"""Universal advertised-price policy and completed-sale history compatibility."""
 from pathlib import Path
 import sys
 import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from loyalty_pricing import customer_id_from, purchase_quote
+from loyalty_pricing import RESERVE, customer_id_from, purchase_quote
 from seller_memory import SellerMemory
 
 
 class FixedPriceTests(unittest.TestCase):
-    def test_history_never_raises_the_lowest_price(self):
-        for item, price in {"lamp": 100, "chair": 180, "bookshelf": 260}.items():
+    def test_history_never_raises_the_advertised_price(self):
+        self.assertEqual(RESERVE, {"lamp": 100, "chair": 180, "bookshelf": 260})
+        for item, price in {"lamp": 105, "chair": 185, "bookshelf": 270}.items():
             for count in [0, 1, 2, 10, 1000]:
                 self.assertEqual(purchase_quote(item, count)["price"], price)
+                self.assertGreater(price, RESERVE[item])
 
     def test_customer_id_is_optional_and_bounded(self):
         self.assertEqual(customer_id_from({"customer_id": "buyer-82"}), "buyer-82")

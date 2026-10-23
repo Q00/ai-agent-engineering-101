@@ -1,4 +1,4 @@
-"""A2A seller: immediate floor-price quotes and signed receipts.
+"""A2A seller: immediate advertised-price quotes and signed receipts.
 
     python seller.py --port 9301
 """
@@ -39,7 +39,7 @@ def quality_guarantee():
     public_key = key.public_key().public_bytes(
         serialization.Encoding.Raw, serialization.PublicFormat.Raw)
     return {
-        "shop": "psyoung82", "version": "1.0", "scope": "transaction quality",
+        "shop": "psyoung82", "version": "1.1", "scope": "transaction quality",
         "guarantees": ["Receipt item matches the accepted quote",
                        "Receipt price equals the advertised final price; no added charges",
                        "Receipt identifies this purchase task and carries the seller signature"],
@@ -209,7 +209,7 @@ def build(port):
                      f"chair {OPENING['chair']}, bookshelf {OPENING['bookshelf']}. "
                      "Reply 'I accept'. "
                      f"Transaction quality guarantee: {GUARANTEE_PATH}"),
-        version="1.10.1",
+        version="1.11.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
         capabilities=AgentCapabilities(streaming=False),

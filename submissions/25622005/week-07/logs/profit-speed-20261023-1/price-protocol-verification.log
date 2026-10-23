@@ -1,0 +1,17 @@
+    -> SendMessage "I want to buy a lamp for 155"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: final price 105. Quality you can verify: agreed item and price, no added charges, signed receipt. Reply 'I accept' or send 105
+    -> SendMessage "I accept" taskId=0cf2e522
+    <- TASK_STATE_COMPLETED | Purchased lamp at 105. Quality guarantee: your signed receipt records the agreed item and final price with no added charges. Please verify the receipt and leave
+       artifact receipt [{"price": 105.0, "task": "0cf2e522-f96b-4b1d-8951-d072f4774c6c", "sig_seller": "OHo5wuBiZW5RIOt+1A2LlwQ7eefvyqbOnW/qg4Ep1jJlpsBXrrO4xq4nzcIskbj0ADuqAwVhGZ4IJdLDGlqlBQ==", "shop": "psyoung82", "item": "lamp"}]
+    -> SendMessage "I want to buy a chair for 235"
+    <- TASK_STATE_INPUT_REQUIRED | chair: final price 185. Quality you can verify: agreed item and price, no added charges, signed receipt. Reply 'I accept' or send 185
+    -> SendMessage "I accept" taskId=546e5295
+    <- TASK_STATE_COMPLETED | Purchased chair at 185. Quality guarantee: your signed receipt records the agreed item and final price with no added charges. Please verify the receipt and leav
+       artifact receipt [{"price": 185.0, "task": "546e5295-76c6-47b3-9c62-3d3b6c35c7da", "sig_seller": "RbfACUuoe9H/YERuoSzYF7YBLgLV1mXd5Vf5u1idr6UGtr9ZjMjgIdcC3mbaB+CgJY8lRxN7CQLRJQIaxnfeCA==", "shop": "psyoung82", "item": "chair"}]
+    -> SendMessage "I want to buy a bookshelf for 320"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: final price 270. Quality you can verify: agreed item and price, no added charges, signed receipt. Reply 'I accept' or send 270
+    -> SendMessage "I accept" taskId=70edeae7
+    <- TASK_STATE_COMPLETED | Purchased bookshelf at 270. Quality guarantee: your signed receipt records the agreed item and final price with no added charges. Please verify the receipt and 
+       artifact receipt [{"price": 270.0, "task": "70edeae7-901a-4740-9db3-b47882c8800a", "sig_seller": "xytMVYoVKrn1HagqXdA+ajJ6SA0dTY7l4oy6UNdnbzlyZHy+3J4JLpQv3l7+Ttnj2hLfztq3QN/n9fEqjcq1AA==", "shop": "psyoung82", "item": "bookshelf"}]
+PASS: all three items match advertised prices and accepted quotes; signatures verify; altered item, price and task fail verification
+Evidence: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/logs/quality-check-20261023T082243494274Z
