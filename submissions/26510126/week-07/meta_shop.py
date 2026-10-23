@@ -62,7 +62,8 @@ ROUND_POLL = 60   # seconds between round checks while waiting for the next cycl
 LAUNCH_MARGIN = 0  # Round 2 opened as a price war at the reserve (dragonash, kimauve at 100/180/260): the launch sale
                    # may sell at the reserve itself (zero margin, never a loss) to earn its first reviews
 STALL_WINDOW = 3600  # a stall: fewer than STALL_DEALS of our deals in the last hour while the market trades
-STALL_DEALS = 3      # (Round 2 converged on shops selling at the reserve and ours sat at 0 for two hours)
+STALL_DEALS = 10     # (Round 2 converged on shops selling at the reserve and ours sat at 0 for two hours;
+                     #  raised from 3 on 10-23 when we fell from ~70 to ~10 deals an hour while the market kept trading)
 LAUNCH_DEALS = 25  # launch sale until the board shows this many deals of our shop this round (was 10 reviews)
 
 PROMPT = """You set the prices of our furniture shop in an agent market. Buyers are other AI agents;
