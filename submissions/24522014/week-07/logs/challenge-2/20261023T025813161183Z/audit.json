@@ -1,0 +1,175 @@
+{
+  "checked_at": "2026-10-23T02:58:13.911972+00:00",
+  "actual_round0_case": {
+    "shop": "maple-home",
+    "order": "o-3506d008",
+    "ledger": 1307,
+    "task": "ef4503e6-c26b-4c8e-b8fd-234c9b8effbd",
+    "offer_and_deal_price": 234,
+    "receipt_price": 269.0,
+    "budget": 250,
+    "buyer_signed": false,
+    "counted_deal": false
+  },
+  "live_memory": {
+    "records": 9192,
+    "sha256_at_read": "61e23fe85589d02be2f151d7d6afdf00c33e839d786b91a6e04160315199b251",
+    "outcomes": {
+      "purchased": 5971,
+      "no_deal": 714,
+      "transport_error": 11,
+      "agent_error": 2496
+    },
+    "recorded_mismatches": 0,
+    "independent_field_mismatches": 0,
+    "round0_task_present": false
+  },
+  "selection_audit": {
+    "matched_live_logs": 9183,
+    "unmatched_logs_excluded": 18,
+    "warning_candidate_counts": {
+      "maple-home": 7180,
+      "elm-street": 4542,
+      "nocha12": 72
+    },
+    "warning_candidates_selected": {},
+    "samples": [
+      {
+        "source": "logs/market-buyer/20261020T114536685501Z-d2601b32.json",
+        "timestamp": "2026-10-20T11:45:36.685134+00:00",
+        "task": "516f8385-4f6f-423b-8c6f-237e6da19092",
+        "selected": "11im",
+        "candidate": {
+          "name": "maple-home",
+          "blocked_price_mismatch": false,
+          "recent_transport_errors": 0,
+          "repeated_public_price_complaints": true,
+          "same_item_success": false,
+          "past_price_reference_only": null
+        }
+      },
+      {
+        "source": "logs/market-buyer/20261020T114549699253Z-474fe699.json",
+        "timestamp": "2026-10-20T11:45:49.698993+00:00",
+        "task": "1a57f9a1-6c76-415d-9c78-cf6f96ca5087",
+        "selected": "11im",
+        "candidate": {
+          "name": "maple-home",
+          "blocked_price_mismatch": false,
+          "recent_transport_errors": 0,
+          "repeated_public_price_complaints": true,
+          "same_item_success": false,
+          "past_price_reference_only": null
+        }
+      },
+      {
+        "source": "logs/market-buyer/20261020T114622622858Z-d51bdc01.json",
+        "timestamp": "2026-10-20T11:46:22.622530+00:00",
+        "task": "9677189b-3a4c-4b9c-af2e-c504e29b7449",
+        "selected": "11im",
+        "candidate": {
+          "name": "maple-home",
+          "blocked_price_mismatch": false,
+          "recent_transport_errors": 0,
+          "repeated_public_price_complaints": true,
+          "same_item_success": false,
+          "past_price_reference_only": null
+        }
+      }
+    ]
+  },
+  "current_maple_reviews": [
+    {
+      "stars": 1,
+      "review": "Agreed 120, receipt says 135.",
+      "round": 2
+    },
+    {
+      "stars": 1,
+      "review": "Agreed 310, receipt says 355.",
+      "round": 2
+    },
+    {
+      "stars": 1,
+      "review": "[WARNING] chair: agreed 185, receipt says 210. Receipt does not match the deal. Avoid.",
+      "round": 1
+    }
+  ],
+  "finding": "Actual price-mismatch encounter and later public-review-based avoidance evidenced.",
+  "limitations": [
+    "No automatic migration of Round 0 incident into current buyer memory.",
+    "Later avoidance uses repeated public complaints, not a stored direct-mismatch block.",
+    "Current review snapshot does not establish exact historical review input.",
+    "Nonselection alone cannot prove which ranking factor was decisive.",
+    "Receipt signature is retained, not independently reverified against a historical key."
+  ],
+  "files": {
+    "original-buyer/01.http.json": {
+      "source": "logs/buyer/20261020T105617121814Z-e001b0b7/01.http.json",
+      "sha256": "7da39046276e4e29743cdffb9d7f5a453a7f1d7a4d33c201ebabe9ccc8394eec"
+    },
+    "original-buyer/01.request.json": {
+      "source": "logs/buyer/20261020T105617121814Z-e001b0b7/01.request.json",
+      "sha256": "248c9af89840653a77cc29fe59c21decfdd622a125ed972e850341c9e618335c"
+    },
+    "original-buyer/01.response.txt": {
+      "source": "logs/buyer/20261020T105617121814Z-e001b0b7/01.response.txt",
+      "sha256": "eafd23e6e7b073af39bec05092bd72b3d313560d84732176031064ad74438b49"
+    },
+    "original-buyer/02.http.json": {
+      "source": "logs/buyer/20261020T105617121814Z-e001b0b7/02.http.json",
+      "sha256": "7da39046276e4e29743cdffb9d7f5a453a7f1d7a4d33c201ebabe9ccc8394eec"
+    },
+    "original-buyer/02.request.json": {
+      "source": "logs/buyer/20261020T105617121814Z-e001b0b7/02.request.json",
+      "sha256": "77c34f5e176877cafb8dd2319343ab75ea98889457058fe79bd847a4eb58c9e5"
+    },
+    "original-buyer/02.response.txt": {
+      "source": "logs/buyer/20261020T105617121814Z-e001b0b7/02.response.txt",
+      "sha256": "2d967566d5e7d6ea3a2f87a098b9b2c31a395a43a3258b2543d1cd58021abb6a"
+    },
+    "original-buyer/03.http.json": {
+      "source": "logs/buyer/20261020T105617121814Z-e001b0b7/03.http.json",
+      "sha256": "7da39046276e4e29743cdffb9d7f5a453a7f1d7a4d33c201ebabe9ccc8394eec"
+    },
+    "original-buyer/03.request.json": {
+      "source": "logs/buyer/20261020T105617121814Z-e001b0b7/03.request.json",
+      "sha256": "4751119e18dc2e00475ece0fe727bcb34c7b1b85e9672f4dd8ba6ee60013d71d"
+    },
+    "original-buyer/03.response.txt": {
+      "source": "logs/buyer/20261020T105617121814Z-e001b0b7/03.response.txt",
+      "sha256": "bfb33c2fc5d6e4a6133e3e1b836578fb78879b2084a019132524092e8bcbcb02"
+    },
+    "original-buyer/decision-01.json": {
+      "source": "logs/buyer/20261020T105617121814Z-e001b0b7/decision-01.json",
+      "sha256": "881b5ee10627fc38880f6cb53ae64e70cd7b5a9f84e4d494617214636bb21a85"
+    },
+    "original-buyer/session.json": {
+      "source": "logs/buyer/20261020T105617121814Z-e001b0b7/session.json",
+      "sha256": "4c4d56d012d7ccb978ed8b83d126b9979d5f8da22863d949e475229175d98ce3"
+    },
+    "kit-order-excerpt.txt": {
+      "source": "logs/market-kit.log",
+      "source_sha256_at_read": "a095a21356695beee213dcc45c53b6cf30ff12b03e7e12836f978c578b69739d",
+      "line_start": 196,
+      "line_end": 203,
+      "kind": "derived excerpt; original unchanged"
+    },
+    "later-selections/20261020T114536685501Z-d2601b32.json": {
+      "source": "logs/market-buyer/20261020T114536685501Z-d2601b32.json",
+      "sha256": "435ffb3647a1f3f8c80596622f84e97a0aa033624735ad8d2169015a7221b82a"
+    },
+    "later-selections/20261020T114549699253Z-474fe699.json": {
+      "source": "logs/market-buyer/20261020T114549699253Z-474fe699.json",
+      "sha256": "9a4bd07ed8725de928e762c472bd6775fa1210b601417728e1de5b1d87b989ca"
+    },
+    "later-selections/20261020T114622622858Z-d51bdc01.json": {
+      "source": "logs/market-buyer/20261020T114622622858Z-d51bdc01.json",
+      "sha256": "acfcf03df9c492b235ddf579a894c56a9e2eb7a2bf8c17d3f8ad21cc44ea03b5"
+    },
+    "current-shops-input.json": {
+      "source": ".market/shops.json",
+      "sha256": "f4e407a7086de17424c262e53f6936b3f4f79930e75b89c3d59d20de8c32472a"
+    }
+  }
+}
