@@ -1,0 +1,24 @@
+...........F.
+======================================================================
+FAIL: test_review_instructions_cannot_replace_the_quote (test_negotiation_guards.NegotiationGuardTests.test_review_instructions_cannot_replace_the_quote)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/tests/test_negotiation_guards.py", line 147, in test_review_instructions_cannot_replace_the_quote
+    self.assertEqual(quote_details(task(), 'bookshelf: asking 390.' + notice, CARD),
+AssertionError: Tuples differ: (5, False) != (390, False)
+
+First differing element 0:
+5
+390
+
+- (5, False)
+?  ^
+
++ (390, False)
+?  ^^^
+
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.009s
+
+FAILED (failures=1)
