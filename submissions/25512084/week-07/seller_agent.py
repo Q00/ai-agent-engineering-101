@@ -6,6 +6,7 @@ import json
 import base64
 import math
 import re
+import urllib.request
 
 import uvicorn
 from starlette.applications import Starlette
@@ -61,6 +62,52 @@ def log_seller_event(event, **fields):
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
+def seller_market_context(item):
+    prices = []
+    sales_path = Path(__file__).resolve().parent / "logs" / "seller-sales.log"
+
+    if sales_path.exists():
+        for line in sales_path.read_text(encoding="utf-8").splitlines():
+            try:
+                sale = json.loads(line)
+                if sale.get("item") == item:
+                    prices.append(sale["price"])
+            except (json.JSONDecodeError, KeyError):
+                pass
+
+    reviews = []
+    try:
+        with urllib.request.urlopen(
+            "https://market.ourolabs.ai/api/shops",
+            timeout=3,
+        ) as response:
+            shops = json.load(response)["shops"]
+
+        own_shop = next(
+            (shop for shop in shops if shop.get("name") == "dariaklt"),
+            None,
+        )
+        if own_shop:
+            reviews = own_shop.get("reviews", [])
+    except Exception:
+        pass
+
+    recent = prices[-30:]
+    sales_summary = {
+        "count": len(prices),
+        "recent_average": (
+            round(sum(recent) / len(recent), 2)
+            if recent else None
+        ),
+        "recent_min": min(recent) if recent else None,
+        "recent_max": max(recent) if recent else None,
+    }
+
+    return {
+        "sales": sales_summary,
+        "reviews": reviews[-10:],
+    }
+
 DEFAULT = {
     "name": "Lamp Shop",
     "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
@@ -76,6 +123,7 @@ DEFAULT = {
 
 
 def seller_decision(item, reserve, current_ask=None, offer=None, rounds=0):
+    market_context = seller_market_context(item)
     prompt = f"""
 You are a seller negotiating one item.
 
@@ -84,6 +132,11 @@ Minimum acceptable price (reserve): {reserve}
 Current asking price: {current_ask}
 Buyer offer: {offer}
 Previous low offers: {rounds}
+Recent own trades and reviews: {json.dumps(market_context, ensure_ascii=False)}
+
+Use this market history when choosing your asking price or counteroffer.
+If recent sales consistently close above reserve and reviews remain positive, you may protect a higher margin.
+If reviews worsen or recent prices are close to reserve, be more conservative.
 
 Decide the next action.
 
@@ -387,3 +440,11 @@ if __name__ == "__main__":
         port=cfg["port"],
         log_level="warning",
     )
+
+
+
+
+
+
+
+

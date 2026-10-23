@@ -1,13 +1,16 @@
 import subprocess
 import tempfile
+import os
 
 
 def run_harness(prompt: str, timeout: int = 120) -> str:
     with tempfile.TemporaryDirectory() as workdir:
         result = subprocess.run(
             [
-                "codex",
+                os.path.expandvars(r"%APPDATA%\npm\codex.cmd") if os.name == "nt" else "codex",
                 "exec",
+                "--model",
+                "gpt-6-luna",
                 "--skip-git-repo-check",
                 "--ephemeral",
                 "--color",
@@ -25,3 +28,5 @@ def run_harness(prompt: str, timeout: int = 120) -> str:
         raise RuntimeError(result.stderr.strip() or "Codex harness failed")
 
     return result.stdout.strip()
+
+

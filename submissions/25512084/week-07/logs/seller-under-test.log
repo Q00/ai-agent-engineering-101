@@ -1,12 +1,12 @@
 Failed to detach context
 Traceback (most recent call last):
-  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+  File "C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
     yield span
-  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+  File "C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
     yield span
-  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+  File "C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
     yield span
-  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+  File "C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 250, in async_wrapper
     result = await func(*args, **kwargs)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 GeneratorExit
@@ -14,24 +14,24 @@ GeneratorExit
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+  File "C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
     _RUNTIME_CONTEXT.detach(token)
     ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
-  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+  File "C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
     self._current_context.reset(token)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
-ValueError: <Token var=<ContextVar name='current_context' default={} at 0x1070ac540> at 0x1087447c0> was created in a different Context
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000002B4D640B100> at 0x000002B4D6A52EC0> was created in a different Context
 Task was destroyed but it is pending!
-task: <Task pending name='Task-68' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+task: <Task pending name='Task-39' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future cancelled>>
 Failed to detach context
 Traceback (most recent call last):
-  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+  File "C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
     yield span
-  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+  File "C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
     yield span
-  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+  File "C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
     yield span
-  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+  File "C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 250, in async_wrapper
     result = await func(*args, **kwargs)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 GeneratorExit
@@ -39,12 +39,12 @@ GeneratorExit
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+  File "C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
     _RUNTIME_CONTEXT.detach(token)
     ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
-  File "/Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+  File "C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
     self._current_context.reset(token)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
-ValueError: <Token var=<ContextVar name='current_context' default={} at 0x1070ac540> at 0x1087451c0> was created in a different Context
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000002B4D640B100> at 0x000002B4D6A53600> was created in a different Context
 Task was destroyed but it is pending!
-task: <Task pending name='Task-69' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/dariakolotihina/Documents/ai-agent-engineering-101/.venv/lib/python3.14/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+task: <Task pending name='Task-40' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\user\Documents\ai-agent-engineering-101\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future cancelled>>

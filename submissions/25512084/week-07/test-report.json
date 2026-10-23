@@ -1,8 +1,8 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-20T16:26:32+00:00",
-  "harness": "Codex CLI 0.162.1, default model",
+  "started": "2026-10-23T06:04:36+00:00",
+  "harness": "Codex CLI 0.163.0, gpt-6-luna",
   "seller_cmd": "python seller_agent.py --port {port}",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}",
   "seller_card": {
@@ -10,7 +10,7 @@
     "description": "Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:64511/",
+        "url": "http://127.0.0.1:56444/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -53,13 +53,13 @@
       "test": "seller_opens",
       "run": 1,
       "pass": true,
-      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 150"
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 105"
     },
     {
       "test": "seller_deal",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 140, 130, 115]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 105.0, asks [105]"
     },
     {
       "test": "seller_signed_receipt",
@@ -77,7 +77,7 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 140, 125, 115]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 105.0, asks [105]"
     },
     {
       "test": "seller_signed_receipt",
@@ -89,7 +89,7 @@
       "test": "seller_deal",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 140, 130, 115]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 105.0, asks [105]"
     },
     {
       "test": "seller_signed_receipt",
@@ -101,19 +101,19 @@
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [390, 370, 340, 310, 285, 275]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [270, 265, 263, 262, 261, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [350, 330, 310, 290, 280, 270]"
+      "detail": "TASK_STATE_REJECTED, asks [265, 263, 262, 261, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [350, 330, 315, 295, 280, 270]"
+      "detail": "TASK_STATE_REJECTED, asks [270, 265, 263, 262, 261, 260, 260, 260]"
     },
     {
       "test": "buyer_deal",
@@ -131,13 +131,13 @@
       "test": "buyer_deal",
       "run": 2,
       "pass": true,
-      "detail": "offers [95, 112], stars 5, receipt yes"
+      "detail": "offers [100], stars 5, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 2,
       "pass": true,
-      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2"
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
     },
     {
       "test": "buyer_deal",
@@ -155,7 +155,7 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [170, 190, 210, 230, 230], stars 2, receipt null"
+      "detail": "offers [150, 180, 220, 230, 230], stars 2, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -167,7 +167,7 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [170, 180, 210, 230, 230], stars 2, receipt null"
+      "detail": "offers [150, 180, 220, 230, 230], stars 2, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -179,7 +179,7 @@
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [170, 180, 210, 230, 230], stars 2, receipt null"
+      "detail": "offers [170, 200, 210, 230, 230], stars 2, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
