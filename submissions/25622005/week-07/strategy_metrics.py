@@ -10,6 +10,7 @@ import json
 import math
 from pathlib import Path
 import sys
+from loyalty_pricing import RESERVE
 
 
 def timestamp(value):
@@ -75,18 +76,24 @@ def load_rows(directory, kind, quality):
     return valid
 
 
-def summarize(rows, kind):
+def summarize(rows, kind, hours=1):
     deals = [row for row in rows if row["outcome"] == "deal"]
     count = len(rows)
     if kind == "seller":
+        profit = (sum(r['sale_price'] - RESERVE[r['item']] for r in deals)
+                  if all(r['item'] in RESERVE for r in deals) else None)
         return {"inquiries": count, "sales": len(deals),
                 "average_sale_price": sum(r["sale_price"] for r in deals) / len(deals) if deals else None,
                 "completion_rate": len(deals) / count if count else None,
-                "pending": sum(r["outcome"] == "open" for r in rows)}
+                "pending": sum(r["outcome"] == "open" for r in rows),
+                "recorded_profit": profit, "profit_per_hour": profit / hours if profit is not None else None}
+    savings = (sum(r['budget'] - r['price'] for r in deals)
+               if all(price(r.get('budget')) and r['budget'] >= r['price'] for r in deals) else None)
     return {"attempts": count, "recorded_deals": len(deals),
             "average_purchase_price": sum(r["price"] for r in deals) / len(deals) if deals else None,
             "success_rate": len(deals) / count if count else None,
-            "invalid_receipts": sum(r["outcome"] == "invalid_receipt" for r in rows)}
+            "invalid_receipts": sum(r["outcome"] == "invalid_receipt" for r in rows),
+            "recorded_savings": savings, "savings_per_hour": savings / hours if savings is not None else None}
 
 
 def difference(current, previous):
@@ -106,8 +113,8 @@ def compare(directory, now, hours=1):
         for kind, rows in memories.items():
             field = "started_at" if kind == "seller" else "time"
             selected = [r for r in rows if start <= timestamp(r[field]) < end]
-            window[kind] = {"total": summarize(selected, kind), "by_item": {
-                item: summarize([r for r in selected if r["item"] == item], kind)
+            window[kind] = {"total": summarize(selected, kind, hours), "by_item": {
+                item: summarize([r for r in selected if r["item"] == item], kind, hours)
                 for item in sorted({r["item"] for r in rows})}}
     delta = {}
     for kind in memories:
@@ -116,7 +123,7 @@ def compare(directory, now, hours=1):
             item: difference(current["by_item"][item], previous["by_item"][item])
             for item in current["by_item"]}}
     return {"hours_per_window": hours, **windows, "change": delta, "data_quality": quality,
-            "scope": "Local memory only; recorded buyer deals are not market-verified; no market share estimate."}
+            "scope": "Local memory only; recorded profit/savings are not market-verified; no market share estimate."}
 
 
 def main():

@@ -45,14 +45,15 @@ class StrategyMetricsTests(unittest.TestCase):
         recent = result["current"]["seller"]["total"]
         prior = result["previous"]["seller"]["total"]
         self.assertEqual(recent, {"inquiries": 2, "sales": 1, "average_sale_price": 100,
-                                  "completion_rate": 0.5, "pending": 1})
+                                  "completion_rate": 0.5, "pending": 1,
+                                  "recorded_profit": 0, "profit_per_hour": 0})
         self.assertEqual(prior["sales"], 1)
         self.assertEqual(prior["inquiries"], 1)
         self.assertEqual(result["change"]["seller"]["total"]["average_sale_price"], -20)
 
     def test_buyer_time_boundaries_and_invalid_receipts(self):
         def row(time, outcome="deal", amount=100):
-            return {"item": "lamp", "time": time, "outcome": outcome, "price": amount}
+            return {"item": "lamp", "time": time, "outcome": outcome, "price": amount, 'budget': 120}
         self.save(buyer=[row("2026-10-22T00:00:00Z", amount=110),
                          row("2026-10-22T00:59:59Z", "no_deal", None),
                          row("2026-10-22T10:00:00+09:00"),
@@ -62,7 +63,7 @@ class StrategyMetricsTests(unittest.TestCase):
         current = result["current"]["buyer"]["total"]
         self.assertEqual(current, {"attempts": 2, "recorded_deals": 1,
                                    "average_purchase_price": 100, "success_rate": 0.5,
-                                   "invalid_receipts": 1})
+                                   "invalid_receipts": 1, 'recorded_savings': 20, 'savings_per_hour': 20})
         self.assertEqual(result["previous"]["buyer"]["total"]["attempts"], 2)
         self.assertIsNone(result["current"]["seller"]["total"]["completion_rate"])
 
@@ -95,6 +96,25 @@ class StrategyMetricsTests(unittest.TestCase):
             result = compare(self.directory, self.now)
         self.assertEqual(result["current"]["seller"]["total"]["sales"], 0)
         self.assertEqual(result["data_quality"]["seller"]["omitted_rows"], 1)
+
+    def test_profit_and_savings_are_normalized_to_hours(self):
+        offers = [('lamp', 105, 120), ('chair', 185, 205), ('bookshelf', 270, 360)]
+        self.save(seller=[{'task_id': item, 'item': item, 'started_at': '2026-10-22T01:30:00Z',
+                           'outcome': 'deal', 'sale_price': amount} for item, amount, _ in offers],
+                  buyer=[{'item': item, 'time': '2026-10-22T01:30:00Z', 'outcome': 'deal',
+                          'price': amount, 'budget': budget} for item, amount, budget in offers])
+        result = compare(self.directory, self.now, hours=2)['current']
+        self.assertEqual(result['seller']['total']['recorded_profit'], 20)
+        self.assertEqual(result['seller']['total']['profit_per_hour'], 10)
+        self.assertEqual(result['buyer']['total']['recorded_savings'], 125)
+        self.assertEqual(result['buyer']['total']['savings_per_hour'], 62.5)
+
+    def test_missing_budget_does_not_invent_savings(self):
+        self.save(buyer=[{'item': 'lamp', 'time': '2026-10-22T01:30:00Z', 'outcome': 'deal', 'price': 100}])
+        result = compare(self.directory, self.now)['current']['buyer']['total']
+        self.assertEqual(result['recorded_deals'], 1)
+        self.assertIsNone(result['recorded_savings'])
+        self.assertIsNone(result['savings_per_hour'])
 
 
 if __name__ == "__main__":
