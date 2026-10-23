@@ -14,6 +14,7 @@ import sys
 import threading
 import time
 from datetime import datetime
+from configure_market_owner import kit_environment
 
 
 def public_url_from_line(line):
@@ -84,6 +85,8 @@ def main():
     parser.add_argument("--port", type=int, default=8900)
     parser.add_argument("--cloudflared", type=Path,
                         help="use this cloudflared executable instead of the SSH tunnel")
+    parser.add_argument('--require-owner', action='store_true',
+                        help='wait for MARKET_OWNER or ignored .market/market-owner before starting')
     parser.add_argument("--dir", type=Path, default=Path(__file__).resolve().parent)
     parser.add_argument("--kit", type=Path, default=Path(__file__).resolve().parents[3] / "scripts/market_kit.py")
     parser.add_argument("--fixed-config", type=Path,
@@ -115,6 +118,17 @@ def main():
 
     def log(message):
         print(f"{datetime.now().astimezone().isoformat(timespec='seconds')} [runtime] {message}", flush=True)
+
+    if args.require_owner:
+        announced = False
+        while running and not kit_environment(private).get('MARKET_OWNER'):
+            if not announced:
+                log('market requires GitHub claim code; waiting for local configure_market_owner.py setup')
+                announced = True
+            time.sleep(2)
+        if not running:
+            log('stopped while waiting for market authentication')
+            return
 
     if args.fixed_config:
         from fixed_address_runtime import run_fixed
@@ -169,7 +183,8 @@ def main():
                                        "--dir", str(folder), "--market", args.market,
                                        "--name", args.name, "--port", str(args.port), "--public-url", current_url]
                             kit = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=kit_output,
-                                                   stderr=subprocess.STDOUT, start_new_session=True)
+                                                   stderr=subprocess.STDOUT, start_new_session=True,
+                                                   env=kit_environment(private))
                             (private / "kit.pid").write_text(str(kit.pid) + "\n")
                             retry_kit_at = time.monotonic() + 30
                             log(f"kit started, pid {kit.pid}")
