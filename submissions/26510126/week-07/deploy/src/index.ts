@@ -140,7 +140,8 @@ type Task = {
   history: Message[];
 };
 type Deal = { item: string; ask: number; history: string[]; offers?: number[]; discount?: number; tier?: number; stamps?: number; floor?: number };
-const MARGIN = 5; // a stuck buyer is accepted only at reserve + MARGIN or more
+const MARGIN = 5; // the deal's floor above the reserve outside sales
+const STUCK_MARGIN = 2; // a buyer that stopped raising is accepted at reserve + STUCK_MARGIN or more
 type RpcError = { code: number; message: string; data: unknown[] };
 type Outcome = { task: Task } | { error: RpcError };
 
@@ -374,9 +375,11 @@ export class TaskObject extends DurableObject<Env> {
       return await this.close(task, item, offer, "Agreed.");
     }
 
-    if (prev !== undefined && offer <= prev + 1 && offer >= floor) {
+    const stuckFloor = Math.min(floor, reserve + STUCK_MARGIN);
+    if (prev !== undefined && offer <= prev + 1 && offer >= stuckFloor) {
       // the buyer stopped raising: this is its limit, and it is above our floor. A deal earns a good review, a walkaway a bad one.
-      console.log(`OUT: buyer stuck at ${offer} (last ${prev}), at or above reserve + ${MARGIN}, accepted by code`);
+      // reserve + STUCK_MARGIN, not the floor: yeonsong2 stopped at 102 against 105 and walked with 2 stars (twice in one night)
+      console.log(`OUT: buyer stuck at ${offer} (last ${prev}), at or above ${stuckFloor}, accepted by code`);
       return await this.close(task, item, offer, "Agreed.");
     }
 
