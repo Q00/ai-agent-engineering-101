@@ -1,0 +1,81 @@
+{
+  "source": "logs/market-runtime-kit.log",
+  "public_guarantee_key_matches_registration": true,
+  "scope": "Observed real market orders with floor checkout and verified ledger entries; not full model test or proof of causal improvement.",
+  "lines": [
+    {
+      "line": 73223,
+      "text": "17:29:59 [buyer] "
+    },
+    {
+      "line": 73224,
+      "text": "17:29:59 [buyer] My reasoning: The shop opened at 184, which is slightly above the historical price of 180 seen in previous deals at this shop and competitors. I'm starting my negotiation well below my budget (225) but reasonably above the historical floor (180). This leaves room for the shop to move down toward their known market price of 180, which fits my budget comfortably. A first offer of 160 is a meaningful step down from their ask—enough to signal serious negotiation without being insulting."
+    },
+    {
+      "line": 73225,
+      "text": "17:30:00 [buyer] -> '160'  <- TASK_STATE_INPUT_REQUIRED | 160 is below the market floor for a chair; no shop here may sign below it. Reply ok and the signed receipt comes back at once. Our final price: 180."
+    },
+    {
+      "line": 73226,
+      "text": "17:30:00 [buyer] [quote] accept at or below market floor 180; model skipped"
+    },
+    {
+      "line": 73227,
+      "text": "17:30:00 [buyer] -> '180'  <- TASK_STATE_COMPLETED | Deal: chair at 180. Signed receipt attached."
+    },
+    {
+      "line": 73228,
+      "text": "17:30:00 [buyer] [memory] saved deal for ggari-shop in /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/buyer-memory.json"
+    },
+    {
+      "line": 73229,
+      "text": "17:30:00 [buyer] {\"shop\": \"https://ggari0703-shop.ggari0703.workers.dev\", \"receipt\": {\"shop\": \"ggari0703\", \"item\": \"chair\", \"price\": 180, \"task\": \"bbd926b5-3dbc-455e-af7f-9d90477b2b4f\", \"sig_seller\": \"r9W/JIP6jtvPYPuP9PR3ttajmJvFcKkCCC2XKtIU1OUfVF72+DxH76PTzcqrbxq8LGWh/gyhCz+HkEaqAAXECg==\"}, \"stars\": 5, \"review\": \"Bought chair for 180 within budget 225; used 80% of budget; receipt fields match the negotiation.\"}"
+    },
+    {
+      "line": 73230,
+      "text": "17:30:00 [sign] sig_seller ok, sig_buyer added"
+    },
+    {
+      "line": 73231,
+      "text": "17:30:01 [market] ledger #391129: chair at 180, stars 5, verified True, review accepted"
+    },
+    {
+      "line": 73277,
+      "text": "17:30:38 [buyer] {\"action\": \"offer\", \"price\": 240}"
+    },
+    {
+      "line": 73278,
+      "text": "17:30:38 [buyer] ```"
+    },
+    {
+      "line": 73279,
+      "text": "17:30:39 [buyer] -> '240'  <- TASK_STATE_INPUT_REQUIRED | 240 is below the market floor for a bookshelf; no shop here may sign below it. Reply ok and the signed receipt comes back at once. Our final price: 260."
+    },
+    {
+      "line": 73280,
+      "text": "17:30:39 [buyer] [quote] accept at or below market floor 260; model skipped"
+    },
+    {
+      "line": 73281,
+      "text": "17:30:39 [buyer] -> '260'  <- TASK_STATE_COMPLETED | Deal: bookshelf at 260. Signed receipt attached."
+    },
+    {
+      "line": 73282,
+      "text": "17:30:39 [buyer] [memory] saved deal for ggari-shop in /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/buyer-memory.json"
+    },
+    {
+      "line": 73283,
+      "text": "17:30:39 [buyer] {\"shop\": \"https://ggari0703-shop.ggari0703.workers.dev\", \"receipt\": {\"shop\": \"ggari0703\", \"item\": \"bookshelf\", \"price\": 260, \"task\": \"b8e2fb6f-2dc2-4746-93e8-8cf5b19549ad\", \"sig_seller\": \"QShZMCKC0SKNb+ri/1F07DCoChG9efwzobeDjmyzxiyg0J//HmvyNA/aqGrzIKv+ZLxR/bvlgLzr6cnLZbqxCg==\"}, \"stars\": 5, \"review\": \"Bought bookshelf for 260 within budget 360; used 72% of budget; receipt fields match the negotiation.\"}"
+    },
+    {
+      "line": 73284,
+      "text": "17:30:39 [sign] sig_seller ok, sig_buyer added"
+    },
+    {
+      "line": 73285,
+      "text": "17:30:40 [market] ledger #391194: bookshelf at 260, stars 5, verified True, review accepted"
+    }
+  ],
+  "api_key_present": false,
+  "historical_official_test_report_unchanged": true
+}
