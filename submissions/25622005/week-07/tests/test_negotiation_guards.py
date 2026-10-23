@@ -115,12 +115,32 @@ class NegotiationGuardTests(unittest.TestCase):
         _, _, _, get = self.run_trade([task("Final price 100"), completed()], prefetched=True)
         get.assert_not_called()
 
+    def test_nonfixed_market_floor_quote_skips_model(self):
+        result, calls, harness, _ = self.run_trade([task("lamp: asking 100"), completed()])
+        self.assertEqual(self.offers(calls), [100])
+        self.assertEqual(result['state'], 'TASK_STATE_COMPLETED')
+        harness.assert_not_called()
+
+    def test_budget_below_reference_floor_cancels_without_model(self):
+        result, calls, harness, _ = self.run_trade([
+            task("lamp: asking 130"), task(state="TASK_STATE_CANCELED")], budget=90)
+        self.assertEqual([c['method'] for c in calls], ['SendMessage', 'CancelTask'])
+        self.assertIsNone(result['receipt'])
+        harness.assert_not_called()
+
+    def test_affordable_below_floor_quote_is_not_discarded(self):
+        _, calls, harness, _ = self.run_trade([task("lamp: asking 85"), completed(85)], budget=90)
+        self.assertEqual(self.offers(calls), [85])
+        harness.assert_not_called()
+
     def test_quote_metadata_precedes_last_text_number(self):
         self.assertEqual(quote_details(task(metadata={"ask": 100.0}), "Quote 100, reference 999", CARD),
                          (100, False))
         self.assertEqual(quote_details(task(), "Offer 60 is too low. Counteroffer: 110.", CARD),
                          (110, False))
         self.assertEqual(quote_details(task(), "Counteroffer: 110.5", CARD), (None, False))
+        self.assertEqual(quote_details(task(metadata={'ask': 110, 'pricing': {'policy': []}}),
+                                       'Counteroffer: 110', CARD), (110, False))
 
 
 if __name__ == "__main__":

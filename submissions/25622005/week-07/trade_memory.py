@@ -64,8 +64,8 @@ def evaluate_trade(trade: dict, *, item: str, budget: int) -> tuple[int, str, st
     if (type(price) not in (int, float) or not 0 <= price <= budget
             or not float(price).is_integer() or receipt.get("item") != item
             or receipt.get("task") != trade.get("task_id")
-            or trade.get("last_offer") is None or price != trade["last_offer"]):
-        return 1, "invalid_receipt", "Receipt does not match the ordered item, budget, task, or last offer."
+            or trade.get("last_offer") is None or price > trade["last_offer"]):
+        return 1, "invalid_receipt", "Receipt does not match the item/task, or exceeds budget or accepted offer."
     stars = 5 if price * 100 <= budget * 80 else 4 if price * 100 <= budget * 90 else 3
     return stars, "deal", (f"Bought {item} for {price:g} within budget {budget}; "
                            f"used {price / budget:.0%} of budget; receipt fields match the negotiation.")

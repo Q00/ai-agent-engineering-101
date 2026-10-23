@@ -6,6 +6,7 @@ import uuid
 import httpx
 
 from harness import ask_json
+from loyalty_pricing import RESERVE
 
 MAX_OFFERS = 8
 
@@ -43,8 +44,9 @@ def quote_details(task: dict, said: str, card: dict) -> tuple[int | None, bool]:
     ask = (int(ask) if type(ask) in (int, float) and math.isfinite(ask)
            and ask >= 0 and float(ask).is_integer() else None)
     pricing = metadata.get("pricing")
-    fixed = (pricing == "same_lowest_for_everyone"
-             or isinstance(pricing, dict) and pricing.get("policy") == "same_lowest_for_everyone"
+    policy = pricing.get("policy") if isinstance(pricing, dict) else pricing
+    fixed_policies = {"same_lowest_for_everyone", "same_fixed_price_with_margin"}
+    fixed = (isinstance(policy, str) and policy in fixed_policies
              or bool(re.search(r"\b(?:fixed|final)\s+(?:price|minimum)\b",
                                f"{card.get('description', '')}\n{said}", re.IGNORECASE)))
     return ask, fixed
@@ -88,7 +90,16 @@ def negotiate(shop_url: str, item: str, budget: int, *, context: str = "",
         if task["status"]["state"] != "TASK_STATE_INPUT_REQUIRED":
             break
         asking_price, fixed = quote_details(task, said, card)
-        if fixed and asking_price is not None:
+        reference_floor = RESERVE.get(item)
+        if (asking_price is not None and asking_price <= budget and reference_floor is not None
+                and asking_price <= reference_floor):
+            price = asking_price
+            print(f"[quote] accept at or below market floor {price}; model skipped", flush=True)
+        elif reference_floor is not None and budget < reference_floor:
+            task = rpc("CancelTask", {"id": task["id"]})
+            print("budget below market floor and no affordable quote (CancelTask)", flush=True)
+            break
+        elif fixed and asking_price is not None:
             if asking_price > budget:
                 task = rpc("CancelTask", {"id": task["id"]})
                 print("fixed price exceeds budget (CancelTask)", flush=True)
