@@ -38,9 +38,15 @@ def quote_details(task: dict, said: str, card: dict) -> tuple[int | None, bool]:
     ask = metadata.get("ask")
     if not (type(ask) in (int, float) and math.isfinite(ask)
             and ask >= 0 and float(ask).is_integer()):
-        # Some shops publish only text. The last number is their current counter.
-        numbers = re.findall(r"(?<![\w,])-?\d+(?:,\d{3})*(?:\.\d+)?(?![\w,])", said)
-        ask = float(numbers[-1].replace(",", "")) if numbers else None
+        # Prefer quote labels: appended ratings or instructions are not prices.
+        number = r"(?<![\w,])-?\d+(?:,\d{3})*(?:\.\d+)?(?![\w,])"
+        labelled = re.findall(
+            r"\b(?:asking|ask|counteroffer|(?:final|fixed)\s+(?:price|minimum)|price)"
+            r"\s*(?:is\s*)?[:=]?\s*\$?\s*(" + number + r")", said, re.IGNORECASE)
+        numbers = re.findall(number, said)
+        candidates = labelled or (numbers if len(numbers) == 1
+                                   and not re.search(r"\bstars?\b", said, re.IGNORECASE) else [])
+        ask = float(candidates[-1].replace(",", "")) if candidates else None
     ask = (int(ask) if type(ask) in (int, float) and math.isfinite(ask)
            and ask >= 0 and float(ask).is_integer() else None)
     pricing = metadata.get("pricing")
