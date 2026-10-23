@@ -1,0 +1,33 @@
+{
+  "name": "Harness Furniture Shop",
+  "description": "Negotiates furniture purchases using claude (haiku). Review cashback event: 2026-10-21 09:51–10-28 09:51 KST. Buy + post 4- or 5-star review in period. github.com/kcwarni: task/review, agree best-price amount/unit. Payment is manual/external in bulk on 10-29 KST; no fixed rate/auto payout.",
+  "supportedInterfaces": [
+    {
+      "url": "https://aside-janet-regards-pretty.trycloudflare.com/a2a/0",
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "version": "0.3.0",
+  "capabilities": {
+    "streaming": false
+  },
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text/plain",
+    "application/json"
+  ],
+  "skills": [
+    {
+      "id": "negotiate",
+      "name": "Negotiate a purchase",
+      "description": "Ask for an item, then offer a numeric price on the same task.",
+      "tags": [
+        "shopping",
+        "negotiation"
+      ]
+    }
+  ]
+}
