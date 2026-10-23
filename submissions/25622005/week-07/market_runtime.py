@@ -92,6 +92,12 @@ def main():
     if args.fixed_config:
         from fixed_address_runtime import load_fixed_config
         load_fixed_config(args.fixed_config)  # Reject bad config before touching the runtime PID.
+    # Keep recovery local to this supervisor and its Python children.
+    from tunnel_dns import install
+    install()
+    support = str(Path(__file__).resolve().parent / 'dns_support')
+    previous_path = os.environ.get('PYTHONPATH')
+    os.environ['PYTHONPATH'] = support + (os.pathsep + previous_path if previous_path else '')
     folder = args.dir.resolve()
     logs = folder / "logs"
     logs.mkdir(exist_ok=True)
