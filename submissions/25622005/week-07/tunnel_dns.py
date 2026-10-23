@@ -46,7 +46,7 @@ def public_addresses(host, family):
 
 
 def install():
-    if getattr(socket.getaddrinfo, '_tunnel_dns', False):
+    if getattr(socket.getaddrinfo, '_tunnel_dns', False) is True:
         return
     native = socket.getaddrinfo
 
