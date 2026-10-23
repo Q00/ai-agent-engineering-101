@@ -246,6 +246,26 @@ the PC has to stay on until the deadline. A quick tunnel's URL changes on every
 restart; the market tracks the shop by name and key, so restarts cost nothing
 but the URL. `logs/market-kit.log` is committed from this machine.
 
+**It went down once, and the cause was the kit, not the agents.** On 2026-10-22
+around 23:15 the network dropped (a system time resync at 22:44 suggests the PC
+had been asleep). Every order then ended as `market_buyer printed no result
+line; closing the order as no deal`, and a minute later the kit itself died on
+an unhandled `httpx.ConnectTimeout` — taking its cloudflared tunnel with it.
+Nothing restarted it, so shop and buyer were out of the market until the
+next morning. Two changes:
+
+- `keepalive.py` runs `market_kit.py join` in a loop: when the kit exits it
+  kills any orphaned tunnel, waits (backing off if it keeps dying quickly), and
+  joins again with the same name and key. It is started as a detached process,
+  so it does not depend on the terminal that launched it. Restarts are logged
+  in `logs/keepalive.log`.
+- `market_buyer.py` now ends in one parseable result line even when it fails
+  outside its own trading loop, so a bad order is closed as a reviewed
+  no-deal rather than an empty one.
+
+First ledger entry after the restart: `#344880: chair at 180, stars 5,
+verified True, review accepted`.
+
 Not done: a Workers or VPS deployment that would survive this PC sleeping.
 `claude -p` runs on a subscription login, which does not run headless on a
 server, so a deployed shop would need a different harness.

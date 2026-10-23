@@ -350,4 +350,23 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # The kit closes an order as "no deal" when the last line is not a result,
+    # and on 2026-10-22 23:15 a network drop made every order end that way. Any
+    # failure outside main()'s own try -- reading the shop list, the memory, the
+    # pick -- still has to end in one parseable line.
+    try:
+        sys.exit(main())
+    except SystemExit:
+        raise
+    except Exception as e:                                  # noqa: BLE001
+        log(f"[buyer] fatal {type(e).__name__}: {e}")
+        shop_url = ""
+        try:
+            a = sys.argv
+            listing = json.loads(Path(a[a.index("--shops") + 1]).read_text(encoding="utf-8"))
+            shop_url = listing[0].get("url", "") if listing else ""
+        except Exception:                                   # noqa: BLE001
+            pass
+        print(json.dumps({"shop": shop_url, "receipt": None, "stars": 2,
+                          "review": f"No trade: the buyer failed ({type(e).__name__})."}))
+        sys.exit(0)
