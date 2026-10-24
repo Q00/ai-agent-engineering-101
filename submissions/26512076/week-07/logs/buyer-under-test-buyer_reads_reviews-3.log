@@ -1,0 +1,9 @@
+{"event": "choose", "shop": "http://127.0.0.1:64615", "name": "Kit Shop South", "reason": "Exclude names with recorded receipt mismatches, then prefer review and purchase evidence.", "score": 5.6, "shops_considered": 2}
+{"event": "card", "name": "Kit Shop South", "skills": [{"id": "negotiate", "name": "Negotiate a purchase", "description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.", "tags": ["shopping"], "examples": ["I want to buy a lamp", "90"]}], "model": "openai/gpt-oss-20b"}
+{"event": "send", "text": "I want to buy a lamp", "taskId": null}
+{"event": "receive", "state": "TASK_STATE_INPUT_REQUIRED", "text": "lamp: asking 130. Send your offer as a number.", "taskId": "40a968cc-8423-4d56-993e-8b35f9b22d95"}
+{"event": "decision", "turn": 1, "action": "offer", "price": 120, "reason": "Within budget and matches previous successful purchases"}
+{"event": "send", "text": "120", "taskId": "40a968cc-8423-4d56-993e-8b35f9b22d95"}
+{"event": "receive", "state": "TASK_STATE_COMPLETED", "text": "Deal: lamp at 120.", "taskId": "40a968cc-8423-4d56-993e-8b35f9b22d95"}
+{"event": "purchased", "item": "lamp", "price": 120.0, "budget": 120}
+{"shop": "http://127.0.0.1:64615", "receipt": {"task": "40a968cc-8423-4d56-993e-8b35f9b22d95", "item": "lamp", "sig_seller": "q26lGnrPd7imdpWyOt57Pwu4pwzi0K8dM4PnyYYRJSKyhXb+aylud/uvl9xPNtIHmlT0xf2t8HbAmt9BsKCSBA==", "shop": "Kit Shop South", "price": 120.0}, "stars": 4, "review": "Bought lamp at 120.0 within budget 120; receipt matches my offer."}
