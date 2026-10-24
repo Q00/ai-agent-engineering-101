@@ -413,9 +413,10 @@ export class TaskObject extends DurableObject<Env> {
       console.log(`GUARD: counter ${price} above the last ask ${current}, holding at ${current}`);
       price = current;
     }
-    if (prev !== undefined && offer > prev && current - price < 0.25 * (current - offer)) {
+    if ((prev === undefined || offer > prev) && current - price < 0.25 * (current - offer)) {
       // the buyer is raising but the model concedes by ones (141, 142, ...): buyers walk and review it badly
       // it speeds the haggle up, it does not sell cheaper: never below the target (a bookshelf went 280 -> 260 at an offer of 202)
+      // the first offer too: dragonash walked from a chair held at 192 ("did not come down") with a budget of 185
       const step = Math.max(floor, target ?? floor, Math.round(current - 0.4 * (current - offer)));
       console.log(`GUARD: counter ${price} concedes too little to a rising buyer, countering at ${step}`);
       price = Math.min(price, step);
