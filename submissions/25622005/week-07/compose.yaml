@@ -1,0 +1,36 @@
+name: week07-market
+
+services:
+  market:
+    image: week07-agent:local
+    build:
+      context: ../../..
+      dockerfile: submissions/25622005/week-07/Dockerfile
+      args:
+        CLAUDE_CODE_VERSION: "2.1.112"
+        CLOUDFLARED_VERSION: "2026.10.2"
+    init: true
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Seoul
+      NAS_UID: "${NAS_UID:-1000}"
+      NAS_GID: "${NAS_GID:-1000}"
+      MARKET_URL: https://market.ourolabs.ai
+      HARNESS_CMD: 'claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence'
+    volumes:
+      - ./.market/nas-data:/data
+      - ./.market/nas-claude:/home/node
+    # cloudflared reaches the kit on localhost:8900 inside this container.
+    # No NAS host port or router port forwarding is required.
+    stop_grace_period: 45s
+    healthcheck:
+      test: ["CMD", "python", "/opt/deploy/healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

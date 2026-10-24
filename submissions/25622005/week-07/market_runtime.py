@@ -78,7 +78,17 @@ def forward_lines(proc, messages):
         messages.put(None)
 
 
-def main():
+def default_kit_path(source):
+    """Find the course kit without assuming a repository directory depth."""
+    for parent in Path(source).resolve().parents:
+        candidate = parent / 'scripts' / 'market_kit.py'
+        if candidate.is_file():
+            return candidate
+    container = Path('/opt/market/market_kit.py')
+    return container if container.is_file() else None
+
+
+def parse_arguments(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
     parser.add_argument("--market", default="https://market.ourolabs.ai")
@@ -88,10 +98,20 @@ def main():
     parser.add_argument('--require-owner', action='store_true',
                         help='wait for MARKET_OWNER or ignored .market/market-owner before starting')
     parser.add_argument("--dir", type=Path, default=Path(__file__).resolve().parent)
-    parser.add_argument("--kit", type=Path, default=Path(__file__).resolve().parents[3] / "scripts/market_kit.py")
+    parser.add_argument("--kit", type=Path,
+                        help="market kit path; otherwise discover the repository or container kit")
     parser.add_argument("--fixed-config", type=Path,
                         help="ignored local JSON: reserved public_url and tunnel_command argument list")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    if args.kit is None:
+        args.kit = default_kit_path(__file__)
+    if args.kit is None or not args.kit.is_file():
+        parser.error('market kit not found; specify --kit /path/to/market_kit.py')
+    return args
+
+
+def main():
+    args = parse_arguments()
     if args.fixed_config:
         from fixed_address_runtime import load_fixed_config
         load_fixed_config(args.fixed_config)  # Reject bad config before touching the runtime PID.

@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/data/market_runtime.py", line 212, in <module>
+    main()
+  File "/data/market_runtime.py", line 91, in main
+    parser.add_argument("--kit", type=Path, default=Path(__file__).resolve().parents[3] / "scripts/market_kit.py")
+                                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib/python3.11/pathlib.py", line 446, in __getitem__
+    raise IndexError(idx)
+IndexError: 3

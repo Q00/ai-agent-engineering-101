@@ -1,0 +1,24 @@
+usage: market_runtime.py [-h] --name NAME [--market MARKET] [--port PORT]
+                         [--cloudflared CLOUDFLARED] [--require-owner]
+                         [--dir DIR] [--kit KIT] [--fixed-config FIXED_CONFIG]
+
+Keep the tunnel and market kit together when the public URL changes.
+MARKET_OWNER is inherited from the environment, never written to disk. This
+manages processes only; shop choice and trading stay in the agents.
+
+options:
+  -h, --help            show this help message and exit
+  --name NAME
+  --market MARKET
+  --port PORT
+  --cloudflared CLOUDFLARED
+                        use this cloudflared executable instead of the SSH
+                        tunnel
+  --require-owner       wait for MARKET_OWNER or ignored .market/market-owner
+                        before starting
+  --dir DIR
+  --kit KIT             market kit path; otherwise discover the repository or
+                        container kit
+  --fixed-config FIXED_CONFIG
+                        ignored local JSON: reserved public_url and
+                        tunnel_command argument list
