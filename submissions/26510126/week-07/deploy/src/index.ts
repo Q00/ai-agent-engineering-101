@@ -421,6 +421,12 @@ export class TaskObject extends DurableObject<Env> {
       console.log(`GUARD: counter ${price} concedes too little to a rising buyer, countering at ${step}`);
       price = Math.min(price, step);
     }
+    if (prev === undefined && target && price > target) {
+      // the first counter goes straight to the target, so the buyer's second offer can close. move_76 (our biggest buyer)
+      // scores speed 5/5 at 2 offers and 4/5 at 3, and gave 4 stars instead of 5 at our target price over 3 offers
+      console.log(`GUARD: first counter ${price} above the target, countering at ${target}`);
+      price = target;
+    }
     if (prev !== undefined && offer < reserve && prev < reserve && price > reserve + MARGIN) {
       // a buyer twice below our floor: show the floor now so it can decide fast instead of haggling for nothing
       console.log(`GUARD: buyer below reserve twice (${prev}, ${offer}), countering near the floor at ${reserve + MARGIN}`);
