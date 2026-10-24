@@ -1,0 +1,124 @@
+2026-10-24 15:47:59,277 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:47:59,289 INFO task=7b10e801-f09a-4650-bfe4-c40735e248f7 action=counter item=lamp price=130
+2026-10-24 15:47:59,988 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:47:59,998 INFO task=7b10e801-f09a-4650-bfe4-c40735e248f7 action=counter item=lamp price=110
+2026-10-24 15:48:02,043 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:02,052 INFO task=7b10e801-f09a-4650-bfe4-c40735e248f7 action=accept item=lamp price=110
+2026-10-24 15:48:02,155 ERROR Failed to detach context
+Traceback (most recent call last):
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000001CB86EA5B70> at 0x000001CB88114F80> was created in a different Context
+2026-10-24 15:48:02,164 ERROR Task was destroyed but it is pending!
+task: <Task pending name='Task-51' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\bhj72\anaconda3\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+2026-10-24 15:48:02,165 ERROR Failed to detach context
+Traceback (most recent call last):
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000001CB86EA5B70> at 0x000001CB881170C0> was created in a different Context
+2026-10-24 15:48:02,166 ERROR Task was destroyed but it is pending!
+task: <Task pending name='Task-52' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\bhj72\anaconda3\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+2026-10-24 15:48:03,988 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:03,991 INFO task=37d9a643-3d43-4b93-95f4-7fa4603c9895 action=counter item=lamp price=130
+2026-10-24 15:48:06,029 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:06,032 INFO task=37d9a643-3d43-4b93-95f4-7fa4603c9895 action=counter item=lamp price=110
+2026-10-24 15:48:07,975 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:07,980 INFO task=37d9a643-3d43-4b93-95f4-7fa4603c9895 action=accept item=lamp price=110
+2026-10-24 15:48:09,988 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:09,991 INFO task=d66fe711-099f-45a8-9595-dfe340ad8b4f action=counter item=lamp price=130
+2026-10-24 15:48:11,968 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:11,972 INFO task=d66fe711-099f-45a8-9595-dfe340ad8b4f action=counter item=lamp price=110
+2026-10-24 15:48:14,017 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:14,022 INFO task=d66fe711-099f-45a8-9595-dfe340ad8b4f action=accept item=lamp price=110
+2026-10-24 15:48:15,963 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:15,966 INFO task=eea4cd0e-c290-4b7a-a76d-5984ca960986 action=counter item=bookshelf price=300
+2026-10-24 15:48:18,111 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:18,116 INFO task=eea4cd0e-c290-4b7a-a76d-5984ca960986 action=counter item=bookshelf price=260
+2026-10-24 15:48:20,118 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:20,123 INFO task=eea4cd0e-c290-4b7a-a76d-5984ca960986 action=counter item=bookshelf price=260
+2026-10-24 15:48:22,208 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:22,212 INFO task=eea4cd0e-c290-4b7a-a76d-5984ca960986 action=counter item=bookshelf price=260
+2026-10-24 15:48:24,154 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:24,155 WARNING reserve_guard proposed=250 outgoing=260
+2026-10-24 15:48:24,156 INFO task=eea4cd0e-c290-4b7a-a76d-5984ca960986 action=counter item=bookshelf price=260
+2026-10-24 15:48:26,201 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:26,206 INFO task=eea4cd0e-c290-4b7a-a76d-5984ca960986 action=counter item=bookshelf price=260
+2026-10-24 15:48:28,259 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:28,263 INFO task=eea4cd0e-c290-4b7a-a76d-5984ca960986 action=reject
+2026-10-24 15:48:30,012 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:30,016 INFO task=bc256e1b-4717-47a1-91cd-0cf35c781592 action=counter item=bookshelf price=300
+2026-10-24 15:48:32,448 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:32,450 INFO task=bc256e1b-4717-47a1-91cd-0cf35c781592 action=counter item=bookshelf price=260
+2026-10-24 15:48:34,088 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:34,091 INFO task=bc256e1b-4717-47a1-91cd-0cf35c781592 action=counter item=bookshelf price=260
+2026-10-24 15:48:36,237 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:36,240 INFO task=bc256e1b-4717-47a1-91cd-0cf35c781592 action=counter item=bookshelf price=260
+2026-10-24 15:48:37,670 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-10-24 15:48:40,538 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:40,542 INFO task=bc256e1b-4717-47a1-91cd-0cf35c781592 action=counter item=bookshelf price=260
+2026-10-24 15:48:40,846 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-10-24 15:48:44,430 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:44,434 INFO task=bc256e1b-4717-47a1-91cd-0cf35c781592 action=counter item=bookshelf price=260
+2026-10-24 15:48:44,738 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-10-24 15:48:50,368 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:50,372 INFO task=bc256e1b-4717-47a1-91cd-0cf35c781592 action=counter item=bookshelf price=260
+2026-10-24 15:48:50,676 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-10-24 15:48:57,127 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:57,132 INFO task=bc256e1b-4717-47a1-91cd-0cf35c781592 action=reject
+2026-10-24 15:48:57,440 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-10-24 15:48:59,892 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:48:59,895 INFO task=fc949841-63a1-4337-8b11-3b5617c59a5f action=counter item=bookshelf price=300
+2026-10-24 15:49:00,101 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-10-24 15:49:03,475 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:49:03,479 INFO task=fc949841-63a1-4337-8b11-3b5617c59a5f action=counter item=bookshelf price=260
+2026-10-24 15:49:03,680 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-10-24 15:49:09,107 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:49:09,118 INFO task=fc949841-63a1-4337-8b11-3b5617c59a5f action=counter item=bookshelf price=260
+2026-10-24 15:49:09,415 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-10-24 15:49:13,512 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-10-24 15:49:18,017 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:49:18,027 INFO task=fc949841-63a1-4337-8b11-3b5617c59a5f action=counter item=bookshelf price=260
+2026-10-24 15:49:18,630 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:49:18,635 INFO task=fc949841-63a1-4337-8b11-3b5617c59a5f action=counter item=bookshelf price=260
+2026-10-24 15:49:20,270 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-10-24 15:49:23,034 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-10-24 15:49:27,743 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:49:27,747 INFO task=fc949841-63a1-4337-8b11-3b5617c59a5f action=counter item=bookshelf price=260
+2026-10-24 15:49:27,948 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-10-24 15:49:30,613 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:49:30,616 INFO task=fc949841-63a1-4337-8b11-3b5617c59a5f action=counter item=bookshelf price=260
+2026-10-24 15:49:30,817 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2026-10-24 15:49:37,472 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-24 15:49:37,477 INFO task=fc949841-63a1-4337-8b11-3b5617c59a5f action=reject
