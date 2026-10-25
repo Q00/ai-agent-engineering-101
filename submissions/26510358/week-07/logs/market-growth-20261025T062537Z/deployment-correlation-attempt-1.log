@@ -1,0 +1,10 @@
+An initial read-only correlation of new seller receipts with the public ledger failed.
+Expression: e['data'].get('receipt', {}).get('task')
+Some result events explicitly contain receipt: null, so get's default does not apply.
+
+Traceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+  File "<stdin>", line 3, in <listcomp>
+AttributeError: 'NoneType' object has no attribute 'get'
+
+No deployment-observation.json file was created by this failed attempt.
