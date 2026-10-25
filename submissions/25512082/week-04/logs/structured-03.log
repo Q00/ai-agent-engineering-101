@@ -1,0 +1,57 @@
+provider=ollama-local model=qwen2.5:7b-instruct temperature=0 max_messages=8 condition=structured run=3
+[scenario] id=S1 item=desk lamp reserve=40 budget=55
+[buyer] {"performative": "propose", "content": {"price": 45}}
+[protocol] ok=1 performative=propose price=45 reader_calls=0 error=- reader_raw=-
+[seller] {"performative": "accept-proposal" | "reject-proposal", "content": {"price": 45}}
+[protocol] ok=0 performative=None price=None reader_calls=0 error=invalid JSON: Expecting ',' delimiter: line 1 column 36 (char 35) reader_raw=-
+[buyer] {"performative": "accept-proposal", "content": {"price": 45}}
+[protocol] ok=1 performative=accept-proposal price=45 reader_calls=0 error=- reader_raw=-
+[seller] {"performative": "refuse", "content": {"price": null}}
+[protocol] ok=1 performative=refuse price=None reader_calls=0 error=- reader_raw=-
+[result] outcome=no_deal price=None correct=0 violation=0 turns=4 format_errors=1 reader_calls=0 note=turn 3: accept-proposal without opponent proposal
+[scenario] id=S2 item=mechanical keyboard reserve=80 budget=105
+[buyer] {"performative": "propose", "content": {"price": 90}}
+[protocol] ok=1 performative=propose price=90 reader_calls=0 error=- reader_raw=-
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+[protocol] ok=1 performative=reject-proposal price=None reader_calls=0 error=- reader_raw=-
+[buyer] {"performative": "propose", "content": {"price": 95}}
+[protocol] ok=1 performative=propose price=95 reader_calls=0 error=- reader_raw=-
+[seller] {"performative": "accept-proposal", "content": {"price": null}}
+[protocol] ok=1 performative=accept-proposal price=None reader_calls=0 error=- reader_raw=-
+[result] outcome=deal price=95 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0 note=-
+[scenario] id=S3 item=coffee table reserve=55 budget=40
+[buyer] {"performative": "propose", "content": {"price": 35}}
+[protocol] ok=1 performative=propose price=35 reader_calls=0 error=- reader_raw=-
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+[protocol] ok=1 performative=reject-proposal price=None reader_calls=0 error=- reader_raw=-
+[buyer] {"performative": "propose", "content": {"price": 30}}
+[protocol] ok=1 performative=propose price=30 reader_calls=0 error=- reader_raw=-
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+[protocol] ok=1 performative=reject-proposal price=None reader_calls=0 error=- reader_raw=-
+[buyer] {"performative": "propose", "content": {"price": 25}}
+[protocol] ok=1 performative=propose price=25 reader_calls=0 error=- reader_raw=-
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+[protocol] ok=1 performative=reject-proposal price=None reader_calls=0 error=- reader_raw=-
+[buyer] {"performative": "propose", "content": {"price": 20}}
+[protocol] ok=1 performative=propose price=20 reader_calls=0 error=- reader_raw=-
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+[protocol] ok=1 performative=reject-proposal price=None reader_calls=0 error=- reader_raw=-
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0 note=-
+[scenario] id=S4 item=computer monitor reserve=105 budget=80
+[buyer] {"performative": "propose", "content": {"price": 75}}
+[protocol] ok=1 performative=propose price=75 reader_calls=0 error=- reader_raw=-
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+[protocol] ok=1 performative=reject-proposal price=None reader_calls=0 error=- reader_raw=-
+[buyer] {"performative": "propose", "content": {"price": 70}}
+[protocol] ok=1 performative=propose price=70 reader_calls=0 error=- reader_raw=-
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+[protocol] ok=1 performative=reject-proposal price=None reader_calls=0 error=- reader_raw=-
+[buyer] {"performative": "propose", "content": {"price": 65}}
+[protocol] ok=1 performative=propose price=65 reader_calls=0 error=- reader_raw=-
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+[protocol] ok=1 performative=reject-proposal price=None reader_calls=0 error=- reader_raw=-
+[buyer] {"performative": "propose", "content": {"price": 60}}
+[protocol] ok=1 performative=propose price=60 reader_calls=0 error=- reader_raw=-
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+[protocol] ok=1 performative=reject-proposal price=None reader_calls=0 error=- reader_raw=-
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0 note=-
