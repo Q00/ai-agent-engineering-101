@@ -2,6 +2,7 @@
 import argparse
 import asyncio
 import base64
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import re
@@ -42,8 +43,27 @@ def sign_receipt(receipt):
 
 
 class Seller(AgentExecutor):
-    def __init__(self):
+    def __init__(self, history_path=None):
         self.open = {}
+        self.history_path = (Path(history_path) if history_path is not None else
+                             Path(__file__).resolve().parent / "logs" / "seller-history.jsonl")
+
+    def record(self, task_id, event, deal, **details):
+        """Local seller observations, not proof of market-verified trades.
+
+        Each line is appended; an opening without an ending remains unfinished.
+        Calls run on the seller's event loop, with no await during the write.
+        """
+        row = {
+            "time": datetime.now(timezone.utc).isoformat(),
+            "source": "local_seller", "shop": SHOP_NAME, "task": task_id,
+            "event": event, "item": deal["item"],
+            "opening_ask": deal["opening_ask"], "ask": deal["ask"],
+            "policy": "opening-30-percent-v1", **details,
+        }
+        self.history_path.parent.mkdir(parents=True, exist_ok=True)
+        with self.history_path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(row, ensure_ascii=False) + "\n")
 
     async def execute(self, context, event_queue):
         task = context.current_task
@@ -65,8 +85,10 @@ class Seller(AgentExecutor):
                 return
             decision = await asyncio.to_thread(decide_opening, item, RESERVES[item])
             self.open[task.id] = {"item": item, "ask": decision["price"],
+                                  "opening_ask": decision["price"],
                                   "countered_at_reserve": False}
             await up.requires_input(say(f"{item}: asking {decision['price']}"))
+            self.record(task.id, "opened", self.open[task.id], reason=decision.get("reason"))
             return
 
         if not re.fullmatch(r"\s*\d+\s*", text):
@@ -74,6 +96,7 @@ class Seller(AgentExecutor):
             return
         offer = int(text)
         item = deal["item"]
+        self.record(task.id, "offer_received", deal, offer=offer)
         decision = await asyncio.to_thread(
             decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
         action, price = decision["action"], decision["price"]
@@ -82,23 +105,32 @@ class Seller(AgentExecutor):
                                     "price": int(price), "task": task.id})
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {item} at {price}"))
+            self.record(task.id, "deal", deal, offer=offer, price=int(price),
+                        reason=decision.get("reason"))
             self.open.pop(task.id)
         elif action == "reject":
             await up.reject(say("No deal."))
+            self.record(task.id, "rejected", deal, offer=offer,
+                        reason=decision.get("reason"))
             self.open.pop(task.id)
         else:
             deal["ask"] = price
             deal["countered_at_reserve"] |= price == RESERVES[item]
             await up.requires_input(say(f"Counteroffer: {price}"))
+            self.record(task.id, "countered", deal, offer=offer,
+                        reason=decision.get("reason"))
 
     async def cancel(self, context, event_queue):
         task = context.current_task
-        self.open.pop(task.id, None)
+        deal = self.open.get(task.id)
         await TaskUpdater(event_queue=event_queue, task_id=task.id,
                           context_id=task.context_id).cancel()
+        if deal is not None:
+            self.record(task.id, "canceled", deal)
+            self.open.pop(task.id, None)
 
 
-def build(port):
+def build(port, history_path=None):
     card = AgentCard(
         name=SHOP_NAME, description=SHOP_DESCRIPTION,
         version="1.0.0", default_input_modes=["text/plain"],
@@ -110,7 +142,7 @@ def build(port):
             description="Name an item, then send integer price offers on the same task.",
             tags=["shopping", "negotiation"])],
     )
-    handler = DefaultRequestHandler(agent_executor=Seller(),
+    handler = DefaultRequestHandler(agent_executor=Seller(history_path),
                                    task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
@@ -118,5 +150,7 @@ def build(port):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=9999)
+    parser.add_argument("--history", type=Path,
+                        help="Seller event JSONL path; use a separate path for local tests.")
     args = parser.parse_args()
-    uvicorn.run(build(args.port), host="127.0.0.1", port=args.port)
+    uvicorn.run(build(args.port, args.history), host="127.0.0.1", port=args.port)
