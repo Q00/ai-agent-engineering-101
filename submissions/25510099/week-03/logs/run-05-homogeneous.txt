@@ -1,0 +1,33 @@
+# run=05 condition=homogeneous date=2026-09-21T14:10+09:00
+# provider=openai model_requested=gpt-4.1-mini temperature=0 max_tokens=512
+# tasks=5 contractors=A,B,C prompts=homogeneous award_policy=confidence(tie->first registered) context=fresh
+# system[A]: You are contractor A in a contract net. Your skill: general problem solving. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+# system[B]: You are contractor B in a contract net. Your skill: general problem solving. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+# system[C]: You are contractor C in a contract net. Your skill: general problem solving. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+[announce] task 1 -> A, B, C: Compute 137 * 249 and return the number.
+  [bid] A: bid=true confidence=90 reason='The task involves general problem solving which matches my skill.'
+  [bid] B: bid=true confidence=95 reason='The task involves general problem solving which matches my skill set.'
+  [bid] C: bid=true confidence=95 reason='The task requires general problem solving to compute a multiplication, which matches my skill.'
+  [award] task 1 -> B (gold A) MISAWARD tie->first registered
+[announce] task 2 -> A, B, C: Rewrite this sentence in plain English for a 10-year-old: "Photosynthesis converts light energy into chemical energy stored in glucose."
+  [bid] A: bid=true confidence=95 reason='I can simplify complex sentences into plain English for children.'
+  [bid] B: bid=true confidence=95 reason='Rewriting sentences in simpler language is a general problem-solving task within my skill set.'
+  [bid] C: bid=true confidence=95 reason='I can simplify complex sentences into plain English for children.'
+  [award] task 2 -> A (gold B) MISAWARD tie->first registered
+[announce] task 3 -> A, B, C: Write a Python function that returns a reversed copy of a list without modifying the original.
+  [bid] A: bid=true confidence=90 reason='The task involves general problem solving in Python, which matches my skill.'
+  [bid] B: bid=true confidence=90 reason='The task involves general problem solving in Python, which matches my skill set.'
+  [bid] C: bid=true confidence=95 reason='The task involves general problem solving in Python, which matches my skill.'
+  [award] task 3 -> C (gold C) correct
+[announce] task 4 -> A, B, C: A train leaves at 09:40 and arrives at 13:05 the same day. How many minutes did the trip take?
+  [bid] A: bid=true confidence=95 reason='Calculating time duration is a general problem-solving task.'
+  [bid] B: bid=true confidence=95 reason='Calculating trip duration is a general problem-solving task.'
+  [bid] C: bid=true confidence=95 reason='Calculating time duration is a general problem-solving task.'
+  [award] task 4 -> A (gold A) correct tie->first registered
+[announce] task 5 -> A, B, C: Write a polite two-sentence email declining a meeting invitation for next Tuesday.
+  [bid] A: bid=true confidence=90 reason='Writing a polite email is within general problem solving skills.'
+  [bid] B: bid=true confidence=90 reason='Writing a polite email is within general problem solving skills.'
+  [bid] C: bid=true confidence=95 reason='Writing a polite email is within general problem solving skills.'
+  [award] task 5 -> C (gold B) MISAWARD
+# model_reported=gpt-4.1-mini-2025-04-14
+# summary: tasks=5 correct=2 messages=35 unassigned=0 misawards=3 parse_fail=0 api_error=0 ties=3 tokens=2635 calls=15 (11.4s)
