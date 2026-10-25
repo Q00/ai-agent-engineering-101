@@ -18,7 +18,7 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from seller_decision import decide_opening, decide_offer
-
+from pricing_state import POLICY
 
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 SHOP_NAME = "Afford Shop"
@@ -59,7 +59,7 @@ class Seller(AgentExecutor):
             "source": "local_seller", "shop": SHOP_NAME, "task": task_id,
             "event": event, "item": deal["item"],
             "opening_ask": deal["opening_ask"], "ask": deal["ask"],
-            "policy": "opening-30-percent-v1", **details,
+            "policy": POLICY, **details,
         }
         self.history_path.parent.mkdir(parents=True, exist_ok=True)
         with self.history_path.open("a", encoding="utf-8") as stream:
