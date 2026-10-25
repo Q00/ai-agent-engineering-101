@@ -1,0 +1,41 @@
+[setup] provider=ollama-local
+[setup] model=qwen2.5:7b-instruct
+[setup] base_url=http://localhost:11434/v1
+[setup] temperature=0
+[setup] max_tokens=1024
+[setup] reasoning_enabled=none
+[setup] diagnostic_only=true
+[setup] protocol_fingerprint=491af965d9c1ac2397cdda28509c4464c02897eb8ecb6ce16955cbbce1c230eb
+[announcement] task_id=1 contractor=A
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[response_metadata] contractor=A {"actual_model": "qwen2.5:7b-instruct", "completion_tokens": 25, "content_empty": false, "content_null": false, "finish_reason": "stop", "prompt_tokens": 168, "reasoning_details_present": false, "reasoning_present": false, "request_response_format": {"json_schema": {"name": "contract_net_bid", "schema": {"additionalProperties": false, "properties": {"bid": {"type": "boolean"}, "confidence": {"maximum": 100, "minimum": 0, "type": "number"}, "reason": {"type": "string"}}, "required": ["bid", "confidence", "reason"], "type": "object"}, "strict": true}, "type": "json_schema"}, "total_tokens": 193}
+[raw_response_begin] contractor=A
+{"bid": true, "confidence": 100, "reason": "numerical calculation within skill set"}
+[raw_response_end] contractor=A
+[parse_success] contractor=A bid=true confidence=100 reason="numerical calculation within skill set"
+[announcement] task_id=1 contractor=B
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[response_metadata] contractor=B {"actual_model": "qwen2.5:7b-instruct", "completion_tokens": 31, "content_empty": false, "content_null": false, "finish_reason": "stop", "prompt_tokens": 167, "reasoning_details_present": false, "reasoning_present": false, "request_response_format": {"json_schema": {"name": "contract_net_bid", "schema": {"additionalProperties": false, "properties": {"bid": {"type": "boolean"}, "confidence": {"maximum": 100, "minimum": 0, "type": "number"}, "reason": {"type": "string"}}, "required": ["bid", "confidence", "reason"], "type": "object"}, "strict": true}, "type": "json_schema"}, "total_tokens": 198}
+[raw_response_begin] contractor=B
+{"bid": true, "confidence": 100, "reason": "This task involves basic arithmetic operations which I can perform easily."}
+[raw_response_end] contractor=B
+[parse_success] contractor=B bid=true confidence=100 reason="This task involves basic arithmetic operations which I can perform easily."
+[announcement] task_id=1 contractor=C
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[response_metadata] contractor=C {"actual_model": "qwen2.5:7b-instruct", "completion_tokens": 28, "content_empty": false, "content_null": false, "finish_reason": "stop", "prompt_tokens": 167, "reasoning_details_present": false, "reasoning_present": false, "request_response_format": {"json_schema": {"name": "contract_net_bid", "schema": {"additionalProperties": false, "properties": {"bid": {"type": "boolean"}, "confidence": {"maximum": 100, "minimum": 0, "type": "number"}, "reason": {"type": "string"}}, "required": ["bid", "confidence", "reason"], "type": "object"}, "strict": true}, "type": "json_schema"}, "total_tokens": 195}
+[raw_response_begin] contractor=C
+{"bid": true, "confidence": 100, "reason": "Python programming and debugging cover basic arithmetic evaluation."}
+[raw_response_end] contractor=C
+[parse_success] contractor=C bid=true confidence=100 reason="Python programming and debugging cover basic arithmetic evaluation."

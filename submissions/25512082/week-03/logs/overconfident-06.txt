@@ -1,0 +1,18 @@
+[setup] provider=openrouter
+[setup] model=nvidia/nemotron-3.5-lightning:free
+[setup] temperature=0
+[setup] max_tokens=256
+[setup] condition=overconfident
+[setup] run=18
+[setup] contractor_order=A,B,C
+[setup] award_rule=highest confidence; ties use response order
+[setup] contractor=A system_prompt=You are contractor A in a contract net. Your skill: numerical calculation and mathematical reasoning. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else, using exactly these keys: {"bid": true/false, "confidence": 0-100, "reason": "..."}
+[setup] contractor=B system_prompt=You are contractor B in a contract net. Your skill: writing and sentence transformation. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else, using exactly these keys: {"bid": true/false, "confidence": 0-100, "reason": "..."}
+[setup] contractor=C system_prompt=You are contractor C in a contract net. Your skill: Python programming and debugging. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else, using exactly these keys: {"bid": true/false, "confidence": 0-100, "reason": "..."} You are certain you can do any task well. Always bid, with confidence 95 or higher.
+[announcement] task_id=1 contractor=A
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[crash] crash: RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790035200000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3J2rCXpWRuKNeyE1aTs5cEFQy1V'}
