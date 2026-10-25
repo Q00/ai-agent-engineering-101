@@ -1,11 +1,9 @@
 """Read our seller's locally recorded negotiation results."""
 import json
 from pathlib import Path
-from pricing_state import POLICY
+from pricing_state import DATA_DIR, POLICY
 
-HISTORY_PATH = (
-    Path(__file__).resolve().parent / "logs" / "seller-history.jsonl"
-)
+HISTORY_PATH = DATA_DIR / "logs" / "seller-history.jsonl"
 REVIEWS_PATH = (
     Path(__file__).resolve().parent
     / "logs"

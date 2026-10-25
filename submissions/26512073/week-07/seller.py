@@ -19,6 +19,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from seller_decision import decide_opening, decide_offer
 from pricing_state import POLICY
+from seller_memory import HISTORY_PATH
 
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 SHOP_NAME = "Afford Shop"
@@ -45,8 +46,9 @@ def sign_receipt(receipt):
 class Seller(AgentExecutor):
     def __init__(self, history_path=None):
         self.open = {}
-        self.history_path = (Path(history_path) if history_path is not None else
-                             Path(__file__).resolve().parent / "logs" / "seller-history.jsonl")
+        self.history_path = (
+            Path(history_path) if history_path is not None else HISTORY_PATH
+        )
 
     def record(self, task_id, event, deal, **details):
         """Local seller observations, not proof of market-verified trades.

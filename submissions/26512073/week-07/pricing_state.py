@@ -3,9 +3,16 @@ import json
 from pathlib import Path
 import tempfile
 from threading import RLock
+import os
 
+DATA_DIR = Path(
+    os.environ.get(
+        "SELLER_DATA_DIR",
+        str(Path(__file__).resolve().parent),
+    )
+).resolve()
 
-STATE_PATH = Path(__file__).resolve().parent / "pricing_state.json"
+STATE_PATH = DATA_DIR / "pricing_state.json"
 POLICY = "adaptive-15-percent-six-results-v1"
 _lock = RLock()
 
