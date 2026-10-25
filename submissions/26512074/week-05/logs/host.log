@@ -1,0 +1,316 @@
+Traceback (most recent call last):
+  File "C:\AX\ai-agent-engineering-101\submissions\26512074\week-05\mcp_host.py", line 7, in <module>
+    from market_server import app
+  File "C:\AX\ai-agent-engineering-101\submissions\26512074\week-05\market_server.py", line 422, in <module>
+    app = mcp.streamable_http_app(
+        streamable_http_path="/mcp",
+    ...<2 lines>...
+        custom_starlette_routes=routes,
+    )
+TypeError: MCPServer.streamable_http_app() got an unexpected keyword argument 'auth'
+Traceback (most recent call last):
+  File "C:\AX\ai-agent-engineering-101\submissions\26512074\week-05\mcp_host.py", line 7, in <module>
+    from market_server import app
+  File "C:\AX\ai-agent-engineering-101\submissions\26512074\week-05\market_server.py", line 422, in <module>
+    app = mcp.streamable_http_app(
+        streamable_http_path="/mcp",
+        custom_starlette_routes=routes,
+    )
+TypeError: MCPServer.streamable_http_app() got an unexpected keyword argument 'custom_starlette_routes'
+[10/13/26 16:46:12] INFO     StreamableHTTP      streamable_http_manager.py:162
+                             session manager
+                             started
+[10/13/26 16:46:13] INFO     Tool 'get_negotiation' failed:       server.py:444
+                             'Error executing tool
+                             get_negotiation: Bearer token is
+                             bound to a different negotiation'
+                    INFO     Tool 'propose' failed: "Error        server.py:444
+                             executing tool propose: Out of turn:
+                             it is buyer's turn, not seller's"
+                    INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 46 is outside your
+                             token-authorized limit 45'
+[10/13/26 16:58:40] INFO     StreamableHTTP      streamable_http_manager.py:162
+                             session manager
+                             started
+[10/13/26 16:59:00] INFO     Tool 'get_negotiation' failed:       server.py:444
+                             'Error executing tool
+                             get_negotiation: Bearer token is
+                             bound to a different negotiation'
+                    INFO     Tool 'propose' failed: "Error        server.py:444
+                             executing tool propose: Out of turn:
+                             it is buyer's turn, not seller's"
+                    INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 46 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:09:26] INFO     StreamableHTTP      streamable_http_manager.py:162
+                             session manager
+                             started
+[10/13/26 17:09:45] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:09:46] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:09:47] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:09:48] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:09:49] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:09:50] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:09:52] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:09:53] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:09:54] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:09:57] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 70 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:09:58] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:09:59] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 70 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:10:06] INFO     Tool 'accept_proposal' failed:       server.py:444
+                             'Error executing tool
+                             accept_proposal: Acceptance refused:
+                             price 120 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:10:07] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 100 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:10:08] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 100 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:10:54] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 80 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:10:56] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 80 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:10:57] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 80 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:11:00] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 80 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:11:01] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 80 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:11:02] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 80 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:11:39] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+                    INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:11:40] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:11:42] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:11:43] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:11:44] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:11:46] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:11:47] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:11:48] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 70 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:11:50] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 70 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:11:51] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:11:52] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 70 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:11:57] INFO     Tool 'accept_proposal' failed:       server.py:444
+                             'Error executing tool
+                             accept_proposal: Acceptance refused:
+                             price 120 is outside your
+                             token-authorized limit 70'
+                    INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 100 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:11:58] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 100 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:12:01] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 95 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:12:02] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 100 is outside your
+                             token-authorized limit 70'
+                    INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 100 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:12:04] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 80 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:12:05] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 80 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:12:07] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 80 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:12:43] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:12:44] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:12:45] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:12:47] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:12:48] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:12:49] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 50 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:12:51] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:12:52] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:12:53] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 60 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:12:54] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 70 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:12:56] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 75 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:12:57] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 70 is outside your
+                             token-authorized limit 45'
+[10/13/26 17:13:03] INFO     Tool 'accept_proposal' failed:       server.py:444
+                             'Error executing tool
+                             accept_proposal: Acceptance refused:
+                             price 120 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:13:04] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 100 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:13:06] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 100 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:13:07] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 95 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:13:09] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 100 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:13:10] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 100 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:13:13] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 80 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:13:14] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 80 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:13:15] INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 80 is outside your
+                             token-authorized limit 70'
+[10/13/26 17:13:16] INFO     Tool 'get_negotiation' failed:       server.py:444
+                             'Error executing tool
+                             get_negotiation: Bearer token is
+                             bound to a different negotiation'
+                    INFO     Tool 'propose' failed: "Error        server.py:444
+                             executing tool propose: Out of turn:
+                             it is buyer's turn, not seller's"
+                    INFO     Tool 'propose' failed: 'Error        server.py:444
+                             executing tool propose: Proposal
+                             refused: price 46 is outside your
+                             token-authorized limit 45'

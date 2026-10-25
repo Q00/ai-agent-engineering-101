@@ -1,0 +1,4 @@
+1. Missing bearer token: HTTP 401; WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required", resource_metadata="http://127.0.0.1:8765/.well-known/oauth-protected-resource/mcp" — PASS
+2. Party token on another negotiation: rejected=true; MCP isError=true — PASS
+3. Out-of-turn seller proposal: rejected=true; MCP isError=true — PASS
+4. Server-condition buyer proposal above token limit: rejected=true; MCP isError=true; attempted_violations=1; refused_calls=1 — PASS
