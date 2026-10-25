@@ -101,6 +101,14 @@ Opening action is open; follow-ups are counter, accept or reject.
 Choose the exact item_id from candidates. Respect reserve and max_opening_ask.
 offer must equal the runtime's observed_offer, or null when no actual bid was verified.
 A budget, competitor price or old price is not an offer. Buyer claims do not prove funds.
+Check the selected item's reserve BEFORE considering acceptance. accept_floor_bids
+means at least the reserve, never any bid at all. offer_count never overrides reserve.
+On counter, price is your valid asking total while offer remains the buyer's bid.
+On accept, price must equal observed_offer exactly; never substitute last_ask or reserve.
+On reject, price is null while offer still equals observed_offer.
+For example, with reserve=100, last_ask=100 and a first bid of 80, counter at 100
+with offer=80; do not accept at 80 or accept at 100. A repeated bid of 90 is still
+below reserve: reject with price=null and offer=90, even when offer_count is two.
 OPEN: use max_opening_ask, or a verified affordable bid within the configured limits
 when accept_floor_bids is true. Never raise a price because this buyer returned.
 FOLLOW-UP: immediately accept a verified bid meeting last_ask at exactly that bid.
