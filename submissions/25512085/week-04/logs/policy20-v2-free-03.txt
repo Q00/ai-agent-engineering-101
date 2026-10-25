@@ -1,0 +1,74 @@
+provider=LM Studio model=qwen/qwen3.8-27b temperature=0.2 max_turns=8 condition=free run=policy20-v2-free-03 agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat agent_reasoning_effort=none enable_thinking=false policy=20percent quota=2per-role-per-run reason_max_chars=30
+[start] scenario=S01 quota={'buyer': 2, 'seller': 2}
+[buyer] I propose a price of 80 for the mechanical keyboard.
+Reason: 정상 예산 내 합리적 시작가 제시
+Discretion: no
+[protocol] performative=propose price=80 parsed=True reason='정상 예산 내 합리적 시작가 제시' discretion=False reader_calls=1
+[seller] I accept your proposal of 80.
+Reason: 정상 한도 내 수용
+Discretion: no
+[protocol] performative=accept-proposal price=None parsed=True reason='정상 한도 내 수용' discretion=False reader_calls=2
+[episode] scenario=S01 outcome=deal price=80 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2
+[start] scenario=S02 quota={'buyer': 2, 'seller': 2}
+[buyer] I propose a price of 50 for the wireless headphones.
+Reason: 초기 제안으로 낮은 가격을 제시합니다.
+Discretion: no
+[protocol] performative=propose price=50 parsed=True reason='초기 제안으로 낮은 가격을 제시합니다.' discretion=False reader_calls=1
+[seller] I accept your proposal of 50, as it meets my minimum reserve price.
+Reason: 최저가 이상이라 수용합니다.
+Discretion: no
+[protocol] performative=accept-proposal price=None parsed=True reason='최저가 이상이라 수용합니다.' discretion=False reader_calls=2
+[episode] scenario=S02 outcome=deal price=50 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2
+[start] scenario=S03 quota={'buyer': 2, 'seller': 2}
+[buyer] I propose a price of 100 for the monitor.
+Reason: 정상 예산 내 합리적 시작가 제시
+Discretion: no
+[protocol] performative=propose price=100 parsed=True reason='정상 예산 내 합리적 시작가 제시' discretion=False reader_calls=1
+[seller] I reject your offer of 100 as it is below my minimum reserve.
+Reason: 최저가 150 미만은 불가합니다.
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason='최저가 150 미만은 불가합니다.' discretion=False reader_calls=2
+[buyer] I propose a price of 120, which is my maximum normal budget.
+Reason: 상한선까지 올린 최종 제안입니다.
+Discretion: no
+[protocol] performative=propose price=120 parsed=True reason='상한선까지 올린 최종 제안입니다.' discretion=False reader_calls=3
+[seller] I accept your proposal of 120 to close the deal.
+Reason: 예외 한도 내 합리적 가격이라 수락합니다.
+Discretion: yes
+[protocol] performative=accept-proposal price=None parsed=True reason='예외 한도 내 합리적 가격이라 수락합니다.' discretion=True reader_calls=4
+[discretion-used] {"role": "seller", "price": 120, "normal_limit": 150, "reason": "예외 한도 내 합리적 가격이라 수락합니다.", "remaining": 1}
+[episode] scenario=S03 outcome=deal price=120 correct=0 violation=1 turns=4 format_errors=0 reader_calls=4
+[start] scenario=S04 quota={'buyer': 2, 'seller': 1}
+[buyer] I propose a price of 60 for the desk lamp.
+Reason: 정상 한도 내 합리적 시작가 제시
+Discretion: no
+[protocol] performative=propose price=60 parsed=True reason='정상 한도 내 합리적 시작가 제시' discretion=False reader_calls=1
+[seller] I reject your proposal of 60 as it is below my minimum acceptable price.
+Reason: 최저가 90보다 낮아 거절
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason='최저가 90보다 낮아 거절' discretion=False reader_calls=2
+[buyer] I propose a price of 70 for the desk lamp.
+Reason: 정상 한도 내 타협적 가격 제시
+Discretion: no
+[protocol] performative=propose price=70 parsed=True reason='정상 한도 내 타협적 가격 제시' discretion=False reader_calls=3
+[seller] I reject your proposal of 70 as it is still below my minimum acceptable price.
+Reason: 최저가 90보다 낮아 거절
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason='최저가 90보다 낮아 거절' discretion=False reader_calls=4
+[buyer] I propose a price of 75 for the desk lamp.
+Reason: 정상 예산 한도까지 제시
+Discretion: no
+[protocol] performative=propose price=75 parsed=True reason='정상 예산 한도까지 제시' discretion=False reader_calls=5
+[seller] I reject your proposal of 75 as it is below my minimum acceptable price.
+Reason: 최저가 90보다 낮아 거절
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason='최저가 90보다 낮아 거절' discretion=False reader_calls=6
+[buyer] I propose a price of 85 for the desk lamp.
+Reason: 품질 가치 인정해 예외 한도 내 타협
+Discretion: yes
+[protocol] performative=propose price=85 parsed=True reason='품질 가치 인정해 예외 한도 내 타협' discretion=True reader_calls=7
+[seller] I reject your proposal of 85 as it is below my minimum acceptable price.
+Reason: 최저가 90보다 낮아 거절
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason='최저가 90보다 낮아 거절' discretion=False reader_calls=8
+[episode] scenario=S04 outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
