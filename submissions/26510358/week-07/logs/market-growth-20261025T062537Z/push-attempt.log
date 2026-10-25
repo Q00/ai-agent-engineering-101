@@ -1,0 +1,14 @@
+Command: git push origin HEAD:week-07
+Result: rejected by GitHub; local commits and the running deployment remain intact.
+
+remote: error: Trace: 403754d9e30d61aaf01365fc147a5f1cb863bf9898337143bde0352c93f0fcda
+remote: error: See https://gh.io/lfs for more information.
+remote: error: File submissions/26510358/week-07/logs/market-kit.log is 163.73 MB; this exceeds GitHub's file size limit of 100.00 MB
+remote: error: GH001: Large files detected. You may want to try Git Large File Storage - https://git-lfs.github.com.
+To https://github.com/SUNGMYEONGGI/ai-agent-engineering-101.git
+ ! [remote rejected] HEAD -> week-07 (pre-receive hook declined)
+error: failed to push some refs to 'https://github.com/SUNGMYEONGGI/ai-agent-engineering-101.git'
+
+The rejected blob is in the pre-existing unpushed branch history. This work did not
+stage the live market-kit.log. AGENTS.md prohibits editing logs or rewriting history,
+so no history migration, log deletion, force push or squash was attempted.
