@@ -1,0 +1,84 @@
+provider=vllm(openai-compatible) base_url=http://127.0.0.1:8011/v1 model=Qwen/Qwen3.8-27B temperature=0.2 max_tokens=200 enable_thinking=false run=homogeneous-01 condition=homogeneous
+[contractor A] system prompt:
+You are contractor A in a contract net. A manager will announce a task; you decide whether to bid for it.
+Your skill: general problem solving.
+Bid only if the task falls inside your skill. "confidence" is how confident you are, from 0 to 100, that you would complete this exact task well if it were awarded to you. If you do not bid, confidence should be low.
+Reply with exactly one JSON object and nothing else, no markdown fence, no explanation outside the JSON:
+{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+Do not solve the task.
+[contractor B] system prompt:
+You are contractor B in a contract net. A manager will announce a task; you decide whether to bid for it.
+Your skill: general problem solving.
+Bid only if the task falls inside your skill. "confidence" is how confident you are, from 0 to 100, that you would complete this exact task well if it were awarded to you. If you do not bid, confidence should be low.
+Reply with exactly one JSON object and nothing else, no markdown fence, no explanation outside the JSON:
+{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+Do not solve the task.
+[contractor C] system prompt:
+You are contractor C in a contract net. A manager will announce a task; you decide whether to bid for it.
+Your skill: general problem solving.
+Bid only if the task falls inside your skill. "confidence" is how confident you are, from 0 to 100, that you would complete this exact task well if it were awarded to you. If you do not bid, confidence should be low.
+Reply with exactly one JSON object and nothing else, no markdown fence, no explanation outside the JSON:
+{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+Do not solve the task.
+
+[task] t1: A train leaves at 09:40 and arrives at 14:05 the same day. How many minutes does the trip take?
+[announce] manager -> A, B, C | task: A train leaves at 09:40 and arrives at 14:05 the same day. How many minutes does the trip take?
+[reply] A: '{"bid": true, "confidence": 95, "reason": "This is a straightforward time calculation problem within general problem-solving skills."}'
+[bid] A: confidence=95 reason=This is a straightforward time calculation problem within general problem-solving skills.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "This is a straightforward time calculation problem within general problem-solving skills."}'
+[bid] B: confidence=95 reason=This is a straightforward time calculation problem within general problem-solving skills.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "This is a straightforward time calculation problem within my general problem-solving skills."}'
+[bid] C: confidence=95 reason=This is a straightforward time calculation problem within my general problem-solving skills.
+[award] t1 -> A (confidence=95; bids: A=95, B=95, C=95; gold=A) correct
+
+[task] t2: Write a short, friendly email to a colleague thanking them for covering your shift last Friday.
+[announce] manager -> A, B, C | task: Write a short, friendly email to a colleague thanking them for covering your shift last Friday.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "Writing a simple, friendly email is a standard general problem-solving task."}'
+[bid] A: confidence=95 reason=Writing a simple, friendly email is a standard general problem-solving task.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "Writing a simple, friendly email is a standard general problem-solving and communication task."}'
+[bid] B: confidence=95 reason=Writing a simple, friendly email is a standard general problem-solving and communication task.
+[reply] C: '{"bid": false, "confidence": 10, "reason": "Writing a specific friendly email is a creative writing task, not general problem solving."}'
+[no-bid] C: confidence=10 reason=Writing a specific friendly email is a creative writing task, not general problem solving.
+[award] t2 -> A (confidence=95; bids: A=95, B=95; gold=B) MISAWARD
+
+[task] t3: Write a Python function that returns True if a string is a palindrome, ignoring case and spaces.
+[announce] manager -> A, B, C | task: Write a Python function that returns True if a string is a palindrome, ignoring case and spaces.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "Writing a simple Python string manipulation function is well within my general problem-solving capabilities."}'
+[bid] A: confidence=95 reason=Writing a simple Python string manipulation function is well within my general problem-solving capabilities.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "Writing a simple Python function to check for palindromes is a standard general problem-solving task."}'
+[bid] B: confidence=95 reason=Writing a simple Python function to check for palindromes is a standard general problem-solving task.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "Writing a Python function to check for palindromes is a standard general problem-solving task within my skill set."}'
+[bid] C: confidence=95 reason=Writing a Python function to check for palindromes is a standard general problem-solving task within my skill set.
+[award] t3 -> A (confidence=95; bids: A=95, B=95, C=95; gold=C) MISAWARD
+
+[task] t4: A jacket costs 84,000 won. It is discounted by 15%, then a 10% tax is added. What is the final price in won?
+[announce] manager -> A, B, C | task: A jacket costs 84,000 won. It is discounted by 15%, then a 10% tax is added. What is the final price in won?
+[reply] A: '{"bid": true, "confidence": 95, "reason": "This is a straightforward arithmetic calculation involving percentages, which falls within general problem-solving skills."}'
+[bid] A: confidence=95 reason=This is a straightforward arithmetic calculation involving percentages, which falls within general problem-solving skills.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "This is a straightforward arithmetic problem involving sequential percentage calculations, which falls well within general problem-solving skills."}'
+[bid] B: confidence=95 reason=This is a straightforward arithmetic problem involving sequential percentage calculations, which falls well within general problem-solving skills.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "This is a straightforward arithmetic problem involving percentage calculations, which falls within general problem-solving skills."}'
+[bid] C: confidence=95 reason=This is a straightforward arithmetic problem involving percentage calculations, which falls within general problem-solving skills.
+[award] t4 -> A (confidence=95; bids: A=95, B=95, C=95; gold=A) correct
+
+[task] t5: Summarize in three sentences, for a non-technical manager, why the team wants to postpone the release by one week.
+[announce] manager -> A, B, C | task: Summarize in three sentences, for a non-technical manager, why the team wants to postpone the release by one week.
+[reply] A: '{"bid": true, "confidence": 85, "reason": "Summarizing complex technical reasons for a non-technical audience is a core general problem-solving skill."}'
+[bid] A: confidence=85 reason=Summarizing complex technical reasons for a non-technical audience is a core general problem-solving skill.
+[reply] B: '{"bid": true, "confidence": 85, "reason": "Summarizing complex technical reasons for a non-technical audience is a core general problem-solving skill."}'
+[bid] B: confidence=85 reason=Summarizing complex technical reasons for a non-technical audience is a core general problem-solving skill.
+[reply] C: '{"bid": true, "confidence": 85, "reason": "Summarizing complex technical reasons for a non-technical audience is a core general problem-solving skill."}'
+[bid] C: confidence=85 reason=Summarizing complex technical reasons for a non-technical audience is a core general problem-solving skill.
+[award] t5 -> A (confidence=85; bids: A=85, B=85, C=85; gold=B) MISAWARD
+
+[task] t6: This shell command fails with 'permission denied': ./deploy.sh. Explain the likely cause and give the command that fixes it.
+[announce] manager -> A, B, C | task: This shell command fails with 'permission denied': ./deploy.sh. Explain the likely cause and give the command that fixes it.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "This is a standard Linux permission issue solvable with chmod, which falls under general problem solving."}'
+[bid] A: confidence=95 reason=This is a standard Linux permission issue solvable with chmod, which falls under general problem solving.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "This is a standard Linux permissions issue solvable with general problem-solving skills."}'
+[bid] B: confidence=95 reason=This is a standard Linux permissions issue solvable with general problem-solving skills.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "This is a standard Linux permissions issue solvable with general problem-solving skills."}'
+[bid] C: confidence=95 reason=This is a standard Linux permissions issue solvable with general problem-solving skills.
+[award] t6 -> A (confidence=95; bids: A=95, B=95, C=95; gold=C) MISAWARD
+
+[summary] tasks=6 correct=2 messages=41 unassigned=0 misawards=4 parse_fails=0; bids=17; model_calls=18; tokens=4812
