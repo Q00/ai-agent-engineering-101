@@ -2,6 +2,7 @@
 import json
 
 from harness import call_harness
+from seller_memory import load_recent_results
 
 
 def decide_opening(item, reserve):
@@ -11,7 +12,12 @@ def decide_opening(item, reserve):
         "reserve. Choose a whole-number asking price at or above the reserve.\n"
         "Return only a JSON object with action set to ask, price (an integer), "
         "and reason (one short sentence).\n"
-        "Item and private reserve:\n" + json.dumps({"item": item, "reserve": reserve})
+        "Item, private reserve, and recent local results:\n"
+        + json.dumps({
+            "item": item,
+            "reserve": reserve,
+            "recent_results": load_recent_results(item),
+        })
     )
     decision = call_harness(prompt)
     price = decision.get("price")
