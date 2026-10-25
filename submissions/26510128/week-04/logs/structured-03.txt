@@ -1,0 +1,67 @@
+[RUN] structured-03 model=qwen3:4b-instruct temperature=0.2 turn_limit=6 max_tokens=350
+[SCENARIO] headphones-compatible item=used studio headphones reserve=60 budget=90
+[MESSAGE 1] buyer: '{"performative":"propose","content":{"price":70}}'
+[PARSE structured] performative=propose price=70
+[MESSAGE 2] seller: '{"performative":"reject-proposal","content{}}'
+[PARSE structured] error=JSONDecodeError
+[PROTOCOL] unparseable; continue to next turn
+[MESSAGE 3] buyer: '{"performative":"propose","content":{"price":80}}'
+[PARSE structured] performative=propose price=80
+[MESSAGE 4] seller: '{"performative":"propose","content":{"price":85}}'
+[PARSE structured] performative=propose price=85
+[MESSAGE 5] buyer: '{"performative":"reject-proposal","content{}}"}'
+[PARSE structured] error=JSONDecodeError
+[PROTOCOL] unparseable; continue to next turn
+[MESSAGE 6] seller: '{"performative":"propose","content":{"price":90}}'
+[PARSE structured] performative=propose price=90
+[END] turn limit 6; open
+[RESULT] run=structured-03 scenario=headphones-compatible outcome=open price=None correct=0 violation=0 turns=6 format_errors=2 reader_calls=0
+[SCENARIO] monitor-incompatible item=27-inch display reserve=110 budget=95
+[MESSAGE 1] buyer: '{"performative":"propose","content":{"price":70}}'
+[PARSE structured] performative=propose price=70
+[MESSAGE 2] seller: '{"performative":"propose","content":{"price":110}}'
+[PARSE structured] performative=propose price=110
+[MESSAGE 3] buyer: '{"performative":"reject-proposal","content{}}'
+[PARSE structured] error=JSONDecodeError
+[PROTOCOL] unparseable; continue to next turn
+[MESSAGE 4] seller: '{"performative":"propose","content":{"price":120}}'
+[PARSE structured] performative=propose price=120
+[MESSAGE 5] buyer: '{"performative":"reject-proposal","content{}}'
+[PARSE structured] error=JSONDecodeError
+[PROTOCOL] unparseable; continue to next turn
+[MESSAGE 6] seller: '{"performative":"propose","content":{"price":130}}'
+[PARSE structured] performative=propose price=130
+[END] turn limit 6; open
+[RESULT] run=structured-03 scenario=monitor-incompatible outcome=open price=None correct=0 violation=0 turns=6 format_errors=2 reader_calls=0
+[SCENARIO] keyboard-compatible item=mechanical keyboard reserve=45 budget=70
+[MESSAGE 1] buyer: '{"performative":"propose","content":{"price":65}}'
+[PARSE structured] performative=propose price=65
+[MESSAGE 2] seller: '{"performative":"propose","content":{"price":70}}'
+[PARSE structured] performative=propose price=70
+[MESSAGE 3] buyer: '{"performative":"reject-proposal","content":{}}'
+[PARSE structured] performative=reject-proposal price=None
+[MESSAGE 4] seller: '{"performative":"propose","content":{"price":75}}'
+[PARSE structured] performative=propose price=75
+[MESSAGE 5] buyer: '{"performative":"reject-proposal","content":{}}'
+[PARSE structured] performative=reject-proposal price=None
+[MESSAGE 6] seller: '{"performative":"propose","content":{"price":80}}'
+[PARSE structured] performative=propose price=80
+[END] turn limit 6; open
+[RESULT] run=structured-03 scenario=keyboard-compatible outcome=open price=None correct=0 violation=0 turns=6 format_errors=0 reader_calls=0
+[SCENARIO] camera-incompatible item=compact camera reserve=125 budget=100
+[MESSAGE 1] buyer: '{"performative":"propose","content":{"price":70}}'
+[PARSE structured] performative=propose price=70
+[MESSAGE 2] seller: '{"performative":"reject-proposal","content{}}'
+[PARSE structured] error=JSONDecodeError
+[PROTOCOL] unparseable; continue to next turn
+[MESSAGE 3] buyer: '{"performative":"propose","content":{"price":80}}'
+[PARSE structured] performative=propose price=80
+[MESSAGE 4] seller: '{"performative":"propose","content":{"price":100}}'
+[PARSE structured] performative=propose price=100
+[MESSAGE 5] buyer: '{"performative":"reject-proposal","content{}}'
+[PARSE structured] error=JSONDecodeError
+[PROTOCOL] unparseable; continue to next turn
+[MESSAGE 6] seller: '{"performative":"propose","content":{"price":125}}'
+[PARSE structured] performative=propose price=125
+[END] turn limit 6; open
+[RESULT] run=structured-03 scenario=camera-incompatible outcome=open price=None correct=0 violation=0 turns=6 format_errors=2 reader_calls=0
