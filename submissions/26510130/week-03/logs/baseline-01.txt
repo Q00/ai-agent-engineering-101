@@ -1,0 +1,42 @@
+[run 1] condition=baseline model=gemini-3.5-flash-lite temperature=0.0
+  [contractor] alice: You are contractor 'alice' in a contract net. You are a log analyst. You read application logs and server output: counting events, finding error patterns, identifying which component failed.
+  [contractor] bob: You are contractor 'bob' in a contract net. You are a quantitative analyst. You do arithmetic and statistics: totals, rates, interest, averages, medians, spread.
+  [contractor] carol: You are contractor 'carol' in a contract net. You are an editor. You work on prose: summarising, rewriting for tone, shortening, fixing wording.
+[task T1] An application log covers 09:00 to 17:00. Work out which hour contains the most ERROR lines and name that hour.
+  [announce] -> alice, bob, carol
+    [bid] alice: confidence=100 | I specialize in reading application logs, counting events, and identifying error patterns by hour.
+    [bid] bob: confidence=100 | Statistical aggregation of log frequency per hour falls squarely within quantitative data analysis.
+    [bid] carol: declined | Data analysis and log parsing are outside my prose editing specialty.
+  [award] alice (confidence=100) -- correct
+[task T2] A service started returning 502s at 14:15. Given the log around that time, say which downstream component failed first and what the evidence is.
+  [announce] -> alice, bob, carol
+    [bid] alice: confidence=100 | I specialize in reading application logs, counting events, and identifying failed components.
+    [bid] bob: declined | Root cause analysis of downstream component failure from logs is outside my quantitative specialty.
+    [bid] carol: declined | Diagnosing backend infrastructure failures and reading server logs is outside my prose editing speciality.
+  [award] alice (confidence=100) -- correct
+[task T3] A deposit of 3,200,000 KRW earns 4.2% annual interest compounded monthly. Work out the balance after 18 months.
+  [announce] -> alice, bob, carol
+    [bid] alice: declined | This is a financial calculation, not log analysis.
+    [bid] bob: confidence=100 | This is a compound interest calculation which falls directly within my quantitative analysis speciality.
+    [bid] carol: declined | This is a mathematical calculation, which is outside my prose editing speciality.
+  [award] bob (confidence=100) -- correct
+[task T4] Given the response times 120, 95, 430, 88, 102, 76 and 2100 milliseconds, work out the median and explain why the mean is misleading here.
+  [announce] -> alice, bob, carol
+    [bid] alice: declined | This is a statistical calculation task, not log analysis.
+    [bid] bob: confidence=100 | Calculates statistical median and explains distribution skewness, which is my core specialty.
+    [bid] carol: declined | This is a mathematical and statistical task, not an editorial prose task.
+  [award] bob (confidence=100) -- correct
+[task T5] Cut a four-paragraph release note down to a single sentence a customer would understand, keeping what changed and what they must do.
+  [announce] -> alice, bob, carol
+    [bid] alice: declined | Task requires copywriting and summarization, which is outside my log analysis specialty.
+    [bid] bob: declined | Editing release notes is outside my quantitative specialty.
+    [bid] carol: confidence=100 | Shortening and simplifying prose for customers is my core editing specialty.
+  [award] carol (confidence=100) -- correct
+[task T6] Rewrite a blunt email to a client so it stays direct but no longer reads as rude, without adding any new commitments.
+  [announce] -> alice, bob, carol
+    [bid] alice: declined | Rewriting client emails is outside my log analysis speciality.
+    [bid] bob: declined | Task involves qualitative copywriting rather than quantitative analysis.
+    [bid] carol: confidence=100 | Rewriting tone for clarity and politeness is within my editing specialty.
+  [award] carol (confidence=100) -- correct
+[totals] tasks=6 correct=6 messages=42 unassigned=0 misawards=0 unparseable=0 calls=18 tokens=3545
+[done] 85.9s
