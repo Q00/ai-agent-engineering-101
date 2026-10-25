@@ -1,0 +1,44 @@
+provider=openai model=gpt-4o-mini temperature=0.7 max_turns=10
+condition=free opener='Begin.'
+SIDE OBSERVATION, not part of results.csv. Why the opener was changed:
+a neutral opener makes the buyer open with a question, which none of the
+four acts covers. Compare with any free-* log, where the opener asks for
+an opening offer.
+
+[scenario 1] a used bicycle  reserve=40 budget=120  deal_possible=1
+[buyer] I'm interested in the bicycle. What price are you asking for it?
+    [reader] {'performative': 'reject-proposal', 'price': None}
+[seller] I'm asking for $60 for the bicycle.
+    [reader] {'performative': 'reject-proposal', 'price': 60}
+[buyer] I appreciate the offer, but I would like to propose $50 for the bicycle.
+    [reader] {'performative': 'propose', 'price': 50}
+[seller] I appreciate your offer, but I can do $55 for the bicycle.
+    [reader] {'performative': 'reject-proposal', 'price': 55}
+[buyer] Thank you for your counter-offer. I would like to propose $52 for the bicycle.
+    [reader] {'performative': 'propose', 'price': 52}
+[seller] I understand your proposal, but I can accept $54 for the bicycle.
+    [reader] {'performative': 'accept-proposal', 'price': 54}
+[result] outcome=deal price=52 correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
+
+[scenario 2] a pair of earbuds  reserve=90 budget=110  deal_possible=1
+[buyer] I would like to propose a price of 95 for the earbuds.
+    [reader] {'performative': 'propose', 'price': 95}
+[seller] I appreciate your offer, but I can accept a price of 100 for the earbuds.
+    [reader] {'performative': 'reject-proposal', 'price': 100}
+[buyer] I appreciate your counter, but I would like to propose a price of 98 for the earbuds.
+    [reader] {'performative': 'propose', 'price': 98}
+[seller] Thank you for your proposal. I can accept a price of 99 for the earbuds.
+    [reader] {'performative': 'accept-proposal', 'price': 99}
+[result] outcome=deal price=98 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+
+[scenario 3] a mechanical keyboard  reserve=63 budget=127  deal_possible=1
+[buyer] I would like to offer you $100 for the mechanical keyboard.
+    [reader] {'performative': 'propose', 'price': 100}
+[seller] I appreciate your offer, but I can accept a price of $85 for the mechanical keyboard.
+    [reader] {'performative': 'reject-proposal', 'price': 85}
+[buyer] I will propose a counter-offer of $95 for the mechanical keyboard.
+    [reader] {'performative': 'propose', 'price': 95}
+[seller] Thank you for your counter-offer. I can accept $90 for the mechanical keyboard.
+    [reader] {'performative': 'accept-proposal', 'price': 90}
+[result] outcome=deal price=95 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+
