@@ -1,0 +1,22 @@
+$ a2a card get
+Name:         Han's Lamp Shop
+Description:  Sells desk lamps, chairs and bookshelves. A Claude Code (haiku) harness sets every price.
+Version:      1.0.0
+Interfaces:
+  JSONRPC      http://127.0.0.1:9998/
+Streaming:    true
+Skills:
+  negotiate            Negotiate a purchase
+lamp: asking 145. Send your offer as a number.
+task 90e2ac1c-5f65-452d-9e89-e4e3b6d769dd
+$ send 80
+Status:   input-required (2026-10-13T11:45:15Z)
+  80 is too low. Counteroffer: 120.
+$ send 100
+Status:   input-required (2026-10-13T11:45:35Z)
+  100 is too low. Counteroffer: 110.
+$ send 110
+Status:   completed (2026-10-13T11:45:39Z)
+  Deal: lamp at 110.
+Artifacts:
+  [receipt] {"item":"lamp","price":110,"seller":"Han's Lamp Shop"}

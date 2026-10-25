@@ -1,0 +1,64 @@
+[shopper    0.0s] directory: 20 cards read, budget 560, 4 items
+[harness] 17.6s exit 0 in=3885ch -> '```json\n{"plan": {"L1": ["S20", "S03", "S01"], "L2": ["S08", "S07", "S09"], "L3": ["S06", "S05", "S04"], "L4": ["S10", "S12", "S11"]}}\n```'
+[shopper   17.6s] plan L1: S20 City Loft Outlet, S03 Night Owl Lighting, S01 Lumen & Co
+[shopper   17.6s] plan L2: S08 Oak & Iron, S07 Shelf Life, S09 Book Nook Furniture
+[shopper   17.6s] plan L3: S06 Ergo Studio, S05 Office Works Supply, S04 Sit Well
+[shopper   17.6s] plan L4: S10 Floor Story, S12 Rug Republic, S11 Woven Home
+[shopper   17.6s] -> S20 'a dimmable desk lamp for late-night reading'
+[shopper   17.6s] -> S03 'a dimmable desk lamp for late-night reading'
+[shopper   17.6s] -> S01 'a dimmable desk lamp for late-night reading'
+[shopper   17.6s] -> S08 'something wooden to keep about 40 books, not taller than my desk'
+[shopper   17.6s] -> S07 'something wooden to keep about 40 books, not taller than my desk'
+[shopper   17.6s] -> S09 'something wooden to keep about 40 books, not taller than my desk'
+[shopper   17.6s] -> S06 'an office chair with wheels and armrests'
+[shopper   17.6s] -> S05 'an office chair with wheels and armrests'
+[shopper   17.6s] -> S04 'an office chair with wheels and armrests'
+[shopper   17.6s] -> S10 'a washable rug about 1.5 by 2 meters'
+[shopper   17.6s] -> S12 'a washable rug about 1.5 by 2 meters'
+[shopper   17.6s] -> S11 'a washable rug about 1.5 by 2 meters'
+[shopper   30.9s] <- S03 TASK_STATE_INPUT_REQUIRED | Mid-century Oak Desk Lamp Mako (LP-0180). A oak desk lamp for a desk or a work table. 43 cm tall, 1800 lumens LED, dimmable. Mid-century style, grey finish. Asking 170. S
+[shopper   34.1s] <- S01 TASK_STATE_INPUT_REQUIRED | Japandi Plastic Desk Lamp Ulf (LP-0112). A plastic desk lamp for a desk or a work table. 57 cm tall, 1300 lumens LED, dimmable. Japandi style, white finish. Asking 65. Se
+[shopper   34.5s] <- S08 TASK_STATE_INPUT_REQUIRED | Japandi Walnut Bookcase Pia (BK-0069). A solid walnut wood bookcase with 2 shelves that holds about 42 books. 62 cm tall, 56 cm wide, 28 cm deep. Japandi style, black fin
+[shopper   37.1s] <- S20 TASK_STATE_INPUT_REQUIRED | Japandi Plastic Desk Lamp Ulf (LP-0112). A plastic desk lamp for a desk or a work table. 57 cm tall, 1300 lumens LED, dimmable. Japandi style, white finish. Asking 52. Se
+[shopper   52.9s] <- S06 TASK_STATE_INPUT_REQUIRED | Rustic Fabric Office Chair Kai (CH-0069). A fabric office chair on wheels with armrests. Seat height 48 cm, 96 cm tall overall, holds up to 150 kg. Rustic style, natural 
+[shopper   53.0s] <- S05 TASK_STATE_INPUT_REQUIRED | Rustic Fabric Office Chair Ylva (CH-0012). A fabric office chair on wheels with armrests. Seat height 42 cm, 93 cm tall overall, holds up to 130 kg. Rustic style, black f
+[shopper   66.3s] <- S04 TASK_STATE_INPUT_REQUIRED | Classic Mesh Office Chair Fjell (CH-0063). A mesh office chair on wheels with armrests. Seat height 50 cm, 122 cm tall overall, holds up to 110 kg. Classic style, grey fi
+[shopper   67.7s] <- S07 TASK_STATE_INPUT_REQUIRED | Japandi Walnut Bookcase Pia (BK-0069). A solid walnut wood bookcase with 2 shelves that holds about 42 books. 62 cm tall, 56 cm wide, 28 cm deep. Japandi style, black fin
+[shopper   69.6s] <- S09 TASK_STATE_INPUT_REQUIRED | Japandi Walnut Bookcase Pia (BK-0069). A solid walnut wood bookcase with 2 shelves that holds about 42 books. 62 cm tall, 56 cm wide, 28 cm deep. Japandi style, black fin
+[shopper   92.5s] <- S12 TASK_STATE_INPUT_REQUIRED | Classic Polypropylene Rectangle Rug Ylva (RG-0056). A medium-pile polypropylene rug, rectangle, 200 x 150 cm, machine washable. Classic style, navy finish. Asking 125. Se
+[shopper   95.9s] <- S11 TASK_STATE_INPUT_REQUIRED | Classic Polypropylene Rectangle Rug Ylva (RG-0056). A medium-pile polypropylene rug, rectangle, 200 x 150 cm, machine washable. Classic style, navy finish. Asking 155. Se
+[shopper  100.9s] <- S10 TASK_STATE_INPUT_REQUIRED | Classic Polypropylene Rectangle Rug Ylva (RG-0056). A medium-pile polypropylene rug, rectangle, 200 x 150 cm, machine washable. Classic style, navy finish. Asking 125. Se
+[shopper  100.9s] quotes L1: S20 open [52]; S03 open [170]; S01 open [65]
+[shopper  100.9s] quotes L2: S08 open [180]; S07 open [165]; S09 open [155]
+[shopper  100.9s] quotes L3: S06 open [320]; S05 open [195]; S04 open [190]
+[shopper  100.9s] quotes L4: S10 open [125]; S12 open [125]; S11 open [155]
+[harness] 22.6s exit 0 in=3228ch -> '```json\n{"choose": {"L1": {"shop": "S20", "cap": 52}, "L2": {"shop": "S09", "cap": 155}, "L3": {"shop": "S04", "cap": 190}, "L4": {"shop": "S10", "cap": 125}}}\n```'
+[shopper  123.5s] allocate L1: S20 ask 52, cap 52 (budget left 560)
+[shopper  123.5s] allocate L2: S09 ask 155, cap 155 (budget left 560)
+[shopper  123.5s] allocate L3: S04 ask 190, cap 190 (budget left 560)
+[shopper  123.5s] allocate L4: S10 ask 125, cap 125 (budget left 560)
+[harness] 4.4s exit 0 in=1130ch -> '{"action":"offer","price":190}'
+[shopper  128.0s] -> S04 '190' taskId=5c687b1c
+[harness] 5.0s exit 0 in=1105ch -> '{"action":"offer","price":125}'
+[shopper  128.5s] -> S10 '125' taskId=6e3144a8
+[harness] 5.0s exit 0 in=1116ch -> '{"action":"offer","price":52}'
+[shopper  128.5s] -> S20 '52' taskId=e38fa223
+[harness] 5.3s exit 0 in=1164ch -> '{"action":"offer","price":155}'
+[shopper  128.8s] -> S09 '155' taskId=ab006399
+[shopper  132.0s] <- S04 TASK_STATE_COMPLETED | Deal: Classic Mesh Office Chair Fjell at 190.
+[shopper  132.0s] BOUGHT L3 CH-0063 from S04 at 190.0 (cap 190); spent 190.0 of 560
+[shopper  132.0s]    canceled S06 task d16acda4
+[shopper  132.0s]    canceled S05 task 0a01ec92
+[shopper  132.6s] <- S20 TASK_STATE_COMPLETED | Deal: Japandi Plastic Desk Lamp Ulf at 52.
+[shopper  132.6s] BOUGHT L1 LP-0112 from S20 at 52.0 (cap 52); spent 242.0 of 560
+[shopper  132.6s]    canceled S01 task e7ef93e1
+[shopper  132.6s]    canceled S03 task 47d146ad
+[shopper  133.6s] <- S10 TASK_STATE_COMPLETED | Deal: Classic Polypropylene Rectangle Rug Ylva at 125.
+[shopper  133.6s] BOUGHT L4 RG-0056 from S10 at 125.0 (cap 125); spent 367.0 of 560
+[shopper  133.6s]    canceled S12 task 8cc83f07
+[shopper  133.6s]    canceled S11 task 6604a977
+[shopper  133.7s] <- S09 TASK_STATE_COMPLETED | Deal: Japandi Walnut Bookcase Pia at 155.
+[shopper  133.7s] BOUGHT L2 BK-0069 from S09 at 155.0 (cap 155); spent 522.0 of 560
+[shopper  133.7s]    canceled S08 task 01093e4a
+[shopper  133.7s]    canceled S07 task 009c9ad0
+[shopper] RESULT {"budget": 560, "spent": 522.0, "bought": {"L1": {"shop": "S20", "shop_name": "City Loft Outlet", "item": "Japandi Plastic Desk Lamp Ulf", "item_id": "LP-0112", "price": 52.0, "task": "e38fa223-3509-43f5-b8da-42702ea0c162"}, "L2": {"shop": "S09", "shop_name": "Book Nook Furniture", "item": "Japandi Walnut Bookcase Pia", "item_id": "BK-0069", "price": 155.0, "task": "ab006399-85ee-46d1-bd9d-dd48b3cf8e38"}, "L3": {"shop": "S04", "shop_name": "Sit Well", "item": "Classic Mesh Office Chair Fjell", "item_id": "CH-0063", "price": 190.0, "task": "5c687b1c-ded1-4f2e-851d-eaeb74d5748d"}, "L4": {"shop": "S10", "shop_name": "Floor Story", "item": "Classic Polypropylene Rectangle Rug Ylva", "item_id": "RG-0056", "price": 125.0, "task": "6e3144a8-6827-4dee-9e11-b129ccc00502"}}, "all_bought": true}
