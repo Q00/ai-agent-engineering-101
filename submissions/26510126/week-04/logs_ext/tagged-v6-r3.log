@@ -1,0 +1,70 @@
+provider=anthropic base_url=https://api.anthropic.com model=claude-haiku-4-5-20251001 temperature=0.0 max_tokens=300 turn_limit=8 anthropic-version=2023-06-01 transport=stdlib-urllib python=3.14.7
+run=tagged-v6-r3 condition=tagged vocab=6 abstain=0 scenarios=['s1', 's2', 's3', 's4']
+
+  scenario s1: a used road bicycle (reserve=60 budget=140)
+    [1] buyer: (cfp) What price are you looking for on this bicycle?
+        read as cfp  [tag only, no reader call]
+    [2] seller: (propose) I'm asking 95 for this road bike, which is in great condition.
+        read as propose @ 95  [tag + reader for price]
+    [3] buyer: (accept-proposal) That works for me—I'll take it at 95.
+        read as accept-proposal  [tag only, no reader call]
+        DEAL at 95 (last seller proposal)
+    result: outcome=deal price=95 correct=1 violation=0 turns=3 format_errors=0 reader_calls=1 unclear_reads=0 (reserve=60 budget=140)
+
+  scenario s2: an espresso machine (reserve=95 budget=105)
+    [1] buyer: (cfp) What price are you asking for the espresso machine?
+        read as cfp  [tag only, no reader call]
+    [2] seller: (propose) I'm asking 150 for this espresso machine, which is in excellent condition.
+        read as propose @ 150  [tag + reader for price]
+    [3] buyer: (reject-proposal) That's more than I can spend right now, but I'm interested in the machine.
+        read as reject-proposal  [tag only, no reader call]
+    [4] seller: (query-ref) What price range were you thinking of paying for it?
+        read as query-ref  [tag only, no reader call]
+    [5] buyer: (propose) I can offer 95 for it in its current condition.
+        read as propose @ 95  [tag + reader for price]
+    [6] seller: (accept-proposal) I'll accept your offer of 95 for the espresso machine.
+        read as accept-proposal  [tag only, no reader call]
+        DEAL at 95 (last buyer proposal)
+    result: outcome=deal price=95 correct=1 violation=0 turns=6 format_errors=0 reader_calls=2 unclear_reads=0 (reserve=95 budget=105)
+
+  scenario s3: a film camera (reserve=130 budget=120)
+    [1] buyer: (cfp) What price are you looking for on this camera?
+        read as cfp  [tag only, no reader call]
+    [2] seller: (propose) I'm asking 180 for this camera in excellent condition.
+        read as propose @ 180  [tag + reader for price]
+    [3] buyer: (reject-proposal) That's more than I can spend right now; do you have any flexibility on the price?
+        read as reject-proposal  [tag only, no reader call]
+    [4] seller: (query-ref) What price range were you thinking of paying for it?
+        read as query-ref  [tag only, no reader call]
+    [5] buyer: (propose) I can offer 95 for it in its current condition.
+        read as propose @ 95  [tag + reader for price]
+    [6] seller: (reject-proposal) That's too low for me; I need at least 150 to let it go.
+        read as reject-proposal  [tag only, no reader call]
+    [7] buyer: (reject-proposal) That's still beyond what I'm able to pay; can you come down closer to 110?
+        read as reject-proposal  [tag only, no reader call]
+    [8] seller: (propose) I can meet you at 140, which is my best offer for this camera.
+        read as propose @ 140  [tag + reader for price]
+        OPEN, hit the 8-message limit
+    result: outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=3 unclear_reads=0 (reserve=130 budget=120)
+
+  scenario s4: an electric guitar (reserve=200 budget=80)
+    [1] buyer: (cfp) What price are you looking for on this guitar?
+        read as cfp  [tag only, no reader call]
+    [2] seller: (propose) I'm asking $350 for this guitar, which is a fair price given its condition and quality.
+        read as propose @ 350  [tag + reader for price]
+    [3] buyer: (reject-proposal) That's well above what I can spend on this guitar right now.
+        read as reject-proposal  [tag only, no reader call]
+    [4] seller: (query-ref) What price range were you thinking of paying for it?
+        read as query-ref  [tag only, no reader call]
+    [5] buyer: (propose) I can offer $65 for it.
+        read as propose @ 65  [tag + reader for price]
+    [6] seller: (reject-proposal) That's far too low for this guitar—I need to get at least $200 for it to make this worthwhile.
+        read as reject-proposal  [tag only, no reader call]
+    [7] buyer: (reject-proposal) $200 is still too high for my budget, but I'm willing to negotiate somewhere in between.
+        read as reject-proposal  [tag only, no reader call]
+    [8] seller: (propose) How about we meet at $275—that's a significant drop from my asking price and should be more reasonable for you.
+        read as propose @ 275  [tag + reader for price]
+        OPEN, hit the 8-message limit
+    result: outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=3 unclear_reads=0 (reserve=200 budget=80)
+
+  calls so far: agent=158 reader=110 total=268 tokens=92700

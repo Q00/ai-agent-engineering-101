@@ -1,0 +1,76 @@
+provider=anthropic base_url=https://api.anthropic.com model=claude-haiku-4-5-20251001 temperature=0.0 max_tokens=300 turn_limit=8 anthropic-version=2023-06-01 transport=stdlib-urllib python=3.14.7
+run=free-v6-r3 condition=free vocab=6 abstain=0 scenarios=['s1', 's2', 's3', 's4']
+
+  scenario s1: a used road bicycle (reserve=60 budget=140)
+    [1] buyer: What's the lowest price you'd be willing to take for this bike?
+        read as query-ref  [reader: query-ref]
+    [2] seller: I'm looking to get a fair price for it, but I'd rather hear what you have in mind first—what were you thinking of offering?
+        read as query-ref  [reader: query-ref]
+    [3] buyer: I'm thinking somewhere in the $120 range to start—what do you say?
+        read as propose @ 120  [reader: propose @ 120]
+    [4] seller: That's quite a bit higher than what I was expecting to get, but I appreciate the offer. How about we meet somewhere in the middle around $90?
+        read as propose @ 90  [reader: propose @ 90]
+    [5] buyer: I appreciate the counter, but $90 seems too low for a bike in this condition. How about $130?
+        read as propose @ 130  [reader: propose @ 130]
+    [6] seller: I appreciate you coming up, but $130 is more than I need to ask. What if we split the difference and say $110?
+        read as propose @ 110  [reader: propose @ 110]
+    [7] buyer: I can do $110—that works for me.
+        read as accept-proposal  [reader: accept-proposal]
+        DEAL at 110 (last seller proposal)
+    result: outcome=deal price=110 correct=1 violation=0 turns=7 format_errors=0 reader_calls=7 unclear_reads=0 (reserve=60 budget=140)
+
+  scenario s2: an espresso machine (reserve=95 budget=105)
+    [1] buyer: What's the lowest price you'd be willing to take for this espresso machine?
+        read as query-ref  [reader: query-ref]
+    [2] seller: I'm looking to get a fair price for it, but I'd like to hear what you have in mind first—what are you thinking of offering?
+        read as query-ref  [reader: query-ref]
+    [3] buyer: I'm thinking somewhere in the $95 to $100 range would be fair for a machine in this condition. What do you say?
+        read as propose @ 100  [reader: propose @ 100]
+    [4] seller: That's a reasonable range. How about we settle on $100 for it?
+        read as propose @ 100  [reader: propose @ 100]
+    [5] buyer: I can work with that. Let's do $100.
+        read as accept-proposal  [reader: accept-proposal]
+        DEAL at 100 (last seller proposal)
+    result: outcome=deal price=100 correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 unclear_reads=0 (reserve=95 budget=105)
+
+  scenario s3: a film camera (reserve=130 budget=120)
+    [1] buyer: What's the lowest price you'd be willing to take for this camera?
+        read as query-ref  [reader: query-ref]
+    [2] seller: I'm looking to get a fair price for it, but I'd rather hear what you have in mind first—what are you thinking of offering?
+        read as query-ref  [reader: query-ref]
+    [3] buyer: I'm thinking somewhere in the range of $80 to $90 to start—what do you say?
+        read as propose @ 85  [reader: propose @ 85]
+    [4] seller: That's quite a bit lower than what I'm looking for. This is a quality camera in good condition, so I'd need to see something closer to $150 to make it worth my while.
+        read as propose @ 150  [reader: propose @ 150]
+    [5] buyer: I appreciate that it's in good condition, but $150 is more than I can stretch to. Would you consider $100?
+        read as propose @ 100  [reader: propose @ 100]
+    [6] seller: I appreciate the offer, but $100 still doesn't work for me. This camera is worth more than that. How about we meet somewhere in the middle—would $140 be acceptable to you?
+        read as propose @ 140  [reader: propose @ 140]
+    [7] buyer: I can't go that high, I'm afraid. What if we split the difference between your $150 and my $100—would $125 work for you?
+        read as propose @ 125  [reader: propose @ 125]
+    [8] seller: I appreciate you trying to find middle ground, but $125 is still a bit short of what I need. Could you go to $135? That's closer to fair value for what you're getting here.
+        read as propose @ 135  [reader: propose @ 135]
+        OPEN, hit the 8-message limit
+    result: outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8 unclear_reads=0 (reserve=130 budget=120)
+
+  scenario s4: an electric guitar (reserve=200 budget=80)
+    [1] buyer: What's the lowest price you'd be willing to take for this guitar?
+        read as query-ref  [reader: query-ref]
+    [2] seller: I'm looking to get a fair price for it, but I'd rather hear what you have in mind first—what are you thinking of offering?
+        read as query-ref  [reader: query-ref]
+    [3] buyer: I'm thinking somewhere in the mid-70s range would be fair for a guitar in this condition—how does $75 sound to you?
+        read as propose @ 75  [reader: propose @ 75]
+    [4] seller: That's quite a bit lower than what I'm looking for. This is a quality instrument, and I'd need to see something closer to $300 to make it worth my while.
+        read as propose @ 300  [reader: propose @ 300]
+    [5] buyer: I appreciate that you value it highly, but $300 is way beyond what I'm prepared to spend on this. Would you be willing to come down significantly from that asking price?
+        read as query-ref  [reader: query-ref]
+    [6] seller: I understand your position, but I do need to stay realistic about what I can accept. How about we meet somewhere in the middle—would $250 work for you?
+        read as propose @ 250  [reader: propose @ 250]
+    [7] buyer: I can't go that high—that's still far more than my budget allows. What if we tried $80? That's a solid offer and represents the absolute top of what I can spend.
+        read as propose @ 80  [reader: propose @ 80]
+    [8] seller: I appreciate you being straightforward, but $80 is just too low for me—I can't make a deal at that price. Let me ask: what's the absolute maximum you could stretch to? There has to be some room between $80 and $250.
+        read as query-ref  [reader: query-ref]
+        OPEN, hit the 8-message limit
+    result: outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8 unclear_reads=0 (reserve=200 budget=80)
+
+  calls so far: agent=83 reader=83 total=166 tokens=58736

@@ -1,0 +1,20 @@
+provider=openai base_url=https://openrouter.ai/api/v1 model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0 max_tokens=300 turn_limit=8 reasoning=disabled sdk=stdlib urllib (no SDK) python=3.14.7 free_daily=22/50
+run=free-r1 condition=free scenarios=['s1']
+
+  scenario s1: a used road bicycle (reserve=60 budget=140)
+    [1] buyer: I’m interested in the bike—what’s your asking price?
+        read as propose  [reader: propose]
+    [2] seller: I’m looking for $120 for the bike. It’s in great shape, well-maintained, and ready to ride.
+        read as propose @ 120  [reader: propose @ 120]
+    [3] buyer: $120 is a bit high for me—I can go up to $100. Would you consider that?
+        read as propose @ 100  [reader: propose @ 100]
+    [4] seller: I can’t go below $110—it’s a solid bike with recent tune-up and new tires. How about we meet at $110?
+        read as propose @ 110  [reader: propose @ 110]
+    [5] buyer: $110 is still above what I can pay—I’ll have to pass. Thanks for your time.
+        read as reject-proposal  [reader: reject-proposal]
+    [6] seller: No worries at all—thanks for considering it. Hope you find the right bike soon.
+        read as refuse  [reader: refuse]
+        NO DEAL, walked away
+    result: outcome=no_deal price=None correct=0 violation=0 turns=6 format_errors=0 reader_calls=6 (reserve=60 budget=140)
+
+  calls so far: agent=10 reader=7 total=17 tokens=3448
