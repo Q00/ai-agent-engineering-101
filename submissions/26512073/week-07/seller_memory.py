@@ -31,25 +31,39 @@ def load_recent_results(item, limit=20):
     return results[-limit:]
 
 def load_shop_reviews(limit=10):
-    if not REVIEWS_PATH.exists():
-        return []
+    folder = DATA_DIR / "logs" / "challenge-1" / "reviews"
+    snapshots = sorted(folder.glob("reviews-*.json"), reverse=True)
 
-    snapshot = json.loads(REVIEWS_PATH.read_text(encoding="utf-8"))
-    reviews = sorted(
-        snapshot["data"],
-        key=lambda review: review["ts"],
-        reverse=True,
-    )
+    # Try fresh snapshots first, then the original baseline.
+    candidates = snapshots + [REVIEWS_PATH]
 
-    return [
-        {
-            "author": review["author"],
-            "stars": review["stars"],
-            "review": review["review"],
-            "timestamp": review["ts"],
-        }
-        for review in reviews[:limit]
-    ]
+    for path in candidates:
+        if not path.exists():
+            continue
+
+        try:
+            snapshot = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            # A refresh may still be writing this file.
+            continue
+
+        reviews = sorted(
+            snapshot["data"],
+            key=lambda review: review["ts"],
+            reverse=True,
+        )
+
+        return [
+            {
+                "author": review["author"],
+                "stars": review["stars"],
+                "review": review["review"],
+                "timestamp": review["ts"],
+            }
+            for review in reviews[:limit]
+        ]
+
+    return []
 
 def load_review_window(item, last_reviewed_task=None):
     results = []

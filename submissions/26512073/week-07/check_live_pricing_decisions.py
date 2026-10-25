@@ -54,6 +54,7 @@ def main():
                            ])]
             reviews_path.write_text(json.dumps({"synthetic": True, "data": reviews}, indent=2), encoding="utf-8")
             with patch.object(pricing_state, "STATE_PATH", state_path), \
+                    patch.object(seller_memory, "DATA_DIR", folder), \
                     patch.object(seller_memory, "HISTORY_PATH", history_path), \
                     patch.object(seller_memory, "REVIEWS_PATH", reviews_path):
                 history_path.write_text("\n".join(json.dumps(row) for row in rows[:5]) + "\n", encoding="utf-8")
