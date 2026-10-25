@@ -1,0 +1,81 @@
+run=structured-02 condition=structured provider=openai base_url=https://api.openai.com/v1 model=gpt-5.4-mini temperature=0.0 max_tokens=200 turn_limit=8
+scenarios=[1, 2, 3, 4, 5] already_done=[]
+--- scenario 1 (a used mountain bicycle) reserve 120 budget 180 deal_possible=1
+  [param] this model wants max_completion_tokens; switching
+[buyer ] {"performative":"propose","content":{"price":140}}
+  [read] parser: propose 140
+[seller] {"performative":"propose","content":{"price":170}}
+  [read] parser: propose 170
+[buyer ] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[seller] {"performative":"propose","content":{"price":155}}
+  [read] parser: propose 155
+[buyer ] {"performative":"accept-proposal","content":{"price":null}}
+  [read] parser: accept-proposal
+[result] outcome=deal price=155 correct=1 violation=0 turns=5 format_errors=0 reader_calls=0
+--- scenario 2 (a desk lamp) reserve 30 budget 38 deal_possible=1
+[buyer ] {"performative":"propose","content":{"price":30}}
+  [read] parser: propose 30
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[buyer ] {"performative":"propose","content":{"price":34}}
+  [read] parser: propose 34
+[seller] {"performative":"accept-proposal","content":{"price":null}}
+  [read] parser: accept-proposal
+[result] outcome=deal price=34 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
+--- scenario 3 (a second-hand textbook) reserve 40 budget 40 deal_possible=1
+[buyer ] {"performative":"propose","content":{"price":25}}
+  [read] parser: propose 25
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[buyer ] {"performative":"propose","content":{"price":30}}
+  [read] parser: propose 30
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[buyer ] {"performative":"propose","content":{"price":35}}
+  [read] parser: propose 35
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[buyer ] {"performative":"propose","content":{"price":38}}
+  [read] parser: propose 38
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+--- scenario 4 (a mechanical keyboard) reserve 90 budget 70 deal_possible=0
+[buyer ] {"performative":"propose","content":{"price":50}}
+  [read] parser: propose 50
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[buyer ] {"performative":"propose","content":{"price":60}}
+  [read] parser: propose 60
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[buyer ] {"performative":"propose","content":{"price":65}}
+  [read] parser: propose 65
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[buyer ] {"performative":"propose","content":{"price":68}}
+  [read] parser: propose 68
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+--- scenario 5 (a 27-inch monitor) reserve 260 budget 150 deal_possible=0
+[buyer ] {"performative":"propose","content":{"price":120}}
+  [read] parser: propose 120
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[buyer ] {"performative":"propose","content":{"price":135}}
+  [read] parser: propose 135
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[buyer ] {"performative":"propose","content":{"price":145}}
+  [read] parser: propose 145
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[buyer ] {"performative":"propose","content":{"price":150}}
+  [read] parser: propose 150
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [read] parser: reject-proposal
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+[run] structured-02 done. agent_calls=33 reader_calls=0 retries=0 tokens=9994
+[run] effective: token_param=max_completion_tokens temperature=0.0 adjusted=[max_tokens -> max_completion_tokens]
