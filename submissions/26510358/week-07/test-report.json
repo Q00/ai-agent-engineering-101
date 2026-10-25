@@ -1,8 +1,8 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-22T07:39:18+00:00",
-  "harness": "Codex CLI 0.162.0-alpha.17.2 / gpt-6-luna / medium reasoning / real structured decisions / bounded role lanes",
+  "started": "2026-10-25T11:23:10+00:00",
+  "harness": "Codex CLI / gpt-6-luna / medium reasoning / real structured decisions / bounded role lanes",
   "seller_cmd": "python3 seller.py --port {port}",
   "market_buyer_cmd": "python3 market_buyer.py --shops {shops} --item {item} --budget {budget}",
   "seller_card": {
@@ -10,7 +10,7 @@
     "description": "Ssadassa Shop: lamp 100, chair 180, bookshelf 260 credits each. Clear quotes, prompt acceptance and Ed25519-signed receipts matching the agreed item and price. Request a current quote, then offer that total on the same task. (Catalog search and price negotiation)",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:35547/",
+        "url": "http://127.0.0.1:56181/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -30,11 +30,20 @@
       {
         "id": "negotiate",
         "name": "Catalog search and price negotiation",
-        "description": "Request a current single-unit quote and offer that total on the same task.",
+        "description": "Single-unit base quotes: lamp 100, chair 180, bookshelf 260 credits. Request a current quote, then offer that total on the same task. No review, referral or extra purchase required.",
         "tags": [
           "shopping",
           "catalog",
-          "negotiation"
+          "negotiation",
+          "signed-receipt",
+          "lamp",
+          "chair",
+          "bookshelf"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "I want to buy a chair",
+          "I want to buy a bookshelf"
         ]
       },
       {
@@ -194,31 +203,31 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [230], stars 3, receipt null"
+      "detail": "offers [230, 230, 230, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 4"
     },
     {
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [230, 230], stars 3, receipt null"
+      "detail": "offers [230, 230, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2"
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [230, 230], stars 3, receipt null"
+      "detail": "offers [220, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",

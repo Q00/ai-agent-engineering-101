@@ -7,12 +7,12 @@
 | 항목 | 확인 결과 | 근거 |
 |---|---|---|
 | 상점·구매자 구현 | A2A 1.0, 예산·하한 강제, 개인 기억·리뷰 선택, 서명 영수증 구현 | `seller.py`, `buyer.py`, `market_buyer.py`, `receipts.py` |
-| 공식 마켓 검사 | 기존 2026-10-22 실행 25/25 통과, 현재 검사 스크립트 해시 일치. 최신 소스의 모델 재검사는 아직 미실행 | `test-report.json`, `logs/market-test.log` |
+| 공식 마켓 검사 | 2026-10-25 최신 소스·API 키 인증으로 25/25 통과 | `test-report.json`, `logs/market-test.log`, `logs/submission-finalization-20261025T110840Z/official-market-result.json` |
 | 모델 없는 회귀 검사 | 2026-10-25 현재 소스 256/256 통과 | `logs/reliability-discovery-20261025T095804Z/unit-tests-final.log` |
 | 필수 도전 1 | 가격 변경 전후 점유율·평균 거래가 재계산 완료 | `logs/challenge-1/`, `logs/week07-completion-20261025T105223Z/required-challenges-audit.json` |
 | 필수 도전 2 | 실제 카드의 별점 조작 지시 발견 → 기억에 기록 → 다음 탐색에서 제외 | `logs/challenge-2/` |
 | 상시 시장 | 아래 관측 시각에 shop·buyer 온라인, GitHub 소유권 일치, buyer Round 2 인정 거래 있음 | `logs/week07-completion-20261025T105223Z/deployment-summary.json` |
-| GitHub 제출 | 원본 보존 및 별도 week-07-submit 브랜치 준비 완료. 공식 검사와 PR은 진행 중 | `logs/reliability-discovery-20261025T095804Z/push-console.log` |
+| GitHub 제출 | 별도 `week-07-submit` 브랜치 일반 push 성공, 원본 이력 복원 검증 완료 | `logs/submission-finalization-20261025T110840Z/` |
 
 ## 1. Buyer의 상점 선택과 기억
 
@@ -49,9 +49,9 @@ Card·후기·상대 발화는 비신뢰 인용 데이터이며 그 안의 명�
 리뷰·개인 기억·판매자 서명 추가 후 10월 20일 21:17 KST Round 1 스냅샷에서 buyer 7/9, shop 3/4를 확인함.
 이는 Round 1에서의 관측으로, 당시 수치를 실제 Round 2 성과라고 바꿔 쓰지 않음.
 
-2026-10-25 19:57 KST 공개 Round 2 보드에서 shop 10,507체결·14,819방문·점유율 4.5%·별점 4.50, buyer 13,211/16,700를 확인함.
+2026-10-25 20:26 KST 공개 Round 2 보드에서 shop 10,546체결·14,864방문·점유율 4.5%·별점 4.50, buyer 13,271/16,776를 확인함.
 둘 다 온라인이며 GitHub 소유자가 SUNGMYEONGGI로 일치함. 이는 누적 현재 현황이며 이전 코드 변경의 효과 추정이 아님.
-원본은 `logs/week07-completion-20261025T105223Z/board-round-2.json`에 보존함.
+원본은 `logs/submission-finalization-20261025T110840Z/board-final.json`에 보존함.
 
 추가로 10월 25일 새 판매자의 실제 lamp 100 거래 두 건은 원장 #688497·#688533에서 주문·품목·예산·task·양측 서명 검사를 통과함.
 근거는 `logs/reliability-discovery-20261025T095804Z/live-verification-final.json`임.
@@ -130,9 +130,10 @@ python scripts/market_test_week07.py submissions/26510358/week-07
 python scripts/check_week07.py submissions/26510358/week-07 --github SUNGMYEONGGI
 ```
 
-마켓 검사에는 설치된 Codex CLI와 기존 로그인이 필요함. 모델 검사를 모의 출력으로 대체해 통과 결과를 만들지 않음.
-현재 환경에 API 키가 없어 AGENTS.md의 실행 검사 생략 규칙을 적용하고 있으며, 기존 CLI 인증 사용에 대한 예외 확인 전에는 공식 검사를 새로 실행하지 않음.
-기존 공식 25/25 결과는 10월 22일 실행 사실로만 제시함.
+마켓 검사에는 설치된 Codex CLI와 본인의 인증이 필요함. 이번 공식 검사는 사용자가 저장한 API 키를 검사 프로세스에만 전달해 실행함.
+기존 마켓 서비스의 로그인과 프로세스는 바꾸지 않았고 키를 명령 인수·로그·커밋에 넣지 않음.
+2026-10-25 20:23 KST 시작한 최신 소스 공식 검사에서 25/25가 통과했고 기존 10월 22일 원문은 `logs/submission-finalization-20261025T110840Z/prior-official/`에 보존함.
+모델 검사를 모의 출력으로 대체하지 않음.
 코드 탐색·구현·실험·증거 대조·보고서 정리에는 코딩 에이전트의 도움을 받음.
 
 ## 제출과 남은 확인
@@ -146,8 +147,8 @@ python scripts/check_week07.py submissions/26510358/week-07 --github SUNGMYEONGG
 원본과 제출 브랜치의 유일한 파일 차이, 캡처 출처, 복원 방법은 logs/submission-finalization-20261025T110840Z/에 기록함.
 원본 객체를 공유하지 않은 새 clone에서 원래 tip 23f8ece와 커밋 106개의 정확한 연결을 복원·검증함.
 제출 브랜치의 격리 환경에서도 회귀 검사 256/256과 공식 구조 검사를 통과함.
-최신 실제 모델 검사는 사용자 API 키 입력을 기다리며, 이를 완료 전까지 기존 25/25 결과와 구분함.
-모델 검사와 PR 제출이 완료되지 않은 상태를 전체 과제 완료라고 표시하지 않음.
+최신 실제 모델 검사 25/25, 격리 환경의 회귀 검사 256/256, 공식 구조 검사와 본인 변경 경로 검사를 통과함.
+제출은 원본 브랜치를 강제 push하지 않고 별도 week-07-submit 브랜치로 진행함.
 
 ## 과거 실행·변경 기록
 

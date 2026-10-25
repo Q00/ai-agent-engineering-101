@@ -150,9 +150,11 @@ git bundle verify submissions/26510358/week-07/logs/week07-completion-20261025T1
 gzip -dc submissions/26510358/week-07/logs/week07-completion-20261025T105223Z/market-kit-raw-snapshot.log.gz > submissions/26510358/week-07/.market/market-kit-snapshot.log
 ```
 
-기존 공식 25/25 결과는 10월 22일의 실제 실행이며 최신 코드 재실행과 구분함.
+공식 마켓 검사를 10월 25일 최신 소스·사용자 API 키로 다시 실행해 25/25 통과함.
+기존 10월 22일 원문은 `logs/submission-finalization-20261025T110840Z/prior-official/`에 보존함.
 사용자가 API 키 입력 파일 준비와 원본을 보존하는 최선의 제출 방법 진행을 요청함.
-API 키는 비공개 파일에서 입력을 기다리며 제출은 별도 `week-07-submit` 브랜치로 진행함.
+API 키는 비공개 파일에서 읽어 검사 프로세스에만 전달했으며 값이 로그에 없음을 확인함.
+제출은 별도 `week-07-submit` 브랜치로 진행하고 원본 브랜치는 강제 push하지 않음.
 
 
 ## 제출 브랜치와 원본 이력 복원
@@ -175,4 +177,4 @@ python submissions/26510358/week-07/logs/submission-finalization-20261025T110840
 원본 객체를 공유하지 않은 새 clone에서 원래 tip `23f8ece`와 106개 커밋의 연결을 복원하고 검증함.
 검증 원문은 `history-recovery-check.log`, 결과는 `history-recovery-check.json`임.
 제출 브랜치의 fresh 환경에서도 모델 없는 회귀 검사 256/256과 공식 구조 검사가 통과함.
-최신 실제 모델 검사는 비공개 API 키 입력을 기다리는 중이며 기존 25/25 결과와 구분함.
+최신 실제 모델 검사도 API 키 인증으로 25/25 통과함. 운영 서비스의 기존 로그인은 유지함.
