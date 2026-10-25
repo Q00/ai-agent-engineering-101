@@ -1,0 +1,11 @@
+{"event": "card", "name": "Kit Shop", "skills": [{"id": "negotiate", "name": "Negotiate a purchase", "description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.", "tags": ["shopping"], "examples": ["I want to buy a lamp", "90"]}], "model": "openai/gpt-oss-20b"}
+{"event": "send", "text": "I want to buy a bookshelf", "taskId": null}
+{"event": "receive", "state": "TASK_STATE_INPUT_REQUIRED", "text": "bookshelf: asking 338. Send your offer as a number.", "taskId": "0336a487-c3f7-4ed2-b833-6fec407e1cb1"}
+{"event": "decision", "turn": 1, "action": "offer", "price": 200, "reason": "Within budget, reasonable starting point"}
+{"event": "send", "text": "200", "taskId": "0336a487-c3f7-4ed2-b833-6fec407e1cb1"}
+{"event": "receive", "state": "TASK_STATE_INPUT_REQUIRED", "text": "200 is too low. Counteroffer: 269.", "taskId": "0336a487-c3f7-4ed2-b833-6fec407e1cb1"}
+{"event": "decision", "turn": 2, "action": "offer", "price": 230, "reason": "Maximum budget"}
+{"event": "send", "text": "230", "taskId": "0336a487-c3f7-4ed2-b833-6fec407e1cb1"}
+{"event": "receive", "state": "TASK_STATE_INPUT_REQUIRED", "text": "230 is too low. Counteroffer: 260.", "taskId": "0336a487-c3f7-4ed2-b833-6fec407e1cb1"}
+{"event": "decision", "turn": 3, "action": "walk", "price": null, "reason": "Budget limit reached; seller's counteroffer exceeds budget."}
+{"event": "walked_away", "budget": 230}

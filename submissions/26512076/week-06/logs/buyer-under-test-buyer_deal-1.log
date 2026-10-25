@@ -1,0 +1,7 @@
+{"event": "card", "name": "Kit Shop", "skills": [{"id": "negotiate", "name": "Negotiate a purchase", "description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.", "tags": ["shopping"], "examples": ["I want to buy a lamp", "90"]}], "model": "openai/gpt-oss-20b"}
+{"event": "send", "text": "I want to buy a lamp", "taskId": null}
+{"event": "receive", "state": "TASK_STATE_INPUT_REQUIRED", "text": "lamp: asking 130. Send your offer as a number.", "taskId": "3a01ed53-58fc-4bb8-86f4-bc3453ef47a1"}
+{"event": "decision", "turn": 1, "action": "offer", "price": 110, "reason": "Budget is 120, asking 130. Offer 110 to stay within budget and leave room for negotiation."}
+{"event": "send", "text": "110", "taskId": "3a01ed53-58fc-4bb8-86f4-bc3453ef47a1"}
+{"event": "receive", "state": "TASK_STATE_COMPLETED", "text": "Deal: lamp at 110.", "taskId": "3a01ed53-58fc-4bb8-86f4-bc3453ef47a1"}
+{"event": "purchased", "item": "lamp", "price": 110.0, "budget": 120}
