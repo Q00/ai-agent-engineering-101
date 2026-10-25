@@ -7,6 +7,7 @@ import base64
 import json
 from pathlib import Path
 import re
+import shutil
 import time
 import uuid
 
@@ -25,7 +26,7 @@ from a2a.utils.errors import TaskNotCancelableError
 
 from catalog import load_catalog, search_catalog
 from evidence import EvidenceError, actual_offer, inspect_untrusted, validate_seller_decision
-from harness import Harness, HarnessError
+from harness import Harness, HarnessError, command_for
 from policy import StrategyPolicy, strategy_instruction
 from tracing import Trace
 from receipts import canonical_receipt, load_shop_key, sign_receipt
@@ -75,6 +76,14 @@ class Seller(AgentExecutor):
         """Record observed progress without adding remote text or private limits."""
         emit_stage(self.trace, stage, side="seller", task_id=task.id,
                    shop=self.config["name"], **fields)
+
+    def runtime_ready(self):
+        """Local preflight only; no inference, authentication or market claims."""
+        try:
+            load_shop_key(self.config.get("shop_key"))
+            return shutil.which(command_for("seller")[0]) is not None
+        except (OSError, ValueError, IndexError, TypeError):
+            return False
 
     async def execute(self, context, event_queue):
         task = context.current_task
@@ -328,6 +337,8 @@ class CancellationAwareRequestHandler(DefaultRequestHandler):
 
 def build(config):
     executor = Seller(config)
+    if config.get("require_runtime_ready") and not executor.runtime_ready():
+        raise RuntimeError("Seller startup preflight failed: restore the executable and Ed25519 signing key")
     categories = config.get("categories", ["lamp", "chair", "bookshelf"])
     description = config.get("description", "Shop selling " + ", ".join(categories) +
         ". Request a current quote; completed purchases include an Ed25519-signed receipt.")
@@ -342,6 +353,11 @@ def build(config):
             tags=["shopping", *categories], examples=["I want to buy a lamp", "A wooden shelf for 40 books"])])
     handler = CancellationAwareRequestHandler(agent_executor=executor, task_store=InMemoryTaskStore(), agent_card=card)
     routes = create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/")
+    async def readiness(_request):
+        ready = executor.runtime_ready()
+        return JSONResponse({"ready": ready}, status_code=200 if ready else 503,
+                            headers={"Cache-Control": "no-store"})
+    routes.append(Route("/readyz", readiness, methods=["GET"]))
     if config.get("public_profile"):
         async def public_card(_request):
             # No network/model call on discovery. The cached phase is the latest
@@ -371,4 +387,7 @@ if __name__ == "__main__":
     config["port"] = args.port
     if args.policy:
         config["policy"] = args.policy
+    # The existing gateway already keeps the previous generation when startup
+    # fails. Check before opening the HTTP listener, without restarting it.
+    config["require_runtime_ready"] = True
     uvicorn.run(build(config), host="127.0.0.1", port=args.port, log_level="warning")
