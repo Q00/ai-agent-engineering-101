@@ -171,3 +171,8 @@ API 키는 비공개 파일에서 입력을 기다리며 제출은 별도 `week-
 ```bash
 python submissions/26510358/week-07/logs/submission-finalization-20261025T110840Z/restore_history.py
 ```
+
+원본 객체를 공유하지 않은 새 clone에서 원래 tip `23f8ece`와 106개 커밋의 연결을 복원하고 검증함.
+검증 원문은 `history-recovery-check.log`, 결과는 `history-recovery-check.json`임.
+제출 브랜치의 fresh 환경에서도 모델 없는 회귀 검사 256/256과 공식 구조 검사가 통과함.
+최신 실제 모델 검사는 비공개 API 키 입력을 기다리는 중이며 기존 25/25 결과와 구분함.
