@@ -1,0 +1,4 @@
+(1) request without a token -> HTTP/1.1 401 Unauthorized, www-authenticate: Bearer error="invalid_token", error_description="Authentication required", resource_metadata="http://127.0.0.1:8100/.well-known/oauth-protected-resource/mcp"; body {"error": "invalid_token", "error_description": "Authentication required"}
+(2) a party token on another negotiation_id -> tools/call get_negotiation with a foreign negotiation_id returns isError:true, "Error executing tool get_negotiation: token is not bound to this negotiation_id"
+(3) a move out of turn -> seller calling propose before buyer's first move returns isError:true, "Error executing tool propose: not your turn (it is buyer's turn)"
+(4) a move outside the token's limit, server_inject condition -> buyer calling propose(999) against budget=80 returns isError:true, "Error executing tool propose: refused: 999 is outside your own limit (80)"
