@@ -1,0 +1,138 @@
+[run 17] condition=structured repeat=2 model=haiku temperature=not-settable(CLI) max_turns=12
+  [episode S1] item=a used road bicycle reserve=300000 budget=450000 deal_possible=1
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 350000}}
+```
+      [parse] propose price=350000
+    [seller] ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+      [parse] accept-proposal price=None
+    [outcome] deal at 350000
+  [episode S2] item=a second-hand espresso machine reserve=180000 budget=200000 deal_possible=1
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 120000}}
+```
+      [parse] propose price=120000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 280000}}
+```
+      [parse] propose price=280000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 150000}}
+```
+      [parse] propose price=150000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 240000}}
+```
+      [parse] propose price=240000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 170000}}
+```
+      [parse] propose price=170000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 200000}}
+```
+      [parse] propose price=200000
+    [buyer] ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+      [parse] accept-proposal price=None
+    [outcome] deal at 200000
+  [episode S3] item=a studio monitor speaker pair reserve=520000 budget=400000 deal_possible=0
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 280000}}
+```
+      [parse] propose price=280000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 480000}}
+```
+      [parse] propose price=480000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 350000}}
+```
+      [parse] propose price=350000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 520000}}
+```
+      [parse] propose price=520000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 370000}}
+```
+      [parse] propose price=370000
+    [seller] ```json
+{"performative": "reject-proposal", "content": {"price": 490000}}
+```
+      [parse] reject-proposal price=490000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 390000}}
+```
+      [parse] propose price=390000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 510000}}
+```
+      [parse] propose price=510000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 400000}}
+```
+      [parse] propose price=400000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 505000}}
+```
+      [parse] propose price=505000
+    [buyer] ```json
+{"performative": "refuse", "content": {"price": null}}
+```
+      [parse] refuse price=None
+    [outcome] no_deal (refuse)
+  [episode S4] item=a vintage film camera reserve=900000 budget=350000 deal_possible=0
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 200000}}
+```
+      [parse] propose price=200000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 1500000}}
+```
+      [parse] propose price=1500000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 250000}}
+```
+      [parse] propose price=250000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 1300000}}
+```
+      [parse] propose price=1300000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 300000}}
+```
+      [parse] propose price=300000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 1100000}}
+```
+      [parse] propose price=1100000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 320000}}
+```
+      [parse] propose price=320000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 1000000}}
+```
+      [parse] propose price=1000000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 330000}}
+```
+      [parse] propose price=330000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 950000}}
+```
+      [parse] propose price=950000
+    [buyer] ```json
+{"performative": "propose", "content": {"price": 340000}}
+```
+      [parse] propose price=340000
+    [seller] ```json
+{"performative": "propose", "content": {"price": 920000}}
+```
+      [parse] propose price=920000
+    [outcome] open (turn limit 12)
+[run 17] done in 386.0s
