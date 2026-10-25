@@ -257,6 +257,12 @@ async def pick(shops, memory, item, budget, going, records, recent=None, rnd=0):
     if pricey and len(pricey) < len(choices):
         log("GUARD", f"not offering shops priced above the market's upper quartile for a {item}: {pricey}")
         choices = [s for s in choices if s["name"] not in pricey]
+    floor = FLOOR.get(item)
+    above = [s["name"] for s in choices if floor and (typical(s["name"], item, records) or floor) > floor]
+    if above and len(above) < len(choices):
+        # the top buyers pay the floor on ~100% of deals; we paid above it on 9% (figure-mrs-record-bryan never sold at it)
+        log("GUARD", f"not offering shops whose recent {item} sales sit above the market floor {floor}: {above}")
+        choices = [s for s in choices if s["name"] not in above]
     if len(choices) == 1:
         return choices[0], "the only shop left to choose from", known[choices[0]["name"]][0]
 
