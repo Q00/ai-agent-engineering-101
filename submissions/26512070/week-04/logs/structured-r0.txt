@@ -1,0 +1,19 @@
+=== run structured-r0 | condition=structured | model=nvidia/nemotron-3-super-120b-a12b:free | temperature=0.7 | turn_limit=10 | base_url=https://openrouter.ai/api/v1 | started 2026-09-28T18:21:36
+--- bike (a used road bicycle) reserve=120 budget=200
+  t01 buyer | {"performative": "propose", "content": {"price": 80}}
+        parse | propose price=80
+  t02 seller| {"performative": "reject-proposal", "content": {"price": 160}}
+        parse | reject-proposal price=160
+  t03 buyer | {"performative": "reject-proposal", "content": {"price": 100}}
+        parse | reject-proposal price=100
+  t04 seller| {"performative": "reject-proposal", "content": {"price": 150}}
+        parse | reject-proposal price=150
+  t05 buyer | {"performative": "reject-proposal", "content": {"price": 120}}
+        parse | reject-proposal price=120
+  t06 seller| {"performative": "performative": "accept-proposal", "content": {}}
+        parse | FORMAT ERROR: not a JSON object
+  t07 buyer | {"performative": "accept-proposal", "content": {}}
+        parse | accept-proposal
+  RESULT outcome=deal price=150 correct=1 violation=0 turns=7 format_errors=1 reader_calls=0 agent_calls=7 tokens=3589
+=== end structured-r0 2026-09-28T18:21:41
+
