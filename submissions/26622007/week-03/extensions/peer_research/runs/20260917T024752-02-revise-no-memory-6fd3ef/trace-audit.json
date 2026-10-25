@@ -1,0 +1,103 @@
+{
+  "passed": true,
+  "errors": [],
+  "mode": "research-live",
+  "peak_calls": 3,
+  "peak_execution_calls": 2,
+  "calls_by_phase": {
+    "propose": 12,
+    "review": 4,
+    "execute": 3,
+    "synthesize": 1
+  },
+  "task_statuses": {
+    "rag-revise/closed_net_backup": "succeeded",
+    "rag-revise/tenant_quality": "succeeded",
+    "rag-revise/adr_checklist": "succeeded",
+    "rag-revise": "succeeded"
+  },
+  "awards": {
+    "rag-revise": {
+      "requester": "C",
+      "worker": "C",
+      "mode": "delegate",
+      "dependencies": {
+        "closed_net_backup": [],
+        "tenant_quality": [],
+        "adr_checklist": [
+          "closed_net_backup",
+          "tenant_quality"
+        ]
+      }
+    },
+    "rag-revise/closed_net_backup": {
+      "requester": "C",
+      "worker": "C",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "rag-revise/tenant_quality": {
+      "requester": "C",
+      "worker": "B",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "rag-revise/adr_checklist": {
+      "requester": "C",
+      "worker": "C",
+      "mode": "execute",
+      "dependencies": {}
+    }
+  },
+  "providers": {
+    "Relace": 3,
+    "GMICloud": 1,
+    "Novita": 4,
+    "Modal": 1,
+    "Reka": 3,
+    "Makora": 1,
+    "Alibaba": 1,
+    "BaseTen": 1,
+    "OpenAI": 3,
+    "Together": 1,
+    "Morph": 1
+  },
+  "models": {
+    "deepseek/deepseek-v4.1-flash": 20
+  },
+  "evaluation": {
+    "passed": false,
+    "checks": {
+      "root_succeeded": true,
+      "required_string_facts": true,
+      "decision_id": true,
+      "backup_owner": true,
+      "no_invented_latency": true,
+      "report_length": true,
+      "comparison_table": true,
+      "two_independent_then_join": true,
+      "verified_url_count": true,
+      "fresh_search_cited": true,
+      "no_unretrieved_evidence_urls": false,
+      "both_products_sourced": false,
+      "memory_refs_delivered": true,
+      "new_constraint": true,
+      "memory_used_or_explicitly_absent": true
+    },
+    "cited_verified_urls": [
+      "https://www.postgresql.org/docs/18/app-pgdump.html",
+      "https://www.postgresql.org/docs/18/backup-dump.html",
+      "https://www.postgresql.org/docs/current/app-pgbasebackup.html"
+    ],
+    "unretrieved_urls": [
+      "https://github.com/pgvector/pgvector",
+      "https://qdrant.tech/documentation/concepts/filtering",
+      "https://qdrant.tech/documentation/concepts/snapshots",
+      "https://qdrant.tech/documentation/guides/multiple-partitions",
+      "https://www.postgresql.org/docs/current/continuous-archiving.html",
+      "https://www.postgresql.org/docs/current/ddl-rowsecurity.html"
+    ],
+    "memory_refs": [],
+    "limits": "Checks trace source retrieval and known scenario facts, not claim entailment, measured performance or statistical reproducibility."
+  }
+}

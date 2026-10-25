@@ -1,0 +1,29 @@
+$ python3 submissions/26622007/week-03/submission_results.py --check
+{"passed": true, "mode": "check", "csv_rows": 61, "completed_rows": 45, "error_rows_with_blank_counts": 16, "byte_identical_console_copies": 61, "report_groups": 9}
+
+exit_code=0
+$ python3 -m unittest discover -s submissions/26622007/week-03 -p test_submission_results.py -v
+test_final_slots_include_recovery_once_and_preserve_original_failures (test_submission_results.SubmissionExportTests.test_final_slots_include_recovery_once_and_preserve_original_failures) ... ok
+test_post_award_transport_failure_keeps_partial_award_out_of_counts (test_submission_results.SubmissionExportTests.test_post_award_transport_failure_keeps_partial_award_out_of_counts) ... ok
+test_recursive_cost_does_not_inflate_root_tasks_or_correct (test_submission_results.SubmissionExportTests.test_recursive_cost_does_not_inflate_root_tasks_or_correct) ... ok
+test_refusal_and_http_retry_are_not_bid_messages (test_submission_results.SubmissionExportTests.test_refusal_and_http_retry_are_not_bid_messages) ... ok
+test_summary_disagreement_is_rejected (test_submission_results.SubmissionExportTests.test_summary_disagreement_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.204s
+
+OK
+
+exit_code=0
+$ python3 scripts/check_week03.py submissions/26622007/week-03
+ok    52 .py file(s) parse
+ok    tasks.json has 5 tasks across 3 gold contractors
+ok    results.csv has 20 run(s) for baseline
+ok    results.csv has 20 run(s) for homogeneous
+ok    results.csv has 21 run(s) for overconfident
+ok    logs/ contains 98 file(s)
+ok    REPORT.md present with a table
+
+all checks passed
+
+exit_code=0

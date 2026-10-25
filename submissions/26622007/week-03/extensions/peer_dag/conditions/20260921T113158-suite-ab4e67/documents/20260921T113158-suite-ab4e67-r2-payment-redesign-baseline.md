@@ -1,0 +1,66 @@
+# payment-redesign / baseline / 2회
+
+상태: succeeded. 필수 facts: 8/8.
+모델 원본의 열람용 사본이다. 실제 구현/실행 검증을 뜻하지 않는다.
+
+## payment-redesign.json
+
+Worker: A; 상태: succeeded
+[원본 JSON](../../../runs/20260921T113158-suite-ab4e67-r2-payment-redesign-baseline/artifacts/payment-redesign.json)
+
+결제 중복 사고를 재현 가능한 설계 문제로 분석한 결과. [원인 가설] (1) idempotency_key 부재로 첫 요청(504)과 2초 뒤 재시도(200)가 PG에서 각각 독립 승인되어 승인 2건 발생, (2) 네트워크 타임아웃만으로 승인 확정 불가한데 클라이언트가 즉시 재시도하여 중복 유발, (3) 웹훅 중복/순서 역전 시 상태 불일치. 확인 필요 증거: PG 승인 로그 2건의 동일 order_id·타임스탬프(2초 차), 주문 DB 완료 1건, 웹훅 수신 로그(중복/역전 여부). [컴포넌트 설계] PaymentCommand(오케스트레이션, order_id+idempotency_key로 IdempotencyStore 조회 후 GatewayPort 호출), IdempotencyStore(order_id+idempotency_key UNIQUE 제약, 상태 머신 INITIATED→AUTHORIZED→CAPTURED→CANCELLED, UNKNOWN 분기), GatewayPort(authorize/cancel/getStatus, 타임아웃 시 UNKNOWN 반환·예외 아님), WebhookHandler(멱등 upsert, version/timestamp 비교로 순서 역전 무시), ReconciliationJob(PG-DB 대사, 불일치 분류: PG만 승인/DB만 완료/금액 불일치). [상태 전이표] INITIATED→AUTHORIZED(승인 성공), INITIATED→UNKNOWN(타임아웃), UNKNOWN→AUTHORIZED(대사/조회로 확정), UNKNOWN→FAILED(조회 결과 미승인), AUTHORIZED→CAPTURED, AUTHORIZED/CAPTURED→CANCELLED. 재시도 경계: UNKNOWN은 재시도 금지(조회 후 결정), 네트워크 오류는 지수 백오프 재시도, 4xx는 재시도 불가. [코드 구조] payment/command(PaymentCommand), payment/idempotency(IdempotencyStore), payment/gateway(GatewayPort), payment/webhook(WebhookHandler), payment/reconciliation(ReconciliationJob). 핵심 의사코드: 경쟁 요청 시 INSERT ... ON CONFLICT(order_id,idempotency_key) DO NOTHING 후 기존 레코드 반환; 웹훅은 if incoming.version <= stored.version then ignore; 부분 실패 시 상태를 UNKNOWN으로 유지하고 ReconciliationJob에 위임. [마이그레이션] backfill_batches=1200000/5000=240, serial=240*15=3600초, two_worker=3600/2=1800초, downtime_budget=20*60=1200초. offline_backfill_fits=(1800<=1200)=false → 20분 중단 내 일괄 backfill 불가. 따라서 온라인 준비(무중단 backfill + 이중쓰기/읽기 전환)와 최종 전환(짧은 쓰기 차단) 분리 필요. [테스트 행렬] 중복 요청(동시 2건→1건 승인), 순서 역전 웹훅(구버전 무시), 부분 실패(승인 후 DB 실패→UNKNOWN 유지), 재시도 안전성, 취소 결제, 롤백 시나리오 — 모두 '설계 제안'이며 실제 수행 아님. [배포·롤백] 72시간 공존 동안 구버전 idempotency_key 미전송 트래픽을 서버측 order_id 기반 멱등성으로 흡수. 롤백 트리거: 대사 불일치율 임계 초과, UNKNOWN 누적. 중단 조건: 대사 불일치 급증, 중복 승인 재발. [모순] 20분 중단 예산 vs 2-worker 30분 소요 → 일괄 전환 불가, 온라인 분할 전환 필수. [미확인] 롤백·재시도 결제·취소 결제 검증 3건 미완료. can_release=false. 실제 PG·DB 조회/환불/배포 미수행.
+
+### Facts
+
+```json
+{
+  "backfill_batches": 240,
+  "serial_backfill_seconds": 3600,
+  "two_worker_backfill_seconds": 1800,
+  "downtime_budget_seconds": 1200,
+  "coexistence_hours": 72,
+  "unverified_release_checks": 3,
+  "offline_backfill_fits": false,
+  "can_release": false,
+  "pg_approvals": 2,
+  "db_completed": 1,
+  "retry_delay_seconds": 2,
+  "idempotency_key_present": false,
+  "migration_rows": 1200000,
+  "batch_size": 5000,
+  "batch_seconds": 15,
+  "max_workers": 2,
+  "downtime_budget_minutes": 20,
+  "two_worker_minutes": 30,
+  "contradiction_detected": true,
+  "actual_pg_db_query_performed": false,
+  "actual_refund_performed": false,
+  "actual_deploy_performed": false
+}
+```
+
+### Evidence
+
+**1.** backfill_batches = 1,200,000 / 5,000 = 240 (제공: 마이그레이션 대상 1,200,000행, 배치 5,000행)
+
+**2.** serial_backfill_seconds = 240 × 15 = 3,600초 (제공: 배치당 15초)
+
+**3.** two_worker_backfill_seconds = 3,600 / 2 = 1,800초 (제공: 작업자 최대 2개, 병목·오버헤드 없음 가정)
+
+**4.** downtime_budget_seconds = 20 × 60 = 1,200초 (제공: 서비스 중단 허용 20분)
+
+**5.** offline_backfill_fits = (1,800 ≤ 1,200) = false → 20분 중단 내 일괄 backfill 불가, 온라인 준비와 최종 전환 분리 필요
+
+**6.** coexistence_hours = 72 (제공: 구버전·신버전 앱 72시간 공존 요구)
+
+**7.** unverified_release_checks = 3 (제공: 롤백·재시도 결제·취소 결제 검증 모두 미완료)
+
+**8.** can_release = false (미검증 3건 + offline_backfill_fits=false)
+
+**9.** 원인 가설 근거: 제공 합성 기록 — 같은 order_id에 첫 요청 504, 2초 뒤 재시도 200, 두 요청 모두 idempotency_key 비어 있음; PG 승인 2건 vs DB 완료 1건
+
+**10.** 모순: 20분 중단 예산(1,200초) < 2-worker 소요(1,800초) → 일괄 전환 불가, 무중단 backfill + 짧은 쓰기 차단 전환 필요
+
+**11.** 테스트 행렬(중복/순서 역전/부분 실패/재시도/취소/롤백)은 설계 제안이며 실제 수행하지 않음 — 미검증으로 표기
+
+**12.** 실제 PG·DB 조회, 환불, 배포는 수행하지 않음(제공 자료만 사용)

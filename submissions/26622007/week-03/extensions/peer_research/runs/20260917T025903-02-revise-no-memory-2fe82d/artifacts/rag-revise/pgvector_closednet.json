@@ -1,0 +1,32 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "## pgvector 폐쇄망·백업·복구·tenant 필터 조사 결과 (Worker A, execute)\n\n### 1. 이전 대비 변경점\n- 배포 환경이 **폐쇄망**으로 바뀌어 외부 관리형 SaaS(예: 관리형 벡터 DB) 사용 불가 → `external_saas_allowed=false`.\n- PostgreSQL은 이미 운영 중이고 stateful 저장소 운영 인력 증원 불가 → **기존 PostgreSQL에 pgvector 확장을 얹는 경로**가 운영 부담 측면에서 유리.\n- 이전 장기 메모리(personal/handoff)가 비어 있어 내부 결정 ID·백업 담당 팀·기존 규모/품질 목표는 **unknown / 확인 필요**로 남긴다(추측 금지).\n\n### 2. 폐쇄망 설치·운영 적합성\n- pgvector는 PostgreSQL **확장(extension)** 으로, 서버에 소스 빌드 후 `CREATE EXTENSION vector`로 활성화하는 구조다. 외부 SaaS 호출이나 관리형 컨트롤 플레인이 필요 없어 폐쇄망에 적합하다(공식 README 근거).\n- 인덱스는 테이블에 데이터가 없어도 생성 가능(HNSW는 학습 단계 없음)하나, IVFFlat은 **데이터가 있는 뒤 생성**해야 recall이 좋다. 폐쇄망 반입 시 확장 바이너리/소스를 내부 미러로 반입하는 절차가 필요하다.\n\n### 3. 인덱스·tenant 필터 검증 계획\n- HNSW: 속도-recall 트레이드오프 우수, 빌드 느리고 메모리 사용 많음. IVFFlat: 빌드 빠르고 메모리 적음, recall 낮음.\n- **핵심 리스크**: 근사 인덱스는 **필터를 인덱스 스캔 이후에 적용**하므로, tenant 조건이 전체 행의 10%만 매칭되고 `hnsw.ef_search=40`이면 평균 4행만 반환될 수 있다.\n- 대응: 0.8.0+ **iterative index scan** 활성화(`SET hnsw.iterative_scan = strict_order;` 또는 `relaxed_order`). relaxed는 순서가 약간 어긋나지만 recall이 더 좋다. `hnsw.max_scan_tuples`/`ivfflat.max_probes` 상한도 함께 튜닝.\n- 검증 계획(미실행): tenant별 부분 인덱스(partial index) vs 단일 인덱스+iterative scan 비교, tenant당 recall@k·지연 측정, 필터 선택도(1%, 10%, 50%)별 반환 행 수 확인. **실측 미수행 → measured_latency=not_measured.**\n\n### 4. 백업·복구 적합성\n- PostgreSQL 공식 문서는 세 가지 백업 방식을 구분: SQL dump, 파일시스템 레벨 백업, 연속 아카이빙(PITR).\n- **pg_dump는 논리 백업**이며 WAL 재생에 필요한 정보가 없어 **연속 아카이빙/PITR의 일부로 사용할 수 없다**. 벡터 데이터도 동일하게 논리 덤프로는 PITR 불가.\n- PITR을 쓰려면 **base backup + 연속 WAL 아카이빙**이 필요하고, 이는 **클러스터 전체 복원만** 지원(부분 복원 불가), 아카이브 저장소 용량 부담이 크다. 대신 고신뢰 환경의 선호 기법이다.\n- 따라서 폐쇄망 권장: 정기 `pg_dump`(논리, 부분/이관용) + `pg_basebackup`+WAL 아카이빙(PITR, 전체 복구용) 병행. **복구 리허설은 미실행 → 검증 필요.**\n\n### 5. 최종 판단(잠정)\n폐쇄망·기존 PostgreSQL 재사용·인력 제약을 고려하면 **pgvector를 기존 운영 PostgreSQL에 확장으로 도입**하는 것이 1차 후보다. 단 tenant 필터 recall 저하가 최대 리스크이므로 iterative scan/partial index 검증과 PITR 리허설을 배포 전 게이트로 둔다. Qdrant 자체 호스팅은 별도 stateful 저장소 운영 부담이 커 인력 증원 불가 조건에서 2차 후보로 둔다(별도 조사 필요).\n\n### 6. 배포/복구 체크리스트\n- [ ] pgvector 확장 버전 확정 및 내부 미러 반입, `CREATE EXTENSION` 검증\n- [ ] 인덱스 타입(HNSW/IVFFlat) 및 파라미터(ef_search, lists/probes) 확정\n- [ ] tenant 필터 recall@k·지연 벤치마크(미실행)\n- [ ] `pg_dump` 정기 논리 백업 + WAL 아카이빙/PITR 구성\n- [ ] PITR 복구 리허설(미실행)\n- [ ] 내부 결정 ID·백업 담당 팀 확인(unknown)\n\n### 7. 미해결 항목\n- internal_decision_id, backup_owner, 기존 규모/품질 목표: 메모리 부재로 unknown\n- tenant 필터 실측 recall/지연: not_measured\n- PITR 복구 리허설: 미실행\n- Qdrant 자체 호스팅 비교: 본 작업 범위 외(별도 조사 필요)",
+    "facts": {
+      "recommended_storage": "pgvector on existing PostgreSQL (1차 후보), self-hosted Qdrant (2차 후보, 별도 조사 필요)",
+      "internal_decision_id": "unknown",
+      "backup_owner": "unknown",
+      "measured_latency": "not_measured",
+      "unresolved": "internal_decision_id/backup_owner/기존 규모·품질 목표 unknown; tenant 필터 recall·지연 미측정; PITR 복구 리허설 미실행; Qdrant 자체 호스팅 비교 미수행",
+      "memory_refs": "none",
+      "external_saas_allowed": false,
+      "pgvector_install_mode": "PostgreSQL extension, source build + CREATE EXTENSION, no external SaaS",
+      "hnsw_vs_ivfflat": "HNSW faster query/better recall but slower build & more memory; IVFFlat faster build/less memory, lower recall",
+      "filtering_behavior": "approximate index applies filter after index scan; 10% selectivity with ef_search=40 yields ~4 rows on average",
+      "iterative_scan_available": "pgvector 0.8.0+ iterative index scans (strict_order/relaxed_order)",
+      "pg_dump_pitr_compatible": false,
+      "pitr_requires": "base backup + continuous WAL archiving; cluster-wide restore only",
+      "backup_test_executed": false,
+      "benchmark_executed": false
+    },
+    "evidence": [
+      "https://github.com/pgvector/pgvector/?tab=readme-ov-file — pgvector 공식 README: HNSW/IVFFlat 특성 비교, IVFFlat은 데이터 적재 후 인덱스 생성 권장, 근사 인덱스는 필터를 인덱스 스캔 이후 적용(10% 선택도·ef_search=40 시 평균 4행), iterative index scan(strict_order/relaxed_order) 및 max_scan_tuples/max_probes 옵션 근거",
+      "https://github.com/pgvector/pgvector/blob/v0.8.2/README.md — iterative index scan이 0.8.0부터 제공됨을 확인",
+      "https://www.postgresql.org/docs/current/backup.html — PostgreSQL 공식 백업/복구 개요: SQL dump, 파일시스템 레벨 백업, 연속 아카이빙(PITR) 세 방식 구분",
+      "https://www.postgresql.org/docs/current/continuous-archiving.html — pg_dump/pg_dumpall은 논리 백업이라 WAL 재생 불가로 연속 아카이빙에 사용 불가, PITR은 base backup+WAL 아카이빙 필요, 클러스터 전체 복원만 지원, 아카이브 저장소 부담 큼",
+      "memory:none — personal_memory/handoff_memory가 비어 있어 참고한 메모리 ID 없음(internal_decision_id, backup_owner는 unknown으로 반환)"
+    ]
+  },
+  "error": ""
+}

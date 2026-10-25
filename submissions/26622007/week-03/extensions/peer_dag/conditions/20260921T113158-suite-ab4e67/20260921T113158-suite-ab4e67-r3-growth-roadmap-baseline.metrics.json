@@ -1,0 +1,297 @@
+{
+  "case_id": "growth-roadmap",
+  "condition": "baseline",
+  "block": 3,
+  "run_id": "20260921T113158-suite-ab4e67-r3-growth-roadmap-baseline",
+  "exit_code": 1,
+  "timed_out": false,
+  "wall_seconds": 110.0041,
+  "status": "failed",
+  "passed": false,
+  "checks_passed": 0,
+  "checks_total": 16,
+  "wrong_or_missing": [
+    "s_margin",
+    "e_margin",
+    "s_profit",
+    "e_profit",
+    "s_break_even",
+    "e_break_even",
+    "s_low_profit",
+    "e_low_profit",
+    "s_high_profit",
+    "e_high_profit",
+    "common_dev_hours",
+    "s_total_dev_hours",
+    "e_total_dev_hours",
+    "e_budget_shortfall_hours",
+    "s_fits_budget",
+    "e_fits_budget"
+  ],
+  "calls": 24,
+  "http_requests": 24,
+  "http_responses": 24,
+  "http_429": 0,
+  "http_errors": {},
+  "retries": 0,
+  "transport_errors": 0,
+  "tasks": 5,
+  "max_depth": 1,
+  "awards": {
+    "B": 1,
+    "A": 2,
+    "C": 2
+  },
+  "root_award": "B",
+  "c_proposals": 5,
+  "c_high_bids": 0,
+  "proposal_rejections": [],
+  "task_failures": [
+    {
+      "task_id": "growth-roadmap/integration",
+      "error": "JSONDecodeError: Unterminated string starting at: line 1 column 4250 (char 4249)"
+    },
+    {
+      "task_id": "growth-roadmap",
+      "error": "ValueError: child failed or blocked; partial results retained"
+    }
+  ],
+  "reported_cost_usd": 0.024169991999999994,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 109.8315,
+  "canonical_facts": null,
+  "artifact_sha": null,
+  "root_plan_sha": "a73540d26d5ff975cd3652d7a2737649bb8ebf4d99f79512c49b1e0710e80acb",
+  "award_sha": "34be7807adb2bd28d32623424f43516b850d9bd1fc7e59757c358eb7c6aadc3d",
+  "controls_sha": "091aa5a218d54220ddba4cd472b77b48ff4b339776e0e397f0ad605fe4f2e921",
+  "root_plan": {
+    "mode": "delegate",
+    "actions": [
+      "손익·예산 계산을 직접 수행할 analysis step을 정의하고, 기술 설계(A)와 운영 준비(C)를 병렬 step으로 위임한다.",
+      "analysis 결과를 facts로 확정한 뒤 tech_design과 ops_readiness를 입력으로 받는 integration step에서 비교표·권고·일정·중단 기준을 통합한다.",
+      "기능 설계·시간표·사업 권고 간 모순과 미확인 사항을 명시하고, 실제 구현/테스트 수행과 설계 제안을 구분한다."
+    ],
+    "steps": [
+      {
+        "id": "analysis",
+        "goal": "S/E안의 공헌이익, 기준·저·고 시나리오 월이익, 손익분기 고객수, 개발 총시간과 예산 적합성을 계산하고 고객 집중·수요 불확실성을 분석한다.",
+        "acceptance": "facts에 s_margin, e_margin, s_profit, e_profit, s_break_even, e_break_even, s_low_profit, e_low_profit, s_high_profit, e_high_profit, common_dev_hours, s_total_dev_hours, e_total_dev_hours, e_budget_shortfall_hours 숫자 키와 s_fits_budget, e_fits_budget boolean 키를 모두 포함한다. evidence에 각 계산식과 제공 자료 근거를 쓰고, 저/고 시나리오는 기준의 70%/130% 후 소수점 버림 정수임을 명시한다. 고객 수가 추정치이며 보장되지 않음을 명시한다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "analysis_result"
+        ]
+      },
+      {
+        "id": "tech_design",
+        "goal": "S/E안에 필요한 도메인·API·데이터 변경 개요와 측정 지표, MVP 포함/제외 범위, 선후 관계를 갖는 단계별 일정을 설계 제안으로 작성한다.",
+        "acceptance": "summary/evidence 문자열에 도메인 모델·API 엔드포인트·데이터 스키마 변경 개요와 코드 조각을 제시하고, 실제 구현/테스트를 수행했다고 쓰지 않으며 설계 제안임을 명시한다. 공통 160시간과 S 추가 64시간, E 추가 96시간 제약을 반영해 일정 선후 관계를 제시하고, E안 부족분과 분기 밖으로 미룰 범위를 명시한다. facts에는 배열·객체를 넣지 않는다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "tech_design_result"
+        ]
+      },
+      {
+        "id": "ops_readiness",
+        "goal": "영업/지원팀 준비, 고객 안내·상담 절차, 출시 중단 기준과 팀 간 일정·담당·전달 계획을 작성한다.",
+        "acceptance": "summary/evidence 문자열에 확정 사실과 정책에 따른 안내 문구, 상담 절차, 출시 중단 기준, 담당·일정 전달 계획을 제시하고, 자료에 없는 시장 조사나 고객 인터뷰를 수행했다고 쓰지 않는다. facts에는 배열·객체를 넣지 않는다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "ops_readiness_result"
+        ]
+      },
+      {
+        "id": "integration",
+        "goal": "analysis, tech_design, ops_readiness를 통합해 경영진용 비교표, 선택 근거와 반증할 가설, MVP 포함/제외 범위, 코드·데이터 변경 개요, 단계별 일정, 영업/지원 준비 및 출시 중단 기준을 완성한다.",
+        "acceptance": "summary와 evidence에 요구한 문서·표·코드 구조를 간결한 텍스트로 제시하고 실제 구현/테스트 수행과 설계 제안을 구분한다. 규칙·인터페이스·일정 사이의 모순과 미확인 사항을 명시한다. facts에 요구된 모든 숫자 키와 boolean 키를 포함하고 배열·객체를 넣지 않는다. evidence에 계산식과 제공 자료 근거를 쓴다.",
+        "depends_on": [
+          "analysis",
+          "tech_design",
+          "ops_readiness"
+        ],
+        "reads": [
+          "analysis_result",
+          "tech_design_result",
+          "ops_readiness_result"
+        ],
+        "writes": [
+          "growth_roadmap_report"
+        ]
+      }
+    ]
+  },
+  "intervals": [
+    {
+      "task_id": "growth-roadmap/analysis",
+      "worker": "A",
+      "start": "2026-09-21T12:19:51.423822+00:00",
+      "end": "2026-09-21T12:20:03.520684+00:00"
+    },
+    {
+      "task_id": "growth-roadmap/tech_design",
+      "worker": "A",
+      "start": "2026-09-21T12:19:55.341030+00:00",
+      "end": "2026-09-21T12:20:12.517430+00:00"
+    },
+    {
+      "task_id": "growth-roadmap/ops_readiness",
+      "worker": "C",
+      "start": "2026-09-21T12:19:53.289402+00:00",
+      "end": "2026-09-21T12:20:16.040392+00:00"
+    },
+    {
+      "task_id": "growth-roadmap/integration",
+      "worker": "C",
+      "start": "2026-09-21T12:20:29.670583+00:00",
+      "end": "2026-09-21T12:20:56.490654+00:00"
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "growth-roadmap/analysis",
+      "right": "growth-roadmap/tech_design",
+      "workers": [
+        "A",
+        "A"
+      ],
+      "seconds": 8.179654,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "growth-roadmap/analysis",
+      "right": "growth-roadmap/ops_readiness",
+      "workers": [
+        "A",
+        "C"
+      ],
+      "seconds": 10.231282,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "growth-roadmap/tech_design",
+      "right": "growth-roadmap/ops_readiness",
+      "workers": [
+        "A",
+        "C"
+      ],
+      "seconds": 17.1764,
+      "both_tasks_succeeded": true
+    }
+  ],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 3,
+    "peak_calls_by_worker": {
+      "A": 2,
+      "B": 2,
+      "C": 1
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 2,
+      "B": 0,
+      "C": 1
+    },
+    "calls_by_phase": {
+      "propose": 15,
+      "review": 5,
+      "execute": 4
+    },
+    "task_statuses": {
+      "growth-roadmap/analysis": "succeeded",
+      "growth-roadmap/tech_design": "succeeded",
+      "growth-roadmap/ops_readiness": "succeeded",
+      "growth-roadmap/integration": "failed",
+      "growth-roadmap": "failed"
+    },
+    "awards": {
+      "growth-roadmap": {
+        "requester": "A",
+        "worker": "B",
+        "mode": "delegate",
+        "dependencies": {
+          "analysis": [],
+          "tech_design": [],
+          "ops_readiness": [],
+          "integration": [
+            "analysis",
+            "tech_design",
+            "ops_readiness"
+          ]
+        }
+      },
+      "growth-roadmap/analysis": {
+        "requester": "B",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "growth-roadmap/ops_readiness": {
+        "requester": "B",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "growth-roadmap/tech_design": {
+        "requester": "B",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "growth-roadmap/integration": {
+        "requester": "B",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 24
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 24
+    },
+    "evaluation": {
+      "passed": false,
+      "checks": {
+        "s_margin": false,
+        "e_margin": false,
+        "s_profit": false,
+        "e_profit": false,
+        "s_break_even": false,
+        "e_break_even": false,
+        "s_low_profit": false,
+        "e_low_profit": false,
+        "s_high_profit": false,
+        "e_high_profit": false,
+        "common_dev_hours": false,
+        "s_total_dev_hours": false,
+        "e_total_dev_hours": false,
+        "e_budget_shortfall_hours": false,
+        "s_fits_budget": false,
+        "e_fits_budget": false
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": false,
+  "verification_errors": [
+    {
+      "kind": "response_decode",
+      "key": [
+        "growth-roadmap/integration",
+        "C",
+        "execute",
+        1
+      ],
+      "message": "Unterminated string starting at: line 1 column 4250 (char 4249)"
+    }
+  ],
+  "error": "ValueError: child failed or blocked; partial results retained",
+  "recorded_case_condition_match": true
+}

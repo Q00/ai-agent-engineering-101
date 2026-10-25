@@ -1,0 +1,29 @@
+{
+  "status": "succeeded",
+  "worker": "B",
+  "artifact": {
+    "summary": "## Qdrant 자체 호스팅 폐쇄망·백업·복구·tenant 필터 조사 결과\n\n### 1. 조사 범위와 방법\n- 공식 Qdrant 문서를 대상으로 웹 검색 2회 수행(폐쇄망 설치·스냅샷/복구 1회, multitenancy/payload index 1회).\n- 실제 벤치마크, 스냅샷 생성/복구 리허설, 폐쇄망 설치 테스트는 **수행하지 않음**. 따라서 성능·복구 성공은 주장하지 않는다.\n- personal_memory, handoff_memory는 비어 있어 과거 내부 결정 ID·백업 담당 팀은 확인 불가 → unknown 처리.\n\n### 2. 폐쇄망(air-gapped) 배포 적합성\n- Qdrant는 단일 바이너리/컨테이너로 자체 호스팅 가능하며, 외부 관리형 SaaS 호출 없이 운영 가능하다. 이는 `external_saas_allowed=false` 제약과 정합적이다.\n- 폐쇄망에서는 컨테이너 이미지·바이너리를 사전 반입해야 하며, 공식 문서는 Docker/바이너리 배포와 스토리지 구성을 안내한다. 오프라인 설치 절차 자체를 별도 문서로 상세 제공하는지는 검색 결과에서 명확히 확인되지 않아 **unresolved**로 남긴다.\n- 운영 인력 증원 불가 조건에서 Qdrant는 PostgreSQL과 별개의 stateful 저장소이므로, 스냅샷·복구·업그레이드 운영 부담이 추가된다는 점이 핵심 리스크다.\n\n### 3. 스냅샷/백업·복구\n- Qdrant 공식 문서는 스냅샷(snapshot) API를 통한 컬렉션/전체 스토리지 백업과 복구 절차를 제공한다. 스냅샷은 컬렉션 단위 및 전체 단위로 생성 가능하며, 복구 시 스냅샷 업로드 방식으로 진행된다.\n- 폐쇄망에서는 스냅샷 파일을 외부 오브젝트 스토리지에 의존하지 않고 내부 파일시스템/NAS로 반출·보관해야 한다.\n- **미검증**: 실제 스냅샷 생성→복구 리허설, RPO/RTO 측정은 미실시(measured_latency=not_measured).\n\n### 4. tenant 필터 및 검색 품질 검증 계획\n- Qdrant는 payload index와 `is_tenant` 파라미터를 통한 멀티테넌시 필터링을 공식 지원한다. tenant별 격리는 payload 기반 필터로 구현하며, 대규모 tenant 수에서는 payload index 생성이 성능에 중요하다.\n- 품질 검증 계획(제안): (1) tenant_id별 골든 쿼리셋 구성, (2) 필터 적용/미적용 시 recall@k 비교, (3) tenant 경계 누출(다른 tenant 문서 반환) 0건 확인, (4) 필터+벡터 검색 지연 비교. 단, 이는 **계획**이며 실행 결과가 아니다.\n\n### 5. 비교 표\n\n| 항목 | pgvector (기존 운영) | Qdrant 자체 호스팅 |\n|---|---|---|\n| 폐쇄망 적합성 | 기존 PostgreSQL 활용, 추가 인프라 최소 | 자체 호스팅 가능하나 별도 stateful 저장소 필요 |\n| 백업/복구 | 기존 PostgreSQL 백업 체계 재사용 가능(담당팀 unknown) | 스냅샷 API 별도 운영 필요 |\n| 운영 인력 | 기존 체계 내 | 증원 불가 조건에서 부담 증가 |\n| tenant 필터 | SQL/파티션 기반 | payload index + is_tenant |\n| 외부 SaaS | 불필요 | 불필요 |\n\n### 6. 최종 판단(잠정)\n- 새 제약(폐쇄망, 외부 SaaS 금지, 운영 인력 증원 불가)을 우선하면, **기존 PostgreSQL/pgvector 유지가 운영 리스크가 낮다**. Qdrant는 tenant 필터·스냅샷 기능이 공식 지원되나 별도 stateful 저장소 운영 부담이 추가된다.\n- 따라서 recommended_storage는 \"pgvector 우선, Qdrant는 조건부 후보\"로 제시한다. 최종 확정은 스냅샷 복구 리허설과 tenant 품질 검증 후 결정 필요.\n\n### 7. 배포/복구 체크리스트\n- [ ] 폐쇄망 반입 이미지/바이너리 무결성 검증\n- [ ] 스냅샷 저장 위치(내부 NAS) 및 보존 정책 정의\n- [ ] 스냅샷 생성→복구 리허설 1회(미실시)\n- [ ] tenant 경계 누출 테스트(미실시)\n- [ ] RPO/RTO 목표 확정(미확인)\n\n### 8. 미해결 항목\n- internal_decision_id, backup_owner: 메모리 없음 → unknown\n- 기존 규모·품질 목표: 이전 메모리 없음 → 확인 필요\n- Qdrant 오프라인 설치 전용 공식 문서 존재 여부\n- 실제 성능/복구 측정치",
+    "facts": {
+      "recommended_storage": "pgvector 우선(기존 PostgreSQL 재사용), Qdrant는 조건부 후보",
+      "internal_decision_id": "unknown",
+      "backup_owner": "unknown",
+      "measured_latency": "not_measured",
+      "unresolved": "Qdrant 오프라인 설치 전용 공식 문서 확인 필요; 스냅샷 복구 리허설 미실시; tenant 경계 누출 테스트 미실시; 기존 규모·품질 목표 확인 필요; RPO/RTO 미확정",
+      "memory_refs": "none",
+      "external_saas_allowed": false,
+      "qdrant_self_hosted_possible": true,
+      "qdrant_snapshot_api_documented": true,
+      "qdrant_tenant_filter_documented": true,
+      "benchmark_executed": false,
+      "restore_test_executed": false
+    },
+    "evidence": [
+      "Qdrant 공식 문서(https://qdrant.tech/documentation/): 자체 호스팅 배포, 스냅샷/백업·복구, payload index 및 is_tenant 기반 멀티테넌시 필터링 기능을 안내함을 뒷받침.",
+      "Qdrant snapshots 문서(https://qdrant.tech/documentation/concepts/snapshots/): 컬렉션/전체 스냅샷 생성 및 복구 절차를 뒷받침.",
+      "Qdrant multitenancy 문서(https://qdrant.tech/documentation/guides/multiple-partitions/): tenant별 payload 필터 및 is_tenant 사용을 뒷받침.",
+      "memory:none — personal_memory/handoff_memory가 비어 있어 internal_decision_id, backup_owner는 unknown으로 기록.",
+      "실제 벤치마크·스냅샷 복구 리허설·폐쇄망 설치 테스트는 수행하지 않았으므로 measured_latency=not_measured, 성공 주장 없음."
+    ]
+  },
+  "error": ""
+}

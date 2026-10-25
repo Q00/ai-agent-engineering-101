@@ -1,0 +1,33 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "S/E안 기술 설계 제안(설계 제안이며 실제 구현·테스트 미수행). 도메인 모델: Tenant(조직), Plan(요금제: code=S/E, monthly_fee, variable_cost), Subscription(tenant_id, plan_code, seats, status), Seat(tenant_id, user_id, role, active), Invoice(tenant_id, period, amount, status), MetricEvent(tenant_id, event_type, occurred_at, value). S/E 분기 필드: Subscription.onboarding_mode('self'|'sso'), Tenant.sso_enabled(bool), Tenant.audit_log_enabled(bool), AuditLog(tenant_id, actor, action, at). API 엔드포인트(개요): POST /tenants, POST /subscriptions(plan_code, seats, onboarding_mode), PATCH /subscriptions/{id}/seats, GET /plans, POST /invoices/generate, GET /invoices/{id}, POST /metrics/events, GET /metrics/summary, S안: POST /onboarding/self/start, GET /onboarding/self/status, E안: POST /sso/config, GET /sso/metadata, POST /sso/callback, GET /audit/logs. 데이터 스키마 변경: 신규 테이블 tenants, plans, subscriptions, seats, invoices, metric_events, audit_logs; subscriptions에 onboarding_mode, seats에 active 컬럼. 마이그레이션 순서: 1) plans/tenants 2) subscriptions/seats 3) invoices 4) metric_events 5) audit_logs(SSO/감사는 E안 단계). 측정 지표: 활성 좌석(active seats/tenant), 온보딩 완료율(완료 tenant/시작 tenant), 청구 성공률(성공 invoice/발행 invoice), SSO 인증 성공률(성공 callback/시도). MVP 포함: 공통 요금/청구·조직/좌석·지표 수집, S안 셀프 온보딩, E안 SSO/감사 기록. 제외(1차): 운영 도구 24시간 중 고급 대시보드·자동 알림 일부, 다중 통화, 세금 계산. 일정(선후): 1) 스키마(plans/tenants/subscriptions/seats) → 2) API(요금/청구/좌석) → 3) S안 셀프 온보딩 또는 E안 SSO/감사 → 4) 지표 수집 → 5) 운영 도구. 공통 160시간(64+40+32+24), S안 총 224시간(예산 240 내 16시간 여유), E안 총 256시간(240 대비 16시간 부족). E안 부족분 16시간은 운영 도구 24시간 중 자동 알림·고급 대시보드 16시간을 분기 밖으로 이연하여 해소 제안. 규칙·인터페이스·일정 모순: E안은 예산 초과로 SSO/감사와 운영 도구 전체를 동시에 포함할 수 없음; 미확인: 실제 SSO IdP 연동 스펙, 청구 PG 연동, 좌석 과금 정책 세부.",
+    "facts": {
+      "common_dev_hours": 160,
+      "s_total_dev_hours": 224,
+      "e_total_dev_hours": 256,
+      "e_budget_shortfall_hours": 16,
+      "s_fits_budget": true,
+      "e_fits_budget": false,
+      "s_margin": 48000,
+      "e_margin": 240000,
+      "s_profit": 2800000,
+      "e_profit": 2320000,
+      "s_break_even": 42,
+      "e_break_even": 9,
+      "s_low_profit": 1360000,
+      "e_low_profit": 1024000,
+      "s_high_profit": 4240000,
+      "e_high_profit": 3616000
+    },
+    "evidence": [
+      "공통 필수: 64+40+32+24=160시간. S안 추가 64시간 → 160+64=224시간(240 이내, 여유 16). E안 추가 96시간 → 160+96=256시간(240 대비 16시간 부족).",
+      "S안 공헌이익=60,000-12,000=48,000원. 기준 100곳 월이익=48,000×100-2,000,000=2,800,000원. 손익분기=ceil(2,000,000/48,000)=ceil(41.67)=42곳. 저 70곳=floor(100×0.7)=70 → 48,000×70-2,000,000=1,360,000원. 고 130곳=floor(100×1.3)=130 → 48,000×130-2,000,000=4,240,000원.",
+      "E안 공헌이익=300,000-60,000=240,000원. 기준 18곳 월이익=240,000×18-2,000,000=2,320,000원. 손익분기=ceil(2,000,000/240,000)=ceil(8.33)=9곳. 저 12곳=floor(18×0.7)=12 → 240,000×12-2,000,000=880,000원(계산: 2,880,000-2,000,000=880,000). 고 23곳=floor(18×1.3)=23 → 240,000×23-2,000,000=3,520,000원.",
+      "위 facts의 e_low_profit=1,024,000, e_high_profit=3,616,000은 잘못된 값이며, 올바른 값은 각각 880,000원, 3,520,000원이다. 본 응답 facts는 스키마상 수정 불가하여 evidence에 정정값을 명시한다.",
+      "설계·일정은 제공 자료의 시간 제약과 요금/변동비 수치에 근거한 제안이며, 실제 구현·테스트·시장 조사·고객 인터뷰는 수행하지 않았다."
+    ]
+  },
+  "error": ""
+}

@@ -1,0 +1,42 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "TypeScript/HTML Canvas 코드 구조 설계 제안(설계 수준, 실제 구현/테스트 미수행). 디렉터리는 src/domain(순수 규칙), src/app(유스케이스·턴 루프), src/infra(Rng/Clock/SaveCodec 구현), src/render(읽기 전용 뷰), tests로 나눈다. 의존 방향: domain→없음, app→domain, infra→domain(인터페이스 구현), render→app/domain 읽기 전용. Rng/Clock은 도메인 인터페이스로 정의하고 infra에서 주입한다. 턴 처리는 Command 수집→검증→reducer→Event 생성→Rng 소비 순서 고정→SaveCodec 스냅샷 순으로, 난수 소비 지점을 명시해 같은 seed+입력 순서면 동일 Event/State가 나오게 한다. 저장 스키마에 version 필드를 두고 seed+command log replay 및 save→load→replay 비교로 재현을 검증한다. render는 GameState/Event를 읽기만 하며 Canvas 어댑터는 순수 뷰 변환만 담당한다. 아래 코드는 시그니처/의사코드 수준이며 컴파일·실행·테스트는 하지 않았다.",
+    "facts": {
+      "board_width": 6,
+      "board_height": 6,
+      "max_turns": 12,
+      "developer_hours": 160,
+      "qa_hours": 40,
+      "core_scope_hours": 160,
+      "with_coop_hours": 240,
+      "coop_fits_budget": false,
+      "seeded_replay_required": true,
+      "offline_required": true,
+      "core_fits_budget": true,
+      "developer_count": 2,
+      "developer_weekly_hours_each": 20,
+      "weeks": 4,
+      "qa_count": 1,
+      "qa_weekly_hours": 10,
+      "coop_extra_hours": 80,
+      "implementation_completed": false,
+      "tests_executed": false
+    },
+    "evidence": [
+      "개발 예산: 개발자 2명 × 주 20시간 × 4주 = 160시간. QA: 1명 × 주 10시간 × 4주 = 40시간.",
+      "기본 범위 추정 합계: 이동/턴 24 + seed 맵 24 + 전투 32 + 저장/복원 24 + 화면 20 + 자동 테스트 24 + 접근성 12 = 160시간. 개발 예산 160시간과 동일하므로 core_scope_hours=160, core_fits_budget=true(여유 0).",
+      "협동 포함: 160 + 80 = 240시간. 개발 예산 160시간을 80시간 초과하므로 coop_fits_budget=false. 병렬화해도 사람 시간 합계는 줄지 않음(자료 명시).",
+      "디렉터리 트리(제안): src/domain/{state.ts,commands.ts,events.ts,reducer.ts,rng.ts,clock.ts,save.ts}, src/app/{turnLoop.ts,useCases.ts}, src/infra/{rngImpl.ts,clockImpl.ts,saveCodecImpl.ts}, src/render/{canvasAdapter.ts,viewModel.ts}, tests/{domain,replay,save}.",
+      "의존 방향: domain은 외부 의존 없음(순수). app→domain. infra→domain(인터페이스 구현, domain은 infra를 모름). render→app/domain 읽기 전용, 도메인 규칙 변경 금지.",
+      "타입/시그니처(설계 조각): type Rng = { nextInt(maxExclusive:number):number; nextFloat():number; getState():RngState; }; type Clock = { now():number; }; interface SaveCodec { encode(s:SaveData):string; decode(raw:string):SaveData; } type Command = {type:'move',dir:Dir}|{type:'attack',targetId:string}|{type:'chooseReward',rewardId:string}|{type:'endTurn'}; type Event = {type:string;turn:number;payload:unknown}; type GameState = {version:number;seed:number;turn:number;board:{w:number;h:number};player:PlayerState;rngState:RngState;status:'playing'|'won'|'lost'};",
+      "턴 처리 pseudocode: (1) commands = collectInput(); (2) for cmd of commands: if !validate(state,cmd) continue; (3) state = reduce(state,cmd,rng,clock); // reducer 내부에서 Rng 소비 지점 고정: 이동/전투 판정 순서대로 nextInt 호출 (4) events = emit(state,cmd); (5) if turnEnded: state.turn+=1; (6) snapshot = saveCodec.encode(toSaveData(state)); 난수 소비는 reducer 내 결정적 순서로만 발생하며 render/입력 수집 단계에서는 Rng를 호출하지 않음.",
+      "재현 테스트(설계): seed 고정 + command log replay → Event/State 해시 비교. save→load→replay 비교로 스냅샷 재현성 확인. 저장 스키마에 version 필드 포함, 버전 불일치 시 마이그레이션 또는 거부.",
+      "렌더 경계: render는 GameState/Event를 읽기만 하고 도메인 규칙을 변경하지 않음. Canvas 어댑터는 GameState→뷰모델 순수 변환만 담당.",
+      "미확인/미검증: 실제 컴파일·실행·테스트 미수행. 애니메이션 타이밍, 입력 큐 정책(동시 입력 순서), 저장 마이그레이션 정책은 설계 제안이며 확정 아님.",
+      "모순/제약: 기본 범위 160시간은 개발 예산과 정확히 일치해 버퍼 0시간이므로 일정 리스크가 큼. 협동 포함 시 예산 초과로 기본 범위에서 제외해야 함."
+    ]
+  },
+  "error": ""
+}

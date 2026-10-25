@@ -1,0 +1,130 @@
+{
+  "case_id": "payment-redesign",
+  "condition": "homogeneous",
+  "block": 2,
+  "run_id": "20260921T113158-suite-ab4e67-r2-payment-redesign-homogeneous",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 49.9914,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 8,
+  "checks_total": 8,
+  "wrong_or_missing": [],
+  "calls": 5,
+  "http_requests": 6,
+  "http_responses": 5,
+  "http_429": 1,
+  "http_errors": {
+    "429": 1
+  },
+  "retries": 1,
+  "transport_errors": 0,
+  "tasks": 1,
+  "max_depth": 0,
+  "awards": {
+    "A": 1
+  },
+  "root_award": "A",
+  "c_proposals": 1,
+  "c_high_bids": 0,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.00394718,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 49.821,
+  "canonical_facts": {
+    "backfill_batches": 240.0,
+    "can_release": false,
+    "coexistence_hours": 72.0,
+    "downtime_budget_seconds": 1200.0,
+    "offline_backfill_fits": false,
+    "serial_backfill_seconds": 3600.0,
+    "two_worker_backfill_seconds": 1800.0,
+    "unverified_release_checks": 3.0
+  },
+  "artifact_sha": "5568968e5b37bb277e1f32189bd98f6e30b1f97e23a3e88a260a785cbfdfb731",
+  "root_plan_sha": "a9633c46cd9a48676c2264ccccc04f074caa75bedad1bbfada907728123c53e3",
+  "award_sha": "e6e89d689c453e47031deb0d396a428872e46d73d17f648c470dcd37ce6b4fed",
+  "controls_sha": "a91c7caead6fdba684f990905ef2cfecaf8c8557e058473abdd7a8aad47d65ff",
+  "root_plan": {
+    "mode": "execute",
+    "actions": [
+      "제공 자료를 정리해 원인 가설(빈 idempotency_key, 타임아웃 후 재시도, 웹훅 중복/역전)과 확인할 증거를 도출한다.",
+      "PaymentCommand, IdempotencyStore, GatewayPort, WebhookHandler, ReconciliationJob의 책임·인터페이스·저장 데이터·고유 제약·오류/재시도 경계를 설계하고 상태 전이표를 작성한다.",
+      "경쟁 요청과 순서 역전 사례를 들어 선택한 멱등성/대사 패턴의 타당성을 설명하고, 코드 디렉터리와 핵심 의사코드를 제시한다.",
+      "마이그레이션 수치를 계산한다: 배치 수=1,200,000/5,000=240, 1개 작업자=240*15=3,600초=60분, 2개 작업자=1,800초=30분, 중단 허용=20분=1,200초이므로 오프라인 일괄은 불가.",
+      "온라인 준비(백필/이중쓰기/검증)와 최종 전환(짧은 중단 또는 무중단 전환)을 구분하고, 롤백·재시도 결제·취소 결제 검증이 미완료임을 명시한다.",
+      "중복/순서 역전/부분 실패 테스트 행렬, 배포·롤백·중단 조건, 지원팀 전달 사실과 미확인 사항을 작성한다.",
+      "facts의 숫자/불리언 키를 모두 채우고, summary/evidence에 설계·계산식·근거를 문자열로 넣어 실제 수행과 설계 제안을 구분한다."
+    ],
+    "steps": []
+  },
+  "intervals": [
+    {
+      "task_id": "payment-redesign",
+      "worker": "A",
+      "start": "2026-09-21T11:55:16.250116+00:00",
+      "end": "2026-09-21T11:55:42.835941+00:00"
+    }
+  ],
+  "overlaps": [],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 1,
+    "peak_calls_by_worker": {
+      "A": 1,
+      "B": 1,
+      "C": 1
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 0,
+      "C": 0
+    },
+    "calls_by_phase": {
+      "propose": 3,
+      "review": 1,
+      "execute": 1
+    },
+    "task_statuses": {
+      "payment-redesign": "succeeded"
+    },
+    "awards": {
+      "payment-redesign": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 5
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 5
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "backfill_batches": true,
+        "serial_backfill_seconds": true,
+        "two_worker_backfill_seconds": true,
+        "downtime_budget_seconds": true,
+        "offline_backfill_fits": true,
+        "coexistence_hours": true,
+        "unverified_release_checks": true,
+        "can_release": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

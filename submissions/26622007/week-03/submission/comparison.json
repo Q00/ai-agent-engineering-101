@@ -1,0 +1,1001 @@
+{
+  "scope": "Observational, post-hoc comparison; final slots include 429 recovery. Not a randomized single-agent ablation.",
+  "character_measure": "Python len(summary), including spaces; excludes facts/evidence and JSON serialization. Repeated content is not deduplicated.",
+  "allocation": {
+    "baseline": {
+      "basic": {
+        "tasks": 15,
+        "correct": 9,
+        "misawards": 6,
+        "messages": 102
+      },
+      "peer_final": {
+        "tasks": 15,
+        "correct": 7,
+        "misawards": 8,
+        "messages": 371
+      }
+    },
+    "homogeneous": {
+      "basic": {
+        "tasks": 15,
+        "correct": 5,
+        "misawards": 10,
+        "messages": 105
+      },
+      "peer_final": {
+        "tasks": 15,
+        "correct": 6,
+        "misawards": 9,
+        "messages": 301
+      }
+    },
+    "overconfident": {
+      "basic": {
+        "tasks": 15,
+        "correct": 3,
+        "misawards": 12,
+        "messages": 101
+      },
+      "peer_final": {
+        "tasks": 15,
+        "correct": 4,
+        "misawards": 11,
+        "messages": 462
+      }
+    }
+  },
+  "depth_counts": {
+    "0": 15,
+    "1": 25,
+    "2": 5
+  },
+  "execution_peak_counts": {
+    "1": 19,
+    "2": 21,
+    "3": 5
+  },
+  "all_phase_peak_counts": {
+    "3": 45
+  },
+  "mode_counts": {
+    "delegate": 30,
+    "execute": 15
+  },
+  "documents": 162,
+  "root_documents": 45,
+  "subtask_documents": 117,
+  "max_tasks": 9,
+  "max_calls": 45,
+  "case_groups": [
+    {
+      "case": "game-design-architecture",
+      "mode": "execute",
+      "n": 5,
+      "facts_passed": 5,
+      "documents": 1,
+      "root_summary_chars": 2447.4,
+      "all_summary_chars": 2447.4,
+      "calls": 5
+    },
+    {
+      "case": "game-design-architecture",
+      "mode": "delegate",
+      "n": 4,
+      "facts_passed": 4,
+      "documents": 4.5,
+      "root_summary_chars": 2830,
+      "all_summary_chars": 9975.5,
+      "calls": 22.5
+    },
+    {
+      "case": "growth-roadmap",
+      "mode": "execute",
+      "n": 3,
+      "facts_passed": 3,
+      "documents": 1,
+      "root_summary_chars": 2653,
+      "all_summary_chars": 2653,
+      "calls": 5
+    },
+    {
+      "case": "growth-roadmap",
+      "mode": "delegate",
+      "n": 6,
+      "facts_passed": 5,
+      "documents": 4.83,
+      "root_summary_chars": 2732.83,
+      "all_summary_chars": 9361,
+      "calls": 24.17
+    },
+    {
+      "case": "launch-operations",
+      "mode": "execute",
+      "n": 2,
+      "facts_passed": 2,
+      "documents": 1,
+      "root_summary_chars": 2343.5,
+      "all_summary_chars": 2343.5,
+      "calls": 5
+    },
+    {
+      "case": "launch-operations",
+      "mode": "delegate",
+      "n": 7,
+      "facts_passed": 7,
+      "documents": 6.57,
+      "root_summary_chars": 2093.43,
+      "all_summary_chars": 11396.86,
+      "calls": 32.86
+    },
+    {
+      "case": "payment-redesign",
+      "mode": "execute",
+      "n": 5,
+      "facts_passed": 5,
+      "documents": 1,
+      "root_summary_chars": 3841.4,
+      "all_summary_chars": 3841.4,
+      "calls": 5
+    },
+    {
+      "case": "payment-redesign",
+      "mode": "delegate",
+      "n": 4,
+      "facts_passed": 4,
+      "documents": 4.5,
+      "root_summary_chars": 3053.25,
+      "all_summary_chars": 12043,
+      "calls": 22.5
+    },
+    {
+      "case": "release-review",
+      "mode": "delegate",
+      "n": 9,
+      "facts_passed": 9,
+      "documents": 4,
+      "root_summary_chars": 658.44,
+      "all_summary_chars": 2006.89,
+      "calls": 20
+    }
+  ],
+  "runs": [
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-release-review-baseline",
+      "case": "release-review",
+      "condition": "baseline",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 650,
+      "all_summary_chars": 1863,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-release-review-baseline/artifacts/release-review/profitability.json": "d8812c7a46b3dde9359240bd99f2997e3b9868e7287dbade45190c9a78b1e15c",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-release-review-baseline/artifacts/release-review/release_recommendation.json": "317706d4e5395af287b054ea6995b6abeee2265101843c1e41b0854c76634add",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-release-review-baseline/artifacts/release-review/tech_risk.json": "3c9e2ef3144c382db1ce268cb58b883c01ed28f333f3c8058ff606d5cfecc29d",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-release-review-baseline/artifacts/release-review.json": "7f680a92a857a37c9da22d5c6d0c781f9798f5f9245996dae8cc60fa83a9a705"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-release-review-homogeneous",
+      "case": "release-review",
+      "condition": "homogeneous",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 542,
+      "all_summary_chars": 2025,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-release-review-homogeneous/artifacts/release-review/profitability_review.json": "13adc58b63e7504a5e979311f0a44306acdf350ea5708f19a5f365bac719cb5f",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-release-review-homogeneous/artifacts/release-review/release_recommendation.json": "7bf3ab7e1d086df64eaec7cc03d0261be4431d1cc5bd3e7ed01ebacded8aec73",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-release-review-homogeneous/artifacts/release-review/tech_risk_review.json": "d40488ff800871a1765bc06164ce716e7056a611acc8ed7adc9b03f697b34257",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-release-review-homogeneous/artifacts/release-review.json": "b2b8e70e140632e924ae7b3050ac03a945cfe71ce2027944428b82d256603f6a"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-release-review-overconfident",
+      "case": "release-review",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 711,
+      "all_summary_chars": 2265,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-release-review-overconfident/artifacts/release-review/profitability.json": "e5134863a6e981484fc23f2a3e9057ddbe5d1081d9f82a593dee24be226c1550",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-release-review-overconfident/artifacts/release-review/release_recommendation.json": "7aa9e9518499b4f6fb27e140ae12177e12ca68b6bdaff94dc8554d93795b0845",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-release-review-overconfident/artifacts/release-review/tech_risk.json": "27d13c0d5b4d7172b33b41231deb5cf2df8ac8e4e3011e5549593f2bc16507e2",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-release-review-overconfident/artifacts/release-review.json": "7aa9e9518499b4f6fb27e140ae12177e12ca68b6bdaff94dc8554d93795b0845"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-baseline",
+      "case": "game-design-architecture",
+      "condition": "baseline",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 2663,
+      "all_summary_chars": 2663,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-baseline/artifacts/game-design-architecture.json": "2e713b4abb71d8dea8f87f23d86b1ab4852b8130208d39a08b7d0dcd82718b36"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-homogeneous",
+      "case": "game-design-architecture",
+      "condition": "homogeneous",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 1746,
+      "all_summary_chars": 1746,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-homogeneous/artifacts/game-design-architecture.json": "7c1b620808bdbac999b48666bba8d8ee7bc81f6bc58db35c18d38c494a2fede1"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-overconfident",
+      "case": "game-design-architecture",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 3584,
+      "all_summary_chars": 11647,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-overconfident/artifacts/game-design-architecture/budget_schedule.json": "683c59e7e2120770bd59e51bc4ebe8f21c9df2d63d388d8606eca11b3c492760",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-overconfident/artifacts/game-design-architecture/integration.json": "600d57b94558c742ff75d0c889a02798ad5c54643f7b0971ed4d4d9a18065737",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-overconfident/artifacts/game-design-architecture/tech_design.json": "cbaa787cb0f18458e6e25cc626f0cc0acb58c42014bbca44f349336031675955",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-overconfident/artifacts/game-design-architecture.json": "e139e83e3ab075d0a00672b80125cc8cd7f9422ba51fb270c74aef7a3b8f2ea4"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-payment-redesign-baseline",
+      "case": "payment-redesign",
+      "condition": "baseline",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 5337,
+      "all_summary_chars": 5337,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-baseline/artifacts/payment-redesign.json": "afda21278e69c87dfb05081b07ec0155f448c5f0051cb480b24e43c4ee911a9e"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-payment-redesign-homogeneous",
+      "case": "payment-redesign",
+      "condition": "homogeneous",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 2027,
+      "all_summary_chars": 2027,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-homogeneous/artifacts/payment-redesign.json": "3f6b6c480793d923345346eea7f02b7eced8f14555431fa9fd62f5ba0a7d8123"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r1-payment-redesign-overconfident",
+      "case": "payment-redesign",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 5,
+      "root_summary_chars": 3097,
+      "all_summary_chars": 13031,
+      "calls": 25,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-overconfident/artifacts/payment-redesign/final_report.json": "7ad172d56e15d15f0eb3f2d57fb1f93151812dfb9e9691a7f9f981fb71f46192",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-overconfident/artifacts/payment-redesign/migration_math.json": "b4bbda9c2aa0f5b220f5a13097a27b6131f39362d6010a55f22acc1117ccf895",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-overconfident/artifacts/payment-redesign/ops_comm.json": "c8b4cfc2ca0e55ea78c0036e94bcda76cfcdc6266acbd2b4b66744879c772c7d",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-overconfident/artifacts/payment-redesign/tech_design.json": "0fdedc727c8af9a5643954d447aa07c6320881194813ac505d74067197178a58",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r1-payment-redesign-overconfident/artifacts/payment-redesign.json": "48d407bf4e3dfad1a0140d459d0b28208addd9a5610305f8a2f6ec2d2a749e9c"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-homogeneous",
+      "case": "game-design-architecture",
+      "condition": "homogeneous",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 2471,
+      "all_summary_chars": 2471,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-homogeneous/artifacts/game-design-architecture.json": "89d6e8b32820715dc8b524e7a9f53183de888902ba5bcda2a864b7685820b078"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-overconfident",
+      "case": "game-design-architecture",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 3026,
+      "all_summary_chars": 7631,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-overconfident/artifacts/game-design-architecture/budget_schedule.json": "00a3fb6be30527b210f4c46f2f21a32c16dc1eef12881947e1dc5c2cdaba8d98",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-overconfident/artifacts/game-design-architecture/design_draft.json": "1c2bc814b993e373484118ca001055697656905db296bf65720fe07db3d981b0",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-overconfident/artifacts/game-design-architecture/integration_review.json": "712d8b31292eae23a829aa281e199f25cfe13917ea66b7243b4eb45679b51446",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-overconfident/artifacts/game-design-architecture.json": "7b52fff85b1778a8c00a10260837b5429505c89c89cc4d011ea650c6fb619c2d"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-baseline",
+      "case": "game-design-architecture",
+      "condition": "baseline",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 2729,
+      "all_summary_chars": 2729,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-game-design-architecture-baseline/artifacts/game-design-architecture.json": "386368336f468aab335d4fa192f0ae928abb0282984a3c78b00141a55c624928"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-payment-redesign-homogeneous",
+      "case": "payment-redesign",
+      "condition": "homogeneous",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 4263,
+      "all_summary_chars": 4263,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-homogeneous/artifacts/payment-redesign.json": "c0e0081ef47e03304b4636be9eb6ebb9be07163008c3842b9e76093d1f3d1f6c"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-payment-redesign-overconfident",
+      "case": "payment-redesign",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 3010,
+      "all_summary_chars": 10848,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-overconfident/artifacts/payment-redesign/integrate.json": "7c546f539d4177afe495c7e7d35843333337fc3c35d5ff1d68cd66cbbafd1aab",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-overconfident/artifacts/payment-redesign/ops_plan.json": "b57f4d43a6b89f32c25d46db8d631cf71e82384a229e0bf7dd93781f2ae3c515",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-overconfident/artifacts/payment-redesign/tech_design.json": "d658c591265e34f8fd52df0a32f5b7616d655b830318d85777ec7dc5140b64ff",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-overconfident/artifacts/payment-redesign.json": "ef8cb88a2e232cee2ba72a9512d7b2659c1d552f099dbdde8f89dcd015b191f7"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-payment-redesign-baseline",
+      "case": "payment-redesign",
+      "condition": "baseline",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 2947,
+      "all_summary_chars": 11635,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-baseline/artifacts/payment-redesign/integrate.json": "151d13199213fe0d9ed6850feb47ea90b0815a1f3602d54084adbfcfb16a8d75",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-baseline/artifacts/payment-redesign/support_comm.json": "23b039d7889ad407ff6a9ea3df11109e21defd174ecf672e66ad533aec1c0acb",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-baseline/artifacts/payment-redesign/tech_design.json": "9199a79fe64eaf9fe4817af66e22676747289682f5451b71291ffe93b229663d",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-payment-redesign-baseline/artifacts/payment-redesign.json": "f1679c30d5ade1b9925f0c533f1dc5706080274a09ea0a74f31b031d2888b11a"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-homogeneous",
+      "case": "growth-roadmap",
+      "condition": "homogeneous",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 2804,
+      "all_summary_chars": 2804,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-homogeneous/artifacts/growth-roadmap.json": "9f35b7c85d2f86ce41473bcb12b953ef41e78b028e6ee62010759bf6e8a0f661"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-overconfident",
+      "case": "growth-roadmap",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 1861,
+      "all_summary_chars": 5346,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-overconfident/artifacts/growth-roadmap/business_analysis.json": "cb634f1a5d6ab65a208c7cb39b26dfcd95e818bb8a18eb1f4ce5cfa9daeff7a4",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-overconfident/artifacts/growth-roadmap/integration.json": "28f69d4cd8407890aaaf26b6b72a915f90cdb922d1aa3364995eecf860e4951f",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-overconfident/artifacts/growth-roadmap/technical_analysis.json": "ba73678a3784ca6423c5a39f7df6f239ca349f1cda53453269eadc0cfbeec7da",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-overconfident/artifacts/growth-roadmap.json": "cf8e8c9ab6b52ca5fa77c0808919d8eb5703df5112a91d7bb1f7a5fd3f714bc6"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-baseline",
+      "case": "growth-roadmap",
+      "condition": "baseline",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 3130,
+      "all_summary_chars": 11452,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-baseline/artifacts/growth-roadmap/design.json": "cb5aa59f35a63e2cdbd27328ab38a132555ee8d57a5b0373dea0db4dca65191a",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-baseline/artifacts/growth-roadmap/economics.json": "21e73fa39facfb1d208a344d45d755e7899f7da394d01d543e0ae9d014262848",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-baseline/artifacts/growth-roadmap/integrate.json": "663e65063f3f077876d61bdc4d89709e4340cd5c46f736dfe38c90aa5cd64804",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-growth-roadmap-baseline/artifacts/growth-roadmap.json": "d88c3f9d396cbfe49d2a41f135265753c5ba32cd7a043659a83f15e1a378bcd0"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-launch-operations-homogeneous",
+      "case": "launch-operations",
+      "condition": "homogeneous",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 2195,
+      "all_summary_chars": 2195,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-homogeneous/artifacts/launch-operations.json": "2411ef554c324443eccf78bd2cd37204cddfc032674afb8d92d3907f7f3fa50f"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-launch-operations-overconfident",
+      "case": "launch-operations",
+      "condition": "overconfident",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 2492,
+      "all_summary_chars": 2492,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-overconfident/artifacts/launch-operations.json": "ea418682986d5dfdcdf8eef3c4fcb81e5550d26987fa0e4bccdeedfd3635a131"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-launch-operations-baseline",
+      "case": "launch-operations",
+      "condition": "baseline",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 2573,
+      "all_summary_chars": 7770,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-baseline/artifacts/launch-operations/capacity_and_policy.json": "5a531bd3586b4dfb97aded9df62015f35d09ddfaaa11cf83ce5625e789b041eb",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-baseline/artifacts/launch-operations/customer_comms.json": "91a340f7d30fcc040c097f196319a0ccfc9a6f33d34562868857ae66e40dbd44",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-baseline/artifacts/launch-operations/integrate.json": "18c4427ddfaf3e7905eb69895d35dab3b40d1f685a049b72e0674d2a791d1d3d",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-launch-operations-baseline/artifacts/launch-operations.json": "45173a0293ed4dd6043df627441a8e67e600e1a2544d9b41f93dad7299639034"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-release-review-homogeneous",
+      "case": "release-review",
+      "condition": "homogeneous",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 568,
+      "all_summary_chars": 1830,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-release-review-homogeneous/artifacts/release-review/profitability_review.json": "99521f67d8430c9cca055542b92df6063d9722022350d28b8ba506b2d3642794",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-release-review-homogeneous/artifacts/release-review/release_recommendation.json": "4dd5e37045bbf3f48efcae02d62ad8cd43c1430f1aadc0832272ad10560e40ef",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-release-review-homogeneous/artifacts/release-review/tech_risk_review.json": "dc299e759f1d871b0a2b25316487e3384d4cd3774d4256cf49afe30fc5bb1e5a",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-release-review-homogeneous/artifacts/release-review.json": "1bcd26afb37a84dc7bbcc8c6fba22ca9b73aca4c67bbe04396ea4ffa6d61ede4"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-release-review-overconfident",
+      "case": "release-review",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 688,
+      "all_summary_chars": 2014,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-release-review-overconfident/artifacts/release-review/profitability.json": "f8384d68c9beef741f52337e154b0afa859fcb64f005b893dca99174b5ab3bb0",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-release-review-overconfident/artifacts/release-review/release_recommendation.json": "f70433744e0044d441069c61354d785881970f9bfcf1672de0e87304e0c71eba",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-release-review-overconfident/artifacts/release-review/tech_risk.json": "160b199d707c289a7241646b62c4b9a826e9a2289c2e483c3e8da7b21e10ce26",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-release-review-overconfident/artifacts/release-review.json": "b9687dfadc287e3b7f5ce299a1f13f8e2d10e748c7726cbe82d041ee00c32e7f"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r2-release-review-baseline",
+      "case": "release-review",
+      "condition": "baseline",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 694,
+      "all_summary_chars": 1992,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-release-review-baseline/artifacts/release-review/profitability.json": "ad3458f881132375ffebb59016d62d260d4d52c32cfbe6502cc31019425e1d6a",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-release-review-baseline/artifacts/release-review/recommendation.json": "6fee6be6913d1524a1b50ee4cf13225c96882efbdaace5555ea3b9cb27f4d00b",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-release-review-baseline/artifacts/release-review/tech_risk.json": "766e961d109b90176e4cc9b18052c2d1e888fbc88abadd037131267e9558a2ec",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r2-release-review-baseline/artifacts/release-review.json": "cf981c25dc47c8de212d9d957006a2062bb8457725c65d6485307619b4c8353a"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-release-review-baseline",
+      "case": "release-review",
+      "condition": "baseline",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 719,
+      "all_summary_chars": 2112,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-release-review-baseline/artifacts/release-review/profitability.json": "cbe596753f42df84708c197f7eddc354e37a2dcd0c0b41770a43b9e07f5d99ba",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-release-review-baseline/artifacts/release-review/release_recommendation.json": "6a319771137ee95652c7fb10f10fb5b36cda43271f4d386671a6e08348898f39",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-release-review-baseline/artifacts/release-review/tech_risk.json": "1d99fe7dc0e81a9866705fcda471542edae7acaf3f49feb05689cd2132462815",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-release-review-baseline/artifacts/release-review.json": "f9baae79c01a3dc9d9278c037bd9ca5b595e688be97d00962a5f1a43666f8a66"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-release-review-homogeneous",
+      "case": "release-review",
+      "condition": "homogeneous",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 609,
+      "all_summary_chars": 1800,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-release-review-homogeneous/artifacts/release-review/profitability.json": "8d02507c1852d1176b733dcdd515879998a4de48b79da5ea781df37f60def766",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-release-review-homogeneous/artifacts/release-review/release_recommendation.json": "7a1eaf8253e8fed2bd431ee93e8917fcb03c320078811222f423a3bc358570ae",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-release-review-homogeneous/artifacts/release-review/tech_risk.json": "735dc2b1e13c7bc0cf6ef0c90bd76852a7e51e84bf52c0fc196029fc3c3affd8",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-release-review-homogeneous/artifacts/release-review.json": "80c7152dfbf525ba7cbb87d4e2ccd458869fe750045597b24e7a18b909812079"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-overconfident",
+      "case": "game-design-architecture",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 5,
+      "root_summary_chars": 3447,
+      "all_summary_chars": 14393,
+      "calls": 25,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 3,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-overconfident/artifacts/game-design-architecture/architecture.json": "372313a2d4d23133f345294f2e6548665400c8ac67f02a54615045ca2ef47242",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-overconfident/artifacts/game-design-architecture/budget_scope.json": "13190d00ba4341304525143648acad4d8c76a69ba53d958e7139462634f8ee03",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-overconfident/artifacts/game-design-architecture/game_design.json": "f4094bcc502de5b3ad1affd1cb757cc876e141cf1a403fde519c99a3f39d4e5a",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-overconfident/artifacts/game-design-architecture/integration.json": "fbbbbbd7dd2d9fd1af4a95de025bc5bce527af74cf1d95d3e1c0dd12401ef54d",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-overconfident/artifacts/game-design-architecture.json": "d598f04af210c0cc7268f7b5011a6de910f4e8698b269efc05ebdb8d23262f4b"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-baseline",
+      "case": "game-design-architecture",
+      "condition": "baseline",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 2628,
+      "all_summary_chars": 2628,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-baseline/artifacts/game-design-architecture.json": "24307f3f94d0df7824779fffb00364eb11dd70082e747fa571a5ca1a8fc0c4d5"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous",
+      "case": "game-design-architecture",
+      "condition": "homogeneous",
+      "mode": "delegate",
+      "documents": 5,
+      "root_summary_chars": 1263,
+      "all_summary_chars": 6231,
+      "calls": 25,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous/artifacts/game-design-architecture/budget_facts.json": "c99bf61766f00d5c2de8b49828894097f3ffd1eccc9b19c389a9588be4a8399d",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous/artifacts/game-design-architecture/code_architecture.json": "3e411dfc5db1bcb08a7d4ffc59573bdcb215097badab9d4f5395d9c243785423",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous/artifacts/game-design-architecture/game_design.json": "bba1177f88113b9afc3d1635b2fbf102f3efdca1a554180b4e7b0c41cf4e88bf",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous/artifacts/game-design-architecture/integration_report.json": "7c7916d2f6e8af494af9be612e02107d36710c493adaa7dce214b7d3e40145bc",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous/artifacts/game-design-architecture.json": "a9077d726b207dac74f1ea7b68b727157e8744b760c74b7f5ca2251505106669"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline",
+      "case": "growth-roadmap",
+      "condition": "baseline",
+      "mode": "delegate",
+      "documents": 5,
+      "root_summary_chars": 3304,
+      "all_summary_chars": 9602,
+      "calls": 25,
+      "depth": 1,
+      "facts_passed": false,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline/artifacts/growth-roadmap/biz_analysis.json": "0a5a73fc69b82ee201328a7c2ffe42036a322ad7a6962b27a68b72c959bdf640",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline/artifacts/growth-roadmap/integrate.json": "1c1076b88582c7771826262b4efcd513d5d94276d596735997db6693194f543d",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline/artifacts/growth-roadmap/ops_readiness.json": "8b62612ab19266b4fa950ddf4281a811ddaaea4753651ba827703a32a0973ced",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline/artifacts/growth-roadmap/tech_design.json": "0ddb8df2bc0255059f9625e99e553ceb961d68adcab0a7a4b8fbd75299785722",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-baseline/artifacts/growth-roadmap.json": "c59126ae3e394f63519f329dadecf27798cba98b6675cf2225b5ebe3d321555e"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-homogeneous",
+      "case": "growth-roadmap",
+      "condition": "homogeneous",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 2340,
+      "all_summary_chars": 2340,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-homogeneous/artifacts/growth-roadmap.json": "2fa91dbd6a626eb3c5bcac5d4e57aa2f924f7a389d7ccb35a93d11f26b8bc736"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-overconfident",
+      "case": "growth-roadmap",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 5,
+      "root_summary_chars": 2445,
+      "all_summary_chars": 7458,
+      "calls": 25,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 3,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-overconfident/artifacts/growth-roadmap/integration.json": "78321e95d7a5da3174114fd6efa14e7035fe0cdd1ef43442e46f0b5c44e46721",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-overconfident/artifacts/growth-roadmap/ops_readiness.json": "d26ebfb23f19d7fc163d66b06e5490a28d83f32f4553ed5480cf029efcf5f384",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-overconfident/artifacts/growth-roadmap/profit_analysis.json": "9089f2c280c952e7705b4aec8ce6a297fdb099358b58efe7777eb6c6095c175a",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-overconfident/artifacts/growth-roadmap/tech_design.json": "8ebcabacf61d22428ae14c0ef3ac35340c3875f5c0ddf89836c5a203b6a7f135",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-growth-roadmap-overconfident/artifacts/growth-roadmap.json": "92f398ee2aa8d1ee58cd02d230489706015d55359c9e43479259d9b5f9869514"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline",
+      "case": "launch-operations",
+      "condition": "baseline",
+      "mode": "delegate",
+      "documents": 8,
+      "root_summary_chars": 2025,
+      "all_summary_chars": 14661,
+      "calls": 40,
+      "depth": 2,
+      "facts_passed": true,
+      "peak_execution_calls": 3,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline/artifacts/launch-operations/capacity_and_policy.json": "83fe6e3940894946fe5100fe783b97db6df1d73d727199d5377bf277b2756002",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline/artifacts/launch-operations/customer_comms/capacity_analysis.json": "f8221441d248d9678b19ed10cd86853ee72cb909f3670252281dcfc5d66282ba",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline/artifacts/launch-operations/customer_comms/comms_pack.json": "9576015097c2fd8a8e494e3e1d8047765439335a2617794b3a3e525fb4c557fc",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline/artifacts/launch-operations/customer_comms/ops_schedule.json": "40f61c7c1d004c49263efe7355e5677c14303cedecbf52ec2d3dd8fca61ada9e",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline/artifacts/launch-operations/customer_comms/single_source.json": "7547d3494b0b436b687f7649116c0c08e4e675c61512d7bf5793a0b40cea65ff",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline/artifacts/launch-operations/customer_comms.json": "406721bffae12c1fedd55489a4c9628ef356acb02756063bc4a461379f25d14b",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline/artifacts/launch-operations/integrate_report.json": "8b2d24c49456c8cde2f2eed1f10a677b5f212f92bfec154acf39a64ed4f5db00",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline/artifacts/launch-operations.json": "ac0de497308bcb533acbbb44c00b422e28ba9c26192e266e98c0ce4c17a9f5cf"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous",
+      "case": "launch-operations",
+      "condition": "homogeneous",
+      "mode": "delegate",
+      "documents": 8,
+      "root_summary_chars": 1873,
+      "all_summary_chars": 13278,
+      "calls": 40,
+      "depth": 2,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous/artifacts/launch-operations/capacity_calc.json": "d961dbd63810d6e978336d5a65f0380b92485a691191caf82ee31e76db35758f",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous/artifacts/launch-operations/integrate.json": "8898a68eecbcce04d11eabafe5faf0951794e2e4e4ba5c04ff7013ee681fc57f",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous/artifacts/launch-operations/policy_comms.json": "85405abd54067dffcbe909c89dcb43f991d7583a8c4a430b1eb5e114dd47fefd",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous/artifacts/launch-operations/schedule_contingency/capacity_calc.json": "199c044ea11d50915e7c94108ca7934080a8e42d1933efed47a5d59bf84d4131",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous/artifacts/launch-operations/schedule_contingency/contingency_plan.json": "932913b5e5fafd6fd7fb2880a12da2c11bf62fec1f9caaad1990537d6212d1b6",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous/artifacts/launch-operations/schedule_contingency/schedule_table.json": "1d5207a5913e1b69448aa42c58a6d7bf6a28a499e1ab3470ca5943337a9deeca",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous/artifacts/launch-operations/schedule_contingency.json": "2154de97f87202088a92c999493ac644d57365411f157662f086891af027a49f",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-homogeneous/artifacts/launch-operations.json": "996c2973fa7597751922de9d87de22a537c174325c1a8ecd151a99b63de0bb92"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident",
+      "case": "launch-operations",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 9,
+      "root_summary_chars": 2408,
+      "all_summary_chars": 14359,
+      "calls": 45,
+      "depth": 2,
+      "facts_passed": true,
+      "peak_execution_calls": 3,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident/artifacts/launch-operations/capacity_and_facts.json": "e24ba92da22ac99e74baa41aeb6162cfd376bab0853c1b79337b0095f7d47e57",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident/artifacts/launch-operations/integrated_package.json": "4bcd0ae7d7d75bbb1bafceba20ffd44cb9c695f5646dc170337e6bfc75d1a3d5",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident/artifacts/launch-operations/staffing_alternatives/cost_effect.json": "37c8e252cfefe74c8f379ef2bcd02205776db1b97ef366590ed1f4d27b902755",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident/artifacts/launch-operations/staffing_alternatives/customer_messaging.json": "b9c1c6d113ecf67103a2144e7bd62bfdb5ae92779cbe6175fa48ccac47818c79",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident/artifacts/launch-operations/staffing_alternatives/queue_policy.json": "62c3812dcc1a080022af33b6c64b7585fa1841ea936da7df1e15b6c075e363fd",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident/artifacts/launch-operations/staffing_alternatives/staffing_alternatives.json": "aab807651605f9bac40533c31e47dcbc543845d9510a2e0b516ae6907f917838",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident/artifacts/launch-operations/staffing_alternatives.json": "98c60a584ff1639d8cea1016e93742be6f9858f7968b67dce7821680fe13cdaf",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident/artifacts/launch-operations/tech_dependency.json": "cbd296a8666e0c9e46e014f385af1cad5c48d6108d8d8df3e91e9e11e7b00763",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-overconfident/artifacts/launch-operations.json": "e201b12efbd2c7a4e8348be79ab4ffdc256516e3dfd1320fd28d4a07081ce5a4"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident",
+      "case": "payment-redesign",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 5,
+      "root_summary_chars": 3159,
+      "all_summary_chars": 12658,
+      "calls": 25,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 3,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident/artifacts/payment-redesign/integrate.json": "c78a968a0d850bae75740208fd766cfa1a11c51400c3d786560e208d7a4be9cc",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident/artifacts/payment-redesign/migration_calc.json": "b519f49510389606ddb210ada1063ac246b61c441875a4d33dddd71faef2df29",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident/artifacts/payment-redesign/support_comms.json": "ac1462a97d4df4e7d381f648f6c27864b4f4586e3da73281b27ee94833921498",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident/artifacts/payment-redesign/tech_design.json": "5d4670741a04ac2d70d7d332488d631058042f3eb8e64e5bf5ab375b5e1b9bcc",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-overconfident/artifacts/payment-redesign.json": "6e1f7c3d85c892041b70c3094462b0bf0777ae1edf9bc23829a0cc2074d06375"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-baseline",
+      "case": "payment-redesign",
+      "condition": "baseline",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 5142,
+      "all_summary_chars": 5142,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-baseline/artifacts/payment-redesign.json": "a753f3f3486a9c8f5f141cc46038b21e6a6efd923ee07a06315dc3ee428d4919"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-homogeneous",
+      "case": "payment-redesign",
+      "condition": "homogeneous",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 2438,
+      "all_summary_chars": 2438,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-payment-redesign-homogeneous/artifacts/payment-redesign.json": "f25d66239a9b57a9db2c152c2b6a1cbc4184ab47a7da08977abc8e055bbdf32a"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-overconfident",
+      "case": "growth-roadmap",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 1963,
+      "all_summary_chars": 5794,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-overconfident/artifacts/growth-roadmap/biz_analysis.json": "fa6eac7dfc342d03767ccb6657d87061c533fef3d2fb4023f7a8d3f464191366",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-overconfident/artifacts/growth-roadmap/ops_integration.json": "fe43dc7c13c96dbda4fe748469ae76a2f701124de680690935bc42a6014761b7",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-overconfident/artifacts/growth-roadmap/tech_plan.json": "dc3dbf2cb07fc8c3798a6a29407df3429710b44c830a5a1fb44e715eced7c26a",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-overconfident/artifacts/growth-roadmap.json": "60826d41c86ee450408c19ff06aa12d874d1dee6f05da7bef334ac6d596302ae"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline",
+      "case": "growth-roadmap",
+      "condition": "baseline",
+      "mode": "delegate",
+      "documents": 7,
+      "root_summary_chars": 3694,
+      "all_summary_chars": 16514,
+      "calls": 35,
+      "depth": 2,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline/artifacts/growth-roadmap/business_recommendation.json": "f879c43c839904d5b717a41a8dbe112bae8355a79b5e54b1ff28ee71ca5d0401",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline/artifacts/growth-roadmap/ops_readiness.json": "a4d4a703fa0800dfed183f21bf15bfd8f362d41d73214ea62ca8f518b3e7ee0a",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline/artifacts/growth-roadmap/profit_analysis.json": "753263ee2b5133fb0afd73030ba1a03d777345d1806ba79fa4d35ee1118e3487",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline/artifacts/growth-roadmap/tech_design/ops_rollout_plan.json": "e8f123cf4bbf0d07222b2ea8a71376db5c23a04a2c94629a585bf6948dc9f979",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline/artifacts/growth-roadmap/tech_design/tech_change_design.json": "c84b25183f0f2bb2ac58e1e080655101a42c1fe8e194115512c5855d1a98fd71",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline/artifacts/growth-roadmap/tech_design.json": "808f334a2f3d070f7a21f6e6b2e979d1fb72b67b51bf7b360f702c478838e8ba",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-baseline/artifacts/growth-roadmap.json": "da58dd4e7a5cb5213409b43d5f91ccb838f855bef67d71912246b614ae0cf5cb"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-homogeneous",
+      "case": "growth-roadmap",
+      "condition": "homogeneous",
+      "mode": "execute",
+      "documents": 1,
+      "root_summary_chars": 2815,
+      "all_summary_chars": 2815,
+      "calls": 5,
+      "depth": 0,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-growth-roadmap-homogeneous/artifacts/growth-roadmap.json": "d6331dd4999b137edbfe798bf8635db6abc5b4732623c0b87e79a333993b879a"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-overconfident",
+      "case": "launch-operations",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 1877,
+      "all_summary_chars": 5801,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 1,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-overconfident/artifacts/launch-operations/capacity_analysis.json": "6d1db6760be71b1a6e297b41de6f2125a0d7219e72a01adeaceb39111eb98b43",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-overconfident/artifacts/launch-operations/ops_package.json": "8405130e90136793d4ec0030f348d5c7afb0d8e770319a4d8f3f0f341cd62f62",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-overconfident/artifacts/launch-operations/tech_status.json": "368f1a9f144711d0cd1803d90f5d36faba623a781d0f89f0d326571f85878736",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-overconfident/artifacts/launch-operations.json": "376799cf505a9fa22e8d2c2158239de22a2fe24cf44b017b31b9dd2d39a4f3c1"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-baseline",
+      "case": "launch-operations",
+      "condition": "baseline",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 2384,
+      "all_summary_chars": 8090,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-baseline/artifacts/launch-operations/capacity_and_risk.json": "821dd1bd5413e334a19f965c0d2f4bd10eea69781e4453ec431f0feb3df27e69",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-baseline/artifacts/launch-operations/customer_comms.json": "76137d0d661c5affbebd98e92db5169470b401d1966fc5f559de33aaea380e6d",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-baseline/artifacts/launch-operations/integration.json": "e8bbae69a57f51ae7fdf5e2471e34b0873028c176d66ce3d236cd44969279a42",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-baseline/artifacts/launch-operations.json": "5b0a1c68f8406b33c0b412c7fc1fb76533d17fe0cf74bf5c7c69fc71654fe996"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous",
+      "case": "launch-operations",
+      "condition": "homogeneous",
+      "mode": "delegate",
+      "documents": 9,
+      "root_summary_chars": 1514,
+      "all_summary_chars": 15819,
+      "calls": 45,
+      "depth": 2,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous/artifacts/launch-operations/capacity_calc.json": "f9d28b5c71dff2bd4f7347195cd01fed94450af403d2ffeac02bafbae374c2fd",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous/artifacts/launch-operations/contingency_checklist.json": "2460d12ae57c8953daaefe13ad2fcb0d571ed5422252c9dd433f18079187e962",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous/artifacts/launch-operations/customer_comms.json": "a4a3edc7478b495efa5cbcdfa8f40d8a33577be87aea0d3c67f845cd2e4c2f1e",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous/artifacts/launch-operations/policy_schedule/capacity_plan.json": "2bf9186cbf7112a7dff12983b92b8faa15b901207d4061af3c9056a17b328e38",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous/artifacts/launch-operations/policy_schedule/contingency_checklist.json": "5e8e2b74d11f7d0bdd2cd33b3609a4645510330909b3a1aea4d344f143317af7",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous/artifacts/launch-operations/policy_schedule/customer_comms.json": "a6335146e1f76da8d2088c157d8569eca818b0c6283b1d536fe0f7d2aed7ad36",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous/artifacts/launch-operations/policy_schedule/policy_schedule.json": "582e06048fd5c3ec9098facef58484ede59a936888cefbff33c4a4fa1ea8bb89",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous/artifacts/launch-operations/policy_schedule.json": "9ba4e030cd66b7b89a89f51af48efc15b0b16230005d9180e0f6498fa6bbab77",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-launch-operations-homogeneous/artifacts/launch-operations.json": "c0d371ee109716a0d9232ca0c359fbf6aaded7c3cb41021f81e04e0a93f7aaf7"
+      }
+    },
+    {
+      "run": "20260922T012131-no-token-limit-9703d2-recovery-r3-release-review-overconfident",
+      "case": "release-review",
+      "condition": "overconfident",
+      "mode": "delegate",
+      "documents": 4,
+      "root_summary_chars": 745,
+      "all_summary_chars": 2161,
+      "calls": 20,
+      "depth": 1,
+      "facts_passed": true,
+      "peak_execution_calls": 2,
+      "artifact_sha256": {
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-release-review-overconfident/artifacts/release-review/profitability_review.json": "98cb9389555c6ccd7c63416d0d25607fdd47042c6efdf54e1e26ce7ccdc5534a",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-release-review-overconfident/artifacts/release-review/release_recommendation.json": "8a279a864374774bf0f82b59bcdecb0a31ce377e5ee8abe8865cc05586703c8f",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-release-review-overconfident/artifacts/release-review/tech_risk_review.json": "a1473f0f1010c7452715663cacf18a28a2d5f24a06de7410099a12c35ae852d1",
+        "extensions/peer_dag/runs/20260922T012131-no-token-limit-9703d2-recovery-r3-release-review-overconfident/artifacts/release-review.json": "5381de4cebb30141fff5fccf93b17dad05b2235cab56e5f4d7dc1c25c8019f83"
+      }
+    }
+  ]
+}

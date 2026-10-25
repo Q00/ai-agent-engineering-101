@@ -1,0 +1,740 @@
+{
+  "manifest": {
+    "batch_id": "20260921T093041-84990d",
+    "git_commit": "5aa1a55b5afd08464e51e81cf409136b5b562fff",
+    "source_hashes": {
+      "submissions/26622007/week-03/contract_net.py": "8f1de0224873177b605abc03c7cdb21d35b38000aa4df00f96628362f496223d",
+      "submissions/26622007/week-03/extensions/peer_dag/audit.py": "5fd6adb22bc596f4ad1678d0eea3e6537183c213791ed9b1df4a7eab16485313",
+      "submissions/26622007/week-03/extensions/peer_dag/case.json": "9a736726ad4c473c9b3e7bf41aa64708f7db99a094c3cfb155f8605d69050050",
+      "submissions/26622007/week-03/extensions/peer_dag/cli.py": "94833aa8f9fa3a83472f4e1e7c5fbede43722ea26e4e52b787d9cef64ac13d68",
+      "submissions/26622007/week-03/extensions/peer_dag/condition_study.py": "8a667a6a7bd70f47837067d8e84962c5fac757ddfb1ab7277b19a1bf54dcfd47",
+      "submissions/26622007/week-03/extensions/peer_dag/conditions/FINAL_PROTOCOL.md": "2dc63c9bd202a04e337a1630db9398e4455a84ab8a6a2848cd1f6f60114c6e04",
+      "submissions/26622007/week-03/extensions/peer_dag/config.json": "6c1d6c50f8bc2d299dc518f7f75922c163cfa1f82caacf8dd4d8075e5c7f10a3",
+      "submissions/26622007/week-03/extensions/peer_dag/core.py": "618e3a09ee29d67857552b7d98b9aa08506d1ac434134524bfa090371f0db545",
+      "submissions/26622007/week-03/extensions/peer_dag/expected.json": "46b1f137c64a2732e28fba70608f5844a8e27a9e662cf1bc2317d4b2c4459e29",
+      "submissions/26622007/week-03/extensions/peer_dag/fixtures.py": "06928c693f9a16b24d82486a5d7dbba70846fce973349d07ca5e3ac0f19ad692",
+      "submissions/26622007/week-03/extensions/peer_dag/models.py": "48cdd33bdcb73b8cb08cdb70c928e9f7bf8af69ce3d1fe9087d85f10f656d2ab",
+      "submissions/26622007/week-03/extensions/peer_dag/response_formats.py": "fb8a82d14181993a4c236d481b4f2535b053f2cbedbfb310128f075debbbddbb",
+      "submissions/26622007/week-03/extensions/peer_dag/test_condition_study.py": "845ae9e0d5ddbc0473e214fc0832066d4a0ff9dcaf4f16fac784b9b2673136a4",
+      "submissions/26622007/week-03/extensions/peer_dag/test_conditions.py": "5cfb1d93da70b4d6fb6c07661513034811fd30855d4d1d7e2026473cdc554f01",
+      "submissions/26622007/week-03/extensions/peer_dag/test_peer_dag.py": "6becc6720f4153a67d06fac6336cfe68f7ff3ffa0478817d2747696f8d23dda2",
+      "submissions/26622007/week-03/extensions/peer_dag/test_response_formats.py": "27821ed1894c024b5b452ca8a581b8fd2e5dc6b54dccfb6eddcd3611e62e3867",
+      "submissions/26622007/week-03/extensions/peer_dag/test_same_worker_parallel.py": "5713f8da333ccadd49d91c27fa1db18f851549446930d6756969be468d66f52f",
+      "submissions/26622007/week-03/openrouter_client.py": "b7a7a733796a0f6761d790f1232048581ca26f8a34ed415e688cc971d247d58c"
+    },
+    "config": {
+      "max_depth": 5,
+      "max_tasks": 12,
+      "max_steps": 4,
+      "max_calls": 64,
+      "max_parallel": 3,
+      "transport": {
+        "model": "deepseek/deepseek-v4.1-flash",
+        "temperature": 0,
+        "max_tokens": 2200,
+        "reasoning": {
+          "enabled": false
+        },
+        "provider": {
+          "only": [
+            "fireworks"
+          ],
+          "allow_fallbacks": true,
+          "require_parameters": true,
+          "max_price": {
+            "prompt": 0.3,
+            "completion": 1.2
+          }
+        },
+        "timeout_seconds": 30,
+        "response_deadline_seconds": 90,
+        "max_attempts": 2,
+        "retry_delay_seconds": 2,
+        "max_http_requests": 2
+      }
+    },
+    "deadline_seconds": 600,
+    "parallel_runs_per_block": 1,
+    "inter_run_delay_seconds": 15,
+    "protocol": "FINAL_PROTOCOL.md",
+    "schedule": [
+      {
+        "block": 1,
+        "condition": "baseline",
+        "run_id": "20260921T093041-84990d-1-baseline"
+      },
+      {
+        "block": 1,
+        "condition": "homogeneous",
+        "run_id": "20260921T093041-84990d-1-homogeneous"
+      },
+      {
+        "block": 1,
+        "condition": "overconfident",
+        "run_id": "20260921T093041-84990d-1-overconfident"
+      },
+      {
+        "block": 2,
+        "condition": "homogeneous",
+        "run_id": "20260921T093041-84990d-2-homogeneous"
+      },
+      {
+        "block": 2,
+        "condition": "overconfident",
+        "run_id": "20260921T093041-84990d-2-overconfident"
+      },
+      {
+        "block": 2,
+        "condition": "baseline",
+        "run_id": "20260921T093041-84990d-2-baseline"
+      },
+      {
+        "block": 3,
+        "condition": "overconfident",
+        "run_id": "20260921T093041-84990d-3-overconfident"
+      },
+      {
+        "block": 3,
+        "condition": "baseline",
+        "run_id": "20260921T093041-84990d-3-baseline"
+      },
+      {
+        "block": 3,
+        "condition": "homogeneous",
+        "run_id": "20260921T093041-84990d-3-homogeneous"
+      }
+    ]
+  },
+  "integrity": {
+    "all_nine_attempts_present": true,
+    "three_per_condition": true,
+    "same_controls": true,
+    "same_source_snapshot": true,
+    "recorded_conditions_match": true,
+    "all_recorded_prompts_match": true,
+    "all_recorded_response_formats_match": true
+  },
+  "conditions": {
+    "baseline": {
+      "attempts": 3,
+      "passed": 3,
+      "checks_passed": 36,
+      "checks_total": 36,
+      "mean_calls": 20.0,
+      "mean_seconds": 60.897,
+      "reported_cost_usd": 0.041616016000000006,
+      "runs_with_cost": 3,
+      "awards": {
+        "C": 4,
+        "A": 5,
+        "B": 3
+      },
+      "c_award_share": 0.3333333333333333,
+      "c_root_awards": 1,
+      "depths": [
+        1,
+        1,
+        1
+      ],
+      "distinct_fact_vectors": 1,
+      "runs_with_facts": 3,
+      "proposal_rejections": 2,
+      "c_high_bids": 3,
+      "c_proposals": 12
+    },
+    "homogeneous": {
+      "attempts": 3,
+      "passed": 2,
+      "checks_passed": 24,
+      "checks_total": 36,
+      "mean_calls": 18.0,
+      "mean_seconds": 49.47213333333334,
+      "reported_cost_usd": 0.035698078,
+      "runs_with_cost": 3,
+      "awards": {
+        "A": 5,
+        "B": 3,
+        "C": 3
+      },
+      "c_award_share": 0.2727272727272727,
+      "c_root_awards": 0,
+      "depths": [
+        1,
+        1,
+        1
+      ],
+      "distinct_fact_vectors": 1,
+      "runs_with_facts": 2,
+      "proposal_rejections": 2,
+      "c_high_bids": 2,
+      "c_proposals": 10
+    },
+    "overconfident": {
+      "attempts": 3,
+      "passed": 3,
+      "checks_passed": 36,
+      "checks_total": 36,
+      "mean_calls": 20.0,
+      "mean_seconds": 74.88813333333333,
+      "reported_cost_usd": 0.043062952,
+      "runs_with_cost": 3,
+      "awards": {
+        "C": 10,
+        "A": 2
+      },
+      "c_award_share": 0.8333333333333334,
+      "c_root_awards": 3,
+      "depths": [
+        1,
+        1,
+        1
+      ],
+      "distinct_fact_vectors": 1,
+      "runs_with_facts": 3,
+      "proposal_rejections": 0,
+      "c_high_bids": 12,
+      "c_proposals": 12
+    }
+  },
+  "runs": [
+    {
+      "condition": "baseline",
+      "block": 1,
+      "run_id": "20260921T093041-84990d-1-baseline",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 56.6261,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 23,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 26,
+      "proposal_rejections": 2,
+      "valid_refusals": 0,
+      "awards": {
+        "C": 3,
+        "A": 1
+      },
+      "root_award": "C",
+      "c_proposals": 4,
+      "c_high_bids": 1,
+      "reported_cost_usd": 0.01332261,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 56.4718,
+      "peak_execution_calls": 2,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 23,
+        "passed": true
+      },
+      "response_format_checks": {
+        "checked": 23,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Fireworks": 18
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 18
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "homogeneous",
+      "block": 1,
+      "run_id": "20260921T093041-84990d-1-homogeneous",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 57.5185,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 0,
+      "valid_refusals": 0,
+      "awards": {
+        "A": 2,
+        "B": 1,
+        "C": 1
+      },
+      "root_award": "A",
+      "c_proposals": 4,
+      "c_high_bids": 1,
+      "reported_cost_usd": 0.016526372,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 57.3468,
+      "peak_execution_calls": 2,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "response_format_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Fireworks": 20
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "overconfident",
+      "block": 1,
+      "run_id": "20260921T093041-84990d-1-overconfident",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 63.8663,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 0,
+      "valid_refusals": 0,
+      "awards": {
+        "C": 3,
+        "A": 1
+      },
+      "root_award": "C",
+      "c_proposals": 4,
+      "c_high_bids": 4,
+      "reported_cost_usd": 0.015800102,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 63.6924,
+      "peak_execution_calls": 2,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "response_format_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Fireworks": 20
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "homogeneous",
+      "block": 2,
+      "run_id": "20260921T093041-84990d-2-homogeneous",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 57.6799,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 0,
+      "valid_refusals": 0,
+      "awards": {
+        "A": 2,
+        "B": 1,
+        "C": 1
+      },
+      "root_award": "A",
+      "c_proposals": 4,
+      "c_high_bids": 1,
+      "reported_cost_usd": 0.01340015,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 57.4414,
+      "peak_execution_calls": 2,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "response_format_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Fireworks": 20
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "overconfident",
+      "block": 2,
+      "run_id": "20260921T093041-84990d-2-overconfident",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 93.4087,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 23,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 0,
+      "valid_refusals": 0,
+      "awards": {
+        "C": 3,
+        "A": 1
+      },
+      "root_award": "C",
+      "c_proposals": 4,
+      "c_high_bids": 4,
+      "reported_cost_usd": 0.013071468,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 93.2494,
+      "peak_execution_calls": 2,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 23,
+        "passed": true
+      },
+      "response_format_checks": {
+        "checked": 23,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Fireworks": 20
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "baseline",
+      "block": 2,
+      "run_id": "20260921T093041-84990d-2-baseline",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 60.0524,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 0,
+      "valid_refusals": 0,
+      "awards": {
+        "A": 3,
+        "B": 1
+      },
+      "root_award": "A",
+      "c_proposals": 4,
+      "c_high_bids": 1,
+      "reported_cost_usd": 0.014070114000000002,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 59.8848,
+      "peak_execution_calls": 2,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "response_format_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Fireworks": 20
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "overconfident",
+      "block": 3,
+      "run_id": "20260921T093041-84990d-3-overconfident",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 67.886,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 0,
+      "valid_refusals": 0,
+      "awards": {
+        "C": 4
+      },
+      "root_award": "C",
+      "c_proposals": 4,
+      "c_high_bids": 4,
+      "reported_cost_usd": 0.014191382,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 67.7226,
+      "peak_execution_calls": 2,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "response_format_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Fireworks": 20
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "baseline",
+      "block": 3,
+      "run_id": "20260921T093041-84990d-3-baseline",
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_seconds": 66.5033,
+      "status": "succeeded",
+      "passed": true,
+      "checks_passed": 12,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 20,
+      "http_requests": 20,
+      "tasks": 4,
+      "max_depth": 1,
+      "contract_messages": 28,
+      "proposal_rejections": 0,
+      "valid_refusals": 0,
+      "awards": {
+        "B": 2,
+        "C": 1,
+        "A": 1
+      },
+      "root_award": "B",
+      "c_proposals": 4,
+      "c_high_bids": 1,
+      "reported_cost_usd": 0.014223292,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 66.3344,
+      "peak_execution_calls": 2,
+      "canonical_facts": {
+        "can_release": false,
+        "migration_before_app": true,
+        "p_break_even": 200.0,
+        "p_high_profit": 3000000.0,
+        "p_low_profit": 1000000.0,
+        "p_margin": 10000.0,
+        "p_profit": 2000000.0,
+        "q_break_even": 125.0,
+        "q_high_profit": 3200000.0,
+        "q_low_profit": 1120000.0,
+        "q_margin": 16000.0,
+        "q_profit": 2160000.0
+      },
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "response_format_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "",
+      "providers": {
+        "Fireworks": 20
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "trace_errors": []
+    },
+    {
+      "condition": "homogeneous",
+      "block": 3,
+      "run_id": "20260921T093041-84990d-3-homogeneous",
+      "exit_code": 1,
+      "timed_out": false,
+      "wall_seconds": 33.7931,
+      "status": "failed",
+      "passed": false,
+      "checks_passed": 0,
+      "checks_total": 12,
+      "trace_passed": true,
+      "calls": 14,
+      "http_requests": 20,
+      "tasks": 3,
+      "max_depth": 1,
+      "contract_messages": 19,
+      "proposal_rejections": 2,
+      "valid_refusals": 0,
+      "awards": {
+        "A": 1,
+        "B": 1,
+        "C": 1
+      },
+      "root_award": "A",
+      "c_proposals": 2,
+      "c_high_bids": 0,
+      "reported_cost_usd": 0.005771556000000001,
+      "cost_missing_responses": 0,
+      "elapsed_seconds": 33.6282,
+      "peak_execution_calls": 1,
+      "canonical_facts": null,
+      "prompt_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "response_format_checks": {
+        "checked": 20,
+        "passed": true
+      },
+      "error": "ValueError: child failed or blocked; partial results retained",
+      "providers": {
+        "Fireworks": 11
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 11
+      },
+      "trace_errors": []
+    }
+  ]
+}

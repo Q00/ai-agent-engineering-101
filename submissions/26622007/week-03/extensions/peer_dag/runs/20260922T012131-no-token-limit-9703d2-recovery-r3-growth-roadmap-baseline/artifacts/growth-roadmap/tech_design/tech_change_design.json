@@ -1,0 +1,46 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "S안/E안의 도메인·API·데이터 변경 개요와 측정 지표를 '설계 제안'으로 정리했다. 실제 구현·테스트는 수행하지 않았다(미검증). 선행 profit_analysis facts를 그대로 인용해 예산을 대조했다: 공통 160h, S 총 224h(예산 240h 이내, s_fits_budget=true), E 총 256h(16h 초과, e_fits_budget=false).\n\n[공통 필수 4개 모듈 — 도메인/API/데이터 변경 개요(설계 제안)]\n1) 요금/청구(64h): 도메인 엔터티 Plan(plan_id, tier, monthly_fee, currency), Subscription(sub_id, org_id, plan_id, status, started_at, canceled_at), Invoice(invoice_id, org_id, period_start, period_end, amount, status). API: POST /plans, GET /plans, POST /subscriptions, PATCH /subscriptions/{id}(업/다운그레이드), GET /invoices?org_id&period, POST /invoices/{id}/retry. 데이터: plans, subscriptions, invoices, invoice_line_items 테이블 신설; 금액은 정수(원) 저장, 기간은 반개구간 [start, end). 변경 리스크: 기존 결제 흐름과의 이중 청구 방지 위해 invoice 상태 전이(pending→issued→paid/failed) 단일화.\n2) 조직/좌석(40h): 엔터티 Organization(org_id, name, owner_user_id), Seat(seat_id, org_id, user_id, role, state), Invitation(invite_id, org_id, email, role, expires_at). API: POST /orgs, GET /orgs/{id}, POST /orgs/{id}/seats, DELETE /orgs/{id}/seats/{seat_id}, POST /orgs/{id}/invitations, POST /invitations/{token}/accept. 데이터: orgs, seats, invitations; seats에 (org_id, user_id) 유니크 제약, 좌석 수 상한은 plan.tier에서 파생.\n3) 지표 수집(32h): 엔터티 MetricEvent(event_id, org_id, user_id, name, value, occurred_at, source), MetricDaily(org_id, date, name, agg_value). API: POST /events(배치 허용), GET /metrics/summary?org_id&from&to&name. 데이터: events(append-only, 파티셔닝 키=occurred_at), metrics_daily(일 단위 롤업). 지연 목표는 설계 가정으로만 표기(예: 수집→롤업 24h 이내) — 실측 아님.\n4) 운영 도구(24h): 엔터티 AdminAction(actor_id, action, target, reason, created_at), FeatureFlag(key, scope, enabled). API: GET /admin/orgs, POST /admin/orgs/{id}/suspend, POST /admin/flags/{key}/toggle, GET /admin/audit(운영 조작 로그). 데이터: admin_actions, feature_flags.\n\n[S안 추가 — 셀프 온보딩(64h), 총 224h ≤ 240h]\n도메인: OnboardingStep(step_id, org_id, key, status, completed_at), OnboardingProgress(org_id, current_step, completed_count). API: GET /onboarding/steps, POST /onboarding/steps/{key}/complete, POST /onboarding/self-serve-signup(조직 생성+플랜 선택+좌석 초대를 한 흐름으로). 데이터: onboarding_steps, onboarding_progress; signup 시 orgs/plans/subscriptions에 트랜잭션 기록. 측정 지표: 온보딩 완료율(완료 org/시작 org), 단계별 이탈률, 가입→첫 좌석 활성화 소요시간, 셀프 가입 비중(영업 개입 없이 생성된 org 비율). 데이터 소스: onboarding_progress, seats, events.\n\n[E안 추가 — SSO/감사 기록(96h), 총 256h → 16h 부족]\n도메인: SSOConnection(conn_id, org_id, idp_metadata_url, protocol, status), SSOSession(session_id, user_id, org_id, issued_at, expires_at), AuditLog(log_id, org_id, actor_id, action, target, before, after, occurred_at, hash_chain_prev). API: POST /orgs/{id}/sso/connections, GET /sso/login?org_id(SP-initiated), POST /sso/acs(assertion 소비), GET /audit/logs?org_id&from&to&action, POST /audit/export. 데이터: sso_connections, sso_sessions, audit_logs(append-only, 해시 체인으로 변조 탐지), audit_exports. 측정 지표: SSO 로그인 성공률, SSO 로그인 지연(p95), 감사 로그 커버리지(감사 대상 액션 중 로그 기록 비율), 감사 로그 내보내기 성공률, 세션 만료 후 재인증 비율. 데이터 소스: sso_sessions, audit_logs, admin_actions.\n\n[E안 16시간 부족분 — 분기 밖 이연 범위(우선순위 기준)]\n이연 원칙: (a) 인증 핵심 경로(SSO 로그인/세션 발급)와 감사 로그 '기록'은 분기 내 유지, (b) 조회·내보내기·보존 정책 고도화는 이연. 이연 후보(합계 16h 이상): 1) 감사 로그 보존/내보내기 고도화(장기 보존 정책, 대용량 비동기 export, CSV/JSON 포맷 옵션) — 이연, 2) SSO 예외 처리 고급화(IdP 메타데이터 자동 갱신, 다중 IdP 동시 지원, SCIM 프로비저닝) — 이연, 3) 감사 로그 검색 인덱스/대시보드 — 이연. 분기 내 유지: SSO SP-initiated 로그인, 세션 발급/만료, 감사 로그 append 및 해시 체인 기록, 관리자 조회 API 최소 버전. 이연 시 리스크: 감사 요구가 강한 기업 고객의 컴플라이언스 검토 지연 가능 — 영업/지원팀에 이연 범위를 사전 고지해야 함.\n\n[모순·미확인 사항]\n- E안은 240h 예산과 256h 필수 범위가 구조적으로 모순 → 이연 없이는 분기 내 완료 불가(설계 제안 단계에서 명시).\n- 지표 수집 지연 목표, SSO p95 지연 목표는 자료에 수치가 없어 '설계 가정'으로만 표기했고 실측하지 않았다.\n- 고객 수(100/18)는 추정치이며 매출·계약 보장 없음(선행 분석과 동일 전제).\n- 실제 구현/테스트/부하 측정은 수행하지 않았으므로 모든 성능·정확도 수치는 미검증이다.",
+    "facts": {
+      "s_margin": 48000,
+      "e_margin": 240000,
+      "s_profit": 2800000,
+      "e_profit": 2320000,
+      "s_break_even": 42,
+      "e_break_even": 9,
+      "s_low_profit": 1360000,
+      "e_low_profit": 880000,
+      "s_high_profit": 4240000,
+      "e_high_profit": 3520000,
+      "common_dev_hours": 160,
+      "s_total_dev_hours": 224,
+      "e_total_dev_hours": 256,
+      "e_budget_shortfall_hours": 16,
+      "s_fits_budget": true,
+      "e_fits_budget": false,
+      "common_modules_count": 4,
+      "s_extra_hours": 64,
+      "e_extra_hours": 96,
+      "e_deferred_scope_count": 3,
+      "implementation_done": false,
+      "tests_executed": false,
+      "design_only": true
+    },
+    "evidence": [
+      "선행 profit_analysis facts 인용: common_dev_hours=160, s_total_dev_hours=224, s_fits_budget=true, e_total_dev_hours=256, e_budget_shortfall_hours=16, e_fits_budget=false",
+      "공통 개발시간 = 요금/청구 64 + 조직/좌석 40 + 지표 수집 32 + 운영 도구 24 = 160시간",
+      "S 총 개발시간 = 160 + 셀프 온보딩 64 = 224시간 ≤ 예산 240시간 → s_fits_budget=true",
+      "E 총 개발시간 = 160 + SSO/감사 기록 96 = 256시간 > 예산 240시간 → 부족분 = 256 - 240 = 16시간, e_fits_budget=false",
+      "S 공헌이익 = 60,000 - 12,000 = 48,000원, E 공헌이익 = 300,000 - 60,000 = 240,000원 (선행 분석 인용)",
+      "S 기준 월이익 = 48,000×100 - 2,000,000 = 2,800,000원, E 기준 월이익 = 240,000×18 - 2,000,000 = 2,320,000원 (선행 분석 인용)",
+      "S 손익분기 = ceil(2,000,000/48,000)=42곳, E 손익분기 = ceil(2,000,000/240,000)=9곳 (선행 분석 인용)",
+      "저/고 시나리오: S 저=floor(100×0.7)=70 → 1,360,000원, S 고=floor(100×1.3)=130 → 4,240,000원, E 저=floor(18×0.7)=12 → 880,000원, E 고=floor(18×1.3)=23 → 3,520,000원 (선행 분석 인용)",
+      "도메인·API·데이터 개요는 제공된 개발 범위 항목(요금/청구, 조직/좌석, 지표 수집, 운영 도구, 셀프 온보딩, SSO/감사 기록)과 시간 배분만을 근거로 한 설계 제안이며, 실제 코드 작성·배포·테스트는 수행하지 않음",
+      "E안 이연 후보 3건(감사 로그 보존/내보내기 고도화, SSO 예외 처리 고급화, 감사 로그 검색 인덱스/대시보드)은 16시간 부족분을 상쇄하기 위한 우선순위 기준 제안이며, 이연 시간의 정밀 재추정은 미검증",
+      "지표 수집 지연·SSO p95 지연 등 성능 목표치는 원자료에 수치가 없어 설계 가정으로만 표기했고 실측하지 않음"
+    ]
+  },
+  "error": ""
+}

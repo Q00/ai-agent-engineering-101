@@ -1,0 +1,237 @@
+{
+  "case_id": "launch-operations",
+  "condition": "baseline",
+  "block": 2,
+  "run_id": "20260921T113158-suite-ab4e67-r2-launch-operations-baseline",
+  "exit_code": 1,
+  "timed_out": false,
+  "wall_seconds": 97.8469,
+  "status": "failed",
+  "passed": false,
+  "checks_passed": 0,
+  "checks_total": 8,
+  "wrong_or_missing": [
+    "expected_contacts",
+    "four_hour_capacity",
+    "backlog_without_hiring",
+    "required_total_agents",
+    "additional_agents",
+    "support_window_hours",
+    "immediate_refund_promised",
+    "launch_hour"
+  ],
+  "calls": 19,
+  "http_requests": 19,
+  "http_responses": 19,
+  "http_429": 0,
+  "http_errors": {},
+  "retries": 0,
+  "transport_errors": 0,
+  "tasks": 4,
+  "max_depth": 1,
+  "awards": {
+    "A": 2,
+    "C": 2
+  },
+  "root_award": "A",
+  "c_proposals": 4,
+  "c_high_bids": 0,
+  "proposal_rejections": [],
+  "task_failures": [
+    {
+      "task_id": "launch-operations/integration",
+      "error": "JSONDecodeError: Unterminated string starting at: line 1 column 4011 (char 4010)"
+    },
+    {
+      "task_id": "launch-operations",
+      "error": "ValueError: child failed or blocked; partial results retained"
+    }
+  ],
+  "reported_cost_usd": 0.019199272,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 97.6767,
+  "canonical_facts": null,
+  "artifact_sha": null,
+  "root_plan_sha": "6b2ac466ded52c6982898be6ea60790204b913349b4a135081903c8c42799452",
+  "award_sha": "bf00357e32f477adbdc4e44dc056d1dd70ea7ce734ff87f382574bd911b0a463",
+  "controls_sha": "0bd8edc9a75b1410910b7c17efe0735ee6db615777048c7f3b4e950bb2e72d0b",
+  "root_plan": {
+    "mode": "delegate",
+    "actions": [
+      "용량 계산과 정책 모순 분석을 직접 수행할 작업으로 정의한다.",
+      "고객 안내문·FAQ·상담 분류 기준 및 일정·담당·전달 흐름은 C에게 위임한다.",
+      "C의 산출물과 본인 계산을 통합해 최종 패키지의 정합성(숫자, 정책 표현, 미확인 사항)을 검증한다."
+    ],
+    "steps": [
+      {
+        "id": "capacity_and_policy",
+        "goal": "제공된 수치로 첫 4시간 예상 문의, 처리 용량, 미처리량, 필요 총 상담원 수, 추가 인원을 계산하고, 확정 정책('영업일 2일 내 처리 시작')과 광고 초안('즉시 자동 환불')의 모순, 기술 배포 승인·결제 검증 미제공 상태를 정리한다. 충원 불가 시 대기열·우선순위·고객 안내 대안(정책 변경 없이)을 제시한다.",
+        "acceptance": "facts에 expected_contacts=160, four_hour_capacity=80, backlog_without_hiring=80, required_total_agents=8, additional_agents=4, support_window_hours=4, launch_hour=10, immediate_refund_promised=false를 숫자/불리언으로 포함. evidence에 계산식(800*0.2, 4*5*4, 160-80, 160/(5*4), 8-4)과 정책-광고 모순, 미확인 사항(배포 승인, 결제 검증)을 명시. 실제 구현/테스트 수행과 설계 제안을 구분.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "capacity_analysis",
+          "policy_gap_notes"
+        ]
+      },
+      {
+        "id": "customer_comms",
+        "goal": "확정 정책에 부합하는 고객 안내문, FAQ, 상담 분류 기준(우선순위 포함)을 작성하고, 광고/상담/랜딩이 동일 약속을 쓰도록 단일 기준 문서와 변경 전달·승인 흐름(목요일 15시 문구 마감, 17시 교육, 18시 랜딩 마감, 14시 제품팀 전달 반영)을 설계한다.",
+        "acceptance": "안내문·FAQ·분류 기준이 '영업일 2일 내 처리 시작'만 약속하고 완료/PG 반영 시간을 보장하지 않음. '즉시 자동 환불' 표현 배제. 담당·기한·선행조건이 연결된 일정표와 변경 승인 흐름 포함. 실제 고객 연락이나 외부 시스템 변경을 수행했다고 쓰지 않음.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "customer_comms_pack",
+          "schedule_and_approval_flow"
+        ]
+      },
+      {
+        "id": "integration",
+        "goal": "capacity_and_policy와 customer_comms 산출물을 통합해 최종 운영 패키지(운영 일정, 확정/미확인 사항표, 고객 안내·FAQ·분류, 용량·인력 대안, 비상 계획(광고 지연/기술 승인 지연/문의 급증), 출시 직전 확인표)를 작성하고 숫자·정책 표현·미확인 사항의 정합성을 검증한다.",
+        "acceptance": "summary/evidence에 모든 요구 산출물이 간결한 텍스트로 제시되고, facts 숫자 키와 immediate_refund_promised가 일관됨. 규칙·인터페이스·일정 간 모순과 미확인 사항이 명시됨. 승인되지 않은 충원·환불·배포를 완료로 서술하지 않음.",
+        "depends_on": [
+          "capacity_and_policy",
+          "customer_comms"
+        ],
+        "reads": [
+          "capacity_analysis",
+          "policy_gap_notes",
+          "customer_comms_pack",
+          "schedule_and_approval_flow"
+        ],
+        "writes": [
+          "launch_operations_report"
+        ]
+      }
+    ]
+  },
+  "intervals": [
+    {
+      "task_id": "launch-operations/capacity_and_policy",
+      "worker": "C",
+      "start": "2026-09-21T12:09:04.536728+00:00",
+      "end": "2026-09-21T12:09:18.191252+00:00"
+    },
+    {
+      "task_id": "launch-operations/customer_comms",
+      "worker": "C",
+      "start": "2026-09-21T12:09:10.795961+00:00",
+      "end": "2026-09-21T12:09:36.623470+00:00"
+    },
+    {
+      "task_id": "launch-operations/integration",
+      "worker": "A",
+      "start": "2026-09-21T12:09:46.245646+00:00",
+      "end": "2026-09-21T12:10:07.606150+00:00"
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "launch-operations/capacity_and_policy",
+      "right": "launch-operations/customer_comms",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 7.395291,
+      "both_tasks_succeeded": true
+    }
+  ],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 2,
+    "peak_calls_by_worker": {
+      "A": 2,
+      "B": 1,
+      "C": 2
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 0,
+      "C": 2
+    },
+    "calls_by_phase": {
+      "propose": 12,
+      "review": 4,
+      "execute": 3
+    },
+    "task_statuses": {
+      "launch-operations/capacity_and_policy": "succeeded",
+      "launch-operations/customer_comms": "succeeded",
+      "launch-operations/integration": "failed",
+      "launch-operations": "failed"
+    },
+    "awards": {
+      "launch-operations": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "delegate",
+        "dependencies": {
+          "capacity_and_policy": [],
+          "customer_comms": [],
+          "integration": [
+            "capacity_and_policy",
+            "customer_comms"
+          ]
+        }
+      },
+      "launch-operations/capacity_and_policy": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/customer_comms": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/integration": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 19
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 19
+    },
+    "evaluation": {
+      "passed": false,
+      "checks": {
+        "expected_contacts": false,
+        "four_hour_capacity": false,
+        "backlog_without_hiring": false,
+        "required_total_agents": false,
+        "additional_agents": false,
+        "support_window_hours": false,
+        "immediate_refund_promised": false,
+        "launch_hour": false
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": false,
+  "verification_errors": [
+    {
+      "kind": "response_decode",
+      "key": [
+        "launch-operations/integration",
+        "A",
+        "execute",
+        1
+      ],
+      "message": "Unterminated string starting at: line 1 column 4011 (char 4010)"
+    }
+  ],
+  "error": "ValueError: child failed or blocked; partial results retained",
+  "recorded_case_condition_match": true
+}

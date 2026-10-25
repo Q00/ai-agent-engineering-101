@@ -1,0 +1,38 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "기술 자료에 따르면 새 앱은 price_version을 필요로 하므로 DB 마이그레이션을 먼저 수행한 뒤 새 앱을 배포해야 한다. 마이그레이션 없이 새 앱을 배포하는 것은 불가하다. 구버전 앱은 마이그레이션 후에도 읽기가 가능하므로 마이그레이션 자체의 하위 호환 읽기 경로는 확보된 것으로 볼 수 있으나, 새 앱이 쓴 데이터의 롤백은 미검증이어서 롤백 안전성을 확정할 수 없다. 또한 재시도 결제와 취소 결제 테스트도 미검증이다. 이번 검토 기준으로 이 세 검증(롤백, 재시도 결제, 취소 결제)이 끝나야 출시 가능하므로, 현재 시점의 출시 권고는 보류(출시 불가)이며, 세 검증 완료 전까지 can_release는 true가 될 수 없다. 수익성 수치(p_margin 등)는 본 기술 위험 검토 범위 밖이며 별도 수익성 검토 작업의 결과로 산출되어야 하므로 여기서 임의로 만들지 않는다.",
+    "facts": {
+      "migration_before_app": true,
+      "can_release": false,
+      "rollback_verified": false,
+      "retry_payment_verified": false,
+      "cancel_payment_verified": false,
+      "old_app_read_after_migration_ok": true,
+      "new_app_requires_price_version": true,
+      "blocking_checks_required": 3,
+      "blocking_checks_completed": 0,
+      "release_recommendation": "보류(출시 불가)",
+      "p_margin": "미산출(수익성 검토 작업 범위)",
+      "q_margin": "미산출(수익성 검토 작업 범위)",
+      "p_profit": "미산출(수익성 검토 작업 범위)",
+      "q_profit": "미산출(수익성 검토 작업 범위)",
+      "p_break_even": "미산출(수익성 검토 작업 범위)",
+      "q_break_even": "미산출(수익성 검토 작업 범위)",
+      "p_low_profit": "미산출(수익성 검토 작업 범위)",
+      "q_low_profit": "미산출(수익성 검토 작업 범위)",
+      "p_high_profit": "미산출(수익성 검토 작업 범위)",
+      "q_high_profit": "미산출(수익성 검토 작업 범위)"
+    },
+    "evidence": [
+      "제공 자료 인용: \"새 앱은 price_version이 필요해 DB 마이그레이션 뒤 배포해야 한다.\" → 배포 순서는 DB 마이그레이션 → 새 앱 배포이며, 마이그레이션 없이 새 앱 배포는 불가(migration_before_app=true).",
+      "제공 자료 인용: \"구버전 앱의 마이그레이션 후 읽기는 가능하다.\" → 마이그레이션 후 구버전 앱의 읽기 경로는 가능하나, 이는 읽기 한정이며 쓰기/롤백 안전성을 보장하지 않음.",
+      "제공 자료 인용: \"새 앱이 쓴 데이터의 롤백, 재시도 결제, 취소 결제 테스트는 아직 미검증이다.\" → 롤백·재시도 결제·취소 결제 3개 항목 모두 미검증이므로 롤백 안전성 확정 불가.",
+      "제공 자료 인용: \"이번 검토에서는 이 세 검증이 끝나야 출시 가능하다.\" → 세 검증 완료 전까지 can_release=false.",
+      "판단 근거: 미검증 항목을 검증 완료로 간주할 로그나 테스트 실행 결과가 제공되지 않았으므로, 해당 항목은 미검증(false)으로 표기하고 출시 권고는 보류로 판단함.",
+      "범위 근거: 수익성 수치(p_margin, q_margin, p_profit, q_profit, p_break_even, q_break_even, p_low_profit, q_low_profit, p_high_profit, q_high_profit)는 본 기술 위험 검토 작업의 입력·범위에 포함되지 않아 산출하지 않았으며, 별도 수익성 검토 작업에서 계산되어야 함."
+    ]
+  },
+  "error": ""
+}
