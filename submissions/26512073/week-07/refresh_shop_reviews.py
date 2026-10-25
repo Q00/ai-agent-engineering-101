@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 import json
 
 import httpx
+import argparse
+import time
 
 from pricing_state import DATA_DIR
 
@@ -41,5 +43,33 @@ def refresh_shop_reviews(shop_name="Afford Shop"):
     return path
 
 
+def watch_reviews(interval=300):
+    while True:
+        try:
+            path = refresh_shop_reviews()
+            print("Saved review snapshot:", path, flush=True)
+        except (httpx.HTTPError, ValueError, OSError) as error:
+            print(
+                f"Review refresh failed: {type(error).__name__}: {error}",
+                flush=True,
+            )
+
+        time.sleep(interval)
+
+
 if __name__ == "__main__":
-    print("Saved review snapshot:", refresh_shop_reviews())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--watch", action="store_true")
+    parser.add_argument("--interval", type=int, default=300)
+    args = parser.parse_args()
+
+    if args.interval < 30:
+        parser.error("--interval must be at least 30 seconds")
+
+    try:
+        if args.watch:
+            watch_reviews(args.interval)
+        else:
+            print("Saved review snapshot:", refresh_shop_reviews())
+    except KeyboardInterrupt:
+        print("\nReview refresh stopped.")
