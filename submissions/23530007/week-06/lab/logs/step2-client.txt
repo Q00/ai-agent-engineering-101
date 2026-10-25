@@ -1,0 +1,16 @@
+$ a2a send -a http://localhost:8080 "hello A2A"
+Task:     01a134d7-8763-7576-994b-bf547999a294
+Context:  01a134d7-8763-77fe-8f54-40281d9bb147
+Status:   completed (2026-10-13T19:38:22+09:00)
+Artifacts:
+  [01a134d7-8763-79f6-b629-fe0a09fc73af] hello A2A
+History:
+  [user] hello A2A
+
+$ a2a card get http://localhost:8080
+Name:         Echo Agent
+Description:  Echoes the user's message back as a response
+Version:      1.0.0
+Interfaces:
+  HTTP+JSON    http://127.0.0.1:8080
+Streaming:    true
