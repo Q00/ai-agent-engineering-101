@@ -1,0 +1,41 @@
+provider=GroqCloud model=openai/gpt-oss-20b temperature=0.2 max_turns=8 condition=structured run=structured-03
+
+=== scenario 1: a used bicycle reserve=120 budget=150 ===
+[buyer] {"performative":"propose","content":{"price":120}}
+[parser] performative=propose price=120
+[seller] {"performative":"accept-proposal","content":{"price":null}}
+[parser] performative=accept-proposal price=None
+[result] outcome=deal price=120 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0
+
+=== scenario 2: a desk lamp reserve=30 budget=45 ===
+[buyer] {"performative":"propose","content":{"price":35}}
+[parser] performative=propose price=35
+[seller] {"performative":"accept-proposal","content":{"price":null}}
+[parser] performative=accept-proposal price=None
+[result] outcome=deal price=35 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0
+
+=== scenario 3: a second-hand textbook reserve=40 budget=40 ===
+[buyer] {"performative":"propose","content":{"price":35}}
+[parser] performative=propose price=35
+[seller] {"performative":"propose","content":{"price":40}}
+[parser] performative=propose price=40
+[buyer] {"performative":"accept-proposal","content":{"price":null}}
+[parser] performative=accept-proposal price=None
+[result] outcome=deal price=40 correct=1 violation=0 turns=3 format_errors=0 reader_calls=0
+
+=== scenario 4: a mechanical keyboard reserve=90 budget=70 ===
+[buyer] {"performative":"propose","content":{"price":60}}
+[parser] performative=propose price=60
+[seller] {"performative":"propose","content":{"price":90}}
+[parser] performative=propose price=90
+[buyer] {"performative":"propose","content":{"price":70}}
+[parser] performative=propose price=70
+[seller] {"performative":"propose","content":{"price":90}}
+[parser] performative=propose price=90
+[buyer] {"performative":"propose","content":{"price":70}}
+[parser] performative=propose price=70
+[seller] {"performative":"propose","content":{"price":90}}
+[parser] performative=propose price=90
+[buyer] {"performative":"refuse","content":{"price":null}}
+[parser] performative=refuse price=None
+[result] outcome=no_deal price= correct=1 violation=0 turns=7 format_errors=0 reader_calls=0
