@@ -1,0 +1,67 @@
+provider=anthropic model=claude-sonnet-5 temperature=NOT_SETTABLE(sampling removed on claude-sonnet-5; internal value unknown) effort=low thinking=disabled max_tokens=300 sdk=anthropic 1.4.0 python=3.12.14
+run=4 condition=ext_baseline rounds=2 persistent=True trajectory=False coded_manager=False uniform=False
+  P1: tools=['count_by_hour', 'count_level']
+  P2: tools=['grep_message']
+  P3: tools=['read_log']
+  P4: tools=['count_by_hour', 'grep_message', 'read_log']
+------------------------------------------------------------------------
+
+[round 1] TASK 1 (aggregate) capable=['P1', 'P4'] gold=P1
+  manager=P1 awarded=P4 feasible=1 optimal=0 solved=1 msgs=7
+  report: Answer: 14:00
+
+[round 1] TASK 2 (aggregate) capable=['P1'] gold=P1
+  manager=P2 awarded=P1 feasible=1 optimal=1 solved=1 msgs=7
+  report: Answer: 11
+
+[round 1] TASK 3 (search) capable=['P2', 'P4'] gold=P2
+  manager=P3 awarded=P2 feasible=1 optimal=1 solved=1 msgs=7
+  report: Answer: 7
+
+[round 1] TASK 4 (verbatim) capable=['P3', 'P4'] gold=P3
+  manager=P4 awarded=P3 feasible=1 optimal=1 solved=1 msgs=7
+  report: Answer: upstream timeout after 5000ms
+
+[round 1] TASK 5 (compound) capable=['P4'] gold=P4
+  manager=P1 awarded=P4 feasible=1 optimal=1 solved=1 msgs=7
+  report: Answer: 14:00 / NullReference in QuizService.score
+
+[round 1] TASK 6 (compound) capable=[] gold=None
+  manager=P2 awarded=P4 feasible=0 optimal=0 solved=1 msgs=7
+  report: Answer: 11/4
+
+[round 1] TASK 7 (generate) capable=['P3', 'P4'] gold=P3
+  manager=P3 awarded=P4 feasible=1 optimal=0 solved=1 msgs=7
+  report: Answer: NullReference in QuizService.score
+------------------------------------------------------------------------
+[round 1] feasible=6 optimal=4 solved=7 partial=0 unassigned=0 messages=49 calls=54 tokens=6102 cache_read=202180 reuse=0.905
+
+[round 2] TASK 1 (aggregate) capable=['P1', 'P4'] gold=P1
+  manager=P1 awarded=P4 feasible=1 optimal=0 solved=1 msgs=7
+  report: Answer: 14:00
+
+[round 2] TASK 2 (aggregate) capable=['P1'] gold=P1
+  manager=P2 awarded=P1 feasible=1 optimal=1 solved=1 msgs=7
+  report: Answer: 11
+
+[round 2] TASK 3 (search) capable=['P2', 'P4'] gold=P2
+  manager=P3 awarded=P2 feasible=1 optimal=1 solved=1 msgs=7
+  report: Answer: 7
+
+[round 2] TASK 4 (verbatim) capable=['P3', 'P4'] gold=P3
+  manager=P4 awarded=P3 feasible=1 optimal=1 solved=1 msgs=7
+  report: Answer: upstream timeout after 5000ms
+
+[round 2] TASK 5 (compound) capable=['P4'] gold=P4
+  manager=P1 awarded=P4 feasible=1 optimal=1 solved=1 msgs=7
+  report: Answer: 14:00 / NullReference in QuizService.score
+
+[round 2] TASK 6 (compound) capable=[] gold=None
+  manager=P2 awarded=P4 feasible=0 optimal=0 solved=1 msgs=7
+  report: Answer: 11/4
+
+[round 2] TASK 7 (generate) capable=['P3', 'P4'] gold=P3
+  manager=P3 awarded=P4 feasible=1 optimal=0 solved=1 msgs=7
+  report: Answer: NullReference in QuizService.score
+------------------------------------------------------------------------
+[round 2] feasible=6 optimal=4 solved=7 partial=0 unassigned=0 messages=49 calls=45 tokens=4867 cache_read=528050 reuse=0.942
