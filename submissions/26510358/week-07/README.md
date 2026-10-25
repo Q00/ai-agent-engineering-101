@@ -127,3 +127,29 @@ Market 검증 피드백은 다음 주문에서 가져올 수 있으므로 가져
 대표 소개와 기본 가격은 유지하고 첫 공개 스킬에 실제 품목별 가격·구매 예시·검색 태그를 추가함.
 리뷰·추천·추가 구매가 거래 조건이 아니라는 현재 정책을 설명하며 광고 후기는 생성하지 않음.
 이는 발견 정보 개선이며 신규 고객이나 방문 증가의 실측 결과가 아님.
+
+## Week 7 제출 증거
+
+필수 여섯 항목과 현재 확인 결과는 `REPORT.md` 앞부분에 정리함.
+과거 보고서 원문은 같은 파일의 접힌 운영 기록에 그대로 보존함.
+`agent.json`의 하네스 설명은 특정 과거 설치 버전을 현재 버전으로 오해하지 않도록 버전 번호를 제외함.
+모델·reasoning·실행 명령은 바꾸지 않음.
+
+`logs/week07-completion-20261025T105223Z/`에는 강의 페이지 원문, 필수 도전 재계산,
+현재 라운드별 보드, 배포 상태와 원본 Git 이력 백업을 보존함.
+`original-unpublished.bundle`은 GitHub의 기존 week-07 tip 이후 원본 103개 커밋이며
+`git bundle verify`로 검증함. 기존 ref와 커밋을 재작성하지 않음.
+
+`market-kit-raw-snapshot.log.gz`는 계속 자라는 실제 배포 로그의 2026-10-25 20:00 KST
+관측 시점 바이트 스냅샷임. 원본 `logs/market-kit.log`는 수정하거나 잘라내지 않음.
+압축 전후 SHA-256과 바이트 수는 `market-kit-snapshot.json`에 기록함.
+복원할 때도 기존 로그를 덮어쓰지 않음.
+
+```bash
+git bundle verify submissions/26510358/week-07/logs/week07-completion-20261025T105223Z/original-unpublished.bundle
+gzip -dc submissions/26510358/week-07/logs/week07-completion-20261025T105223Z/market-kit-raw-snapshot.log.gz > submissions/26510358/week-07/.market/market-kit-snapshot.log
+```
+
+기존 공식 25/25 결과는 10월 22일의 실제 실행이며 최신 코드 재실행과 구분함.
+API 키가 없을 때의 기존 Codex 로그인 사용과 GitHub 대용량 로그 이력 처리에는
+AGENTS.md의 해당 규칙에 대한 사용자 확인이 필요하여 현재 요청을 남겨 둔 상태임.
