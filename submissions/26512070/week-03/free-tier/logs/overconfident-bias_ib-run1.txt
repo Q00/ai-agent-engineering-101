@@ -1,0 +1,67 @@
+=== run overconfident-bias_ib-run1 ===
+provider=openai model=cohere/north-mini-code:free temperature=0.7
+condition=overconfident arm=bias+ib bias=on icebreak=on
+seed=20264047 veto_threshold=40 adj_range=(-100,20)
+contractors=['sql_analyst', 'text_editor', 'code_fixer']
+icebreak_tasks=['ib1', 'ib2', 'ib3']
+measure_tasks=['t1', 't2', 't3', 't4', 't5', 't6']
+fixtures={t1:sql, t2:none, t3:python, t4:sql, t5:none, t6:python}
+
+########## icebreaking (not scored) ##########
+[icebreak] ib1 -- all contractors execute, no award
+[announce] ib1
+           req: 재고 테이블에서 GROUP BY 절을 사용하여 창고별 집계 작업을 수행할 수 있어야 합니다.
+           req: SQL SUM 집계 함수를 사용하여 수량 컬럼의 총합을 계산할 수 있어야 합니다.
+           req: 반환 컬럼이 창고 이름과 총 재고 수량 순으로 정렬되도록 쿼리를 작성할 수 있어야 합니다.
+  [bid] sql_analyst: BID elig=100 conf=95 :: GROUP BY 절을 사용한 집계, SUM 함수를 통한 수량 총합 계산, 창고 이름과 총 재고 수량 순으로 반환 컬럼 정렬 등 공고의 모든 자격 요건을 충족할 수 있습니다.
+  [bid] text_editor: BID elig=100 conf=95 :: I can use GROUP BY on warehouse, SUM(qty), and ORDER BY warehouse and total quantity as required.
+  [bid] code_fixer: UNPARSEABLE -> counted as no bid
+        raw: SELECT warehouse, SUM(qty) AS total_qty FROM stock GROUP BY warehouse ORDER BY warehouse, total_qty;
+  [exec] sql_analyst: 3 claimed step(s), 76 chars of artifact
+  [run ] sql_analyst: PASS (67ms)
+  [exec] text_editor: 3 claimed step(s), 92 chars of artifact
+  [run ] text_editor: PASS (67ms)
+  [exec] code_fixer: 5 claimed step(s), 100 chars of artifact
+  [run ] code_fixer: PASS (63ms)
+  [verify] sql_analyst: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           쿼리는 GROUP BY warehouse를 사용하여 집계하고 SUM(qty)를 적용하며, 필요한 컬럼 순서를 정확히 준수합니다.
+  [verify] text_editor: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           제출된 쿼리는 GROUP BY를 사용하여 창고별 재고 총합을 계산하고, 'total'이라는 별칭으로 수량을 집계한 후, 창고 이름과 총 수량 순으로 정렬하여 요구 사항을 정확히 충족합니다.
+  [verify] code_fixer: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           쿼리는 GROUP BY warehouse와 SUM(qty) AS total_qty를 사용하여 재고 테이블을 집계하고, ORDER BY warehouse, total_qty로 정렬하여 요구 사항을 모두 충족합니다.
+  [bias] hypotheses after icebreak ib1:
+         sql_analyst: sql_analyst 실행이 성공하여 모든 자격 요건을 충족하는 정확한 SQL 쿼리를 제공했으며, 높은 확신도(95%)를 보고했습니다. 이는 그들이 요구 사항에 맞게 안정적으로 작업을 수행한다는 기존 가설을 뒷받침합니다.
+         text_editor: text_editor 역시 유효한 쿼리를 생성하여 모든 요구 사항을 충족했으며, 높은 확신도(95%)를 보고했습니다. 쿼리의 구조는 약간 달랐지만(다른 별칭과 ORDER BY 절), 일관된 성공은 그들의 역량에 대한 확신을 더욱 강화합니다.
+         code_fixer: code_fixer는 확신도가 0이고 입찰에 참여하지 않았지만, 제출한 쿼리가 모든 검사를 통과했습니다. 이는 그들이 낮은 자기 평가에도 불구하고 실제 역량을 갖추고 있을 수 있음을 시사하며, 그들의 신뢰성에 대한 가설을 재고할 필요가 있음을 나타냅니다.
+
+[icebreak] ib2 -- all contractors execute, no award
+[announce] ib2
+           req: 원어민 한국어 구사자로 우수한 글쓰기 및 교정 능력 보유
+           req: 명확하고 자연스러운 유창한 한국어를 위해 공식적인 한국어 비즈니스 문서를 수정하는 경험
+           req: 맥락을 이해하고 간결하며 전문적인 한국어 문장을 작성할 수 있는 능력
+  [bid] sql_analyst: pass elig=0 conf=0 :: 자격 요건 중 하나인 "원어민 한국어 구사자로 우수한 글쓰기 및 교정 능력 보유"를 충족하지 않습니다.
+  [bid] text_editor: pass elig=0 conf=10 :: 공고에서 요구하는 '원어민 한국어 구사자로 우수한 글쓰기 및 교정 능력 보유' 자격 요건을 충족하지 못하므로 입찰하지 않습니다.
+  [bid] code_fixer: BID elig=90 conf=95 :: 이 작업은 '원어민 한국어 구사자로 우수한 글쓰기 및 교정 능력 보유'와 '명확하고 자연스러운 유창한 한국어를 위해 공식적인 한국어 비즈니스 문서를 수정하는 경험'을 요구하며, 우리는 이러한 자격을 갖추고 있어 간결하고 전문적인 한국어 문장을 작성할 수 있습니다.
+  [exec] sql_analyst: 3 claimed step(s), 21 chars of artifact
+  [run ] sql_analyst: fixture 없음 (LLM 판정만 가능)
+  [exec] text_editor: 3 claimed step(s), 18 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [exec] code_fixer: 5 claimed step(s), 18 chars of artifact
+  [run ] code_fixer: fixture 없음 (LLM 판정만 가능)
+  [verify] sql_analyst: judge_says=True fixture_says=None -> verdict=True
+           결과물은 원문의 부자연스럽고 장황한 표현을 제거하고 간결하고 자연스러운 한국어로 작성되었으며, 자격 요건에 맞는 전문적인 비즈니스 문장입니다.
+  [verify] text_editor: judge_says=True fixture_says=None -> verdict=True
+           결과물은 원문의 번잡한 표현을 제거하고 자연스럽고 간결한 한국어로 다시 작성했으며, 의미는 그대로 유지했습니다.
+  [verify] code_fixer: judge_says=True fixture_says=None -> verdict=True
+           제출된 결과물은 간결하고 자연스러운 국문 표현으로, 원문의 번역투와 군더더기를 제거했으며 전문적인 비즈니스 문맥에 적합합니다.
+  [bias] icebreak update UNPARSEABLE -> memory unchanged
+
+[icebreak] ib3 -- all contractors execute, no award
+[announce] ib3
+           req: 파이썬 프로그래밍에 능숙하며, 함수, 리스트, 내장 sum/len 함수를 사용 가능
+           req: ZeroDivisionError와 빈 컬렉션을 처리하는 경험으로 오류 처리에 능숙
+           req: 입력 검증 및 엣지 케이스 처리를 통한 방어적 프로그래밍 관행 이해
+  [bid] sql_analyst: pass elig=20 conf=10 :: 파이썬 디버깅 및 함수 수정을 요구하는데, 이는 SQL 분석가의 전문 분야가 아닌 작업입니다.
+  [bid] text_editor: BID elig=100 conf=95 :: 저는 파이썬 프로그래밍(함수, 리스트, 내장 sum/len 함수)에 능숙하고, ZeroDivisionError 및 빈 컬렉션을 처리하는 경험과 방어적 프로그래밍 관행(입력 검증 및 엣지 케이스 처리)에 대한 이해를 갖추고 있습니다.
+  [bid] code_fixer: UNPARSEABLE -> counted as no bid
+        raw: def mean(xs): |     if not xs: |         return 0.0 |     return sum(xs) / len(xs)
