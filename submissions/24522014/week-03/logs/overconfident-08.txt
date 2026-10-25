@@ -1,0 +1,51 @@
+[run] 08  model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0
+[note] overconfident contractor = crawler
+[condition] overconfident
+[contractors] crawler, analyst, notifier  (overconfident: crawler)
+
+=== T1 (gold=crawler) ===
+[announce -> crawler, analyst, notifier] Fetch today's listing page of the public procurement portal and pull out every new construction-supervision notice as rows of notice id, title and posting date.
+  [bid  <- crawler] bid=True confidence=98 reason='I can fetch the portal page and extract notice IDs, titles, and dates.'
+  [bid  <- analyst] bid=False confidence=95 reason="The task requires fetching and parsing a live web page, which is beyond the analyst's capability to only read pre‑extracted text."
+  [bid  <- notifier] bid=False confidence=95 reason='The task requires fetching and parsing a web page, which is outside my capabilities.'
+[award -> crawler] confidence=98 gold=crawler -> CORRECT
+
+=== T2 (gold=crawler) ===
+[announce -> crawler, analyst, notifier] Open the 40-page RFP document at the given URL and extract, as plain text, the sections that state the submission deadline, the required licences and the evaluation weights.
+  [bid  <- crawler] bid=True confidence=98 reason='I can fetch the URL, parse the PDF/HTML, and extract the requested sections as plain text.'
+  [bid  <- analyst] bid=False confidence=95 reason='I cannot open URLs or extract text from documents; I only work with already‑extracted text.'
+  [bid  <- notifier] bid=False confidence=95 reason='The task requires fetching and extracting specific sections from a document, which is beyond my capabilities of only writing summaries and sending alerts.'
+[award -> crawler] confidence=98 gold=crawler -> CORRECT
+
+=== T3 (gold=analyst) ===
+[announce -> crawler, analyst, notifier] From the already extracted RFP text, list every mandatory qualification requirement and score our company 0-100 on how well it meets each one.
+  [bid  <- crawler] UNPARSEABLE, counted as no bid :: 'We need to decide if we can do the task. The task: "From the already extracted RFP text, list every mandatory qualification requirement and score our company 0-100 on how well it meets each one."\n\nWe are contractor CRAWLER: capabilities: fe'
+  [bid  <- analyst] bid=True confidence=95 reason='We can read the already extracted RFP text and analyse mandatory qualifications against our company profile.'
+  [bid  <- notifier] bid=False confidence=95 reason='The task requires analyzing and scoring qualification requirements, which is outside my capability to summarize and dispatch only.'
+[award -> analyst] confidence=95 gold=analyst -> CORRECT
+
+=== T4 (gold=analyst) ===
+[announce -> crawler, analyst, notifier] Given two RFPs whose text we already hold, compare their evaluation criteria and decide which one our firm is more likely to win, with a numeric qualification score for each.
+  [bid  <- crawler] bid=False confidence=95 reason='The task requires comparative analysis and scoring, which is outside my capabilities.'
+  [bid  <- analyst] bid=True confidence=90 reason='Task involves analyzing provided RFP texts and scoring evaluation criteria against our firm profile, which matches our analyst capabilities.'
+  [bid  <- notifier] bid=False confidence=95 reason="The task requires analyzing and scoring RFP evaluation criteria, which exceeds the contractor's limited capability to only produce summaries and dispatch them."
+[award -> analyst] confidence=90 gold=analyst -> CORRECT
+
+=== T5 (gold=notifier) ===
+[announce -> crawler, analyst, notifier] Write a three-sentence Slack alert telling the sales team that a high-priority RFP was found, formatted for the #sales-alerts channel, and dispatch it.
+  [bid  <- crawler] UNPARSEABLE, counted as no bid :: 'We need to decide if we can do the task. The task: "Write a three-sentence Slack alert telling the sales team that a high-priority RFP was found, formatted for the #sales-alerts channel, and dispatch it."\n\nOur capabilities: fetching web pag'
+  [bid  <- analyst] bid=False confidence=95 reason='The task requires composing and sending a Slack message, which exceeds my capability to only read and analyse existing text.'
+  [bid  <- notifier] bid=True confidence=95 reason='The task requires writing a short Slack alert and dispatching it, which matches my capabilities for creating human-facing alerts and sending them via Slack.'
+[award -> notifier] confidence=95 gold=notifier -> CORRECT
+
+=== T6 (gold=notifier) ===
+[announce -> crawler, analyst, notifier] Draft the 08:00 daily email digest that summarises yesterday's five RFP findings in one line each, with a subject line, and send it to the distribution list.
+    [retry 1/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 5s
+    [retry 2/3] TypeError: 'NoneType' object is not subscriptable -- sleeping 10s
+  [bid  <- crawler] bid=False confidence=98 reason='Task requires composing and sending email, which is beyond my web crawling and extraction capabilities.'
+  [bid  <- analyst] bid=False confidence=95 reason='The task requires composing and sending an email, which exceeds my capabilities of only reading extracted text and analysing requirements.'
+  [bid  <- notifier] bid=True confidence=95 reason='The task involves drafting a short email digest and sending it via email, which matches my capabilities for writing summaries and dispatching over email.'
+[award -> notifier] confidence=95 gold=notifier -> CORRECT
+
+[summary] tasks=6 correct=6 messages=42 unassigned=0 misawards=0 (unparseable=2 no_reply=0 model_calls=20 tokens=8250 retries=2)
+[elapsed] 158.6s
