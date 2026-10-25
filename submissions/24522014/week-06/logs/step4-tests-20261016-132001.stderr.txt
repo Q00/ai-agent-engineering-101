@@ -1,0 +1,58 @@
+test_process_failure_is_not_retried (test_seller_opening.OpeningChecks.test_process_failure_is_not_retried) ... ok
+test_reject_under_reserve_and_wrong_action (test_seller_opening.OpeningChecks.test_reject_under_reserve_and_wrong_action) ... ok
+test_retry_constraint_violation_once (test_seller_opening.OpeningChecks.test_retry_constraint_violation_once) ... ok
+test_two_invalid_decisions_fail_without_fallback (test_seller_opening.OpeningChecks.test_two_invalid_decisions_fail_without_fallback) ... ok
+test_valid_price_is_not_replaced (test_seller_opening.OpeningChecks.test_valid_price_is_not_replaced) ... ok
+test_accept_must_match_offer_and_reserve (test_seller_negotiation.FollowupValidation.test_accept_must_match_offer_and_reserve) ... ok
+test_counteroffer_receipt_and_terminal_task (test_seller_negotiation.NegotiationProtocol.test_counteroffer_receipt_and_terminal_task) ... ok
+test_invalid_acceptance_is_corrected_not_clamped (test_seller_negotiation.NegotiationProtocol.test_invalid_acceptance_is_corrected_not_clamped) ... ok
+Dispatcher task is not running. Cannot wait for event dispatch.
+test_invalid_offer_does_not_call_harness_or_lose_task (test_seller_negotiation.NegotiationProtocol.test_invalid_offer_does_not_call_harness_or_lose_task) ... Producer[e62e2ab8-0f9e-47fb-bedc-314490ecfaa6]: Execution failed
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 133, in execute
+    raise InvalidParamsError("Send your offer as one positive integer.")
+a2a.utils.errors.InvalidParamsError: Send your offer as one positive integer.
+Consumer[e62e2ab8-0f9e-47fb-bedc-314490ecfaa6]: Failed
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\seller.py", line 133, in execute
+    raise InvalidParamsError("Send your offer as one positive integer.")
+a2a.utils.errors.InvalidParamsError: Send your offer as one positive integer.
+FAIL
+Dispatcher task was cancelled or finished. Events may be lost.
+test_reject_and_cancel_have_no_receipts (test_seller_negotiation.NegotiationProtocol.test_reject_and_cancel_have_no_receipts) ... ok
+
+======================================================================
+FAIL: test_invalid_offer_does_not_call_harness_or_lose_task (test_seller_negotiation.NegotiationProtocol.test_invalid_offer_does_not_call_harness_or_lose_task)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\°­Ã¶¿ø\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\°­Ã¶¿ø\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\test_seller_negotiation.py", line 93, in test_invalid_offer_does_not_call_harness_or_lose_task
+    counter = self.task(await self.send("80", tid))
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\test_seller_negotiation.py", line 53, in task
+    self.assertNotIn("error", payload)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+AssertionError: 'error' unexpectedly found in {'error': {'code': -32004, 'message': 'Task e62e2ab8-0f9e-47fb-bedc-314490ecfaa6 is already completed.', 'data': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'UNSUPPORTED_OPERATION', 'domain': 'a2a-protocol.org', 'metadata': {}}]}, 'id': 'd6840b5c-170d-496d-a61b-70794f0bf0ed', 'jsonrpc': '2.0'}
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.198s
+
+FAILED (failures=1)

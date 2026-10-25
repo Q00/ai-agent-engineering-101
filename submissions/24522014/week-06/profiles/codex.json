@@ -1,0 +1,6 @@
+{
+  "profile": "codex",
+  "harness": "seller: Codex + Luna (gpt-6-luna); buyer: Codex + Luna (gpt-6-luna)",
+  "seller": {"harness": "codex", "model": "gpt-6-luna", "cmd": "python seller.py --mode codex --port {port}"},
+  "buyer": {"harness": "codex", "model": "gpt-6-luna", "cmd": "python buyer.py --mode codex --url {url} --item {item} --budget {budget}"}
+}
