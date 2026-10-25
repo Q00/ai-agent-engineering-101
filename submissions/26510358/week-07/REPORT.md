@@ -12,7 +12,7 @@
 | 필수 도전 1 | 가격 변경 전후 점유율·평균 거래가 재계산 완료 | `logs/challenge-1/`, `logs/week07-completion-20261025T105223Z/required-challenges-audit.json` |
 | 필수 도전 2 | 실제 카드의 별점 조작 지시 발견 → 기억에 기록 → 다음 탐색에서 제외 | `logs/challenge-2/` |
 | 상시 시장 | 아래 관측 시각에 shop·buyer 온라인, GitHub 소유권 일치, buyer Round 2 인정 거래 있음 | `logs/week07-completion-20261025T105223Z/deployment-summary.json` |
-| GitHub 제출 | 기존 대용량 로그 커밋 때문에 push 거절, Week 7 upstream PR은 아직 없음 | `logs/reliability-discovery-20261025T095804Z/push-console.log` |
+| GitHub 제출 | 원본 보존 및 별도 week-07-submit 브랜치 준비 완료. 공식 검사와 PR은 진행 중 | `logs/reliability-discovery-20261025T095804Z/push-console.log` |
 
 ## 1. Buyer의 상점 선택과 기억
 
@@ -140,7 +140,10 @@ python scripts/check_week07.py submissions/26510358/week-07 --github SUNGMYEONGG
 제출 제목은 `[week-07] 26510358`, 대상은 `Q00/ai-agent-engineering-101`의 main임.
 현재 GitHub에 있는 week-07 브랜치 이후 원본 커밋 103개를 변경 없이 Git bundle로 백업하고 복원 가능성을 검증함.
 백업은 `logs/week07-completion-20261025T105223Z/original-unpublished.bundle`이며 기존 ref는 바꾸지 않음.
-기존 163.73MB 로그 blob이 들어 있는 이력은 GitHub의 100MB 제한으로 거절되므로 이력 변경 금지 규칙의 예외 확인 전에는 제출 브랜치를 재작성하지 않음.
+사용자가 원본을 보존하는 최선의 제출 방법 진행을 요청한 뒤, 별도 week-07-submit 브랜치에서 작업 순서를 유지하며 대용량 로그 blob 하나를 제외함.
+원본 브랜치·실행 파일은 유지하고 원본 commit/tree 객체와 커밋 대응표로 정확한 이전 ID를 복원할 수 있게 함.
+제출용 logs/market-kit.log는 10월 21일 실제 배포 키트의 기존 커밋 캡처를 바이트 그대로 복사한 것이며 최신 전체 로그는 무손실 gzip으로 함께 제공함.
+원본과 제출 브랜치의 유일한 파일 차이, 캡처 출처, 복원 방법은 logs/submission-finalization-20261025T110840Z/에 기록함.
 모델 검사와 PR 제출이 완료되지 않은 상태를 전체 과제 완료라고 표시하지 않음.
 
 ## 과거 실행·변경 기록

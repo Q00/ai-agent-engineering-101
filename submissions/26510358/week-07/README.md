@@ -151,5 +151,23 @@ gzip -dc submissions/26510358/week-07/logs/week07-completion-20261025T105223Z/ma
 ```
 
 기존 공식 25/25 결과는 10월 22일의 실제 실행이며 최신 코드 재실행과 구분함.
-API 키가 없을 때의 기존 Codex 로그인 사용과 GitHub 대용량 로그 이력 처리에는
-AGENTS.md의 해당 규칙에 대한 사용자 확인이 필요하여 현재 요청을 남겨 둔 상태임.
+사용자가 API 키 입력 파일 준비와 원본을 보존하는 최선의 제출 방법 진행을 요청함.
+API 키는 비공개 파일에서 입력을 기다리며 제출은 별도 `week-07-submit` 브랜치로 진행함.
+
+
+## 제출 브랜치와 원본 이력 복원
+
+원본 `week-07` 브랜치와 실행 중인 파일은 유지함.
+`week-07-submit`은 원본 작업 순서를 커밋별로 유지하고 변경된 커밋에 `Original-Commit`을 기록함.
+변환 범위는 GitHub가 거절한 대용량 `logs/market-kit.log` blob 한 개이며 가격·코드·다른 학생 파일은 변경하지 않음.
+제출용 canonical 로그는 원본 커밋 `23f8ece`의 실제 배포 `logs/deployment-20261021T084746Z/kit-console.log`를 바이트 그대로 복사함.
+이는 2026-10-21 Round 2 등록·정상 검증 거래를 포함한 캡처이며 최신 전체 로그라고 주장하지 않음.
+현재 전체 원시 로그는 앞서 설명한 무손실 gzip 스냅샷으로 제공함.
+
+원본 103개 커밋 bundle과 이후 원본 commit/tree 객체를 함께 제공하므로 제출 브랜치에서 원래 커밋 ID를 복원할 수 있음.
+대응표·원본 객체·복원 스크립트는 `logs/submission-finalization-20261025T110840Z/`에 있음.
+새 clone의 저장소 루트에서 아래 명령은 별도 복원 브랜치만 생성하고 제출 이력은 바꾸지 않음.
+
+```bash
+python submissions/26510358/week-07/logs/submission-finalization-20261025T110840Z/restore_history.py
+```
