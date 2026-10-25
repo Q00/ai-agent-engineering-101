@@ -1,24 +1,732 @@
-INFO:     Started server process [12344]
+INFO:     Started server process [12772]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://127.0.0.1:61178 (Press CTRL+C to quit)
-INFO:     127.0.0.1:61179 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61182 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61202 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61220 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61237 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61238 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61256 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61274 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61291 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61312 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61331 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61350 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61367 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61384 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61405 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61423 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61442 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61461 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61478 - "POST / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61498 - "POST / HTTP/1.1" 200 OK
+INFO:     Uvicorn running on http://127.0.0.1:57764 (Press CTRL+C to quit)
+INFO:     127.0.0.1:57765 - "GET /.well-known/agent-card.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57768 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57769 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57786 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57787 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57788 - "POST / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57194 - "POST / HTTP/1.1" 200 OK
+Producer[663e6fe7-dfe0-481a-9408-955aaeff81c2]: Execution failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103317_705523Z_attempt1.txt
+Consumer[663e6fe7-dfe0-481a-9408-955aaeff81c2]: Failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103317_705523Z_attempt1.txt
+Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        specific_request, call_context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request_obj, context
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+    ...<30 lines>...
+            result = event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103317_705523Z_attempt1.txt
+Request Error (ID: 50976893): Code=-32603, Message='Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103317_705523Z_attempt1.txt'
+INFO:     127.0.0.1:57195 - "POST / HTTP/1.1" 200 OK
+Dispatcher task was cancelled or finished. Events may be lost.
+INFO:     127.0.0.1:57210 - "POST / HTTP/1.1" 200 OK
+Producer[7c9dedbf-207d-45ea-ae90-2510a130dd87]: Execution failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103320_606478Z_attempt1.txt
+Consumer[7c9dedbf-207d-45ea-ae90-2510a130dd87]: Failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103320_606478Z_attempt1.txt
+Failed to detach context
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        specific_request, call_context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request_obj, context
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+    ...<30 lines>...
+            result = event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103320_606478Z_attempt1.txt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000002C79886E020> at 0x000002C798EF9CC0> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-37' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future cancelled>>
+Failed to detach context
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        specific_request, call_context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request_obj, context
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+    ...<30 lines>...
+            result = event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103320_606478Z_attempt1.txt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000002C79886E020> at 0x000002C798EF9EC0> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-38' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future cancelled>>
+Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        specific_request, call_context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request_obj, context
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+    ...<30 lines>...
+            result = event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103320_606478Z_attempt1.txt
+Request Error (ID: e1735aa0): Code=-32603, Message='Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103320_606478Z_attempt1.txt'
+INFO:     127.0.0.1:57211 - "POST / HTTP/1.1" 200 OK
+Dispatcher task was cancelled or finished. Events may be lost.
+INFO:     127.0.0.1:57225 - "POST / HTTP/1.1" 200 OK
+Producer[1e913256-0b18-46b9-bba9-d902cb3b129c]: Execution failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103322_872824Z_attempt1.txt
+Consumer[1e913256-0b18-46b9-bba9-d902cb3b129c]: Failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103322_872824Z_attempt1.txt
+Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        specific_request, call_context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request_obj, context
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+    ...<30 lines>...
+            result = event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103322_872824Z_attempt1.txt
+Request Error (ID: 6cc20810): Code=-32603, Message='Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103322_872824Z_attempt1.txt'
+INFO:     127.0.0.1:57226 - "POST / HTTP/1.1" 200 OK
+Dispatcher task was cancelled or finished. Events may be lost.
+INFO:     127.0.0.1:57244 - "POST / HTTP/1.1" 200 OK
+Producer[f2b0831f-21d2-4195-9755-f028baa42544]: Execution failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103325_175943Z_attempt1.txt
+Consumer[f2b0831f-21d2-4195-9755-f028baa42544]: Failed
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103325_175943Z_attempt1.txt
+Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        specific_request, call_context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request_obj, context
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+    ...<30 lines>...
+            result = event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+        request_context, self._event_queue_agent
+    )
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller.py", line 102, in execute
+    decision = await asyncio.to_thread(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+        decide_offer, item, RESERVES[item], offer, deal["countered_at_reserve"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Users\user\anaconda3\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\seller_decision.py", line 120, in decide_offer
+    decision = call_harness(prompt)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103325_175943Z_attempt1.txt
+Request Error (ID: 7b4a0a8d): Code=-32603, Message='Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103325_175943Z_attempt1.txt'
+INFO:     127.0.0.1:57245 - "POST / HTTP/1.1" 200 OK
+Dispatcher task was cancelled or finished. Events may be lost.
