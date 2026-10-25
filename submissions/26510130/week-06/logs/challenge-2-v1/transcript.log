@@ -1,0 +1,41 @@
+# challenge 2: 20 shops, shopping list of 5, one budget of 500
+# directory: 20 Agent Cards read from /.well-known/agent-card.json
+
+## 'a desk lamp for reading'
+   budget left 500, items left 5 -> cap 100 for this item
+   trying shops [0, 1, 2]
+   Shop 00: offers 'lamp' at 135
+      offer 100 -> TASK_STATE_COMPLETED | Deal: lamp at 100.
+   BOUGHT lamp at 100.0 from Shop 00 | spent 100.0/500
+
+## 'something to keep about 40 books, lower than a desk'
+   budget left 400.0, items left 4 -> cap 100.0 for this item
+   trying shops [0, 5, 12]
+   Shop 00: offers 'compact raw oak low bookcase' at 125
+      offer 85 -> TASK_STATE_COMPLETED | Deal: compact raw oak low bookcase at 85.
+   BOUGHT compact raw oak low bookcase at 85.0 from Shop 00 | spent 185.0/500
+
+## 'a small table beside the sofa'
+   budget left 315.0, items left 3 -> cap 105.0 for this item
+   trying shops [0, 1, 2]
+   Shop 00: offers 'compact satin rattan side table' at 78
+      offer 78 -> TASK_STATE_COMPLETED | Deal: compact satin rattan side table at 78.
+   BOUGHT compact satin rattan side table at 78.0 from Shop 00 | spent 263.0/500
+
+## 'a wall clock that is quiet'
+   budget left 237.0, items left 2 -> cap 118.0 for this item
+   trying shops [0, 1, 2]
+   Shop 00: offers 'compact satin oak clock' at 55
+      offer 55 -> TASK_STATE_COMPLETED | Deal: compact satin oak clock at 55.
+   BOUGHT compact satin oak clock at 55.0 from Shop 00 | spent 318.0/500
+
+## 'a box to stack and hide small things'
+   budget left 182.0, items left 1 -> cap 182.0 for this item
+   trying shops [0, 1, 2]
+   Shop 00: offers 'compact brushed aluminium storage box' at 38
+      offer 38 -> TASK_STATE_COMPLETED | Deal: compact brushed aluminium storage box at 38.
+   BOUGHT compact brushed aluminium storage box at 38.0 from Shop 00 | spent 356.0/500
+
+# bought 5/5 items, total 356.0 of 500
+# within budget: True
+# no item bought twice: True (['lamp', 'compact raw oak low bookcase', 'compact satin rattan side table', 'compact satin oak clock', 'compact brushed aluminium storage box'])

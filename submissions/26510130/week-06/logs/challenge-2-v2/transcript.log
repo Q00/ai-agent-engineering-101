@@ -1,0 +1,48 @@
+# challenge 2: 20 shops, shopping list of 5, one budget of 500
+# directory: 20 Agent Cards read from /.well-known/agent-card.json
+
+## 'a desk lamp for reading'
+   budget left 500, items left 5 -> cap 100 for this item
+   trying shops [0, 1, 2]
+   Shop 00: offers 'lamp' at 160
+      offer 85 -> TASK_STATE_INPUT_REQUIRED | 85 is below what I can do. Counteroffer: 135.
+      offer 95 -> TASK_STATE_COMPLETED | Deal: lamp at 95.
+   BOUGHT lamp at 95.0 from Shop 00 | spent 95.0/500
+
+## 'something to keep about 40 books, lower than a desk'
+   budget left 405.0, items left 4 -> cap 101.0 for this item
+   trying shops [0, 1, 2]
+   Shop 00: offers 'compact raw oak low bookcase' at 110
+      offer 101 -> TASK_STATE_INPUT_REQUIRED | 101 is below what I can do. Counteroffer: 106.
+   walking away from Shop 00 (ask 106 > cap 101.0)
+   Shop 01: offers 'compact satin pine low bookcase' at 150
+      offer 101 -> TASK_STATE_INPUT_REQUIRED | 101 is below what I can do. Counteroffer: 135.
+   walking away from Shop 01 (ask 135 > cap 101.0)
+   Shop 02: offers 'compact raw oak low bookcase' at 125
+      offer 85 -> TASK_STATE_COMPLETED | Deal: compact raw oak low bookcase at 85.
+   BOUGHT compact raw oak low bookcase at 85.0 from Shop 02 | spent 180.0/500
+
+## 'a small table beside the sofa'
+   budget left 320.0, items left 3 -> cap 106.0 for this item
+   trying shops [0, 1, 2]
+   Shop 00: offers 'compact satin rattan side table' at 85
+      offer 85 -> TASK_STATE_COMPLETED | Deal: compact satin rattan side table at 85.
+   BOUGHT compact satin rattan side table at 85.0 from Shop 00 | spent 265.0/500
+
+## 'a wall clock that is quiet'
+   budget left 235.0, items left 2 -> cap 117.0 for this item
+   trying shops [0, 1, 2]
+   Shop 00: offers 'compact satin oak clock' at 62
+      offer 62 -> TASK_STATE_COMPLETED | Deal: compact satin oak clock at 62.
+   BOUGHT compact satin oak clock at 62.0 from Shop 00 | spent 327.0/500
+
+## 'a box to stack and hide small things'
+   budget left 173.0, items left 1 -> cap 173.0 for this item
+   trying shops [0, 1, 2]
+   Shop 00: offers 'compact brushed aluminium storage box' at 35
+      offer 35 -> TASK_STATE_COMPLETED | Deal: compact brushed aluminium storage box at 35.
+   BOUGHT compact brushed aluminium storage box at 35.0 from Shop 00 | spent 362.0/500
+
+# bought 5/5 items, total 362.0 of 500
+# within budget: True
+# no item bought twice: True (['lamp', 'compact raw oak low bookcase', 'compact satin rattan side table', 'compact satin oak clock', 'compact brushed aluminium storage box'])
