@@ -45,6 +45,12 @@ python scripts/check_week07.py submissions/26510358/week-07
 모델 판단에는 기존 Codex CLI 인증을 사용함. 개인키·소유권 코드·`.market/`는 커밋하지 않음.
 검사에서 사용하는 모의 결정과 실제 모델 실행 기록을 구분함.
 
+기본 harness는 PATH의 `codex` 링크를 실제 실행 파일 경로로 해석함. 링크가 잠시
+사라져도 같은 프로세스가 확인한 실행 파일이 남아 있으면 계속 사용함. 새 설치가
+조회되면 새 경로를 사용하며, 실제 실행 파일까지 삭제된 경우에는 복구를 보장하지 않음.
+명시적인 `A2A_HARNESS_COMMAND` 설정은 그대로 사용함. 실행 파일이 없으면 모델을
+호출하지 않은 설정 오류로 기록함.
+
 ## 현재 배포
 
 현재 Linux 머신의 `shop_service.py`와 cloudflared가 공개 URL을 유지함.
