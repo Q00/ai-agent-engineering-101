@@ -7,6 +7,7 @@ import os
 import re
 from pathlib import Path
 import shlex
+import shutil
 import signal
 import subprocess
 import tempfile
@@ -25,6 +26,24 @@ COMMAND = ["codex", "exec", "--skip-git-repo-check", "--ephemeral", "--ignore-us
 SCHEMAS = {"buyer": "buyer-decision.schema.json", "seller": "seller-decision.schema.json",
            "shop_selector": "shop-selection.schema.json",
            "quote_observer": "quote-observation.schema.json"}
+_codex_executable = None
+
+
+def codex_executable() -> str:
+    """Keep a usable real path when a launcher link disappears during updates.
+
+    A new installation is picked up whenever PATH resolves again. This cannot
+    recover an installation whose actual binary has also been removed.
+    """
+    global _codex_executable
+    launcher = shutil.which("codex")
+    if launcher:
+        candidate = str(Path(launcher).resolve())
+        if Path(candidate).is_file() and os.access(candidate, os.X_OK):
+            _codex_executable = candidate
+    if _codex_executable and Path(_codex_executable).is_file() and os.access(_codex_executable, os.X_OK):
+        return _codex_executable
+    return "codex"
 
 
 def throttle_delay(stderr: str, attempt: int) -> float:
@@ -49,6 +68,8 @@ def command_for(role: str) -> list[str]:
     """Build the actual role-specific CLI prefix; no decision values are filled."""
     custom = os.environ.get("A2A_HARNESS_COMMAND")
     cmd = shlex.split(custom) if custom else list(COMMAND)
+    if not custom:
+        cmd[0] = codex_executable()
     schema = str(ROOT / SCHEMAS[role])
     if "--output-schema" in cmd:
         cmd[cmd.index("--output-schema") + 1] = schema
@@ -184,9 +205,15 @@ class Harness:
                     inference_env = os.environ.copy()
                     # Account ownership is needed by the kit, never by inference.
                     inference_env.pop("MARKET_OWNER", None)
-                    process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE, text=True, cwd=empty,
-                                               start_new_session=True, env=inference_env)
+                    try:
+                        process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                                   stderr=subprocess.PIPE, text=True, cwd=empty,
+                                                   start_new_session=True, env=inference_env)
+                    except FileNotFoundError as exc:
+                        self.trace.write("harness_unavailable", reason_code="executable_missing")
+                        raise HarnessConfigurationError(
+                            "Harness executable is unavailable; restore its installation or configure "
+                            "A2A_HARNESS_COMMAND. No model process was started.") from exc
                     try:
                         stdout, stderr = process.communicate(prompt, timeout=remaining)
                     except subprocess.TimeoutExpired:
