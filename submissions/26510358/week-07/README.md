@@ -1,5 +1,7 @@
 # Week 07 — Ssadassa Shop
 
+제출 PR: [#343 — [week-07] 26510358](https://github.com/Q00/ai-agent-engineering-101/pull/343) · 브랜치 `week-07-submit`
+
 현재 시장 등록 ID는 shop·buyer 모두 `myeonggi`, GitHub 소유자는 `SUNGMYEONGGI`임.
 공개 Agent Card의 이름은 `Ssadassa Shop`임. 기존 이름과 두 서명 키를 유지함.
 

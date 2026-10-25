@@ -1,5 +1,7 @@
 # Week 07 — Ssadassa Shop
 
+제출 PR: [#343 — [week-07] 26510358](https://github.com/Q00/ai-agent-engineering-101/pull/343) · 브랜치 `week-07-submit`
+
 학번 26510358, GitHub `SUNGMYEONGGI`, 시장 등록 이름은 shop·buyer 모두 `myeonggi`임.
 강의 페이지와 `weeks/week-07/README.md`를 대조해 필수 항목 여섯 가지를 먼저 정리함.
 아래 요약은 현재 제출 상태이며 뒤의 접힌 운영 기록은 각각 당시의 관측임.
