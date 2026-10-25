@@ -48,8 +48,11 @@ def public_description(offers):
 
 def public_skills(offers):
     return [{'id': 'negotiate', 'name': 'Catalog search and price negotiation',
-             'description': 'Request a current single-unit quote and offer that total on the same task.',
-             'tags': ['shopping', 'catalog', 'negotiation']}] + [
+             'description': ('Single-unit base quotes: ' + price_line(offers) + ' credits. '
+                             'Request a current quote, then offer that total on the same task. '
+                             'No review, referral or extra purchase required.'),
+             'tags': ['shopping', 'catalog', 'negotiation', 'signed-receipt', *[item['id'] for item in offers]],
+             'examples': ['I want to buy a ' + item['id'] for item in offers]}] + [
             {'id': 'buy-' + item['id'], 'name': item['name'],
              'description': (f"Latest base quote: {item['price']} credits. " + ', '.join(item['features']) +
                              '. Request a current quote, then offer that number on the same task for a signed receipt.'),
