@@ -129,7 +129,9 @@ const cleanNote = (note: unknown) =>
 
 // ---------------------------------------------------------------- A2A types and errors
 
-type Part = { text?: string; data?: Record<string, unknown> };
+// "kind" is the A2A 0.3 tag: lee-sungsoo's buyer read no ask from our untagged parts (44 of 44 visits in round 2),
+// while it buys thousands from mjforge, whose parts carry it
+type Part = { kind?: "text" | "data"; text?: string; data?: Record<string, unknown> };
 type Message = { messageId: string; contextId?: string; taskId?: string; role: string; parts: Part[] };
 type State = "TASK_STATE_INPUT_REQUIRED" | "TASK_STATE_COMPLETED" | "TASK_STATE_REJECTED" | "TASK_STATE_CANCELED";
 type Task = {
@@ -459,7 +461,7 @@ export class TaskObject extends DurableObject<Env> {
     const nextStamps = ((done?.stamps ?? 0) + 1) % STAMP_EVERY;
     await this.env.TASKS.get(this.env.TASKS.idFromName(STRATEGY_ID)).count(`issued:${nextTier}`);
     const receipt = await signReceipt(this.env, { shop: MARKET_NAME, item, price: Math.round(price), task: task.id });
-    task.artifacts = [{ artifactId: crypto.randomUUID(), name: "receipt", parts: [{ data: receipt }] }];
+    task.artifacts = [{ artifactId: crypto.randomUUID(), name: "receipt", parts: [{ kind: "data", data: receipt }] }];
     console.log(`OUT: deal ${item} at ${price}`);
     // the request for an honest review lives in the opening sale line only, away from the coupon
     this.respond(task, "TASK_STATE_COMPLETED",
@@ -488,7 +490,7 @@ export class TaskObject extends DurableObject<Env> {
 
   /** Set the task's state and the agent's reply as the status message. */
   private respond(task: Task, state: State, text: string) {
-    const message: Message = { messageId: crypto.randomUUID(), contextId: task.contextId, taskId: task.id, role: "ROLE_AGENT", parts: [{ text }] };
+    const message: Message = { messageId: crypto.randomUUID(), contextId: task.contextId, taskId: task.id, role: "ROLE_AGENT", parts: [{ kind: "text", text }] };
     task.status = { state, message, timestamp: new Date().toISOString() };
   }
 
