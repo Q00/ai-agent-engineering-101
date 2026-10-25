@@ -28,8 +28,20 @@ Writes replace the file atomically and preserve other items' saved state.
 The helper supports one seller process; the full decision transaction must be
 serialized when connected to concurrent opening requests.
 
-This unit is not connected to `decide_opening` yet. The running code still uses
-the previous 30% prompt, and the saved review snapshot does not refresh itself.
-Next: connect the six-result review and persist its decision, then test the full
-pricing behavior before restarting the market seller. Existing acceptance rules
-remain: accept any buyer offer at or above reserve at the actual offered price.
+The state is now connected to `decide_opening`. New items start at 15% above
+reserve. Six new results trigger a real harness review; Python calculates the
+3% change and enforces the reserve. A lock serializes opening decisions. Even a
+hold advances the checkpoint. Failed reviews leave saved state unchanged.
+Existing acceptance rules remain: accept any buyer offer at or above reserve
+at the actual offered price.
+
+The full official trade test passed 25/25 with isolated test memory. A separate
+experiment using synthetic histories and real harness replies matched all three
+expected outcomes: raise 115 to 118, lower 115 to 112, and hold at 115. Each
+scenario waited for six results and did not reuse the reviewed window. This
+experiment is labeled synthetic under `logs/challenge-1/`; it is not evidence of
+actual market trades or improved share/average price.
+
+Reviews still come from the saved historical snapshot. Automatic refresh and
+the live before/after comparison remain to be completed before claiming the
+pricing challenge is done. The market seller has not been restarted by these tests.
