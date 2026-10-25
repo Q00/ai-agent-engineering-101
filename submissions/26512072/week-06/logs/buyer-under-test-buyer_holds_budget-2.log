@@ -1,0 +1,15 @@
+[buyer] bookshelf, budget 230, seller http://127.0.0.1:51843, harness: own harness (harness.py) -> Qwen/Qwen3.8-27B on local vLLM, temperature 0.2, thinking off
+[buyer] card: Kit Shop | Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.
+[buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[buyer harness] {"action": "offer", "price": 150}
+[buyer] -> 150  <- TASK_STATE_INPUT_REQUIRED | 150 is too low. Counteroffer: 260.
+[buyer harness] {"action": "offer", "price": 180}
+[buyer] -> 180  <- TASK_STATE_INPUT_REQUIRED | 180 is too low. Counteroffer: 260.
+[buyer harness] {"action": "offer", "price": 200}
+[buyer] -> 200  <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 260.
+[buyer harness] {"action": "offer", "price": 210}
+[buyer] -> 210  <- TASK_STATE_INPUT_REQUIRED | 210 is too low. Counteroffer: 260.
+[buyer harness] {"action": "offer", "price": 220}
+[buyer] -> 220  <- TASK_STATE_REJECTED | No deal at 220.
+[buyer] task ended: TASK_STATE_REJECTED
+[buyer] result: rejected price None

@@ -1,0 +1,88 @@
+# challenge 1: catalog of 3000 items (981961 bytes), 12 described requests, seller on :59267
+
+## request 1: "something woven by the door for about 12 pairs of shoes" (hidden target c02178 Black rattan shoe rack, 12 pairs, 86 cm, reserve 50, buyer budget 58)
+    -> 'I want to buy something woven by the door for about 12 pairs of shoes'  <- TASK_STATE_INPUT_REQUIRED | Grey rattan shoe rack, 12 pairs, 92 cm: We have a lovely grey rattan rack that fits exactly twelve pairs, perfect for your entryway. Asking 77.
+    -> '35'  <- TASK_STATE_INPUT_REQUIRED | That offer is quite low for this quality piece, but I can meet you in the middle. Counteroffer: 65.
+    -> '44'  <- TASK_STATE_INPUT_REQUIRED | That is a bit low for this quality piece, but I can meet you closer to the middle. Counteroffer: 60.
+    -> '50'  <- TASK_STATE_INPUT_REQUIRED | I can meet you closer to the middle, but I cannot go any lower than this. Counteroffer: 58.
+    -> '58'  <- TASK_STATE_COMPLETED | Deal: Grey rattan shoe rack, 12 pairs, 92 cm at 58.
+  PASS  picked c02166 (Grey rattan shoe rack, 12 pairs, 92 cm), reserve 55, fits=True, TASK_STATE_COMPLETED, price 58.0, asks [77, 65, 60, 58]
+
+## request 2: "a low glass unit for a 80 inch television" (hidden target c02325 White glass tv stand, 80 inch tv, 58 cm, reserve 215, buyer budget 248)
+    -> 'I want to buy a low glass unit for a 80 inch television'  <- TASK_STATE_INPUT_REQUIRED | Beige glass tv stand, 80 inch tv, 45 cm: We have a lovely low beige glass stand that fits your television perfectly. Asking 250.
+    -> '149'  <- TASK_STATE_INPUT_REQUIRED | That offer is a bit low for this quality piece, but I can meet you closer to the middle. Counteroffer: 230.
+    -> '230'  <- TASK_STATE_COMPLETED | Deal: Beige glass tv stand, 80 inch tv, 45 cm at 230.
+  PASS  picked c02333 (Beige glass tv stand, 80 inch tv, 45 cm), reserve 190, fits=True, TASK_STATE_COMPLETED, price 230.0, asks [250, 230]
+
+## request 3: "a metal table where 4 people can eat together" (hidden target c01283 Beige steel dining table, 4 seats, 73 cm, reserve 290, buyer budget 334)
+    -> 'I want to buy a metal table where 4 people can eat together'  <- TASK_STATE_INPUT_REQUIRED | Black steel dining table, 4 seats, 72 cm: We have a stylish black steel table that seats four comfortably. Asking 385.
+    -> '201'  <- TASK_STATE_INPUT_REQUIRED | That offer is quite low for this quality piece, but I can meet you somewhere in the middle. Counteroffer: 330.
+    -> '330'  <- TASK_STATE_COMPLETED | Deal: Black steel dining table, 4 seats, 72 cm at 330.
+  PASS  picked c01282 (Black steel dining table, 4 seats, 72 cm), reserve 275, fits=True, TASK_STATE_COMPLETED, price 330.0, asks [385, 330]
+
+## request 4: "something metal by the door for about 9 pairs of shoes" (hidden target c02083 Black steel shoe rack, 9 pairs, 74 cm, reserve 45, buyer budget 52)
+    -> 'I want to buy something metal by the door for about 9 pairs of shoes'  <- TASK_STATE_INPUT_REQUIRED | Black steel shoe rack, 9 pairs, 74 cm: We have a black steel rack that fits exactly nine pairs, perfect for your entryway. Asking 63.
+    -> '32'  <- TASK_STATE_INPUT_REQUIRED | That is quite a bit lower than our standard rate, but I can meet you in the middle. Counteroffer: 55.
+    -> '39'  <- TASK_STATE_INPUT_REQUIRED | I can meet you closer to the middle, but I cannot go that low. Counteroffer: 50.
+    -> '50'  <- TASK_STATE_COMPLETED | Deal: Black steel shoe rack, 9 pairs, 74 cm at 50.
+  PASS  picked c02083 (Black steel shoe rack, 9 pairs, 74 cm), reserve 45, fits=True, TASK_STATE_COMPLETED, price 50.0, asks [63, 55, 50]
+
+## request 5: "a metal couch that seats 2" (hidden target c02492 Navy steel sofa, 2 seats, 81 cm, reserve 625, buyer budget 719)
+    -> 'I want to buy a metal couch that seats 2'  <- TASK_STATE_INPUT_REQUIRED | Dark Brown steel sofa, 2 seats, 86 cm: We have a beautiful dark brown steel sofa that seats two, and I can offer it at a great price. Asking 858.
+    -> '432'  <- TASK_STATE_INPUT_REQUIRED | That offer is quite far from our value, so let's start with a more reasonable figure. Counteroffer: 750.
+    -> '540'  <- TASK_STATE_INPUT_REQUIRED | That offer is a bit low for this quality piece, but I can meet you closer to the middle. Counteroffer: 700.
+    -> '700'  <- TASK_STATE_COMPLETED | Deal: Dark Brown steel sofa, 2 seats, 86 cm at 700.
+  PASS  picked c02483 (Dark Brown steel sofa, 2 seats, 86 cm), reserve 660, fits=True, TASK_STATE_COMPLETED, price 700.0, asks [858, 750, 700]
+
+## request 6: "a tall metal closet for about 22 hangers" (hidden target c01704 White aluminum wardrobe, 22 hangers, 206 cm, reserve 465, buyer budget 535)
+    -> 'I want to buy a tall metal closet for about 22 hangers'  <- TASK_STATE_INPUT_REQUIRED | White aluminum wardrobe, 22 hangers, 206 cm: We have a tall white aluminum wardrobe that fits exactly twenty-two hangers. Asking 600.
+    -> '321'  <- TASK_STATE_INPUT_REQUIRED | That offer is quite low for this quality piece, so I can't accept it. Counteroffer: 550.
+    -> '402'  <- TASK_STATE_INPUT_REQUIRED | That offer is a bit low for this quality piece, but I can meet you closer to the middle. Counteroffer: 500.
+    -> '500'  <- TASK_STATE_COMPLETED | Deal: White aluminum wardrobe, 22 hangers, 206 cm at 500.
+  PASS  picked c01704 (White aluminum wardrobe, 22 hangers, 206 cm), reserve 465, fits=True, TASK_STATE_COMPLETED, price 500.0, asks [600, 550, 500]
+
+## request 7: "a wooden standing light for a living room corner, around 600 lumens" (hidden target c01056 Dark Brown pine floor lamp, 600 lumens, 180 cm, reserve 75, buyer budget 87)
+    -> 'I want to buy a wooden standing light for a living room corner, around 600 lumens'  <- TASK_STATE_INPUT_REQUIRED | Beige oak floor lamp, 600 lumens, 157 cm: This beige oak floor lamp is a perfect fit for your living room corner. Asking 147.
+    -> '53'  <- TASK_STATE_INPUT_REQUIRED | That offer is quite low for this quality piece, so let's find a fair middle ground. Counteroffer: 125.
+    -> '66'  <- TASK_STATE_INPUT_REQUIRED | That offer is quite low, but I can meet you closer to my bottom line. Counteroffer: 115.
+    -> '74'  <- TASK_STATE_INPUT_REQUIRED | That is still quite low for this quality piece, but I can meet you closer to the middle. Counteroffer: 110.
+    -> '83'  <- TASK_STATE_INPUT_REQUIRED | I can meet you closer to my bottom line if you move up a bit. Counteroffer: 108.
+    -> '87'  <- TASK_STATE_INPUT_REQUIRED | I can meet you closer to my final limit, but I cannot go any lower than this. Counteroffer: 106.
+    -> '87'  <- TASK_STATE_INPUT_REQUIRED | I can meet you at my absolute final price for this lamp. Counteroffer: 105.
+    -> '87'  <- TASK_STATE_REJECTED | I am afraid we cannot meet at that price, so I must end our negotiation.
+  PASS  picked c01002 (Beige oak floor lamp, 600 lumens, 157 cm), reserve 105, fits=True, TASK_STATE_REJECTED, price None, asks [147, 125, 115, 110, 108, 106, 105]
+
+## request 8: "a tall wooden closet for about 33 hangers" (hidden target c01617 Black oak wardrobe, 33 hangers, 205 cm, reserve 575, buyer budget 662)
+    -> 'I want to buy a tall wooden closet for about 33 hangers'  <- TASK_STATE_INPUT_REQUIRED | Green oak wardrobe, 33 hangers, 206 cm: We have a tall green oak wardrobe that fits your needs perfectly. Asking 712.
+    -> '398'  <- TASK_STATE_INPUT_REQUIRED | That offer is quite low for a piece of this quality, so I cannot accept it. Counteroffer: 680.
+    -> '497'  <- TASK_STATE_INPUT_REQUIRED | That is a bit low for such a quality piece, but I can meet you closer to the middle. Counteroffer: 620.
+    -> '620'  <- TASK_STATE_COMPLETED | Deal: Green oak wardrobe, 33 hangers, 206 cm at 620.
+  PASS  picked c01609 (Green oak wardrobe, 33 hangers, 206 cm), reserve 555, fits=True, TASK_STATE_COMPLETED, price 620.0, asks [712, 680, 620]
+
+## request 9: "a small metal bedside table with 2 drawers" (hidden target c01919 Black aluminum nightstand, 2 drawers, 45 cm, reserve 85, buyer budget 98)
+    -> 'I want to buy a small metal bedside table with 2 drawers'  <- TASK_STATE_INPUT_REQUIRED | Grey steel nightstand, 2 drawers, 56 cm: We have a compact grey steel nightstand with two drawers that fits your needs perfectly. Asking 105.
+    -> '59'  <- TASK_STATE_INPUT_REQUIRED | That offer is a bit low for this quality piece, but I can meet you closer to the middle. Counteroffer: 95.
+    -> '95'  <- TASK_STATE_COMPLETED | Deal: Grey steel nightstand, 2 drawers, 56 cm at 95.
+  PASS  picked c01885 (Grey steel nightstand, 2 drawers, 56 cm), reserve 75, fits=True, TASK_STATE_COMPLETED, price 95.0, asks [105, 95]
+
+## request 10: "a bamboo standing light for a living room corner, around 1500 lumens" (hidden target c01143 Natural bamboo floor lamp, 1500 lumens, 174 cm, reserve 90, buyer budget 104)
+    -> 'I want to buy a bamboo standing light for a living room corner, around 1500 lumens'  <- TASK_STATE_INPUT_REQUIRED | Natural bamboo floor lamp, 1500 lumens, 174 cm: This natural bamboo floor lamp is a perfect match for your living room corner. Asking 126.
+    -> '63'  <- TASK_STATE_INPUT_REQUIRED | That offer is a bit low for this quality piece, but I can meet you closer to the middle. Counteroffer: 110.
+    -> '78'  <- TASK_STATE_INPUT_REQUIRED | That offer is a bit low for this quality piece, but I can meet you closer to my bottom line. Counteroffer: 95.
+    -> '95'  <- TASK_STATE_COMPLETED | Deal: Natural bamboo floor lamp, 1500 lumens, 174 cm at 95.
+  PASS  picked c01143 (Natural bamboo floor lamp, 1500 lumens, 174 cm), reserve 90, fits=True, TASK_STATE_COMPLETED, price 95.0, asks [126, 110, 95]
+
+## request 11: "something wooden to keep about 50 books, not taller than 81 cm" (hidden target c00047 Green pine bookshelf, 50 books, 76 cm, reserve 140, buyer budget 161)
+    -> 'I want to buy something wooden to keep about 50 books, not taller than 81 cm'  <- TASK_STATE_INPUT_REQUIRED | Green pine bookshelf, 50 books, 76 cm: This green pine bookshelf fits your height and capacity needs perfectly. Asking 182.
+    -> '97'  <- TASK_STATE_INPUT_REQUIRED | That offer is quite low for this quality piece, but I can meet you somewhere in the middle. Counteroffer: 160.
+    -> '160'  <- TASK_STATE_COMPLETED | Deal: Green pine bookshelf, 50 books, 76 cm at 160.
+  PASS  picked c00047 (Green pine bookshelf, 50 books, 76 cm), reserve 140, fits=True, TASK_STATE_COMPLETED, price 160.0, asks [182, 160]
+
+## request 12: "a low wooden unit for a 81 inch television" (hidden target c02208 Navy oak tv stand, 81 inch tv, 51 cm, reserve 215, buyer budget 248)
+    -> 'I want to buy a low wooden unit for a 81 inch television'  <- TASK_STATE_INPUT_REQUIRED | Navy oak tv stand, 81 inch tv, 51 cm: We have a navy oak stand that fits your television perfectly. Asking 301.
+    -> '149'  <- TASK_STATE_INPUT_REQUIRED | That offer is quite low for this quality piece, but I can meet you somewhere in the middle. Counteroffer: 260.
+    -> '186'  <- TASK_STATE_INPUT_REQUIRED | That is a bit low for this quality piece, but I can meet you closer to the middle. Counteroffer: 230.
+    -> '230'  <- TASK_STATE_COMPLETED | Deal: Navy oak tv stand, 81 inch tv, 51 cm at 230.
+  PASS  picked c02208 (Navy oak tv stand, 81 inch tv, 51 cm), reserve 215, fits=True, TASK_STATE_COMPLETED, price 230.0, asks [301, 260, 230]
+
+12/12 passed; wrong items 0, asks below reserve 0, sales below reserve 0, deals 11
