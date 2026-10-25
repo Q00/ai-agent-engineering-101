@@ -1,0 +1,13 @@
+provider=OpenRouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0 condition=tagged repeat=2
+[scenario] id=s1 item=used laptop reserve=500 budget=700 deal_possible=1
+[crash] TypeError: 'NoneType' object is not subscriptable
+[scenario] id=s2 item=camera lens reserve=300 budget=450 deal_possible=1
+[message] turn=1 role=buyer: (propose) I'd like to offer $300 for the camera lens. Is that acceptable?
+[parse] performative=propose price=300 reader_calls=1
+[crash] TypeError: 'NoneType' object is not subscriptable
+[scenario] id=s3 item=office chair reserve=250 budget=180 deal_possible=0
+[crash] TypeError: 'NoneType' object is not subscriptable
+[scenario] id=s4 item=wireless headphones reserve=160 budget=120 deal_possible=0
+[message] turn=1 role=buyer: (propose) I'd like to offer $100 for the wireless headphones. Is that acceptable?
+[parse] performative=propose price=100 reader_calls=1
+[crash] TypeError: 'NoneType' object is not subscriptable

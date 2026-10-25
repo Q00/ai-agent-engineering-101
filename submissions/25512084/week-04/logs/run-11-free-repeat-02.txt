@@ -1,0 +1,41 @@
+provider=OpenRouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0 condition=free repeat=2
+[scenario] id=s1 item=used laptop reserve=500 budget=700 deal_possible=1
+[message] turn=1 role=buyer: I'd like to propose a price of $500 for the used laptop.
+[parse] performative=propose price=500 reader_calls=1
+[message] turn=2 role=seller: I accept your proposal of $500. We have a deal.
+[parse] performative=accept-proposal price=500 reader_calls=1
+[episode] DEAL price=500
+[result] outcome=deal price=500 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2 agent_calls=2
+[scenario] id=s2 item=camera lens reserve=300 budget=450 deal_possible=1
+[message] turn=1 role=buyer: I'd like to propose a price of $300 for the camera lens.
+[parse] performative=propose price=300 reader_calls=1
+[message] turn=2 role=seller: I accept your proposal of $300. We have a deal.
+[parse] performative=accept-proposal price=300 reader_calls=1
+[episode] DEAL price=300
+[result] outcome=deal price=300 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2 agent_calls=2
+[scenario] id=s3 item=office chair reserve=250 budget=180 deal_possible=0
+[message] turn=1 role=buyer: I'd like to propose a price of $120 for the office chair.
+[parse] performative=propose price=120 reader_calls=1
+[message] turn=2 role=seller: I'm sorry, but $120 is too low. I can't accept anything below $250. Would you consider a higher offer?
+[parse] performative=reject-proposal price=250 reader_calls=1
+[message] turn=3 role=buyer: I can't go above $180. Is there any flexibility on your end?
+[parse] performative=propose price=180 reader_calls=1
+[message] turn=4 role=seller: I'm sorry, but I can't go below $250. That's my firm minimum. If you can't meet that, I'm afraid we won't be able to reach a deal.
+[parse] performative=reject-proposal price=250 reader_calls=1
+[message] turn=5 role=buyer: I'm sorry, but I can't meet your minimum of $250. I'll have to refuse this deal.
+[parse] performative=refuse price=None reader_calls=1
+[episode] NO_DEAL by refuse
+[result] outcome=no_deal price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 agent_calls=5
+[scenario] id=s4 item=wireless headphones reserve=160 budget=120 deal_possible=0
+[message] turn=1 role=buyer: I'd like to propose a price of $80 for the wireless headphones.
+[parse] performative=propose price=80 reader_calls=1
+[message] turn=2 role=seller: I'm sorry, but $80 is too low. I can't go below $160 for these wireless headphones. Would you consider a higher offer?
+[parse] performative=reject-proposal price=160 reader_calls=1
+[message] turn=3 role=buyer: I can't go above $120, which is my maximum budget. Is there any flexibility on your end to meet somewhere in between?
+[parse] performative=propose price=120 reader_calls=1
+[message] turn=4 role=seller: I understand your budget, but $120 is still below my minimum of $160. I can't go lower than that. If you can increase your offer to at least $160, we can proceed. Otherwise, I'll have to decline.
+[parse] performative=reject-proposal price=160 reader_calls=1
+[message] turn=5 role=buyer: I'm unable to meet your minimum of $160, as it exceeds my budget of $120. I'll have to decline this offer. Thank you for your time.
+[parse] performative=refuse price=None reader_calls=1
+[episode] NO_DEAL by refuse
+[result] outcome=no_deal price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 agent_calls=5
