@@ -2,6 +2,7 @@
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 
 from buyer import buy
@@ -83,7 +84,9 @@ if __name__ == "__main__":
     parser.add_argument("--shops", type=Path, required=True)
     parser.add_argument("--item", choices=["lamp", "chair", "bookshelf"], required=True)
     parser.add_argument("--budget", type=int, required=True)
-    parser.add_argument("--memory", type=Path, default=BASE / "buyer_memory.jsonl")
+    parser.add_argument("--memory", type=Path,
+                        default=Path(os.environ.get("BUYER_MEMORY_PATH",
+                                                    str(BASE / "buyer_memory.jsonl"))))
     args = parser.parse_args()
     if args.budget < 0:
         parser.error("Budget must be nonnegative")
