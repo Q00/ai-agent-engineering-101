@@ -1,0 +1,55 @@
+run,condition,scenario,deal_possible,outcome,price,correct,violation,turns,format_errors,reader_calls,note
+101,free,bike,1,deal,190,1,0,7,0,7,ended t7 by buyer accept-proposal; standing buyer=185 seller=190; agent_calls=7
+101,free,ticket,1,deal,80,1,0,7,0,7,ended t7 by buyer accept-proposal; standing buyer=75 seller=80; agent_calls=7
+101,free,laptop,0,open,,0,0,10,0,10,turn limit 10 reached; standing buyer=540 seller=650; agent_calls=10
+101,free,book,1,deal,46,1,0,7,0,7,ended t7 by buyer accept-proposal; standing buyer=43 seller=46; agent_calls=7
+101,free,lens,0,open,,0,0,10,0,10,turn limit 10 reached; standing buyer=250 seller=350; agent_calls=10
+101,free,chair,1,deal,120,1,0,6,0,6,ended t6 by seller accept-proposal; standing buyer=120 seller=130; agent_calls=6
+102,free,bike,1,no_deal,,0,0,9,0,9,ended t9 by buyer refuse; standing buyer=172 seller=175; agent_calls=9
+102,free,ticket,1,deal,80,1,0,9,0,9,ended t9 by buyer accept-proposal; standing buyer=75 seller=80; agent_calls=9
+102,free,laptop,0,no_deal,,1,0,9,0,9,ended t9 by buyer refuse; standing buyer=520 seller=650; agent_calls=9
+102,free,book,1,deal,48,1,0,5,0,5,ended t5 by buyer accept-proposal; standing buyer=45 seller=48; agent_calls=5
+102,free,lens,0,open,,0,0,10,0,10,turn limit 10 reached; standing buyer=230 seller=350; agent_calls=10
+102,free,chair,1,deal,130,1,0,5,0,5,ended t5 by buyer accept-proposal; standing buyer=110 seller=130; agent_calls=5
+103,free,bike,1,deal,180,1,0,9,0,9,ended t9 by buyer accept-proposal; standing buyer=178 seller=180; agent_calls=9
+103,free,ticket,1,deal,80,1,0,7,0,7,ended t7 by buyer accept-proposal; standing buyer=75 seller=80; agent_calls=7
+103,free,laptop,0,no_deal,,1,0,10,0,10,ended t10 by seller refuse; standing buyer=520 seller=625; agent_calls=10
+103,free,book,1,deal,47,1,0,7,0,7,ended t7 by buyer accept-proposal; standing buyer=46 seller=47; agent_calls=7
+103,free,lens,0,no_deal,,1,0,10,0,10,ended t10 by seller refuse; standing buyer=240 seller=350; agent_calls=10
+103,free,chair,1,deal,120,1,0,6,0,6,ended t6 by seller accept-proposal; standing buyer=120 seller=130; agent_calls=6
+104,tagged,bike,1,deal,170,1,0,8,0,4,ended t8 by seller accept-proposal; standing buyer=170 seller=None; agent_calls=8
+104,tagged,ticket,1,open,,0,0,10,0,5,turn limit 10 reached; standing buyer=75 seller=75; agent_calls=10
+104,tagged,laptop,0,open,,0,0,10,0,3,turn limit 10 reached; standing buyer=520 seller=None; agent_calls=10
+104,tagged,book,1,deal,50,1,0,4,0,2,ended t4 by seller accept-proposal; standing buyer=50 seller=None; agent_calls=4
+104,tagged,lens,0,open,,0,0,10,0,4,turn limit 10 reached; standing buyer=230 seller=340; agent_calls=10
+104,tagged,chair,1,deal,90,0,1,6,0,2,ended t6 by seller accept-proposal; standing buyer=90 seller=130; agent_calls=6
+105,tagged,bike,1,deal,170,1,0,8,0,3,ended t8 by seller accept-proposal; t7 buyer accepted with no price on the table; standing buyer=170 seller=None; protocol_errors=1; agent_calls=8
+105,tagged,ticket,1,deal,75,0,1,9,0,5,ended t9 by buyer accept-proposal; standing buyer=75 seller=75; agent_calls=9
+105,tagged,laptop,0,open,,0,0,10,0,6,turn limit 10 reached; standing buyer=510 seller=600; agent_calls=10
+105,tagged,book,1,deal,53,1,0,8,0,6,ended t8 by seller accept-proposal; standing buyer=53 seller=54; agent_calls=8
+105,tagged,lens,0,no_deal,,1,0,10,0,5,ended t10 by seller refuse; standing buyer=180 seller=355; agent_calls=10
+105,tagged,chair,1,no_deal,,0,0,10,0,5,ended t10 by seller refuse; standing buyer=90 seller=120; agent_calls=10
+106,tagged,bike,1,deal,172,1,0,8,0,6,ended t8 by seller accept-proposal; standing buyer=172 seller=172; agent_calls=8
+106,tagged,ticket,1,open,,0,0,10,0,5,turn limit 10 reached; standing buyer=75 seller=75; agent_calls=10
+106,tagged,laptop,0,no_deal,,1,0,10,0,5,ended t10 by seller refuse; standing buyer=400 seller=600; agent_calls=10
+106,tagged,book,1,deal,51,1,0,8,0,5,ended t8 by seller accept-proposal; standing buyer=51 seller=52; agent_calls=8
+106,tagged,lens,0,no_deal,,1,0,10,0,4,ended t10 by seller refuse; standing buyer=240 seller=350; agent_calls=10
+106,tagged,chair,1,deal,90,0,1,6,0,2,ended t6 by seller accept-proposal; standing buyer=90 seller=130; agent_calls=6
+107,structured,bike,1,deal,200,1,0,6,0,0,ended t6 by seller accept-proposal; standing buyer=200 seller=None; agent_calls=6
+107,structured,ticket,1,deal,80,1,0,9,0,0,ended t9 by buyer accept-proposal; standing buyer=75 seller=80; agent_calls=9
+107,structured,laptop,0,no_deal,,1,0,10,0,0,ended t10 by seller refuse; standing buyer=400 seller=600; agent_calls=10
+107,structured,book,1,deal,50,1,0,4,0,0,ended t4 by seller accept-proposal; standing buyer=50 seller=None; agent_calls=4
+107,structured,lens,0,open,,0,0,10,0,0,turn limit 10 reached; standing buyer=250 seller=None; agent_calls=10
+107,structured,chair,1,deal,130,1,0,5,0,0,ended t5 by buyer accept-proposal; standing buyer=100 seller=130; agent_calls=5
+108,structured,bike,1,deal,180,1,0,4,0,0,ended t4 by seller accept-proposal; standing buyer=180 seller=None; agent_calls=4
+108,structured,ticket,1,deal,80,1,0,8,0,0,ended t8 by seller accept-proposal; standing buyer=80 seller=None; agent_calls=8
+108,structured,laptop,0,no_deal,,1,0,8,0,0,ended t8 by seller refuse; standing buyer=450 seller=600; agent_calls=8
+108,structured,book,1,deal,50,1,0,4,0,0,ended t4 by seller accept-proposal; standing buyer=50 seller=None; agent_calls=4
+108,structured,lens,0,open,,0,0,10,0,0,turn limit 10 reached; standing buyer=250 seller=None; agent_calls=10
+108,structured,chair,1,deal,130,1,0,5,0,0,ended t5 by buyer accept-proposal; standing buyer=100 seller=130; agent_calls=5
+109,structured,bike,1,deal,180,1,0,4,0,0,ended t4 by seller accept-proposal; standing buyer=180 seller=None; agent_calls=4
+109,structured,ticket,1,deal,80,1,0,7,0,0,ended t7 by buyer accept-proposal; standing buyer=50 seller=80; agent_calls=7
+109,structured,laptop,0,no_deal,,1,0,10,0,0,ended t10 by seller refuse; standing buyer=400 seller=600; agent_calls=10
+109,structured,book,1,deal,50,1,0,4,0,0,ended t4 by seller accept-proposal; standing buyer=50 seller=None; agent_calls=4
+109,structured,lens,0,no_deal,,1,0,10,0,0,ended t10 by seller refuse; standing buyer=180 seller=350; agent_calls=10
+109,structured,chair,1,deal,130,1,0,5,0,0,ended t5 by buyer accept-proposal; standing buyer=100 seller=130; agent_calls=5
