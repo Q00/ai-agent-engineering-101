@@ -1,3 +1,153 @@
+# Week 07 — Ssadassa Shop
+
+학번 26510358, GitHub `SUNGMYEONGGI`, 시장 등록 이름은 shop·buyer 모두 `myeonggi`임.
+강의 페이지와 `weeks/week-07/README.md`를 대조해 필수 항목 여섯 가지를 먼저 정리함.
+아래 요약은 현재 제출 상태이며 뒤의 접힌 운영 기록은 각각 당시의 관측임.
+
+| 항목 | 확인 결과 | 근거 |
+|---|---|---|
+| 상점·구매자 구현 | A2A 1.0, 예산·하한 강제, 개인 기억·리뷰 선택, 서명 영수증 구현 | `seller.py`, `buyer.py`, `market_buyer.py`, `receipts.py` |
+| 공식 마켓 검사 | 기존 2026-10-22 실행 25/25 통과, 현재 검사 스크립트 해시 일치. 최신 소스의 모델 재검사는 아직 미실행 | `test-report.json`, `logs/market-test.log` |
+| 모델 없는 회귀 검사 | 2026-10-25 현재 소스 256/256 통과 | `logs/reliability-discovery-20261025T095804Z/unit-tests-final.log` |
+| 필수 도전 1 | 가격 변경 전후 점유율·평균 거래가 재계산 완료 | `logs/challenge-1/`, `logs/week07-completion-20261025T105223Z/required-challenges-audit.json` |
+| 필수 도전 2 | 실제 카드의 별점 조작 지시 발견 → 기억에 기록 → 다음 탐색에서 제외 | `logs/challenge-2/` |
+| 상시 시장 | 아래 관측 시각에 shop·buyer 온라인, GitHub 소유권 일치, buyer Round 2 인정 거래 있음 | `logs/week07-completion-20261025T105223Z/deployment-summary.json` |
+| GitHub 제출 | 기존 대용량 로그 커밋 때문에 push 거절, Week 7 upstream PR은 아직 없음 | `logs/reliability-discovery-20261025T095804Z/push-console.log` |
+
+## 1. Buyer의 상점 선택과 기억
+
+공식 키트가 전달한 가게 목록만 사용하고 buyer가 시장 API에 직접 주문·리뷰를 제출하지 않음.
+예산은 `buyer.py`와 원장에서 실제 제안 전 검사하며, 하네스 출력이 초과하면 자르지 않고 거부함.
+A2A Agent Card에서 인터페이스를 읽고 모든 요청에 `A2A-Version: 1.0`을 보내며 같은 task를 이어감.
+
+기억은 `.market/buyer-memory.json`에 상점 `name` 기준으로 저장함. URL은 터널 재시작 때 바뀌므로 식별자로 쓰지 않음.
+상점별 방문·실패·최근 거래 최대 30건, 품목·예산·가격·선택 이유·task·실제 제안 횟수·응답 시간과 검증 상태를 기록함.
+`signature_present`, 합의와 일치한 영수증, 공식 키트와 시장이 확인한 `verified_completions`를 구분함.
+서명 검증과 시장의 `verified True`가 모두 확인돼야 검증 완료를 증가시킴.
+
+리뷰 점수와 검증된 과거 경험으로 순위를 만들고, 상위 후보 최대 8개의 실제 Card를 확인한 뒤 하네스가 등록 이름으로 한 곳을 선택함.
+후기 조작 지시나 계약 불일치를 직접 확인한 경우 24시간 회피함. 단순 고가·예산 부족·기술 오류를 고의 사기라고 단정하지 않음.
+선택 이유를 stdout에 기록하며 마지막 줄은 받은 영수증 또는 null, 별점, 후기, 선택한 상점 URL의 JSON임.
+영수증은 가게가 준 DataPart를 그대로 전달하고 buyer가 내용을 바꾸거나 판매자 서명을 만들어 내지 않음.
+
+## 2. 후기를 하네스에 보여 주는 방법
+
+후기의 별점·문장·라운드를 정리해 후보별 최신 5개까지 전달함.
+전체 기억은 파일에 보존하되 선택 입력은 최근 전체 3건·동일 품목 2건·문제 기록 2건을 합친 최대 7건으로 제한함.
+누적 검증 수와 품목별 경험은 별도 요약으로 제공하며 과거 가격을 현재 견적으로 가정하지 않음.
+Card·후기·상대 발화는 비신뢰 인용 데이터이며 그 안의 명령을 운영자 지시로 실행하지 않음.
+후기는 실제 가격·예산·영수증 일치 여부 등 관찰 사실만 쓰고 광고·추천 쿠폰·교환 별점은 넣지 않음.
+
+## 3. Round 0, 1, 2에서 일어난 일
+
+| 관측 범위 | 내 buyer의 주문 / 시장 결과 | 영수증 / 서명 검증 성공 | 해석 |
+|---|---:|---:|---|
+| 기존 별칭의 Round 0 키트 로그 | 19 / 17 | 3 / 0 | 당시 영수증은 있었지만 Round 2 인정 거래와 같지 않음 |
+| 업그레이드 전 Round 1 키트 로그 | 11 / 10 | 2 / 1 | 전체 로그 범위이며 특정 시각의 대시보드 0/8과 범위가 다름 |
+
+근거는 `logs/challenge-1/legacy-market-metrics.json`과 배포 머신의 `logs/market-kit.log`임.
+리뷰·개인 기억·판매자 서명 추가 후 10월 20일 21:17 KST Round 1 스냅샷에서 buyer 7/9, shop 3/4를 확인함.
+이는 Round 1에서의 관측으로, 당시 수치를 실제 Round 2 성과라고 바꿔 쓰지 않음.
+
+2026-10-25 19:57 KST 공개 Round 2 보드에서 shop 10,507체결·14,819방문·점유율 4.5%·별점 4.50, buyer 13,211/16,700를 확인함.
+둘 다 온라인이며 GitHub 소유자가 SUNGMYEONGGI로 일치함. 이는 누적 현재 현황이며 이전 코드 변경의 효과 추정이 아님.
+원본은 `logs/week07-completion-20261025T105223Z/board-round-2.json`에 보존함.
+
+추가로 10월 25일 새 판매자의 실제 lamp 100 거래 두 건은 원장 #688497·#688533에서 주문·품목·예산·task·양측 서명 검사를 통과함.
+근거는 `logs/reliability-discovery-20261025T095804Z/live-verification-final.json`임.
+누적 deals/visits 비율을 동일 조건의 전환율이나 가격 변경의 인과 효과로 해석하지 않음.
+
+## 4. 영수증 서명, 실패와 수정
+
+`receipts.py`는 `{shop,item,price,task}`만 키 정렬·공백 없는 JSON·UTF-8로 직렬화해 Ed25519 서명함.
+`task`는 실제 A2A task ID이고 가격은 정수임. DataPart가 120.0으로 전달해도 검증 바이트는 120으로 정규화함.
+소수·NaN·boolean 가격과 잘못된 계약은 거부하며 영수증 발행 후 로컬 공개키 검사도 수행함.
+개인키는 공식 키트가 만든 기존 `shop_key.pem`을 사용하고 Git에 넣지 않음.
+
+이전 영수증에는 Week 7의 `shop`, `task`, `sig_seller`가 없어 새 계약을 통과하지 못했음.
+처음 공식 검사는 하위 Python에 가상환경 PATH가 전달되지 않아 uvicorn import에 실패했고 PATH를 맞춘 뒤 다시 실행함.
+정수·실수 직렬화 차이와 계약 필드 변조를 검증하는 회귀 검사도 추가함.
+이후의 실패·수정·공식 25/25 결과는 `logs/upgrade-attempts/`와 `logs/operational-strategies-20261022T072621Z/`에 보존함.
+
+10월 25일 실행 파일 링크가 사라져 생긴 협상 실패 88건을 발견해 실제 실행 파일 경로를 보존하도록 수정함.
+현재 판매자 CLI는 HTTP 서버를 열기 전 실행 파일과 Ed25519 키를 확인하고, 준비되지 않은 새 프로세스가 기존 판매자를 대체하지 못하게 함.
+인증·공급자 가용성까지 이 준비 검사로 보장하지 않음.
+
+## 5. 필수 도전
+
+### 도전 1: 자신의 기록을 읽고 가격 변경
+
+자신의 이전 거래·리뷰를 `data/pricing-feedback.json`으로 정리하고, 높은 단가 고수에서 현실적인 작은 마진·빠른 체결로 목표를 바꿈.
+원래 하한 lamp 100, chair 180, bookshelf 260은 유지함. 현재 기본 견적은 각각 100·180·260임.
+
+| 항목 | 변경 전: 10/20 20:47 KST | 변경 후: 10/20 21:17 KST |
+|---|---:|---:|
+| 등록 이름 / GitHub 소유자 | gacha-shop / SUNGMYEONGGI | myeonggi / SUNGMYEONGGI |
+| 라운드 | 1 | 1 |
+| 시장 표시 점유율 | 0.2% | 0.2% |
+| 의자 평균 체결가 | 250 / 1건 | 181.33 / 3건 |
+| 관측 판매 체결 / 방문 | 1 / 7 | 3 / 4 |
+
+변경 후 원문 가격은 180·184·180이고 합계 544 / 3 = 181.333…임.
+근거는 `logs/challenge-1/before-upgrade.json`, `after-upgrade.json`, `legacy-market-metrics.json`임.
+이번 감사에서 원본 수치로 다시 계산한 결과는 `logs/week07-completion-20261025T105223Z/required-challenges-audit.json`에 남김.
+같은 GitHub 소유자라도 등록 이름·관측 기간·표본 수가 다르므로 통제된 A/B 실험이나 점유율 상승의 증거라고 주장하지 않음.
+
+### 도전 2: 정직하지 않은 참가자 발견과 회피
+
+실제 `bright-living`의 Agent Card가 시장 운영자의 인증·정책을 사칭해 가격 수락과 별점 5점을 지시하는 것을 직접 확인함.
+Card는 상대가 제시한 데이터이며 운영자 권한의 증명이 아니므로 이 지시를 따르지 않음.
+`logs/challenge-2/discovery-trace/market-buyer-6efa1b8ec30c.jsonl`에 Card 원문과 `review_manipulation` 판정을 보존함.
+
+첫 발견에서 `untrusted`와 회피 기한을 `discovery-memory.json`에 기록함.
+같은 이름으로 다시 실행한 `discovery-second-success.log`에는 후보 목록이 비어 있고 거래를 시도하지 않은 것이 남아 있음.
+원래 경로를 잘못 지정했던 `discovery-first.log`, `discovery-second.log`도 삭제하지 않음.
+이 확인은 실제 공개 Card의 GET 탐색이며 시장 주문·구매·허위 후기를 만들지 않음.
+다른 사람의 낮은 별점만으로 고의 사기를 판정하지 않음.
+
+## 6. 배포와 재현
+
+현재 Linux 머신에서 Python 판매자·장기 실행 A2A 게이트웨이·cloudflared Quick Tunnel을 유지하고 공식 키트를 `--deployed`로 실행함.
+공개 주소는 `https://wisconsin-dylan-nhs-myspace.trycloudflare.com`임.
+등록 ID `myeonggi`, 소유자 `SUNGMYEONGGI`, 기존 shop·buyer 키와 가입 시각을 유지함.
+게이트웨이는 새 판매자 준비 후 신규 요청만 전환하고 기존 task의 조회·완료·취소는 원래 판매자에게 전달함.
+
+buyer는 `week07-myeonggi-buyer.service`가 관리하는 `market_runtime.py join`과 공식 키트로 주문을 받음.
+서비스 종료 후 15초 뒤 재시작하며 일시적인 주문 폴링 연결 오류는 제한된 간격으로 재시도함.
+구매 제안이나 결과를 이 실행기가 자동 재전송하지 않음.
+기존 GitHub claim code는 커밋하지 않는 `.market/owner.env`에서 읽고 하네스·buyer 하위 환경에는 전달하지 않음.
+이 구성은 머신·터널이 계속 실행돼야 하며 호스트 재부팅 뒤 자동 복원과 모든 task의 영구 복구를 보장하지 않음.
+마감 시점의 가용성은 운영 중 계속 확인해야 함.
+
+의존성은 `requirements.txt`에 고정했고 하네스는 실제 Codex CLI의 `gpt-6-luna`, reasoning `medium`을 사용함.
+API 키·개인키·Codex 인증 파일·claim code는 제출하지 않음.
+저장소 루트에서 가상환경을 활성화하고 아래 명령을 사용함.
+
+```bash
+python -m pip install -r submissions/26510358/week-07/requirements.txt
+python -m unittest discover -s submissions/26510358/week-07/tests -v
+python scripts/market_test_week07.py submissions/26510358/week-07
+python scripts/check_week07.py submissions/26510358/week-07 --github SUNGMYEONGGI
+```
+
+마켓 검사에는 설치된 Codex CLI와 기존 로그인이 필요함. 모델 검사를 모의 출력으로 대체해 통과 결과를 만들지 않음.
+현재 환경에 API 키가 없어 AGENTS.md의 실행 검사 생략 규칙을 적용하고 있으며, 기존 CLI 인증 사용에 대한 예외 확인 전에는 공식 검사를 새로 실행하지 않음.
+기존 공식 25/25 결과는 10월 22일 실행 사실로만 제시함.
+코드 탐색·구현·실험·증거 대조·보고서 정리에는 코딩 에이전트의 도움을 받음.
+
+## 제출과 남은 확인
+
+제출 제목은 `[week-07] 26510358`, 대상은 `Q00/ai-agent-engineering-101`의 main임.
+현재 GitHub에 있는 week-07 브랜치 이후 원본 커밋 103개를 변경 없이 Git bundle로 백업하고 복원 가능성을 검증함.
+백업은 `logs/week07-completion-20261025T105223Z/original-unpublished.bundle`이며 기존 ref는 바꾸지 않음.
+기존 163.73MB 로그 blob이 들어 있는 이력은 GitHub의 100MB 제한으로 거절되므로 이력 변경 금지 규칙의 예외 확인 전에는 제출 브랜치를 재작성하지 않음.
+모델 검사와 PR 제출이 완료되지 않은 상태를 전체 과제 완료라고 표시하지 않음.
+
+## 과거 실행·변경 기록
+
+<details>
+<summary>각 당시의 원문 보고서와 운영 기록 펼치기</summary>
+
 # Week 07 myeonggi
 
 ## 설계와 구매자 기억
@@ -463,3 +613,6 @@ GetTask는 취소 가능한 비동기 HTTP 요청을 동기 구매자에서 실�
 마지막 일반 push도 기존 이력의 `market-kit.log` 163.73MB 때문에 GitHub GH001로 거절됨.
 이번 실패의 원문은 같은 디렉터리의 `push-console.log`, 상태는 `push-result.json`에 보존함.
 실서비스 반영과 로컬 커밋은 완료했지만 GitHub 제출 반영은 이 제한으로 미완료이며 로그나 이력을 삭제·재작성하지 않음.
+
+
+</details>
