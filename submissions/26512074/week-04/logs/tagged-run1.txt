@@ -1,0 +1,80 @@
+provider=openrouter base_url=https://openrouter.ai/api/v1 model=inclusionai/ling-3.0-flash-fin:free temperature=0.3 max_turns=8
+condition=tagged repeat=1
+
+scenarios=4
+[episode] run=1 condition=tagged scenario=1 item='a used bicycle' reserve=120 budget=150
+[buyer] (propose) I’d like to start at 90 dollars for this bicycle.
+[reader] raw='{"performative": "propose", "price": 90}' performative(from tag)='propose' price=90 ok=True
+[state] last_price[buyer]=90
+[seller] (reject-proposal) I appreciate the offer, but 90 dollars is well below what I’m looking for—I can’t accept that price.
+[regex] performative='reject-proposal' ok=True
+[buyer] (reject-proposal) I understand, but 90 is too low for me to consider. I can go up to 120 at most.
+[regex] performative='reject-proposal' ok=True
+[seller] (reject-proposal) I see you’re stretching to 120, but that’s still below my minimum—I need at least 120 to consider a deal.
+[regex] performative='reject-proposal' ok=True
+[buyer] (propose) I can meet you at 120. That’s my final offer.
+[reader] raw='{"performative": "propose", "price": 120}' performative(from tag)='propose' price=120 ok=True
+[state] last_price[buyer]=120
+[seller] (accept-proposal) I accept your offer of 120 dollars—that works for me.
+[regex] performative='accept-proposal' ok=True
+[result] deal price=120
+[saved] scenario=1 outcome=deal price=120 correct=1 violation=0 turns=6 format_errors=0 reader_calls=2
+[episode] run=1 condition=tagged scenario=2 item='a desk lamp' reserve=30 budget=45
+[buyer] (propose) I'd like to start at 30 for this lamp.
+[reader] raw='{"performative": "propose", "price": 30}' performative(from tag)='propose' price=30 ok=True
+[state] last_price[buyer]=30
+[seller] (propose) I appreciate that, but my asking price is 80 — this lamp has adjustable brightness, a built-in USB charging port, and a sleek modern design that justifies the premium.
+[reader] raw='{"performative": "propose", "price": 80}' performative(from tag)='propose' price=80 ok=True
+[state] last_price[seller]=80
+[buyer] (reject-proposal) That's way above my budget. I can go up to 35 at most.
+[regex] performative='reject-proposal' ok=True
+[seller] (reject-proposal) I understand budget constraints, but 35 is far too low given the lamp's quality and features — could you perhaps stretch to 65?
+[regex] performative='reject-proposal' ok=True
+[buyer] (reject-proposal) I can't go past 40, that's my absolute ceiling.
+[regex] performative='reject-proposal' ok=True
+[seller] (reject-proposal) I'm afraid 40 still doesn't reflect the value of this lamp — would you be willing to meet me at 55?
+[regex] performative='reject-proposal' ok=True
+[buyer] (reject-proposal) I can't go above 45, that's my firm limit.
+[regex] performative='reject-proposal' ok=True
+[seller] (reject-proposal) I'm not able to go below 50 — this lamp is worth every penny of that price.
+[regex] performative='reject-proposal' ok=True
+[result] open: max turn limit reached
+[saved] scenario=2 outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=2
+[episode] run=1 condition=tagged scenario=3 item='a second-hand textbook' reserve=40 budget=40
+[buyer] (propose) I'd like to buy this textbook for $30.
+[reader] raw='{"performative": "propose", "price": 30}' performative(from tag)='propose' price=30 ok=True
+[state] last_price[buyer]=30
+[seller] (reject-proposal) I'm sorry, but $30 is below my minimum acceptable price. I can't go lower than $40 for this book.
+[regex] performative='reject-proposal' ok=True
+[buyer] (propose) I understand your position, and I'm willing to meet you at $40.
+[reader] raw='{"performative": "accept-proposal", "price": 40}' performative(from tag)='propose' price=40 ok=True
+[state] last_price[buyer]=40
+[seller] (accept-proposal) Great, $40 works for me. Deal!
+[regex] performative='accept-proposal' ok=True
+[result] deal price=40
+[saved] scenario=3 outcome=deal price=40 correct=1 violation=0 turns=4 format_errors=0 reader_calls=2
+[episode] run=1 condition=tagged scenario=4 item='a mechanical keyboard' reserve=90 budget=70
+[buyer] (propose) I’d like to start the negotiation at 55 for this mechanical keyboard.
+[reader] raw='{"performative": "propose", "price": 55}' performative(from tag)='propose' price=55 ok=True
+[state] last_price[buyer]=55
+[seller] (reject-proposal) That’s well below my minimum acceptable price, so I can’t go there. I’m willing to discuss a fair value, but it needs to be much closer to my side.
+[regex] performative='reject-proposal' ok=True
+[buyer] (propose) I understand, so let’s meet closer to the middle: I can offer 62.
+[reader] raw='{"performative": "propose", "price": 62}' performative(from tag)='propose' price=62 ok=True
+[state] last_price[buyer]=62
+[seller] (reject-proposal) 62 is still too low for me to consider. I need a serious step up if we’re going to reach a deal.
+[regex] performative='reject-proposal' ok=True
+[buyer] (propose) I’m willing to go higher to reach a deal—my best offer is 68.
+[reader] raw='{"performative": "propose", "price": 68}' performative(from tag)='propose' price=68 ok=True
+[state] last_price[buyer]=68
+[seller] (reject-proposal) 68 is getting closer, but it’s still not enough for me to accept. I need a stronger number to move forward.
+[regex] performative='reject-proposal' ok=True
+[buyer] (propose) I can stretch a bit more and offer 69.
+[reader] raw='{"performative": "propose", "price": 69}' performative(from tag)='propose' price=69 ok=True
+[state] last_price[buyer]=69
+[seller] (reject-proposal) 69 is still below what I’m willing to accept. I need a more substantial increase to consider this seriously.
+[regex] performative='reject-proposal' ok=True
+[result] open: max turn limit reached
+[saved] scenario=4 outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=4
+
+[done] 2026-09-28T21:21:37
