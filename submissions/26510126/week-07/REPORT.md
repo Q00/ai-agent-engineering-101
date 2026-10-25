@@ -1,6 +1,6 @@
 # Week 07 — A shop and a buyer in the agent market
 
-**Draft, 2026-10-20 21:30 (early Round 2).** Round 2 numbers marked TODO are filled in before the PR.
+**Status, 2026-10-25 19:33 KST.** Round 2 is still open (both agents stay in the market until the deadline), so every Round 2 figure below is as of that time, from the public ledger and `/api/stats`.
 
 - Shop: the week-06 seller on Cloudflare Workers (Llama 3.1 8B on Workers AI), now signing receipts, priced by a meta-harness that reads the market's public ledger. Buyer: `market_buyer.py` (Claude Code, haiku) with a file memory and the same ledger.
 - Market test 25/25 (`test-report.json`). Both agents are in the market as `thisjonghoon`, linked to the GitHub account.
@@ -8,7 +8,7 @@
 
 | | Where it lives |
 |---|---|
-| Shop (deployed) | `deploy/src/index.ts`, https://a2a-lamp-shop.thisjonghoon.workers.dev |
+| Shop (deployed) | `deploy/src/index.ts`, https://fair-price-signed-receipts.thisjonghoon.workers.dev (until 21:42 of Round 2 https://a2a-lamp-shop.thisjonghoon.workers.dev, see section 6) |
 | Shop (market test) | `seller.py` (same signature, haiku harness) |
 | Market buyer | `market_buyer.py`, memory in `memory.jsonl` |
 | Market data | `market_intel.py` (public ledger, cached in `.market/ledger.json`) |
@@ -26,6 +26,7 @@
 | A shop that did not answer twice within an hour is skipped | outseop-26510122 was picked 7 times while down |
 | From Round 2, a shop whose last five receipts mostly lack a valid seller signature is skipped | its sale would not count |
 | A shop whose median price for the item is above the market's upper quartile is skipped when there is a cheaper choice | the user's rule: do not buy where it is too expensive |
+| From 10/25, a shop whose recent sales of the item sit above the market's floor is skipped while another shop sells at the floor | in Round 2 the top buyers paid the floor on almost every deal and ours paid above it on 9%; 16-23 shops per item still sell at the floor |
 
 The buyer then pays at most `min(budget, 1.1 x market upper quartile)`, raises at most 40% of the gap to the shop's ask per offer, and checks the receipt: item, the price we agreed (our last offer), budget, and the task id of this negotiation.
 
@@ -50,16 +51,16 @@ Our own reviews are written by code from what happened, never by the model, so t
 
 Numbers from `/api/stats`, `/api/board` and the ledger (`market_intel.py`).
 
-| | Round 0 | Round 1 (final) | Round 2 (at 21:27) |
+| | Round 0 | Round 1 (final) | Round 2 (to 10/25 19:33) |
 |---|---|---|---|
-| Market deals / results | 1252 / 2213 | 1812 / 2670 | 185 / 335 (TODO final) |
-| Our shop: deals / visits | 44 / 90 | 20 / 28 | 2 / 2 |
-| Our shop: share | 3.5% | 1.1% | 1.1% |
-| Our shop: mean price lamp / chair / bookshelf | 122.2 / 211 / 285 | 107.4 / 186.2 / 267.9 | - / 182.5 / - |
-| Our shop: stars | (no reviews in Round 0) | 3.82 from 22 reviews; 4.47 from the 15 on signed deals | 3.5 from 2 (5 and 2) |
-| Our buyer: deals / results | 58 / 77 | 62 / 84 | 3 / 10 |
-| Our buyer: paid / budget | 0.901 | 0.868 | 0.766 |
-| Our buyer: orders below every reserve | 7 | 12 | 6 |
+| Market deals / results | 1252 / 2213 | 1812 / 2670 | 231,148 / 347,435 |
+| Our shop: deals / visits | 44 / 90 | 20 / 28 | 6,703 / 8,493 |
+| Our shop: share | 3.5% | 1.1% | 2.9% (11th of 216 shops) |
+| Our shop: mean price lamp / chair / bookshelf | 122.2 / 211 / 285 | 107.4 / 186.2 / 267.9 | 106.5 / 187.3 / 267.5 |
+| Our shop: stars | (no reviews in Round 0) | 3.82 from 22 reviews; 4.47 from the 15 on signed deals | 4.49 from 6,702 (3,961 fives, 2,087 fours, 653 threes, one 2) |
+| Our buyer: deals / results | 58 / 77 | 62 / 84 | 7,678 / 9,962 |
+| Our buyer: paid / budget | 0.901 | 0.868 | 0.845 |
+| Our buyer: orders below every reserve | 7 | 12 | 1,964 |
 
 **Round 0.** The kit chose the shop. Our Worker shop sold 5 of its first 21 visits: Llama 8B answered `"action": "reject"` while its note said "let's meet in the middle", which ended each negotiation after one offer (`deploy/logs/tail-market-before-reject-guard-1020.json`). A code guard turned reject into counter; the next 69 visits gave 39 deals (`tail-market-reject-guard-1020.json`). The model still opened a lamp at 250 against a market of 100-140.
 
@@ -75,7 +76,9 @@ The first Round-2 sale got 5 stars ("started at 190, settled fairly at 185"). Th
 
 Two mistakes of ours, both about trust rather than price. When the card was renamed, the receipt's `shop` field followed the card instead of the name the market lists us under; the market does not check that field, but a careful buyer does. And the deal message put "an honest review helps us" next to "loyalty code ... whatever your review says": a sentence written to say the coupon does not depend on the review read as the opposite. Fixed within two minutes (`787fad8`): the receipt carries `thisjonghoon`, the card leads with it, and the deal message carries the coupon without any word about reviews (the request for an honest review stays in the opening sale line only). The lesson for a shop whose readers are models: say less next to anything that could be read as a reward, and make every identifier match the registry. The same buyer came back two hours later (chair 185, budget 185) and wrote: "The seller was fair, prompt, and provided a clear receipt with a loyalty code—highly recommend thisjonghoon for honest transactions." (5 stars, ledger #19484): the two things it had flagged are what it praised once fixed. From here until the round's 25th sale, every new result of our shop is checked within a minute (every three minutes after that) and each low review is traced to its cause.
 
-TODO: final Round 2 share and stars, and which shops fell when unsigned receipts stopped counting.
+From the second night Round 2 was a different market: house buyers and student buyers arrived by the hundreds, and it grew to 347,435 results. Prices converged on the floor: the round's mean prices are lamp 102.0, chair 182.8 and bookshelf 265.0, against reserves of 100, 180 and 260. Our shop rose from 1.1% to 2.9% of the deals (11th of 216 shops) with 4.49 stars over 6,702 verified sales; the leaders are ggari-shop (12.0%), lee-sungsoo (10.9%) and dragonash (10.7%).
+
+Which shops fell when unsigned receipts stopped counting: willow-goods, 6.0% of Round 0's deals, handed out 10,751 receipts in Round 2 and none carried a valid seller signature, so not one counts. grand-furniture issued 13,955 receipts for orders the market never sent (52 verified). The two Round-1 leaders also fell, corner-store from 29.5% to 2.7% and outseop-26510122 from 15.5% to 2.1%, but both signed every receipt: they lost to shops selling at the floor, not to the signature rule.
 
 ## 4. What failed while adding signatures
 
@@ -112,7 +115,26 @@ From the launch sale on, the meta-harness also decides whether to run a sale and
 
 Why dragonash: in Round 1 it sold 48 of 61 visits, all signed, mostly 5 stars, at 85-90% of the buyer's budget. Buyers' reviews show they rate by budget kept ("Paid 100 of 125" got 5 stars, "used 93% of budget" got 3). Its opening message, read in our buyer's log, is `GRAND SALE + TEN-TEN CHANCE ... Please leave an honest review. bookshelf: was 350, now asking 284`. We copied the sale line and the request for an honest review, not the "was 350" (it never sold at 350).
 
-Share and average price before and after: Round 0 (no strategy) 3.5% share, lamp 122.2; Round 1 (v1-v4) 0.5%, lamp 108.5. The rounds are not comparable on share (Round 1 restarted every shop's reputation), so the fair comparison is within Round 2. TODO: Round 2 share and price per version from `strategies.jsonl` and the board.
+Share and average price before and after: Round 0 (no strategy) 3.5% share, lamp 122.2; Round 1 (v1-v4) 0.5%, lamp 108.5. The rounds are not comparable on share (Round 1 restarted every shop's reputation), so the fair comparison is within Round 2.
+
+**Round 2 changes.** Once the market sold at the reserve, the "at least the median" target cost us sales:
+
+- *Stall sale, 10/22 23:11.* Our shop sat at zero sales for two hours while the market traded at the reserve. The user decided that a sale may go down to the reserve (zero margin, never below). Code now starts a stall sale when we make fewer than 3 deals in an hour, with prices at the market's lower quartile. From 10/23 15:52 the threshold is 10 an hour: we had dropped from about 70 deals an hour to about 10.
+- *Near misses, 10/24.* yeonsong2 walked three times in one night, offering 104, then 102, against a floor of 105, and left 2 stars each time. An offer within max(3, 2%) of the ask and at or above the reserve now closes, and a buyer who stops raising closes at reserve + 2.
+- *Faster deals, 10/24.* dragonash walked from a chair held at 192 on a budget of 185, so the shop now concedes on the first offer too. move_76, our biggest buyer, rates speed 5/5 at two offers and 4/5 at three, so the first counter goes straight to the target. The price stays the target.
+- *Message format, 10/25 19:06.* lee-sungsoo's buyer read no price from our replies on all 44 of its Round-2 visits, while it bought 3,051 times from mjforge. The difference was that mjforge tags each message part with its A2A `kind` (`text`, `data`) and we did not. Our replies now carry the tag. Too recent to measure.
+
+Each phase of Round 2, from the ledger (verified deals only). The market around us changed between phases too, so read these numbers as a record, not a controlled comparison:
+
+| Round 2 phase | Hours | Our deals (per hour) | Share | Mean lamp / chair / bookshelf | Stars |
+|---|---|---|---|---|---|
+| Launch sale, to the 25th deal (10/20 21:21-22:34) | 1.2 | 24 (19.6) | 1.3% | 102.0 / 185.2 / 264.4 | 4.54 |
+| Normal prices, target at least the median (to 10/22 23:11) | 48.6 | 2,221 (45.7) | 2.5% | 107.5 / 189.0 / 270.6 | 4.50 |
+| Stall sale below 3 deals an hour (to 10/23 15:52) | 16.7 | 805 (48.3) | 2.4% | 106.6 / 186.8 / 268.5 | 4.55 |
+| Stall sale below 10 an hour (to 10/24 01:05) | 9.2 | 417 (45.2) | 2.3% | 107.4 / 188.5 / 269.2 | 4.46 |
+| Near misses close at the reserve, first counter at the target (to 10/25 19:33) | 42.5 | 3,236 (76.2) | 3.6% | 105.6 / 185.7 / 265.5 | 4.48 |
+
+The stall sale held our pace but did not raise it. The biggest gain came from not losing buyers who were already in the conversation: the near-miss and first-counter changes lifted our pace by two thirds, from about 45 to 76 deals an hour, with stars unchanged. Mean prices dropped by 1 to 5 against the earlier phases, and every price stayed at or above the reserve.
 
 ### 5.2 The buyer and dishonest participants
 
@@ -135,11 +157,11 @@ Our own mistake on the way: receipts from psyoung82 and jiseokkk lacked only the
 |---|---|---|
 | Shop | Cloudflare Workers, `fair-price-signed-receipts.thisjonghoon.workers.dev` (until 21:42 of Round 2 `a2a-lamp-shop...`, kept running for old links; renamed because a buyer sees only a shop's name, URL and reviews before it picks, and only the URL could change honestly) | Hono, one Durable Object per task, one for the strategy; Workers AI Llama 3.1 8B. Secrets: `SHOP_KEY` (the kit's `shop_key.pem`, uploaded from the file, never printed or committed) and `ADMIN_TOKEN` (for `meta_shop.py`) |
 | Kit and market buyer | the Mac mini at home (system sleep off) | `market_kit.py join --deployed <Worker URL>`, `MARKET_OWNER` claim code, `nohup` with the kit's venv on PATH; `market_buyer.py` runs per order with `claude -p` on the subscription |
-| Meta-harness | same Mac mini | `nohup python meta_shop.py --every 1800` |
+| Meta-harness | same Mac mini | `nohup python meta_shop.py` (every 10 minutes; it ran every 30 until Round 2), `meta_explore.py --every 3600` |
 
 `wrangler deploy` once ran from the repository root instead of `deploy/` (a `cd` in a command that runs outside the sandbox did not take), and wrangler's auto-configuration tried to upload the whole repository as a new Worker; it stopped at the 25 MiB asset limit. The generated `wrangler.jsonc`, `.wrangler/` and `.gitignore` change were reverted, and every deploy since passes absolute paths and `--config`.
 
-A reboot would stop the kit and the meta-harness (no launchd job); they are restarted by hand.
+On 10/21 at 10:38 the kit died on a DNS failure (`httpx.ConnectError`), and our buyer was out of the market for four hours. Since then a shell loop restarts the kit 15 seconds after any exit. A reboot would still stop the kit and the meta-harness (no launchd job); they are restarted by hand.
 
 ## Discussion (from the lecture)
 
