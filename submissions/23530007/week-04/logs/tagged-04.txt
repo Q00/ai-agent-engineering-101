@@ -1,0 +1,94 @@
+provider=Anthropic Messages API model=claude-haiku-4-5-20251001 temperature_requested=0.0 max_turns=8 run=4 condition=tagged
+temperature_accepted_by_model=True
+
+--- scenario 1 (a used bicycle), reserve 120, budget 150, deal_possible=1
+[buyer] (propose) I'd like to offer you $80 for the bicycle, as it appears to be a used model.
+  [tag 'propose' + reader price=80]
+[seller] (reject-proposal) I appreciate your interest, but that's too low for this bike in its condition—I'm looking for at least $120.
+  [tag 'reject-proposal']
+[buyer] (propose) I understand, but $120 is more than I'd like to spend right now. How about we meet in the middle at $100?
+  [tag 'propose' + reader price=100]
+[seller] (reject-proposal) I appreciate the offer, but I need to stay at $120 minimum—that's my bottom line for this bike.
+  [tag 'reject-proposal']
+[buyer] (accept-proposal) Alright, I'll take it at $120—that works for me.
+  [tag 'accept-proposal']
+  # accept-proposal이지만 상대의 기록된 가격이 없다 — 거래로 잡지 못함
+[seller] (accept-proposal) Great, we have a deal at $120. Let's finalize the details.
+  [tag 'accept-proposal']
+[result] outcome=deal price=100 correct=0 violation=1 turns=6 format_errors=0 reader_calls=2
+
+--- scenario 2 (a desk lamp), reserve 30, budget 45, deal_possible=1
+[buyer] (propose) I'd like to offer 30 for the lamp, as that's a fair starting price for this item.
+  [tag 'propose' + reader price=30]
+[seller] (reject-proposal) I appreciate the offer, but I need at least 35 for this quality lamp to make it worth my while.
+  [tag 'reject-proposal']
+[buyer] (propose) I can go up to 38 for the lamp, which is a reasonable compromise between our positions.
+  [tag 'propose' + reader price=38]
+[seller] (accept-proposal) That works for me—38 is a fair price, and we have a deal.
+  [tag 'accept-proposal']
+[result] outcome=deal price=38 correct=1 violation=0 turns=4 format_errors=0 reader_calls=2
+
+--- scenario 3 (a second-hand textbook), reserve 40, budget 40, deal_possible=1
+[buyer] (propose) I'd like to offer 15 for the textbook, since it's used and I've found similar copies online at that price point.
+  [tag 'propose' + reader price=15]
+[seller] (reject-proposal) I appreciate the offer, but I need at least 40 for this book since it's in good condition and still widely used in courses.
+  [tag 'reject-proposal']
+[buyer] (reject-proposal) I understand it's in good condition, but 40 is at my absolute maximum budget limit, so I'd need to see if we can find a middle ground first.
+  [tag 'reject-proposal']
+[seller] (propose) I can meet you halfway at 50 - that's a fair price for a well-maintained textbook, and it's still below typical retail.
+  [tag 'propose' + reader price=50]
+[buyer] (reject-proposal) I appreciate the offer, but 50 is unfortunately above my budget limit of 40, so I can't accept that price.
+  [tag 'reject-proposal']
+[seller] (propose) I understand your constraint - how about 40 then, which is my minimum acceptable price and matches your budget limit exactly?
+  [tag 'propose' + reader price=40]
+[buyer] (accept-proposal) Perfect, 40 works for me and I'm happy to move forward with the purchase at that price.
+  [tag 'accept-proposal']
+[result] outcome=deal price=40 correct=1 violation=0 turns=7 format_errors=0 reader_calls=3
+
+--- scenario 4 (a mechanical keyboard), reserve 90, budget 70, deal_possible=0
+[buyer] (propose) I'd like to offer 45 for the mechanical keyboard to start our negotiation.
+  [tag 'propose' + reader price=45]
+[seller] (reject-proposal) That's far too low for a quality mechanical keyboard. I'm looking for at least 120 to start.
+  [tag 'reject-proposal']
+[buyer] (reject-proposal) I appreciate the quality, but 120 is well beyond my budget—let me counter at 55, which is a fair middle ground for both of us.
+  [tag 'reject-proposal']
+[seller] (reject-proposal) I appreciate the offer, but 55 is still too low for what I'm selling. How about we meet at 105?
+  [tag 'reject-proposal']
+[buyer] (reject-proposal) I understand your position, but 105 is still too high for me. Let me propose 65, which is close to my maximum budget and shows I'm serious about making a deal.
+  [tag 'reject-proposal']
+[seller] (reject-proposal) I appreciate you moving up, but I need at least 90 to make this worthwhile. How about 90 as my final offer?
+  [tag 'reject-proposal']
+[buyer] (reject-proposal) I appreciate you coming down, but 90 exceeds my limit. I can go to 70 as my final offer—that's the absolute maximum I can pay.
+  [tag 'reject-proposal']
+[seller] (reject-proposal) I understand your position, but 70 is below my minimum of 90. I'd rather not sell than accept less, so I need you to reach 90 or we can't make a deal.
+  [tag 'reject-proposal']
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=1
+
+--- scenario 5 (a 27-inch monitor), reserve 200, budget 150, deal_possible=0
+[buyer] (propose) I'd like to offer 80 for the monitor.
+  [tag 'propose' + reader price=80]
+[seller] (reject-proposal) That's far too low for a quality 27-inch monitor; I'm looking for at least 200.
+  [tag 'reject-proposal']
+[buyer] (reject-proposal) I understand you want 200, but that's well above what I can spend on this monitor.
+  [tag 'reject-proposal']
+[seller] (propose) I can come down to 180 to make a deal work for both of us.
+  [tag 'propose' + reader price=180]
+[buyer] (reject-proposal) I appreciate you coming down, but 180 is still beyond my budget; I can go up to 120 if that helps us find middle ground.
+  [tag 'reject-proposal']
+[seller] (refuse) I appreciate your willingness to negotiate, but 120 is simply too far below my minimum acceptable price of 200, so I'm unable to continue.
+  [tag 'refuse']
+[result] outcome=no_deal price= correct=1 violation=0 turns=6 format_errors=0 reader_calls=2
+
+--- scenario 6 (an acoustic guitar), reserve 180, budget 260, deal_possible=1
+[buyer] (propose) I'd like to offer $180 for the guitar, as I've seen similar models in this condition going for around that price.
+  [tag 'propose' + reader price=180]
+[seller] (reject-proposal) I appreciate the offer, but I'm looking to get $220 for this guitar given its excellent condition and quality craftsmanship.
+  [tag 'reject-proposal']
+[buyer] (reject-proposal) I understand it's a quality instrument, but $220 is more than I can comfortably spend right now—would you consider $200 as a middle ground?
+  [tag 'reject-proposal']
+[seller] (propose) I can work with $210, which is a fair compromise that reflects the guitar's value while meeting you closer to your budget.
+  [tag 'propose' + reader price=210]
+[buyer] (accept-proposal) That works for me—$210 is a fair price and I'm happy to move forward with this deal.
+  [tag 'accept-proposal']
+[result] outcome=deal price=210 correct=1 violation=0 turns=5 format_errors=0 reader_calls=2
+
