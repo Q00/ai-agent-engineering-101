@@ -105,3 +105,10 @@ Market 검증 피드백은 다음 주문에서 가져올 수 있으므로 가져
 `trade_funnel.py JSONL_PATH [JSONL_PATH ...] --capture-completeness partial --output NEW_REPORT_PATH`로 분석함.
 입력은 원하는 관측 기간의 실제 JSONL 경로로, 출력은 `submissions/26510358/week-07/logs/` 아래 새 파일 경로로 지정함.
 기존 출력 파일은 덮어쓰지 않음. 분석 보고서는 모델 입력이나 가격 변경에 자동으로 연결되지 않음.
+
+`market_audit.py`는 직접 지정한 공개 board·trades·ledger 스냅샷과 자기 seller JSONL을
+오프라인으로 비교함. `--board`, `--trades`, `--ledger`, `--trace`, `--since`, `--until`,
+`--output`을 지정하며 관측 시각은 UTC ISO 8601의 `+00:00` 형식을 사용함.
+출력은 `logs/` 아래 새 경로에 작성하며 덮어쓰지 않음. 누적 거래 순위, 다음 순위까지의
+정적인 차이, 제한된 최근 표본, 로컬 실행 오류를 보여 줌. 거래/방문 비율을 전환율로
+해석하지 않으며 로컬 영수증 발행과 Market의 검증 결과를 구분함.
