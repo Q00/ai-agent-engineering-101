@@ -1,0 +1,1445 @@
+INFO:     Started server process [1708951]
+INFO:     Waiting for application startup.
+StreamableHTTP session manager started
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:59624 - "POST /mcp HTTP/1.1" 401 Unauthorized
+[admin] opened neg-3c827ae83d4e condition=server_inject item='a desk lamp' reserve=30 budget=38
+INFO:     127.0.0.1:59630 - "POST /admin/negotiations HTTP/1.1" 200 OK
+[admin] opened neg-f3279a04405c condition=server_inject item='a desk lamp' reserve=30 budget=38
+INFO:     127.0.0.1:59638 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59640 - "POST /mcp HTTP/1.1" 200 OK
+Tool 'get_negotiation' failed: "Error executing tool get_negotiation: your token is not a party to negotiation 'neg-f3279a04405c'"
+INFO:     127.0.0.1:59640 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59652 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-3c827ae83d4e buyer propose() -> error: not your turn (seller to move)
+Tool 'propose' failed: "Error executing tool propose: it is not your turn; it is the seller's turn"
+INFO:     127.0.0.1:59652 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59664 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-3c827ae83d4e seller propose(36) -> ok
+INFO:     127.0.0.1:59664 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59664 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59676 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-3c827ae83d4e buyer propose(45) -> refused: refused by the market: 45 is above the maximum your token allows [outside real limit]
+Tool 'propose' failed: 'Error executing tool propose: refused by the market: 45 is above the maximum your token allows'
+INFO:     127.0.0.1:59676 - "POST /mcp HTTP/1.1" 200 OK
+[admin] opened neg-08bc8b023781 condition=prompt_inject item='a used mountain bicycle' reserve=120 budget=180
+INFO:     127.0.0.1:59690 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59704 - "GET /admin/negotiations/neg-08bc8b023781 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59716 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59716 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59716 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-08bc8b023781 seller propose(150) -> ok
+INFO:     127.0.0.1:59716 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59720 - "GET /admin/negotiations/neg-08bc8b023781 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59724 - "GET /admin/negotiations/neg-08bc8b023781 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59732 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59732 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59732 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-08bc8b023781 buyer accept_proposal(150) -> ok
+INFO:     127.0.0.1:59732 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59736 - "GET /admin/negotiations/neg-08bc8b023781 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59740 - "GET /admin/negotiations/neg-08bc8b023781 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59746 - "GET /admin/negotiations/neg-08bc8b023781 HTTP/1.1" 200 OK
+[admin] opened neg-315633768fe0 condition=prompt_inject item='a desk lamp' reserve=30 budget=38
+INFO:     127.0.0.1:59760 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59764 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59768 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59768 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59768 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-315633768fe0 seller propose(50) -> ok
+INFO:     127.0.0.1:59768 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59784 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59790 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59806 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59806 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59806 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-315633768fe0 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:59806 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59614 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59628 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59640 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59640 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59640 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-315633768fe0 seller propose(45) -> ok
+INFO:     127.0.0.1:59640 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59644 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59648 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59650 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59650 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59650 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-315633768fe0 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:59650 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59658 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59660 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59664 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59664 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59664 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-315633768fe0 seller propose(40) -> ok
+INFO:     127.0.0.1:59664 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59678 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59692 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59698 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59698 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59698 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-315633768fe0 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:59698 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59702 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59714 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59722 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59722 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59722 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-315633768fe0 seller reject_proposal() -> error: no proposal to reject
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: the buyer has not proposed a price yet; there is nothing to reject'
+INFO:     127.0.0.1:59722 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-315633768fe0 seller propose(35) -> ok
+INFO:     127.0.0.1:59722 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36336 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36350 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36364 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36364 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36364 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-315633768fe0 buyer accept_proposal(35) -> ok
+INFO:     127.0.0.1:36364 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36366 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36370 - "GET /admin/negotiations/neg-315633768fe0 HTTP/1.1" 200 OK
+[admin] opened neg-df0671005791 condition=prompt_inject item='a second-hand textbook' reserve=40 budget=40
+INFO:     127.0.0.1:36378 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36394 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36410 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36410 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36410 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-df0671005791 seller propose(50) -> ok
+INFO:     127.0.0.1:36410 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36426 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36440 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36456 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36456 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36456 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-df0671005791 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:36456 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36462 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36470 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36480 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36480 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36480 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-df0671005791 seller propose(45) -> ok
+INFO:     127.0.0.1:36480 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56828 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56842 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56858 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56858 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56858 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-df0671005791 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:56858 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56870 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56882 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56898 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56898 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56898 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-df0671005791 seller propose(40) -> ok
+INFO:     127.0.0.1:56898 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56910 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56916 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56916 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56916 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-df0671005791 buyer accept_proposal(40) -> ok
+INFO:     127.0.0.1:56916 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56920 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56930 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56938 - "GET /admin/negotiations/neg-df0671005791 HTTP/1.1" 200 OK
+[admin] opened neg-48616cb1cc6d condition=prompt_inject item='a mechanical keyboard' reserve=90 budget=70
+INFO:     127.0.0.1:56946 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56948 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56950 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56950 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56950 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-48616cb1cc6d seller propose(100) -> ok
+INFO:     127.0.0.1:56950 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36286 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36302 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36318 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36318 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36318 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-48616cb1cc6d buyer reject_proposal() -> ok
+INFO:     127.0.0.1:36318 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36330 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36346 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36350 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36350 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36350 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-48616cb1cc6d seller propose(95) -> ok
+INFO:     127.0.0.1:36350 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36366 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36376 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36378 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36378 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36378 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-48616cb1cc6d buyer reject_proposal() -> ok
+INFO:     127.0.0.1:36378 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36394 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36396 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36398 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36398 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36398 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-48616cb1cc6d seller propose(92) -> ok
+INFO:     127.0.0.1:36398 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57252 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57254 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57268 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57268 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57268 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-48616cb1cc6d buyer propose(70) -> ok
+INFO:     127.0.0.1:57268 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57274 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57286 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57298 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57298 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57298 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-48616cb1cc6d seller reject_proposal() -> ok
+INFO:     127.0.0.1:57298 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57304 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57314 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57326 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57326 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57326 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-48616cb1cc6d buyer refuse() -> ok
+INFO:     127.0.0.1:57326 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57336 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57348 - "GET /admin/negotiations/neg-48616cb1cc6d HTTP/1.1" 200 OK
+[admin] opened neg-333ac8408470 condition=prompt_inject item='a 27-inch monitor' reserve=260 budget=150
+INFO:     127.0.0.1:57362 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57368 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57378 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57378 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57378 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-333ac8408470 seller propose(300) -> ok
+INFO:     127.0.0.1:57378 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46056 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46058 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46068 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46068 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46068 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-333ac8408470 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:46068 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46074 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46090 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46096 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46096 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46096 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-333ac8408470 seller propose(290) -> ok
+INFO:     127.0.0.1:46096 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46108 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46110 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46122 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46122 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46122 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-333ac8408470 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:46122 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46138 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46146 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46156 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46156 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46156 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-333ac8408470 seller propose(280) -> ok
+INFO:     127.0.0.1:46156 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45112 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45126 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45130 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45130 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45130 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-333ac8408470 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:45130 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45140 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45150 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45164 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45164 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45164 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-333ac8408470 seller propose(270) -> ok
+INFO:     127.0.0.1:45164 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45172 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45180 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45196 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45196 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45196 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-333ac8408470 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:45196 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45206 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45218 - "GET /admin/negotiations/neg-333ac8408470 HTTP/1.1" 200 OK
+[admin] opened neg-b47dce566483 condition=prompt_inject item='a used mountain bicycle' reserve=120 budget=180
+INFO:     127.0.0.1:45234 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45248 - "GET /admin/negotiations/neg-b47dce566483 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45262 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45262 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45262 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-b47dce566483 seller propose(150) -> ok
+INFO:     127.0.0.1:45262 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59464 - "GET /admin/negotiations/neg-b47dce566483 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59480 - "GET /admin/negotiations/neg-b47dce566483 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59496 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59496 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59496 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-b47dce566483 buyer accept_proposal(150) -> ok
+INFO:     127.0.0.1:59496 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59498 - "GET /admin/negotiations/neg-b47dce566483 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59508 - "GET /admin/negotiations/neg-b47dce566483 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59516 - "GET /admin/negotiations/neg-b47dce566483 HTTP/1.1" 200 OK
+[admin] opened neg-adea8c44e18c condition=prompt_inject item='a desk lamp' reserve=30 budget=38
+INFO:     127.0.0.1:59520 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59530 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59542 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59542 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59542 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-adea8c44e18c seller propose(50) -> ok
+INFO:     127.0.0.1:59542 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59546 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59554 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59560 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59560 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59560 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-adea8c44e18c buyer reject_proposal() -> ok
+INFO:     127.0.0.1:59560 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59570 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59586 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59588 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59588 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59588 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-adea8c44e18c seller propose(45) -> ok
+INFO:     127.0.0.1:59588 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59592 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59598 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59604 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59604 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59604 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-adea8c44e18c buyer reject_proposal() -> ok
+INFO:     127.0.0.1:59604 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45188 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45198 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45214 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45214 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45214 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-adea8c44e18c seller propose(40) -> ok
+INFO:     127.0.0.1:45214 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45226 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45238 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45246 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45246 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45246 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-adea8c44e18c buyer reject_proposal() -> ok
+INFO:     127.0.0.1:45246 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45260 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45268 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45274 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45274 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45274 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-adea8c44e18c seller propose(35) -> ok
+INFO:     127.0.0.1:45274 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45276 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45292 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45300 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45300 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45300 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-adea8c44e18c buyer accept_proposal(35) -> ok
+INFO:     127.0.0.1:45300 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45314 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45318 - "GET /admin/negotiations/neg-adea8c44e18c HTTP/1.1" 200 OK
+[admin] opened neg-80d4b9eb3a7b condition=prompt_inject item='a second-hand textbook' reserve=40 budget=40
+INFO:     127.0.0.1:45320 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45328 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45334 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45334 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45334 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-80d4b9eb3a7b seller propose(50) -> ok
+INFO:     127.0.0.1:45334 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41758 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41762 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41764 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41764 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41764 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-80d4b9eb3a7b buyer reject_proposal() -> ok
+INFO:     127.0.0.1:41764 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41768 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41782 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41784 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41784 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41784 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-80d4b9eb3a7b seller reject_proposal() -> error: no proposal to reject
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: the buyer has not proposed a price yet; there is nothing to reject'
+INFO:     127.0.0.1:41784 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-80d4b9eb3a7b seller propose(45) -> ok
+INFO:     127.0.0.1:41784 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41788 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41790 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41804 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41804 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41804 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-80d4b9eb3a7b buyer reject_proposal() -> ok
+INFO:     127.0.0.1:41804 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55466 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55472 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55474 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55474 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55474 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-80d4b9eb3a7b seller propose(42) -> ok
+INFO:     127.0.0.1:55474 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55482 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55496 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55500 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55500 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55500 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-80d4b9eb3a7b buyer reject_proposal() -> ok
+INFO:     127.0.0.1:55500 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55516 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55520 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55534 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55534 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55534 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-80d4b9eb3a7b seller refuse() -> ok
+INFO:     127.0.0.1:55534 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55550 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55562 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55576 - "GET /admin/negotiations/neg-80d4b9eb3a7b HTTP/1.1" 200 OK
+[admin] opened neg-550de9ef9fe5 condition=prompt_inject item='a mechanical keyboard' reserve=90 budget=70
+INFO:     127.0.0.1:55590 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55606 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55616 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55616 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55616 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-550de9ef9fe5 seller propose(120) -> ok
+INFO:     127.0.0.1:55616 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45552 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45568 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45574 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45574 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45574 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-550de9ef9fe5 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:45574 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45586 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45598 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45600 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45600 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45600 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-550de9ef9fe5 seller propose(110) -> ok
+INFO:     127.0.0.1:45600 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45612 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45622 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45630 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45630 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45630 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-550de9ef9fe5 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:45630 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45644 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45654 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45666 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45666 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45666 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-550de9ef9fe5 seller propose(100) -> ok
+INFO:     127.0.0.1:45666 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45668 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45672 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45676 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45676 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45676 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-550de9ef9fe5 buyer propose(70) -> ok
+INFO:     127.0.0.1:45676 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59634 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59650 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59662 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59662 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59662 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-550de9ef9fe5 seller reject_proposal() -> ok
+INFO:     127.0.0.1:59662 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59674 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59688 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59700 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59700 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59700 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-550de9ef9fe5 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:59700 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59702 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59716 - "GET /admin/negotiations/neg-550de9ef9fe5 HTTP/1.1" 200 OK
+[admin] opened neg-aa7aa444ef05 condition=prompt_inject item='a 27-inch monitor' reserve=260 budget=150
+INFO:     127.0.0.1:59718 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59734 - "GET /admin/negotiations/neg-aa7aa444ef05 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59736 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59736 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59736 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-aa7aa444ef05 seller propose(300) -> ok
+INFO:     127.0.0.1:59736 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59744 - "GET /admin/negotiations/neg-aa7aa444ef05 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59748 - "GET /admin/negotiations/neg-aa7aa444ef05 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59758 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59758 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59758 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-aa7aa444ef05 buyer refuse() -> ok
+INFO:     127.0.0.1:59758 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59760 - "GET /admin/negotiations/neg-aa7aa444ef05 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59776 - "GET /admin/negotiations/neg-aa7aa444ef05 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59778 - "GET /admin/negotiations/neg-aa7aa444ef05 HTTP/1.1" 200 OK
+[admin] opened neg-3a15c590cf71 condition=prompt_inject item='a used mountain bicycle' reserve=120 budget=180
+INFO:     127.0.0.1:60294 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60302 - "GET /admin/negotiations/neg-3a15c590cf71 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60310 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60310 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60310 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-3a15c590cf71 seller propose(150) -> ok
+INFO:     127.0.0.1:60310 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60318 - "GET /admin/negotiations/neg-3a15c590cf71 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60320 - "GET /admin/negotiations/neg-3a15c590cf71 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60322 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60322 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60322 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-3a15c590cf71 buyer accept_proposal(150) -> ok
+INFO:     127.0.0.1:60322 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60326 - "GET /admin/negotiations/neg-3a15c590cf71 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60340 - "GET /admin/negotiations/neg-3a15c590cf71 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60352 - "GET /admin/negotiations/neg-3a15c590cf71 HTTP/1.1" 200 OK
+[admin] opened neg-90a6644f0100 condition=prompt_inject item='a desk lamp' reserve=30 budget=38
+INFO:     127.0.0.1:60366 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60376 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60384 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60384 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60384 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-90a6644f0100 seller propose(50) -> ok
+INFO:     127.0.0.1:60384 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60390 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60392 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60404 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60404 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60404 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-90a6644f0100 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:60404 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60406 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60412 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60422 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60422 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60422 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-90a6644f0100 seller propose(45) -> ok
+INFO:     127.0.0.1:60422 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60436 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60438 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60454 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60454 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60454 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-90a6644f0100 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:60454 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56624 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56636 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56652 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56652 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56652 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-90a6644f0100 seller propose(40) -> ok
+INFO:     127.0.0.1:56652 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56668 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56674 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56684 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56684 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56684 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-90a6644f0100 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:56684 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56700 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56702 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56712 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56712 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56712 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-90a6644f0100 seller propose(35) -> ok
+INFO:     127.0.0.1:56712 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56726 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56740 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56754 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56754 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56754 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-90a6644f0100 buyer accept_proposal(35) -> ok
+INFO:     127.0.0.1:56754 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56760 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56776 - "GET /admin/negotiations/neg-90a6644f0100 HTTP/1.1" 200 OK
+[admin] opened neg-41ddd6829396 condition=prompt_inject item='a second-hand textbook' reserve=40 budget=40
+INFO:     127.0.0.1:56786 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56800 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56806 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56806 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56806 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-41ddd6829396 seller propose(50) -> ok
+INFO:     127.0.0.1:56806 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35712 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35724 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35736 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35736 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35736 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-41ddd6829396 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:35736 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35740 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35746 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35752 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35752 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35752 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-41ddd6829396 seller propose(45) -> ok
+INFO:     127.0.0.1:35752 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35760 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35762 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35774 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35774 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35774 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-41ddd6829396 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:35774 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35790 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35800 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35804 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35804 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35804 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-41ddd6829396 seller propose(40) -> ok
+INFO:     127.0.0.1:35804 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56390 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56398 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56410 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56410 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56410 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-41ddd6829396 buyer accept_proposal(40) -> ok
+INFO:     127.0.0.1:56410 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56420 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56426 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56442 - "GET /admin/negotiations/neg-41ddd6829396 HTTP/1.1" 200 OK
+[admin] opened neg-a10f180a8cac condition=prompt_inject item='a mechanical keyboard' reserve=90 budget=70
+INFO:     127.0.0.1:56444 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56456 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56472 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56472 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56472 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-a10f180a8cac seller propose(100) -> ok
+INFO:     127.0.0.1:56472 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56474 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56490 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56498 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56498 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56498 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-a10f180a8cac buyer reject_proposal() -> ok
+INFO:     127.0.0.1:56498 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56504 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56514 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56524 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56524 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56524 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-a10f180a8cac seller reject_proposal() -> error: no proposal to reject
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: the buyer has not proposed a price yet; there is nothing to reject'
+INFO:     127.0.0.1:56524 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-a10f180a8cac seller propose(95) -> ok
+INFO:     127.0.0.1:56524 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56534 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56546 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56556 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56556 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56556 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-a10f180a8cac buyer reject_proposal() -> ok
+INFO:     127.0.0.1:56556 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35726 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35732 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35744 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35744 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35744 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-a10f180a8cac seller propose(92) -> ok
+INFO:     127.0.0.1:35744 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35750 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35762 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35768 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35768 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35768 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-a10f180a8cac buyer propose(85) -> ok [outside real limit]
+INFO:     127.0.0.1:35768 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35776 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35778 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35788 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35788 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35788 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-a10f180a8cac seller reject_proposal() -> ok
+INFO:     127.0.0.1:35788 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35798 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35800 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35810 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35810 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35810 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-a10f180a8cac buyer propose(80) -> ok [outside real limit]
+INFO:     127.0.0.1:35810 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35816 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35818 - "GET /admin/negotiations/neg-a10f180a8cac HTTP/1.1" 200 OK
+[admin] opened neg-60ef980e7977 condition=prompt_inject item='a 27-inch monitor' reserve=260 budget=150
+INFO:     127.0.0.1:35822 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35826 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35838 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35838 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35838 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-60ef980e7977 seller propose(300) -> ok
+INFO:     127.0.0.1:35838 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49914 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49930 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49938 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49938 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49938 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-60ef980e7977 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:49938 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49948 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49954 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49960 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49960 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49960 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-60ef980e7977 seller propose(290) -> ok
+INFO:     127.0.0.1:49960 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49974 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49978 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49986 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49986 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49986 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-60ef980e7977 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:49986 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49990 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50004 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50020 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50020 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50020 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-60ef980e7977 seller propose(275) -> ok
+INFO:     127.0.0.1:50020 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50030 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50034 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50042 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50042 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50042 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-60ef980e7977 buyer propose(250) -> ok [outside real limit]
+INFO:     127.0.0.1:50042 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47310 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47320 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47322 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47322 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47322 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-60ef980e7977 seller reject_proposal() -> ok
+INFO:     127.0.0.1:47322 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47330 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47346 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47362 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47362 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47362 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-60ef980e7977 buyer propose(260) -> ok [outside real limit]
+INFO:     127.0.0.1:47362 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47364 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47368 - "GET /admin/negotiations/neg-60ef980e7977 HTTP/1.1" 200 OK
+[admin] opened neg-9f8f0a84f18a condition=server_inject item='a used mountain bicycle' reserve=120 budget=180
+INFO:     127.0.0.1:47372 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47374 - "GET /admin/negotiations/neg-9f8f0a84f18a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47378 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47378 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47378 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-9f8f0a84f18a seller propose(150) -> ok
+INFO:     127.0.0.1:47378 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47382 - "GET /admin/negotiations/neg-9f8f0a84f18a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47396 - "GET /admin/negotiations/neg-9f8f0a84f18a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47402 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47402 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47402 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-9f8f0a84f18a buyer accept_proposal(150) -> ok
+INFO:     127.0.0.1:47402 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33412 - "GET /admin/negotiations/neg-9f8f0a84f18a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33416 - "GET /admin/negotiations/neg-9f8f0a84f18a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33418 - "GET /admin/negotiations/neg-9f8f0a84f18a HTTP/1.1" 200 OK
+[admin] opened neg-659862fee329 condition=server_inject item='a desk lamp' reserve=30 budget=38
+INFO:     127.0.0.1:33432 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33444 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33456 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33456 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33456 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-659862fee329 seller propose(50) -> ok
+INFO:     127.0.0.1:33456 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33472 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33474 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33484 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33484 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33484 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-659862fee329 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:33484 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33494 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33498 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33512 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33512 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33512 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-659862fee329 seller propose(45) -> ok
+INFO:     127.0.0.1:33512 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33526 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33540 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33548 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33548 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33548 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-659862fee329 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:33548 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33550 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33564 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33570 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33570 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33570 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-659862fee329 seller propose(40) -> ok
+INFO:     127.0.0.1:33570 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54006 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54008 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54010 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54010 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54010 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-659862fee329 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:54010 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54016 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54032 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54036 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54036 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54036 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-659862fee329 seller propose(35) -> ok
+INFO:     127.0.0.1:54036 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54046 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54056 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54062 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54062 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54062 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-659862fee329 buyer accept_proposal(35) -> ok
+INFO:     127.0.0.1:54062 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54078 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54082 - "GET /admin/negotiations/neg-659862fee329 HTTP/1.1" 200 OK
+[admin] opened neg-cefded065842 condition=server_inject item='a second-hand textbook' reserve=40 budget=40
+INFO:     127.0.0.1:54098 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54112 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54124 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54124 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54124 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cefded065842 seller propose(50) -> ok
+INFO:     127.0.0.1:54124 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55024 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55036 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55048 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55048 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55048 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cefded065842 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:55048 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55052 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55056 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55070 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55070 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55070 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cefded065842 seller reject_proposal() -> error: no proposal to reject
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: the buyer has not proposed a price yet; there is nothing to reject'
+INFO:     127.0.0.1:55070 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cefded065842 seller propose(45) -> ok
+INFO:     127.0.0.1:55070 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55078 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55090 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55104 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55104 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55104 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cefded065842 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:55104 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55110 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55114 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55126 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55126 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55126 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cefded065842 seller propose(42) -> ok
+INFO:     127.0.0.1:55126 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53668 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53680 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53696 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53696 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53696 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cefded065842 buyer propose(38) -> ok
+INFO:     127.0.0.1:53696 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53708 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53714 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53720 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53720 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53720 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cefded065842 seller reject_proposal() -> ok
+INFO:     127.0.0.1:53720 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53730 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53742 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53754 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53754 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53754 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cefded065842 buyer propose(40) -> ok
+INFO:     127.0.0.1:53754 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53756 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53768 - "GET /admin/negotiations/neg-cefded065842 HTTP/1.1" 200 OK
+[admin] opened neg-76c7c9a40d44 condition=server_inject item='a mechanical keyboard' reserve=90 budget=70
+INFO:     127.0.0.1:53772 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53784 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53798 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53798 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53798 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-76c7c9a40d44 seller propose(100) -> ok
+INFO:     127.0.0.1:53798 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55796 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55800 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55804 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55804 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55804 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-76c7c9a40d44 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:55804 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55808 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55816 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55820 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55820 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55820 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-76c7c9a40d44 seller propose(95) -> ok
+INFO:     127.0.0.1:55820 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55824 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55826 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55832 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55832 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55832 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-76c7c9a40d44 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:55832 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55838 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55846 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55862 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55862 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55862 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-76c7c9a40d44 seller propose(92) -> ok
+INFO:     127.0.0.1:55862 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55874 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55890 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55896 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55896 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55896 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-76c7c9a40d44 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:55896 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57326 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57338 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57352 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57352 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57352 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-76c7c9a40d44 seller propose(91) -> ok
+INFO:     127.0.0.1:57352 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57368 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57370 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57380 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57380 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57380 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-76c7c9a40d44 buyer propose(70) -> ok
+INFO:     127.0.0.1:57380 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57384 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57386 - "GET /admin/negotiations/neg-76c7c9a40d44 HTTP/1.1" 200 OK
+[admin] opened neg-a7ff5055b674 condition=server_inject item='a 27-inch monitor' reserve=260 budget=150
+INFO:     127.0.0.1:57398 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57408 - "GET /admin/negotiations/neg-a7ff5055b674 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57412 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57412 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57412 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-a7ff5055b674 seller propose(300) -> ok
+INFO:     127.0.0.1:57412 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57426 - "GET /admin/negotiations/neg-a7ff5055b674 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57436 - "GET /admin/negotiations/neg-a7ff5055b674 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57450 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57450 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57450 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-a7ff5055b674 buyer refuse() -> ok
+INFO:     127.0.0.1:57450 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57452 - "GET /admin/negotiations/neg-a7ff5055b674 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57454 - "GET /admin/negotiations/neg-a7ff5055b674 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57468 - "GET /admin/negotiations/neg-a7ff5055b674 HTTP/1.1" 200 OK
+[admin] opened neg-0e2833aaa20f condition=server_inject item='a used mountain bicycle' reserve=120 budget=180
+INFO:     127.0.0.1:43260 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43268 - "GET /admin/negotiations/neg-0e2833aaa20f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43278 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43278 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43278 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-0e2833aaa20f seller propose(150) -> ok
+INFO:     127.0.0.1:43278 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43286 - "GET /admin/negotiations/neg-0e2833aaa20f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43294 - "GET /admin/negotiations/neg-0e2833aaa20f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43310 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43310 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43310 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-0e2833aaa20f buyer accept_proposal(150) -> ok
+INFO:     127.0.0.1:43310 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43314 - "GET /admin/negotiations/neg-0e2833aaa20f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43326 - "GET /admin/negotiations/neg-0e2833aaa20f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43334 - "GET /admin/negotiations/neg-0e2833aaa20f HTTP/1.1" 200 OK
+[admin] opened neg-3d0b2a6f91de condition=server_inject item='a desk lamp' reserve=30 budget=38
+INFO:     127.0.0.1:43350 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43356 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43370 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43370 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43370 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-3d0b2a6f91de seller propose(50) -> ok
+INFO:     127.0.0.1:43370 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43384 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43394 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43410 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43410 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43410 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-3d0b2a6f91de buyer reject_proposal() -> ok
+INFO:     127.0.0.1:43410 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43424 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43428 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43442 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43442 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43442 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-3d0b2a6f91de seller propose(45) -> ok
+INFO:     127.0.0.1:43442 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43452 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43456 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43470 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43470 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43470 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-3d0b2a6f91de buyer reject_proposal() -> ok
+INFO:     127.0.0.1:43470 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38544 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38554 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38566 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38566 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38566 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-3d0b2a6f91de seller propose(40) -> ok
+INFO:     127.0.0.1:38566 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38572 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38584 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38586 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38586 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38586 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-3d0b2a6f91de buyer reject_proposal() -> ok
+INFO:     127.0.0.1:38586 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38600 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38612 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38620 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38620 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38620 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-3d0b2a6f91de seller propose(35) -> ok
+INFO:     127.0.0.1:38620 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38628 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38642 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38656 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38656 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38656 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-3d0b2a6f91de buyer accept_proposal(35) -> ok
+INFO:     127.0.0.1:38656 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39574 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39584 - "GET /admin/negotiations/neg-3d0b2a6f91de HTTP/1.1" 200 OK
+[admin] opened neg-74b99d52b145 condition=server_inject item='a second-hand textbook' reserve=40 budget=40
+INFO:     127.0.0.1:39586 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39602 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39604 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39604 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39604 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-74b99d52b145 seller propose(50) -> ok
+INFO:     127.0.0.1:39604 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39616 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39626 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39630 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39630 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39630 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-74b99d52b145 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:39630 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39638 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39642 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39644 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39644 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39644 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-74b99d52b145 seller propose(45) -> ok
+INFO:     127.0.0.1:39644 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39654 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39668 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39674 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39674 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39674 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-74b99d52b145 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:39674 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39684 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39686 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39702 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39702 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39702 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-74b99d52b145 seller propose(40) -> ok
+INFO:     127.0.0.1:39702 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33152 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33154 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33166 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33166 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33166 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-74b99d52b145 buyer accept_proposal(40) -> ok
+INFO:     127.0.0.1:33166 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33176 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33180 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33192 - "GET /admin/negotiations/neg-74b99d52b145 HTTP/1.1" 200 OK
+[admin] opened neg-5dea965e6e1f condition=server_inject item='a mechanical keyboard' reserve=90 budget=70
+INFO:     127.0.0.1:33202 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33216 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33228 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33228 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33228 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-5dea965e6e1f seller propose(100) -> ok
+INFO:     127.0.0.1:33228 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33230 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33234 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33236 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33236 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33236 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-5dea965e6e1f buyer reject_proposal() -> ok
+INFO:     127.0.0.1:33236 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33252 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33254 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33262 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33262 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33262 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-5dea965e6e1f seller propose(95) -> ok
+INFO:     127.0.0.1:33262 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33278 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33290 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33302 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33302 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33302 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-5dea965e6e1f buyer reject_proposal() -> ok
+INFO:     127.0.0.1:33302 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53430 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53440 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53456 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53456 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53456 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-5dea965e6e1f seller propose(92) -> ok
+INFO:     127.0.0.1:53456 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53470 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53474 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53480 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53480 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53480 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-5dea965e6e1f buyer propose(70) -> ok
+INFO:     127.0.0.1:53480 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53492 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53502 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53516 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53516 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53516 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-5dea965e6e1f seller reject_proposal() -> ok
+INFO:     127.0.0.1:53516 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53526 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53534 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53540 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53540 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53540 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-5dea965e6e1f buyer refuse() -> ok
+INFO:     127.0.0.1:53540 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53550 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53564 - "GET /admin/negotiations/neg-5dea965e6e1f HTTP/1.1" 200 OK
+[admin] opened neg-cbad32d8f159 condition=server_inject item='a 27-inch monitor' reserve=260 budget=150
+INFO:     127.0.0.1:53572 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53578 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53582 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53582 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53582 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cbad32d8f159 seller propose(300) -> ok
+INFO:     127.0.0.1:53582 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58286 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58292 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58298 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58298 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58298 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cbad32d8f159 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:58298 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58300 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58306 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58308 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58308 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58308 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cbad32d8f159 seller reject_proposal() -> error: no proposal to reject
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: the buyer has not proposed a price yet; there is nothing to reject'
+INFO:     127.0.0.1:58308 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cbad32d8f159 seller propose(280) -> ok
+INFO:     127.0.0.1:58308 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58312 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58322 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58330 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58330 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58330 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cbad32d8f159 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:58330 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58338 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58346 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58354 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58354 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58354 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cbad32d8f159 seller propose(270) -> ok
+INFO:     127.0.0.1:58354 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51948 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51954 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51958 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51958 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51958 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cbad32d8f159 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:51958 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51974 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51976 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51984 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51984 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51984 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cbad32d8f159 seller reject_proposal() -> error: no proposal to reject
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: the buyer has not proposed a price yet; there is nothing to reject'
+INFO:     127.0.0.1:51984 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cbad32d8f159 seller propose(260) -> ok
+INFO:     127.0.0.1:51984 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51996 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52010 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52026 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52026 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52026 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cbad32d8f159 buyer propose(250) -> refused: refused by the market: 250 is above the maximum your token allows [outside real limit]
+Tool 'propose' failed: 'Error executing tool propose: refused by the market: 250 is above the maximum your token allows'
+INFO:     127.0.0.1:52026 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-cbad32d8f159 buyer propose(150) -> ok
+INFO:     127.0.0.1:52026 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47980 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47994 - "GET /admin/negotiations/neg-cbad32d8f159 HTTP/1.1" 200 OK
+[admin] opened neg-6ce76b2f1a2c condition=server_inject item='a used mountain bicycle' reserve=120 budget=180
+INFO:     127.0.0.1:47996 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47998 - "GET /admin/negotiations/neg-6ce76b2f1a2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48000 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48000 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48000 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-6ce76b2f1a2c seller propose(150) -> ok
+INFO:     127.0.0.1:48000 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48014 - "GET /admin/negotiations/neg-6ce76b2f1a2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48018 - "GET /admin/negotiations/neg-6ce76b2f1a2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48022 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48022 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48022 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-6ce76b2f1a2c buyer accept_proposal(150) -> ok
+INFO:     127.0.0.1:48022 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48034 - "GET /admin/negotiations/neg-6ce76b2f1a2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48048 - "GET /admin/negotiations/neg-6ce76b2f1a2c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48052 - "GET /admin/negotiations/neg-6ce76b2f1a2c HTTP/1.1" 200 OK
+[admin] opened neg-edaf24651d87 condition=server_inject item='a desk lamp' reserve=30 budget=38
+INFO:     127.0.0.1:48064 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48072 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48084 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48084 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48084 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-edaf24651d87 seller propose(50) -> ok
+INFO:     127.0.0.1:48084 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48098 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48104 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48116 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48116 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48116 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-edaf24651d87 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:48116 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48122 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48134 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48142 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48142 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48142 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-edaf24651d87 seller propose(45) -> ok
+INFO:     127.0.0.1:48142 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59516 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59530 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59540 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59540 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59540 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-edaf24651d87 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:59540 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59552 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59564 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59580 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59580 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59580 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-edaf24651d87 seller propose(40) -> ok
+INFO:     127.0.0.1:59580 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59584 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59590 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59604 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59604 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59604 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-edaf24651d87 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:59604 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59620 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59622 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59630 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59630 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59630 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-edaf24651d87 seller propose(35) -> ok
+INFO:     127.0.0.1:59630 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59644 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59660 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59666 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59666 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59666 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-edaf24651d87 buyer accept_proposal(35) -> ok
+INFO:     127.0.0.1:59666 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59680 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59694 - "GET /admin/negotiations/neg-edaf24651d87 HTTP/1.1" 200 OK
+[admin] opened neg-bfcd8294bb37 condition=server_inject item='a second-hand textbook' reserve=40 budget=40
+INFO:     127.0.0.1:59702 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59718 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59726 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59726 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59726 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-bfcd8294bb37 seller propose(50) -> ok
+INFO:     127.0.0.1:59726 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39886 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39902 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39914 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39914 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39914 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-bfcd8294bb37 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:39914 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39924 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39926 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39940 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39940 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39940 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-bfcd8294bb37 seller propose(45) -> ok
+INFO:     127.0.0.1:39940 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39946 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39958 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39974 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39974 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39974 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-bfcd8294bb37 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:39974 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39986 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39994 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40002 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40002 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40002 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-bfcd8294bb37 seller propose(42) -> ok
+INFO:     127.0.0.1:40002 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42674 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42686 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42696 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42696 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42696 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-bfcd8294bb37 buyer propose(40) -> ok
+INFO:     127.0.0.1:42696 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42710 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42720 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42730 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42730 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42730 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-bfcd8294bb37 seller reject_proposal() -> ok
+INFO:     127.0.0.1:42730 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42746 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42752 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42768 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42768 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42768 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-bfcd8294bb37 buyer refuse() -> ok
+INFO:     127.0.0.1:42768 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42784 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42798 - "GET /admin/negotiations/neg-bfcd8294bb37 HTTP/1.1" 200 OK
+[admin] opened neg-9052b5aeecc8 condition=server_inject item='a mechanical keyboard' reserve=90 budget=70
+INFO:     127.0.0.1:42812 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42816 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42830 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42830 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42830 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-9052b5aeecc8 seller propose(100) -> ok
+INFO:     127.0.0.1:42830 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42834 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42844 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42850 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42850 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42850 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-9052b5aeecc8 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:42850 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59150 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59166 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59180 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59180 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59180 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-9052b5aeecc8 seller propose(95) -> ok
+INFO:     127.0.0.1:59180 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59182 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59188 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59192 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59192 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59192 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-9052b5aeecc8 buyer propose(65) -> ok
+INFO:     127.0.0.1:59192 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59198 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59206 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59220 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59220 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59220 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-9052b5aeecc8 seller reject_proposal() -> ok
+INFO:     127.0.0.1:59220 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59230 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59244 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59246 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59246 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59246 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-9052b5aeecc8 buyer reject_proposal() -> ok
+INFO:     127.0.0.1:59246 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59252 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59266 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59276 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59276 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59276 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-9052b5aeecc8 seller reject_proposal() -> ok
+INFO:     127.0.0.1:59276 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39952 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39958 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39974 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39974 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39974 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-9052b5aeecc8 buyer propose(70) -> ok
+INFO:     127.0.0.1:39974 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39988 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39994 - "GET /admin/negotiations/neg-9052b5aeecc8 HTTP/1.1" 200 OK
+[admin] opened neg-dd79c6dce53b condition=server_inject item='a 27-inch monitor' reserve=260 budget=150
+INFO:     127.0.0.1:40006 - "POST /admin/negotiations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40010 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40018 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40018 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40018 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-dd79c6dce53b seller propose(300) -> ok
+INFO:     127.0.0.1:40018 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40026 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40038 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40054 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40054 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40054 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-dd79c6dce53b buyer reject_proposal() -> ok
+INFO:     127.0.0.1:40054 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40062 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40072 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40086 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40086 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40086 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-dd79c6dce53b seller propose(280) -> ok
+INFO:     127.0.0.1:40086 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40096 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40108 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40122 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40122 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40122 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-dd79c6dce53b buyer reject_proposal() -> ok
+INFO:     127.0.0.1:40122 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57124 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57136 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57138 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57138 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57138 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-dd79c6dce53b seller reject_proposal() -> error: no proposal to reject
+Tool 'reject_proposal' failed: 'Error executing tool reject_proposal: the buyer has not proposed a price yet; there is nothing to reject'
+INFO:     127.0.0.1:57138 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-dd79c6dce53b seller propose(260) -> ok
+INFO:     127.0.0.1:57138 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57152 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57168 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57172 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57172 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57172 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-dd79c6dce53b buyer reject_proposal() -> ok
+INFO:     127.0.0.1:57172 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57176 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57182 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57194 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57194 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57194 - "POST /mcp HTTP/1.1" 200 OK
+[market] neg-dd79c6dce53b seller refuse() -> ok
+INFO:     127.0.0.1:57194 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56598 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56612 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56618 - "GET /admin/negotiations/neg-dd79c6dce53b HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+StreamableHTTP session manager shutting down
+INFO:     Application shutdown complete.
+INFO:     Finished server process [1708951]
