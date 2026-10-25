@@ -5,7 +5,12 @@ from pathlib import Path
 HISTORY_PATH = (
     Path(__file__).resolve().parent / "logs" / "seller-history.jsonl"
 )
-
+REVIEWS_PATH = (
+    Path(__file__).resolve().parent
+    / "logs"
+    / "challenge-1"
+    / "before-reviews-20261025T083209Z.json"
+)
 
 def load_recent_results(item, limit=20):
     if not HISTORY_PATH.exists():
@@ -25,3 +30,24 @@ def load_recent_results(item, limit=20):
                 results.append(event)
 
     return results[-limit:]
+
+def load_shop_reviews(limit=10):
+    if not REVIEWS_PATH.exists():
+        return []
+
+    snapshot = json.loads(REVIEWS_PATH.read_text(encoding="utf-8"))
+    reviews = sorted(
+        snapshot["data"],
+        key=lambda review: review["ts"],
+        reverse=True,
+    )
+
+    return [
+        {
+            "author": review["author"],
+            "stars": review["stars"],
+            "review": review["review"],
+            "timestamp": review["ts"],
+        }
+        for review in reviews[:limit]
+    ]
