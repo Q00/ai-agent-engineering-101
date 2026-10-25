@@ -1,0 +1,33 @@
+{"condition": "structured", "event": "meta", "model": "gpt-5.6-luna", "protocol": "two_buyers_one_seller_feedback_affinity_penalty", "provider": "https://api.openai.com/v1", "repeat": 2, "round_limit": 4, "temperature": 0}
+{"budgets": {"buyer_1": 100, "buyer_2": 95}, "event": "episode_start", "max_rounds": 4, "reserve": 80, "scenario": "headphones"}
+{"agent": "buyer_1", "event": "message", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":1}}", "round": 1}
+{"buyer_id": "buyer_1", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 1, "round": 1, "valid": true}
+{"agent": "buyer_2", "event": "message", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":95}}", "round": 1}
+{"buyer_id": "buyer_2", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 95, "round": 1, "valid": true}
+{"agent": "seller", "event": "message", "raw": "{\"performative\":\"accept-proposal\",\"content\":{\"buyer_id\":\"buyer_2\"}}", "round": 1}
+{"buyer_id": "buyer_2", "event": "parsed_decision", "performative": "accept-proposal", "round": 1}
+{"affinity_buyer_1": 0, "affinity_buyer_2": 0, "agent_calls": 3, "correct": 1, "event": "episode_result", "format_errors": 0, "highest_offers": [95], "outcome": "deal", "penalty_buyer_1": 0.0, "penalty_buyer_2": 0.0, "price": 95, "reader_calls": 0, "rounds": 1, "seller_opportunity_penalty": 0.0, "seller_reserve_penalty": 0.0, "total_model_calls": 3, "violation": 0, "winner": "buyer_2"}
+{"budgets": {"buyer_1": 100, "buyer_2": 110}, "event": "episode_start", "max_rounds": 4, "reserve": 120, "scenario": "coffee-maker"}
+{"agent": "buyer_1", "event": "message", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":85}}", "round": 1}
+{"buyer_id": "buyer_1", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 85, "round": 1, "valid": true}
+{"agent": "buyer_2", "event": "message", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":110}}", "round": 1}
+{"buyer_id": "buyer_2", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 110, "round": 1, "valid": true}
+{"agent": "seller", "event": "message", "raw": "{\"performative\":\"accept-proposal\",\"content\":{\"buyer_id\":\"buyer_2\"}}", "round": 1}
+{"buyer_id": "buyer_2", "event": "parsed_decision", "performative": "accept-proposal", "round": 1}
+{"affinity_buyer_1": 0, "affinity_buyer_2": 0, "agent_calls": 3, "correct": 0, "event": "episode_result", "format_errors": 0, "highest_offers": [110], "outcome": "deal", "penalty_buyer_1": 0.0, "penalty_buyer_2": 0.0, "price": 110, "reader_calls": 0, "rounds": 1, "seller_opportunity_penalty": 0.0, "seller_reserve_penalty": 8.3333, "total_model_calls": 3, "violation": 1, "winner": "buyer_2"}
+{"budgets": {"buyer_1": 45, "buyer_2": 40}, "event": "episode_start", "max_rounds": 4, "reserve": 30, "scenario": "textbook"}
+{"agent": "buyer_1", "event": "message", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":45}}", "round": 1}
+{"buyer_id": "buyer_1", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 45, "round": 1, "valid": true}
+{"agent": "buyer_2", "event": "message", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":40}}", "round": 1}
+{"buyer_id": "buyer_2", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 40, "round": 1, "valid": true}
+{"agent": "seller", "event": "message", "raw": "{\"performative\":\"accept-proposal\",\"content\":{\"buyer_id\":\"buyer_1\"}}", "round": 1}
+{"buyer_id": "buyer_1", "event": "parsed_decision", "performative": "accept-proposal", "round": 1}
+{"affinity_buyer_1": 0, "affinity_buyer_2": 0, "agent_calls": 3, "correct": 1, "event": "episode_result", "format_errors": 0, "highest_offers": [45], "outcome": "deal", "penalty_buyer_1": 0.0, "penalty_buyer_2": 0.0, "price": 45, "reader_calls": 0, "rounds": 1, "seller_opportunity_penalty": 0.0, "seller_reserve_penalty": 0.0, "total_model_calls": 3, "violation": 0, "winner": "buyer_1"}
+{"budgets": {"buyer_1": 50, "buyer_2": 85}, "event": "episode_start", "max_rounds": 4, "reserve": 70, "scenario": "desk-lamp"}
+{"agent": "buyer_1", "event": "message", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":35}}", "round": 1}
+{"buyer_id": "buyer_1", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 35, "round": 1, "valid": true}
+{"agent": "buyer_2", "event": "message", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":85}}", "round": 1}
+{"buyer_id": "buyer_2", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 85, "round": 1, "valid": true}
+{"agent": "seller", "event": "message", "raw": "{\"performative\":\"accept-proposal\",\"content\":{\"buyer_id\":\"buyer_2\"}}", "round": 1}
+{"buyer_id": "buyer_2", "event": "parsed_decision", "performative": "accept-proposal", "round": 1}
+{"affinity_buyer_1": 0, "affinity_buyer_2": 0, "agent_calls": 3, "correct": 1, "event": "episode_result", "format_errors": 0, "highest_offers": [85], "outcome": "deal", "penalty_buyer_1": 0.0, "penalty_buyer_2": 0.0, "price": 85, "reader_calls": 0, "rounds": 1, "seller_opportunity_penalty": 0.0, "seller_reserve_penalty": 0.0, "total_model_calls": 3, "violation": 0, "winner": "buyer_2"}
