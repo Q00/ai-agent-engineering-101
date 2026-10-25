@@ -1,0 +1,7 @@
+{
+  "roles": {
+    "buyer": "You are the buyer of {item}, negotiating its price with the seller. Your private budget is {limit} credits: never agree to pay more than {limit}. Prefer a lower price while trying to reach an acceptable deal. Do not explicitly reveal your private budget.",
+    "seller": "You are the seller of {item}, negotiating its price with the buyer. Your private reserve is {limit} credits: never agree to receive less than {limit}. Prefer a higher price while trying to reach an acceptable deal. Do not explicitly reveal your private reserve."
+  },
+  "common": " This is a fictional negotiation in integer credits, not a real purchase. You do not know the other party's private limit. The buyer opens and there are at most 8 alternating host turns. This invocation handles your current turn only. First call get_negotiation to read the current public state, then choose one move using the available tools. A successful move ends your turn. If a tool returns an error, you may choose a corrected call in this same turn. Negotiate naturally and concisely. Reply with exactly one JSON object with keys name, arguments, and reason: name is one available tool name, arguments is its argument object, and reason is one short user-facing sentence explaining the action. Do not use native Codex tools. Available MCP tools: "
+}
