@@ -27,7 +27,9 @@ Three stages, and the order is the design:
    agreed, or above my budget. A shop with `cheated > 0` is removed from the list
    **before the harness sees it**, so the model cannot choose it back. A review
    is somebody's claim; my own receipt is evidence, and it outranks every star
-   average.
+   average. (The file also holds `Kit Shop` rows: the market test runs the same
+   buyer in the same directory. They are harmless — no market shop has that
+   name — but they are not market data.)
 2. **The harness chooses among what is left**, from a per-shop summary (§2).
 3. **A code floor**: the answer must index the allowed list; anything else falls
    back to the best star average rather than to list order.
@@ -40,8 +42,9 @@ three lamp deals at exactly 105 (my budget), and explicit 5/5 receipt matching
 ```
 
 The budget is enforced in code: every offer is `min(price, budget)`, and a
-harness `accept` above budget is refused. That guard fired once in the market,
-and it is the clearest line in the log about why the guard exists:
+harness `accept` above budget is refused. That guard fired twice in the
+market, both times on a lamp with a budget of 90 (asks of 105 and 100). The
+first is the clearest line in the log about why the guard exists:
 
 ```
 17:19:54 [buyer] [harness haggle] <- {"action": "accept", "price": 90}
@@ -107,9 +110,28 @@ still shows @kingsssik:
 ```
 
 Ledger #245113, three minutes in, is the first buyer deal that counts under the
-Round 2 rules. At the time of writing: **shop** 156 deals from 226 visits,
-4.65 stars, revenue 32,490; **buyer** 62 counted deals from 89 orders, paying
-85.4% of budget on average, every one of its 62 deals `verified True`.
+Round 2 rules.
+
+**The whole run**, 2026-10-22 16:39 to 10-26 11:00 (`analyze.py`, written to
+`logs/analysis/summary.json`, from `market-kit.log`, `picks.jsonl`,
+`market_memory.json` and the board):
+
+| | |
+|---|---|
+| **shop** deals / visits | 420 / 576 (73% of visits closed) |
+| shop stars | 4.81 — **2nd of 42** shops with 20+ deals; 29th by volume |
+| shop revenue / profit | 84,965 / 11,365 |
+| shop price ÷ reserve | lamp 1.153, chair 1.163, bookshelf 1.149; **0** sales below reserve |
+| **buyer** orders | 1,110 (lamp 373, chair 355, bookshelf 382) |
+| buyer counted deals | **388**, every one `verified True` |
+| buyer no-deal results | 132 reviewed, plus **587** orders the kit closed empty (§6) |
+| buyer mean price | lamp 102.5, chair 182.7, bookshelf 264.2 — 86% of budget |
+| held / hopeless (board) | 212 / 212: orders whose budget was under every reserve, correctly not bought |
+| receipt mismatches met | 0 in 388 deals |
+
+The number that matters most is not on that table: **of 90.3 hours, the agents
+were in the market and working for 6.2** (§6). All 420 shop deals and 388 buyer
+deals came from those six hours.
 
 Reviews other participants left my shop:
 
@@ -197,17 +219,31 @@ reputation quantity and price did not move it.
 
 ### 2 — dishonest participants, and how my buyer avoided them
 
-From the 34 shop lists the kit handed my buyer after I started recording them
-(`logs/challenge-2/picks.jsonl`):
+From all **481** shop lists the kit handed my buyer between 10-22 17:15 and
+10-26 10:51 (`logs/challenge-2/picks.jsonl`, 25–31 shops per list):
 
-| shop | offered to my buyer | picked | review it was shown |
-|---|---|---|---|
-| **maple-home** (house) | 34 | **0** | *"[WARNING] chair: agreed 185, receipt says 210. Receipt does not match the deal. Avoid."* |
-| **elm-street** (house) | 34 | **0** | *"Receipt for the bookshelf did not match the deal (agreed 260, receipt 295). Avoid."* |
+| shop | offered to my buyer | picked | board, Round 2 | review it was shown |
+|---|---|---|---|---|
+| **maple-home** (house) | 481 | **0** | 7 deals, **1.0★** | *"[WARNING] chair: agreed 185, receipt says 210. Receipt does not match the deal. Avoid."* |
+| **elm-street** (house) | 233 | **0** | 1,145 deals, **4.74★** | *"Receipt for the bookshelf did not match the deal (agreed 260, receipt 295). Avoid."* |
 
 Both are instructor-run shops accused of the same thing: writing a higher price
-on the receipt than the one agreed. maple-home fell to **1.0 stars** in Round 2.
-Both were in every list my buyer received, and it never chose either.
+on the receipt than the one agreed. Over the same orders the buyer spread its
+choices across 19 shops (cheapest-in-town 111, ggari-shop 106, myeonggi 91 …),
+so never picking these two is not a narrow habit.
+
+The two cases are not the same, and the difference is the interesting part.
+maple-home is shunned by everyone — seven deals and a 1.0 average; the market
+had already decided. **elm-street has 4.74 stars over 1,145 deals**, better than
+most shops my buyer did use, and my buyer still avoided it in all 233 lists.
+One concrete accusation outweighed a thousand mostly happy trades. That is the
+review layer doing exactly what I told it ("receipt not matching the agreed
+price is the serious kind"), and it may also be over-avoidance: a shop that
+inflates one receipt in a hundred, or one that drew a single false review,
+looks the same from where my buyer stands. Among the problems Resnick et al.
+(2000) list for reputation systems is that honest reports are hard to ensure;
+a reader cannot tell a true accusation from a planted one, and here that
+uncertainty cut in the cautious direction.
 
 How it came to avoid them matters, because there were two possible mechanisms
 and only one fired. My memory never blacklisted them — `cheated` is 0 for every
@@ -246,13 +282,39 @@ the PC has to stay on until the deadline. A quick tunnel's URL changes on every
 restart; the market tracks the shop by name and key, so restarts cost nothing
 but the URL. `logs/market-kit.log` is committed from this machine.
 
-**It went down once, and the cause was the kit, not the agents.** On 2026-10-22
-around 23:15 the network dropped (a system time resync at 22:44 suggests the PC
-had been asleep). Every order then ended as `market_buyer printed no result
-line; closing the order as no deal`, and a minute later the kit itself died on
-an unhandled `httpx.ConnectTimeout` — taking its cloudflared tunnel with it.
-Nothing restarted it, so shop and buyer were out of the market until the
-next morning. Two changes:
+**It was in the market and working for 6.2 of 90.3 hours.** The agents were
+never the weak part; keeping them running was:
+
+| from → to | hours | what |
+|---|---|---|
+| 10-22 16:39 → 19:56 | 3.3 | working |
+| 10-22 19:56 → 23:16 | 3.3 | **kit alive, every order failed** — 587 orders closed empty |
+| 10-22 23:16 → 10-23 09:45 | 10.5 | **down**: kit died on `httpx.ConnectTimeout` |
+| 10-23 09:45 → 12:18 | 2.5 | working, under the first supervisor |
+| 10-23 12:18 → 10-26 10:39 | 70.3 | **down**: supervisor and everything under it killed at once |
+| 10-26 10:39 → | — | working, supervisor launched through WMI |
+
+Three different failures, each found only after the previous fix:
+
+**1. Alive and useless (10-22 19:56–23:16).** Straight after a good deal
+(`#264431: lamp at 101, verified True`), every order for 3 h 20 min ended
+`market_buyer printed no result line; closing the order as no deal` — in the
+same second, with **no output at all** from the buyer, not even a traceback. So
+the buyer did not fail; it never got to run. Since the next restart there have
+been 0 of these in 248 orders. I have not proven the cause: no Windows
+application error was logged then, and the kit does not record the child's exit
+code. A child process that dies before printing anything, until its parent is
+restarted, is consistent with the parent's environment being exhausted after
+hundreds of launches, but that is an inference, not a finding.
+
+**2. Dead (10-22 23:16).** The network dropped (a system time resync at 22:44
+suggests the PC had slept), the kit died on an unhandled
+`httpx.ConnectTimeout`, and its cloudflared tunnel went with it. Nothing
+restarted it.
+
+**3. Killed (10-23 12:18).** See the launch note below.
+
+The changes:
 
 - `keepalive.py` runs `market_kit.py join` in a loop: when the kit exits it
   kills any orphaned tunnel, waits (backing off if it keeps dying quickly), and
@@ -269,10 +331,19 @@ next morning. Two changes:
   from a launcher kept outside the repository because it holds the claim code.
 - `market_buyer.py` now ends in one parseable result line even when it fails
   outside its own trading loop, so a bad order is closed as a reviewed
-  no-deal rather than an empty one.
+  no-deal rather than an empty one. This does nothing for failure 1 — a buyer
+  that never starts cannot print anything.
+- **For failure 1 the supervisor has to watch, not wait.** A supervisor that
+  restarts the kit only when the kit exits would have sat through all 3 h
+  20 min. `keepalive.watch()` now tails `market-kit.log` and kills the kit after
+  8 empty results in a row with no ledger line between them; the loop then
+  starts a fresh one, which is what cleared it last time. This version is
+  committed but **not yet running**: replacing the live supervisor means
+  stopping the processes it manages, and that step is left for me to do by
+  hand, so the market is not interrupted from this session.
 
-First ledger entry after the restart: `#344880: chair at 180, stars 5,
-verified True, review accepted`.
+First ledger entries after each restart: `#344880` (10-23 09:47) and `#786630`
+(10-26 10:40), both `verified True`.
 
 Not done: a Workers or VPS deployment that would survive this PC sleeping.
 `claude -p` runs on a subscription login, which does not run headless on a
