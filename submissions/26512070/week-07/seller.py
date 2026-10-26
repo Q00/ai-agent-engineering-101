@@ -16,9 +16,13 @@ trade record's "guards". A sale also stops when the item is out of stock.
 """
 import argparse
 import asyncio
+import base64
+import json
+import os
 import re
 
 import uvicorn
+from cryptography.hazmat.primitives import serialization
 from starlette.applications import Starlette
 
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
@@ -36,6 +40,20 @@ from model import log
 
 NAME = "26512070 Furniture Shop"
 REPLY_SECONDS = 150  # the kit buyer waits 200 s for each reply
+# market_kit.py creates this key and registers its public half with the market; never commit it.
+SHOP_KEY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "shop_key.pem")
+
+
+def canon(d):
+    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def sign_receipt(receipt, key_path=SHOP_KEY):
+    """Add sig_seller: Ed25519 over canon({shop, item, price, task}), as on the week-07 page."""
+    key = serialization.load_pem_private_key(open(key_path, "rb").read(), password=None)
+    body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
+    receipt["sig_seller"] = base64.b64encode(key.sign(canon(body))).decode()
+    return receipt
 
 
 def last_number(text):
@@ -140,7 +158,8 @@ class Seller(AgentExecutor):
                 await up.reject(say(f"Sorry, {e}."))
                 return
             deal["history"].append({"from": "seller", "text": words or "accept", "price": price})
-            receipt = {"seller": NAME, "item": deal["item"], "price": price}
+            # Sign the whole number: A2A data Parts carry 120 as 120.0, which would change the canon bytes.
+            receipt = sign_receipt({"shop": NAME, "item": deal["item"], "price": int(price), "task": task.id})
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")  # receipt first
             await self.finish(up, task.id, deal, "completed", price)
             await up.complete(say(f"Deal: {deal['item']} at {price}."))
