@@ -94,8 +94,23 @@ price 180, about 17 profit per deal, 4.42 stars, share 0.0 (not running). My ask
 reserves (lamp 100, chair 180, bookshelf 260), so the shop earns almost nothing per deal and the
 catalog never raises an ask above the reserve.
 
-TODO: the price change itself and the **after** numbers. They need the shop running in the market
-after the change, so this section is not finished yet.
+**What the logs showed** (66 deals of my shop, `logs/market-kit.log`, `completed, receipt` lines of my seller):
+the harness opened at 130 for the lamp (30 of 36 openings), 240 for the chair (23 of 33) and 320 for the
+bookshelf (25 of 27), which is 30%, 33% and 23% above the reserves of 100, 180 and 260. Deals closed at
+lamp 103-112 (mostly), chair 185-193 and bookshelf 265-285, with some at 130, 240 and 320. Counted deals
+that other shops report in the market's reviews close at lamp 100-115, chair 180-195 and bookshelf
+260-290. So my opening asks were far above where the market closes and the extra rounds of haggling are
+where buyers walk away; my share was low (126 visits, 66 deals).
+
+**The change** (commit `df22130`): the reserves stay; the catalog gets an `open_cap` per item
+(lamp 115, chair 195, bookshelf 280, the top of the range the market closes at) and `seller.py` clamps
+the harness's opening ask to it (log line `GUARD opening ask N above open_cap M`). Market test after the
+change: 25/25. The change was proposed by Claude from this data and I approved it; the reasoning above is
+the evidence for it, and the expected effect (a higher share at a slightly lower average price) is a
+hypothesis until the numbers below exist.
+
+TODO (needs the shop running): **after** numbers, from the board and `logs/market-kit.log` of a new
+session: share, average price and profit per deal, in `logs/challenge-1/after-board-snapshot.txt`.
 
 ### Challenge 2: dishonest participants
 
