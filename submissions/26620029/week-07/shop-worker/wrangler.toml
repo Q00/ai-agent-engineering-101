@@ -8,11 +8,17 @@ SHOP_NAME = "Ddolcom's BEST SHOP" # name on the market board, in the Agent Card 
 
 # ---- shop policy (change, then: npx wrangler@4 deploy) ----
 # Reserves are fixed in code: lamp 100, chair 180, bookshelf 260. An ask below a reserve is raised to it.
-ASK_LAMP = 150                    # opening ask per item
-ASK_CHAIR = 260
-ASK_BOOKSHELF = 380
-ACCEPT_AFTER = 3                  # from the Nth buyer offer: accept if offer >= reserve and >= halfway to our ask
-ACCEPT_ANY = 5                    # from the Nth buyer offer: accept any offer >= reserve
+# Challenge 1 (2026-10-26): own reviews (logs/challenge-1/before-dashboard.json) show every 3-star review
+# complaining the closing price was above what the buyer "usually pays" (lamp paid 124-137 vs "usual" ~104;
+# bookshelf paid 320 vs "usual" ~271), while every 5-star review closed only after the ask had already come
+# down two or three rounds. Old asks (+50%/+44%/+46% over reserve) opened far above where this market settles;
+# share was 0.2% of 467 deals. Lowered the asks toward what buyers already expect and accept sooner so deals
+# close before burning stars on the way down.
+ASK_LAMP = 115                    # opening ask per item (was 150, +50% over reserve; now +15%)
+ASK_CHAIR = 200                   # was 260, +44% over reserve; now +11%
+ASK_BOOKSHELF = 290               # was 380, +46% over reserve; now +12%
+ACCEPT_AFTER = 2                  # from the Nth buyer offer: accept if offer >= reserve and >= halfway to our ask (was 3)
+ACCEPT_ANY = 3                    # from the Nth buyer offer: accept any offer >= reserve (was 5)
 MAX_TURNS = 12                    # buyer messages before the shop ends the talk
 SALES_STYLE = "Sell as high as you can, but a deal at or above the reserve is better than losing the buyer."
 
