@@ -1,16 +1,16 @@
 {
   "kit_version": "1",
-  "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
-  "started": "2026-10-26T09:33:45+00:00",
-  "harness": "Claude Code 2.1.296 (claude -p --model haiku, built-in tools off) inside our own ReAct loop",
+  "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
+  "started": "2026-10-26T10:02:45+00:00",
+  "harness": "Claude Code 2.1.283 (claude -p --model haiku, built-in tools off) inside our own ReAct loop; market_buyer: haiku picks the shop, code keeps the record and blocks shops that cheated",
   "seller_cmd": "py seller.py --port {port}",
-  "buyer_cmd": "py buyer.py --url {url} --item {item} --budget {budget}",
+  "market_buyer_cmd": "py market_buyer.py --shops {shops} --item {item} --budget {budget}",
   "seller_card": {
     "name": "26512070 Furniture Shop",
     "description": "Sells lamps, chairs and bookshelves. Negotiates the price with the buyer.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:62620/",
+        "url": "http://127.0.0.1:65080/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -62,6 +62,12 @@
       "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [130, 115]"
     },
     {
+      "test": "seller_signed_receipt",
+      "run": 1,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
       "test": "seller_terminal",
       "run": 1,
       "pass": true,
@@ -74,12 +80,24 @@
       "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [130, 115]"
     },
     {
+      "test": "seller_signed_receipt",
+      "run": 2,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
       "test": "seller_deal",
       "run": 3,
       "pass": true,
       "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [130, 115]"
     },
     {
+      "test": "seller_signed_receipt",
+      "run": 3,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
@@ -89,7 +107,7 @@
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [338, 299, 260]"
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [338, 299, 260, 260, 260, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
@@ -101,7 +119,7 @@
       "test": "buyer_deal",
       "run": 1,
       "pass": true,
-      "detail": "deals [101] (budget 120)"
+      "detail": "offers [72, 101], stars 5, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -113,7 +131,7 @@
       "test": "buyer_deal",
       "run": 2,
       "pass": true,
-      "detail": "deals [101] (budget 120)"
+      "detail": "offers [72, 101], stars 5, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -125,7 +143,7 @@
       "test": "buyer_deal",
       "run": 3,
       "pass": true,
-      "detail": "deals [101] (budget 120)"
+      "detail": "offers [72, 101], stars 5, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -137,7 +155,7 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "deals [] (budget 230 < reserve 260)"
+      "detail": "offers [138, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -149,7 +167,7 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "deals [] (budget 230 < reserve 260)"
+      "detail": "offers [138, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -161,13 +179,19 @@
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "deals [] (budget 230 < reserve 260)"
+      "detail": "offers [138, 230], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 3,
       "pass": true,
       "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
+    },
+    {
+      "test": "buyer_reads_reviews",
+      "run": 1,
+      "pass": true,
+      "detail": "shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2"
     }
   ],
   "passed": true
