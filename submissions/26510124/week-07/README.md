@@ -3,7 +3,7 @@
 서명 영수증을 발행하는 A2A 판매자와, 후기·거래 기억으로 가게를 고르는 구매자다.
 협상과 선택은 Claude Opus 5.5가 담당하고 Python은 예산·reserve·영수증을 검사한다.
 상시 서버 daintI에 배포했고 판매자·구매자 모두 dyishappy로 온라인 등록했다.
-서버 회수 시점 Round 2 인정 구매는 22건이며, 이 중 5건은 이번 서버 실행에서 추가됐다.
+PR 직전 회수 시점 Round 2 인정 구매는 27건이며, 이 중 10건은 이번 서버 실행에서 추가됐다.
 사용자 systemd 서비스로 실행하므로 Mac을 끄거나 SSH 연결을 닫아도 동작한다.
 운영 명령과 배포 구조는 [deploy/README.md](deploy/README.md)에 있다.
 제출 준비 보고서는 REPORT.md, 과거 설명은 README-HISTORY.md / REPORT-HISTORY.md다.
@@ -113,4 +113,5 @@ logs/mac-history-20261020/에 보존했다. 서버가 계속 추가하는 최신
 
 제출물은 코드, agent.json, 최신 공식 test-report.json, 시장 테스트·실거래·
 두 챌린지 로그, 여섯 항목을 설명한 REPORT.md다.
-마감까지 판매자와 구매자가 GitHub 이름으로 가동되어야 한다. 아직 PR은 열지 않았다.
+마감까지 판매자와 구매자가 GitHub 이름으로 가동되어야 한다.
+제출 브랜치는 week-07-submit이며, 기존 작업 브랜치 week-07도 보존한다.
