@@ -13,16 +13,35 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 class Inventory:
     def __init__(self, path=os.path.join(HERE, "inventory.json")):
+        self.path = path
         with open(path, encoding="utf-8") as f:
             self.items = json.load(f)
+        self._mtime = os.path.getmtime(path)
         self.sales = []
         self._lock = threading.Lock()
+
+    def _reload_prices(self):
+        """Pick up list prices that challenge1_tune.py wrote to inventory.json; stock stays as sold."""
+        try:
+            mtime = os.path.getmtime(self.path)
+            if mtime == self._mtime:
+                return
+            with open(self.path, encoding="utf-8") as f:
+                fresh = json.load(f)
+        except (OSError, ValueError):
+            return
+        with self._lock:
+            self._mtime = mtime
+            for name, info in fresh.items():
+                if name in self.items and info.get("list_price", 0) >= self.items[name]["reserve"]:
+                    self.items[name]["list_price"] = info["list_price"]
 
     def names(self):
         return list(self.items)
 
     def get(self, item):
         """{"item", "reserve", "list_price", "stock"} for one item, or None if we do not sell it."""
+        self._reload_prices()
         if item not in self.items:
             return None
         return {"item": item, **self.items[item]}
