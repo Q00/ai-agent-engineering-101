@@ -14,7 +14,7 @@ $Agent  = Join-Path $Root "submissions\26620029\week-07"
 $Market = "https://market.ourolabs.ai"
 $Nick   = "ddolcom"
 $Mode   = "--tunnel"        # if the tunnel is blocked, change to "--buyer-only"
-$Deployed = ""              # Cloudflare Worker URL, e.g. "https://ddolcom-shop.ddolcom.workers.dev" -> registers that shop
+$Deployed = "https://ddolcom-shop.ddolcom.workers.dev"  # Cloudflare Worker URL -> registers that shop, no local tunnel needed
 
 # logs/pid go to .market (already in .gitignore)
 $OutDir = Join-Path $Root ".market"
