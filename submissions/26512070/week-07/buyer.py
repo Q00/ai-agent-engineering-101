@@ -113,15 +113,13 @@ def guard(d, wallet):
     return {"action": "offer", "price": price}, None
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--url", required=True)
-    ap.add_argument("--item", required=True)
-    ap.add_argument("--budget", type=float, required=True)
-    args = ap.parse_args()
-    if args.budget.is_integer():
-        args.budget = int(args.budget)
-    t0 = time.time()
+def negotiate(url, item, budget, t0=None):
+    """One A2A negotiation with the shop at url. market_buyer.py reuses this after it picks a shop.
+
+    Returns {"card_name", "final_state", "receipt", "offers", "last_offer", "last_ask", "seller_said", "guards"}.
+    """
+    t0 = t0 or time.time()
+    args = argparse.Namespace(url=url, item=item, budget=budget)
 
     card = httpx.get(args.url.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=30).json()
     # The server lists its interfaces in order of preference; take the first one we can speak.
@@ -193,8 +191,24 @@ def main():
     rec["seller_record"] = artifact_data(t, "trade-record")
     trade_record.save(rec)
     log("\n" + trade_record.to_text(rec))
-    print(json.dumps({"item": args.item, "budget": args.budget, "final_state": state(t),
-                      "receipt": r, "seconds": round(time.time() - t0, 1)}))
+    asks = [h["price"] for h in deal["history"] if h["from"] == "seller" and h["price"] is not None]
+    return {"card_name": card["name"], "final_state": state(t), "receipt": r, "offers": list(wallet.offers),
+            "last_offer": wallet.offers[-1] if wallet.offers else None, "last_ask": asks[-1] if asks else None,
+            "seller_said": status_text(t), "guards": deal["guards"]}
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--url", required=True)
+    ap.add_argument("--item", required=True)
+    ap.add_argument("--budget", type=float, required=True)
+    args = ap.parse_args()
+    if args.budget.is_integer():
+        args.budget = int(args.budget)
+    t0 = time.time()
+    res = negotiate(args.url, args.item, args.budget, t0)
+    print(json.dumps({"item": args.item, "budget": args.budget, "final_state": res["final_state"],
+                      "receipt": res["receipt"], "seconds": round(time.time() - t0, 1)}))
 
 
 if __name__ == "__main__":
