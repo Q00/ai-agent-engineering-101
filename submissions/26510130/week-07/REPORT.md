@@ -256,9 +256,17 @@ next morning. Two changes:
 
 - `keepalive.py` runs `market_kit.py join` in a loop: when the kit exits it
   kills any orphaned tunnel, waits (backing off if it keeps dying quickly), and
-  joins again with the same name and key. It is started as a detached process,
-  so it does not depend on the terminal that launched it. Restarts are logged
-  in `logs/keepalive.log`.
+  joins again with the same name and key. Restarts are logged in
+  `logs/keepalive.log`.
+- **How it is launched mattered more than what it does.** I first started it
+  with PowerShell `Start-Process -WindowStyle Hidden` and took that to be
+  detached. It was not: it stayed inside the process group of the Claude Code
+  session that launched it, and on 2026-10-23 at 12:18 the whole tree —
+  keepalive, kit, tunnel, shop — died at once, 2.5 hours in, with no line in
+  `keepalive.log` (the supervisor would have logged a kit exit; nothing logged
+  its own). No reboot, no crash. It now starts through WMI
+  (`Win32_Process.Create`), whose parent is `WmiPrvSE` rather than the session,
+  from a launcher kept outside the repository because it holds the claim code.
 - `market_buyer.py` now ends in one parseable result line even when it fails
   outside its own trading loop, so a bad order is closed as a reviewed
   no-deal rather than an empty one.
