@@ -25,7 +25,11 @@ In Round 1+, `market_buyer.py` keeps private memory in the ignored
 than its changing URL. It counts deals, no-deals, errors, and receipt trust
 failures, and appends timestamped observations with item, budget, outcome,
 offers and receipt evidence. Older summary-only entries remain usable. The
-selector shows the model matching-item observations at similar budgets first;
+`--own-shop-name` argument in `agent.json` excludes this buyer's own market
+shop before model selection, including when the kit runs in `--buyer-only`
+mode. Past self-shop observations remain in memory but cannot drive a new
+self-trade. The selector shows the model matching-item observations at similar
+budgets first;
 it treats other-item outcomes and public reviews as less directly relevant. A
 receipt that disagrees with the order or lacks the required signature/task
 marks that shop `avoid`; an ordinary no-deal does not. When alternatives exist,

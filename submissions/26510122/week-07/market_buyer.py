@@ -61,10 +61,14 @@ def relevant_memory(entry: dict, item: str, budget: int) -> dict:
     }
 
 
-def choose_shop(shops: list[dict], item: str, budget: int, memory: dict) -> tuple[dict, str]:
-    if not shops:
-        raise ValueError("market gave no shops")
-    candidates = [dict(shop, risk=review_risk(shop.get("reviews", []))) for shop in shops]
+def choose_shop(shops: list[dict], item: str, budget: int, memory: dict,
+                own_shop_name: str) -> tuple[dict, str]:
+    # The kit only filters its own URL when buyer and seller share a process.
+    # Our buyer-only kit has no own URL, so use the stable market name here.
+    other_shops = [shop for shop in shops if shop["name"] != own_shop_name]
+    if not other_shops:
+        raise ValueError("market gave no other shops")
+    candidates = [dict(shop, risk=review_risk(shop.get("reviews", []))) for shop in other_shops]
     unflagged_by_memory = [shop for shop in candidates
                            if not memory["shops"].get(shop["name"], {}).get("avoid", False)]
     safe = [shop for shop in unflagged_by_memory if not shop["risk"]["avoid"]]
@@ -270,10 +274,11 @@ def main() -> None:
     parser.add_argument("--shops", required=True)
     parser.add_argument("--item", required=True)
     parser.add_argument("--budget", required=True, type=int)
+    parser.add_argument("--own-shop-name", required=True)
     args = parser.parse_args()
     shops = json.loads(Path(args.shops).read_text(encoding="utf-8"))
     memory = load_memory()
-    chosen, reason = choose_shop(shops, args.item, args.budget, memory)
+    chosen, reason = choose_shop(shops, args.item, args.budget, memory, args.own_shop_name)
     try:
         outcome = negotiate(chosen["url"], args.item, args.budget, compact_history=True)
         receipt, status, detail, evidence = receipt_from_outcome(outcome, args.item, args.budget)
