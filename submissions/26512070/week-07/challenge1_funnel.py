@@ -17,6 +17,8 @@ import statistics as st
 
 import httpx
 
+from challenge1_tune import test_window
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 MARKET = "https://market.ourolabs.ai"
 NICK = "김관우"
@@ -31,11 +33,13 @@ def main():
     since, s0 = last["time"].replace("T", " "), last["snapshot"]
     b = httpx.get(f"{MARKET}/api/board", timeout=30).json()
     me = next(s for s in b["shops"] if s["name"] == NICK)
-    win = [r for r in jsonl("trades/seller.jsonl") if r["time"] > since]
+    test = test_window()  # the market test's seller trades are with its own buyers, not the market's
+    win = [r for r in jsonl("trades/seller.jsonl") if r["time"] > since
+           and not (test and test[0] <= r["time"] <= test[1])]
     print(f"== 1. funnel since {since}")
     print(f"  market deals +{b['totals']['deals'] - s0['market_deals']}")
     print(f"  my visits {s0['me']['visits']} -> {me['visits']} (+{me['visits'] - s0['me']['visits']})")
-    print(f"  negotiations recorded at my shop {len(win)}")
+    print(f"  negotiations recorded at my shop {len(win)} (market test {test} left out)")
     print(f"  my counted deals {s0['me']['deals']} -> {me['deals']} (+{me['deals'] - s0['me']['deals']})")
 
     print("\n== 2. negotiations at my shop (b = buyer, s = seller)")
