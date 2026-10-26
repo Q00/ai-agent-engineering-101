@@ -1,6 +1,8 @@
 # Week 07 — 26510124 / dyishappy
 
-작성 기준: 2026-10-26. 제출 준비본이며 상시 서버 배포는 아직 완료되지 않았다.
+작성 기준: 2026-10-26 KST. daintI 상시 서버에 배포하고 판매자·구매자 온라인을 확인했다.
+서버 시계가 시장 HTTP Date보다 약 13분 앞서 있어 서버 로그는 일부 10월 27일로
+표시된다. 원본 시각을 고치지 않았으며 회수 메타데이터에 차이를 기록했다.
 과거 시도와 당시 상태는 REPORT-HISTORY.md와 각 작업 커밋에 보존한다.
 6주차 카탈로그·병렬 장보기 실험은 7주차 필수 챌린지로 계산하지 않는다.
 
@@ -19,6 +21,8 @@ result, detail, selection_reason, authorized_price, observed_receipt, stars, rev
 보존한다. 결과는 purchased / no_deal / error / receipt_mismatch로 구분한다.
 2026-10-20 종료 당시 79건 중 구매 62건, 결렬 16건, 실행 오류 1건이었다.
 이는 Round 1부터의 기억이다. Round 0 기록을 소급해서 새 기억에 넣지 않았다.
+서버 회수본은 87건(구매 67, 결렬 19, 오류 1)이다. 기존 79건을 그대로 보존한
+접두부인지 확인한 뒤 새 8건만 로컬 기억에 반영했다. 현재 서버 기억은 계속 증가한다.
 
 영수증 가격·예산·품목·task를 확인하고 받은 data Part를 그대로 반환한다.
 서명의 암호학적 검증과 buyer 서명 추가는 공식 market kit가 담당한다.
@@ -52,13 +56,22 @@ result, detail, selection_reason, authorized_price, observed_receipt, stars, rev
 Round 0에는 지정된 가게와 거래했고 Maple Home의 합의·영수증 불일치를 거부했다.
 Round 1에는 후기와 기억으로 가게를 선택했지만 우리 가게의 터널 연결 실패로
 낮은 후기를 받았다. heartbeat 프록시와 터널 갱신 실행기를 추가했다.
-Round 2에서는 서명된 거래가 인정되었다. logs/market-kit.log의 ledger #12177은
+Round 2에서는 서명된 거래가 인정되었다. logs/mac-history-20261020/market-kit.log의 ledger #12177은
 chair 212, sig_seller ok, sig_buyer added, verified True, review accepted를 기록한다.
 
-현재 시장은 Round 2지만 두 에이전트 모두 alive: false다.
+위 22:46 조회 당시에는 두 에이전트 모두 alive: false였다.
 2026-10-20 21:42 KST 종료 기록은 logs/shutdown-20261020T214242.json에 있다.
 이후 다른 참가자의 거래가 누적된 점유율이므로 Round 2 비율을 가격 전략만의
 결과로 해석할 수 없다.
+
+이후 daintI에서 실행을 재개했다. 서버 회수 시점(시장 HTTP Date 2026-10-26
+23:54:05 KST)에는 두 에이전트 모두 alive: true, 소유 계정 dyishappy였다.
+Round 2 누적 판매는 방문 54, 성사 36, 매출 7,298, 평균 202.72,
+점유율 36/294,883 = 0.0122082%였고 구매자는 주문 28 / 성사 22였다.
+재개 전보다 판매 28건·구매 5건이 추가됐다. 이는 운영 재개 후 관측이며 새 가격 실험은 아니다.
+서버의 첫 인정 구매 ledger #877657은 lamp 106, verified True, review accepted다.
+원본은 logs/market-kit.log 및
+logs/server-evidence-20261026T150714Z-892d21d1/logs/server-evidence-20261026T150714Z-892d21d1/board.json이다.
 
 ## 4. 서명·공개 실행 중 실패와 수정
 
@@ -98,12 +111,12 @@ logs/public-trade-check-31d05f26f1.log.
 추가로 수행해야 한다. 접속 장애 후기는 가격 인하의 직접 근거가 아니다.
 
 원본 기준값은 logs/owner-value-baseline-20261020.json이다.
-파생 분석은 logs/challenge-1/week07-evidence-20261026T135017Z-c57a4a4c/analysis.json에
+파생 분석은 logs/challenge-1/week07-evidence-20261026T145456Z-5ca4ced1/analysis.json에
 있으며 출처 경로·해시·한계를 포함한다. 새 시장 실험 로그가 아니다.
 
 ### Challenge 2 — 실제 불일치와 이후 회피
 
-logs/market-kit.log 94–112행의 Round 0 주문 o-2e01a98f에서 Maple Home의 chair를
+logs/mac-history-20261020/market-kit.log 94–112행의 Round 0 주문 o-2e01a98f에서 Maple Home의 chair를
 예산 185로 협상했다. 구매자 제안은 155 → 180 → 185였다. 판매자의 완료 메시지는
 “Deal: chair at 185.”였으나 영수증은 **210**이었다. 구매자가 거부하고 키트도
 buyer 서명을 추가하지 않았다. ledger #311의 검증은 실패했다.
@@ -112,13 +125,13 @@ buyer 서명을 추가하지 않았다. ledger #311의 검증은 실패했다.
 이후 Round 1 선택 로그 1328행에서 구매자는 후기의 Maple Home 합의 185 / 청구 210을
 근거로 가게를 제외하고 corner-store를 선택했다.
 logs/market-select-38b87ba2e5da4dce9258af8f05b5178d.log에는 하네스에 전달한 불일치
-후기와 선택 이유가 함께 있다. 전체 기억 79건에 Maple Home 거래는 없다.
+후기와 선택 이유가 함께 있다. 당시 기억 79건에 Maple Home 거래는 없다.
 
 Round 0 사건은 새 기억 파일로 이관하지 않았으므로 **내 기억에서 자동 학습해 피했다**고
 쓰지 않는다. 직접 관측한 불일치를 보고서에서 확인했고, 실제 후속 선택은 후기와
 다른 가게의 성공 기억에 의존했다. 외부 참가자의 의도 자체는 단정하지 않는다.
 
-logs/challenge-2/week07-evidence-20261026T135017Z-c57a4a4c/는 직접 만난 3건과
+logs/challenge-2/week07-evidence-20261026T145456Z-5ca4ced1/는 직접 만난 3건과
 Maple Home을 언급한 선택 판단 58개를 색인한다. 묶음별 판단도 있어 서로 다른
 주문 58건으로 세지 않는다. 원본 로그는 수정하지 않고 일부를 바이트 그대로 복사했다.
 
@@ -128,24 +141,45 @@ Maple Home을 언급한 선택 판단 58개를 색인한다. 묶음별 판단도
 파일 도구·MCP를 비활성화하고 매 호출을 별도 임시 디렉터리에서 실행한다.
 설치·실행 방법은 README.md에 있다.
 
-기존 배포는 사용자의 Mac에서 run_public_market.py와 Serveo 터널을 사용하는
-방식이었다. 판매자와 buyer를 dyishappy로 등록했지만 현재 중지되어 있다.
-사용자는 상시 서버를 선택했으며 SSH 환경을 기다리는 중이다.
-서버 설치·자동 재시작·상시 운영을 완료로 기록하지 않는다.
-기존 shop/buyer 키와 기억은 안전하게 이전하고 Git에는 개인키를 넣지 않는다.
+현재 배포는 SSH 별칭 daintI의 Ubuntu 서버이며 루트는
+/home/llddyy0319/agent-market-week07이다. Python 3.12.15 전용 환경,
+Claude Code 2.1.287, cloudflared 2026.10.4를 사용자 경로에 설치했다.
+사용자가 서버에서 Claude와 시장 GitHub 인증을 직접 완료했다.
+shop/buyer 키와 기존 기억을 이전해 시장 신원과 과거 거래를 유지했다.
+개인키와 claim code는 Git에 넣지 않았다.
+
+사용자 systemd의 week07-market.service가 public_market.py와 공식 키트,
+cloudflared 터널로 판매자와 구매자를 함께 실행한다. 서비스 enabled,
+Linger=yes, Restart=always / 20초를 확인했다. SSH 세션과 다른 서비스 cgroup에서
+실행되어 Mac 종료 후에도 유지된다. 서버 전체 재부팅 시험은 하지 않았다.
+서버 상태 확인·중지·재시작 명령은 deploy/README.md에 있다.
+Mac에서 공개 판매자에 접속한 lamp 125 진단 거래도 서명 검증을 통과했다
+(logs/public-trade-check-cdaa8d73c4.log). 이 진단은 시장 실적으로 제출하지 않았다.
 
 2026-10-26 오프라인 단위 검사 38/38 통과: logs/pre-submit-unit-4e14762a.log.
 같은 날 현재 설정의 공식 시장 테스트도 25/25 통과했다.
-원본은 logs/round2-check-20261026T134732Z-c16cfec0/에 있고 현재 소스·설정·프롬프트
-해시가 검사본과 일치함을 확인했다. 후기 비교 3회 모두 좋은 후기의 가게를 선택했다.
-공식 test-report.json과 logs/market-test.log를 생성된 원본 그대로 제출 위치에 반영했다.
-기존 2026-10-20 공식 25/25 결과와 새 실행의 원본을 모두 보존한다.
+Mac 원본은 logs/round2-check-20261026T134732Z-c16cfec0/에 보존했다.
+서버 첫 단위 검사는 과거 응답 재생 fixture가 배포에서 빠져 1건 실패했다.
+실패 로그를 커밋한 뒤 해당 원본 파일을 배포 목록에 추가했고 38/38을 통과했다.
+서버에서도 실제 Claude를 이용한 공식 시장 테스트 25/25를 통과했다.
+원본은 logs/server-evidence-20261026T150714Z-892d21d1/
+logs/round2-check-20261026T150040Z-3cc0fab3/에 있다.
+현재 실행 소스·설정·프롬프트의 해시와 검사본이 일치하고 후기 비교는 3/3이었다.
+이 서버 검사의 test-report.json과 logs/market-test.log를 원본 그대로 제출 위치에
+반영했다. 이전 공식 결과와 실패 로그도 보존했다.
 
 공식 구조 검사도 통과했다: logs/pre-submit-structure-fa24c60c.log.
 이 검사는 GitHub 연결과 기존 거래를 확인하지만 현재 오프라인이어도 통과하므로
 상시 운영 조건을 충족했다는 의미는 아니다.
+배포 후 재검사 logs/post-deploy-structure-20261026T145635Z-e2b736b3.log도 통과했고,
+이번에는 판매자·구매자 모두 running now, Round 2 판매 45건·구매 24건을 확인했다.
+이 숫자는 앞의 서버 로그 회수 이후 계속된 거래를 포함한다. 마감 시점 검사는 별도다.
 
-제출 전 남은 작업은 상시 서버 배포·공개 통신·GitHub 연결 재확인, 운영 로그 회수,
-가격 비교 증거 보완과 배포 후 최종 확인이다.
+서버 실행 로그는 logs/server-evidence-20261026T150714Z-892d21d1/에 회수했고
+파일별 SHA-256을 검사했다. logs/market-kit.log는 그 서버 원본이다.
+이전 Mac 로그·기억은 logs/mac-history-20261020/에 원본 그대로 보존했으며
+챌린지 분석은 이 역사적 파일을 명시해 재현한다. 서버 실행은 계속된다.
+
+제출 전 남은 작업은 가격 비교 증거 보완, 최신 서버 로그 회수와 마감 직전 온라인 확인이다.
 마감은 8주차 수업 시작 전이며 PR 개설 시각으로 판단한다. 아직 PR은 제출하지 않았다.
 코드·검증·증거 정리에는 Codex를 사용했고 선택한 전략·관측 결과·미완료 조건을 구분했다.

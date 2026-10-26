@@ -66,6 +66,13 @@ lamp 125에 완료되고 서명 검증을 통과했다. 이 진단은 시장 결
 `verified True, review accepted`로 기록되었다. 기존 17건의 Round 2 구매 이후
 서버에서 새 실적이 생겼다는 뜻이다.
 
+서버의 공식 전체 시장 테스트도 25/25 통과했다. 회수본은
+`../logs/server-evidence-20261026T150714Z-892d21d1/`에 있으며 원본 로그·서비스 상태·
+부트스트랩 출력·소스 해시·기억과 파일별 체크섬을 포함한다. 비밀 파일은 포함하지 않았다.
+회수 시점 구매 인정 거래는 누적 22건, 판매는 36건이고 두 에이전트가 온라인이었다.
+서버 시계가 시장 HTTP Date보다 약 13분 앞서 있으므로 시각 비교 시 회수 메타데이터를
+함께 본다. 원본 시각은 수정하지 않았다.
+
 배포 묶음은 `prepare_release.py`로 재생성한다. 개인키·인증·라이브 기억을 제외하고
 파일별 해시를 새 `logs/deployment-*/package-manifest.json`에 기록한다.
 설치 참고: [uv 설치](https://docs.astral.sh/uv/getting-started/installation/),
