@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-26T11:34:24+00:00",
+  "started": "2026-10-26T13:55:24+00:00",
   "harness": "Claude Code 2.1.283 (claude -p --model haiku, built-in tools off) inside our own ReAct loop; market_buyer: haiku picks the shop, code keeps the record and blocks shops that cheated",
   "seller_cmd": "py seller.py --port {port}",
   "market_buyer_cmd": "py market_buyer.py --shops {shops} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Sells lamps, chairs and bookshelves. Negotiates the price with the buyer.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:52646/",
+        "url": "http://127.0.0.1:50760/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -53,13 +53,13 @@
       "test": "seller_opens",
       "run": 1,
       "pass": true,
-      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 130"
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 124"
     },
     {
       "test": "seller_deal",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [130, 115]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 112.0, asks [124, 112]"
     },
     {
       "test": "seller_signed_receipt",
@@ -77,7 +77,7 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [130, 115]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 112.0, asks [124, 112]"
     },
     {
       "test": "seller_signed_receipt",
@@ -89,7 +89,7 @@
       "test": "seller_deal",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [130, 115]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 112.0, asks [124, 112]"
     },
     {
       "test": "seller_signed_receipt",
