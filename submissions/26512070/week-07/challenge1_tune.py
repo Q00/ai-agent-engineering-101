@@ -86,9 +86,24 @@ def window_start():
     return datetime.fromtimestamp(os.path.getmtime(report)).strftime("%Y-%m-%d %H:%M:%S")
 
 
+def test_window():
+    """(start, end) local time of the last market test run: its seller trades are with the test's buyers."""
+    report = os.path.join(HERE, "test-report.json")
+    if not os.path.exists(report):
+        return None
+    started = json.load(open(report, encoding="utf-8")).get("started")
+    if not started:
+        return None
+    start = datetime.fromisoformat(started).astimezone().strftime("%Y-%m-%d %H:%M:%S")
+    end = datetime.fromtimestamp(os.path.getmtime(report)).strftime("%Y-%m-%d %H:%M:%S")
+    return start, end
+
+
 def trade_stats(since):
-    recs = [r for r in load_jsonl(TRADES) if r.get("time", "") > since]
-    stats = {"since": since, "negotiations": len(recs), "outcomes": {}, "items": {}}
+    test = test_window()
+    recs = [r for r in load_jsonl(TRADES) if r.get("time", "") > since
+            and not (test and test[0] <= r.get("time", "") <= test[1])]
+    stats = {"since": since, "excluded_market_test": test, "negotiations": len(recs), "outcomes": {}, "items": {}}
     for r in recs:
         stats["outcomes"][r["outcome"]] = stats["outcomes"].get(r["outcome"], 0) + 1
         it = stats["items"].setdefault(r["item"], {"negotiations": 0, "deals": 0, "prices": [], "turns": [],
