@@ -16,6 +16,10 @@ def main():
     state_path=ROOT/'.market/refund-deployment.json'
     state=json.loads(state_path.read_text(encoding='utf-8'))
     previous=dict(state)
+    prior_started=previous.get('process',{}).get('started')
+    prior_stderr=next((path for path in (
+        ROOT/f'logs/satisfaction-refund/recovery-{prior_started}.stderr.log',
+        ROOT/f'logs/satisfaction-refund/restart-{prior_started}.stderr.log') if path.exists()),None)
     state['urls']=sorted(set(state.get('urls',[state['url']]))|{live['url']})
     state.update(url=live['url'],process=process,
                  runtime_started_at=datetime.strptime(process['started'],'%Y%m%d-%H%M%S').replace(tzinfo=timezone(timedelta(hours=9))).isoformat())
@@ -25,7 +29,7 @@ def main():
     evidence={'checked_at':datetime.now(timezone.utc).isoformat(),'previous_deployment':previous,'current_deployment':state,
               'live_verification':str(verification.relative_to(ROOT)),'memory_preserved':True,
               'last_exit':'httpx.ReadError: [WinError 10054] remote host forcibly closed connection',
-              'prior_stderr':'logs/satisfaction-refund/restart-20261022-165010.stderr.log'}
+              'prior_stderr':str(prior_stderr.relative_to(ROOT)) if prior_stderr else None}
     output.write_text(json.dumps(evidence,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps({'url':state['url'],'pid':process['pid'],'memory_preserved':True,'evidence':str(output)},indent=2))
 
