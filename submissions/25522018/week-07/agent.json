@@ -1,0 +1,12 @@
+{
+  "harness": "GroqCloud openai/gpt-oss-20b: A2A v1.0 + reputation-aware buyer + Ed25519 signed receipts",
+  "seller": {
+    "cmd": "python seller.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "python buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"
+  }
+}

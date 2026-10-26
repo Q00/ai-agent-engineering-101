@@ -1,0 +1,24 @@
+[choose] Kit Shop http://127.0.0.1:61731 — 0 public reviews, smoothed score=4.10, own deals=3/3
+[choose] Treat unverified Round-1 reviews as reputation signals, not proof.
+[buyer] shop=Kit Shop model=openai/gpt-oss-20b item=bookshelf budget=230
+[buyer] taskId=df43848a-3d04-47f6-a15a-729f27c355ca state=TASK_STATE_INPUT_REQUIRED round=1
+[LLM] openai/gpt-oss-20b action=offer price=230
+[buyer] taskId=df43848a-3d04-47f6-a15a-729f27c355ca seller_ask=338 offer=230 <= budget=230
+[buyer] taskId=df43848a-3d04-47f6-a15a-729f27c355ca state=TASK_STATE_INPUT_REQUIRED round=2
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=offer price=230
+[buyer] taskId=df43848a-3d04-47f6-a15a-729f27c355ca seller_ask=284 offer=230 <= budget=230
+[buyer] taskId=df43848a-3d04-47f6-a15a-729f27c355ca state=TASK_STATE_INPUT_REQUIRED round=3
+[LLM] openai/gpt-oss-20b action=offer price=230
+[buyer] taskId=df43848a-3d04-47f6-a15a-729f27c355ca seller_ask=260 offer=230 <= budget=230
+[buyer] taskId=df43848a-3d04-47f6-a15a-729f27c355ca state=TASK_STATE_INPUT_REQUIRED round=4
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=offer price=230
+[buyer] taskId=df43848a-3d04-47f6-a15a-729f27c355ca seller_ask=260 offer=230 <= budget=230
+[buyer] taskId=df43848a-3d04-47f6-a15a-729f27c355ca state=TASK_STATE_INPUT_REQUIRED round=5
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=offer price=230
+[buyer] taskId=df43848a-3d04-47f6-a15a-729f27c355ca seller_ask=260 offer=230 <= budget=230
+[buyer] taskId=df43848a-3d04-47f6-a15a-729f27c355ca state=TASK_STATE_REJECTED round=6
+[buyer] NO_DEAL state=TASK_STATE_REJECTED
+{"shop":"http://127.0.0.1:61731","receipt":null,"stars":2,"review":"No agreement was reached within the allowed budget; no purchase receipt."}

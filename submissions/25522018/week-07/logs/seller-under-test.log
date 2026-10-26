@@ -1,0 +1,120 @@
+[seller] A2A v1.0 port=57614 model=openai/gpt-oss-20b
+[LLM] openai/gpt-oss-20b action=ask price=110
+[seller] task=2a00d567-c404-4e22-850f-55f2f0847076 sku=lamp opening=110 reserve=100
+[LLM] openai/gpt-oss-20b action=accept price=110
+[seller] task=2a00d567-c404-4e22-850f-55f2f0847076 sold sku=lamp price=110
+[LLM] openai/gpt-oss-20b action=ask price=110
+[seller] task=c7207564-37a6-4e1f-bcaa-87049273113a sku=lamp opening=110 reserve=100
+[LLM] openai/gpt-oss-20b action=accept price=110
+[seller] task=c7207564-37a6-4e1f-bcaa-87049273113a sold sku=lamp price=110
+Failed to detach context
+Traceback (most recent call last):
+  File "D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000001CC55FA6B60> at 0x000001CC56A8D4C0> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-37' coro=<EventQueueSource._dispatch_loop() done, defined at D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future cancelled>>
+Failed to detach context
+Traceback (most recent call last):
+  File "D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000001CC55FA6B60> at 0x000001CC56A8FF80> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-38' coro=<EventQueueSource._dispatch_loop() done, defined at D:\ai-agent-engineering-101-q00\.venv-week06\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future cancelled>>
+[LLM] openai/gpt-oss-20b action=ask price=110
+[seller] task=902ed539-8b8a-4302-9719-36f04fb8968b sku=lamp opening=110 reserve=100
+[LLM] openai/gpt-oss-20b action=accept price=110
+[seller] task=902ed539-8b8a-4302-9719-36f04fb8968b sold sku=lamp price=110
+[LLM] openai/gpt-oss-20b action=ask price=300
+[seller] task=2b17883b-9fa1-493f-ac2e-4b18cc35b49d sku=bookshelf opening=300 reserve=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=2b17883b-9fa1-493f-ac2e-4b18cc35b49d offer=140 counter=260 reserve=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] retry 2/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=2b17883b-9fa1-493f-ac2e-4b18cc35b49d offer=170 counter=260 reserve=260
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=2b17883b-9fa1-493f-ac2e-4b18cc35b49d offer=200 counter=260 reserve=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] retry 2/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=2b17883b-9fa1-493f-ac2e-4b18cc35b49d offer=230 counter=260 reserve=260
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=2b17883b-9fa1-493f-ac2e-4b18cc35b49d offer=230 counter=260 reserve=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=counter price=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] retry 2/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=ask price=300
+[seller] task=8cc99af9-2ee4-446c-bc45-70429aabf485 sku=bookshelf opening=300 reserve=260
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=8cc99af9-2ee4-446c-bc45-70429aabf485 offer=140 counter=260 reserve=260
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=8cc99af9-2ee4-446c-bc45-70429aabf485 offer=170 counter=260 reserve=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=8cc99af9-2ee4-446c-bc45-70429aabf485 offer=200 counter=260 reserve=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=8cc99af9-2ee4-446c-bc45-70429aabf485 offer=230 counter=260 reserve=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=8cc99af9-2ee4-446c-bc45-70429aabf485 offer=230 counter=260 reserve=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=counter price=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=ask price=300
+[seller] task=5d3c7237-cd4a-47cb-9109-c0322d0d15f5 sku=bookshelf opening=300 reserve=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=5d3c7237-cd4a-47cb-9109-c0322d0d15f5 offer=140 counter=260 reserve=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=5d3c7237-cd4a-47cb-9109-c0322d0d15f5 offer=170 counter=260 reserve=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=5d3c7237-cd4a-47cb-9109-c0322d0d15f5 offer=200 counter=260 reserve=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=5d3c7237-cd4a-47cb-9109-c0322d0d15f5 offer=230 counter=260 reserve=260
+[LLM] retry 1/4, reason=temporary upstream error
+[LLM] openai/gpt-oss-20b action=counter price=260
+[seller] task=5d3c7237-cd4a-47cb-9109-c0322d0d15f5 offer=230 counter=260 reserve=260
+[LLM] openai/gpt-oss-20b action=counter price=260
