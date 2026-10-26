@@ -22,6 +22,8 @@ class Catalog:
             items = [i for i in items if i["category"] in categories]
         for i in items:
             i["reserve"] = round(i["reserve"] * price_factor)
+            if "open_cap" in i:
+                i["open_cap"] = round(i["open_cap"] * price_factor)
         self.items = items
         self.by_id = {i["id"]: i for i in items}
         self.docs = [Counter(tokens(f"{i['name']} {i['category']} {i['description']}")) for i in items]

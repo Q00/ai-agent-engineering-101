@@ -196,6 +196,10 @@ class Seller(AgentExecutor):
             if ask is None or ask < item["reserve"]:
                 log(f"[{tag}] GUARD opening ask {ask} below reserve {item['reserve']} -> {math.ceil(item['reserve'] * 1.3)}")
                 ask = math.ceil(item["reserve"] * 1.3)
+            cap = item.get("open_cap")   # week 07 challenge 1: market deals close near the reserve, so cap the opening
+            if cap and ask > cap:
+                log(f"[{tag}] GUARD opening ask {ask} above open_cap {cap} -> {cap}")
+                ask = cap
             self.open[task.id] = {"item": item, "ask": ask, "opening": ask, "history": []}
             log(f"[{tag}] picked {item['id']} {item['name']} (reserve {item['reserve']})")
             note = clean(out.get("message"), tag)
