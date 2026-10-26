@@ -64,7 +64,10 @@ and buyer, and I do not claim any.
   (chair 6 at 183 on average, lamp 5 at 102, bookshelf 4 at 260; average paid 177) and 4 no-deal
   results that the market did not show. The first counted deal is ledger #118535, a chair at 180
   from ggari-shop, `verified True`. The market board lists the buyer with 15 counted deals.
-- **Shop, Round 2 (board, 2026-10-26 22:36):** 66 counted deals, 4.42 stars on 66 reviews, 126 visits,
+- **Second session (22:57 to 23:45, after the price change):** 95 orders, 65 counted deals and 28
+  no-deals for the buyer; the board shows the buyer at 79 deals in total and the shop at 245 deals,
+  4.44 stars. Details in challenge 1.
+- **Shop, Round 2 (board, 2026-10-26 22:36, before the change):** 66 counted deals, 4.42 stars on 66 reviews, 126 visits,
   average price 180 (revenue 11878 / 66 deals), profit 1118 (about 17 per deal), share 0.0
   because the shop is not alive right now. For comparison ggari-shop has share 0.121 with an
   average price of 178 and about 1.6 profit per deal.
@@ -109,8 +112,34 @@ change: 25/25. The change was proposed by Claude from this data and I approved i
 the evidence for it, and the expected effect (a higher share at a slightly lower average price) is a
 hypothesis until the numbers below exist.
 
-TODO (needs the shop running): **after** numbers, from the board and `logs/market-kit.log` of a new
-session: share, average price and profit per deal, in `logs/challenge-1/after-board-snapshot.txt`.
+**After** (`logs/challenge-1/after-board-snapshot.txt`, board of 2026-10-26 23:45; kit restarted at 22:57,
+so 48 minutes, 95 orders, `GUARD opening ask ... above open_cap` fired 251 times). The deltas are board
+totals minus the "before" snapshot (66 deals, 126 visits, revenue 11878, profit 1118):
+
+| | before (13 min session) | after (48 min session) |
+|---|---|---|
+| deals per visit | 66 / 126 = 52% | 179 / 247 = 72% |
+| deals per minute | 5.1 | 3.7 |
+| average price, lamp | 111.0 (29 deals) | 105.7 (53) |
+| average price, chair | 198.5 (22) | 187.0 (69) |
+| average price, bookshelf | 286.0 (15) | 268.4 (58) |
+| profit per deal | 16.9 | 7.1 ((2391-1118)/179) |
+| share | 0.0 (not running) | 0.001, rank 28 of 37 running shops |
+
+(The per-item averages are from my seller's `completed, receipt` lines in `logs/market-kit.log`.)
+
+**What this says.** The cap did what it was meant to do on price: the average closing price per item fell
+by about 5-6% and a larger part of the visits ended in a deal (52% to 72%). It did **not** raise my
+share: 0.001 is nearly zero, and deals per minute went down, not up. So the hypothesis that high openings were
+what cost me customers is not supported; at most the cap made the customers I already got more likely to
+buy. The price per deal fell and profit per deal fell from about 17 to about 7, so the shop earns less per
+sale without selling more. What decides who gets visits is, as the assignment says, what buyers remember
+and read in reviews, and a 4.4-star shop with 159-245 reviews in a market where the leaders have 30,000
+does not get picked by buyers whose memory already holds other shops. **Limits:** the two sessions are
+different lengths and at different times, other shops' prices and the buyers around changed, and I
+changed one thing but did not run a control. I kept the cap rather than revert, because the conversion rate
+is better and reserves are unchanged; a next step would be to measure what buyers see (my reviews say
+"receipt matches" but are few) instead of the asking price.
 
 ### Challenge 2: dishonest participants
 
@@ -139,6 +168,7 @@ seller on a local port (49829 in the log) and opened a cloudflared quick tunnel
 command was `python scripts/market_kit.py join --dir submissions/25512192/week-07 --market https://market.ourolabs.ai --name winun1127 --tunnel`
 (with `MARKET_OWNER` set to my claim code, so the agents show my GitHub name).
 The shop is not deployed to Workers or a VPS. Signing uses `shop_key.pem` on that PC, and the code
-also accepts a `SHOP_KEY` secret for a later deployment. Uptime: the log covers one session,
-20:10:55 to 20:23:33 (about 13 minutes). Because a quick-tunnel URL changes at every start, the shop
+also accepts a `SHOP_KEY` secret for a later deployment. Uptime: the log covers two sessions on the same PC: 2026-10-21
+20:10:55 to 20:23:33 (about 13 minutes) and, after the price change, 2026-10-26 22:55 to at least 23:45
+(started by `D:\seoultech\2026-2\agent-market\join.ps1`, a hidden process with the same join command). Because a quick-tunnel URL changes at every start, the shop
 is offline whenever the PC's kit is stopped; the board shows it as not running now.
