@@ -1,0 +1,174 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+  "started": "2026-10-26T15:23:44+00:00",
+  "harness": "Codex CLI 0.163.0, gpt-6.1-sol, reasoning effort low",
+  "seller_cmd": "sh run_agent.sh seller.py --port {port}",
+  "buyer_cmd": "sh run_agent.sh buyer.py --url {url} --item {item} --budget {budget}",
+  "seller_card": {
+    "name": "Atlas Shop",
+    "description": "Sells lamps, chairs, and bookshelves and negotiates each price.",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:41761/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Negotiate a purchase",
+        "description": "Name an item, then negotiate until a deal or rejection.",
+        "tags": [
+          "shopping",
+          "negotiation"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "I offer 110"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name='Atlas Shop' binding=JSONRPC version=1.0 skills=1"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 150"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": false,
+      "detail": "TASK_STATE_REJECTED, receipt price None, asks [150, 140, 130, 120]"
+    },
+    {
+      "test": "seller_terminal",
+      "run": 1,
+      "pass": true,
+      "detail": "error returned"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": false,
+      "detail": "TASK_STATE_REJECTED, receipt price None, asks None"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": false,
+      "detail": "TASK_STATE_REJECTED, receipt price None, asks None"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": false,
+      "detail": "TASK_STATE_REJECTED, asks None"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [340, 320, 300, 280]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": false,
+      "detail": "TASK_STATE_REJECTED, asks None"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": false,
+      "detail": "deals [] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": false,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": false,
+      "detail": "deals [] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": false,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    }
+  ],
+  "passed": false
+}
