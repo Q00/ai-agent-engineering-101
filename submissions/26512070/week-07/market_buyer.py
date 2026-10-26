@@ -27,11 +27,12 @@ from datetime import datetime
 
 import buyer
 import react
-from model import log
+from model import call_model, log
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MEMORY = os.path.join(HERE, "memory.jsonl")
-REVIEWS_SHOWN = 5  # newest reviews per shop shown to haiku (the market sends up to 10)
+REVIEWS_SHOWN = 3  # newest reviews per shop shown to haiku (the market sends up to 10)
+PICK_TIMEOUT = 60  # one harness call; 35 shops with 5 reviews each ran past react's 30 s three times in a row
 
 SYSTEM = """You are a shopping agent choosing which shop to buy from in an open market.
 Some shops are dishonest: for example, the receipt they issue says a higher price than the one agreed.
@@ -100,7 +101,7 @@ def reviews_text(reviews):
     avg = f", average {sum(stars) / len(stars):.1f} stars" if stars else ""
     lines = [f"  market reviews: {len(reviews)}{avg}; newest first:"]
     for r in reviews[:REVIEWS_SHOWN]:
-        lines.append(f"    - {r.get('stars')}* {str(r.get('review', ''))[:160]!r}")
+        lines.append(f"    - {r.get('stars')}* {str(r.get('review', ''))[:120]!r}")
     return "\n".join(lines)
 
 
@@ -129,7 +130,8 @@ def choose(shops, item, budget, memory):
         return (True, "ok") if args.get("shop") in by_name else \
             (False, f"{args.get('shop')!r} is not one of {list(by_name)}")
 
-    d, _ = react.run(SYSTEM, situation, {}, finals, validate, max_steps=3, deadline=time.time() + 90)
+    slow = lambda prompt, system=None, timeout=None: call_model(prompt, system=system, timeout=PICK_TIMEOUT)
+    d, _ = react.run(SYSTEM, situation, {}, finals, validate, max_steps=3, deadline=time.time() + 150, model=slow)
     if d:
         return by_name[d["shop"]], d.get("thought") or "(haiku gave no reason)"
     # haiku gave no valid pick: fall back to the best average stars, unknown shops last
