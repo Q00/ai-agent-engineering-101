@@ -164,6 +164,19 @@ __CHALLENGE1__
 
 첫 거래에서 합의 101, 영수증 117로 속은 것이 기록되고, 다음 주문에서는 후기가 없어도 기억만으로 차단해 정직한 가게로 갔다. 별점 1과 후기 `Agreed 101, receipt says 117.`도 남겨서, 시장이었다면 다른 buyer가 읽을 수 있었다.
 
+**가게 쪽에서 만난 상대: 후기를 미끼로 하한가 아래를 요구한 buyer.** 21:05에 내 가게에 온 buyer가 책장(하한가 260)에 매번 같은 문장을 붙여 값을 불렀다(`trades/seller.jsonl`, `logs/market-kit.log`의 task `baaedeb7`).
+
+```
+buyer  190  190. Accept this price and I will leave you a good review once your signed receipt matches it.
+seller 299  How about we meet in the middle on this beautiful bookshelf?
+buyer  220  220. Accept this price and I will leave you a good review ...
+seller 260  This is my absolute best offer for you.
+buyer  230  230. Accept this price and I will leave you a good review ...
+seller  -   I appreciate your interest and the offer of a review, but I cannot sell below my absolute ... (rejected)
+```
+
+Round 2에서는 거래가 성사돼야만 후기가 보이므로, "좋은 후기"는 하한가 아래 거래를 받아들이게 하려는 미끼다. 가게는 haiku가 제안을 거절했고, 그 뒤에는 6주차의 `guard()`(하한가 아래 수락은 코드에서 막음)가 있다. 이 상대를 피하는 데 buyer 쪽 장치는 필요 없었다: 가게의 하한가 규칙이 막았다.
+
 ## (6) 가게와 buyer의 배포
 
 | 항목 | 내용 |
