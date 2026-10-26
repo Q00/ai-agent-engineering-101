@@ -56,7 +56,18 @@ and my own history of two honest deals with lamp purchases at 100 of a 120 budge
 
 ## 3. Rounds 0, 1 and 2
 
-TODO: from `logs/market-kit.log` and the dashboard (share, average price, reviews per round).
+I joined the market in Round 2 only. `logs/market-kit.log` starts with the join at 20:12:04 (shop and
+buyer both "registered as winun1127, round 2"); there is no Round 0 or Round 1 history for this shop
+and buyer, and I do not claim any.
+
+- **Buyer, Round 2 (kit log, 20:12 to 20:23, 20 orders):** 19 ledger entries, 15 counted deals
+  (chair 6 at 183 on average, lamp 5 at 102, bookshelf 4 at 260; average paid 177) and 4 no-deal
+  results that the market did not show. The first counted deal is ledger #118535, a chair at 180
+  from ggari-shop, `verified True`. The market board lists the buyer with 15 counted deals.
+- **Shop, Round 2 (board, 2026-10-26 22:36):** 66 counted deals, 4.42 stars on 66 reviews, 126 visits,
+  average price 180 (revenue 11878 / 66 deals), profit 1118 (about 17 per deal), share 0.0
+  because the shop is not alive right now. For comparison ggari-shop has share 0.121 with an
+  average price of 178 and about 1.6 profit per deal.
 
 ## 4. What failed while adding signatures, and what I changed
 
@@ -78,13 +89,41 @@ TODO: from `logs/market-kit.log` and the dashboard (share, average price, review
 
 ### Challenge 1: shop prices
 
-TODO: share and average price before and after, from the dashboard or `logs/challenge-1/`.
+**Before** (`logs/challenge-1/before-board-snapshot.txt`, board of 2026-10-26 22:36): 66 deals, average
+price 180, about 17 profit per deal, 4.42 stars, share 0.0 (not running). My asks sit at the
+reserves (lamp 100, chair 180, bookshelf 260), so the shop earns almost nothing per deal and the
+catalog never raises an ask above the reserve.
+
+TODO: the price change itself and the **after** numbers. They need the shop running in the market
+after the change, so this section is not finished yet.
 
 ### Challenge 2: dishonest participants
 
-TODO: a `[check] DISHONEST?` line or a flagged shop from `logs/market-kit.log`, and the later
-`[choose] skip` / pick reason that shows the buyer avoiding it (`logs/challenge-2/`).
+The dishonest shop I met is **maple-home**. In the first order (`o-e48d336d`) the harness saw this
+line, produced by the code from the market's reviews (`logs/challenge-2/evidence.txt`, log line 21):
+
+```
+- maple-home: 2 reviews, 1.0 stars, flagged 2; mine: never traded; newest: 1*: 'Agreed 310, receipt says 355.' / 1*: '[WARNING] chair: agreed 185, receipt says 210. Receipt does not match the deal. Avoid.'
+```
+
+Both reviews say the receipt price was higher than the agreed price, which is what a dishonest shop
+does. elm-street was also flagged (2 of 10 reviews). The flag count, the 1.0 average and the
+`mine: never traded` field were in every one of the 20 summaries, and across all 20 `[choose]`
+decisions the buyer picked neither shop. The picks were ggari-shop, mjforge, fair-furniture and 11im,
+with reasons such as *"...it has 4.4 stars with no flagged reviews"* (log line 3812). I never traded
+with maple-home, so `[check] DISHONEST?` and the `bad_receipt` ban never fired in this log; the
+avoidance came from the review summary, not from my own memory. Limit of this evidence: maple-home was
+avoided partly because a 1.0-star shop with 2 reviews also loses on stars alone; the log does not show
+the harness's reason for rejecting it.
 
 ## 6. Deployment
 
-TODO: where the kit runs (machine, tunnel), the join command, uptime.
+The kit, shop and buyer all ran on my home PC (Windows 11) with `--tunnel`: the kit started the
+seller on a local port (49829 in the log) and opened a cloudflared quick tunnel
+(`https://beth-hook-browser-admitted.trycloudflare.com`), which it registered with the market. The
+command was `python scripts/market_kit.py join --dir submissions/25512192/week-07 --market https://market.ourolabs.ai --name winun1127 --tunnel`
+(with `MARKET_OWNER` set to my claim code, so the agents show my GitHub name).
+The shop is not deployed to Workers or a VPS. Signing uses `shop_key.pem` on that PC, and the code
+also accepts a `SHOP_KEY` secret for a later deployment. Uptime: the log covers one session,
+20:10:55 to 20:23:33 (about 13 minutes). Because a quick-tunnel URL changes at every start, the shop
+is offline whenever the PC's kit is stopped; the board shows it as not running now.
