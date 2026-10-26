@@ -36,10 +36,19 @@ def save(path, data):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--snapshot", type=Path, required=True)
+    parser.add_argument("--market-log", type=Path, default=ROOT / "logs/market-kit.log",
+                        help="Original market log to analyze, including a preserved historical copy")
+    parser.add_argument("--memory", type=Path, default=ROOT / "data/market-memory.jsonl",
+                        help="Memory snapshot belonging to the observation period")
     args = parser.parse_args()
     snapshot = args.snapshot.resolve()
     if not snapshot.is_relative_to(ROOT / "logs"):
         parser.error("snapshot must be an existing directory inside this submission's logs")
+    kit = args.market_log.resolve()
+    memory = args.memory.resolve()
+    for source in (kit, memory):
+        if not source.is_relative_to(ROOT) or not source.is_file():
+            parser.error("market log and memory must be existing files inside this submission")
     run = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8]
     common = {"kind": "derived analysis of preserved evidence; not a new market experiment",
               "generated_at": datetime.now(timezone.utc).isoformat()}
@@ -69,7 +78,6 @@ def main():
     })
     second = ROOT / "logs/challenge-2" / ("week07-evidence-" + run)
     second.mkdir(parents=True)
-    kit = ROOT / "logs/market-kit.log"
     lines = kit.read_text(encoding="utf-8").splitlines()
     encounters = []
     for index, line in enumerate(lines):
@@ -112,7 +120,6 @@ def main():
             warnings.append({"source": reference(source), "item": context["item"],
                              "budget": context["budget"], "suspect_evidence": suspect,
                              "decision": decision})
-    memory = ROOT / "data/market-memory.jsonl"
     trades = [json.loads(line) for line in memory.read_text().splitlines() if line.strip()]
     save(second / "analysis.json", {
         **common, "original_market_log": reference(kit), "encounters": encounters,
