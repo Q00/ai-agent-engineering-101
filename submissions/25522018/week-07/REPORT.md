@@ -8,18 +8,17 @@ This solution builds on the Week 06 A2A buyer and seller. The market kit runs th
 
 ## Actual local tests
 
-Both official local tests were executed on Windows using GroqCloud with openai/gpt-oss-20b.
+The official tests were executed on Windows using GroqCloud (`openai/gpt-oss-20b`).
 
-- Week 06 A2A compatibility: 21/21 passed.
-- Week 07 market test: 25/25 passed.
-- Seller receipt signatures: Ed25519 verification passed in 3/3 seller-deal runs.
-- Reputation-based shop selection: the positively reviewed shop was selected in 3/3 runs.
-- Buyer budget enforcement: all tested over-budget negotiations ended without a purchase.
-- A2A version headers and task continuation: all relevant checks passed.
+- Week 6 A2A compatibility: **21/21 passed**
+- Week 7 market test: **25/25 passed**
+- Ed25519 receipt signatures: verified in 3/3 seller-deal tests
+- Reputation-based shop selection: selected the positively reviewed seller in 3/3 runs
+- Buyer budget enforcement and A2A task continuation: all relevant checks passed
 
-The local tests provide evidence in test-report.json, logs/trade-test.log, and logs/market-test.log.
+Evidence is provided in `test-report.json`, `logs/trade-test.log`, and `logs/market-test.log`.
 
-During initial Windows setup, Python commands failed because the virtual environment was not activated. Activating .venv-week06 resolved this issue. Both final test suites then passed.
+The live class-market rounds have not yet been completed.
 
 ## Three live rounds
 
