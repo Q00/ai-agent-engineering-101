@@ -119,6 +119,12 @@ class Seller(AgentExecutor):
                 return
             info = self.inventory.get(item)
             if info["stock"] <= 0:
+                # Logged and recorded: 113 buyers were turned away here unseen on 2026-10-26 (20:33-21:05).
+                log(f"\n=== task {task.id[:8]} {item}: out of stock, turned the buyer away")
+                trade_record.save(trade_record.build("seller", {
+                    "item": item, "history": [{"from": "buyer", "text": text, "price": None},
+                                              {"from": "seller", "text": f"Sorry, {item} is out of stock.",
+                                               "price": None}], "guards": []}, "rejected"))
                 await up.reject(say(f"Sorry, {item} is out of stock."))
                 return
             deal = {"item": item, "reserve": info["reserve"], "list_price": info["list_price"],
