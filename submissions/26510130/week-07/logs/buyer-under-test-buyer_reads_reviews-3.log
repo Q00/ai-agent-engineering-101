@@ -1,0 +1,7 @@
+[harness pick] <- '```json\n{"choice": 1, "why": "Kit Shop South has a strong track record of honest pricing and receipt accuracy, unlike Kit Shop North which has overcharged on receipts before."}\n```'
+[buyer] picked 'Kit Shop South' (http://127.0.0.1:52345) because: Kit Shop South has a strong track record of honest pricing and receipt accuracy, unlike Kit Shop North which has overcharged on receipts before.
+[buyer] -> 'I want to buy a lamp'
+[harness haggle] <- '```json\n{"action": "counter", "price": 110}\n```'
+[buyer] -> '110' taskId=6ef5091e
+[buyer] TASK_STATE_COMPLETED | Deal: lamp at 110.
+{"shop": "http://127.0.0.1:52345", "receipt": {"task": "6ef5091e-7ba0-4b3a-bba3-0407b1323157", "item": "lamp", "sig_seller": "pDv+qLwQAWiR8aso9P6T6/T6ZKWzuto/21XfkjwG5AMR3SbpyHIebmKfYNhzKMqwOTEnH4+l5/aZQzvnJ3AjAg==", "shop": "Kit Shop South", "price": 110.0}, "stars": 5, "review": "Quick, fair deal on the lamp at 110; receipt matched."}
