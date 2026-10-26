@@ -2,10 +2,14 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import json
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import uvicorn
+from cryptography.hazmat.primitives import serialization
 from starlette.applications import Starlette
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
 from a2a.server.agent_execution import AgentExecutor, RequestContext
@@ -20,6 +24,18 @@ from protocol import RESERVES
 
 SELLER_NAME = "Atlas Shop"
 TERMINAL_STATES = {"completed", "rejected", "canceled"}
+
+
+def canon(value: dict) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def sign_receipt(receipt: dict, key_path: str | Path = "shop_key.pem") -> dict:
+    key = serialization.load_pem_private_key(Path(key_path).read_bytes(), password=None)
+    body = {name: receipt[name] for name in ("shop", "item", "price", "task")}
+    signed = dict(receipt)
+    signed["sig_seller"] = base64.b64encode(key.sign(canon(body))).decode()
+    return signed
 
 
 @dataclass
@@ -154,7 +170,12 @@ class Seller(AgentExecutor):
             if price != offer or price < deal.reserve:
                 await self._safe_reject(updater, deal, "Acceptance violated the price contract.")
                 return
-            receipt = {"seller": SELLER_NAME, "item": deal.item, "price": price}
+            receipt = sign_receipt({
+                "shop": SELLER_NAME,
+                "item": deal.item,
+                "price": int(price),
+                "task": task.id,
+            })
             await updater.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             message = f"Deal accepted at {price}"
             deal.history.append(NegotiationTurn("seller", message, price))
