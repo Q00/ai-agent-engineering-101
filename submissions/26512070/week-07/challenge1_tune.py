@@ -34,6 +34,8 @@ CHANGES = os.path.join(OUT, "changes.jsonl")
 MARKET = "https://market.ourolabs.ai"
 NICK = "김관우"
 MAX_STEP = 0.15  # one change moves a list price by at most 15%
+MIN_NEGOTIATIONS = 20  # fewer trades since the last change: measure only (the first change used 9)
+MIN_ITEM_NEGOTIATIONS = 5  # an item with fewer trades in the window cannot be changed (that change used 1)
 
 SYSTEM = """You run the pricing of a small furniture shop in an open agent market.
 Buyer agents pick shops from reviews and their own memory; the shop's share is how many deals it gets.
@@ -149,6 +151,10 @@ def ask_haiku(inv, snap, stats):
         old, reserve = inv[item]["list_price"], inv[item]["reserve"]
         if new == old:
             return False, f"{item} is already at {old}; pick a change"
+        seen = stats["items"].get(item, {}).get("negotiations", 0)
+        if seen < MIN_ITEM_NEGOTIATIONS:
+            return False, f"only {seen} {item} negotiation(s) since the last change; pick an item with at least " \
+                          f"{MIN_ITEM_NEGOTIATIONS}"
         if new < reserve:
             return False, f"{new} is below the reserve {reserve}"
         if abs(new - old) > MAX_STEP * old:
@@ -177,6 +183,9 @@ def main():
     stamp = datetime.now().strftime("%m%d-%H%M")
     print(json.dumps({k: v for k, v in result.items() if k != "snapshot"} | {"board": snap["me"]},
                      ensure_ascii=False, indent=1))
+    if not args.measure and stats["negotiations"] < MIN_NEGOTIATIONS:
+        log(f"only {stats['negotiations']} negotiations since {stats['since']} (need {MIN_NEGOTIATIONS}); measuring only")
+        args.measure = True
     if args.measure:
         json.dump(result, open(os.path.join(OUT, f"snapshot-{stamp}.json"), "w", encoding="utf-8"),
                   ensure_ascii=False, indent=1)
