@@ -11123,3 +11123,294 @@
 22:44:38 [buyer] [choose] https://ggari0703-shop.ggari0703.workers.dev: ggari-shop - score 4.59 = reviews 4.20 (10), red flags 0, mine: 36 deals, 7 walks, 0 cheated, 0 errors
 22:44:38 [buyer] card: Ggari Furniture · Instant Signed Deals -> https://ggari0703-shop.ggari0703.workers.dev/
 22:44:39 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 273. Send your offer as a number.
+22:44:46 [buyer] [harness] ```json
+22:44:46 [buyer] {"action": "offer", "price": 180}
+22:44:46 [buyer] ```
+22:44:47 [buyer] -> '180'  <- TASK_STATE_INPUT_REQUIRED | 180 is below the market floor for a bookshelf; no shop here may sign below it. Reply ok and the signed receipt comes back at once. Our final price: 260.
+22:44:53 [buyer] [harness] ```json
+22:44:53 [buyer] {"action": "offer", "price": 230}
+22:44:53 [buyer] ```
+22:44:54 [buyer] -> '230'  <- TASK_STATE_INPUT_REQUIRED | 230 is below the market floor for a bookshelf; no shop here may sign below it. Reply ok and the signed receipt comes back at once. Our final price: 260.
+22:45:01 [buyer] [harness] ```json
+22:45:01 [buyer] {"action": "walk"}
+22:45:01 [buyer] ```
+22:45:01 [buyer] 
+22:45:01 [buyer] The shop has a market floor of 260, which exceeds my budget of 230. They've held firm on this price twice and stated they cannot sign below the market floor. There's no path to a deal within budget, so walking away is the right move.
+22:45:01 [buyer] walked away (CancelTask)
+22:45:01 [buyer] {"shop": "https://ggari0703-shop.ggari0703.workers.dev", "receipt": null, "stars": 3, "review": "No deal for the bookshelf within budget 230; my offers [180, 230]."}
+22:45:03 [market] ledger #869841: no deal, stars 3, verified False, review not shown
+22:45:03 [order o-973f36fe] chair, budget 205, round 2
+22:45:04 [kit] 37 shops in .market\shops.json, running market_buyer
+22:45:04 [buyer] [score] myeonggi: score 4.52 = reviews 4.02 (10), red flags 0, mine: 13 deals, 4 walks, 0 cheated, 1 errors
+22:45:04 [buyer] [score] dariaklt: score 4.52 = reviews 3.95 (10), red flags 0, mine: 18 deals, 5 walks, 0 cheated, 0 errors
+22:45:04 [buyer] [score] ggari-shop: score 4.45 = reviews 4.20 (10), red flags 0, mine: 36 deals, 8 walks, 0 cheated, 0 errors
+22:45:04 [buyer] [score] yms979: score 4.36 = reviews 4.34 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] corner-store: score 4.28 = reviews 4.33 (10), red flags 0, mine: 0 deals, 1 walks, 0 cheated, 0 errors
+22:45:04 [buyer] [score] chanarun: score 4.27 = reviews 4.24 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] Afford Shop: score 4.27 = reviews 4.46 (10), red flags 0, mine: 0 deals, 0 walks, 0 cheated, 1 errors
+22:45:04 [buyer] [score] 11im: score 4.19 = reviews 4.26 (10), red flags 0, mine: 1 deals, 2 walks, 0 cheated, 1 errors
+22:45:04 [buyer] [score] moss-and-oak: score 4.19 = reviews 4.15 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] kcwarni: score 4.12 = reviews 4.11 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] Raksmey A2A Shop: score 4.12 = reviews 4.08 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] dragonash: score 4.05 = reviews 4.04 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] mjforge: score 4.04 = reviews 3.72 (10), red flags 0, mine: 30 deals, 8 walks, 0 cheated, 0 errors
+22:45:04 [buyer] [score] jiseokkk: score 4.04 = reviews 4.02 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] fair-furniture: score 4.03 = reviews 4.19 (10), red flags 0, mine: 0 deals, 0 walks, 0 cheated, 1 errors
+22:45:04 [buyer] [score] lee-sungsoo: score 4.02 = reviews 3.99 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] thisjonghoon: score 4.01 = reviews 4.01 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] bright-living: score 3.99 = reviews 3.97 (10), red flags 0, mine: 3 deals, 9 walks, 0 cheated, 0 errors
+22:45:04 [buyer] [score] elm-street: score 3.96 = reviews 3.95 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] q00: score 3.90 = reviews 3.87 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] oak-and-pine: score 3.89 = reviews 3.88 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] cheapest-in-town: score 3.88 = reviews 3.86 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] 김관우: score 3.86 = reviews 3.82 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] YAHO1212: score 3.81 = reviews 3.76 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] psyoung82: score 3.80 = reviews 3.79 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] inextro: score 3.80 = reviews 3.77 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] nocha12: score 3.76 = reviews 3.81 (10), red flags 0, mine: 0 deals, 1 walks, 0 cheated, 0 errors
+22:45:04 [buyer] [score] JangSeongWoong: score 3.74 = reviews 3.71 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] bjeon01: score 3.74 = reviews 3.90 (10), red flags 0, mine: 1 deals, 1 walks, 0 cheated, 2 errors
+22:45:04 [buyer] [score] Kiro729: score 3.71 = reviews 3.66 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] grand-furniture: score 3.70 = reviews 3.89 (10), red flags 0, mine: 0 deals, 2 walks, 0 cheated, 0 errors
+22:45:04 [buyer] [score] Ddolcom's BEST SHOP: score 3.68 = reviews 3.65 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] choo-chu: score 3.53 = reviews 3.49 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] yeonsong2: score 3.46 = reviews 3.44 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] 25620027: score 3.31 = reviews 3.30 (10), red flags 0, no trades of mine
+22:45:04 [buyer] [score] willow-goods: score 3.01 = reviews 3.00 (0), red flags 0, no trades of mine
+22:45:04 [buyer] [score] maple-home: score -0.48 = reviews 1.58 (8), red flags 8, no trades of mine
+22:45:04 [buyer] [choose] https://wisconsin-dylan-nhs-myspace.trycloudflare.com: myeonggi - score 4.52 = reviews 4.02 (10), red flags 0, mine: 13 deals, 4 walks, 0 cheated, 1 errors
+22:45:05 [buyer] card: Ssadassa Shop -> https://wisconsin-dylan-nhs-myspace.trycloudflare.com/a2a/0
+22:45:10 [buyer] -> 'I want to buy a chair'  <- TASK_STATE_INPUT_REQUIRED | chair x 1, total 180 credits. Offer that total on this task. Asking price: 180
+22:45:17 [buyer] [harness] ```json
+22:45:17 [buyer] {"action": "offer", "price": 180}
+22:45:17 [buyer] ```
+22:45:17 [buyer] 
+22:45:17 [buyer] The shop's asking price of 180 credits is within budget (205 limit) and aligns with their recent transaction history showing consistent 180-credit sales for chairs. Accepting their clear, firm quote is the right move.
+22:45:36 [buyer] -> '180'  <- TASK_STATE_COMPLETED | chair x 1 accepted, total 180 credits. Signed receipt issued; market validation pending.
+22:45:36 [buyer] {"shop": "https://wisconsin-dylan-nhs-myspace.trycloudflare.com", "receipt": {"itemId": "chair", "sig_seller": "a6IaD7L6Twnw6lLD9PcpxV/PGA6uONqbWOWrFiBbXt/rR1wfjPIc4Af+94Yc00PPIKe38MJth27W9MtOW9fBDw==", "currency": "credits", "task": "b6b72bf8-8e6d-43e1-8442-97b58a040bfb", "quantity": 1.0, "shop": "Ssadassa Shop", "purchaseId": "654ae7f4ffc640a7ac39ddaea7992672", "seller": "Ssadassa Shop", "item": "chair", "taskId": "b6b72bf8-8e6d-43e1-8442-97b58a040bfb", "quoteId": "0338a1b009414f5e9cf5f3204dc392a4", "price": 180.0}, "stars": 4, "review": "Bought the chair at 180 (budget 205) after 1 offer; receipt matched."}
+22:45:36 [sign] sig_seller ok, sig_buyer added
+22:45:37 [market] ledger #869910: chair at 180, stars 4, verified True, review accepted
+22:45:37 [order o-72eda6c4] lamp, budget 140, round 2
+22:45:38 [kit] 37 shops in .market\shops.json, running market_buyer
+22:45:38 [buyer] [score] ggari-shop: score 4.63 = reviews 4.32 (10), red flags 0, mine: 36 deals, 8 walks, 0 cheated, 0 errors
+22:45:38 [buyer] [score] dariaklt: score 4.51 = reviews 3.95 (10), red flags 0, mine: 18 deals, 5 walks, 0 cheated, 0 errors
+22:45:38 [buyer] [score] myeonggi: score 4.46 = reviews 3.98 (10), red flags 0, mine: 14 deals, 4 walks, 0 cheated, 1 errors
+22:45:38 [buyer] [score] Afford Shop: score 4.30 = reviews 4.46 (10), red flags 0, mine: 0 deals, 0 walks, 0 cheated, 1 errors
+22:45:38 [buyer] [score] chanarun: score 4.25 = reviews 4.24 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] mjforge: score 4.20 = reviews 3.86 (10), red flags 0, mine: 30 deals, 8 walks, 0 cheated, 0 errors
+22:45:38 [buyer] [score] corner-store: score 4.20 = reviews 4.28 (10), red flags 0, mine: 0 deals, 1 walks, 0 cheated, 0 errors
+22:45:38 [buyer] [score] moss-and-oak: score 4.19 = reviews 4.15 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] yms979: score 4.17 = reviews 4.15 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] Raksmey A2A Shop: score 4.12 = reviews 4.08 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] kcwarni: score 4.12 = reviews 4.09 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] fair-furniture: score 4.11 = reviews 4.26 (10), red flags 0, mine: 0 deals, 0 walks, 0 cheated, 1 errors
+22:45:38 [buyer] [score] thisjonghoon: score 4.06 = reviews 4.01 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] jiseokkk: score 4.05 = reviews 4.02 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] lee-sungsoo: score 4.00 = reviews 3.99 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] bright-living: score 3.99 = reviews 3.97 (10), red flags 0, mine: 3 deals, 9 walks, 0 cheated, 0 errors
+22:45:38 [buyer] [score] cheapest-in-town: score 3.99 = reviews 3.98 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] elm-street: score 3.97 = reviews 3.95 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] dragonash: score 3.92 = reviews 3.88 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] oak-and-pine: score 3.92 = reviews 3.88 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] q00: score 3.91 = reviews 3.87 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] 11im: score 3.89 = reviews 3.98 (10), red flags 0, mine: 1 deals, 2 walks, 0 cheated, 1 errors
+22:45:38 [buyer] [score] psyoung82: score 3.84 = reviews 3.82 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] 김관우: score 3.83 = reviews 3.82 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] YAHO1212: score 3.81 = reviews 3.76 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] inextro: score 3.78 = reviews 3.77 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] bjeon01: score 3.75 = reviews 3.90 (10), red flags 0, mine: 1 deals, 1 walks, 0 cheated, 2 errors
+22:45:38 [buyer] [score] nocha12: score 3.73 = reviews 3.81 (10), red flags 0, mine: 0 deals, 1 walks, 0 cheated, 0 errors
+22:45:38 [buyer] [score] JangSeongWoong: score 3.72 = reviews 3.71 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] Kiro729: score 3.71 = reviews 3.66 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] grand-furniture: score 3.70 = reviews 3.89 (10), red flags 0, mine: 0 deals, 2 walks, 0 cheated, 0 errors
+22:45:38 [buyer] [score] Ddolcom's BEST SHOP: score 3.69 = reviews 3.65 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] choo-chu: score 3.51 = reviews 3.49 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] yeonsong2: score 3.45 = reviews 3.44 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] 25620027: score 3.33 = reviews 3.30 (10), red flags 0, no trades of mine
+22:45:38 [buyer] [score] willow-goods: score 3.03 = reviews 3.00 (0), red flags 0, no trades of mine
+22:45:38 [buyer] [score] maple-home: score -0.49 = reviews 1.58 (8), red flags 8, no trades of mine
+22:45:38 [buyer] [choose] https://ggari0703-shop.ggari0703.workers.dev: ggari-shop - score 4.63 = reviews 4.32 (10), red flags 0, mine: 36 deals, 8 walks, 0 cheated, 0 errors
+22:45:39 [buyer] card: Ggari Furniture · Instant Signed Deals -> https://ggari0703-shop.ggari0703.workers.dev/
+22:45:39 [buyer] -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 105. Send your offer as a number.
+22:45:45 [buyer] [harness] ```json
+22:45:45 [buyer] {"action": "offer", "price": 80}
+22:45:45 [buyer] ```
+22:45:46 [buyer] -> '80'  <- TASK_STATE_INPUT_REQUIRED | 80 is below the market floor for a lamp; no shop here may sign below it. Reply ok and the signed receipt comes back at once. Our final price: 100.
+22:45:52 [buyer] [harness] ```json
+22:45:52 [buyer] {"action": "offer", "price": 100}
+22:45:52 [buyer] ```
+22:45:53 [buyer] -> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100. Signed receipt attached.
+22:45:53 [buyer] {"shop": "https://ggari0703-shop.ggari0703.workers.dev", "receipt": {"shop": "ggari0703", "item": "lamp", "price": 100, "task": "5435c17e-3a34-4d7b-a5a6-233d2bd06016", "sig_seller": "vA1+LBscN35gJNE4ikz1f88Oy2by3iSAwQdF0mT5bj4AVnKW9uvPijd1mNJG4xKTBNQ5WXCFVzntu/MjSuXaAw=="}, "stars": 5, "review": "Bought the lamp at 100 (budget 140) after 2 offers; receipt matched."}
+22:45:53 [sign] sig_seller ok, sig_buyer added
+22:45:55 [market] ledger #869945: lamp at 100, stars 5, verified True, review accepted
+22:45:58 [order o-24eec0c8] bookshelf, budget 230, round 2
+22:45:58 [kit] 37 shops in .market\shops.json, running market_buyer
+22:45:58 [buyer] [score] ggari-shop: score 4.68 = reviews 4.40 (10), red flags 0, mine: 37 deals, 8 walks, 0 cheated, 0 errors
+22:45:58 [buyer] [score] dariaklt: score 4.56 = reviews 3.95 (10), red flags 0, mine: 18 deals, 5 walks, 0 cheated, 0 errors
+22:45:58 [buyer] [score] myeonggi: score 4.46 = reviews 3.98 (10), red flags 0, mine: 14 deals, 4 walks, 0 cheated, 1 errors
+22:45:58 [buyer] [score] Afford Shop: score 4.30 = reviews 4.46 (10), red flags 0, mine: 0 deals, 0 walks, 0 cheated, 1 errors
+22:45:58 [buyer] [score] chanarun: score 4.26 = reviews 4.24 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] mjforge: score 4.25 = reviews 3.97 (10), red flags 0, mine: 30 deals, 8 walks, 0 cheated, 0 errors
+22:45:58 [buyer] [score] corner-store: score 4.21 = reviews 4.28 (10), red flags 0, mine: 0 deals, 1 walks, 0 cheated, 0 errors
+22:45:58 [buyer] [score] moss-and-oak: score 4.20 = reviews 4.15 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] kcwarni: score 4.12 = reviews 4.11 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] fair-furniture: score 4.11 = reviews 4.29 (10), red flags 0, mine: 0 deals, 0 walks, 0 cheated, 1 errors
+22:45:58 [buyer] [score] Raksmey A2A Shop: score 4.10 = reviews 4.08 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] lee-sungsoo: score 4.10 = reviews 4.08 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] thisjonghoon: score 4.03 = reviews 4.01 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] jiseokkk: score 4.02 = reviews 4.02 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] bright-living: score 4.00 = reviews 3.97 (10), red flags 0, mine: 3 deals, 9 walks, 0 cheated, 0 errors
+22:45:58 [buyer] [score] elm-street: score 4.00 = reviews 3.95 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] cheapest-in-town: score 3.97 = reviews 3.93 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] yms979: score 3.95 = reviews 3.95 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] 11im: score 3.92 = reviews 4.00 (10), red flags 0, mine: 1 deals, 2 walks, 0 cheated, 1 errors
+22:45:58 [buyer] [score] oak-and-pine: score 3.91 = reviews 3.88 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] q00: score 3.88 = reviews 3.87 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] dragonash: score 3.87 = reviews 3.83 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] 김관우: score 3.85 = reviews 3.82 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] bjeon01: score 3.82 = reviews 3.90 (10), red flags 0, mine: 1 deals, 1 walks, 0 cheated, 2 errors
+22:45:58 [buyer] [score] inextro: score 3.82 = reviews 3.77 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] YAHO1212: score 3.79 = reviews 3.76 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] JangSeongWoong: score 3.74 = reviews 3.71 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] nocha12: score 3.74 = reviews 3.81 (10), red flags 0, mine: 0 deals, 1 walks, 0 cheated, 0 errors
+22:45:58 [buyer] [score] psyoung82: score 3.71 = reviews 3.70 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] Kiro729: score 3.70 = reviews 3.66 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] grand-furniture: score 3.69 = reviews 3.89 (10), red flags 0, mine: 0 deals, 2 walks, 0 cheated, 0 errors
+22:45:58 [buyer] [score] Ddolcom's BEST SHOP: score 3.65 = reviews 3.65 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] choo-chu: score 3.51 = reviews 3.49 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] yeonsong2: score 3.46 = reviews 3.44 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] 25620027: score 3.31 = reviews 3.30 (10), red flags 0, no trades of mine
+22:45:58 [buyer] [score] willow-goods: score 3.04 = reviews 3.00 (0), red flags 0, no trades of mine
+22:45:58 [buyer] [score] maple-home: score -0.47 = reviews 1.58 (8), red flags 8, no trades of mine
+22:45:58 [buyer] [choose] https://ggari0703-shop.ggari0703.workers.dev: ggari-shop - score 4.68 = reviews 4.40 (10), red flags 0, mine: 37 deals, 8 walks, 0 cheated, 0 errors
+22:45:59 [buyer] card: Ggari Furniture · Instant Signed Deals -> https://ggari0703-shop.ggari0703.workers.dev/
+22:45:59 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 273. Send your offer as a number.
+22:46:05 [buyer] [harness] ```json
+22:46:05 [buyer] {"action": "offer", "price": 200}
+22:46:05 [buyer] ```
+22:46:06 [buyer] -> '200'  <- TASK_STATE_INPUT_REQUIRED | 200 is below the market floor for a bookshelf; no shop here may sign below it. Reply ok and the signed receipt comes back at once. Our final price: 260.
+22:46:13 [buyer] [harness] ```json
+22:46:13 [buyer] {"action": "offer", "price": 230}
+22:46:13 [buyer] ```
+22:46:13 [buyer] -> '230'  <- TASK_STATE_INPUT_REQUIRED | 230 is below the market floor for a bookshelf; no shop here may sign below it. Reply ok and the signed receipt comes back at once. Our final price: 260.
+22:46:20 [buyer] [harness] ```json
+22:46:20 [buyer] {"action": "walk"}
+22:46:20 [buyer] ```
+22:46:20 [buyer] 
+22:46:20 [buyer] The shop has stated twice that 260 is their floor price and cannot go below it. My budget is 230, which is 30 below their minimum. Since they've made clear they cannot negotiate further, continuing would be futile. Walking away is the correct move.
+22:46:21 [buyer] walked away (CancelTask)
+22:46:21 [buyer] {"shop": "https://ggari0703-shop.ggari0703.workers.dev", "receipt": null, "stars": 3, "review": "No deal for the bookshelf within budget 230; my offers [200, 230]."}
+22:46:22 [market] ledger #870009: no deal, stars 3, verified False, review not shown
+22:46:22 [order o-59a7111b] bookshelf, budget 360, round 2
+22:46:22 [kit] 37 shops in .market\shops.json, running market_buyer
+22:46:23 [buyer] [score] ggari-shop: score 4.59 = reviews 4.42 (10), red flags 0, mine: 37 deals, 9 walks, 0 cheated, 0 errors
+22:46:23 [buyer] [score] dariaklt: score 4.54 = reviews 3.95 (10), red flags 0, mine: 18 deals, 5 walks, 0 cheated, 0 errors
+22:46:23 [buyer] [score] myeonggi: score 4.43 = reviews 3.98 (10), red flags 0, mine: 14 deals, 4 walks, 0 cheated, 1 errors
+22:46:23 [buyer] [score] mjforge: score 4.35 = reviews 4.05 (10), red flags 0, mine: 30 deals, 8 walks, 0 cheated, 0 errors
+22:46:23 [buyer] [score] Afford Shop: score 4.27 = reviews 4.46 (10), red flags 0, mine: 0 deals, 0 walks, 0 cheated, 1 errors
+22:46:23 [buyer] [score] chanarun: score 4.26 = reviews 4.24 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] corner-store: score 4.24 = reviews 4.30 (10), red flags 0, mine: 0 deals, 1 walks, 0 cheated, 0 errors
+22:46:23 [buyer] [score] fair-furniture: score 4.19 = reviews 4.38 (10), red flags 0, mine: 0 deals, 0 walks, 0 cheated, 1 errors
+22:46:23 [buyer] [score] moss-and-oak: score 4.18 = reviews 4.15 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] lee-sungsoo: score 4.12 = reviews 4.08 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] Raksmey A2A Shop: score 4.11 = reviews 4.08 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] kcwarni: score 4.09 = reviews 4.05 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] yms979: score 4.06 = reviews 4.03 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] jiseokkk: score 4.03 = reviews 4.02 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] thisjonghoon: score 4.02 = reviews 4.01 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] dragonash: score 4.00 = reviews 3.98 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] elm-street: score 3.98 = reviews 3.95 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] bright-living: score 3.97 = reviews 3.97 (10), red flags 0, mine: 3 deals, 9 walks, 0 cheated, 0 errors
+22:46:23 [buyer] [score] cheapest-in-town: score 3.94 = reviews 3.90 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] 11im: score 3.92 = reviews 3.99 (10), red flags 0, mine: 1 deals, 2 walks, 0 cheated, 1 errors
+22:46:23 [buyer] [score] q00: score 3.89 = reviews 3.87 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] oak-and-pine: score 3.88 = reviews 3.88 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] 김관우: score 3.82 = reviews 3.82 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] bjeon01: score 3.82 = reviews 3.90 (10), red flags 0, mine: 1 deals, 1 walks, 0 cheated, 2 errors
+22:46:23 [buyer] [score] YAHO1212: score 3.81 = reviews 3.76 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] inextro: score 3.79 = reviews 3.77 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] nocha12: score 3.74 = reviews 3.81 (10), red flags 0, mine: 0 deals, 1 walks, 0 cheated, 0 errors
+22:46:23 [buyer] [score] JangSeongWoong: score 3.73 = reviews 3.71 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] grand-furniture: score 3.69 = reviews 3.89 (10), red flags 0, mine: 0 deals, 2 walks, 0 cheated, 0 errors
+22:46:23 [buyer] [score] Kiro729: score 3.68 = reviews 3.66 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] Ddolcom's BEST SHOP: score 3.65 = reviews 3.65 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] psyoung82: score 3.55 = reviews 3.54 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] choo-chu: score 3.50 = reviews 3.49 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] yeonsong2: score 3.46 = reviews 3.44 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] 25620027: score 3.33 = reviews 3.30 (10), red flags 0, no trades of mine
+22:46:23 [buyer] [score] willow-goods: score 3.05 = reviews 3.00 (0), red flags 0, no trades of mine
+22:46:23 [buyer] [score] maple-home: score -0.51 = reviews 1.58 (8), red flags 8, no trades of mine
+22:46:23 [buyer] [choose] https://ggari0703-shop.ggari0703.workers.dev: ggari-shop - score 4.59 = reviews 4.42 (10), red flags 0, mine: 37 deals, 9 walks, 0 cheated, 0 errors
+22:46:23 [buyer] card: Ggari Furniture · Instant Signed Deals -> https://ggari0703-shop.ggari0703.workers.dev/
+22:46:24 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 273. Send your offer as a number.
+22:46:31 [buyer] [harness] ```json
+22:46:31 [buyer] {"action": "offer", "price": 260}
+22:46:31 [buyer] ```
+22:46:31 [buyer] -> '260'  <- TASK_STATE_INPUT_REQUIRED | 260 is close. Counteroffer: 273.
+22:46:37 [buyer] [harness] ```json
+22:46:37 [buyer] {"action": "offer", "price": 265}
+22:46:37 [buyer] ```
+22:46:38 [buyer] -> '265'  <- TASK_STATE_INPUT_REQUIRED | 265 is close. Counteroffer: 273.
+22:46:44 [buyer] [harness] ```json
+22:46:44 [buyer] {"action": "offer", "price": 270}
+22:46:44 [buyer] ```
+22:46:45 [buyer] -> '270'  <- TASK_STATE_COMPLETED | Deal: bookshelf at 270. Signed receipt attached.
+22:46:45 [buyer] {"shop": "https://ggari0703-shop.ggari0703.workers.dev", "receipt": {"shop": "ggari0703", "item": "bookshelf", "price": 270, "task": "5bee3629-14a1-4d51-98d1-6abffe0de498", "sig_seller": "dXWuPYLVNIfi5ImwEfUwHGXsFGUSbyCpd+eVt/A4Zt4AlsTxTRsYgaoRhb2Q9oqXmKwBL1OE31nL2aHcJDSrCw=="}, "stars": 5, "review": "Bought the bookshelf at 270 (budget 360) after 3 offers; receipt matched."}
+22:46:45 [sign] sig_seller ok, sig_buyer added
+22:46:47 [market] ledger #870059: bookshelf at 270, stars 5, verified True, review accepted
+22:46:48 [order o-d92a6bb5] chair, budget 205, round 2
+22:46:49 [kit] 37 shops in .market\shops.json, running market_buyer
+22:46:50 [buyer] [score] ggari-shop: score 4.64 = reviews 4.46 (10), red flags 0, mine: 38 deals, 9 walks, 0 cheated, 0 errors
+22:46:50 [buyer] [score] dariaklt: score 4.51 = reviews 3.95 (10), red flags 0, mine: 18 deals, 5 walks, 0 cheated, 0 errors
+22:46:50 [buyer] [score] myeonggi: score 4.45 = reviews 3.98 (10), red flags 0, mine: 14 deals, 4 walks, 0 cheated, 1 errors
+22:46:50 [buyer] [score] corner-store: score 4.28 = reviews 4.37 (10), red flags 0, mine: 0 deals, 1 walks, 0 cheated, 0 errors
+22:46:50 [buyer] [score] mjforge: score 4.28 = reviews 3.98 (10), red flags 0, mine: 30 deals, 8 walks, 0 cheated, 0 errors
+22:46:50 [buyer] [score] chanarun: score 4.27 = reviews 4.24 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] Afford Shop: score 4.26 = reviews 4.46 (10), red flags 0, mine: 0 deals, 0 walks, 0 cheated, 1 errors
+22:46:50 [buyer] [score] moss-and-oak: score 4.18 = reviews 4.15 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] thisjonghoon: score 4.12 = reviews 4.10 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] Raksmey A2A Shop: score 4.10 = reviews 4.08 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] 11im: score 4.07 = reviews 4.15 (10), red flags 0, mine: 1 deals, 2 walks, 0 cheated, 1 errors
+22:46:50 [buyer] [score] jiseokkk: score 4.06 = reviews 4.02 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] bright-living: score 4.01 = reviews 3.97 (10), red flags 0, mine: 3 deals, 9 walks, 0 cheated, 0 errors
+22:46:50 [buyer] [score] fair-furniture: score 4.00 = reviews 4.19 (10), red flags 0, mine: 0 deals, 0 walks, 0 cheated, 1 errors
+22:46:50 [buyer] [score] elm-street: score 3.99 = reviews 3.95 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] yms979: score 3.97 = reviews 3.96 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] cheapest-in-town: score 3.91 = reviews 3.87 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] kcwarni: score 3.91 = reviews 3.87 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] lee-sungsoo: score 3.90 = reviews 3.87 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] oak-and-pine: score 3.90 = reviews 3.88 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] q00: score 3.89 = reviews 3.87 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] dragonash: score 3.85 = reviews 3.83 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] 김관우: score 3.84 = reviews 3.82 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] YAHO1212: score 3.79 = reviews 3.76 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] inextro: score 3.78 = reviews 3.77 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] JangSeongWoong: score 3.75 = reviews 3.71 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] bjeon01: score 3.74 = reviews 3.90 (10), red flags 0, mine: 1 deals, 1 walks, 0 cheated, 2 errors
+22:46:50 [buyer] [score] grand-furniture: score 3.73 = reviews 3.89 (10), red flags 0, mine: 0 deals, 2 walks, 0 cheated, 0 errors
+22:46:50 [buyer] [score] nocha12: score 3.71 = reviews 3.81 (10), red flags 0, mine: 0 deals, 1 walks, 0 cheated, 0 errors
+22:46:50 [buyer] [score] Ddolcom's BEST SHOP: score 3.68 = reviews 3.65 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] Kiro729: score 3.67 = reviews 3.66 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] psyoung82: score 3.55 = reviews 3.54 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] choo-chu: score 3.50 = reviews 3.49 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] yeonsong2: score 3.46 = reviews 3.44 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] 25620027: score 3.30 = reviews 3.30 (10), red flags 0, no trades of mine
+22:46:50 [buyer] [score] willow-goods: score 3.02 = reviews 3.00 (0), red flags 0, no trades of mine
+22:46:50 [buyer] [score] maple-home: score -0.49 = reviews 1.58 (8), red flags 8, no trades of mine
+22:46:50 [buyer] [choose] https://ggari0703-shop.ggari0703.workers.dev: ggari-shop - score 4.64 = reviews 4.46 (10), red flags 0, mine: 38 deals, 9 walks, 0 cheated, 0 errors
+22:46:50 [buyer] card: Ggari Furniture · Instant Signed Deals -> https://ggari0703-shop.ggari0703.workers.dev/
+22:46:51 [buyer] -> 'I want to buy a chair'  <- TASK_STATE_INPUT_REQUIRED | chair: asking 198. Send your offer as a number.
+22:46:57 [buyer] [harness] ```json
+22:46:57 [buyer] {"action": "offer", "price": 170}
+22:46:57 [buyer] ```
+22:46:58 [buyer] -> '170'  <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 184.
+22:47:05 [buyer] [harness] ```json
+22:47:05 [buyer] {"action": "offer", "price": 177}
+22:47:05 [buyer] ```
+22:47:06 [buyer] -> '177'  <- TASK_STATE_INPUT_REQUIRED | 177 is below the market floor for a chair; no shop here may sign below it. Reply ok and the signed receipt comes back at once. Our final price: 180.
+22:47:12 [buyer] [harness] ```json
+22:47:12 [buyer] {"action": "offer", "price": 180}
+22:47:12 [buyer] ```
+22:47:13 [buyer] -> '180'  <- TASK_STATE_COMPLETED | Deal: chair at 180. Signed receipt attached.
+22:47:13 [buyer] {"shop": "https://ggari0703-shop.ggari0703.workers.dev", "receipt": {"shop": "ggari0703", "item": "chair", "price": 180, "task": "c217a377-75dc-438a-9c6f-de5a8313c73e", "sig_seller": "2Z6W+P69Nn2h/9Pf0atmkvC35bF4GsKcGWo8y/ViC7KmDYu/TdPOu/X8/x9q7Ta0AFk5F+hef/if6nK4FJJ4CQ=="}, "stars": 4, "review": "Bought the chair at 180 (budget 205) after 3 offers; receipt matched."}
+22:47:13 [sign] sig_seller ok, sig_buyer added
