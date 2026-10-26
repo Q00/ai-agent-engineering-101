@@ -30,7 +30,8 @@ import react
 from model import call_model, log
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MEMORY = os.path.join(HERE, "memory.jsonl")
+# MARKET_BUYER_MEMORY lets a local replay (challenge2_replay.py) keep its own memory, apart from the market's.
+MEMORY = os.environ.get("MARKET_BUYER_MEMORY") or os.path.join(HERE, "memory.jsonl")
 REVIEWS_SHOWN = 3  # newest reviews per shop shown to haiku (the market sends up to 10)
 PICK_TIMEOUT = 60  # one harness call; 35 shops with 5 reviews each ran past react's 30 s three times in a row
 
@@ -114,10 +115,11 @@ def choose(shops, item, budget, memory):
         if s["name"] in bad:
             log(f"[choose] blocked {s['name']!r}: cheated us before: {bad[s['name']]}")
     allowed = [s for s in shops if s["name"] not in bad]
+    bad_here = [s for s in shops if s["name"] in bad]
     if not allowed:
         raise RuntimeError("every shop in the list has cheated us before")
     if len(allowed) == 1:
-        return allowed[0], f"the only shop that never cheated us"
+        return allowed[0], f"the only shop left ({len(shops)} listed, {len(bad_here)} blocked)"
 
     by_name = {s["name"]: s for s in allowed}
     situation = "\n".join(
