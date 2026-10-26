@@ -34,6 +34,7 @@ class BuyerOutcome:
     outcome: str
     task_id: str | None = None
     price: int | None = None
+    receipt: dict | None = None
 
 
 def validate_url(value: str) -> str:
@@ -155,14 +156,20 @@ class BuyerClient:
         return int(float(numbers[-1]))
 
     @staticmethod
-    def _receipt_price(task: dict) -> int:
+    def _receipt(task: dict) -> dict:
         for artifact in task.get("artifacts", []):
             for part in artifact.get("parts", []):
                 data = part.get("data")
                 price = data.get("price") if isinstance(data, dict) else None
                 if isinstance(price, (int, float)) and not isinstance(price, bool) and float(price).is_integer():
-                    return int(price)
+                    receipt = dict(data)
+                    receipt["price"] = int(price)
+                    return receipt
         raise BuyerError("Completed task has no integer-valued receipt price")
+
+    @classmethod
+    def _receipt_price(cls, task: dict) -> int:
+        return int(cls._receipt(task)["price"])
 
     def _cancel_once(self) -> None:
         if self.task_id is None:
@@ -177,10 +184,11 @@ class BuyerClient:
         state = self._state(task)
         task_id = self.task_id or task.get("id")
         if state == COMPLETED:
-            price = self._receipt_price(task)
+            receipt = self._receipt(task)
+            price = int(receipt["price"])
             if price > budget:
                 raise BuyerError("Completed deal exceeds the budget")
-            return BuyerOutcome("deal", task_id, price)
+            return BuyerOutcome("deal", task_id, price, receipt)
         if state == REJECTED:
             return BuyerOutcome("rejected", task_id)
         if state == CANCELED:
