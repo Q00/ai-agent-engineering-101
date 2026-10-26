@@ -8,15 +8,28 @@ This solution builds on the Week 06 A2A buyer and seller. The market kit runs th
 
 ## Actual local tests
 
-**Not yet run in this provided package.** Run `scripts/trade_test_week06.py` and `scripts/market_test_week07.py` on Windows, then replace this paragraph with actual results from `test-report.json` and `logs/market-test.log`. Report any failing tests, corrections and reruns. Do not claim 25/25 before observing it.
+Both official local tests were executed on Windows using GroqCloud with openai/gpt-oss-20b.
+
+- Week 06 A2A compatibility: 21/21 passed.
+- Week 07 market test: 25/25 passed.
+- Seller receipt signatures: Ed25519 verification passed in 3/3 seller-deal runs.
+- Reputation-based shop selection: the positively reviewed shop was selected in 3/3 runs.
+- Buyer budget enforcement: all tested over-budget negotiations ended without a purchase.
+- A2A version headers and task continuation: all relevant checks passed.
+
+The local tests provide evidence in test-report.json, logs/trade-test.log, and logs/market-test.log.
+
+During initial Windows setup, Python commands failed because the virtual environment was not activated. Activating .venv-week06 resolved this issue. Both final test suites then passed.
 
 ## Three live rounds
 
-- Round 0: [fill in actual registration and order outcomes, including the shop assigned by the kit]
-- Round 1: [fill in actual reputation-based shop choice, memory and reviews]
-- Round 2: [fill in actual signature verification and accepted or rejected reviews]
+The official local market simulator has been validated successfully. Participation in the instructor's shared live market has not yet been completed or independently verified.
 
-**Class market URL is provided by the instructor.** No real market results are included in this starter package.
+- Round 0: Live registration and randomized-shop trading pending.
+- Round 1: Live reputation-informed trading and memory evidence pending.
+- Round 2: Live receipt verification and accepted/rejected review evidence pending.
+
+The class market URL must be obtained from the instructor. Local test results are not presented as live-market results.
 
 ## Discussion and limitations
 
