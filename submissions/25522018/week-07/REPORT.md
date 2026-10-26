@@ -22,13 +22,15 @@ The live class-market rounds have not yet been completed.
 
 ## Three live rounds
 
-The official local market simulator has been validated successfully. Participation in the instructor's shared live market has not yet been completed or independently verified.
+The agents joined the instructor's shared market under GitHub account `@raksmeyphann`.
 
-- Round 0: Live registration and randomized-shop trading pending.
-- Round 1: Live reputation-informed trading and memory evidence pending.
-- Round 2: Live receipt verification and accepted/rejected review evidence pending.
+- **Round 0:** Historical outcomes have not been separately verified in this report.
+- **Round 1:** The local reputation-selection tests passed 3/3; historical live-round outcomes have not been separately verified.
+- **Round 2:** The official market checker confirmed that both the shop and buyer were running. At validation, the shop had 89 counted deals and the buyer had 48 counted deals.
 
-The class market URL must be obtained from the instructor. Local test results are not presented as live-market results.
+The live-market checker completed successfully with `all checks passed`. Evidence is recorded in `logs/market-kit.log`.
+
+Intermittent GroqCloud upstream errors occurred during live participation, resulting in retry attempts and some failed decisions. Despite these errors, the market checker confirmed successful participation.
 
 ## Discussion and limitations
 
