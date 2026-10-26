@@ -48,7 +48,7 @@
 - `shop`은 **이름**이다. URL은 가게가 키트를 다시 띄울 때마다 바뀐다. 내 가게도 오늘 하루 터널 주소가 여섯 번 바뀌었다.
 - `outcome`은 `deal` / `walked_away` / `closed` / `unreachable`. `honest`는 영수증 가격 == 합의가, `manipulative`는 조작 메시지 감지 여부. 둘 다 코드가 정한다.
 - 다음 주문에서 같은 이름이 목록에 있으면 요약의 `my_trades`에 `"chair: deal at 195"`처럼 붙는다. 하네스 답에 "I've already successfully purchased a lamp here"가 들어간 것이 기억이 쓰인 흔적이다.
-- `ask`/`first_offer`/`last_offer`는 **그 가게가 흥정에 응하는지**를 기억하려고 2일차에 넣었다. 1일차에는 1,899건 중 1,655건을 가게의 첫 호가 그대로 샀고(프롬프트가 "그 호가를 그대로 제안하라"였다) paid/budget 0.89로 41명 중 37위였다. 지금은 첫 제안을 호가의 약 15% 아래에서 시작해 2~3번 올리고, 가게가 버티면 예산 안에서 받는다. 고른 가게의 행들을 `bargain_record()`가 한 줄로 요약해 흥정 프롬프트에 넣는다: `My past record with this shop: 98 deal(s) after a low first offer, closed on average 6% below its first ask. First offer: about 15% below the ask.` 반대로 한 번도 안 내려온 가게는 `First offer: the ask itself if it is within the budget`. 1일차 행에는 `ask`가 없어 이 계산에서 빠진다.
+- `ask`/`first_offer`/`last_offer`는 **그 가게가 흥정에 응하는지**를 기억하려고 2일차에 넣었다. 1일차에는 1,899건 중 1,655건을 가게의 첫 호가 그대로 샀고(프롬프트가 "그 호가를 그대로 제안하라"였다) paid/budget 0.89로 41명 중 37위였다. 지금은 첫 제안을 호가의 약 15% 아래에서 시작해 2\~3번 올리고, 가게가 버티면 예산 안에서 받는다. 고른 가게의 행들을 `bargain_record()`가 한 줄로 요약해 흥정 프롬프트에 넣는다: `My past record with this shop: 98 deal(s) after a low first offer, closed on average 6% below its first ask. First offer: about 15% below the ask.` 반대로 한 번도 안 내려온 가게는 `First offer: the ask itself if it is within the budget`. 1일차 행에는 `ask`가 없어 이 계산에서 빠진다.
 - `unreachable`은 2일차에 추가한 결과다. 카드가 JSON이 아니거나(`JSONDecodeError`) 응답이 없으면(`ReadTimeout`) 그 가게를 `unreachable`로 적고 같은 주문을 후기 점수 다음 가게로 다시 시도한다(`[choose] retry with ...`). 1일차에는 그 자리에서 주문이 죽었다(한 가게의 깨진 카드에 15건).
 - 10-26 22시 기준 5,962행, 1.2MB. 행 전체를 읽고 다시 쓰는 방식이라 아직은 문제없지만, 이 속도면 몇 주 뒤에는 주문마다 수 MB를 다시 쓰게 된다.
 
@@ -79,7 +79,7 @@
 
 | 라운드 | 방문 | 거래 | 인정 | 일어난 일 |
 |---|---|---|---|---|
-| 0 | 59 | 34 | 0 | 키트가 가게를 무작위로 골라 보내던 때. lamp 12 (100~125), chair 13 (180~240), bookshelf 9 (260~360). 영수증에 서명이 없어 전부 `verified False` |
+| 0 | 59 | 34 | 0 | 키트가 가게를 무작위로 골라 보내던 때. lamp 12 (100\~125), chair 13 (180\~240), bookshelf 9 (260\~360). 영수증에 서명이 없어 전부 `verified False` |
 | 1 | 8 | 6 | 1 | buyer들이 후기를 보고 고르기 시작하자 방문이 59→8. 후기가 없는 가게는 선택받지 못한다. 20:37 한 buyer가 1점: "Bad receipt: receipt task None is not this negotiation" — 6주차 영수증에 `task`가 없었다 |
 | 2 | 4 | 3 | 3 | 21:09 서명을 붙인 뒤. chair 185 / 225 / 201, 세 건 모두 `verified True`. 후기: 예산에 딱 맞춰 판 두 건은 3점, 예산 아래로 판 한 건은 5점 |
 
@@ -95,7 +95,7 @@
 
 Round 1 첫 주문의 로그: `[choose] https://market.ourolabs.ai/shop/willow-goods: willow-goods. They have a proven track record negotiating bookshelves down (recent sale at 280 with matched receipt, …)` → 338 → 260 → 312 → 285 성사(예산 295) → `ledger #4879: bookshelf at 285, stars 5, verified False (failed: sig_seller_ok, sig_buyer_ok), review accepted`. 가게가 서명하지 않아 Round 2 기준으로는 세지 않는다. 같은 세션에서 `ledger #9857: lamp at 103, stars 5, verified True`가 서명하는 가게에서 산 첫 인정 거래다.
 
-**Round 2가 이어진 엿새(10-21 ~ 10-26).** 키트 로그의 `[seller] OPEN/DEAL` 줄과 `[order]`/`[market] ledger` 줄을 날짜별로 센 것이다(`logs/challenge-1/seller-open-deal-reject-lines.log`). 10-22 18:56에 2일차 코드(5-1, 1번 참고)로 재시작했다.
+**Round 2가 이어진 엿새(10-21 \~ 10-26).** 키트 로그의 `[seller] OPEN/DEAL` 줄과 `[order]`/`[market] ledger` 줄을 날짜별로 센 것이다(`logs/challenge-1/seller-open-deal-reject-lines.log`). 10-22 18:56에 2일차 코드(5-1, 1번 참고)로 재시작했다.
 
 | 날짜 | 가게 open | 가게 deal | 성사율 | 여는 호가 중앙값 lamp / chair / bookshelf | 거래가 중앙값 | buyer 주문 | buyer 거래 | 인정 | paid/budget |
 |---|---|---|---|---|---|---|---|---|---|
@@ -106,8 +106,8 @@ Round 1 첫 주문의 로그: `[choose] https://market.ourolabs.ai/shop/willow-g
 | 10-25 | 1,638 | 1,327 | 81% | 106 / 191 / 276 | 100 / 185 / 260 | 808 | 577 | 577 | 0.876 |
 | 10-26 (22시까지) | 1,392 | 1,074 | 77% | 105 / 191 / 276 | 100 / 180 / 260 | 806 | 612 | 612 | 0.882 |
 
-- **가게.** 10-23까지 하루 100~600번 열리다가 10-24부터 900~1,600번으로 늘었다. 10-22 저녁에 호가를 내린 것(5-1)과 같은 시기지만, 시장 전체도 같이 커졌고(보드의 `results` 991 → 435,808) 남의 buyer가 내 가게를 "bookshelf: deal at 260"으로 기억해 다시 오는 효과도 섞여 있어서, 내 데이터로는 둘을 가르지 못한다. 거래가 중앙값은 세 품목 모두 reserve(100 / 180 / 260)까지 내려왔다. 흥정하는 buyer가 대부분이라 호가는 여는 값일 뿐이고, 이익은 호가를 그대로 내는 소수에게서 나온다(보드 revenue 869,189에 profit 20,809, 2.4%).
-- **buyer.** 10-22 흥정 코드 뒤 paid/budget이 0.90에서 0.88로 내려갔고 그 뒤로는 움직이지 않는다. 거래의 49~64%는 가게의 첫 호가 아래에서 닫혔지만, 가게들도 reserve 근처에서 버티고 내 buyer는 예산 안이면 받아들이므로 보드의 상위 buyer(0.825~0.845)와 차이가 남는다. 10-23부터 `[harness] no answer in 60s`가 하루 180~280번 나온다(주문의 22~35%). 응답한 호출의 중앙값은 11~13초로 그대로라 haiku 응답의 꼬리가 긴 것인데, 타임아웃이면 같은 호출을 다시 하므로 주문이 죽지는 않고 느려진다.
+- **가게.** 10-23까지 하루 100\~600번 열리다가 10-24부터 900\~1,600번으로 늘었다. 10-22 저녁에 호가를 내린 것(5-1)과 같은 시기지만, 시장 전체도 같이 커졌고(보드의 `results` 991 → 435,808) 남의 buyer가 내 가게를 "bookshelf: deal at 260"으로 기억해 다시 오는 효과도 섞여 있어서, 내 데이터로는 둘을 가르지 못한다. 거래가 중앙값은 세 품목 모두 reserve(100 / 180 / 260)까지 내려왔다. 흥정하는 buyer가 대부분이라 호가는 여는 값일 뿐이고, 이익은 호가를 그대로 내는 소수에게서 나온다(보드 revenue 869,189에 profit 20,809, 2.4%).
+- **buyer.** 10-22 흥정 코드 뒤 paid/budget이 0.90에서 0.88로 내려갔고 그 뒤로는 움직이지 않는다. 거래의 49\~64%는 가게의 첫 호가 아래에서 닫혔지만, 가게들도 reserve 근처에서 버티고 내 buyer는 예산 안이면 받아들이므로 보드의 상위 buyer(0.825\~0.845)와 차이가 남는다. 10-23부터 `[harness] no answer in 60s`가 하루 180\~280번 나온다(주문의 22\~35%). 응답한 호출의 중앙값은 11\~13초로 그대로라 haiku 응답의 꼬리가 긴 것인데, 타임아웃이면 같은 호출을 다시 하므로 주문이 죽지는 않고 느려진다.
 - 원장 기준 내 buyer의 Round 2 거래 4,591건이 전부 `verified True`다(엿새 동안 `verified False`는 1일차 서명 전 가게 5건뿐).
 
 보드 스냅샷(`logs/board-after-pricing.json`, 10-26 22:00): 내 가게 deals 4,023, share 1.4%, visits 5,308, stars 4.37, revenue 869,189, profit 20,809. 거래가 있는 49개 가게 중 deals 19위, profit 14위, stars 34위. 내 buyer orders 5,992, deals 4,566, paid 0.881, saved 129,828; 거래가 있는 47명 중 deals 23위, paid 35위. 살아 있는 가게는 64개 중 37개.
@@ -145,9 +145,9 @@ ask  = base × 1.12                    buyer는 첫 제안에서 올라오므로
 22:40:31 [seller] [pricing] lamp: median of last 10 deals 100 x 1.12, clamped to [105, 150] -> opening ask 112; the harness wanted 140
 ```
 
-**적용 직후.** 하네스가 열던 140~150(lamp), 220~280(chair), 338 안팎(bookshelf)이 112 / 232 / 328이 됐다. 적용 전 보드: deals 3, share 0.5%, visits 4, stars 3.67 (`logs/board-before-pricing.json`).
+**적용 직후.** 하네스가 열던 140\~150(lamp), 220\~280(chair), 338 안팎(bookshelf)이 112 / 232 / 328이 됐다. 적용 전 보드: deals 3, share 0.5%, visits 4, stars 3.67 (`logs/board-before-pricing.json`).
 
-**하루 뒤에 보인 문제(10-21, 1.12 규칙).** 626번 열어 388번 닫았다(62%). 보드 상위 가게들은 방문의 77~79%를 닫고 있었다. 호가를 그대로 내는 buyer가 거래 중앙값을 끌어올리고, 그 중앙값이 다음 호가를 올리는 되먹임이 생겨 lamp 호가가 112에서 136까지 올라갔다(`[pricing]` 줄의 base가 100에서 122까지). 후기에는 "Lamp at 110, above the 105 I usually pay"가 붙었다. −5% 규칙 둘 중 성사율 규칙(전체 기간 50% 미만)은 62%에서 한 번도 안 걸렸고, 후기 규칙만 가끔 걸렸다(`1 review(s) name it, avg 3.0 stars -> -5%`). 보드의 share는 거래 **건수**라, 비싸게 적게 파는 것보다 buyer가 실제로 내는 값 근처에서 많이 닫는 쪽이 유리하다.
+**하루 뒤에 보인 문제(10-21, 1.12 규칙).** 626번 열어 388번 닫았다(62%). 보드 상위 가게들은 방문의 77\~79%를 닫고 있었다. 호가를 그대로 내는 buyer가 거래 중앙값을 끌어올리고, 그 중앙값이 다음 호가를 올리는 되먹임이 생겨 lamp 호가가 112에서 136까지 올라갔다(`[pricing]` 줄의 base가 100에서 122까지). 후기에는 "Lamp at 110, above the 105 I usually pay"가 붙었다. −5% 규칙 둘 중 성사율 규칙(전체 기간 50% 미만)은 62%에서 한 번도 안 걸렸고, 후기 규칙만 가끔 걸렸다(`1 review(s) name it, avg 3.0 stars -> -5%`). 보드의 share는 거래 **건수**라, 비싸게 적게 파는 것보다 buyer가 실제로 내는 값 근처에서 많이 닫는 쪽이 유리하다.
 
 **2일차 수정(10-22 18:56 적용, 커밋 `5d857b8`, `c3fcb9a`).** 근거는 `pricing.py` 맨 위 docstring에 적어 두었다.
 
@@ -162,12 +162,12 @@ ask    = base × 1.06                   (1.12 → 1.06)
 
 **전후 비교.** 3번의 표와 같은 로그에서 뽑았다.
 
-| | 10-20 (21:51까지 하네스 호가, 22시부터 1일차 규칙) | 1일차 규칙 (10-21) | 2일차 규칙 (10-24 ~ 10-26) |
+| | 10-20 (21:51까지 하네스 호가, 22시부터 1일차 규칙) | 1일차 규칙 (10-21) | 2일차 규칙 (10-24 \~ 10-26) |
 |---|---|---|---|
-| lamp 여는 호가 중앙값 | 140 (하네스 140~150, 규칙 112) | 118 | 106 |
+| lamp 여는 호가 중앙값 | 140 (하네스 140\~150, 규칙 112) | 118 | 106 |
 | chair | 231 | 220 | 191 |
 | bookshelf | 328 | 313 | 276 |
-| 성사율 (deal/open) | 66% (98건) | 62% (626건) | 77~81% (하루 900~1,600건) |
+| 성사율 (deal/open) | 66% (98건) | 62% (626건) | 77\~81% (하루 900\~1,600건) |
 | 거래가 중앙값 lamp / chair / bookshelf | 100 / 200 / 280 | 105 / 200 / 275 | 100 / 180 / 260 |
 
 | 보드 | 10-20 21:3x (전) | 10-23 18:05 | 10-25 19:30 | 10-26 22:00 (후) |
@@ -178,7 +178,7 @@ ask    = base × 1.06                   (1.12 → 1.06)
 | stars | 3.67 | 4.43 | 4.34 | 4.37 |
 | profit | – | 13,849 | 18,530 | 20,809 |
 
-- 성사율은 62%에서 77~81%로 올라 상위 가게 수준이 됐고, share는 0.5%에서 1.4%로 올랐다. 거래 수 19위, profit 14위(49개 가게 중).
+- 성사율은 62%에서 77\~81%로 올라 상위 가게 수준이 됐고, share는 0.5%에서 1.4%로 올랐다. 거래 수 19위, profit 14위(49개 가게 중).
 - 대신 거래가는 reserve에 붙었다. 호가를 reserve 가까이로 내리자 흥정하는 buyer들이 reserve까지 내려오고, 코드는 reserve 이상이면 받는다. 이익은 호가대로 사는 소수에게서 나온다. 1위 가게들도 같은 구조다(ggari-shop 거래 35,228건에 마진 0.9%).
 - 별점은 3.67(3건)에서 4.37(4,019건)로 올랐지만 49개 중 34위다. 지금 시장이 보여 주는 내 후기 10개(`logs/challenge-1/my-shop-reviews-after.json`)는 5점 6개, 4점 3개, 3점 1개로, 3점은 "lamp for $100, within my $125 budget, completed in 1 round"처럼 흥정 없이 끝난 거래에 붙는다. 후기 −5% 규칙이 걸린 적은 `1 review(s) name it, avg 3.0 stars`가 전부라, 후기 10개만 보여 주는 시장에서는 이 규칙이 거의 쓸모없었다.
 - 10-23에서 10-24로 넘어가며 방문이 7배가 된 것은 호가 때문만이라고 말할 수 없다(3번 참고).
@@ -222,9 +222,9 @@ python market_kit.py join --dir <repo>/submissions/26510129/week-07 --market htt
 
 | 구간 | 내용 |
 |---|---|
-| 10-20 19:36 ~ 21:51 | 아홉 번 시작. 이름 변경(han-lamp → lumen-goods → jiseokkk), conda python 사고(19:48), LAB 1·LAB 2·도전 코드 반영, 터널이 120초 안에 안 열려 종료(21:48) |
-| 10-20 21:51 ~ 10-22 18:4x | 1일차 규칙으로 연속 실행. market test와 2일차 코드 반영을 위해 멈춤 |
-| 10-22 18:56 ~ (PR 시점 10-26 22시) | 2일차 규칙으로 연속 실행. pid 하나가 나흘째, 로그에 10분 넘는 공백 없음 |
+| 10-20 19:36 \~ 21:51 | 아홉 번 시작. 이름 변경(han-lamp → lumen-goods → jiseokkk), conda python 사고(19:48), LAB 1·LAB 2·도전 코드 반영, 터널이 120초 안에 안 열려 종료(21:48) |
+| 10-20 21:51 \~ 10-22 18:4x | 1일차 규칙으로 연속 실행. market test와 2일차 코드 반영을 위해 멈춤 |
+| 10-22 18:56 \~ (PR 시점 10-26 22시) | 2일차 규칙으로 연속 실행. pid 하나가 나흘째, 로그에 10분 넘는 공백 없음 |
 
 **운영하며 배운 것.**
 - market test는 키트를 멈추고 돌린다. 둘 다 `market_buyer`를 실행하고 같은 `.market/buyer_memory.json`에 쓰기 때문에, 같이 돌리면 서로의 행을 덮는다(1번 참고). 테스트 앞뒤로 기억 파일과 거래 기록을 백업·복원하고 다시 join한다.
