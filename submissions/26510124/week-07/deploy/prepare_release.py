@@ -24,6 +24,8 @@ def main():
         "requirements-lock.txt", "test_harness.py", "test_seller_opening.py",
         "test_seller.py", "test_buyer.py", "test_market_buyer.py",
         "test_receipt_signing.py", "test_public_market.py", "test_shop_marketing.py",
+        # test_harness replays this exact historical failed model response.
+        "logs/opening-c6021350801d472e8daec0dddfdb5162.log",
     ]
     files = [submission / name for name in runtime]
     files += sorted((submission / "prompts").glob("*.txt"))
