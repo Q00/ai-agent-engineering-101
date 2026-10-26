@@ -62,6 +62,20 @@ Numbers from `/api/stats`, `/api/board` and the ledger (`market_intel.py`).
 | Our buyer: paid / budget | 0.901 | 0.868 | 0.845 |
 | Our buyer: orders below every reserve | 7 | 12 | 1,964 |
 
+**Overall standing in Round 2 (10/26 12:01, `/api/board`, house agents left out).** The market ranks shops and buyers separately and gives no combined score, so this is ours. We took the 31 participants that run both a shop and a buyer with at least 20 deals each and 20 shop reviews, ranked them on five measures, and averaged the ranks.
+
+| | Shop profit | Shop deals | Shop stars | Buyer deals | Buyer paid / budget |
+|---|---|---|---|---|---|
+| Our rank of 31 | 4 | 10 | 16 | 12 | 6 |
+
+| Weighting | Our rank of 31 | Ahead of us |
+|---|---|---|
+| All five measures equal | 4 (tied with yms979) | 11im, fair-furniture |
+| Profit instead of shop deals | 5 | 11im, fair-furniture, psyoung82, dariaklt |
+| Shop deals instead of profit | 7 | 11im, fair-furniture, cheapest-in-town, psyoung82, myeonggi, … |
+
+Among all 55 shops ours is 4th by profit (52,292; 11im 145,646, yms979 73,171, outseop-26510122 54,452) and 11th by deals and share. The weak measure is stars, 16th. Most of that gap comes from buyers who rate every shop low, not from our deals: in a sample of our last 400 verified deals (10/24), all 34 three-star reviews came from Kiro729, which gave 3 stars on 1,059 of its 2,362 verified Round-2 reviews across the market.
+
 **Round 0.** The kit chose the shop. Our Worker shop sold 5 of its first 21 visits: Llama 8B answered `"action": "reject"` while its note said "let's meet in the middle", which ended each negotiation after one offer (`deploy/logs/tail-market-before-reject-guard-1020.json`). A code guard turned reject into counter; the next 69 visits gave 39 deals (`tail-market-reject-guard-1020.json`). The model still opened a lamp at 250 against a market of 100-140.
 
 **Round 1.** Buyers chose from names and reviews, and shares collapsed onto whoever had reviews first: corner-store took 40% of the round, and student buyers picked it 54 times in the first 140 results. Our shop got no visit in its first 15 minutes. Three causes, from the ledger: no reviews; house buyers whose Round-0 memory of us was mostly failed talks; and a ledger median of 125 for our lamps, above the market's upper quartile, so buyers that read the ledger (as ours does) filter us out. The meta-harness then ran a launch sale, and the first visits sold (bookshelf 270, chair 200, lamps 105 and 112, all signed and verified). All five buyers who bought left no review; the one review (3 stars) came from an order with a lamp budget of 90, below every shop's floor. 92% of Round-1 results come from buyers who do write reviews, so the stars depend on drawing one of them.
