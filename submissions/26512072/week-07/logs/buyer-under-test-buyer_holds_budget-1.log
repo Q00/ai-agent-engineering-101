@@ -1,15 +1,8 @@
-[harness] {"shop": "Kit Shop", "reason": "It is the only shop listed, it has no reviews to flag, and my memory shows three deals at a consistent 100 with no record of receipt mismatches or overcharging, which is within the 230 budget."}
-[choose] http://127.0.0.1:36449: Kit Shop: It is the only shop listed, it has no reviews to flag, and my memory shows three deals at a consistent 100 with no record of receipt mismatches or overcharging, which is within the 230 budget.
-card: Kit Shop -> http://127.0.0.1:36449/
+[harness] {"shop": "Kit Shop", "reason": "Kit Shop has no reviews, which the rules rank above a shop with bad reviews, and my own record shows 3 deals at prices of 100, 100, and 104, all low relative to the 230 budget, with no notes of receipt mismatches or overcharging."}
+[choose] http://127.0.0.1:60155: Kit Shop: Kit Shop has no reviews, which the rules rank above a shop with bad reviews, and my own record shows 3 deals at prices of 100, 100, and 104, all low relative to the 230 budget, with no notes of receipt mismatches or overcharging.
+card: Kit Shop -> http://127.0.0.1:60155/
 -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
-[harness] {"action": "offer", "price": 170}
--> '170'  <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 260.
-[harness] {"action": "offer", "price": 215}
--> '215'  <- TASK_STATE_INPUT_REQUIRED | 215 is too low. Counteroffer: 260.
-[harness] {"action": "offer", "price": 230}
--> '230'  <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
-[harness] {"action": "walk"}
-walked away (CancelTask)
+budget 230 is below the market floor 260 for a bookshelf: walked away (CancelTask)
 [receipt] no deal, no receipt
-[harness] {"stars": 2, "review": "The shop held its counteroffer at 260 after my offers of 170, 215, and 230 against a 338 asking price, and no deal or receipt was made."}
-{"shop": "http://127.0.0.1:36449", "receipt": null, "stars": 2, "review": "The shop held its counteroffer at 260 after my offers of 170, 215, and 230 against a 338 asking price, and no deal or receipt was made."}
+[harness] {"stars": 2, "review": "The shop asked 338 for a bookshelf, I walked away at a 230 budget without making an offer, and no deal or receipt was made."}
+{"shop": "http://127.0.0.1:60155", "receipt": null, "stars": 2, "review": "The shop asked 338 for a bookshelf, I walked away at a 230 budget without making an offer, and no deal or receipt was made."}

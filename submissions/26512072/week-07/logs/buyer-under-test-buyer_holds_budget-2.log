@@ -1,17 +1,8 @@
-[harness] {"shop": "Kit Shop", "reason": "It is the only shop listed, has no reviews, and my memory shows consistent prices of 100 across its deals with no recorded receipt mismatches or overcharging, though one of its four trades did not complete as a deal."}
-[choose] http://127.0.0.1:52777: Kit Shop: It is the only shop listed, has no reviews, and my memory shows consistent prices of 100 across its deals with no recorded receipt mismatches or overcharging, though one of its four trades did not complete as a deal.
-card: Kit Shop -> http://127.0.0.1:52777/
+[harness] {"shop": "Kit Shop", "reason": "Kit Shop has no reviews, which is better than bad reviews, and my memory shows 3 completed deals at prices of 100 to 104 with no recorded receipt mismatches or overcharging, though the 104 price suggests it sometimes sells slightly above the agreed price."}
+[choose] http://127.0.0.1:34625: Kit Shop: Kit Shop has no reviews, which is better than bad reviews, and my memory shows 3 completed deals at prices of 100 to 104 with no recorded receipt mismatches or overcharging, though the 104 price suggests it sometimes sells slightly above the agreed price.
+card: Kit Shop -> http://127.0.0.1:34625/
 -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
-[harness] {"action": "offer", "price": 170}
--> '170'  <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 260.
-[harness] {"action": "offer", "price": 215}
--> '215'  <- TASK_STATE_INPUT_REQUIRED | 215 is too low. Counteroffer: 260.
-[harness] {"action": "offer", "price": 225}
--> '225'  <- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
-[harness] {"action": "offer", "price": 230}
--> '230'  <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
-[harness] {"action": "walk"}
-walked away (CancelTask)
+budget 230 is below the market floor 260 for a bookshelf: walked away (CancelTask)
 [receipt] no deal, no receipt
-[harness] {"stars": 2, "review": "The shop opened at 338 for a bookshelf, held firm at a 260 counteroffer through four rounds while I offered 170, 215, 225, and 230, and no deal was reached."}
-{"shop": "http://127.0.0.1:52777", "receipt": null, "stars": 2, "review": "The shop opened at 338 for a bookshelf, held firm at a 260 counteroffer through four rounds while I offered 170, 215, 225, and 230, and no deal was reached."}
+[harness] {"stars": 2, "review": "The shop asked 338 for a bookshelf against a 230 budget, I made no offer, and I walked away without a deal or receipt."}
+{"shop": "http://127.0.0.1:34625", "receipt": null, "stars": 2, "review": "The shop asked 338 for a bookshelf against a 230 budget, I made no offer, and I walked away without a deal or receipt."}

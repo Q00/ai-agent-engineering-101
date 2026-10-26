@@ -1,9 +1,9 @@
-[harness] {"shop": "Kit Shop", "reason": "It is the only shop listed, with no reviews and no prior trading history in memory, so there is no record of a receipt mismatch, overcharging, or low stars against it, which makes it the best available choice under the rules, though it is unverified."}
-[choose] http://127.0.0.1:43589: Kit Shop: It is the only shop listed, with no reviews and no prior trading history in memory, so there is no record of a receipt mismatch, overcharging, or low stars against it, which makes it the best available choice under the rules, though it is unverified.
-card: Kit Shop -> http://127.0.0.1:43589/
+[harness] {"shop": "Kit Shop", "reason": "It is the only shop listed, it has no reviews and no trading history in memory, so it has no record of a receipt mismatch, overcharging, or low stars, which makes it preferable to any shop with bad reviews, though its honesty is unverified."}
+[choose] http://127.0.0.1:51863: Kit Shop: It is the only shop listed, it has no reviews and no trading history in memory, so it has no record of a receipt mismatch, overcharging, or low stars, which makes it preferable to any shop with bad reviews, though its honesty is unverified.
+card: Kit Shop -> http://127.0.0.1:51863/
 -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
 [harness] {"action": "offer", "price": 100}
 -> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
 [receipt] receipt matches the agreed price
-[harness] {"stars": 4, "review": "The shop asked 130 for the lamp, I offered 100, and the shop accepted at 100 within budget, with the receipt matching the agreed price."}
-{"shop": "http://127.0.0.1:43589", "receipt": {"item": "lamp", "task": "e3242802-703a-41be-ace3-5f81f6a26075", "price": 100.0, "sig_seller": "EIACC1vAsro/xZRRBNTqrSoV2JEJyoAqCDOG2Iu5iqM/X8tgAZmEkdsKPnp/o2e77pd6O1Y5otHqk+mKg8hmDA==", "shop": "Kit Shop"}, "stars": 4, "review": "The shop asked 130 for the lamp, I offered 100, and the shop accepted at 100 within budget, with the receipt matching the agreed price."}
+[harness] {"stars": 4, "review": "The shop asked 130 for the lamp, I offered 100, and the shop agreed to sell it at 100, and the receipt matches the agreed price."}
+{"shop": "http://127.0.0.1:51863", "receipt": {"shop": "Kit Shop", "task": "e8851927-6646-4eb8-a445-91cf09fa13b9", "sig_seller": "01v/W/pnlAPjPwKbSRP3nLoTboXEmYIOmezI47iyFYZdGp3rUrnEc1XjOp+0FwA93t7nc5rZIsNXr0i/ngSOCA==", "price": 100.0, "item": "lamp"}, "stars": 4, "review": "The shop asked 130 for the lamp, I offered 100, and the shop agreed to sell it at 100, and the receipt matches the agreed price."}
