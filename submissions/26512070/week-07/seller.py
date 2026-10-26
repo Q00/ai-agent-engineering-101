@@ -151,7 +151,12 @@ class Seller(AgentExecutor):
         action, words = d.get("action"), (d.get("say") or "").strip()
         if action == "counter":
             price = int(d["price"])
+            first = deal["ask"] is None
             deal["ask"] = price
+            # Opening ask only: invite an offer. 8 of 28 lamp buyers (19:12-22:40) left after the opening ask
+            # without a word; the price stays, the words ask them to stay and name their budget.
+            if first:
+                words = f"{words} Tell me your budget and I will see what I can do.".strip()
             deal["history"].append({"from": "seller", "text": words, "price": price})
             # The trade test reads the LAST number of this message as our ask.
             await up.requires_input(say(f"{words} My price: {price}.".strip()))
