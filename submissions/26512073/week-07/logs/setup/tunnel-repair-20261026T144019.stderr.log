@@ -1,0 +1,180 @@
+2026-10-26T05:40:19Z INF Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in production you should use a pre-created named tunnel by following: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+2026-10-26T05:40:19Z INF Requesting new quick Tunnel on trycloudflare.com...
+2026-10-26T05:40:25Z INF +--------------------------------------------------------------------------------------------+
+2026-10-26T05:40:25Z INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
+2026-10-26T05:40:25Z INF |  https://know-mental-lending-inserted.trycloudflare.com                                    |
+2026-10-26T05:40:25Z INF +--------------------------------------------------------------------------------------------+
+2026-10-26T05:40:25Z INF Cannot determine default configuration path. No file [config.yml config.yaml] in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp]
+2026-10-26T05:40:25Z INF Version 2026.10.2 (Checksum 12c7c887f8aaab779aef1dfa9b60673530a5adb88ecc55dd6df8f56e0b70f199)
+2026-10-26T05:40:25Z INF GOOS: windows, GOVersion: go1.27.3, GoArch: amd64
+2026-10-26T05:40:25Z INF Settings: map[ha-connections:1 no-autoupdate:true protocol:quic url:http://127.0.0.1:8900]
+2026-10-26T05:40:25Z INF cloudflared will not automatically update on Windows systems.
+2026-10-26T05:40:25Z INF Generated Connector ID: 2cff22db-a1fd-4d9e-8149-a1dd71e2f08f
+2026-10-26T05:40:25Z INF Initial protocol quic
+2026-10-26T05:40:25Z INF ICMP proxy will use 192.168.0.102 as source for IPv4
+2026-10-26T05:40:25Z INF ICMP proxy will use fe80::5227:a6a:910f:687f in zone Wi-Fi as source for IPv6
+2026-10-26T05:40:25Z INF cloudflared does not support loading the system root certificate pool on Windows. Please use --origin-ca-pool <PATH> to specify the path to the certificate pool
+2026-10-26T05:40:25Z INF ICMP proxy will use 192.168.0.102 as source for IPv4
+2026-10-26T05:40:25Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.192.67
+2026-10-26T05:40:25Z INF ICMP proxy will use fe80::5227:a6a:910f:687f in zone Wi-Fi as source for IPv6
+2026-10-26T05:40:25Z INF Starting metrics server on 127.0.0.1:20242/metrics
+2026-10-26T05:40:25Z INF +-------------------------------------------------------------------------------------+
+2026-10-26T05:40:25Z INF |                               CONNECTIVITY PRE-CHECKS                               |
+2026-10-26T05:40:25Z INF +-------------------------------------------------------------------------------------+
+2026-10-26T05:40:25Z INF |  COMPONENT         TARGET                     STATUS  DETAILS                       |
+2026-10-26T05:40:25Z INF |  DNS Resolution    region1.v2.argotunnel.com  PASS    DNS Resolved successfully     |
+2026-10-26T05:40:25Z INF |  DNS Resolution    region2.v2.argotunnel.com  PASS    DNS Resolved successfully     |
+2026-10-26T05:40:25Z INF |  UDP Connectivity  region1.v2.argotunnel.com  PASS    QUIC connection successful    |
+2026-10-26T05:40:25Z INF |  UDP Connectivity  region2.v2.argotunnel.com  PASS    QUIC connection successful    |
+2026-10-26T05:40:25Z INF |  TCP Connectivity  region1.v2.argotunnel.com  PASS    HTTP/2 connection successful  |
+2026-10-26T05:40:25Z INF |  TCP Connectivity  region2.v2.argotunnel.com  PASS    HTTP/2 connection successful  |
+2026-10-26T05:40:25Z INF |  Cloudflare API    api.cloudflare.com:443     PASS    API is reachable              |
+2026-10-26T05:40:25Z INF |                                                                                     |
+2026-10-26T05:40:25Z INF |  SUMMARY: Environment is healthy. cloudflared will use 'quic' as primary protocol.  |
+2026-10-26T05:40:25Z INF +-------------------------------------------------------------------------------------+
+2026-10-26T05:40:25Z INF precheck component="DNS Resolution" details="DNS Resolved successfully" run_id=b34ba88e-448c-45e7-92c7-8b4252248e47 status=pass target=region1.v2.argotunnel.com
+2026-10-26T05:40:25Z INF precheck component="DNS Resolution" details="DNS Resolved successfully" run_id=b34ba88e-448c-45e7-92c7-8b4252248e47 status=pass target=region2.v2.argotunnel.com
+2026-10-26T05:40:25Z INF precheck component="UDP Connectivity" details="QUIC connection successful" run_id=b34ba88e-448c-45e7-92c7-8b4252248e47 status=pass target=region1.v2.argotunnel.com
+2026-10-26T05:40:25Z INF precheck component="UDP Connectivity" details="QUIC connection successful" run_id=b34ba88e-448c-45e7-92c7-8b4252248e47 status=pass target=region2.v2.argotunnel.com
+2026-10-26T05:40:25Z INF precheck component="TCP Connectivity" details="HTTP/2 connection successful" run_id=b34ba88e-448c-45e7-92c7-8b4252248e47 status=pass target=region1.v2.argotunnel.com
+2026-10-26T05:40:25Z INF precheck component="TCP Connectivity" details="HTTP/2 connection successful" run_id=b34ba88e-448c-45e7-92c7-8b4252248e47 status=pass target=region2.v2.argotunnel.com
+2026-10-26T05:40:25Z INF precheck component="Cloudflare API" details="API is reachable" run_id=b34ba88e-448c-45e7-92c7-8b4252248e47 status=pass target=api.cloudflare.com:443
+2026-10-26T05:40:25Z INF precheck complete hard_fail=false run_id=b34ba88e-448c-45e7-92c7-8b4252248e47 suggested_protocol=quic
+2026-10-26T05:40:25Z INF Registered tunnel connection connIndex=0 connection=333a0ce2-c0d5-4949-8cf6-ded51b693687 event=0 ip=198.41.192.67 location=icn06 protocol=quic
+2026-10-26T07:24:29Z ERR Serve tunnel error error="accept stream listener error: failed to accept QUIC stream: timeout: no recent network activity" connIndex=0 event=0 ip=198.41.192.67
+2026-10-26T07:24:29Z INF Retrying connection in up to 2s connIndex=0 event=0 ip=198.41.192.67
+2026-10-26T07:24:30Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:30Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:30Z INF Retrying connection in up to 4s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:34Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:34Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:34Z INF Retrying connection in up to 8s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:34Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:34Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:34Z INF Retrying connection in up to 16s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:35Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:35Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:35Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:58Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:58Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:24:58Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:25:02Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:25:02Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:25:02Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:25:23Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:25:23Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:25:23Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:25:37Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:25:37Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:25:37Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:25:57Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:25:57Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:25:57Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:26:28Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:26:28Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:26:28Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:26:32Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:26:32Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:26:32Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:01Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:01Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:01Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:10Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:10Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:10Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:18Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:18Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:18Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:24Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:24Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:24Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:39Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:39Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:39Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:58Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:58Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:27:58Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:28:23Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:28:23Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:28:23Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:28:40Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:28:40Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:28:40Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:28:45Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:28:45Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:28:45Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:29:08Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:29:08Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:29:08Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:29:15Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:29:15Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:29:15Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:29:33Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:29:33Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:29:33Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:29:45Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:29:45Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:29:45Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:30:03Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:30:04Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:30:04Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:30:21Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:30:21Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:30:21Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:30:23Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:30:23Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:30:23Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:30:38Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:30:38Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:30:38Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:31:04Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:31:04Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:31:04Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:31:15Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:31:15Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:31:15Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:31:35Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:31:35Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:31:35Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:32:02Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:32:02Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:32:02Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:32:28Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:32:28Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:32:28Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:32:50Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:32:50Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:32:50Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:16Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:17Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:17Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:21Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:21Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:21Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:35Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:35Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:35Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:35Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:35Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:35Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:59Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:59Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:33:59Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:34:14Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:34:14Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:34:14Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:34:31Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:34:31Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:34:31Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:34:35Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:34:35Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:34:35Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:34:46Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:34:46Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:34:46Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:35:07Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:35:07Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:35:07Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:35:19Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:35:19Z ERR Register tunnel error from server side error="Unauthorized: Tunnel not found" connIndex=0 event=0 ip=198.41.200.33
+2026-10-26T07:35:19Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
