@@ -211,13 +211,13 @@ def evolve(config, snapshot, events, previous=None):
                 reason = "hold: investigate receipt complaints"
             elif (rejected / len(fresh) >= .5 and tags.get("price", 0) >= 3
                   and claims.get("value_claim", 0)):
-                target = math.floor(target * .95)
+                target = math.ceil(target * .95)
                 reason = "lower: repeated price hints, own rejections, leaders claim value"
             elif (receipts / len(fresh) >= .8 and delta.get("deals", 0) >= 3
                   and not tags.get("price") and not tags.get("receipt")
                   and len(snapshot["reviews"]) >= 3
                   and sum(r["stars"] for r in snapshot["reviews"]) / len(snapshot["reviews"]) >= 4):
-                target = math.ceil(target * 1.05)
+                target = math.floor(target * 1.05)
                 reason = "raise cautiously: own receipts, counted sales growth and good reviews"
             else:
                 reason = "hold: evidence does not support a price change"

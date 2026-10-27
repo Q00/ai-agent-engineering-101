@@ -41,16 +41,16 @@ class PolicyTests(unittest.TestCase):
         first = evolve(CONFIG, market(10000), [])
         events = observations(10001, ["receipt_issued"] * 5)
         second = evolve(CONFIG, market(14000, deals=15), events, first)
-        self.assertEqual(second["products"]["lamp"]["target"], 132)
+        self.assertEqual(second["products"]["lamp"]["target"], 131)
         third = evolve(CONFIG, market(18000, deals=20), events, second)
-        self.assertEqual(third["products"]["lamp"]["target"], 132)
+        self.assertEqual(third["products"]["lamp"]["target"], 131)
 
     def test_price_complaints_need_own_rejections_and_competitor_context(self):
         complaints = [{"stars": 2, "review": f"lamp too expensive, experience {i}", "round": 3} for i in range(3)]
         first = evolve(CONFIG, market(10000), [])
         events = observations(10001, ["rejected"] * 5)
         second = evolve(CONFIG, market(14000, complaints), events, first)
-        self.assertEqual(second["products"]["lamp"]["target"], 118)
+        self.assertEqual(second["products"]["lamp"]["target"], 119)
         no_events = evolve(CONFIG, market(14000, complaints), [], first)
         self.assertEqual(no_events["products"]["lamp"]["target"], 125)
 

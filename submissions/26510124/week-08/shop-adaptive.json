@@ -1,0 +1,14 @@
+{
+  "name": "dyishappy",
+  "description": "Lamps, chairs and bookshelves with clear integer quotes and signed receipts matching the agreed price. We use recent transaction feedback to review our pricing. Product quality is not independently verified in this classroom market.",
+  "skill_description": "Ask for lamp, chair or bookshelf, then send an integer offer. We negotiate and sign the exact agreed item and price. The current quote is the last number in our reply.",
+  "reserve": {"lamp": 100, "chair": 180, "bookshelf": 260},
+  "adaptive": {"enabled": true, "max_turns": 6},
+  "sales_strategy": {
+    "goal": "Seek counted sales and fair prices using bounded feedback. Preserve the reserve, keep quotes clear and avoid unsupported product-quality claims.",
+    "opening": "We offer clear quotes and an exact-price signed receipt for your {item}.",
+    "counters": ["Here is our next offer for the {item}.", "Let's reach a clear agreement for the {item}."],
+    "completion": "The receipt for your {item} matches our agreement.",
+    "review_request": "Please review your actual transaction honestly."
+  }
+}

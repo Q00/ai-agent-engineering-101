@@ -9,6 +9,7 @@ import argparse
 import asyncio
 import json
 import re
+import time
 from pathlib import Path
 
 import uvicorn
@@ -24,6 +25,15 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import HarnessError, opening_price, seller_decision
 from receipt_signing import load_shop_key, sign_receipt
+from feedback import StrategyReader, append_event
+
+ROOT = Path(__file__).resolve().parent
+
+
+def bounded_history(history):
+    """At most seven messages/2,800 characters, preserving the latest quote."""
+    selected = history if len(history) <= 7 else history[:1] + history[-6:]
+    return [{"role": entry["role"], "text": entry["text"][-400:]} for entry in selected]
 
 DEFAULT = {
     "name": "Lamp Shop",
@@ -52,6 +62,22 @@ class Seller(AgentExecutor):
         self.open = {}  # task id -> item, latest ask, and explicit model context
         self.pending = {}  # task id -> cancellation event during model inference
         self.locks = {}  # serialize state publication with CancelTask
+        adaptive = cfg.get("adaptive", {})
+        self.reader = StrategyReader(ROOT / ".market" / "seller-strategy.json") if adaptive.get("enabled") else None
+        self.events = ROOT / "logs" / "seller-events.jsonl"
+        self.max_turns = min(10, max(2, int(adaptive.get("max_turns", 6))))
+        self.model_slots = asyncio.Semaphore(2)
+
+    def record(self, task, item, outcome, policy, price=None):
+        if not self.reader:
+            return
+        try:
+            append_event(self.events, {"time": time.time(), "task": task, "item": item,
+                                      "outcome": outcome, "price": price,
+                                      "strategy": policy.get("version") if policy else "baseline"})
+        except OSError as exc:
+            # Observability failure must never turn an issued receipt into a retry.
+            print(f"[feedback] event write failed: {type(exc).__name__}", flush=True)
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -61,6 +87,9 @@ class Seller(AgentExecutor):
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
         say = lambda text: up.new_agent_message(parts=[new_text_part(text)])
         text = get_message_text(context.message) or ""
+        if len(text) > 4000:
+            await up.reject(say("Message too long. Send an item or an integer offer."))
+            return
         deal = self.open.get(task.id)
 
         if deal is None:  # first message: identify the catalog item
@@ -78,27 +107,56 @@ class Seller(AgentExecutor):
             offer = int(text.strip())
             history = deal["history"] + [{"role": "buyer", "text": text}]
 
+        # Pin even an absent snapshot: a policy must not appear/change mid-task.
+        policy = (deal.get("policy") if deal else
+                  self.reader.for_item(item, self.cfg["reserve"][item]) if self.reader else None)
+        options = ({"strategy": self.cfg["sales_strategy"]["goal"]}
+                   if self.cfg.get("sales_strategy") else {})
+        if policy:
+            options["adaptive"] = policy
+        if self.reader:
+            history = bounded_history(history)
+            if deal and deal["counters"] >= self.max_turns and offer != deal["ask"]:
+                self.open.pop(task.id, None)
+                self.record(task.id, item, "turn_limit", policy)
+                await up.reject(say("Negotiation limit reached. No deal."))
+                return
+
         canceled = asyncio.Event()
         self.pending[task.id] = canceled
         lock = self.locks.setdefault(task.id, asyncio.Lock())
         try:
             try:
-                if deal is None:
-                    options = ({"strategy": self.cfg["sales_strategy"]["goal"]}
-                               if self.cfg.get("sales_strategy") else {})
-                    price = await asyncio.to_thread(opening_price, item, self.cfg["reserve"][item], text, **options)
-                    decision = {"action": "counter", "price": price}
-                else:
-                    options = ({"strategy": self.cfg["sales_strategy"]["goal"]}
-                               if self.cfg.get("sales_strategy") else {})
-                    decision = await asyncio.to_thread(
-                        seller_decision, item=item, reserve=self.cfg["reserve"][item],
-                        offer=offer, history=history, **options,
-                    )
+                try:
+                    await asyncio.wait_for(self.model_slots.acquire(), timeout=.1)
+                except TimeoutError:
+                    raise HarnessError("Shop busy; model concurrency limit reached")
+                try:
+                    if deal is None:
+                        price = await asyncio.to_thread(opening_price, item, self.cfg["reserve"][item], text[:400], **options)
+                        decision = {"action": "counter", "price": price}
+                    else:
+                        decision = await asyncio.to_thread(
+                            seller_decision, item=item, reserve=self.cfg["reserve"][item],
+                            offer=offer, history=history, **options,
+                        )
+                finally:
+                    self.model_slots.release()
+                action, price = decision.get("action"), decision.get("price")
+                if action not in ("counter", "accept", "reject"):
+                    raise HarnessError("Invalid seller action")
+                if action != "reject":
+                    if type(price) is not int or price < self.cfg["reserve"][item]:
+                        raise HarnessError("Price is below reserve or not an integer")
+                    if action == "accept" and (deal is None or price != offer):
+                        raise HarnessError("Acceptance does not match the buyer offer")
+                    if self.reader and deal and action == "counter" and price > deal["ask"]:
+                        raise HarnessError("A counteroffer must not increase the existing quote")
             except HarnessError as exc:
                 async with lock:
                     if not canceled.is_set():
                         self.open.pop(task.id, None)
+                        self.record(task.id, item, "error", policy)
                         await up.failed(say(str(exc)))
                 return
 
@@ -125,6 +183,7 @@ class Seller(AgentExecutor):
                         "item": item, "ask": price,
                         "history": history + [{"role": "seller", "text": reply}],
                         "counters": counters + (deal is not None),
+                        "policy": policy,
                     }
                     await up.requires_input(say(reply))
                 elif action == "accept":
@@ -140,9 +199,11 @@ class Seller(AgentExecutor):
                     closing = (f"{strategy['completion'].format(item=item)} {strategy['review_request']}"
                                if strategy else REVIEW_COUPON_PITCH)
                     await up.complete(say(f"{closing} Deal: {item} at {price}."))
+                    self.record(task.id, item, "receipt_issued", policy, price)
                     self.open.pop(task.id, None)
                 else:
                     await up.reject(say("No mutually acceptable deal. Negotiation ended."))
+                    self.record(task.id, item, "rejected", policy)
                     self.open.pop(task.id, None)
         finally:
             if self.pending.get(task.id) is canceled:
@@ -155,7 +216,9 @@ class Seller(AgentExecutor):
             pending = self.pending.get(task.id)
             if pending:
                 pending.set()
-            self.open.pop(task.id, None)
+            deal = self.open.pop(task.id, None)
+            if deal:
+                self.record(task.id, deal["item"], "canceled", deal.get("policy"))
             await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 
@@ -186,6 +249,7 @@ if __name__ == "__main__":
     ap.add_argument("--config")
     ap.add_argument("--port", type=int)
     ap.add_argument("--sign-receipts", action="store_true", help="Round 2: sign receipts with existing shop_key.pem")
+    ap.add_argument("--shop-key", type=Path, help="Use the existing market identity; never create a replacement key")
     args = ap.parse_args()
     cfg = dict(DEFAULT)
     if args.config:
@@ -194,4 +258,6 @@ if __name__ == "__main__":
         cfg["port"] = args.port
     if args.sign_receipts:
         cfg["sign_receipts"] = True
+    if args.shop_key:
+        cfg["shop_key"] = args.shop_key
     uvicorn.run(build(cfg), host="127.0.0.1", port=cfg["port"], log_level="warning")

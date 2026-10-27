@@ -1,0 +1,46 @@
+OFFLINE TESTS — synthetic fixtures, no model or market trades
+COMMAND: ['/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python', '-m', 'unittest', 'discover', '-s', '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08', '-p', 'test_*.py', '-v']
+/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_adaptive_seller.py:16: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+test_busy_shop_never_starts_a_third_model_call (test_adaptive_seller.ConcurrencyTests.test_busy_shop_never_starts_a_third_model_call) ... ok
+test_below_reserve_or_wrong_acceptance_cannot_issue_receipt (test_adaptive_seller.SellerTests.test_below_reserve_or_wrong_acceptance_cannot_issue_receipt) ... ok
+test_exact_quote_can_be_accepted_at_turn_limit (test_adaptive_seller.SellerTests.test_exact_quote_can_be_accepted_at_turn_limit) ... ok
+test_history_is_bounded_and_latest_price_survives (test_adaptive_seller.SellerTests.test_history_is_bounded_and_latest_price_survives) ... ok
+test_max_turns_end_bargaining_without_another_model_call (test_adaptive_seller.SellerTests.test_max_turns_end_bargaining_without_another_model_call) ... ok
+test_missing_snapshot_uses_baseline_without_network_or_extra_model_call (test_adaptive_seller.SellerTests.test_missing_snapshot_uses_baseline_without_network_or_extra_model_call) ... Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_model_output_must_stay_in_experimental_opening_band (test_adaptive_seller.SellerTests.test_model_output_must_stay_in_experimental_opening_band) ... ok
+test_policy_is_pinned_and_signed_receipt_is_not_called_settlement (test_adaptive_seller.SellerTests.test_policy_is_pinned_and_signed_receipt_is_not_called_settlement) ... ERROR
+test_bad_configuration_cannot_poll_aggressively (test_feedback.PolicyTests.test_bad_configuration_cannot_poll_aggressively) ... ok
+test_duplicate_reviews_and_injection_do_not_become_evidence (test_feedback.PolicyTests.test_duplicate_reviews_and_injection_do_not_become_evidence) ... ok
+test_model_errors_and_cancellations_do_not_lower_prices (test_feedback.PolicyTests.test_model_errors_and_cancellations_do_not_lower_prices) ... ok
+test_no_change_on_first_snapshot_or_same_events (test_feedback.PolicyTests.test_no_change_on_first_snapshot_or_same_events) ... ok
+test_price_complaints_need_own_rejections_and_competitor_context (test_feedback.PolicyTests.test_price_complaints_need_own_rejections_and_competitor_context) ... ok
+test_rank_uses_profit_not_registry_order_and_limits_three (test_feedback.PolicyTests.test_rank_uses_profit_not_registry_order_and_limits_three) ... ok
+test_receipts_alone_do_not_count_as_settled_sales (test_feedback.PolicyTests.test_receipts_alone_do_not_count_as_settled_sales) ... ok
+test_repeated_updates_are_bounded (test_feedback.PolicyTests.test_repeated_updates_are_bounded) ... ok
+test_round_transition_and_market_reset_start_new_baseline (test_feedback.PolicyTests.test_round_transition_and_market_reset_start_new_baseline) ... ok
+test_incremental_refresh_failure_keeps_good_snapshot (test_feedback.StorageTests.test_incremental_refresh_failure_keeps_good_snapshot) ... ok
+test_oversize_response_is_rejected_before_cache_write (test_feedback.StorageTests.test_oversize_response_is_rejected_before_cache_write) ... ok
+test_refresh_uses_only_two_fixed_public_endpoints (test_feedback.StorageTests.test_refresh_uses_only_two_fixed_public_endpoints) ... ok
+test_snapshot_expires_and_reader_never_forwards_external_text (test_feedback.StorageTests.test_snapshot_expires_and_reader_never_forwards_external_text) ... ok
+test_tail_ignores_incomplete_append_and_deduplicates_tasks (test_feedback.StorageTests.test_tail_ignores_incomplete_append_and_deduplicates_tasks) ... ok
+
+======================================================================
+ERROR: test_policy_is_pinned_and_signed_receipt_is_not_called_settlement (test_adaptive_seller.SellerTests.test_policy_is_pinned_and_signed_receipt_is_not_called_settlement)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_adaptive_seller.py", line 67, in test_policy_is_pinned_and_signed_receipt_is_not_called_settlement
+    event = json.loads((self.root / "logs" / "seller-events.jsonl").read_text())
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/decoder.py", line 340, in decode
+    raise JSONDecodeError("Extra data", s, end)
+json.decoder.JSONDecodeError: Extra data: line 2 column 1 (char 156)
+
+----------------------------------------------------------------------
+Ran 22 tests in 0.343s
+
+FAILED (errors=1)
