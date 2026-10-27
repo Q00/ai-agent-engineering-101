@@ -1,8 +1,8 @@
 {
   "kit_version": "1",
   "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
-  "started": "2026-10-27T01:44:08+00:00",
-  "harness": "Codex CLI 0.159.3; gpt-5.6-terra; reasoning low; isolated codex exec with JSON schema",
+  "started": "2026-10-27T02:00:10+00:00",
+  "harness": "Codex CLI 0.164.0-alpha.11.1; gpt-5.6-terra; reasoning low; isolated codex exec with JSON schema",
   "seller_cmd": "python seller.py --port {port}",
   "buyer_cmd": "python buyer.py --url {url} --item {item} --budget {budget}",
   "seller_card": {
@@ -10,7 +10,7 @@
     "description": "Constraint-aware furniture shopping for small rooms.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:12020/",
+        "url": "http://127.0.0.1:14380/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -125,19 +125,19 @@
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "error, asks [312, 295]"
+      "detail": "TASK_STATE_REJECTED, asks [310, 290, 275, 265, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "error, asks [300, 280]"
+      "detail": "TASK_STATE_REJECTED, asks [300, 290, 280, 270, 265]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "error, asks [310, 300]"
+      "detail": "TASK_STATE_REJECTED, asks [312, 300, 280, 270, 265, 262]"
     },
     {
       "test": "buyer_deal",
