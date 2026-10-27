@@ -70,6 +70,8 @@ async def run(args):
                                         require_verified=require_verified,
                                         audit_name=os.environ.get("MARKET_AUDIT_SHOP"))
     safe = lambda value: value.replace(settings.api_key, "[REDACTED]") if settings.api_key else value
+    for avoided in evidence["avoided_for_integrity"]:
+        print(safe(f"[avoid] {avoided['name']}: {avoided['reason']}"), flush=True)
     print(safe(f"[choose] {shop['name']} {shop['url']}: {reason}"), flush=True)
     log.record("shop_selected", name=shop["name"], url=shop["url"], item=args.item,
                budget=args.budget, reason=reason, evidence=evidence)

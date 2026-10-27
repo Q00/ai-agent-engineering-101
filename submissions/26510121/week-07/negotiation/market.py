@@ -156,7 +156,10 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False, audit_na
     reason = (f"{mode}; item={item}; own successes={selected['wins']}/{selected['own']}; "
               f"budget fit={selected['budget_fit']}; public score={selected['public']}; "
               f"recent receipt fault={selected['recent_fault']}; recent outage={selected['recent_outage']}")
-    evidence = {"selection_reason": reason, "public_reviews_untrusted": selected["shop"]["reviews"],
+    avoided = [{"name": candidate["shop"]["name"], "reason": "recent receipt integrity fault"}
+               for candidate in candidates if candidate["recent_fault"] and candidate is not selected]
+    evidence = {"selection_reason": reason, "avoided_for_integrity": avoided,
+                "public_reviews_untrusted": selected["shop"]["reviews"],
                 "own_item_history": [r for r in memory if r["name"] == selected["shop"]["name"]
                                      and r.get("item") == item][-5:]}
     return selected["shop"], reason, evidence

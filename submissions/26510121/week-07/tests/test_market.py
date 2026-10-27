@@ -24,8 +24,10 @@ def shop(name, stars=4):
 class MarketSelectionTests(unittest.TestCase):
     def test_own_receipt_fault_outweighs_glowing_public_reviews(self):
         memory = [{"name": "fraud", "item": "lamp", "outcome": "integrity_error", "epoch": time.time()}]
-        picked, _, _ = choose_shop([shop("fraud", 5), shop("honest", 4)], memory, "lamp", 120)
+        picked, _, evidence = choose_shop([shop("fraud", 5), shop("honest", 4)], memory, "lamp", 120)
         self.assertEqual(picked["name"], "honest")
+        self.assertEqual(evidence["avoided_for_integrity"],
+                         [{"name": "fraud", "reason": "recent receipt integrity fault"}])
 
     def test_new_url_keeps_same_personal_reputation(self):
         memory = [{"name": "regular", "item": "lamp", "outcome": "purchased", "price": 100, "seconds": 3}] * 5
