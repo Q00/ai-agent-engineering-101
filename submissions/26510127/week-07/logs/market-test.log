@@ -1,0 +1,169 @@
+# week-07 market test, kit v1, 2026-10-20T13:19:50+00:00
+harness: Claude Code: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence (run in an empty temp dir)
+
+## seller tests: python seller.py --port 43767 --name chaewoonee
+  PASS  seller_card #1: name='chaewoonee' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | The lamp is 150. Send your offer as a number.
+    -> SendMessage "60" taskId=a4de85cf
+    <- TASK_STATE_INPUT_REQUIRED | I can do 125.
+    -> SendMessage "80" taskId=a4de85cf
+    <- TASK_STATE_INPUT_REQUIRED | I can do 110.
+    -> SendMessage "110" taskId=a4de85cf
+    <- TASK_STATE_COMPLETED | Deal: one lamp for 110. Receipt attached.
+       artifact receipt [{"sig_seller": "mgbKgU0o5cFFkDH84T8tW1Fi783hLAjU27u+UVjAYWb5aX+b41zSBS5kkAVtyYItVb531WFzaKMn7+v0hgmbDQ==", "task": "a4de85cf-c4c2-4b8a-9358-1490ea336014", "price": 110.0, "shop": "chaewoonee", "item": "lamp"}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 150
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 110.0, asks [150, 125, 110]
+  PASS  seller_signed_receipt #1: sig_seller verifies with shop_key.pem
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=a4de85cf
+    <- error -32004 Task a4de85cf-c4c2-4b8a-9358-1490ea336014 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | The lamp is 150. Send your offer as a number.
+    -> SendMessage "60" taskId=04638645
+    <- TASK_STATE_INPUT_REQUIRED | I can do 130.
+    -> SendMessage "80" taskId=04638645
+    <- TASK_STATE_INPUT_REQUIRED | I can do 115.
+    -> SendMessage "115" taskId=04638645
+    <- TASK_STATE_COMPLETED | Deal: one lamp for 115. Receipt attached.
+       artifact receipt [{"sig_seller": "CM9ryagTqczA5CSdhYjpZvG4h2VqHgjnaOAWdGvP/afsE+QF9guGbXT0rCS5FXK30c2xMPBBFIwzdoqx62HpDg==", "task": "04638645-51cb-4499-8683-25abe0d66758", "price": 115.0, "shop": "chaewoonee", "item": "lamp"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 130, 115]
+  PASS  seller_signed_receipt #2: sig_seller verifies with shop_key.pem
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | The lamp is 180. Send your offer as a number.
+    -> SendMessage "60" taskId=88e75d99
+    <- TASK_STATE_INPUT_REQUIRED | I can do 160.
+    -> SendMessage "80" taskId=88e75d99
+    <- TASK_STATE_INPUT_REQUIRED | I can do 120.
+    -> SendMessage "120" taskId=88e75d99
+    <- TASK_STATE_COMPLETED | Deal: one lamp for 120. Receipt attached.
+       artifact receipt [{"sig_seller": "XjPMh163/KDdk17csh8wZml/O4teqEPK6w6weoooyUt3hv39t8k6MFqY9SM4NRUfj17yHswENEhvUjngv6SYCw==", "task": "88e75d99-d413-4e9b-980c-fb83f29e9e50", "price": 120.0, "shop": "chaewoonee", "item": "lamp"}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 120.0, asks [180, 160, 120]
+  PASS  seller_signed_receipt #3: sig_seller verifies with shop_key.pem
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | The bookshelf is 400. Send your offer as a number.
+    -> SendMessage "140" taskId=2194e140
+    <- TASK_STATE_INPUT_REQUIRED | I can do 360.
+    -> SendMessage "170" taskId=2194e140
+    <- TASK_STATE_INPUT_REQUIRED | I can do 320.
+    -> SendMessage "200" taskId=2194e140
+    <- TASK_STATE_INPUT_REQUIRED | I can do 290.
+    -> SendMessage "230" taskId=2194e140
+    <- TASK_STATE_INPUT_REQUIRED | I can do 270.
+    -> SendMessage "230" taskId=2194e140
+    <- TASK_STATE_INPUT_REQUIRED | I can do 265.
+    -> SendMessage "230" taskId=2194e140
+    <- TASK_STATE_INPUT_REQUIRED | I can do 260.
+    -> SendMessage "230" taskId=2194e140
+    <- TASK_STATE_INPUT_REQUIRED | I can do 260.
+    -> SendMessage "230" taskId=2194e140
+    <- TASK_STATE_INPUT_REQUIRED | I can do 260.
+  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [400, 360, 320, 290, 270, 265, 260, 260, 260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | The bookshelf is 350. Send your offer as a number.
+    -> SendMessage "140" taskId=71567653
+    <- TASK_STATE_INPUT_REQUIRED | I can do 300.
+    -> SendMessage "170" taskId=71567653
+    <- TASK_STATE_INPUT_REQUIRED | I can do 280.
+    -> SendMessage "200" taskId=71567653
+    <- TASK_STATE_INPUT_REQUIRED | I can do 265.
+    -> SendMessage "230" taskId=71567653
+    <- TASK_STATE_INPUT_REQUIRED | I can do 260.
+    -> SendMessage "230" taskId=71567653
+    <- TASK_STATE_INPUT_REQUIRED | I can do 260.
+    -> SendMessage "230" taskId=71567653
+    <- TASK_STATE_INPUT_REQUIRED | I can do 260.
+    -> SendMessage "230" taskId=71567653
+    <- TASK_STATE_INPUT_REQUIRED | I can do 260.
+    -> SendMessage "230" taskId=71567653
+    <- TASK_STATE_INPUT_REQUIRED | I can do 260.
+  PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [350, 300, 280, 265, 260, 260, 260, 260, 260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | The bookshelf is 340. Send your offer as a number.
+    -> SendMessage "140" taskId=6c44e225
+    <- TASK_STATE_INPUT_REQUIRED | I can do 300.
+    -> SendMessage "170" taskId=6c44e225
+    <- TASK_STATE_INPUT_REQUIRED | I can do 280.
+    -> SendMessage "200" taskId=6c44e225
+    <- TASK_STATE_INPUT_REQUIRED | I can do 265.
+    -> SendMessage "230" taskId=6c44e225
+    <- TASK_STATE_INPUT_REQUIRED | I can do 262.
+    -> SendMessage "230" taskId=6c44e225
+    <- TASK_STATE_INPUT_REQUIRED | I can do 261.
+    -> SendMessage "230" taskId=6c44e225
+    <- TASK_STATE_INPUT_REQUIRED | I can do 260.
+    -> SendMessage "230" taskId=6c44e225
+    <- TASK_STATE_INPUT_REQUIRED | I can do 260.
+    -> SendMessage "230" taskId=6c44e225
+    <- TASK_STATE_INPUT_REQUIRED | I can do 260.
+  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [340, 300, 280, 265, 262, 261, 260, 260, 260]
+
+## buyer tests: your market_buyer against the kit's rule-based shops
+
+### buyer_deal #1: python market_buyer.py --shops /home/claude/repo/submissions/26510127/week-07/.market/test-shops-buyer_deal-1.json --item lamp --budget 120
+    Kit Shop saw: offers [95, 105], deals [105], canceled 0, continued 2, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:52081", "receipt": {"price": 105.0, "sig_seller": "R0ztkmySUFRXORPD09Y1LBdyK8b1d7GVO0rRBUg0z4sEqaV8jhESx7bcNCyo9ToRqPrpKnfzgH015a3R6JMRAg==", "item": "lamp", "shop": "Kit Shop", "task": "0399775b-3eed-49b1-9450-142202ab3cf4"}, "stars": 4, "review": "I negotiated a lamp fro
+  PASS  buyer_deal #1: offers [95, 105], stars 4, receipt yes
+  PASS  buyer_protocol_deal #1: posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+### buyer_deal #2: python market_buyer.py --shops /home/claude/repo/submissions/26510127/week-07/.market/test-shops-buyer_deal-2.json --item lamp --budget 120
+    Kit Shop saw: offers [95, 105], deals [105], canceled 0, continued 2, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:53685", "receipt": {"price": 105.0, "sig_seller": "i9gvoAhsf9lLhKkwYp/rzJkXcMw8SKZjmGzz1cf5tNjMCusup9aN6gX6BFN6bIDImsdu40zk6xEsey3Dx6dJCA==", "item": "lamp", "shop": "Kit Shop", "task": "bbde11e2-7570-444a-878a-150c9ed8cf59"}, "stars": 4, "review": "I bought a lamp from Ki
+  PASS  buyer_deal #2: offers [95, 105], stars 4, receipt yes
+  PASS  buyer_protocol_deal #2: posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+### buyer_deal #3: python market_buyer.py --shops /home/claude/repo/submissions/26510127/week-07/.market/test-shops-buyer_deal-3.json --item lamp --budget 120
+    Kit Shop saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:37831", "receipt": {"price": 100.0, "sig_seller": "PRepV62AIurXqTdGMzReSpVHQqctPyAPLp0xaXX62kMhPAFOrVPwc+/HEWDRJaYHXkdyjlAVxJ3B4DpwG2GIDQ==", "item": "lamp", "shop": "Kit Shop", "task": "e747f14c-73fe-4b3c-8d52-4356d71c19a6"}, "stars": 4, "review": "Bought a lamp from Kit 
+  PASS  buyer_deal #3: offers [100], stars 4, receipt yes
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: python market_buyer.py --shops /home/claude/repo/submissions/26510127/week-07/.market/test-shops-buyer_holds_budget-1.json --item bookshelf --budget 230
+    Kit Shop saw: offers [170, 200, 215, 225], deals [], canceled 1, continued 4, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:36235", "receipt": null, "stars": 2, "review": "Kit Shop opened at 338 and then held at 260 for a bookshelf, never moving from there even when I offered up to 225, so no sale went through and I received no receipt."}
+  PASS  buyer_holds_budget #1: offers [170, 200, 215, 225], stars 2, receipt null
+  PASS  buyer_protocol_holds_budget #1: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4
+
+### buyer_holds_budget #2: python market_buyer.py --shops /home/claude/repo/submissions/26510127/week-07/.market/test-shops-buyer_holds_budget-2.json --item bookshelf --budget 230
+    Kit Shop saw: offers [200, 215, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:55387", "receipt": null, "stars": 2, "review": "I did not end up buying the bookshelf from Kit Shop: my offers of 200, 215, and 230 were below the shop's asking prices, which ranged from 260 to 338, so no sale or receipt was completed."}
+  PASS  buyer_holds_budget #2: offers [200, 215, 230], stars 2, receipt null
+  PASS  buyer_protocol_holds_budget #2: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### buyer_holds_budget #3: python market_buyer.py --shops /home/claude/repo/submissions/26510127/week-07/.market/test-shops-buyer_holds_budget-3.json --item bookshelf --budget 230
+    Kit Shop saw: offers [200, 215, 225], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:58899", "receipt": null, "stars": 2, "review": "I tried to buy a bookshelf from Kit Shop, but no sale went through and I received no receipt: the shop asked for 260 to 338 while my offers were 200 to 225, so we never agreed on a price."}
+  PASS  buyer_holds_budget #3: offers [200, 215, 225], stars 2, receipt null
+  PASS  buyer_protocol_holds_budget #3: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### buyer_reads_reviews #1: python market_buyer.py --shops /home/claude/repo/submissions/26510127/week-07/.market/test-shops-buyer_reads_reviews-1.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:37243", "receipt": {"price": 100.0, "sig_seller": "Bgd/RMsSofT4oF3w/cL3hdaZ0YsG9mffxJJVFqN7D+Ubj9SaE8BcoZhocoDS0saUbs2jQ0jFGoJ8LJ/0lXYsAg==", "item": "lamp", "shop": "Kit Shop South", "task": "416f19a5-945d-413e-9301-6a92f4e5a841"}, "stars": 4, "review": "I bought a lamp f
+
+### buyer_reads_reviews #2: python market_buyer.py --shops /home/claude/repo/submissions/26510127/week-07/.market/test-shops-buyer_reads_reviews-2.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:54905", "receipt": {"price": 100.0, "sig_seller": "OhcLe+LUdolanuAKSZdkt2SYaolAbDnsuPJao99aYaSp78X5ZbB8VJrU6u0K6SzQtd+cOclj8NacZsH0snwhBQ==", "item": "lamp", "shop": "Kit Shop South", "task": "299bec8f-c1d0-4c2f-a005-218953f7596d"}, "stars": 5, "review": "I offered 100 aga
+
+### buyer_reads_reviews #3: python market_buyer.py --shops /home/claude/repo/submissions/26510127/week-07/.market/test-shops-buyer_reads_reviews-3.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:48183", "receipt": {"price": 100.0, "sig_seller": "quJnD3K6gqLfq6r7AsUa71ZNzavERTGRcmcsx6j75OWYnJHsUsucQTm/oF7UDP5ZPZX/a1bkdkfcO11Qt3/sCw==", "item": "lamp", "shop": "Kit Shop South", "task": "949ce151-e3b9-4370-9406-0e9f29c98a5b"}, "stars": 5, "review": "Kit Shop South so
+  PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
+
+25/25 passed -> PASS
