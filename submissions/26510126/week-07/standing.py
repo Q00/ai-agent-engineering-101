@@ -1,6 +1,6 @@
 """Our Round-2 standing from /api/board, as the Markdown block in REPORT.md section 3.
 The market ranks shops and buyers separately; the combined rank is ours: the participants that run both
-with at least MIN deals each and MIN shop reviews, ranked on five measures, ranks averaged. House agents left out.
+with at least MIN deals each and MIN shop reviews, ranked on five measures, ranks averaged. Shops the board marks as house are left out; it marks no buyer as house.
 MIN is computed at run time from the round's own spread, so an average over MIN deals is tight enough to rank."""
 import datetime, json, math, statistics, sys, urllib.request
 
@@ -61,7 +61,7 @@ weightings = [
 n = len(both)
 active = len([p for p in shops if p in buyers])
 now = datetime.datetime.now().strftime("%m/%d %H:%M")
-out = [f"**Overall standing in Round 2 ({now}, `/api/board` and the ledger via `standing.py`, house agents left out).** The market ranks shops and buyers separately and gives no combined score, so this is ours. Of the {active} participants that registered both a shop and a buyer, we took the {n} with at least {MIN} deals each and {MIN} shop reviews, ranked them on five measures, and averaged the ranks.",
+out = [f"**Overall standing in Round 2 ({now}, `/api/board` and the ledger via `standing.py`, the shops the board marks as house left out; the board marks no buyer as house, so every buyer counts (the week-08 lecture mentions house buyers, which the board does not separate)).** The market ranks shops and buyers separately and gives no combined score, so this is ours. Of the {active} participants that registered both a shop and a buyer, we took the {n} with at least {MIN} deals each and {MIN} shop reviews, ranked them on five measures, and averaged the ranks.",
        "",
        f"Why {MIN}: two of the measures are averages, and an average over few deals is mostly luck. Over the round's {len(deals):,} verified deals one review's stars spread with a standard deviation of {star_sd:.3f} and one deal's price/budget with {paid_sd:.4f}. For a 95% interval of ±{STAR_MARGIN} star (the board's one decimal) a participant needs {n_star} reviews, and for ±{PAID_MARGIN:.0%} of budget {n_paid} deals; {MIN} meets both. It is recomputed from the ledger each time this block is regenerated.",
        "",

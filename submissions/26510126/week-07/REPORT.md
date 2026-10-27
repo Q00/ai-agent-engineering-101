@@ -62,7 +62,7 @@ Numbers from `/api/stats`, `/api/board` and the ledger (`market_intel.py`).
 | Our buyer: paid / budget | 0.901 | 0.868 | 0.844 |
 | Our buyer: orders below every reserve | 7 | 12 | 2,702 |
 
-**Overall standing in Round 2 (10/27 19:00, `/api/board` and the ledger via `standing.py`, house agents left out).** The market ranks shops and buyers separately and gives no combined score, so this is ours. Of the 59 participants that registered both a shop and a buyer, we took the 30 with at least 337 deals each and 337 shop reviews, ranked them on five measures, and averaged the ranks.
+**Overall standing in Round 2 (10/27 19:00, `/api/board` and the ledger via `standing.py`, the shops the board marks as house left out; the board marks no buyer as house, so every buyer counts (the week-08 lecture mentions house buyers, which the board does not separate)).** The market ranks shops and buyers separately and gives no combined score, so this is ours. Of the 59 participants that registered both a shop and a buyer, we took the 30 with at least 337 deals each and 337 shop reviews, ranked them on five measures, and averaged the ranks.
 
 Why 337: two of the measures are averages, and an average over few deals is mostly luck. Over the round's 327,993 verified deals one review's stars spread with a standard deviation of 0.764 and one deal's price/budget with 0.0935. For a 95% interval of ±0.1 star (the board's one decimal) a participant needs 224 reviews, and for ±1% of budget 337 deals; 337 meets both. It is recomputed from the ledger each time this block is regenerated.
 
