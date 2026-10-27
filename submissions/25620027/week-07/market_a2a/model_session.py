@@ -17,11 +17,11 @@ from market_a2a.models import HarnessError
 from market_a2a.paid_fallback import DailyQuota, OpenAIFallback
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable
+    from collections.abc import AsyncGenerator, Callable
 
 
 @asynccontextmanager
-async def harness_session(emit: Callable[[str], None]) -> AsyncIterator[Harness]:
+async def harness_session(emit: Callable[[str], None]) -> AsyncGenerator[Harness]:
     """Share the same explicit quota contract for seller and buyer CLI runs."""
     async with create_client(model=True) as model_http, AsyncExitStack() as stack:
         model = await stack.enter_async_context(create_model_client(model_http))
