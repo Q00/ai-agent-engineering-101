@@ -131,6 +131,12 @@ def open_tunnel(port):
 
 
 if __name__ == "__main__":
+    if os.name == "nt":
+        import ctypes
+        # Prevent automatic idle sleep only while this kit process is alive.
+        # The OS releases this request when stop.ps1 terminates the process.
+        if not ctypes.windll.kernel32.SetThreadExecutionState(0x80000001):
+            raise RuntimeError("Could not keep the market host awake")
     kit.open_tunnel = open_tunnel
     kit.Market.call = market_call
     kit.handle_order = handle_order
