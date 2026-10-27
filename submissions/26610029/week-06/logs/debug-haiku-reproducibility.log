@@ -1,0 +1,40 @@
+Follow-up check on the "haiku anchors on its ask" claim in REPORT.md section 3(c).
+
+The original observation (quoted in REPORT.md) came from an actual run of
+scripts/trade_test_week06.py at the time: test-report.json showed, for all
+3 seller_deal repeats, "asks [130, 130, 130, 130, 130, 130]" and a deal that
+only closed because of the MAX_ROUNDS=6 round-cap guard. That test-report.json
+was later overwritten by subsequent runs (sonnet, then the fixed haiku) and
+was not separately saved as a file -- it only exists as real tool output
+earlier in the work session, not as a committed log here.
+
+To get a citable, reproducible artifact, the exact OLD prompt (from git
+commit 9495fd5, before the ACCEPT-wording/concession-magnitude fix) was
+re-run in isolation 6 times against fresh harness calls, correctly tracking
+`ask` the same way the original code did (an earlier reproduction attempt had
+a bug that kept re-showing "Counteroffer: 130" in the history regardless of
+what the harness actually said -- that bug is NOT in the real seller.py,
+just in a throwaway repro script, and is noted here for honesty).
+
+Result: all 6 reproduction runs with the OLD prompt actually converged
+cleanly (120 -> 110/115 -> ACCEPT at 100), matching the GOOD behavior, not
+the anchoring failure:
+
+run 1: 60 -> COUNTER 120 | 80 -> COUNTER 110 | 100 -> ACCEPT 100
+run 2: 60 -> COUNTER 120 | 80 -> COUNTER 110 | 100 -> ACCEPT 100
+run 3: 60 -> COUNTER 120 | 80 -> COUNTER 110 | 100 -> ACCEPT 100
+run 4: 60 -> COUNTER 120 | 80 -> COUNTER 115 | 100 -> ACCEPT 100
+run 5: 60 -> COUNTER 120 | 80 -> COUNTER 115 | 100 -> ACCEPT 100
+run 6: 60 -> COUNTER 120 | 80 -> COUNTER 110 | 100 -> ACCEPT 100
+
+Honest conclusion: the "always repeats its first ask" failure was real --
+it happened in one actual graded trade-test run, and test-report.json's own
+numbers at the time (quoted in REPORT.md) are genuine tool output, not
+invented -- but it was NOT a guaranteed, deterministic consequence of the
+old prompt's wording the way REPORT.md originally implied. 6/6 later
+attempts with the identical old prompt converged fine. haiku's answers are
+not deterministic call to call, so a single bad run is weak evidence of a
+reliable bug on its own. The prompt fix (unambiguous "MUST ACCEPT", and a
+concrete computed concession example) is still a legitimate improvement --
+it removes wording that COULD license stalling -- but the claim that the old
+prompt "reliably" caused anchoring was overstated and is corrected here.
