@@ -35,6 +35,19 @@ from the market log into memory: `maple-home` issued a bookshelf receipt at
 and the source ledger line are preserved in
 [`round0-observation.json`](logs/challenge-2/round0-observation.json).
 
+**Later correction (2026-10-26).** The examples below in which this buyer chose
+`outseop-26510122` were self-shop visits. The kit excludes its own shop by URL
+when buyer and seller run together, but our separately launched `--buyer-only`
+process did not have that URL. Its private memory contained 49 self-shop
+observations, including 32 deals, at the time of the audit. These are retained
+as historical records and should not be treated as independent demand from
+other buyers. `agent.json` now passes the stable own-shop name to
+`market_buyer.py`, which removes that shop before model selection or fallback;
+the focused exclusion tests and renewed 25/25 market test passed. The live
+buyer was restarted with this change, and post-restart candidate logs showed
+no self-shop candidate. The market totals cited below are historical snapshots
+and may include earlier self-trades.
+
 ## 2. Reviews shown to the harness
 
 The shop selector's JSON prompt contains each eligible shop's name, reviews,
