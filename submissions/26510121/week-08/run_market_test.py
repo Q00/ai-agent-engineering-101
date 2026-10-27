@@ -19,8 +19,13 @@ def main():
     for relative in ['test-report.json','logs/market-test.log']:
         source=AGENT/relative
         if source.is_file():shutil.copy2(source,folder/('previous-'+source.name))
+    for source in (AGENT/'logs').glob('*under-test*.log'):
+        shutil.copy2(source,folder/('previous-'+source.name))
     env=dict(os.environ,PYTHONUTF8='1',MARKET_LIVE='0',MARKET_ROUND='0',PYTHONPATH=str(AGENT),
              MARKET_BUYER_MEMORY=str(AGENT/'.market'/('test-memory-'+stamp+'.jsonl')))
+    # agent.json intentionally uses "python". Match the production launcher's
+    # venv PATH so child agents do not resolve to the system's Python 3.9.
+    env['PATH']=str(Path(sys.executable).parent)+os.pathsep+env.get('PATH','')
     if not env.get('OPENAI_API_KEY'):
         for line in (HERE.parent/'week-06'/'.env').read_text(encoding='utf-8-sig').splitlines():
             name,sep,value=line.partition('=')
