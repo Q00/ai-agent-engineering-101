@@ -1,0 +1,144 @@
+{
+  "kind": "seller-stage-checks-not-full-trade-test",
+  "model": "gpt-4o-mini",
+  "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+  "passed": true,
+  "checks": [
+    {
+      "check": "seller_card",
+      "passed": true,
+      "detail": {
+        "name": "Seochanit Shop",
+        "interface": {
+          "url": "http://127.0.0.1:50633/",
+          "protocolBinding": "JSONRPC",
+          "protocolVersion": "1.0"
+        }
+      }
+    },
+    {
+      "check": "seller_opens",
+      "passed": true,
+      "detail": {
+        "state": "TASK_STATE_INPUT_REQUIRED",
+        "ask": 120
+      }
+    },
+    {
+      "check": "seller_deal_1",
+      "passed": true,
+      "detail": {
+        "state": "TASK_STATE_COMPLETED",
+        "price": 120.0,
+        "asks": [
+          120
+        ]
+      }
+    },
+    {
+      "check": "seller_terminal",
+      "passed": true,
+      "detail": {
+        "code": -32004,
+        "message": "Task 8287b177-f060-4ec1-b1cc-425d7984b83b is in terminal state: TASK_STATE_COMPLETED",
+        "data": [
+          {
+            "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+            "reason": "UNSUPPORTED_OPERATION",
+            "domain": "a2a-protocol.org",
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "check": "seller_deal_2",
+      "passed": true,
+      "detail": {
+        "state": "TASK_STATE_COMPLETED",
+        "price": 120.0,
+        "asks": [
+          120
+        ]
+      }
+    },
+    {
+      "check": "seller_deal_3",
+      "passed": true,
+      "detail": {
+        "state": "TASK_STATE_COMPLETED",
+        "price": 120.0,
+        "asks": [
+          120
+        ]
+      }
+    },
+    {
+      "check": "seller_holds_reserve_1",
+      "passed": true,
+      "detail": {
+        "state": "TASK_STATE_REJECTED",
+        "price": null,
+        "asks": [
+          300,
+          260
+        ]
+      }
+    },
+    {
+      "check": "seller_holds_reserve_2",
+      "passed": true,
+      "detail": {
+        "state": "TASK_STATE_REJECTED",
+        "price": null,
+        "asks": [
+          300,
+          260
+        ]
+      }
+    },
+    {
+      "check": "seller_holds_reserve_3",
+      "passed": true,
+      "detail": {
+        "state": "TASK_STATE_REJECTED",
+        "price": null,
+        "asks": [
+          300,
+          260
+        ]
+      }
+    },
+    {
+      "check": "unknown_item_rejected",
+      "passed": true,
+      "detail": "TASK_STATE_REJECTED"
+    },
+    {
+      "check": "seller_cancel",
+      "passed": true,
+      "detail": "TASK_STATE_CANCELED"
+    },
+    {
+      "check": "missing_version_rejected",
+      "passed": true,
+      "detail": {
+        "error": {
+          "code": -32009,
+          "message": "A2A version '0.3' is not supported by this handler. Expected version '1.0'.",
+          "data": [
+            {
+              "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+              "reason": "VERSION_NOT_SUPPORTED",
+              "domain": "a2a-protocol.org",
+              "metadata": {}
+            }
+          ]
+        },
+        "id": "version-check",
+        "jsonrpc": "2.0"
+      }
+    }
+  ],
+  "error": null
+}

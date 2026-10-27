@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-07\agent-market\run-kit.py", line 61, in <module>
+    kit.main()
+  File "C:\Users\MASTER\ai-agent-engineering-101\scripts\market_kit.py", line 511, in main
+    cmd_join(a)
+  File "C:\Users\MASTER\ai-agent-engineering-101\scripts\market_kit.py", line 413, in cmd_join
+    tp, url = open_tunnel(pport)
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-07\agent-market\run-kit.py", line 51, in open_tunnel
+    raise RuntimeError(f"cloudflared exited {proc.returncode}; see {path.relative_to(AGENT)}")
+RuntimeError: cloudflared exited 1; see logs\market-sessions\tunnel-raw-20261020-203904-445522.log

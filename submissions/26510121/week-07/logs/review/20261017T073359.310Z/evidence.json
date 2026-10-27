@@ -1,0 +1,195 @@
+{
+  "official": {
+    "passed": true,
+    "runs": 21,
+    "counts": {
+      "seller_card": 1,
+      "seller_opens": 1,
+      "seller_deal": 3,
+      "seller_terminal": 1,
+      "seller_holds_reserve": 3,
+      "buyer_deal": 3,
+      "buyer_protocol_deal": 3,
+      "buyer_holds_budget": 3,
+      "buyer_protocol_holds_budget": 3
+    },
+    "commands_match": true
+  },
+  "catalog": {
+    "passed": true,
+    "checks": 15,
+    "changed_sources_since_run": []
+  },
+  "shopping": {
+    "passed": true,
+    "checks": 3,
+    "changed_sources_since_run": [],
+    "trials": [
+      {
+        "spent": 1200,
+        "total_budget": 1500,
+        "actual_sales": 5,
+        "peak_concurrent": 4,
+        "model_requests": 8,
+        "buyer_calls_using_summary": 0,
+        "max_planner_cards": 20,
+        "purchases": [
+          {
+            "line_id": "lamp",
+            "shop_id": "lamp-2",
+            "price": 140,
+            "cap": 140
+          },
+          {
+            "line_id": "chair",
+            "shop_id": "chair-1",
+            "price": 180,
+            "cap": 200
+          },
+          {
+            "line_id": "bookshelf",
+            "shop_id": "bookshelf-1",
+            "price": 280,
+            "cap": 280
+          },
+          {
+            "line_id": "desk",
+            "shop_id": "desk-1",
+            "price": 320,
+            "cap": 320
+          },
+          {
+            "line_id": "cabinet",
+            "shop_id": "cabinet-1",
+            "price": 280,
+            "cap": 300
+          }
+        ]
+      },
+      {
+        "spent": 1160,
+        "total_budget": 1500,
+        "actual_sales": 5,
+        "peak_concurrent": 4,
+        "model_requests": 6,
+        "buyer_calls_using_summary": 0,
+        "max_planner_cards": 20,
+        "purchases": [
+          {
+            "line_id": "lamp",
+            "shop_id": "lamp-1",
+            "price": 100,
+            "cap": 120
+          },
+          {
+            "line_id": "chair",
+            "shop_id": "chair-1",
+            "price": 180,
+            "cap": 200
+          },
+          {
+            "line_id": "bookshelf",
+            "shop_id": "bookshelf-1",
+            "price": 280,
+            "cap": 280
+          },
+          {
+            "line_id": "desk",
+            "shop_id": "desk-1",
+            "price": 320,
+            "cap": 320
+          },
+          {
+            "line_id": "cabinet",
+            "shop_id": "cabinet-1",
+            "price": 280,
+            "cap": 300
+          }
+        ]
+      },
+      {
+        "spent": 1160,
+        "total_budget": 1500,
+        "actual_sales": 5,
+        "peak_concurrent": 4,
+        "model_requests": 6,
+        "buyer_calls_using_summary": 0,
+        "max_planner_cards": 20,
+        "purchases": [
+          {
+            "line_id": "lamp",
+            "shop_id": "lamp-1",
+            "price": 100,
+            "cap": 120
+          },
+          {
+            "line_id": "chair",
+            "shop_id": "chair-1",
+            "price": 180,
+            "cap": 200
+          },
+          {
+            "line_id": "bookshelf",
+            "shop_id": "bookshelf-1",
+            "price": 280,
+            "cap": 280
+          },
+          {
+            "line_id": "desk",
+            "shop_id": "desk-1",
+            "price": 320,
+            "cap": 320
+          },
+          {
+            "line_id": "cabinet",
+            "shop_id": "cabinet-1",
+            "price": 280,
+            "cap": 300
+          }
+        ]
+      }
+    ],
+    "cards": 20,
+    "unique_urls": 20
+  },
+  "semantic": {
+    "passed": true,
+    "checks": 15,
+    "changed_sources_since_run": []
+  },
+  "inventory": {
+    "count": 3000,
+    "unique_ids": 3000,
+    "all_have_name_description_reserve": true
+  },
+  "stress_memory_audit": {
+    "memory_bounds_passed": true,
+    "purchase_scenario_passed": false,
+    "buyer_requests": 32,
+    "requests_reusing_prior_summary": 27,
+    "max_recent_turns": 4,
+    "max_summary_chars": 251,
+    "example": {
+      "task_id": "8832b74e-b8b2-4ad6-b4b4-b68be3778cc0",
+      "item_id": "desk-white-wood",
+      "budget": 320,
+      "summary": "The seller is asking 350 for the white wood desk, which exceeds my budget of 320. I am making an initial offer of 320, which is my maximum budget for this item. I hope the seller will accept this offer.",
+      "rounds_left": 5
+    }
+  },
+  "git": {
+    "branch": "week-06",
+    "changed_files": 1858,
+    "all_changes_within_own_week06": true
+  },
+  "secrets": {
+    "tracked_env_runtime_venv_files": 0,
+    "tracked_files_checked": 1858,
+    "local_key_found_in_tracked_content": false
+  },
+  "extra_credit": {
+    "semantic_prices_done": true,
+    "deployed_field_present": false,
+    "cross_harness_logs_present": false
+  }
+}
