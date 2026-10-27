@@ -7,7 +7,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from buyer import BuyerOutcome
+from buyer import BuyerError, BuyerOutcome
+from harness import HarnessError
 from market_buyer import Shop, choose_shop, run, state_dir_for
 
 
@@ -48,6 +49,21 @@ class MarketBuyerTests(unittest.TestCase):
             self.assertEqual(result["receipt"]["task"], "task-1")
             memory = json.loads((state / "buyer-memory.json").read_text())
             self.assertEqual(memory["shops"]["Good"]["deals"], 1)
+
+    def test_own_model_failure_is_not_blamed_on_the_shop(self):
+        class FailingBuyer(FakeBuyer):
+            def buy(self, item, budget):
+                raise BuyerError("Buyer decision failed safely") from HarnessError("usage limit")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            shops = root / "shops.json"
+            shops.write_text(json.dumps([{"name": "Good", "url": "http://good.test", "reviews": []}]))
+            state = root / "state"
+            with patch.dict(os.environ, {"AX_STATE_DIR": str(state)}):
+                result = run(shops, "lamp", 120, buyer_factory=FailingBuyer)
+            self.assertEqual((result["stars"], result["receipt"]), (3, None))
+            self.assertFalse((state / "buyer-memory.json").exists())
 
 
 if __name__ == "__main__":

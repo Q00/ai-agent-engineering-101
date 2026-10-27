@@ -12,6 +12,7 @@ from typing import Callable
 import httpx
 
 from buyer import BuyerClient, BuyerError, BuyerOutcome, validate_url
+from harness import HarnessError
 
 
 class MarketBuyerError(RuntimeError):
@@ -172,7 +173,16 @@ def run(
             outcome = client.buy(item, budget)
             final_offer = client.last_offer
         stars, review, mismatch = _review_for(outcome, final_offer)
-    except (BuyerError, httpx.HTTPError):
+    except BuyerError as exc:
+        if isinstance(exc.__cause__, HarnessError):
+            # Our own model failed (rate limit, timeout, bad output), not the shop: rate neutrally and
+            # keep the shop's memory unchanged (week 07: one buyer gave 6,837 one-star reviews this way).
+            print(f"[own-failure] {exc}: {exc.__cause__}")
+            return {"shop": choice.shop.url, "receipt": None, "stars": 3,
+                    "review": "No rating: this buyer's own model failed before a deal; not the shop's fault."}
+        outcome = BuyerOutcome("failed")
+        stars, review, mismatch = 1, "Trade failed safely before a receipt was received.", False
+    except httpx.HTTPError:
         outcome = BuyerOutcome("failed")
         stars, review, mismatch = 1, "Trade failed safely before a receipt was received.", False
     remember(memory, choice.shop, outcome, mismatch)
