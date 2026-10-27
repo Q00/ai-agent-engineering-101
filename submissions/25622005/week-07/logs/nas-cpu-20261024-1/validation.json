@@ -1,0 +1,42 @@
+{
+  "nas_cpu_from_user": "AMD Turion II Neo N40L, x86_64, family 16",
+  "features_absent_from_supplied_flags": [
+    "avx",
+    "avx2",
+    "ssse3",
+    "sse4_1",
+    "sse4_2"
+  ],
+  "sse4a_is_not_sse4_2": true,
+  "previous_cli": {
+    "version": "2.1.263",
+    "entrypoint": "bin/claude.exe",
+    "native": true
+  },
+  "compatibility_cli": {
+    "version": "2.1.112",
+    "entrypoint": "cli.js",
+    "runtime": "Node.js 22",
+    "optional_native_image_modules_omitted": true
+  },
+  "verification": {
+    "image": "week07-agent:n40l",
+    "platform": "linux/amd64",
+    "unit_tests": 64,
+    "local_A2A_items": [
+      "lamp",
+      "chair",
+      "bookshelf"
+    ],
+    "cpu_emulator": "qemu-x86_64 -cpu phenom",
+    "emulated_cli_version_passed": true,
+    "emulated_auth_status_help_passed": true,
+    "existing_harness_options_supported": true,
+    "preflight_CPU_failure_classification_passed": true
+  },
+  "scope": "No actual N40L access, OAuth login, model request, image push or market registration was performed. Phenom emulation does not reproduce every NAS hardware/OS condition. No commits.",
+  "sources": [
+    "https://code.claude.com/docs/en/setup#install-with-npm",
+    "https://github.com/anthropics/claude-code/issues/51976"
+  ]
+}

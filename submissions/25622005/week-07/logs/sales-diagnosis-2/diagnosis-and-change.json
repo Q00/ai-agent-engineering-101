@@ -1,0 +1,71 @@
+{
+  "scope": "Evidence and checkout compatibility improvement; no claim of sales increase",
+  "round": 2,
+  "before": {
+    "name": "psyoung82",
+    "owner": {
+      "login": "psyoung82",
+      "avatar": "https://avatars.githubusercontent.com/u/316834502?v=4",
+      "html": "https://github.com/psyoung82"
+    },
+    "house": false,
+    "joined": 1792492574,
+    "card": {
+      "name": "psyoung82 Furniture",
+      "description": "Furniture shop. Best available prices: lamp 100, chair 180, bookshelf 260. Immediate quotes and acceptance at these prices. Ed25519-signed receipts.",
+      "version": "1.4.0",
+      "provider": "",
+      "skills": [
+        {
+          "name": "Negotiate a purchase",
+          "description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt."
+        }
+      ],
+      "url": "https://8fb1346eefff15.lhr.life"
+    },
+    "alive": true,
+    "deals": 0,
+    "share": 0.0,
+    "visits": 1,
+    "stars": null,
+    "reviews": 0,
+    "revenue": 0
+  },
+  "current_floor_price_tasks": [
+    {
+      "task_id": "7611f157-3404-4497-8312-fe412eb0177e",
+      "item": "chair",
+      "outcome": "canceled",
+      "started_at": "2026-10-20T12:22:20.603+00:00",
+      "updated_at": "2026-10-20T12:22:35.243+00:00",
+      "opening_ask": 180,
+      "last_ask": 180,
+      "last_offer": 160,
+      "sale_price": null,
+      "buyer_messages": 3,
+      "seller_quotes": 3,
+      "elapsed_seconds": 14.64
+    }
+  ],
+  "diagnosis": [
+    "Only one Round 2 visit was recorded at inspection; evidence is insufficient to attribute low sales to the new prices.",
+    "The observed chair negotiation ended after offers of 150 and 160, below the fixed reserve 180. Buyer maximum budget is unknown.",
+    "Code inspection found that first-message offers were ignored and text-only acceptance was not recognized. These are compatibility defects, not proven causes of the observed cancellation."
+  ],
+  "change": [
+    "Recognize explicit offers in the first message.",
+    "Recognize short explicit acceptance of an existing quoted price.",
+    "Only interpret complete supported offer phrases; avoid taking a budget or arbitrary number as a purchase commitment."
+  ],
+  "preserved": [
+    "Public prices lamp 100, chair 180, bookshelf 260",
+    "Reserve enforcement",
+    "Task-bound Ed25519 receipt signatures",
+    "Seller identity, public URL and keys"
+  ],
+  "local_validation": {
+    "a2a_cases": 11,
+    "passed": true
+  },
+  "remaining_limit": "Other buyers control shop selection. Price and checkout changes cannot guarantee visits or sales."
+}

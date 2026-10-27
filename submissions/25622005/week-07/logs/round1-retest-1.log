@@ -1,0 +1,56 @@
+Round 1 buyer-only retest: official buyer_tests scenarios and assertions; not a full market-test report.
+Output filenames prefixed to preserve previous logs. Test memory is separate from live memory.
+
+## buyer tests: your market_buyer against the kit's rule-based shops
+
+### round1-retest-1-buyer_deal #1: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-round1-retest-1-buyer_deal-1.json --item lamp --budget 120
+    Kit Shop saw: offers [110], deals [110], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:50640", "receipt": {"item": "lamp", "sig_seller": "Y1SuI4IZcBoZ/YsllsUnb73ejCtapwEkphU/T3EAArH/yIJ8IYN7LDom8Or5Rsb5hzO3787yMyiQA7Qe7Ra3AQ==", "task": "72aa9731-553a-402a-9560-600c50e0c902", "shop": "Kit Shop", "price": 110.0}, "stars": 3, "review": "Bought lamp for 110 wit
+  PASS  buyer_deal #1: offers [110], stars 3, receipt yes
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### round1-retest-1-buyer_deal #2: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-round1-retest-1-buyer_deal-2.json --item lamp --budget 120
+    Kit Shop saw: offers [110], deals [110], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:50681", "receipt": {"item": "lamp", "sig_seller": "2cOpgU6IfrS6jcJVUVkf6+V8ESY5tdAIn1CWW3hAN0EYy7qsOwfuuVwLONAPvr9jyyEkIstu1+EioVkCVegoAg==", "task": "4299090c-dfb8-4177-b5e0-027fc6eb1610", "shop": "Kit Shop", "price": 110.0}, "stars": 3, "review": "Bought lamp for 110 wit
+  PASS  buyer_deal #2: offers [110], stars 3, receipt yes
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### round1-retest-1-buyer_deal #3: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-round1-retest-1-buyer_deal-3.json --item lamp --budget 120
+    Kit Shop saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:50707", "receipt": {"item": "lamp", "sig_seller": "ec1PhZ809H05JzZTsAEFur5SoA9lMYpY+0nn3ZnE5Wl6NnBHAV3m2OsQ5+EaFsIBaSSYXnJTYGJtnAggC91ZCw==", "task": "5374f32b-f3b3-4559-96b4-712a4503deac", "shop": "Kit Shop", "price": 100.0}, "stars": 4, "review": "Bought lamp for 100 wit
+  PASS  buyer_deal #3: offers [100], stars 4, receipt yes
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### round1-retest-1-buyer_holds_budget #1: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-round1-retest-1-buyer_holds_budget-1.json --item bookshelf --budget 230
+    Kit Shop saw: offers [180, 210, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:50750", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
+  PASS  buyer_holds_budget #1: offers [180, 210, 230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #1: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### round1-retest-1-buyer_holds_budget #2: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-round1-retest-1-buyer_holds_budget-2.json --item bookshelf --budget 230
+    Kit Shop saw: offers [180, 210, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:50872", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
+  PASS  buyer_holds_budget #2: offers [180, 210, 230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #2: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### round1-retest-1-buyer_holds_budget #3: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-round1-retest-1-buyer_holds_budget-3.json --item bookshelf --budget 230
+    Kit Shop saw: offers [180, 210, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:50969", "receipt": null, "stars": 3, "review": "No deal within budget 230; negotiation ended without a receipt."}
+  PASS  buyer_holds_budget #3: offers [180, 210, 230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #3: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### round1-retest-1-buyer_reads_reviews #1: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-round1-retest-1-buyer_reads_reviews-1.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:51108", "receipt": {"item": "lamp", "sig_seller": "72vfxhZp1k0gpK6KZuBIY+XHw0oKB3CD89FeIe8rlJiW2v+aDToSgtTASUXBX4p1bM/E3z26xcFEU/XhbD3KDQ==", "task": "07bf570d-9d8c-4063-93d9-fb6ba331bcf9", "shop": "Kit Shop South", "price": 100.0}, "stars": 4, "review": "Bought lamp for 1
+
+### round1-retest-1-buyer_reads_reviews #2: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-round1-retest-1-buyer_reads_reviews-2.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:51139", "receipt": {"item": "lamp", "sig_seller": "ZrTuOfHauBRL7qmbKaMtQ29m0xlOqbrIihxQUkk0GuRKatSfjGeELDRD39G6BglBa8HKo7IutT/JjRBvFWr4Bw==", "task": "7696cb04-04f2-43c7-b5b0-483910de5ff4", "shop": "Kit Shop South", "price": 100.0}, "stars": 4, "review": "Bought lamp for 1
+
+### round1-retest-1-buyer_reads_reviews #3: /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/test-shops-round1-retest-1-buyer_reads_reviews-3.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:51184", "receipt": {"item": "lamp", "sig_seller": "Xm2JDqkNrPtmjK2qMRLoUcmfszCboqNKV6WPvgqB8X1kTh3BZaZ4yPZUc0AnooAwDjbXRaZEoOPot5LBeEuECg==", "task": "e58fa4f8-ea2a-4c5f-bd27-67b9504be80a", "shop": "Kit Shop South", "price": 100.0}, "stars": 4, "review": "Bought lamp for 1
+  PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2

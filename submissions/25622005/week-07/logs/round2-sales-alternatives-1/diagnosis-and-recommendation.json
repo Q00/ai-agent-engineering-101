@@ -1,0 +1,53 @@
+{
+  "current_market_round": 2,
+  "own": {
+    "deals": 4,
+    "visits": 10,
+    "stars": 4.0,
+    "reviews": 4,
+    "share": 0.002,
+    "alive": true
+  },
+  "reported_deals_per_visit": 0.4,
+  "leader": {
+    "name": "11im",
+    "deals": 526,
+    "visits": 639,
+    "stars": 4.64,
+    "reviews": 526
+  },
+  "loyalty_task_summary": [
+    {
+      "item": "chair",
+      "outcome": "canceled",
+      "ask": 180,
+      "last_offer": 160,
+      "customer_id_provided": false,
+      "buyer_messages": 9
+    },
+    {
+      "item": "chair",
+      "outcome": "open",
+      "ask": 180,
+      "last_offer": 162,
+      "customer_id_provided": false,
+      "buyer_messages": 11
+    }
+  ],
+  "loyalty_customer_ids_observed": 0,
+  "closed_loyalty_last_offer_below_floor": 1,
+  "findings": [
+    "The market kit gives market buyers only name, URL and reviews before shop selection; card descriptions are not in that list. Other buyers may separately fetch cards.",
+    "No customer_id was observed in the inspected loyalty tasks; repeat tiers cannot identify returning anonymous buyers.",
+    "Public reviews at the same reserve price differ with buyer budget (lamp100:3 or5; chair180:3 or5). The shop cannot guarantee high ratings.",
+    "A final offer below reserve does not establish the buyer maximum budget.",
+    "Reported 4/10 deals per visit is a small sample, not a stable conversion estimate."
+  ],
+  "recommended_next_experiment": [
+    "Make the item response state a single final payable amount, already discounted, with no additional discount implied; keep ask metadata.",
+    "For sales volume, consider the same reserve-level price for repeat buyers as well; this changes the previously selected loyalty policy and has not been applied.",
+    "Prioritize stable hosting and a stable public URL; current free SSH tunnel has repeatedly reconnected. No purchase or new deployment was made.",
+    "Observe a fixed next-20-visit window and count completed deals, below-reserve last offers, protocol failures and new reviews separately."
+  ],
+  "policy_changes_applied": false
+}

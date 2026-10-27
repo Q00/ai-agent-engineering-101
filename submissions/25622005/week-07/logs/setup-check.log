@@ -1,0 +1,12 @@
+PASS syntax: seller.py
+PASS syntax: buyer.py
+PASS syntax: harness.py
+PASS agent.json placeholders: seller
+PASS agent.json placeholders: buyer
+PASS dependency import: a2a.helpers
+PASS dependency import: a2a.server.routes
+PASS dependency import: uvicorn
+PASS dependency import: httpx
+PASS dependency import: cryptography
+SKIP trade test: no ANTHROPIC_API_KEY or OPENAI_API_KEY in environment; CLI authentication was not checked.
+PENDING LAB 1: market_buyer; LAB 2: signed receipts; market connection and deployment.

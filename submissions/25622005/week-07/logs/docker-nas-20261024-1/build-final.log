@@ -1,0 +1,86 @@
+ Image week07-agent:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 723B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.19kB done
+#2 DONE 0.0s
+
+#3 [auth] library/node:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#4 [auth] cloudflare/cloudflared:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#5 [internal] load metadata for docker.io/cloudflare/cloudflared:2026.10.2
+#5 DONE 1.0s
+
+#6 [internal] load metadata for docker.io/library/node:22-bookworm-slim
+#6 DONE 1.1s
+
+#7 [stage-1  1/14] FROM docker.io/library/node:22-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d
+#7 resolve docker.io/library/node:22-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d done
+#7 DONE 0.0s
+
+#8 [tunnel 1/1] FROM docker.io/cloudflare/cloudflared:2026.10.2@sha256:0e56c13c7058fcef9c4f0e7d83372f82330548dbf8f8b366f3d8b506526d93b2
+#8 resolve docker.io/cloudflare/cloudflared:2026.10.2@sha256:0e56c13c7058fcef9c4f0e7d83372f82330548dbf8f8b366f3d8b506526d93b2 done
+#8 DONE 0.0s
+
+#9 [internal] load build context
+#9 transferring context:
+#9 transferring context: 5.24kB 0.3s done
+#9 DONE 0.3s
+
+#10 [stage-1  4/14] COPY submissions/25622005/week-07/docker/requirements.txt /opt/deploy/requirements.txt
+#10 CACHED
+
+#11 [stage-1  7/14] COPY --from=tunnel /usr/local/bin/cloudflared /usr/local/bin/cloudflared
+#11 CACHED
+
+#12 [stage-1  3/14] RUN python3 -m venv /opt/venv
+#12 CACHED
+
+#13 [stage-1  6/14] RUN npm install --global "@anthropic-ai/claude-code@2.1.263"     && npm cache clean --force
+#13 CACHED
+
+#14 [stage-1  8/14] COPY scripts/market_kit.py /opt/market/market_kit.py
+#14 CACHED
+
+#15 [stage-1  2/14] RUN apt-get update     && apt-get install -y --no-install-recommends         ca-certificates git gosu python3 python3-venv tzdata     && rm -rf /var/lib/apt/lists/*
+#15 CACHED
+
+#16 [stage-1  5/14] RUN pip install --no-cache-dir -r /opt/deploy/requirements.txt
+#16 CACHED
+
+#17 [stage-1  9/14] COPY submissions/25622005/week-07/*.py /opt/agent/
+#17 CACHED
+
+#18 [stage-1 10/14] COPY submissions/25622005/week-07/dns_support/ /opt/agent/dns_support/
+#18 CACHED
+
+#19 [stage-1 11/14] COPY submissions/25622005/week-07/tests/ /opt/agent/tests/
+#19 CACHED
+
+#20 [stage-1 12/14] COPY submissions/25622005/week-07/docker/ /opt/deploy/
+#20 DONE 0.0s
+
+#21 [stage-1 13/14] RUN chmod 755 /opt/deploy/entrypoint.sh     && mkdir -p /data /home/node     && chown node:node /data /home/node
+#21 DONE 0.1s
+
+#22 [stage-1 14/14] WORKDIR /data
+#22 DONE 0.0s
+
+#23 exporting to image
+#23 exporting layers 0.0s done
+#23 exporting manifest sha256:1efcf4273d35b005762363fa22c3ad1af690d8cc93de4c7c4c96568a8d854f68 done
+#23 exporting config sha256:40a5b19f6d0e40589c89c88763618c61c57da33a2cdc5229622ad17b5cef07c1 done
+#23 exporting attestation manifest sha256:ae83bb99a91bd9a02f18380eaa4e717b1e9ef27a494ad946b5449688925c16aa done
+#23 exporting manifest list sha256:668e6975bd4069a395b1a41b6ee44654d5c61213497fb3bff0c17985ed837947 done
+#23 naming to docker.io/library/week07-agent:local done
+#23 unpacking to docker.io/library/week07-agent:local 0.0s done
+#23 DONE 0.1s
+
+#24 resolving provenance for metadata file
+#24 DONE 0.0s
+ Image week07-agent:local Built 

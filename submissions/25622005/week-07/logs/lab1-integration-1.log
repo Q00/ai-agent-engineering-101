@@ -1,0 +1,11 @@
+LAB 1 integration checks: synthetic transport and model output, no live trades.
+card: Example -> http://example.invalid/rpc
+-> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 150
+[harness] synthetic over-budget offer 999
+[guard] offer 999 outside allowed whole-number range -> 120
+-> '120'  <- TASK_STATE_COMPLETED | lamp: asking 150
+PASS over-budget model output capped to 120; A2A version and taskId retained; receipt unchanged
+[choose] example: score=3.00; own=3.00 (0 trades), reviews=3.00 (0 reviews); weights=50:50, missing source=3, ties by name; url=http://example.invalid
+[memory] saved deal for example in /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/.market/tmp6qwk47e1/memory.json
+{"shop": "http://example.invalid", "receipt": {"shop": "Example", "item": "lamp", "price": 120.0, "task": "demo-task", "sig_seller": "example-only"}, "stars": 3, "review": "Bought lamp for 120 within budget 120; used 100% of budget; receipt fields match the negotiation."}
+PASS market buyer final JSON and persistent name-based memory; full budget -> 3 stars

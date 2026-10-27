@@ -1,0 +1,29 @@
+....FF...F..
+======================================================================
+FAIL: test_formatted_prices_are_not_partially_parsed (test_purchase_policy.PurchasePolicyTests.test_formatted_prices_are_not_partially_parsed) (text='lamp $1,000')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/tests/test_purchase_policy.py", line 113, in test_formatted_prices_are_not_partially_parsed
+    self.assertEqual(inspect_public_price(shop('a'), 'lamp')['public_price'], expected)
+AssertionError: 1 != 1000
+
+======================================================================
+FAIL: test_formatted_prices_are_not_partially_parsed (test_purchase_policy.PurchasePolicyTests.test_formatted_prices_are_not_partially_parsed) (text='lamp 100.50')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/tests/test_purchase_policy.py", line 113, in test_formatted_prices_are_not_partially_parsed
+    self.assertEqual(inspect_public_price(shop('a'), 'lamp')['public_price'], expected)
+AssertionError: 100 != None
+
+======================================================================
+FAIL: test_receipt_cooldown_does_not_expire_after_twenty_other_records (test_purchase_policy.PurchasePolicyTests.test_receipt_cooldown_does_not_expire_after_twenty_other_records)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/tests/test_purchase_policy.py", line 119, in test_receipt_cooldown_does_not_expire_after_twenty_other_records
+    self.assertIsNone(chosen)
+AssertionError: {'name': 'a', 'url': 'https://a.example', 'reviews': [{'stars': 4, 'review': 'Buyer experience', 'round': 2}]} is not None
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.003s
+
+FAILED (failures=3)

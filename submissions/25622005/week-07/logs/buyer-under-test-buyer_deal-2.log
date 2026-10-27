@@ -1,0 +1,9 @@
+[choose] Kit Shop: score=3.00; own=3.00 (1 trades), reviews=3.00 (0 reviews); weights=50:50, missing source=3, ties by name; url=http://127.0.0.1:53881
+card: Kit Shop -> http://127.0.0.1:53881/
+-> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] ```json
+{"action": "offer", "price": 105}
+```
+-> '105'  <- TASK_STATE_COMPLETED | Deal: lamp at 105.
+[memory] saved deal for Kit Shop in /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/logs/fixed-price-stable-address-1/official-buyer-memory.json
+{"shop": "http://127.0.0.1:53881", "receipt": {"price": 105.0, "sig_seller": "UcbizD3Ib9JDQF9qgTyStuJQ7d5vUnIOkdhHlwVjD8G+CUZgqZPm5L3QKbBruOtCbNKYlPx/fPfKZibaWm+LCA==", "item": "lamp", "shop": "Kit Shop", "task": "89c02b18-1b47-48b7-8246-e81a55be46a3"}, "stars": 4, "review": "Bought lamp for 105 within budget 120; used 88% of budget; receipt fields match the negotiation."}

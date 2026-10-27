@@ -1,0 +1,69 @@
+{
+  "scope": "Recommendation evidence only; no pricing changes applied",
+  "market_round": 1,
+  "comparison": [
+    {
+      "name": "psyoung82",
+      "deals": 3,
+      "visits": 9,
+      "share": 0.002,
+      "stars": 2.25,
+      "reviews": 4,
+      "reported_deals_per_visit": 0.3333333333333333
+    },
+    {
+      "name": "corner-store",
+      "deals": 492,
+      "visits": 658,
+      "share": 0.312,
+      "stars": 3.93,
+      "reviews": 663,
+      "reported_deals_per_visit": 0.7477203647416414
+    }
+  ],
+  "current_opening_asks": {
+    "lamp": 110,
+    "chair": 200,
+    "bookshelf": 285
+  },
+  "market_mean_prices": {
+    "bookshelf": {
+      "n": 518,
+      "min": 260,
+      "max": 360,
+      "mean": 282.6
+    },
+    "chair": {
+      "n": 544,
+      "min": 180,
+      "max": 250,
+      "mean": 195.6
+    },
+    "lamp": {
+      "n": 515,
+      "min": 100,
+      "max": 140,
+      "mean": 108.6
+    }
+  },
+  "seller_memory_closed_without_sale": 5,
+  "closed_last_offer_below_reserve": 5,
+  "recommended_volume_experiment_opening_asks": {
+    "lamp": 100,
+    "chair": 180,
+    "bookshelf": 260
+  },
+  "constraints": [
+    "Keep reserves and existing identity/keys unchanged.",
+    "Price at reserve maximizes affordability among allowed prices but leaves zero margin above reserve.",
+    "A final offer below reserve does not prove the buyer budget was below reserve.",
+    "Prices alone do not guarantee more visits or better reviews.",
+    "Our sample of nine reported visits is small.",
+    "Evaluate a fixed observation window; do not claim causal improvement from cumulative before/after totals."
+  ],
+  "priority": [
+    "restore reputation through correct signed receipts and successful affordable trades",
+    "quote the lowest allowed price immediately in a bounded volume-first experiment",
+    "track visits, eligible offers, completed trades, and valid new reviews separately"
+  ]
+}
