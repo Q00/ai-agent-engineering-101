@@ -1,0 +1,143 @@
+....................F.....F............................................. [ 19%]
+........................................................................ [ 39%]
+........................................................................ [ 59%]
+........................................................................ [ 79%]
+........................................................................ [ 99%]
+..                                                                       [100%]
+=================================== FAILURES ===================================
+_______ test_memory_when_url_changes_retains_failed_trade_for_selection ________
+
+registry = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-10/test_memory_when_url_changes_r0/shops.json')
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-10/test_memory_when_url_changes_r0')
+wire = <tests.market_fakes.ShopTransport object at 0x10b1881d0>
+
+    def test_memory_when_url_changes_retains_failed_trade_for_selection(
+        registry: Path, tmp_path: Path, wire: ShopTransport
+    ) -> None:
+        # Given: a failed purchase is recorded under South's stable name.
+        memory_path = tmp_path / "memory.json"
+        first = ScriptedHarness(
+            [
+                ("select_shop", {"index": 1, "reason": "Try South"}),
+                ("walk_away", {"reason": "No acceptable deal"}),
+                ("leave_review", {"stars": 3, "review": "No purchase was made."}),
+            ]
+        )
+        _ = anyio.run(
+            market_buy, first, MarketRequest(registry, "lamp", 100, memory_path), print
+        )
+        _ = registry.write_text(
+            '[{"name":"South","url":"http://restarted.test","reviews":[]}]',
+            encoding="utf-8",
+        )
+        second = ScriptedHarness(
+            [
+                ("select_shop", {"index": 0, "reason": "Remember the previous no-deal"}),
+                ("walk_away", {"reason": "Still too expensive"}),
+                ("leave_review", {"stars": 3, "review": "No deal within budget."}),
+            ]
+        )
+        # When: the same shop restarts at a different URL.
+        result = anyio.run(
+            market_buy, second, MarketRequest(registry, "lamp", 100, memory_path), print
+        )
+        # Then: its prior failed trade is present in the selection state and both persist.
+>       assert second.states[0] == {
+            "item": "lamp",
+            "budget": 100,
+            "shops": [
+                {
+                    "index": 0,
+                    "listing": {
+                        "name": "South",
+                        "url": "http://restarted.test",
+                        "reviews": [],
+                    },
+                    "locally_observed_operator_directive": False,
+                    "own_trades": [
+                        {
+                            "item": "lamp",
+                            "budget": 100,
+                            "completed": False,
+                            "price": None,
+                            "receipt_present": False,
+                            "operator_directive_observed": False,
+                            "incident_response_count": 0,
+                            "same_requested_item": True,
+                            "price_within_current_budget": None,
+                        }
+                    ],
+                }
+            ],
+        }
+E       AssertionError: assert {'item': 'lam..., ...}, ...}]} == {'item': 'lam...None, ...}]}]}
+E         
+E         Omitting 2 identical items, use -vv to show
+E         Differing items:
+E         {'shops': [{'index': 0, 'listing': {'name': 'South', 'url': 'http://restarted.test', 'reviews': []}, 'locally_observed...ds': 1, 'negotiated_completions': 0, 'requested_item_records': 1, 'lowest_observed_same_item_price': None, ...}, ...}]} != {'shops': [{'index': 0, 'listing': {'name': 'South', 'url': 'http://restarted.test', 'reviews': []}, 'locally_observed_operator_directive': False, 'own_trades': [{'item': 'lamp', 'budget': 100, 'completed': False, 'price': None, ...}]}]}
+E         Use -v to get more diff
+
+tests/test_market_buyer.py:145: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[MARKET SELECTION] {"index":1,"reason":"Try South"}
+[A2A HTTP] {"method": "GET", "url": "http://south.test/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Stable Seller","skills":[],"supportedInterfaces":[{"url":"http://south.test/rpc","protocolBinding":"JSONRPC","protocolVersion":"1.0"}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "fad90cad-3f7d-47b9-9375-6e6fc4ae40c1", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "877c3753-6e0b-4c1e-a8a8-e90fd4aaa56d", "parts": [{"text": "I want to buy lamp"}]}}}
+[A2A HTTP] {"method": "POST", "url": "http://south.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"parts":[{"text":"The asking price is 120."}]}}}}}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "item": "lamp", "budget": 100, "rounds": 0, "last_offer": null, "seller_ask": null, "offered_prices": [], "remaining_rounds": 12, "pricing_context": {"selected_shop_trades": [], "observed_same_item_prices": []}, "recent_observations": [{"state": "TASK_STATE_INPUT_REQUIRED", "ask": null}], "operator_directive_observed": false, "directive_response_count": 0}
+[BUYER WALK] No acceptable deal
+[NEGOTIATION RESULT] {"completed":false,"item":"lamp","sku":"","price":null,"task_id":"trade-1","shop":"http://south.test/rpc","failure_observation":"TASK_STATE_INPUT_REQUIRED: The asking price is 120.","receipt":null,"safety":{"operator_directive_observed":false,"response_count":0,"evidence_sha256":[]},"initial_ask":null,"offer_count":0}
+[MARKET SELECTION] {"index":0,"reason":"Remember the previous no-deal"}
+[A2A HTTP] {"method": "GET", "url": "http://restarted.test/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Stable Seller","skills":[],"supportedInterfaces":[{"url":"http://restarted.test/rpc","protocolBinding":"JSONRPC","protocolVersion":"1.0"}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "d983eb3d-a462-4cc2-b7d8-733daac0ee4c", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "8141bc43-9bd3-4958-b2b9-3bd6a136f719", "parts": [{"text": "I want to buy lamp"}]}}}
+[A2A HTTP] {"method": "POST", "url": "http://restarted.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"parts":[{"text":"The asking price is 120."}]}}}}}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "item": "lamp", "budget": 100, "rounds": 0, "last_offer": null, "seller_ask": null, "offered_prices": [], "remaining_rounds": 12, "pricing_context": {"selected_shop_trades": [{"item": "lamp", "budget": 100, "completed": false, "price": null, "receipt_present": false, "operator_directive_observed": false, "incident_response_count": 0}], "observed_same_item_prices": []}, "recent_observations": [{"state": "TASK_STATE_INPUT_REQUIRED", "ask": null}], "operator_directive_observed": false, "directive_response_count": 0}
+[BUYER WALK] Still too expensive
+[NEGOTIATION RESULT] {"completed":false,"item":"lamp","sku":"","price":null,"task_id":"trade-1","shop":"http://restarted.test/rpc","failure_observation":"TASK_STATE_INPUT_REQUIRED: The asking price is 120.","receipt":null,"safety":{"operator_directive_observed":false,"response_count":0,"evidence_sha256":[]},"initial_ask":null,"offer_count":0}
+________ test_memory_when_atomic_replace_fails_preserves_previous_file _________
+
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-10/test_memory_when_atomic_replac0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b4e5f40>
+
+    def test_memory_when_atomic_replace_fails_preserves_previous_file(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Given: an existing file and a subsequent failed atomic replacement.
+        path = tmp_path / "memory.json"
+        Memory().save(path)
+        previous = path.read_bytes()
+        next_memory = Memory().append(
+            "South",
+            Trade(
+                item="lamp",
+                budget=120,
+                selection_reason="Previous reports",
+                purchase=Purchase(completed=False, item="lamp"),
+            ),
+        )
+    
+        def fail_replace(_source: Path, _target: Path) -> Path:
+            message = "Simulated replacement failure"
+            raise OSError(message)
+    
+        monkeypatch.setattr(type(path), "replace", fail_replace)
+        # When: persisting the new snapshot cannot finish.
+        with pytest.raises(OSError, match="Simulated replacement failure"):
+            next_memory.save(path)
+        # Then: the previous snapshot survives and no temporary file remains.
+        assert path.read_bytes() == previous
+>       assert list(tmp_path.iterdir()) == [path]
+E       AssertionError: assert [PosixPath('/...memory.json')] == [PosixPath('/...memory.json')]
+E         
+E         At index 0 diff: PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-10/test_memory_when_atomic_replac0/memory.context.md') != PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-10/test_memory_when_atomic_replac0/memory.json')
+E         Left contains one more item: PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-10/test_memory_when_atomic_replac0/memory.json')
+E         Use -v to get more diff
+
+tests/test_market_buyer.py:296: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_market_buyer.py::test_memory_when_url_changes_retains_failed_trade_for_selection
+FAILED tests/test_market_buyer.py::test_memory_when_atomic_replace_fails_preserves_previous_file
+2 failed, 360 passed in 25.54s

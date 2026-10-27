@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import anyio
 import httpx2
 import pytest
-from pydantic import TypeAdapter, ValidationError
+from pydantic import JsonValue, TypeAdapter, ValidationError
 
 from market_a2a.market_buyer import MarketRequest, market_buy
 from market_a2a.memory import Memory, Trade
@@ -142,7 +142,11 @@ def test_memory_when_url_changes_retains_failed_trade_for_selection(
         market_buy, second, MarketRequest(registry, "lamp", 100, memory_path), print
     )
     # Then: its prior failed trade is present in the selection state and both persist.
-    assert second.states[0] == {
+    # Additional compact-prior metadata must not change the original trade facts.
+    observed = TypeAdapter(dict[str, JsonValue]).validate_python(second.states[0])
+    entries = TypeAdapter(list[dict[str, JsonValue]]).validate_python(observed["shops"])
+    _ = entries[0].pop("memory_prior")
+    assert {**observed, "shops": entries} == {
         "item": "lamp",
         "budget": 100,
         "shops": [
@@ -273,6 +277,8 @@ def test_memory_when_atomic_replace_fails_preserves_previous_file(
     path = tmp_path / "memory.json"
     Memory().save(path)
     previous = path.read_bytes()
+    context = path.with_suffix(".context.md")
+    previous_context = context.read_bytes()
     next_memory = Memory().append(
         "South",
         Trade(
@@ -293,4 +299,5 @@ def test_memory_when_atomic_replace_fails_preserves_previous_file(
         next_memory.save(path)
     # Then: the previous snapshot survives and no temporary file remains.
     assert path.read_bytes() == previous
-    assert list(tmp_path.iterdir()) == [path]
+    assert context.read_bytes() == previous_context
+    assert set(tmp_path.iterdir()) == {path, context}
