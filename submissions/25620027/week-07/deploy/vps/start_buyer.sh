@@ -10,7 +10,7 @@ test -f /run/kit/market_kit.py
 stop_epoch=$(date -u -d '2026-10-28T08:15:00Z' +%s)
 run_seconds=$((stop_epoch - $(date -u +%s)))
 test "$run_seconds" -gt 0
-remaining_orders=$(python -c 'import json, urllib.request; r=urllib.request.Request("https://market.ourolabs.ai/api/board", headers={"User-Agent":"AX7-public-research"}); b=json.load(urllib.request.urlopen(r,timeout=20)); assert b["round"]==2; p=next(x for x in b["buyers"] if x["name"]=="25620027"); assert p["owner"]["login"]=="SungJinho"; print(max(0,600-p["orders"]))')
+remaining_orders=$(python -c 'import json, urllib.request; r=urllib.request.Request("https://market.ourolabs.ai/api/board", headers={"User-Agent":"AX7-public-research"}); b=json.load(urllib.request.urlopen(r,timeout=20)); assert b["round"]==2; p=next(x for x in b["buyers"] if x["name"]=="25620027"); assert p["owner"]["login"]=="SungJinho"; print(max(0,1200-p["orders"]))')
 test "$remaining_orders" -gt 0
 mkdir -p /data/buyer/logs /data/buyer/.market
 cp /app/deploy/vps/buyer-agent.json /data/buyer/agent.json
