@@ -79,7 +79,8 @@ def choose_shop(shops, memory, item, budget, *, now=None, recent_count=RECENT_CO
         evidence.append(details)
         if not blocked:
             # Risk comes before preference for past successful purchases.
-            rank = (errors >= 2, warning, not bool(successes), shop["name"])
+            reference = successes[-1]["price"] if successes else float("inf")
+            rank = (errors >= 2, warning, not bool(successes), reference, shop["name"])
             candidates.append((rank, shop, details))
     if not candidates:
         return None, "No eligible shop: direct receipt-mismatch evidence for all candidates.", evidence
@@ -87,5 +88,6 @@ def choose_shop(shops, memory, item, budget, *, now=None, recent_count=RECENT_CO
     reason = (f"{shop['name']}: repeated price complaints={details['repeated_public_price_complaints']}, "
               f"recent connection errors={details['recent_transport_errors']}, "
               f"same-item past success={details['same_item_success']}. "
-              "Past prices are references, not current offers; name breaks ties.")
+              f"Past same-item price reference={details['past_price_reference_only']}; "
+              "not a current offer. Name breaks remaining ties.")
     return shop, reason, evidence
