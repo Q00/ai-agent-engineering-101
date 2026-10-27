@@ -17,6 +17,8 @@ ignore = ["D203", "D213", "COM812"]
 "verify_protocol.py" = ["T201"]
 
 [tool.basedpyright]
+stubPath = "typings"
+extraPaths = ["../../.."]
 typeCheckingMode = "all"
 pythonVersion = "3.12"
 include = ["."]
@@ -25,4 +27,4 @@ exclude = ["logs", "cards", ".omo", "__pycache__"]
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", "../../.."]

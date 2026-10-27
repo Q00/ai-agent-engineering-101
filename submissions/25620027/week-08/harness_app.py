@@ -129,6 +129,21 @@ def seller(
     isolated(run)
 
 
+@app.command("r3-seller")
+def r3_seller(
+    config: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+) -> None:
+    """Run local R3 ACP/A2A integration without joining the public market."""
+    from r3.server import serve_r3
+
+    absolute = config.resolve()
+
+    async def run() -> None:
+        await serve_r3(absolute, emit)
+
+    isolated(run)
+
+
 @app.command("directory-server")
 def directory_server(
     port: Annotated[int, typer.Option(min=1024, max=65535)],
