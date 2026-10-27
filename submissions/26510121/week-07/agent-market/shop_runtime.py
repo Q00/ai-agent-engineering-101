@@ -22,6 +22,9 @@ def run_shop(args, kit):
             raise RuntimeError("seller card did not become ready")
         proxy = kit.Proxy(args.port or kit.free_port())
         proxy.target(f"http://127.0.0.1:{sport}")
+        # Week 08 SETUP: use the course v3 checkout with the existing shop key.
+        # Keeping this proxy across tunnel renewals also preserves its sessions.
+        proxy.acp = kit.AcpShop(key, market)
         failures = 0
         while True:
             if seller.poll() is not None:

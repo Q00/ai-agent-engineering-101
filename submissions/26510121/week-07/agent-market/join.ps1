@@ -23,7 +23,16 @@ if (Test-Path -LiteralPath $statePath) {
         throw "Market kit is already running (PID $($previous.pid))."
     }
 }
-if (-not $ClaimCode) { throw 'Provide -ClaimCode or MARKET_OWNER to link the agents to GitHub.' }
+if (-not $ClaimCode) {
+    # The market permits signed rejoin without a claim code. Keep the identity
+    # that was already linked last week, rather than generating a new key.
+    foreach ($keyName in @('shop_key.pem','buyer_key.pem')) {
+        if (-not (Test-Path -LiteralPath (Join-Path $agentDir $keyName))) {
+            throw 'Signed rejoin requires both existing identity keys, or a claim code for initial registration.'
+        }
+    }
+    Write-Output 'Reusing existing signing keys; verify GitHub ownership on the board after joining.'
+}
 
 $oldPath = $env:PATH
 $oldKey = $env:OPENAI_API_KEY
