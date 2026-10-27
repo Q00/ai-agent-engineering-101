@@ -10,9 +10,9 @@ import json
 import math
 import os
 import tempfile
-from itertools import zip_longest
 import time
 from datetime import datetime
+from itertools import zip_longest
 from pathlib import Path
 
 import harness

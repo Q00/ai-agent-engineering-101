@@ -69,6 +69,7 @@ uv run python -m unittest discover -s . -p 'test_memory_context.py' -v
 
 이 검증은 컨텍스트 구성의 계약을 확인한다. LongMemEval-V2 공식 평가나 모델 판단 품질,
 거래 성과 개선을 입증한 결과가 아니다. Round 3 성과는 개시 이후 정산 로그로 평가해야 한다.
+현재 Codex CLI 호출에는 고정 seed를 지정하지 않으므로 모델 요약과 판단은 재실행 시 달라질 수 있다.
 
 참고: [LongMemEval-V2](https://github.com/xiaowu0162/LongMemEval-V2)는 평가 벤치마크이며,
 [Mem0](https://github.com/mem0ai/mem0)는 별도의 메모리 구현 시스템이다.
