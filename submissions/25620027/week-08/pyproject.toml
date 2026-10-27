@@ -1,0 +1,28 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["D203", "D213", "COM812"]
+
+[tool.ruff.lint.per-file-ignores]
+"*.py" = ["CPY001"]
+"tests/*.py" = ["S101", "D100", "D103", "PLR2004", "INP001", "T201"]
+"a2a_client.py" = ["TRY003", "EM101", "EM102"]
+"archive.py" = ["EM101"]
+"batches.py" = ["TRY003", "EM101", "EM102", "S311", "T201"]
+"episode.py" = ["TRY003", "EM101", "EM102"]
+"run.py" = ["S603", "TRY003", "EM101", "EM102"]
+"verify_protocol.py" = ["T201"]
+
+[tool.basedpyright]
+typeCheckingMode = "all"
+pythonVersion = "3.12"
+include = ["."]
+exclude = ["logs", "cards", ".omo", "__pycache__"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+pythonpath = ["."]
