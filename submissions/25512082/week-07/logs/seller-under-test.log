@@ -18,7 +18,7 @@ Traceback (most recent call last):
     _RUNTIME_CONTEXT.detach(token)
   File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
     self._current_context.reset(token)
-ValueError: <Token var=<ContextVar name='current_context' default={} at 0x76d9ed2a89a0> at 0x76d9ecafcf40> was created in a different Context
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7aa6649e8bd0> at 0x7aa66423b480> was created in a different Context
 Task was destroyed but it is pending!
 task: <Task pending name='Task-65' coro=<EventQueueSource._dispatch_loop() done, defined at /home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
 Failed to detach context
@@ -41,6 +41,6 @@ Traceback (most recent call last):
     _RUNTIME_CONTEXT.detach(token)
   File "/home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
     self._current_context.reset(token)
-ValueError: <Token var=<ContextVar name='current_context' default={} at 0x76d9ed2a89a0> at 0x76d9ecafe640> was created in a different Context
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7aa6649e8bd0> at 0x7aa664239700> was created in a different Context
 Task was destroyed but it is pending!
 task: <Task pending name='Task-66' coro=<EventQueueSource._dispatch_loop() done, defined at /home/user/student/AX/ai-agent-engineering-101/a2a-lab/.venv/lib/python3.11/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
