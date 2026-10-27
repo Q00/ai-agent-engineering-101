@@ -9,7 +9,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from harness import emit
+from harness import decision_schema, emit
 from market import shop
 from protocol import amount, receipt
 
@@ -20,6 +20,13 @@ def completed(price=110, item="lamp"):
 
 
 class SafetyTests(unittest.TestCase):
+    def test_seller_schema_cannot_emit_a_buyer_offer_action(self):
+        schema = decision_schema("seller_turn")
+        self.assertEqual(schema["properties"]["action"]["enum"], ["ask", "accept", "reject"])
+        schema["properties"]["action"]["enum"].append("invalid")
+        self.assertNotIn("invalid", decision_schema("seller_turn")["properties"]["action"]["enum"])
+        self.assertEqual(decision_schema("buyer_turn")["properties"]["action"]["enum"], ["offer", "walk"])
+
     def test_actual_receipt_required(self):
         self.assertEqual(receipt(completed(), "lamp", 120, 110)["price"], 110)
         for task in ({"status": {"state": "TASK_STATE_INPUT_REQUIRED"}},
