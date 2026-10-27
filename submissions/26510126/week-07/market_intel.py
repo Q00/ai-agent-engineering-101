@@ -54,6 +54,46 @@ def load_ledger(timeout=8.0, max_pages=40):
     return entries
 
 
+RECENT = os.path.join(HERE, ".market", "ledger-recent.json")
+RECENT_HOURS = 6  # the buyer looks back at most three hours (going prices) and a shop's last ten sales
+
+
+def load_recent(hours=RECENT_HOURS, timeout=8.0, max_pages=40):
+    """Join and round entries plus the last `hours` of the ledger, from a small cache of its own.
+
+    The full cache passed 400 MB in Round 2 and the buyer parsed it on every order (2 GB, one core, 10-30 s),
+    which with the meta-harness and the watcher on the same 16 GB Mac pushed the kit into swap until it stalled.
+    The first call builds the small cache from the full one; later calls read only the small file."""
+    try:
+        with open(RECENT) as f:
+            entries = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        entries = load_ledger(timeout=timeout, max_pages=max_pages)
+    after = max((e["seq"] for e in entries), default=0)
+    try:
+        with httpx.Client(timeout=timeout) as client:
+            for _ in range(max_pages):
+                page = client.get(f"{MARKET}/api/ledger", params={"after": after} if after else None).json()
+                page = [e for e in page if e["seq"] > after]
+                if not page:
+                    break
+                entries += page
+                after = page[-1]["seq"]
+                if len(page) < PAGE:
+                    break
+    except (httpx.HTTPError, ValueError, KeyError) as e:
+        print(f"[intel] ledger fetch failed ({e!r}), using {len(entries)} recent entries", file=sys.stderr)
+    cut = time.time() - hours * 3600
+    entries = [e for e in entries if e["kind"] in ("join", "round") or e["ts"] >= cut]
+    if entries:
+        os.makedirs(os.path.dirname(RECENT), exist_ok=True)
+        tmp = RECENT + f".{os.getpid()}"
+        with open(tmp, "w") as f:
+            json.dump(entries, f)
+        os.replace(tmp, RECENT)
+    return entries
+
+
 def summarize(entries, since=None):
     """Going prices per item, and per shop name: deals, prices per item, failed checks.
 

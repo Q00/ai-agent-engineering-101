@@ -213,7 +213,7 @@ def score(shop, past):
 def market_view(item):
     """(going price of the item or None, going prices, per-shop records, recent per-shop records, round)
     from the public ledger; empty when offline."""
-    entries = market_intel.load_ledger(timeout=5.0)
+    entries = market_intel.load_recent(timeout=5.0)  # the last six hours, not the 400 MB full ledger
     going, _ = market_intel.summarize(entries, since=time.time() - GOING_WINDOW)
     _, recent = market_intel.summarize(entries, since=time.time() - SIGN_WINDOW)  # a shop that just began signing counts
     _, shops = market_intel.summarize(entries)
