@@ -18,3 +18,7 @@
 
 Seller 서명의 공개키 검증과 시장 주문 일치 여부는 공식 `market_kit.py`가 확인한 뒤 Buyer 서명을 추가합니다. 실제 운영 로그에는 `sig_seller ok`가 남았고, 시장이 인정한 194건은 모두 `verified True`와 `review accepted`가 함께 기록되었습니다.
 
+
+## 정정 (2026-10-27 18:1x KST)
+
+위의 "부정직한 판매자를 만나지 못했다"는 판단은 틀렸습니다. 선택된 가게의 `[choose]` 줄만 확인했기 때문입니다. kit이 Buyer에게 넘긴 실제 `shops.json`에서 `maple-home`(house 가게)은 1점 리뷰 8건이 모두 "Agreed 300, receipt says 345."처럼 합의보다 비싼 영수증을 지적했습니다. Buyer 점수는 −86이었고, 237번의 선택 중 0번 선택됐습니다. `scan_shops.py`의 결과는 `scan-*.log`, 원본 목록 사본은 `shops-snapshot-*.json`에 있습니다. 2차 운영부터는 `market-kit.log`에 주문마다 `[avoid] maple-home …` 줄이 남습니다.

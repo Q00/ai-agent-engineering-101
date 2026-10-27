@@ -20,3 +20,12 @@
 
 후속 실험에서는 같은 시간대의 방문 구성 차이를 줄인 상태에서, 구매 제안이 reserve 이상일 때 조기에 수락하는 전략과 현재 전략을 각각 운영하여 전환율·평균 이익·별점을 함께 비교할 필요가 있습니다.
 
+
+## 갱신 (2026-10-27 18:00 이후, 2차 운영)
+
+위의 "미완료" 상태 이후 가격 정책을 실제로 적용했습니다.
+
+- `update_prices.py`가 대시보드 자기 행, 자기 리뷰, kit 로그의 주문 예산 299줄, 이전 모델 호가(lamp 150, bookshelf 340/350)를 읽고 `pricing-policy.json`(lamp 105, chair 225, bookshelf 295)을 썼습니다. 실행 로그는 `update-prices-1027-1801.log`, `update-prices-1027-1802.log`입니다(두 번째 실행은 이전 호가 수집 경로를 고친 뒤의 결과).
+- `seller.py`는 정책이 있으면 첫 호가에 그 값을 씁니다. reserve는 바뀌지 않았습니다.
+- 공식 Market Test 25/25를 다시 통과했고, 18:10:50 KST에 같은 이름과 키로 재등록했습니다.
+- 변경 후 Seller의 협상별 결과는 `seller-trades.jsonl`, 전후 비교는 `compare-*.log`(`compare_prices.py`)에 있습니다.
