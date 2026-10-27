@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-20T12:34:55+00:00",
+  "started": "2026-10-27T07:13:55+00:00",
   "harness": "Python prompt/validation loop + OpenAI Responses API; gpt-4o-mini; strict JSON Schema; temperature 0",
   "seller_cmd": "python -u seller.py --port {port}",
   "market_buyer_cmd": "python -u market_buyer.py --shops {shops} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Published minimum prices: lamp 100; chair 180; bookshelf 260. Ed25519-signed receipts for Round 2. Send the item name, then a plain integer offer using the same taskId. The receipt preserves the agreed price. Reviews should reflect the actual final outcome.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:51949/",
+        "url": "http://127.0.0.1:64501/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -184,25 +184,25 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [200, 230], stars 3, receipt null"
+      "detail": "offers [200], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 1"
     },
     {
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [200], stars 3, receipt null"
+      "detail": "offers [], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
     },
     {
       "test": "buyer_holds_budget",
