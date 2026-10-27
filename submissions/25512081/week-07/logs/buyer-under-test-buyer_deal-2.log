@@ -1,11 +1,11 @@
-[choose] http://127.0.0.1:36405: the only shop in the list I have not caught cheating
+[choose] http://127.0.0.1:51885: the only shop in the list I have not caught cheating
 [buyer] -> 'I want to buy a lamp.'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-    [harness 4.2s] {"action": "offer", "price": 65, "reason": "Opening at about 65% of my target price of roughly 100, leaving room to raise in shrinking steps while staying well under budget."}
+    [harness 4.5s] {"action": "offer", "price": 65, "reason": "Opening offer at about 65% of my target price, which leaves room to raise in shrinking steps."}
 [buyer] -> 65  <- TASK_STATE_INPUT_REQUIRED | 65 is too low. Counteroffer: 100.
-    [harness 4.5s] {"action": "offer", "price": 85, "reason": "The seller dropped a lot in one step (from 130 to 100), so they probably have more room to come down. Following the Ackerman pattern toward my target, I'm moving from 65 to 85, which is 85% of the target. I'm still well under my budget."}
+    [harness 6.3s] {"action": "offer", "price": 85, "reason": "Second step toward my target of 100 (85%). The seller dropped 30 in one move, so there is probably more room before their floor."}
 [buyer] -> 85  <- TASK_STATE_INPUT_REQUIRED | 85 is too low. Counteroffer: 100.
-    [harness 6.5s] {"action": "offer", "price": 94, "reason": "Next shrinking step toward my target (~95% of it). The seller just dropped 30, so there may be more room, and the uneven number makes it look calculated."}
+    [harness 7.9s] {"action": "offer", "price": 95, "reason": "Seller repeated 100, signaling near floor. Following Ackerman steps (65, 85, now 95% of target 100) to test for a final small concession before closing."}
 [buyer] [guard] seller held 100 twice, within budget; offering the ask
 [buyer] -> 100  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-[buyer] DEAL lamp at 100.0 (budget 120) after 3 offers, 3 harness calls, 15s
-{"shop": "http://127.0.0.1:36405", "receipt": {"sig_seller": "xKWi3VM5Zs+NYUOMtvRssDBn099T+QPDCOpXIPsgbGoAEy8b8yWDbAOkmDKtmahqaF2Z0C3OBxJltzX9lPsqDg==", "task": "7af24b80-fcb7-440b-b6da-e95040a9bbb0", "price": 100.0, "shop": "Kit Shop", "item": "lamp"}, "stars": 5, "review": "Fair deal at 100 after 2 counters, receipt matched."}
+[buyer] DEAL lamp at 100.0 (budget 120) after 3 offers, 3 harness calls, 19s
+{"shop": "http://127.0.0.1:51885", "receipt": {"price": 100.0, "shop": "Kit Shop", "sig_seller": "vI+PrIi0OsS01vY7I1Yj93jpioktSQkwbC1qc6YuwAmnBTEKsGwK5wmqRuXy5/VrHLXn/gLhV/zcbISmEZbLAg==", "item": "lamp", "task": "123a8e33-2619-4666-bc41-8fdfef486f61"}, "stars": 5, "review": "Fair deal at 100 after 2 counters, receipt matched."}

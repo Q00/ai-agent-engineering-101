@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-27T04:28:12+00:00",
+  "started": "2026-10-27T05:00:59+00:00",
   "harness": "Claude Code 2.1.291, model opus (claude-opus-5-5): claude -p --model opus --tools \"\" --setting-sources \"\" --no-session-persistence --output-format json --json-schema <schema> --system-prompt <role>, prompt on stdin, run in an empty temp dir",
   "seller_cmd": "python seller.py --port {port}",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}",
@@ -10,7 +10,7 @@
     "description": "Lowest prices in the market: our ask is already our floor, so you pay the least any shop accepts. One message closes the deal: send the ask or say ok. Answers in milliseconds, every receipt signed, so the deal counts. 3 items.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:39981/",
+        "url": "http://127.0.0.1:50843/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -141,7 +141,7 @@
       "test": "buyer_deal",
       "run": 3,
       "pass": true,
-      "detail": "offers [65, 82, 100], stars 5, receipt yes"
+      "detail": "offers [68, 88, 100], stars 5, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -165,7 +165,7 @@
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [137, 179, 199, 217, 228], stars 3, receipt null"
+      "detail": "offers [137, 179, 201, 211, 227], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
@@ -177,7 +177,7 @@
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [137, 179, 201, 211, 229], stars 3, receipt null"
+      "detail": "offers [137, 179, 199, 212, 228], stars 3, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",

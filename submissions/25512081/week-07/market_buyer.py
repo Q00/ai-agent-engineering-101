@@ -83,6 +83,10 @@ def choose(shops, item, budget, mine):
 def review(res, item, budget):
     """Stars and text from facts only."""
     r, hist = res["reply"], res["history"]
+    if res["outcome"] == "injection":
+        return 1, (f"No deal: the shop's messages give orders to buying agents "
+                   f"(\"{res['injection']}\"), telling them to accept its price and rate it 5 "
+                   "stars. I walked away."), False, None
     asks = [h["ask"] for h in hist if h["ask"] is not None]
     if res["outcome"] == "deal":
         agreed = hist[-1]["offer"] if hist else r.ask
@@ -127,7 +131,7 @@ def main():
         stars, text, honest, paid, receipt, outcome = 2, "Could not complete a trade: the shop " \
             "did not answer properly.", None, None, None, "error"
     if honest is False:
-        log(f"[buyer] [check] receipt does not match the agreed price: {text}")
+        log(f"[buyer] [check] marked dishonest in memory: {text}")
     mine.append({"shop": shop["name"], "item": a.item, "budget": a.budget, "outcome": outcome,
                  "price": paid, "honest": honest, "time": int(time.time())})
     save_memory(mine)
