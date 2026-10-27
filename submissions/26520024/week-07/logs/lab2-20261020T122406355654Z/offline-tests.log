@@ -1,0 +1,157 @@
+/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/test_lab2.py:16: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+test_counter_below_current_offer_rejected (test_lab2.Policy) ... ok
+test_counteroffer_never_increases (test_lab2.Policy) ... ok
+test_final_floor_is_visible_and_last_number (test_lab2.Policy) ... ok
+test_honor_quoted_price (test_lab2.Policy) ... ok
+test_opening_price_ceiling (test_lab2.Policy) ... ok
+test_reserve_remains_authoritative (test_lab2.Policy) ... ok
+test_real_sdk_receipt_verifies (test_lab2.SignedProtocol) ... ok
+test_signing_failure_never_emits_unsigned_receipt (test_lab2.SignedProtocol) ... Producer[da1872fc-0d29-4db4-867e-31ead42151f5]: Execution failed
+Traceback (most recent call last):
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/seller.py", line 134, in execute
+    signed_receipt = sign_receipt(dict(shop=self.name, item=product['name'],
+  File "/home/uichan/miniconda3/envs/eraseanything/lib/python3.10/unittest/mock.py", line 1114, in __call__
+    return self._mock_call(*args, **kwargs)
+  File "/home/uichan/miniconda3/envs/eraseanything/lib/python3.10/unittest/mock.py", line 1118, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+  File "/home/uichan/miniconda3/envs/eraseanything/lib/python3.10/unittest/mock.py", line 1173, in _execute_mock_call
+    raise effect
+ValueError: simulated signing failure
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/seller.py", line 138, in execute
+    await up.fail(say('Decision service failed; no purchase was made.'))
+AttributeError: 'TaskUpdater' object has no attribute 'fail'
+Consumer[da1872fc-0d29-4db4-867e-31ead42151f5]: Failed
+Traceback (most recent call last):
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/seller.py", line 134, in execute
+    signed_receipt = sign_receipt(dict(shop=self.name, item=product['name'],
+  File "/home/uichan/miniconda3/envs/eraseanything/lib/python3.10/unittest/mock.py", line 1114, in __call__
+    return self._mock_call(*args, **kwargs)
+  File "/home/uichan/miniconda3/envs/eraseanything/lib/python3.10/unittest/mock.py", line 1118, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+  File "/home/uichan/miniconda3/envs/eraseanything/lib/python3.10/unittest/mock.py", line 1173, in _execute_mock_call
+    raise effect
+ValueError: simulated signing failure
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/seller.py", line 138, in execute
+    await up.fail(say('Decision service failed; no purchase was made.'))
+AttributeError: 'TaskUpdater' object has no attribute 'fail'
+Unhandled exception
+Traceback (most recent call last):
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/seller.py", line 134, in execute
+    signed_receipt = sign_receipt(dict(shop=self.name, item=product['name'],
+  File "/home/uichan/miniconda3/envs/eraseanything/lib/python3.10/unittest/mock.py", line 1114, in __call__
+    return self._mock_call(*args, **kwargs)
+  File "/home/uichan/miniconda3/envs/eraseanything/lib/python3.10/unittest/mock.py", line 1118, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+  File "/home/uichan/miniconda3/envs/eraseanything/lib/python3.10/unittest/mock.py", line 1173, in _execute_mock_call
+    raise effect
+ValueError: simulated signing failure
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 320, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 518, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 410, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 396, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/seller.py", line 138, in execute
+    await up.fail(say('Decision service failed; no purchase was made.'))
+AttributeError: 'TaskUpdater' object has no attribute 'fail'
+Request Error (ID: 6517cdf682654ef283ed3a48e6a5acee): Code=-32603, Message=''TaskUpdater' object has no attribute 'fail''
+Dispatcher task was cancelled or finished. Events may be lost.
+ERROR
+test_canonical_order_whitespace_utf8 (test_lab2.Signing) ... ok
+test_every_signed_field_tamper_rejected (test_lab2.Signing) ... ok
+test_exact_fields_and_no_input_mutation (test_lab2.Signing) ... ok
+test_existing_key_loading_and_wrong_type (test_lab2.Signing) ... ok
+test_missing_key_does_not_generate_replacement (test_lab2.Signing) ... ok
+test_rejects_invalid_body (test_lab2.Signing) ... ok
+test_transport_float_requires_integer_normalization (test_lab2.Signing) ... ok
+test_wrong_public_key_rejected (test_lab2.Signing) ... ok
+test_bad_reviews_rejected (test_market_buyer.MarketTests) ... ok
+test_bounded_memory_retains_all_rows (test_market_buyer.MarketTests) ... ok
+test_completed_without_receipt_is_negative (test_market_buyer.MarketTests) ... ok
+test_duplicate_shop_rejected (test_market_buyer.MarketTests) ... ok
+test_exact_receipt_last_line_and_persistent_memory (test_market_buyer.MarketTests) ... ok
+test_https_card_same_origin_required (test_market_buyer.MarketTests) ... ok
+test_network_failure_is_not_fraud (test_market_buyer.MarketTests) ... ok
+test_no_deal_is_not_fraud (test_market_buyer.MarketTests) ... ok
+test_overbudget_cannot_reach_wire (test_market_buyer.MarketTests) ... ok
+test_overcharge_one_star_preserves_original (test_market_buyer.MarketTests) ... ok
+test_reviews_are_bounded_and_exposed_not_executed (test_market_buyer.MarketTests) ... ok
+test_shared_url_does_not_stop_selection (test_market_buyer.MarketTests) ... ok
+test_unknown_and_bad_model_choices (test_market_buyer.MarketTests) ... ok
+test_url_constraints (test_market_buyer.MarketTests) ... ok
+test_wrong_item_and_task (test_market_buyer.MarketTests) ... ok
+test_accept_guard (test_week06.Guards) ... ok
+test_budget_guard (test_week06.Guards) ... ok
+test_catalog_size (test_week06.Guards) ... ok
+test_corrective_feedback (test_week06.Guards) ... ok
+test_description_retrieval (test_week06.Guards) ... ok
+test_generic_retrieval (test_week06.Guards) ... ok
+test_identity_guard (test_week06.Guards) ... ok
+test_no_fallback (test_week06.Guards) ... ok
+test_plan_guard (test_week06.Guards) ... ok
+test_price_parser (test_week06.Guards) ... ok
+test_reserve_guard (test_week06.Guards) ... ok
+test_strict_json (test_week06.Guards) ... ok
+test_valid_accept (test_week06.Guards) ... ok
+test_receipt_rejects_overcharge (test_week06.Protocol) ... ok
+test_sdk_task_lifecycle (test_week06.Protocol) ... ok
+
+======================================================================
+ERROR: test_signing_failure_never_emits_unsigned_receipt (test_lab2.SignedProtocol)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/test_lab2.py", line 154, in test_signing_failure_never_emits_unsigned_receipt
+    last = self.send(client, '100', first['id'])
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-07/test_lab2.py", line 133, in send
+    return client.post('/', headers={'A2A-Version': '1.0'}, json=dict(jsonrpc='2.0', id=uuid.uuid4().hex,
+KeyError: 'result'
+
+----------------------------------------------------------------------
+Ran 46 tests in 0.890s
+
+FAILED (errors=1)

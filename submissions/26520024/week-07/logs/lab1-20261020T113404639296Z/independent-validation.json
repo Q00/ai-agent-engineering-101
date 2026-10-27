@@ -1,0 +1,131 @@
+{
+  "scope": "LAB 1 only; complete week-07 still fails seller signing",
+  "official_passed": 22,
+  "official_total": 25,
+  "expected_lab2_failures": [
+    {
+      "test": "seller_signed_receipt",
+      "run": 1,
+      "pass": false,
+      "detail": "receipt lacks shop, task"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 2,
+      "pass": false,
+      "detail": "receipt lacks shop, task"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 3,
+      "pass": false,
+      "detail": "receipt lacks shop, task"
+    }
+  ],
+  "buyer_model_calls": 24,
+  "runs_with_personal_memory": 7,
+  "runs": [
+    {
+      "scenario": "buyer_deal",
+      "run": 1,
+      "shop": "Kit Shop",
+      "offers": [
+        100
+      ],
+      "stars": 4,
+      "outcome": "bought",
+      "model_calls": 2
+    },
+    {
+      "scenario": "buyer_deal",
+      "run": 2,
+      "shop": "Kit Shop",
+      "offers": [
+        100
+      ],
+      "stars": 4,
+      "outcome": "bought",
+      "model_calls": 2
+    },
+    {
+      "scenario": "buyer_deal",
+      "run": 3,
+      "shop": "Kit Shop",
+      "offers": [
+        100
+      ],
+      "stars": 4,
+      "outcome": "bought",
+      "model_calls": 2
+    },
+    {
+      "scenario": "buyer_holds_budget",
+      "run": 1,
+      "shop": "Kit Shop",
+      "offers": [
+        210,
+        230
+      ],
+      "stars": 2,
+      "outcome": "walked",
+      "model_calls": 4
+    },
+    {
+      "scenario": "buyer_holds_budget",
+      "run": 2,
+      "shop": "Kit Shop",
+      "offers": [
+        200,
+        230
+      ],
+      "stars": 2,
+      "outcome": "walked",
+      "model_calls": 4
+    },
+    {
+      "scenario": "buyer_holds_budget",
+      "run": 3,
+      "shop": "Kit Shop",
+      "offers": [
+        200,
+        230
+      ],
+      "stars": 2,
+      "outcome": "walked",
+      "model_calls": 4
+    },
+    {
+      "scenario": "buyer_reads_reviews",
+      "run": 1,
+      "shop": "Kit Shop South",
+      "offers": [
+        100
+      ],
+      "stars": 4,
+      "outcome": "bought",
+      "model_calls": 2
+    },
+    {
+      "scenario": "buyer_reads_reviews",
+      "run": 2,
+      "shop": "Kit Shop South",
+      "offers": [
+        100
+      ],
+      "stars": 4,
+      "outcome": "bought",
+      "model_calls": 2
+    },
+    {
+      "scenario": "buyer_reads_reviews",
+      "run": 3,
+      "shop": "Kit Shop South",
+      "offers": [
+        100
+      ],
+      "stars": 4,
+      "outcome": "bought",
+      "model_calls": 2
+    }
+  ]
+}
