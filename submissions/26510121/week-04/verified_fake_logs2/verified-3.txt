@@ -1,0 +1,59 @@
+run=verified-3 turn_limit=8
+protocol=JSON acts + unique offer IDs + explicit acceptance reference
+verification=field schema, ID ownership/status, private limits
+scenario 1: reserve=120 budget=300
+  [1] buyer: {"act": "propose", "offer_id": "B1", "price": 155, "responds_to": null, "reason": "scripted buyer offer"}
+       verifier: record offer_id=B1 price=155
+  [2] seller: {"act": "accept", "offer_id": null, "price": null, "responds_to": "B1", "reason": "accept feasible opposing offer"}
+       verifier: valid accept responds_to=B1; close at 155
+  -> outcome=deal price=155 correct=1 violation=0 turns=2 format_errors=0
+scenario 2: reserve=245 budget=265
+  [1] buyer: {"act": "propose", "offer_id": "B1", "price": 155, "responds_to": null, "reason": "scripted buyer offer"}
+       verifier: record offer_id=B1 price=155
+  [2] seller: {"act": "propose", "offer_id": "S1", "price": 430, "responds_to": null, "reason": "scripted seller offer"}
+       verifier: record offer_id=S1 price=430
+  [3] buyer: {"act": "propose", "offer_id": "B2", "price": 210, "responds_to": null, "reason": "scripted buyer offer"}
+       verifier: record offer_id=B2 price=210
+  [4] seller: {"act": "propose", "offer_id": "S2", "price": 360, "responds_to": null, "reason": "scripted seller offer"}
+       verifier: record offer_id=S2 price=360
+  [5] buyer: {"act": "propose", "offer_id": "B3", "price": 265, "responds_to": null, "reason": "scripted buyer offer"}
+       verifier: record offer_id=B3 price=265
+  [6] seller: {"act": "accept", "offer_id": null, "price": null, "responds_to": "B3", "reason": "accept feasible opposing offer"}
+       verifier: valid accept responds_to=B3; close at 265
+  -> outcome=deal price=265 correct=1 violation=0 turns=6 format_errors=0
+scenario 3: reserve=400 budget=380
+  [1] buyer: {"act": "propose", "offer_id": "B1", "price": 155, "responds_to": null, "reason": "scripted buyer offer"}
+       verifier: record offer_id=B1 price=155
+  [2] seller: {"act": "propose", "offer_id": "S1", "price": 430, "responds_to": null, "reason": "scripted seller offer"}
+       verifier: record offer_id=S1 price=430
+  [3] buyer: {"act": "propose", "offer_id": "B2", "price": 210, "responds_to": null, "reason": "scripted buyer offer"}
+       verifier: record offer_id=B2 price=210
+  [4] seller: {"act": "propose", "offer_id": "S2", "price": 400, "responds_to": null, "reason": "scripted seller offer"}
+       verifier: record offer_id=S2 price=400
+  [5] buyer: {"act": "propose", "offer_id": "B3", "price": 265, "responds_to": null, "reason": "scripted buyer offer"}
+       verifier: record offer_id=B3 price=265
+  [6] seller: {"act": "propose", "offer_id": "S3", "price": 400, "responds_to": null, "reason": "scripted seller offer"}
+       verifier: record offer_id=S3 price=400
+  [7] buyer: {"act": "propose", "offer_id": "B4", "price": 320, "responds_to": null, "reason": "scripted buyer offer"}
+       verifier: record offer_id=B4 price=320
+  [8] seller: {"act": "propose", "offer_id": "S4", "price": 400, "responds_to": null, "reason": "scripted seller offer"}
+       verifier: record offer_id=S4 price=400
+  -> outcome=open price= correct=1 violation=0 turns=8 format_errors=0
+scenario 4: reserve=900 budget=250
+  [1] buyer: {"act": "propose", "offer_id": "B1", "price": 155, "responds_to": null, "reason": "scripted buyer offer"}
+       verifier: record offer_id=B1 price=155
+  [2] seller: {"act": "propose", "offer_id": "S1", "price": 900, "responds_to": null, "reason": "scripted seller offer"}
+       verifier: record offer_id=S1 price=900
+  [3] buyer: {"act": "propose", "offer_id": "B2", "price": 210, "responds_to": null, "reason": "scripted buyer offer"}
+       verifier: record offer_id=B2 price=210
+  [4] seller: {"act": "propose", "offer_id": "S2", "price": 900, "responds_to": null, "reason": "scripted seller offer"}
+       verifier: record offer_id=S2 price=900
+  [5] buyer: {"act": "propose", "offer_id": "B3", "price": 250, "responds_to": null, "reason": "scripted buyer offer"}
+       verifier: record offer_id=B3 price=250
+  [6] seller: {"act": "propose", "offer_id": "S3", "price": 900, "responds_to": null, "reason": "scripted seller offer"}
+       verifier: record offer_id=S3 price=900
+  [7] buyer: {"act": "propose", "offer_id": "B4", "price": 250, "responds_to": null, "reason": "scripted buyer offer"}
+       verifier: record offer_id=B4 price=250
+  [8] seller: {"act": "propose", "offer_id": "S4", "price": 900, "responds_to": null, "reason": "scripted seller offer"}
+       verifier: record offer_id=S4 price=900
+  -> outcome=open price= correct=1 violation=0 turns=8 format_errors=0
