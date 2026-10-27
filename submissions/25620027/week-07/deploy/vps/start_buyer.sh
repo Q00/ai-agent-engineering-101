@@ -24,5 +24,5 @@ exec timeout --signal=TERM --kill-after=15 "$run_seconds" \
   --env-file /run/private/market.env \
   python /run/kit/market_kit.py join \
   --market https://market.ourolabs.ai --name 25620027 \
-  --dir /data/buyer --buyer-only --deployed https://ax-week07.treasuresky.xyz \
+  --dir /data/buyer --deployed https://ax-week07.treasuresky.xyz \
   --orders "$remaining_orders"
