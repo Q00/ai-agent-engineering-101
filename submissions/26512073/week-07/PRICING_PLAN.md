@@ -1,6 +1,9 @@
 # Student's agreed pricing strategy
 
 - Start each item at 15% above its fixed reserve, rounded to a whole number.
+- Updated during the Week 8 lab: the opening ask is also capped at 15% above
+  reserve. Keep 3% adjustments within this ceiling and the reserve floor.
+  See `../week-08/PRICING_CHANGE.md` for migration and observation details.
 - Review six new completed negotiations for the same item. Count deals and
   explicit rejections; keep cancellations and unfinished conversations separate.
 - Raise the previous ask by 3% when at least four of those six deals sold at
@@ -35,9 +38,10 @@ hold advances the checkpoint. Failed reviews leave saved state unchanged.
 Existing acceptance rules remain: accept any buyer offer at or above reserve
 at the actual offered price.
 
-The full official trade test passed 25/25 with isolated test memory. A separate
+Before the cap change, the full official trade test passed 25/25 with isolated test memory. A separate
 experiment using synthetic histories and real harness replies matched all three
-expected outcomes: raise 115 to 118, lower 115 to 112, and hold at 115. Each
+expected outcomes under the earlier uncapped rule: raise 115 to 118, lower
+115 to 112, and hold at 115. Each
 scenario waited for six results and did not reuse the reviewed window. This
 experiment is labeled synthetic under `logs/challenge-1/`; it is not evidence of
 actual market trades or improved share/average price.

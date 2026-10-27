@@ -30,9 +30,9 @@ class AdaptiveOpeningTests(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def write_results(self, strong=4):
+    def write_results(self, strong=4, opening_ask=115):
         rows = [{"task": f"simulated-{i}", "item": "lamp", "event": "deal",
-                 "opening_ask": 115, "price": 115 if i < strong else 100,
+                 "opening_ask": opening_ask, "price": opening_ask if i < strong else 100,
                  "policy": pricing_state.POLICY} for i in range(6)]
         self.history.write_text("\n".join(json.dumps(row) for row in rows) + "\n",
                                 encoding="utf-8")
@@ -49,15 +49,35 @@ class AdaptiveOpeningTests(unittest.TestCase):
                 self.assertEqual(pricing_state.load_item_state(item, reserve)["ask"], price)
             harness.assert_not_called()
 
-    def test_raise_persists_and_same_results_are_not_reused(self):
+    def test_legacy_migration_does_not_reuse_old_results(self):
         self.write_results()
+        rows = [json.loads(line) for line in self.history.read_text().splitlines()]
+        for row in rows:
+            row["policy"] = pricing_state.LEGACY_POLICY
+        self.history.write_text("\n".join(json.dumps(row) for row in rows) + "\n")
+        old = {"ask": 125, "policy": pricing_state.LEGACY_POLICY,
+               "last_reviewed_task": "simulated-5"}
+        self.state.write_text(json.dumps({"lamp": old}))
+        with patch("seller_decision.call_harness") as harness:
+            self.assertEqual(seller_decision.decide_opening("lamp", 100)["price"], 115)
+            self.assertEqual(seller_decision.decide_opening("lamp", 100)["price"], 115)
+            harness.assert_not_called()
+        state = pricing_state.load_item_state("lamp", 100)
+        self.assertEqual(state["previous_policy_state"], old)
+        self.assertIsNone(state["last_reviewed_task"])
+
+    def test_raise_persists_and_same_results_are_not_reused(self):
+        state = pricing_state.load_item_state("lamp", 100)
+        state["ask"] = 110
+        pricing_state.save_item_state("lamp", 100, state)
+        self.write_results(opening_ask=110)
         with self.reply("raise") as harness:
-            self.assertEqual(seller_decision.decide_opening("lamp", 100)["price"], 118)
-            self.assertEqual(seller_decision.decide_opening("lamp", 100)["price"], 118)
+            self.assertEqual(seller_decision.decide_opening("lamp", 100)["price"], 113)
+            self.assertEqual(seller_decision.decide_opening("lamp", 100)["price"], 113)
             harness.assert_called_once()
         state = pricing_state.load_item_state("lamp", 100)
         self.assertEqual(state["last_reviewed_task"], "simulated-5")
-        self.assertEqual(state["last_review"]["previous_ask"], 115)
+        self.assertEqual(state["last_review"]["previous_ask"], 110)
         self.assertEqual(len(state["last_review"]["tasks"]), 6)
 
     def test_hold_also_consumes_window(self):
@@ -90,8 +110,27 @@ class AdaptiveOpeningTests(unittest.TestCase):
             with ThreadPoolExecutor(max_workers=2) as pool:
                 futures = [pool.submit(seller_decision.decide_opening, "lamp", 100)
                            for _ in range(2)]
-                self.assertEqual([future.result()["price"] for future in futures], [118, 118])
+                self.assertEqual([future.result()["price"] for future in futures], [115, 115])
             harness.assert_called_once()
+
+    def test_raise_at_cap_holds_and_consumes_window(self):
+        self.write_results()
+        with self.reply("raise") as harness:
+            self.assertEqual(seller_decision.decide_opening("lamp", 100)["price"], 115)
+            self.assertEqual(seller_decision.decide_opening("lamp", 100)["price"], 115)
+            harness.assert_called_once()
+        state = pricing_state.load_item_state("lamp", 100)
+        self.assertEqual(state["last_review"]["action"], "hold")
+        self.assertEqual(state["last_reviewed_task"], "simulated-5")
+
+    def test_lower_at_floor_holds(self):
+        result = seller_decision
+        self.write_results(strong=0)
+        with self.reply("lower"):
+            decision = result.decide_price_adjustment("lamp", 100, 100,
+                                                      seller_memory.load_review_window("lamp"), [])
+        self.assertEqual(decision["price"], 100)
+        self.assertEqual(decision["action"], "hold")
 
     def test_recorded_policy_matches_window_reader(self):
         seller = Seller(self.history)

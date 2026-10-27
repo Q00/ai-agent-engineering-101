@@ -13,14 +13,21 @@ DATA_DIR = Path(
 ).resolve()
 
 STATE_PATH = DATA_DIR / "pricing_state.json"
-POLICY = "adaptive-15-percent-six-results-v1"
+LEGACY_POLICY = "adaptive-15-percent-six-results-v1"
+POLICY = "adaptive-15-percent-six-results-capped-v2"
 _lock = RLock()
 
 
-def _validate(state, reserve):
+def asking_cap(reserve):
+    return (reserve * 115 + 50) // 100
+
+
+def _validate(state, reserve, legacy=False):
     if (type(state.get("ask")) is not int or state["ask"] < reserve
-            or state.get("policy") != POLICY):
+            or state.get("policy") != (LEGACY_POLICY if legacy else POLICY)):
         raise ValueError("Invalid saved asking price or pricing policy")
+    if not legacy and state["ask"] > asking_cap(reserve):
+        raise ValueError("Saved asking price exceeds the 15 percent cap")
     checkpoint = state.get("last_reviewed_task")
     if checkpoint is not None and (not isinstance(checkpoint, str) or not checkpoint):
         raise ValueError("Review checkpoint must be a task ID or null")
@@ -32,10 +39,18 @@ def load_item_state(item, reserve, path=None):
     with _lock:
         states = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
         state = states.get(item, {
-            "ask": (reserve * 115 + 50) // 100,
+            "ask": asking_cap(reserve),
             "last_reviewed_task": None,
             "policy": POLICY,
         })
+        if state.get("policy") == LEGACY_POLICY:
+            _validate(state, reserve, legacy=True)
+            state = {
+                "ask": min(state["ask"], asking_cap(reserve)),
+                "last_reviewed_task": None,
+                "policy": POLICY,
+                "previous_policy_state": dict(state),
+            }
         _validate(state, reserve)
         return dict(state)
 

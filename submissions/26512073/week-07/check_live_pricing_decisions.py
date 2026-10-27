@@ -26,7 +26,8 @@ def main():
     outcomes = []
     print(f"SYNTHETIC evidence, REAL model replies. Directory: {run}", flush=True)
     try:
-        for action, expected in [("raise", 118), ("lower", 112), ("hold", 115)]:
+        # The raise fixture starts at the new cap, so its expected price is held.
+        for action, expected in [("raise", 115), ("lower", 112), ("hold", 115)]:
             folder = run / action
             folder.mkdir()
             history_path = folder / "synthetic-history.jsonl"
