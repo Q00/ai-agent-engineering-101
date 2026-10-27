@@ -1,0 +1,46 @@
+provider=openai base_url=https://api.openai.com/v1 model=gpt-4o-mini temperature=0.0 max_tokens=300
+=== run 1 condition=baseline team=[('A', 'arithmetic and numeric computation'), ('B', 'writing and rewriting text in plain language'), ('C', 'programming, writing and debugging code')]
+
+[announce] contract 1 -> A, B, C
+  task-abstraction: Compute 137 * 249 and return only the resulting number.
+  [bid] A: bid=True confidence=95 reason=The task involves arithmetic computation, which is my skill.
+  [refuse] B: bid=False reason=The task requires computation, not text rewriting.
+  [bid] C: bid=True confidence=90 reason=The task involves programming to compute a multiplication.
+  [award] A at confidence 95 (gold A) -> correct
+
+[announce] contract 2 -> A, B, C
+  task-abstraction: A shop sold 1,284 units in March and 1,617 units in April. Compute the percentage increase, rounded to one decimal place.
+  [bid] A: bid=True confidence=95 reason=The task involves arithmetic computation of percentage increase.
+  [refuse] B: bid=False reason=This task requires mathematical computation, not text rewriting.
+  [refuse] C: bid=False reason=The task requires basic arithmetic, not my primary skills.
+  [award] A at confidence 95 (gold A) -> correct
+
+[announce] contract 3 -> A, B, C
+  task-abstraction: Rewrite this sentence in plain English for a 10-year-old: 'The committee deferred the motion pending further deliberation.'
+  [refuse] A: bid=False reason=This task requires language skills, not arithmetic.
+  [bid] B: bid=True confidence=95 reason=I can rewrite complex sentences in plain language.
+  [bid] C: bid=True confidence=85 reason=I can simplify complex sentences for better understanding.
+  [award] B at confidence 95 (gold B) -> correct
+
+[announce] contract 4 -> A, B, C
+  task-abstraction: Write a two-sentence apology email to a customer whose order shipped four days late.
+  [refuse] A: bid=False reason=This task requires writing skills, not arithmetic.
+  [bid] B: bid=True confidence=95 reason=I can effectively write a clear and concise apology email.
+  [bid] C: bid=True confidence=90 reason=The task involves writing, which is within my skill set.
+  [award] B at confidence 95 (gold B) -> correct
+
+[announce] contract 5 -> A, B, C
+  task-abstraction: Write a Python function that returns a reversed copy of a list without modifying the original.
+  [refuse] A: bid=False reason=The task requires programming skills, not arithmetic.
+  [refuse] B: bid=False reason=The task requires programming skills, not text rewriting.
+  [bid] C: bid=True confidence=95 reason=The task involves programming, which is my skill.
+  [award] C at confidence 95 (gold C) -> correct
+
+[announce] contract 6 -> A, B, C
+  task-abstraction: This Python snippet raises IndexError: 'for i in range(len(xs) + 1): print(xs[i])'. Fix the bug and explain the fix in one line.
+  [bid] A: bid=True confidence=90 reason=The task involves fixing an arithmetic error related to indexing.
+  [refuse] B: bid=False reason=The task requires debugging Python code, which is outside my skill.
+  [bid] C: bid=True confidence=95 reason=The task involves debugging Python code, which is within my skill set.
+  [award] C at confidence 95 (gold C) -> correct
+
+[result] correct=6/6 messages=34 unassigned=0 misawards=0 parse_fails=0 fence_or_prose=0 tokens=3455 calls=18
