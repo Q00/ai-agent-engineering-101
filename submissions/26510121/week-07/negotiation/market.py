@@ -88,6 +88,22 @@ def observation_count(memory):
     return max([len(memory)] + [r.get("sequence") or 0 for r in memory])
 
 
+def read_review_cautions(path, *, now=None):
+    """Only fresh, explicitly advisory local evidence may discount public reviews."""
+    if not Path(path).is_file():
+        return set()
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        age = (time.time() if now is None else now) - data['generated_epoch']
+        if (data.get('schema') != 1 or data.get('advisory_only') is not True
+                or not 0 <= age <= min(7200, data.get('max_age_seconds', 0))
+                or not isinstance(data.get('shops'), list)):
+            return set()
+        return {name for name in data['shops'] if isinstance(name, str)}
+    except (OSError, ValueError, KeyError, TypeError):
+        return set()
+
+
 def choose_shop(shops, memory, item, budget, *, require_verified=False, audit_name=None):
     """Prefer personal evidence; explore once per seven orders after six observations.
 
@@ -117,7 +133,8 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False, audit_na
         budget_fit = (2 + sum(price <= budget for price in prices)) / (3 + len(prices) + len(comparable_misses))
         reviews = shop["reviews"]
         public = (6 + sum(r["stars"] for r in reviews)) / (5 * (2 + len(reviews)))
-        bad_public = sum(r["stars"] <= 2 for r in reviews) >= 2
+        review_caution = shop.get('review_concentration_caution') is True
+        bad_public = not review_caution and sum(r["stars"] <= 2 for r in reviews) >= 2
         recent_fault = any(r.get("outcome") == "integrity_error"
                            and time.time() - r.get("epoch", 0) < 1800 for r in own)
         # Transport health is shared across items. Do not discover a broken
@@ -129,7 +146,7 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False, audit_na
         speed = 1 / (1 + (sum(speeds) / len(speeds) if speeds else 60) / 30)
         # As direct evidence grows, unverified public ratings lose influence.
         # Otherwise a burst of bad reviews could outweigh years of good dealings.
-        public_weight = 0.20 / (1 + len(informative))
+        public_weight = 0 if review_caution else 0.20 / (1 + len(informative))
         personal_weight = 0.70 - public_weight
         score = personal_weight * personal + 0.20 * budget_fit + public_weight * public + 0.10 * speed
         if recent_fault:
@@ -159,13 +176,14 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False, audit_na
     avoided = [{"name": candidate["shop"]["name"], "reason": "recent receipt integrity fault"}
                for candidate in candidates if candidate["recent_fault"] and candidate is not selected]
     evidence = {"selection_reason": reason, "avoided_for_integrity": avoided,
+                "public_reviews_discounted": selected['shop'].get('review_concentration_caution') is True,
                 "public_reviews_untrusted": selected["shop"]["reviews"],
                 "own_item_history": [r for r in memory if r["name"] == selected["shop"]["name"]
                                      and r.get("item") == item][-5:]}
     return selected["shop"], reason, evidence
 
 
-def review_trade(result, error, budget, turns):
+def review_trade(result, error, budget, turns, *, reveal_budget=True):
     if error:
         integrity = any(token in error for token in ("receipt_", "one_receipt", "task_id_changed"))
         return (1 if integrity else 2), ("Receipt/protocol validation failed: " if integrity else "Trade unavailable: ") + error
@@ -173,4 +191,5 @@ def review_trade(result, error, budget, turns):
         return 3, "No agreement within my budget; no verified purchase. This alone is not evidence of dishonesty."
     price = result["receipt"]["price"]
     stars = 5 if price <= budget * 0.9 and turns <= 4 else 4
-    return stars, f"Receipt matches item and agreed price: paid {price} within budget {budget}; {turns} price messages."
+    limit = f" within budget {budget}" if reveal_budget else "; budget limit kept private"
+    return stars, f"Receipt matches item and agreed price: paid {price}{limit}; {turns} price messages."

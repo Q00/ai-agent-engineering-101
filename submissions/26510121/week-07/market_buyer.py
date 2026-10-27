@@ -14,7 +14,7 @@ from negotiation.a2a_client import A2AClient, ProtocolError
 from negotiation.buying import negotiate
 from negotiation.config import ROOT, load_settings
 from negotiation.harness import HarnessError, ModelHarness
-from negotiation.market import choose_shop, observation_count, read_memory, read_shops, remember, review_trade
+from negotiation.market import choose_shop, observation_count, read_memory, read_shops, remember, review_trade, read_review_cautions
 from negotiation.receipts import verify_receipt
 from negotiation.runlog import RunLog
 
@@ -64,6 +64,9 @@ async def run(args):
     folder = ROOT / "logs" / "market-buyer" / datetime.now(timezone.utc).strftime("run-%Y%m%dT%H%M%S.%fZ")
     log = RunLog(folder / "buyer-events.jsonl", settings.api_key)
     shops = read_shops(args.shops, exclude_name=args.self_name)
+    cautions = read_review_cautions(ROOT / '.market' / 'review-cautions.json')
+    for candidate in shops:
+        candidate['review_concentration_caution'] = candidate['name'] in cautions
     memory = read_memory(args.memory, ROOT / "memory" / "market-verification.jsonl")
     require_verified = int(os.environ.get("MARKET_ROUND", "0")) >= 2
     shop, reason, evidence = choose_shop(shops, memory, args.item, args.budget,
@@ -97,7 +100,8 @@ async def run(args):
         error = "unexpected_market_buyer_error"
     finally:
         await client.close()
-    stars, review = review_trade(result, error, args.budget, client.turns)
+    stars, review = review_trade(result, error, args.budget, client.turns,
+                                 reveal_budget=int(os.environ.get('MARKET_ROUND', '0')) < 3)
     receipt = result.get("receipt") if not error and result.get("outcome") == "purchased" else None
     outcome = ("integrity_error" if error and stars == 1 else "unavailable" if error
                else "purchased" if receipt is not None else "no_deal")
