@@ -233,7 +233,7 @@ class HarnessSeller(AgentExecutor):
         if MODE == "volume" and offered:              # "lamp for 100": one message closes it
             deal = self.open[task.id]
             deal["history"].append({"ask": ask, "offer": offered[-1]})
-            return await self._close(task, up, say, deal, int(offered[-1]), tid)
+            return await self._close(task, up, say, deal, min(int(offered[-1]), ask), tid)
         pitch = pitch_of(ans)
         await up.requires_input(say(f"{item['name']}: asking {ask}. "
                                     + (f"{pitch} " if pitch else "")
@@ -276,6 +276,8 @@ class HarnessSeller(AgentExecutor):
         deal["history"].append({"ask": ask, "offer": offer})
 
         if offer >= ask:                                        # buyer met our price
+            if MODE == "volume":    # never charge above the ask: on 10-27 a buyer's message carried
+                offer = ask         # its id 25620027 and we sold a lamp at that number
             return await self._close(task, up, say, deal, offer, tid)
         if MODE == "volume":
             if offer >= reserve:                                # a counted deal now beats haggling
