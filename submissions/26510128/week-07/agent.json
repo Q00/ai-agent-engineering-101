@@ -1,0 +1,12 @@
+{
+  "harness": "Custom Python OpenAI-compatible decision loop; local Ollama qwen3:4b-instruct (temperature 0.2)",
+  "seller": {
+    "cmd": "python seller.py --port {port} --name JangSeongWoong"
+  },
+  "buyer": {
+    "cmd": "python buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"
+  }
+}
