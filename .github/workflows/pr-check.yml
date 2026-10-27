@@ -114,5 +114,5 @@ jobs:
           fi
           for d in $dirs; do
             echo "==> checking $d"
-            python scripts/check_week07.py "$d"
+            python scripts/check_week07.py "$d" --github "${{ github.event.pull_request.user.login }}"
           done

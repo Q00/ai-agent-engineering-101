@@ -47,6 +47,21 @@ python scripts/trade_test_week06.py submissions/<student-id>/week-07
 
 The kit and the tests need Python 3.10 or later. On Python 3.9 (the default `python3` on macOS), pip stops with `No matching distribution found for a2a-sdk[http-server]`.
 
+## The goal: your shop and buyer stay in the market
+
+Deploy your shop and your buyer so that both are in the market, under your GitHub name, until the deadline. The shop is the one you deployed in week-06 challenge 4, now signing its receipts. You also pass the market test below.
+
+- **GitHub.** Sign in at https://market.ourolabs.ai/join and copy your claim code. Agents that join with it show your GitHub name.
+- **Shop.** Deploy it as in week 6 (Workers, a VPS). The kit registers the public key of your local `shop_key.pem` even with `--deployed`, so the deployed shop signs with that key: put the private key on the server as a secret, never in the repository.
+- **Buyer.** The kit asks the market for orders and runs your buyer, so the kit itself has to keep running: start it on a machine that stays on (a VPS, a home PC). If the shop runs on that machine too, use `--tunnel` instead of `--deployed`.
+
+```bash
+MARKET_OWNER=<claim code> python scripts/market_kit.py join --dir submissions/<student-id>/week-07 \
+    --market https://market.ourolabs.ai --name <nickname> --deployed <shop URL>
+```
+
+At the deadline the instructor checks the market: your shop and buyer are running, and your buyer has at least one deal that counts under the Round 2 rules. Commit `logs/market-kit.log` from that machine.
+
 ## What to build
 
 ### The shop
@@ -115,10 +130,6 @@ Read your shop's own trades and reviews and change its asking prices from them. 
 
 Point to a dishonest shop or buyer you met in the market, from your logs, and show how your buyer came to avoid it.
 
-### Extra credit: deploy
-
-As in week 6. Register the deployed shop with `--deployed <URL>`. A deployed shop needs the private key as a secret on the server.
-
 ## What to submit
 
 Everything goes in `submissions/<student-id>/week-07/`:
@@ -128,21 +139,21 @@ Everything goes in `submissions/<student-id>/week-07/`:
 | source | Your shop, week-06 buyer and market buyer. |
 | `agent.json` | as above |
 | `test-report.json` | Written by the market test, from the current `scripts/market_test_week07.py` and the commands in `agent.json`; every run passes. |
-| `logs/` | `market-test.log` and the buyer and seller logs from the market test, and `market-kit.log` from your time in the market. |
+| `logs/` | `market-test.log` and the buyer and seller logs from the market test, and `market-kit.log` from the machine your deployed agents run on. |
 | `logs/challenge-1/`, `logs/challenge-2/` | Logs for the two challenges. |
-| `REPORT.md` | (1) how your buyer picks a shop and the format of its memory; (2) how you show reviews to the harness; (3) what happened to your shop and buyer in Rounds 0, 1 and 2, quoting dashboard numbers or logs; (4) what failed while adding signatures and what you changed; (5) challenges 1 and 2. |
+| `REPORT.md` | (1) how your buyer picks a shop and the format of its memory; (2) how you show reviews to the harness; (3) what happened to your shop and buyer in Rounds 0, 1 and 2, quoting dashboard numbers or logs; (4) what failed while adding signatures and what you changed; (5) challenges 1 and 2; (6) where and how you deployed your shop and buyer. |
 
 No `*.pem` file may be in the submission.
 
 ## Grading
 
 - **Pass or fail: the market test.**
-- **The report.** Parts (3), (4) and (5).
-- **Extra credit.** A deployed shop.
+- **The market at the deadline.** Your shop and buyer are running under your GitHub name, and your buyer has a deal that counts in Round 2.
+- **The report.** Parts (3), (4), (5) and (6).
 
 ## Checks
 
-CI verifies structure: source files parse; `agent.json` has `seller`, `buyer` and `market_buyer` with their placeholders; `test-report.json` comes from the current market test and the commands in `agent.json` with every run passing; `logs/market-test.log` and `logs/market-kit.log` exist; no `*.pem` is committed; `REPORT.md` has at least 600 characters. Run both locally first:
+CI verifies structure: source files parse; `agent.json` has `seller`, `buyer` and `market_buyer` with their placeholders; `test-report.json` comes from the current market test and the commands in `agent.json` with every run passing; `logs/market-test.log` exists and `logs/market-kit.log` has a ledger entry; the shop and buyer named in that log are in the market and linked to your GitHub account (CI passes the PR author); no `*.pem` is committed; `REPORT.md` has at least 600 characters. Run both locally first:
 
 ```bash
 python scripts/market_test_week07.py submissions/<student-id>/week-07

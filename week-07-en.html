@@ -491,7 +491,7 @@ the shop does not sign receipts yet (LAB 2), and there is no market_buyer yet (L
     <div class="code"><span class="file">terminal</span><pre>python scripts/market_kit.py join --dir submissions/&lt;student-id&gt;/week-07 \
     --market &lt;market URL&gt; --name &lt;nickname&gt; --tunnel
 <span class="cm"># Windows: drop the \ at the line ends and write it as one line</span></pre></div>
-    <p>The market URL is announced in class. <code class="inline">--tunnel</code> gives your shop a public URL through cloudflared. The tunnel URL does not open right after it is printed, so the kit waits until the card opens at that URL, then registers it. For a shop you have already deployed, use <code class="inline">--deployed &lt;URL&gt;</code> instead of <code class="inline">--tunnel</code>.</p>
+    <p>The market URL is announced in class. <code class="inline">--tunnel</code> gives your shop a public URL through cloudflared. The tunnel URL does not open right after it is printed. The shop is registered only once the card opens at that URL, so in the practice market log below it took 75 s from the <code class="inline">[tunnel]</code> line to the <code class="inline">[market]</code> line. For a shop you have already deployed, use <code class="inline">--deployed &lt;URL&gt;</code> instead of <code class="inline">--tunnel</code>.</p>
     <p>This cloudflared tunnel opens without a Cloudflare account or login. If you cannot use cloudflared, follow the table below.</p>
 
     <div class="tbl-wrap">
@@ -682,8 +682,8 @@ the shop does not sign receipts yet (LAB 2), and there is no market_buyer yet (L
         <tr><th>Condition</th><th>Round 0</th><th>Round 1</th></tr>
         <tr><td class="stage">Choice</td><td>The kit decides the shop</td><td>The buyer picks from the registry</td></tr>
         <tr><td class="stage">Repetition</td><td>Orders keep coming, but each is like a first trade</td><td>The buyer can meet the same shop again</td></tr>
-        <tr><td class="stage">Memory</td><td>None</td><td>The buyer carries its own trade records in a file</td></tr>
-        <tr><td class="stage">Information</td><td>None</td><td>Reviews on the review board</td></tr>
+        <tr><td class="stage">Memory</td><td>No past trades are kept</td><td>The buyer carries its own trade records in a file</td></tr>
+        <tr><td class="stage">Information</td><td>No reviews to read</td><td>Reviews on the review board</td></tr>
       </table>
     </div>
 
@@ -1001,15 +1001,27 @@ verify forged -&gt; InvalidSignature</pre></div>
 <section>
   <div class="col">
     <div class="secmark"><span class="no">HW</span><h2>The always-on market</h2></div>
-    <p>After class the market keeps running with the Round 2 rules. Leave your shop and buyer in the market, and pass the fixed market test.</p>
+    <p>After class the market keeps running with the Round 2 rules. The goal of the assignment is to deploy your shop and buyer and keep them in the market until the deadline. You build on the shop you deployed in week-06 challenge 4. You also pass the fixed market test.</p>
 
     <div class="tbl-wrap">
       <table>
         <tr><th>Part</th><th>Must do</th></tr>
         <tr><td class="stage">Shop</td><td>Answers at the card URL registered with the registry. Never asks or sells below the reserve. Adds <code class="inline">sig_seller</code> to receipts</td></tr>
         <tr><td class="stage">Buyer</td><td>Stays within the order's budget. Prints a result line (receipt, stars, review) for every trade, and logs why it picked the shop</td></tr>
+        <tr><td class="stage">Market</td><td>At the deadline your shop and buyer are running in the market under your GitHub name, and your buyer has at least one deal that counts under the Round 2 rules</td></tr>
       </table>
     </div>
+
+    <h3><span class="tag">DEPLOY</span>Deploying the shop and the buyer</h3>
+    <p>Your agents have to stay in the market after you close your laptop. The kit takes the orders and runs your buyer, so start the kit on a machine that stays on (a VPS, a PC left on at home).</p>
+    <div class="recorder">
+      <div><span class="k">GitHub</span><span class="v">Sign in at <code class="inline">https://market.ourolabs.ai/join</code> and get your claim code. A shop and buyer that join with it show your GitHub name</span></div>
+      <div><span class="k">Shop</span><span class="v">Deploy it to Workers or a VPS as in week 6. The kit registers the public key of <code class="inline">shop_key.pem</code> when you register with <code class="inline">--deployed</code> too, so the deployed shop signs with this key. Put the private key on the server as a secret and never commit it</span></div>
+      <div><span class="k">Buyer</span><span class="v">Start the kit with the command below on the machine that stays on. If the shop runs on that machine too, use <code class="inline">--tunnel</code> instead of <code class="inline">--deployed</code></span></div>
+    </div>
+    <div class="code"><span class="file">on the machine that stays on</span><pre>MARKET_OWNER=&lt;claim code&gt; python scripts/market_kit.py join --dir submissions/&lt;student-id&gt;/week-07 \
+    --market https://market.ourolabs.ai --name &lt;nickname&gt; --deployed &lt;shop URL&gt;</pre></div>
+    <p>Put that machine's <code class="inline">logs/market-kit.log</code> in your submission.</p>
     <div class="code"><span class="file">market test</span><pre>python scripts/market_test_week07.py submissions/&lt;student-id&gt;/week-07
 python scripts/check_week07.py submissions/&lt;student-id&gt;/week-07</pre></div>
     <div class="tbl-wrap">
@@ -1023,22 +1035,28 @@ python scripts/check_week07.py submissions/&lt;student-id&gt;/week-07</pre></div
         <tr><td class="stage">buyer_reads_reviews</td><td>of two shops that behave the same, only the first has bad reviews. In at least 2 of 3 runs the buyer sends nothing to the shop with bad reviews and goes to the other one</td></tr>
       </table>
     </div>
-    <p>All runs must pass. The reference implementation (Claude Code, haiku) passed all 25, and the week-06 reference shop, which does not sign, failed the three <code class="inline">seller_signed_receipt</code> runs. If you change the commands in <code class="inline">agent.json</code>, run the market test again. On top of this, <code class="inline">check_week07.py</code> checks that <code class="inline">logs/market-kit.log</code> has ledger lines from trades in the market, that <code class="inline">REPORT.md</code> has at least 600 characters, and that no <code class="inline">*.pem</code> is committed.</p>
+    <p>All runs must pass. The reference implementation (Claude Code, haiku) passed all 25, and the week-06 reference shop, which does not sign, failed the three <code class="inline">seller_signed_receipt</code> runs. If you change the commands in <code class="inline">agent.json</code>, run the market test again.</p>
+    <p>What <code class="inline">check_week07.py</code> checks along with the market test results.</p>
+    <div class="recorder">
+      <div><span class="k">Log</span><span class="v"><code class="inline">logs/market-kit.log</code> has ledger lines from trades in the market</span></div>
+      <div><span class="k">Market</span><span class="v">the shop and buyer named in that log are registered in the market under your GitHub name</span></div>
+      <div><span class="k">Report</span><span class="v"><code class="inline">REPORT.md</code> has at least 600 characters</span></div>
+      <div><span class="k">Keys</span><span class="v">no <code class="inline">*.pem</code> is committed</span></div>
+    </div>
 
     <ol class="pre">
       <li><b class="lead">Shop: change your prices (required).</b> Your shop reads its own trades and reviews and changes its asking prices on its own. The reserves stay. Show share and average deal price before and after the change, from the dashboard or your logs.</li>
       <li><b class="lead">Buyer: dishonest participants (required).</b> Point to a dishonest shop or buyer you met in the market, from your logs, and show how your buyer came to avoid it.</li>
-      <li><b class="lead">Deploy (extra credit).</b> Same as week-06 challenge 4. A deployed shop takes trades even when there is no class. The kit registers the public key of <code class="inline">shop_key.pem</code> when you register with <code class="inline">--deployed</code> too, so the deployed shop signs with this key as well. Put the private key on the server as a secret and never commit it.</li>
     </ol>
 
     <div class="hw">
       <div class="head">ASSIGNMENT: WEEK 07</div>
       <div class="body">
         <div class="due">DUE: before the start of next week's class (judged by the PR open timestamp)</div>
-        <p><strong>Submit</strong>: the code of your shop and buyer, <code class="inline">agent.json</code> (with the <code class="inline">market_buyer</code> command added), the <code class="inline">test-report.json</code> and <code class="inline">logs/</code> that the market test wrote, the logs of challenges 1 and 2 (<code class="inline">logs/challenge-1/</code>, <code class="inline">logs/challenge-2/</code>), and <code class="inline">REPORT.md</code>.</p>
-        <p><strong>REPORT.md</strong>: (1) How your buyer picks a shop, and the format of its memory. (2) How you showed reviews to the harness. (3) What happened to your shop and buyer in Rounds 0, 1 and 2. Quote dashboard numbers or logs. (4) What failed while adding signatures, and what you changed. (5) Challenges 1 and 2.</p>
+        <p><strong>Submit</strong>: the code of your shop and buyer, <code class="inline">agent.json</code> (with the <code class="inline">market_buyer</code> command added), the <code class="inline">test-report.json</code> and <code class="inline">logs/</code> that the market test wrote, the logs of challenges 1 and 2 (<code class="inline">logs/challenge-1/</code>, <code class="inline">logs/challenge-2/</code>), <code class="inline">logs/market-kit.log</code> from the machine you deployed to, and <code class="inline">REPORT.md</code>.</p>
+        <p><strong>REPORT.md</strong>: (1) How your buyer picks a shop, and the format of its memory. (2) How you showed reviews to the harness. (3) What happened to your shop and buyer in Rounds 0, 1 and 2. Quote dashboard numbers or logs. (4) What failed while adding signatures, and what you changed. (5) Challenges 1 and 2. (6) Where and how you deployed your shop and buyer.</p>
         <p><strong>Format</strong>: commit to <code class="inline">submissions/&lt;student-id&gt;/week-07/</code> in your fork and open a PR upstream. Details are in <code class="inline">weeks/week-07/README.md</code>.</p>
-        <p><strong>Grading</strong>: whether the market test passes, and parts (3), (4) and (5) of the report. Extra credit for a deployed shop.</p>
+        <p><strong>Grading</strong>: whether the market test passes, your shop and buyer running in the market at the deadline, and parts (3), (4), (5) and (6) of the report.</p>
       </div>
     </div>
 

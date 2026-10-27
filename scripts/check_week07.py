@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Structural checks for the week-07 submission. CI runs exactly this.
 
-Usage: python scripts/check_week07.py submissions/<student-id>/week-07
+Usage: python scripts/check_week07.py submissions/<student-id>/week-07 [--github <login>]
 
 CI cannot run your harness (it needs your login), so it does not run the market
 test. It checks that you ran the current market test yourself and that it passed:
@@ -9,12 +9,21 @@ test-report.json must come from scripts/market_test_week07.py as it is in this
 repository, with every test present and passing. The instructor may rerun the
 market test with the commands in your agent.json. Private keys (*.pem) must not
 be in the submission.
+
+The market check reads the names your kit registered from logs/market-kit.log and
+looks them up on the market: a shop and a buyer under that name must exist, linked
+to a GitHub account (MARKET_OWNER from the market's join page). With --github (CI
+passes the PR author) that account must be yours. Whether they are still running at
+the deadline is checked by the instructor on the market, not here.
 """
 import ast
 import hashlib
 import json
+import os
+import re
 import subprocess
 import sys
+import urllib.request
 from collections import Counter
 from pathlib import Path
 
@@ -25,6 +34,7 @@ REQUIRED = {                     # test name -> runs the market test records
     "buyer_protocol_holds_budget": 3, "buyer_reads_reviews": 1,
 }
 MIN_REPORT_CHARS = 600
+MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai").rstrip("/")
 
 
 def fail(msg: str):
@@ -132,6 +142,36 @@ def check_no_keys(sub: Path):
         ok("no *.pem files")
 
 
+def check_market(sub: Path, github):
+    log = sub / "logs" / "market-kit.log"
+    text = log.read_text(encoding="utf-8", errors="ignore") if log.is_file() else ""
+    names = {role: re.findall(rf"\[market\] {role} registered as (.+?), round \d+", text) for role in ("shop", "buyer")}
+    if not names["shop"] or not names["buyer"]:
+        fail("logs/market-kit.log has no '[market] shop registered' and '[market] buyer registered' lines; "
+             "commit the kit log from the machine your agents run on")
+        return
+    shop, buyer = names["shop"][-1], names["buyer"][-1]
+    try:
+        with urllib.request.urlopen(f"{MARKET}/api/board?round=2", timeout=20) as r:
+            board = json.load(r)
+    except Exception as e:
+        fail(f"cannot read {MARKET}/api/board ({type(e).__name__}); try again later")
+        return
+    for role, name, rows in (("shop", shop, board["shops"]), ("buyer", buyer, board["buyers"])):
+        row = next((x for x in rows if x["name"] == name), None)
+        if row is None:
+            fail(f"the market has no {role} named {name!r}")
+            continue
+        owner = (row.get("owner") or {}).get("login")
+        if not owner:
+            fail(f"{role} {name!r} is not linked to GitHub; join again with MARKET_OWNER=<claim code> from {MARKET}/join")
+        elif github and owner.lower() != github.lower():
+            fail(f"{role} {name!r} belongs to @{owner}, not @{github}")
+        else:
+            state = "running now" if row.get("alive") else "not running now"
+            ok(f"market: {role} {name!r} of @{owner}, {state}, {row.get('deals', 0)} counted deal(s) in Round 2")
+
+
 def check_report_md(sub: Path):
     p = sub / "REPORT.md"
     if not p.is_file():
@@ -145,9 +185,14 @@ def check_report_md(sub: Path):
 
 
 def main():
-    if len(sys.argv) != 2:
+    args = sys.argv[1:]
+    github = None
+    if len(args) == 3 and args[1] == "--github":
+        github = args[2]
+        args = args[:1]
+    if len(args) != 1:
         sys.exit(__doc__)
-    sub = Path(sys.argv[1])
+    sub = Path(args[0])
     if not sub.is_dir():
         print(f"FAIL  {sub} is not a directory")
         sys.exit(1)
@@ -155,6 +200,7 @@ def main():
     cfg = check_agent_json(sub)
     check_report_json(sub, cfg)
     check_logs(sub)
+    check_market(sub, github)
     check_no_keys(sub)
     check_report_md(sub)
     if fail.count:

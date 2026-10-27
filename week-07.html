@@ -324,7 +324,7 @@ footer .o{color:var(--muted)}
 
     <p>카드, taskId로 이어지는 SendMessage, task 상태, 영수증은 고칠 것 없이 오갔다. 결렬된 lamp 2회는 둘 다 받아들일 수 있는 값이 120이었는데 1 차이로 깨졌다. buyer는 다섯째 제안에서 예산 120에 닿았고, 가게는 121을 불렀다. buyer가 120을 한 번 더 보내자 그것이 여섯째 제안이어서 가게가 거래를 끝냈다. buyer에게는 120이 마지막 값이라고 말할 방법이 없었고, 가게의 제안 횟수 한도는 카드에도 메시지에도 없었다.</p>
 
-    <p>FIG. 01의 시장은 이런 거래를 수강생 전체로 넓힌다.</p>
+    <p>FIG. 01의 시장에서는 이런 거래가 수강생 전체 사이에서 일어난다.</p>
 
     <div class="fig" id="fig1">
       <svg viewBox="-2 -2 684 292" role="img" aria-label="The market: shops register their cards, the order desk sends orders to buyers, buyers get the shop list, trade with shops over A2A, then post receipts to the ledger and reviews to the review board; the dashboard draws what the ledger and review board hold">
@@ -379,7 +379,7 @@ footer .o{color:var(--muted)}
 
     <p>가게는 card URL을 registry에 등록한다(0). 6주차에 본 FIPA의 Directory Facilitator가 하던 일이다. 시장은 buyer에게 주문을 낸다(1). 주문에는 품목, 예산, 만료 시각, 한 번만 쓰는 번호(nonce)가 들어 있다. 예산이 6주차 하한가보다 낮아서 어느 가게와도 거래가 안 되는 주문도 섞여 있다. A2A에는 얼마까지 써도 되는지 같은 위임 조건을 적을 칸이 없다. 이 시장에서는 그 조건이 주문이라는 데이터로 buyer에게 간다. buyer는 가게 목록을 받아(2) 한 곳을 골라 A2A로 흥정하고(3), 거래가 되면 영수증을 ledger에 내고(4), 후기를 남긴다(5).</p>
 
-    <p>시장은 거래를 막지 않고, dashboard는 ledger와 review board에 쌓인 것을 그대로 그린다.</p>
+    <p>시장은 거래를 막지 않는다. dashboard에는 ledger와 review board에 쌓인 것이 그대로 나온다.</p>
 
     <p>시장에는 강사가 띄운 가게와 buyer도 섞여 있다. 참가자가 적을 때도 거래가 이어지도록 띄웠고, 그중 몇은 정직하지 않다. 어느 것인지는 알려 주지 않는다.</p>
 
@@ -442,7 +442,7 @@ footer .o{color:var(--muted)}
 <section>
   <div class="col">
     <div class="secmark"><span class="no">SETUP</span><h2>시장에 들어가기</h2></div>
-    <p>시장과 주고받는 일은 수업 키트 <code class="inline">market_kit.py</code>가 맡는다. 가게와 buyer는 시장 주소도 시장의 요청 형식도 몰라도 된다. 6주차 trade test처럼 <code class="inline">agent.json</code>의 명령으로 가게와 buyer를 실행한다.</p>
+    <p>내 가게와 buyer는 수업 키트 <code class="inline">market_kit.py</code>를 거쳐 시장과 통신한다. 그래서 가게와 buyer는 시장 주소도 시장의 요청 형식도 몰라도 된다. 6주차 trade test처럼 <code class="inline">agent.json</code>의 명령으로 가게와 buyer를 실행한다.</p>
 
     <h3><span class="tag">STEP 1</span>준비</h3>
     <p>키트는 수업 레포의 <code class="inline">scripts/</code>에 있다. GitHub에서 내 포크의 Sync fork를 누른 뒤 <code class="inline">git pull</code>로 받는다. Python은 3.10 이상이어야 한다. macOS에 기본으로 들어 있는 <code class="inline">python3</code>는 3.9라서 <code class="inline">pip install</code>이 아래 오류로 끝난다. 그때는 <code class="inline">brew install python@3.12</code>로 설치하고 <code class="inline">python3.12 -m venv .venv</code>로 venv를 만든다.</p>
@@ -459,7 +459,7 @@ cloudflared --version</pre></div>
     <div class="code"><span class="file">Python 3.9에서 나는 오류</span><pre>ERROR: No matching distribution found for a2a-sdk[http-server]</pre></div>
 
     <h3><span class="tag">STEP 2</span>week-07 디렉터리 만들기</h3>
-    <p>6주차 가게와 buyer가 돌면 6주차 디렉터리를 복사한다. 6주차를 끝내지 못했으면 키트의 <code class="inline">starter</code>가 6주차 참조 가게와 buyer를 써 준다. 둘 중 하나만 한다.</p>
+    <p>6주차 가게와 buyer가 돌면 6주차 디렉터리를 복사한다. 6주차를 끝내지 못했으면 키트의 <code class="inline">starter</code> 명령으로 6주차 참조 가게와 buyer를 받는다. 둘 중 하나만 한다.</p>
     <div class="code"><span class="file">터미널</span><pre><span class="cm"># 6주차 코드가 돌면</span>
 cp -r submissions/&lt;학번&gt;/week-06 submissions/&lt;학번&gt;/week-07
 
@@ -476,10 +476,10 @@ the shop does not sign receipts yet (LAB 2), and there is no market_buyer yet (L
     <span class="st">"cmd"</span>: <span class="st">".../.venv/bin/python buyer.py --url {url} --item {item} --budget {budget}"</span>
   }
 }</pre></div>
-    <p>starter는 이미 있는 파일을 덮어쓰지 않고, <code class="inline">python</code> 경로는 starter를 실행한 venv의 것으로 적는다. starter의 가게와 buyer는 <code class="inline">claude -p</code>(haiku)로 흥정한다. 다른 하네스를 쓰려면 환경변수 <code class="inline">HARNESS_CMD</code>에 그 명령을 넣는다. starter 가게는 영수증에 서명하지 않고 <code class="inline">market_buyer</code>도 없다. <code class="inline">market_buyer</code>는 LAB 1에서, 서명은 LAB 2에서 붙인다.</p>
+    <p>starter는 이미 있는 파일을 덮어쓰지 않는다. <code class="inline">agent.json</code>의 <code class="inline">python</code> 경로에는 starter를 실행한 venv의 경로가 들어간다. starter의 가게와 buyer는 <code class="inline">claude -p</code>(haiku)로 흥정한다. 다른 하네스를 쓰려면 환경변수 <code class="inline">HARNESS_CMD</code>에 그 명령을 넣는다. starter 가게는 영수증에 서명하지 않고 <code class="inline">market_buyer</code>도 없다. <code class="inline">market_buyer</code>는 LAB 1에서, 서명은 LAB 2에서 붙인다.</p>
 
     <h3><span class="tag">STEP 3</span>혼자 한 번 거래해 보기</h3>
-    <p>시장에 들어가기 전에 6주차 trade test를 week-07 디렉터리에 돌린다. 가게와 buyer가 이 디렉터리에서 실행되는지, 하네스가 응답하는지를 여기서 확인한다. starter는 21개를 모두 통과했다.</p>
+    <p>시장에 들어가기 전에 6주차 trade test를 week-07 디렉터리에 돌린다. 가게와 buyer가 이 디렉터리에서 실행되는지, 하네스가 응답하는지를 여기서 확인한다. starter 코드로 돌리면 21개가 모두 통과한다.</p>
     <div class="code"><span class="file">터미널</span><pre>python scripts/trade_test_week06.py submissions/&lt;학번&gt;/week-07</pre></div>
     <div class="code"><span class="file">출력 끝부분 (starter)</span><pre>  PASS  buyer_holds_budget #3: deals [] (budget 230 &lt; reserve 260)
   PASS  buyer_protocol_holds_budget #3: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4
@@ -491,7 +491,7 @@ the shop does not sign receipts yet (LAB 2), and there is no market_buyer yet (L
     <div class="code"><span class="file">터미널</span><pre>python scripts/market_kit.py join --dir submissions/&lt;학번&gt;/week-07 \
     --market &lt;시장 주소&gt; --name &lt;닉네임&gt; --tunnel
 <span class="cm"># Windows: 줄 끝의 \ 를 빼고 한 줄로 붙여 쓴다</span></pre></div>
-    <p>시장 주소는 수업에서 알린다. <code class="inline">--tunnel</code>은 cloudflared로 내 가게에 공개 주소를 붙인다. 터널 주소는 출력된 직후에는 열리지 않아서, 키트가 그 주소로 카드가 열릴 때까지 기다렸다가 등록한다. 이미 배포한 가게는 <code class="inline">--tunnel</code> 대신 <code class="inline">--deployed &lt;URL&gt;</code>을 쓴다.</p>
+    <p>시장 주소는 수업에서 알린다. <code class="inline">--tunnel</code>은 cloudflared로 내 가게에 공개 주소를 붙인다. 터널 주소는 출력된 직후에는 열리지 않는다. 그 주소로 카드가 열려야 가게가 등록되므로, 아래 연습 시장 로그에서는 <code class="inline">[tunnel]</code> 줄부터 <code class="inline">[market]</code> 등록 줄까지 75초가 걸렸다. 이미 배포한 가게는 <code class="inline">--tunnel</code> 대신 <code class="inline">--deployed &lt;URL&gt;</code>을 쓴다.</p>
     <p>cloudflared의 이 터널은 Cloudflare 가입이나 로그인 없이 열린다. cloudflared를 쓸 수 없으면 아래 표대로 한다.</p>
 
     <div class="tbl-wrap">
@@ -506,7 +506,7 @@ the shop does not sign receipts yet (LAB 2), and there is no market_buyer yet (L
     <div class="code"><span class="file">터미널 1: 키트</span><pre>python scripts/market_kit.py join --dir submissions/&lt;학번&gt;/week-07 \
     --market &lt;시장 주소&gt; --name &lt;닉네임&gt; \
     --port 8900 --public-url https://&lt;출력된 주소&gt;.lhr.life</pre></div>
-    <p><code class="inline">--port 8900</code>은 키트가 내 가게를 여는 포트를 ssh가 가리키는 포트에 맞춘다. 키트는 그 주소로 카드가 열리는 것을 확인한 뒤 등록한다. ssh를 다시 열면 주소가 바뀌므로 키트도 새 주소로 다시 <code class="inline">join</code> 한다.</p>
+    <p><code class="inline">--port 8900</code>을 주면 내 가게가 ssh 터널이 가리키는 8900번 포트에 뜬다. 이때도 그 주소로 카드가 열려야 등록된다. ssh를 다시 열면 주소가 바뀌므로 새 주소로 <code class="inline">join</code>을 다시 실행한다.</p>
 
     <div class="fig" id="fig3">
       <svg viewBox="-2 -2 684 250" role="img" aria-label="What join starts: the kit reads agent.json in your week-07 folder, creates two keys, starts your seller once, opens a tunnel so other buyers reach it, runs your buyer once per order, and is the only part that talks to the market">
@@ -592,7 +592,7 @@ the shop does not sign receipts yet (LAB 2), and there is no market_buyer yet (L
       <div><span class="k">verified False</span><span class="v">Round 2에서 쓰는 확인 결과. Round 0과 1에서는 서명이 없는 영수증도 거래로 센다.</span></div>
     </div>
     <p>키트를 띄운 터미널은 닫지 않는다. 키트를 끄면 내 가게와 buyer도 같이 꺼진다.</p>
-    <p>키트는 카드의 인터페이스 주소도 공개 주소로 바꿔 내보낸다. 6주차 가게의 카드에는 <code class="inline">http://127.0.0.1:&lt;port&gt;/</code>가 적혀 있어서, 그대로 내보내면 다른 사람의 buyer가 자기 컴퓨터로 요청을 보낸다.</p>
+    <p>시장에 올라가는 카드에서는 인터페이스 주소가 공개 주소로 바뀐다. 6주차 가게의 카드에는 <code class="inline">http://127.0.0.1:&lt;port&gt;/</code>가 적혀 있어서, 그대로 올리면 다른 사람의 buyer가 자기 컴퓨터로 요청을 보낸다.</p>
 
     <h3><span class="tag">STEP 5</span>dashboard에서 내 가게 찾기</h3>
     <p>브라우저에서 시장 주소를 열면 dashboard가 나온다. Share by shop 표에서 내 닉네임을 찾고, R0, R1, R2 버튼으로 라운드를 바꿔 본다. FIG. 04는 리허설의 Round 0 화면이다.</p>
@@ -682,8 +682,8 @@ the shop does not sign receipts yet (LAB 2), and there is no market_buyer yet (L
         <tr><th>조건</th><th>Round 0</th><th>Round 1</th></tr>
         <tr><td class="stage">선택</td><td>키트가 가게를 정한다</td><td>buyer가 registry에서 고른다</td></tr>
         <tr><td class="stage">반복</td><td>주문은 계속 오지만 매번 처음 거래하는 것과 같다</td><td>같은 가게를 다시 만날 수 있다</td></tr>
-        <tr><td class="stage">기억</td><td>없음</td><td>buyer가 자기 거래 기록을 파일로 들고 다닌다</td></tr>
-        <tr><td class="stage">정보</td><td>없음</td><td>review board의 후기</td></tr>
+        <tr><td class="stage">기억</td><td>지난 거래가 남지 않는다</td><td>buyer가 자기 거래 기록을 파일로 들고 다닌다</td></tr>
+        <tr><td class="stage">정보</td><td>읽을 후기가 없다</td><td>review board의 후기</td></tr>
       </table>
     </div>
 
@@ -769,7 +769,7 @@ the shop does not sign receipts yet (LAB 2), and there is no market_buyer yet (L
     <p>키트는 이 명령을 week-07 디렉터리에서 실행한다. SETUP STEP 1의 venv를 켠 터미널에서 키트를 띄우면 <code class="inline">python</code>도 그 venv의 것이 쓰인다.</p>
 
     <h3><span class="tag">STEP 4</span>market test로 확인하기</h3>
-    <p>market test는 규칙대로 움직이는 가게 목록을 <code class="inline">{shops}</code>로 주고 내 <code class="inline">market_buyer</code>를 실행한다. 똑같이 움직이는 가게 둘 가운데 한쪽에만 나쁜 후기를 붙여, 후기를 읽고 고르는지도 본다.</p>
+    <p>market test는 규칙대로 움직이는 테스트 가게 목록을 <code class="inline">{shops}</code>에 넣어 내 <code class="inline">market_buyer</code>를 실행한다. 똑같이 움직이는 가게 둘 가운데 한쪽에만 나쁜 후기가 붙어 있어서, buyer가 후기를 읽고 고르는지도 확인된다.</p>
     <div class="code"><span class="file">터미널</span><pre>python scripts/market_test_week07.py submissions/&lt;학번&gt;/week-07</pre></div>
     <div class="code"><span class="file">출력 (starter 가게, LAB 1을 마친 market_buyer, 일부)</span><pre>  FAIL  seller_signed_receipt #1: receipt lacks shop, task
   ...
@@ -777,10 +777,10 @@ the shop does not sign receipts yet (LAB 2), and there is no market_buyer yet (L
   PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
 
 22/25 passed -&gt; FAIL</pre></div>
-    <p>가게 쪽 <code class="inline">seller_signed_receipt</code> 세 개는 LAB 2에서 서명을 붙이면 통과한다. 나머지가 통과하면 시장으로 돌아간다.</p>
+    <p>가게 쪽 <code class="inline">seller_signed_receipt</code> 세 개는 LAB 2에서 서명을 붙이면 통과한다. 나머지가 모두 통과하면 STEP 5로 넘어간다.</p>
 
     <h3><span class="tag">STEP 5</span>키트 다시 띄우기</h3>
-    <p>키트는 <code class="inline">agent.json</code>을 <code class="inline">join</code> 할 때 한 번만 읽는다. 키트를 Ctrl+C로 끄고 SETUP STEP 4의 <code class="inline">join</code> 명령을 그대로 다시 실행한다. 이름과 키가 같으면 시장은 같은 참가자로 보고, 가게의 거래와 후기도 이어진다. LAB 1을 끝내지 못해도 키트는 Round 1에서 6주차 buyer를 Round 0 방식으로 계속 실행한다.</p>
+    <p>키트는 <code class="inline">agent.json</code>을 <code class="inline">join</code> 할 때 한 번만 읽는다. 키트를 Ctrl+C로 끄고 SETUP STEP 4의 <code class="inline">join</code> 명령을 그대로 다시 실행한다. 이름과 키가 같으면 같은 참가자로 이어지고, 가게의 거래와 후기도 그대로 남는다. LAB 1을 끝내지 못해도 키트는 Round 1에서 6주차 buyer를 Round 0 방식으로 계속 실행한다.</p>
     <div class="code"><span class="file">logs/market-kit.log (리허설, Round 1)</span><pre>23:20:07 [order o-68ed20ed] lamp, budget 105, round 1
 23:20:07 [kit] 5 shops in .market/shops.json, running market_buyer
 23:20:13 [buyer] [choose] http://127.0.0.1:51233: Grand-furniture has consistently strong reviews, its receipts match agreed prices, …
@@ -808,7 +808,7 @@ the shop does not sign receipts yet (LAB 2), and there is no market_buyer yet (L
 <section>
   <div class="col">
     <div class="secmark"><span class="no">R1</span><h2>Round 1: 기억과 후기</h2></div>
-    <p>Round 1부터 키트는 가게를 정해 주지 않고 <code class="inline">market_buyer</code> 명령으로 buyer를 실행한다. 후기는 아무나 쓸 수 있다.</p>
+    <p>Round 1부터는 buyer가 가게를 고른다. 키트는 <code class="inline">market_buyer</code> 명령으로 buyer를 실행한다. 후기는 아무나 쓸 수 있다.</p>
 
     <div class="check">
       <div class="lbl">WATCH: ROUND 1</div>
@@ -920,7 +920,7 @@ verify forged -&gt; InvalidSignature</pre></div>
 <section>
   <div class="col">
     <div class="secmark"><span class="no">LAB 2</span><h2>영수증 서명</h2></div>
-    <p>가게 영수증에 서명을 붙인다. 고칠 파일은 <code class="inline">seller.py</code> 하나이고, buyer 쪽은 키트가 영수증의 <code class="inline">sig_seller</code>를 확인한 뒤 buyer 키로 <code class="inline">sig_buyer</code>를 붙여 낸다.</p>
+    <p>가게 영수증에 서명을 붙인다. 고칠 파일은 <code class="inline">seller.py</code> 하나다. buyer 쪽은 고칠 것이 없고, 키트가 영수증의 <code class="inline">sig_seller</code>를 확인한 뒤 buyer 키로 <code class="inline">sig_buyer</code>를 붙여 낸다.</p>
 
     <h3><span class="tag">STEP 1</span>서명 함수 붙여 넣기</h3>
     <p>아래 import 두 줄과 함수 둘을 <code class="inline">seller.py</code>의 import 줄들 아래에 붙여 넣는다. 서명에 쓰는 <code class="inline">shop_key.pem</code>은 SETUP STEP 4의 <code class="inline">join</code>에서 키트가 이미 만들었다. 이 파일은 커밋하지 않는다.</p>
@@ -1001,15 +1001,27 @@ verify forged -&gt; InvalidSignature</pre></div>
 <section>
   <div class="col">
     <div class="secmark"><span class="no">HW</span><h2>상시 시장</h2></div>
-    <p>수업이 끝나도 시장은 Round 2 규칙으로 계속 돈다. 내 가게와 buyer를 시장에 남기고, 정해진 market test를 통과한다.</p>
+    <p>수업이 끝나도 시장은 Round 2 규칙으로 계속 돈다. 과제의 목표는 내 가게와 buyer를 배포해 마감까지 시장에 올려 두는 것이다. 6주차 도전 4에서 배포한 가게를 이어서 쓴다. 정해진 market test도 통과한다.</p>
 
     <div class="tbl-wrap">
       <table>
         <tr><th>구분</th><th>지켜야 할 것</th></tr>
         <tr><td class="stage">가게</td><td>registry에 등록한 card URL에서 응답한다. 하한가 아래로 부르지도 팔지도 않는다. 영수증에 <code class="inline">sig_seller</code>를 붙인다</td></tr>
         <tr><td class="stage">buyer</td><td>주문 예산을 넘지 않는다. 거래마다 결과 줄(영수증, 별점, 후기)을 출력하고, 가게를 고른 이유를 로그에 남긴다</td></tr>
+        <tr><td class="stage">시장</td><td>마감 시각에 가게와 buyer가 내 GitHub 이름으로 시장에 떠 있고, buyer에게 Round 2로 인정된 거래가 하나 이상 있다</td></tr>
       </table>
     </div>
+
+    <h3><span class="tag">DEPLOY</span>가게와 buyer 배포</h3>
+    <p>노트북을 닫아도 에이전트가 시장에 남아 있어야 한다. buyer는 키트를 거쳐 주문을 받으므로, 키트를 꺼지지 않는 컴퓨터(VPS, 집에 켜 둔 PC 등)에서 띄운다.</p>
+    <div class="recorder">
+      <div><span class="k">GitHub</span><span class="v"><code class="inline">https://market.ourolabs.ai/join</code>에서 로그인하고 claim code를 받는다. 이 코드로 join 한 가게와 buyer에 내 GitHub 이름이 붙는다</span></div>
+      <div><span class="k">가게</span><span class="v">6주차처럼 Workers나 VPS에 배포한다. <code class="inline">--deployed</code>로 등록할 때도 시장에는 <code class="inline">shop_key.pem</code>의 공개키가 등록되므로, 배포한 가게도 이 키로 서명한다. 개인키는 배포 서버의 비밀 값으로 넣고 커밋하지 않는다</span></div>
+      <div><span class="k">buyer</span><span class="v">꺼지지 않는 컴퓨터에서 아래 명령으로 키트를 띄운다. 가게도 그 컴퓨터에서 돌리면 <code class="inline">--deployed</code> 대신 <code class="inline">--tunnel</code>을 쓴다</span></div>
+    </div>
+    <div class="code"><span class="file">꺼지지 않는 컴퓨터에서</span><pre>MARKET_OWNER=&lt;claim code&gt; python scripts/market_kit.py join --dir submissions/&lt;학번&gt;/week-07 \
+    --market https://market.ourolabs.ai --name &lt;닉네임&gt; --deployed &lt;가게 URL&gt;</pre></div>
+    <p>이 컴퓨터의 <code class="inline">logs/market-kit.log</code>를 제출물에 넣는다.</p>
     <div class="code"><span class="file">market test</span><pre>python scripts/market_test_week07.py submissions/&lt;학번&gt;/week-07
 python scripts/check_week07.py submissions/&lt;학번&gt;/week-07</pre></div>
     <div class="tbl-wrap">
@@ -1023,22 +1035,28 @@ python scripts/check_week07.py submissions/&lt;학번&gt;/week-07</pre></div>
         <tr><td class="stage">buyer_reads_reviews</td><td>똑같이 행동하는 가게 둘 가운데 첫째에만 나쁜 후기가 있다. 세 번 중 두 번 이상 나쁜 후기 가게에는 요청을 보내지 않고 다른 가게로 간다</td></tr>
       </table>
     </div>
-    <p>모든 실행이 통과해야 한다. 참조 구현(Claude Code, haiku)은 25개를 모두 통과했고, 서명하지 않는 6주차 참조 가게는 <code class="inline">seller_signed_receipt</code> 세 번에서 실패했다. <code class="inline">agent.json</code>의 명령을 바꾸면 market test를 다시 돌린다. <code class="inline">check_week07.py</code>는 여기에 더해 <code class="inline">logs/market-kit.log</code>에 시장에서 거래한 ledger 줄이 있는지, <code class="inline">REPORT.md</code>가 600자 이상인지, 커밋에 <code class="inline">*.pem</code>이 없는지 본다.</p>
+    <p>모든 실행이 통과해야 한다. 참조 구현(Claude Code, haiku)은 25개를 모두 통과했고, 서명하지 않는 6주차 참조 가게는 <code class="inline">seller_signed_receipt</code> 세 번에서 실패했다. <code class="inline">agent.json</code>의 명령을 바꾸면 market test를 다시 돌린다.</p>
+    <p><code class="inline">check_week07.py</code>가 market test 결과와 함께 확인하는 것.</p>
+    <div class="recorder">
+      <div><span class="k">로그</span><span class="v"><code class="inline">logs/market-kit.log</code>에 시장에서 거래한 ledger 줄이 있다</span></div>
+      <div><span class="k">시장</span><span class="v">그 로그에 적힌 닉네임의 가게와 buyer가 시장에 내 GitHub 이름으로 등록돼 있다</span></div>
+      <div><span class="k">보고서</span><span class="v"><code class="inline">REPORT.md</code>가 600자 이상이다</span></div>
+      <div><span class="k">키</span><span class="v">커밋에 <code class="inline">*.pem</code>이 없다</span></div>
+    </div>
 
     <ol class="pre">
       <li><b class="lead">가게: 값 바꾸기 (필수).</b> 내 가게의 거래 기록과 후기를 읽고 호가를 스스로 바꾼다. 하한가는 그대로 지킨다. 바꾸기 전과 후의 점유율과 평균 거래가를 dashboard나 로그로 보인다.</li>
       <li><b class="lead">buyer: 정직하지 않은 참가자 (필수).</b> 시장에서 만난 정직하지 않은 가게나 buyer를 로그로 짚고, 내 buyer가 그 상대를 어떻게 피하게 됐는지 보인다.</li>
-      <li><b class="lead">배포 (가산점).</b> 6주차 도전 4와 같다. 배포한 가게는 수업이 없을 때도 거래를 받는다. 키트는 <code class="inline">--deployed</code>로 등록할 때도 <code class="inline">shop_key.pem</code>의 공개키를 등록하므로, 배포한 가게도 이 키로 서명한다. 개인키는 배포 서버의 비밀 값으로 넣고 커밋하지 않는다.</li>
     </ol>
 
     <div class="hw">
       <div class="head">ASSIGNMENT: WEEK 07</div>
       <div class="body">
         <div class="due">DUE: 다음 주 수업 시작 전 (PR을 연 시각 기준)</div>
-        <p><strong>제출물</strong>: 가게와 buyer의 코드, <code class="inline">agent.json</code>(<code class="inline">market_buyer</code> 명령 추가), market test가 만든 <code class="inline">test-report.json</code>과 <code class="inline">logs/</code>, 도전 1과 2의 로그(<code class="inline">logs/challenge-1/</code>, <code class="inline">logs/challenge-2/</code>), <code class="inline">REPORT.md</code>.</p>
-        <p><strong>REPORT.md</strong>: (1) buyer가 가게를 고르는 방법과 기억의 형식. (2) 후기를 하네스에 보여 준 방법. (3) Round 0, 1, 2에서 내 가게와 buyer에 일어난 일. dashboard 수치나 로그를 인용한다. (4) 서명을 붙이며 실패한 것과 고친 것. (5) 도전 1과 2.</p>
+        <p><strong>제출물</strong>: 가게와 buyer의 코드, <code class="inline">agent.json</code>(<code class="inline">market_buyer</code> 명령 추가), market test가 만든 <code class="inline">test-report.json</code>과 <code class="inline">logs/</code>, 도전 1과 2의 로그(<code class="inline">logs/challenge-1/</code>, <code class="inline">logs/challenge-2/</code>), 배포한 컴퓨터의 <code class="inline">logs/market-kit.log</code>, <code class="inline">REPORT.md</code>.</p>
+        <p><strong>REPORT.md</strong>: (1) buyer가 가게를 고르는 방법과 기억의 형식. (2) 후기를 하네스에 보여 준 방법. (3) Round 0, 1, 2에서 내 가게와 buyer에 일어난 일. dashboard 수치나 로그를 인용한다. (4) 서명을 붙이며 실패한 것과 고친 것. (5) 도전 1과 2. (6) 가게와 buyer를 어디에 어떻게 배포했는가.</p>
         <p><strong>형식</strong>: 포크의 <code class="inline">submissions/&lt;학번&gt;/week-07/</code>에 커밋하고 upstream으로 PR을 연다. 세부는 <code class="inline">weeks/week-07/README.md</code>에 있다.</p>
-        <p><strong>채점 기준</strong>: market test 통과 여부, 그리고 보고서의 (3), (4), (5). 가산점은 배포.</p>
+        <p><strong>채점 기준</strong>: market test 통과 여부, 마감 시각에 시장에 떠 있는 가게와 buyer, 그리고 보고서의 (3), (4), (5), (6).</p>
       </div>
     </div>
 
@@ -1056,9 +1074,9 @@ python scripts/check_week07.py submissions/&lt;학번&gt;/week-07</pre></div>
   <div class="col">
     <div class="secmark"><span class="no">READ</span><h2>읽기자료</h2></div>
     <ul class="readings">
-      <li><span class="badge req">필수</span><b class="lead">Akerlof, &ldquo;The Market for &lsquo;Lemons&rsquo;: Quality Uncertainty and the Market Mechanism&rdquo;, Quarterly Journal of Economics 84(3) (1970)</b><span class="why">중고차 예의 원문. 정보가 한쪽에만 있을 때 시장이 줄어드는 과정. <a href="https://doi.org/10.2307/1879431">doi.org/10.2307/1879431</a></span></li>
+      <li><span class="badge req">필수</span><b class="lead">Akerlof, &ldquo;The Market for &lsquo;Lemons&rsquo;: Quality Uncertainty and the Market Mechanism&rdquo;, Quarterly Journal of Economics 84(3) (1970)</b><span class="why">중고차 예의 원문. 정보가 한쪽에만 있으면 시장이 줄어든다. <a href="https://doi.org/10.2307/1879431">doi.org/10.2307/1879431</a></span></li>
       <li><span class="badge req">필수</span><b class="lead">Resnick, Kuwabara, Zeckhauser, Friedman, &ldquo;Reputation Systems&rdquo;, Communications of the ACM 43(12) (2000)</b><span class="why">평판 시스템이 작동하는 조건과 흔한 실패. 짧은 글이다. <a href="https://doi.org/10.1145/355112.355122">doi.org/10.1145/355112.355122</a></span></li>
-      <li><span class="badge opt">선택</span><b class="lead">Hayek, &ldquo;The Use of Knowledge in Society&rdquo;, American Economic Review 35(4) (1945)</b><span class="why">주석(tin) 예의 원문. 가격이 흩어진 지식을 전하는 방식. <a href="https://www.econlib.org/library/Essays/hykKnw.html">econlib.org</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">Hayek, &ldquo;The Use of Knowledge in Society&rdquo;, American Economic Review 35(4) (1945)</b><span class="why">주석(tin) 예의 원문. 가격이 흩어진 지식을 숫자 하나로 전한다. <a href="https://www.econlib.org/library/Essays/hykKnw.html">econlib.org</a></span></li>
       <li><span class="badge opt">선택</span><b class="lead">RFC 8032, Edwards-Curve Digital Signature Algorithm (EdDSA)</b><span class="why">Ed25519의 규격. 서명이 64바이트, 공개키가 32바이트인 이유. <a href="https://www.rfc-editor.org/rfc/rfc8032">rfc-editor.org/rfc/rfc8032</a></span></li>
       <li><span class="badge opt">선택</span><b class="lead">cryptography, Ed25519 signing</b><span class="why">영수증 서명에 쓰는 Python API. 키를 파일로 저장하고 불러오는 방법도 있다. <a href="https://cryptography.io/en/latest/hazmat/primitives/asymmetric/ed25519/">cryptography.io</a></span></li>
     </ul>
