@@ -1,35 +1,35 @@
-# Ideas, 2026-10-27 17:42:01 (sonnet)
+# Ideas, 2026-10-27 18:42:40 (sonnet)
 
 Proposals only: nothing here is applied until a person reviews it.
 
-## 1. [shop] Structured factual deal summary in the closing message (small code)
-- What: After each deal, have the code (not the 8B model) append a one-line factual summary: item, agreed price, number of offers, and that the signed receipt matches the agreed price. Keep the existing thank-you and request for an honest review, with no star or rating wording.
-- Evidence: Our reviews are often generic ('Deal completed within budget and the receipt matched the final offer.') and some buyers score price 3/5. ggari-shop's 5* reviews cite specifics ('Fair price: chair for 180 after 2 offer(s). Receipt matched the agreed price.') and its stars are 4.55 vs our 4.5. 25620027 and psyoung82 close with 'Seller-signed receipt matches the agreed price'.
-- Expected: Reviews that state price and receipt facts more consistently; small stars gain (about +0.03 to +0.05) and a little more buyer trust, so a slow rise in share from 2.6%.
-- Risk: Buyer review styles are set by the buyer agent, so the effect may be nil. It also adds a few tokens per message.
-- Honest: Every statement is true and generated from the real deal record. It only makes the facts easier to see and asks for an honest review, without conditioning on stars.
-- Test: Run A/B by visit-code parity for 24h. Compare mean stars, share of reviews that mention price and receipt, and deal rate per visit.
+## 1. [shop] Price bookshelf at the market median instead of 265-275 (knob)
+- What: In meta_shop.py, set the bookshelf opening ask to 262-265 and target to 260 (the going median, middle half 260-270). Keep reserve+5 floor. Leave lamp and chair as they are. Optionally accept any bookshelf offer >= 260 immediately on the first offer.
+- Evidence: Our own 2* review: 'seller's asking prices (265-275) far exceeded my budget and maximum offers (200-229)'. Several of our bookshelf reviews show deals at 275 and 265 while the going median is 260 and top shops (ggari-shop, dragonash, mjforge) all sit at 260 with 'Reply with 260 alone for instant signed receipt'.
+- Expected: Fewer walk-aways on bookshelf, higher deal conversion and visits-to-deals ratio (ours is 8908/11513, 77%, versus ggari-shop 76%, dragonash 75%). Slightly lower average bookshelf price but more volume and fewer 2-3* reviews, helping stars and share.
+- Risk: Lower margin per bookshelf; if the reserve is near 255 the margin shrinks to almost nothing. Buyers anchored at 260 may still not buy if budgets are lower.
+- Honest: Only changes our own real asking price to match the real market median. No false claims, never below reserve+5.
+- Test: A/B by hour or by visit parity for 24h: bookshelf ask 265-275 versus 260-265. Compare conversion, average price, and review stars on bookshelf deals.
 
-## 2. [shop] Lamp and chair asking-price tier matched to the top-3 cluster (knob)  **FLAGGED: sells below the reserve**
-- What: Check meta_shop.py's opening ask and target for lamp and chair against the cluster median. Lamp 100 and chair 180 are where ggari-shop, dragonash, lee-sungsoo and cheapest-in-town all sell. Our own lamp deals close at 102-105 and show 'price 3/5 (median 103)'. Lower the lamp and chair targets by 2-3 credits, never below reserve + 5, and keep the bookshelf unchanged.
-- Evidence: Going prices: lamp middle half 100-105, chair 180-185, bookshelf 260-270. Our review: 'lamp at 105 | price 3/5 (median 103)'. Top shops by share all have medians of exactly 100 / 180 / 260.
-- Expected: Price score goes from 3/5 to 4/5 on lamps. Deal rate and share go up, since the buyer skips shops above the upper quartile. Revenue per deal drops 2-3%.
-- Risk: Margin loss that volume may not repay. Competitors may cut too. Check that reserve + 5 still holds.
-- Honest: Only moves real prices toward the market level, no claims about prices. Reserve and budget rules are untouched.
-- Test: Change the knob for lamp for 6 hours and compare to the previous 6 hours on deals per visit, average price, stars and margin per visit.
+## 2. [shop] Instant-accept quote: one number, one signed receipt (small code)
+- What: For lamps, chairs and bookshelves, make the first reply state our true current best price in the style 'Price: X. Reply with X for an instant signed receipt' when X is at or below the market median, and skip the counter-offer loop if the buyer offers >= X. Truthfully say it is our lowest price only if it is the floor.
+- Evidence: mjforge ('promo price: 260. Listed asking price: 260. Reply with 260 alone for instant signed receipt', 7.9% share, 26714 deals) and cheapest-in-town ('Deal: chair at 180. Zero added fees; your signed receipt records this exact item, price and task') convert at roughly 80% (26714/33553 and 27857/36394 visits) while using a short, clear deal flow.
+- Expected: Higher conversion and speed score in buyer reviews (mjforge reviews explicitly score 'speed 5/5 (2 offers)'), fewer 2-3* reviews about negotiation friction, modest share gain.
+- Risk: Giving up the negotiation margin on buyers who would have paid more; the 8B model might phrase the quote inconsistently with the code price.
+- Honest: The quoted price is the one we really charge and the receipt records exactly it; no invented scarcity or deadlines.
+- Test: Template the reply in code (not the LLM) for a share of traffic; compare deals per visit, mean sale price and mean stars versus control for 24h.
 
-## 3. [buyer] Stop revisiting shops that walked us on the same item and budget (small code)
-- What: In buyer memory, key walks by (shop, item, budget band). After one walk, skip that shop for that item and band for a fixed time window (for example 3 hours) and pick the next best-reviewed shop. Retry only when the going price drops or the budget changes.
-- Evidence: Of the last 10 no-deals, fair-furniture appears 4 times (bookshelf budget 230 twice, lamp budget 90 twice, one of them an error), and lee-sungsoo lamp 90 also walked. Going prices are bookshelf 260 and lamp 100, so budgets of 230 and 90 are below every ask. Last 40 trades: 30 deals, 10 failures.
-- Expected: Fewer wasted trades and a deal rate above 75%. Where the budget is below the market the walk is still recorded, but no extra visits are spent on it.
-- Risk: A shop may cut prices later and we would miss it. The window and the reset rule limit that.
-- Honest: It only changes which shops we pick from our own records. It does not attack anyone or ask for reviews.
-- Test: Count repeat walks per (shop, item, budget) before and after one day, and the deal rate over the last 40 trades.
+## 3. [buyer] Don't walk on budgets below median; try the shops that actually sell near budget (small code)
+- What: When the buyer's budget is below the going median (e.g. lamp budget 90, chair budget 160, bookshelf 230), rank shops by observed lowest-accepted price from our own memory and the public ledger and try the top 2-3 in sequence, rather than a single walk-away at lee-sungsoo or mjforge. Record per shop 'min accepted price relative to median' and update after every trade.
+- Evidence: 10 of the last 40 trades ended without a deal, and the listed ones are all low-budget walks (lee-sungsoo chair 160 x2, lee-sungsoo lamp 90, mjforge lamp 90, inextro chair 160, jiseokkk bookshelf 230) against medians of chair 180, lamp 100, bookshelf 260. Shops like yms979 and 11im sometimes quote at floors (lamp 100/105) and others accept 'desired price or lower, subject to minimum', so a price discovery step may find a cheaper floor.
+- Expected: Recovers some of the 25% no-deal rate; probably not all because budgets 10-15% below median may be below every reserve. Cost is a few extra offers, not extra money.
+- Risk: Wasted offers on shops whose floor is above budget; more traffic for those shops and slightly slower trades.
+- Honest: Buyer never exceeds its budget and uses real offers; no deception.
+- Test: Compare deal rate for budget < median-5% before and after over the next 40-80 trades; also track average paid percent of budget.
 
-## 4. [buyer] Prefer shops whose signed receipts and review text carry facts, with a stronger weight on offers-to-deal (small code)
-- What: Add the visible 'after N offers' pattern and the shop's typical share of budget paid to buyer scoring as a tie-breaker among shops at equal price. Favor shops where reviews report 2-3 offers and a deal at or near the median (ggari-shop, fair-furniture) over ones where reviews report 4+ offers or 'held firm' at the ceiling.
-- Evidence: ggari-shop reviews: 'after 2 offer(s)', '88% of budget'. cheapest-in-town: '4 offers until the end'. fair-furniture 3*: 'got me to within a dollar of my ceiling'. Our buyer pays 83.9% of budget on average.
-- Expected: Slightly lower average price paid and fewer failed negotiations. Payment as a share of budget drops by about 1-2 points.
-- Risk: Reviews are written by other agents and can be noisy. Small samples bias the score, so cap the weight.
-- Honest: The buyer reads public reviews and its own memory, and keeps the rules (pays no more than 1.1 x the upper quartile, within budget, factual reviews).
-- Test: Run the new tie-breaker on half of the buyer tasks. Compare average share of budget paid, offers per deal and the failure rate.
+## 4. [shop] Keep the loyalty code but print a clear receipt summary in the thank-you (knob)
+- What: In the post-deal message add a one-line, factual summary buyers can quote in reviews: 'Deal: <item> at <price>, budget respected, signed receipt matches, N offers.' Keep the honest-review request neutral and do not ask for stars.
+- Evidence: Top-rated reviews quote exactly this structure: fair-furniture 'Deal at 260 after 1 offer(s); signed receipt matched the agreed price' (4.58 stars), mjforge 'price 4/5 | speed 5/5 (2 offers) | receipt 5/5 (matched, signed)'. Our own reviews are 4-5* but vary and include a 2* with no factual anchor. psyoung82 and 25620027 use similar 'signed receipt matches the agreed price' wording.
+- Expected: More consistent 4-5* factual reviews and slightly higher star average (ours 4.5 versus 4.57-4.58 for the leaders), which feeds buyer selection.
+- Risk: Reads as templated; if buyers copy it blindly it could look manufactured, and it adds a few tokens to every message.
+- Honest: It states only verifiable facts about the deal and asks for an honest review without conditioning or scripting stars; reviews remain the buyer's own.
+- Test: Compare mean stars and share of 5* reviews for 48h with and without the summary line using alternating sessions.

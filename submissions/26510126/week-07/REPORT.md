@@ -1,6 +1,6 @@
 # Week 07 — A shop and a buyer in the agent market
 
-**Status, 2026-10-27 18:31 KST.** Round 2 is still open (both agents stay in the market until the deadline), so the Round 2 figures in section 3 are as of that time unless a section gives its own date, from the public ledger and `/api/stats`.
+**Status, 2026-10-27 19:00 KST.** Round 2 is still open (both agents stay in the market until the deadline), so the Round 2 figures in section 3 are as of that time unless a section gives its own date, from the public ledger and `/api/stats`.
 
 - Shop: the week-06 seller on Cloudflare Workers (Llama 3.1 8B on Workers AI), now signing receipts, priced by a meta-harness that reads the market's public ledger. Buyer: `market_buyer.py` (Claude Code, haiku) with a file memory and the same ledger.
 - Market test 25/25 (`test-report.json`). Both agents are in the market as `thisjonghoon`, linked to the GitHub account.
@@ -51,40 +51,44 @@ Our own reviews are written by code from what happened, never by the model, so t
 
 Numbers from `/api/stats`, `/api/board` and the ledger (`market_intel.py`).
 
-| | Round 0 | Round 1 (final) | Round 2 (to 10/27 18:31) |
+| | Round 0 | Round 1 (final) | Round 2 (to 10/27 19:00) |
 |---|---|---|---|
-| Market deals / results | 1252 / 2213 | 1812 / 2670 | 373,354 / 513,508 |
-| Our shop: deals / visits | 44 / 90 | 20 / 28 | 8,905 / 11,509 |
+| Market deals / results | 1252 / 2213 | 1812 / 2670 | 374,617 / 515,409 |
+| Our shop: deals / visits | 44 / 90 | 20 / 28 | 8,914 / 11,541 |
 | Our shop: share | 3.5% | 1.1% | 2.6% (12th of 307 shops) |
 | Our shop: mean price lamp / chair / bookshelf | 122.2 / 211 / 285 | 107.4 / 186.2 / 267.9 | 106.1 / 186.7 / 266.8 |
-| Our shop: stars | (no reviews in Round 0) | 3.82 from 22 reviews; 4.47 from the 15 on signed deals | 4.50 from 8,900 (5,301 fives, 2,764 fours, 834 threes, one 2) |
-| Our buyer: deals / results | 58 / 77 | 62 / 84 | 10,500 / 13,639 |
+| Our shop: stars | (no reviews in Round 0) | 3.82 from 22 reviews; 4.47 from the 15 on signed deals | 4.50 from 8,909 (5,307 fives, 2,767 fours, 834 threes, one 2) |
+| Our buyer: deals / results | 58 / 77 | 62 / 84 | 10,525 / 13,670 |
 | Our buyer: paid / budget | 0.901 | 0.868 | 0.844 |
-| Our buyer: orders below every reserve | 7 | 12 | 2,696 |
+| Our buyer: orders below every reserve | 7 | 12 | 2,702 |
 
-**Overall standing in Round 2 (10/27 18:30, `/api/board` via `standing.py`, house agents left out).** The market ranks shops and buyers separately and gives no combined score, so this is ours. We took the 40 participants that run both a shop and a buyer with at least 20 deals each and 20 shop reviews, ranked them on five measures, and averaged the ranks.
+**Overall standing in Round 2 (10/27 19:00, `/api/board` and the ledger via `standing.py`, house agents left out).** The market ranks shops and buyers separately and gives no combined score, so this is ours. Of the 59 participants that registered both a shop and a buyer, we took the 30 with at least 337 deals each and 337 shop reviews, ranked them on five measures, and averaged the ranks.
+
+Why 337: two of the measures are averages, and an average over few deals is mostly luck. Over the round's 327,993 verified deals one review's stars spread with a standard deviation of 0.764 and one deal's price/budget with 0.0935. For a 95% interval of ±0.1 star (the board's one decimal) a participant needs 224 reviews, and for ±1% of budget 337 deals; 337 meets both. It is recomputed from the ledger each time this block is regenerated.
 
 | | Shop profit | Shop deals | Shop stars | Buyer deals | Buyer paid / budget |
 |---|---|---|---|---|---|
-| Our rank of 40 | 4 | 10 | 18 | 13 | 6 |
+| Our rank of 30 | 4 | 10 | 11 | 12 | 6 |
 
-| Weighting | Our rank of 40 | Ahead of us |
+| Weighting | Our rank of 30 | Ahead of us |
 |---|---|---|
 | All five measures equal | 3 | 11im, fair-furniture |
 | Profit instead of shop deals | 3 | 11im, fair-furniture |
 | Shop deals instead of profit | 5 | 11im, fair-furniture, myeonggi, cheapest-in-town |
 
-Shops, all 62: ours is 5th by profit (58,601; 11im 204,513, yms979 86,805, ggari-shop 71,637, outseop-26510122 59,555), 10th by revenue (1,776,601), 11th by deals (8,904) and share (2.6%), and 21st of 45 by stars (4.5) among shops with 20+ reviews.
+With equal weights, a minimum of 1 gives rank 3 of 43, 20 gives rank 3 of 40, 100 gives rank 3 of 37, 337 gives rank 3 of 30, 500 gives rank 3 of 25, so the result does not depend on the cut.
 
-| Buyer, of 101 (paid and fill rate: of 47 with 20+ deals) | Ours | Rank | Best |
+Shops, all 62: ours is 5th by profit (58,636; 11im 205,291, yms979 86,975, ggari-shop 71,637, outseop-26510122 59,732), 10th by revenue (1,778,716), 11th by deals (8,912) and share (2.6%), and 15th of 38 by stars (4.5) among shops with 224+ reviews.
+
+| Buyer, of 101 (paid and fill rate: of 38 with 337+ deals) | Ours | Rank | Best |
 |---|---|---|---|
-| Paid / budget (lower is better) | 84.4% | 7 | kimauve 83.3% |
-| Saved (budget minus price) | 373,403 | 15 | myeonggi 625,618 |
-| Deals | 10,499 | 17 | myeonggi 18,597 |
-| Orders received | 13,638 | 19 | |
-| Deals / orders some shop could fill | 96.0% (10,499 of 10,941; 2,697 budgets were below every reserve) | 14 | chaewoonee 100.0% |
+| Paid / budget (lower is better) | 84.4% | 7 | kimauve 83.5% |
+| Saved (budget minus price) | 374,587 | 15 | myeonggi 627,673 |
+| Deals | 10,523 | 17 | myeonggi 18,656 |
+| Orders received | 13,668 | 19 | |
+| Deals / orders some shop could fill | 96.0% (10,523 of 10,965; 2,703 budgets were below every reserve) | 13 | editork19-web 99.9% |
 
-The weak measure is the shop's stars. Most of that gap comes from buyers who rate every shop low, not from our deals: in a sample of our last 400 verified deals (10/24), all 34 three-star reviews came from Kiro729, which gave 3 stars on 1,059 of its 2,362 verified Round-2 reviews across the market. The buyer's middling ranks on deals and savings follow from how many orders it received, which the market decides; on price, the measure it controls, it is near the top.
+Our two weakest measures are buyer deals and shop stars. Most of the stars gap comes from buyers who rate every shop low, not from our deals: in a sample of our last 400 verified deals (10/24), all 34 three-star reviews came from Kiro729, which gave 3 stars on 1,059 of its 2,362 verified Round-2 reviews across the market. The buyer's middling ranks on deals and savings follow from how many orders it received, which the market decides; on price, the measure it controls, it is near the top.
 
 **Round 0.** The kit chose the shop. Our Worker shop sold 5 of its first 21 visits: Llama 8B answered `"action": "reject"` while its note said "let's meet in the middle", which ended each negotiation after one offer (`deploy/logs/tail-market-before-reject-guard-1020.json`). A code guard turned reject into counter; the next 69 visits gave 39 deals (`tail-market-reject-guard-1020.json`). The model still opened a lamp at 250 against a market of 100-140.
 
@@ -128,7 +132,7 @@ The Worker opens at the strategy's ask and closes at once when an offer reaches 
 
 Loyalty, because the shop cannot tell buyers apart (requests carry no buyer id): every deal hands out a one-time code, `FAIR-` and sixteen letters (no digits, since buyers read numbers as prices). It carries a tier and a stamp count, HMAC-signed so neither can be forged; a returning code takes its tier's discount off the ask and the target, and every eighth order adds 8% and may go down to the reserve itself (zero margin; every other discount stops at reserve + 5). The table is the meta-harness's to set: 3/5/7% during a sale, 5/8/10% after, at most 15% a tier and six tiers. Live test: a lamp went 115, 112, 109, 107, 107, 107, 107, then 100 on the eighth order. A discount tied to stars was considered and rejected: it pays for reviews.
 
-From the launch sale on, the meta-harness also decides whether to run a sale and how the coupon table looks, every 10 minutes, with this round's top shops and our coupon use in front of it. A second layer, `meta_explore.py` (sonnet, hourly), reads other shops' messages, reviews and our records and proposes techniques we do not use yet, to `logs/explore/`; it changes nothing by itself. Two of its first four ideas were applied: the fixed counter lines, and a buyer filter that skips shops whose recent sales sit above the budget.
+From the launch sale on, the meta-harness also decides whether to run a sale and how the coupon table looks, every 10 minutes (about 13 in practice, since reading the ledger and asking the harness take three more minutes per cycle), with this round's top shops and our coupon use in front of it. A second layer, `meta_explore.py` (sonnet, hourly), reads other shops' messages, reviews and our records and proposes techniques we do not use yet, to `logs/explore/`; it changes nothing by itself. Two of its first four ideas were applied: the fixed counter lines, and a buyer filter that skips shops whose recent sales sit above the budget.
 
 | Version | Lamp / chair / bookshelf (open, target) | Why (from `logs/challenge-1/strategies.jsonl`) |
 |---|---|---|
@@ -183,7 +187,7 @@ Our own mistake on the way: receipts from psyoung82 and jiseokkk lacked only the
 |---|---|---|
 | Shop | Cloudflare Workers, `fair-price-signed-receipts.thisjonghoon.workers.dev` (until 21:42 of Round 2 `a2a-lamp-shop...`, kept running for old links; renamed because a buyer sees only a shop's name, URL and reviews before it picks, and only the URL could change honestly) | Hono, one Durable Object per task, one for the strategy; Workers AI Llama 3.1 8B. Secrets: `SHOP_KEY` (the kit's `shop_key.pem`, uploaded from the file, never printed or committed) and `ADMIN_TOKEN` (for `meta_shop.py`) |
 | Kit and market buyer | the Mac mini at home (system sleep off) | `market_kit.py join --deployed <Worker URL>`, `MARKET_OWNER` claim code, `nohup` with the kit's venv on PATH; `market_buyer.py` runs per order with `claude -p` on the subscription |
-| Meta-harness | same Mac mini | `nohup python meta_shop.py` (every 10 minutes; it ran every 30 until Round 2), `meta_explore.py --every 3600` |
+| Meta-harness | same Mac mini | `nohup python meta_shop.py` (every 10 minutes, about 13 with the cycle's own work; it ran every 30 until Round 2), `meta_explore.py --every 3600` |
 
 `wrangler deploy` once ran from the repository root instead of `deploy/` (a `cd` in a command that runs outside the sandbox did not take), and wrangler's auto-configuration tried to upload the whole repository as a new Worker; it stopped at the 25 MiB asset limit. The generated `wrangler.jsonc`, `.wrangler/` and `.gitignore` change were reverted, and every deploy since passes absolute paths and `--config`.
 
