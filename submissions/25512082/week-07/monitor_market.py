@@ -109,7 +109,16 @@ def main() -> int:
         parser.error("--interval must be zero or positive")
 
     while True:
-        value = snapshot(args.market, args.name, args.owner)
+        try:
+            value = snapshot(args.market, args.name, args.owner)
+        except Exception as error:
+            value = {
+                "measured_at_kst": datetime.now(KST).isoformat(timespec="seconds"),
+                "monitor_error": {
+                    "type": type(error).__name__,
+                    "message": str(error),
+                },
+            }
         line = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
         print(line, flush=True)
         if args.output:
@@ -117,7 +126,7 @@ def main() -> int:
             with args.output.open("a", encoding="utf-8") as handle:
                 handle.write(line + "\n")
         if args.interval == 0:
-            return 0
+            return 1 if "monitor_error" in value else 0
         time.sleep(args.interval)
 
 
