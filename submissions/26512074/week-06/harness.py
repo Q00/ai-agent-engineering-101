@@ -67,7 +67,7 @@ Use only directory shop IDs and supplied shopping line IDs. Honor the exact sche
 
 def emit(event: str, **fields):
     print(json.dumps({"at": datetime.now(timezone.utc).isoformat(), "event": event, **fields},
-                     ensure_ascii=False, allow_nan=False), flush=True)
+                     ensure_ascii=True, allow_nan=False), flush=True)
 
 
 def money(value):

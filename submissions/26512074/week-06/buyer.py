@@ -10,7 +10,8 @@ from harness import decide, emit
 from protocol import A2AClient, amount, receipt, task_state, task_text
 
 
-async def buy(url, item, budget, *, line_id=None, on_progress=None, max_rounds=6):
+async def buy(url, item, budget, *, line_id=None, on_progress=None, max_rounds=6,
+              initial_task=None):
     amount(budget, "budget")
     memory = {"item": item, "budget": budget, "task_id": None,
               "last_offer": None, "summary": "No negotiation yet.", "binding_pending": False}
@@ -42,12 +43,16 @@ async def buy(url, item, budget, *, line_id=None, on_progress=None, max_rounds=6
     async def negotiate():
         async with A2AClient(url, label=line_id or item) as client:
             card = await client.discover()
-            opening = await decide(
-                "buyer_open", {"item": item, "budget": budget},
-                {"shop_name": card.get("name"), "skills": card["skills"]},
-                validator=validate_open)
-            progress(summary=opening["summary"][:700])
-            task = await client.send(opening["message"])
+            if initial_task is None:
+                opening = await decide(
+                    "buyer_open", {"item": item, "budget": budget},
+                    {"shop_name": card.get("name"), "skills": card["skills"]},
+                    validator=validate_open)
+                progress(summary=opening["summary"][:700])
+                task = await client.send(opening["message"])
+            else:
+                task = initial_task
+                progress(summary="Preflight quote received; no binding offer has been sent.")
             progress(task_id=task["id"])
             for turn in range(max_rounds + 1):
                 state = task_state(task)
@@ -105,7 +110,7 @@ def main():
     parser.add_argument("--budget", type=float, required=True)
     args = parser.parse_args()
     result = asyncio.run(buy(args.url, args.item, args.budget))
-    print(json.dumps(result, ensure_ascii=False), flush=True)
+    print(json.dumps(result, ensure_ascii=True), flush=True)
     raise SystemExit(0 if result["outcome"] in ("completed", "walked", "rejected") else 1)
 
 

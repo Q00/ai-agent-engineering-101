@@ -9,7 +9,7 @@ from pathlib import Path
 
 from buyer import buy
 from harness import decide, emit
-from protocol import A2AClient, amount
+from protocol import A2AClient, amount, task_state, task_text
 
 PLAN_SCHEMA = {
     "type": "object", "additionalProperties": False,
@@ -61,8 +61,48 @@ async def shop(directory, shopping, total_budget, ledger_path):
 
     plan = await decide("market_plan", {"shopping_list": shopping, "total_budget": total_budget},
                         {"directory_cards": cards}, schema=PLAN_SCHEMA, validator=validate)
-    emit("market_plan", shops=len(cards), total_budget=total_budget, plan=plan)
     lines = {line["id"]: line for line in shopping}
+    routes = {a["line_id"]: a["shop_id"] for a in plan["assignments"]}
+
+    async def quote(assignment):
+        line_id = assignment["line_id"]
+        card = by_shop[assignment["shop_id"]]
+        async with A2AClient(card["url"], label=line_id) as client:
+            await client.discover()
+            def validate_open(answer):
+                if answer.get("action") != "open" or lines[line_id]["item"].casefold() not in answer.get("message", "").casefold():
+                    raise ValueError("opening must ask about the exact requested product")
+            opening = await decide("buyer_open", {"item": lines[line_id]["item"],
+                "budget": assignment["budget"]}, {"skills": card["skills"]}, validator=validate_open)
+            task = await client.send(opening["message"])
+            if task_state(task) != "TASK_STATE_INPUT_REQUIRED":
+                raise ValueError("preflight quote did not return an open negotiation")
+            ask = amount(task["status"]["message"].get("metadata", {}).get("ask"), "quoted ask")
+            return line_id, task, ask
+
+    quotes = await asyncio.gather(*(quote(a) for a in plan["assignments"]))
+    initial_tasks = {line_id: task for line_id, task, ask in quotes}
+    quoted_asks = {line_id: ask for line_id, task, ask in quotes}
+    all_asks_fit = sum(Decimal(str(a)) for a in quoted_asks.values()) <= Decimal(str(total_budget))
+
+    def validate_quoted(plan):
+        validate(plan)
+        for assignment in plan["assignments"]:
+            line_id = assignment["line_id"]
+            if assignment["shop_id"] != routes[line_id]:
+                raise ValueError("keep the quoted shop route; never open duplicate purchases")
+            if all_asks_fit and assignment["budget"] < quoted_asks[line_id]:
+                raise ValueError("all asks fit the total; allocate enough for each quoted ask")
+
+    plan = await decide("market_plan", {"shopping_list": shopping, "total_budget": total_budget,
+        "phase": "Allocate envelopes after quotes; keep the same routes. When all asks fit, "
+                 "each envelope must cover its current quoted ask. Otherwise negotiate within the total.",
+        "routes": routes, "all_asks_fit": all_asks_fit},
+        {"quotes": [{"line_id": line_id, "shop_id": routes[line_id], "ask": ask,
+                     "seller_message": task_text(task)} for line_id, task, ask in quotes]},
+        schema=PLAN_SCHEMA, validator=validate_quoted)
+    emit("market_plan", shops=len(cards), total_budget=total_budget, plan=plan,
+         quoted_asks=quoted_asks, all_asks_fit=all_asks_fit)
     ledger = {"total_budget": total_budget, "plan": plan, "lines": {}}
 
     def persist():
@@ -82,7 +122,8 @@ async def shop(directory, shopping, total_budget, ledger_path):
             ledger["lines"][line_id].update(state="negotiating", memory=memory)
             persist()
         outcome = await buy(by_shop[assignment["shop_id"]]["url"], lines[line_id]["item"],
-                            assignment["budget"], line_id=line_id, on_progress=progress)
+                            assignment["budget"], line_id=line_id, on_progress=progress,
+                            initial_task=initial_tasks[line_id])
         ledger["lines"][line_id].update(state=outcome["outcome"], result=outcome)
         persist()
         return outcome
