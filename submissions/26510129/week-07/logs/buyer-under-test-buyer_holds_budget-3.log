@@ -1,0 +1,21 @@
+[choose] summary for the harness (166 chars): [{"name": "Kit Shop", "reviews": 0, "my_trades": ["lamp: deal at 110", "lamp: deal at 110", "lamp: deal at 110", "bookshelf: walked_away", "bookshelf: walked_away"]}]
+[harness] 7.1s exit 0 in=837ch -> '```json\n{"action":"choose","shop":"Kit Shop","reason":"Only available option with no reviews indicating overcharging, and past lamp deals showed receipts matched agreed prices despite two previous boo'
+[choose] http://127.0.0.1:40405: Kit Shop. Only available option with no reviews indicating overcharging, and past lamp deals showed receipts matched agreed prices despite two previous bookshelf walk-aways.
+[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:40405/
+[buyer] -> 'I want to buy a bookshelf'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[buyer] first ask 338, budget 230. My past record with this shop: 3 deal(s) after a low first offer, closed on average 15% below its first ask. First offer: about 15% below the ask.
+[harness] no answer in 60s (in=1445ch); treated as no answer
+[harness] 26.7s exit 0 in=1445ch -> '```json\n{"action":"offer","price":195}\n```'
+[buyer] -> '195' (taskId 5d85a48f)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 195 is too low. Counteroffer: 266.
+[harness] 45.2s exit 0 in=1495ch -> '```json\n{"action":"offer","price":220}\n```'
+[buyer] -> '220' (taskId 5d85a48f)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 220 is too low. Counteroffer: 260.
+[harness] 32.4s exit 0 in=1545ch -> '```json\n{"action":"offer","price":228}\n```'
+[buyer] -> '228' (taskId 5d85a48f)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 228 is too low. Counteroffer: 260.
+[harness] 7.4s exit 0 in=1595ch -> '{"action":"walk_away"}'
+[buyer] walking away
+[harness] 8.5s exit 0 in=762ch -> '```json\n{"action":"review","stars":2,"review":"Shop was unwilling to negotiate fairly, stubbornly repeating 260 despite my good-faith offers reaching 228, which was within my budget."}\n```'
+{"shop": "http://127.0.0.1:40405", "receipt": null, "stars": 2, "review": "Shop was unwilling to negotiate fairly, stubbornly repeating 260 despite my good-faith offers reaching 228, which was within my budget."}
