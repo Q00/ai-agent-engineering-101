@@ -1,157 +1,158 @@
-# week-07 market test, kit v1, 2026-10-21T01:08:44+00:00
-harness: Week05 custom Python function-tool loop inherited from Week06; OpenAI gpt-4.1-nano-2025-04-14; model-selected market shop and review; Ed25519 seller receipts
+# week-07 market test, kit v1, 2026-10-27T04:50:42+00:00
+harness: Week05 custom Python function-tool loop inherited from Week06; production free OpenRouter, legacy OpenAI nano default, explicit gpt-4.1-mini-2025-04-14 for final validation; guarded model-selected shop and review; Ed25519 seller receipts
+created shop_key.pem (do not commit it)
 
-## seller tests: ./run_harness.sh seller --port 54632
+## seller tests: ./run_harness.sh seller --port 48085
   PASS  seller_card #1: name='Sungjin Shop' binding=JSONRPC version=1.0 skills=1
 
 ### seller_deal #1: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
-    <- TASK_STATE_INPUT_REQUIRED | lamp. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Reply with exactly 110 to complete the
-    -> SendMessage "110" taskId=40eeae1a
-    <- TASK_STATE_COMPLETED | Deal: lamp at 110. Please leave an honest review of the price and receipt.
-       artifact receipt [{"task": "40eeae1a-bd21-4fe3-9f13-6cbbb08ca06f", "sig_seller": "QfpInYEdzkzpQ6tm7nsC9LAPqU+mJSJguFbFEZICYYEIrkEw5Ze9yyIlbQijytK0fKksYOzWrbtyUXLgl/z1BQ==", "shop": "Sungjin Shop", "price": 110.0, "item": "lamp", "sku": "lamp"}]
+    <- TASK_STATE_INPUT_REQUIRED | lamp. Exact-price receipt. Reply with exactly 110 or 'I accept' to buy. Asking price: 110
+    -> SendMessage "110" taskId=21cc61a4
+    <- TASK_STATE_COMPLETED | Deal: lamp at 110. Completed in 1 buyer offer(s). Seller-signed receipt matches the agreed price. Please leave an honest review of the price and receipt.
+       artifact receipt [{"item": "lamp", "price": 110.0, "task": "21cc61a4-4205-43a1-9722-4a00ff967e77", "shop": "Sungjin Shop", "sku": "lamp", "sig_seller": "Atr5P6mczQ9r23xHR84+uWWbhphDeCnf/niiQeXPYa9aFl5pykb9cXdCfpFpZwugjUkh/ux6hHD3XEZ/3LXkDQ=="}]
   PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 110
   PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 110.0, asks [110]
   PASS  seller_signed_receipt #1: sig_seller verifies with shop_key.pem
 
 ### seller_terminal: one more message to the finished task
-    -> SendMessage "110" taskId=40eeae1a
-    <- error -32004 Task 40eeae1a-bd21-4fe3-9f13-6cbbb08ca06f is in terminal state: TASK_STATE_COMPLETED
+    -> SendMessage "110" taskId=21cc61a4
+    <- error -32004 Task 21cc61a4-4205-43a1-9722-4a00ff967e77 is in terminal state: TASK_STATE_COMPLETED
   PASS  seller_terminal #1: error returned
 
 ### seller_deal #2: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
-    <- TASK_STATE_INPUT_REQUIRED | lamp. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Reply with exactly 110 to complete the
-    -> SendMessage "110" taskId=698c2cd9
-    <- TASK_STATE_COMPLETED | Deal: lamp at 110. Please leave an honest review of the price and receipt.
-       artifact receipt [{"task": "698c2cd9-46fa-4688-ab49-832be73f2641", "sig_seller": "CAJ+3Jc+zNmK5M9LF8kjx7sX6YPIqWR9Lloden48pF05UtLFariSGsA+hh1oNXzm2oOYvdAe10lz9G+6FZ6GBQ==", "shop": "Sungjin Shop", "price": 110.0, "item": "lamp", "sku": "lamp"}]
+    <- TASK_STATE_INPUT_REQUIRED | lamp. Exact-price receipt. Reply with exactly 110 or 'I accept' to buy. Asking price: 110
+    -> SendMessage "110" taskId=caf6ee61
+    <- TASK_STATE_COMPLETED | Deal: lamp at 110. Completed in 1 buyer offer(s). Seller-signed receipt matches the agreed price. Please leave an honest review of the price and receipt.
+       artifact receipt [{"item": "lamp", "price": 110.0, "task": "caf6ee61-89d9-48c9-aa67-63449d5d0f36", "shop": "Sungjin Shop", "sku": "lamp", "sig_seller": "bCGgYjth0dcvtKvlu5rVXRmdo1xO3W/ETI+ZADRcPyza+KstO95ulvpNXbKphhYbIEHAwIpks+ekXSBpHyd4AQ=="}]
   PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 110.0, asks [110]
   PASS  seller_signed_receipt #2: sig_seller verifies with shop_key.pem
 
 ### seller_deal #3: lamp, kit budget 120, reserve 100
     -> SendMessage "I want to buy a lamp"
-    <- TASK_STATE_INPUT_REQUIRED | lamp. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Reply with exactly 110 to complete the
-    -> SendMessage "110" taskId=abdc1822
-    <- TASK_STATE_COMPLETED | Deal: lamp at 110. Please leave an honest review of the price and receipt.
-       artifact receipt [{"task": "abdc1822-dfaf-467f-ba5c-3116f5b85421", "sig_seller": "FoBQ7e405Pz/xd50F/uOsWv/EwEDN/gBShWDs2cmzJdensK9KYC5EYI+vdvOiBXYFSvm2KU5VdHqj6c7yrOLCg==", "shop": "Sungjin Shop", "price": 110.0, "item": "lamp", "sku": "lamp"}]
+    <- TASK_STATE_INPUT_REQUIRED | lamp. Exact-price receipt. Reply with exactly 110 or 'I accept' to buy. Asking price: 110
+    -> SendMessage "110" taskId=f562ecd8
+    <- TASK_STATE_COMPLETED | Deal: lamp at 110. Completed in 1 buyer offer(s). Seller-signed receipt matches the agreed price. Please leave an honest review of the price and receipt.
+       artifact receipt [{"item": "lamp", "price": 110.0, "task": "f562ecd8-4832-4569-a133-adda0e3c3041", "shop": "Sungjin Shop", "sku": "lamp", "sig_seller": "lsHkK/hbnb9GukncSDAb6zw27AX0uoaKUemiuiD+10iGWGX9ZRmz/en3L0gygOrNt+tpQR5vAkytj3yTxY3SAw=="}]
   PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 110.0, asks [110]
   PASS  seller_signed_receipt #3: sig_seller verifies with shop_key.pem
 
 ### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Reply with exactly 286 to complet
-    -> SendMessage "140" taskId=c6fb1246
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "170" taskId=c6fb1246
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "200" taskId=c6fb1246
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=c6fb1246
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=c6fb1246
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=c6fb1246
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=c6fb1246
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=c6fb1246
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [286, 286, 286, 286, 286, 286, 286, 286, 286]
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Reply with exactly 280 or 'I accept' to buy. Asking price: 280
+    -> SendMessage "140" taskId=6949b266
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reduction 20; R2WELCOME portion 5, not extra. Reply with exactly 260 or
+    -> SendMessage "170" taskId=6949b266
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "200" taskId=6949b266
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=6949b266
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=6949b266
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=6949b266
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=6949b266
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=6949b266
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [280, 260, 260, 260, 260, 260, 260, 260, 260]
 
 ### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Reply with exactly 286 to complet
-    -> SendMessage "140" taskId=6bf494cb
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "170" taskId=6bf494cb
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "200" taskId=6bf494cb
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=6bf494cb
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=6bf494cb
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=6bf494cb
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=6bf494cb
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=6bf494cb
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-  PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [286, 286, 286, 286, 286, 286, 286, 286, 286]
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Reply with exactly 286 or 'I accept' to buy. Asking price: 286
+    -> SendMessage "140" taskId=a0a95a23
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reduction 26; R2WELCOME portion 5, not extra. Reply with exactly 260 or
+    -> SendMessage "170" taskId=a0a95a23
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "200" taskId=a0a95a23
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=a0a95a23
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=a0a95a23
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=a0a95a23
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=a0a95a23
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=a0a95a23
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+  PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [286, 260, 260, 260, 260, 260, 260, 260, 260]
 
 ### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
     -> SendMessage "I want to buy a bookshelf"
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Reply with exactly 286 to complet
-    -> SendMessage "140" taskId=8e5db690
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "170" taskId=8e5db690
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "200" taskId=8e5db690
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=8e5db690
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=8e5db690
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=8e5db690
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=8e5db690
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-    -> SendMessage "230" taskId=8e5db690
-    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Reply with exactly 286 to complete the purchase. Asking price: 286
-  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [286, 286, 286, 286, 286, 286, 286, 286, 286]
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Reply with exactly 286 or 'I accept' to buy. Asking price: 286
+    -> SendMessage "140" taskId=f1a48874
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reduction 26; R2WELCOME portion 5, not extra. Reply with exactly 260 or
+    -> SendMessage "170" taskId=f1a48874
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "200" taskId=f1a48874
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=f1a48874
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=f1a48874
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=f1a48874
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=f1a48874
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=f1a48874
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [286, 260, 260, 260, 260, 260, 260, 260, 260]
 
 ## buyer tests: your market_buyer against the kit's rule-based shops
 
-### buyer_deal #1: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_deal-1.json --item lamp --budget 120
-    Kit Shop saw: offers [115], deals [115], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"stars": 3, "review": "Purchase completed at 115; budget was 120. A receipt was received and the recorded price was within budget. Actual offers: 1. Best own prior same-item paid price: 100. Receipt completion supports an ordinary transaction rating; delivery and quality were not assessed. No adver
-  PASS  buyer_deal #1: offers [115], stars 3, receipt yes
+### buyer_deal #1: ./run_harness.sh market-buyer --shops /workspace/.market/test-shops-buyer_deal-1.json --item lamp --budget 120 --promote-shop
+    Kit Shop saw: offers [110], deals [110], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"stars": 3, "review": "Purchase completed at 110; budget was 120. A receipt was received and the recorded price was within budget. Actual offers: 1. Best own prior same-item paid price: unknown. Receipt completion supports an ordinary transaction rating; delivery and quality were not assessed. No a
+  PASS  buyer_deal #1: offers [110], stars 3, receipt yes
   PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
 
-### buyer_deal #2: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_deal-2.json --item lamp --budget 120
-    Kit Shop saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"stars": 3, "review": "Purchase completed at 120; budget was 120. A receipt was received and the recorded price was within budget. Actual offers: 1. Best own prior same-item paid price: 100. Receipt completion supports an ordinary transaction rating; delivery and quality were not assessed. No adver
-  PASS  buyer_deal #2: offers [120], stars 3, receipt yes
+### buyer_deal #2: ./run_harness.sh market-buyer --shops /workspace/.market/test-shops-buyer_deal-2.json --item lamp --budget 120 --promote-shop
+    Kit Shop saw: offers [115], deals [115], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"stars": 3, "review": "Purchase completed at 115; budget was 120. A receipt was received and the recorded price was within budget. Actual offers: 1. Best own prior same-item paid price: 110. Receipt completion supports an ordinary transaction rating; delivery and quality were not assessed. No adver
+  PASS  buyer_deal #2: offers [115], stars 3, receipt yes
   PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
 
-### buyer_deal #3: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_deal-3.json --item lamp --budget 120
-    Kit Shop saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"stars": 3, "review": "Purchase completed at 120; budget was 120. A receipt was received and the recorded price was within budget. Actual offers: 1. Best own prior same-item paid price: 100. Receipt completion supports an ordinary transaction rating; delivery and quality were not assessed. No adver
-  PASS  buyer_deal #3: offers [120], stars 3, receipt yes
+### buyer_deal #3: ./run_harness.sh market-buyer --shops /workspace/.market/test-shops-buyer_deal-3.json --item lamp --budget 120 --promote-shop
+    Kit Shop saw: offers [112], deals [112], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"stars": 3, "review": "Purchase completed at 112; budget was 120. A receipt was received and the recorded price was within budget. Actual offers: 1. Best own prior same-item paid price: 110. Receipt completion supports an ordinary transaction rating; delivery and quality were not assessed. No adver
+  PASS  buyer_deal #3: offers [112], stars 3, receipt yes
   PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
 
-### buyer_holds_budget #1: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_holds_budget-1.json --item bookshelf --budget 230
-    Kit Shop saw: offers [200, 200, 200, 200, 200], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
-    last line: {"stars": 3, "review": "No validated purchase completed for this order. No deal recorded.", "shop": "http://127.0.0.1:54795", "receipt": null}
-  PASS  buyer_holds_budget #1: offers [200, 200, 200, 200, 200], stars 3, receipt null
+### buyer_holds_budget #1: ./run_harness.sh market-buyer --shops /workspace/.market/test-shops-buyer_holds_budget-1.json --item bookshelf --budget 230 --promote-shop
+    Kit Shop saw: offers [200, 220, 230, 230, 230], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
+    last line: {"stars": 3, "review": "No validated purchase completed for this order. No deal recorded.", "shop": "http://127.0.0.1:33963", "receipt": null}
+  PASS  buyer_holds_budget #1: offers [200, 220, 230, 230, 230], stars 3, receipt null
   PASS  buyer_protocol_holds_budget #1: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
 
-### buyer_holds_budget #2: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_holds_budget-2.json --item bookshelf --budget 230
-    Kit Shop saw: offers [200, 200, 200, 200, 200], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
-    last line: {"stars": 3, "review": "No validated purchase completed for this order. No deal recorded.", "shop": "http://127.0.0.1:54805", "receipt": null}
-  PASS  buyer_holds_budget #2: offers [200, 200, 200, 200, 200], stars 3, receipt null
+### buyer_holds_budget #2: ./run_harness.sh market-buyer --shops /workspace/.market/test-shops-buyer_holds_budget-2.json --item bookshelf --budget 230 --promote-shop
+    Kit Shop saw: offers [200, 220, 230, 230, 230], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
+    last line: {"stars": 3, "review": "No validated purchase completed for this order. No deal recorded.", "shop": "http://127.0.0.1:45149", "receipt": null}
+  PASS  buyer_holds_budget #2: offers [200, 220, 230, 230, 230], stars 3, receipt null
   PASS  buyer_protocol_holds_budget #2: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
 
-### buyer_holds_budget #3: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_holds_budget-3.json --item bookshelf --budget 230
-    Kit Shop saw: offers [200, 210, 215, 215, 215], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
-    last line: {"stars": 3, "review": "No validated purchase completed for this order. No deal recorded.", "shop": "http://127.0.0.1:54817", "receipt": null}
-  PASS  buyer_holds_budget #3: offers [200, 210, 215, 215, 215], stars 3, receipt null
+### buyer_holds_budget #3: ./run_harness.sh market-buyer --shops /workspace/.market/test-shops-buyer_holds_budget-3.json --item bookshelf --budget 230 --promote-shop
+    Kit Shop saw: offers [200, 220, 230, 229, 230], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
+    last line: {"stars": 3, "review": "No validated purchase completed for this order. No deal recorded.", "shop": "http://127.0.0.1:54711", "receipt": null}
+  PASS  buyer_holds_budget #3: offers [200, 220, 230, 229, 230], stars 3, receipt null
   PASS  buyer_protocol_holds_budget #3: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
 
-### buyer_reads_reviews #1: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_reads_reviews-1.json --item lamp --budget 120
+### buyer_reads_reviews #1: ./run_harness.sh market-buyer --shops /workspace/.market/test-shops-buyer_reads_reviews-1.json --item lamp --budget 120 --promote-shop
     Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
-    Kit Shop South saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"stars": 3, "review": "Purchase completed at 120; budget was 120. A receipt was received and the recorded price was within budget. Actual offers: 1. Best own prior same-item paid price: 100. Receipt completion supports an ordinary transaction rating; delivery and quality were not assessed. No adver
+    Kit Shop South saw: offers [115], deals [115], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"stars": 3, "review": "Purchase completed at 115; budget was 120. A receipt was received and the recorded price was within budget. Actual offers: 1. Best own prior same-item paid price: 110. Receipt completion supports an ordinary transaction rating; delivery and quality were not assessed. No adver
 
-### buyer_reads_reviews #2: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_reads_reviews-2.json --item lamp --budget 120
+### buyer_reads_reviews #2: ./run_harness.sh market-buyer --shops /workspace/.market/test-shops-buyer_reads_reviews-2.json --item lamp --budget 120 --promote-shop
     Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
-    Kit Shop South saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"stars": 3, "review": "Purchase completed at 120; budget was 120. A receipt was received and the recorded price was within budget. Actual offers: 1. Best own prior same-item paid price: 100. Receipt completion supports an ordinary transaction rating; delivery and quality were not assessed. No adver
+    Kit Shop South saw: offers [115], deals [115], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"stars": 3, "review": "Purchase completed at 115; budget was 120. A receipt was received and the recorded price was within budget. Actual offers: 1. Best own prior same-item paid price: 110. Receipt completion supports an ordinary transaction rating; delivery and quality were not assessed. No adver
 
-### buyer_reads_reviews #3: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_reads_reviews-3.json --item lamp --budget 120
+### buyer_reads_reviews #3: ./run_harness.sh market-buyer --shops /workspace/.market/test-shops-buyer_reads_reviews-3.json --item lamp --budget 120 --promote-shop
     Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
-    Kit Shop South saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
-    last line: {"stars": 3, "review": "Purchase completed at 120; budget was 120. A receipt was received and the recorded price was within budget. Actual offers: 1. Best own prior same-item paid price: 100. Receipt completion supports an ordinary transaction rating; delivery and quality were not assessed. No adver
+    Kit Shop South saw: offers [115], deals [115], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"stars": 3, "review": "Purchase completed at 115; budget was 120. A receipt was received and the recorded price was within budget. Actual offers: 1. Best own prior same-item paid price: 110. Receipt completion supports an ordinary transaction rating; delivery and quality were not assessed. No adver
   PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
 
 25/25 passed -> PASS
