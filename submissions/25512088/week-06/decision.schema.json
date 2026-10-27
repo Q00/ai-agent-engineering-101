@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "action": {"type": "string", "enum": ["ask", "counter", "accept", "reject", "offer", "walk"]},
+    "price": {"type": ["integer", "null"]},
+    "message": {"type": "string"}
+  },
+  "required": ["action", "price", "message"],
+  "additionalProperties": false
+}

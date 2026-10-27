@@ -1,0 +1,66 @@
+{
+  "directory_cards": 20,
+  "shopping_list": [
+    {
+      "item": "lamp",
+      "limit": 120
+    },
+    {
+      "item": "chair",
+      "limit": 200
+    },
+    {
+      "item": "bookshelf",
+      "limit": 280
+    }
+  ],
+  "total_budget": 570,
+  "total_spent": 540,
+  "bought": [
+    "lamp",
+    "chair",
+    "bookshelf"
+  ],
+  "results": [
+    {
+      "item": "lamp",
+      "shop": "shop-00",
+      "limit": 120,
+      "returncode": 0,
+      "receipt": {
+        "seller": "Shop 00 Lamp",
+        "price": 100.0,
+        "item": "lamp"
+      },
+      "stdout": "CARD {\"name\": \"Shop 00 Lamp\", \"skills\": [{\"id\": \"negotiate\", \"name\": \"Negotiate a furniture purchase\", \"description\": \"Ask for a lamp, chair, or bookshelf, then negotiate a numeric price.\", \"tags\": [\"shopping\", \"furniture\", \"negotiation\", \"codex\"], \"examples\": [\"I want to buy a lamp\", \"100\"]}]}\nSTATE TASK_STATE_INPUT_REQUIRED lamp: asking 130. Send your offer as a number.\nHARNESS {\"model\": \"gpt-5.6-luna\", \"effort\": \"low\", \"decision\": {\"action\": \"offer\", \"price\": 100, \"message\": \"I offer 100.\"}}\nSTATE TASK_STATE_COMPLETED Deal: lamp at 100.\nRECEIPT {\"seller\": \"Shop 00 Lamp\", \"price\": 100.0, \"item\": \"lamp\"}\n",
+      "stderr": ""
+    },
+    {
+      "item": "chair",
+      "shop": "shop-01",
+      "limit": 200,
+      "returncode": 0,
+      "receipt": {
+        "item": "chair",
+        "price": 180.0,
+        "seller": "Shop 01 Chair"
+      },
+      "stdout": "CARD {\"name\": \"Shop 01 Chair\", \"skills\": [{\"id\": \"negotiate\", \"name\": \"Negotiate a furniture purchase\", \"description\": \"Ask for a lamp, chair, or bookshelf, then negotiate a numeric price.\", \"tags\": [\"shopping\", \"furniture\", \"negotiation\", \"codex\"], \"examples\": [\"I want to buy a lamp\", \"100\"]}]}\nSTATE TASK_STATE_INPUT_REQUIRED chair: asking 234. Send your offer as a number.\nHARNESS {\"model\": \"gpt-5.6-luna\", \"effort\": \"low\", \"decision\": {\"action\": \"offer\", \"price\": 180, \"message\": \"I offer 180 for the chair.\"}}\nSTATE TASK_STATE_COMPLETED Deal: chair at 180.\nRECEIPT {\"item\": \"chair\", \"price\": 180.0, \"seller\": \"Shop 01 Chair\"}\n",
+      "stderr": ""
+    },
+    {
+      "item": "bookshelf",
+      "shop": "shop-02",
+      "limit": 280,
+      "returncode": 0,
+      "receipt": {
+        "price": 260.0,
+        "item": "bookshelf",
+        "seller": "Shop 02 Bookshelf"
+      },
+      "stdout": "CARD {\"name\": \"Shop 02 Bookshelf\", \"skills\": [{\"id\": \"negotiate\", \"name\": \"Negotiate a furniture purchase\", \"description\": \"Ask for a lamp, chair, or bookshelf, then negotiate a numeric price.\", \"tags\": [\"shopping\", \"furniture\", \"negotiation\", \"codex\"], \"examples\": [\"I want to buy a lamp\", \"100\"]}]}\nSTATE TASK_STATE_INPUT_REQUIRED bookshelf: asking 338. Send your offer as a number.\nHARNESS {\"model\": \"gpt-5.6-luna\", \"effort\": \"low\", \"decision\": {\"action\": \"offer\", \"price\": 260, \"message\": \"I offer 260.\"}}\nSTATE TASK_STATE_COMPLETED Deal: bookshelf at 260.\nRECEIPT {\"price\": 260.0, \"item\": \"bookshelf\", \"seller\": \"Shop 02 Bookshelf\"}\n",
+      "stderr": ""
+    }
+  ],
+  "passed": true
+}

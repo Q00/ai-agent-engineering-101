@@ -1,0 +1,104 @@
+# week-06 trade test, kit v1, 2026-10-20T06:19:44+00:00
+harness: Codex CLI 0.162.0-alpha.17.2, gpt-5.6-luna, reasoning effort low
+
+## seller tests: python seller_agent.py --port 60543
+  PASS  seller_card #1: name='Codex Luna Furniture Shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+    -> SendMessage "60" taskId=db94f153
+    <- TASK_STATE_INPUT_REQUIRED | 60 is too low. Counteroffer: 115.
+    -> SendMessage "115" taskId=db94f153
+    <- TASK_STATE_COMPLETED | Deal: lamp at 115.
+       artifact receipt [{"price": 115.0, "seller": "Codex Luna Furniture Shop", "item": "lamp"}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 130
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 115.0, asks [130, 115]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=db94f153
+    <- error -32004 Task db94f153-b456-466a-a58c-810d9351ba05 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+    -> SendMessage "60" taskId=b69ef9c1
+    <- TASK_STATE_INPUT_REQUIRED | 60 is too low. Counteroffer: 115.
+    -> SendMessage "115" taskId=b69ef9c1
+    <- TASK_STATE_COMPLETED | Deal: lamp at 115.
+       artifact receipt [{"price": 115.0, "seller": "Codex Luna Furniture Shop", "item": "lamp"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 115.0, asks [130, 115]
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+    -> SendMessage "60" taskId=fa07e157
+    <- TASK_STATE_INPUT_REQUIRED | 60 is too low. Counteroffer: 115.
+    -> SendMessage "115" taskId=fa07e157
+    <- TASK_STATE_COMPLETED | Deal: lamp at 115.
+       artifact receipt [{"price": 115.0, "seller": "Codex Luna Furniture Shop", "item": "lamp"}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 115.0, asks [130, 115]
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+    -> SendMessage "140" taskId=5292e3b7
+    <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 299.
+    -> SendMessage "170" taskId=5292e3b7
+    <- TASK_STATE_REJECTED | I can’t accept this offer.
+  PASS  seller_holds_reserve #1: TASK_STATE_REJECTED, asks [338, 299]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+    -> SendMessage "140" taskId=08404e05
+    <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 300.
+    -> SendMessage "170" taskId=08404e05
+    <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 280.
+    -> SendMessage "200" taskId=08404e05
+    <- TASK_STATE_REJECTED | I can’t accept 200 for this bookshelf.
+  PASS  seller_holds_reserve #2: TASK_STATE_REJECTED, asks [338, 300, 280]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+    -> SendMessage "140" taskId=1fafd9cb
+    <- TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 300.
+    -> SendMessage "170" taskId=1fafd9cb
+    <- TASK_STATE_REJECTED | I can’t accept offers below 260.
+  PASS  seller_holds_reserve #3: TASK_STATE_REJECTED, asks [338, 300]
+
+## buyer tests: your buyer against the kit's rule-based seller
+
+### buyer_deal #1: python buyer_agent.py --url http://127.0.0.1:60836 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #1: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: python buyer_agent.py --url http://127.0.0.1:60855 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #2: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: python buyer_agent.py --url http://127.0.0.1:60879 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #3: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: python buyer_agent.py --url http://127.0.0.1:60898 --item bookshelf --budget 230
+    kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #1: posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #2: python buyer_agent.py --url http://127.0.0.1:60915 --item bookshelf --budget 230
+    kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #2: posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #3: python buyer_agent.py --url http://127.0.0.1:60933 --item bookshelf --budget 230
+    kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 1, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+21/21 passed -> PASS
