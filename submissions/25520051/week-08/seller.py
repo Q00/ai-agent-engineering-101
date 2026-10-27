@@ -202,6 +202,105 @@ def perks(code: str | None, ask: int, reserve: int) -> tuple[int, str, int, int 
                                      f"your {PCT_WORDS[cpn]} percent coupon (down to our floor)" if cpn else ""] if x)
     return new, f" Member perks applied: {said}.", used, cpn
 
+# --- shop memory: learn each buyer's negotiation behaviour and price to it. Round 3 takes the budget
+# off the ledger, so what the shop observes for itself is its only edge. Kept honest by two hard limits
+# that never move: the reserve floor, and the member price promise (we never open a member above the
+# price they last paid us). Buyers weigh their own past trades with us at 76% and a matching signed
+# receipt at 99% (lecture data), so the memory's job is to price to a known buyer, never to trick one.
+SHOP_MEM = Path(__file__).with_name("shop_memory.json")
+GRINDER_STEP = [0.4, 0.6, 0.8, 1.0]      # reach the reserve sooner for hard hagglers: speed is a star (>=4 offers -> lower)
+MARKUP_CAP = 0.08                        # bounded live move of the opening ask for buyers without a member code
+MARKUP_MIN_N = 8                         # negotiations seen for an item before its opening moves at all
+
+
+def account_id(code: str | None) -> str | None:
+    """The stable account a member code points to (codes rotate each purchase; the account does not)."""
+    return members()["codes"].get(code) if code else None
+
+
+def load_shop_mem() -> dict:
+    try:
+        d = json.loads(SHOP_MEM.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        d = {}
+    d.setdefault("members", {})
+    d.setdefault("items", {})
+    return d
+
+
+def save_shop_mem(d: dict):
+    tmp = SHOP_MEM.with_suffix(".tmp")
+    tmp.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
+    tmp.replace(SHOP_MEM)
+
+
+def ceiling_estimate(offers: list) -> int | None:
+    """From a buyer's rising offers, extrapolate where they would stop: the mirror of the buyer's
+    floor estimate. If the increments shrink by a steady ratio r, the remaining climb sums to
+    inc*r/(1-r). Recorded only; the member price promise, not this guess, caps what we ask."""
+    inc = [b - a for a, b in zip(offers, offers[1:]) if b - a > 0]
+    if len(inc) >= 2 and 0 < inc[-1] < inc[-2]:
+        r = inc[-1] / inc[-2]
+        return int(offers[-1] + inc[-1] * r / (1 - r))
+    return offers[-1] if offers else None
+
+
+def record_deal(acct: str | None, item: str, result: str, price: int | None, buyer_offers: list, ask: int):
+    """One negotiation's outcome. Members are keyed by account (behaviour follows the buyer across
+    visits); everyone is counted into the item aggregate (anonymous buyers share no identity)."""
+    d = load_shop_mem()
+    rounds = len(buyer_offers)
+    if acct:
+        m = d["members"].setdefault(acct, {}).setdefault(item, {"accepts": [], "rounds": [], "walks": 0})
+        if result == "deal":
+            m["accepts"] = (m["accepts"] + [price])[-10:]
+            m["rounds"] = (m["rounds"] + [rounds])[-10:]
+        else:
+            m["walks"] = m.get("walks", 0) + 1
+        if buyer_offers:
+            m["ceiling_est"] = ceiling_estimate(buyer_offers)
+    it = d["items"].setdefault(item, {"deals": 0, "near_ask": 0, "walk": 0, "cleared": []})
+    if result == "deal":
+        it["deals"] += 1
+        it["cleared"] = (it["cleared"] + [price])[-50:]
+        if rounds <= 2 and price >= ask * 0.95:          # won fast and near the ask: clear sign of room
+            it["near_ask"] += 1
+    else:
+        it["walk"] += 1
+    save_shop_mem(d)
+
+
+def memory_opening(acct: str | None, item: str, ask: int, reserve: int, step: list, member: bool) -> tuple[int, list, str]:
+    """Adjust the opening ask and concession schedule from memory.
+
+    Member (ask already <= their last price, so this only moves within the promise):
+      accepts fast (avg <= 2 offers) -> hold the opening; grinds (avg >= 4) -> open a touch lower and
+      concede faster, trading a little margin for the speed star and avoiding a 'held firm' review.
+    No member code: move the item's opening within +/-MARKUP_CAP by the win rate (deals vs walks), a
+    self-correcting loop -- the Round-3 lever, now that no one can read budgets to undercut toward.
+    Winning nearly every negotiation means the opening is too low; losing too many means it is too high."""
+    d = load_shop_mem()
+    if member and acct and item in d["members"].get(acct, {}):
+        rounds = d["members"][acct][item].get("rounds") or []
+        if rounds:
+            avg = sum(rounds) / len(rounds)
+            if avg >= 4:
+                ask = max(reserve, round(ask * 0.96))
+                return max(ask, round(reserve * 1.08)), GRINDER_STEP, f"member grinds (avg {avg:.1f} offers): open {ask}, concede faster"
+            if avg <= 2:
+                return max(ask, round(reserve * 1.08)), step, f"member accepts fast (avg {avg:.1f} offers): hold the opening {ask}"
+    if not member:
+        it = d["items"].get(item, {})
+        n = it.get("deals", 0) + it.get("walk", 0)
+        if n >= MARKUP_MIN_N:
+            win = it["deals"] / n
+            adj = max(-MARKUP_CAP, min(MARKUP_CAP, (win - 0.70) * MARKUP_CAP / 0.30))   # win 100%->+cap, 70%->0, 40%->-cap
+            ask = round(ask * (1 + adj))
+            return max(ask, round(reserve * 1.08)), step, (f"win rate {win:.0%} of {n} "
+                    f"(near-ask {it.get('near_ask', 0)}): opening {adj:+.0%} -> {ask}")
+    return max(ask, round(reserve * 1.08)), step, ""
+
+
 # Every reply is written for any buyer model, large or small:
 # - the current price is the only digit in the text, and it comes last ("Counteroffer: 115.")
 # - "Final price" means it will not go lower; the offers left are spelled out, never digits
@@ -258,10 +357,17 @@ class Seller(AgentExecutor):
             code = member_of(text)
             member = code is not None
             asks, step = prices()
-            ask = round(asks[item] * MEMBER_ASK) if member else asks[item]
-            cap = member_cap(code, item)
-            if cap is not None:
-                ask = min(ask, cap)                                   # member price promise
+            acct = account_id(code)
+            if member:
+                ask = round(asks[item] * MEMBER_ASK)
+                cap = member_cap(code, item)
+                if cap is not None:
+                    ask = min(ask, cap)                               # member price promise
+            else:
+                ask = asks[item]
+            ask, step, mem_note = memory_opening(acct, item, ask, RESERVE[item], step, member)
+            if mem_note:
+                print(f"[seller] memory: {mem_note}", flush=True)
             ask, perk_text, pts_used, cpn_used = perks(code, max(ask, RESERVE[item]), RESERVE[item])
             pop = popup()
             ev = None if member else event()
@@ -282,7 +388,7 @@ class Seller(AgentExecutor):
                 perk_text += " VIP pass holder: you start at our floor price this season."
             deal = {"item": item, "reserve": RESERVE[item], "ask": max(ask, RESERVE[item]), "offers": 0,
                     "member": member, "code": code, "list": asks[item], "step": step,
-                    "pts_used": pts_used, "cpn_used": cpn_used, "first": not member}
+                    "pts_used": pts_used, "cpn_used": cpn_used, "first": not member, "buyer_offers": []}
             self.open[task.id] = deal
             hello = await asyncio.to_thread(pitch, item, member)
             if deal["ask"] == deal["reserve"]:
@@ -326,6 +432,7 @@ class Seller(AgentExecutor):
             return
         offer = int(float(m.group()))
         deal["offers"] += 1
+        deal["buyer_offers"].append(offer)
         if offer >= deal["ask"]:                                          # never charge more than our own ask
             return await self.sell(up, task.id, deal, deal["ask"])
         new = next_ask(deal)
@@ -334,6 +441,8 @@ class Seller(AgentExecutor):
         if offer >= deal["reserve"] and (offer >= new - close or left == 0):
             return await self.sell(up, task.id, deal, offer)
         if left == 0:
+            record_deal(account_id(deal.get("code")), deal["item"], "walk", None,
+                        deal.get("buyer_offers", []), deal["list"])
             del self.open[task.id]
             await up.reject(up.new_agent_message(parts=[
                 new_text_part(f"No deal this time. Our final price was {deal['reserve']}."),
@@ -374,6 +483,8 @@ class Seller(AgentExecutor):
             if vip:
                 state["vip"] = season
         save_members(book)
+        record_deal(book["codes"][deal.get("code") or new_code], deal["item"], "deal", price,
+                    deal.get("buyer_offers", []), deal["list"])
         await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
         await up.complete(up.new_agent_message(parts=[new_text_part(
             f"Deal: {deal['item']} at {price}. Signed receipt attached. Your Moss & Oak member code is "
