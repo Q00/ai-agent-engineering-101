@@ -1,0 +1,227 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
+  "started": "2026-10-27T07:13:55+00:00",
+  "harness": "Python prompt/validation loop + OpenAI Responses API; gpt-4o-mini; strict JSON Schema; temperature 0",
+  "seller_cmd": "python -u seller.py --port {port}",
+  "market_buyer_cmd": "python -u market_buyer.py --shops {shops} --item {item} --budget {budget}",
+  "seller_card": {
+    "name": "Seochanit Shop",
+    "description": "Published minimum prices: lamp 100; chair 180; bookshelf 260. Ed25519-signed receipts for Round 2. Send the item name, then a plain integer offer using the same taskId. The receipt preserves the agreed price. Reviews should reflect the actual final outcome.",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:64501/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "text/plain",
+      "application/json"
+    ],
+    "skills": [
+      {
+        "id": "buy-lamp",
+        "name": "Buy a lamp",
+        "description": "Buy one lamp: name the item, then send a plain integer offer on the same task. Completed deals include the agreed price, task id and an Ed25519-signed receipt.",
+        "tags": [
+          "shopping",
+          "negotiation",
+          "lamp",
+          "signed-receipt"
+        ],
+        "examples": [
+          "I want to buy a lamp"
+        ]
+      },
+      {
+        "id": "buy-chair",
+        "name": "Buy a chair",
+        "description": "Buy one chair: name the item, then send a plain integer offer on the same task. Completed deals include the agreed price, task id and an Ed25519-signed receipt.",
+        "tags": [
+          "shopping",
+          "negotiation",
+          "chair",
+          "signed-receipt"
+        ],
+        "examples": [
+          "I want to buy a chair"
+        ]
+      },
+      {
+        "id": "buy-bookshelf",
+        "name": "Buy a bookshelf",
+        "description": "Buy one bookshelf: name the item, then send a plain integer offer on the same task. Completed deals include the agreed price, task id and an Ed25519-signed receipt.",
+        "tags": [
+          "shopping",
+          "negotiation",
+          "bookshelf",
+          "signed-receipt"
+        ],
+        "examples": [
+          "I want to buy a bookshelf"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name='Seochanit Shop' binding=JSONRPC version=1.0 skills=3"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 100"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [100]"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 1,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
+      "test": "seller_terminal",
+      "run": 1,
+      "pass": true,
+      "detail": "error returned"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [100]"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 2,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [100]"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 3,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [260, 260, 260, 260, 260, 260, 260, 260, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [260, 260, 260, 260, 260, 260, 260, 260, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [260, 260, 260, 260, 260, 260, 260, 260, 260]"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "offers [100], stars 5, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "offers [100], stars 5, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "offers [100], stars 5, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "offers [200], stars 3, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "offers [], stars 3, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "offers [], stars 3, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_reads_reviews",
+      "run": 1,
+      "pass": true,
+      "detail": "shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2"
+    }
+  ],
+  "passed": true
+}

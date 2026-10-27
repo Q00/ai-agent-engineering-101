@@ -1,0 +1,67 @@
+$ C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-06\.venv\Scripts\python.exe C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-06\seller.py --port 50633 --log-dir C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-06\logs\seller\stage-20261017T041758.156194Z\model
+PASS seller_card: {'name': 'Seochanit Shop', 'interface': {'url': 'http://127.0.0.1:50633/', 'protocolBinding': 'JSONRPC', 'protocolVersion': '1.0'}}
+
+## seller_deal #1: current kit buyer, lamp budget 120
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 120
+    -> SendMessage "120" taskId=8287b177
+    <- TASK_STATE_COMPLETED | Deal: lamp at 120
+       artifact receipt [{"item": "lamp", "price": 120.0, "seller": "Seochanit Shop"}]
+PASS seller_opens: {'state': 'TASK_STATE_INPUT_REQUIRED', 'ask': 120}
+PASS seller_deal_1: {'state': 'TASK_STATE_COMPLETED', 'price': 120.0, 'asks': [120]}
+    -> SendMessage "110" taskId=8287b177
+    <- error -32004 Task 8287b177-f060-4ec1-b1cc-425d7984b83b is in terminal state: TASK_STATE_COMPLETED
+PASS seller_terminal: {'code': -32004, 'message': 'Task 8287b177-f060-4ec1-b1cc-425d7984b83b is in terminal state: TASK_STATE_COMPLETED', 'data': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'UNSUPPORTED_OPERATION', 'domain': 'a2a-protocol.org', 'metadata': {}}]}
+
+## seller_deal #2: current kit buyer, lamp budget 120
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 120
+    -> SendMessage "120" taskId=63ce419a
+    <- TASK_STATE_COMPLETED | Deal: lamp at 120
+       artifact receipt [{"item": "lamp", "price": 120.0, "seller": "Seochanit Shop"}]
+PASS seller_deal_2: {'state': 'TASK_STATE_COMPLETED', 'price': 120.0, 'asks': [120]}
+
+## seller_deal #3: current kit buyer, lamp budget 120
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 120
+    -> SendMessage "120" taskId=a82a5d4b
+    <- TASK_STATE_COMPLETED | Deal: lamp at 120
+       artifact receipt [{"item": "lamp", "price": 120.0, "seller": "Seochanit Shop"}]
+PASS seller_deal_3: {'state': 'TASK_STATE_COMPLETED', 'price': 120.0, 'asks': [120]}
+
+## seller_holds_reserve #1: current kit buyer, bookshelf budget 230
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 300
+    -> SendMessage "140" taskId=539cf602
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260
+    -> SendMessage "170" taskId=539cf602
+    <- TASK_STATE_REJECTED | The seller ended this negotiation without a sale.
+PASS seller_holds_reserve_1: {'state': 'TASK_STATE_REJECTED', 'price': None, 'asks': [300, 260]}
+
+## seller_holds_reserve #2: current kit buyer, bookshelf budget 230
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 300
+    -> SendMessage "140" taskId=585169c6
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260
+    -> SendMessage "170" taskId=585169c6
+    <- TASK_STATE_REJECTED | The seller ended this negotiation without a sale.
+PASS seller_holds_reserve_2: {'state': 'TASK_STATE_REJECTED', 'price': None, 'asks': [300, 260]}
+
+## seller_holds_reserve #3: current kit buyer, bookshelf budget 230
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 300
+    -> SendMessage "140" taskId=4f0c8cbe
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260
+    -> SendMessage "170" taskId=4f0c8cbe
+    <- TASK_STATE_REJECTED | The seller ended this negotiation without a sale.
+PASS seller_holds_reserve_3: {'state': 'TASK_STATE_REJECTED', 'price': None, 'asks': [300, 260]}
+
+## additional protocol checks
+    -> SendMessage "I want to buy a sofa"
+    <- TASK_STATE_REJECTED | Name one supported item: lamp, chair, bookshelf.
+PASS unknown_item_rejected: TASK_STATE_REJECTED
+    -> SendMessage "I want to buy a chair"
+    <- TASK_STATE_INPUT_REQUIRED | chair: asking 200
+    <- TASK_STATE_CANCELED | 
+PASS seller_cancel: TASK_STATE_CANCELED
+PASS missing_version_rejected: {'error': {'code': -32009, 'message': "A2A version '0.3' is not supported by this handler. Expected version '1.0'.", 'data': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'VERSION_NOT_SUPPORTED', 'domain': 'a2a-protocol.org', 'metadata': {}}]}, 'id': 'version-check', 'jsonrpc': '2.0'}

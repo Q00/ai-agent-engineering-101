@@ -1,0 +1,123 @@
+{
+  "kind": "lecture-lab-not-assignment-trade-test",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "packages": {
+    "a2a-sdk": "1.2.2",
+    "uvicorn": "0.54.0",
+    "httpx": "0.28.1"
+  },
+  "passed": true,
+  "checks": [
+    {
+      "check": "cli_version",
+      "passed": true,
+      "detail": "a2a 0.3.0\ncommit:  6286ed6a9a1f8c7360c03b5e832811fe0896414a\nbuilt:   2026-09-24T09:01:49Z\ngo:      go1.25.0\nos/arch: windows/amd64"
+    },
+    {
+      "check": "echo_card",
+      "passed": true,
+      "detail": "name=Echo Agent; interface={'url': 'http://127.0.0.1:8080', 'protocolBinding': 'HTTP+JSON', 'protocolVersion': '1.0'}"
+    },
+    {
+      "check": "echo_completed_artifact",
+      "passed": true,
+      "detail": "state=TASK_STATE_COMPLETED; artifacts=[{'artifactId': '01a147f6-e416-7582-8a67-ff4b8a2b293b', 'parts': [{'text': 'hello A2A'}]}]"
+    },
+    {
+      "check": "hello_card",
+      "passed": true,
+      "detail": "name=Hello Agent; interface={'url': 'http://127.0.0.1:9000/', 'protocolBinding': 'JSONRPC', 'protocolVersion': '1.0'}"
+    },
+    {
+      "check": "hello_reply",
+      "passed": true,
+      "detail": "{'message': {'messageId': '2eae4997-8d65-41cb-9d5d-ebc3bca330c5', 'contextId': 'fe8edf99-7cd8-4b7b-95e3-7c8b410cb816', 'parts': [{'text': 'Hello! You said: hi there'}], 'role': 'ROLE_AGENT', 'taskId': '57c9df66-ff4e-424c-97b0-42e265877460'}, 'state': 'TASK_STATE_COMPLETED', 'timestamp': '2026-10-17T03:45:28.777875Z'}"
+    },
+    {
+      "check": "seller_card",
+      "passed": true,
+      "detail": "name=Lamp Shop; interface={'url': 'http://127.0.0.1:9999/', 'protocolBinding': 'JSONRPC', 'protocolVersion': '1.0'}"
+    },
+    {
+      "check": "missing_version_rejected",
+      "passed": true,
+      "detail": "{\"error\":{\"code\":-32009,\"message\":\"A2A version '0.3' is not supported by this handler. Expected version '1.0'.\",\"data\":[{\"@type\":\"type.googleapis.com/google.rpc.ErrorInfo\",\"reason\":\"VERSION_NOT_SUPPORTED\",\"domain\":\"a2a-protocol.org\",\"metadata\":{}}]},\"id\":1,\"jsonrpc\":\"2.0\"}"
+    },
+    {
+      "check": "lamp_open_130",
+      "passed": true,
+      "detail": "{'message': {'messageId': '49a59c0c-d57b-49fe-9994-6c0ee38a5456', 'contextId': 'a3ae67eb-be65-43ea-a2b5-2af4f4fc75cc', 'parts': [{'text': 'lamp: asking 130. Send your offer as a number.'}], 'role': 'ROLE_AGENT', 'taskId': '66a98713-dfc2-496e-a041-57c1ea425483'}, 'state': 'TASK_STATE_INPUT_REQUIRED', 'timestamp': '2026-10-17T03:45:31.952378Z'}"
+    },
+    {
+      "check": "lamp-offer-80_same_task",
+      "passed": true,
+      "detail": "66a98713-dfc2-496e-a041-57c1ea425483"
+    },
+    {
+      "check": "lamp_counter_105",
+      "passed": true,
+      "detail": "{'message': {'messageId': 'cc81c879-2d6a-4456-97f5-4f3077cc76ff', 'contextId': 'a3ae67eb-be65-43ea-a2b5-2af4f4fc75cc', 'parts': [{'text': '80 is too low. Counteroffer: 105.'}], 'role': 'ROLE_AGENT', 'taskId': '66a98713-dfc2-496e-a041-57c1ea425483'}, 'state': 'TASK_STATE_INPUT_REQUIRED', 'timestamp': '2026-10-17T03:45:32.017053Z'}"
+    },
+    {
+      "check": "lamp-buy-105_same_task",
+      "passed": true,
+      "detail": "66a98713-dfc2-496e-a041-57c1ea425483"
+    },
+    {
+      "check": "lamp_receipt_105",
+      "passed": true,
+      "detail": "state=TASK_STATE_COMPLETED; receipts=[{'item': 'lamp', 'price': 105, 'seller': 'Lamp Shop'}]"
+    },
+    {
+      "check": "lamp_history",
+      "passed": true,
+      "detail": "history length=5"
+    },
+    {
+      "check": "finished_task_error",
+      "passed": true,
+      "detail": "{'error': {'code': 'A2ACLI_ERR_PROTOCOL', 'message': 'failed to send message: Task 66a98713-dfc2-496e-a041-57c1ea425483 is in terminal state: TASK_STATE_COMPLETED', 'a2aCode': 'UNSUPPORTED_OPERATION'}}"
+    },
+    {
+      "check": "unknown_item_rejected",
+      "passed": true,
+      "detail": "{'message': {'messageId': '8e2a2f17-5c37-4c4e-9d7c-829a655e23f5', 'contextId': '0de8942d-02ef-4822-9336-e3a8c87b6f38', 'parts': [{'text': 'We only sell: lamp, chair, bookshelf.'}], 'role': 'ROLE_AGENT', 'taskId': 'a34fa2c1-dfd0-4420-9579-b3922894af97'}, 'state': 'TASK_STATE_REJECTED', 'timestamp': '2026-10-17T03:45:32.299158Z'}"
+    },
+    {
+      "check": "chair-low-1_same_task",
+      "passed": true,
+      "detail": "412737e3-94b8-4a96-ba9d-e68a1dbaf6a6"
+    },
+    {
+      "check": "chair_round_1",
+      "passed": true,
+      "detail": "{'message': {'messageId': 'e50469b2-d3c2-4477-bbdb-9eb4d29a83c7', 'contextId': '1d4613c6-5feb-49a6-b9ac-e6088c883b16', 'parts': [{'text': '100 is too low. Counteroffer: 180.'}], 'role': 'ROLE_AGENT', 'taskId': '412737e3-94b8-4a96-ba9d-e68a1dbaf6a6'}, 'state': 'TASK_STATE_INPUT_REQUIRED', 'timestamp': '2026-10-17T03:45:32.468589Z'}"
+    },
+    {
+      "check": "chair-low-2_same_task",
+      "passed": true,
+      "detail": "412737e3-94b8-4a96-ba9d-e68a1dbaf6a6"
+    },
+    {
+      "check": "chair_round_2",
+      "passed": true,
+      "detail": "{'message': {'messageId': '8385db2b-a733-41a9-a2b4-b2c33435acd0', 'contextId': '1d4613c6-5feb-49a6-b9ac-e6088c883b16', 'parts': [{'text': '100 is too low. Counteroffer: 180.'}], 'role': 'ROLE_AGENT', 'taskId': '412737e3-94b8-4a96-ba9d-e68a1dbaf6a6'}, 'state': 'TASK_STATE_INPUT_REQUIRED', 'timestamp': '2026-10-17T03:45:32.533497Z'}"
+    },
+    {
+      "check": "chair-low-3_same_task",
+      "passed": true,
+      "detail": "412737e3-94b8-4a96-ba9d-e68a1dbaf6a6"
+    },
+    {
+      "check": "chair_round_3",
+      "passed": true,
+      "detail": "{'message': {'messageId': '645fc935-8254-485d-91da-08de3b5dbb9c', 'contextId': '1d4613c6-5feb-49a6-b9ac-e6088c883b16', 'parts': [{'text': 'No deal at 100.'}], 'role': 'ROLE_AGENT', 'taskId': '412737e3-94b8-4a96-ba9d-e68a1dbaf6a6'}, 'state': 'TASK_STATE_REJECTED', 'timestamp': '2026-10-17T03:45:32.595987Z'}"
+    },
+    {
+      "check": "bookshelf_canceled",
+      "passed": true,
+      "detail": "{'id': 'fb0fa499-e5c7-48fe-b0a0-3f0ec3cb59fc', 'contextId': '0d538456-d8c6-4e06-86e0-cc4b730873c7', 'history': [{'messageId': '01a147f7-01df-7804-99d9-e5fc916abcdb', 'contextId': '0d538456-d8c6-4e06-86e0-cc4b730873c7', 'parts': [{'text': 'I want to buy a bookshelf'}], 'role': 'ROLE_USER', 'taskId': 'fb0fa499-e5c7-48fe-b0a0-3f0ec3cb59fc'}, {'messageId': '53d78900-3349-4269-917a-dfb80baadd3c', 'contextId': '0d538456-d8c6-4e06-86e0-cc4b730873c7', 'parts': [{'text': 'bookshelf: asking 338. Send your offer as a number.'}], 'role': 'ROLE_AGENT', 'taskId': 'fb0fa499-e5c7-48fe-b0a0-3f0ec3cb59fc'}], 'status': {'state': 'TASK_STATE_CANCELED', 'timestamp': '2026-10-17T03:45:32.730275Z'}}"
+    }
+  ],
+  "error": null
+}
