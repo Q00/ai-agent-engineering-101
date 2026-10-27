@@ -8,6 +8,7 @@ import re
 
 RECENT_COUNT = 5  # Initial setting, not a measured optimum.
 ERROR_COOLDOWN_SECONDS = 3600
+EXPLORATION_INTERVAL = 5
 
 
 def load_memory(path):
@@ -84,10 +85,19 @@ def choose_shop(shops, memory, item, budget, *, now=None, recent_count=RECENT_CO
             candidates.append((rank, shop, details))
     if not candidates:
         return None, "No eligible shop: direct receipt-mismatch evidence for all candidates.", evidence
-    _, shop, details = min(candidates, key=lambda entry: entry[0])
+    exploring = len(memory) % EXPLORATION_INTERVAL == EXPLORATION_INTERVAL - 1
+    safe = [entry for entry in candidates if not entry[0][0] and not entry[0][1]]
+    if exploring and safe:
+        last_visit = {record["shop_name"]: index for index, record in enumerate(memory)}
+        _, shop, details = min(safe, key=lambda entry: (last_visit.get(entry[1]["name"], -1),
+                                                        entry[1]["name"]))
+    else:
+        exploring = False
+        _, shop, details = min(candidates, key=lambda entry: entry[0])
     reason = (f"{shop['name']}: repeated price complaints={details['repeated_public_price_complaints']}, "
               f"recent connection errors={details['recent_transport_errors']}, "
               f"same-item past success={details['same_item_success']}. "
+              f"Selection={'rotation' if exploring else 'price and history'}. "
               f"Past same-item price reference={details['past_price_reference_only']}; "
               "not a current offer. Name breaks remaining ties.")
     return shop, reason, evidence

@@ -30,6 +30,22 @@ class MemoryRules(unittest.TestCase):
     def choose(self, shops, records, **kwargs):
         return memory.choose_shop(shops, records, "lamp", 120, now=NOW, **kwargs)[0]
 
+    def test_rotation_uses_least_recent_safe_shop_every_fifth_attempt(self):
+        records = [observation("known") for _ in range(4)]
+        selected, reason, _ = memory.choose_shop([shop("known"), shop("new")], records,
+                                                  "lamp", 120, now=NOW)
+        self.assertEqual(selected["name"], "new")
+        self.assertIn("Selection=rotation", reason)
+        records.append(observation("new", "no_deal"))
+        self.assertEqual(self.choose([shop("known"), shop("new")], records)["name"], "known")
+
+    def test_rotation_excludes_mismatch_and_avoids_repeated_outages(self):
+        records = [observation("blocked", "receipt_mismatch"),
+                   observation("unavailable", "transport_error"),
+                   observation("unavailable", "transport_error"), observation("known")]
+        self.assertEqual(self.choose([shop("blocked"), shop("unavailable"), shop("known")],
+                                     records)["name"], "known")
+
     def test_success_remembered_by_name_despite_url_change(self):
         chosen = self.choose([shop("aaa-new"), shop("known", url="http://changed.test")], [observation()])
         self.assertEqual(chosen["name"], "known")
