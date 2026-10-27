@@ -160,6 +160,12 @@ def run(
     memory_path = state_dir / "buyer-memory.json"
     memory = load_memory(memory_path)
     choice = choose_shop(shops, memory)
+    for shop in shops:
+        _, suspicious, review_summary = _review_summary(shop.reviews)
+        history = memory.get("shops", {}).get(shop.name, {})
+        mismatches = int(history.get("receipt_mismatches", 0)) if isinstance(history, dict) else 0
+        if (suspicious or mismatches) and shop.name != choice.shop.name:
+            print(f"[avoid] {shop.name}: {review_summary}; receipt mismatches {mismatches}")
     print(f"[choose] {choice.shop.name} ({choice.shop.url}): {choice.reason}")
     try:
         with buyer_factory(choice.shop.url) as client:

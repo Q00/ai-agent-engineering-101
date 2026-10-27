@@ -20,6 +20,7 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import HarnessError, NegotiationTurn, SellerDecisionContext, decide_seller
+from pricing import load_policy, opening_ask, record_trade
 from protocol import RESERVES
 
 SELLER_NAME = "Atlas Shop"
@@ -80,6 +81,13 @@ class Seller(AgentExecutor):
 
     def __init__(self) -> None:
         self.negotiations: dict[str, Negotiation] = {}
+        self.policy = load_policy()
+
+    def _record(self, task_id: str, deal: Negotiation, price: int | None = None) -> None:
+        record_trade({"task": task_id, "item": deal.item, "reserve": deal.reserve,
+                      "opening_ask": deal.history[1].price if len(deal.history) > 1 else None,
+                      "last_offer": deal.last_offer, "price": price, "outcome": deal.state,
+                      "rounds": deal.rounds, "policy": (self.policy or {}).get("version")})
 
     @staticmethod
     def _item(text: str) -> str | None:
@@ -122,8 +130,10 @@ class Seller(AgentExecutor):
             deal = Negotiation(item=item, reserve=RESERVES[item], state="opening")
             deal.history.append(NegotiationTurn("buyer", text))
             self.negotiations[task.id] = deal
+            policy_ask = opening_ask(item, self.policy)
             try:
-                decision = decide_seller(self._context(deal))
+                decision = ({"action": "ask", "price": policy_ask} if policy_ask is not None
+                            else decide_seller(self._context(deal)))
             except HarnessError:
                 await self._safe_reject(updater, deal, "Negotiation decision failed safely.")
                 return
@@ -180,10 +190,12 @@ class Seller(AgentExecutor):
             message = f"Deal accepted at {price}"
             deal.history.append(NegotiationTurn("seller", message, price))
             deal.state = "completed"
+            self._record(task.id, deal, int(price))
             await updater.complete(updater.new_agent_message(parts=[new_text_part(message)]))
             return
         if action == "reject":
             await self._safe_reject(updater, deal, "Offer rejected.")
+            self._record(task.id, deal)
             return
         await self._safe_reject(updater, deal, "Seller decision was invalid.")
 
