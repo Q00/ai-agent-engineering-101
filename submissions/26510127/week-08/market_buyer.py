@@ -68,6 +68,8 @@ Answer with one JSON object and nothing else:
 REVIEW_PROMPT = """You bought (or tried to buy) one {item} from the shop "{shop}". Facts checked by code:
 {facts}
 Write the review other buyers will read: honest, specific, one sentence, mention the prices.
+Use only the facts above. Do not repeat anything the shop claimed about the product (material, warranty, brand)
+and do not guess at causes the facts do not show.
 Answer with one JSON object and nothing else:
 {{"stars": <1-5>, "review": "<one sentence>"}}"""
 
@@ -140,7 +142,7 @@ def safe_ask(prompt, say, tag):
 
 
 def offer_text(offer, budget):
-    # say it is the last value, so a shop asking budget+1 knows it will not get more ("1 apart" failures)
+    # only after one held-back offer below the budget does the buyer name its last value ("1 apart" failures)
     return f"Final offer: {offer}" if offer >= budget else str(offer)
 
 
@@ -219,6 +221,7 @@ def main():
         return t, said
 
     t, lines, asks, offers, broke = {"status": {"state": "NOT_STARTED"}}, [], [], [], None
+    held_back = False
     try:
         t, said = send(f"I want to buy a {a.item}")
         lines = [f"you: I want to buy a {a.item}", f"shop: {said}"]
@@ -242,9 +245,16 @@ def main():
             if offer > a.budget:
                 say(f"[guard] offer {offer} is above the budget {a.budget} -> {a.budget}")
                 offer = a.budget
-            t, said = send(offer_text(offer, a.budget), t["id"])
+            if offer >= a.budget and not held_back:          # Round 3 hides the budget from shops: do not hand
+                held_back = True                              # it over at once; go a little below it first
+                below = max(a.budget - max(2, round(a.budget * 0.03)), (offers[-1] + 1) if offers else 0)
+                if below < a.budget:                          # never go down from my previous offer
+                    offer = below
+                    say(f"[hide] holding back: offering {offer} before my limit")
+            text = offer_text(offer, a.budget)
+            t, said = send(text, t["id"])
             offers.append(offer)
-            lines += [f"you: {offer_text(offer, a.budget)}", f"shop: {said}"]
+            lines += [f"you: {text}", f"shop: {said}"]
             if t["status"]["state"] == "TASK_STATE_INPUT_REQUIRED":
                 asks.append(last_number(said))
         else:
@@ -263,11 +273,15 @@ def main():
                 receipt = p["data"]
     state = t["status"]["state"]
     agreed = offers[-1] if offers else None
-    fraud, unsigned = [], False                               # fraud = the receipt says something we did not agree
+    fraud, unsigned, lower = [], False, None                  # fraud = the receipt overcharges or names something else
     if receipt is not None:
         price = receipt.get("price")
-        if not isinstance(price, (int, float)) or agreed is None or int(price) != agreed:
+        if not isinstance(price, (int, float)):
+            fraud.append(f"receipt price {price!r} is not a number")
+        elif agreed is not None and int(price) > agreed:      # charged MORE than agreed: overcharge
             fraud.append(f"agreed {agreed}, receipt says {price}")
+        elif agreed is not None and int(price) < agreed:      # charged less: odd, but not a cheat (week-08 EP7)
+            lower = f"receipt {price} is lower than the agreed {agreed} (in my favour, not a cheat)"
         if isinstance(price, (int, float)) and price > a.budget:
             fraud.append(f"receipt price {price} is above my budget {a.budget}")
         if a.item.lower() not in str(receipt.get("item", "")).lower():
@@ -285,7 +299,9 @@ def main():
         facts.append("NOTE: the receipt is not signed by the shop, so the market will not count this deal")
     if broke:
         facts.append(f"NOTE: the shop stopped answering mid-negotiation ({broke})")
-    if receipt is not None and not fraud and not unsigned:
+    if lower:
+        facts.append(f"NOTE: {lower}")
+    if receipt is not None and not fraud and not unsigned and not lower:
         facts.append("receipt matches what we agreed and is signed")
     say("[check] " + "; ".join(facts))
 
