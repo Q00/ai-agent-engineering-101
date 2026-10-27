@@ -64,6 +64,7 @@ LAUNCH_MARGIN = 0  # Round 2 opened as a price war at the reserve (dragonash, ki
 STALL_WINDOW = 3600  # a stall: fewer than STALL_DEALS of our deals in the last hour while the market trades
 STALL_DEALS = 10     # (Round 2 converged on shops selling at the reserve and ours sat at 0 for two hours;
                      #  raised from 3 on 10-23 when we fell from ~70 to ~10 deals an hour while the market kept trading)
+HISTORY_SHOWN = 40  # versions shown to the harness, about nine hours at one decision every 13 minutes
 LAUNCH_DEALS = 25  # launch sale until the board shows this many deals of our shop this round (was 10 reviews)
 
 PROMPT = """You set the prices of our furniture shop in an agent market. Buyers are other AI agents;
@@ -146,6 +147,8 @@ def outcome(entries, start, end):
 
 
 def history_text(history, entries, now):
+    """The last HISTORY_SHOWN versions and how each did. A closed version's outcome is the "before" the next decision
+    stored, so only the current version is measured from the ledger (once 884 versions were re-measured every cycle)."""
     if not history:
         start = first_result(entries)
         if start is None:
@@ -155,10 +158,14 @@ def history_text(history, entries, now):
                           f"profit/h {o['items'][k]['profit_per_hour']}" for k in RESERVE)
         return (f"v0, no strategy: the model picked opening prices itself, mostly around 250 for a lamp "
                 f"({o['hours']} h, {o['results']} visits ending in a result, {o['deals']} deals): {items}")
-    lines = []
-    for i, v in enumerate(history):
-        end = history[i + 1]["time"] if i + 1 < len(history) else now
-        o = outcome(entries, v["time"], end)
+    first = max(0, len(history) - HISTORY_SHOWN)
+    lines = [f"({first} earlier versions not shown)"] if first else []
+    for i in range(first, len(history)):
+        v = history[i]
+        o = history[i + 1].get("before") if i + 1 < len(history) else outcome(entries, v["time"], now)
+        if not o:
+            lines.append(f"v{v['version']}: outcome not recorded")
+            continue
         items = "; ".join(f"{k} open {v['open'][k]} target {v['target'][k]}: {o['items'][k]['deals']} deals, "
                           f"median {o['items'][k]['median_price']}, profit/h {o['items'][k]['profit_per_hour']}"
                           for k in RESERVE)
@@ -247,7 +254,7 @@ def situation(entries, now, token):
         def row(s):
             med = {k: statistics.median(v) for k, v in recent.get(s["shop"], {}).get("prices", {}).items()}
             return (f"- {s['shop']}: {s['deals']} deals, {s['visits']} visits, share {s['share']:.1%}, "
-                    f"{s['reviews']} reviews, stars {s['stars']}, median prices {med}")
+                    f"{s['reviews']} reviews, stars {s['stars']}, median prices in the last six hours {med}")
         lines.append(f"Round {stats['round']}, {rnd['deals']} deals in the market so far. Top shops:")
         lines += [row(s) for s in shops[:TOP_SHOPS]]
         ours = next((s for s in shops if s["shop"] == SHOP_NAME), None)
@@ -271,7 +278,7 @@ def market_intel_int(v):
 
 async def cycle(dry_run=False):
     now = time.time()
-    entries = market_intel.load_ledger()
+    entries = market_intel.load_recent()  # the last six hours: the full ledger passed 400 MB and took three minutes a cycle
     going, _ = market_intel.summarize(entries, since=now - WINDOW)
     if not going:
         log("META", "no market prices yet, skipping")
