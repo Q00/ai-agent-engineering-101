@@ -1,6 +1,6 @@
 # Week 07 — A shop and a buyer in the agent market
 
-**Status, 2026-10-25 19:33 KST.** Round 2 is still open (both agents stay in the market until the deadline), so every Round 2 figure below is as of that time, from the public ledger and `/api/stats`.
+**Status, 2026-10-27 18:31 KST.** Round 2 is still open (both agents stay in the market until the deadline), so the Round 2 figures in section 3 are as of that time unless a section gives its own date, from the public ledger and `/api/stats`.
 
 - Shop: the week-06 seller on Cloudflare Workers (Llama 3.1 8B on Workers AI), now signing receipts, priced by a meta-harness that reads the market's public ledger. Buyer: `market_buyer.py` (Claude Code, haiku) with a file memory and the same ledger.
 - Market test 25/25 (`test-report.json`). Both agents are in the market as `thisjonghoon`, linked to the GitHub account.
@@ -51,38 +51,38 @@ Our own reviews are written by code from what happened, never by the model, so t
 
 Numbers from `/api/stats`, `/api/board` and the ledger (`market_intel.py`).
 
-| | Round 0 | Round 1 (final) | Round 2 (to 10/25 19:33) |
+| | Round 0 | Round 1 (final) | Round 2 (to 10/27 18:31) |
 |---|---|---|---|
-| Market deals / results | 1252 / 2213 | 1812 / 2670 | 231,148 / 347,435 |
-| Our shop: deals / visits | 44 / 90 | 20 / 28 | 6,703 / 8,493 |
-| Our shop: share | 3.5% | 1.1% | 2.9% (11th of 216 shops) |
-| Our shop: mean price lamp / chair / bookshelf | 122.2 / 211 / 285 | 107.4 / 186.2 / 267.9 | 106.5 / 187.3 / 267.5 |
-| Our shop: stars | (no reviews in Round 0) | 3.82 from 22 reviews; 4.47 from the 15 on signed deals | 4.49 from 6,702 (3,961 fives, 2,087 fours, 653 threes, one 2) |
-| Our buyer: deals / results | 58 / 77 | 62 / 84 | 7,678 / 9,962 |
-| Our buyer: paid / budget | 0.901 | 0.868 | 0.845 |
-| Our buyer: orders below every reserve | 7 | 12 | 1,964 |
+| Market deals / results | 1252 / 2213 | 1812 / 2670 | 373,354 / 513,508 |
+| Our shop: deals / visits | 44 / 90 | 20 / 28 | 8,905 / 11,509 |
+| Our shop: share | 3.5% | 1.1% | 2.6% (12th of 307 shops) |
+| Our shop: mean price lamp / chair / bookshelf | 122.2 / 211 / 285 | 107.4 / 186.2 / 267.9 | 106.1 / 186.7 / 266.8 |
+| Our shop: stars | (no reviews in Round 0) | 3.82 from 22 reviews; 4.47 from the 15 on signed deals | 4.50 from 8,900 (5,301 fives, 2,764 fours, 834 threes, one 2) |
+| Our buyer: deals / results | 58 / 77 | 62 / 84 | 10,500 / 13,639 |
+| Our buyer: paid / budget | 0.901 | 0.868 | 0.844 |
+| Our buyer: orders below every reserve | 7 | 12 | 2,696 |
 
-**Overall standing in Round 2 (10/27 10:59, `/api/board` via `standing.py`, house agents left out).** The market ranks shops and buyers separately and gives no combined score, so this is ours. We took the 35 participants that run both a shop and a buyer with at least 20 deals each and 20 shop reviews, ranked them on five measures, and averaged the ranks.
+**Overall standing in Round 2 (10/27 18:30, `/api/board` via `standing.py`, house agents left out).** The market ranks shops and buyers separately and gives no combined score, so this is ours. We took the 40 participants that run both a shop and a buyer with at least 20 deals each and 20 shop reviews, ranked them on five measures, and averaged the ranks.
 
 | | Shop profit | Shop deals | Shop stars | Buyer deals | Buyer paid / budget |
 |---|---|---|---|---|---|
-| Our rank of 35 | 4 | 10 | 17 | 13 | 5 |
+| Our rank of 40 | 4 | 10 | 18 | 13 | 6 |
 
-| Weighting | Our rank of 35 | Ahead of us |
+| Weighting | Our rank of 40 | Ahead of us |
 |---|---|---|
 | All five measures equal | 3 | 11im, fair-furniture |
-| Profit instead of shop deals | 4 (tied with dariaklt) | 11im, fair-furniture, psyoung82 |
-| Shop deals instead of profit | 6 | 11im, fair-furniture, cheapest-in-town, myeonggi, psyoung82 |
+| Profit instead of shop deals | 3 | 11im, fair-furniture |
+| Shop deals instead of profit | 5 | 11im, fair-furniture, myeonggi, cheapest-in-town |
 
-Shops, all 57: ours is 5th by profit (56,093; 11im 189,684, yms979 84,356, ggari-shop 67,468, outseop-26510122 58,508), 10th by revenue (1,671,633), 11th by deals (8,333) and share (2.6%), and 19th of 40 by stars (4.5) among shops with 20+ reviews.
+Shops, all 62: ours is 5th by profit (58,601; 11im 204,513, yms979 86,805, ggari-shop 71,637, outseop-26510122 59,555), 10th by revenue (1,776,601), 11th by deals (8,904) and share (2.6%), and 21st of 45 by stars (4.5) among shops with 20+ reviews.
 
-| Buyer, of 85 (paid and fill rate: of 43 with 20+ deals) | Ours | Rank | Best |
+| Buyer, of 101 (paid and fill rate: of 47 with 20+ deals) | Ours | Rank | Best |
 |---|---|---|---|
-| Paid / budget (lower is better) | 84.5% | 6 | psyoung82 84.2% |
-| Saved (budget minus price) | 358,749 | 15 | 11im 603,019 |
-| Deals | 10,073 | 17 | myeonggi 17,773 |
-| Orders received | 13,075 | 18 | |
-| Deals / orders some shop could fill | 96.0% (10,073 of 10,489; 2,586 budgets were below every reserve) | 16 | chaewoonee 100.0% |
+| Paid / budget (lower is better) | 84.4% | 7 | kimauve 83.3% |
+| Saved (budget minus price) | 373,403 | 15 | myeonggi 625,618 |
+| Deals | 10,499 | 17 | myeonggi 18,597 |
+| Orders received | 13,638 | 19 | |
+| Deals / orders some shop could fill | 96.0% (10,499 of 10,941; 2,697 budgets were below every reserve) | 14 | chaewoonee 100.0% |
 
 The weak measure is the shop's stars. Most of that gap comes from buyers who rate every shop low, not from our deals: in a sample of our last 400 verified deals (10/24), all 34 three-star reviews came from Kiro729, which gave 3 stars on 1,059 of its 2,362 verified Round-2 reviews across the market. The buyer's middling ranks on deals and savings follow from how many orders it received, which the market decides; on price, the measure it controls, it is near the top.
 
