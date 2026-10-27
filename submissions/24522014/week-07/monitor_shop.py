@@ -44,13 +44,13 @@ def main():
             if old.get("status") != "ok" or old.get("round") != round_number:
                 continue
             elapsed = (now - datetime.fromisoformat(old["observed_at"])).total_seconds()
-            if elapsed >= 1800:
+            if elapsed >= 7200:
                 previous = old
                 record["comparison_file"] = candidate.name
                 record["comparison_seconds"] = elapsed
                 break
         if previous is None:
-            record["alerts"].append("Baseline saved; need an observation at least 30 minutes earlier in the same round.")
+            record["alerts"].append("Baseline saved; need an observation at least 2 hours earlier in the same round.")
         else:
             for field in ("deals", "visits", "reviews"):
                 if isinstance(record.get(field), (int, float)) and isinstance(previous.get(field), (int, float)):
@@ -75,10 +75,10 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--interval", type=int, default=0, help="Repeat in seconds (minimum 1800); 0 runs once")
+    parser.add_argument("--interval", type=int, default=0, help="Repeat in seconds (minimum 7200); 0 runs once")
     args = parser.parse_args()
-    if args.interval and args.interval < 1800:
-        parser.error("interval must be 0 or at least 1800 seconds")
+    if args.interval and args.interval < 7200:
+        parser.error("interval must be 0 or at least 7200 seconds")
     if not args.interval:
         raise SystemExit(main())
     while True:
