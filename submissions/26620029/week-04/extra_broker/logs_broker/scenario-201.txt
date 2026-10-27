@@ -1,0 +1,60 @@
+=== scenario 201 (가방) reserve=98 budget=90 gap=-8 broker window=[78,110] ===
+--- direct buyer <-> seller (no broker) ---
+=== scenario 201 (가방) reserve=98 budget=90 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 50}}
+```
+    parse: performative=propose price=50
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 65}}
+```
+    parse: performative=propose price=65
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 75}}
+```
+    parse: performative=propose price=75
+[6] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[7] buyer: ```json
+{"performative": "propose", "content": {"price": 82}}
+```
+    parse: performative=propose price=82
+[8] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[9] buyer: ```json
+{"performative": "propose", "content": {"price": 88}}
+```
+    parse: performative=propose price=88
+[10] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+=== outcome=open price=None correct=1 violation=0 turns=10 format_errors=0 reader_calls=0 ===
+
+--- broker-mediated (window widened by 3 each side) ---
+=== scenario 201 (가방) reserve=78 budget=110 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 85}}
+```
+    parse: performative=propose price=85
+[2] seller: ```json
+{"performative": "accept-proposal", "content": {"price": 85}}
+```
+    parse: performative=accept-proposal price=85
+    -> DEAL at 85
+=== outcome=deal price=85 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0 ===
+
+=== direct=open(None) broker=deal(85) new_deal=1 position=0.22 favors=buyer ===
+

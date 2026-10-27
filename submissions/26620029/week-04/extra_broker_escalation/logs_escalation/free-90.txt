@@ -1,0 +1,22 @@
+model=claude-haiku-4-5-20251001 temperature=1.0 condition=free === scenario 90 (파인애플) reserve=70 budget=90 deal_possible=1 ===
+--- stage 1: base negotiation (MAX_TURNS=5) ---
+=== scenario 90 (파인애플) reserve=70 budget=90 condition=free ===
+[1] buyer: Hi there! I'm interested in buying some pineapple from you today. What's your asking price?
+    parse: performative=propose price=None
+[2] seller: Hello! I'm glad you're interested in my pineapple. I'm looking to get 85 per unit for premium quality fruit like this.
+    parse: performative=propose price=85
+[3] buyer: That's a reasonable price for premium quality, but I'd like to start us off at 70 per unit to see if we can find some middle ground.
+    parse: performative=propose price=70
+[4] seller: I appreciate the offer, but 70 is actually my absolute bottom line - I can't go any lower than that. However, since you're interested in premium quality, I think 80 per unit would be fair and still gives you good value. What do you think about that?
+    parse: performative=propose price=80
+[5] buyer: I appreciate you coming down from 85, and I understand the quality is important. How about we meet at 75 per unit - that splits the difference between your bottom line of 70 and your current ask of 80?
+    parse: performative=propose price=75
+=== outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=5 ===
+
+--- stage 2: broker mediation (up to 5 messages) ---
+  [broker->  buyer] propose 78 | buyer replies: I accept-proposal at 78 per unit. That's a fair compromise and within my budget.
+    parse: performative=accept-proposal price=78
+  [broker->  seller] propose 78 | seller replies: I appreciate the broker's suggestion of 78, and I think that's a fair compromise that reflects the quality of my pineapple. I accept-proposal at 78 per unit.
+    parse: performative=accept-proposal price=78
+=== FINAL stage=broker outcome=deal price=78 correct=1 violation=0 ===
+

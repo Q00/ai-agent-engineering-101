@@ -1,0 +1,23 @@
+card: 'Haiku Furniture Shop' -> http://127.0.0.1:37599/
+-> SendMessage 'I want to buy a bookshelf'
+<- TASK_STATE_INPUT_REQUIRED | Thanks for your interest in our bookshelf! This plain pine five-shelf model is a sturdy, classic choice, and my asking price is 325. I'm happy to talk about how we can make it work for you.
+[buyer] call 1 (5.9s) -> '{"seller_ask": 325, "action": "offer", "price": 180}'
+[read] harness read ask 325 (last number in text: 325)
+-> SendMessage '180' taskId=bb66912c
+<- TASK_STATE_INPUT_REQUIRED | Thank you for your offer of 180. This is a solid five-shelf plain pine bookshelf, and I can meet you partway at 300. I'm happy to talk further if that works for you.
+[buyer] call 2 (5.2s) -> '{"seller_ask": 300, "action": "offer", "price": 215}'
+[read] harness read ask 300 (last number in text: 300)
+-> SendMessage '215' taskId=bb66912c
+<- TASK_STATE_INPUT_REQUIRED | Thank you for your offer of 215, but I can't go that low on this five-shelf plain pine bookshelf. I can meet you partway at 280, which is a fair price for solid pine. Let me know if that works for you.
+[buyer] call 3 (5.7s) -> '{"seller_ask": 280, "action": "offer", "price": 225}'
+[read] harness read ask 280 (last number in text: 280)
+-> SendMessage '225' taskId=bb66912c
+<- TASK_STATE_INPUT_REQUIRED | Thanks for your offer of 225. The pine bookshelf is solid, with five shelves and a clean finish, and I can come down to 270 for you. If that works, I can arrange delivery as soon as you're ready.
+[buyer] call 4 (7.9s) -> '{"seller_ask": 270, "action": "offer", "price": 228}'
+[read] harness read ask 270 (last number in text: 270)
+-> SendMessage '228' taskId=bb66912c
+<- TASK_STATE_INPUT_REQUIRED | Thanks for your offer of 228 on the five-shelf plain pine bookshelf. I can come down to 265 because the solid pine construction holds up well over time. I'd be happy to close the deal at that price.
+[buyer] call 5 (6.3s) -> '{"seller_ask": 265, "action": "walk", "price": 0}'
+[read] harness read ask 265 (last number in text: 265)
+harness says walk; walking away (CancelTask)
+done: TASK_STATE_CANCELED, harness calls 5, 61s
