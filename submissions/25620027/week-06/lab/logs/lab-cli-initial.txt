@@ -1,0 +1,107 @@
+Error: failed to resolve agent card: card request failed: Get "http://127.0.0.1:9999/.well-known/agent-card.json": dial tcp 127.0.0.1:9999: connect: connection refused
+hint: check the agent is running and the --agent-card reference is correct
+{
+  "error": {
+    "code": "A2ACLI_ERR_IO",
+    "message": "failed to resolve agent card: card request failed: Get \"http://127.0.0.1:9999/.well-known/agent-card.json\": dial tcp 127.0.0.1:9999: connect: connection refused",
+    "hint": "check the agent is running and the --agent-card reference is correct"
+  }
+}
+Name:         Lamp Shop
+Description:  Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.
+Version:      1.0.0
+Interfaces:
+  JSONRPC      http://127.0.0.1:9999/
+Streaming:    false
+Skills:
+  negotiate            Negotiate a purchase
+{
+  "task": {
+    "id": "de70362c-7485-42e3-a6a2-7cf52ca42a3a",
+    "contextId": "fff98187-bd52-4f44-8d90-205c3d4e0c70",
+    "history": [
+      {
+        "messageId": "01a134d4-330b-7290-a5f9-25d2f1503e67",
+        "contextId": "fff98187-bd52-4f44-8d90-205c3d4e0c70",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "de70362c-7485-42e3-a6a2-7cf52ca42a3a"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "9ceec888-588b-4ee8-9704-2ae5a7aa3175",
+        "contextId": "fff98187-bd52-4f44-8d90-205c3d4e0c70",
+        "parts": [
+          {
+            "text": "lamp: asking 130. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "de70362c-7485-42e3-a6a2-7cf52ca42a3a"
+      },
+      "state": "TASK_STATE_INPUT_REQUIRED",
+      "timestamp": "2026-10-13T10:34:44.369016Z"
+    }
+  }
+}
+{
+  "task": {
+    "id": "de70362c-7485-42e3-a6a2-7cf52ca42a3a",
+    "contextId": "fff98187-bd52-4f44-8d90-205c3d4e0c70",
+    "history": [
+      {
+        "messageId": "01a134d4-330b-7290-a5f9-25d2f1503e67",
+        "contextId": "fff98187-bd52-4f44-8d90-205c3d4e0c70",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "de70362c-7485-42e3-a6a2-7cf52ca42a3a"
+      },
+      {
+        "messageId": "9ceec888-588b-4ee8-9704-2ae5a7aa3175",
+        "contextId": "fff98187-bd52-4f44-8d90-205c3d4e0c70",
+        "parts": [
+          {
+            "text": "lamp: asking 130. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "de70362c-7485-42e3-a6a2-7cf52ca42a3a"
+      },
+      {
+        "messageId": "01a134d4-add7-73b5-8a2f-ad2ff4c89925",
+        "contextId": "5e267976-4814-4f76-bda1-2bdb48852768",
+        "parts": [
+          {
+            "text": "80"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "de70362c-7485-42e3-a6a2-7cf52ca42a3a"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "7a4e1cc7-f2fd-4023-a7b7-0e9c9ab127a3",
+        "contextId": "5e267976-4814-4f76-bda1-2bdb48852768",
+        "parts": [
+          {
+            "text": "80 is too low. Counteroffer: 105."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "de70362c-7485-42e3-a6a2-7cf52ca42a3a"
+      },
+      "state": "TASK_STATE_INPUT_REQUIRED",
+      "timestamp": "2026-10-13T10:35:15.814294Z"
+    }
+  }
+}

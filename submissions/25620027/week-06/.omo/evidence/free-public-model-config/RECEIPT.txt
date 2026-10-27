@@ -1,0 +1,39 @@
+Invocation: /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest -p no:cacheprovider -v tests/test_public_seller.py tests/test_harness_model.py
+Exit code: 0
+============================= test session starts ==============================
+platform darwin -- Python 3.12.11, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 26 items
+
+tests/test_public_seller.py::test_public_discovery_when_configured PASSED [  3%]
+tests/test_public_seller.py::test_public_root_when_browser_or_rpc_client_connects PASSED [  7%]
+tests/test_public_seller.py::test_settings_when_public_url_is_invalid[http://seller.example/] PASSED [ 11%]
+tests/test_public_seller.py::test_settings_when_public_url_is_invalid[https://user:pass@seller.example/] PASSED [ 15%]
+tests/test_public_seller.py::test_settings_when_public_url_is_invalid[https://x/?a=b] PASSED [ 19%]
+tests/test_public_seller.py::test_settings_when_public_model_config_is_missing[model_base_url] PASSED [ 23%]
+tests/test_public_seller.py::test_settings_when_public_model_config_is_missing[model] PASSED [ 26%]
+tests/test_public_seller.py::test_settings_when_public_model_config_is_missing[model_api_key] PASSED [ 30%]
+tests/test_public_seller.py::test_settings_when_public_model_config_is_invalid[model_base_url-https://api.openai.com/v1] PASSED [ 34%]
+tests/test_public_seller.py::test_settings_when_public_model_config_is_invalid[model_base_url-http://api.cloudflare.com/client/v4/accounts/x/ai/v1] PASSED [ 38%]
+tests/test_public_seller.py::test_settings_when_public_model_config_is_invalid[model_base_url-https://api.cloudflare.com.evil.example/ai/v1] PASSED [ 42%]
+tests/test_public_seller.py::test_settings_when_public_model_config_is_invalid[model_base_url-https://user:secret@api.cloudflare.com/ai/v1] PASSED [ 46%]
+tests/test_public_seller.py::test_settings_when_public_model_config_is_invalid[model-gpt-4.1-nano-2025-04-14] PASSED [ 50%]
+tests/test_public_seller.py::test_settings_when_public_model_config_is_invalid[model-@cf/] PASSED [ 53%]
+tests/test_public_seller.py::test_settings_when_public_model_config_is_invalid[model_api_key-] PASSED [ 57%]
+tests/test_public_seller.py::test_settings_when_public_model_config_is_invalid[model_api_key- \n] PASSED [ 61%]
+tests/test_public_seller.py::test_settings_error_when_raw_token_is_present PASSED [ 65%]
+tests/test_public_seller.py::test_budget_when_concurrent_requests_exceed_allowance PASSED [ 69%]
+tests/test_public_seller.py::test_budget_when_process_restarts PASSED    [ 73%]
+tests/test_public_seller.py::test_budget_when_utc_day_changes PASSED     [ 76%]
+tests/test_public_seller.py::test_budget_when_upstream_fails PASSED      [ 80%]
+tests/test_harness_model.py::test_model_request_when_default_or_public_override[None] PASSED [ 84%]
+tests/test_harness_model.py::test_model_request_when_default_or_public_override[@cf/zai-org/glm-4.7-flash] PASSED [ 88%]
+tests/test_harness_model.py::test_public_serve_when_paid_environment_is_present PASSED [ 92%]
+tests/test_harness_model.py::test_public_serve_when_custom_headers_are_present[authorization: Bearer test-only-paid] PASSED [ 96%]
+tests/test_harness_model.py::test_public_serve_when_custom_headers_are_present[X-Private-Token: test-only-secret] PASSED [100%]
+
+============================== 26 passed in 1.95s ==============================
+
+Judgment: PASS: public model configuration, ambient credential isolation and preserved default scenarios passed.
