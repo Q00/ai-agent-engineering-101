@@ -5,6 +5,7 @@ This bounded sample measures reciprocal concentration, not secret agreements.
 It never posts a review, reports a player, requests an order, or calls settlement.
 """
 import argparse
+import base64
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 import json
@@ -13,6 +14,8 @@ import sys
 import time
 
 import httpx
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from cryptography.exceptions import InvalidSignature
 
 ROOT = Path(__file__).resolve().parent
 AGENT = ROOT.parent / 'week-07'
@@ -38,6 +41,29 @@ def owner_maps(board, registry):
 
 def analyze(events, board, registry, *, minimum=20, share=0.8):
     buyers, shops, urls = owner_maps(board, registry)
+    signing_identities = []
+    for row in registry.get('shops', []):
+        if row['name'] in shops and row.get('pubkey'):
+            signing_identities.append((row['name'], shops[row['name']], row['pubkey']))
+
+    def signed_identity(data):
+        """A signed receipt can map an old tunnel URL without trusting display names."""
+        receipt = data.get('receipt') or {}
+        if not isinstance(receipt, dict) or not receipt.get('sig_seller'):
+            return None
+        body = {k:receipt.get(k) for k in ('shop','item','price','task')}
+        try:
+            signature = base64.b64decode(receipt['sig_seller'])
+            canonical = json.dumps(body,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
+        except (ValueError,TypeError):
+            return None
+        for name, owner, public in signing_identities:
+            try:
+                Ed25519PublicKey.from_public_bytes(base64.b64decode(public)).verify(signature,canonical)
+                return name,owner
+            except (ValueError,InvalidSignature):
+                continue
+        return None
     # One verified result per order. Keep unknown sellers in the buyer denominator.
     seen, verified, duplicates, excluded_rounds = set(), [], 0, 0
     rounds = Counter()
@@ -58,7 +84,7 @@ def analyze(events, board, registry, *, minimum=20, share=0.8):
         verified.append((event, data))
         rounds[str(event.get('round'))] += 1
     by_buyer, edges, evidence, stars = Counter(), Counter(), defaultdict(list), defaultdict(list)
-    unknown_buyers = unknown_sellers = house_or_same_owner = 0
+    unknown_buyers = unknown_sellers = house_or_same_owner = signed_url_recoveries = 0
     for event, data in verified:
         buyer = buyers.get(data.get('buyer'))
         if not buyer:
@@ -66,6 +92,10 @@ def analyze(events, board, registry, *, minimum=20, share=0.8):
             continue
         by_buyer[buyer] += 1
         seller = urls.get(str(data.get('shop', '')).rstrip('/'))
+        if not seller:
+            seller = signed_identity(data)
+            if seller:
+                signed_url_recoveries += 1
         if not seller:
             unknown_sellers += 1
             continue
@@ -103,6 +133,7 @@ def analyze(events, board, registry, *, minimum=20, share=0.8):
             'verified_results_from_other_rounds_excluded': excluded_rounds,
             'verified_results_by_round': dict(rounds), 'unmapped_buyer_results': unknown_buyers,
             'unmapped_seller_results_for_known_buyers': unknown_sellers,
+            'historical_urls_mapped_by_signature': signed_url_recoveries,
             'same_owner_results_excluded_from_pairs': house_or_same_owner,
             'thresholds': {'minimum_verified_results_per_buyer': minimum, 'reciprocal_share': share},
             'pairs': sorted(pairs, key=lambda x: -(x['a_to_b']+x['b_to_a'])),
@@ -123,13 +154,25 @@ def main():
     parser.add_argument('--round', type=int, default=2)
     parser.add_argument('--minimum', type=int, default=20)
     parser.add_argument('--share', type=float, default=0.8)
+    parser.add_argument('--snapshot', type=Path, help='Reanalyze saved inputs; never change original evidence')
     args = parser.parse_args()
     if not 1 <= args.events <= 10000 or args.minimum < 20 or not 0.5 <= args.share <= 1:
         parser.error('Use 1..10000 events, minimum >=20 and share 0.5..1')
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-    folder = ROOT / 'logs' / ('public-market-' + stamp)
-    folder.mkdir(parents=True)
-    with httpx.Client(timeout=httpx.Timeout(20, connect=10), follow_redirects=False) as client:
+    folder = args.snapshot.resolve() if args.snapshot else ROOT / 'logs' / ('public-market-' + stamp)
+    if args.snapshot:
+        if not folder.is_relative_to(ROOT/'logs'):
+            parser.error('Snapshot must be inside this submission logs directory')
+        load = lambda name: json.loads((folder/name).read_text(encoding='utf-8'))
+        registry, board, tail = load('registry.json'), load('board.json'), load('ledger-tail.json')
+        previous = load('analysis.json')
+        start, end = previous['requested_seq_after'], previous['snapshot_end_seq']
+        events = [row for path in sorted(folder.glob('ledger-[0-9]*.json'))
+                  for row in json.loads(path.read_text(encoding='utf-8')) if start < row['seq'] <= end]
+    else:
+        folder.mkdir(parents=True)
+    if not args.snapshot:
+      with httpx.Client(timeout=httpx.Timeout(20, connect=10), follow_redirects=False) as client:
         registry = fetch(client, '/api/shops', folder/'registry.json')
         # Freeze the end sequence so a busy market does not create a moving denominator.
         tail = fetch(client, '/api/ledger', folder/'ledger-tail.json', after=-1)
@@ -150,21 +193,24 @@ def main():
     seqs = [row['seq'] for row in events]
     complete = len(set(seqs)) == end-start and min(seqs,default=0) == start+1 and max(seqs,default=0) == end
     summary = analyze(events, board, registry, minimum=args.minimum, share=args.share)
-    summary.update({'snapshot_utc': stamp, 'market_current_round': registry['round'],
+    summary.update({'snapshot_utc': previous['snapshot_utc'] if args.snapshot else stamp,
+                    'analysis_utc': stamp, 'market_current_round': registry['round'],
                     'board_round': args.round, 'requested_seq_after': start, 'snapshot_end_seq': end,
                     'events_read': len(events), 'sequence_window_complete': complete,
                     'sources': [MARKET+'/api/shops', MARKET+f'/api/board?round={args.round}',
                                 MARKET+f'/api/ledger?after={start}'],
                     'limitations': ['Recent bounded window, not the entire market history.',
-                                    'Only registry/board URL mappings identify sellers; unmapped sellers remain unknown.',
+                                    'Seller identity uses recorded registry/board URLs or receipt signatures; unmatched identities remain unknown.',
                                     'Preferential repeat buying can be legitimate; this does not prove coordination.',
                                     'No claim that these heuristic thresholds are optimal or that all collusion is detectable.']})
-    (folder/'analysis.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    analysis_file = folder / (f'analysis-{stamp}.json' if args.snapshot else 'analysis.json')
+    with analysis_file.open('x',encoding='utf-8') as out:
+        out.write(json.dumps(summary,ensure_ascii=False,indent=2)+'\n')
     # Advisory data may only reduce reliance on public reviews; never fabricate negative ratings.
     state = {'schema': 1, 'advisory_only': True, 'generated_epoch': time.time(),
              'source_round': args.round, 'max_age_seconds': 7200,
              'shops': summary['review_caution_shops'] if complete else [],
-             'evidence': str((folder/'analysis.json').relative_to(AGENT.parent))}
+             'evidence': str(analysis_file.relative_to(AGENT.parent))}
     target = AGENT/'.market'/'review-cautions.json'
     temporary = target.with_suffix('.tmp')
     temporary.write_text(json.dumps(state,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

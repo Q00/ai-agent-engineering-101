@@ -24,6 +24,16 @@ if (Test-Path -LiteralPath $statePath) {
     }
 }
 if (-not $ClaimCode) {
+    $ownerFile = Join-Path $stateDir 'owner.env'
+    if (Test-Path -LiteralPath $ownerFile) {
+        foreach ($line in [IO.File]::ReadAllLines($ownerFile)) {
+            if ($line -match '^\s*MARKET_OWNER\s*=(.*)$') {
+                $ClaimCode = $Matches[1].Trim().Trim([char]34, [char]39)
+            }
+        }
+    }
+}
+if (-not $ClaimCode) {
     # The market permits signed rejoin without a claim code. Keep the identity
     # that was already linked last week, rather than generating a new key.
     foreach ($keyName in @('shop_key.pem','buyer_key.pem')) {
