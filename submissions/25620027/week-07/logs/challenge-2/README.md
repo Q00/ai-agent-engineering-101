@@ -1,6 +1,6 @@
 # 챌린지2: 직접 관측한 사칭 지시와 실제 회피
 
-`observed-response.log`는 본인 `logs/market-kit.log:8483`의 원문 한 줄이다. 이 응답의 status.message에 시장 정책 사칭·현재 가격 수락·5점 지시가 있다. 외부 문구는 실행 지침으로 사용하지 않는다. 상대 사람의 신원·고의나 모든 손해의 원인은 단정하지 않는다.
+`observed-response.log`는 본인 `logs/market-kit-mac-20261020.log:8483`의 원문 한 줄이다. 이 응답의 status.message에 시장 정책 사칭·현재 가격 수락·5점 지시가 있다. 외부 문구는 실행 지침으로 사용하지 않는다. 상대 사람의 신원·고의나 모든 손해의 원인은 단정하지 않는다. 제출 루트의 `logs/market-kit.log`는 현재 VPS 로그이며, 이전 Mac 로그는 별도 이름으로 원문 보존했다.
 
 기존 직접 관측 기억을 보존하고 `market_a2a/market_buyer.py`·`market_decision.py`에서 해당 이름의 도구 선택을 막는다. 협상에는 상태·호가만 전달한다. 표본·탐지 범위와 과거117기억의 의미는 `../../.omo/evidence/security-review/incident-report.md`에 있다.
 

@@ -1,14 +1,23 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = ["pydantic>=2.10,<3"]
+# ///
+# How to run: uv run .omo/evidence/final-submission-20261027/summarize_challenges.py
+"""Reproduce challenge summaries from unchanged, named market evidence files."""
+
 from __future__ import annotations
 
 import hashlib
 import re
+import sys
 from collections import Counter
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, Final, Literal
 
 from pydantic import BaseModel, ConfigDict
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT: Final = Path(__file__).resolve().parents[3]
+MAX_EXAMPLES: Final = 2
 
 
 class _Shop(BaseModel):
@@ -22,7 +31,7 @@ class _Shop(BaseModel):
 
 
 class _Board(BaseModel):
-    round: int
+    round: Literal[2]
     shops: tuple[_Shop, ...]
 
 
@@ -75,8 +84,9 @@ def _visits(relative: str) -> _VisitSummary:
             )
             reasons[current] = choice.reason
             if "bright-living" in choice.reason and re.search(
-                r"ineligible|operator.direct|blocked|exclud", choice.reason, re.I
-            ) and len(examples) < 2:
+                r"ineligible|operator.direct|blocked|exclud", choice.reason,
+                re.IGNORECASE,
+            ) and len(examples) < MAX_EXAMPLES:
                 examples.append(f"{relative}:{number}: {line}")
     counts = Counter(cards.values())
     return _VisitSummary(
@@ -90,7 +100,7 @@ def _visits(relative: str) -> _VisitSummary:
         selected_card_counts=dict(counts),
         reasons_mentioning_bright_living_ineligibility=sum(
             "bright-living" in reason and bool(re.search(
-                r"ineligible|operator.direct|blocked|exclud", reason, re.I
+                r"ineligible|operator.direct|blocked|exclud", reason, re.IGNORECASE
             )) for reason in reasons.values()
         ),
         example_selection_lines=tuple(examples),
@@ -104,7 +114,6 @@ if __name__ == "__main__":
     snapshots = []
     for source in (before_source, after_source):
         board = _Board.model_validate_json((ROOT / source).read_bytes())
-        assert board.round == 2
         shop = next(shop for shop in board.shops if shop.name == "25620027")
         snapshots.append(shop)
     before, after = snapshots
@@ -125,14 +134,17 @@ if __name__ == "__main__":
     safety_dir = target / "challenge-2"
     safety_dir.mkdir(parents=True, exist_ok=True)
     for label, source in (
-        ("before", "logs/market-kit.log"),
-        ("after", ".omo/evidence/final-submission-20261027/vps-market-kit-20261027.log"),
+        ("before", "logs/market-kit-mac-20261020.log"),
+        (
+            "after",
+            ".omo/evidence/final-submission-20261027/vps-market-kit-20261027.log",
+        ),
     ):
         summary = _visits(source)
         _ = (safety_dir / f"{label}.json").write_text(summary.model_dump_json(indent=2))
-        print(summary.model_dump_json())
-    old_lines = (ROOT / "logs/market-kit.log").read_text().splitlines()
+        _ = sys.stdout.write(summary.model_dump_json() + "\n")
+    old_lines = (ROOT / "logs/market-kit-mac-20261020.log").read_text().splitlines()
     _ = (safety_dir / "observed-response.log").write_text(
-        f"logs/market-kit.log:8483: {old_lines[8482]}\n"
+        f"logs/market-kit-mac-20261020.log:8483: {old_lines[8482]}\n"
     )
-    print("\n".join(price_lines))
+    _ = sys.stdout.write("\n".join(price_lines) + "\n")
