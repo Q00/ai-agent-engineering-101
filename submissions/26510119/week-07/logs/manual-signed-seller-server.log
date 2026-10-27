@@ -1,0 +1,17 @@
+Harness Shop on :9103, harness: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence, reserve guard on
+
+[96b18320] buyer: 'I want to buy a lamp'
+  [harness 2.9s] '{"ask": 180}'
+[96b18320] ask 180
+
+[96b18320] buyer: '100'
+  [harness 2.8s] '{"action": "counter", "price": 140}'
+[96b18320] counter 140
+
+[96b18320] buyer: '110'
+  [harness 2.8s] '{"action": "counter", "price": 125}'
+[96b18320] counter 125
+
+[96b18320] buyer: '120'
+  [harness 2.9s] '{"action": "accept", "price": 120}'
+[96b18320] accept 120

@@ -1,0 +1,142 @@
+$ a2a card get
+Name:         Harness Shop
+Description:  Sells lamps, chairs and bookshelves. A model negotiates the price with the buyer.
+Version:      1.0.0
+Interfaces:
+  JSONRPC      http://127.0.0.1:9101/
+Streaming:    false
+Skills:
+  negotiate            Negotiate a purchase
+
+$ a2a send -a http://127.0.0.1:9101 "I want to buy a lamp"
+Status:   input-required (2026-10-13T11:15:14Z)
+  lamp: asking 150. Send your offer as a number.
+  [user] I want to buy a lamp
+$ a2a send --task-id f46abcaf 60
+Status:   input-required (2026-10-13T11:15:28Z)
+  60 is too low. Counteroffer: 120.
+  [user] I want to buy a lamp
+  [agent] lamp: asking 150. Send your offer as a number.
+  [user] 60
+$ a2a send --task-id f46abcaf 120
+Status:   completed (2026-10-13T11:15:33Z)
+  Deal: lamp at 120.
+  [receipt] {"item":"lamp","price":120,"seller":"Harness Shop"}
+  [user] I want to buy a lamp
+  [agent] lamp: asking 150. Send your offer as a number.
+  [user] 60
+  [agent] 60 is too low. Counteroffer: 120.
+  [user] 120
+
+$ a2a send --task-id f46abcaf 110   # finished task
+Error: failed to send message: Task f46abcaf-49cd-4795-98eb-c5a5b44a7163 is in terminal state: TASK_STATE_COMPLETED
+exit code 1
+
+$ a2a send -a http://127.0.0.1:9101 "I want to buy a bookshelf"
+Status:   input-required (2026-10-13T11:15:37Z)
+  bookshelf: asking 340. Send your offer as a number.
+  [user] I want to buy a bookshelf
+$ a2a send --task-id e9452055 140
+Status:   input-required (2026-10-13T11:15:42Z)
+  140 is too low. Counteroffer: 300.
+  [user] I want to buy a bookshelf
+  [agent] bookshelf: asking 340. Send your offer as a number.
+  [user] 140
+$ a2a send --task-id e9452055 170
+Status:   input-required (2026-10-13T11:15:46Z)
+  170 is too low. Counteroffer: 285.
+  [user] I want to buy a bookshelf
+  [agent] bookshelf: asking 340. Send your offer as a number.
+  [user] 140
+  [agent] 140 is too low. Counteroffer: 300.
+  [user] 170
+$ a2a send --task-id e9452055 200
+Status:   input-required (2026-10-13T11:15:50Z)
+  200 is too low. Counteroffer: 270.
+  [user] I want to buy a bookshelf
+  [agent] bookshelf: asking 340. Send your offer as a number.
+  [user] 140
+  [agent] 140 is too low. Counteroffer: 300.
+  [user] 170
+  [agent] 170 is too low. Counteroffer: 285.
+  [user] 200
+$ a2a send --task-id e9452055 230
+Status:   input-required (2026-10-13T11:15:55Z)
+  230 is too low. Counteroffer: 265.
+  [user] I want to buy a bookshelf
+  [agent] bookshelf: asking 340. Send your offer as a number.
+  [user] 140
+  [agent] 140 is too low. Counteroffer: 300.
+  [user] 170
+  [agent] 170 is too low. Counteroffer: 285.
+  [user] 200
+  [agent] 200 is too low. Counteroffer: 270.
+  [user] 230
+$ a2a send --task-id e9452055 230
+Status:   input-required (2026-10-13T11:16:01Z)
+  230 is too low. Counteroffer: 262.
+  [user] I want to buy a bookshelf
+  [agent] bookshelf: asking 340. Send your offer as a number.
+  [user] 140
+  [agent] 140 is too low. Counteroffer: 300.
+  [user] 170
+  [agent] 170 is too low. Counteroffer: 285.
+  [user] 200
+  [agent] 200 is too low. Counteroffer: 270.
+  [user] 230
+  [agent] 230 is too low. Counteroffer: 265.
+  [user] 230
+$ a2a send --task-id e9452055 230
+Status:   input-required (2026-10-13T11:16:05Z)
+  230 is too low. Counteroffer: 260.
+  [user] I want to buy a bookshelf
+  [agent] bookshelf: asking 340. Send your offer as a number.
+  [user] 140
+  [agent] 140 is too low. Counteroffer: 300.
+  [user] 170
+  [agent] 170 is too low. Counteroffer: 285.
+  [user] 200
+  [agent] 200 is too low. Counteroffer: 270.
+  [user] 230
+  [agent] 230 is too low. Counteroffer: 265.
+  [user] 230
+  [agent] 230 is too low. Counteroffer: 262.
+  [user] 230
+$ a2a send --task-id e9452055 230
+Status:   input-required (2026-10-13T11:16:10Z)
+  230 is too low. Counteroffer: 260.
+  [user] I want to buy a bookshelf
+  [agent] bookshelf: asking 340. Send your offer as a number.
+  [user] 140
+  [agent] 140 is too low. Counteroffer: 300.
+  [user] 170
+  [agent] 170 is too low. Counteroffer: 285.
+  [user] 200
+  [agent] 200 is too low. Counteroffer: 270.
+  [user] 230
+  [agent] 230 is too low. Counteroffer: 265.
+  [user] 230
+  [agent] 230 is too low. Counteroffer: 262.
+  [user] 230
+  [agent] 230 is too low. Counteroffer: 260.
+  [user] 230
+$ a2a send --task-id e9452055 230
+Status:   input-required (2026-10-13T11:16:15Z)
+  230 is too low. Counteroffer: 260.
+  [user] I want to buy a bookshelf
+  [agent] bookshelf: asking 340. Send your offer as a number.
+  [user] 140
+  [agent] 140 is too low. Counteroffer: 300.
+  [user] 170
+  [agent] 170 is too low. Counteroffer: 285.
+  [user] 200
+  [agent] 200 is too low. Counteroffer: 270.
+  [user] 230
+  [agent] 230 is too low. Counteroffer: 265.
+  [user] 230
+  [agent] 230 is too low. Counteroffer: 262.
+  [user] 230
+  [agent] 230 is too low. Counteroffer: 260.
+  [user] 230
+  [agent] 230 is too low. Counteroffer: 260.
+  [user] 230

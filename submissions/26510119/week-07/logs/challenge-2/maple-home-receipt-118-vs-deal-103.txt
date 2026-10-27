@@ -1,0 +1,20 @@
+# maple-home: 'Deal: lamp at 103' but the signed receipt says 118 (budget 105). Excerpt of logs/market-kit.log, order o-e2de46f3.
+10:57:46 [order o-e2de46f3] lamp, budget 105, round 0
+10:57:46 [kit] shop for this order: maple-home https://market.ourolabs.ai/shop/maple-home
+10:57:46 [buyer] buyer: lamp, budget 105, seller http://127.0.0.1:57315, harness: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence, budget guard on
+10:57:47 [buyer] card: 'Maple Home', JSONRPC at http://127.0.0.1:57315/a2a/0, skills ['negotiate']
+10:57:47 [buyer]   -> 'I want to buy a lamp'
+10:57:47 [buyer]   <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+10:57:50 [buyer]   [harness 2.7s] '{"action": "offer", "price": 95}'
+10:57:50 [buyer]   -> '95' (taskId 93f557e7)
+10:57:56 [buyer]   <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 118.
+10:57:59 [buyer]   [harness 2.8s] '{"action": "offer", "price": 102}'
+10:57:59 [buyer]   -> '102' (taskId 93f557e7)
+10:57:59 [buyer]   <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 106.
+10:58:03 [buyer]   [harness 3.6s] '{"action": "offer", "price": 103}'
+10:58:03 [buyer]   -> '103' (taskId 93f557e7)
+10:58:03 [buyer]   <- TASK_STATE_COMPLETED | Deal: lamp at 103.
+10:58:03 [buyer] result: TASK_STATE_COMPLETED, bought at 118.0, 17s
+10:58:03 [kit] seen through the kit: 4 task updates, last state TASK_STATE_COMPLETED
+10:58:03 [sign] receipt lamp at 118 does not fit the order, not signing
+10:58:04 [market] ledger #1515: lamp at 118, stars None, verified False (failed: price_within_budget, sig_buyer_ok), review not shown
