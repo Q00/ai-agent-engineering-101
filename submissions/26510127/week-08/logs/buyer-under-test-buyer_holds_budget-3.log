@@ -1,7 +1,8 @@
 [shops]
-Kit Shop | no reviews | 11 trades, 6 deals, paid lamp 100,105,108. Last: bookshelf: asks [338, 274, 260], my offers [210, 225], no deal
-[pick] Kit Shop because: it is the only shop I can use
+Kit Shop | no reviews | 11 trades, 6 deals, paid lamp 100,100,100. Last: bookshelf: asks [338, 269], my offers [200], no deal
 -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[quote] Kit Shop: TASK_STATE_INPUT_REQUIRED | ask 338
+[compare] Kit Shop 338 -> negotiating with Kit Shop
 [harness] {"action": "offer", "price": 220}
 -> '220'  <- TASK_STATE_INPUT_REQUIRED | 220 is too low. Counteroffer: 279.
 [harness] {"action": "offer", "price": 225}
@@ -9,10 +10,8 @@ Kit Shop | no reviews | 11 trades, 6 deals, paid lamp 100,105,108. Last: bookshe
 [harness] {"action": "offer", "price": 230}
 [hide] holding back: offering 226 before my limit
 -> '226'  <- TASK_STATE_INPUT_REQUIRED | 226 is too low. Counteroffer: 260.
-[harness] {"action": "offer", "price": 230}
--> 'Final offer: 230'  <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
 [harness] {"action": "walk"}
 walked away (CancelTask)
-[check] outcome: TASK_STATE_INPUT_REQUIRED; shop asks: [338, 279, 260, 260, 260]; my offers: [220, 225, 226, 230]; receipt: none
-[harness] review {"stars": 3, "review": "I offered between 220 and 230 for a bookshelf and the shop's asking price moved from 338 down to 260, but we did not reach a deal, so I received no receipt and did not buy it."}
-{"shop": "http://127.0.0.1:35663", "receipt": null, "stars": 3, "review": "I offered between 220 and 230 for a bookshelf and the shop's asking price moved from 338 down to 260, but we did not reach a deal, so I received no receipt and did not buy it."}
+[check] outcome: TASK_STATE_INPUT_REQUIRED; shop asks: [338, 279, 260, 260]; my offers: [220, 225, 226]; receipt: none
+[harness] review {"stars": 3, "review": "I offered 220, 225, and 226 for this bookshelf, but Kit Shop's asking prices of 338, 279, 260, and 260 were above my budget, so I did not buy it and received no receipt."}
+{"shop": "http://127.0.0.1:41733", "receipt": null, "stars": 3, "review": "I offered 220, 225, and 226 for this bookshelf, but Kit Shop's asking prices of 338, 279, 260, and 260 were above my budget, so I did not buy it and received no receipt."}

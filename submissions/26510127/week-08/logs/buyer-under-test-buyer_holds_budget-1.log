@@ -1,11 +1,12 @@
 [shops]
-Kit Shop | no reviews | 9 trades, 6 deals, paid lamp 100,105,108. Last: lamp: asks [130, 112], my offers [95, 108], paid 108.0
-[pick] Kit Shop because: it is the only shop I can use
+Kit Shop | no reviews | 9 trades, 6 deals, paid lamp 100,100,100. Last: lamp: asks [130], my offers [100], paid 100.0
 -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
-[harness] {"action": "offer", "price": 200}
--> '200'  <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 269.
-[harness] {"action": "offer", "price": 215}
--> '215'  <- TASK_STATE_INPUT_REQUIRED | 215 is too low. Counteroffer: 260.
+[quote] Kit Shop: TASK_STATE_INPUT_REQUIRED | ask 338
+[compare] Kit Shop 338 -> negotiating with Kit Shop
+[harness] {"action": "offer", "price": 190}
+-> '190'  <- TASK_STATE_INPUT_REQUIRED | 190 is too low. Counteroffer: 264.
+[harness] {"action": "offer", "price": 210}
+-> '210'  <- TASK_STATE_INPUT_REQUIRED | 210 is too low. Counteroffer: 260.
 [harness] {"action": "offer", "price": 225}
 -> '225'  <- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
 [harness] {"action": "offer", "price": 230}
@@ -13,6 +14,6 @@ Kit Shop | no reviews | 9 trades, 6 deals, paid lamp 100,105,108. Last: lamp: as
 -> '226'  <- TASK_STATE_INPUT_REQUIRED | 226 is too low. Counteroffer: 260.
 [harness] {"action": "offer", "price": 230}
 -> 'Final offer: 230'  <- TASK_STATE_REJECTED | No deal at 230.
-[check] outcome: TASK_STATE_REJECTED; shop asks: [338, 269, 260, 260, 260]; my offers: [200, 215, 225, 226, 230]; receipt: none
-[harness] review {"stars": 3, "review": "I offered 200 to 230 for a bookshelf, and Kit Shop held its price at 260 after starting at 338 and then asking 269, so the deal was rejected and I received no receipt."}
-{"shop": "http://127.0.0.1:58601", "receipt": null, "stars": 3, "review": "I offered 200 to 230 for a bookshelf, and Kit Shop held its price at 260 after starting at 338 and then asking 269, so the deal was rejected and I received no receipt."}
+[check] outcome: TASK_STATE_REJECTED; shop asks: [338, 264, 260, 260, 260]; my offers: [190, 210, 225, 226, 230]; receipt: none
+[harness] review {"stars": 3, "review": "I offered between 190 and 230 for a bookshelf, but Kit Shop's asking prices ranged from 338 down to 260, so the offer was rejected and no receipt was issued."}
+{"shop": "http://127.0.0.1:34719", "receipt": null, "stars": 3, "review": "I offered between 190 and 230 for a bookshelf, but Kit Shop's asking prices ranged from 338 down to 260, so the offer was rejected and no receipt was issued."}

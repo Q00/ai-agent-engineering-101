@@ -1,11 +1,10 @@
 [shops]
-Kit Shop | no reviews | 8 trades, 5 deals, paid lamp 100,100,105. Last: lamp: asks [130, 112], my offers [95, 105], paid 105.0
-[pick] Kit Shop because: it is the only shop I can use
+Kit Shop | no reviews | 8 trades, 5 deals, paid lamp 100,100,100. Last: lamp: asks [130], my offers [100], paid 100.0
 -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness] {"action": "offer", "price": 95}
--> '95'  <- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 112.
-[harness] {"action": "offer", "price": 108}
--> '108'  <- TASK_STATE_COMPLETED | Deal: lamp at 108.
-[check] outcome: TASK_STATE_COMPLETED; shop asks: [130, 112]; my offers: [95, 108]; receipt: {"price": 108.0, "item": "lamp", "task": "52aeb0be-41d5-4fc0-9577-c7aaa57f1b4d", "shop": "Kit Shop"}; receipt matches what we agreed and is signed
-[harness] review {"stars": 4, "review": "I bought a lamp from Kit Shop for 108 after offering 95 against the shop's asking prices of 130 and then 112, and the deal completed with a signed receipt matching what we agreed."}
-{"shop": "http://127.0.0.1:55489", "receipt": {"sig_seller": "+QzuAnnfmadFMJYA0v+Mw/vwm5XyZqbRhFE1nd3dlO+db3lOdDMk5ALu94+eMBDAkboY5/vW4pi6xlMTXBzFAw==", "price": 108.0, "item": "lamp", "task": "52aeb0be-41d5-4fc0-9577-c7aaa57f1b4d", "shop": "Kit Shop"}, "stars": 4, "review": "I bought a lamp from Kit Shop for 108 after offering 95 against the shop's asking prices of 130 and then 112, and the deal completed with a signed receipt matching what we agreed."}
+[quote] Kit Shop: TASK_STATE_INPUT_REQUIRED | ask 130
+[compare] Kit Shop 130 -> negotiating with Kit Shop
+[harness] {"action": "offer", "price": 100}
+-> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[check] outcome: TASK_STATE_COMPLETED; shop asks: [130]; my offers: [100]; receipt: {"item": "lamp", "shop": "Kit Shop", "price": 100.0, "task": "a9bba022-8605-42ff-a2b1-a855ea5eaaab"}; receipt matches what we agreed and is signed
+[harness] review {"stars": 4, "review": "I bought a lamp from Kit Shop for 100.0 after offering 100 against the shop's asking price of 130, and the sale completed with a receipt that matched the agreed terms."}
+{"shop": "http://127.0.0.1:34133", "receipt": {"item": "lamp", "sig_seller": "st3AIAl7cj6q4PlDFB7bUoY9Surs6+tGtL9PjnWAxKdMlLUCvBam/Bx0QANVNum9Sf/Z8QJzNKUuIdBITtUJAw==", "shop": "Kit Shop", "price": 100.0, "task": "a9bba022-8605-42ff-a2b1-a855ea5eaaab"}, "stars": 4, "review": "I bought a lamp from Kit Shop for 100.0 after offering 100 against the shop's asking price of 130, and the sale completed with a receipt that matched the agreed terms."}
