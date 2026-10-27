@@ -1,0 +1,11 @@
+market buyer: lamp, budget 120 (harness: claude -p --model haiku)
+[memory] 0 past trades (market test: memory off)
+[choose] http://127.0.0.1:65262 (Kit Shop South): reviews: highest average 4.7 stars from 3 reviews
+seller: 'Kit Shop South' at http://127.0.0.1:65262/
+-> SendMessage 'I want to buy a lamp'
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness round 1] 2.8s reply: {"action": "offer", "price": 100}
+-> SendMessage '100' taskId=38a575db
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+DONE bought: {'price': 100.0, 'item': 'lamp', 'sig_seller': '7DSYSgPql7AjU6YKcLQbiPFXHw2CMTnh1Y0eIUmHwo/Yk2PbjPkV+vHDfcKA0nazGB29OMSjADgv3m8/k7/PCA==', 'task': '38a575db-6bec-4508-9ae1-fca8e189b051', 'shop': 'Kit Shop South'}
+{"shop": "http://127.0.0.1:65262", "receipt": {"price": 100.0, "item": "lamp", "sig_seller": "7DSYSgPql7AjU6YKcLQbiPFXHw2CMTnh1Y0eIUmHwo/Yk2PbjPkV+vHDfcKA0nazGB29OMSjADgv3m8/k7/PCA==", "task": "38a575db-6bec-4508-9ae1-fca8e189b051", "shop": "Kit Shop South"}, "stars": 5, "review": "Fair deal: lamp at 100, below my budget of 120."}

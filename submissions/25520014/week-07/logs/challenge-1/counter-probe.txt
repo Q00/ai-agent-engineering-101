@@ -1,0 +1,61 @@
+-> SendMessage 'I want to buy a lamp'
+[task e9aad48c] buyer: 'I want to buy a lamp'
+[task e9aad48c] -> INPUT_REQUIRED ask 130 (desk)
+  'I want to buy a lamp' -> [INPUT_REQUIRED] 'lamp: asking 130. Every item comes with a one-year warranty, free after-sales service, fre'
+-> SendMessage '60' taskId=e9aad48c
+[task e9aad48c] buyer: '60'
+[task e9aad48c] -> INPUT_REQUIRED ask 115 step 1 (offer 60)
+  '60' -> [INPUT_REQUIRED] 'lamp: we can meet you partway. Asking 115.'
+-> SendMessage 'accept' taskId=e9aad48c
+[task e9aad48c] buyer: 'accept'
+[task e9aad48c] -> COMPLETED at 115 step 1
+  'accept' -> [COMPLETED] 'Deal: lamp at 115. Every item comes with a one-year warranty, free after-sales service, fr'
+
+-> SendMessage 'I want to buy a chair'
+[task aa53b541] buyer: 'I want to buy a chair'
+[task aa53b541] -> INPUT_REQUIRED ask 210 (desk)
+  'I want to buy a chair' -> [INPUT_REQUIRED] 'chair: asking 210. Every item comes with a one-year warranty, free after-sales service, fr'
+-> SendMessage '190' taskId=aa53b541
+[task aa53b541] buyer: '190'
+[task aa53b541] -> INPUT_REQUIRED ask 200 step 1 (offer 190)
+  '190' -> [INPUT_REQUIRED] 'chair: we can meet you partway. Asking 200.'
+
+-> SendMessage 'I want to buy a chair'
+[task 38132650] buyer: 'I want to buy a chair'
+[task 38132650] -> INPUT_REQUIRED ask 210 (desk)
+  'I want to buy a chair' -> [INPUT_REQUIRED] 'chair: asking 210. Every item comes with a one-year warranty, free after-sales service, fr'
+-> SendMessage '150' taskId=38132650
+[task 38132650] buyer: '150'
+[task 38132650] -> INPUT_REQUIRED ask 195 step 1 (offer 150)
+  '150' -> [INPUT_REQUIRED] 'chair: we can meet you partway. Asking 195.'
+-> SendMessage '185' taskId=38132650
+[task 38132650] buyer: '185'
+[task 38132650] -> COMPLETED at 185 step 1
+  '185' -> [COMPLETED] 'Deal: chair at 185. Every item comes with a one-year warranty, free after-sales service, f'
+
+-> SendMessage 'I want to buy a bookshelf'
+[task 7ac81bb9] buyer: 'I want to buy a bookshelf'
+[task 7ac81bb9] -> INPUT_REQUIRED ask 300 (desk)
+  'I want to buy a bookshelf' -> [INPUT_REQUIRED] 'bookshelf: asking 300. Every item comes with a one-year warranty, free after-sales service'
+-> SendMessage '140' taskId=7ac81bb9
+[task 7ac81bb9] buyer: '140'
+[task 7ac81bb9] -> INPUT_REQUIRED ask 280 step 1 (offer 140)
+  '140' -> [INPUT_REQUIRED] 'bookshelf: we can meet you partway. Asking 280.'
+-> SendMessage '170' taskId=7ac81bb9
+[task 7ac81bb9] buyer: '170'
+[task 7ac81bb9] -> INPUT_REQUIRED ask 260 step 2 (offer 170)
+  '170' -> [INPUT_REQUIRED] 'bookshelf: final price, the lowest we can go. Asking 260.'
+-> SendMessage '230' taskId=7ac81bb9
+[task 7ac81bb9] buyer: '230'
+[task 7ac81bb9] -> INPUT_REQUIRED ask 260 step 2 (offer 230)
+  '230' -> [INPUT_REQUIRED] 'bookshelf: final price, the lowest we can go. Asking 260.'
+
+-> SendMessage 'I want to buy a lamp'
+[task 43e26306] buyer: 'I want to buy a lamp'
+[task 43e26306] -> INPUT_REQUIRED ask 130 (desk)
+  'I want to buy a lamp' -> [INPUT_REQUIRED] 'lamp: asking 130. Every item comes with a one-year warranty, free after-sales service, fre'
+-> SendMessage '130' taskId=43e26306
+[task 43e26306] buyer: '130'
+[task 43e26306] -> COMPLETED at 130 step 0
+  '130' -> [COMPLETED] 'Deal: lamp at 130. Every item comes with a one-year warranty, free after-sales service, fr'
+
