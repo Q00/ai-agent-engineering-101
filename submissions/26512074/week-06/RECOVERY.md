@@ -1,5 +1,9 @@
 # Week 06 recovery — 2026-10-27
 
+> Historical snapshot from the initial recovery. The user subsequently authorized
+> full implementation. See README.md, REPORT.md and the final test-report.json for
+> the completed code and validation. The findings below describe the earlier state.
+
 This is an incomplete assignment, despite the previous commit title.
 The ZIP contains the same partial implementation as that commit; it is not a
 backup of a working seller or a passing submission.
