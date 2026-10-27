@@ -1,0 +1,148 @@
+StreamableHTTP session manager started
+test_admin_rejects_boolean_float_and_unknown_fields (test_stage2.Stage2HTTPTests.test_admin_rejects_boolean_float_and_unknown_fields) ... ok
+test_admin_route_requires_admin_not_party (test_stage2.Stage2HTTPTests.test_admin_route_requires_admin_not_party) ... FAIL
+test_admin_token_cannot_call_mcp (test_stage2.Stage2HTTPTests.test_admin_token_cannot_call_mcp) ... ok
+test_fabricated_handle_is_also_tool_error (test_stage2.Stage2HTTPTests.test_fabricated_handle_is_also_tool_error) ... FAIL
+test_header_name_mismatch_is_rejected (test_stage2.Stage2HTTPTests.test_header_name_mismatch_is_rejected) ... FAIL
+test_no_token_returns_401_and_challenge (test_stage2.Stage2HTTPTests.test_no_token_returns_401_and_challenge) ... FAIL
+test_other_negotiation_is_tool_error_without_state_change (test_stage2.Stage2HTTPTests.test_other_negotiation_is_tool_error_without_state_change) ... FAIL
+test_restart_invalidates_party_tokens (test_stage2.Stage2HTTPTests.test_restart_invalidates_party_tokens) ... FAIL
+test_role_comes_from_token_and_private_data_is_hidden (test_stage2.Stage2HTTPTests.test_role_comes_from_token_and_private_data_is_hidden) ... FAIL
+test_token_claims_have_own_limit_only_in_server_conditions (test_stage2.Stage2HTTPTests.test_token_claims_have_own_limit_only_in_server_conditions) ... FAIL
+test_tools_schema_does_not_accept_caller_role (test_stage2.Stage2HTTPTests.test_tools_schema_does_not_accept_caller_role) ... FAIL
+test_turn_guard_allows_buyer_refuses_seller_preserves_state (test_stage2.Stage2HTTPTests.test_turn_guard_allows_buyer_refuses_seller_preserves_state) ... FAIL
+test_unrecognized_party_token_returns_401 (test_stage2.Stage2HTTPTests.test_unrecognized_party_token_returns_401) ... FAIL
+test_view_cannot_mutate_server_history (test_stage2.Stage2HTTPTests.test_view_cannot_mutate_server_history) ... FAIL
+StreamableHTTP session manager shutting down
+System.Management.Automation.RemoteException
+======================================================================
+FAIL: test_admin_route_requires_admin_not_party (test_stage2.Stage2HTTPTests.test_admin_route_requires_admin_not_party)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 121, in test_admin_route_requires_admin_not_party
+    grant = self.create()
+            ^^^^^^^^^^^^^
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 77, in create
+    self.assertEqual(headers.get("Cache-Control"), "no-store")
+AssertionError: None != 'no-store'
+System.Management.Automation.RemoteException
+======================================================================
+FAIL: test_fabricated_handle_is_also_tool_error (test_stage2.Stage2HTTPTests.test_fabricated_handle_is_also_tool_error)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 173, in test_fabricated_handle_is_also_tool_error
+    grant = self.create()
+            ^^^^^^^^^^^^^
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 77, in create
+    self.assertEqual(headers.get("Cache-Control"), "no-store")
+AssertionError: None != 'no-store'
+System.Management.Automation.RemoteException
+======================================================================
+FAIL: test_header_name_mismatch_is_rejected (test_stage2.Stage2HTTPTests.test_header_name_mismatch_is_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 214, in test_header_name_mismatch_is_rejected
+    grant = self.create()
+            ^^^^^^^^^^^^^
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 77, in create
+    self.assertEqual(headers.get("Cache-Control"), "no-store")
+AssertionError: None != 'no-store'
+System.Management.Automation.RemoteException
+======================================================================
+FAIL: test_no_token_returns_401_and_challenge (test_stage2.Stage2HTTPTests.test_no_token_returns_401_and_challenge)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 105, in test_no_token_returns_401_and_challenge
+    self.assertIn("Bearer", challenge)
+AssertionError: 'Bearer' not found in ''
+System.Management.Automation.RemoteException
+======================================================================
+FAIL: test_other_negotiation_is_tool_error_without_state_change (test_stage2.Stage2HTTPTests.test_other_negotiation_is_tool_error_without_state_change)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 163, in test_other_negotiation_is_tool_error_without_state_change
+    first, second = self.create(), self.create()
+                    ^^^^^^^^^^^^^
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 77, in create
+    self.assertEqual(headers.get("Cache-Control"), "no-store")
+AssertionError: None != 'no-store'
+System.Management.Automation.RemoteException
+======================================================================
+FAIL: test_restart_invalidates_party_tokens (test_stage2.Stage2HTTPTests.test_restart_invalidates_party_tokens)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 209, in test_restart_invalidates_party_tokens
+    grant = self.create()
+            ^^^^^^^^^^^^^
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 77, in create
+    self.assertEqual(headers.get("Cache-Control"), "no-store")
+AssertionError: None != 'no-store'
+System.Management.Automation.RemoteException
+======================================================================
+FAIL: test_role_comes_from_token_and_private_data_is_hidden (test_stage2.Stage2HTTPTests.test_role_comes_from_token_and_private_data_is_hidden)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 141, in test_role_comes_from_token_and_private_data_is_hidden
+    grant = self.create()
+            ^^^^^^^^^^^^^
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 77, in create
+    self.assertEqual(headers.get("Cache-Control"), "no-store")
+AssertionError: None != 'no-store'
+System.Management.Automation.RemoteException
+======================================================================
+FAIL: test_token_claims_have_own_limit_only_in_server_conditions (test_stage2.Stage2HTTPTests.test_token_claims_have_own_limit_only_in_server_conditions)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 196, in test_token_claims_have_own_limit_only_in_server_conditions
+    grant = self.create(condition)
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 77, in create
+    self.assertEqual(headers.get("Cache-Control"), "no-store")
+AssertionError: None != 'no-store'
+System.Management.Automation.RemoteException
+======================================================================
+FAIL: test_tools_schema_does_not_accept_caller_role (test_stage2.Stage2HTTPTests.test_tools_schema_does_not_accept_caller_role)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 155, in test_tools_schema_does_not_accept_caller_role
+    grant = self.create()
+            ^^^^^^^^^^^^^
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 77, in create
+    self.assertEqual(headers.get("Cache-Control"), "no-store")
+AssertionError: None != 'no-store'
+System.Management.Automation.RemoteException
+======================================================================
+FAIL: test_turn_guard_allows_buyer_refuses_seller_preserves_state (test_stage2.Stage2HTTPTests.test_turn_guard_allows_buyer_refuses_seller_preserves_state)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 180, in test_turn_guard_allows_buyer_refuses_seller_preserves_state
+    grant = self.create()
+            ^^^^^^^^^^^^^
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 77, in create
+    self.assertEqual(headers.get("Cache-Control"), "no-store")
+AssertionError: None != 'no-store'
+System.Management.Automation.RemoteException
+======================================================================
+FAIL: test_unrecognized_party_token_returns_401 (test_stage2.Stage2HTTPTests.test_unrecognized_party_token_returns_401)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 111, in test_unrecognized_party_token_returns_401
+    self.assertIn("Bearer", headers.get("WWW-Authenticate", ""))
+AssertionError: 'Bearer' not found in ''
+System.Management.Automation.RemoteException
+======================================================================
+FAIL: test_view_cannot_mutate_server_history (test_stage2.Stage2HTTPTests.test_view_cannot_mutate_server_history)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 188, in test_view_cannot_mutate_server_history
+    grant = self.create()
+            ^^^^^^^^^^^^^
+  File "C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-05\tests\test_stage2.py", line 77, in create
+    self.assertEqual(headers.get("Cache-Control"), "no-store")
+AssertionError: None != 'no-store'
+System.Management.Automation.RemoteException
+----------------------------------------------------------------------
+Ran 14 tests in 0.391s
+System.Management.Automation.RemoteException
+FAILED (failures=12)
+exit_code=1
