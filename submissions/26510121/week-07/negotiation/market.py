@@ -68,6 +68,7 @@ def read_memory(path, verification_path=None):
             event = feedback.get(row.get("task_id"))
             if event:
                 row["market_verified"] = event.get("verified") is True
+                row["market_settled"] = event.get("settled") is True
     return rows
 
 
@@ -104,7 +105,7 @@ def read_review_cautions(path, *, now=None):
         return set()
 
 
-def choose_shop(shops, memory, item, budget, *, require_verified=False, audit_name=None):
+def choose_shop(shops, memory, item, budget, *, require_verified=False, require_settled=False, audit_name=None, long_term=None):
     """Prefer personal evidence; explore once per seven orders after six observations.
 
     Weights and exploration frequency are explicit starting hypotheses, not an
@@ -116,11 +117,14 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False, audit_na
         same = [r for r in own if r.get("item") == item]
         # A failed low-budget order does not imply the shop is dishonest or bad.
         def eligible_win(row):
+            if require_settled:
+                return (row.get('outcome')=='purchased' and row.get('market_verified') is True
+                        and row.get('market_settled') is True)
             return (row.get("outcome") == "purchased" and row.get("market_verified") is not False
                     and (not require_verified or row.get("market_verified") is True
                          or row.get("signature_verified") is True))
         # Unknown old successes are tentative in R2, not proven failures.
-        informative = [r for r in same if r.get("outcome") != "no_deal"
+        informative = [r for r in same if r.get("outcome") not in {"no_deal", "local_failure"}
                        and (r.get("outcome") != "purchased" or eligible_win(r)
                             or r.get("market_verified") is False)]
         wins = [r for r in same if eligible_win(r)]
@@ -156,6 +160,19 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False, audit_na
         # Negative public evidence is a caution, not a permanent blacklist.
         if bad_public:
             score -= 0.15 / (1 + len(informative))
+        historical = (long_term or {}).get(shop['name'], {})
+        successes = historical.get('eligible_successes', 0)
+        failures = historical.get('comparable_failures', 0)
+        if successes + failures:
+            # A bounded lifetime prior complements recent experience; this is
+            # not an independent second sample or a claim of optimal weights.
+            success_value = (2 + successes) / (3 + successes + failures)
+            typical_price = historical.get('median_price')
+            savings = max(0, 1-typical_price/budget) if typical_price and budget else 0
+            affordable = (2 + historical.get('affordable_successes', 0))/(3+successes)
+            historical_value = success_value * affordable * (0.7 + 0.3*savings)
+            if not recent_fault and not recent_outage:
+                score = 0.8*score + 0.2*historical_value
         tie = hashlib.sha256(f"{observation_count(memory)}:{item}:{shop['name']}".encode()).hexdigest()
         candidates.append({"shop": shop, "score": score, "tie": tie, "own": len(same),
                            "public": round(public, 3), "recent_fault": recent_fault, "recent_outage": recent_outage,
@@ -176,6 +193,7 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False, audit_na
     avoided = [{"name": candidate["shop"]["name"], "reason": "recent receipt integrity fault"}
                for candidate in candidates if candidate["recent_fault"] and candidate is not selected]
     evidence = {"selection_reason": reason, "avoided_for_integrity": avoided,
+                "personal_long_term_statistics": (long_term or {}).get(selected['shop']['name'], {}),
                 "public_reviews_discounted": selected['shop'].get('review_concentration_caution') is True,
                 "public_reviews_untrusted": selected["shop"]["reviews"],
                 "own_item_history": [r for r in memory if r["name"] == selected["shop"]["name"]
@@ -183,13 +201,15 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False, audit_na
     return selected["shop"], reason, evidence
 
 
-def review_trade(result, error, budget, turns, *, reveal_budget=True):
+def review_trade(result, error, budget, turns, *, reveal_budget=True, local_failure=False):
     if error:
+        if local_failure:
+            return 3, 'My decision service failed; no purchase verified and no conclusion about this shop.'
         integrity = any(token in error for token in ("receipt_", "one_receipt", "task_id_changed"))
         return (1 if integrity else 2), ("Receipt/protocol validation failed: " if integrity else "Trade unavailable: ") + error
     if result.get("outcome") != "purchased":
         return 3, "No agreement within my budget; no verified purchase. This alone is not evidence of dishonesty."
     price = result["receipt"]["price"]
-    stars = 5 if price <= budget * 0.9 and turns <= 4 else 4
+    stars = (5 if price <= budget * 0.9 and turns <= 4 else 4) if reveal_budget else (5 if turns <= 2 else 4)
     limit = f" within budget {budget}" if reveal_budget else "; budget limit kept private"
     return stars, f"Receipt matches item and agreed price: paid {price}{limit}; {turns} price messages."

@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import json
 import re
+import os
 
 from starlette.applications import Starlette
 import uvicorn
@@ -30,13 +31,15 @@ from negotiation.receipts import sign_receipt
 from negotiation.catalog import Catalog, matches
 from negotiation.catalog_contracts import NeedContext, SelectionContext
 from negotiation.price_reading import PriceContext
+from negotiation.experience import Experience, POLICY
+import sqlite3
 
 
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
 
 class Seller(AgentExecutor):
-    def __init__(self, harness, log, catalog=None, shop_name="Seochanit Shop", semantic_prices=False):
+    def __init__(self, harness, log, catalog=None, shop_name="Seochanit Shop", semantic_prices=False, experience=None):
         self.harness = harness
         self.log = log
         self.memories = {}
@@ -45,6 +48,16 @@ class Seller(AgentExecutor):
         self.shop_name = shop_name
         self.semantic_prices = semantic_prices
         self.pending = {}
+        self.experience = experience
+
+    def experience_call(self, method, *args, **kwargs):
+        if self.experience is None:
+            return None
+        try:
+            return getattr(self.experience, method)(*args, **kwargs)
+        except (OSError, sqlite3.Error, ValueError, TypeError) as error:
+            self.log.record('long_term_memory_unavailable', operation=method, code=type(error).__name__)
+            return None
 
     async def choose_catalog(self, task_id, text, updater, say):
         messages = self.pending.setdefault(task_id, [])
@@ -140,14 +153,21 @@ class Seller(AgentExecutor):
                     offer = reading.price
                 trusted = SellerContext(memory.item_id, memory.reserve,
                                         "opening" if opening else "negotiating", offer)
-                decision = await self.harness.seller(trusted, memory.observation(text))
+                observation = memory.observation(text)
+                statistics = self.experience_call('seller_summary', memory.item_id, memory.reserve)
+                if statistics is not None:
+                    observation['personal_long_term_statistics'] = statistics
+                    self.log.record('long_term_retrieved', task_id=task.id, item=memory.item_id, statistics=statistics)
+                decision = await self.harness.seller(trusted, observation)
             except HarnessError as error:
                 memory.terminal = True
                 self.log.record("negotiation_failed", task_id=task.id, code=str(error))
+                self.experience_call('seller_end', task.id, memory.item_id, 'local_failure')
                 await updater.failed(say("The decision service failed; no transaction was made."))
                 return
             self.log.record("seller_decision", task_id=task.id, reserve=memory.reserve,
-                            buyer_offer=offer, decision=decision.model_dump())
+                            buyer_offer=offer, decision=decision.model_dump(), policy=POLICY,
+                            market_round=self.experience_call('current_round'))
             if decision.action in {"ask", "counter"}:
                 prefix = memory.item_id + ": asking" if opening else "Counteroffer:"
                 if opening and decision.price == memory.reserve:
@@ -170,7 +190,10 @@ class Seller(AgentExecutor):
                 self.log.record("receipt", task_id=task.id, receipt=receipt)
             else:
                 await updater.reject(say("The seller ended this negotiation without a sale."))
+                self.experience_call('seller_end', task.id, memory.item_id, 'reject')
             memory.apply(text, decision)
+            self.experience_call('seller_decision', task=task.id, item=memory.item_id, reserve=memory.reserve,
+                                 turn=memory.rounds, action=decision.action, price=decision.price, buyer_offer=offer)
             self.log.record("decision_applied", task_id=task.id, action=decision.action,
                             terminal=memory.terminal, recent_turns=len(memory.recent))
 
@@ -183,6 +206,7 @@ class Seller(AgentExecutor):
                 raise UnsupportedOperationError("This negotiation has already ended.")
             if memory is not None:
                 memory.terminal = True
+                self.experience_call('seller_end', task.id, memory.item_id, 'cancel')
             self.pending.pop(task.id, None)
             await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
             self.log.record("canceled", task_id=task.id)
@@ -198,7 +222,8 @@ def build(port, log_dir, catalog_path=None, profile=None, semantic_prices=False)
     if not isinstance(shop_name, str) or not 1 <= len(shop_name) <= 80 or not isinstance(guide, str) or len(guide) > 240:
         raise ValueError("Invalid public shop profile")
     log.record("startup", model=settings.model, reserves=RESERVES if catalog is None else None,
-               catalog_size=len(catalog.products) if catalog else 3, port=port, semantic_prices=semantic_prices)
+               catalog_size=len(catalog.products) if catalog else 3, port=port, semantic_prices=semantic_prices,
+               live_market=os.environ.get('MARKET_LIVE')=='1',policy=POLICY)
     skills = [AgentSkill(id="buy-" + item, name="Buy a " + item,
                         description=(f"Buy one {item}: name the item, then send a plain integer offer on the same task. "
                                      "Completed deals include the agreed price, task id and an Ed25519-signed receipt."),
@@ -217,19 +242,23 @@ def build(port, log_dir, catalog_path=None, profile=None, semantic_prices=False)
             skill.description += " Long text price offers are model-read; current ask is in Task and Message metadata.ask."
     card = AgentCard(
         name=shop_name, description=(f"Describe one furniture need; searches {len(catalog.products)} synthetic products, then negotiates."
-                                            if catalog else "Published minimum prices: "
-                                            + "; ".join(f"{item} {price}" for item, price in RESERVES.items())
-                                            + ". Ed25519-signed receipts for Round 2. "
+                                            if catalog else "Furniture shop with persistent trading experience. "
+                                            "Clear integer quotes, Ed25519-signed receipts and kit v3 ACP checkout with AP2 payment. "
                                             "Send the item name, then a plain integer offer using the same taskId. "
                                             "The receipt preserves the agreed price. Reviews should reflect the actual final outcome."),
-        version="1.0.0", default_input_modes=["text/plain"],
+        version="1.1.0", default_input_modes=["text/plain"],
         default_output_modes=["text/plain", "application/json"],
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", protocol_version="1.0",
                                              url=f"http://127.0.0.1:{port}/")],
         skills=skills,
     )
-    executor = Seller(ModelHarness(log_dir), log, catalog, shop_name, semantic_prices)
+    try:
+        experience = Experience() if os.environ.get('MARKET_LIVE')=='1' else None
+    except (OSError, sqlite3.Error) as error:
+        log.record('long_term_memory_unavailable', operation='open', code=type(error).__name__)
+        experience = None
+    executor = Seller(ModelHarness(log_dir), log, catalog, shop_name, semantic_prices, experience)
     handler = DefaultRequestHandler(agent_executor=executor, task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 

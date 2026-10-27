@@ -34,14 +34,7 @@ if (-not $ClaimCode) {
     }
 }
 if (-not $ClaimCode) {
-    # The market permits signed rejoin without a claim code. Keep the identity
-    # that was already linked last week, rather than generating a new key.
-    foreach ($keyName in @('shop_key.pem','buyer_key.pem')) {
-        if (-not (Test-Path -LiteralPath (Join-Path $agentDir $keyName))) {
-            throw 'Signed rejoin requires both existing identity keys, or a claim code for initial registration.'
-        }
-    }
-    Write-Output 'Reusing existing signing keys; verify GitHub ownership on the board after joining.'
+    throw 'Market authentication requires MARKET_OWNER or the ignored .market/owner.env file.'
 }
 
 $oldPath = $env:PATH
@@ -51,6 +44,7 @@ $oldUtf8 = $env:PYTHONUTF8
 $oldTunnelLog = $env:TUNNEL_LOGFILE
 $oldTunnelLevel = $env:TUNNEL_LOGLEVEL
 $oldProvider = $env:MARKET_TUNNEL_PROVIDER
+$oldLive = $env:MARKET_LIVE
 try {
     if (-not $env:OPENAI_API_KEY) {
         $credentialFile = Join-Path $agentDir '../week-06/.env'
@@ -73,6 +67,7 @@ try {
     $env:TUNNEL_LOGFILE = Join-Path $logDir "cloudflared-$stamp.log"
     $env:TUNNEL_LOGLEVEL = 'info'
     $env:MARKET_TUNNEL_PROVIDER = $TunnelProvider
+    $env:MARKET_LIVE = '1'
     $mode = if ($BuyerOnly) { '--buyer-only' } elseif ($PublicUrl) { '--public-url' } else { '--tunnel' }
     $kit = Join-Path $PSScriptRoot 'run-kit.py'
     $arguments = @('-u', ('"' + $kit + '"'), 'join', '--dir', ('"' + $agentDir + '"'),
@@ -94,4 +89,5 @@ try {
     $env:TUNNEL_LOGFILE = $oldTunnelLog
     $env:TUNNEL_LOGLEVEL = $oldTunnelLevel
     $env:MARKET_TUNNEL_PROVIDER = $oldProvider
+    $env:MARKET_LIVE = $oldLive
 }

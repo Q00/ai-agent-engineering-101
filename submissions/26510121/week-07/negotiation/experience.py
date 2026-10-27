@@ -67,6 +67,8 @@ class Experience:
         allowed = ('name','item','budget','outcome','price','seconds','turns','task_id',
                    'sequence','signature_verified','epoch')
         data = {k: record.get(k) for k in allowed}
+        if type(data.get('price')) is float and data['price'].is_integer():
+            data['price'] = int(data['price'])
         data.update(round=round_number, policy=policy)
         identity = str(data.get('task_id') or f"{data['name']}:{data['epoch']}:{data['sequence']}")
         return self.put('buyer_observation', identity, data, item=data['item'],
@@ -108,7 +110,7 @@ class Experience:
         for name, history in grouped.items():
             verified = [r for r in history if r['outcome']=='purchased' and r['market'].get('verified') is True]
             settled = [r for r in verified if r['market'].get('settled') is True]
-            wins = settled if rnd >= 3 else verified
+            wins = [r for r in (settled if rnd >= 3 else verified) if r['round']==rnd]
             # A smaller historical budget cannot establish infeasibility now.
             misses = [r for r in history if r['outcome'] in {'no_deal','integrity_error','unavailable'}
                       and isinstance(r.get('budget'),int) and r['budget'] >= budget

@@ -10,6 +10,7 @@ import subprocess
 import sys
 import threading
 import time
+import sqlite3
 
 import httpx
 
@@ -18,6 +19,7 @@ AGENT = Path(__file__).resolve().parent.parent
 REPO = AGENT.parents[2]
 sys.path.insert(0, str(AGENT))
 from negotiation.auditing import take_audit_request
+from negotiation.experience import Experience
 spec = importlib.util.spec_from_file_location("course_market_kit", REPO / "scripts" / "market_kit.py")
 kit = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(kit)
@@ -26,6 +28,16 @@ spec.loader.exec_module(kit)
 original_call = kit.Market.call
 original_handle_order = kit.handle_order
 original_join = kit.cmd_join
+experience = None
+
+
+def remember(method, *args, **kwargs):
+    if experience is None:
+        return
+    try:
+        return getattr(experience, method)(*args, **kwargs)
+    except (OSError, sqlite3.Error, ValueError, TypeError) as failure:
+        kit.log(f'[memory] {method} unavailable: {type(failure).__name__}; raw logs retained')
 
 
 def join(args):
@@ -40,6 +52,7 @@ def market_call(self, method, path, role="buyer", **kwargs):
     if response.status_code != 200:
         return response
     if method == "GET" and path == "/api/shops":
+        remember('set_round', response.json()['round'])
         registry = {row["url"].rstrip("/"): {"name": row["name"], "pubkey": row["pubkey"]}
                     for row in response.json()["shops"]}
         target = AGENT / ".market" / "registry-keys.json"
@@ -54,10 +67,25 @@ def market_call(self, method, path, role="buyer", **kwargs):
                  "task_id": receipt.get("task"), "shop_url": submitted.get("shop"),
                  "verified": result.get("verified") is True, "checks": result.get("checks"),
                  "review_accepted": result.get("review_accepted"), "ledger": result.get("ledger")}
+        round_number = int(os.environ.get('MARKET_ROUND', '0'))
+        event['round'] = round_number
+        event['settled'] = round_number >= 3 and bool(submitted.get('mandate_receipt')) and result.get('verified') is True
+        remember('buyer_feedback', task=receipt.get('task'), order=submitted.get('order'),
+                 verified=result.get('verified'), settled=event['settled'], round_number=round_number,
+                 ledger=result.get('ledger'))
         memory = AGENT / "memory" / "market-verification.jsonl"
         memory.parent.mkdir(exist_ok=True)
         with memory.open("a", encoding="utf-8") as out:
             out.write(json.dumps(event) + "\n")
+    elif method == 'POST' and path == '/api/settle' and role == 'shop':
+        submitted, result = kwargs.get('json', {}), response.json()
+        if result.get('mandate_receipt'):
+            key = kit.load_key(AGENT / 'shop_key.pem')
+            checkout = kit.jwt_payload(submitted.get('checkout_jwt', ''), kit.pub_b64(key))
+            if checkout:
+                remember('set_round', 3)
+                remember('seller_settlement', task=checkout['task'],item=checkout['item'],price=checkout['price'],
+                         order=submitted.get('order'),ledger=result.get('ledger'))
     return response
 
 
@@ -65,6 +93,7 @@ def handle_order(order, *args, **kwargs):
     names = ("MARKET_ROUND", "MARKET_REGISTRY_KEYS", "MARKET_AUDIT_SHOP")
     old = {name: os.environ.get(name) for name in names}
     os.environ["MARKET_ROUND"] = str(order["round"])
+    remember('set_round', order['round'])
     os.environ["MARKET_REGISTRY_KEYS"] = str(AGENT / ".market" / "registry-keys.json")
     try:
         audit = take_audit_request(AGENT / ".market" / "audit-request.json", order)
@@ -131,6 +160,10 @@ def open_tunnel(port):
 
 
 if __name__ == "__main__":
+    try:
+        experience = Experience()
+    except (OSError, sqlite3.Error) as failure:
+        kit.log(f'[memory] opening journal failed: {type(failure).__name__}; raw logs retained')
     if os.name == "nt":
         import ctypes
         # Prevent automatic idle sleep only while this kit process is alive.

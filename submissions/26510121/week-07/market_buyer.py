@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import time
+import sqlite3
 
 import httpx
 
@@ -17,6 +18,7 @@ from negotiation.harness import HarnessError, ModelHarness
 from negotiation.market import choose_shop, observation_count, read_memory, read_shops, remember, review_trade, read_review_cautions
 from negotiation.receipts import verify_receipt
 from negotiation.runlog import RunLog
+from negotiation.experience import Experience, POLICY
 
 
 class BudgetClient(A2AClient):
@@ -68,9 +70,18 @@ async def run(args):
     for candidate in shops:
         candidate['review_concentration_caution'] = candidate['name'] in cautions
     memory = read_memory(args.memory, ROOT / "memory" / "market-verification.jsonl")
-    require_verified = int(os.environ.get("MARKET_ROUND", "0")) >= 2
+    round_number = int(os.environ.get('MARKET_ROUND', '0'))
+    require_verified = round_number >= 2
+    experience, history = None, {}
+    try:
+        if os.environ.get('MARKET_LIVE')=='1':
+            experience = Experience()
+            history = experience.buyer_summary(args.item, args.budget, round_number=round_number)
+    except (OSError, sqlite3.Error, ValueError, TypeError) as failure:
+        log.record('long_term_memory_unavailable', code=type(failure).__name__)
     shop, reason, evidence = choose_shop(shops, memory, args.item, args.budget,
                                         require_verified=require_verified,
+                                        require_settled=round_number >= 3, long_term=history,
                                         audit_name=os.environ.get("MARKET_AUDIT_SHOP"))
     safe = lambda value: value.replace(settings.api_key, "[REDACTED]") if settings.api_key else value
     for avoided in evidence["avoided_for_integrity"]:
@@ -80,6 +91,7 @@ async def run(args):
                budget=args.budget, reason=reason, evidence=evidence)
     client = BudgetClient(log, args.budget)
     started, result, error, signature_verified = time.monotonic(), {}, None, None
+    local_failure = False
     try:
         async with asyncio.timeout(240):
             result = await negotiate(client, InformedHarness(ModelHarness(folder), evidence),
@@ -87,7 +99,9 @@ async def run(args):
             if result.get("outcome") == "purchased":
                 signature_verified = validate_market_receipt(result["receipt"], shop, memory,
                     os.environ.get("MARKET_REGISTRY_KEYS"), required=require_verified)
-    except (ProtocolError, HarnessError) as failure:
+    except HarnessError as failure:
+        error, local_failure = str(failure), True
+    except ProtocolError as failure:
         error = str(failure)
     except TimeoutError:
         error = "buyer_deadline_exceeded"
@@ -101,15 +115,20 @@ async def run(args):
     finally:
         await client.close()
     stars, review = review_trade(result, error, args.budget, client.turns,
-                                 reveal_budget=int(os.environ.get('MARKET_ROUND', '0')) < 3)
+                                 reveal_budget=round_number < 3, local_failure=local_failure)
     receipt = result.get("receipt") if not error and result.get("outcome") == "purchased" else None
-    outcome = ("integrity_error" if error and stars == 1 else "unavailable" if error
+    outcome = ('local_failure' if local_failure else "integrity_error" if error and stars == 1 else "unavailable" if error
                else "purchased" if receipt is not None else "no_deal")
     record = remember(args.memory, shop=shop, item=args.item, budget=args.budget, outcome=outcome,
                       price=receipt["price"] if receipt is not None else None,
                       seconds=time.monotonic() - started, turns=client.turns, task_id=result.get("task_id"),
                       sequence=observation_count(memory) + 1, signature_verified=signature_verified)
-    log.record("market_result", memory=record, error=error, stars=stars, review=review)
+    if experience is not None:
+        try:
+            experience.buyer_observation(record, round_number=round_number)
+        except (OSError, sqlite3.Error, ValueError, TypeError) as failure:
+            log.record('long_term_memory_unavailable', code=type(failure).__name__)
+    log.record("market_result", memory=record, error=error, stars=stars, review=review, policy=POLICY, market_round=round_number)
     print(safe(json.dumps({"shop": shop["url"], "receipt": receipt,
                           "stars": stars, "review": review}, ensure_ascii=False)), flush=True)
     return 0

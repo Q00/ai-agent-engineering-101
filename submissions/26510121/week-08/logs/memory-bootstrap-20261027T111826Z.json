@@ -1,0 +1,57 @@
+{
+  "at_utc": "20261027T111826Z",
+  "sources": [
+    {
+      "source": "stash@{0}:memory/market-trades.jsonl",
+      "rows_read": 480,
+      "events_added": 480
+    },
+    {
+      "source": "week-07\\memory\\market-trades.jsonl",
+      "rows_read": 37,
+      "events_added": 30
+    },
+    {
+      "source": "stash@{0}:memory/market-verification.jsonl",
+      "rows_read": 334,
+      "events_added": 220
+    },
+    {
+      "source": "week-07\\memory\\market-verification.jsonl",
+      "rows_read": 37,
+      "events_added": 26
+    },
+    {
+      "source": "stash@{0}:submissions/26510121/week-07/logs/seller/server-20261027T071356.988784Z/server-events.jsonl",
+      "seller_decisions_added": 33
+    },
+    {
+      "source": "stash@{0}:submissions/26510121/week-07/logs/seller/server-20261027T072235.216935Z/server-events.jsonl",
+      "seller_decisions_added": 1124
+    },
+    {
+      "source": "stash@{0}:submissions/26510121/week-07/logs/seller/stage-20261017T041758.156194Z/model/server-events.jsonl",
+      "seller_decisions_added": 16
+    },
+    {
+      "source": "week-07\\logs\\seller\\server-20261027T101136.638016Z\\server-events.jsonl",
+      "seller_decisions_added": 104
+    },
+    {
+      "source": "week-07\\logs\\seller\\server-20261027T110129.608390Z\\server-events.jsonl",
+      "seller_decisions_added": 214
+    }
+  ],
+  "database_counts": {
+    "buyer_feedback": 246,
+    "buyer_observation": 517,
+    "seller_decision": 1491,
+    "seller_end": 64
+  },
+  "limitations": [
+    "Archived rows without a round are week-07 historical Round 2 observations.",
+    "Historical rows without a policy version are not a controlled pricing baseline.",
+    "Only last three archived seller sessions are imported; all raw originals remain in Git.",
+    "Source files are read only; import identity makes repeated runs idempotent."
+  ]
+}
