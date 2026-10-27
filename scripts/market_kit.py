@@ -10,7 +10,9 @@ No working week-06 shop or buyer yet? Copy the starter (an unsigned week-06 shop
   - creates shop_key.pem and buyer_key.pem (Ed25519) and adds *.pem to .gitignore,
   - starts your seller with the "seller" command and registers its card URL,
   - asks the market for orders and runs your buyer for each one,
-  - sends the result (receipt, stars, review) to the market and signs it for you.
+  - sends the result (receipt, stars, review) to the market and signs it for you,
+  - from Round 3: serves an ACP checkout for your shop (/.well-known/acp.json, /acp/checkout_sessions) and pays
+    for your buyer's deals with AP2-shaped mandates; only settled deals count.
 
 Your seller and buyer never talk to the market. agent.json:
     {
@@ -35,7 +37,10 @@ Needs: pip install "a2a-sdk[http-server]" uvicorn httpx cryptography
 Logs: logs/market-kit.log in your submission directory.
 """
 import argparse
+import asyncio
 import base64
+import collections
+import hashlib
 import json
 import os
 import random
@@ -50,6 +55,7 @@ import threading
 import time
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 import httpx
 import uvicorn
@@ -61,22 +67,57 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
-KIT_VERSION = "1"
+KIT_VERSION = "3"
 BUYER_TIMEOUT = 300
 RECEIPT_KEYS = ("shop", "item", "price", "task")
 LOG_FILE = None
+LOG_MAX = 20_000_000                                # bytes; then market-kit.log moves to market-kit.log.1
+LOG_LOCK = threading.Lock()
+RETRY = (httpx.TransportError, ValueError)        # network trouble, or a body that is not JSON (e.g. a proxy's 502 page)
 
 
 def log(line=""):
+    """Never raises: a failed write must not stop the thread that drains a process's output."""
     stamp = datetime.now().strftime("%H:%M:%S")
-    print(f"{stamp} {line}", flush=True)
-    if LOG_FILE:
-        with open(LOG_FILE, "a", encoding="utf-8") as f:
-            f.write(f"{stamp} {line}\n")
+    with LOG_LOCK:
+        try:
+            print(f"{stamp} {line}", flush=True)
+        except Exception:
+            pass
+        if LOG_FILE:
+            try:
+                if LOG_FILE.exists() and LOG_FILE.stat().st_size > LOG_MAX:
+                    os.replace(LOG_FILE, LOG_FILE.with_suffix(".log.1"))
+                with open(LOG_FILE, "a", encoding="utf-8") as f:
+                    f.write(f"{stamp} {line}\n")
+            except Exception:
+                pass
 
 
 def canon(d):
     return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def b64url(b):
+    return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+
+
+def unb64url(s):
+    return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
+
+
+def jwt_sign(key, payload):
+    head = b64url(canon({"alg": "EdDSA", "typ": "JWT"})) + "." + b64url(canon(payload))
+    return head + "." + b64url(key.sign(head.encode()))
+
+
+def jwt_payload(token, pubkey_b64):
+    try:
+        head, body, sig = token.split(".")
+        Ed25519PublicKey.from_public_bytes(base64.b64decode(pubkey_b64)).verify(unb64url(sig), f"{head}.{body}".encode())
+        return json.loads(unb64url(body))
+    except (InvalidSignature, ValueError, TypeError, AttributeError):
+        return None
 
 
 # --- keys
@@ -87,6 +128,8 @@ def load_key(path: Path):
         path.write_bytes(key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
                                            serialization.NoEncryption()))
         log(f"[keys] created {path.name}")
+    if os.name != "nt":
+        os.chmod(path, 0o600)                       # only you can read your private key
     return serialization.load_pem_private_key(path.read_bytes(), password=None)
 
 
@@ -124,8 +167,8 @@ def free_port():
 
 def start(cmd, cwd, out=subprocess.PIPE):
     kw = {"start_new_session": True} if os.name != "nt" else {}
-    return subprocess.Popen(cmd, shell=True, cwd=cwd, stdout=out, stderr=subprocess.STDOUT, text=True,
-                            encoding="utf-8", errors="replace", **kw)
+    return subprocess.Popen(cmd, shell=True, cwd=cwd, stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT,
+                            text=True, encoding="utf-8", errors="replace", **kw)
 
 
 def stop(proc):
@@ -138,7 +181,14 @@ def stop(proc):
             subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
         proc.wait(timeout=10)
     except Exception:
-        proc.kill()
+        try:
+            if os.name != "nt":
+                os.killpg(proc.pid, signal.SIGKILL)     # the whole group: the shell and what it started
+            else:
+                proc.kill()
+            proc.wait(timeout=5)
+        except Exception:
+            pass
 
 
 def fill(cmd, **kw):
@@ -170,12 +220,15 @@ class Proxy:
     127.0.0.1; the buyer side uses it in Round 0 to see the task state and the receipt.
     """
 
-    def __init__(self, port):
+    def __init__(self, port, same_host=False):
         self.port = port
+        self.same_host = same_host         # buyer side: follow a card only to the shop's own host
         self.public = f"http://127.0.0.1:{port}"
         self.upstream = None
         self.ifaces = {}
-        self.seen = []                     # tasks observed in responses
+        self.seen = collections.deque(maxlen=200)   # tasks observed in responses
+        self.client = None                 # one keep-alive client, made on uvicorn's loop
+        self.acp = None                    # shop side: the kit's ACP checkout (Round 3)
         app = Starlette(routes=[Route("/{path:path}", self.handle, methods=["GET", "POST", "PUT", "DELETE"])])
         self.server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning"))
         threading.Thread(target=self.server.run, daemon=True).start()
@@ -185,7 +238,7 @@ class Proxy:
             time.sleep(0.1)
 
     def target(self, base):
-        self.upstream, self.ifaces, self.seen = base.rstrip("/"), {}, []
+        self.upstream, self.ifaces, self.seen = base.rstrip("/"), {}, collections.deque(maxlen=200)
 
     def rewrite(self, card):
         for i, iface in enumerate(card.get("supportedInterfaces") or []):
@@ -199,17 +252,25 @@ class Proxy:
     async def handle(self, req: Request):
         path = req.path_params["path"]
         body = await req.body()
+        if self.acp and (path == ".well-known/acp.json" or path.startswith("acp/")):
+            return await self.acp.handle(req, path, body, self.public)
         headers = {k: v for k, v in req.headers.items() if k.lower() in ("content-type", "a2a-version", "authorization", "accept")}
         if path.startswith("a2a/"):
             url = self.ifaces.get(path.split("/", 1)[1])
             if url is None:
                 return JSONResponse({"error": "read the agent card first"}, status_code=404)
+            if self.same_host and urlparse(url).hostname != urlparse(self.upstream).hostname:
+                return JSONResponse({"error": f"the card's interface {url} is not on the shop's host"}, status_code=403)
         else:
             url = f"{self.upstream}/{path}"
         if req.url.query:
             url += "?" + req.url.query
-        async with httpx.AsyncClient(timeout=240) as c:
-            r = await c.request(req.method, url, content=body, headers=headers)
+        if self.client is None:
+            self.client = httpx.AsyncClient(timeout=240)
+        try:
+            r = await self.client.request(req.method, url, content=body, headers=headers)
+        except httpx.HTTPError as e:
+            return JSONResponse({"error": f"upstream: {type(e).__name__}"}, status_code=502)
         content = r.content
         if path == ".well-known/agent-card.json" and r.status_code == 200:
             content = json.dumps(self.rewrite(r.json())).encode()
@@ -225,6 +286,138 @@ class Proxy:
         task = res.get("task", res)
         if isinstance(task, dict) and "status" in task:
             self.seen.append(task)
+
+
+class AcpShop:
+    """The shop's ACP checkout (Agentic Commerce Protocol 2026-04-17, the checkout subset), served by the kit.
+
+    A buyer brings the receipt your seller signed over A2A; the kit turns it into a checkout session whose
+    checkout_jwt it signs with your shop key. Completing the session forwards the buyer's closed AP2 mandates
+    to the market's /api/settle. Your seller does not change.
+    """
+
+    def __init__(self, key, market):
+        self.key, self.market = key, market
+        self.pub = pub_b64(key)
+        self.sessions = collections.OrderedDict()
+
+    def card(self, public):
+        tools = [("create_checkout_session", "POST", "/checkout_sessions",
+                  {"line_items": "[{id: item, quantity: 1}]", "receipt": "the receipt the shop signed over A2A"}),
+                 ("get_checkout_session", "GET", "/checkout_sessions/{id}", {}),
+                 ("complete_checkout_session", "POST", "/checkout_sessions/{id}/complete",
+                  {"payment_data": "{order, checkout_mandate, payment_mandate}"}),
+                 ("cancel_checkout_session", "POST", "/checkout_sessions/{id}/cancel", {})]
+        return {"protocol": "acp", "version": "2026-04-17", "endpoint": f"{public}/acp",
+                "capabilities": {"services": ["checkout"], "payment_methods": ["ap2-mandate"]},
+                "tools": [{"name": n, "method": m, "path": p, "input": i} for n, m, p, i in tools]}
+
+    async def handle(self, req, path, body, public):
+        if path == ".well-known/acp.json":
+            return JSONResponse(self.card(public))
+        try:
+            b = json.loads(body or b"{}")
+        except ValueError:
+            return JSONResponse({"error": "body is not JSON"}, status_code=400)
+        parts = path.split("/")[1:]                      # acp/checkout_sessions[/id[/complete|cancel]]
+        if parts[:1] != ["checkout_sessions"]:
+            return JSONResponse({"error": "unknown ACP path"}, status_code=404)
+        if len(parts) == 1 and req.method == "POST":
+            return self.create(b, public)
+        s = self.sessions.get(parts[1]) if len(parts) > 1 else None
+        if s is None:
+            return JSONResponse({"error": "no such checkout session"}, status_code=404)
+        if len(parts) == 2:
+            return JSONResponse(s)
+        if parts[2] == "cancel" and s["status"] != "completed":
+            s["status"] = "canceled"
+            return JSONResponse(s)
+        if parts[2] == "complete" and s["status"] == "ready_for_payment":
+            pay = b.get("payment_data") or {}
+            r = await asyncio.to_thread(self.market.call, "POST", "/api/settle", "shop",
+                                        json={"order": pay.get("order"), "checkout_jwt": s["checkout_jwt"],
+                                              "checkout_mandate": pay.get("checkout_mandate"),
+                                              "payment_mandate": pay.get("payment_mandate")})
+            res = r.json() if r.headers.get("content-type", "").startswith("application/json") else {"error": r.text[:200]}
+            if r.status_code != 200:
+                log(f"[acp] settle refused: {[k for k, v in (res.get('checks') or {}).items() if not v] or res}")
+                return JSONResponse({"error": "payment refused by the market", "market": res}, status_code=402)
+            s["status"] = "completed"
+            s["order"] = {"status": "confirmed", "mandate_receipt": res["mandate_receipt"]}
+            log(f"[acp] settled {s['line_items'][0]['id']} at {s['totals'][0]['amount']}, ledger #{res['ledger']}")
+            return JSONResponse(s)
+        return JSONResponse({"error": f"session is {s['status']}"}, status_code=409)
+
+    def create(self, b, public):
+        rec = b.get("receipt") if isinstance(b.get("receipt"), dict) else {}
+        items = b.get("line_items") or [{}]
+        if not (rec.get("sig_seller") and verify_seller(self.pub, rec)):
+            return JSONResponse({"error": "the receipt is not signed by this shop"}, status_code=400)
+        if items[0].get("id") != rec.get("item") or type(rec.get("price")) is not int:
+            return JSONResponse({"error": "line_items do not match the receipt"}, status_code=400)
+        if any(x.get("task") == rec["task"] for x in self.sessions.values()):
+            return JSONResponse({"error": "this receipt already has a checkout session"}, status_code=409)
+        sid = "cs_" + os.urandom(8).hex()
+        co = {"id": sid, "shop": rec["shop"], "shop_url": public, "item": rec["item"], "price": rec["price"],
+              "task": rec["task"], "currency": "credits", "iat": int(time.time())}
+        self.sessions[sid] = s = {
+            "id": sid, "status": "ready_for_payment", "task": rec["task"],
+            "line_items": [{"id": rec["item"], "quantity": 1}],
+            "totals": [{"type": "total", "amount": rec["price"]}],
+            "capabilities": {"payment_methods": ["ap2-mandate"]},
+            "checkout_jwt": jwt_sign(self.key, co)}
+        while len(self.sessions) > 500:
+            self.sessions.popitem(last=False)
+        return JSONResponse(s, status_code=201)
+
+
+def acp_pay(o, shop_url, shop_pub, receipt, buyer_key):
+    """Round 3, buyer side: open an ACP checkout on the shop, check it against the agreed receipt and the open
+    mandates, sign the closed AP2 mandates, and complete. Returns the market's mandate receipt or None."""
+    c = httpx.Client(timeout=60)
+    try:
+        r = c.get(f"{shop_url}/.well-known/acp.json")
+        if r.status_code != 200:
+            log(f"[acp] {shop_url} serves no /.well-known/acp.json ({r.status_code}); this deal cannot settle")
+            return None
+        base = r.json()["endpoint"].rstrip("/")
+        if urlparse(base).hostname != urlparse(shop_url).hostname:
+            log(f"[acp] the ACP endpoint {base} is not on the shop's host; not paying")
+            return None
+        r = c.post(f"{base}/checkout_sessions", json={"line_items": [{"id": receipt["item"], "quantity": 1}],
+                                                      "receipt": receipt})
+        if r.status_code not in (200, 201):
+            log(f"[acp] checkout refused: {r.status_code} {r.text[:200]}")
+            return None
+        s = r.json()
+        co = jwt_payload(s.get("checkout_jwt", ""), shop_pub)
+        budget = next(x["max"] for x in o["mandates"]["payment"]["mandate"]["constraints"] if x["type"] == "payment.amount_range")
+        if not co or (co.get("item"), co.get("price"), co.get("task")) != (receipt["item"], receipt["price"], receipt["task"]):
+            log("[acp] the checkout does not match the agreed receipt (or is not signed by the shop); not paying")
+            return None
+        if co["price"] > budget:
+            log(f"[acp] checkout total {co['price']} is above the mandate's limit; not paying")
+            return None
+        h = b64url(hashlib.sha256(s["checkout_jwt"].encode()).digest())
+        opens = {k: hashlib.sha256(canon(v["mandate"])).hexdigest() for k, v in o["mandates"].items()}
+        cm = {"vct": "mandate.checkout.1", "order": o["order"], "open_mandate": opens["checkout"],
+              "checkout_jwt": s["checkout_jwt"], "checkout_hash": h}
+        pm = {"vct": "mandate.payment.1", "order": o["order"], "open_mandate": opens["payment"], "payee": shop_url,
+              "amount": co["price"], "currency": "credits", "checkout_hash": h}
+        sign = lambda m: {"mandate": m, "sig": base64.b64encode(buyer_key.sign(canon(m))).decode()}
+        r = c.post(f"{base}/checkout_sessions/{s['id']}/complete",
+                   json={"payment_data": {"order": o["order"], "checkout_mandate": sign(cm), "payment_mandate": sign(pm)}})
+        if r.status_code != 200:
+            log(f"[acp] payment not completed: {r.status_code} {r.text[:300]}")
+            return None
+        mr = r.json()["order"]["mandate_receipt"]
+        log(f"[acp] paid {co['price']} through {base}, settled at ledger #{mr['ledger']}")
+        return mr
+    except (httpx.HTTPError, ValueError, KeyError, TypeError) as e:
+        log(f"[acp] payment failed: {type(e).__name__}: {e}")
+        return None
+    finally:
+        c.close()
 
 
 def receipt_from_task(task):
@@ -247,18 +440,31 @@ class Market:
     def __init__(self, base, owner=None):
         self.base = base.rstrip("/")
         self.owner = owner
-        self.c = httpx.Client(timeout=30)
+        self.c = httpx.Client(timeout=httpx.Timeout(30, connect=10), transport=httpx.HTTPTransport(retries=3))
         self.token = {}
+        self.joined = {}                                # role -> (name, key, url), to join again after a reset
 
-    def join(self, role, name, key, url=None):
-        body = {"name": name, "role": role, "pubkey": pub_b64(key), "url": url}
+    def join(self, role, name, key, url=None, tries=6):
+        """Join (again). Waits out a restarting market; a refusal (4xx) raises SystemExit with the market's reason."""
+        ts = int(time.time())                           # proves the key: the market lets only its holder join again
+        body = {"name": name, "role": role, "pubkey": pub_b64(key), "url": url, "ts": ts,
+                "sig": base64.b64encode(key.sign(canon({"name": name, "role": role, "url": url, "ts": ts}))).decode()}
         if self.owner:
             body["owner"] = self.owner
-        r = self.c.post(f"{self.base}/api/join", json=body)
-        if r.status_code != 200:
-            sys.exit(f"[market] join as {role} failed: {r.status_code} {r.text}")
-        self.token[role] = r.json()["token"]
-        return r.json()
+        for i in range(tries):
+            try:
+                r = self.c.post(f"{self.base}/api/join", json=body)
+                if r.status_code == 200:
+                    self.token[role] = r.json()["token"]
+                    self.joined[role] = (name, key, url)
+                    return r.json()
+                if r.status_code < 500 and r.status_code != 429:
+                    break
+            except RETRY as e:
+                r = e
+            log(f"[market] join as {role}: {getattr(r, 'status_code', type(r).__name__)}, trying again")
+            time.sleep(min(10 * 2 ** i, 120))
+        raise SystemExit(f"[market] join as {role} failed: {getattr(r, 'status_code', '')} {getattr(r, 'text', r)}")
 
     def call(self, method, path, role="buyer", **kw):
         return self.c.request(method, f"{self.base}{path}",
@@ -278,15 +484,22 @@ def wait_card(base, seconds=60):
 
 def open_tunnel(port):
     proc = subprocess.Popen(["cloudflared", "tunnel", "--no-autoupdate", "--url", f"http://127.0.0.1:{port}"],
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    found = []
+
+    def read():                                     # reads until cloudflared exits, so its pipe never fills
+        for line in proc.stdout:
+            m = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", line)
+            if m and not found:
+                found.append(m.group())
+    threading.Thread(target=read, daemon=True).start()
     deadline = time.time() + 60
-    while time.time() < deadline:
-        line = proc.stdout.readline()
-        m = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", line)
-        if m:
-            threading.Thread(target=lambda: [None for _ in proc.stdout], daemon=True).start()
-            return proc, m.group()
-    sys.exit("[tunnel] cloudflared did not print a trycloudflare URL within 60 s")
+    while time.time() < deadline and not found and proc.poll() is None:
+        time.sleep(0.2)
+    if found:
+        return proc, found[0]
+    stop(proc)
+    raise RuntimeError("cloudflared did not print a trycloudflare URL within 60 s")
 
 
 # --- one order
@@ -299,7 +512,8 @@ def run_buyer(cmd, cwd):
         proc.wait(timeout=BUYER_TIMEOUT)
     except subprocess.TimeoutExpired:
         log(f"[kit] buyer still running after {BUYER_TIMEOUT} s, stopped")
-        stop(proc)
+    finally:
+        stop(proc)                                  # also on Ctrl-C, so no buyer is left running
     t.join(timeout=5)
     return lines
 
@@ -313,6 +527,22 @@ def last_json(lines):
             except json.JSONDecodeError:
                 continue
     return None
+
+
+def post_result(market, body):
+    """Retry only when the result surely did not arrive (no connection, or the market restarting behind its proxy)."""
+    for i in range(5):
+        try:
+            r = market.call("POST", "/api/results", json=body)
+            if r.status_code not in (502, 503, 504):
+                return r
+        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+            r = e
+        log(f"[market] result not delivered ({getattr(r, 'status_code', type(r).__name__)}), trying again")
+        time.sleep(5 * (i + 1))
+    if isinstance(r, Exception):
+        raise r
+    return r
 
 
 def handle_order(o, agent, d, market, proxy, own_shop, keys):
@@ -336,7 +566,7 @@ def handle_order(o, agent, d, market, proxy, own_shop, keys):
         if not out or "shop" not in out:
             log("[kit] market_buyer printed no result line {\"shop\": ..., \"receipt\": ..., \"stars\": ..., \"review\": ...}; "
                 "closing the order as no deal")
-            market.call("POST", "/api/results", json={"order": o["order"], "shop": "", "receipt": None})
+            post_result(market, {"order": o["order"], "shop": "", "receipt": None})
             return None
         shop_url = str(out["shop"]).rstrip("/")
         receipt = out.get("receipt")
@@ -371,7 +601,9 @@ def handle_order(o, agent, d, market, proxy, own_shop, keys):
             signed = {k: receipt[k] for k in RECEIPT_KEYS}
             body["sig_buyer"] = base64.b64encode(keys["buyer"].sign(canon(dict(signed, order=o["order"])))).decode()
             log("[sign] sig_seller ok, sig_buyer added")
-    r = market.call("POST", "/api/results", json=body)
+            if rnd >= 3 and o.get("mandates"):
+                body["mandate_receipt"] = acp_pay(o, shop_url, pubkeys[shop_url], receipt, keys["buyer"])
+    r = post_result(market, body)
     if r.status_code != 200:
         log(f"[market] result refused: {r.status_code} {r.text}")
         return None
@@ -396,7 +628,7 @@ def cmd_join(a):
     ignore_pem(d)
     keys = {"shop": load_key(d / "shop_key.pem"), "buyer": load_key(d / "buyer_key.pem")}
     market = Market(a.market, a.owner)
-    procs, own_shop = [], None
+    procs, own_shop, state = [], None, {}
     try:
         if not a.buyer_only:
             if a.deployed:
@@ -409,8 +641,12 @@ def cmd_join(a):
                     sys.exit("[kit] your seller did not serve /.well-known/agent-card.json within 60 s")
                 proxy = Proxy(pport)
                 proxy.target(f"http://127.0.0.1:{sport}")
+                proxy.acp = AcpShop(keys["shop"], market)
                 if a.tunnel:
-                    tp, url = open_tunnel(pport)
+                    try:
+                        tp, url = open_tunnel(pport)
+                    except RuntimeError as e:
+                        sys.exit(f"[tunnel] {e}")
                     procs.append(tp)
                     proxy.public = url
                     log(f"[tunnel] {url}, waiting until it answers")
@@ -427,34 +663,88 @@ def cmd_join(a):
                 log(f"[shop] your seller on port {sport}; others reach it through the kit at {own_shop}")
             j = market.join("shop", a.name, keys["shop"], own_shop)
             log(f"[market] shop registered as {j['name']}, round {j['round']}")
+            if not a.deployed:
+                state["own_shop"] = own_shop
+                threading.Thread(target=watchdog, args=(a, agent, d, market, keys, procs, proxy, sport, pport, state),
+                                 daemon=True).start()
         if a.shop_only:
             log("[kit] shop only; Ctrl-C to leave the market")
             while True:
                 time.sleep(3600)
         j = market.join("buyer", a.name, keys["buyer"])
         log(f"[market] buyer registered as {j['name']}, round {j['round']}")
-        bproxy = Proxy(free_port())
+        bproxy = Proxy(free_port(), same_host=True)
         n = 0
         while a.orders == 0 or n < a.orders:
-            r = market.call("POST", "/api/orders")
-            if r.status_code == 429:
-                time.sleep(min(r.json().get("wait", 5), 30))
-                continue
-            if r.status_code != 200:
-                log(f"[market] order failed: {r.status_code} {r.text}")
-                time.sleep(10)
-                continue
-            try:
-                handle_order(r.json(), agent, d, market, bproxy, own_shop, keys)
+            try:                                        # nothing in one order may end the kit
+                r = market.call("POST", "/api/orders")
+                if r.status_code == 429:
+                    try:
+                        wait = float(r.json().get("wait", 5))
+                    except Exception:
+                        wait = 5
+                    time.sleep(min(max(wait, 1), 30))
+                    continue
+                if r.status_code == 401:                # the market forgot this buyer (e.g. a reset): join again
+                    log("[market] buyer token refused, joining again")
+                    try:
+                        market.join("buyer", *market.joined["buyer"][:2])
+                    except SystemExit as e:             # refused for good (e.g. no claim code): keep trying slowly
+                        log(str(e))
+                        time.sleep(300)
+                    continue
+                if r.status_code != 200:
+                    log(f"[market] order failed: {r.status_code} {r.text[:200]}")
+                    time.sleep(10)
+                    continue
+                handle_order(r.json(), agent, d, market, bproxy, state.get("own_shop", own_shop), keys)
+                n += 1
             except Exception as e:
                 log(f"[kit] order failed: {type(e).__name__}: {e}")
                 time.sleep(15)
-            n += 1
     except KeyboardInterrupt:
         log("[kit] leaving the market")
     finally:
         for p in procs:
             stop(p)
+
+
+def card_ok(base):
+    try:
+        return httpx.get(base + "/.well-known/agent-card.json", timeout=10).status_code == 200
+    except Exception:
+        return False
+
+
+def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every=60):
+    """Bring the shop back by itself: restart a crashed seller, and replace a dead quick tunnel
+    (join again with the new URL; the market moves the shop's history to it)."""
+    misses = 0
+    while True:
+        time.sleep(every)
+        try:
+            if procs[0].poll() is not None:
+                log(f"[kit] your seller exited (code {procs[0].returncode}), starting it again")
+                procs[0] = start(fill(agent["seller"]["cmd"], port=sport), d)
+                pump(procs[0], "[seller]")
+                wait_card(f"http://127.0.0.1:{sport}")
+            if not a.tunnel:
+                continue
+            ok = procs[1].poll() is None and card_ok(proxy.public)
+            misses = 0 if ok else misses + 1
+            if misses < 3:
+                continue
+            log(f"[tunnel] {proxy.public} stopped answering, opening a new tunnel")
+            stop(procs[1])
+            procs[1], url = open_tunnel(pport)
+            if not wait_card(url, 120):
+                raise RuntimeError(f"the new tunnel {url} did not answer within 120 s")
+            proxy.public = state["own_shop"] = url
+            j = market.join("shop", a.name, keys["shop"], url)
+            log(f"[market] shop registered again as {j['name']} at {url}")
+            misses = 0
+        except (Exception, SystemExit) as e:
+            log(f"[kit] watchdog: {type(e).__name__}: {e}")
 
 
 def cmd_starter(a):
