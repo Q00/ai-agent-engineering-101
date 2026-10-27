@@ -14,7 +14,10 @@ import time
 import httpx
 
 ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT.parents[2] / "scripts"))
+# Keep the shared course scripts read-only while allowing the official v3 kit
+# downloaded for Week 08 to run with the existing identity and agent directory
+KIT_DIR = Path(os.environ.get("MARKET_KIT_DIR", str(ROOT.parents[2] / "scripts"))).resolve()
+sys.path.insert(0, str(KIT_DIR))
 import market_kit
 
 OFFICIAL_MARKET = market_kit.Market
