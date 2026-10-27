@@ -1,10 +1,12 @@
 {
-  "harness": "Codex CLI gpt-6-luna: /usr/bin/env SSL_CERT_FILE=/etc/ssl/cert.pem codex exec --ignore-user-config --ephemeral --skip-git-repo-check -m gpt-6-luna -",
+  "harness": "rule-based negotiation in code (negotiation.py, pricing.py) for shop and buyers; Codex CLI gpt-6-luna optional with --use-harness: /usr/bin/env SSL_CERT_FILE=/etc/ssl/cert.pem codex exec --ignore-user-config --ephemeral --skip-git-repo-check -m gpt-6-luna -",
   "seller": {
-    "cmd": "python3 seller.py --port {port}"
+    "cmd": "python3 seller.py --port {port} --name ggari0703"
   },
   "buyer": {
     "cmd": "python3 buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python3 market_buyer.py --shops {shops} --item {item} --budget {budget} --self-name ggari0703,ggari-shop"
   }
 }
-

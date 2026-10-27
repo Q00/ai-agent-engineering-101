@@ -30,7 +30,8 @@ class SellerPolicy:
         self.harness = harness
 
     def opening(self, item: str, reserve: int) -> Decision:
-        fallback = Decision("counter", math.ceil(reserve * 1.3), "safe opening")
+        target = math.ceil(reserve * 1.05)
+        fallback = Decision("counter", target, "fast-close opening")
         prompt = (
             "You are the seller decision harness. "
             f"Item={item!r}; private reserve={reserve}. Choose an opening asking price. "
@@ -39,7 +40,8 @@ class SellerPolicy:
         )
         decision = self.harness.decide(prompt, fallback)
         price = decision.price if decision.price is not None else fallback.price
-        return Decision("counter", max(reserve, int(price)), decision.reason)
+        guarded_price = min(target, max(reserve, int(price)))
+        return Decision("counter", guarded_price, decision.reason)
 
     def respond(
         self,
@@ -63,8 +65,9 @@ class SellerPolicy:
             + JSON_RULE
         )
         decision = self.harness.decide(prompt, fallback)
-        if decision.action == "accept" and offer >= reserve:
-            return Decision("accept", offer, decision.reason)
+        if offer >= reserve:
+            reason = decision.reason if decision.action == "accept" else fallback.reason
+            return Decision("accept", offer, reason)
         if decision.action == "reject":
             return Decision("reject", None, decision.reason)
         price = decision.price if decision.price is not None else fallback.price
@@ -100,5 +103,3 @@ class BuyerPolicy:
             return Decision("walk", None, decision.reason)
         price = decision.price if decision.price is not None else fallback.price
         return Decision("offer", max(0, min(budget, int(price or 0))), decision.reason)
-
-

@@ -27,7 +27,8 @@ def completed(task_id: str, price: int) -> dict:
     return {
         "id": task_id,
         "status": {"state": "TASK_STATE_COMPLETED", "message": {"parts": []}},
-        "artifacts": [{"name": "receipt", "parts": [{"data": {"price": price}}]}],
+        "artifacts": [{"name": "receipt", "parts": [{"data": {
+            "shop": "Kit Shop", "item": "lamp", "price": price, "task": task_id, "sig_seller": "c2ln"}}]}],
     }
 
 
