@@ -1,0 +1,96 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
+  "started": "2026-10-27T01:11:59+00:00",
+  "harness": "Week05 custom Python function-tool loop inherited from Week06; OpenAI gpt-4.1-nano-2025-04-14; model-selected market shop and review; Ed25519 seller receipts",
+  "seller_cmd": "./run_harness.sh seller --port {port}",
+  "market_buyer_cmd": "./run_harness.sh market-buyer --shops {shops} --item {item} --budget {budget} --promote-shop",
+  "seller_card": null,
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": false,
+      "detail": "no Agent Card at /.well-known/agent-card.json within 60 s"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_reads_reviews",
+      "run": 1,
+      "pass": false,
+      "detail": "shop with good reviews in 0 of 3 runs (picks ['none', 'none', 'none']); needs 2"
+    }
+  ],
+  "passed": false
+}
