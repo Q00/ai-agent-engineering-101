@@ -47,6 +47,7 @@ from pathlib import Path
 import harness
 import httpx
 import market_data
+import memory_context
 import review_feedback
 
 SCOUT_EVERY = 600  # seconds between scouting rounds: one harness call each
@@ -604,7 +605,7 @@ def build_prompt(
     )
     learned = review_feedback.prompt_lines(review_feedback.read_operations())
     lessons = (
-        ("- Lessons distilled from buyers' low reviews: " + " / ".join(learned) + "\n")
+        ("- Selected experience, not verified causal lessons: " + " / ".join(learned) + "\n")
         if learned
         else ""
     )
@@ -636,7 +637,7 @@ def build_prompt(
         reviews=reviews,
         lessons=lessons,
         history=history_lines(
-            strategy.get("history") or [],
+            (strategy.get("history") or [])[-3:],
             dict(scorecard(picture, funnel), time=time.time()),
         ),
         lead_max=LEAD_MAX,
@@ -849,6 +850,7 @@ def refresh(
     picture = market_picture()
     caps = price_caps(reserve, picture["items"])
     ops = review_feedback.read_operations()
+    memory_context.compact_seller(ops, previous)
     launch = ops.get("round_reviews", 0) < launch_reviews
     cache = {}
     try:

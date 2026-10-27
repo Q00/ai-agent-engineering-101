@@ -16,6 +16,7 @@ import uuid
 
 import harness
 import httpx
+import memory_context
 
 HEADERS = {"A2A-Version": "1.0"}
 TIME_LIMIT = 270  # seconds; the trade test stops a buyer after 300
@@ -89,7 +90,7 @@ ASK_LINE = re.compile(
 )
 
 
-def build_buyer_prompt(item: str, budget: int, history: list[dict]) -> str:
+def build_buyer_prompt(item: str, budget: int, history: list[dict], memory: str = "") -> str:
     """Builds the prompt that asks the harness for the buyer's next move.
 
     Args:
@@ -122,7 +123,7 @@ def build_buyer_prompt(item: str, budget: int, history: list[dict]) -> str:
         floor=floor,
         offers_left=MAX_TURNS - offers_sent,
         conversation="\n".join(lines),
-    )
+    ) + ("\n" + memory if memory else "")
 
 
 def parse_buyer_decision(answer: str, require_ask: bool = False) -> dict:
@@ -243,9 +244,9 @@ class Seller:
         self.call("CancelTask", {"id": task["id"]})
 
 
-def decide(item: str, budget: int, history: list[dict], deadline: float):
+def decide(item: str, budget: int, history: list[dict], deadline: float, memory: str = ""):
     """Asks the harness for a move; tries twice, returns None if both fail or time runs out."""
-    prompt = build_buyer_prompt(item, budget, history)
+    prompt = build_buyer_prompt(item, budget, history, memory)
     for attempt in (1, 2):
         left = deadline - time.monotonic()
         if left < 15:
@@ -288,9 +289,12 @@ def enforce(decision, ask, last_offer, budget: int):
     return "offer", price, notes
 
 
-def main(url: str, item: str, budget: int):
+def main(url: str, item: str, budget: int, shop_name: str | None = None,
+         round_id: int | None = None):
     """Negotiates one purchase; returns the last task and the history (week 7: market_buyer.py reads them)."""
     deadline = time.monotonic() + TIME_LIMIT
+    memory = (memory_context.context("buyer", "negotiate", item=item, shop=shop_name,
+                                     round_id=round_id) if shop_name else "")
     seller = Seller(url)
     # The opening offers the published floor (the budget if lower): a shop at the floor closes on the
     # first reply, and every other shop hears the lowest price that exists in this market first.
@@ -326,7 +330,7 @@ def main(url: str, item: str, budget: int):
             decision, ask = None, known
             log(f"read ask: {ask} (metadata, written in the message)")
         else:
-            decision = decide(item, budget, history, deadline)
+            decision = decide(item, budget, history, deadline, memory)
             raw = decision["ask"] if decision is not None else None
             ask = ask_in_text(raw, text)
             log(f"read ask: {ask} (model said {raw}, metadata {meta})")

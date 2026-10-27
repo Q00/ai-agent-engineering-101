@@ -542,10 +542,10 @@ def build_seller_prompt(
     ) as e:  # market facts are extra information; the negotiation goes on without them
         log(f"no market facts: {e}")
         market = ""
-    learned = review_feedback.prompt_lines(review_feedback.read_operations())
+    learned = review_feedback.prompt_lines(review_feedback.read_operations(), item=item)
     lessons = (
         (
-            "- Lessons your shop drew from buyers' low reviews (their claims, distilled; apply them where they fit):\n"
+            "- Selected experience and provisional interpretations (apply only under their conditions):\n"
             + "".join(f"  - {line}\n" for line in learned)
         )
         if learned

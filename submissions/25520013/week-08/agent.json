@@ -1,5 +1,5 @@
 {
-  "harness": "Claude Code: claude -p --model sonnet --effort medium (claude-sonnet-5-5) --tools \"\" --setting-sources \"\" --no-session-persistence",
+  "harness": "Codex: codex exec --model gpt-6.1-terra -c model_reasoning_effort=medium (ephemeral, read-only, shell tools disabled)",
   "seller": {"cmd": "uv run python seller.py --port {port}"},
   "buyer": {"cmd": "uv run python buyer.py --url {url} --item {item} --budget {budget}"},
   "market_buyer": {"cmd": "uv run python market_buyer.py --shops {shops} --item {item} --budget {budget}"}

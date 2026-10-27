@@ -40,6 +40,7 @@ import buyer
 import buyer_scout
 import harness
 import market_data
+import memory_context
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
@@ -134,9 +135,11 @@ def load_memory() -> list[dict]:
     if not MEMORY.exists():
         return []
     rows = []
-    for line in MEMORY.read_text(encoding="utf-8").splitlines():
+    for number, line in enumerate(MEMORY.read_text(encoding="utf-8").splitlines(), 1):
         try:
-            rows.append(json.loads(line))
+            row = json.loads(line)
+            row["_memory_line"] = number
+            rows.append(row)
         except json.JSONDecodeError:
             continue
     return rows
@@ -254,7 +257,7 @@ def build_pick_prompt(
         else:
             lines.append("  reviews: none")
         lines.append("  " + ledger_line(market["shops"].get(s["name"]), item))
-        lines.append("  " + own_line(summary.get(s["name"]), item))
+        # Historical own-trade memory is selected separately below.
         blocks.append("\n".join(lines))
     t = market["items"].get(item) or [0, 0]
     return PICK_PROMPT.format(
@@ -263,6 +266,9 @@ def build_pick_prompt(
         market_mean=market_data.mean(t),
         market_n=t[1],
         shops="\n".join(blocks),
+    ) + "\n" + memory_context.context(
+        "buyer", "choose_shop", item=item, shops=[s["name"] for s in shops],
+        round_id=market.get("round"),
     )
 
 
@@ -474,7 +480,8 @@ def main(shops_path: str, item: str, budget: int) -> None:
     buyer.TIME_LIMIT = max(60, TIME_LIMIT - REVIEW_TIMEOUT - (time.monotonic() - start))
     task, history, error = None, [], None
     try:
-        task, history = buyer.main(shop["url"], item, budget)
+        task, history = buyer.main(shop["url"], item, budget, shop_name=shop["name"],
+                                   round_id=market.get("round"))
     except Exception as e:  # an unreachable shop or a broken reply still gets a review and a memory row
         error = f"{type(e).__name__}: {e}"[:200]
         log(f"trade failed: {error}")
@@ -490,6 +497,8 @@ def main(shops_path: str, item: str, budget: int) -> None:
     row = {
         "time": datetime.now().isoformat(timespec="seconds"),
         "shop": shop["name"],
+        "round": market.get("round"),
+        "settlement_status": "unknown",  # The kit settles after this process returns.
         "item": item,
         "budget": budget,
         "first_ask": asks[0] if asks else None,
