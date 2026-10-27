@@ -10,7 +10,8 @@ The kit runs this for every order from Round 1 on. {shops} is a JSON list of
            {"ts", "shop", "item", "budget", "first_ask", "agreed", "receipt_price", "outcome", "signed",
             "stars", "problem"}. Shops are remembered by name (their URL changes when their kit restarts).
   filter   code drops shops my own memory marks as bad: a receipt above the agreed price, a receipt
-           for another item, or two failed connections. If that leaves nothing, every shop stays in.
+           for another item (for good), or no answer in 2 of my last 5 trades within 6 hours (for now).
+           If that leaves nothing, every shop stays in.
   signed   Round 2 counts only receipts signed by the shop. Shops that sold to me two or more times and
            never signed are dropped when others are left, and each summary line shows how many of my
            receipts from that shop were signed.
@@ -115,14 +116,23 @@ def my_history(memory, name):
     return rows, deals, flags
 
 
-def blocked(memory, name):
-    _, _, flags = my_history(memory, name)
+# A shop that did not answer is skipped only while that is recent: at least NO_ANSWER_MIN of my last
+# NO_ANSWER_LAST trades with it got no answer, the latest one within NO_ANSWER_HOURS. Counting every
+# no-answer ever (the first version) blocked ggari-shop for good after two timeouts in 1,866 deals.
+# Cheating (an inflated receipt, a raised ask, an absurd price) still blocks for good.
+NO_ANSWER_LAST, NO_ANSWER_MIN, NO_ANSWER_HOURS = 5, 2, 6
+
+
+def blocked(memory, name, now=None):
+    rows, _, flags = my_history(memory, name)
     cheats = [f for f in flags if f.startswith(("receipt above", "receipt for", "misbehaved"))]
-    unreachable = [f for f in flags if f.startswith("no answer")]
     if cheats:
         return f"my memory: {cheats[0]}"
-    if len(unreachable) >= 2:
-        return f"my memory: no answer {len(unreachable)} times"
+    recent = sorted(rows, key=lambda r: r.get("ts") or 0)[-NO_ANSWER_LAST:]
+    silent = [r for r in recent if r.get("outcome") == "no answer"]
+    now = now or time.time()
+    if len(silent) >= NO_ANSWER_MIN and now - (silent[-1].get("ts") or 0) < NO_ANSWER_HOURS * 3600:
+        return f"my memory: no answer in {len(silent)} of my last {len(recent)} trades, latest {int((now - silent[-1]['ts']) / 60)} min ago"
     return None
 
 
