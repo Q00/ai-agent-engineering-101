@@ -1,19 +1,15 @@
 [shops]
-Kit Shop | no reviews | 11 trades, 6 deals, paid lamp 100,100,100. Last: bookshelf: asks [338, 274], my offers [210], no deal
+Kit Shop | no reviews | 11 trades, 6 deals, paid lamp 105,105,100. Last: bookshelf: asks [338, 269, 260, 260], my offers [200, 215, 230], no deal
 [pick] Kit Shop because: it is the only shop I can use
 -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[harness] {"action": "offer", "price": 200}
+-> '200'  <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 269.
 [harness] {"action": "offer", "price": 215}
--> '215'  <- TASK_STATE_INPUT_REQUIRED | 215 is too low. Counteroffer: 276.
+-> '215'  <- TASK_STATE_INPUT_REQUIRED | 215 is too low. Counteroffer: 260.
 [harness] {"action": "offer", "price": 225}
 -> '225'  <- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
-[harness] {"action": "offer", "price": 228}
--> '228'  <- TASK_STATE_INPUT_REQUIRED | 228 is too low. Counteroffer: 260.
-[harness] {"action": "offer", "price": 230}
--> 'Final offer: 230'  <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
-[fallback] harness failed (harness failed: exit 1: Managed settings contain invalid entries (remaining valid policies are still enforced):
-  /etc/c); using the rule for this step
-[fallback] offer 230
--> 'Final offer: 230'  <- TASK_STATE_REJECTED | No deal at 230.
-[check] outcome: TASK_STATE_REJECTED; shop asks: [338, 276, 260, 260, 260]; my offers: [215, 225, 228, 230, 230]; receipt: none
-[harness] review {"stars": 2, "review": "I tried to buy a bookshelf from Kit Shop, but their asking price only dropped from 338 to 260 while my offers rose from 215 to 230, so the deal was rejected and I received no receipt."}
-{"shop": "http://127.0.0.1:56281", "receipt": null, "stars": 2, "review": "I tried to buy a bookshelf from Kit Shop, but their asking price only dropped from 338 to 260 while my offers rose from 215 to 230, so the deal was rejected and I received no receipt."}
+[harness] {"action": "walk"}
+walked away (CancelTask)
+[check] outcome: TASK_STATE_INPUT_REQUIRED; shop asks: [338, 269, 260, 260]; my offers: [200, 215, 225]; receipt: none
+[harness] review {"stars": 2, "review": "I tried to buy a bookshelf from Kit Shop, but no sale went through and I received no receipt: the shop asked for 260 to 338 while my offers were 200 to 225, so we never agreed on a price."}
+{"shop": "http://127.0.0.1:58899", "receipt": null, "stars": 2, "review": "I tried to buy a bookshelf from Kit Shop, but no sale went through and I received no receipt: the shop asked for 260 to 338 while my offers were 200 to 225, so we never agreed on a price."}

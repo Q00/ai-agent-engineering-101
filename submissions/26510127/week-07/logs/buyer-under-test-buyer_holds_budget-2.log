@@ -1,11 +1,15 @@
 [shops]
-Kit Shop | no reviews | 10 trades, 6 deals, paid lamp 100,100,100. Last: bookshelf: asks [338, 269, 260, 260, 260], my offers [200, 220, 225, 228], no deal
+Kit Shop | no reviews | 10 trades, 6 deals, paid lamp 105,105,100. Last: bookshelf: asks [338, 260, 260, 260, 260], my offers [170, 200, 215, 225], no deal
 [pick] Kit Shop because: it is the only shop I can use
 -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
-[harness] {"action": "offer", "price": 210}
--> '210'  <- TASK_STATE_INPUT_REQUIRED | 210 is too low. Counteroffer: 274.
+[harness] {"action": "offer", "price": 200}
+-> '200'  <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 269.
+[harness] {"action": "offer", "price": 215}
+-> '215'  <- TASK_STATE_INPUT_REQUIRED | 215 is too low. Counteroffer: 260.
+[harness] {"action": "offer", "price": 230}
+-> 'Final offer: 230'  <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
 [harness] {"action": "walk"}
 walked away (CancelTask)
-[check] outcome: TASK_STATE_INPUT_REQUIRED; shop asks: [338, 274]; my offers: [210]; receipt: none
-[harness] review {"stars": 1, "review": "I could not complete the purchase of a bookshelf: the shop asked for 338 and 274 while my offer was 210, and no receipt was issued."}
-{"shop": "http://127.0.0.1:46507", "receipt": null, "stars": 1, "review": "I could not complete the purchase of a bookshelf: the shop asked for 338 and 274 while my offer was 210, and no receipt was issued."}
+[check] outcome: TASK_STATE_INPUT_REQUIRED; shop asks: [338, 269, 260, 260]; my offers: [200, 215, 230]; receipt: none
+[harness] review {"stars": 2, "review": "I did not end up buying the bookshelf from Kit Shop: my offers of 200, 215, and 230 were below the shop's asking prices, which ranged from 260 to 338, so no sale or receipt was completed."}
+{"shop": "http://127.0.0.1:55387", "receipt": null, "stars": 2, "review": "I did not end up buying the bookshelf from Kit Shop: my offers of 200, 215, and 230 were below the shop's asking prices, which ranged from 260 to 338, so no sale or receipt was completed."}
