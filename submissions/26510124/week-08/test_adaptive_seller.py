@@ -50,7 +50,7 @@ class SellerTests(unittest.TestCase):
         key = Ed25519PrivateKey.generate()
         with patch("seller_agent.StrategyReader.for_item", side_effect=[POLICY, {**POLICY, "version": "second"}]) as reader, \
                 patch("seller_agent.load_shop_key", return_value=key), \
-                patch("seller_agent.opening_price", return_value=125) as opening, \
+                patch("seller_agent.opening_price", side_effect=[125, 225]) as opening, \
                 patch("seller_agent.seller_decision", return_value={"action": "accept", "price": 120}) as decide, \
                 TestClient(build({**CONFIG, "sign_receipts": True})) as client:
             first = send(client, "I want a lamp")
