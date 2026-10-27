@@ -66,7 +66,9 @@ async def run(args):
     shops = read_shops(args.shops, exclude_name=args.self_name)
     memory = read_memory(args.memory, ROOT / "memory" / "market-verification.jsonl")
     require_verified = int(os.environ.get("MARKET_ROUND", "0")) >= 2
-    shop, reason, evidence = choose_shop(shops, memory, args.item, args.budget, require_verified=require_verified)
+    shop, reason, evidence = choose_shop(shops, memory, args.item, args.budget,
+                                        require_verified=require_verified,
+                                        audit_name=os.environ.get("MARKET_AUDIT_SHOP"))
     safe = lambda value: value.replace(settings.api_key, "[REDACTED]") if settings.api_key else value
     print(safe(f"[choose] {shop['name']} {shop['url']}: {reason}"), flush=True)
     log.record("shop_selected", name=shop["name"], url=shop["url"], item=args.item,

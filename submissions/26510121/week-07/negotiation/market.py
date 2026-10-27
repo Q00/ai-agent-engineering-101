@@ -88,7 +88,7 @@ def observation_count(memory):
     return max([len(memory)] + [r.get("sequence") or 0 for r in memory])
 
 
-def choose_shop(shops, memory, item, budget, *, require_verified=False):
+def choose_shop(shops, memory, item, budget, *, require_verified=False, audit_name=None):
     """Prefer personal evidence; explore once per seven orders after six observations.
 
     Weights and exploration frequency are explicit starting hypotheses, not an
@@ -149,6 +149,10 @@ def choose_shop(shops, memory, item, budget, *, require_verified=False):
             and not c["recent_fault"] and not c["recent_outage"]]
     mode = "bounded exploration" if explore and pool else "best evidence"
     selected = max(pool if explore and pool else candidates, key=lambda c: (c["score"], c["tie"]))
+    if audit_name:
+        audit = next((candidate for candidate in candidates if candidate["shop"]["name"] == audit_name), None)
+        if audit:
+            selected, mode = audit, "explicit one-order integrity audit"
     reason = (f"{mode}; item={item}; own successes={selected['wins']}/{selected['own']}; "
               f"budget fit={selected['budget_fit']}; public score={selected['public']}; "
               f"recent receipt fault={selected['recent_fault']}; recent outage={selected['recent_outage']}")

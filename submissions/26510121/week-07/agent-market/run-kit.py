@@ -16,6 +16,8 @@ import httpx
 
 AGENT = Path(__file__).resolve().parent.parent
 REPO = AGENT.parents[2]
+sys.path.insert(0, str(AGENT))
+from negotiation.auditing import take_audit_request
 spec = importlib.util.spec_from_file_location("course_market_kit", REPO / "scripts" / "market_kit.py")
 kit = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(kit)
@@ -60,11 +62,17 @@ def market_call(self, method, path, role="buyer", **kwargs):
 
 
 def handle_order(order, *args, **kwargs):
-    names = ("MARKET_ROUND", "MARKET_REGISTRY_KEYS")
+    names = ("MARKET_ROUND", "MARKET_REGISTRY_KEYS", "MARKET_AUDIT_SHOP")
     old = {name: os.environ.get(name) for name in names}
     os.environ["MARKET_ROUND"] = str(order["round"])
     os.environ["MARKET_REGISTRY_KEYS"] = str(AGENT / ".market" / "registry-keys.json")
     try:
+        audit = take_audit_request(AGENT / ".market" / "audit-request.json", order)
+        if audit:
+            os.environ["MARKET_AUDIT_SHOP"] = audit
+            kit.log(f"[audit] one real order assigned to integrity audit of {audit}; normal budget and receipt checks remain")
+        else:
+            os.environ.pop("MARKET_AUDIT_SHOP", None)
         return original_handle_order(order, *args, **kwargs)
     finally:
         for name, value in old.items():
