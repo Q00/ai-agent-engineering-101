@@ -6,6 +6,9 @@ line-length = 88
 select = ["ALL"]
 ignore = ["D203", "D213", "COM812"]
 
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = ["market_a2a.models.FrozenModel"]
+
 [tool.ruff.lint.per-file-ignores]
 "*.py" = ["CPY001"]
 "tests/*.py" = ["S101", "D100", "D103", "PLR2004", "INP001", "T201"]

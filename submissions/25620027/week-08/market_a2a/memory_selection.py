@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Final, Literal, assert_never
 
 from pydantic import Field, TypeAdapter, ValidationError
 
+from market_a2a.memory_models import ShopKnowledge
 from market_a2a.models import FrozenModel, ToolResult, json_value
 
 if TYPE_CHECKING:
@@ -44,6 +45,7 @@ class SelectionPrior(FrozenModel):
         "unverified_negotiation_memory"
     )
     recent_evidence: tuple[TradePointer, ...]
+    shop_notebook: ShopKnowledge | None = None
 
 
 class MemorySelection:
@@ -72,6 +74,7 @@ class MemorySelection:
             negotiated_completions=sum(trade.purchase.completed for trade in records),
             requested_item_records=len(matched),
             lowest_observed_same_item_price=min(prices, default=None),
+            shop_notebook=self.memory.profiles.get(name),
             recent_evidence=tuple(
                 TradePointer(
                     shop_index=index,

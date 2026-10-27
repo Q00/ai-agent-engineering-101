@@ -13,7 +13,8 @@ from pydantic import JsonValue, TypeAdapter, ValidationError
 
 from market_a2a.buyer import BuyerHarness, BuyerOrder, buy_order
 from market_a2a.market_decision import Decision, MarketShop, PublicReview, Selection
-from market_a2a.memory import Memory, Review, Trade
+from market_a2a.memory import Review, Trade
+from market_a2a.memory_repository import MemoryRepository
 from market_a2a.memory_selection import EvidenceQuery, MemorySelection
 from market_a2a.models import (
     HarnessError,
@@ -104,7 +105,10 @@ async def market_buy(
     if not shops:
         msg = "Market registry contains no shops"
         raise HarnessError(msg)
-    memory = await anyio.to_thread.run_sync(Memory.load, request.memory_path)
+    repository = await anyio.to_thread.run_sync(
+        MemoryRepository.configured, request.memory_path
+    )
+    memory = await anyio.to_thread.run_sync(repository.load)
     blocked_names = frozenset(
         name
         for name, trades in memory.shops.items()
@@ -221,9 +225,7 @@ async def market_buy(
         purchase=outcome,
         observed_at=datetime.now(UTC),
     )
-    await anyio.to_thread.run_sync(
-        memory.append(selected.name, trade).save, request.memory_path
-    )
+    await anyio.to_thread.run_sync(repository.record, selected.name, trade)
     _ = await harness.run(
         REVIEW_PROMPT,
         {
@@ -246,10 +248,9 @@ async def market_buy(
         raise HarnessError(msg)
     review = grounded_review(trade, decision.review, observed_prices)
     await anyio.to_thread.run_sync(
-        memory.append(
-            selected.name, trade.model_copy(update={"evaluation": review})
-        ).save,
-        request.memory_path,
+        repository.review,
+        selected.name,
+        trade.model_copy(update={"evaluation": review}),
     )
     return MarketResult(
         shop=selected.url,

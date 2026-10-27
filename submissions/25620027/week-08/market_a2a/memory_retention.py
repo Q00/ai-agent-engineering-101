@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Final
 if TYPE_CHECKING:
     from market_a2a.memory_models import Trade
 
-MAX_SHOPS: Final = 64
+MAX_SHOPS: Final = 128
 MAX_PER_SHOP: Final = 200
 MAX_RECORDS: Final = 2048
 MAX_RECORD_BYTES: Final = 8192
@@ -35,12 +35,21 @@ def retained(
         key=lambda entry: (entry[0], entry[1]),
         reverse=True,
     )
+    # Allocate one recent record to each shop before filling additional history.
+    first: dict[str, tuple[datetime, int, str, Trade]] = {}
+    rest: list[tuple[datetime, int, str, Trade]] = []
+    for entry in entries:
+        name = entry[2]
+        if name not in first:
+            first[name] = entry
+        else:
+            rest.append(entry)
     counts: Counter[str] = Counter()
     kept: dict[str, list[Trade]] = {}
     # Reserve space for names, commas and JSON object delimiters.
-    budget = MAX_FILE_BYTES - 32768
+    budget = MAX_FILE_BYTES - 131072
     total = 0
-    for _, _, name, trade in entries:
+    for _, _, name, trade in (*first.values(), *rest):
         size = len(trade.model_dump_json().encode())
         if (
             counts[name] >= MAX_PER_SHOP

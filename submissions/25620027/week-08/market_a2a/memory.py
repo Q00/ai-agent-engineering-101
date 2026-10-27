@@ -10,7 +10,7 @@ from tempfile import NamedTemporaryFile
 from pydantic import Field
 
 from market_a2a.context_snapshot import publish_context
-from market_a2a.memory_models import Review, Trade
+from market_a2a.memory_models import Review, ShopKnowledge, Trade
 from market_a2a.memory_retention import MAX_FILE_BYTES, MAX_LOAD_BYTES, retained
 from market_a2a.models import FrozenModel, HarnessError
 
@@ -21,6 +21,7 @@ class Memory(FrozenModel):
     """File boundary for own experience, independent of changing URLs."""
 
     shops: dict[str, tuple[Trade, ...]] = Field(default_factory=dict)
+    profiles: dict[str, ShopKnowledge] = Field(default_factory=dict)
 
     @classmethod
     def load(cls, path: Path) -> Memory:
@@ -60,8 +61,20 @@ class Memory(FrozenModel):
             _ = temporary.replace(path)
         finally:
             temporary.unlink(missing_ok=True)
-        publish_context(bounded.shops, path)
+        publish_context(bounded.shops, bounded.profiles, path)
 
     def append(self, name: str, trade: Trade) -> Memory:
         """Create the next snapshot without modifying earlier observations."""
-        return Memory(shops={**self.shops, name: (*self.shops.get(name, ()), trade)})
+        previous = self.profiles.get(name)
+        profile = ShopKnowledge(
+            observations=(previous.observations if previous else 0) + 1,
+            negotiated_completions=(previous.negotiated_completions if previous else 0)
+            + int(trade.purchase.completed),
+            last_seen=trade.observed_at,
+            last_item=trade.item,
+            last_observed_price=trade.purchase.price,
+        )
+        return Memory(
+            shops={**self.shops, name: (*self.shops.get(name, ()), trade)},
+            profiles={**self.profiles, name: profile},
+        )
