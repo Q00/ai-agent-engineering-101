@@ -84,7 +84,10 @@ def test_failed_paid_attempt_is_counted_without_sdk_retry(tmp_path: Path) -> Non
     anyio.run(scenario)
 
 
-def test_free_outage_uses_original_openai_with_persistent_quota(tmp_path: Path) -> None:
+@pytest.mark.parametrize("model", [FREE_ROUTER, DEFAULT_MODEL])
+def test_free_outage_uses_original_openai_with_persistent_quota(
+    tmp_path: Path, model: str,
+) -> None:
     requested: list[str] = []
 
     def respond(request: httpx2.Request) -> httpx2.Response:
@@ -113,7 +116,7 @@ def test_free_outage_uses_original_openai_with_persistent_quota(tmp_path: Path) 
                         http_client=http) as paid,
         ):
             harness = Harness(
-                free, print, model=FREE_ROUTER,
+                free if model == FREE_ROUTER else paid, print, model=model,
                 fallback=OpenAIFallback(
                     paid, DailyQuota(tmp_path / "quota.sqlite3", 1),
                 ),
@@ -121,7 +124,10 @@ def test_free_outage_uses_original_openai_with_persistent_quota(tmp_path: Path) 
             _ = await harness.complete([], [])
             with pytest.raises(HarnessError, match="limit reached"):
                 _ = await harness.complete([], [])
-            assert requested == ["openrouter.ai", "api.openai.com"]
+            assert requested == (
+                ["openrouter.ai", "api.openai.com"]
+                if model == FREE_ROUTER else ["api.openai.com"]
+            )
             assert harness.calls == 1
 
     anyio.run(scenario)

@@ -86,7 +86,9 @@ def test_missing_free_endpoint_falls_back_only_to_free_router(
             httpx2.AsyncClient(transport=httpx2.MockTransport(respond)) as http,
             create_model_client(http) as client,
         ):
-            harness = Harness(client, print)
+            harness = Harness(
+                client, print, clock=lambda: PROMOTION_END - timedelta(seconds=1)
+            )
             _ = await harness.complete([{"role": "user", "content": "test"}], [])
             assert requested == [FREE_MODEL, FREE_ROUTER]
             assert harness.calls == 1
@@ -109,8 +111,11 @@ def test_free_model_requires_matching_endpoint() -> None:
 
 
 @pytest.mark.parametrize("provider", ["openai", "openrouter-free"])
+@pytest.mark.parametrize("now", [
+    PROMOTION_END - timedelta(seconds=1), PROMOTION_END + timedelta(seconds=1),
+])
 def test_sdk_request_uses_correct_host_model_and_zero_price_constraint(
-    provider: str, monkeypatch: pytest.MonkeyPatch
+    provider: str, now: datetime, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("AX_MODEL_PROVIDER", provider)
     monkeypatch.setenv("OPENAI_API_KEY", "offline-openai")
@@ -126,7 +131,9 @@ def test_sdk_request_uses_correct_host_model_and_zero_price_constraint(
         if provider == "openrouter-free":
             assert request.url.host == "openrouter.ai"
             assert request.headers["authorization"] == "Bearer offline-openrouter"
-            assert body["model"] == FREE_MODEL
+            assert body["model"] == (
+                FREE_MODEL if now < PROMOTION_END else FREE_ROUTER
+            )
             assert body["provider"] == {
                 "require_parameters": True,
                 "max_price": {"prompt": 0, "completion": 0, "request": 0},
@@ -173,7 +180,7 @@ def test_sdk_request_uses_correct_host_model_and_zero_price_constraint(
             httpx2.AsyncClient(transport=httpx2.MockTransport(respond)) as http,
             create_model_client(http) as client,
         ):
-            harness = Harness(client, print)
+            harness = Harness(client, print, clock=lambda: now)
             result = await harness.complete(
                 [{"role": "user", "content": "Offline tool serialization check"}],
                 [{"type": "function", "function": {"name": "accept"}}],

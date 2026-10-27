@@ -97,6 +97,7 @@ class Harness:
         *,
         model: str | None = None,
         fallback: OpenAIFallback | None = None,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
         """Own observability counters while the caller owns the API client."""
         self.client = client
@@ -114,6 +115,7 @@ class Harness:
         self.limit = anyio.CapacityLimiter(1 if self.model in FREE_MODELS else 5)
         self.next_call_at = 0.0
         self.fallback = fallback
+        self.clock = clock if clock is not None else lambda: datetime.now(UTC)
         self.free_retry_at = 0.0
 
     async def run(
@@ -184,7 +186,7 @@ class Harness:
         """Retry transient API errors without replacing the model's decision."""
         if self.fallback is not None and monotonic() < self.free_retry_at:
             return await self._paid_complete(messages, tools)
-        route = request_model(self.model, datetime.now(UTC))
+        route = request_model(self.model, self.clock())
         for attempt, delay in enumerate(RETRY_DELAYS):
             try:
                 completion = await self._complete_once(messages, tools, route)
@@ -230,6 +232,8 @@ class Harness:
                         "reasoning": {"effort": "low"},
                     },
                 )
+            if self.fallback is not None:
+                return await self.fallback.complete(messages, tools, self.emit)
             return await self.client.chat.completions.create(
                 model=self.model, temperature=0, messages=messages, tools=tools,
                 tool_choice="required", parallel_tool_calls=False,
