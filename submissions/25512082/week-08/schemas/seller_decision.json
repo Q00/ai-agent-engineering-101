@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": ["ask", "counter", "accept", "reject"]
+    },
+    "price": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": ["action", "price", "reason"]
+}
