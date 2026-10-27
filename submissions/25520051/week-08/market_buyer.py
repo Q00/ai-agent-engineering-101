@@ -177,45 +177,57 @@ def floor_estimate(asks: list) -> tuple[int | None, bool]:
 
 
 def plan_offer(budget: int, asks: list, offers: list, ref: float | None, known: dict) -> tuple[str, int, str]:
-    """('offer' | 'accept' | 'final' | 'walk', price, why)."""
+    """('offer' | 'accept' | 'final' | 'walk', price, why).
+
+    Round 3: the shop no longer sees our budget on the ledger, so our offers must not hand it
+    the budget either. We climb only toward a hidden ceiling `cap` (< budget, randomised per order
+    in bargain), and our stated 'final' offer sits at `cap`, never at the budget. We stretch past
+    cap toward the budget only to meet a shop floor we are sure of and can afford, and even then we
+    stop at that floor (which is <= budget), so a watching shop reads `cap` or the floor, not our max.
+    `budget` stays the hard maximum, enforced again in bargain."""
     ask = asks[-1] if asks else None
     last = offers[-1] if offers else 0
     floor, sure = floor_estimate(asks)
+    cap = known["cap"]                                   # hidden planning ceiling; hides the true budget
+    target = cap
+    if floor is not None and cap < floor <= budget:      # an affordable, confident floor is worth a stretch
+        target = floor
+    target = min(target, budget)
     if ask is not None and ask <= budget:
-        if ask <= last or len(offers) >= PLAN or sure or ask - last <= max(2, budget * 0.03):
-            return "accept", ask, f"ask {ask} is within budget and close to our last {last}"
+        if ask <= target or ask <= last or len(offers) >= PLAN or sure or ask - last <= max(2, budget * 0.03):
+            return "accept", ask, f"ask {ask} is within reach and close to our last {last}"
         # A deal within budget is on the table: only nibble. Splitting the gap here lost a chair at 180
         # with budget 250 (BelieveMe rejected an offer of 164 right after countering 180).
         if offers:
             nibble = max(last + 1, ask - max(2, round(ask * 0.05)))
-            return "offer", nibble, f"ask {ask} is within budget: nibble, do not risk the deal"
-    if budget in offers and (ask is None or ask > budget):
-        return "walk", 0, f"final offer {budget} was refused (ask {ask})"
-    if sure and floor > budget:
-        return "final", budget, f"the shop holds at {floor}, above the budget: one final offer"
+            return "offer", nibble, f"ask {ask} is within reach: nibble, do not risk the deal"
+    if target in offers and (ask is None or ask > target):
+        return "walk", 0, f"our top offer {target} was refused (ask {ask})"
+    if sure and floor > budget:                          # cannot afford it; walk without revealing the budget
+        return "walk", 0, f"the shop holds at {floor}, above our budget"
 
     if not offers:
-        anchor = budget * 0.65 if ask is None else min(budget * 0.65, ask * 0.6)
+        anchor = cap * 0.65 if ask is None else min(cap * 0.65, ask * 0.6)
         if ref:
             anchor = min(anchor, ref * 0.85)
         if known.get("paid"):                                # what this shop took last time
             anchor = min(anchor, min(known["paid"]) * 0.9)
         known["anchor"] = max(1, int(anchor))
-        return "offer", known["anchor"], f"anchor at {known['anchor']} (ask {ask}, reference {ref})"
+        return "offer", known["anchor"], f"anchor at {known['anchor']} (ask {ask}, reference {ref}, cap {cap})"
 
     anchor = known["anchor"]
     k = min(len(offers), PLAN - 1)
-    price = int(round(anchor + (budget - anchor) * STEPS[k]))
-    why = f"step {k + 1}/{PLAN} toward the budget"
+    price = int(round(anchor + (target - anchor) * STEPS[k]))
+    why = f"step {k + 1}/{PLAN} toward cap {cap}" + (f" (stretched to floor {target})" if target != cap else "")
     if floor is not None and last < floor <= budget and floor > price:
         price, why = floor, f"jump to the estimated floor {floor}"
     if floor is not None and floor > budget * 1.15 and len(asks) >= 3:
-        return "final", budget, f"estimated floor {floor} is far above the budget: final offer now"
+        return "walk", 0, f"estimated floor {floor} is far above our budget"
     if ask is not None and price >= ask:                 # the plan overshoots the ask: still split the gap
         price, why = int(last + (ask - last) * 0.6), f"ask {ask} is within reach; split the gap"
     price = max(price, last + 1)
-    if price >= budget:
-        return "final", budget, why + ", reaching the budget"
+    if price >= target:
+        return "final", target, why + ", reaching our top"
     return "offer", price, why
 
 
@@ -249,6 +261,11 @@ def harness_adjust(item, budget, asks, offers, talk, plan, band):
 
 def bargain(url: str, item: str, budget: int, ref, known: dict, start: float) -> dict:
     out = {"asks": [], "offers": [], "injection": False, "state": "", "receipt": None, "task": None, "agreed": None}
+    # Round 3: pick a hidden ceiling below the budget, fresh per order so repeated trades do not
+    # let a shop average our offers into our budget. We plan toward this cap; the budget stays a
+    # hard guard. floor-stretch (plan_offer) still lets us meet an affordable, confident floor.
+    known["cap"] = cap = round(budget * random.uniform(0.80, 0.90))
+    print(f"[buyer] budget {budget}, hidden cap {cap} (shops see offers climb toward the cap, not the budget)", flush=True)
     t = send(url, f"I want to buy a {item}")
     out["task"] = t.get("id")
     while state(t) == "TASK_STATE_INPUT_REQUIRED":
@@ -264,9 +281,11 @@ def bargain(url: str, item: str, budget: int, ref, known: dict, start: float) ->
             break
         plan = plan_offer(budget, out["asks"], out["offers"], ref, known)
         last = out["offers"][-1] if out["offers"] else 0
-        spread = max(2, int(budget * 0.08))
+        spread = max(2, int(cap * 0.08))
         low = plan[1] if (ask and ask <= budget and out["offers"]) else plan[1] - spread   # no lowballing a live deal
-        band = (max(last + 1, low), min(budget - 1, plan[1] + spread, ask if ask else budget))
+        # Band top never reaches the budget unless a live ask does: with no ask, the harness may not
+        # climb past the hidden cap, so an onlooking shop cannot read our ceiling from an adjusted offer.
+        band = (max(last + 1, low), min(budget - 1, plan[1] + spread, ask if ask else cap))
         action, price, why = harness_adjust(item, budget, out["asks"], out["offers"], clean(text, 200), plan, band)
         price = min(int(price), budget)                                   # guard: never above the budget
         print(f"[buyer] {action} {price}: {why}", flush=True)
