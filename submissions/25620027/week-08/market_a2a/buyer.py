@@ -13,6 +13,7 @@ from http_client import create_client
 from market_a2a.models import FrozenModel, HarnessError, Purchase, ToolResult, ToolSpec
 from market_a2a.promotion import SHOP_NOTICE
 from market_a2a.remote import Checkout, Remote, Task, purchase
+from market_a2a.round_mode import margin_mode
 from market_a2a.security import SecurityEvents
 
 if TYPE_CHECKING:
@@ -218,13 +219,24 @@ async def buy_order(
                 negotiation.rounds < MAX_ROUNDS
                 and not negotiation.walked
                 and negotiation.task.status.state == "TASK_STATE_INPUT_REQUIRED"
+                and not (
+                    margin_mode() and events.snapshot().operator_directive_observed
+                )
             ):
                 emit("[NEGOTIATION SUMMARY] " + json.dumps(negotiation.summary()))
                 _ = await harness.run(
                     PROMPT, negotiation.summary(), TOOLS, negotiation.dispatch
                 )
             final_task = negotiation.task
-            if final_task.status.state == "TASK_STATE_COMPLETED":
+            if margin_mode() and events.snapshot().operator_directive_observed:
+                result = Purchase(
+                    completed=False,
+                    item=item,
+                    shop=endpoint,
+                    task_id=final_task.id,
+                    failure_observation="Observed unsafe authority directive",
+                )
+            elif final_task.status.state == "TASK_STATE_COMPLETED":
                 if negotiation.last_offer is None:
                     msg = "Seller completed without an authorized offer"
                     raise HarnessError(msg)

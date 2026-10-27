@@ -1,6 +1,6 @@
 """Stateful A2A seller whose tool loop owns all commercial decisions."""
 
-# noqa: SIZE_OK — one per-task tool/state machine keeps guards before mutation;
+# SIZE_OK: one per-task tool/state machine keeps guards before mutation;
 # wire publication is already isolated in seller_messages.py.
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from pydantic import JsonValue, TypeAdapter, ValidationError
 from market_a2a.catalog_constraints import compatible
 from market_a2a.comparison import compare_price
 from market_a2a.models import HarnessError, Product, ToolResult, json_value
+from market_a2a.round_mode import margin_mode
 from market_a2a.seller_history import SellerHistory
 from market_a2a.seller_messages import (
     AgreedSale,
@@ -99,7 +100,8 @@ class Negotiator:
             candidates.update(
                 (product.sku, product)
                 for product in self.catalog.search(
-                    basic_sku, constraints=lambda product: product.sku == basic_sku,
+                    basic_sku,
+                    constraints=lambda product: product.sku == basic_sku,
                 )
             )
         if current is not None and offer is not None:
@@ -122,9 +124,12 @@ class Negotiator:
             "catalog_count": len(self.catalog.products),
             "catalog_candidates": (
                 search_result(
-                    tuple(candidates.values()), self.price_history, snapshot,
+                    tuple(candidates.values()),
+                    self.price_history,
+                    snapshot,
                 ).data
-                if candidates else None
+                if candidates
+                else None
             ),
             "selected": json_value(current.product) if current else None,
             "ask": current.ask if current else None,
@@ -139,6 +144,7 @@ class Negotiator:
             "rounds": current.rounds if current else 0,
             "incoming_offers": current.incoming_offers if current else 0,
             "settlement_required": settlement_required(current, offer),
+            "immediate_reserve_settlement": not margin_mode(),
         }
         self.harness.emit(
             "".join(
@@ -338,7 +344,10 @@ class Negotiator:
                 await complete_sale(
                     updater,
                     AgreedSale(
-                        product, decision.price, turn.task_id, self.name,
+                        product,
+                        decision.price,
+                        turn.task_id,
+                        self.name,
                         current.incoming_offers if current else 1,
                     ),
                     self.signer,

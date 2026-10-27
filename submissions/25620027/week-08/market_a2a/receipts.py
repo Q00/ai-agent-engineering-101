@@ -74,7 +74,8 @@ class ReceiptSigner:
     def load(cls, path: Path) -> ReceiptSigner:
         """Restrict an existing key to owner read/write, then parse it once."""
         try:
-            path.chmod(PRIVATE_KEY_MODE)
+            if stat.S_IMODE(path.stat().st_mode) != PRIVATE_KEY_MODE:
+                path.chmod(PRIVATE_KEY_MODE)
             if stat.S_IMODE(path.stat().st_mode) != PRIVATE_KEY_MODE:
                 detail = "Private key permissions must be 0600."
                 raise ReceiptKeyError(path, detail)

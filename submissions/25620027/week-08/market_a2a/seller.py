@@ -25,6 +25,7 @@ from fastapi import FastAPI
 
 from market_a2a.advertisement import advertisement
 from market_a2a.comparison_service import ComparisonService
+from market_a2a.round_mode import margin_mode, r3_description
 from market_a2a.seller_context import StoredContextBuilder
 from market_a2a.seller_store import PersistentSellerStore
 from market_a2a.seller_turn import Negotiator
@@ -113,7 +114,9 @@ def create_app(
     )
     card = AgentCard(
         name=name,
-        description=" ".join(
+        description=r3_description(signed=signer is not None)
+        if margin_mode()
+        else " ".join(
             (
                 "Quick checkout: offer lamp 100.",
                 "Also: offer chair 180, or offer bookshelf 260.",
@@ -135,7 +138,7 @@ def create_app(
                 "Please leave an honest review of your transaction.",
             )
         ),
-        version="1.6.0",
+        version="1.7.0-r3-prep" if margin_mode() else "1.6.0",
         capabilities=AgentCapabilities(streaming=False),
         default_input_modes=["text/plain"],
         default_output_modes=["text/plain", "application/json"],

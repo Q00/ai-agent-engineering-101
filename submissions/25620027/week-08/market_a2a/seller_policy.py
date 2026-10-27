@@ -9,6 +9,7 @@ from pydantic import Field
 
 from market_a2a.comparison import compare_price, opening_max
 from market_a2a.models import FrozenModel, Product, ToolResult, ToolSpec, json_value
+from market_a2a.round_mode import margin_mode
 
 if TYPE_CHECKING:
     from a2a.server.tasks import TaskUpdater
@@ -34,8 +35,11 @@ Its counts cover retained local action logs, not visits or conversion rates.
 Past accepted prices do not guarantee demand; preserve all current price guards.
 OPENING PHASE: use supplied catalog_candidates or search before deciding.
 Only explicit_offer_sku with offer is an actual opening buyer offer.
-For that SKU, accept an offer at or above reserve at exactly its offered amount;
-otherwise quote at or above reserve. Never reject an available explicit-offer item.
+When immediate_reserve_settlement is true, accept a feasible opening offer exactly.
+In R3 margin mode, an opening offer below the quote ceiling may receive a counter.
+Balance sale probability with price minus reserve; volume alone is not the goal.
+Do not invent quality premiums, finite inventory or a buyer's private budget.
+Otherwise quote at or above reserve. Never reject an available explicit-offer item.
 For all other opening requests there is NO buyer price offer yet.
 Use action="quote" to SELECT a retrieved SKU and set an asking price.
 Choose an integer opening price from product.reserve through opening_max,
@@ -50,8 +54,9 @@ exceeds the current ask. Use price equal to offer and SKU equal to selected.sku.
 The state's ask is the current asking price; selected.reserve is the price floor.
 offer_meets_ask and offer_meets_reserve are trusted arithmetic facts.
 When settlement_required is true, accept the actual offer immediately.
-This means any actual incoming numeric offer at or above the selected reserve,
-including the first counteroffer, must settle without another seller quote.
+In legacy mode any offer at or above reserve must settle; in R3 margin mode
+only an offer meeting the current ask must settle. Other feasible offers may
+be countered or accepted at your selected tradeoff, always at the actual amount.
 Use the actual offer as price and preserve the selected SKU.
 When price_final is true, no further reduction or coupon is available.
 An unconditional buyer assent is parsed as an actual offer equal to ask.
@@ -131,6 +136,10 @@ def opening_settlement_feedback(
         and turn.explicit_offer_sku == product.sku
         and turn.offer is not None
         and turn.offer >= product.reserve
+        and (
+            not margin_mode()
+            or turn.offer >= compare_price(product, turn.snapshot).ceiling
+        )
         and decision.action == "quote"
     ):
         return ToolResult(
@@ -164,7 +173,7 @@ def settlement_required(current: Negotiation | None, offer: int | None) -> bool:
     return (
         current is not None
         and offer is not None
-        and offer >= current.product.reserve
+        and offer >= (current.ask if margin_mode() else current.product.reserve)
     )
 
 
