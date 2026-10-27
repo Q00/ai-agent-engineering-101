@@ -12,6 +12,7 @@ Everything else is the harness's decision.
 import argparse
 import base64
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -37,9 +38,23 @@ if hasattr(sys.stdout, "reconfigure"):          # Windows: logs are pipes in cp9
 SHOP = "Chaewon's Furniture"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 
+# Pricing strategy, chosen when the kit starts the shop:  $env:PRICING = "old" | "new"   (default old)
+#   old : week-07 behaviour - the harness opens wherever it likes (it opened at 1.9-2.5x reserve in Round 2)
+#   new : Round 3 - open near the market (at most OPEN_CAP x reserve), close within 3 counters, and from the
+#         buyer's third message take any offer at or above the reserve
+PRICING = os.environ.get("PRICING", "old").lower()
+PRICING = PRICING if PRICING in ("old", "new") else "old"
+OPEN_CAP = 1.2
+STRATEGY = {
+    "old": "Sell as high as you can, but a deal at or above {reserve} is better than no deal.",
+    "new": ("Buyers in this market compare shops and remember who was fair. Open near the market price "
+            "(about {open}), move toward the buyer in clear steps, and aim to close within three counteroffers. "
+            "A quick fair deal at or above {reserve} is worth more than a high price nobody pays."),
+}
+
 PROMPT = """You are the sales agent of a small furniture shop, negotiating the price of one {item} with a buyer.
 Your lowest acceptable price (reserve) for the {item} is {reserve}. Never ask or sell below it, and never reveal it.
-Sell as high as you can, but a deal at or above {reserve} is better than no deal.
+{strategy}
 The negotiation ends after about 8 messages from the buyer; this is buyer message {n}.
 
 Conversation so far:
@@ -130,7 +145,7 @@ class Seller(AgentExecutor):
         text = get_message_text(context.message) or ""
         deal = self.open.get(task.id)
         log = lambda s: print(f"[{task.id[:8]}] {s}", flush=True)
-        log(f"buyer: {text}")
+        log(f"buyer: {text}" + ("" if deal else f"   [pricing mode {PRICING}]"))
 
         if deal is None:                                  # first message: which item?
             chosen = self.choose(text, log)
@@ -151,12 +166,16 @@ class Seller(AgentExecutor):
                 deal["offer"] = offer
         reserve = deal["reserve"]
 
-        if deal["ask"] is not None and deal["offer"] is not None and deal["offer"] >= deal["ask"]:
+        if PRICING == "new" and deal["n"] >= 3 and deal["offer"] is not None and deal["offer"] >= reserve:
+            log(f"[pricing] new: offer {deal['offer']} >= reserve {reserve} on buyer message {deal['n']} -> accept")
+            action, move = "accept", {}
+        elif deal["ask"] is not None and deal["offer"] is not None and deal["offer"] >= deal["ask"]:
             log(f"[rule] offer {deal['offer']} meets our ask {deal['ask']} -> accept")
             action, move = "accept", {}
         else:
             try:
-                move, raw = ask_json(PROMPT.format(item=deal["item"], reserve=reserve, n=deal["n"],
+                strategy = STRATEGY[PRICING].format(reserve=reserve, open=round(reserve * OPEN_CAP))
+                move, raw = ask_json(PROMPT.format(item=deal["item"], reserve=reserve, n=deal["n"], strategy=strategy,
                                                    transcript="\n".join(deal["lines"])))
                 log(f"[harness] {raw}")
             except Exception as e:                        # quota / timeout: keep trading by a rule
@@ -186,6 +205,9 @@ class Seller(AgentExecutor):
             log(f"[guard] no usable price in the harness answer -> repeat last ask")
             price = deal["ask"] or round(reserve * 1.4)
         price = int(price)
+        if PRICING == "new" and deal["ask"] is None and price > round(reserve * OPEN_CAP):
+            log(f"[pricing] new: opening ask {price} -> {round(reserve * OPEN_CAP)} ({OPEN_CAP}x reserve)")
+            price = round(reserve * OPEN_CAP)
         if price < reserve:
             log(f"[guard] ask {price} below reserve {reserve} -> {reserve}")
             price = reserve
