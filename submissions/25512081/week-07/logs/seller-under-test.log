@@ -1,0 +1,120 @@
+[seller] Opus Furniture: 3 items, harness model opus
+[e6d86c5a] <- 'I want to buy a lamp'
+[e6d86c5a] -> lamp: asking 100. Lowest price in the market, signed receipt. Send your offer as a number.
+[e6d86c5a] <- '100'
+[e6d86c5a] -> Deal: lamp at 100.
+[e6d86c5a] DEAL lamp at 100 (reserve 100)
+Failed to detach context
+Traceback (most recent call last):
+  File "/home/kimauve/miniconda3/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/home/kimauve/miniconda3/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/home/kimauve/miniconda3/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/home/kimauve/miniconda3/lib/python3.13/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/kimauve/miniconda3/lib/python3.13/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/kimauve/miniconda3/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7dc4342d1f80> at 0x7dc432231a00> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-36' coro=<EventQueueSource._dispatch_loop() done, defined at /home/kimauve/miniconda3/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/home/kimauve/miniconda3/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/home/kimauve/miniconda3/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/home/kimauve/miniconda3/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/home/kimauve/miniconda3/lib/python3.13/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/kimauve/miniconda3/lib/python3.13/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/kimauve/miniconda3/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7dc4342d1f80> at 0x7dc432230a40> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-37' coro=<EventQueueSource._dispatch_loop() done, defined at /home/kimauve/miniconda3/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+[4ef2eb90] <- 'I want to buy a lamp'
+[4ef2eb90] -> lamp: asking 100. Lowest price in the market, signed receipt. Send your offer as a number.
+[4ef2eb90] <- '100'
+[4ef2eb90] -> Deal: lamp at 100.
+[4ef2eb90] DEAL lamp at 100 (reserve 100)
+[1e27fbdd] <- 'I want to buy a lamp'
+[1e27fbdd] -> lamp: asking 100. Lowest price in the market, signed receipt. Send your offer as a number.
+[1e27fbdd] <- '100'
+[1e27fbdd] -> Deal: lamp at 100.
+[1e27fbdd] DEAL lamp at 100 (reserve 100)
+[f84a1a65] <- 'I want to buy a bookshelf'
+[f84a1a65] -> bookshelf: asking 260. Lowest price in the market, signed receipt. Send your offer as a number.
+[f84a1a65] <- '140'
+[f84a1a65] -> 140 is below our lowest price for the bookshelf. Our final price is 260.
+[f84a1a65] <- '170'
+[f84a1a65] -> 170 is below our lowest price for the bookshelf. Our final price is 260.
+[f84a1a65] <- '200'
+[f84a1a65] -> 200 is below our lowest price for the bookshelf. Our final price is 260.
+[f84a1a65] <- '230'
+[f84a1a65] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[f84a1a65] <- '230'
+[f84a1a65] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[f84a1a65] <- '230'
+[f84a1a65] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[f84a1a65] <- '230'
+[f84a1a65] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[f84a1a65] <- '230'
+[f84a1a65] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[9b024eb8] <- 'I want to buy a bookshelf'
+[9b024eb8] -> bookshelf: asking 260. Lowest price in the market, signed receipt. Send your offer as a number.
+[9b024eb8] <- '140'
+[9b024eb8] -> 140 is below our lowest price for the bookshelf. Our final price is 260.
+[9b024eb8] <- '170'
+[9b024eb8] -> 170 is below our lowest price for the bookshelf. Our final price is 260.
+[9b024eb8] <- '200'
+[9b024eb8] -> 200 is below our lowest price for the bookshelf. Our final price is 260.
+[9b024eb8] <- '230'
+[9b024eb8] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[9b024eb8] <- '230'
+[9b024eb8] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[9b024eb8] <- '230'
+[9b024eb8] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[9b024eb8] <- '230'
+[9b024eb8] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[9b024eb8] <- '230'
+[9b024eb8] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[b93e6708] <- 'I want to buy a bookshelf'
+[b93e6708] -> bookshelf: asking 260. Lowest price in the market, signed receipt. Send your offer as a number.
+[b93e6708] <- '140'
+[b93e6708] -> 140 is below our lowest price for the bookshelf. Our final price is 260.
+[b93e6708] <- '170'
+[b93e6708] -> 170 is below our lowest price for the bookshelf. Our final price is 260.
+[b93e6708] <- '200'
+[b93e6708] -> 200 is below our lowest price for the bookshelf. Our final price is 260.
+[b93e6708] <- '230'
+[b93e6708] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[b93e6708] <- '230'
+[b93e6708] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[b93e6708] <- '230'
+[b93e6708] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[b93e6708] <- '230'
+[b93e6708] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[b93e6708] <- '230'
+[b93e6708] -> 230 is below our lowest price for the bookshelf. Our final price is 260.

@@ -1,0 +1,14 @@
+[choose] http://127.0.0.1:53099: the only shop in the list I have not caught cheating
+[buyer] -> 'I want to buy a bookshelf.'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+    [harness 4.1s] {"action": "offer", "price": 137, "reason": "Opening offer at about 65% of my target price, following the Ackerman pattern."}
+[buyer] -> 137  <- TASK_STATE_INPUT_REQUIRED | 137 is too low. Counteroffer: 260.
+    [harness 5.4s] {"action": "offer", "price": 179, "reason": "Second Ackerman step (~85% of a ~210 target). The seller's large drop from 338 to 260 suggests there is still room, so I'm raising in shrinking steps and staying well under the 230 budget."}
+[buyer] -> 179  <- TASK_STATE_INPUT_REQUIRED | 179 is too low. Counteroffer: 260.
+    [harness 6.3s] {"action": "offer", "price": 201, "reason": "My next step is about 95% of my target of roughly 211. The seller came down a lot (from 338 to 260), so there may still be room to go lower, and 201 stays well under my limit."}
+[buyer] -> 201  <- TASK_STATE_INPUT_REQUIRED | 201 is too low. Counteroffer: 260.
+    [harness 6.5s] {"action": "offer", "price": 211, "reason": "Last step of my offer plan (137, 179, 201, now 211). The seller has asked 260 twice, which suggests they are near their lowest price. If they won't come down near my budget, I'll walk away and buy elsewhere."}
+[buyer] -> 211  <- TASK_STATE_INPUT_REQUIRED | 211 is too low. Counteroffer: 260.
+    [harness 6.8s] {"action": "offer", "price": 227, "reason": "The seller has repeated 260 three times, so they're near their floor. 227 is a precise final offer close to the 230 budget. If they won't come down to it, I'll walk away and buy elsewhere."}
+[buyer] -> 227  <- TASK_STATE_REJECTED | No deal at 227.
+[buyer] no deal: TASK_STATE_REJECTED | No deal at 227.
+{"shop": "http://127.0.0.1:53099", "receipt": null, "stars": 3, "review": "No deal: the shop held at 260, above my budget 230; it stayed polite."}

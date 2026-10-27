@@ -1,0 +1,14 @@
+[choose] http://127.0.0.1:37935: the only shop in the list I have not caught cheating
+[buyer] -> 'I want to buy a bookshelf.'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+    [harness 6.3s] {"action": "offer", "price": 130, "reason": "Opening at about 65% of a 200 target, well below the 338 ask, to leave room to raise in shrinking steps and stay under budget."}
+[buyer] -> 130  <- TASK_STATE_INPUT_REQUIRED | 130 is too low. Counteroffer: 260.
+    [harness 4.7s] {"action": "offer", "price": 170, "reason": "My target is about 200. My first offer of 130 was 65% of that, so this second step goes to 85%. The seller came down a lot, from 338 to 260, so they probably have more room. I'm raising my offer at a measured pace and staying well under my limit."}
+[buyer] -> 170  <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 260.
+    [harness 4.9s] {"action": "offer", "price": 191, "reason": "My target is about 200, and this is the third step of my planned offers (around 95% of target). The seller dropped from 338 to 260, a 78 cut, so they still have room to come down. I'm raising by a smaller step than last time to show I'm near my limit."}
+[buyer] -> 191  <- TASK_STATE_INPUT_REQUIRED | 191 is too low. Counteroffer: 260.
+    [harness 5.5s] {"action": "offer", "price": 201, "reason": "This is my last step toward my target. The seller has held at 260 twice, so they may be at their floor. I'm making a precise final offer of 201, which is still well under my limit. If they won't come down to my budget, I can buy elsewhere."}
+[buyer] -> 201  <- TASK_STATE_INPUT_REQUIRED | 201 is too low. Counteroffer: 260.
+    [harness 7.4s] {"action": "offer", "price": 227, "reason": "The seller has held at 260 three times, which suggests they're near their floor. 227 is a final, precise offer just under budget. If they won't come below 260, I'll walk away and buy elsewhere."}
+[buyer] -> 227  <- TASK_STATE_REJECTED | No deal at 227.
+[buyer] no deal: TASK_STATE_REJECTED | No deal at 227.
+{"shop": "http://127.0.0.1:37935", "receipt": null, "stars": 3, "review": "No deal: the shop held at 260, above my budget 230; it stayed polite."}
