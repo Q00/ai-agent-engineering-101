@@ -1,0 +1,11 @@
+[shops]
+Kit Shop | no reviews | 6 trades, 3 deals, paid lamp 100,100,100. Last: bookshelf: asks [338, 279, 260, 260, 260], my offers [220, 225, 228, 230], no deal
+[pick] Kit Shop because: it is the only shop I can use
+-> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] {"action": "offer", "price": 90}
+-> '90'  <- TASK_STATE_INPUT_REQUIRED | 90 is too low. Counteroffer: 110.
+[harness] {"action": "offer", "price": 100}
+-> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[check] outcome: TASK_STATE_COMPLETED; shop asks: [130, 110]; my offers: [90, 100]; receipt: {"price": 100.0, "item": "lamp", "task": "1ecce0b7-b16e-495d-902c-c9f79e9b2a9a", "shop": "Kit Shop"}; receipt matches what we agreed and is signed
+[harness] review {"stars": 5, "review": "I bought a lamp from Kit Shop for 100, my final offer, after the shop's asks dropped from 130 to 110; the transaction completed and the signed receipt matched what we agreed."}
+{"shop": "http://127.0.0.1:56421", "receipt": {"sig_seller": "x05gobhAC5J3sq9lIk2c+4dSLuS5rRSK7clz+nKs1wqL5DpDFfVwZ+r2ne5XSq2b7LqS9QT50sooG+zvJhBrCg==", "price": 100.0, "item": "lamp", "task": "1ecce0b7-b16e-495d-902c-c9f79e9b2a9a", "shop": "Kit Shop"}, "stars": 5, "review": "I bought a lamp from Kit Shop for 100, my final offer, after the shop's asks dropped from 130 to 110; the transaction completed and the signed receipt matched what we agreed."}
