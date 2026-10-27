@@ -1,16 +1,16 @@
 {
   "kit_version": "1",
-  "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-26T16:32:52+00:00",
+  "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+  "started": "2026-10-27T03:17:07+00:00",
   "harness": "Codex CLI 0.163.0, gpt-6.1-sol, reasoning effort low",
   "seller_cmd": "sh run_agent.sh seller.py --port {port}",
-  "market_buyer_cmd": "sh run_agent.sh market_buyer.py --shops {shops} --item {item} --budget {budget}",
+  "buyer_cmd": "sh run_agent.sh buyer.py --url {url} --item {item} --budget {budget}",
   "seller_card": {
     "name": "Atlas Shop",
     "description": "Sells lamps, chairs, and bookshelves and negotiates each price.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:57375/",
+        "url": "http://127.0.0.1:60499/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -58,14 +58,8 @@
     {
       "test": "seller_deal",
       "run": 1,
-      "pass": false,
-      "detail": "TASK_STATE_REJECTED, receipt price None, asks [150, 140, 130]"
-    },
-    {
-      "test": "seller_signed_receipt",
-      "run": 1,
-      "pass": false,
-      "detail": "no completed task to check"
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 140, 130, 120]"
     },
     {
       "test": "seller_terminal",
@@ -76,123 +70,105 @@
     {
       "test": "seller_deal",
       "run": 2,
-      "pass": false,
-      "detail": "TASK_STATE_REJECTED, receipt price None, asks None"
-    },
-    {
-      "test": "seller_signed_receipt",
-      "run": 2,
-      "pass": false,
-      "detail": "no completed task to check"
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 140, 130, 120]"
     },
     {
       "test": "seller_deal",
       "run": 3,
-      "pass": false,
-      "detail": "TASK_STATE_REJECTED, receipt price None, asks None"
-    },
-    {
-      "test": "seller_signed_receipt",
-      "run": 3,
-      "pass": false,
-      "detail": "no completed task to check"
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 140, 130, 120]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [350, 330, 310, 290, 270]"
+      "detail": "TASK_STATE_REJECTED, asks [340, 320, 300, 280, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
-      "pass": false,
-      "detail": "TASK_STATE_REJECTED, asks None"
+      "pass": true,
+      "detail": "TASK_STATE_INPUT_REQUIRED, asks [340, 320, 300, 280, 260, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
-      "pass": false,
-      "detail": "TASK_STATE_REJECTED, asks None"
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [350, 330, 310, 290, 270, 260, 260, 260]"
     },
     {
       "test": "buyer_deal",
       "run": 1,
-      "pass": false,
-      "detail": "deals [], expected one"
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 1,
-      "pass": false,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
     },
     {
       "test": "buyer_deal",
       "run": 2,
-      "pass": false,
-      "detail": "deals [], expected one"
+      "pass": true,
+      "detail": "deals [104] (budget 120)"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 2,
-      "pass": false,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "pass": true,
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2"
     },
     {
       "test": "buyer_deal",
       "run": 3,
-      "pass": false,
-      "detail": "deals [], expected one"
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 3,
-      "pass": false,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "pass": true,
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2"
     },
     {
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [], stars 1, receipt null"
+      "detail": "deals [] (budget 230 < reserve 260)"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [], stars 1, receipt null"
+      "detail": "deals [] (budget 230 < reserve 260)"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [], stars 1, receipt null"
+      "detail": "deals [] (budget 230 < reserve 260)"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0"
-    },
-    {
-      "test": "buyer_reads_reviews",
-      "run": 1,
-      "pass": true,
-      "detail": "shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2"
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
     }
   ],
-  "passed": false
+  "passed": true
 }
