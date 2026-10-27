@@ -12,7 +12,7 @@ from openai import AsyncOpenAI
 
 from http_client import create_client
 from market_a2a.harness import Harness
-from market_a2a.model_provider import create_model_client
+from market_a2a.model_provider import configured_openai_model, create_model_client
 from market_a2a.models import HarnessError
 from market_a2a.paid_fallback import DailyQuota, OpenAIFallback
 
@@ -36,5 +36,10 @@ async def harness_session(emit: Callable[[str], None]) -> AsyncGenerator[Harness
                 api_key=os.environ["OPENAI_API_KEY"], http_client=model_http,
                 max_retries=0,
             ))
-            fallback = OpenAIFallback(paid, DailyQuota(quota_path))
+            limit = int(os.environ.get("AX_OPENAI_DAILY_LIMIT", "5000"))
+            bound = os.environ.get("AX_OPENAI_MAX_INPUT_BYTES")
+            fallback = OpenAIFallback(
+                paid, DailyQuota(quota_path, limit), configured_openai_model(),
+                int(bound) if bound is not None else None,
+            )
         yield Harness(model, emit, fallback=fallback)

@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     import httpx2
 
 DEFAULT_MODEL: Final = "gpt-4.1-nano-2025-04-14"
+VALIDATION_MODEL: Final = "gpt-4.1-mini-2025-04-14"
 FREE_MODEL: Final = "minimax/minimax-m3.1-flash:free"
 FREE_ROUTER: Final = "openrouter/free"
 FREE_MODELS: Final = (FREE_MODEL, FREE_ROUTER)
@@ -30,12 +31,21 @@ def configured_model() -> str:
     """Reject unknown backends instead of silently selecting a paid default."""
     match os.environ.get("AX_MODEL_PROVIDER", "openai"):
         case "openai":
-            return DEFAULT_MODEL
+            return configured_openai_model()
         case "openrouter-free":
             return FREE_MODEL
         case _:
             message = "AX_MODEL_PROVIDER must be openai or openrouter-free"
             raise HarnessError(message)
+
+
+def configured_openai_model() -> str:
+    """Allow a maintained validation model only through explicit configuration."""
+    selected = os.environ.get("AX_OPENAI_MODEL", DEFAULT_MODEL)
+    if selected not in (DEFAULT_MODEL, VALIDATION_MODEL):
+        message = "AX_OPENAI_MODEL must select the legacy nano or explicit mini"
+        raise HarnessError(message)
+    return selected
 
 
 def create_model_client(http_client: httpx2.AsyncClient) -> AsyncOpenAI:

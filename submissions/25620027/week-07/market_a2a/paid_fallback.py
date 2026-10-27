@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from contextlib import closing
 from dataclasses import dataclass, field
@@ -88,6 +89,8 @@ class OpenAIFallback:
 
     client: AsyncOpenAI = field(repr=False)
     quota: DailyQuota
+    model: str = DEFAULT_MODEL
+    max_input_bytes: int | None = None
 
     async def complete(
         self, messages: list[ChatCompletionMessageParam],
@@ -98,10 +101,15 @@ class OpenAIFallback:
                 or self.client.base_url.host != "api.openai.com"):
             message = "Paid fallback requires OpenAI directly with SDK retries off"
             raise HarnessError(message)
+        if self.max_input_bytes is not None:
+            size = len(json.dumps([messages, tools], ensure_ascii=False).encode())
+            if size > self.max_input_bytes:
+                message = "Validation request exceeds its authorized input bound"
+                raise HarnessError(message)
         used = self.quota.reserve()
         emit(f"OPENAI_ATTEMPT day_kst={datetime.now(KST).date()} used={used}/5000")
         return await self.client.chat.completions.create(
-            model=DEFAULT_MODEL, temperature=0, messages=messages, tools=tools,
+            model=self.model, temperature=0, messages=messages, tools=tools,
             tool_choice="required", parallel_tool_calls=False,
             max_completion_tokens=450,
         )

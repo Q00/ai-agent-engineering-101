@@ -62,6 +62,26 @@ def test_invalid_or_excessive_paid_limit_is_rejected(
         _ = DailyQuota(tmp_path / "quota.sqlite3", limit)
 
 
+def test_validation_input_bound_rejects_before_paid_request(tmp_path: Path) -> None:
+    def unexpected(_request: httpx2.Request) -> httpx2.Response:
+        pytest.fail("Oversized validation input must never reach the API")
+
+    async def scenario() -> None:
+        async with (
+            httpx2.AsyncClient(transport=httpx2.MockTransport(unexpected)) as http,
+            AsyncOpenAI(api_key="offline", max_retries=0, http_client=http) as client,
+        ):
+            quota = DailyQuota(tmp_path / "quota.sqlite3", 1)
+            fallback = OpenAIFallback(client, quota, max_input_bytes=10)
+            with pytest.raises(HarnessError, match="input bound"):
+                _ = await fallback.complete(
+                    [{"role": "user", "content": "oversized"}], [], print,
+                )
+            assert quota.reserve() == 1
+
+    anyio.run(scenario)
+
+
 def test_failed_paid_attempt_is_counted_without_sdk_retry(tmp_path: Path) -> None:
     requests: list[str] = []
 

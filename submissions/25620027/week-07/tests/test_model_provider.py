@@ -16,10 +16,25 @@ from market_a2a.model_provider import (
     FREE_ROUTER,
     PROMOTION_END,
     configured_model,
+    configured_openai_model,
     create_model_client,
     request_model,
 )
 from market_a2a.models import HarnessError
+
+
+def test_validation_model_requires_explicit_supported_configuration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AX_MODEL_PROVIDER", "openai")
+    monkeypatch.setenv("AX_OPENAI_MODEL", "gpt-4.1-mini-2025-04-14")
+    assert configured_model() == "gpt-4.1-mini-2025-04-14"
+    monkeypatch.setenv("AX_MODEL_PROVIDER", "openrouter-free")
+    assert configured_model() == FREE_MODEL
+    assert configured_openai_model() == "gpt-4.1-mini-2025-04-14"
+    monkeypatch.setenv("AX_OPENAI_MODEL", "arbitrary-expensive-model")
+    with pytest.raises(HarnessError, match="AX_OPENAI_MODEL"):
+        _ = configured_openai_model()
 
 
 def test_unknown_provider_and_missing_key_fail_closed(
