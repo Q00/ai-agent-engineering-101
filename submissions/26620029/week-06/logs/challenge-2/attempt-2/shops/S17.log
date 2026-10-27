@@ -1,0 +1,20 @@
+Book Nook: 296 items, port 34353, chatty=False
+[seller 4b3aca98] <- 'a rug about 140 by 200 cm'
+[seller f8796ee4] <- 'a wooden bookshelf for about 60 books'
+[seller 4b3aca98] call 2 (9.5s) -> '{"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["rug", "140x200", "140 x 200 cm", "area rug"]}'
+[seller 4b3aca98] query {"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["rug", "140x200", "140 x 200 cm", "area rug"]} -> 8 candidates
+[seller f8796ee4] call 3 (10.0s) -> '{"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "bookcase", "shelving", "book storage"]}'
+[seller f8796ee4] query {"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "bookcase", "shelving", "book storage"]} -> 8 candidates
+[seller 4b3aca98] call 4 (7.4s) -> '{"sku": "RUG-09011", "price": 138, "say": "This cream synthetic rug matches the size you asked for and is a versatile choice."}'
+[seller 4b3aca98] -> item RUG-09011 (search+pick), reserve 106, open ask 138
+[seller f8796ee4] call 4 (7.4s) -> '{"sku": "BOO-00092", "price": 205, "say": "Our white pine Industrial Pine Bookshelf B23 is a sturdy three-shelf piece that comfortably holds about sixty books."}'
+[seller f8796ee4] -> item BOO-00092 (search+pick), reserve 142, open ask 205
+[seller f8796ee4] <- '150'
+[seller 4b3aca98] <- '138.0'
+[seller f8796ee4] call 6 (5.6s) -> '{"buyer_offer": 150, "action": "counter", "price": 146, "say": "I can\'t go as low as that, but I can meet you partway on this bookshelf at a fair price."}'
+[seller f8796ee4] -> counter 146
+[seller 4b3aca98] call 6 (4.4s) -> '{"buyer_offer": 138, "action": "accept", "price": 138, "say": "Thank you, that works for me, and the Heritage rug is yours at that price."}'
+[deal] Book Nook | RUG-09011 | 138 | task 4b3aca98-ba56-459f-be59-6bc4014bbeba
+[seller f8796ee4] <- '146.0'
+[seller f8796ee4] call 7 (4.4s) -> '{"buyer_offer": 146, "action": "accept", "price": 146, "say": "Thanks, that works for me, and the bookshelf is yours at that price."}'
+[deal] Book Nook | BOO-00092 | 146 | task f8796ee4-7e85-4bbd-9fee-abc97726748f

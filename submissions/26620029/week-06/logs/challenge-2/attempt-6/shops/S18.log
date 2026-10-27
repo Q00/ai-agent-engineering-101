@@ -1,0 +1,11 @@
+Chair Market: 334 items, port 42843, chatty=False
+[seller 14ee7add] <- 'a shoe cabinet for at least 20 pairs of shoes'
+[seller f665aea3] <- 'an office chair with lumbar support'
+[seller 14ee7add] call 2 (6.9s) -> '{"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "shoe rack"]}'
+[seller 14ee7add] query {"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "shoe rack"]} -> 8 candidates
+[seller f665aea3] call 3 (7.1s) -> '{"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 1, "size": null, "features": ["lumbar"], "keywords": ["lumbar support", "ergonomic", "office chair"]}'
+[seller f665aea3] query {"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 1, "size": null, "features": ["lumbar"], "keywords": ["lumbar support", "ergonomic", "office chair"]} -> 8 candidates
+[seller 14ee7add] call 4 (7.3s) -> '{"sku": "SHO-10097", "price": 180, "say": "Yes, this grey particleboard cabinet holds 24 pairs and is our best value for that capacity."}'
+[seller 14ee7add] -> item SHO-10097 (search+pick), reserve 134, open ask 180
+[seller f665aea3] call 4 (7.5s) -> '{"sku": "OFF-03033", "price": 205, "say": "Yes, the Bauhaus Plastic Office Chair F34 has lumbar support and adjustable height, and it comes in black."}'
+[seller f665aea3] -> item OFF-03033 (search+pick), reserve 158, open ask 205

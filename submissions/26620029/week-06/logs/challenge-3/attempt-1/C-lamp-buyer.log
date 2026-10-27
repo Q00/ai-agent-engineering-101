@@ -1,0 +1,9 @@
+card: 'Haiku Furniture Shop' -> http://127.0.0.1:37599/
+-> SendMessage 'I want to buy a lamp'
+<- TASK_STATE_INPUT_REQUIRED | Thanks for your interest in our plain metal desk lamp. My asking price is $125. I'm happy to discuss it if you have questions about the lamp.
+[buyer] call 1 (5.1s) -> '{"seller_ask": 125, "action": "offer", "price": 100}'
+[read] harness read ask 125 (last number in text: 125)
+-> SendMessage '100' taskId=f01b9352
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+receipt: [{'price': 100.0, 'sku': 'BASE-LAMP', 'item': 'lamp', 'seller': 'Haiku Furniture Shop'}]
+done: TASK_STATE_COMPLETED, harness calls 1, 12s

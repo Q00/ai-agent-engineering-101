@@ -1,0 +1,29 @@
+Entryway Co: 347 items, port 47443, chatty=False
+[seller b05c9ca3] <- 'a wooden bookshelf for about 60 books'
+[seller c7ea20ea] <- 'a shoe cabinet for at least 20 pairs of shoes'
+[seller c7ea20ea] call 2 (7.9s) -> '{"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "shoe rack", "entryway"]}'
+[seller c7ea20ea] query {"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "shoe rack", "entryway"]} -> 8 candidates
+[seller b05c9ca3] call 3 (8.0s) -> '{"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "bookcase", "book storage", "shelf"]}'
+[seller b05c9ca3] query {"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "bookcase", "book storage", "shelf"]} -> 8 candidates
+[seller c7ea20ea] call 4 (8.4s) -> '{"sku": "SHO-10007", "price": 100, "say": "This particleboard cabinet holds exactly the 20 pairs you need, and it\'s our most affordable option that does."}'
+[seller c7ea20ea] -> item SHO-10007 (search+pick), reserve 78, open ask 100
+[seller b05c9ca3] call 4 (8.9s) -> '{"sku": "BOO-00154", "price": 270, "say": "The Coastal Oak C32 holds about 60 books and is a close match for your collection, so I can offer it at a good price."}'
+[seller b05c9ca3] -> item BOO-00154 (search+pick), reserve 187, open ask 270
+[seller c7ea20ea] <- '60'
+[seller c7ea20ea] call 5 (4.9s) -> '{"buyer_offer": 60, "action": "counter", "price": 88, "say": "This shoe cabinet is solid, well-made particleboard, and I can meet you partway on the price."}'
+[seller c7ea20ea] -> counter 88
+[seller c7ea20ea] <- '70'
+[seller c7ea20ea] call 6 (5.5s) -> '{"buyer_offer": 70, "action": "counter", "price": 80, "say": "We\'re close, and I can meet you partway on the shoe cabinet at this new price."}'
+[seller c7ea20ea] -> counter 80
+[seller c7ea20ea] <- '74'
+[seller c7ea20ea] call 7 (5.8s) -> '{"buyer_offer": 74, "action": "counter", "price": 78, "say": "We\'re close, so I can meet you partway on the price, but this is the lowest I can go on this cabinet."}'
+[seller c7ea20ea] -> counter 78
+[seller c7ea20ea] <- '75'
+[seller c7ea20ea] call 8 (6.1s) -> '{"buyer_offer": 75, "action": "counter", "price": 78, "say": "I can\'t go lower than this, but I\'m holding at my best price and I\'d be glad to close the deal at it."}'
+[seller c7ea20ea] -> counter 78
+[seller c7ea20ea] <- '75'
+[seller c7ea20ea] call 9 (5.9s) -> '{"buyer_offer": 75, "action": "counter", "price": 78, "say": "We\'re close, and 78 is the best I can do on this cabinet, so let\'s settle there."}'
+[seller c7ea20ea] -> counter 78
+[seller c7ea20ea] <- '75'
+[seller c7ea20ea] call 10 (6.9s) -> '{"buyer_offer": 75, "action": "counter", "price": 78, "say": "I can\'t go lower than this, but I\'m holding at my best price so we can close this today."}'
+[seller c7ea20ea] -> counter 78
