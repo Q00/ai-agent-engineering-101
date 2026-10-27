@@ -1,0 +1,128 @@
+# week-06 trade test, kit v1, 2026-10-27T01:53:03+00:00
+harness: Codex CLI 0.164.0-alpha.11.1; gpt-5.6-terra; reasoning low; isolated codex exec with JSON schema
+
+## seller tests: python seller.py --port 13450
+  PASS  seller_card #1: name='Small Room Furniture' binding=JSONRPC version=1.0 skills=5
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | The simple metal reading desk lamp is available. My opening price is 120; what numeric offer would you like to make? Product: lamp. Asking 120
+    -> SendMessage "120" taskId=c4688aa6
+    <- TASK_STATE_COMPLETED | Deal for lamp at 120.
+       artifact receipt [{"item": "lamp", "attributes": {"usb_c": false, "height_cm": 45.0, "material": "metal", "dimmable": false}, "item_id": "lamp", "price": 120.0, "seller": "Small Room Furniture"}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 120
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 120.0, asks [120]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=c4688aa6
+    <- error -32004 Task c4688aa6-1317-450a-a324-628aeee91eb2 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the simple 45 cm metal reading lamp for 120. What numeric price would you offer? Product: lamp. Asking 120
+    -> SendMessage "120" taskId=68aa0e4f
+    <- TASK_STATE_COMPLETED | Deal for lamp at 120.
+       artifact receipt [{"item": "lamp", "attributes": {"usb_c": false, "height_cm": 45.0, "material": "metal", "dimmable": false}, "item_id": "lamp", "price": 120.0, "seller": "Small Room Furniture"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 120.0, asks [120]
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | The simple 45 cm metal reading desk lamp is available. My opening price is 120; what numeric offer would you like to make? Product: lamp. Asking 120
+    -> SendMessage "120" taskId=ac3ff7a3
+    <- TASK_STATE_COMPLETED | Deal for lamp at 120.
+       artifact receipt [{"item": "lamp", "attributes": {"usb_c": false, "height_cm": 45.0, "material": "metal", "dimmable": false}, "item_id": "lamp", "price": 120.0, "seller": "Small Room Furniture"}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 120.0, asks [120]
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | The wood bookshelf that holds 60 books and is 120 cm tall is available. My opening price is 310; what numeric offer would you make? Product: bookshelf. Asking 3
+    -> SendMessage "140" taskId=f6ea5a62
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for the offer. The current ask is 300; this is a wood 120 cm bookshelf for 60 books, and I can’t go below the 260 reserve. Product: bookshelf. Asking 300
+    -> SendMessage "170" taskId=f6ea5a62
+    <- TASK_STATE_INPUT_REQUIRED | Thanks—170 is below the 260 reserve. I can move down to 280 for the wood 120 cm, 60-book bookshelf. Product: bookshelf. Asking 280
+    -> SendMessage "200" taskId=f6ea5a62
+    <- TASK_STATE_INPUT_REQUIRED | Thanks—200 is below my 260 reserve. I can reduce my ask to 270. Product: bookshelf. Asking 270
+    -> SendMessage "230" taskId=f6ea5a62
+    <- TASK_STATE_INPUT_REQUIRED | Thanks—230 is below my 260 reserve. I can come down to 265 for the wood 120 cm bookshelf. Product: bookshelf. Asking 265
+    -> SendMessage "230" taskId=f6ea5a62
+    <- TASK_STATE_INPUT_REQUIRED | I can’t go as low as 230. My best price is 260 for the wood 120 cm bookshelf. Product: bookshelf. Asking 260
+    -> SendMessage "230" taskId=f6ea5a62
+    <- TASK_STATE_INPUT_REQUIRED | I can’t go below the 260 reserve for this wood bookshelf. If you can do 260, we have a deal. Product: bookshelf. Asking 260
+    -> SendMessage "230" taskId=f6ea5a62
+    <- TASK_STATE_INPUT_REQUIRED | I can’t sell below the 260 reserve. My current price is 260. Product: bookshelf. Asking 260
+    -> SendMessage "230" taskId=f6ea5a62
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for the offer. The lowest I can do is 260 for the wood 120 cm, 60-book bookshelf. Product: bookshelf. Asking 260
+  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [310, 300, 280, 270, 265, 260, 260, 260, 260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | The 120 cm wood bookshelf with capacity for 60 books is available. My opening price is 312; please send a numeric offer. Product: bookshelf. Asking 312
+    -> SendMessage "140" taskId=e3e6eb39
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for the offer. I can’t go as low as 140; the current ask is 290 for the wood 120 cm bookshelf. Product: bookshelf. Asking 290
+    -> SendMessage "170" taskId=e3e6eb39
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for the offer. I can’t go below the 260 reserve; I can reduce the ask to 280. Product: bookshelf. Asking 280
+    -> SendMessage "200" taskId=e3e6eb39
+    <- TASK_STATE_INPUT_REQUIRED | Thanks—200 is below my 260 reserve. I can reduce the ask to 270; please let me know if you can come up to at least 260. Product: bookshelf. Asking 270
+    -> SendMessage "230" taskId=e3e6eb39
+    <- TASK_STATE_INPUT_REQUIRED | Thanks—230 is below my 260 reserve. I can come down to 260. Product: bookshelf. Asking 260
+    -> SendMessage "230" taskId=e3e6eb39
+    <- TASK_STATE_INPUT_REQUIRED | I can’t accept 230; the current price is 260. Product: bookshelf. Asking 260
+    -> SendMessage "230" taskId=e3e6eb39
+    <- error -32603 Model decision still invalid after repair: seller action must be ask, accept or reject
+  PASS  seller_holds_reserve #2: error, asks [312, 290, 280, 270, 260, 260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | The wood bookshelf holding 60 books and measuring 120 cm tall is available. My opening offer is 300. Product: bookshelf. Asking 300
+    -> SendMessage "140" taskId=7af14c0e
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for the offer. I can’t go that low for this wood bookshelf; my counteroffer is 285. Product: bookshelf. Asking 285
+    -> SendMessage "170" taskId=7af14c0e
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for the offer. I can’t go below the 260 reserve; I can reduce the ask to 275. Product: bookshelf. Asking 275
+    -> SendMessage "200" taskId=7af14c0e
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for the offer. I can’t go below the 260 reserve; I can reduce the ask to 265. Product: bookshelf. Asking 265
+    -> SendMessage "230" taskId=7af14c0e
+    <- TASK_STATE_INPUT_REQUIRED | Thanks—230 is still below my 260 reserve. I can reduce the ask to 260; can you meet that price? Product: bookshelf. Asking 260
+    -> SendMessage "230" taskId=7af14c0e
+    <- TASK_STATE_INPUT_REQUIRED | Thanks—230 is below my 260 reserve. I can hold at 260. Product: bookshelf. Asking 260
+    -> SendMessage "230" taskId=7af14c0e
+    <- TASK_STATE_INPUT_REQUIRED | I can’t go below the 260 reserve. The bookshelf is available at 260; please let me know if you can meet that price. Product: bookshelf. Asking 260
+    -> SendMessage "230" taskId=7af14c0e
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for the offer. The current 230 is below my 260 reserve, so I can hold at 260. Please let me know if you can meet it. Product: bookshelf. Asking 260
+    -> SendMessage "230" taskId=7af14c0e
+    <- TASK_STATE_INPUT_REQUIRED | I can’t go below 260 for this bookshelf. My ask remains 260. Product: bookshelf. Asking 260
+  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [300, 285, 275, 265, 260, 260, 260, 260, 260]
+
+## buyer tests: your buyer against the kit's rule-based seller
+
+### buyer_deal #1: python buyer.py --url http://127.0.0.1:14112 --item lamp --budget 120
+    kit seller saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #1: deals [120] (budget 120)
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: python buyer.py --url http://127.0.0.1:14145 --item lamp --budget 120
+    kit seller saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #2: deals [120] (budget 120)
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: python buyer.py --url http://127.0.0.1:14176 --item lamp --budget 120
+    kit seller saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #3: deals [120] (budget 120)
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: python buyer.py --url http://127.0.0.1:14218 --item bookshelf --budget 230
+    kit seller saw: offers [230], deals [], canceled 1, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #1: posts 3, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #2: python buyer.py --url http://127.0.0.1:14264 --item bookshelf --budget 230
+    kit seller saw: offers [230, 230], deals [], canceled 1, continued 2, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #2: posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+### buyer_holds_budget #3: python buyer.py --url http://127.0.0.1:14321 --item bookshelf --budget 230
+    kit seller saw: offers [230], deals [], canceled 1, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 3, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+21/21 passed -> PASS

@@ -1,0 +1,216 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+  "started": "2026-10-27T02:00:10+00:00",
+  "harness": "Codex CLI 0.164.0-alpha.11.1; gpt-5.6-terra; reasoning low; isolated codex exec with JSON schema",
+  "seller_cmd": "python seller.py --port {port}",
+  "buyer_cmd": "python buyer.py --url {url} --item {item} --budget {budget}",
+  "seller_card": {
+    "name": "Small Room Furniture",
+    "description": "Constraint-aware furniture shopping for small rooms.",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:14380/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "text/plain",
+      "application/json"
+    ],
+    "skills": [
+      {
+        "id": "bookshelf",
+        "name": "Buy bookshelf",
+        "description": "Sells bookshelf furniture. Describe material, maximum height in cm, book capacity, USB-C or lumbar needs; then negotiate a numeric price.",
+        "tags": [
+          "bookshelf",
+          "shopping",
+          "small-room",
+          "constraint-search"
+        ]
+      },
+      {
+        "id": "chair",
+        "name": "Buy chair",
+        "description": "Sells chair furniture. Describe material, maximum height in cm, book capacity, USB-C or lumbar needs; then negotiate a numeric price.",
+        "tags": [
+          "chair",
+          "shopping",
+          "small-room",
+          "constraint-search"
+        ]
+      },
+      {
+        "id": "desk",
+        "name": "Buy desk",
+        "description": "Sells desk furniture. Describe material, maximum height in cm, book capacity, USB-C or lumbar needs; then negotiate a numeric price.",
+        "tags": [
+          "desk",
+          "shopping",
+          "small-room",
+          "constraint-search"
+        ]
+      },
+      {
+        "id": "lamp",
+        "name": "Buy lamp",
+        "description": "Sells lamp furniture. Describe material, maximum height in cm, book capacity, USB-C or lumbar needs; then negotiate a numeric price.",
+        "tags": [
+          "lamp",
+          "shopping",
+          "small-room",
+          "constraint-search"
+        ]
+      },
+      {
+        "id": "storage",
+        "name": "Buy storage",
+        "description": "Sells storage furniture. Describe material, maximum height in cm, book capacity, USB-C or lumbar needs; then negotiate a numeric price.",
+        "tags": [
+          "storage",
+          "shopping",
+          "small-room",
+          "constraint-search"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name='Small Room Furniture' binding=JSONRPC version=1.0 skills=5"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 120"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [120]"
+    },
+    {
+      "test": "seller_terminal",
+      "run": 1,
+      "pass": true,
+      "detail": "error returned"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [120]"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [120]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [310, 290, 275, 265, 260, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [300, 290, 280, 270, 265]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [312, 300, 280, 270, 265, 262]"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [120] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [120] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [120] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    }
+  ],
+  "passed": true
+}

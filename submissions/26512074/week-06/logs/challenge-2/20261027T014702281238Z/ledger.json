@@ -1,0 +1,119 @@
+{
+  "total_budget": 850,
+  "plan": {
+    "assignments": [
+      {
+        "line_id": "study-light",
+        "shop_id": "shop-00-lamp",
+        "budget": 200
+      },
+      {
+        "line_id": "low-shelf",
+        "shop_id": "shop-02-bookshelf",
+        "budget": 250
+      },
+      {
+        "line_id": "support-seat",
+        "shop_id": "shop-01-chair",
+        "budget": 400
+      }
+    ],
+    "summary": "Assigned each requested item to a directory shop with the matching category skill. Budgets total 850: lamp 200, oak low shelf 250, mesh-back support chair 400. Next: open negotiations for the exact items."
+  },
+  "lines": {
+    "study-light": {
+      "line_id": "study-light",
+      "shop_id": "shop-00-lamp",
+      "budget": 200,
+      "state": "completed",
+      "memory": {
+        "item": "amber-study-lamp",
+        "budget": 200,
+        "task_id": "1d86dec1-6872-4806-9934-e1376bbf9b7b",
+        "last_offer": 140,
+        "summary": "Amber-study-lamp seller’s current ask is 140, within the 200 budget. Offered the full current ask; awaiting seller response.",
+        "binding_pending": false
+      },
+      "result": {
+        "outcome": "completed",
+        "item": "amber-study-lamp",
+        "task_id": "1d86dec1-6872-4806-9934-e1376bbf9b7b",
+        "last_offer": 140,
+        "summary": "Amber-study-lamp seller’s current ask is 140, within the 200 budget. Offered the full current ask; awaiting seller response.",
+        "price": 140.0,
+        "receipt": {
+          "item": "amber-study-lamp",
+          "attributes": {
+            "usb_c": true,
+            "height_cm": 32.0,
+            "material": "metal",
+            "dimmable": true,
+            "light_color": "warm"
+          },
+          "item_id": "amber-study-lamp",
+          "price": 140.0,
+          "seller": "shop-00-lamp"
+        }
+      }
+    },
+    "low-shelf": {
+      "line_id": "low-shelf",
+      "shop_id": "shop-02-bookshelf",
+      "budget": 250,
+      "state": "unknown",
+      "memory": {
+        "item": "oak-low-40",
+        "budget": 250,
+        "task_id": "c9f3d6f3-1d92-4053-9ee7-be549f0ff5d6",
+        "last_offer": 250,
+        "summary": "Oak-low-40 seller asks 325; budget is 250. Offered the full 250 budget and will consider an affordable counter.",
+        "binding_pending": true
+      },
+      "result": {
+        "outcome": "unknown",
+        "item": "oak-low-40",
+        "task_id": "c9f3d6f3-1d92-4053-9ee7-be549f0ff5d6",
+        "last_offer": 250,
+        "summary": "Oak-low-40 seller asks 325; budget is 250. Offered the full 250 budget and will consider an affordable counter.",
+        "error": "ProtocolError: SendMessage: {'code': -32603, 'message': \"'cp949' codec can't encode character '\\\\u2014' in position 238: illegal multibyte sequence\"}"
+      }
+    },
+    "support-seat": {
+      "line_id": "support-seat",
+      "shop_id": "shop-01-chair",
+      "budget": 400,
+      "state": "completed",
+      "memory": {
+        "item": "mesh-back-support-chair",
+        "budget": 400,
+        "task_id": "03108da7-8bf7-4841-9d9d-0429c9dd0e09",
+        "last_offer": 250,
+        "summary": "Mesh-back-support-chair seller currently asks 250; offered 250, which is within the private budget. Awaiting seller response.",
+        "binding_pending": false
+      },
+      "result": {
+        "outcome": "completed",
+        "item": "mesh-back-support-chair",
+        "task_id": "03108da7-8bf7-4841-9d9d-0429c9dd0e09",
+        "last_offer": 250,
+        "summary": "Mesh-back-support-chair seller currently asks 250; offered 250, which is within the private budget. Awaiting seller response.",
+        "price": 250.0,
+        "receipt": {
+          "item": "mesh-back-support-chair",
+          "attributes": {
+            "footrest": true,
+            "height_cm": 110.0,
+            "material": "mesh",
+            "adjustable_height": true,
+            "lumbar_support": true
+          },
+          "item_id": "mesh-back-support-chair",
+          "price": 250.0,
+          "seller": "shop-01-chair"
+        }
+      }
+    }
+  },
+  "passed": false,
+  "spent": 390.0
+}
