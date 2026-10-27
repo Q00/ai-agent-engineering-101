@@ -75,12 +75,14 @@ buyer 운영에는 `market_runtime.py join`을 사용함. 공식 키트를 그�
 파일이 비어 있으면 등록을 시도하지 않고 15초 간격으로 코드 입력을 기다림.
 코드는 로그나 buyer·모델 하위 프로세스의 환경변수에 넣지 않음.
 
-현재 머신에서는 systemd 사용자 서비스 `week07-myeonggi-buyer.service`가 이 실행기를
-관리하며, 종료 시 15초 뒤 재시작함. 아래 명령으로 상태와 중단을 관리함.
+2026-10-27부터 systemd 사용자 서비스 `week08-myeonggi-market.service`가 이 실행기를
+관리하며, 종료 시 10초 뒤 재시작함. `MARKET_KIT_DIR`로 Week 08의 공식 v3 키트를
+선택하고 기존 에이전트 폴더와 키로 터널 모드에 재가입했음. 재가입과 ACP 확인 기록은
+`../week-08/README.md`에 있음. 아래 명령으로 상태와 중단을 관리함.
 
 ```bash
-systemctl --user status week07-myeonggi-buyer.service
-systemctl --user stop week07-myeonggi-buyer.service
+systemctl --user status week08-myeonggi-market.service
+systemctl --user stop week08-myeonggi-market.service
 ```
 
 서비스가 실행 중이어도 `waiting_for_owner`이면 buyer가 시장에 접속한 상태는 아님.
