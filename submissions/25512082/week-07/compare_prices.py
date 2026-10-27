@@ -1,6 +1,6 @@
 """Challenge 1: share and average price before and after the policy asks, from the dashboard and logs.
 
-Usage: python compare_prices.py
+Usage: python compare_prices.py [AFTER_END_ISO]
 
 Before: the first run, 14:46:02 to 17:40:18 KST, model-chosen opening asks; its totals are the
 dashboard row measured after it stopped (101 deals). After: the run started 18:10:50 KST with
@@ -37,7 +37,9 @@ def describe(label: str, hours: float, deals: int, visits: int, revenue: int, pr
 
 
 def main() -> None:
+    import sys
     now = datetime.now(KST)
+    after_end = datetime.fromisoformat(sys.argv[1]) if len(sys.argv) > 1 else now  # when the kit stopped
     b = board()
     row = next(x for x in b["shops"] if x["name"] == "sohyunkim11")
     print(f"measured {now.isoformat(timespec='seconds')}; dashboard row: "
@@ -53,7 +55,7 @@ def main() -> None:
     start, end = (datetime.fromisoformat(BEFORE[k]) for k in ("start", "end"))
     describe("before (model asks)", (end - start).total_seconds() / 3600, BEFORE["deals"], BEFORE["visits"],
              BEFORE["revenue"], BEFORE["profit"], before_market)
-    after_hours = (now - datetime.fromisoformat(AFTER_START)).total_seconds() / 3600
+    after_hours = (after_end - datetime.fromisoformat(AFTER_START)).total_seconds() / 3600
     deltas = {k: row[k] - BEFORE[k] for k in ("deals", "visits", "revenue", "profit")}
     if deltas["deals"] and deltas["visits"]:
         describe("after (policy asks)", after_hours, deltas["deals"], deltas["visits"], deltas["revenue"],

@@ -15,7 +15,7 @@
 |---|---|---|
 | 1차 운영 | 14:46:02 등록 → 17:40:18 `[kit] leaving the market` | 모델이 정한 호가로 운영했습니다. 사용자 요청으로 Ctrl+C를 눌러 종료했습니다(kit이 KeyboardInterrupt를 받을 때 남기는 줄). |
 | 중단 | 17:40:18 → 18:10:50 | 프로세스가 없었고, 대시보드에도 `alive=false`로 표시됐습니다(17:56 확인). |
-| 2차 운영 | 18:10:50 재등록 → 마감까지 유지 | Challenge 1 정책 호가와 Challenge 2 `[avoid]` 로그를 적용했습니다. 같은 이름과 같은 키를 사용했습니다. |
+| 2차 운영 | 18:10:50 재등록 → 18:27:50 kit 비정상 종료(DNS 장애) | Challenge 1 정책 호가와 Challenge 2 `[avoid]` 로그를 적용했습니다. 같은 이름과 같은 키를 사용했습니다. |
 
 일주일 내내 운영한 것이 아니라, 등록일인 10월 27일 오후부터 운영을 시작했습니다.
 
@@ -74,9 +74,21 @@ score = 평균별점×10 + min(성공거래,5)×2 − min(무거래,5) − 무�
 
 Seller 쪽은 kit이 판매 내역을 로그로 남기지 않아 대시보드 수치만 있습니다. 14:47에 거래 1건(매출 295, 이익 35)이었고, 15:41에 40건, 17:41:54에 101건(방문 178, 매출 22,492, 이익 2,712, 별점 4.43)이었습니다. 시각별 값은 `logs/operations/leaderboard.jsonl`에 있습니다.
 
-2차 운영(18:10:50 이후)의 결과와 최종 순위는 아래 표에 있습니다. 측정 시각: **{{MEASURED_AT}}**
+2차 운영(18:10:50 이후)의 결과와 최종 순위는 아래 표에 있습니다. 측정 시각: **2026-10-27 18:39:48 KST**
 
-{{FINAL_TABLE}}
+| 구분 | 값 (2026-10-27 18:39:48 KST, Round 2) |
+|---|---|
+| Seller 온라인 | `alive=false`. 2차 운영 kit이 18:27:50 네트워크 DNS 장애로 종료됨(아래 참고) |
+| Seller Profit 순위 | 69개 중 39위, 누적 이익 2,857 |
+| Seller Deals 순위 | 45위, 판매 112건(방문 210, 전환율 53.3%) |
+| Seller Revenue 순위 | 43위, 누적 매출 24,457 |
+| Seller Stars 순위 | 29위, 평균 4.46, 리뷰 112개 |
+| Buyer 온라인 | `alive=false` (Seller와 같은 kit) |
+| Buyer Saved 순위 | 101개 중 42위, 총 절감액 6,280 |
+| Buyer Deals 순위 | 43위, 주문 263건 중 검증 거래 200건(76.0%), held 43 |
+| Buyer Best price(paid) 순위 | 29위, 예산 대비 평균 지불 비율 0.872 |
+
+2차 운영(18:10:50–18:27:50)에서 Seller는 11건을 더 팔았고 Buyer는 검증 거래 6건을 더 했습니다. 18:26:46에 `Trade failed safely before a receipt was received.`가 나온 뒤, `18:27:50 [kit] order failed: ConnectTimeout`과 `httpx.ConnectError: [Errno -3] Temporary failure in name resolution`이 이어졌습니다. 이 PC의 DNS가 잠시 끊긴 사이 공식 kit이 `/api/orders` 호출(`market_kit.py:439`)에서 예외를 잡지 못하고 종료했습니다. 마지막 줄은 `.market/kit-console.out`(Git 제외)에 있고, 18:39 확인 때 네트워크는 이미 복구되어 있었습니다. **제출 시점에 Seller와 Buyer는 오프라인이며, 마감 전에 다시 join해야 합니다.**
 
 Buyer 기억의 `deals` 카운터는 시장이 인정하지 않은 거래나 재시도까지 셀 수 있습니다. 그래서 공식 성과는 대시보드의 검증 거래 수만 사용했습니다. Seller 판매 건수와 Buyer 구매 건수는 역할이 다르므로 합산하지 않았습니다.
 
@@ -106,9 +118,16 @@ Buyer 기억의 `deals` 카운터는 시장이 인정하지 않은 거래나 재
 - **테스트**: 단위 테스트 통과, 공식 Market Test 25/25 통과(로그에서 `lamp asking price: 105`, `bookshelf asking price: 295` 확인)
 - **실시장 적용**: 18:10:50에 재등록했습니다. 이후 결과는 `compare_prices.py`로 계산했습니다(`logs/challenge-1/compare-*.log`).
 
-{{C1_TABLE}}
+| 구간 | 시간 | 판매 | 방문 | 전환율 | 평균 가격 | 거래당 이익 | 시간당 이익 | 시장 전체 거래 중 비중 |
+|---|---|---|---|---|---|---|---|---|
+| 이전: 모델 호가 (14:46–17:40) | 2.90 h | 101 | 179 | 56.4% | 222.7 | 26.9 | 934 | 1.676% |
+| 이후: 정책 호가 (18:10:50–18:27:50) | 0.28 h | 11 | 31 | 35.5% | 178.6 | 13.2 | 512 | 0.977%* |
 
-{{C1_NOTE}}
+\* 시장 전체 거래는 18:08:31부터 측정 시각 18:39:37까지 늘어난 양이고, 이 중 kit이 꺼져 있던 12분이 포함되어 비중이 낮게 잡혔습니다. 대시보드의 `share` 필드는 두 구간 모두 0.0으로 표시되어 위처럼 직접 계산했습니다. 원본: `logs/challenge-1/compare-*.log`
+
+상품별 이후 결과(`seller-trades.jsonl`, 끝난 협상 11건, 모두 성사)는 다음과 같습니다. lamp 5건은 평균 103.0이고 3건은 호가 105 그대로였습니다. chair 3건은 평균 205.0이고 1건이 225였습니다. bookshelf 3건은 평균 278.3이고 1건이 295였습니다.
+
+**결과 해석**: 정책 호가는 의도대로 동작했습니다. lamp는 예산 안의 105로 열려 절반 이상이 그 가격에 바로 팔렸습니다. 그러나 이 짧은 구간에서는 **판매 속도(시간당 34.8 → 38.8건)만 조금 오르고, 평균 가격과 거래당 이익은 절반으로 줄었습니다.** 전환율은 오히려 낮았습니다. 성사되지 않은 방문 20건은 거절(reject) 기록이 0건이므로, 구매자가 중간에 떠난 경우로 보입니다. 17분, 11건이라는 표본은 결론을 내리기에 너무 작고 시간대의 구매자 구성도 다릅니다. 그래서 "가격 인하가 효과적이었다"고 주장하지 않습니다. 관측된 이익 감소를 보면 다음 정책은 중앙값이 아니라 75백분위 예산(lamp 125, chair 225, bookshelf 360)으로 여는 쪽이 맞아 보입니다. 하지만 실제로 배포해 검증하지는 않았습니다.
 
 ### Challenge 2 — Buyer: 부정직한 참가자
 
@@ -132,7 +151,7 @@ Buyer 기억의 `deals` 카운터는 시장이 인정하지 않은 거래나 재
   kit은 `run_agent.sh seller.py --port <p>`로 Seller를 띄우고, 무료 Cloudflare Quick Tunnel(`cloudflared tunnel --url`, 계정 불필요)로 공개합니다. 이어 카드 URL과 `shop_key.pem` 공개키를 시장에 등록하고, 주문을 받아 `market_buyer.py`를 실행합니다.
 - **공개 엔드포인트**: 1차는 `https://engineer-chemistry-partial-prerequisite.trycloudflare.com`, 2차는 `https://destination-feelings-spears-pearl.trycloudflare.com`입니다. Quick Tunnel은 재시작할 때마다 URL이 바뀝니다. 그래도 시장에는 같은 이름과 같은 키로 재등록되므로 거래와 리뷰가 이어집니다.
 - **인증과 키**: Claim Code는 권한 0600 파일에서 환경 변수로만 넘겼고, 로그·Git·이 보고서에 값이 없습니다. 개인키 두 개도 0600 권한이며 `.gitignore`의 `*.pem`으로 제외했습니다. CI의 `check_no_keys`도 통과했습니다.
-- **실행 유지**: `setsid nohup`으로 Claude Code·Codex 세션과 분리해 실행하므로, 터미널을 닫아도 계속 돕니다. `monitor_market.py --interval 900`이 15분마다 대시보드 행을 `logs/operations/leaderboard.jsonl`에 추가합니다.
+- **실행 유지**: `setsid nohup`으로 Claude Code·Codex 세션과 분리해 실행하므로, 터미널을 닫아도 계속 돕니다. 다만 공식 kit은 네트워크 오류 한 번에 종료되므로(18:27:50 실제 발생), 재시작 감시가 없으면 사람이 다시 join해야 합니다. `monitor_market.py --interval 900`이 15분마다 대시보드 행을 `logs/operations/leaderboard.jsonl`에 추가합니다.
 - **장시간 운영의 제약**: PC가 꺼지거나 절전에 들어가거나 WSL이 종료(`wsl --shutdown`, 업데이트 재부팅)되면 Seller와 Buyer가 함께 내려갑니다. Quick Tunnel은 가용성을 보장하지 않습니다. 주문마다 `codex exec`가 실행되므로 ChatGPT Codex 사용량을 계속 소비하고, 한도에 걸리면 Seller가 거절하고 Buyer는 무거래가 됩니다(§4-3과 같은 증상). `cloudflared`가 `/tmp`에만 있으면 재부팅 때 사라지므로 `~/.local/bin`으로 복사해 두었습니다.
 
 ## 7. 한계
