@@ -1,0 +1,116 @@
+# week-07 market test, kit v1, 2026-10-26T16:32:52+00:00
+harness: Codex CLI 0.163.0, gpt-6.1-sol, reasoning effort low
+
+## seller tests: sh run_agent.sh seller.py --port 57375
+  PASS  seller_card #1: name='Atlas Shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp asking price: 150
+    -> SendMessage "60" taskId=268bed73
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 140
+    -> SendMessage "80" taskId=268bed73
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 130
+    -> SendMessage "100" taskId=268bed73
+    <- TASK_STATE_REJECTED | Negotiation decision failed safely.
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 150
+  FAIL  seller_deal #1: TASK_STATE_REJECTED, receipt price None, asks [150, 140, 130]
+  FAIL  seller_signed_receipt #1: no completed task to check
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=268bed73
+    <- error -32004 Task 268bed73-a2e3-460e-a2fe-a3e85817518e is in terminal state: TASK_STATE_REJECTED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_REJECTED | Negotiation decision failed safely.
+  FAIL  seller_deal #2: TASK_STATE_REJECTED, receipt price None, asks None
+  FAIL  seller_signed_receipt #2: no completed task to check
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_REJECTED | Negotiation decision failed safely.
+  FAIL  seller_deal #3: TASK_STATE_REJECTED, receipt price None, asks None
+  FAIL  seller_signed_receipt #3: no completed task to check
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf asking price: 350
+    -> SendMessage "140" taskId=6cb7a27d
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 330
+    -> SendMessage "170" taskId=6cb7a27d
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 310
+    -> SendMessage "200" taskId=6cb7a27d
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 290
+    -> SendMessage "230" taskId=6cb7a27d
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 270
+    -> SendMessage "230" taskId=6cb7a27d
+    <- TASK_STATE_REJECTED | Negotiation decision failed safely.
+  PASS  seller_holds_reserve #1: TASK_STATE_REJECTED, asks [350, 330, 310, 290, 270]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_REJECTED | Negotiation decision failed safely.
+  FAIL  seller_holds_reserve #2: TASK_STATE_REJECTED, asks None
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_REJECTED | Negotiation decision failed safely.
+  FAIL  seller_holds_reserve #3: TASK_STATE_REJECTED, asks None
+
+## buyer tests: your market_buyer against the kit's rule-based shops
+
+### buyer_deal #1: sh run_agent.sh market_buyer.py --shops /home/user/student/AX/ai-agent-engineering-101/submissions/25512082/week-07/.market/test-shops-buyer_deal-1.json --item lamp --budget 120
+    Kit Shop saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+    last line: {"receipt": null, "review": "Trade failed safely before a receipt was received.", "shop": "http://127.0.0.1:48527", "stars": 1}
+  FAIL  buyer_deal #1: deals [], expected one
+  FAIL  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_deal #2: sh run_agent.sh market_buyer.py --shops /home/user/student/AX/ai-agent-engineering-101/submissions/25512082/week-07/.market/test-shops-buyer_deal-2.json --item lamp --budget 120
+    Kit Shop saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+    last line: {"receipt": null, "review": "Trade failed safely before a receipt was received.", "shop": "http://127.0.0.1:54769", "stars": 1}
+  FAIL  buyer_deal #2: deals [], expected one
+  FAIL  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_deal #3: sh run_agent.sh market_buyer.py --shops /home/user/student/AX/ai-agent-engineering-101/submissions/25512082/week-07/.market/test-shops-buyer_deal-3.json --item lamp --budget 120
+    Kit Shop saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+    last line: {"receipt": null, "review": "Trade failed safely before a receipt was received.", "shop": "http://127.0.0.1:33215", "stars": 1}
+  FAIL  buyer_deal #3: deals [], expected one
+  FAIL  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #1: sh run_agent.sh market_buyer.py --shops /home/user/student/AX/ai-agent-engineering-101/submissions/25512082/week-07/.market/test-shops-buyer_holds_budget-1.json --item bookshelf --budget 230
+    Kit Shop saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+    last line: {"receipt": null, "review": "Trade failed safely before a receipt was received.", "shop": "http://127.0.0.1:48901", "stars": 1}
+  PASS  buyer_holds_budget #1: offers [], stars 1, receipt null
+  PASS  buyer_protocol_holds_budget #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #2: sh run_agent.sh market_buyer.py --shops /home/user/student/AX/ai-agent-engineering-101/submissions/25512082/week-07/.market/test-shops-buyer_holds_budget-2.json --item bookshelf --budget 230
+    Kit Shop saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+    last line: {"receipt": null, "review": "Trade failed safely before a receipt was received.", "shop": "http://127.0.0.1:60645", "stars": 1}
+  PASS  buyer_holds_budget #2: offers [], stars 1, receipt null
+  PASS  buyer_protocol_holds_budget #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #3: sh run_agent.sh market_buyer.py --shops /home/user/student/AX/ai-agent-engineering-101/submissions/25512082/week-07/.market/test-shops-buyer_holds_budget-3.json --item bookshelf --budget 230
+    Kit Shop saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+    last line: {"receipt": null, "review": "Trade failed safely before a receipt was received.", "shop": "http://127.0.0.1:54649", "stars": 1}
+  PASS  buyer_holds_budget #3: offers [], stars 1, receipt null
+  PASS  buyer_protocol_holds_budget #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_reads_reviews #1: sh run_agent.sh market_buyer.py --shops /home/user/student/AX/ai-agent-engineering-101/submissions/25512082/week-07/.market/test-shops-buyer_reads_reviews-1.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+    last line: {"receipt": null, "review": "Trade failed safely before a receipt was received.", "shop": "http://127.0.0.1:43371", "stars": 1}
+
+### buyer_reads_reviews #2: sh run_agent.sh market_buyer.py --shops /home/user/student/AX/ai-agent-engineering-101/submissions/25512082/week-07/.market/test-shops-buyer_reads_reviews-2.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+    last line: {"receipt": null, "review": "Trade failed safely before a receipt was received.", "shop": "http://127.0.0.1:44013", "stars": 1}
+
+### buyer_reads_reviews #3: sh run_agent.sh market_buyer.py --shops /home/user/student/AX/ai-agent-engineering-101/submissions/25512082/week-07/.market/test-shops-buyer_reads_reviews-3.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+    last line: {"receipt": null, "review": "Trade failed safely before a receipt was received.", "shop": "http://127.0.0.1:46107", "stars": 1}
+  PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
+
+11/25 passed -> FAIL
