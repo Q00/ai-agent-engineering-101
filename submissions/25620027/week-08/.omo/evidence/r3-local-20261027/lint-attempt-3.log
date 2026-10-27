@@ -1,0 +1,160 @@
+TC003 Move standard library import `pathlib.Path` into a type-checking block
+ --> deploy/vps/bundle.py:8:21
+  |
+6 | import json
+7 | import shutil
+8 | from pathlib import Path
+  |                     ^^^^
+9 | from typing import Final
+  |
+help: Move into type-checking block
+   |
+7  | import shutil
+   - from pathlib import Path
+   - from typing import Final
+8  + from typing import Final, TYPE_CHECKING
+9  |
+10 | from market_a2a.models import HarnessError
+11 | from r3.gateway import KIT_SHA256
+12 |
+13 + if TYPE_CHECKING:
+14 +     from pathlib import Path
+15 +
+16 | FILES: Final = (
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+T201 `print` found
+   --> deploy/vps/launch.py:113:5
+    |
+111 |     if arguments.activate is True:
+112 |         raise SystemExit(anyio.run(activate, settings))
+113 |     print("R3 configuration and kit hash valid; no activation or network requests")
+    |     ^^^^^
+help: Remove `print`
+    |
+112 |         raise SystemExit(anyio.run(activate, settings))
+    -     print("R3 configuration and kit hash valid; no activation or network requests")
+113 |
+    |
+note: This is an unsafe fix and may change runtime behavior
+
+PLC0415 `import` should be at the top-level of a file
+  --> deploy/vps/settings.py:77:5
+   |
+75 | def verify_kit(app: Path) -> None:
+76 |     """Check the vendored instructor source before starting any subprocess."""
+77 |     import hashlib
+   |     ^^^^^^^^^^^^^^
+78 |
+79 |     kit = app / "scripts" / "market_kit.py"
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> market_a2a/market_buyer.py:3:1
+   |
+ 1 |   """Market selection and review through the existing Week 05 buyer harness."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | from datetime import UTC, datetime
+ 6 | |
+ 7 | | from dataclasses import dataclass
+ 8 | | from typing import TYPE_CHECKING, Final
+ 9 | |
+10 | | import anyio
+11 | | import httpx2
+12 | | from openai import OpenAIError
+13 | | from pydantic import JsonValue, TypeAdapter, ValidationError
+14 | |
+15 | | from market_a2a.buyer import BuyerHarness, BuyerOrder, buy_order
+16 | | from market_a2a.market_decision import Decision, MarketShop, PublicReview, Selection
+17 | | from market_a2a.memory import Memory, Review, Trade
+18 | | from market_a2a.memory_selection import EvidenceQuery, MemorySelection
+19 | | from market_a2a.models import (
+20 | |     HarnessError,
+21 | |     Purchase,
+22 | |     ToolSpec,
+23 | |     json_value,
+24 | | )
+25 | | from market_a2a.promotion import SHOP_URL
+26 | | from market_a2a.security import SecurityEvents
+27 | | from market_a2a.security_review import selection_review_evidence
+28 | | from market_a2a.strict_review import (
+29 | |     REVIEW_PROMPT,
+30 | |     grounded_review,
+31 | |     trade_facts,
+32 | | )
+   | |_^
+33 |
+34 |   __all__ = ["Decision", "MarketShop", "PublicReview", "Selection", "grounded_review"]
+   |
+help: Organize imports
+  |
+4 |
+  - from datetime import UTC, datetime
+  -
+5 | from dataclasses import dataclass
+6 + from datetime import UTC, datetime
+7 | from typing import TYPE_CHECKING, Final
+  |
+
+E501 Line too long (90 > 88)
+   --> market_a2a/market_buyer.py:159:89
+    |
+157 |             ToolSpec(
+158 |                 name="lookup_trade_evidence",
+159 |                 description="Read one exact own-trade record by shop and record ordinal.",
+    |                                                                                         ^^
+160 |                 parameters=EvidenceQuery.model_json_schema(),
+161 |             ),
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `256` with a constant variable
+  --> market_a2a/memory_retention.py:31:38
+   |
+29 |             for name, trades in shops.items()
+30 |             for ordinal, trade in enumerate(trades)
+31 |             if len(name.encode()) <= 256
+   |                                      ^^^
+32 |             and (trade.observed_at is None or now - TTL <= trade.observed_at <= now)
+33 |         ),
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_memory_selection.py:3:1
+   |
+ 1 |   """Keep compact priors separate from original retrievable trade observations."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import json
+ 6 | | import hashlib
+ 7 | | from typing import TYPE_CHECKING
+ 8 | |
+ 9 | | import anyio
+10 | | import httpx2
+11 | | import pytest
+12 | |
+13 | | from market_a2a.market_buyer import MarketRequest, market_buy
+14 | | from market_a2a.market_decision import Decision, MarketShop
+15 | | from market_a2a.memory import Memory, Trade
+16 | | from market_a2a.memory_selection import MemorySelection
+17 | | from market_a2a.models import Purchase
+18 | | from tests.market_fakes import ScriptedHarness, ShopTransport
+19 | | from tests.r3_ledger import JSON
+   | |________________________________^
+20 |
+21 |   if TYPE_CHECKING:
+   |
+help: Organize imports
+  |
+4 |
+5 + import hashlib
+6 | import json
+  - import hashlib
+7 | from typing import TYPE_CHECKING
+  |
+
+Found 7 errors.
+[*] 2 fixable with `--fix` (2 unsafe fixes available with `--fix --unsafe-fixes`).

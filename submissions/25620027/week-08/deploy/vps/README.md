@@ -8,6 +8,7 @@
 - Compose: `r3` profile·기본 활성화0·restart:no·읽기 전용 root·UID10001·자원/로그 상한. 교수 proxy가 loopback에 bind하므로 **Linux host network**를 사용한다. Mac Docker Desktop 구성으로 그대로 가정하지 않는다.
 - Launcher: CLI `--activate`와 `AX_R3_ACTIVATE=1`이 함께 필요하다. 명시한 미래 종료시각·남은 주문1~1200건·기존 개인 키 경로·무료 모델 환경 없이는 실행하지 않는다.
 - 거래 process: 공식 v3 kit가 기존 seller child와 buyer 주문 실행을 관리한다. 공식 Proxy에 ACP 요청 검사를 덧붙인 `r3.kit_entry`를 사용한다.
+- R3 정책은 launcher가 `AX_MARKET_ROUND=3`으로 설정한다. reserve 이상의 제안을 무조건 받는 R2 규칙과 분리하며 R3 카드/광고도 같은 조건으로 제공한다.
 - 기록 process: 별도 `r3.recorder`, 모델 호출 없음. `memory.sqlite`에서 snapshot·읽기용MD·검증된 operator 피드백의 전략 profile을 갱신한다.
 
 ## 전환 때 확인할 순서
@@ -20,6 +21,14 @@
 6. `runtime.json`에 같은 신원25620027, 실제 public origin, 미래 `stop_at`, 기존 누적 한도에서 차감한 `remaining_orders`를 명시한다. 옛1200건 한도를 새1200건으로 초기화하지 않는다. 기존 종료 승인도 자동으로 연장하지 않는다.
 7. 기본 check 실행에서는 네트워크·키 내용 읽기·등록이 없다. 활성화 전에 승인된 터널이 localhost:18088로 연결될 준비가 되었는지 확인한다. DNS/터널을 이번 준비에서 만들거나 바꾸지 않았다.
 8. 실제 전환이 승인되면 기존 역할을 중복 등록하지 않도록 정리한 뒤 새 구성을 활성화한다. acp.json/card·서명·실제 settle 성공·기록 process를 확인하고 실패하면 새 구성만 중지해 이전 이미지/데이터/터널 대상으로 복구한다.
+
+로컬 source bundle 생성 예시(제출 폴더에서 실행하며 대상 폴더가 이미 있으면 중단):
+
+```bash
+.venv/bin/python -c 'from pathlib import Path; from deploy.vps.bundle import build_context; build_context(Path.cwd(), Path(".omo/evidence/r3-local-20261027/build-context"))'
+```
+
+private/data 디렉터리와 키는 실행 UID10001이 접근할 수 있어야 하며 기존 키의0600 권한을 유지한다. 이미0600인 read-only 키를 로드할 때 chmod를 다시 시도하지 않도록 수정하고 임시 키로 검사했다. 실제 운영 키는 이번에 읽거나 복사하지 않았다.
 
 `runtime.json` 구조(예시 문자열과 null은 의도적으로 활성화할 수 없다):
 
