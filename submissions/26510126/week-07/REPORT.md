@@ -62,19 +62,29 @@ Numbers from `/api/stats`, `/api/board` and the ledger (`market_intel.py`).
 | Our buyer: paid / budget | 0.901 | 0.868 | 0.845 |
 | Our buyer: orders below every reserve | 7 | 12 | 1,964 |
 
-**Overall standing in Round 2 (10/26 12:01, `/api/board`, house agents left out).** The market ranks shops and buyers separately and gives no combined score, so this is ours. We took the 31 participants that run both a shop and a buyer with at least 20 deals each and 20 shop reviews, ranked them on five measures, and averaged the ranks.
+**Overall standing in Round 2 (10/27 10:59, `/api/board` via `standing.py`, house agents left out).** The market ranks shops and buyers separately and gives no combined score, so this is ours. We took the 35 participants that run both a shop and a buyer with at least 20 deals each and 20 shop reviews, ranked them on five measures, and averaged the ranks.
 
 | | Shop profit | Shop deals | Shop stars | Buyer deals | Buyer paid / budget |
 |---|---|---|---|---|---|
-| Our rank of 31 | 4 | 10 | 16 | 12 | 6 |
+| Our rank of 35 | 4 | 10 | 17 | 13 | 5 |
 
-| Weighting | Our rank of 31 | Ahead of us |
+| Weighting | Our rank of 35 | Ahead of us |
 |---|---|---|
-| All five measures equal | 4 (tied with yms979) | 11im, fair-furniture |
-| Profit instead of shop deals | 5 | 11im, fair-furniture, psyoung82, dariaklt |
-| Shop deals instead of profit | 7 | 11im, fair-furniture, cheapest-in-town, psyoung82, myeonggi, … |
+| All five measures equal | 3 | 11im, fair-furniture |
+| Profit instead of shop deals | 4 (tied with dariaklt) | 11im, fair-furniture, psyoung82 |
+| Shop deals instead of profit | 6 | 11im, fair-furniture, cheapest-in-town, myeonggi, psyoung82 |
 
-Among all 55 shops ours is 4th by profit (52,292; 11im 145,646, yms979 73,171, outseop-26510122 54,452) and 11th by deals and share. The weak measure is stars, 16th. Most of that gap comes from buyers who rate every shop low, not from our deals: in a sample of our last 400 verified deals (10/24), all 34 three-star reviews came from Kiro729, which gave 3 stars on 1,059 of its 2,362 verified Round-2 reviews across the market.
+Shops, all 57: ours is 5th by profit (56,093; 11im 189,684, yms979 84,356, ggari-shop 67,468, outseop-26510122 58,508), 10th by revenue (1,671,633), 11th by deals (8,333) and share (2.6%), and 19th of 40 by stars (4.5) among shops with 20+ reviews.
+
+| Buyer, of 85 (paid and fill rate: of 43 with 20+ deals) | Ours | Rank | Best |
+|---|---|---|---|
+| Paid / budget (lower is better) | 84.5% | 6 | psyoung82 84.2% |
+| Saved (budget minus price) | 358,749 | 15 | 11im 603,019 |
+| Deals | 10,073 | 17 | myeonggi 17,773 |
+| Orders received | 13,075 | 18 | |
+| Deals / orders some shop could fill | 96.0% (10,073 of 10,489; 2,586 budgets were below every reserve) | 16 | chaewoonee 100.0% |
+
+The weak measure is the shop's stars. Most of that gap comes from buyers who rate every shop low, not from our deals: in a sample of our last 400 verified deals (10/24), all 34 three-star reviews came from Kiro729, which gave 3 stars on 1,059 of its 2,362 verified Round-2 reviews across the market. The buyer's middling ranks on deals and savings follow from how many orders it received, which the market decides; on price, the measure it controls, it is near the top.
 
 **Round 0.** The kit chose the shop. Our Worker shop sold 5 of its first 21 visits: Llama 8B answered `"action": "reject"` while its note said "let's meet in the middle", which ended each negotiation after one offer (`deploy/logs/tail-market-before-reject-guard-1020.json`). A code guard turned reject into counter; the next 69 visits gave 39 deals (`tail-market-reject-guard-1020.json`). The model still opened a lamp at 250 against a market of 100-140.
 
