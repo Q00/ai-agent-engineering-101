@@ -159,8 +159,10 @@ def competitor_signals(leaders):
 def validate_config(config):
     if not isinstance(config.get("name"), str) or not config["name"]:
         raise ValueError("name required")
-    if not number(config.get("interval_seconds")) or config["interval_seconds"] < 900:
-        raise ValueError("Polling interval must be at least 900 seconds")
+    if not number(config.get("interval_seconds")) or not 900 <= config["interval_seconds"] <= TTL:
+        raise ValueError("Polling interval must be between 900 and 3600 seconds")
+    if not isinstance(config.get("products"), dict) or set(config["products"]) != set(ITEMS):
+        raise ValueError("Configure exactly lamp, chair and bookshelf")
     for item in ITEMS:
         p = config.get("products", {}).get(item, {})
         if any(type(p.get(k)) is not int or p[k] <= 0 for k in ("reserve", "base_quote")):
@@ -173,7 +175,9 @@ def evolve(config, snapshot, events, previous=None):
     """Change a bounded target only after new evidence; never change a reserve."""
     validate_config(config)
     now = snapshot["time"]
-    same_round = bool(previous and previous.get("round") == snapshot["round"])
+    same_round = bool(isinstance(previous, dict) and previous.get("round") == snapshot["round"]
+                      and number(previous.get("updated_at"))
+                      and 0 <= now - previous["updated_at"] <= TTL)
     before = previous if same_round else {}
     previous_own = before.get("market", {}).get("own", {})
     own = snapshot["own"]
@@ -251,7 +255,10 @@ class StrategyReader:
                 or not number(state.get("updated_at")) or not number(state.get("expires_at"))
                 or not 0 <= now - state["updated_at"] <= TTL or now > state["expires_at"]):
             return None
-        p = state.get("products", {}).get(item)
+        products = state.get("products")
+        if not isinstance(products, dict):
+            return None
+        p = products.get(item)
         if (not isinstance(p, dict) or p.get("reserve") != reserve
                 or type(p.get("target")) is not int or p["target"] < reserve):
             return None

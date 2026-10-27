@@ -33,7 +33,8 @@ def refresh(config, root=ROOT, client=None, now=None):
     now = time.time() if now is None else now
     cache_path = root / ".market" / "seller-strategy.json"
     previous = load_json(cache_path)
-    if (isinstance(previous, dict) and 0 <= now - previous.get("updated_at", 0)
+    if (isinstance(previous, dict) and isinstance(previous.get("updated_at"), (int, float))
+            and 0 <= now - previous["updated_at"]
             < config["interval_seconds"]):
         return "cached"
     owned = client is None

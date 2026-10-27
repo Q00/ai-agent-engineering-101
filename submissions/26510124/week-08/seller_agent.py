@@ -68,6 +68,22 @@ class Seller(AgentExecutor):
         self.max_turns = min(10, max(2, int(adaptive.get("max_turns", 6))))
         self.model_slots = asyncio.Semaphore(2)
 
+    async def infer(self, function, *args, **kwargs):
+        try:
+            await asyncio.wait_for(self.model_slots.acquire(), timeout=.1)
+        except TimeoutError:
+            raise HarnessError("Shop busy; model concurrency limit reached")
+        worker = asyncio.create_task(asyncio.to_thread(function, *args, **kwargs))
+
+        def finished(task):
+            self.model_slots.release()
+            if not task.cancelled():
+                task.exception()  # consume failures even if the HTTP caller left
+
+        worker.add_done_callback(finished)
+        # Disconnecting a buyer must not free a slot while its CLI still runs.
+        return await asyncio.shield(worker)
+
     def record(self, task, item, outcome, policy, price=None):
         if not self.reader:
             return
@@ -116,7 +132,8 @@ class Seller(AgentExecutor):
             options["adaptive"] = policy
         if self.reader:
             history = bounded_history(history)
-            if deal and deal["counters"] >= self.max_turns and offer != deal["ask"]:
+            if deal and (deal["counters"] > self.max_turns or
+                         deal["counters"] >= self.max_turns and offer != deal["ask"]):
                 self.open.pop(task.id, None)
                 self.record(task.id, item, "turn_limit", policy)
                 await up.reject(say("Negotiation limit reached. No deal."))
@@ -127,21 +144,14 @@ class Seller(AgentExecutor):
         lock = self.locks.setdefault(task.id, asyncio.Lock())
         try:
             try:
-                try:
-                    await asyncio.wait_for(self.model_slots.acquire(), timeout=.1)
-                except TimeoutError:
-                    raise HarnessError("Shop busy; model concurrency limit reached")
-                try:
-                    if deal is None:
-                        price = await asyncio.to_thread(opening_price, item, self.cfg["reserve"][item], text[:400], **options)
-                        decision = {"action": "counter", "price": price}
-                    else:
-                        decision = await asyncio.to_thread(
-                            seller_decision, item=item, reserve=self.cfg["reserve"][item],
-                            offer=offer, history=history, **options,
-                        )
-                finally:
-                    self.model_slots.release()
+                if deal is None:
+                    price = await self.infer(opening_price, item, self.cfg["reserve"][item], text[:400], **options)
+                    decision = {"action": "counter", "price": price}
+                else:
+                    decision = await self.infer(
+                        seller_decision, item=item, reserve=self.cfg["reserve"][item],
+                        offer=offer, history=history, **options,
+                    )
                 action, price = decision.get("action"), decision.get("price")
                 if action not in ("counter", "accept", "reject"):
                     raise HarnessError("Invalid seller action")

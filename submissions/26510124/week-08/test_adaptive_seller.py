@@ -126,6 +126,28 @@ class SellerTests(unittest.TestCase):
 
 
 class ConcurrencyTests(unittest.IsolatedAsyncioTestCase):
+    async def test_disconnect_keeps_slot_until_worker_finishes(self):
+        seller = Seller(DEFAULT)
+        release = threading.Event()
+        calls = []
+        def slow():
+            calls.append(1)
+            release.wait(3)
+            return 125
+        jobs = [asyncio.create_task(seller.infer(slow)) for _ in range(2)]
+        try:
+            await asyncio.sleep(.05)
+            jobs[0].cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await jobs[0]
+            with self.assertRaises(harness.HarnessError):
+                await seller.infer(slow)
+            self.assertEqual(len(calls), 2)
+        finally:
+            release.set()
+            await asyncio.gather(*jobs, return_exceptions=True)
+            await asyncio.sleep(.05)
+
     async def test_busy_shop_never_starts_a_third_model_call(self):
         seller = Seller(DEFAULT)
         release = threading.Event()
