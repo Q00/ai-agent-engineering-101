@@ -31,7 +31,7 @@ def seller_assignment(task, statistics):
     ready=[r for r in results if r.get('arm') in SELLER_ARMS and r.get('matured_opportunities',0)>=10]
     winner=None
     if len(ready)==len(SELLER_ARMS) and sum(r.get('reward_sum',0) for r in ready)>0:
-        winner=max(ready,key=lambda r:r['reward_sum']/r['matured_opportunities'])['arm']
+        winner=max(ready,key=lambda r:r['reward_sum']/max(1,r.get('cycle_seconds_sum',r['matured_opportunities'])))['arm']
     draw=unit_draw(task,'seller-arm')
     if draw<0.10:
         arm='memory-v1-control'

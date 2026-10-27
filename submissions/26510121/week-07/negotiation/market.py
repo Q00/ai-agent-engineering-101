@@ -73,11 +73,14 @@ def read_memory(path, verification_path=None):
 
 
 def remember(path, *, shop, item, budget, outcome, price, seconds, turns, task_id=None,
-             sequence=None, signature_verified=None):
+             sequence=None, signature_verified=None, order_id=None, error_code=None,
+             policy_arm=None, round_number=None):
     row = {"at": datetime.now(timezone.utc).isoformat(), "epoch": time.time(),
            "name": shop["name"], "item": item, "budget": budget, "outcome": outcome,
            "price": price, "seconds": round(seconds, 3), "turns": turns, "task_id": task_id,
-           "sequence": sequence, "signature_verified": signature_verified}
+           "sequence": sequence, "signature_verified": signature_verified,
+           'pubkey':shop.get('pubkey'),'order_id':order_id,'error_code':error_code,
+           'policy_arm':policy_arm,'round':round_number}
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as output:

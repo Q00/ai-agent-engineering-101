@@ -10,6 +10,7 @@ from pathlib import Path
 import json
 import re
 import os
+import time
 
 from starlette.applications import Starlette
 import uvicorn
@@ -32,6 +33,7 @@ from negotiation.catalog import Catalog, matches
 from negotiation.catalog_contracts import NeedContext, SelectionContext
 from negotiation.price_reading import PriceContext
 from negotiation.experience import Experience, POLICY
+from negotiation.ranking import seller_assignment
 import sqlite3
 
 
@@ -154,9 +156,13 @@ class Seller(AgentExecutor):
                 trusted = SellerContext(memory.item_id, memory.reserve,
                                         "opening" if opening else "negotiating", offer)
                 observation = memory.observation(text)
-                statistics = self.experience_call('seller_summary', memory.item_id, memory.reserve)
+                statistics = self.experience_call('seller_policy_summary', memory.item_id, memory.reserve)
                 if statistics is not None:
+                    if not memory.policy_assignment:
+                        memory.policy_assignment=seller_assignment(task.id,statistics)
+                        self.log.record('policy_assigned',task_id=task.id,policy=memory.policy_assignment)
                     observation['personal_long_term_statistics'] = statistics
+                    observation['host_policy']=memory.policy_assignment
                     self.log.record('long_term_retrieved', task_id=task.id, item=memory.item_id, statistics=statistics)
                 decision = await self.harness.seller(trusted, observation)
             except HarnessError as error:
@@ -167,7 +173,8 @@ class Seller(AgentExecutor):
                 return
             self.log.record("seller_decision", task_id=task.id, reserve=memory.reserve,
                             buyer_offer=offer, decision=decision.model_dump(), policy=POLICY,
-                            market_round=self.experience_call('current_round'))
+                            market_round=self.experience_call('current_round'),policy_arm=memory.policy_assignment.get('arm'),
+                            elapsed_seconds=round(time.monotonic()-memory.opened_at,4))
             if decision.action in {"ask", "counter"}:
                 prefix = memory.item_id + ": asking" if opening else "Counteroffer:"
                 if opening and decision.price == memory.reserve:
@@ -193,7 +200,8 @@ class Seller(AgentExecutor):
                 self.experience_call('seller_end', task.id, memory.item_id, 'reject')
             memory.apply(text, decision)
             self.experience_call('seller_decision', task=task.id, item=memory.item_id, reserve=memory.reserve,
-                                 turn=memory.rounds, action=decision.action, price=decision.price, buyer_offer=offer)
+                                 turn=memory.rounds, action=decision.action, price=decision.price, buyer_offer=offer,
+                                 policy_arm=memory.policy_assignment.get('arm'),elapsed_seconds=time.monotonic()-memory.opened_at)
             self.log.record("decision_applied", task_id=task.id, action=decision.action,
                             terminal=memory.terminal, recent_turns=len(memory.recent))
 

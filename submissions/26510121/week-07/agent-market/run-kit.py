@@ -48,7 +48,21 @@ def join(args):
 
 
 def market_call(self, method, path, role="buyer", **kwargs):
+    requested=time.monotonic()
+    if method=='POST' and path=='/api/orders' and self is not None and not getattr(self,'_ranking_cycle_start',None):
+        self._ranking_cycle_start=requested
     response = original_call(self, method, path, role=role, **kwargs)
+    if method=='POST' and path=='/api/orders' and response.status_code==200 and self is not None:
+        self._ranking_order_received=time.monotonic()
+    if method=='POST' and path=='/api/results' and response.status_code in range(400,500) and response.status_code!=429:
+        submitted=kwargs.get('json',{});receipt=submitted.get('receipt') or {}
+        total=time.monotonic()-(getattr(self,'_ranking_cycle_start',None) or requested) if self is not None else None
+        remember('buyer_feedback',task=receipt.get('task'),order=submitted.get('order'),verified=False,settled=False,
+                 round_number=int(os.environ.get('MARKET_ROUND','0')),total_seconds=total,
+                 failed_checks=[f'result_http_{response.status_code}'])
+        if self is not None:
+            self._ranking_cycle_start=None
+            self._ranking_order_received=None
     if response.status_code != 200:
         return response
     if method == "GET" and path == "/api/shops":
@@ -70,9 +84,21 @@ def market_call(self, method, path, role="buyer", **kwargs):
         round_number = int(os.environ.get('MARKET_ROUND', '0'))
         event['round'] = round_number
         event['settled'] = round_number >= 3 and bool(submitted.get('mandate_receipt')) and result.get('verified') is True
+        complete=time.monotonic()
+        began=getattr(self,'_ranking_cycle_start',None) if self is not None else None
+        received=getattr(self,'_ranking_order_received',None) if self is not None else None
+        event['total_seconds']=complete-began if began is not None else None
+        event['processing_seconds']=complete-received if received is not None else None
+        event['wait_seconds']=received-began if received is not None and began is not None else None
+        event['failed_checks']=[k for k,v in (result.get('checks') or {}).items() if v is False]
         remember('buyer_feedback', task=receipt.get('task'), order=submitted.get('order'),
                  verified=result.get('verified'), settled=event['settled'], round_number=round_number,
-                 ledger=result.get('ledger'))
+                 ledger=result.get('ledger'),total_seconds=event['total_seconds'],
+                 processing_seconds=event['processing_seconds'],wait_seconds=event['wait_seconds'],
+                 failed_checks=event['failed_checks'])
+        if self is not None:
+            self._ranking_cycle_start=None
+            self._ranking_order_received=None
         memory = AGENT / "memory" / "market-verification.jsonl"
         memory.parent.mkdir(exist_ok=True)
         with memory.open("a", encoding="utf-8") as out:
@@ -90,9 +116,10 @@ def market_call(self, method, path, role="buyer", **kwargs):
 
 
 def handle_order(order, *args, **kwargs):
-    names = ("MARKET_ROUND", "MARKET_REGISTRY_KEYS", "MARKET_AUDIT_SHOP")
+    names = ("MARKET_ROUND", "MARKET_REGISTRY_KEYS", "MARKET_AUDIT_SHOP",'MARKET_ORDER_ID')
     old = {name: os.environ.get(name) for name in names}
     os.environ["MARKET_ROUND"] = str(order["round"])
+    os.environ['MARKET_ORDER_ID']=str(order['order'])
     remember('set_round', order['round'])
     os.environ["MARKET_REGISTRY_KEYS"] = str(AGENT / ".market" / "registry-keys.json")
     try:

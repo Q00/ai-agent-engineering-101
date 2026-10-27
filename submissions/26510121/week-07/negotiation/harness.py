@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 import sys
 import uuid
+import os
+import time
 
 import httpx
 
@@ -41,6 +43,8 @@ def decide(role, context, observation, settings, log, client):
     if not settings.api_key:
         raise HarnessError("api_key_missing")
     instructions = (ROOT / "prompts" / f"{role}.md").read_text(encoding="utf-8")
+    if role=='seller' and observation.get('host_policy',{}).get('arm')=='memory-v1-control':
+        instructions=(ROOT/'prompts'/'baseline'/'memory-v1-seller.md').read_text(encoding='utf-8')
     trusted = asdict(context)
     if role == "price":
         # The validator needs the source text, but it is not trusted policy.
@@ -53,6 +57,7 @@ def decide(role, context, observation, settings, log, client):
     for attempt in (1, 2):
         log.record("model_request", role=role, attempt=attempt, model=settings.model,
                    instructions=instructions, input=input_data)
+        api_started=time.monotonic()
         try:
             response = client.post(
                 "https://api.openai.com/v1/responses",
@@ -65,7 +70,11 @@ def decide(role, context, observation, settings, log, client):
             )
         except httpx.HTTPError:
             log.record("api_error", code="network_error", attempt=attempt)
+            log.record('model_call_metrics',role=role,attempt=attempt,api_seconds=round(time.monotonic()-api_started,6),
+                       input_chars=len(json.dumps(input_data,ensure_ascii=False)),http_status=None)
             raise HarnessError("api_network_error") from None
+        log.record('model_call_metrics',role=role,attempt=attempt,api_seconds=round(time.monotonic()-api_started,6),
+                   input_chars=len(json.dumps(input_data,ensure_ascii=False)),http_status=response.status_code)
         if response.status_code != 200:
             log.record("api_error", http_status=response.status_code, attempt=attempt)
             # Invalid-key errors can echo credentials: never log the raw body.
@@ -127,11 +136,13 @@ class ModelHarness:
 
     async def _run(self, role, context, observation):
         log_path = self.log_dir / ("model-" + uuid.uuid4().hex + ".jsonl")
+        parent_started=time.perf_counter_ns()
         process = await asyncio.create_subprocess_exec(
             sys.executable, str(ROOT / "harness_cli.py"), "--role", role, "--log", str(log_path),
             cwd=self.work_dir, stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
             creationflags=0x08000000 if sys.platform == "win32" else 0,
+            env={**os.environ,'HARNESS_PARENT_STARTED_NS':str(parent_started)},
         )
         request = json.dumps({"context": asdict(context), "observation": observation}).encode("utf-8")
         try:
@@ -162,6 +173,9 @@ def main():
     log = RunLog(args.log, settings.api_key)
     try:
         request = json.load(sys.stdin)
+        parent_start=os.environ.get('HARNESS_PARENT_STARTED_NS')
+        if parent_start:
+            log.record('worker_metrics',startup_seconds=max(0,(time.perf_counter_ns()-int(parent_start))/1e9))
         context_class = CONTEXTS[args.role]
         context = context_class(**request["context"])
         with httpx.Client(timeout=15, trust_env=False, follow_redirects=False) as client:

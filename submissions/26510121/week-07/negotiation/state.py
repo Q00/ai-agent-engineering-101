@@ -1,6 +1,7 @@
 """Per-task observations: a bounded recent window plus a model summary."""
 from collections import deque
 from dataclasses import dataclass, field
+import time
 
 
 @dataclass
@@ -12,6 +13,8 @@ class SellerMemory:
     rounds: int = 0
     terminal: bool = False
     recent: deque = field(default_factory=lambda: deque(maxlen=4))
+    opened_at: float = field(default_factory=time.monotonic)
+    policy_assignment: dict = field(default_factory=dict)
 
     def observation(self, message):
         return {

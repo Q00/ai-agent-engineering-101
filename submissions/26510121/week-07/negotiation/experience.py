@@ -109,7 +109,7 @@ class Experience:
         rnd=self.current_round() if round_number is None else round_number
         with self.connection() as db:
             final_rows=db.execute("SELECT task,payload FROM events WHERE kind='buyer_feedback' ORDER BY at").fetchall()
-            observations=db.execute("SELECT at,payload FROM events WHERE kind='buyer_observation' AND item=? ORDER BY at",(item,)).fetchall()
+            observations=db.execute("SELECT at,payload FROM events WHERE kind='buyer_observation' ORDER BY at").fetchall()
             capabilities=db.execute("SELECT at,counterparty,payload FROM events WHERE kind='shop_capability' ORDER BY at").fetchall()
         by_task,by_order={},{}
         for task,payload in final_rows:
@@ -123,12 +123,18 @@ class Experience:
         result={}
         for name,key in identities.items():
             all_rows=grouped[name]
-            same_key=[r for r in all_rows if r.get('pubkey')==key and key]
+            same_identity=[r for r in all_rows if r.get('pubkey')==key and key]
+            same_key=[r for r in same_identity if r.get('item')==item]
             comparable=[r for r in same_key if r.get('round')==rnd and budget_band(item,r['budget'])==budget_band(item,budget)]
-            finalized=[];wins=[];durations=[];failure_reasons=Counter()
+            finalized=[];wins=[];durations=[];failure_reasons=Counter();pending=local_failures=0
             for row in comparable[-200:]:
                 feedback=by_order.get(row.get('order_id')) or by_task.get(row.get('task_id'))
-                if feedback is None or row['outcome']=='local_failure':continue
+                if row['outcome']=='local_failure':
+                    local_failures+=1
+                    continue
+                if feedback is None:
+                    pending+=1
+                    continue
                 finalized.append(row)
                 success=feedback.get('verified') is True and (rnd<3 or feedback.get('settled') is True)
                 if success and row.get('outcome')=='purchased' and isinstance(row.get('price'),(int,float)) and row['price']<=budget:
@@ -142,12 +148,12 @@ class Experience:
                 feedback=by_order.get(row.get('order_id')) or by_task.get(row.get('task_id')) or {}
                 if feedback.get('verified') is True and (row['round']<3 or feedback.get('settled') is True) and type(row.get('price')) in {int,float}:
                     verified_prices.append(row['price'])
-            recent=[r for r in same_key if now-r['_at']<1800]
+            recent=[r for r in same_identity if now-r['_at']<1800]
             last_outage=max([0]+[r['_at'] for r in recent if r['outcome']=='unavailable'])
             last_purchase=max([0]+[r['_at'] for r in recent if r['outcome']=='purchased'])
             result[name]={'pubkey':key,'item':item,'round':rnd,'budget_band':budget_band(item,budget),
                           'lifetime_observations':len(all_rows),'legacy_or_other_key_excluded':len(all_rows)-len(same_key),
-                          'finalized':len(finalized),'successes':len(wins),'pending':len(comparable[-200:])-len(finalized),
+                          'finalized':len(finalized),'successes':len(wins),'pending':pending,'local_failures_excluded':local_failures,
                           'mean_success_price':sum(r['price'] for r in wins)/len(wins) if wins else None,
                           'mean_cycle_seconds':sum(durations)/len(durations) if durations else None,
                           'historical_verified_median':median(verified_prices) if verified_prices else None,
@@ -170,19 +176,20 @@ class Experience:
         result=self.seller_summary(item,reserve,now=now)
         with self.connection() as db:
             rows=db.execute("SELECT at,task,payload FROM events WHERE kind='seller_decision' AND item=? AND at>? ORDER BY at",(item,now-21600)).fetchall()
-            payments={task:json.loads(payload) for task,payload in db.execute("SELECT task,payload FROM events WHERE kind='seller_settled' AND item=?",(item,))}
-            endings={task:json.loads(payload)['outcome'] for task,payload in db.execute("SELECT task,payload FROM events WHERE kind='seller_end' AND item=? ORDER BY at",(item,))}
+            payments={task:{**json.loads(payload),'_at':at} for at,task,payload in db.execute("SELECT at,task,payload FROM events WHERE kind='seller_settled' AND item=?",(item,))}
+            endings={task:{**json.loads(payload),'_at':at} for at,task,payload in db.execute("SELECT at,task,payload FROM events WHERE kind='seller_end' AND item=? ORDER BY at",(item,))}
         tasks=defaultdict(list)
         for at,task,payload in rows:tasks[task].append((at,json.loads(payload)))
-        arms={arm:{'arm':arm,'opportunities':0,'matured_opportunities':0,'paid':0,'accepted':0,'unresolved':0,'reward_sum':0} for arm in SELLER_ARMS}
+        arms={arm:{'arm':arm,'opportunities':0,'matured_opportunities':0,'paid':0,'accepted':0,'unresolved':0,'reward_sum':0,'cycle_seconds_sum':0} for arm in SELLER_ARMS}
         for task,decisions in tasks.items():
             first_at,first=decisions[0];arm=first.get('policy_arm')
             if first.get('turn')!=1 or first.get('round')!=rnd or first.get('policy')!=POLICY or arm not in arms:continue
             row=arms[arm];row['opportunities']+=1
             accepted=next((d for _,d in decisions if d['action']=='accept'),None)
             paid=payments.get(task)
-            matured=paid or endings.get(task) in {'reject','cancel'} or now-first_at>=600
-            if endings.get(task)=='local_failure':continue
+            ending=endings.get(task,{})
+            matured=bool(paid) or ending.get('outcome') in {'reject','cancel'} or now-first_at>=600 or (rnd<3 and bool(accepted))
+            if ending.get('outcome')=='local_failure':continue
             row['matured_opportunities']+=bool(matured)
             row['accepted']+=bool(accepted);row['paid']+=bool(paid)
             row['unresolved']+=not paid and not accepted and task not in endings
@@ -190,10 +197,16 @@ class Experience:
             price=paid['price'] if rnd>=3 and paid else accepted['price'] if rnd<3 and accepted else None
             if price is not None:
                 row['reward_sum']+=max(0,price-reserve)
-                if not matured:row['matured_opportunities']+=1
+            if matured:
+                began=first_at-(first.get('elapsed_seconds') or 0)
+                elapsed=(paid['_at']-began if paid else ending['_at']-began if ending else
+                         accepted.get('elapsed_seconds') if rnd<3 and accepted else 600)
+                if not isinstance(elapsed,(int,float)):elapsed=decisions[-1][0]-first_at
+                row['cycle_seconds_sum']+=max(1,min(600,elapsed))
         result.update(arm_results=list(arms.values()),policy_version=POLICY,
                       evaluation_window_seconds=21600,maturation_seconds=600,
                       reward_basis='settled margin' if rnd>=3 else 'R2 signed-margin proxy, not R3 payment')
+        result['timing_note']='Arm cycle sums are scheduling proxies, not wall-clock uptime; concurrent negotiations overlap.'
         # Sharing projects only observed prices; never buyer budgets or mandates.
         with self.connection() as db:
             observations=db.execute("SELECT task,payload FROM events WHERE kind='buyer_observation' AND item=? ORDER BY at DESC LIMIT 200",(item,)).fetchall()

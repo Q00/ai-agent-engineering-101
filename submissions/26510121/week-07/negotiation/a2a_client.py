@@ -4,6 +4,7 @@ import math
 import re
 from urllib.parse import urljoin, urlsplit
 import uuid
+import time
 
 import httpx
 
@@ -98,7 +99,11 @@ class A2AClient:
 
     async def discover(self, base_url):
         base_url = _http_url(base_url).rstrip("/")
-        response = await self.http.get(base_url + "/.well-known/agent-card.json")
+        started=time.monotonic()
+        try:
+            response = await self.http.get(base_url + "/.well-known/agent-card.json")
+        finally:
+            if self.log:self.log.record('peer_request_metrics',method='discover',seconds=round(time.monotonic()-started,6))
         response.raise_for_status()
         card = response.json()
         if not card.get("name") or not card.get("skills"):
@@ -116,7 +121,11 @@ class A2AClient:
             raise ProtocolError("agent_card_not_resolved")
         body = {"jsonrpc": "2.0", "id": uuid.uuid4().hex, "method": method, "params": params}
         self.log.record("a2a_request", method=method, params=params)
-        response = await self.http.post(self.endpoint, json=body)
+        started=time.monotonic()
+        try:
+            response = await self.http.post(self.endpoint, json=body)
+        finally:
+            if self.log:self.log.record('peer_request_metrics',method=method,seconds=round(time.monotonic()-started,6))
         response.raise_for_status()
         payload = response.json()
         if "error" in payload:
