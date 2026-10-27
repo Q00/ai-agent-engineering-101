@@ -69,7 +69,8 @@ REVIEW_PROMPT = """You bought (or tried to buy) one {item} from the shop "{shop}
 {facts}
 Write the review other buyers will read: honest, specific, one sentence, mention the prices.
 Use only the facts above. Do not repeat anything the shop claimed about the product (material, warranty, brand)
-and do not guess at causes the facts do not show.
+and do not guess at causes the facts do not show. A shop that answered politely and simply would not go below
+its price, while my budget was lower, did nothing wrong: no deal alone is not a reason for 1 or 2 stars.
 Answer with one JSON object and nothing else:
 {{"stars": <1-5>, "review": "<one sentence>"}}"""
 
