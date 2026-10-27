@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from contextlib import closing
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Final
 
 from pydantic import TypeAdapter
@@ -22,6 +23,7 @@ PAIR: Final = TypeAdapter(tuple[int, int])
 COUNT: Final = TypeAdapter(tuple[int])
 MAX_PENDING: Final = 4096
 MAX_EVENT_BYTES: Final = 16384
+IDLE_COMPACTION_SECONDS: Final = 3600
 
 
 class MemoryJournal:
@@ -145,7 +147,12 @@ class MemoryJournal:
                     "SELECT current, exported FROM revision WHERE id=1"
                 ).fetchone()
             )
-        if current == exported:
+        fresh = (
+            snapshot_path.exists()
+            and datetime.now(UTC).timestamp() - snapshot_path.stat().st_mtime
+            < IDLE_COMPACTION_SECONDS
+        )
+        if current == exported and fresh:
             return False
         revision, memory = self.snapshot()
         memory.save(snapshot_path)

@@ -6,11 +6,13 @@ import logging
 import os
 import sqlite3
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
 from market_a2a.memory import Memory
 from market_a2a.memory_journal import MemoryJournal
+from market_a2a.memory_retention import retained
 from market_a2a.models import HarnessError
 
 if TYPE_CHECKING:
@@ -35,7 +37,10 @@ class MemoryRepository:
     def load(self) -> Memory:
         """Read current events and per-shop notebooks, even if export is behind."""
         if self.journal is not None:
-            return self.journal.snapshot()[1]
+            snapshot = self.journal.snapshot()[1]
+            return snapshot.model_copy(
+                update={"shops": retained(snapshot.shops, datetime.now(UTC))}
+            )
         return Memory.load(self.snapshot_path)
 
     def record(self, name: str, trade: Trade) -> None:

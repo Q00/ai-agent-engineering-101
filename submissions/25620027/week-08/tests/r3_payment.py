@@ -29,9 +29,9 @@ def signed_receipt(scene: Scenario, price: int = 100) -> dict[str, JsonValue]:
     return receipt
 
 
-async def closed_payment(scene: Scenario) -> dict[str, JsonValue]:
+async def closed_payment(scene: Scenario, budget: int = 120) -> dict[str, JsonValue]:
     """Open a real gateway session, then sign its exact checkout hash."""
-    order = scene.ledger.issue(scene.shop)
+    order = scene.ledger.issue(scene.shop, budget=budget)
     response = await scene.http.post(
         "/acp/checkout_sessions",
         json={

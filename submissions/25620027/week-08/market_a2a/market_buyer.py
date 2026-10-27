@@ -16,6 +16,7 @@ from market_a2a.market_decision import Decision, MarketShop, PublicReview, Selec
 from market_a2a.memory import Review, Trade
 from market_a2a.memory_repository import MemoryRepository
 from market_a2a.memory_selection import EvidenceQuery, MemorySelection
+from market_a2a.meta_profile import profile_context
 from market_a2a.models import (
     HarnessError,
     Purchase,
@@ -109,6 +110,7 @@ async def market_buy(
         MemoryRepository.configured, request.memory_path
     )
     memory = await anyio.to_thread.run_sync(repository.load)
+    strategy = await anyio.to_thread.run_sync(profile_context)
     blocked_names = frozenset(
         name
         for name, trades in memory.shops.items()
@@ -121,6 +123,7 @@ async def market_buy(
         {
             "item": item,
             "budget": budget,
+            **strategy,
             "shops": [
                 {
                     "index": index,
@@ -183,6 +186,7 @@ async def market_buy(
         and 0 < trade.purchase.price <= trade.budget
     )
     pricing_context: dict[str, JsonValue] = {
+        **strategy,
         "selected_shop_trades": [
             trade_facts(trade) for trade in memory.shops.get(selected.name, ())[-10:]
         ],
