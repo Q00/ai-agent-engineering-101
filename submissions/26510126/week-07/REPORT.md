@@ -195,6 +195,8 @@ Our own mistake on the way: receipts from psyoung82 and jiseokkk lacked only the
 
 On 10/21 at 10:38 the kit died on a DNS failure (`httpx.ConnectError`), and our buyer was out of the market for four hours. Since then a shell loop restarts the kit 15 seconds after any exit. A reboot would still stop the kit and the meta-harness (no launchd job); they are restarted by hand.
 
+The kit's log outgrew GitHub. `logs/market-kit.log` passed GitHub's 100 MB file limit on 10/27, after which the file in the repository stayed at its 10/26 snapshot (96 MB, commit `473b5c3`). The whole log as of 10/27 19:08 (693,217 lines, 166 MB) is committed unchanged as `logs/market-kit-20261027-1908.log.gz` (15.2 MB; `gzip -dc` gives back the same bytes, checked with `cmp`). The kit keeps appending to `market-kit.log` on the Mac mini until the agents are stopped.
+
 ## Discussion (from the lecture)
 
 - *A shop that builds a reputation and then cheats once:* maple-home shows the market cannot see a price inflated within the budget, even when signed. The buyer has to keep its own record of the agreed price and refuse to co-sign; recording the negotiation's final ask with the receipt would close the gap.
