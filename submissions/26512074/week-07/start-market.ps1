@@ -8,5 +8,5 @@ if (Test-Path -LiteralPath $week07PidFile) {
     if ($week07Existing) { throw 'An operator may already be running. Check .market/operator.pid before starting another.' }
 }
 $week07Stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-Start-Process -FilePath $week07Python -ArgumentList @('-u', 'run_market.py') -WorkingDirectory $week07Root -WindowStyle Hidden -RedirectStandardOutput (Join-Path $week07Root "logs/operator-$week07Stamp.out.log") -RedirectStandardError (Join-Path $week07Root "logs/operator-$week07Stamp.err.log")
+Start-Process -FilePath $week07Python -ArgumentList @('-X', 'utf8', '-u', 'run_market.py') -WorkingDirectory $week07Root -WindowStyle Hidden -RedirectStandardOutput (Join-Path $week07Root "logs/operator-$week07Stamp.out.log") -RedirectStandardError (Join-Path $week07Root "logs/operator-$week07Stamp.err.log")
 Write-Output 'Market operator started. Keep this PC powered on and signed in; see logs/market-kit.log.'

@@ -18,9 +18,13 @@ CHOICE_SCHEMA = {"type": "object", "additionalProperties": False,
 
 
 def load_memory():
-    if not MEMORY.exists():
-        return {"version": 1, "shops": {}}
-    return json.loads(MEMORY.read_text(encoding="utf-8"))
+    memory = json.loads(MEMORY.read_text(encoding="utf-8")) if MEMORY.exists() else {"version": 1, "shops": {}}
+    incidents = Path("logs/challenge-2/confirmed-memory.json")
+    if incidents.exists():
+        for name, evidence in json.loads(incidents.read_text(encoding="utf-8"))["shops"].items():
+            if evidence.get("blocked"):
+                memory["shops"][name] = evidence
+    return memory
 
 
 def save_memory(memory):
