@@ -1,11 +1,11 @@
-[choose] http://127.0.0.1:44265: the only shop in the list I have not caught cheating
+[choose] http://127.0.0.1:35907: the only shop in the list I have not caught cheating
 [buyer] -> 'I want to buy a lamp.'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-    [harness 6.6s] {"action": "offer", "price": 65, "reason": "Opening offer using the Ackerman pattern: 65% of a target near 100, which is well under the 130 ask and leaves room within budget."}
+    [harness 4.4s] {"action": "offer", "price": 65, "reason": "This is my first offer. I'm aiming for a final price of about 100 and will raise my offer in smaller steps each round."}
 [buyer] -> 65  <- TASK_STATE_INPUT_REQUIRED | 65 is too low. Counteroffer: 100.
-    [harness 7.7s] {"action": "offer", "price": 85, "reason": "My plan targets about 100 and raises offers in shrinking steps (65 \u2192 85 \u2192 95 \u2192 100). The seller dropped 30 in one move (130 \u2192 100), which suggests they can go lower. 85 is well under my budget of 120."}
-[buyer] -> 85  <- TASK_STATE_INPUT_REQUIRED | 85 is too low. Counteroffer: 100.
-    [harness 9.0s] {"action": "offer", "price": 94, "reason": "The seller dropped from 130 to 100 and then held at 100, which suggests they're close to their lowest price. I'm moving up to about 95% of my 100 target and using a precise figure. That still leaves room to close at their 100 ask if needed, which is well under my 120 budget."}
+    [harness 5.5s] {"action": "offer", "price": 82, "reason": "The seller dropped a lot (130 to 100), so there is likely more room. Raising in shrinking steps from 65 toward a target of about 95, well under the 120 budget."}
+[buyer] -> 82  <- TASK_STATE_INPUT_REQUIRED | 82 is too low. Counteroffer: 100.
+    [harness 5.1s] {"action": "offer", "price": 93, "reason": "The seller dropped from 130 to 100, so there is probably more room. I'm moving toward my target of about 100 in a smaller step and using a precise number, 93, which shows I'm serious without accepting their ask."}
 [buyer] [guard] seller held 100 twice, within budget; offering the ask
 [buyer] -> 100  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-[buyer] DEAL lamp at 100.0 (budget 120) after 3 offers, 3 harness calls, 24s
-{"shop": "http://127.0.0.1:44265", "receipt": {"price": 100.0, "item": "lamp", "task": "75973691-5c42-408a-b615-c1b5fe842794", "sig_seller": "vY/iUfgfPN3ZhJuftqFSNkCsBi42R2Nyt5Z1bTbqFHuDYrzkVnmg4FGs1qHBUfASs6EDLGb/OhobrfCZQl7MAQ==", "shop": "Kit Shop"}, "stars": 5, "review": "Fair deal at 100 after 2 counters, receipt matched."}
+[buyer] DEAL lamp at 100.0 (budget 120) after 3 offers, 3 harness calls, 15s
+{"shop": "http://127.0.0.1:35907", "receipt": {"sig_seller": "7QR9KeT/gTNtgIwSu7X2qD9Eg77UeJeNWJolDxOE78+dlLCc9eWuo53WhbcvmuXZAU8adEpZSRMUEVeQYzEqBQ==", "task": "29a524b8-992d-4bf0-8a9a-a6fa4e7d8969", "price": 100.0, "shop": "Kit Shop", "item": "lamp"}, "stars": 5, "review": "Fair deal at 100 after 2 counters, receipt matched."}

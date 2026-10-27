@@ -1,9 +1,9 @@
 [seller] Opus Furniture: 3 items, harness model opus
-[84edcd07] <- 'I want to buy a lamp'
-[84edcd07] -> lamp: asking 105. Fair price, instant answer, signed receipt. Send your offer as a number.
-[84edcd07] <- '105'
-[84edcd07] -> Deal: lamp at 105.
-[84edcd07] DEAL lamp at 105 (reserve 100)
+[ccac163c] <- 'I want to buy a lamp'
+[ccac163c] -> lamp: asking 100. Lowest price in the market, signed receipt. Send your offer as a number.
+[ccac163c] <- '100'
+[ccac163c] -> Deal: lamp at 100.
+[ccac163c] DEAL lamp at 100 (reserve 100)
 Failed to detach context
 Traceback (most recent call last):
   File "/home/kimauve/miniconda3/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
@@ -26,7 +26,7 @@ Traceback (most recent call last):
   File "/home/kimauve/miniconda3/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
     self._current_context.reset(token)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
-ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7fd602ee1ee0> at 0x7fd600e39ec0> was created in a different Context
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7ac1a68d1f80> at 0x7ac1a4830ec0> was created in a different Context
 Task was destroyed but it is pending!
 task: <Task pending name='Task-36' coro=<EventQueueSource._dispatch_loop() done, defined at /home/kimauve/miniconda3/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
 Failed to detach context
@@ -51,70 +51,70 @@ Traceback (most recent call last):
   File "/home/kimauve/miniconda3/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
     self._current_context.reset(token)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
-ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7fd602ee1ee0> at 0x7fd600e38080> was created in a different Context
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7ac1a68d1f80> at 0x7ac1a4831300> was created in a different Context
 Task was destroyed but it is pending!
 task: <Task pending name='Task-37' coro=<EventQueueSource._dispatch_loop() done, defined at /home/kimauve/miniconda3/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
-[5417b47a] <- 'I want to buy a lamp'
-[5417b47a] -> lamp: asking 105. Fair price, instant answer, signed receipt. Send your offer as a number.
-[5417b47a] <- '105'
-[5417b47a] -> Deal: lamp at 105.
-[5417b47a] DEAL lamp at 105 (reserve 100)
-[6164d8bb] <- 'I want to buy a lamp'
-[6164d8bb] -> lamp: asking 105. Fair price, instant answer, signed receipt. Send your offer as a number.
-[6164d8bb] <- '105'
-[6164d8bb] -> Deal: lamp at 105.
-[6164d8bb] DEAL lamp at 105 (reserve 100)
-[083b1006] <- 'I want to buy a bookshelf'
-[083b1006] -> bookshelf: asking 273. Fair price, instant answer, signed receipt. Send your offer as a number.
-[083b1006] <- '140'
-[083b1006] -> 140 is below our lowest price for the bookshelf. Our final price is 260.
-[083b1006] <- '170'
-[083b1006] -> 170 is below our lowest price for the bookshelf. Our final price is 260.
-[083b1006] <- '200'
-[083b1006] -> 200 is below our lowest price for the bookshelf. Our final price is 260.
-[083b1006] <- '230'
-[083b1006] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[083b1006] <- '230'
-[083b1006] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[083b1006] <- '230'
-[083b1006] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[083b1006] <- '230'
-[083b1006] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[083b1006] <- '230'
-[083b1006] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[bd3af452] <- 'I want to buy a bookshelf'
-[bd3af452] -> bookshelf: asking 273. Fair price, instant answer, signed receipt. Send your offer as a number.
-[bd3af452] <- '140'
-[bd3af452] -> 140 is below our lowest price for the bookshelf. Our final price is 260.
-[bd3af452] <- '170'
-[bd3af452] -> 170 is below our lowest price for the bookshelf. Our final price is 260.
-[bd3af452] <- '200'
-[bd3af452] -> 200 is below our lowest price for the bookshelf. Our final price is 260.
-[bd3af452] <- '230'
-[bd3af452] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[bd3af452] <- '230'
-[bd3af452] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[bd3af452] <- '230'
-[bd3af452] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[bd3af452] <- '230'
-[bd3af452] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[bd3af452] <- '230'
-[bd3af452] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[ee5a1387] <- 'I want to buy a bookshelf'
-[ee5a1387] -> bookshelf: asking 273. Fair price, instant answer, signed receipt. Send your offer as a number.
-[ee5a1387] <- '140'
-[ee5a1387] -> 140 is below our lowest price for the bookshelf. Our final price is 260.
-[ee5a1387] <- '170'
-[ee5a1387] -> 170 is below our lowest price for the bookshelf. Our final price is 260.
-[ee5a1387] <- '200'
-[ee5a1387] -> 200 is below our lowest price for the bookshelf. Our final price is 260.
-[ee5a1387] <- '230'
-[ee5a1387] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[ee5a1387] <- '230'
-[ee5a1387] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[ee5a1387] <- '230'
-[ee5a1387] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[ee5a1387] <- '230'
-[ee5a1387] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
-[ee5a1387] <- '230'
-[ee5a1387] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[2ce05b78] <- 'I want to buy a lamp'
+[2ce05b78] -> lamp: asking 100. Lowest price in the market, signed receipt. Send your offer as a number.
+[2ce05b78] <- '100'
+[2ce05b78] -> Deal: lamp at 100.
+[2ce05b78] DEAL lamp at 100 (reserve 100)
+[2ae96125] <- 'I want to buy a lamp'
+[2ae96125] -> lamp: asking 100. Lowest price in the market, signed receipt. Send your offer as a number.
+[2ae96125] <- '100'
+[2ae96125] -> Deal: lamp at 100.
+[2ae96125] DEAL lamp at 100 (reserve 100)
+[55951f7a] <- 'I want to buy a bookshelf'
+[55951f7a] -> bookshelf: asking 260. Lowest price in the market, signed receipt. Send your offer as a number.
+[55951f7a] <- '140'
+[55951f7a] -> 140 is below our lowest price for the bookshelf. Our final price is 260.
+[55951f7a] <- '170'
+[55951f7a] -> 170 is below our lowest price for the bookshelf. Our final price is 260.
+[55951f7a] <- '200'
+[55951f7a] -> 200 is below our lowest price for the bookshelf. Our final price is 260.
+[55951f7a] <- '230'
+[55951f7a] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[55951f7a] <- '230'
+[55951f7a] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[55951f7a] <- '230'
+[55951f7a] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[55951f7a] <- '230'
+[55951f7a] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[55951f7a] <- '230'
+[55951f7a] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[9757b4a5] <- 'I want to buy a bookshelf'
+[9757b4a5] -> bookshelf: asking 260. Lowest price in the market, signed receipt. Send your offer as a number.
+[9757b4a5] <- '140'
+[9757b4a5] -> 140 is below our lowest price for the bookshelf. Our final price is 260.
+[9757b4a5] <- '170'
+[9757b4a5] -> 170 is below our lowest price for the bookshelf. Our final price is 260.
+[9757b4a5] <- '200'
+[9757b4a5] -> 200 is below our lowest price for the bookshelf. Our final price is 260.
+[9757b4a5] <- '230'
+[9757b4a5] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[9757b4a5] <- '230'
+[9757b4a5] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[9757b4a5] <- '230'
+[9757b4a5] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[9757b4a5] <- '230'
+[9757b4a5] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[9757b4a5] <- '230'
+[9757b4a5] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[5caccf99] <- 'I want to buy a bookshelf'
+[5caccf99] -> bookshelf: asking 260. Lowest price in the market, signed receipt. Send your offer as a number.
+[5caccf99] <- '140'
+[5caccf99] -> 140 is below our lowest price for the bookshelf. Our final price is 260.
+[5caccf99] <- '170'
+[5caccf99] -> 170 is below our lowest price for the bookshelf. Our final price is 260.
+[5caccf99] <- '200'
+[5caccf99] -> 200 is below our lowest price for the bookshelf. Our final price is 260.
+[5caccf99] <- '230'
+[5caccf99] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[5caccf99] <- '230'
+[5caccf99] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[5caccf99] <- '230'
+[5caccf99] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[5caccf99] <- '230'
+[5caccf99] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
+[5caccf99] <- '230'
+[5caccf99] -> 230 is below our lowest price for the bookshelf. Our final price is 260.
