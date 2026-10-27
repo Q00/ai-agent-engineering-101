@@ -1,0 +1,32 @@
+run,harness,success,tokens,iters,interventions,note
+1,react,O,4027,2,0,
+2,plan_exec,X,2138,1,0,replans=0
+3,react,O,3987,2,0,
+4,plan_exec,X,2138,1,0,replans=0
+5,react,O,3835,2,0,
+6,plan_exec,X,2138,1,0,replans=0
+7,plan_exec,X,32982,11,0,plan_prompt=v1 plan_parser=tolerant replans=1
+8,plan_exec,X,2717,3,0,crash: APIConnectionError: Connection error.; tokens=reported_usage_only
+9,plan_exec,X,0,1,0,crash: APIConnectionError: Connection error.; tokens=reported_usage_only
+10,plan_exec,X,28856,12,0,plan_prompt=v2 plan_parser=strict replans=1
+11,plan_exec,X,455,1,0,plan_prompt=v2 plan_parser=strict replans=0
+12,plan_exec,X,25732,9,0,plan_prompt=v2 plan_parser=strict replans=1
+13,react,O,24023,7,0,
+14,plan_exec,O,20409,7,0,plan_prompt=v3 plan_parser=strict replans=0
+15,react,O,4204,2,0,
+16,plan_exec,O,19317,7,0,plan_prompt=v3 plan_parser=strict replans=0
+17,react,X,13457,7,0,"crash: RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1789344000000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3IitevMwzyaydyhkiHgV7BhzstB'}; tokens=reported_usage_only"
+18,plan_exec,X,0,1,0,"crash: RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1789344000000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3IitevMwzyaydyhkiHgV7BhzstB'}; tokens=reported_usage_only"
+19,react,X,0,1,0,crash: APIConnectionError: Connection error.; tokens=reported_usage_only
+20,plan_exec,X,0,1,0,crash: APIConnectionError: Connection error.; tokens=reported_usage_only
+21,react,X,0,1,0,crash: APIConnectionError: Connection error.; tokens=reported_usage_only
+22,plan_exec,X,0,1,0,crash: APIConnectionError: Connection error.; tokens=reported_usage_only
+23,react,X,0,1,0,crash: APIConnectionError: Connection error.; tokens=reported_usage_only
+24,plan_exec,X,0,1,0,crash: APIConnectionError: Connection error.; tokens=reported_usage_only
+25,react,X,6784,4,0,
+26,plan_exec,O,20894,7,0,plan_prompt=v3 plan_parser=strict replans=0
+27,react,O,3744,2,0,
+28,plan_exec,O,24714,7,0,plan_prompt=v3 plan_parser=strict replans=0
+29,react,X,2083,4,0,crash: KeyboardInterrupt: ; tokens=reported_usage_only
+30,plan_exec,X,45357,16,0,plan_prompt=v3 plan_parser=strict replans=1
+31,react,O,4019,2,0,
