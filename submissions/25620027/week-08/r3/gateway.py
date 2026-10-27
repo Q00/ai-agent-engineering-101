@@ -8,14 +8,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final
 from urllib.parse import urlsplit
 
-from pydantic import ValidationError
 from scripts import market_kit as kit
 from starlette.applications import Starlette
-from starlette.responses import JSONResponse
 from starlette.routing import Mount, Route
 
 from market_a2a.models import HarnessError
-from r3.models import CompleteCheckout, CreateCheckout
+from r3.boundary import validate_checkout
+from r3.kit_pin import KIT_SHA256
 
 if TYPE_CHECKING:
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -23,7 +22,6 @@ if TYPE_CHECKING:
     from starlette.responses import Response
     from starlette.types import ASGIApp
 
-KIT_SHA256: Final = "d348544868f38443d45b718bd4496033c73035e393200211ad095e3e5484cc04"
 LOOPBACK: Final = ("127.0.0.1", "localhost", "::1")
 
 
@@ -56,22 +54,13 @@ def create_gateway(seller: ASGIApp, binding: CheckoutBinding) -> Starlette:
     checkout = kit.AcpShop(binding.key, binding.market)
 
     async def route(request: Request) -> Response:
-        body = await request.body()
-        try:
-            if request.url.path == "/acp/checkout_sessions":
-                purchase = CreateCheckout.model_validate_json(body)
-                if purchase.line_items[0].id != purchase.receipt.item:
-                    return JSONResponse(
-                        {"error": "item differs from receipt"}, status_code=400
-                    )
-            if request.url.path.endswith("/complete"):
-                _ = CompleteCheckout.model_validate_json(body)
-        except ValidationError:
-            return JSONResponse({"error": "invalid checkout envelope"}, status_code=400)
+        rejected = await validate_checkout(request)
+        if rejected is not None:
+            return rejected
         return await checkout.handle(
             request,
             request.url.path.lstrip("/"),
-            body,
+            await request.body(),
             binding.public_url.rstrip("/"),
         )
 

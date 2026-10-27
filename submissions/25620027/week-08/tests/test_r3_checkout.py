@@ -165,3 +165,23 @@ def test_completed_session_and_settled_order_cannot_charge_twice(
             assert scene.ledger.balances == {"buyer": 900, "shop": 100}
 
     anyio.run(run)
+
+
+def test_two_valid_orders_with_same_partner_are_not_a_collusion_detector(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Given: repeated honest purchases are allowed; signatures do not prove intent.
+    async def run() -> None:
+        async with scenario(monkeypatch) as scene:
+            for _ in range(2):
+                payment = await closed_payment(scene)
+                response = await scene.http.post(
+                    f"/acp/checkout_sessions/{payment['session']}/complete",
+                    json={"payment_data": payment["payment_data"]},
+                )
+                assert response.status_code == 200
+            # Then: two fresh authorizations move200; neither is a replay.
+            assert len(scene.ledger.used_orders) == 2
+            assert scene.ledger.balances == {"buyer": 800, "shop": 200}
+
+    anyio.run(run)
