@@ -36,6 +36,24 @@ def opening_ask(item: str, policy: dict | None) -> int | None:
     return max(ask, RESERVES[item])
 
 
+def fallback_decision(item: str, ask: int, offer: int, rounds: int) -> dict:
+    """Week 08: the rule the seller uses when the model call fails (rate limit, timeout, bad output),
+    so the shop keeps trading instead of rejecting. Never below the reserve.
+
+    Accept an offer at or above the current ask, within 5 of it, or at or above the reserve after
+    3 buyer offers. Otherwise counter halfway between the ask and the offer, rounded up to 5,
+    at least the reserve and at least 5 below the current ask.
+    """
+    reserve = RESERVES[item]
+    if offer >= reserve and (offer >= ask - 5 or rounds >= 3):
+        return {"action": "accept", "price": offer}
+    halfway = (ask + max(offer, reserve) + 9) // 10 * 5
+    counter = max(reserve, min(halfway, ask - 5))
+    if counter <= offer:
+        return {"action": "accept", "price": offer}
+    return {"action": "counter", "price": counter}
+
+
 def record_trade(row: dict) -> None:
     """Append one finished negotiation to SELLER_TRADE_LOG (unset in tests: nothing is written)."""
     target = os.environ.get("SELLER_TRADE_LOG")

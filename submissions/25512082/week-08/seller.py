@@ -20,7 +20,7 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import HarnessError, NegotiationTurn, SellerDecisionContext, decide_seller
-from pricing import load_policy, opening_ask, record_trade
+from pricing import fallback_decision, load_policy, opening_ask, record_trade
 from protocol import RESERVES
 
 SELLER_NAME = "Atlas Shop"
@@ -82,12 +82,14 @@ class Seller(AgentExecutor):
     def __init__(self) -> None:
         self.negotiations: dict[str, Negotiation] = {}
         self.policy = load_policy()
+        self.rule_tasks: set[str] = set()                # negotiations where the fallback rule decided
 
     def _record(self, task_id: str, deal: Negotiation, price: int | None = None) -> None:
         record_trade({"task": task_id, "item": deal.item, "reserve": deal.reserve,
                       "opening_ask": deal.history[1].price if len(deal.history) > 1 else None,
                       "last_offer": deal.last_offer, "price": price, "outcome": deal.state,
-                      "rounds": deal.rounds, "policy": (self.policy or {}).get("version")})
+                      "rounds": deal.rounds, "policy": (self.policy or {}).get("version"),
+                      "decided_by": "rule" if task_id in self.rule_tasks else "model"})
 
     @staticmethod
     def _item(text: str) -> str | None:
@@ -162,8 +164,8 @@ class Seller(AgentExecutor):
         try:
             decision = decide_seller(self._context(deal))
         except HarnessError:
-            await self._safe_reject(updater, deal, "Negotiation decision failed safely.")
-            return
+            decision = fallback_decision(deal.item, deal.ask or offer, offer, deal.rounds)
+            self.rule_tasks.add(task.id)
 
         action, price = decision["action"], decision["price"]
         if action in {"ask", "counter"}:
