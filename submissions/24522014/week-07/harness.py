@@ -14,7 +14,7 @@ from uuid import uuid4
 
 
 ROOT = Path(__file__).resolve().parent
-MODELS = {"claude": "haiku", "codex": "gpt-6-luna"}
+MODELS = {"claude": "sonnet", "codex": "gpt-6-luna"}
 
 
 class HarnessError(RuntimeError):
@@ -55,7 +55,7 @@ def build_command(provider):
         executable = shutil.which("claude")
         if not executable:
             raise FileNotFoundError("Claude Code not found in PATH")
-        return [executable, "-p", "--model", "haiku", "--tools", "",
+        return [executable, "-p", "--model", MODELS["claude"], "--tools", "",
                 "--setting-sources", "", "--no-session-persistence"]
     if provider != "codex":
         raise ValueError("Unknown harness")
