@@ -1,0 +1,6 @@
+{
+  "harness": "Claude Code: claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence (run in an empty temp dir)",
+  "seller": {"cmd": "python seller.py --port {port} --name chaewoonee"},
+  "buyer": {"cmd": "python buyer.py --url {url} --item {item} --budget {budget}"},
+  "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"}
+}
