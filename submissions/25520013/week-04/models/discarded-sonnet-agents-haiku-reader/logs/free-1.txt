@@ -1,0 +1,62 @@
+run=free-1 provider=claude-cli model=claude-sonnet-5 reader_model=claude-haiku-4-5-20251001 temperature=not settable turn_limit=8 pressure=none
+
+--- scenario 1 (a used bicycle) reserve=120 budget=150 deal_possible=1
+[buyer] **propose: 80**
+
+I've done some research and I think 80 is a fair starting price for a used bike in this condition, so I'd like to open with that offer.
+  [reader] {'performative': 'propose', 'price': 80}
+[seller] I've made my opening offer.
+
+**propose: 80**
+  [reader] {'performative': 'propose', 'price': 80}
+[buyer] I've made my opening offer of 80 and am now waiting for the seller's response before taking any further action.
+  [reader] {'performative': 'propose', 'price': 80}
+[seller] **propose: 170**
+
+Thanks for the offer, but 80 is well below what this bike is worth given its condition — I'd like to counter at 170.
+  [reader] {'performative': 'propose', 'price': 170}
+[buyer] 170 is above my limit for this bike, so I can't accept that, but I'm willing to move up from my opening offer — **propose: 100**.
+  [reader] {'performative': 'propose', 'price': 100}
+[seller] **reject-proposal**
+
+100 is still too low for me to let this bike go — I'd need something closer to my counter to make a deal work.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[buyer] I understand it's still a gap between us, so let me come up a bit more — **propose: 120**.
+  [reader] {'performative': 'propose', 'price': 120}
+[seller] **accept-proposal**
+
+120 works for me — deal.
+  [reader] {'performative': 'accept-proposal', 'price': 120}
+[result] outcome=deal price=120 correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
+
+--- scenario 2 (a desk lamp) reserve=30 budget=45 deal_possible=1
+[buyer] I'd like to offer $25 for the desk lamp, as that seems like a fair starting price for a nice desk lamp.
+
+**propose: 25**
+  [reader] {'performative': 'propose', 'price': 25}
+[seller] That's below what I can work with for this lamp. **reject-proposal**: I appreciate the offer, but $25 is too low for me to consider given the lamp's quality and condition.
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[buyer] I understand—let's find a fair middle ground then. I'll offer $32 for the lamp, taking into account its quality while still keeping it reasonable for me.
+
+**propose: 32**
+  [reader] {'performative': 'propose', 'price': 32}
+[seller] **propose: 45**
+
+I can come down a bit from my original expectation, but $32 still undervalues the lamp's quality—let's meet closer to $45.
+  [reader] {'performative': 'propose', 'price': 45}
+[buyer] That's right at my absolute ceiling, so let me try once more for a bit of a middle ground before we get there. I'll counter with $38, which is a meaningful jump up from my last offer and should work well for both of us.
+
+**propose: 38**
+  [reader] {'performative': 'propose', 'price': 38}
+[seller] **accept-proposal**
+
+$38 is a fair number that works well for me, so let's close the deal here.
+  [reader] {'performative': 'accept-proposal', 'price': 38}
+[result] outcome=deal price=38 correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
+
+--- scenario 3 (a second-hand textbook) reserve=40 budget=40 deal_possible=1
+[buyer] I'll open with a low offer to leave room for negotiation. **Propose: $20** — I'm interested in the textbook, and I'd like to offer $20 to start things off, given it's used and I'm working with a tight budget.
+  [reader] {'performative': 'propose', 'price': 20}
+[seller] Reject-proposal: $20 is too low for me to consider, since my bottom line for this textbook is well above that — I'd need something closer to $65 to make a deal work.
+  [reader] {'performative': 'reject-proposal', 'price': 65}
+[buyer] **Propose: $28** — $65 is far more than this used textbook is worth, but I can move up from my first offer to $28 to help us find common ground.
