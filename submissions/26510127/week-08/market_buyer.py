@@ -312,11 +312,16 @@ def main():
                                                 rivals=", ".join(f"{q['shop']['name']} {q['ask']}" for q in live
                                                                  if q is not best) or "none",
                                                 transcript="\n".join(lines)), say, "")
-            if move is None:                                  # rule: start at 70% of the ask, then close the gap
+            if move is None:                                  # rule: start at 70%, close half the gap, then meet it
                 ask = asks[-1] or a.budget
-                prev = offers[-1] if offers else int(min(ask, a.budget) * 0.7)
-                move = {"action": "offer", "price": min(ask, max(prev, (prev + min(ask, a.budget)) // 2))
-                        if offers else prev}
+                target = min(ask, a.budget)                   # the shop's ask if I can afford it, else my budget
+                if not offers:
+                    price = int(target * 0.7)
+                elif len(offers) >= 3 or target - offers[-1] <= max(3, round(target * 0.05)):
+                    price = target                            # halving alone never reached the ask (0/598 deals)
+                else:
+                    price = max(offers[-1], (offers[-1] + target + 1) // 2)
+                move = {"action": "offer", "price": price}
                 say(f"[fallback] offer {move['price']}")
             if move.get("action") != "offer" or not isinstance(move.get("price"), (int, float)):
                 rpc("CancelTask", {"id": t["id"]})
@@ -392,7 +397,7 @@ def main():
     # ---------------------------------------------------------------- review and memory
     move = safe_ask(REVIEW_PROMPT.format(item=a.item, shop=shop["name"], facts="\n".join(facts)), say, "review ")
     stars = (move or {}).get("stars")
-    stars = int(stars) if isinstance(stars, (int, float)) and 1 <= stars <= 5 else (4 if receipt and not fraud else 2)
+    stars = int(stars) if isinstance(stars, (int, float)) and 1 <= stars <= 5 else (4 if receipt and not fraud else 3)  # no deal alone is not 2 stars
     review = str((move or {}).get("review") or "").strip() or (
         f"Paid {receipt['price']} for the {a.item} after asks {asks}." if receipt else
         f"No deal on the {a.item}: asks {asks}, my offers {offers}.")
