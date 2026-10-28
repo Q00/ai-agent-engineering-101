@@ -1,0 +1,10 @@
+  [tool] count_pattern({'path': 'app.log', 'pattern': 'ERROR'}) -> 19
+  [tool] count_pattern({'path': 'app.log', 'pattern': 'ERROR [0-9]{1,2}:00'}) -> 0
+  [tool] count_pattern({'path': 'app.log', 'pattern': 'ERROR [0-9]{1,2}:01'}) -> 0
+  [tool] count_pattern({'path': 'app.log', 'pattern': 'ERROR [0-9]{1,2}:02'}) -> 0
+  [tool] count_pattern({'path': 'app.log', 'pattern': 'ERROR [0-9]{1,2}:03'}) -> 0
+  [tool] count_pattern({'path': 'app.log', 'pattern': 'ERROR [0-9]{1,2}:04'}) -> 0
+  [tool] count_pattern({'path': 'app.log', 'pattern': 'ERROR [0-9]{1,2}:05'}) -> 0
+  [tool] count_pattern({'path': 'app.log', 'pattern': 'ERROR [0-9]{1,2}:06'}) -> 0
+[final] MAX_STEPS reached: incomplete
+[judge] expected='14:00' -> X (6.8s)
