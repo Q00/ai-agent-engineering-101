@@ -1,0 +1,14 @@
+  [host] 3 tools: ['calculator', 'read_file', 'write_note']
+  [host] model=gpt-4o-mini, protocol=2026-07-28
+  [tool] read_file({'path': 'notes.txt'}) -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+  [tool] calculator({'expression': '4 + 48000 + 9500 + 12000'}) -> 69504
+  [tool] write_note({'path': 'memo-stdio.txt', 'content': 'Total: 69504'}) -> appended 12 chars to memo-stdio.txt
+I successfully read the notes, calculated the sum of the numeric fields, and appended the total (69504) to the file `memo-stdio.txt`.
