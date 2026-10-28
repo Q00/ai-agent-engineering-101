@@ -1,0 +1,106 @@
+{
+  "version": "review-only-example-3",
+  "week": "week-06",
+  "checker": "review-only",
+  "status": "template-not-official",
+  "base_point_per_item": 1,
+  "bonus_policy": {
+    "explicit_criteria": [],
+    "open_ended": true,
+    "open_points": 1,
+    "cap": null
+  },
+  "items": [
+    {
+      "id": "R1",
+      "category": "requirements",
+      "mode": "review",
+      "title": "필수 요구사항",
+      "rule": "Replace with one concrete required deliverable from the pinned assignment spec.",
+      "pass_rule": "Replace with one concrete required deliverable from the pinned assignment spec.",
+      "fail_rule": "Required deliverable is missing or materially incomplete.",
+      "source_requirement": "Replace with the exact assignment section and explicit required deliverable.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "deliverable",
+            "rule": "Replace with one concrete required deliverable from the pinned assignment spec."
+          }
+        ],
+        "atoms": [
+          {
+            "id": "present",
+            "parent": "deliverable",
+            "question": "Is the concrete deliverable specified by this item present and materially complete? Judge only the pinned requirement.",
+            "remedy": "명세에 적힌 해당 필수 제출물을 완성하고 근거를 남기세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C1",
+      "category": "consistency",
+      "mode": "review",
+      "title": "주요 결과와 구현의 일치",
+      "rule": "Reported core results and computations agree with submitted implementation and records.",
+      "pass_rule": "Reported core results and computations agree with submitted implementation and records.",
+      "fail_rule": "A contradiction materially changes the result or reproducibility.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "agreement",
+            "rule": "Reported core results and computations agree with submitted implementation and records."
+          }
+        ],
+        "atoms": [
+          {
+            "id": "central_agreement",
+            "parent": "agreement",
+            "question": "Do central report claims agree with the submitted implementation and records, allowing documented corrections? Local errors alone do not negate the central conclusion.",
+            "remedy": "중심 결과와 구현·기록이 일치하도록 수정하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "specific_claims",
+            "parent": "agreement",
+            "question": "Are specific factual claims consistent with corresponding records and scope? For a contradiction cite the actual claim and counterexample verbatim.",
+            "remedy": "실제 주장과 대응 근거를 대조하여 사실 오류를 정정하세요.",
+            "effect": "correction",
+            "source": "semantic-claim"
+          }
+        ]
+      }
+    },
+    {
+      "id": "I1",
+      "category": "intent",
+      "mode": "review",
+      "title": "과제 의도와 해석",
+      "rule": "The central analysis addresses the assignment question and stays within observed evidence.",
+      "pass_rule": "The central analysis addresses the assignment question and stays within observed evidence.",
+      "fail_rule": "The central conclusion depends on unsupported claims or misses the required question.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "interpretation",
+            "rule": "The central analysis addresses the assignment question and stays within observed evidence."
+          }
+        ],
+        "atoms": [
+          {
+            "id": "answers_question",
+            "parent": "interpretation",
+            "question": "Does the central analysis answer the pinned assignment question within the scope of the observed evidence?",
+            "remedy": "과제 질문에 대해 관측 근거와 한계를 연결하여 해석하세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    }
+  ],
+  "scoring_policy": "requirements-only-v1"
+}

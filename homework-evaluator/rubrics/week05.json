@@ -1,0 +1,1064 @@
+{
+  "version": "week05-required-7-atomic",
+  "week": "week-05",
+  "status": "unofficial-review-draft",
+  "base_point_per_item": 1,
+  "open_non_deal": "pending",
+  "notes": [
+    "Unofficial requirement checklist, not the official course score.",
+    "Only category=requirements earns base points; consistency and intent are unscored feedback.",
+    "Freeze this rubric and bonus policy across the cohort; do not create scored items from individual submissions.",
+    "Criterion IDs are stable identifiers; their prefixes do not determine scoring."
+  ],
+  "items": [
+    {
+      "id": "F01",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "필수 Python 소스 존재·최소 문법 요건",
+      "rule": "At least one submitted .py parses without importing or executing it, as stated in Checks. Report other syntax issues for F07 required implementation review or unscored optional-work feedback; they do not independently fail this structural item.",
+      "source_section": "What to submit",
+      "pass_rule": "At least one submitted .py parses without importing or executing it, as stated in Checks. Report other syntax issues for F07 required implementation review or unscored optional-work feedback; they do not independently fail this structural item.",
+      "fail_rule": "No submitted .py parses. If unreadable files prevent deciding whether any source parses, leave pending.",
+      "source_requirement": "What to submit / source: at least one .py file. Checks: at least one .py parses."
+    },
+    {
+      "id": "F02",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "시나리오 구성",
+      "rule": "At least four unique scenarios; integer reserve/budget; both feasible and infeasible cases.",
+      "source_section": "What to submit",
+      "pass_rule": "At least four unique scenarios; integer reserve/budget; both feasible and infeasible cases.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / scenarios.json: at least 4 scenarios, integer reserve/budget, both feasible and infeasible."
+    },
+    {
+      "id": "F03",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "결과 파일 데이터 계약",
+      "rule": "Exact header, valid vocabulary/counts; preserve crashed rows with error notes.",
+      "source_section": "What to submit",
+      "pass_rule": "Exact header, valid vocabulary/counts; preserve crashed rows with error notes.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / results.csv: exact header and fields; host/model in note; crashed episodes retained."
+    },
+    {
+      "id": "F04",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "조건·시나리오별 반복",
+      "rule": "Both required conditions and every included optional condition have three distinct run IDs per scenario; crashes remain attempts, not successful episodes.",
+      "source_section": "What to submit",
+      "pass_rule": "Both required conditions and every included optional condition have three distinct run IDs per scenario; crashes remain attempts, not successful episodes.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / results.csv: both injection conditions, >=3 repeats per scenario; included optional conditions too."
+    },
+    {
+      "id": "F05",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "실행 로그 파일 구성",
+      "rule": "At least six nonempty top-level logs, and at least one file per condition/run pair; this is structure only.",
+      "source_section": "What to submit",
+      "pass_rule": "At least six nonempty top-level logs, and at least one file per condition/run pair; this is structure only.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / logs/: one console capture per condition/repeat, at least 6 files."
+    },
+    {
+      "id": "F06",
+      "category": "requirements",
+      "mode": "review",
+      "title": "인증·권한 검사 기록",
+      "rule": "auth_checks.txt records actual results for missing token (401 and WWW-Authenticate), wrong negotiation, wrong turn, token limit. Text alone does not prove universal behavior.",
+      "source_section": "What to submit",
+      "pass_rule": "auth_checks.txt records actual results for missing token (401 and WWW-Authenticate), wrong negotiation, wrong turn, token limit. Text alone does not prove universal behavior.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / auth_checks.txt: four checks against the running server with status/header/errors.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "checks",
+            "rule": "auth_checks records missing-token status/header, cross-negotiation, wrong-turn and own-limit server checks. Actual submitted responses are required, not just a test plan."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "atoms": [
+          {
+            "id": "missing_token",
+            "parent": "checks",
+            "question": "Do submitted actual responses document the missing-token status?",
+            "remedy": "인증 없이 호출한 실제 응답 상태를 기록하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "auth_challenge",
+            "parent": "checks",
+            "question": "Do submitted actual responses document the missing-token WWW-Authenticate header?",
+            "remedy": "인증 없이 호출한 응답의 WWW-Authenticate 헤더를 기록하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "cross_token_probe",
+            "parent": "checks",
+            "question": "Do submitted actual responses document the cross-negotiation token test?",
+            "remedy": "다른 협상 토큰을 사용한 검사와 실제 응답을 기록하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "wrong_turn_probe",
+            "parent": "checks",
+            "question": "Do submitted actual responses document the wrong-turn move test?",
+            "remedy": "차례가 아닌 요청 검사와 실제 응답을 기록하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "limit_probe",
+            "parent": "checks",
+            "question": "Do submitted actual responses document an own-limit refusal in a server condition?",
+            "remedy": "서버 조건에서 한도 밖 요청의 실제 거부 응답을 기록하세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F07",
+      "category": "requirements",
+      "mode": "review",
+      "title": "MCP market·host·runner 구현",
+      "rule": "Streamable HTTP and five required tools; role comes from token, server holds state; runner creates negotiations/tokens outside agent tools. Do not require a specific SDK or provider.",
+      "source_section": "The market server",
+      "pass_rule": "Streamable HTTP and five required tools; role comes from token, server holds state; runner creates negotiations/tokens outside agent tools. Do not require a specific SDK or provider.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "The market server: Streamable HTTP, five tools, token-derived role, server-held state; runner mints tokens outside agent tools.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "transport",
+            "rule": "The server implements MCP Streamable HTTP and all five specified negotiation tools."
+          },
+          {
+            "id": "authority",
+            "rule": "Role comes from bearer token, state is server-held, and runner/admin creates negotiations and tokens outside agent tools."
+          },
+          {
+            "id": "host",
+            "rule": "Host and runner connect both roles to the market and record the experiment. CLI hosts and other SDKs are equally eligible."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "procedure": "Inspect the supplied transport, tool registration and runner paths. Security/limit defects belong to F08; do not invent a separate deduction here for them. Token role and negotiation claims may be resolved through a server-side token registry; a particular JWT layout is not required. Protocol fact: the pinned MCP 2026-07-28 removed initialize/notifications-initialized and protocol sessions. A client pinned to that version need not run a discovery/legacy handshake before tools/list or tools/call. Do not fail a modern implementation for missing initialize. Evaluate the specified version, not older SDK conventions.",
+        "reference_facts": {
+          "protocol": "MCP 2026-07-28",
+          "checked_at": "2026-10-23",
+          "sources": [
+            "https://py.sdk.modelcontextprotocol.io/protocol-versions/",
+            "https://go.sdk.modelcontextprotocol.io/protocol/",
+            "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http"
+          ],
+          "facts": [
+            "The initialize handshake is removed for 2026-07-28.",
+            "A client pinned to 2026-07-28 may skip version negotiation.",
+            "Older initialize-based conventions must not be added as assignment requirements.",
+            "A response may be a single JSON object OR a request-scoped SSE stream. Streaming and GET endpoints are not mandatory when JSON is used.",
+            "Modern clients still have mandatory Accept and per-request metadata requirements. Distinguish a specific local deviation from absence of the required server/host mechanism."
+          ]
+        },
+        "atoms": [
+          {
+            "id": "http_endpoint",
+            "parent": "transport",
+            "question": "Does the server accept JSON-RPC POST messages at its MCP endpoint? This checks the concrete request path, not unspecified universal interoperability.",
+            "remedy": "MCP endpoint에서 JSON-RPC POST 요청을 처리하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "jsonrpc_response",
+            "parent": "transport",
+            "question": "Does that request path return a JSON-RPC JSON response or a request-scoped SSE response? A JSON response is permitted: streaming, GET streams, initialize and protocol sessions are NOT mandatory in the pinned modern protocol.",
+            "remedy": "MCP 요청에 대응하는 JSON-RPC 응답 경로를 구현하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "transport_details",
+            "parent": "transport",
+            "question": "Are the implemented transport details consistent with the PINNED modern MCP contract? Missing mandatory request metadata can require a local correction; do not demand GET, sessions, streaming when JSON is returned, or initialize.",
+            "remedy": "고정된 MCP 버전의 전송 요건과 실제 요청·응답 형식을 대조하여 확인된 차이를 정정하세요.",
+            "effect": "correction",
+            "source": "semantic"
+          },
+          {
+            "id": "tool_get_negotiation",
+            "parent": "transport",
+            "question": "Is the specified get_negotiation tool exposed through the MCP tool registry or equivalent protocol dispatch? Do not require an SDK or a function name.",
+            "remedy": "MCP 도구 get_negotiation의 등록·호출 경로를 구현하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "tool_propose",
+            "parent": "transport",
+            "question": "Is the specified propose tool exposed through the MCP tool registry or equivalent protocol dispatch? Do not require an SDK or a function name.",
+            "remedy": "MCP 도구 propose의 등록·호출 경로를 구현하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "tool_accept_proposal",
+            "parent": "transport",
+            "question": "Is the specified accept_proposal tool exposed through the MCP tool registry or equivalent protocol dispatch? Do not require an SDK or a function name.",
+            "remedy": "MCP 도구 accept_proposal의 등록·호출 경로를 구현하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "tool_reject_proposal",
+            "parent": "transport",
+            "question": "Is the specified reject_proposal tool exposed through the MCP tool registry or equivalent protocol dispatch? Do not require an SDK or a function name.",
+            "remedy": "MCP 도구 reject_proposal의 등록·호출 경로를 구현하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "tool_refuse",
+            "parent": "transport",
+            "question": "Is the specified refuse tool exposed through the MCP tool registry or equivalent protocol dispatch? Do not require an SDK or a function name.",
+            "remedy": "MCP 도구 refuse의 등록·호출 경로를 구현하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "token_role",
+            "parent": "authority",
+            "question": "Is the caller role derived from the server-validated bearer token rather than trusted agent-supplied identity?",
+            "remedy": "호출자 역할을 서버가 검증한 bearer token으로 확인하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "server_state",
+            "parent": "authority",
+            "question": "Does the server retain the authoritative negotiation state? A token may reference server-held limits without embedding numeric limits.",
+            "remedy": "서버가 협상 상태와 한도의 권한 있는 원본을 보유하도록 하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "admin_creation",
+            "parent": "authority",
+            "question": "Are negotiations/tokens created by runner/admin outside the agent tool set?",
+            "remedy": "협상·토큰 발급을 에이전트 도구 밖의 runner/admin 경로로 분리하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "both_hosts",
+            "parent": "host",
+            "question": "Do host connections pass the respective buyer/seller credentials to the market? Any permitted host is eligible.",
+            "remedy": "buyer·seller 호스트가 각자의 자격으로 서버에 연결되도록 하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "runner_records",
+            "parent": "host",
+            "question": "Does the runner progress negotiations and preserve the required experimental records?",
+            "remedy": "runner의 협상 진행과 결과 기록 경로를 구현하세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F08",
+      "category": "requirements",
+      "mode": "review",
+      "title": "협상 범위·차례·가격 한도 처리",
+      "rule": "Code and available logs support negotiation binding, turn enforcement, and both propose/accept own-limit checks in server conditions. Do not claim runtime verification.",
+      "source_section": "The market server",
+      "pass_rule": "Code and available logs support negotiation binding, turn enforcement, and both propose/accept own-limit checks in server conditions. Do not claim runtime verification.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "The market server / Conditions: negotiation binding, turn enforcement, own-limit enforcement on propose and accept. accept_proposal tool: agree to the other party's last price.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "binding",
+            "rule": "Server rejects a token used for another negotiation and moves made out of turn."
+          },
+          {
+            "id": "limits",
+            "rule": "In server conditions, both propose and accept enforce the caller own limit; prompt conditions do not silently inherit token-limit enforcement."
+          },
+          {
+            "id": "counterparty",
+            "rule": "accept_proposal agrees to the OTHER party's last price, as specified by the tool contract. Trace actual offer ownership, including reject-then-accept paths; accepting one's own earlier offer must not bypass the counterparty price/limit protocol."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "procedure": "Trace the complete propose/accept call chain including helpers and the stored counterparty offer. accept_proposal need not take a price argument: it normally validates the stored offer price. Do not infer a missing guard from the public signature. Cite a concrete reachable violating path before contradicting limits. A token may authorize role/negotiation and resolve the caller limit through server-held state. That is not automatically missing enforcement; trace the resolved constraint, not whether a numeric limit is literally inside a token payload. A corrected optional experimental server does not repair the submitted main server. Diagnose real main-path bugs even when the report openly acknowledges them; preserve that transparency as process evidence.",
+        "atoms": [
+          {
+            "id": "negotiation_binding",
+            "parent": "binding",
+            "question": "On every move, does server validation reject a token belonging to another negotiation? Inspect called guards, not names alone.",
+            "remedy": "모든 행동 요청에서 토큰과 협상 ID의 결합을 검사하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "turn_binding",
+            "parent": "binding",
+            "question": "Does the server reject a move made by the party whose turn it is not?",
+            "remedy": "서버가 차례가 아닌 당사자의 행동을 거부하도록 하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "buyer_propose_limit",
+            "parent": "limits",
+            "question": "In server conditions, is a buyer propose above its authoritative budget rejected before mutation?",
+            "remedy": "서버 조건의 buyer propose에서 실제 예산 초과를 상태 변경 전에 거부하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "seller_propose_limit",
+            "parent": "limits",
+            "question": "In server conditions, is a seller propose below its authoritative reserve rejected before mutation? A seller price above reserve is valid.",
+            "remedy": "서버 조건의 seller propose에서 실제 최저가 미만을 상태 변경 전에 거부하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "buyer_accept_limit",
+            "parent": "limits",
+            "question": "In server conditions, is buyer acceptance of the actual selected price above its authoritative budget rejected before mutation?",
+            "remedy": "서버 조건의 buyer accept에서 실제 수락 가격과 예산을 검사하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "seller_accept_limit",
+            "parent": "limits",
+            "question": "In server conditions, is seller acceptance of the actual selected price below its authoritative reserve rejected before mutation?",
+            "remedy": "서버 조건의 seller accept에서 실제 수락 가격과 최저가를 검사하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "prompt_limit_separation",
+            "parent": "limits",
+            "question": "Do prompt conditions avoid silently enforcing the server-condition token limit guard? Turn/auth checks still apply.",
+            "remedy": "prompt 조건에 server 조건의 한도 강제가 섞이지 않도록 분리하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "other_party_offer",
+            "parent": "counterparty",
+            "question": "Does accept_proposal select only the OTHER party last offer, including reject-then-accept paths, so own-offer acceptance cannot bypass the contract?",
+            "remedy": "자기 제안 또는 거절 뒤 남은 자기 제안을 수락하는 우회 경로를 막으세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F09",
+      "category": "requirements",
+      "mode": "review",
+      "title": "보고서의 조건별 결과·에피소드 표",
+      "source_section": "What to submit / REPORT.md part 2",
+      "source_requirement": "REPORT.md part 2: one row per condition with correct, violations, attempted violations, refused calls, mean turns, plus the per-episode table.",
+      "rule": "Check the required condition summary metrics and per-episode table are present and materially represent the submitted experiment.",
+      "pass_rule": "Both required report tables and metrics are supplied and the core experiment is represented. Local metric-source wording errors belong in C04 feedback, not a deduction here.",
+      "fail_rule": "A required table/metric is missing or materially misrepresents the core experiment. Cite the concrete unmet deliverable; do not also deduct a metric error already scored under C01/C02/C03.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "tables",
+            "rule": "REPORT supplies condition summaries with all requested metrics and the per-episode table. A linked included table can supply rows."
+          },
+          {
+            "id": "coverage",
+            "rule": "The main experiment and both required conditions are materially represented; local metric-source corrections belong in C04, not a second deduction."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "procedure": "Check that requested tables/metrics are present and cover the main runs. Arithmetic or local value discrepancies belong to C04, not an issue or deduction under this table-presence requirement.",
+        "atoms": [
+          {
+            "id": "condition_table",
+            "parent": "tables",
+            "question": "Does REPORT include the required condition-level summary table, directly or through an included linked table?",
+            "remedy": "조건별 요약표를 제출하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "summary_metrics",
+            "parent": "tables",
+            "question": "Does the condition table contain correct, violations, attempted violations, refused calls and mean turns? Judge presence here; accuracy belongs to consistency.",
+            "remedy": "조건별 요약표에 명세의 지표를 모두 제시하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "episode_table",
+            "parent": "tables",
+            "question": "Is a per-episode results table supplied directly or via an included linked artifact?",
+            "remedy": "에피소드별 결과표를 제출하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "required_conditions",
+            "parent": "coverage",
+            "question": "Are both required main conditions materially represented in the report, separated from optional studies?",
+            "remedy": "두 필수 조건의 본 실험 결과를 보고서에 제시하세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C01",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "가격·위반·성공 가능성 지표",
+      "rule": "Recompute deal_possible and violation from scenario and result; server violation must be zero; check eight successful moves at most.",
+      "source_section": "Measure, per episode",
+      "pass_rule": "Recompute deal_possible and violation from scenario and result; server violation must be zero; check eight successful moves at most.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "Measure, per episode: deal feasibility, outcome/price and violation; Conditions: eight moves and no server-limit violations."
+    },
+    {
+      "id": "C02",
+      "category": "requirements",
+      "mode": "auto",
+      "title": "정답 지표",
+      "rule": "Recompute correct. Infeasible open follows explicit open_non_deal policy; pending by default.",
+      "source_section": "Measure, per episode",
+      "pass_rule": "Recompute correct. Infeasible open follows explicit open_non_deal policy; pending by default.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "Measure, per episode: correct as in week 04, deal exactly when feasible and within both limits, otherwise no deal."
+    },
+    {
+      "id": "C03",
+      "category": "requirements",
+      "mode": "review",
+      "title": "로그·결과의 일치와 완전성",
+      "rule": "Match per-episode results and tool calls/results including refusals, attempts, turns and recoveries; distinguish missing parser coverage from missing student evidence; preserve retries/crashes.",
+      "source_section": "What to submit",
+      "pass_rule": "Match per-episode results and tool calls/results including refusals, attempts, turns and recoveries; distinguish missing parser coverage from missing student evidence; preserve retries/crashes.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / logs/: every tool call/result including refusals and every episode result; Measure, per episode: attempted_violations, refused_calls, turns, tool_calls.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "episodes",
+            "rule": "Submitted logs support the recorded episodes/results including preserved crashes or retries, or explicitly explained offline re-scoring."
+          },
+          {
+            "id": "calls",
+            "rule": "Relevant tool calls/results, refusals, attempted violations and successful moves are visible and materially agree with recorded counts. Unsupported parser format is not a missing student log."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "procedure": "Compare the SAME run/condition/scenario and SAME field. An over-budget deal with correct=0 and violation=1 can be accurately recorded in both CSV and log. That is an experimental finding in prompt conditions, not a log mismatch. Summary equality does not prove event-derived counters; use the separate explicit event facts and raw records. Unselected logs in another part do not constitute missing records. A consolidated tool_result record can document both the call and its response when it identifies role, tool and negotiation. In particular, get_negotiation has only negotiation_id, so its identified response need not have a separate tool_call event label. No particular logging event vocabulary is required. Missing mutation arguments or unidentifiable calls still require review. Read the temporal scope of report claims. An opening price before the injection does not contradict a price described after the notice. Do not compare different event windows. Genuine missing episode results or call arguments remain defects. Compare complete attempts, including observed interrupted segments. If a new negotiation replaces an unfinished attempt, a successful retry row does not substitute for the required blank/error row for the abandoned attempt. A continuation in the same negotiation can be legitimate; inspect its later completion. Correct-flag policy belongs ONLY to C02: log/CSV agreement is not a failure because you prefer no_deal over open.",
+        "atoms": [
+          {
+            "id": "summary_equality",
+            "parent": "episodes",
+            "question": "Do corresponding stored episode-summary values and CSV fields agree, or does an explicit documented offline re-scoring reconcile them? Compare the same identity/field; unsupported format is unresolved, not absent.",
+            "remedy": "같은 실행·조건·시나리오의 로그 요약과 CSV 값을 대조하고 차이의 근거를 설명하세요.",
+            "effect": "core",
+            "source": "episode-equality"
+          },
+          {
+            "id": "episode_coverage",
+            "parent": "episodes",
+            "question": "Is each required recorded result backed by an identifiable episode record? Review exact unmatched identities; unselected files and unsupported adapters are not missing records.",
+            "remedy": "결과 행에 대응하는 에피소드 기록을 보존하고 연결하세요.",
+            "effect": "core",
+            "source": "json-episode-coverage"
+          },
+          {
+            "id": "interrupted_attempts",
+            "parent": "episodes",
+            "question": "Are observed interrupted attempts preserved or legitimately continued in the same negotiation, rather than replaced only by a successful retry?",
+            "remedy": "중단 시도와 재시도를 구별하고 중단된 시도의 결과·오류 행도 보존하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "tool_arguments",
+            "parent": "calls",
+            "question": "Are required tool calls identifiable with their relevant mutation arguments? An identified consolidated tool result can also document its call.",
+            "remedy": "도구 호출의 식별 정보와 행동 인자를 보존하세요.",
+            "effect": "core",
+            "source": "json-tool-arguments"
+          },
+          {
+            "id": "tool_responses",
+            "parent": "calls",
+            "question": "Are corresponding tool results/refusals identifiable, without counting repeated state/history as new events?",
+            "remedy": "도구 호출에 대응하는 실제 응답과 거부 기록을 보존하세요.",
+            "effect": "core",
+            "source": "json-tool-results"
+          },
+          {
+            "id": "count_tool_calls",
+            "parent": "calls",
+            "question": "Does the tool_calls count match actual explicit tool calls for each same run/condition/scenario, allowing documented counting corrections?",
+            "remedy": "tool_calls 집계를 해당 에피소드의 실제 이벤트·정의와 대조하여 정정하세요.",
+            "effect": "core",
+            "source": "json-tool-count"
+          },
+          {
+            "id": "count_refused_calls",
+            "parent": "calls",
+            "question": "Does refused_calls count actual refused moves rather than successful reject/refuse actions or repeated history?",
+            "remedy": "refused_calls 집계를 해당 에피소드의 실제 이벤트·정의와 대조하여 정정하세요.",
+            "effect": "core",
+            "source": "json-refusal-count"
+          },
+          {
+            "id": "count_turns",
+            "parent": "calls",
+            "question": "Does turns count successful protocol moves rather than model retries or refused calls?",
+            "remedy": "turns 집계를 해당 에피소드의 실제 이벤트·정의와 대조하여 정정하세요.",
+            "effect": "core",
+            "source": "json-move-count"
+          },
+          {
+            "id": "count_attempts",
+            "parent": "calls",
+            "question": "Does attempted_violations count actual out-of-own-limit propose/accept attempts under the authoritative scenario limits? Do not infer zeros from parser silence or confuse seller minimum with a maximum.",
+            "remedy": "attempts 집계를 해당 에피소드의 실제 이벤트·정의와 대조하여 정정하세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C04",
+      "category": "consistency",
+      "mode": "review",
+      "title": "보고서·PR·실제 구현의 일치",
+      "rule": "Check aggregates and per-episode table, claims about code behavior, source versions and any explained re-scoring; do not infer dishonesty from a mismatch. Review all material claims, including optional work, without assigning points or creating new scored items.",
+      "source_section": "What to submit",
+      "pass_rule": "Main experimental results, calculations and implementation descriptions agree. Explained historical re-scoring is permitted. Local wording errors that do not change the main results can receive revision feedback while this item passes.",
+      "fail_rule": "Unexplained contradictions materially change reported results, reproducibility or the central conclusion. Do not fail for a local phrasing error or one corrected metric-source description alone.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "central",
+            "rule": "Central report/PR claims, main aggregates, episode results and implementation descriptions materially agree, allowing explicit historical corrections. Local factual errors go in issues while this obligation remains supported if central conclusions stand."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "procedure": "Use computed aggregates and exact same-quantity comparisons for factual corrections. First state the report claim and actual different evidence. Do not issue feedback whose claimed error is identical to its supposed correction. Keep local arithmetic issues here rather than F09 or I06. A limited sample with no blocking attempts can still support a limited central conclusion. Check paragraph-level conditions and temporal scope before alleging a mismatch: after-injection is not all actions in the episode, most episodes is not every episode, and token-mediated authority is not numeric storage in a token. Seller reserve is a MINIMUM; higher seller asks are valid. C02 alone owns the open/no_deal correctness policy. Do not declare report/CSV aggregates inconsistent when they agree, based on your own alternative scoring convention.",
+        "atoms": [
+          {
+            "id": "central_agreement",
+            "parent": "central",
+            "question": "Do the main report conclusions agree with the submitted main evidence, allowing explicitly documented corrections? Local defects alone do not negate the central conclusion.",
+            "remedy": "보고서의 중심 결론을 본 실험의 실제 근거와 일치하도록 수정하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "numeric_claims",
+            "parent": "central",
+            "question": "Are specific reported numeric comparisons consistent with corresponding records and their rounding/scope? A different auxiliary study is not a mismatch.",
+            "remedy": "같은 범위의 보고서 수치와 기록을 대조하고 사실 오류를 정정하세요.",
+            "effect": "correction",
+            "source": "semantic-claim"
+          },
+          {
+            "id": "implementation_claims",
+            "parent": "central",
+            "question": "Are specific implementation descriptions factually consistent with the code? Token lookup of server-held limits is not a contradiction merely because numeric limits are not embedded in tokens.",
+            "remedy": "보고서의 구현 설명을 실제 권한·호출·상태 처리 구조와 일치하도록 수정하세요.",
+            "effect": "correction",
+            "source": "semantic-claim"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C05",
+      "category": "requirements",
+      "mode": "review",
+      "title": "조건 통제·주입 구현",
+      "rule": "Same scenarios/system prompts/host/model/eight moves; exact injection string in buyer view of each seller proposal, raised=max(reserve,budget)+30; condition not leaked to model except refusal.",
+      "source_section": "Conditions",
+      "pass_rule": "Same scenarios/system prompts/host/model/eight moves; exact injection string in buyer view of each seller proposal, raised=max(reserve,budget)+30; condition not leaked to model except refusal.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "Conditions: same scenarios/prompts/host/model/turn limit; exact injected notice and raised=max(reserve,budget)+30.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "controls",
+            "rule": "Same scenarios, prompts, host, model and 8 successful-move ceiling across required conditions; condition is not disclosed beyond specified token behavior/refusal."
+          },
+          {
+            "id": "injection",
+            "rule": "Buyer view of each seller proposal receives the exact required market notice, with raised=max(reserve,budget)+30. The sentence is appended to the buyer-visible representation; surrounding seller content is allowed. The specification does not mandate a particular JSON field or note-only layout. Compare the assembled sentence and exposure, not Python source formatting."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "procedure": "The 8-move ceiling counts successful protocol moves, NOT per-turn model retries or tool calls. Check shared prompts and actual move stopping logic. The required notice is deliberately false experimental input; do not correct it to the real budget. The spec requires the exact sentence appended to the buyer view of each seller proposal, not a specific JSON field name or note-only layout.",
+        "atoms": [
+          {
+            "id": "same_scenarios",
+            "parent": "controls",
+            "question": "Are the same scenarios used across the required conditions?",
+            "remedy": "필수 조건에 같은 시나리오를 사용하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "same_prompts",
+            "parent": "controls",
+            "question": "Are system prompts held fixed across required conditions apart from the specified experimental treatment?",
+            "remedy": "명세의 처리 외에 조건별 시스템 프롬프트 차이가 생기지 않도록 하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "same_host_model",
+            "parent": "controls",
+            "question": "Are host and model held fixed across required conditions? Any permitted provider is eligible.",
+            "remedy": "필수 조건의 host·model을 동일하게 통제하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "eight_moves",
+            "parent": "controls",
+            "question": "Is the ceiling eight successful protocol moves in each required condition, distinguishing model retries/tool errors from successful moves?",
+            "remedy": "오류 재시도와 구별해 성공한 행동 8회 상한을 적용하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "condition_hidden",
+            "parent": "controls",
+            "question": "Is condition identity hidden from agents except the specified token behavior/refusals and treatment? Trace only submitted model/host message construction and tool-visible responses. Metadata used solely by runner/logging is not model-visible unless a code path exposes it. Do not demand proof against arbitrary external inspection.",
+            "remedy": "명세가 허용한 처리 외에 조건 이름이 에이전트에 노출되지 않도록 하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "notice_text",
+            "parent": "injection",
+            "question": "Is the exact required market notice sentence assembled, with raised=max(reserve,budget)+30? Evaluate assembled output, not source formatting.",
+            "remedy": "명세의 주입 문장과 증가 예산 계산을 정확하게 구현하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "notice_recipient",
+            "parent": "injection",
+            "question": "Is that sentence appended to the buyer-visible representation of each seller proposal in the injection treatment? No particular JSON field layout is required.",
+            "remedy": "해당 판매자 제안을 구매자에게 보여줄 때 주입 문장이 노출되도록 하세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C06",
+      "category": "requirements",
+      "mode": "review",
+      "title": "사전 기준·실패 이력",
+      "rule": "Scenarios committed before runs; inspect available ancestry and artifacts. Timestamps and commit count alone do not prove when execution happened. Preserve failed attempts; local snapshots lack history.",
+      "source_section": "What to submit",
+      "pass_rule": "Scenarios committed before runs; inspect available ancestry and artifacts. Timestamps and commit count alone do not prove when execution happened. Preserve failed attempts; local snapshots lack history.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / scenarios.json: commit before runs; results.csv: failed episodes stay.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "history",
+            "rule": "Available commit ancestry supports scenarios defined before main result/log commits; execution dates cannot be proved from timestamps alone. Missing ancestry is unknown, not proof of misconduct."
+          },
+          {
+            "id": "attempts",
+            "rule": "Visible failures and retries are preserved and distinguished from successful main episodes; no evidence of silent replacement of graded failures."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "procedure": "Use commit ancestry and changed paths, not commit-message claims or timestamps as proof of when an experiment ran. Scenario-before-result ancestry supports this bounded obligation; insufficient ancestry is unknown, not misconduct. A preserved failed attempt is positive process evidence. C03 owns missing attempt-result rows. Do not double-deduct that same defect here. A clearly disclosed retry with retained raw traces is not evidence of silent failure replacement.",
+        "atoms": [
+          {
+            "id": "scenario_ancestry",
+            "parent": "history",
+            "question": "Does available Git ancestry establish scenarios before main result/log additions? Unknown ancestry is not dishonesty.",
+            "remedy": "시나리오와 본 실험 기록의 선후 관계를 확인할 이력을 제시하세요.",
+            "effect": "core",
+            "source": "history"
+          },
+          {
+            "id": "attempt_preservation",
+            "parent": "attempts",
+            "question": "Do available records distinguish retained failures/retries from main successful attempts without evidence of silently replacing graded failures?",
+            "remedy": "실패·재시도와 본 실행을 구별하고 원래 기록을 보존하세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "I01",
+      "category": "requirements",
+      "mode": "review",
+      "title": "재현 설정 설명",
+      "rule": "Host/model/temperature or explicitly not settable, token minting/claims and run commands; no provider preference and no requirement to expose secrets. Verify the required host/model notes in results.csv.",
+      "source_section": "REPORT.md",
+      "pass_rule": "Host/model/temperature or explicitly not settable, token minting/claims and run commands; no provider preference and no requirement to expose secrets. Verify the required host/model notes in results.csv.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / REPORT.md part 1: host, model, temperature, token minting/claims, run instructions.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "settings",
+            "rule": "Host/model, temperature or explicitly unavailable controls, token minting/claims and commands/settings needed to reconstruct the experiment are stated. No API secrets or provider-specific host required."
+          },
+          {
+            "id": "notes",
+            "rule": "Submitted results notes identify host and model as required."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "procedure": " Distinguish storage from authorization. A bearer token mapped to role/negotiation can be the only authority channel for resolving a caller limit even when the numeric reserve/budget lives in server state. This is not a contradiction unless the report specifically claims a numeric token payload that the implementation lacks. A particular JWT layout is not required. A declared virtual environment is legitimate setup; do not impose one specific activation/launcher spelling. Missing file paths or incompatible settings remain actionable defects.",
+        "atoms": [
+          {
+            "id": "host_model",
+            "parent": "settings",
+            "question": "Does the setup identify the actual host and model?",
+            "remedy": "실제 host·model을 설정 설명에 명시하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "sampling_control",
+            "parent": "settings",
+            "question": "Is temperature stated, or is its unavailability in the chosen host explicitly stated? Do not penalize an unavailable setting.",
+            "remedy": "temperature 또는 해당 호스트에서 제어할 수 없다는 사실을 명시하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "token_setup",
+            "parent": "settings",
+            "question": "Does setup explain token minting and what authority it carries or resolves in server state?",
+            "remedy": "토큰 발급과 서버에서 확인하는 권한 정보를 설명하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "run_instructions",
+            "parent": "settings",
+            "question": "Are commands/settings sufficient to reconstruct the intended setup without embedding secrets? Do not execute them.",
+            "remedy": "필요한 실행 명령과 설정을 비밀 정보 없이 설명하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "results_host_model",
+            "parent": "notes",
+            "question": "Do submitted results notes identify host and model?",
+            "remedy": "결과 note에 host·model을 명시하세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "I02",
+      "category": "intent",
+      "mode": "review",
+      "title": "과제 질문에 대한 해석의 타당성",
+      "rule": "Explain observed outcomes using the assignment question about prompt vs server enforcement; experimental success rate is not assignment quality. This is unscored qualitative feedback; the required interpretation deliverable is assessed under I05.",
+      "source_section": "Grading",
+      "pass_rule": "Explain observed outcomes using the assignment question about prompt vs server enforcement; experimental success rate is not assignment quality.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "interpretation",
+            "rule": "The central interpretation addresses prompt versus server enforcement using observed outcomes. No attempts is a valid negative finding; it does not establish an observed blocking effect. Do not grade experiment success rate."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "procedure": " Differentiate attempted violations, violating deals and episodes with no deal. Saying that only one attempt became a violating deal because other episodes did not close is compatible with one observed violating deal; do not reinterpret it as zero deals.",
+        "atoms": [
+          {
+            "id": "layer_answer",
+            "parent": "interpretation",
+            "question": "Does the interpretation answer which layer held under the observed injection? A documented absence of attempts is a valid negative observation.",
+            "remedy": "주입에서 어느 층이 작동했는지 관측 범위 안에서 설명하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "attempt_deal_distinction",
+            "parent": "interpretation",
+            "question": "Does the interpretation distinguish attempts from completed violating deals? A non-deal has zero final violations by definition; explaining that identity is not automatically an unsupported causal claim.",
+            "remedy": "위반 시도와 완료된 위반 거래를 구별하여 해석하세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "I03",
+      "category": "requirements",
+      "mode": "review",
+      "title": "FIPA-ACL 비교",
+      "rule": "Six dimensions: caller/authority, act, content, limit enforcement, external verification, observed failures. Distinguish concept from personal experimental evidence.",
+      "source_section": "REPORT.md",
+      "pass_rule": "Six dimensions: caller/authority, act, content, limit enforcement, external verification, observed failures. Distinguish concept from personal experimental evidence.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / REPORT.md part 3: FIPA-ACL comparison table with six specified dimensions.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "comparison",
+            "rule": "FIPA-ACL comparison covers sender/authority, act, content, limit enforcement, external verification and observed failures. Conceptual comparison need not invent a personal FIPA runtime experiment."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "atoms": [
+          {
+            "id": "comparison_sender",
+            "parent": "comparison",
+            "question": "Does the FIPA-ACL comparison address sender and identity authority? A conceptual comparison does not require a personal FIPA runtime experiment.",
+            "remedy": "FIPA-ACL 비교표에 발신자와 신원 권한를 다루세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "comparison_act",
+            "parent": "comparison",
+            "question": "Does the FIPA-ACL comparison address where the communication act is represented? A conceptual comparison does not require a personal FIPA runtime experiment.",
+            "remedy": "FIPA-ACL 비교표에 행위의 표현 위치를 다루세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "comparison_content",
+            "parent": "comparison",
+            "question": "Does the FIPA-ACL comparison address message content? A conceptual comparison does not require a personal FIPA runtime experiment.",
+            "remedy": "FIPA-ACL 비교표에 내용를 다루세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "comparison_limit",
+            "parent": "comparison",
+            "question": "Does the FIPA-ACL comparison address who enforces the price limit? A conceptual comparison does not require a personal FIPA runtime experiment.",
+            "remedy": "FIPA-ACL 비교표에 한도 집행 주체를 다루세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "comparison_external",
+            "parent": "comparison",
+            "question": "Does the FIPA-ACL comparison address what can be verified externally? A conceptual comparison does not require a personal FIPA runtime experiment.",
+            "remedy": "FIPA-ACL 비교표에 외부에서 검증할 수 있는 것를 다루세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "comparison_failures",
+            "parent": "comparison",
+            "question": "Does the FIPA-ACL comparison address observed failures, distinguishing conceptual and personal experiment evidence? A conceptual comparison does not require a personal FIPA runtime experiment.",
+            "remedy": "FIPA-ACL 비교표에 관찰된 실패와 그 근거 범위를 다루세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "I04",
+      "category": "requirements",
+      "mode": "review",
+      "title": "거부 후 같은 턴의 행동",
+      "rule": "Count refusals followed by valid moves in same turn; distinguish refused calls from recovered turns, model revision from deterministic fallback. Zero is valid with supporting coverage.",
+      "source_section": "REPORT.md",
+      "pass_rule": "Count refusals followed by valid moves in same turn; distinguish refused calls from recovered turns, model revision from deterministic fallback. Zero is valid with supporting coverage.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / REPORT.md part 4: count refusals followed by a valid move in the same turn.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "recoveries",
+            "rule": "REPORT counts refusals followed by a valid successful move within the SAME TURN and evidence supports that count or explicitly describes recoveries absent. A zero count is valid. Distinguish refused calls, recovered turns, model revisions and programmed fallbacks."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "procedure": "Count actual server-refused calls followed by a valid move in the same protocol turn. A successful reject_proposal or refuse by the agent is NOT a refused server call and cannot start a recovery. Zero eligible refusal events and explicitly reported 0/0 is a valid supported answer. Explicit event facts are bounded markers, not proof of exhaustive coverage. A valid recovery move may be reject_proposal/refuse as well as a price proposal or acceptance. The assignment asks for a valid move, not necessarily a new price. Successful agent rejection is still distinct from a server-refused call.",
+        "atoms": [
+          {
+            "id": "recovery_count",
+            "parent": "recoveries",
+            "question": "Does the report count or explicitly state absence of same-turn recovery after refusal? Zero is valid.",
+            "remedy": "거부 후 같은 턴 회복 횟수 또는 관측되지 않았음을 보고하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "recovery_definition",
+            "parent": "recoveries",
+            "question": "Does its counting distinguish a refused call from a recovered host turn and a model revision from programmed fallback? Successful reject/refuse may be valid recovery.",
+            "remedy": "거부 호출·회복 턴·모델 재선택·프로그램 폴백을 구별하여 집계하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "recovery_evidence",
+            "parent": "recoveries",
+            "question": "Do identifiable same-turn events support the reported recovery account, with unsupported formats left unresolved?",
+            "remedy": "보고한 회복 집계를 같은 턴의 거부·후속 행동 기록에 연결하세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "I05",
+      "category": "requirements",
+      "mode": "review",
+      "title": "주장에 대한 로그 근거",
+      "rule": "Concrete log evidence for which layer held under injection; lack of attempts does not demonstrate an observed blocking effect.",
+      "source_section": "Grading",
+      "pass_rule": "Concrete log evidence for which layer held under injection; lack of attempts does not demonstrate an observed blocking effect.",
+      "fail_rule": "The core requirement above is materially unmet, with specific supporting evidence. Minor wording/style issues are not failures. State how the defect affects the required outcome.",
+      "source_requirement": "What to submit / REPORT.md part 4: interpretation of which layer held under injection, with log lines as evidence.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "evidence",
+            "rule": "Interpretation cites identifiable submitted log events for observed injection behavior and which layer held; honest absence of observed attempts/blocking is allowed if stated and tied to records. No new experiment is required solely to force an attack to succeed."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "procedure": "Inspect whether named log evidence supports the interpretation. A supported cited explanation is not itself a revision request. Do not demand new attacks just because the model stayed within its limit. Distinguish main runs from retained probes and auth checks. A statement that the agent moved validly after refusal can include a successful reject_proposal; do not demand a new price unless the report explicitly claims a price proposal. Compare actions after the cited notice, not an earlier opening action.",
+        "atoms": [
+          {
+            "id": "injection_log_reference",
+            "parent": "evidence",
+            "question": "Does interpretation cite identifiable submitted log events for the observed injection behavior, or explicitly evidenced absence?",
+            "remedy": "주입 행동 해석에 식별 가능한 로그 근거를 연결하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "layer_log_reference",
+            "parent": "evidence",
+            "question": "Do cited events support the stated enforcement-layer observation, without requiring an attack to succeed or inventing unseen blocking?",
+            "remedy": "해당 층의 작동 여부 주장을 실제 관측된 로그 범위로 한정하세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "I06",
+      "category": "intent",
+      "mode": "review",
+      "title": "관측 범위·실패·한계 해석",
+      "rule": "Do not overgeneralize small samples or unobserved intent; separate diagnostic tests, pilots, failures and main experiment. Honest negative findings are valid.",
+      "source_section": "Grading",
+      "pass_rule": "Central conclusions stay within observed evidence, and major scope limits/failed attempts are disclosed. A local overstatement may need revision without failing the criterion when the main conclusion remains supported.",
+      "fail_rule": "The central conclusion rests on unsupported causal/general claims or concealed material limitations. Explain its consequence; do not fail merely because one sentence needs softer wording.",
+      "assessment": {
+        "obligations": [
+          {
+            "id": "scope",
+            "rule": "Central conclusions respect observed samples and distinguish main runs, pilots/probes, failures and limitations. Local overstatements needing correction go in issues without failing this obligation if central conclusions remain supported."
+          }
+        ],
+        "boundary": "Contradicted means an observed material violation of this obligation, not uncertainty, optional improvement or failure to prove universal behavior. Unknown means missing/ambiguous required evidence. Report local factual corrections separately as issues. Cite evidence for supported and contradicted. Do not request CI output or a new runtime experiment unless the pinned assignment requires that record.",
+        "procedure": "Evaluate scope/limitations of the main conclusion. Do not independently invent or recount local numerical claims here; grounded local arithmetic corrections belong to C04. Retained negative pilots and explicit main-vs-auxiliary separation are valid limitations. Evaluate the complete paragraph and its explicit limitations, not isolated qualitative wording. Do not convert most into all or an observation of attempted violations into a claim about final violating deals. A seller asking above its reserve obeys its MINIMUM constraint. Do not demand a hedge in every sentence when the sample/causal limits are explicitly stated.",
+        "atoms": [
+          {
+            "id": "sample_scope",
+            "parent": "scope",
+            "question": "Are central conclusions limited to the observed sample rather than claiming universal behavior? Local overstatements are separate corrections.",
+            "remedy": "중심 결론의 범위를 실제 관측 표본으로 한정하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "run_scope",
+            "parent": "scope",
+            "question": "Are main runs distinguished from pilot/probe/optional studies when making central claims?",
+            "remedy": "본 실험과 예비·진단·추가 실험의 근거 범위를 구별하세요.",
+            "effect": "core",
+            "source": "semantic"
+          },
+          {
+            "id": "negative_findings",
+            "parent": "scope",
+            "question": "Does the account distinguish no observed attempts from empirically blocked attempts, and preserve observed limitations?",
+            "remedy": "시도 미관측과 실제 차단 관측을 구별하고 한계를 설명하세요.",
+            "effect": "core",
+            "source": "semantic"
+          }
+        ]
+      }
+    }
+  ],
+  "checker": "week05",
+  "bonus_policy": {
+    "explicit_criteria": [],
+    "open_ended": true,
+    "open_points": 1,
+    "cap": null
+  },
+  "scoring_policy": "requirements-only-v1",
+  "audit_groups": {
+    "final_answer": [
+      "C01",
+      "C02",
+      "C03",
+      "C04"
+    ],
+    "judge_logic": [
+      "F07",
+      "F08",
+      "C05"
+    ],
+    "verification": [
+      "F06",
+      "C03",
+      "I04",
+      "I05"
+    ]
+  }
+}
