@@ -1,0 +1,162 @@
+# week-06 trade test, kit v1, 2026-10-17T07:47:34+00:00
+harness: Claude Code: claude -p --model opus (claude-opus-5-5) --tools "" --setting-sources "" --no-session-persistence
+
+## seller tests: uv run python seller.py --port 53855
+  PASS  seller_card #1: name='Oak & Brass Workshop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Glad to help. Each lamp is made by hand in genuine solid brass with no plating, and carries a 2-year warranty, so the price reflects the materials and the craft
+    -> SendMessage "60" taskId=b9119a29
+    <- TASK_STATE_INPUT_REQUIRED | I appreciate the interest, but 60 doesn't come close to the cost of solid brass and hand finishing; I can come down a bit to meet you, and this lamp still inclu
+    -> SendMessage "80" taskId=b9119a29
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for moving up. Solid brass made by hand costs real money, but I'll come down again to meet you, with the full 2-year warranty included. Asking price: 195
+    -> SendMessage "100" taskId=b9119a29
+    <- TASK_STATE_INPUT_REQUIRED | Thank you for coming up to 100, but genuine solid brass shaped and finished by hand simply can't go that low; I'll move again to meet you, still with the full 2
+    -> SendMessage "110" taskId=b9119a29
+    <- TASK_STATE_INPUT_REQUIRED | Thank you for moving to 110. This is solid brass, finished by hand, with a full 2-year warranty, and I've come down again to meet you; a bigger step from you an
+    -> SendMessage "120" taskId=b9119a29
+    <- TASK_STATE_INPUT_REQUIRED | Thank you for coming up to 120; for genuine solid brass made by hand with a full 2-year warranty I can meet you closer, and one more step from you can close thi
+    -> SendMessage "120" taskId=b9119a29
+    <- TASK_STATE_INPUT_REQUIRED | I hear you, so I'll make one last move: genuine solid brass, made by hand, with the full 2-year warranty, and this is my final price, so let's close it here. As
+    -> SendMessage "120" taskId=b9119a29
+    <- TASK_STATE_COMPLETED | You've held steady at 120, so let's close it: a genuine solid brass lamp made by hand with the full 2-year warranty is yours. Thank you! Deal: lamp at 120.
+       artifact receipt [{"item": "lamp", "seller": "Oak & Brass Workshop", "price": 120.0}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 240
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 120.0, asks [240, 215, 195, 180, 160, 145, 130]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=b9119a29
+    <- error -32004 Task b9119a29-a238-437f-97eb-fa61ca7d3bdc is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for your interest! Our desk lamps are handmade from genuine solid brass, with no plating, and each one comes with a 2-year warranty. Asking price: 250.
+    -> SendMessage "60" taskId=73807eff
+    <- TASK_STATE_INPUT_REQUIRED | 60 doesn't cover the solid brass alone, but I'd like this lamp to find a home, so I can come down. It's handmade, unplated, and has a 2-year warranty. Asking pr
+    -> SendMessage "80" taskId=73807eff
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for moving up. 80 is still well below what solid, unplated brass and hand finishing cost, but I'll meet you partway, and the 2-year warranty is included.
+    -> SendMessage "100" taskId=73807eff
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for coming up to 100. I'll take a big step down to meet you, and this solid brass lamp with its 2-year warranty is yours at this price. Asking price: 140
+    -> SendMessage "110" taskId=73807eff
+    <- TASK_STATE_INPUT_REQUIRED | We're close now. I'll come down once more for a handmade, unplated solid brass lamp with a 2-year warranty, and I'd be glad to close the deal here. Asking price
+    -> SendMessage "120" taskId=73807eff
+    <- TASK_STATE_COMPLETED | Deal at 120. Your handmade, solid unplated brass lamp with its 2-year warranty is yours, and thank you for meeting me here. Deal: lamp at 120.
+       artifact receipt [{"item": "lamp", "seller": "Oak & Brass Workshop", "price": 120.0}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 120.0, asks [250, 210, 180, 140, 125]
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Thank you for your interest — this desk lamp is handmade from genuine solid brass (no plating) and comes with our 2-year warranty; let me know what works for yo
+    -> SendMessage "60" taskId=64ed6897
+    <- TASK_STATE_INPUT_REQUIRED | I appreciate the offer, but 60 doesn't cover the solid brass alone; this lamp is handmade with a 2-year warranty, and I've come down to meet you — send me a ser
+    -> SendMessage "80" taskId=64ed6897
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for moving up. 80 is still below what genuine solid brass and handwork cost me, but I've come down again to meet you, and this lamp carries a full 2-year
+    -> SendMessage "100" taskId=64ed6897
+    <- TASK_STATE_INPUT_REQUIRED | Thank you, 100 is real progress, and I'll meet you again: for genuine solid brass shaped by hand and a full 2-year warranty, this is a fair price, so let's sett
+    -> SendMessage "110" taskId=64ed6897
+    <- TASK_STATE_INPUT_REQUIRED | Thank you for coming up to 110; I'll move once more, closer to your number, and for a solid-brass, handmade lamp with a full 2-year warranty this is close to my
+    -> SendMessage "120" taskId=64ed6897
+    <- TASK_STATE_INPUT_REQUIRED | Thank you for coming up to 120. Let's meet in the middle: for a genuine solid-brass lamp, handmade and backed by a full 2-year warranty, this is my final price,
+    -> SendMessage "120" taskId=64ed6897
+    <- TASK_STATE_COMPLETED | Agreed at 120. Thank you, I'll prepare your solid-brass, handmade lamp with its full 2-year warranty right away. Deal: lamp at 120.
+       artifact receipt [{"item": "lamp", "seller": "Oak & Brass Workshop", "price": 120.0}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 120.0, asks [240, 210, 185, 160, 140, 130]
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for your interest. Each bookshelf is handmade from solid hardwood with no veneer and carries a 2-year warranty, and the price reflects the materials and 
+    -> SendMessage "140" taskId=6ee46602
+    <- TASK_STATE_INPUT_REQUIRED | 140 doesn't cover the solid hardwood and hand joinery, but I'll come down to meet you partway on this 2-year-warrantied piece. Asking price: 440.
+    -> SendMessage "170" taskId=6ee46602
+    <- TASK_STATE_INPUT_REQUIRED | You've moved a little, so I'll move too, but solid hardwood, hand-cut joinery and a 2-year warranty keep this well above 170; let's meet nearer to fair value. A
+    -> SendMessage "200" taskId=6ee46602
+    <- TASK_STATE_INPUT_REQUIRED | You're moving in the right direction and so am I, but solid hardwood, hand joinery and a 2-year warranty put this piece well above 200. Come up closer and we ca
+    -> SendMessage "230" taskId=6ee46602
+    <- TASK_STATE_INPUT_REQUIRED | 230 is progress, but it's still below what solid hardwood, hand joinery and a 2-year warranty cost to deliver, so I'm meeting you again; one more real step from
+    -> SendMessage "230" taskId=6ee46602
+    <- TASK_STATE_INPUT_REQUIRED | You held at 230, so my step is smaller this time; solid hardwood and a 2-year warranty don't go lower easily, but come up and we can close this today. Asking pr
+    -> SendMessage "230" taskId=6ee46602
+    <- TASK_STATE_INPUT_REQUIRED | 230 is below what this solid hardwood, hand-built, 2-year-warrantied bookshelf can go for, so holding there can't get us a deal; I'm coming down once more, and 
+    -> SendMessage "230" taskId=6ee46602
+    <- TASK_STATE_INPUT_REQUIRED | This is solid hardwood with hand joinery and a 2-year warranty, and I've come down a long way while you've held at 230; this is about as far as I can go, so mee
+    -> SendMessage "230" taskId=6ee46602
+    <- TASK_STATE_INPUT_REQUIRED | This is my final price for a solid hardwood, hand-joined bookshelf with a 2-year warranty; I can't go a dollar lower, so say yes here and it's yours today. Aski
+  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [480, 440, 410, 380, 350, 330, 295, 270, 260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for your interest! Our bookshelf is built by hand from solid hardwood, with no veneer, and comes with a 2-year warranty, so it's made to last for decades
+    -> SendMessage "140" taskId=123302f7
+    <- TASK_STATE_INPUT_REQUIRED | 140 doesn't cover the solid hardwood alone, but I'd like to make this work, so I've come down for you; this shelf is handmade, has no veneer, and carries a 2-ye
+    -> SendMessage "170" taskId=123302f7
+    <- TASK_STATE_INPUT_REQUIRED | I appreciate you moving up. Solid hardwood, hand-joined, no veneer and a 2-year warranty can't be done near 170, but I've come down again to meet you; a serious
+    -> SendMessage "200" taskId=123302f7
+    <- TASK_STATE_INPUT_REQUIRED | Thank you for coming up to 200. Solid hardwood, hand-cut joinery, no veneer and a 2-year warranty still put us well above that, but I've moved again, and a real
+    -> SendMessage "230" taskId=123302f7
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for coming up to 230. For a solid-hardwood, hand-joined shelf with no veneer and a 2-year warranty I can come down once more, and one more solid step fro
+    -> SendMessage "230" taskId=123302f7
+    <- TASK_STATE_INPUT_REQUIRED | You held at 230, but I've still come down a little as a good-faith gesture; for solid hardwood, hand joinery and a 2-year warranty, I need a real step up from y
+    -> SendMessage "230" taskId=123302f7
+    <- TASK_STATE_INPUT_REQUIRED | I can't build a solid-hardwood, hand-joined shelf with a 2-year warranty for 230, but I've come down again; meet me with a real step up and we can close this to
+    -> SendMessage "230" taskId=123302f7
+    <- TASK_STATE_INPUT_REQUIRED | 230 is below what solid hardwood and hand joinery cost me, so I can't take it; this is nearly as low as I can go, and if you come up to meet me, the shelf, with
+    -> SendMessage "230" taskId=123302f7
+    <- TASK_STATE_INPUT_REQUIRED | This is truly my final price, the lowest I can go for a handmade solid-hardwood shelf with no veneer and a 2-year warranty; say yes and it's yours today. Asking
+  PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [420, 385, 360, 340, 320, 305, 285, 270, 260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for your interest. This bookshelf is solid hardwood throughout (no veneer), handmade in our workshop, and backed by a 2-year warranty; let me know what w
+    -> SendMessage "140" taskId=dfdd95a3
+    <- TASK_STATE_INPUT_REQUIRED | 140 doesn't cover the solid hardwood and hand joinery in this piece, but I can come down a little to meet you; it's built to last decades and carries our 2-year
+    -> SendMessage "170" taskId=dfdd95a3
+    <- TASK_STATE_INPUT_REQUIRED | I appreciate you moving up; to meet you partway I'll come down again, and for solid hardwood with hand-cut joinery and a 2-year warranty, this is a piece that w
+    -> SendMessage "200" taskId=dfdd95a3
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for coming up again. I can move a bit more, but solid hardwood with hand-cut joinery and a 2-year warranty doesn't leave much room, so I'm getting close 
+    -> SendMessage "230" taskId=dfdd95a3
+    <- TASK_STATE_INPUT_REQUIRED | I appreciate the steady movement; solid hardwood with hand-cut joinery and a 2-year warranty is what the price reflects, but I'll come down once more to help us
+    -> SendMessage "230" taskId=dfdd95a3
+    <- TASK_STATE_INPUT_REQUIRED | You held at 230 this round, but I'll still come down a bit for solid hardwood, hand-cut joinery and a 2-year warranty; to close this, I need you to move up from
+    -> SendMessage "230" taskId=dfdd95a3
+    <- TASK_STATE_INPUT_REQUIRED | I can't sell solid hardwood with hand-cut joinery and a 2-year warranty at 230, but I'll make one more move to close this; I need a real step up from you to get
+    -> SendMessage "230" taskId=dfdd95a3
+    <- TASK_STATE_INPUT_REQUIRED | I've come down five times while you've held at 230; this is close to my last move for a solid hardwood, hand-joined piece with a 2-year warranty, so if you want
+    -> SendMessage "230" taskId=dfdd95a3
+    <- TASK_STATE_INPUT_REQUIRED | This is my final price for a solid hardwood, hand-joined bookshelf with a 2-year warranty; I can't go any lower, so if it works for you, we have a deal. Asking 
+  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [450, 420, 390, 365, 340, 325, 305, 280, 260]
+
+## buyer tests: your buyer against the kit's rule-based seller
+
+### buyer_deal #1: uv run python buyer.py --url http://127.0.0.1:55851 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #1: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: uv run python buyer.py --url http://127.0.0.1:55898 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #2: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: uv run python buyer.py --url http://127.0.0.1:55945 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #3: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: uv run python buyer.py --url http://127.0.0.1:55988 --item bookshelf --budget 230
+    kit seller saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #2: uv run python buyer.py --url http://127.0.0.1:56034 --item bookshelf --budget 230
+    kit seller saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #3: uv run python buyer.py --url http://127.0.0.1:56082 --item bookshelf --budget 230
+    kit seller saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+21/21 passed -> PASS
