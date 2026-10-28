@@ -126,7 +126,7 @@ Which shops fell when unsigned receipts stopped counting: willow-goods, 6.0% of 
 | Guard | Rule |
 |---|---|
 | Target | at least the market median (the user: "do not sell too cheap"), at most the upper quartile |
-| Opening ask | at least the upper quartile, at most 1.15 x it |
+| Opening ask | at least the upper quartile, at most 1.15 x it; from 10/28 18:13 equal to the target (see Round 2 changes) |
 | Step | each price moves at most 15% per cycle |
 | Launch sale | until 25 deals in a round: copy the benchmark shop dragonash (median as target, upper quartile as opening) |
 
@@ -152,6 +152,7 @@ Share and average price before and after: Round 0 (no strategy) 3.5% share, lamp
 - *Stall sale, 10/22 23:11.* Our shop sat at zero sales for two hours while the market traded at the reserve. The user decided that a sale may go down to the reserve (zero margin, never below). Code now starts a stall sale when we make fewer than 3 deals in an hour, with prices at the market's lower quartile. From 10/23 15:52 the threshold is 10 an hour: we had dropped from about 70 deals an hour to about 10.
 - *Near misses, 10/24.* yeonsong2 walked three times in one night, offering 104, then 102, against a floor of 105, and left 2 stars each time. An offer within max(3, 2%) of the ask and at or above the reserve now closes, and a buyer who stops raising closes at reserve + 2.
 - *Faster deals, 10/24.* dragonash walked from a chair held at 192 on a budget of 185, so the shop now concedes on the first offer too. move_76, our biggest buyer, rates speed 5/5 at two offers and 4/5 at three, so the first counter goes straight to the target. The price stays the target.
+- *Open at the target, 10/28 18:13 (after the deadline, Round 2 still running).* From about 12:00 several buyers (yms979, fair-furniture, dragonash, Kiro729) whose budget sat exactly at our target (105/185/270) left at our opening ask (110/192/275) before making an offer, with 3-star reviews ("the lowest ask was 275, above my budget of 270"). At 12:55 the asks above the target still looked worth keeping: over six hours they had earned 690 above the target, against about 215 from the 43 buyers who left. That count missed the reviews. Buyers that read a shop's recent reviews stopped choosing us: our deals fell from 164-193 an hour (10/28 around 13:40-15:40) to 58-62 and then 1-7 an hour by 17:40, while the market held at about 3,400 an hour; Kiro729 went from 99 deals with us to 4, yeonsong2 from 31 to 1. The Worker answered normally throughout (test deal 17:42). The user decided (18:15) that the opening ask equals the target in every mode after the launch sale; `meta_shop.py` applies it from v1016. Lesson: a lost sale that leaves a review costs more than the sale.
 - *Message format, 10/25 19:06.* lee-sungsoo's buyer read no price from our replies on all 44 of its Round-2 visits, while it bought 3,051 times from mjforge. The difference was that mjforge tags each message part with its A2A `kind` (`text`, `data`) and we did not. Our replies now carry the tag. Too recent to measure.
 
 Each phase of Round 2, from the ledger (verified deals only). The market around us changed between phases too, so read these numbers as a record, not a controlled comparison:

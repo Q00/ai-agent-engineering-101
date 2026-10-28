@@ -333,6 +333,12 @@ async def cycle(dry_run=False):
         open_, target, notes = guard(proposal, previous, going, sale=sale)
         loyalty, lnotes = guard_loyalty(proposal.get("loyalty"), (previous or {}).get("loyalty"))
         notes += lnotes
+    if not launch and open_ != target:
+        # open at the target (user, 10/28 18:15): buyers whose budget sat at our target left at the higher opening ask
+        # with 2-3 star reviews, and from 16:00 the buyers that read recent reviews stopped choosing us (190 deals/h -> 1).
+        # The asks above the target had earned 690 in six hours, less than the custom those reviews drove away.
+        notes.append(f"opening ask {open_} lowered to the target")
+        open_ = dict(target)
     for n in notes:
         log("GUARD", n)
     strategy = {
