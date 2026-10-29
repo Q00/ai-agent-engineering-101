@@ -33,7 +33,7 @@ class ShopfrontTests(unittest.TestCase):
 
     def test_exact_owner_profile_has_no_inactive_promotion(self):
         description=public_description(public_items(load_catalog(), self.quotes()))
-        self.assertEqual(description, "Ssadassa Shop: lamp 100, chair 180, bookshelf 260 credits each. Clear quotes, prompt acceptance and Ed25519-signed receipts matching the agreed item and price. Request a current quote, then offer that total on the same task. (Catalog search and price negotiation)")
+        self.assertEqual(description, "Ssadassa Shop: lamp 100, chair 180, bookshelf 260 credits each. Clear totals, prompt agreement and Ed25519-signed receipts. Catalog attributes are seller-declared. Request a current quote; offer its total on the same task. (Catalog search and price negotiation)")
         self.assertNotIn('REVIEW10', description)
         self.assertLessEqual(len(description), 300)
 

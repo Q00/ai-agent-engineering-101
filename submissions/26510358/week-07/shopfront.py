@@ -41,8 +41,8 @@ def price_line(offers):
 
 def public_description(offers):
     return ('Ssadassa Shop: ' + price_line(offers) + ' credits each. '
-            'Clear quotes, prompt acceptance and Ed25519-signed receipts matching the agreed item and price. '
-            'Request a current quote, then offer that total on the same task. '
+            'Clear totals, prompt agreement and Ed25519-signed receipts. Catalog attributes are seller-declared. '
+            'Request a current quote; offer its total on the same task. '
             '(Catalog search and price negotiation)')
 
 
@@ -54,7 +54,7 @@ def public_skills(offers):
              'tags': ['shopping', 'catalog', 'negotiation', 'signed-receipt', *[item['id'] for item in offers]],
              'examples': ['I want to buy a ' + item['id'] for item in offers]}] + [
             {'id': 'buy-' + item['id'], 'name': item['name'],
-             'description': (f"Latest base quote: {item['price']} credits. " + ', '.join(item['features']) +
+             'description': (f"Latest base quote: {item['price']} credits. Seller-declared attributes: " + ', '.join(item['features']) +
                              '. Request a current quote, then offer that number on the same task for a signed receipt.'),
              'tags': ['shopping', 'furniture', item['id']],
              'examples': ['I want to buy a ' + item['id'], str(item['price'])]} for item in offers]
