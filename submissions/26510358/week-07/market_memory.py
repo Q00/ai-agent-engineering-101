@@ -134,7 +134,7 @@ class MarketMemory:
                     market_verified = verdict == "verified" and bool(re.search(r"\bverified True(?:,|$)", entry))
                     runtime_task = pending.get("runtime_task")
                     local_contract_ok = (not runtime_task or runtime_task == pending.get("receipt_task")) \
-                        and pending.get("local_status") not in {"disputed", "unresolved", "error", "no_deal", "untrusted"}
+                        and pending.get("local_status") not in {"disputed", "unresolved", "error", "local_error", "unavailable", "no_deal", "untrusted"}
                     settlement_required = pending.get("round", 0) >= 3
                     settled = settlement_required and market_verified and local_contract_ok and confirmed_payment(pending)
                     verified = market_verified and local_contract_ok and (not settlement_required or settled)
@@ -195,7 +195,7 @@ class MarketMemory:
             data["kit_pending"] = pending
         return imported
 
-    def visit(self, name, *, item, reason):
+    def visit(self, name, *, item, reason, owner=None):
         """A selected negotiation is a visit, independently of acceptance/settlement."""
         with self.transaction() as data:
             shop = data["shops"].setdefault(name, {"trades": 0, "completed": 0, "failures": 0, "recent": []})
@@ -205,9 +205,12 @@ class MarketMemory:
             shop["last_visit_at"] = stamp
             shop["last_selection"] = {"time": stamp, "item": item, "reason": reason[:500],
                                       "returning_verified": shop.get("verified_completions", 0) > 0}
+            window = data.setdefault("selection_window", [])
+            window.append({"shop": name, "owner": owner, "item": item, "time": stamp})
+            data["selection_window"] = window[-60:]
 
     def record(self, name, *, item, budget, status, price=None, reason="", issues=None, signed=False,
-               task=None, offer_count=None, response_seconds=None):
+               task=None, offer_count=None, response_seconds=None, penalize_shop=None, attribution="unknown"):
         with self.transaction() as data:
             shop = data["shops"].setdefault(name, {"trades": 0, "completed": 0, "failures": 0, "recent": []})
             shop["trades"] += 1
@@ -218,6 +221,7 @@ class MarketMemory:
             shop["recent"].append({"time": datetime.now(timezone.utc).isoformat(), "item": item,
                 "budget": budget, "status": status, "price": price, "reason": reason[:500],
                 "issues": issues or [], "signature_present": signed, "verified": False,
+                "penalize_shop": penalize_shop, "attribution": attribution,
                 "task": task, "offer_count": offer_count, "response_seconds": response_seconds})
             shop["recent"] = shop["recent"][-30:]
             # A factual receipt inconsistency is stronger evidence than a bad rating.
@@ -235,18 +239,36 @@ def rank_shops(shops, memory, item, budget, *, now=None):
         past = memory.get("shops", {}).get(shop["name"], {})
         if past.get("avoid_until", 0) > now:
             continue
-        reviews = [r for r in shop.get("reviews", []) if isinstance(r, dict)
+        valid_reviews = [r for r in shop.get("reviews", []) if isinstance(r, dict)
                    and isinstance(r.get("stars"), (int, float)) and not isinstance(r["stars"], bool)
-                   and 1 <= r["stars"] <= 5][:20]
+                   and 1 <= r["stars"] <= 5][:50]
+        reviews, seen_reviewers = [], set()
+        for index, review in enumerate(valid_reviews):
+            owner, author = review.get("registry_author_owner"), review.get("author")
+            if (isinstance(owner, str) and shop.get("registry_owner_verified") is True
+                    and owner.casefold() == str(shop.get("registry_owner", "")).casefold()):
+                continue
+            identity = ("owner", owner.casefold()) if isinstance(owner, str) else (
+                ("author", author) if isinstance(author, str) else ("unidentified", index))
+            if identity in seen_reviewers:
+                continue
+            seen_reviewers.add(identity)
+            reviews.append(review)
+            if len(reviews) >= 20:
+                break
         score = (sum(r["stars"] for r in reviews) + 8) / (len(reviews) + 2)
-        verified = past.get("verified_by_item", {}).get(item, {}).get("completed", 0)
+        round3 = isinstance(shop.get("current_round"), int) and shop["current_round"] >= 3
+        verified = past.get("settled_by_item" if round3 else "verified_by_item", {}).get(item, {}).get("completed", 0)
         score += min(verified, 5) * 0.15
-        score += min(past.get("verified_completions", 0), 3) * 0.25
+        score += min(past.get("round3_settlements" if round3 else "verified_completions", 0), 3) * 0.25
         recent = past.get("recent", [])[-5:]
-        score -= sum(r.get("status") == "error" for r in recent) * 0.6
+        # Legacy generic errors have no attribution; they cannot prove shop fault.
+        score -= sum(r.get("status") in {"error", "unavailable"} and r.get("penalize_shop") is True for r in recent) * 0.6
         score -= sum(r.get("status") == "disputed" for r in recent) * 2
         # Historical price is context for obtaining a fresh quote, not a current price advantage.
         ranked.append({**shop, "score": round(score, 3), "personal_memory": past,
+            "review_sample_size": len(reviews),
             "reviews": [{"stars": r["stars"], "review": str(r.get("review", ""))[:250],
-                         "round": r.get("round")} for r in reviews[:5]]})
+                         "round": r.get("round"), "author": r.get("author"),
+                         "registry_author_owner": r.get("registry_author_owner")} for r in reviews[:5]]})
     return sorted(ranked, key=lambda s: (-s["score"], s["name"]))

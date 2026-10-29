@@ -14,9 +14,11 @@ from harness import Harness
 from market_memory import MarketMemory, rank_shops
 from tracing import Trace
 from trade_funnel import emit_stage
+from review_policy import review_for_error, review_for_result
 
 ROOT = Path(__file__).resolve().parent
 OWN_NAMES = {"myeonggi", "gacha-shop", "SUNGMYEONGGI"}
+OWN_OWNER = "sungmyeonggi"
 
 
 def selection_view(shop, item):
@@ -34,7 +36,7 @@ def selection_view(shop, item):
         row = history[i]
         compact = {k: row[k] for k in ("time", "item", "budget", "status", "price", "issues", "signature_present",
                                       "task", "offer_count", "response_seconds", "verified", "round",
-                                      "settled", "settlement_ledger") if k in row}
+                                      "settled", "settlement_ledger", "penalize_shop", "attribution") if k in row}
         if row.get("issues") or row.get("status") in ("error", "untrusted", "disputed"):
             compact["reason"] = str(row.get("reason", ""))[:160]
         recent.append(compact)
@@ -94,6 +96,8 @@ def buy(shops, item, budget, memory, trace):
                                else "market_verification_failed"))
     eligible = [s for s in shops if isinstance(s, dict) and isinstance(s.get("name"), str)
                 and s["name"] not in OWN_NAMES and isinstance(s.get("url"), str)
+                and not (s.get("registry_owner_verified") is True
+                         and str(s.get("registry_owner", "")).casefold() == OWN_OWNER)
                 and urlparse(s["url"]).scheme in {"http", "https"}]
     ranked = rank_shops(eligible, memory.read(), item, budget)
     trace.write("market_candidates", item=item, budget=budget,
@@ -102,8 +106,7 @@ def buy(shops, item, budget, memory, trace):
                   "reviews": s["reviews"]} for s in ranked])
     if not ranked:
         trace.write("market_no_candidate", reason="All supplied shops excluded by personal evidence or own identity")
-        return report(shops[0]["url"] if shops else "", None, 1,
-                      "I could not find an eligible shop for this purchase.")
+        return report("", None, None, "")
     pool = ranked[:8]
     with ThreadPoolExecutor(max_workers=6) as executor:
         available = [s for s in executor.map(check_card, pool) if s is not None]
@@ -119,12 +122,9 @@ def buy(shops, item, budget, memory, trace):
             trusted_candidates.append(candidate)
     available = trusted_candidates
     if not available:
-        chosen = ranked[0]
-        review = ("Shop instructions tried to control my review rating."
-                  if blocked else "Could not reach the shop to make a purchase.")
-        if not blocked:
-            memory.record(chosen["name"], item=item, budget=budget, status="error", reason=review)
-        return report(chosen["url"], None, 1 if blocked else 2, review)
+        # No actual transaction supports a public rating of an arbitrary shop.
+        trace.write("market_discovery_unavailable", blocked_count=len(blocked), ratings_withheld=True)
+        return report("", None, None, "")
     choices = {s["name"]: s for s in available}
 
     def validate(decision):
@@ -147,48 +147,40 @@ def buy(shops, item, budget, memory, trace):
         chosen, reason = available[0], "Review/personal-memory ranking fallback after selector failure: " + str(exc)[:180]
     trace.write("market_shop_selected", shop=chosen["name"], url=chosen["url"], reason=reason,
                 reviews=chosen["reviews"], personal_memory=selection_view(chosen, item)["personal_memory"])
-    memory.visit(chosen["name"], item=item, reason=reason)
+    memory.visit(chosen["name"], item=item, reason=reason,
+                 owner=chosen.get("registry_owner") if chosen.get("registry_owner_verified") else None)
     try:
         result = negotiate(chosen["url"], item, budget, trace=trace, timeout=180)
         status = result["status"]
         receipt = result.get("receipt")
         issues = result.get("issues", [])
-        if status == "completed":
-            # Preserve the received DataPart. Only the kit knows the registry's
-            # authoritative public key and can verify + add the buyer signature.
-            signed = bool(receipt.get("sig_seller"))
-            stars = 5 if signed else 3
-            receipt_note = ("receipt matches the agreement; market signature validation pending" if signed else
-                            "receipt lacks a seller signature; completion unresolved")
-            review = (f"Agreed {item} x 1 for {numeric_price(receipt['price']):g} credits; {receipt_note}.")
-        elif status == "disputed":
-            signed, stars = False, 1
-            review = f"The {item} receipt did not match our agreed purchase."
-        else:
-            signed, stars = False, 3
-            review = f"No deal for {item} within my {budget:g}-credit budget."
-        memory_status = ("receipt_matched" if signed else "unresolved") if status == "completed" else status
+        assessment = review_for_result(item, status=status, receipt=receipt, issues=issues, state=result.get("state"))
+        signed = isinstance(receipt, dict) and bool(receipt.get("sig_seller"))
+        memory_status = assessment["memory_status"]
         memory.record(chosen["name"], item=item, budget=budget, status=memory_status,
             price=receipt.get("price") if isinstance(receipt, dict) else None,
-            reason=str(result.get("reason", result.get("state", review)))[:250],
+            reason=assessment["reason_code"],
             issues=issues, signed=signed, task=result.get("task_id"),
-            offer_count=result.get("offer_count"), response_seconds=result.get("response_seconds"))
+            offer_count=result.get("offer_count"), response_seconds=result.get("response_seconds"),
+            penalize_shop=assessment["penalize_shop"], attribution=assessment["attribution"])
         trace.write("market_trade_observed", shop=chosen["name"], status=memory_status,
                     receipt=receipt, task_id=result.get("task_id"), offer_count=result.get("offer_count"),
                     response_seconds=result.get("response_seconds"))
         # The kit does not know our agreed price/quote or prior task snapshots.
         # Keep disputed artifacts in the trace, never submit them for countersigning.
-        return report(chosen["url"], receipt if status == "completed" else None, stars, review)
+        return report(chosen["url"], receipt if status == "completed" else None,
+                      assessment["stars"], assessment["review"])
     except Exception as exc:
         detail = type(exc).__name__ + ": " + str(exc)[:250]
         trace.write("market_trade_error", shop=chosen["name"], detail=detail)
-        uncertain = bool(getattr(exc, "purchase_uncertain", False))
+        assessment = review_for_error(item, exc)
         memory.record(chosen["name"], item=item, budget=budget,
-            status="unresolved" if uncertain else "error", reason=detail,
+            status=assessment["memory_status"], reason=assessment["reason_code"],
             task=getattr(exc, "task_id", None), offer_count=getattr(exc, "offer_count", None),
             response_seconds=getattr(exc, "response_seconds", None),
-            issues=["purchase_outcome_uncertain"] if uncertain else [])
-        return report(chosen["url"], None, 2, f"I could not confirm a completed {item} purchase.")
+            issues=[assessment["reason_code"]], penalize_shop=assessment["penalize_shop"],
+            attribution=assessment["attribution"])
+        return report(chosen["url"], None, assessment["stars"], assessment["review"])
 
 
 if __name__ == "__main__":
