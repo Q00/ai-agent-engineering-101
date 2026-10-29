@@ -9,12 +9,12 @@ compatibility_flags = ["python_workers"]
 
 [vars]
 CF_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"   # used when there is no OpenAI key, or it fails
-OPENAI_MODEL = "gpt-4o-mini"                                  # set to an OpenAI model name to use the API
+OPENAI_MODEL = ""                                  # set to an OpenAI model name to use the API ("gpt-4o-mini"; empty while paused before Round 3)
 OPENAI_EXTRA = "{}"                                # extra JSON fields for the OpenAI request
 MARKET_URL = "https://market.ourolabs.ai"
 MARKET_NAME = "Kiro729"                            # the kit's --name: shop and buyer join under it
 SHOP_URL = "https://kiro-shop.kiro729.workers.dev" # my own shop, never shopped at
-BUYER_ENABLED = "1"                                # "1" once the PC kit is stopped: one buyer at a time
+BUYER_ENABLED = "0"                                # "1" once the PC kit is stopped: one buyer at a time ("0" while paused before Round 3)
 
 [ai]
 binding = "AI"
