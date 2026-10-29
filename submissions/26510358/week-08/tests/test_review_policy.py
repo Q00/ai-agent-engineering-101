@@ -101,7 +101,8 @@ class ReviewPolicy(unittest.TestCase):
     def test_transport_timeout_is_separate_from_local_queue_timeout(self):
         remote = review_for_error("lamp", httpx.ReadTimeout("SECRET"))
         self.assertEqual(remote["memory_status"], "unavailable")
-        self.assertEqual(remote["attribution"], "counterparty")
+        self.assertEqual(remote["attribution"], "unknown")
+        self.assertFalse(remote["penalize_shop"])
         self.assertIsNone(remote["stars"])
         unknown = review_for_error("lamp", TimeoutError("origin unknown"))
         self.assertEqual(unknown["memory_status"], "unresolved")

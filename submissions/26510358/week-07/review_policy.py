@@ -125,6 +125,7 @@ def review_for_error(item, exc, *, uncertain=None):
             return _decision(reason_code="counterparty_http_rejected", attribution="counterparty")
         if isinstance(cause, (httpx.TimeoutException, httpx.NetworkError,
                               httpx.RemoteProtocolError, httpx.ProxyError)):
-            return _decision(memory_status="unavailable", penalize_shop=True,
-                reason_code="counterparty_transport_unavailable", attribution="counterparty")
+            # A local network/proxy failure can look like a shop outage.
+            return _decision(memory_status="unavailable", penalize_shop=False,
+                reason_code="transport_unavailable_unattributed", attribution="unknown")
     return _decision(reason_code="unattributed_execution_error")
