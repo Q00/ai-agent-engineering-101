@@ -1,7 +1,7 @@
 {
-  "profile": "claude",
-  "harness": "seller: configured opening, quote confirmation, purchase guidance, signed refund coverage and request intake; Claude Code + Sonnet for other numeric negotiation; buyer: Claude Code + Sonnet",
-  "seller": {"harness": "claude", "model": "sonnet", "cmd": "python seller.py --mode claude --port {port}"},
-  "buyer": {"harness": "claude", "model": "sonnet", "cmd": "python buyer.py --mode claude --url {url} --item {item} --budget {budget}"},
-  "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"}
+  "profile": "codex",
+  "harness": "seller: configured opening, quote confirmation, purchase guidance, signed refund coverage and request intake; Codex + gpt-6-luna for other numeric negotiation; buyer: Codex + gpt-6-luna",
+  "seller": {"harness": "codex", "model": "gpt-6-luna", "cmd": "python seller.py --mode codex --port {port}"},
+  "buyer": {"harness": "codex", "model": "gpt-6-luna", "cmd": "python buyer.py --mode codex --url {url} --item {item} --budget {budget}"},
+  "market_buyer": {"cmd": "python market_buyer.py --mode codex --shops {shops} --item {item} --budget {budget}"}
 }
