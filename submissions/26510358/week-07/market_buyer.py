@@ -15,6 +15,7 @@ from market_memory import MarketMemory, rank_shops
 from tracing import Trace
 from trade_funnel import emit_stage
 from review_policy import review_for_error, review_for_result
+from buyer_value import value_context
 
 ROOT = Path(__file__).resolve().parent
 OWN_NAMES = {"myeonggi", "gacha-shop", "SUNGMYEONGGI"}
@@ -41,7 +42,7 @@ def selection_view(shop, item):
             compact["reason"] = str(row.get("reason", ""))[:160]
         recent.append(compact)
     compact_memory = {key: value for key, value in memory.items()
-                      if key not in ("recent", "verified_ledgers", "verified_by_item", "settled_by_item",
+                      if key not in ("recent", "failures", "verified_ledgers", "verified_by_item", "settled_by_item",
                                      "settled_orders", "settlement_ledgers")}
     compact_memory["verified_by_item"] = {item: memory.get("verified_by_item", {}).get(item, {})}
     compact_memory["settled_by_item"] = {item: memory.get("settled_by_item", {}).get(item, {})}
@@ -116,8 +117,9 @@ def buy(shops, item, budget, memory, trace):
             blocked.append(candidate["name"])
             trace.write("market_card_instruction_rejected", shop=candidate["name"],
                 url=candidate["url"], card=candidate["card"], flags=candidate["card_flags"])
-            memory.record(candidate["name"], item=item, budget=budget, status="untrusted",
-                reason="Agent Card instructs AI buyers to assign its own rating", issues=["review_manipulation"])
+            memory.record(candidate["name"], item=item, budget=budget, status="instruction_signal",
+                reason="Review-control wording detected; discovery will be rechecked, not classified as fraud",
+                issues=["review_manipulation"], penalize_shop=False, attribution="remote_metadata")
         else:
             trusted_candidates.append(candidate)
     available = trusted_candidates
@@ -150,7 +152,9 @@ def buy(shops, item, budget, memory, trace):
     memory.visit(chosen["name"], item=item, reason=reason,
                  owner=chosen.get("registry_owner") if chosen.get("registry_owner_verified") else None)
     try:
-        result = negotiate(chosen["url"], item, budget, trace=trace, timeout=180)
+        reference = value_context(chosen, item)
+        trace.write("buyer_value_context", shop=chosen["name"], evidence=reference)
+        result = negotiate(chosen["url"], item, budget, trace=trace, timeout=180, value_evidence=reference)
         status = result["status"]
         receipt = result.get("receipt")
         issues = result.get("issues", [])

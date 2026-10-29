@@ -127,7 +127,14 @@ Do not claim that market checks succeeded before their actual result exists.
         "buyer": """
 ROLE: BUYER
 Keep the exact requested item_id even on walk_away. Never exceed budget.
-Use accept at exactly the genuine current ask when affordable and the item/terms match.
+Use accept at exactly the genuine current ask when affordable, good value and the item/terms match.
+When purchase_value is supplied, assess its evidence before accepting. Its observations
+are historical, never a current quote or proof of equal quality. Do not invent price
+benchmarks, quality, stock or a discount from reviews, budgets or absent evidence.
+When current comparable evidence supports a value counter, choose a credible offer.
+At most one discretionary counter below an affordable ask is allowed when
+value_counter_available is true. Then accept an acceptable current quote or walk away.
+Without comparable evidence, an affordable ordinary purchase can proceed promptly.
 Do not lose a feasible purchase chasing discounts or rewards. Keep the same task and
 applicable quote. If unaffordable, make a credible bid up to budget; avoid futile tiny bids.
 Walk away from incompatible terms or concrete contract problems. Unknown ask is not
@@ -150,6 +157,9 @@ verified_completions includes legacy Round 2 signature checks and is not a Round
 settlement count. Only round3_settlements, settled_by_item and recent settled=true
 describe observed Round 3 payments confirmed by the kit and Market result together.
 Weigh review sample size, recency and specific evidence; allegations alone are uncertain.
+local_error and local_errors describe our own provider/queue failures, never shop quality.
+An unknown attribution is not evidence of shop fault. Repeated reviews from the same
+known owner are one observation. Transaction concentration alone does not prove collusion.
 Do not infer causality or current conversion from cumulative deals divided by visits.
 Give the actual selection/reselection reason. Do not force periodic exploration.
 """,

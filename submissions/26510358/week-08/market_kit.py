@@ -373,14 +373,13 @@ class AcpShop:
         return JSONResponse(s, status_code=201)
 
 
-def acp_pay(o, shop_url, shop_pub, receipt, buyer_key):
+def acp_pay(o, shop_url, shop_pub, receipt, buyer_key, *, allow_local_http=False):
     """Round 3, buyer side: open an ACP checkout on the shop, check it against the agreed receipt and the open
     mandates, sign the closed AP2 mandates, and complete. Returns the market's mandate receipt or None."""
     c = httpx.Client(timeout=60, follow_redirects=False, trust_env=False)
     try:
         # Public shops require HTTPS. Explicit loopback URLs keep the local
         # course demo usable without permitting remote HTTP or an origin change.
-        allow_local_http = urlparse(shop_url).hostname in {"localhost", "127.0.0.1", "::1"}
         validate_endpoint(shop_url, shop_url, allow_local_http=allow_local_http)
         r = c.get(f"{shop_url}/.well-known/acp.json")
         if r.status_code != 200:
@@ -393,6 +392,8 @@ def acp_pay(o, shop_url, shop_pub, receipt, buyer_key):
             log(f"[acp] checkout refused: HTTP {r.status_code}")
             return None
         s = r.json()
+        if not isinstance(s, dict):
+            raise AcpValidationError("invalid_checkout_shape")
         co = jwt_payload(s.get("checkout_jwt", ""), shop_pub)
         validate_checkout(o, shop_url, receipt, s, co, allow_local_http=allow_local_http)
         h = b64url(hashlib.sha256(s["checkout_jwt"].encode()).digest())
@@ -612,7 +613,9 @@ def handle_order(o, agent, d, market, proxy, own_shop, keys):
             body["sig_buyer"] = base64.b64encode(keys["buyer"].sign(canon(dict(signed, order=o["order"])))).decode()
             log("[sign] sig_seller ok, sig_buyer added")
             if rnd >= 3 and o.get("mandates"):
-                body["mandate_receipt"] = acp_pay(o, shop_url, pubkeys[shop_url], receipt, keys["buyer"])
+                local_demo = urlparse(getattr(market, "base", "")).hostname in {"localhost", "127.0.0.1", "::1"}
+                body["mandate_receipt"] = acp_pay(o, shop_url, pubkeys[shop_url], receipt, keys["buyer"],
+                                                  allow_local_http=local_demo)
         # A pre-payment opinion must not be published as successful shopping
         # when the official signature/order/payment checks did not complete.
         if not body.get("sig_buyer") or (rnd >= 3 and not body.get("mandate_receipt")):

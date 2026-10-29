@@ -214,10 +214,17 @@ class MarketMemory:
         with self.transaction() as data:
             shop = data["shops"].setdefault(name, {"trades": 0, "completed": 0, "failures": 0, "recent": []})
             shop["trades"] += 1
-            if status != "receipt_matched":
-                shop["completed" if status == "completed" else "failures"] += 1
-            else:
+            if status == "receipt_matched":
                 shop["accepted_receipts"] = shop.get("accepted_receipts", 0) + 1
+            elif status == "completed":
+                shop["completed"] += 1
+            elif status == "local_error":
+                shop["local_errors"] = shop.get("local_errors", 0) + 1
+            elif status == "unresolved":
+                shop["unresolved_attempts"] = shop.get("unresolved_attempts", 0) + 1
+            elif penalize_shop is True or status in {"disputed", "untrusted"}:
+                shop["failures"] += 1
+                shop["attributed_shop_failures"] = shop.get("attributed_shop_failures", 0) + 1
             shop["recent"].append({"time": datetime.now(timezone.utc).isoformat(), "item": item,
                 "budget": budget, "status": status, "price": price, "reason": reason[:500],
                 "issues": issues or [], "signature_present": signed, "verified": False,

@@ -114,6 +114,25 @@ class PaymentGuards(unittest.TestCase):
         self.assertNotIn("PRIVATE MUST NOT LEAK", str(log.call_args_list))
         self.assertIn("reconciliation", str(log.call_args_list))
 
+    def test_nonobject_create_response_fails_locally_without_completing(self):
+        for body in (None, [], "not a session"):
+            with self.subTest(body=body):
+                client = Mock(spec=["get", "post", "close"])
+                client.get.return_value = httpx.Response(200, json={"endpoint": "https://shop.test/acp"})
+                client.post.return_value = httpx.Response(201, content=json.dumps(body))
+                with patch.object(kit.httpx, "Client", return_value=client), patch.object(kit, "log"):
+                    result = kit.acp_pay(self.order, self.shop_url, kit.pub_b64(self.shop_key), self.receipt, self.buyer_key)
+                self.assertIsNone(result)
+                self.assertEqual(client.post.call_count, 1)
+
+    def test_loopback_http_requires_explicit_local_demo_permission(self):
+        client = Mock(spec=["get", "post", "close"])
+        with patch.object(kit.httpx, "Client", return_value=client), patch.object(kit, "log"):
+            result = kit.acp_pay(self.order, "http://127.0.0.1:9000", kit.pub_b64(self.shop_key),
+                                 self.receipt, self.buyer_key)
+        self.assertIsNone(result)
+        client.get.assert_not_called()
+
 
 class ResultBoundaryGuards(unittest.TestCase):
     def setUp(self):

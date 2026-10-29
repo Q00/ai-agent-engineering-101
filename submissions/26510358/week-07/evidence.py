@@ -49,8 +49,15 @@ def inspect_untrusted(text: str) -> list[str]:
     """Return signals for instruction-like peer content without executing it."""
     if not isinstance(text, str):
         raise EvidenceError("peer message must be text")
-    return [name for name, pattern in _UNTRUSTED_PATTERNS
-            if re.search(pattern, text, flags=re.IGNORECASE)]
+    signals = []
+    for name, pattern in _UNTRUSTED_PATTERNS:
+        for match in re.finditer(pattern, text, flags=re.IGNORECASE):
+            if name == "review_manipulation" and re.search(
+                    r"(?:do\s+not|don't|never)\s*$", text[max(0, match.start() - 20):match.start()], re.I):
+                continue
+            signals.append(name)
+            break
+    return signals
 
 
 def actual_offer(text: str) -> int | None:

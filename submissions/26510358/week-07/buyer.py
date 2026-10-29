@@ -141,11 +141,13 @@ def _prior_receipt_issues(receipt, observed_tasks):
 
 
 def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, trace=None,
-              timeout=240, expected_item_id=None, coordination_context=None):
+              timeout=240, expected_item_id=None, coordination_context=None, value_evidence=None):
     if not isinstance(item, str) or not item.strip():
         raise EvidenceError("Requested item must be nonempty text")
     if coordination_context is not None and not isinstance(coordination_context, dict):
         raise EvidenceError("Coordination context must be a factual object")
+    if value_evidence is not None and not isinstance(value_evidence, dict):
+        raise EvidenceError("Value evidence must be a factual object")
     if expected_item_id is not None:
         if not isinstance(expected_item_id, str) or not expected_item_id.strip():
             raise EvidenceError("Expected item ID must be nonempty text")
@@ -285,6 +287,11 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
             if coordination_context is not None:
                 # Coordinator observations never replace the slot's authorized budget.
                 context["coordination"] = deepcopy(coordination_context)
+            if value_evidence is not None:
+                context["purchase_value"] = deepcopy(value_evidence)
+                context["value_counter_available"] = not any(
+                    row["action"] == "offer" and row["ask"] is not None
+                    and row["price"] < row["ask"] <= budget for row in history)
             strategy = policy.choose("buyer", context)
             def validate_decision(output):
                 validated = validate_buyer_decision(output, budget=budget, ask=ask)
@@ -292,6 +299,10 @@ def negotiate(url, item, budget, *, ledger=None, item_key=None, policy=None, tra
                     raise EvidenceError("Cannot accept without an observed asking price; offer or walk away instead")
                 if validated["item_id"] != expected_item:
                     raise EvidenceError("Buyer decision must keep the requested quoted item ID")
+                if (value_evidence is not None and validated["action"] == "offer"
+                        and ask is not None and validated["price"] < ask <= budget
+                        and not context["value_counter_available"]):
+                    raise EvidenceError("Only one discretionary value counter is allowed; accept the valid current ask or walk away")
                 return validated
             decision = harness.decide(context, strategy=strategy,
                 instruction=strategy_instruction("buyer", strategy), deadline=deadline,
