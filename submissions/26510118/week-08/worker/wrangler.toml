@@ -6,6 +6,9 @@ name = "kiro-shop"
 main = "src/entry.py"
 compatibility_date = "2026-10-01"
 compatibility_flags = ["python_workers"]
+# false closes https://kiro-shop.kiro729.workers.dev while paused before Round 3; the Durable
+# Objects (journal, buyer memory) stay. true opens the same address again.
+workers_dev = false
 
 [vars]
 CF_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"   # used when there is no OpenAI key, or it fails
