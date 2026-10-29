@@ -1,5 +1,15 @@
 # Week 08 키트 v3 운영
 
+2026-10-29 권장 개선 적용 후 `market_kit.py`는 공식 v3를 바탕으로 한 로컬 확장임.
+`acp_security.py`의 결제 전 검사와 `market_identity.py`의 시장 소유권 연결을 추가했으므로
+현재 파일은 공식 원본과 바이트 단위로 같지 않음. 수정 전 원본은
+`logs/assignment-audit-20261029T013035Z/official-kit.py`에 보존함.
+시장 정산 규칙과 서명 형식은 유지하며, 가격·품질 조건을 임의로 만들어 추가하지 않음.
+2026-10-29 11:26 KST 같은 서비스의 재시작 검증을 통과했고 Shop·Buyer가 온라인임.
+그때 확인한 공개 주소는 https://tomatoes-pills-prison-wider.trycloudflare.com 임.
+기존 이름·소유자·가입 시각·키를 유지했으며 자세한 결과는
+`logs/guarded-rollout-20261029/restart-report.json`에 있음.
+
 2026-10-29 과제 진행 보고서는 [REPORT.md](REPORT.md), 업그레이드 순서는
 [ROUND3_UPGRADE.md](ROUND3_UPGRADE.md)에 있음. Round 3 개시 전 준비 단계이며 최종 제출 완료가 아님.
 정산 기억 호환성은 `../week-07/market_memory.py`, `market_buyer.py`, `harness.py`에 보완함.
@@ -10,13 +20,13 @@
 - 수행 범위: 강의 SETUP의 Step 1 다운로드, Step 2 재가입, Step 3 확인 완료함
 - 공식 원본: https://github.com/Q00/ai-agent-engineering-101/blob/main/scripts/market_kit.py
 - 원본 Git blob: `a1c7a5cfff4c1783ecaaf128a129c8f8fe70c9d6`
-- `market_kit.py`는 공식 원본과 바이트 단위로 동일하며 `KIT_VERSION = "3"`임
+- 2026-10-27 설치 당시 `market_kit.py`는 공식 원본과 바이트 단위로 동일했으며 `KIT_VERSION = "3"`임
 - 저장소 AGENTS 지침의 공유 `scripts/` 읽기 전용 규칙에 따라 학생 폴더에 저장함
 - 구문 파싱, 기존 가상 환경에서 의존성 import, CLI 도움말 실행 확인함
 - 기존 Week 07 에이전트 폴더, 이름 `myeonggi`, 소유 계정 `SUNGMYEONGGI`, 개인키를 그대로 사용함
 - 외부 배포 모드에서 v3 터널 모드로 재가입해 공식 키트가 ACP checkout 경로를 제공함
 - `week08-myeonggi-market.service` 사용자 서비스가 운영하며 이전 Buyer 서비스는 중지함
-- 현재 공개 주소는 https://customs-whilst-thy-gate.trycloudflare.com 임
+- 2026-10-27 확인한 공개 주소는 https://customs-whilst-thy-gate.trycloudflare.com 이었음. 재시작하면 주소가 바뀔 수 있음
 - 공개 ACP 안내는 https://customs-whilst-thy-gate.trycloudflare.com/.well-known/acp.json 에서 HTTP 200 확인함
 - 새 `week-07/logs/market-kit.log` 첫 줄의 `market_kit 3`와 재가입 후 실제 검증 거래를 확인함
 - 2026-10-27 재가입 시 시장은 Round 2였으므로 Round 3의 정산 성공을 주장하지 않음
