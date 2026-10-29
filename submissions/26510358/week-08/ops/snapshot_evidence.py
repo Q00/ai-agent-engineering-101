@@ -24,6 +24,8 @@ from market_memory import MarketMemory
 
 
 def timestamp(text):
+    if not isinstance(text, str):
+        raise ValueError("Missing ISO 8601 timestamp")
     value = datetime.fromisoformat(text.replace("Z", "+00:00"))
     if value.tzinfo is None:
         raise ValueError("Use an ISO 8601 timestamp with a timezone")
