@@ -1,0 +1,32 @@
+test_matching_settlement_is_recorded_once_and_visible_in_bounded_context (test_settlement_memory.SettlementMemory) ... ok
+test_partial_lines_resume_without_losing_order_context (test_settlement_memory.SettlementMemory) ... ok
+test_repeated_order_or_payment_ledger_does_not_increment_counters (test_settlement_memory.SettlementMemory) ... ok
+test_replaced_larger_log_cannot_reuse_pending_payment (test_settlement_memory.SettlementMemory) ... ok
+test_round2_verification_remains_distinct_from_round3_settlement (test_settlement_memory.SettlementMemory) ... ok
+test_round3_verification_without_paid_is_not_promoted (test_settlement_memory.SettlementMemory) ... ok
+test_seller_settled_line_and_peer_quoted_paid_cannot_pay_for_buyer (test_settlement_memory.SettlementMemory) ... ok
+test_wrong_amount_origin_or_contract_never_promotes (test_settlement_memory.SettlementMemory) ... ok
+test_boolean_and_infinite_quote_prices_are_ignored (test_snapshot_evidence.SnapshotEvidence) ... ok
+test_local_receipts_and_quoted_peer_settlements_do_not_count (test_snapshot_evidence.SnapshotEvidence) ... ok
+test_opening_is_one_per_started_task_and_counter_is_not_an_opening (test_snapshot_evidence.SnapshotEvidence) ... ok
+test_output_outside_student_log_directory_is_rejected_before_network (test_snapshot_evidence.SnapshotEvidence) ... ok
+test_since_excludes_undated_and_old_quotes (test_snapshot_evidence.SnapshotEvidence) ... ERROR
+
+======================================================================
+ERROR: test_since_excludes_undated_and_old_quotes (test_snapshot_evidence.SnapshotEvidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-08/tests/test_snapshot_evidence.py", line 50, in test_since_excludes_undated_and_old_quotes
+    self.assertEqual(self.summary(text, timestamp("2026-11-02T00:00:00+09:00"))["opening_quotes"], {})
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-08/tests/test_snapshot_evidence.py", line 32, in summary
+    return summarize_log(path, self.root / "memory.json", since)
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-08/ops/snapshot_evidence.py", line 75, in summarize_log
+    if timestamp(event.get("time", "")) < since:
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-08/ops/snapshot_evidence.py", line 27, in timestamp
+    value = datetime.fromisoformat(text.replace("Z", "+00:00"))
+AttributeError: 'NoneType' object has no attribute 'replace'
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.040s
+
+FAILED (errors=1)
