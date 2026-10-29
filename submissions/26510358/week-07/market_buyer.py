@@ -33,13 +33,16 @@ def selection_view(shop, item):
     for i in sorted(indices):
         row = history[i]
         compact = {k: row[k] for k in ("time", "item", "budget", "status", "price", "issues", "signature_present",
-                                      "task", "offer_count", "response_seconds", "verified") if k in row}
+                                      "task", "offer_count", "response_seconds", "verified", "round",
+                                      "settled", "settlement_ledger") if k in row}
         if row.get("issues") or row.get("status") in ("error", "untrusted", "disputed"):
             compact["reason"] = str(row.get("reason", ""))[:160]
         recent.append(compact)
     compact_memory = {key: value for key, value in memory.items()
-                      if key not in ("recent", "verified_ledgers", "verified_by_item")}
+                      if key not in ("recent", "verified_ledgers", "verified_by_item", "settled_by_item",
+                                     "settled_orders", "settlement_ledgers")}
     compact_memory["verified_by_item"] = {item: memory.get("verified_by_item", {}).get(item, {})}
+    compact_memory["settled_by_item"] = {item: memory.get("settled_by_item", {}).get(item, {})}
     return {**shop, "personal_memory": {**compact_memory, "recent": recent}}
 
 
@@ -86,8 +89,9 @@ def buy(shops, item, budget, memory, trace):
             else:
                 emit_stage(trace, "ended", side="buyer", task_id=task_id,
                            item=result.get("item"), shop=result.get("shop"),
-                           outcome="unresolved", reason_code=("local_contract_failed" if result.get("market_verified")
-                                                              else "market_verification_failed"))
+                           outcome="unresolved", reason_code=("local_contract_failed" if not result.get("local_contract_ok", True)
+                               else "settlement_unconfirmed" if result.get("market_verified") and result.get("settlement_required")
+                               else "market_verification_failed"))
     eligible = [s for s in shops if isinstance(s, dict) and isinstance(s.get("name"), str)
                 and s["name"] not in OWN_NAMES and isinstance(s.get("url"), str)
                 and urlparse(s["url"]).scheme in {"http", "https"}]

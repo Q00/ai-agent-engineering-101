@@ -146,6 +146,9 @@ receipts, fewer actual bids and smooth completion. Respect concrete current prob
 or a clearly better verified offer elsewhere. Past prices are not current quotes.
 Use personal verified_completions and per-item verified outcomes, not unverified
 receipt presence or historical completed counters, as evidence of successful settlement.
+verified_completions includes legacy Round 2 signature checks and is not a Round 3
+settlement count. Only round3_settlements, settled_by_item and recent settled=true
+describe observed Round 3 payments confirmed by the kit and Market result together.
 Weigh review sample size, recency and specific evidence; allegations alone are uncertain.
 Do not infer causality or current conversion from cumulative deals divided by visits.
 Give the actual selection/reselection reason. Do not force periodic exploration.
