@@ -1,0 +1,28 @@
+test_already_completed_session_never_completes_again (test_kit_guards.PaymentGuards) ... ok
+test_complete_timeout_is_not_retried_and_error_content_is_not_logged (test_kit_guards.PaymentGuards) ... ok
+test_consistent_signed_price_over_order_budget_never_completes (test_kit_guards.PaymentGuards) ... ok
+test_downgrade_or_different_port_descriptor_never_posts (test_kit_guards.PaymentGuards) ... ok
+test_forged_checkout_signature_never_completes (test_kit_guards.PaymentGuards) ... ok
+test_redirect_descriptor_is_not_followed_and_never_posts (test_kit_guards.PaymentGuards) ... ok
+test_valid_signature_and_matching_session_complete_exactly_once (test_kit_guards.PaymentGuards) ... ok
+test_valid_signature_with_altered_visible_total_never_completes (test_kit_guards.PaymentGuards) ... ok
+test_invalid_signature_never_pays_or_publishes_success_review (test_kit_guards.ResultBoundaryGuards) ... ok
+test_missing_round3_settlement_suppresses_prepared_review (test_kit_guards.ResultBoundaryGuards) ... ok
+test_nullable_stars_remain_nullable_for_a_valid_round2_receipt (test_kit_guards.ResultBoundaryGuards) ... ok
+test_round3_order_without_mandates_never_pays_or_publishes_success_review (test_kit_guards.ResultBoundaryGuards) ... ok
+test_same_key_alias_returned_by_buyer_cannot_be_signed_or_paid (test_kit_guards.ResultBoundaryGuards) ... ok
+test_same_owner_url_returned_by_buyer_cannot_be_signed_or_paid (test_kit_guards.ResultBoundaryGuards) ... FAIL
+test_valid_eligible_receipt_is_signed_and_paid_once (test_kit_guards.ResultBoundaryGuards) ... ok
+
+======================================================================
+FAIL: test_same_owner_url_returned_by_buyer_cannot_be_signed_or_paid (test_kit_guards.ResultBoundaryGuards)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-08/tests/test_kit_guards.py", line 171, in test_same_owner_url_returned_by_buyer_cannot_be_signed_or_paid
+    self.assertNotIn("sig_buyer", body)
+AssertionError: 'sig_buyer' unexpectedly found in {'order': 'order-1', 'shop': 'https://other.test', 'receipt': {'shop': 'TEST SHOP', 'item': 'lamp', 'price': 100, 'task': 'task-1', 'sig_seller': 'XelXMSZETp29fFXHZwMbENgatsu+RNVVj/trtyvVb/kER1r2M1oYa0dL4qLCr/MYVyZgsIUgUsWV5oR2ZMIDDw=='}, 'stars': 5, 'review': 'TEST ONLY transaction observation', 'sig_buyer': 'OVwCqS18N+HwJ20QzMgcnxqOR+VSMppFuWepzGx12ObXDT2+GF1+wX/W7fRmE9Qf5mV6TDYRzGhkAm324O6iBA==', 'mandate_receipt': {'ledger': 122}}
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.038s
+
+FAILED (failures=1)

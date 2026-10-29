@@ -66,6 +66,8 @@ from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
+from acp_security import AcpValidationError, validate_checkout, validate_endpoint
+from market_identity import cached_board, enrich_shops
 
 KIT_VERSION = "3"
 BUYER_TIMEOUT = 300
@@ -374,30 +376,25 @@ class AcpShop:
 def acp_pay(o, shop_url, shop_pub, receipt, buyer_key):
     """Round 3, buyer side: open an ACP checkout on the shop, check it against the agreed receipt and the open
     mandates, sign the closed AP2 mandates, and complete. Returns the market's mandate receipt or None."""
-    c = httpx.Client(timeout=60)
+    c = httpx.Client(timeout=60, follow_redirects=False, trust_env=False)
     try:
+        # Public shops require HTTPS. Explicit loopback URLs keep the local
+        # course demo usable without permitting remote HTTP or an origin change.
+        allow_local_http = urlparse(shop_url).hostname in {"localhost", "127.0.0.1", "::1"}
+        validate_endpoint(shop_url, shop_url, allow_local_http=allow_local_http)
         r = c.get(f"{shop_url}/.well-known/acp.json")
         if r.status_code != 200:
             log(f"[acp] {shop_url} serves no /.well-known/acp.json ({r.status_code}); this deal cannot settle")
             return None
-        base = r.json()["endpoint"].rstrip("/")
-        if urlparse(base).hostname != urlparse(shop_url).hostname:
-            log(f"[acp] the ACP endpoint {base} is not on the shop's host; not paying")
-            return None
+        base = validate_endpoint(shop_url, r.json()["endpoint"], allow_local_http=allow_local_http)
         r = c.post(f"{base}/checkout_sessions", json={"line_items": [{"id": receipt["item"], "quantity": 1}],
                                                       "receipt": receipt})
         if r.status_code not in (200, 201):
-            log(f"[acp] checkout refused: {r.status_code} {r.text[:200]}")
+            log(f"[acp] checkout refused: HTTP {r.status_code}")
             return None
         s = r.json()
         co = jwt_payload(s.get("checkout_jwt", ""), shop_pub)
-        budget = next(x["max"] for x in o["mandates"]["payment"]["mandate"]["constraints"] if x["type"] == "payment.amount_range")
-        if not co or (co.get("item"), co.get("price"), co.get("task")) != (receipt["item"], receipt["price"], receipt["task"]):
-            log("[acp] the checkout does not match the agreed receipt (or is not signed by the shop); not paying")
-            return None
-        if co["price"] > budget:
-            log(f"[acp] checkout total {co['price']} is above the mandate's limit; not paying")
-            return None
+        validate_checkout(o, shop_url, receipt, s, co, allow_local_http=allow_local_http)
         h = b64url(hashlib.sha256(s["checkout_jwt"].encode()).digest())
         opens = {k: hashlib.sha256(canon(v["mandate"])).hexdigest() for k, v in o["mandates"].items()}
         cm = {"vct": "mandate.checkout.1", "order": o["order"], "open_mandate": opens["checkout"],
@@ -408,13 +405,17 @@ def acp_pay(o, shop_url, shop_pub, receipt, buyer_key):
         r = c.post(f"{base}/checkout_sessions/{s['id']}/complete",
                    json={"payment_data": {"order": o["order"], "checkout_mandate": sign(cm), "payment_mandate": sign(pm)}})
         if r.status_code != 200:
-            log(f"[acp] payment not completed: {r.status_code} {r.text[:300]}")
+            log(f"[acp] payment not completed: HTTP {r.status_code}")
             return None
         mr = r.json()["order"]["mandate_receipt"]
         log(f"[acp] paid {co['price']} through {base}, settled at ledger #{mr['ledger']}")
         return mr
+    except AcpValidationError as e:
+        log(f"[acp] payment refused locally: {e.code}")
+        return None
     except (httpx.HTTPError, ValueError, KeyError, TypeError) as e:
-        log(f"[acp] payment failed: {type(e).__name__}: {e}")
+        # Do not expose peer response bodies, mandate contents or credentials.
+        log(f"[acp] payment failed: {type(e).__name__}; outcome may require reconciliation")
         return None
     finally:
         c.close()
@@ -556,11 +557,16 @@ def handle_order(o, agent, d, market, proxy, own_shop, keys):
     pubkeys = {s["url"]: s["pubkey"] for s in shops}
 
     if rnd >= 1 and "market_buyer" in agent:
+        buyer_name = market.joined.get("buyer", (None,))[0] if hasattr(market, "joined") else None
+        candidates, excluded = enrich_shops(shops, cached_board(market), buyer_name=buyer_name,
+            own_shop_key=pub_b64(keys["shop"]), round_number=rnd)
+        for row in excluded:
+            log(f"[identity] excluded {row['name']}: {row['reason']}")
         shops_file = d / ".market" / "shops.json"
         shops_file.parent.mkdir(exist_ok=True)
-        shops_file.write_text(json.dumps([{"name": s["name"], "url": s["url"], "reviews": s["reviews"]} for s in shops],
+        shops_file.write_text(json.dumps(candidates,
                                          ensure_ascii=False, indent=1), encoding="utf-8")
-        log(f"[kit] {len(shops)} shops in {shops_file.relative_to(d)}, running market_buyer")
+        log(f"[kit] {len(candidates)} shops in {shops_file.relative_to(d)}, running market_buyer")
         lines = run_buyer(fill(agent["market_buyer"]["cmd"], shops=shops_file, item=o["item"], budget=o["budget"]), d)
         out = last_json(lines)
         if not out or "shop" not in out:
@@ -570,6 +576,10 @@ def handle_order(o, agent, d, market, proxy, own_shop, keys):
             return None
         shop_url = str(out["shop"]).rstrip("/")
         receipt = out.get("receipt")
+        if shop_url not in {s["url"].rstrip("/") for s in candidates}:
+            log("[identity] buyer returned a shop outside the eligible candidate list; not signing")
+            shop_url, receipt = "", None
+            out["stars"], out["review"] = None, ""
         if isinstance(receipt, dict) and "seller" in receipt and "shop" not in receipt:
             receipt["shop"] = receipt.pop("seller")
         stars, review = out.get("stars"), out.get("review")
@@ -595,7 +605,7 @@ def handle_order(o, agent, d, market, proxy, own_shop, keys):
             log(f"[sign] {shop_url} is not a registered shop")
         elif not verify_seller(pubkeys[shop_url], receipt):
             log("[sign] sig_seller does not verify with the shop's registered key")
-        elif receipt.get("item") != o["item"] or not isinstance(receipt.get("price"), int) or receipt["price"] > o["budget"]:
+        elif receipt.get("item") != o["item"] or type(receipt.get("price")) is not int or not 0 < receipt["price"] <= o["budget"]:
             log(f"[sign] receipt {receipt.get('item')} at {receipt.get('price')} does not fit the order, not signing")
         else:
             signed = {k: receipt[k] for k in RECEIPT_KEYS}
@@ -603,6 +613,10 @@ def handle_order(o, agent, d, market, proxy, own_shop, keys):
             log("[sign] sig_seller ok, sig_buyer added")
             if rnd >= 3 and o.get("mandates"):
                 body["mandate_receipt"] = acp_pay(o, shop_url, pubkeys[shop_url], receipt, keys["buyer"])
+        # A pre-payment opinion must not be published as successful shopping
+        # when the official signature/order/payment checks did not complete.
+        if not body.get("sig_buyer") or (rnd >= 3 and not body.get("mandate_receipt")):
+            body["stars"], body["review"] = None, ""
     r = post_result(market, body)
     if r.status_code != 200:
         log(f"[market] result refused: {r.status_code} {r.text}")
