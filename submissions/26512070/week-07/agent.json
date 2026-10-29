@@ -1,0 +1,6 @@
+{
+  "harness": "Claude Code 2.1.283 (claude -p --model haiku, built-in tools off) inside our own ReAct loop; market_buyer: haiku picks the shop, code keeps the record and blocks shops that cheated",
+  "seller": {"cmd": "py seller.py --port {port}"},
+  "buyer": {"cmd": "py buyer.py --url {url} --item {item} --budget {budget}"},
+  "market_buyer": {"cmd": "py market_buyer.py --shops {shops} --item {item} --budget {budget}"}
+}
