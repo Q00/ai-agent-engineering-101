@@ -114,6 +114,6 @@ def value_context(shop, item, *, now=None, max_age=86400):
         "evidence_limits": [
             "Historical observations are not current offers.",
             "Matching quality, availability and other purchase conditions have not been verified.",
-            "These observations do not define a fair price, offer, acceptance threshold or budget ceiling.",
+            "These observations do not define a fair price, offer or acceptance threshold.",
         ],
     }

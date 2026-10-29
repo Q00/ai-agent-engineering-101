@@ -144,7 +144,8 @@ class ResultBoundaryGuards(unittest.TestCase):
                             "card": {"url": self.other_url}}]}
         market = SimpleNamespace(joined={"buyer": ("buyer", self.buyer_key, self.own_url)},
             call=Mock(side_effect=lambda method, path, **kwargs: httpx.Response(
-                200, json={"shops": shops} if path == "/api/shops" else board)))
+                200, json={"shops": shops} if path == "/api/shops" else board,
+                request=httpx.Request(method, "https://market.test" + path))))
         output = {"shop": self.other_url, "receipt": receipt if receipt_present else None,
                   "stars": stars, "review": "TEST ONLY transaction observation"}
         response = httpx.Response(200, json={"checks": {}, "ledger": 123,
