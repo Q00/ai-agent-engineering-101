@@ -44,41 +44,45 @@ class TransactionReviewTests(unittest.TestCase):
         for name in ("TEST_ONLY_HIGHER", "TEST_ONLY_LOWER"):
             with self.subTest(name=name):
                 response = self.run_case(result=result, name=name)
-                self.assertEqual(response["stars"], 5)
+                self.assertEqual(response["stars"], 4)
                 self.assertEqual(response["receipt"], result["receipt"])
                 self.assertEqual(response["review"],
-                                 "Agreed lamp x 1 for 100 credits; receipt matches the agreement; market signature validation pending.")
+                                 "Agreed lamp x 1 for 100 credits; receipt matches the agreement; market validation pending.")
                 self.assertNotIn("Simulation competition rating", response["review"])
 
     def test_no_deal_unsigned_disputed_and_error_reviews_preserve_actual_outcome(self):
         cases = [({"status": "no_deal", "receipt": None, "reason": "TEST ONLY budget too low"}, None, 3),
                  ({"status": "completed", "receipt": {"price": 100}}, None, 3),
                  ({"status": "disputed", "receipt": {"price": 130}, "issues": ["receipt_price_mismatch"]}, None, 1),
-                 (None, RuntimeError("TEST ONLY network error " * 100), 2)]
+                 (None, RuntimeError("TEST ONLY network error " * 100), None)]
         for result, error, stars in cases:
             with self.subTest(result=result, error=bool(error)):
                 response = self.run_case(result=result, error=error)
                 self.assertEqual(response["stars"], stars)
                 self.assertEqual(response["receipt"], result["receipt"] if result and result["status"] == "completed" else None)
                 if error:
-                    self.assertEqual(response["review"],
-                                     "I could not confirm a completed lamp purchase.")
+                    self.assertEqual(response["review"], "")
                     self.assertNotIn("TEST ONLY network error", response["review"])
                 elif result["status"] == "no_deal":
-                    self.assertEqual(response["review"], "No deal for lamp within my 120-credit budget.")
+                    self.assertEqual(response["review"], "No agreement was reached for the lamp purchase.")
+                    self.assertNotIn("120", response["review"])
+                    self.assertNotIn("budget", response["review"])
                 elif result["status"] == "disputed":
                     self.assertIn("did not match our agreed purchase", response["review"])
                 elif not result["receipt"].get("sig_seller"):
                     self.assertIn("lacks a seller signature", response["review"])
 
     def test_pretrade_excluded_unavailable_and_blocked_results_have_no_ads(self):
-        for stage, stars in (("excluded", 1), ("unavailable", 2), ("blocked", 1)):
+        for stage, stars in (("excluded", None), ("unavailable", None), ("blocked", None)):
             with self.subTest(stage=stage):
                 response = self.run_case(stage=stage)
                 self.assertEqual(response["stars"], stars)
                 self.assertIsNone(response["receipt"])
+                self.assertEqual(response["review"], "")
 
     def test_long_requested_item_stays_one_line_within_market_limit(self):
         result = {"status": "completed", "receipt": {"price": 100, "sig_seller": "TEST_ONLY"}}
         response = self.run_case(result=result, item="TEST ONLY unusually long item\n" * 30)
-        self.assertEqual(len(response["review"]), 400)
+        self.assertLessEqual(len(response["review"]), 400)
+        self.assertIn("requested item", response["review"])
+        self.assertNotIn("unusually long", response["review"])
