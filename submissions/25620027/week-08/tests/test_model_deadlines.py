@@ -33,14 +33,33 @@ def test_stalled_sdk_response_is_cancelled_and_reported(
     monkeypatch.setattr("market_a2a.harness.MODEL_WAIT_SECONDS", 0.02)
     logs: list[str] = []
 
+    async def warmed_transport(request: httpx2.Request) -> httpx2.Response:
+        if b'"offline-warmup"' in request.content:
+            return httpx2.Response(200, json={
+                "id": "warmup", "object": "chat.completion", "created": 0,
+                "model": "offline-warmup", "choices": [{
+                    "index": 0, "finish_reason": "stop",
+                    "message": {"role": "assistant", "content": "ready"},
+                }],
+            })
+        return await stalled(request)
+
     async def scenario() -> None:
         async with (
-            httpx2.AsyncClient(transport=httpx2.MockTransport(stalled)) as http,
+            httpx2.AsyncClient(
+                transport=httpx2.MockTransport(warmed_transport)
+            ) as http,
             AsyncOpenAI(api_key="offline", max_retries=0, http_client=http) as client,
         ):
+            # Given: SDK platform discovery has finished outside the I/O fault.
+            _ = await client.chat.completions.create(
+                model="offline-warmup", messages=[],
+            )
             harness = Harness(client, logs.append)
+            # When: a warmed SDK waits forever on its actual HTTP transport.
             with anyio.fail_after(1), pytest.raises(HarnessError, match="response"):
                 _ = await harness.complete([], [])
+            # Then: the model I/O budget cancels it and reports the right error.
             assert harness.calls == 0
             assert "MODEL_TIMEOUT stage=response" in logs
 
