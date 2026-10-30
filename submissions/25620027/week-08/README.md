@@ -1,4 +1,4 @@
-# Week08 — R3 공개 준비본 (Draft)
+# Week08 — 증거 조회·별도 기록·ACP 결제를 연결한 하네스
 
 학번25620027. 7주차 최종 하네스에서 이어받은 독립 작업본이다. **VPS 설치·Linux 검증 완료, 시장 활성화 전 대기 상태**다. 기존7주차 서비스는 건드리지 않았다.
 
@@ -6,23 +6,35 @@
 - [요구사항 대조](REQUIREMENTS.md): 웹교재·중간/중간2 속기록·판서
 - [VPS 전환 절차](deploy/vps/README.md): 빌드·기억 이전·활성화·복구
 - [조건부터 다시 본 전략](STRATEGY_REVIEW.md): 재고 매집 제외·R3 마진·악성 지시 중단·사실형 문구
+- [최종 검사](logs/submission-review-20261030-summary.json): 381개 PASS, 실패·오류·건너뜀 0
+- [메타 피드백 예제](examples/operator_feedback_demo.py): API 없이 관측→검증→프로필 변경 재현
+- [기존 보고서 원문](REPORT_HISTORY.md): 공고·시도·실패 이력 보존
 - [실행 로그](logs/): 실패 원본과 후속 검사 모두 보존
 - [VPS 설치 결과](logs/vps-stage-20261030/result.json): 코드64개·Linux 이미지·핵심54검사와 기본 기동 검증 완료, 시장 등록/주문0회
 
-2026-10-30 공개 준비본이다. 중간평가 마감은 **2026-11-16 23:59(PR 생성 시각)**, R3 기간은 **11월2일~16일**이다. 실제 R3 정산/가격 전후 분석/순위는 아직 없다. 최신 공고의 공급·식품 품질·게시판 계약 반영, 모델 실호출, 실서비스 검증은 후속 항목이다. Linux 이미지 빌드·기본 기동 검증은 아래 설치 기록에서 완료했다. [공식 개정](https://github.com/Q00/ai-agent-engineering-101/blob/5b398056d0b11d3fbd0b943ff6080f388832d8ec/week-08.html).
+2026-10-30 코드·재현 검증 제출본이다. 중간평가 마감은 **2026-11-16 23:59(PR 생성 시각)**, R3 기간은 **11월2일~16일**이다. 실제 R3 정산/가격 전후 분석/순위는 아직 없다. 최신 공고의 공급·식품 품질·게시판 계약 반영, 모델 실호출, 실서비스 검증은 후속 항목이다. Linux 이미지 빌드·기본 기동 검증은 아래 설치 기록에서 완료했다. [공식 개정](https://github.com/Q00/ai-agent-engineering-101/blob/5b398056d0b11d3fbd0b943ff6080f388832d8ec/week-08.html).
 
-## 설치와 로컬 검사
+## 설치와 오프라인 재현
 
-저장소 루트에 교수의 pinned `scripts/market_kit.py`가 있어야 한다. Python3.12.11 기준이다.
+검증 환경은 Python3.12.11, Node.js22.23.4다. Node는 광고/가격표 JavaScript 검사에 사용한다. 저장소 루트의 교수 kit v3는 [고정 소스](https://github.com/Q00/ai-agent-engineering-101/blob/c89c58d652ef63a85307f82bb793e54fb6969272/scripts/market_kit.py)와 같아야 한다. 키/환경 파일 없이 다음을 실행한다.
 
 ```bash
 cd submissions/25620027/week-08
 uv venv --python 3.12.11 .venv
 uv pip sync --python .venv/bin/python requirements-local.lock
-.venv/bin/python -m pytest tests -q
+.venv/bin/python -m pytest tests -q -p no:cacheprovider
+.venv/bin/python -m examples.operator_feedback_demo --output /tmp/ax8-meta-demo-unique
 ```
 
-실제 LLM 호출을 대신한 fixture와 임시 Ed25519 키를 사용한다. A2A/ACP/HTTP/서명은 실제 코드와 로컬 소켓을 거친다. 외부 모델 API와 실제 시장의 결제는 호출하지 않는다.
+예제 출력 경로는 실행마다 새로 정한다. 기존 경로는 덮어쓰지 않는다. `result.json`에서 가격 비교 우선v1→협상 횟수 우선v2, 구매자 컨텍스트 반영, 변조 해시 거부·이전 프로필 유지, 모델/시장 호출0을 확인할 수 있다. [보존한 결과](logs/meta-demo-20261030/result.json). 가상 관측이며 실제 시장·수익 학습 실험은 아니다.
+
+회귀 검사는 모델 답변 fixture와 임시 키를 쓴다. A2A/ACP/HTTP/서명은 실제 코드·로컬 소켓을 거치고 외부 모델 API/시장 결제는 호출하지 않는다. localhost bind가 금지된 실행 환경에서는 socket 검사가 실패하므로, 원인을 기록하고 로컬 소켓을 허용한 환경에서 실행한다.
+
+## 실제 모델과 시장 운영
+
+[agent.json](agent.json)은 seller/buyer/market_buyer 명령과 하네스를 기술한다. 실제 운영은 [VPS 절차](deploy/vps/README.md)에 따라 기존 키·기억·유효 시한·남은 주문 수를 준비하고 공식 kit Proxy 경로를 활성화한다. 무료 경로의 명시 설정은 `AX_MODEL_PROVIDER=openrouter-free`, `AX_OPENAI_FALLBACK=0`이다. 실제 키 값은 환경에만 둔다.
+
+`run_harness.sh`의 기본 provider는 이전 OpenAI 설정일 수 있고 환경 파일도 읽는다. 위 오프라인 검사에 이 wrapper를 사용하지 않는다. 현재 고정 kit는 새 공급/식품 품질 계약이 나오면 다시 대조해야 한다. 실제 시장 참가와 상시 운영 시한 연장은 이 재현 명령에 포함되지 않는다.
 
 ## 역할 분리
 
