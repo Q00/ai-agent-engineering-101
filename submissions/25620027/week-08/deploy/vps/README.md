@@ -1,11 +1,11 @@
 # R3 VPS 전환 준비
 
-**2026-10-30 VPS 설치·Linux 검증 완료, 시장 활성화 전 대기 상태.** 별도 release에 런타임64개와 Docker 이미지를 설치했다. 기존 서비스는 재시작하지 않았다.
+**2026-10-30 VPS 설치·Linux 검증 완료, 시장 활성화 전 대기 상태.** 별도 release에 런타임64개와 Docker 이미지를 설치했다. 기존 서비스는 재시작하지 않았다. 이번 개선 소스 `b619818`로 갱신했고 이전 d7ed271 release·이미지는 복구용으로 보존했다.
 
-- VPS 경로: `/docker/ax-week08-25620027/releases/d7ed271f6e66`; `current` symlink가 이 release를 가리킨다.
-- Runtime: `ax-week08-25620027:d7ed271-prepared`, `ax-week08-25620027:prepared`. QA 이미지는 별도 태그다.
-- 기본 이미지/QA 빌드·서버 핵심54검사·기본 기동 검사 통과. 검사 컨테이너는 제거됐고 실제 주문 프로세스는 시작하지 않았다.
-- [서버 검증 결과](../../logs/vps-stage-20261030/result.json). 서버 원본 로그는 release의 `evidence/`에 있다.
+- VPS 경로: `/docker/ax-week08-25620027/releases/b619818b258f`; `current` symlink가 이 release를 가리킨다.
+- Runtime: `ax-week08-25620027:b619818-prepared`, `ax-week08-25620027:prepared`. QA 이미지는 별도 태그다.
+- 기본 이미지/QA 빌드·서버 핵심79검사·기본 기동 검사 통과. 검사 컨테이너는 제거됐고 실제 주문 프로세스는 시작하지 않았다.
+- [서버 검증 결과](../../logs/reliability-20261030/vps/result.json). 서버 원본 로그는 release의 `evidence/`에 있다.
 - API 키·개인키·환경 파일은 전송하지 않았다. 기존 승인 종료시각과 주문 한도를 임의로 새로 잡지 않았다. `/private`를 마운트하거나 `--activate`를 실행하지 않았다.
 
 아래는 실제 시장 활성화 때 사용할 절차다. 새 R3 계약과 유효한 운영 범위, 기존 신원/기억 이전을 확인한 뒤 적용한다.

@@ -18,7 +18,7 @@
 
 | 구성 | 구현과 범위 | 소스 |
 |---|---|---|
-| 모델 실행 | 자체 Python function-tool loop. 모델 응답 최대 6회, API 재시도 최대 3회 | [harness.py](market_a2a/harness.py), [model_session.py](market_a2a/model_session.py) |
+| 모델 실행 | 자체 Python function-tool loop. 모델 응답 최대 6회, API 시도 최대 3회. 모델 대기30초·결정별 모델 대기 예산60초 | [harness.py](market_a2a/harness.py), [model_session.py](market_a2a/model_session.py) |
 | 모델 경로 | 준비 설정은 OpenRouter 무료 경로, 유료 fallback OFF. 기존 MiniMax 무료 행사 선택은 만료일 이후 `openrouter/free` 요청으로 전환 | [model_provider.py](market_a2a/model_provider.py), [paid_fallback.py](market_a2a/paid_fallback.py) |
 | 선택 입력 | 고정 지시문과 주문 상태를 분리. 짧은 관측 prior·최근 3건·증거 포인터·유효한 전략 프로필 제공 | [context_snapshot.py](market_a2a/context_snapshot.py), [market_decision.py](market_a2a/market_decision.py) |
 | 기억 저장·조회 | 최대 128곳의 노트, 자기 관측 원문을 registry/snapshot index로 조회. 임의 파일 경로와 외부 광고를 지시문으로 받지 않음 | [memory_selection.py](market_a2a/memory_selection.py), [memory_repository.py](market_a2a/memory_repository.py) |
@@ -65,12 +65,12 @@ flowchart LR
 
 | 검증 | 결과·해석 | 증거 |
 |---|---|---|
-| Mac 전체 회귀 | 381개 PASS, 실패/오류/건너뜀 0. 외부 모델·시장 호출 0, loopback 연결 48회 | [로그](logs/submission-review-20261030.log), [JUnit](logs/submission-review-20261030-junit.xml), [집계](logs/submission-review-20261030-summary.json) |
+| Mac 전체 회귀 | 397개 PASS, 실패/오류/건너뜀 0. 외부 모델·시장 호출 0, loopback 연결49회 | [로그](logs/reliability-20261030/final.log), [JUnit](logs/reliability-20261030/final-junit.xml), [집계](logs/reliability-20261030/summary.json) |
 | 피드백 실행 예제 | v1/v2 생성·컨텍스트 반영·변조 거부·직전 버전 유지 | [결과](logs/meta-demo-20261030/result.json) |
-| Linux VPS 핵심 검사 | 54개 PASS, 실패/건너뜀 0. 결제·동시성·권한·기억·프로필·기동 범위 | [전체 로그](logs/vps-stage-20261030/server-core.log), [JUnit](logs/vps-stage-20261030/core-junit.xml) |
+| Linux VPS 핵심 검사 | 79개 PASS, 실패/오류/건너뜀0. 기존 결제·기억 범위와 새 집행·시간 제한·리뷰 검사 | [전체 로그](logs/reliability-20261030/vps/server-core-final.log), [JUnit](logs/reliability-20261030/vps/core-final-junit.xml) |
 | 실제 R3 시장 | 개시 전, 정산/순위/수익 효과 미측정 | 아래 후속 수집 항목 |
 
-프로젝트 전체 strict 타입 검사는 오류·경고·메모 0, 새 예제와 직접 검사는 Ruff 통과다. [타입 원본](logs/submission-review-20261030-types.log), [린트 원본](logs/submission-review-20261030-lint.log). 도구 캐시 접근이 막힌 첫 sandbox 시도도 [별도 원본](logs/submission-review-20261030-types-sandbox.log)에 보존했다.
+프로젝트 전체 strict 타입 검사는 오류·경고·메모 0, 이번 변경 소스·직접 검사는 Ruff 통과다. [새 타입](logs/reliability-20261030/types-final.log), [새 린트](logs/reliability-20261030/lint-pass.log). 이전 예제 제출 검수도 보존한다. [타입 원본](logs/submission-review-20261030-types.log), [린트 원본](logs/submission-review-20261030-lint.log). 도구 캐시 접근이 막힌 첫 sandbox 시도도 [별도 원본](logs/submission-review-20261030-types-sandbox.log)에 보존했다.
 
 정상 결제 fixture는 lamp 100·mandate budget 120으로 공식 payer와 closed mandates 서명을 거쳐 로컬 장부 잔액 900/100을 확인한다. budget 90의 실제 payer 거부와, 잘못된 wallet이 유효한 서명으로 상한을 넘겨도 로컬 시장이 거부하는 층을 구분했다. 금액·품목·수취인·해시·주문·서명·만료·수량 오류와 재사용, 두 동시 complete에서 한 번만 차감되는 경우도 검사한다. [정상 경로](logs/r3-third-attempt.log), [경계](logs/r3-payer-boundaries.log), [다층 방어](logs/meta-defense-attempt-1.log).
 
@@ -100,6 +100,25 @@ localhost bind가 금지된 첫 sandbox 실행은 29개 실패였다. 원인을 
 
 [README](README.md)에 Python 3.12.11·Node 22.23.4·lock 설치·검사·예제 실행 명령을 적었다. API 키 없이 재현할 수 있으며, 실제 모델 명령인 `run_harness.sh`는 private env를 읽을 수 있어 오프라인 검사에 사용하지 않는다.
 
-VPS에는 runtime 64개와 Linux amd64·UID10001 이미지를 설치했다. 코드 기준은 `d7ed271f6e6673a4ce60e908d117d80e9fd32bac`, 이미지 ID는 `sha256:6cdb4a1977aa61260e971c109d5bc2171233c09ce7d7f01c965fc44af31a593a`다. 현재는 **installed-and-verified-not-activated**이며 시장 등록·주문·API 호출은 하지 않았다. 이번 설명/예제 추가는 runtime bundle을 바꾸지 않는다. [서버 설치 결과](logs/vps-stage-20261030/result.json).
+VPS의 현재 대기 release는 `b619818b258f`이고 runtime64개·Linux amd64·UID10001이다. 소스는 `b619818b258f857c841bd6ecda133d40948d922b`, 이미지 ID는 `sha256:e6cffd8b7241cc9b7bb7a8ed1e5442ed959efc103861616d5d2accb83c14aa1c`다. `prepared` 태그와 `current`가 이 검증된 release를 가리킨다. 상태는 **installed-and-verified-not-activated**이며 시장 등록·주문·실제 모델 호출0회다. [새 서버 결과](logs/reliability-20261030/vps/result.json). 이전 d7ed271 이미지와 [첫 설치54검사](logs/vps-stage-20261030/result.json)도 보존했다.
 
 활성화 때는 기존 신원·기억·유효한 운영 시한·남은 주문 수·공유 API 한도를 [VPS 절차](deploy/vps/README.md)에 따라 확인한다. 설치 검사용 만료형 설정을 새 운영 승인으로 쓰지 않는다. 현재 제출은 구현·재현 증거이며, 전체 과제 완료 판정에는 위 실제 R3 증거가 더 필요하다.
+
+
+## 7. 참고한 원리와 이번 독자 구현 — 2026-10-30
+
+용재형(dragonash22)의 [공개 판매자 빠른 수락](https://github.com/dragonash22/ai-agent-engineering-101/blob/5fd8467262ada1246b44e947effbfb3988ea7317/submissions/25620024/week-07/deploy/src/index.ts#L279)과 [10/29 모델 전환의 남은 시간 관리](https://github.com/dragonash22/ai-agent-engineering-101/blob/672c63c650a01d5f4e69f6944a8091b47b376b39/submissions/25620024/week-07/harness.py#L107)를 참고했다. 배운 원리는 이미 합의 가능한 거래에 추가 모델 판단을 요구하지 않고, 여러 대기를 하나의 남은 시간 안에서 다루는 것이다. 구현은 기존 Python의 typed 도구·공통 commit·Task 잠금·서명·SQLite 복구 경로를 사용해 직접 작성했다. 상대 TypeScript/Python 구현을 이식하지 않았고 상대의 광고 문구·운영 키·거래 기억도 제출물에 포함하지 않는다.
+
+- **기존 호가의 집행:** 선택된 상품과 실제 제안이 있고 제안이 현재 호가 이상이면 `execute_accepted_quote()`가 기존 `commit()`을 거친다. 무조건 수락 문장은 기존 parser로 호가와 같은 실제 제안으로 처리한다. 해당 수락 턴의 모델 호출은1→0이고, 최초 가격·새로운 역제안은 계속 모델이 결정한다. R3에서 호가보다 낮은 제안을 무조건 하한에 체결하도록 바꾸지 않았다.
+- **대기 예산:** 한 모델 응답의 네트워크·재시도·대기열 대기는30초, 한 결정에서 모델에 기다리는 총 예산은60초다. 모델 대기 scope 밖에서 금융 도구를 집행해 모델 timeout이 실행 중인 commit을 자르지 않는다. OpenAI SDK 중복 재시도는 끄고 기존 공통 재시도를 사용하며 마지막 실패 뒤 불필요한4초 대기는 없앴다. 실제 유료 시도가 예약된 뒤 timeout돼도 quota를 환불하지 않는다.
+- **시장 주문 예산:**240초의 남은 시간을 선택(최대40초)·협상·리뷰(최대15초)에 나눠 쓴다. 일반 `buy_order` 상한280초보다 짧은 남은 시간을 전달하고 리뷰 시간을 확보한다. durable 저장·동기 CPU 작업까지 정확한 wall-clock 상한으로 중단한다고 주장하지 않는다.
+- **리뷰 장애 복구:** 이미 받은 영수증과 거래 관측을 저장한 뒤 리뷰 모델이 실패/지연되면 기존 사실 기반 평가기로 최종 JSON을 반환한다. 완료 거래의 원래 data Part와 기존3점 정책을 보존한다. 검증되지 않은 정산 성공이나 상품 품질을 새로 주장하지 않는다.
+
+[새 회귀397개](logs/reliability-20261030/summary.json)는 재시작 후 모델 응답이 없어도 정확한 상품/가격/task 서명과 재사용 차단, 예산90 반복에서 호가110→100→100 유지, R3 신규 역제안의 모델 결정, 선택 상품 변경 거부, SDK 지연 취소·유료 quota 보존, 리뷰 오류/지연 후 원래 영수증 반환을 확인한다. timeout 결함 검사는 짧게 조정한 예산으로 실행하며 실제 서비스의 지연 분포 측정이 아니다.
+
+첫 새 검사에서는 기존 코드가6개 실패했고, 변경 뒤 첫 전체 회귀에서는 모델 호출/가짜 재검색을 기대하던 구판 검사3개가 실패했다. 실행 계약에 맞춰 그 기대를 고치고 선택 상품 변경 거부는 별도 실제 A2A 경로로 유지했다. [변경 전](logs/reliability-20261030/quote-before.log), [첫 전체 결과](logs/reliability-20261030/attempt1.log), [최종 원본](logs/reliability-20261030/final.log)을 보존했다.
+
+가격 정책·리뷰 상한·일별 API 한도·운영 종료시각·시장 신원은 바꾸지 않았다. 무료 모델 목록을 직접 수집해 자동 승격하는 기능이나 메타 하네스의 후보 실험/성과 자동 복구를 이번에 구현했다고 주장하지 않는다. 무료 라우터와 기존 명시적 유료 fallback 계약을 유지한다. 실제 R3 정산·수익·전환율 개선은 이후 별도 측정이 필요하다.
+
+
+새 VPS 첫 검사에서는 무료 provider를 기본값으로 가진 이미지와 OpenAI mock client의 테스트 설정이 충돌해66개 PASS·13개 실패였다. [첫 Linux 원본](logs/reliability-20261030/vps/server-core-attempt1.log)을 보존하고 **QA 컨테이너에만** mock client에 맞는 backend를 명시해79개를 통과했다. 실제 runtime은 무료 provider·유료 fallback OFF 그대로이며, 양쪽 검사 모두 network=none·키 마운트 없음이다. 프로덕션 모델 성공이나 과금 실험으로 계산하지 않는다.
