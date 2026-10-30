@@ -78,7 +78,7 @@ def load_review_window(item, last_reviewed_task=None):
                 event = json.loads(line)
                 if (
                     event["item"] == item
-                    and event["event"] in {"deal", "rejected"}
+                    and event["event"] in {"deal", "rejected", "canceled"}
                     and event.get("policy") == POLICY
                     and event["task"] not in seen_tasks
                 ):
