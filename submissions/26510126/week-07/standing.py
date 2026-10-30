@@ -19,11 +19,13 @@ buyers = {b["name"]: b for b in board["buyers"] if not b.get("house")}
 
 # the spread of one review's stars and of one deal's price/budget over every verified Round-2 deal
 entries = mi.load_ledger(timeout=60)
-budget = {x["data"]["order"]: x["data"]["budget"] for x in entries if x["kind"] == "order" and x.get("round") == board["round"]}
+# Round 3 orders carry budget_commitment (a hash) instead of the budget, so a round may have no budgets at all
+budget = {x["data"]["order"]: x["data"].get("budget") for x in entries if x["kind"] == "order" and x.get("round") == board["round"]}
 deals = [x["data"] for x in entries if x["kind"] == "result" and x.get("round") == board["round"]
          and x["data"].get("verified") and x["data"].get("receipt") and isinstance(x["data"].get("stars"), (int, float))]
 star_sd = statistics.pstdev(d["stars"] for d in deals)
-paid_sd = statistics.pstdev(d["receipt"]["price"] / budget[d["order"]] for d in deals if budget.get(d["order"]))
+ratios = [d["receipt"]["price"] / budget[d["order"]] for d in deals if budget.get(d["order"])]
+paid_sd = statistics.pstdev(ratios) if len(ratios) > 1 else 0.0  # no budgets in the ledger: only the stars set MIN
 n_star = math.ceil((Z * star_sd / STAR_MARGIN) ** 2)
 n_paid = math.ceil((Z * paid_sd / PAID_MARGIN) ** 2)
 MIN = max(n_star, n_paid)
