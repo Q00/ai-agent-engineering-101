@@ -1,6 +1,6 @@
 # Week08 R3 준비 보고서
 
-작성:25620027 / 2026-10-27 / 상태: **로컬 검증·배포 구성 준비, 실제 시장 미투입**.
+작성:25620027 / 2026-10-27 / 상태: **VPS 설치·Linux 검증 완료, 실제 시장 미투입**.
 
 10월27일 공고 확인 이력:21:13 KST에 교수 웹교재와 최신 Git `a496eac201abb83e38ffc4478104b6f8c5bd9af9`를 다시 확인했다. 중간평가는 **R3 시장의 내 에이전트**, 성적30%로 통합됐고 기존 별도 재현 보고서 절은 삭제됐다. 마감은 다음 주 수업 시작 전(PR 시각 기준), 제출물은 실제 배포 정산 로그·코드·REPORT다. 세부 배점·20건·순위 점수에는 교수 TODO-confirm 주석이 남아 있다. kit hash는 동일하다.
 
@@ -97,3 +97,14 @@ W05의 function-tool loop→W06의 A2A·실패 후 재계획→W07의 시장 선
 ## 2026-10-30 공개 후보 재검사
 
 새 로컬 실행379개 PASS·실패/건너뜀0개, 외부 모델/시장 동작0회, loopback 연결49회다. 첫 sandbox 실행은 socket.bind 권한 제한으로29개 실패(350개 PASS)했다. 원본을 보존하고 외부 연결 차단을 유지한 채 다시 실행했다. [집계](logs/public-prep-20261030-summary.json) · [전체 로그](logs/public-prep-20261030.log) · [JUnit](logs/public-prep-20261030-junit.xml) · [첫 실패](logs/public-prep-20261030-sandbox.log).
+
+## 2026-10-30 VPS 설치·대기 완료
+
+사용자 요청으로 공개 코드 commit `d7ed271f6e6673a4ce60e908d117d80e9fd32bac`의 런타임64개를 별도 VPS 경로에 전송하고 manifest/묶음 해시를 대조했다. API 키·개인키·환경 파일은 전송하지 않았다.
+
+- Runtime 이미지: `ax-week08-25620027:d7ed271-prepared` (`prepared` 태그도 같은 이미지). Linux amd64·UID10001. 이미지 digest `sha256:6cdb4a1977aa61260e971c109d5bc2171233c09ce7d7f01c965fc44af31a593a`.
+- 실제 Linux Docker 빌드와 별도 QA 이미지 빌드가 통과했다. 외부 네트워크 없는 임시 컨테이너에서 R3 결제/중복·동시성/권한/기억/프로필/기동 경계 **54개 PASS·실패/건너뜀0개**. 전체 Mac379개와 다른 선택 범위다.
+- Runtime 기본 기동 검사도 network=none·비밀 파일 마운트 없이 통과했다. 검사에만 쓰는 만료형 설정이며 새 시장 운영 시한/주문 한도 승인으로 사용하지 않는다.
+- 설치 상태는 `installed-and-verified-not-activated`다. 실제 API 호출·시장 등록·주문0회, 기존 서비스 재시작0회다. 상시 거래 프로세스가 실행 중이라는 뜻은 아니다. 새 R3 계약/운영 시한/기존 신원·기억 이전·접속 경로 확인 후 활성화한다.
+
+[서버 결과](logs/vps-stage-20261030/result.json) · [Runtime 빌드](logs/vps-stage-20261030/runtime-build.log) · [핵심 검사](logs/vps-stage-20261030/server-core.log) · [JUnit](logs/vps-stage-20261030/core-junit.xml) · [기본 기동](logs/vps-stage-20261030/runtime-preflight.log). 이전 절의 미배포/이미지 미빌드 표기는 해당 시점 이력이며 이 설치 기록으로 현행화한다.
