@@ -21,6 +21,7 @@ class SellerHistory:
     """Load canonical seller events only; never expose raw log text to the model."""
 
     def __init__(self) -> None:
+        """Restore bounded price evidence from canonical local action records."""
         self.entries: dict[str, PriceHistory] = {}
         path = Path(__file__).resolve().parents[1] / "logs" / "market-kit.log"
         try:
@@ -33,11 +34,10 @@ class SellerHistory:
                 tail = stream.read(2_000_000).decode("utf-8", errors="replace")
         except FileNotFoundError:
             return
-        pattern = re.compile(
-            r"[0-9]{2}:[0-9]{2}:[0-9]{2} \[seller\] seller\.action "
-            r"task=[A-Za-z0-9-]+ action=(quote|accept) "
-            r"sku=([A-Za-z0-9_.-]{1,100}) price=([0-9]{1,9})"
-        )
+        timestamp = r"[0-9]{2}:[0-9]{2}:[0-9]{2} \[seller\] seller\.action "
+        action = r"task=[A-Za-z0-9-]+ action=(quote|accept) "
+        product = r"sku=([A-Za-z0-9_.-]{1,100}) price=([0-9]{1,9})"
+        pattern = re.compile(f"{timestamp}{action}{product}")
         for line in tail.splitlines()[-5000:]:
             found = pattern.fullmatch(line)
             if found is None:
@@ -48,6 +48,8 @@ class SellerHistory:
                     self.record("quote", sku, price)
                 case "accept":
                     self.record("accept", sku, price)
+                case _:
+                    continue
 
     def snapshot(self, sku: str) -> PriceHistory:
         """Return only typed numeric facts for the selected SKU."""
@@ -67,7 +69,10 @@ class SellerHistory:
                 updated = PriceHistory(
                     quote_actions=previous.quote_actions,
                     accepted_sales=previous.accepted_sales + 1,
-                    recent_accepted_prices=(*previous.recent_accepted_prices, price)[-5:],
+                    recent_accepted_prices=(
+                        *previous.recent_accepted_prices,
+                        price,
+                    )[-5:],
                 )
             case _:
                 assert_never(action)

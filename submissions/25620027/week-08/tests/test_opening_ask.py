@@ -20,8 +20,8 @@ from market_a2a.catalog import Catalog
 from market_a2a.harness import Harness
 from market_a2a.models import Product
 from market_a2a.seller import create_app
-from market_a2a.seller_policy import Decision
-from market_a2a.seller_turn import Negotiator, Turn
+from market_a2a.seller_policy import Decision, Turn
+from market_a2a.seller_turn import Negotiator
 from tests.test_signed_seller import send, task_from
 
 if TYPE_CHECKING:
