@@ -32,6 +32,10 @@ from market_a2a.strict_review import (
     trade_facts,
 )
 
+MARKET_ORDER_SECONDS: Final = 240.0
+SELECT_SECONDS: Final = 40.0
+REVIEW_SECONDS: Final = 15.0
+
 __all__ = ["Decision", "MarketShop", "PublicReview", "Selection", "grounded_review"]
 
 if TYPE_CHECKING:
@@ -94,6 +98,7 @@ async def market_buy(
     emit: Callable[[str], None],
 ) -> MarketResult:
     """Choose, negotiate via the existing buyer, remember, then review a trade."""
+    deadline = anyio.current_time() + MARKET_ORDER_SECONDS
     item, budget = request.item, request.budget
     if budget < 1:
         msg = "Purchase budget must be positive"
@@ -118,56 +123,63 @@ async def market_buy(
     )
     decision = Decision(shops, blocked_names)
     memory_tools = MemorySelection(decision, memory)
-    _ = await harness.run(
-        SELECT_PROMPT,
-        {
-            "item": item,
-            "budget": budget,
-            **strategy,
-            "shops": [
-                {
-                    "index": index,
-                    "listing": {
-                        "name": entry.name,
-                        "url": entry.url,
-                        "reviews": [
-                            json_value(review)
-                            for review in selection_review_evidence(entry.reviews)
+    with anyio.fail_after(
+        min(SELECT_SECONDS, max(0.0, deadline - anyio.current_time()))
+    ):
+        _ = await harness.run(
+            SELECT_PROMPT,
+            {
+                "item": item,
+                "budget": budget,
+                **strategy,
+                "shops": [
+                    {
+                        "index": index,
+                        "listing": {
+                            "name": entry.name,
+                            "url": entry.url,
+                            "reviews": [
+                                json_value(review)
+                                for review in selection_review_evidence(entry.reviews)
+                            ],
+                        },
+                        "locally_observed_operator_directive": (
+                            entry.name in blocked_names
+                        ),
+                        "memory_prior": json_value(memory_tools.prior(index, item)),
+                        "own_trades": [
+                            {
+                                **trade_facts(trade),
+                                "same_requested_item": trade.item == item,
+                                "price_within_current_budget": (
+                                    0 < trade.purchase.price <= budget
+                                    if trade.item == item
+                                    and trade.purchase.price is not None
+                                    else None
+                                ),
+                            }
+                            for trade in memory.shops.get(entry.name, ())[-3:]
                         ],
-                    },
-                    "locally_observed_operator_directive": entry.name in blocked_names,
-                    "memory_prior": json_value(memory_tools.prior(index, item)),
-                    "own_trades": [
-                        {
-                            **trade_facts(trade),
-                            "same_requested_item": trade.item == item,
-                            "price_within_current_budget": (
-                                0 < trade.purchase.price <= budget
-                                if trade.item == item
-                                and trade.purchase.price is not None
-                                else None
-                            ),
-                        }
-                        for trade in memory.shops.get(entry.name, ())[-3:]
-                    ],
-                }
-                for index, entry in enumerate(shops)
-            ],
-        },
-        (
-            ToolSpec(
-                name="select_shop",
-                description="Choose a listed shop and explain the evidence.",
-                parameters=Selection.model_json_schema(),
+                    }
+                    for index, entry in enumerate(shops)
+                ],
+            },
+            (
+                ToolSpec(
+                    name="select_shop",
+                    description="Choose a listed shop and explain the evidence.",
+                    parameters=Selection.model_json_schema(),
+                ),
+                ToolSpec(
+                    name="lookup_trade_evidence",
+                    description=(
+                        "Read one own-trade record from this selection snapshot."
+                    ),
+                    parameters=EvidenceQuery.model_json_schema(),
+                ),
             ),
-            ToolSpec(
-                name="lookup_trade_evidence",
-                description="Read one own-trade record from this selection snapshot.",
-                parameters=EvidenceQuery.model_json_schema(),
-            ),
-        ),
-        memory_tools.dispatch,
-    )
+            memory_tools.dispatch,
+        )
     if decision.selection is None:
         msg = "Harness ended without selecting a shop"
         raise HarnessError(msg)
@@ -204,6 +216,7 @@ async def market_buy(
                 pricing_context=pricing_context,
                 security_events=security_events,
                 promote_shop=request.promote_shop,
+                timeout_seconds=deadline - anyio.current_time() - REVIEW_SECONDS,
             ),
             emit,
         )
@@ -230,26 +243,33 @@ async def market_buy(
         observed_at=datetime.now(UTC),
     )
     await anyio.to_thread.run_sync(repository.record, selected.name, trade)
-    _ = await harness.run(
-        REVIEW_PROMPT,
-        {
-            "trade": trade_facts(trade),
-            "initial_ask": outcome.initial_ask,
-            "offer_count": outcome.offer_count,
-            "best_prior_price": min(observed_prices, default=None),
-        },
-        (
-            ToolSpec(
-                name="leave_review",
-                description="Rate and review only the observed transaction.",
-                parameters=Review.model_json_schema(),
-            ),
-        ),
-        decision.evaluate,
-    )
+    try:
+        with anyio.fail_after(
+            min(REVIEW_SECONDS, max(0.0, deadline - anyio.current_time()))
+        ):
+            _ = await harness.run(
+                REVIEW_PROMPT,
+                {
+                    "trade": trade_facts(trade),
+                    "initial_ask": outcome.initial_ask,
+                    "offer_count": outcome.offer_count,
+                    "best_prior_price": min(observed_prices, default=None),
+                },
+                (
+                    ToolSpec(
+                        name="leave_review",
+                        description="Rate and review only the observed transaction.",
+                        parameters=Review.model_json_schema(),
+                    ),
+                ),
+                decision.evaluate,
+            )
+    except (
+        HarnessError, OpenAIError, httpx2.HTTPError, ValidationError, TimeoutError
+    ) as exc:
+        emit(f"[MARKET REVIEW FALLBACK] reason={type(exc).__name__}")
     if decision.review is None:
-        msg = "Harness ended without reviewing the transaction"
-        raise HarnessError(msg)
+        decision.review = Review(stars=3, review="Use the recorded transaction facts.")
     review = grounded_review(trade, decision.review, observed_prices)
     await anyio.to_thread.run_sync(
         repository.review,

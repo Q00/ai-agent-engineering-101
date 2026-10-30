@@ -49,8 +49,10 @@ SERVER_ERROR: Final = 500
 NOT_FOUND: Final = 404
 PAYMENT_REQUIRED: Final = 402
 FREE_RECHECK_SECONDS: Final = 60
-RETRY_DELAYS: Final = (1.0, 2.0, 4.0)
+RETRY_DELAYS: Final = (1.0, 2.0, 0.0)
 FREE_CALL_INTERVAL: Final = 3.1
+MODEL_WAIT_SECONDS: Final = 30.0
+DECISION_WAIT_SECONDS: Final = 60.0
 
 
 def assistant_message(
@@ -142,8 +144,15 @@ class Harness:
             for tool in tools
         ]
         self.emit(f"CONTEXT chars={len(json.dumps(state))} tools={len(tools)}")
+        deadline = monotonic() + DECISION_WAIT_SECONDS
         for round_number in range(MAX_MODEL_ROUNDS):
-            reply = await self.complete(messages, advertised)
+            try:
+                with anyio.fail_after(max(0.0, deadline - monotonic())):
+                    reply = await self.complete(messages, advertised)
+            except TimeoutError as exc:
+                self.emit("MODEL_TIMEOUT stage=decision")
+                message = "Model decision exceeded its remaining time budget"
+                raise HarnessError(message) from exc
             messages.append(assistant_message(reply))
             for call in reply.tool_calls or []:
                 match call.type:
@@ -179,6 +188,20 @@ class Harness:
         raise HarnessError(message)
 
     async def complete(
+        self,
+        messages: list[ChatCompletionMessageParam],
+        tools: list[ChatCompletionToolParam],
+    ) -> ChatCompletionMessage:
+        """Bound model I/O and retry/queue waits without canceling a tool commit."""
+        try:
+            with anyio.fail_after(MODEL_WAIT_SECONDS):
+                return await self._retry_complete(messages, tools)
+        except TimeoutError as exc:
+            self.emit("MODEL_TIMEOUT stage=response")
+            message = "Model response exceeded its time budget"
+            raise HarnessError(message) from exc
+
+    async def _retry_complete(
         self,
         messages: list[ChatCompletionMessageParam],
         tools: list[ChatCompletionToolParam],

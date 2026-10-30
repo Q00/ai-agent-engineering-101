@@ -12,7 +12,7 @@ from pydantic import JsonValue, TypeAdapter, ValidationError
 
 from market_a2a.market_buyer import MarketRequest, market_buy
 from market_a2a.memory import Memory, Trade
-from market_a2a.models import HarnessError, Purchase
+from market_a2a.models import Purchase, ToolDispatch, ToolResult, ToolSpec
 from market_a2a.promotion import SHOP_URL
 from tests.market_fakes import ScriptedHarness, ShopTransport
 
@@ -179,30 +179,103 @@ def test_memory_when_url_changes_retains_failed_trade_for_selection(
     assert wire.requests[-1].url.host == "restarted.test"
 
 
-def test_failure_when_review_model_fails_still_persists_trade(
-    registry: Path, tmp_path: Path, wire: ShopTransport
+@pytest.mark.parametrize("completed", [False, True])
+def test_failure_when_review_model_fails_preserves_trade_and_final_result(
+    registry: Path, tmp_path: Path, wire: ShopTransport, *, completed: bool
 ) -> None:
-    # Given: the review model cannot supply an action after a no-deal result.
+    # Given: the review model cannot supply an action after the real trade.
     harness = ScriptedHarness(
         [
             ("select_shop", {"index": 0, "reason": "Try this shop"}),
-            ("walk_away", {"reason": "No affordable offer"}),
+            ("offer", {"price": 120, "reason": "Accept the quote"}) if completed
+            else ("walk_away", {"reason": "No affordable offer"}),
         ]
     )
     memory_path = tmp_path / "memory.json"
-    # When: review generation fails.
-    with pytest.raises(HarnessError, match="Scripted model exhausted"):
-        _ = anyio.run(
-            market_buy,
-            harness,
-            MarketRequest(registry, "lamp", 100, memory_path),
-            print,
-        )
-    # Then: a durable unrated failed trade remains.
+    # When: review generation fails after a completed or unsuccessful purchase.
+    result = anyio.run(
+        market_buy, harness, MarketRequest(registry, "lamp", 120, memory_path), print
+    )
+    # Then: the final result and raw receipt survive with a factual neutral review.
     trade = Memory.load(memory_path).shops["North"][0]
-    assert trade.purchase.completed is False
-    assert trade.evaluation is None
-    assert len(wire.requests) == 2
+    assert trade.purchase.completed is completed
+    assert trade.evaluation is not None
+    assert trade.evaluation.stars == result.stars == 3
+    assert result.receipt == (wire.receipt if completed else None)
+    assert len(wire.requests) == (3 if completed else 2)
+
+
+def test_review_timeout_returns_the_completed_receipt_and_factual_review(
+    registry: Path, tmp_path: Path, wire: ShopTransport,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("market_a2a.market_buyer.REVIEW_SECONDS", 0.02)
+    harness = ScriptedHarness([
+        ("select_shop", {"index": 0, "reason": "Known shop"}),
+        ("offer", {"price": 120, "reason": "Accept"}),
+    ])
+    original = harness.run
+
+    async def run(
+        prompt: str, state: JsonValue, tools: tuple[ToolSpec, ...],
+        dispatch: ToolDispatch,
+    ) -> ToolResult:
+        if tools[0].name == "leave_review":
+            await anyio.sleep_forever()
+        return await original(prompt, state, tools, dispatch)
+
+    monkeypatch.setattr(harness, "run", run)
+    memory_path = tmp_path / "memory.json"
+    logs: list[str] = []
+
+    async def scenario() -> None:
+        with anyio.fail_after(1):
+            result = await market_buy(
+                harness, MarketRequest(registry, "lamp", 120, memory_path), logs.append
+            )
+        assert result.receipt == wire.receipt
+        assert result.stars == 3
+        assert "120" in result.review
+        assert any("REVIEW FALLBACK" in line for line in logs)
+
+    anyio.run(scenario)
+    assert Memory.load(memory_path).shops["North"][0].evaluation is not None
+
+
+def test_market_trade_uses_the_remaining_order_budget(
+    registry: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("market_a2a.market_buyer.MARKET_ORDER_SECONDS", 0.08)
+    monkeypatch.setattr("market_a2a.market_buyer.REVIEW_SECONDS", 0.02)
+    observed: list[str] = []
+
+    async def stall(request: httpx2.Request) -> httpx2.Response:
+        observed.append(request.method)
+        await anyio.sleep_forever()
+        raise AssertionError
+
+    def create_client() -> httpx2.AsyncClient:
+        return httpx2.AsyncClient(transport=httpx2.MockTransport(stall))
+
+    monkeypatch.setattr("market_a2a.buyer.create_client", create_client)
+    harness = ScriptedHarness([
+        ("select_shop", {"index": 0, "reason": "Try the listed shop"}),
+        ("leave_review", {"stars": 3, "review": "No completed trade"}),
+    ])
+    memory_path = tmp_path / "memory.json"
+
+    async def scenario() -> None:
+        with anyio.fail_after(1):
+            result = await market_buy(
+                harness, MarketRequest(registry, "lamp", 120, memory_path), print
+            )
+        assert result.receipt is None
+        assert result.stars == 3
+
+    anyio.run(scenario)
+    assert observed == ["GET"]
+    trade = Memory.load(memory_path).shops["North"][0]
+    assert trade.purchase.failure_observation == "Purchase failed: TimeoutError"
 
 
 @pytest.mark.parametrize("invalid", ["{}", '[{"name":"x","url":"u","reviews":[{}]}]'])

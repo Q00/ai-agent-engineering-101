@@ -22,6 +22,9 @@ if TYPE_CHECKING:
     from market_a2a.models import ToolDispatch
 
 
+MAX_PURCHASE_SECONDS: Final = 280.0
+
+
 class BuyerHarness(Protocol):
     """The shared Week 05 function-tool loop supplies each decision."""
 
@@ -47,6 +50,7 @@ class BuyerOrder:
     pricing_context: JsonValue = None
     security_events: SecurityEvents | None = None
     promote_shop: bool = False
+    timeout_seconds: float = MAX_PURCHASE_SECONDS
 
 
 class OrderedItemMismatchError(HarnessError):
@@ -176,15 +180,18 @@ async def buy(
 async def buy_order(
     harness: BuyerHarness, order: BuyerOrder, emit: Callable[[str], None]
 ) -> Purchase:
-    """Run one caller-specified purchase with a hard 280-second deadline."""
+    """Bound A2A negotiation by the caller's remaining budget, at most 280 s."""
     url, item, budget = order.url, order.item, order.budget
     if budget < 1:
         msg = "Purchase budget must be positive"
         raise HarnessError(msg)
+    if not 0 < order.timeout_seconds <= MAX_PURCHASE_SECONDS:
+        msg = "Purchase time budget must be positive and at most 280 seconds"
+        raise HarnessError(msg)
     events = (
         order.security_events if order.security_events is not None else SecurityEvents()
     )
-    with anyio.fail_after(280):
+    with anyio.fail_after(order.timeout_seconds):
         async with create_client() as client:
             remote = Remote(client, emit, events)
             card = await remote.card(url)

@@ -62,4 +62,4 @@ def create_model_client(http_client: httpx2.AsyncClient) -> AsyncOpenAI:
             http_client=http_client,
             max_retries=0,
         )
-    return AsyncOpenAI(http_client=http_client)
+    return AsyncOpenAI(http_client=http_client, max_retries=0)
