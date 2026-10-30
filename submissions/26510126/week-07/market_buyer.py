@@ -46,6 +46,9 @@ import re
 import statistics
 import sys
 import time
+from urllib.parse import urlparse
+
+import httpx
 
 import buyer
 import harness
@@ -220,6 +223,39 @@ def market_view(item):
     return going.get(item), going, shops, recent, market_intel.current_round(entries)
 
 
+ACP_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".market", "acp-cache.json")
+ACP_TTL = 3600  # seconds a shop's ACP answer is trusted before it is asked again
+
+
+async def serves_acp(urls):
+    """{shop url: True if it serves /.well-known/acp.json with an endpoint on its own host}, cached for ACP_TTL."""
+    try:
+        with open(ACP_CACHE) as f:
+            cache = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        cache = {}
+    now = time.time()
+    stale = [u.rstrip("/") for u in urls if now - cache.get(u.rstrip("/"), {}).get("t", 0) > ACP_TTL]
+
+    async def check(client, base):
+        try:
+            r = await client.get(f"{base}/.well-known/acp.json")
+            ep = r.json().get("endpoint", "") if r.status_code == 200 else ""
+            return base, bool(ep) and urlparse(ep).hostname == urlparse(base).hostname
+        except Exception:
+            return base, False
+
+    if stale:
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            for base, ok in await asyncio.gather(*(check(client, b) for b in stale)):
+                cache[base] = {"ok": ok, "t": now}
+        os.makedirs(os.path.dirname(ACP_CACHE), exist_ok=True)
+        with open(ACP_CACHE + f".{os.getpid()}", "w") as f:
+            json.dump(cache, f)
+        os.replace(ACP_CACHE + f".{os.getpid()}", ACP_CACHE)
+    return {u.rstrip("/"): cache.get(u.rstrip("/"), {}).get("ok", False) for u in urls}
+
+
 def typical(name, item, records, last=10):
     """The median of a shop's last `last` sale prices for the item, or None."""
     prices = (records.get(name) or {}).get("prices", {}).get(item, [])[-last:]
@@ -248,6 +284,18 @@ async def pick(shops, memory, item, budget, going, records, recent=None, rnd=0):
         if nosig and len(nosig) < len(choices):
             log("GUARD", f"Round {rnd}: not offering shops whose recent receipts are unsigned: {nosig}")
             choices = [s for s in choices if s["name"] not in nosig]
+    if rnd >= market_intel.SETTLE_ROUND:
+        # Round 3 counts only settled deals: a shop with no ACP checkout, or whose receipts keep not settling,
+        # sells us something that is worth nothing
+        acp = await serves_acp([s["url"] for s in choices])
+        noacp = [s["name"] for s in choices if not acp.get(s["url"].rstrip("/"))]
+        if noacp and len(noacp) < len(choices):
+            log("GUARD", f"Round {rnd}: not offering shops that serve no ACP checkout: {noacp}")
+            choices = [s for s in choices if s["name"] not in noacp]
+        nosettle = [s["name"] for s in choices if market_intel.unsettled(s["name"], records)]
+        if nosettle and len(nosettle) < len(choices):
+            log("GUARD", f"Round {rnd}: not offering shops whose recent deals did not settle: {nosettle}")
+            choices = [s for s in choices if s["name"] not in nosettle]
     over = [s["name"] for s in choices if (typical(s["name"], item, records) or 0) > budget]
     if over and len(over) < len(choices):
         # its recent sales sit above our budget: we would haggle and walk (explorer idea 4, 2026-10-20)

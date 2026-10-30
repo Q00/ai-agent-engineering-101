@@ -102,6 +102,9 @@ def summarize(entries, since=None):
     for e in entries:
         if e["kind"] == "join" and e["data"].get("role") == "shop" and e["data"].get("url"):
             names[e["data"]["url"].rstrip("/")] = e["data"]["name"]
+    # Round 3 counts a deal only once the market settled its order (a "settle" entry); a receipt without one is
+    # an unsettled deal: it earns nothing, and a shop that leaves many unsettled is one to avoid
+    settled = {e["data"].get("order") for e in entries if e["kind"] == "settle"}
     items, shops = {}, {}
     for e in entries:
         if e["kind"] != "result" or (since and e["ts"] < since):
@@ -109,7 +112,8 @@ def summarize(entries, since=None):
         d = e["data"]
         url = (d.get("shop") or "").rstrip("/")
         name = names.get(url) or url.rsplit("/shop/", 1)[-1] or url
-        s = shops.setdefault(name, {"results": 0, "deals": 0, "signed": 0, "sig_history": [], "prices": {}, "failed": {}, "last": 0})
+        s = shops.setdefault(name, {"results": 0, "deals": 0, "signed": 0, "sig_history": [], "prices": {}, "failed": {}, "last": 0,
+                                    "unsettled": 0, "settle_history": []})
         s["results"] += 1
         s["last"] = max(s["last"], e["ts"])
         r = d.get("receipt")
@@ -118,6 +122,12 @@ def summarize(entries, since=None):
             if checks.get(c) is False:
                 s["failed"][c] = s["failed"].get(c, 0) + 1
         if isinstance(r, dict) and r.get("item") and isinstance(r.get("price"), (int, float)):
+            if (e.get("round") or 0) >= SETTLE_ROUND:
+                ok = d.get("order") in settled
+                s["settle_history"].append(ok)
+                if not ok:
+                    s["unsettled"] += 1
+                    continue
             s["deals"] += 1
             s["signed"] += checks.get("sig_seller_ok") is True
             s["sig_history"].append(checks.get("sig_seller_ok") is True)  # ledger order: oldest first
@@ -135,6 +145,15 @@ def summarize(entries, since=None):
 def current_round(entries):
     rounds = [e["data"].get("round", e.get("round")) for e in entries if e["kind"] == "round"]
     return rounds[-1] if rounds else 0
+
+
+SETTLE_ROUND = 3  # from Round 3 only settled deals count
+
+
+def unsettled(name, shops):
+    """True when most of a shop's last SIG_LAST Round-3 receipts never settled (no ACP checkout, or a refused one)."""
+    last = ((shops.get(name) or {}).get("settle_history") or [])[-SIG_LAST:]
+    return len(last) >= 3 and sum(last) < len(last) / 2
 
 
 SIG_LAST = 5  # a shop's signing is judged on its last five deals, so one that just began signing counts
