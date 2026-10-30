@@ -1,4 +1,4 @@
-# Week08 — R3 로컬 준비
+# Week08 — R3 공개 준비본 (Draft)
 
 학번25620027. 7주차 최종 하네스에서 이어받은 독립 작업본이다. **VPS 배포·실제 시장 참가 전 상태**이며 기존7주차 서비스는 건드리지 않았다.
 
@@ -8,11 +8,14 @@
 - [조건부터 다시 본 전략](STRATEGY_REVIEW.md): 재고 매집 제외·R3 마진·악성 지시 중단·사실형 문구
 - [실행 로그](logs/): 실패 원본과 후속 검사 모두 보존
 
+2026-10-30 공개 준비본이다. 중간평가 마감은 **2026-11-16 23:59(PR 생성 시각)**, R3 기간은 **11월2일~16일**이다. 실제 R3 정산/가격 전후 분석/순위는 아직 없다. 최신 공고의 공급·식품 품질·게시판 계약 반영, 모델 실호출, Linux 이미지 빌드와 실서비스 검증은 후속 항목이다. [공식 개정](https://github.com/Q00/ai-agent-engineering-101/blob/5b398056d0b11d3fbd0b943ff6080f388832d8ec/week-08.html).
+
 ## 설치와 로컬 검사
 
 저장소 루트에 교수의 pinned `scripts/market_kit.py`가 있어야 한다. Python3.12.11 기준이다.
 
 ```bash
+cd submissions/25620027/week-08
 uv venv --python 3.12.11 .venv
 uv pip sync --python .venv/bin/python requirements-local.lock
 .venv/bin/python -m pytest tests -q
