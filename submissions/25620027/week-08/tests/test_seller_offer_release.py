@@ -173,8 +173,6 @@ def test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search(
             ("search_catalog", {"query": "lamp"}),
             action("accept", 99),
             action("quote", ask),
-            ("search_catalog", {"query": "chair"}),
-            action("accept", ask),
         ],
     )
     catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
@@ -194,7 +192,7 @@ def test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search(
                 quote = task_from(first)
                 last_integer = quote.status.message.parts[0].text.split()[-1]
                 final = await send(client, last_integer, quote.id)
-                # Then: factual final-price metadata and completion survive fake search.
+                # Then: factual final-price metadata survives model-free acceptance.
                 assert quote.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
                 metadata = TypeAdapter(JsonValue).validate_json(
                     MessageToJson(quote.status.message.metadata)
@@ -209,7 +207,8 @@ def test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search(
                 assert task_from(final).status.state == TaskState.TASK_STATE_COMPLETED
                 assert tools[-2:] == [["decide"], ["decide"]]
                 assert sum("seller.search " in line for line in logs) == 1
-                assert any("SKU already selected" in line for line in logs)
+                assert len(tools) == 3
+                assert any("seller.quote_execution " in line for line in logs)
                 print(
                     json.dumps(
                         {

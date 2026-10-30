@@ -84,7 +84,6 @@ class Negotiator:
         started = monotonic()
         current = self.negotiations.get(task.id)
         snapshot = self.comparison.snapshot if self.comparison is not None else None
-        candidates: dict[str, Product] = {}
         explicit = opening_offer(text) if current is None else None
         basic_sku = explicit.sku if explicit else basic_request(text)
         offer = (
@@ -96,14 +95,7 @@ class Negotiator:
         )
         if current is not None and offer is None and accepts_quote(text):
             offer = current.ask
-        if current is None and basic_sku is not None:
-            candidates.update(
-                (product.sku, product)
-                for product in self.catalog.search(
-                    basic_sku,
-                    constraints=lambda product: product.sku == basic_sku,
-                )
-            )
+        candidates = self.opening_candidates(current, basic_sku)
         if current is not None and offer is not None:
             current = replace(current, incoming_offers=current.incoming_offers + 1)
             self.negotiations[task.id] = current
@@ -221,6 +213,10 @@ class Negotiator:
             else "BARGAINING: use the selected product and the actual numeric offer."
         )
         try:
+            if await self.execute_accepted_quote(
+                Turn(task.id, updater, current, candidates, offer, snapshot)
+            ):
+                return
             _ = await self.harness.run(
                 phase + "\n" + PROMPT,
                 state,
@@ -242,6 +238,37 @@ class Negotiator:
             self.harness.emit(
                 f"seller.turn_elapsed task={task.id} seconds={elapsed:.3f}"
             )
+
+    def opening_candidates(
+        self, current: Negotiation | None, sku: str | None
+    ) -> dict[str, Product]:
+        """Prefetch an exact basic SKU only before a negotiation has selected one."""
+        if current is not None or sku is None:
+            return {}
+        return {
+            product.sku: product
+            for product in self.catalog.search(
+                sku, constraints=lambda product: product.sku == sku
+            )
+        }
+
+    async def execute_accepted_quote(self, turn: Turn) -> bool:
+        """Execute an existing quote through the same guards, without repricing."""
+        current, offer = turn.current, turn.offer
+        if current is None or offer is None or offer < current.ask:
+            return False
+        result = await self.commit(
+            turn,
+            Decision(
+                action="accept", sku=current.product.sku, price=offer,
+                reason="Execute the buyer's acceptance of the existing quote.",
+            ),
+        )
+        if result.terminal:
+            self.harness.emit(
+                f"seller.quote_execution task={turn.task_id} model_calls=0"
+            )
+        return result.terminal
 
     async def mark_closed(self, task_id: str) -> None:
         """Persist terminal authority before publishing any terminal wire events."""

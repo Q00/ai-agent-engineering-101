@@ -65,11 +65,11 @@ def test_basic_prefetch_never_discards_attributes(
     ("chair", 183, "Hello, I'd like to buy a chair, please.", "OK"),
     ("bookshelf", 265, "I need a bookshelf", "I accept your quote"),
 ])
-def test_generic_purchase_uses_one_model_round_per_turn_and_exact_signature(
+def test_generic_purchase_quotes_once_then_executes_assent_and_exact_signature(
     monkeypatch: pytest.MonkeyPatch, sku: str, ask: int, buyer_text: str, assent: str,
 ) -> None:
     tools = scripted(
-        monkeypatch, [action("quote", ask, sku), action("accept", ask, sku)],
+        monkeypatch, [action("quote", ask, sku)],
     )
     catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
     key = Ed25519PrivateKey.generate()
@@ -109,8 +109,8 @@ def test_generic_purchase_uses_one_model_round_per_turn_and_exact_signature(
                 replay = await send(client, assent, opening.id)
                 assert isinstance(replay, dict)
                 assert "error" in replay
-                assert len(tools) == 2
-                assert tools == [["decide"], ["decide"]]
+                assert len(tools) == 1
+                assert tools == [["decide"]]
                 assert not any("seller.search " in line for line in logs)
                 assert sum("seller.turn_elapsed " in line for line in logs) == 2
 

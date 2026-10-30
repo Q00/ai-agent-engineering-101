@@ -56,15 +56,12 @@ def fresh_client(
 def test_signed_sale_when_app_restarts_preserves_offer_and_blocks_terminal_replay(
     monkeypatch: pytest.MonkeyPatch, database: Path
 ) -> None:
-    # Given: a real opening quote followed by hostile SKU/price model decisions.
+    # Given: a persisted model quote; acceptance does not need another model decision.
     calls = scripted(
         monkeypatch,
         [
             ("search_catalog", {"query": "lamp"}),
             action("quote", 105),
-            action("accept", 105, "chair"),
-            action("accept", 106),
-            action("accept", 105),
         ],
     )
     key = Ed25519PrivateKey.generate()
@@ -107,7 +104,7 @@ def test_signed_sale_when_app_restarts_preserves_offer_and_blocks_terminal_repla
             )
             assert isinstance(replay, dict)
             assert "error" in replay
-            assert len(calls) == 5
+            assert len(calls) == 2
             assert PersistentSellerStore(database).restore() == ({}, {opened.id})
             print(
                 json.dumps(
