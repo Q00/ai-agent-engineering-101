@@ -5,6 +5,13 @@
 기존 서버 서비스는 변경하지 않았다. 실제 상품 품질 기준이 정해지지 않아
 품질 점수/등급이나 높은 원가를 임의로 만들지 않았다.
 
+2026-10-30 모델 변경: 공식 [스타터 하네스](https://github.com/Q00/ai-agent-engineering-101/blob/main/scripts/starter_week07/harness.py)의
+기본값과 동일하게 `claude -p --model haiku`를 사용한다. 7주차 공용 하네스도 동일하게
+변경했으므로 서버용 후보 설정의 판매자·구매자는 모두 Haiku를 사용하게 된다.
+`haiku` 별칭의 실제 모델 버전은 서버 CLI/계정에서 확인해야 하며 특정 버전으로
+검증했다는 의미는 아니다. 변경 전 원본 로그는 보존하고, 실제 Haiku 협상은 아직
+검증하지 않았다. 전략 수집기는 계속 모델 호출이 없다.
+
 ## 동작
 
 `collect_feedback.py`가 공식 공개 `/api/board`, `/api/shops`를 읽는다.

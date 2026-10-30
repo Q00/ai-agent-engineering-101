@@ -1,12 +1,18 @@
 # Week 07 — dyishappy / 26510124
 
 서명 영수증을 발행하는 A2A 판매자와, 후기·거래 기억으로 가게를 고르는 구매자다.
-협상과 선택은 Claude Opus 5.5가 담당하고 Python은 예산·reserve·영수증을 검사한다.
+현재 코드의 협상과 선택은 Claude Haiku가 담당하고 Python은 예산·reserve·영수증을 검사한다.
 상시 서버 daintI에 배포했고 판매자·구매자 모두 dyishappy로 온라인 등록했다.
 PR 직전 회수 시점 Round 2 인정 구매는 27건이며, 이 중 10건은 이번 서버 실행에서 추가됐다.
 사용자 systemd 서비스로 실행하므로 Mac을 끄거나 SSH 연결을 닫아도 동작한다.
 운영 명령과 배포 구조는 [deploy/README.md](deploy/README.md)에 있다.
 제출 준비 보고서는 REPORT.md, 과거 설명은 README-HISTORY.md / REPORT-HISTORY.md다.
+
+2026-10-30: 공식 스타터의 `claude -p --model haiku` 기본값에 맞춰 공용 하네스를
+변경했다. seller/buyer/market_buyer 모두 적용 대상이다. `haiku`는 별칭이므로 실제
+해석되는 모델 버전은 설치된 Claude CLI/계정에 따라 확인해야 한다. 이 변경은 로컬
+코드에만 적용했으며 서버 서비스는 재시작하지 않았다. 아래 기존 검사 결과와
+REPORT·실행 로그는 변경 전 Opus 실행의 증거이며, Haiku 실거래 검증 결과가 아니다.
 
 ## 설치
 
