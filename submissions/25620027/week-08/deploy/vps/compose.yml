@@ -14,12 +14,16 @@ services:
       AX_R3_ACTIVATE: ${AX_R3_ACTIVATE:-0}
       AX_MODEL_PROVIDER: openrouter-free
       AX_OPENAI_FALLBACK: "0"
+      AX_PAID_FALLBACK: ${AX_PAID_FALLBACK:-anthropic}
+      AX_PAID_DAILY_LIMIT: "5000"
+      AX_PAID_QUOTA_PATH: /data/r3/paid-quota.sqlite3
       AX_PRICE_COMPARISON: "0"
       AX_MARKET_ROUND: "3"
       AX_SELLER_STATE_DB: /data/r3/seller.sqlite
       AX_MEMORY_JOURNAL: /data/r3/memory.sqlite
     env_file:
       - ${AX_R3_PRIVATE_DIR:?Supply an approved private directory}/model-market.env
+      - ${AX_R3_PRIVATE_DIR}/anthropic-fallback.env
     volumes:
       - ${AX_R3_PRIVATE_DIR}:/private:ro
       - ${AX_R3_DATA_DIR:?Supply an isolated writable data directory}:/data

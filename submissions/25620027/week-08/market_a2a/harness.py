@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion
     from pydantic import JsonValue
 
-    from market_a2a.paid_fallback import OpenAIFallback
+    from market_a2a.paid_fallback import PaidFallback
 
 MODEL: Final = DEFAULT_MODEL
 MAX_MODEL_ROUNDS: Final = 6
@@ -98,7 +98,7 @@ class Harness:
         emit: Callable[[str], None],
         *,
         model: str | None = None,
-        fallback: OpenAIFallback | None = None,
+        fallback: PaidFallback | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         """Own observability counters while the caller owns the API client."""
@@ -208,7 +208,7 @@ class Harness:
     ) -> ChatCompletionMessage:
         """Retry transient API errors without replacing the model's decision."""
         if self.fallback is not None and monotonic() < self.free_retry_at:
-            return await self._paid_complete(messages, tools)
+            return await self._paid_complete(messages, tools, free_failed=False)
         route = request_model(self.model, self.clock())
         for attempt, delay in enumerate(RETRY_DELAYS):
             try:
@@ -219,7 +219,9 @@ class Harness:
                     self.emit("MODEL_FREE_FALLBACK route=openrouter/free")
                 elif (
                     self.fallback is not None and self.model in FREE_MODELS
-                    and exc.status_code in (PAYMENT_REQUIRED, NOT_FOUND)
+                    and exc.status_code in (
+                        PAYMENT_REQUIRED, NOT_FOUND, RETRY_STATUS,
+                    )
                 ):
                     return await self._paid_complete(messages, tools)
                 elif exc.status_code != RETRY_STATUS and exc.status_code < SERVER_ERROR:
@@ -266,15 +268,17 @@ class Harness:
     async def _paid_complete(
         self, messages: list[ChatCompletionMessageParam],
         tools: list[ChatCompletionToolParam],
+        *, free_failed: bool = True,
     ) -> ChatCompletionMessage:
         fallback = self.fallback
         if fallback is None:
             message = "Paid fallback has not been configured"
             raise HarnessError(message)
-        self.free_retry_at = monotonic() + FREE_RECHECK_SECONDS
+        if free_failed:
+            self.free_retry_at = monotonic() + FREE_RECHECK_SECONDS
         async with self.limit:
             completion = await fallback.complete(messages, tools, self.emit)
-        return self._observe_completion(completion, DEFAULT_MODEL)
+        return self._observe_completion(completion, fallback.model)
 
     def _observe_completion(
         self, completion: ChatCompletion, route: str,

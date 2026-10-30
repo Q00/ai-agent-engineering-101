@@ -8,13 +8,15 @@ import shlex
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Final
+from typing import TYPE_CHECKING, Annotated, Final, assert_never
 
 import anyio
 import typer
 
 from deploy.vps.settings import LaunchSettings, verify_kit
+from market_a2a.anthropic_fallback import HAIKU_MODEL
 from market_a2a.models import HarnessError
+from market_a2a.paid_fallback import DailyQuota, configured_paid_provider
 
 if TYPE_CHECKING:
     from anyio.abc import Process
@@ -96,6 +98,36 @@ async def stop(process: Process) -> None:
             _ = await process.wait()
 
 
+def validate_paid_launch(settings: LaunchSettings) -> None:
+    """Permit only the authorized Haiku route with one existing shared ledger."""
+    provider = configured_paid_provider()
+    match provider:
+        case "none":
+            return
+        case "anthropic":
+            if (
+                not os.environ.get("ANTHROPIC_API_KEY")
+                or os.environ.get("ANTHROPIC_MODEL", HAIKU_MODEL) != HAIKU_MODEL
+            ):
+                message = "Approved Haiku API key and model configuration are required"
+                raise HarnessError(message)
+            quota = settings.run_directory / "paid-quota.sqlite3"
+            if (
+                os.environ.get("AX_PAID_QUOTA_PATH") != str(quota)
+                or not quota.is_file()
+            ):
+                message = "Existing shared R3 paid quota ledger is required"
+                raise HarnessError(message)
+            _ = DailyQuota(
+                quota, int(os.environ.get("AX_PAID_DAILY_LIMIT", "5000"))
+            )
+        case "openai":
+            message = "This deployment authorizes Haiku fallback only"
+            raise HarnessError(message)
+        case _:
+            assert_never(provider)
+
+
 async def activate(settings: LaunchSettings, app: Path = APP) -> int:
     """No market requests occur unless the explicit activation flag is present."""
     if os.environ.get("AX_R3_ACTIVATE") != "1":
@@ -104,9 +136,7 @@ async def activate(settings: LaunchSettings, app: Path = APP) -> int:
     if os.environ.get("AX_MODEL_PROVIDER") != "openrouter-free":
         message = "Prepared deployment requires the explicit free OpenRouter route"
         raise HarnessError(message)
-    if os.environ.get("AX_OPENAI_FALLBACK", "0") != "0":
-        message = "Paid fallback needs a separate cutover review and shared quota mount"
-        raise HarnessError(message)
+    validate_paid_launch(settings)
     if not os.environ.get("MARKET_OWNER") or not os.environ.get("OPENROUTER_API_KEY"):
         message = "Private market owner and OpenRouter environment are required"
         raise HarnessError(message)

@@ -12,9 +12,10 @@ import anyio
 import pytest
 
 from deploy.vps.bundle import build_context
-from deploy.vps.launch import activate
+from deploy.vps.launch import activate, validate_paid_launch
 from deploy.vps.settings import LaunchSettings
 from market_a2a.models import HarnessError
+from market_a2a.paid_fallback import DailyQuota
 from r3.kit_pin import KIT_SHA256
 
 
@@ -40,6 +41,42 @@ def test_default_activation_refuses_before_files_or_network(
     with pytest.raises(HarnessError):
         _ = anyio.run(activate, config)
     # Then: no credential reads, runtime files, joins or model calls occurred.
+    assert not config.run_directory.exists()
+
+
+def test_haiku_launch_requires_shared_ledger_and_preserves_existing_attempts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Given: explicitly approved Haiku fallback and the R3 shared volume.
+    config = settings(tmp_path)
+    quota = DailyQuota(config.run_directory / "paid-quota.sqlite3", 1)
+    _ = quota.reserve()
+    for key, value in {
+        "AX_OPENAI_FALLBACK": "0", "AX_PAID_FALLBACK": "anthropic",
+        "ANTHROPIC_API_KEY": "offline", "ANTHROPIC_MODEL": "claude-haiku-5-5",
+        "AX_PAID_QUOTA_PATH": str(quota.path), "AX_PAID_DAILY_LIMIT": "1",
+    }.items():
+        monkeypatch.setenv(key, value)
+    # When: validate deployment without activating or contacting a service.
+    validate_paid_launch(config)
+    # Then: existing attempts cannot be reset by changing the paid provider.
+    with pytest.raises(HarnessError, match="limit reached"):
+        _ = DailyQuota(quota.path, 1).reserve()
+
+
+def test_haiku_launch_refuses_missing_ledger_before_activation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Given: a key but no approved persistent quota mount.
+    config = settings(tmp_path)
+    monkeypatch.setenv("AX_OPENAI_FALLBACK", "0")
+    monkeypatch.setenv("AX_PAID_FALLBACK", "anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "offline")
+    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-haiku-5-5")
+    monkeypatch.setenv("AX_PAID_QUOTA_PATH", str(config.run_directory / "missing"))
+    # When/Then: fail closed before any quota reset, model call or market entry.
+    with pytest.raises(HarnessError, match="shared R3 paid quota ledger"):
+        validate_paid_launch(config)
     assert not config.run_directory.exists()
 
 
