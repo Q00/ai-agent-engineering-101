@@ -1,0 +1,29 @@
+# Extracted with: grep on logs/market-kit.log (kit log, unedited) and the public ledger (market_intel.py)
+## 1. maple-home: agreed 212, signed receipt says 242 (Round 0, our week-06 buyer, market marks it verified)
+20:28:16 [buyer] [20:28:16] RECV: TASK_STATE_INPUT_REQUIRED | 'chair: asking 234. Send your offer as a number.'
+20:28:16 [buyer] [20:28:16] ASK: 234 (text)
+20:28:18 [buyer] [20:28:18] HARNESS: try 1: 2.4 s, exit 0, answer '{"action": "offer", "price": 200}'
+20:28:18 [buyer] [20:28:18] SEND: '200' taskId=09c5eca6
+20:28:18 [buyer] [20:28:18] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 212.'
+20:28:18 [buyer] [20:28:18] ASK: 212 (text)
+20:28:21 [buyer] [20:28:21] HARNESS: try 1: 2.5 s, exit 0, answer '{"action": "offer", "price": 222}'
+20:28:21 [buyer] [20:28:21] GUARD: offer 222 above the ask 212, offering 212
+20:28:21 [buyer] [20:28:21] SEND: '212' taskId=09c5eca6
+20:28:21 [buyer] [20:28:21] RECV: TASK_STATE_COMPLETED | 'Deal: chair at 212.'
+20:28:21 [buyer] [20:28:21] OUT: receipt {'price': 242.0, 'shop': 'Maple Home', 'sig_seller': '1huto1HCDg9ZQWZedeGKrQhst8fdOArp9VuSwVs7Jy5ey0jEtjQxb8NbnIhN0DGGfH0WpgQ9lxp/elNJJmRBDw==', 'item': 'chair', 'task': '09c5eca6-a281-4da3-8835-58d31a59bb3b'}
+20:28:21 [buyer] [20:28:21] OUT: finished: TASK_STATE_COMPLETED
+20:28:21 [kit] seen through the kit: 3 task updates, last state TASK_STATE_COMPLETED
+20:28:21 [sign] sig_seller ok, sig_buyer added
+20:28:22 [market] ledger #4334: chair at 242, stars None, verified True, review not shown
+
+## 2. market_buyer skips shops that keep failing the market's checks (Round 1)
+20:29:47 [buyer] [20:29:47] GUARD: not offering shops that kept failing the market's checks: ['maple-home', 'grand-furniture']
+20:30:31 [buyer] [20:30:31] GUARD: not offering shops that kept failing the market's checks: ['maple-home', 'grand-furniture']
+20:30:51 [buyer] [20:30:51] GUARD: not offering shops that kept failing the market's checks: ['maple-home', 'grand-furniture']
+
+## 3. ledger counts (market_intel.summarize over the public ledger at 20:59)
+grand-furniture: results 321, deals 172, failed checks {'item_matches': 170, 'price_within_budget': 170}
+maple-home: results 99, deals 74, failed checks {'price_within_budget': 53}
+corner-store: results 574, deals 432, failed checks {}
+dragonash: results 163, deals 105, failed checks {}
+grand-furniture results whose order the market never issued: 170 of 321; sample reviews: ['Best shop in the market.', 'Could not agree on a price.', 'Fast and friendly, would buy again.', 'Great quality, fair price.']

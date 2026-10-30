@@ -1,0 +1,87 @@
+$ a2a card get https://a2a-lamp-shop.thisjonghoon.workers.dev
+Error: failed to resolve agent card: card request failed, status: 404 Not Found
+hint: check the --agent-card reference (host, full card URL, or local file path)
+
+$ a2a send "I want to buy a lamp"
+Task:     046a6e43-2b17-4a5a-9b32-a48db159df5c
+Context:  d3f9c786-341f-4541-a26a-3e94529e8896
+Status:   input-required (2026-10-13T13:22:35Z)
+  lamp: A lovely piece, worth every penny Asking 180. Send your offer as a number.
+History:
+  [user] I want to buy a lamp
+
+
+Resume:     a2a send --task-id 046a6e43-2b17-4a5a-9b32-a48db159df5c "<reply>"
+$ a2a send --task-id 046a6e43-2b17-4a5a-9b32-a48db159df5c 60
+Task:     046a6e43-2b17-4a5a-9b32-a48db159df5c
+Context:  d3f9c786-341f-4541-a26a-3e94529e8896
+Status:   input-required (2026-10-13T13:22:38Z)
+  That's a bit low, but I can do that. Counteroffer: 150.
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: A lovely piece, worth every penny Asking 180. Send your offer as a number.
+  [user] 60
+
+
+Resume:     a2a send --task-id 046a6e43-2b17-4a5a-9b32-a48db159df5c "<reply>"
+$ a2a send --task-id 046a6e43-2b17-4a5a-9b32-a48db159df5c 80
+Task:     046a6e43-2b17-4a5a-9b32-a48db159df5c
+Context:  d3f9c786-341f-4541-a26a-3e94529e8896
+Status:   input-required (2026-10-13T13:22:41Z)
+  I can meet you halfway. Counteroffer: 140.
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: A lovely piece, worth every penny Asking 180. Send your offer as a number.
+  [user] 60
+  [agent] That's a bit low, but I can do that. Counteroffer: 150.
+  [user] 80
+
+
+Resume:     a2a send --task-id 046a6e43-2b17-4a5a-9b32-a48db159df5c "<reply>"
+$ a2a send --task-id 046a6e43-2b17-4a5a-9b32-a48db159df5c 100
+Task:     046a6e43-2b17-4a5a-9b32-a48db159df5c
+Context:  d3f9c786-341f-4541-a26a-3e94529e8896
+Status:   input-required (2026-10-13T13:22:43Z)
+  I'm willing to compromise a bit more Counteroffer: 130.
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: A lovely piece, worth every penny Asking 180. Send your offer as a number.
+  [user] 60
+  [agent] That's a bit low, but I can do that. Counteroffer: 150.
+  [user] 80
+  [agent] I can meet you halfway. Counteroffer: 140.
+  [user] 100
+
+
+Resume:     a2a send --task-id 046a6e43-2b17-4a5a-9b32-a48db159df5c "<reply>"
+$ a2a send --task-id 046a6e43-2b17-4a5a-9b32-a48db159df5c 110
+Task:     046a6e43-2b17-4a5a-9b32-a48db159df5c
+Context:  d3f9c786-341f-4541-a26a-3e94529e8896
+Status:   completed (2026-10-13T13:22:46Z)
+  Deal accepted, thank you for your interest! Deal: lamp at 110.
+Artifacts:
+  [receipt] {"item":"lamp","price":110,"seller":"Llama Furniture Shop on Workers"}
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: A lovely piece, worth every penny Asking 180. Send your offer as a number.
+  [user] 60
+  [agent] That's a bit low, but I can do that. Counteroffer: 150.
+  [user] 80
+  [agent] I can meet you halfway. Counteroffer: 140.
+  [user] 100
+  [agent] I'm willing to compromise a bit more Counteroffer: 130.
+  [user] 110
+$ a2a send --task-id 046a6e43-2b17-4a5a-9b32-a48db159df5c 130 -o json (finished task)
+{
+  "error": {
+    "code": "A2ACLI_ERR_PROTOCOL",
+    "message": "failed to send message: Task 046a6e43-2b17-4a5a-9b32-a48db159df5c is in terminal state: TASK_STATE_COMPLETED",
+    "a2aCode": "UNSUPPORTED_OPERATION"
+  }
+}
+[exit 1]
+$ a2a task cancel 7995dff6-4804-41bc-b9af-3315199a890d
+Status:   canceled (2026-10-13T13:22:50Z)
+$ a2a send "I want to buy a sofa"
+Status:   rejected (2026-10-13T13:22:52Z)
+  We only sell: lamp, chair, bookshelf.
