@@ -19,7 +19,7 @@
 | 구성 | 구현과 범위 | 소스 |
 |---|---|---|
 | 모델 실행 | 자체 Python function-tool loop. 모델 응답 최대 6회, API 시도 최대 3회. 모델 대기30초·결정별 모델 대기 예산60초 | [harness.py](market_a2a/harness.py), [model_session.py](market_a2a/model_session.py) |
-| 모델 경로 | 준비 설정은 OpenRouter 무료 경로, 유료 fallback OFF. 기존 MiniMax 무료 행사 선택은 만료일 이후 `openrouter/free` 요청으로 전환 | [model_provider.py](market_a2a/model_provider.py), [paid_fallback.py](market_a2a/paid_fallback.py) |
+| 모델 경로 | OpenRouter 무료 우선·명시적 Haiku5.5 대체. 기존 MiniMax 행사 만료 후 `openrouter/free`, 유료 시도는 판매자/구매자 합산 KST 하루5000회 | [model_provider.py](market_a2a/model_provider.py), [paid_fallback.py](market_a2a/paid_fallback.py), [anthropic_fallback.py](market_a2a/anthropic_fallback.py) |
 | 선택 입력 | 고정 지시문과 주문 상태를 분리. 짧은 관측 prior·최근 3건·증거 포인터·유효한 전략 프로필 제공 | [context_snapshot.py](market_a2a/context_snapshot.py), [market_decision.py](market_a2a/market_decision.py) |
 | 기억 저장·조회 | 최대 128곳의 노트, 자기 관측 원문을 registry/snapshot index로 조회. 임의 파일 경로와 외부 광고를 지시문으로 받지 않음 | [memory_selection.py](market_a2a/memory_selection.py), [memory_repository.py](market_a2a/memory_repository.py) |
 | 기록 담당 | SQLite WAL과 별도 프로세스. 모델/API 호출 없이 관측을 정리 | [memory_journal.py](market_a2a/memory_journal.py), [recorder.py](r3/recorder.py) |
@@ -65,12 +65,13 @@ flowchart LR
 
 | 검증 | 결과·해석 | 증거 |
 |---|---|---|
-| Mac 전체 회귀 | 397개 PASS, 실패/오류/건너뜀 0. 외부 모델·시장 호출 0, loopback 연결49회 | [로그](logs/reliability-20261030/final.log), [JUnit](logs/reliability-20261030/final-junit.xml), [집계](logs/reliability-20261030/summary.json) |
+| Mac 전체 회귀 | 412개 PASS, 실패/오류/건너뜀0. 외부 모델·시장 호출0, loopback49회 | [로그](logs/claude-fallback-20261030/final.log), [JUnit](logs/claude-fallback-20261030/final-junit.xml), [집계](logs/claude-fallback-20261030/summary.json) |
 | 피드백 실행 예제 | v1/v2 생성·컨텍스트 반영·변조 거부·직전 버전 유지 | [결과](logs/meta-demo-20261030/result.json) |
-| Linux VPS 핵심 검사 | 79개 PASS, 실패/오류/건너뜀0. 기존 결제·기억 범위와 새 집행·시간 제한·리뷰 검사 | [전체 로그](logs/reliability-20261030/vps/server-core-final.log), [JUnit](logs/reliability-20261030/vps/core-final-junit.xml) |
+| Linux VPS 핵심 검사 | 115개 PASS, 실패/오류/건너뜀0. 기존 결제·기억·집행과 새 대체 경로·쿼터·기동 경계 검사 | [전체 로그](logs/claude-fallback-20261030/vps/server-core-final.log), [JUnit](logs/claude-fallback-20261030/vps/qa/core-final-junit.xml) |
+| 실제 Haiku 대체 | 합성 무료429 뒤 실제 도구 응답1회,532입력/37출력 토큰·공유 장부0→1. 실제 시장 행동0 | [VPS 연결 결과](logs/claude-fallback-20261030/vps/live/live-smoke.json) |
 | 실제 R3 시장 | 개시 전, 정산/순위/수익 효과 미측정 | 아래 후속 수집 항목 |
 
-프로젝트 전체 strict 타입 검사는 오류·경고·메모 0, 이번 변경 소스·직접 검사는 Ruff 통과다. [새 타입](logs/reliability-20261030/types-final.log), [새 린트](logs/reliability-20261030/lint-pass.log). 이전 예제 제출 검수도 보존한다. [타입 원본](logs/submission-review-20261030-types.log), [린트 원본](logs/submission-review-20261030-lint.log). 도구 캐시 접근이 막힌 첫 sandbox 시도도 [별도 원본](logs/submission-review-20261030-types-sandbox.log)에 보존했다.
+프로젝트 전체 strict 타입 검사는 오류·경고·메모 0, 이번 변경 소스·직접 검사는 Ruff 통과다. [새 타입](logs/claude-fallback-20261030/types-final.log), [새 린트](logs/claude-fallback-20261030/lint-final.log). 이전 예제 제출 검수도 보존한다. [타입 원본](logs/submission-review-20261030-types.log), [린트 원본](logs/submission-review-20261030-lint.log). 도구 캐시 접근이 막힌 첫 sandbox 시도도 [별도 원본](logs/submission-review-20261030-types-sandbox.log)에 보존했다.
 
 정상 결제 fixture는 lamp 100·mandate budget 120으로 공식 payer와 closed mandates 서명을 거쳐 로컬 장부 잔액 900/100을 확인한다. budget 90의 실제 payer 거부와, 잘못된 wallet이 유효한 서명으로 상한을 넘겨도 로컬 시장이 거부하는 층을 구분했다. 금액·품목·수취인·해시·주문·서명·만료·수량 오류와 재사용, 두 동시 complete에서 한 번만 차감되는 경우도 검사한다. [정상 경로](logs/r3-third-attempt.log), [경계](logs/r3-payer-boundaries.log), [다층 방어](logs/meta-defense-attempt-1.log).
 
@@ -100,7 +101,7 @@ localhost bind가 금지된 첫 sandbox 실행은 29개 실패였다. 원인을 
 
 [README](README.md)에 Python 3.12.11·Node 22.23.4·lock 설치·검사·예제 실행 명령을 적었다. API 키 없이 재현할 수 있으며, 실제 모델 명령인 `run_harness.sh`는 private env를 읽을 수 있어 오프라인 검사에 사용하지 않는다.
 
-VPS의 현재 대기 release는 `b619818b258f`이고 runtime64개·Linux amd64·UID10001이다. 소스는 `b619818b258f857c841bd6ecda133d40948d922b`, 이미지 ID는 `sha256:e6cffd8b7241cc9b7bb7a8ed1e5442ed959efc103861616d5d2accb83c14aa1c`다. `prepared` 태그와 `current`가 이 검증된 release를 가리킨다. 상태는 **installed-and-verified-not-activated**이며 시장 등록·주문·실제 모델 호출0회다. [새 서버 결과](logs/reliability-20261030/vps/result.json). 이전 d7ed271 이미지와 [첫 설치54검사](logs/vps-stage-20261030/result.json)도 보존했다.
+VPS의 현재 대기 release는 `20763f685bb9`, runtime65개·Linux amd64·UID10001이다. 운영 소스 `20763f685bb9938a2aa98f9743dc9e805f327a90`, 이미지ID `sha256:bc9748458f119ba38a5f031503ac801e0cc37195a074556b1f37a5051db4064a`로 `prepared`와 `current`를 갱신했다. 상태는 **Haiku 대체 준비·시장 비활성**이다. Anthropic API 키는 전용 비공개 env에0600으로 설치하고 기존 유료 호출 장부를 복사해 누적값을 보존했다. 실제 API 연결 검증1회·시장 등록/주문0회, 기존 서비스 재시작0회다. [새 서버 결과](logs/claude-fallback-20261030/vps/result.json). 이전 b619818/d7ed271 이미지와 검증 기록은 복구용으로 보존했다.
 
 활성화 때는 기존 신원·기억·유효한 운영 시한·남은 주문 수·공유 API 한도를 [VPS 절차](deploy/vps/README.md)에 따라 확인한다. 설치 검사용 만료형 설정을 새 운영 승인으로 쓰지 않는다. 현재 제출은 구현·재현 증거이며, 전체 과제 완료 판정에는 위 실제 R3 증거가 더 필요하다.
 
@@ -121,4 +122,17 @@ VPS의 현재 대기 release는 `b619818b258f`이고 runtime64개·Linux amd64·
 가격 정책·리뷰 상한·일별 API 한도·운영 종료시각·시장 신원은 바꾸지 않았다. 무료 모델 목록을 직접 수집해 자동 승격하는 기능이나 메타 하네스의 후보 실험/성과 자동 복구를 이번에 구현했다고 주장하지 않는다. 무료 라우터와 기존 명시적 유료 fallback 계약을 유지한다. 실제 R3 정산·수익·전환율 개선은 이후 별도 측정이 필요하다.
 
 
-새 VPS 첫 검사에서는 무료 provider를 기본값으로 가진 이미지와 OpenAI mock client의 테스트 설정이 충돌해66개 PASS·13개 실패였다. [첫 Linux 원본](logs/reliability-20261030/vps/server-core-attempt1.log)을 보존하고 **QA 컨테이너에만** mock client에 맞는 backend를 명시해79개를 통과했다. 실제 runtime은 무료 provider·유료 fallback OFF 그대로이며, 양쪽 검사 모두 network=none·키 마운트 없음이다. 프로덕션 모델 성공이나 과금 실험으로 계산하지 않는다.
+1차 신뢰성 보완 당시 VPS 첫 검사에서는 무료 provider를 기본값으로 가진 이미지와 OpenAI mock client의 테스트 설정이 충돌해66개 PASS·13개 실패였다. [첫 Linux 원본](logs/reliability-20261030/vps/server-core-attempt1.log)을 보존하고 **QA 컨테이너에만** mock client에 맞는 backend를 명시해79개를 통과했다. 당시 runtime은 무료 provider·유료 fallback OFF였으며, 양쪽 검사 모두 network=none·키 마운트 없음이다. 프로덕션 모델 성공이나 과금 실험으로 계산하지 않는다.
+
+
+## 8. 무료 우선·Haiku 유료 대체 — 2026-10-30
+
+사용자가 기존 Anthropic env의 Haiku5.5를 무료 소진 뒤 쓰도록 승인했다. `AX_PAID_FALLBACK=anthropic`로만 선택하며 기존 OpenAI opt-in과 충돌하면 시작을 거부한다. 승인 모델은 `claude-haiku-5-5`, 목적지는 `https://api.anthropic.com/v1/`로 제한한다. [Anthropic 공식 SDK 호환 API](https://platform.claude.com/docs/en/cli-sdks-libraries/libraries/openai-sdk)를 사용해 기존 typed tool loop를 유지했다. 호환 API의 strict 무시·thinking 미반환·prompt cache 미지원 한계는 남고, 실제 도구 실행 전 스키마·예산·서명 검사는 기존 코드가 계속 담당한다. 최신 Claude의 temperature 제한에 맞춰 해당 매개변수는 보내지 않는다.
+
+- 무료 한도402/429·무료 라우터 부재404는 응답을 받는 즉시 유료로 전환한다. 무료 모델에는0원 가격 제한을 계속 보낸다. 기존 행사 모델의404는 먼저 무료 라우터로 바꾼다. 기타 일시 오류는 기존 제한 재시도를 사용하므로 모든 장애의 즉시 전환을 보장하지 않는다.
+- 한 하네스 세션에서60초 동안 Haiku를 사용한 뒤 무료를 재확인한다. 연속 유료 호출이 이 시점을 연장하지 않는다. 구매자 프로세스를 새로 시작하면 무료 우선 확인부터 다시 한다.
+- 유료 요청은 SDK 재시도0·출력 최대450토큰이며, 네트워크 전 기존 공유 SQLite 장부에서 슬롯을 원자적으로 예약한다. 실패·취소도 횟수에 포함하고, 분실한 장부를 새로 만들어 한도를 초기화하지 않는다. 구매자·판매자 합산 KST 하루5000회이며 계정 잔액과 동일한 지표는 아니다. 준비한 R3 launcher는 승인된 Haiku 설정과 공유 장부 없이는 유료 사용을 시작하지 않는다.
+- [로컬412개](logs/claude-fallback-20261030/summary.json)·Linux115개·타입/린트 통과, 무료 오류의 실제 SDK wire 전환·도구 dispatch·잘못된 host/model/retry 거부·실패 유료 시도 차감·무료 복귀를 검사했다. [실제 VPS 연결](logs/claude-fallback-20261030/vps/live/live-smoke.json)은 합성 무료429 후 실제 Haiku 도구 응답1회만 사용했다. 실제 무료 계정 소진·시장 거래·유입/수익 효과 검증은 아니다.
+- Linux 첫115개 실행은114 PASS·1실패였다. 멈춘 네트워크를 검사하기 전에 SDK의 platform discovery 초기 준비가 검사 외부1초 한도에 걸린 원본을 [보존](logs/claude-fallback-20261030/vps/server-core.log)했다. SDK를 합성 성공 응답으로 준비한 뒤 같은 멈춘 HTTP 응답·20ms 모델 예산을 검사하도록 fixture만 분리했다. 운영30/60/240초 값은 바꾸지 않았고 재검사115개를 통과했다.
+
+키는 이미지/Git/공개 로그에 넣지 않고 사용자 VPS의 비공개 env에만 설치했다. 기존 b619818 release는 복구용으로 보존했으며 시장 활성화·운영 종료시각/주문 한도 연장·실제 시장 등록은 하지 않았다. 실제 R3 정산 증거와 현재 코드 검증을 구분한다.

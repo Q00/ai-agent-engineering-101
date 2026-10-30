@@ -6,13 +6,13 @@
 - [요구사항 대조](REQUIREMENTS.md): 웹교재·중간/중간2 속기록·판서
 - [VPS 전환 절차](deploy/vps/README.md): 빌드·기억 이전·활성화·복구
 - [조건부터 다시 본 전략](STRATEGY_REVIEW.md): 재고 매집 제외·R3 마진·악성 지시 중단·사실형 문구
-- [최종 검사](logs/reliability-20261030/summary.json): 397개 PASS, 실패·오류·건너뜀 0
+- [최종 검사](logs/claude-fallback-20261030/summary.json): 412개 PASS, 실패·오류·건너뜀 0
 - [메타 피드백 예제](examples/operator_feedback_demo.py): API 없이 관측→검증→프로필 변경 재현
 - [기존 보고서 원문](REPORT_HISTORY.md): 공고·시도·실패 이력 보존
 - [실행 로그](logs/): 실패 원본과 후속 검사 모두 보존
-- [VPS 설치 결과](logs/reliability-20261030/vps/result.json): 개선 코드64개·Linux 이미지·핵심79검사와 기본 기동 검증 완료, 시장 등록/주문0회
+- [VPS 설치 결과](logs/claude-fallback-20261030/vps/result.json): 개선 코드65개·Linux 핵심115검사·실제 Haiku 대체1회 검증 완료, 시장 등록/주문0회
 
-2026-10-30 코드·재현 검증 제출본이다. 중간평가 마감은 **2026-11-16 23:59(PR 생성 시각)**, R3 기간은 **11월2일~16일**이다. 실제 R3 정산/가격 전후 분석/순위는 아직 없다. 최신 공고의 공급·식품 품질·게시판 계약 반영, 모델 실호출, 실서비스 검증은 후속 항목이다. Linux 이미지 빌드·기본 기동 검증은 아래 설치 기록에서 완료했다. [공식 개정](https://github.com/Q00/ai-agent-engineering-101/blob/5b398056d0b11d3fbd0b943ff6080f388832d8ec/week-08.html).
+2026-10-30 코드·재현 검증 제출본이다. 중간평가 마감은 **2026-11-16 23:59(PR 생성 시각)**, R3 기간은 **11월2일~16일**이다. 실제 R3 정산/가격 전후 분석/순위는 아직 없다. 최신 공고의 공급·식품 품질·게시판 계약 반영, 무료 모델 실가용성·실제 시장 연동 검증은 후속 항목이다. Haiku의 합성 도구 연결은 별도1회 확인했다. Linux 이미지 빌드·기본 기동 검증은 아래 설치 기록에서 완료했다. [공식 개정](https://github.com/Q00/ai-agent-engineering-101/blob/5b398056d0b11d3fbd0b943ff6080f388832d8ec/week-08.html).
 
 ## 설치와 오프라인 재현
 
@@ -32,7 +32,7 @@ uv pip sync --python .venv/bin/python requirements-local.lock
 
 ## 실제 모델과 시장 운영
 
-[agent.json](agent.json)은 seller/buyer/market_buyer 명령과 하네스를 기술한다. 실제 운영은 [VPS 절차](deploy/vps/README.md)에 따라 기존 키·기억·유효 시한·남은 주문 수를 준비하고 공식 kit Proxy 경로를 활성화한다. 무료 경로의 명시 설정은 `AX_MODEL_PROVIDER=openrouter-free`, `AX_OPENAI_FALLBACK=0`이다. 실제 키 값은 환경에만 둔다.
+[agent.json](agent.json)은 seller/buyer/market_buyer 명령과 하네스를 기술한다. 실제 운영은 [VPS 절차](deploy/vps/README.md)에 따라 기존 키·기억·유효 시한·남은 주문 수를 준비하고 공식 kit Proxy 경로를 활성화한다. 현재 VPS 준비 설정은 `AX_MODEL_PROVIDER=openrouter-free`, `AX_PAID_FALLBACK=anthropic`, `AX_OPENAI_FALLBACK=0`이다. 무료 한도402/429 또는 무료 라우터 부재404 때 Haiku5.5로 대체하며, 판매자·구매자가 같은 KST 하루5000회 유료 시도 장부를 사용한다. 키는 비공개 env로만 전달한다. 실제 키 값은 환경에만 둔다.
 
 `run_harness.sh`의 기본 provider는 이전 OpenAI 설정일 수 있고 환경 파일도 읽는다. 위 오프라인 검사에 이 wrapper를 사용하지 않는다. 현재 고정 kit는 새 공급/식품 품질 계약이 나오면 다시 대조해야 한다. 실제 시장 참가와 상시 운영 시한 연장은 이 재현 명령에 포함되지 않는다.
 
@@ -65,3 +65,10 @@ flowchart LR
 모델이 제시한 현재 호가를 받아들이는 제안은 같은 commit·서명 경로에서 추가 모델 호출 없이 집행한다. 최초 가격과 새로운 역제안은 계속 모델이 결정한다. 모델 응답 대기30초·결정별 모델 대기 예산60초, 시장 주문의 남은 시간240초에서 선택40초·리뷰15초를 제한한다. 금융 도구 commit과 durable 저장은 모델 대기 timeout으로 잘라내지 않는다. 리뷰 모델 실패·지연에도 이미 받은 원래 영수증을 사실 기반 평가와 함께 반환한다.
 
 참고한 아이디어·자체 구현의 차이·실패와 최종 검사·적용 한계는 [보고서7절](REPORT.md#7-참고한-원리와-이번-독자-구현--2026-10-30)에 있다. 가격·평점 정책과 운영 예산/시한은 유지한다. 실제 시장 성과는 아직 평가하지 않았다.
+
+
+## 무료 우선·Haiku 유료 대체
+
+사용자 승인으로 `claude-haiku-5-5`를 직접 Anthropic API의 대체 경로로 추가했다. 무료 한도 오류 뒤 재시도 지연 없이 유료로 넘어가고, 같은 하네스 세션에서는60초 후 무료 경로를 다시 확인한다. 유료 트래픽이 계속 와도 이 시점이 뒤로 밀리지 않는다. 무료 모델에 보내는0원 가격 제한은 유지한다.
+
+[VPS 실제 연결 결과](logs/claude-fallback-20261030/vps/live/live-smoke.json)는 합성 무료429 뒤 실제 Haiku 도구 응답1회,532입력/37출력 토큰, 공유 장부0→1을 확인했다. 실제 시장 행동은0회다. 보호된 env와 기존 장부를 준비한 대기 이미지이며, 실제 R3 활성화에는 기존 시장 신원·새 계약·유효한 운영 시한/남은 주문 수를 계속 확인해야 한다. [구성·검사·호환 한계](REPORT.md#8-무료-우선haiku-유료-대체--2026-10-30).
