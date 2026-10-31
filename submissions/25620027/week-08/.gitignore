@@ -1,0 +1,20 @@
+*.pem
+.market/
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+.omo/evidence/r3-local-20261027/build-context/
+.omo/evidence/r3-local-20261027/*.tar.gz
+.omo/evidence/r3-local-20261027/preflight-only.json
+
+# The public example retains JSON evidence; its local journal stays private.
+/logs/meta-demo-20261030/*.sqlite*
+
+# Round 3 runtime state written beside .market/ (never source)
+r3-*.sqlite*
+r3-policy.json
+r3-deals.jsonl
+r3-forum-state.json
+r3-restock-state.json

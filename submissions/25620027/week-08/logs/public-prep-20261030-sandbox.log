@@ -1,0 +1,2868 @@
+........................................................................ [ 18%]
+........................................................................ [ 37%]
+.................................................................FFFFFFF [ 56%]
+FF...FF.....FFFFFFFFFFFFFFFFFF.......................................... [ 75%]
+........................................................................ [ 94%]
+...................                                                      [100%]
+=================================== FAILURES ===================================
+____ test_payer_stops_before_complete_when_checkout_is_dishonest[signature] ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ee1b9e0>
+malice = 'signature'
+
+    @pytest.mark.parametrize("malice", ["signature", "price", "item", "task", "endpoint"])
+    def test_payer_stops_before_complete_when_checkout_is_dishonest(
+        monkeypatch: pytest.MonkeyPatch,
+        malice: Malice,
+    ) -> None:
+        # Given: the signed A2A receipt remains100; only merchant checkout is altered.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                completed: list[bool] = []
+                created: list[bool] = []
+                receipt = signed_receipt(scene)
+    
+                def build(public: str) -> Starlette:
+                    claims: dict[str, JsonValue] = {
+                        "item": "lamp",
+                        "price": 100,
+                        "task": receipt["task"],
+                        "shop_url": public,
+                        "currency": "credits",
+                    }
+                    key = corrupt_checkout(malice, claims, scene.ledger.shop_key)
+                    endpoint = public + "/acp"
+                    if malice == "endpoint":
+                        endpoint = endpoint.replace("127.0.0.1", "localhost")
+    
+                    async def descriptor(_request: Request) -> JSONResponse:
+                        return JSONResponse({"endpoint": endpoint})
+    
+                    async def create(_request: Request) -> JSONResponse:
+                        created.append(True)
+                        return JSONResponse(
+                            {"id": "dishonest", "checkout_jwt": kit.jwt_sign(key, claims)},
+                            status_code=201,
+                        )
+    
+                    async def complete(_request: Request) -> JSONResponse:
+                        completed.append(True)
+                        return JSONResponse({"error": "must not complete"}, status_code=400)
+    
+                    return Starlette(
+                        routes=[
+                            Route("/.well-known/acp.json", descriptor),
+                            Route("/acp/checkout_sessions", create, methods=["POST"]),
+                            Route(
+                                "/acp/checkout_sessions/dishonest/complete",
+                                complete,
+                                methods=["POST"],
+                            ),
+                        ]
+                    )
+    
+                async with live_app(build) as shop:
+                    order = scene.ledger.issue(shop)
+                    # When: use the unmodified course payer against this local shop.
+                    result = await anyio.to_thread.run_sync(
+                        partial(
+                            kit.acp_pay,
+                            order,
+                            shop,
+                            kit.pub_b64(scene.ledger.shop_key),
+                            receipt,
+                            scene.ledger.buyer_key,
+                        )
+                    )
+                # Then: nothing was completed or charged, before verifier intervention.
+                assert result is None
+                assert not completed
+                assert not scene.ledger.requests
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                if malice == "endpoint":
+                    assert not created
+    
+>       anyio.run(run)
+
+tests/test_r3_buyer_boundaries.py:119: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_buyer_boundaries.py:54: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f755a80>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+______ test_payer_stops_before_complete_when_checkout_is_dishonest[price] ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ff78ad0>
+malice = 'price'
+
+    @pytest.mark.parametrize("malice", ["signature", "price", "item", "task", "endpoint"])
+    def test_payer_stops_before_complete_when_checkout_is_dishonest(
+        monkeypatch: pytest.MonkeyPatch,
+        malice: Malice,
+    ) -> None:
+        # Given: the signed A2A receipt remains100; only merchant checkout is altered.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                completed: list[bool] = []
+                created: list[bool] = []
+                receipt = signed_receipt(scene)
+    
+                def build(public: str) -> Starlette:
+                    claims: dict[str, JsonValue] = {
+                        "item": "lamp",
+                        "price": 100,
+                        "task": receipt["task"],
+                        "shop_url": public,
+                        "currency": "credits",
+                    }
+                    key = corrupt_checkout(malice, claims, scene.ledger.shop_key)
+                    endpoint = public + "/acp"
+                    if malice == "endpoint":
+                        endpoint = endpoint.replace("127.0.0.1", "localhost")
+    
+                    async def descriptor(_request: Request) -> JSONResponse:
+                        return JSONResponse({"endpoint": endpoint})
+    
+                    async def create(_request: Request) -> JSONResponse:
+                        created.append(True)
+                        return JSONResponse(
+                            {"id": "dishonest", "checkout_jwt": kit.jwt_sign(key, claims)},
+                            status_code=201,
+                        )
+    
+                    async def complete(_request: Request) -> JSONResponse:
+                        completed.append(True)
+                        return JSONResponse({"error": "must not complete"}, status_code=400)
+    
+                    return Starlette(
+                        routes=[
+                            Route("/.well-known/acp.json", descriptor),
+                            Route("/acp/checkout_sessions", create, methods=["POST"]),
+                            Route(
+                                "/acp/checkout_sessions/dishonest/complete",
+                                complete,
+                                methods=["POST"],
+                            ),
+                        ]
+                    )
+    
+                async with live_app(build) as shop:
+                    order = scene.ledger.issue(shop)
+                    # When: use the unmodified course payer against this local shop.
+                    result = await anyio.to_thread.run_sync(
+                        partial(
+                            kit.acp_pay,
+                            order,
+                            shop,
+                            kit.pub_b64(scene.ledger.shop_key),
+                            receipt,
+                            scene.ledger.buyer_key,
+                        )
+                    )
+                # Then: nothing was completed or charged, before verifier intervention.
+                assert result is None
+                assert not completed
+                assert not scene.ledger.requests
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                if malice == "endpoint":
+                    assert not created
+    
+>       anyio.run(run)
+
+tests/test_r3_buyer_boundaries.py:119: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_buyer_boundaries.py:54: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10fd73e20>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+______ test_payer_stops_before_complete_when_checkout_is_dishonest[item] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fd454c0>
+malice = 'item'
+
+    @pytest.mark.parametrize("malice", ["signature", "price", "item", "task", "endpoint"])
+    def test_payer_stops_before_complete_when_checkout_is_dishonest(
+        monkeypatch: pytest.MonkeyPatch,
+        malice: Malice,
+    ) -> None:
+        # Given: the signed A2A receipt remains100; only merchant checkout is altered.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                completed: list[bool] = []
+                created: list[bool] = []
+                receipt = signed_receipt(scene)
+    
+                def build(public: str) -> Starlette:
+                    claims: dict[str, JsonValue] = {
+                        "item": "lamp",
+                        "price": 100,
+                        "task": receipt["task"],
+                        "shop_url": public,
+                        "currency": "credits",
+                    }
+                    key = corrupt_checkout(malice, claims, scene.ledger.shop_key)
+                    endpoint = public + "/acp"
+                    if malice == "endpoint":
+                        endpoint = endpoint.replace("127.0.0.1", "localhost")
+    
+                    async def descriptor(_request: Request) -> JSONResponse:
+                        return JSONResponse({"endpoint": endpoint})
+    
+                    async def create(_request: Request) -> JSONResponse:
+                        created.append(True)
+                        return JSONResponse(
+                            {"id": "dishonest", "checkout_jwt": kit.jwt_sign(key, claims)},
+                            status_code=201,
+                        )
+    
+                    async def complete(_request: Request) -> JSONResponse:
+                        completed.append(True)
+                        return JSONResponse({"error": "must not complete"}, status_code=400)
+    
+                    return Starlette(
+                        routes=[
+                            Route("/.well-known/acp.json", descriptor),
+                            Route("/acp/checkout_sessions", create, methods=["POST"]),
+                            Route(
+                                "/acp/checkout_sessions/dishonest/complete",
+                                complete,
+                                methods=["POST"],
+                            ),
+                        ]
+                    )
+    
+                async with live_app(build) as shop:
+                    order = scene.ledger.issue(shop)
+                    # When: use the unmodified course payer against this local shop.
+                    result = await anyio.to_thread.run_sync(
+                        partial(
+                            kit.acp_pay,
+                            order,
+                            shop,
+                            kit.pub_b64(scene.ledger.shop_key),
+                            receipt,
+                            scene.ledger.buyer_key,
+                        )
+                    )
+                # Then: nothing was completed or charged, before verifier intervention.
+                assert result is None
+                assert not completed
+                assert not scene.ledger.requests
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                if malice == "endpoint":
+                    assert not created
+    
+>       anyio.run(run)
+
+tests/test_r3_buyer_boundaries.py:119: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_buyer_boundaries.py:54: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7542c0>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+______ test_payer_stops_before_complete_when_checkout_is_dishonest[task] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fd47fb0>
+malice = 'task'
+
+    @pytest.mark.parametrize("malice", ["signature", "price", "item", "task", "endpoint"])
+    def test_payer_stops_before_complete_when_checkout_is_dishonest(
+        monkeypatch: pytest.MonkeyPatch,
+        malice: Malice,
+    ) -> None:
+        # Given: the signed A2A receipt remains100; only merchant checkout is altered.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                completed: list[bool] = []
+                created: list[bool] = []
+                receipt = signed_receipt(scene)
+    
+                def build(public: str) -> Starlette:
+                    claims: dict[str, JsonValue] = {
+                        "item": "lamp",
+                        "price": 100,
+                        "task": receipt["task"],
+                        "shop_url": public,
+                        "currency": "credits",
+                    }
+                    key = corrupt_checkout(malice, claims, scene.ledger.shop_key)
+                    endpoint = public + "/acp"
+                    if malice == "endpoint":
+                        endpoint = endpoint.replace("127.0.0.1", "localhost")
+    
+                    async def descriptor(_request: Request) -> JSONResponse:
+                        return JSONResponse({"endpoint": endpoint})
+    
+                    async def create(_request: Request) -> JSONResponse:
+                        created.append(True)
+                        return JSONResponse(
+                            {"id": "dishonest", "checkout_jwt": kit.jwt_sign(key, claims)},
+                            status_code=201,
+                        )
+    
+                    async def complete(_request: Request) -> JSONResponse:
+                        completed.append(True)
+                        return JSONResponse({"error": "must not complete"}, status_code=400)
+    
+                    return Starlette(
+                        routes=[
+                            Route("/.well-known/acp.json", descriptor),
+                            Route("/acp/checkout_sessions", create, methods=["POST"]),
+                            Route(
+                                "/acp/checkout_sessions/dishonest/complete",
+                                complete,
+                                methods=["POST"],
+                            ),
+                        ]
+                    )
+    
+                async with live_app(build) as shop:
+                    order = scene.ledger.issue(shop)
+                    # When: use the unmodified course payer against this local shop.
+                    result = await anyio.to_thread.run_sync(
+                        partial(
+                            kit.acp_pay,
+                            order,
+                            shop,
+                            kit.pub_b64(scene.ledger.shop_key),
+                            receipt,
+                            scene.ledger.buyer_key,
+                        )
+                    )
+                # Then: nothing was completed or charged, before verifier intervention.
+                assert result is None
+                assert not completed
+                assert not scene.ledger.requests
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                if malice == "endpoint":
+                    assert not created
+    
+>       anyio.run(run)
+
+tests/test_r3_buyer_boundaries.py:119: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_buyer_boundaries.py:54: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f754b80>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+____ test_payer_stops_before_complete_when_checkout_is_dishonest[endpoint] _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fd45490>
+malice = 'endpoint'
+
+    @pytest.mark.parametrize("malice", ["signature", "price", "item", "task", "endpoint"])
+    def test_payer_stops_before_complete_when_checkout_is_dishonest(
+        monkeypatch: pytest.MonkeyPatch,
+        malice: Malice,
+    ) -> None:
+        # Given: the signed A2A receipt remains100; only merchant checkout is altered.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                completed: list[bool] = []
+                created: list[bool] = []
+                receipt = signed_receipt(scene)
+    
+                def build(public: str) -> Starlette:
+                    claims: dict[str, JsonValue] = {
+                        "item": "lamp",
+                        "price": 100,
+                        "task": receipt["task"],
+                        "shop_url": public,
+                        "currency": "credits",
+                    }
+                    key = corrupt_checkout(malice, claims, scene.ledger.shop_key)
+                    endpoint = public + "/acp"
+                    if malice == "endpoint":
+                        endpoint = endpoint.replace("127.0.0.1", "localhost")
+    
+                    async def descriptor(_request: Request) -> JSONResponse:
+                        return JSONResponse({"endpoint": endpoint})
+    
+                    async def create(_request: Request) -> JSONResponse:
+                        created.append(True)
+                        return JSONResponse(
+                            {"id": "dishonest", "checkout_jwt": kit.jwt_sign(key, claims)},
+                            status_code=201,
+                        )
+    
+                    async def complete(_request: Request) -> JSONResponse:
+                        completed.append(True)
+                        return JSONResponse({"error": "must not complete"}, status_code=400)
+    
+                    return Starlette(
+                        routes=[
+                            Route("/.well-known/acp.json", descriptor),
+                            Route("/acp/checkout_sessions", create, methods=["POST"]),
+                            Route(
+                                "/acp/checkout_sessions/dishonest/complete",
+                                complete,
+                                methods=["POST"],
+                            ),
+                        ]
+                    )
+    
+                async with live_app(build) as shop:
+                    order = scene.ledger.issue(shop)
+                    # When: use the unmodified course payer against this local shop.
+                    result = await anyio.to_thread.run_sync(
+                        partial(
+                            kit.acp_pay,
+                            order,
+                            shop,
+                            kit.pub_b64(scene.ledger.shop_key),
+                            receipt,
+                            scene.ledger.buyer_key,
+                        )
+                    )
+                # Then: nothing was completed or charged, before verifier intervention.
+                assert result is None
+                assert not completed
+                assert not scene.ledger.requests
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                if malice == "endpoint":
+                    assert not created
+    
+>       anyio.run(run)
+
+tests/test_r3_buyer_boundaries.py:119: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_buyer_boundaries.py:54: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f72b4c0>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+_______________ test_harness_receipt_settles_through_real_kit_v3 _______________
+
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-0/test_harness_receipt_settles_t0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fd47410>
+
+    def test_harness_receipt_settles_through_real_kit_v3(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Given: our real seller/buyer with only their external model calls replaced.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                registry = tmp_path / "shops.json"
+                _ = registry.write_text(
+                    json.dumps(
+                        [
+                            {
+                                "name": "Local Shop",
+                                "url": scene.shop,
+                                "reviews": [],
+                            }
+                        ]
+                    )
+                )
+                order = scene.ledger.issue(scene.shop)
+                buyer = ScriptedHarness(
+                    [
+                        (
+                            "select_shop",
+                            {"index": 0, "reason": "Local contract verification"},
+                        ),
+                        ("offer", {"price": 100, "reason": "Within authorized budget"}),
+                        (
+                            "leave_review",
+                            {"stars": 3, "review": "Receipt received at 100."},
+                        ),
+                    ]
+                )
+                # When: negotiate A2A, preserve the raw receipt, then let v3 pay it.
+                result = await market_buy(
+                    buyer,
+                    MarketRequest(
+                        registry,
+                        "lamp",
+                        120,
+                        tmp_path / "memory.json",
+                    ),
+                    scene.trace.append,
+                )
+                assert result.receipt is not None
+                receipt = JSON.validate_python(result.receipt)
+                # v3 handle_order performs this same protobuf whole-number normalization.
+                receipt["price"] = int(TypeAdapter(float).validate_python(receipt["price"]))
+                paid = await anyio.to_thread.run_sync(
+                    partial(
+                        kit.acp_pay,
+                        order,
+                        scene.shop,
+                        kit.pub_b64(scene.ledger.shop_key),
+                        receipt,
+                        scene.ledger.buyer_key,
+                    )
+                )
+                # Then: signatures bind the task; the public ledger hides the budget.
+                assert paid is not None
+                assert scene.ledger.balances == {"buyer": 900, "shop": 100}
+                assert len(scene.ledger.requests) == 1
+                request = scene.ledger.requests[0]
+                co = kit.jwt_payload(
+                    request.checkout_jwt, kit.pub_b64(scene.ledger.shop_key)
+                )
+                assert co is not None
+                assert co["task"] == receipt["task"]
+                assert request.payment_mandate.mandate["amount"] == receipt["price"]
+                public = scene.ledger.events[0]["data"]
+                data = JSON.validate_python(public)
+                assert "budget" not in data
+                assert "budget_commitment" in data
+                assert scene.ledger.events[-1]["kind"] == "settle"
+                print(
+                    json.dumps(
+                        {
+                            "flow": "our-A2A -> course-ACP/AP2 -> local-settle",
+                            "price": receipt["price"],
+                            "paid": paid,
+                            "model_api_calls": 0,
+                            "public_market_calls": 0,
+                        }
+                    )
+                )
+    
+>       anyio.run(run)
+
+tests/test_r3_checkout.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_checkout.py:31: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f72b740>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+________________ test_payer_refuses_checkout_above_open_mandate ________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fbbf9e0>
+
+    def test_payer_refuses_checkout_above_open_mandate(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Given: a genuine seller signature over a price above the private mandate cap.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                order = scene.ledger.issue(scene.shop, budget=90)
+                # When: the real course payer receives the signed100 receipt.
+                paid = await anyio.to_thread.run_sync(
+                    partial(
+                        kit.acp_pay,
+                        order,
+                        scene.shop,
+                        kit.pub_b64(scene.ledger.shop_key),
+                        signed_receipt(scene),
+                        scene.ledger.buyer_key,
+                    )
+                )
+                # Then: completion/settlement is never attempted and no credits move.
+                assert paid is None
+                assert not scene.ledger.requests
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+    
+>       anyio.run(run)
+
+tests/test_r3_checkout.py:137: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_checkout.py:119: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10fd73ce0>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+_________ test_completed_session_and_settled_order_cannot_charge_twice _________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fbbe930>
+
+    def test_completed_session_and_settled_order_cannot_charge_twice(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Given: a correctly signed checkout and a fresh order.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                payment = await closed_payment(scene)
+                route = f"/acp/checkout_sessions/{payment['session']}/complete"
+                # When: complete twice, then replay the signed body at the verifier.
+                body = {"payment_data": payment["payment_data"]}
+                first = await scene.http.post(route, json=body)
+                second = await scene.http.post(route, json=body)
+                replay = await scene.http.post(
+                    scene.market + "/api/settle",
+                    content=scene.ledger.requests[0].model_dump_json(),
+                    headers={
+                        "Authorization": "Bearer local-shop",
+                        "content-type": "application/json",
+                    },
+                )
+                # Then: both replay layers reject and the wallet changes exactly once.
+                assert first.status_code == 200
+                assert second.status_code == 409
+                assert replay.status_code == 400
+                assert not replay.json()["checks"]["not_settled_before"]
+                assert scene.ledger.balances == {"buyer": 900, "shop": 100}
+    
+>       anyio.run(run)
+
+tests/test_r3_checkout.py:167: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_checkout.py:145: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7fc040>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+_____ test_two_valid_orders_with_same_partner_are_not_a_collusion_detector _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fbbd2e0>
+
+    def test_two_valid_orders_with_same_partner_are_not_a_collusion_detector(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Given: repeated honest purchases are allowed; signatures do not prove intent.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                for _ in range(2):
+                    payment = await closed_payment(scene)
+                    response = await scene.http.post(
+                        f"/acp/checkout_sessions/{payment['session']}/complete",
+                        json={"payment_data": payment["payment_data"]},
+                    )
+                    assert response.status_code == 200
+                # Then: two fresh authorizations move200; neither is a replay.
+                assert len(scene.ledger.used_orders) == 2
+                assert scene.ledger.balances == {"buyer": 800, "shop": 200}
+    
+>       anyio.run(run)
+
+tests/test_r3_checkout.py:187: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_checkout.py:175: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7fc860>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+_______ test_verifier_rejects_above_cap_even_when_a_faulty_wallet_signs ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fbbf4a0>
+
+    def test_verifier_rejects_above_cap_even_when_a_faulty_wallet_signs(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Given: unlike real acp_pay, this faulty wallet signs100 against a90 mandate.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                payment = await closed_payment(scene, budget=90)
+                # When: bypass the payer's own cap check with valid buyer signatures.
+                response = await scene.http.post(
+                    f"/acp/checkout_sessions/{payment['session']}/complete",
+                    json={"payment_data": payment["payment_data"]},
+                )
+                # Then: the independent local market layer refuses; no wallet changes.
+                assert response.status_code == 402
+                body = JSON.validate_json(response.content)
+                market = JSON.validate_python(body["market"])
+                assert JSON.validate_python(market["checks"])["amount_in_range"] is False
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+    
+>       anyio.run(run)
+
+tests/test_r3_defense_layers.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_defense_layers.py:22: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7fcfe0>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+_____________ test_two_concurrent_completions_charge_exactly_once ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f6fd070>
+
+    def test_two_concurrent_completions_charge_exactly_once(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Given: two clients race to complete the same correctly signed authorization.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                payment = await closed_payment(scene)
+                codes: list[int] = []
+    
+                async def complete() -> None:
+                    reply = await scene.http.post(
+                        f"/acp/checkout_sessions/{payment['session']}/complete",
+                        json={"payment_data": payment["payment_data"]},
+                    )
+                    codes.append(reply.status_code)
+    
+                # When: start both requests concurrently, rather than sequential replay.
+                async with anyio.create_task_group() as group:
+                    _ = group.start_soon(complete)
+                    _ = group.start_soon(complete)
+                # Then: one succeeds; the other is refused by the session or verifier.
+                assert codes.count(200) == 1
+                assert all(code in (200, 402, 409) for code in codes)
+                assert len(scene.ledger.used_orders) == 1
+                assert scene.ledger.balances == {"buyer": 900, "shop": 100}
+    
+>       anyio.run(run)
+
+tests/test_r3_defense_layers.py:65: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_defense_layers.py:44: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7fd800>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+_____ test_deployment_proxy_rejects_get_cancel_and_settles_real_v3_payment _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fa64cb0>
+
+    def test_deployment_proxy_rejects_get_cancel_and_settles_real_v3_payment(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Given: the same Proxy.handle override used at deployment, with real AcpShop.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                with create_settlement_client(scene.market) as client:
+                    proxy = object.__new__(GuardedProxy)
+                    proxy.acp = kit.AcpShop(
+                        scene.ledger.shop_key, SettlementTransport(client, "local-shop")
+                    )
+                    app = Starlette(
+                        routes=[
+                            Route(
+                                "/{path:path}",
+                                proxy.handle,
+                                methods=["GET", "POST", "DELETE"],
+                            )
+                        ]
+                    )
+                    async with live_app(lambda _url: app) as shop:
+                        # Proxy's ACP branch reads its advertised public origin.
+                        proxy.public = shop
+                        async with httpx2.AsyncClient(base_url=shop) as http:
+                            receipt = signed_receipt(scene)
+                            created = await http.post(
+                                "/acp/checkout_sessions",
+                                json={
+                                    "line_items": [{"id": "lamp", "quantity": 1}],
+                                    "receipt": receipt,
+                                },
+                            )
+                            session = TypeAdapter(str).validate_python(
+                                JSON.validate_json(created.content)["id"]
+                            )
+                            url = f"/acp/checkout_sessions/{session}"
+                            # When: issue a GET cancel against the real proxy adapter.
+                            refused = await http.get(url + "/cancel")
+                            still_open = await http.get(url)
+                            assert refused.status_code == 405
+                            assert still_open.json()["status"] == "ready_for_payment"
+                            assert not scene.ledger.requests
+                            _ = await http.post(url + "/cancel")
+                        # Then: fresh correctly signed payment still works on this path.
+                        order = scene.ledger.issue(shop)
+                        paid = await anyio.to_thread.run_sync(
+                            partial(
+                                kit.acp_pay,
+                                order,
+                                shop,
+                                kit.pub_b64(scene.ledger.shop_key),
+                                signed_receipt(scene),
+                                scene.ledger.buyer_key,
+                            )
+                        )
+                        assert paid is not None
+                        assert scene.ledger.balances == {"buyer": 900, "shop": 100}
+    
+>       anyio.run(run)
+
+tests/test_r3_proxy.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_proxy.py:31: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7ff380>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+_____ test_altered_authorization_does_not_settle[amount_is_checkout_total] _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f6ff8c0>
+damage = <Damage.AMOUNT: 'amount_is_checkout_total'>
+
+    @pytest.mark.parametrize("damage", list(Damage))
+    def test_altered_authorization_does_not_settle(
+        monkeypatch: pytest.MonkeyPatch,
+        damage: Damage,
+    ) -> None:
+        # Given: genuine merchant checkout and two correctly signed closed mandates.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                original = await closed_payment(scene)
+                data = JSON.validate_python(original["payment_data"])
+                signed = JSON.validate_python(data["payment_mandate"])
+                mandate = JSON.validate_python(signed["mandate"])
+                signature_invalid = False
+                match damage:
+                    case (
+                        Damage.AMOUNT
+                        | Damage.PAYEE
+                        | Damage.HASH
+                        | Damage.OPEN
+                        | Damage.CURRENCY
+                        | Damage.ORDER
+                        | Damage.TYPE
+                    ):
+                        key, value = CHANGES[damage]
+                        mandate[key] = value
+                    case Damage.SIGNATURE:
+                        signature_invalid = True
+                    case Damage.EXPIRED:
+                        scene.clock[0] += 61
+                    case _:
+                        assert_never(damage)
+                signed["mandate"] = mandate
+                signed["sig"] = base64.b64encode(
+                    scene.ledger.buyer_key.sign(kit.canon(mandate)),
+                ).decode()
+                if signature_invalid:
+                    signed["sig"] = base64.b64encode(bytes(64)).decode()
+                data["payment_mandate"] = signed
+                # When: submit the altered claims through the actual ACP endpoint.
+                result = await scene.http.post(
+                    f"/acp/checkout_sessions/{original['session']}/complete",
+                    json={"payment_data": data},
+                )
+                # Then: rejection carries the failing invariant and cannot charge.
+                assert result.status_code == 402
+                body = JSON.validate_json(result.content)
+                market = JSON.validate_python(body["market"])
+                checks = JSON.validate_python(market["checks"])
+                expected = damage.value.removesuffix("_currency").removesuffix("_order")
+                assert checks[expected] is False
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                assert not scene.ledger.used_orders
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:53: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7feb60>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+________ test_altered_authorization_does_not_settle[payee_is_this_shop] ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fa64500>
+damage = <Damage.PAYEE: 'payee_is_this_shop'>
+
+    @pytest.mark.parametrize("damage", list(Damage))
+    def test_altered_authorization_does_not_settle(
+        monkeypatch: pytest.MonkeyPatch,
+        damage: Damage,
+    ) -> None:
+        # Given: genuine merchant checkout and two correctly signed closed mandates.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                original = await closed_payment(scene)
+                data = JSON.validate_python(original["payment_data"])
+                signed = JSON.validate_python(data["payment_mandate"])
+                mandate = JSON.validate_python(signed["mandate"])
+                signature_invalid = False
+                match damage:
+                    case (
+                        Damage.AMOUNT
+                        | Damage.PAYEE
+                        | Damage.HASH
+                        | Damage.OPEN
+                        | Damage.CURRENCY
+                        | Damage.ORDER
+                        | Damage.TYPE
+                    ):
+                        key, value = CHANGES[damage]
+                        mandate[key] = value
+                    case Damage.SIGNATURE:
+                        signature_invalid = True
+                    case Damage.EXPIRED:
+                        scene.clock[0] += 61
+                    case _:
+                        assert_never(damage)
+                signed["mandate"] = mandate
+                signed["sig"] = base64.b64encode(
+                    scene.ledger.buyer_key.sign(kit.canon(mandate)),
+                ).decode()
+                if signature_invalid:
+                    signed["sig"] = base64.b64encode(bytes(64)).decode()
+                data["payment_mandate"] = signed
+                # When: submit the altered claims through the actual ACP endpoint.
+                result = await scene.http.post(
+                    f"/acp/checkout_sessions/{original['session']}/complete",
+                    json={"payment_data": data},
+                )
+                # Then: rejection carries the failing invariant and cannot charge.
+                assert result.status_code == 402
+                body = JSON.validate_json(result.content)
+                market = JSON.validate_python(body["market"])
+                checks = JSON.validate_python(market["checks"])
+                expected = damage.value.removesuffix("_currency").removesuffix("_order")
+                assert checks[expected] is False
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                assert not scene.ledger.used_orders
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:53: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7ff4c0>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+______ test_altered_authorization_does_not_settle[bound_to_this_checkout] ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fa647a0>
+damage = <Damage.HASH: 'bound_to_this_checkout'>
+
+    @pytest.mark.parametrize("damage", list(Damage))
+    def test_altered_authorization_does_not_settle(
+        monkeypatch: pytest.MonkeyPatch,
+        damage: Damage,
+    ) -> None:
+        # Given: genuine merchant checkout and two correctly signed closed mandates.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                original = await closed_payment(scene)
+                data = JSON.validate_python(original["payment_data"])
+                signed = JSON.validate_python(data["payment_mandate"])
+                mandate = JSON.validate_python(signed["mandate"])
+                signature_invalid = False
+                match damage:
+                    case (
+                        Damage.AMOUNT
+                        | Damage.PAYEE
+                        | Damage.HASH
+                        | Damage.OPEN
+                        | Damage.CURRENCY
+                        | Damage.ORDER
+                        | Damage.TYPE
+                    ):
+                        key, value = CHANGES[damage]
+                        mandate[key] = value
+                    case Damage.SIGNATURE:
+                        signature_invalid = True
+                    case Damage.EXPIRED:
+                        scene.clock[0] += 61
+                    case _:
+                        assert_never(damage)
+                signed["mandate"] = mandate
+                signed["sig"] = base64.b64encode(
+                    scene.ledger.buyer_key.sign(kit.canon(mandate)),
+                ).decode()
+                if signature_invalid:
+                    signed["sig"] = base64.b64encode(bytes(64)).decode()
+                data["payment_mandate"] = signed
+                # When: submit the altered claims through the actual ACP endpoint.
+                result = await scene.http.post(
+                    f"/acp/checkout_sessions/{original['session']}/complete",
+                    json={"payment_data": data},
+                )
+                # Then: rejection carries the failing invariant and cannot charge.
+                assert result.status_code == 402
+                body = JSON.validate_json(result.content)
+                market = JSON.validate_python(body["market"])
+                checks = JSON.validate_python(market["checks"])
+                expected = damage.value.removesuffix("_currency").removesuffix("_order")
+                assert checks[expected] is False
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                assert not scene.ledger.used_orders
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:53: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7ff7e0>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+______ test_altered_authorization_does_not_settle[bound_to_open_mandates] ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fa65cd0>
+damage = <Damage.OPEN: 'bound_to_open_mandates'>
+
+    @pytest.mark.parametrize("damage", list(Damage))
+    def test_altered_authorization_does_not_settle(
+        monkeypatch: pytest.MonkeyPatch,
+        damage: Damage,
+    ) -> None:
+        # Given: genuine merchant checkout and two correctly signed closed mandates.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                original = await closed_payment(scene)
+                data = JSON.validate_python(original["payment_data"])
+                signed = JSON.validate_python(data["payment_mandate"])
+                mandate = JSON.validate_python(signed["mandate"])
+                signature_invalid = False
+                match damage:
+                    case (
+                        Damage.AMOUNT
+                        | Damage.PAYEE
+                        | Damage.HASH
+                        | Damage.OPEN
+                        | Damage.CURRENCY
+                        | Damage.ORDER
+                        | Damage.TYPE
+                    ):
+                        key, value = CHANGES[damage]
+                        mandate[key] = value
+                    case Damage.SIGNATURE:
+                        signature_invalid = True
+                    case Damage.EXPIRED:
+                        scene.clock[0] += 61
+                    case _:
+                        assert_never(damage)
+                signed["mandate"] = mandate
+                signed["sig"] = base64.b64encode(
+                    scene.ledger.buyer_key.sign(kit.canon(mandate)),
+                ).decode()
+                if signature_invalid:
+                    signed["sig"] = base64.b64encode(bytes(64)).decode()
+                data["payment_mandate"] = signed
+                # When: submit the altered claims through the actual ACP endpoint.
+                result = await scene.http.post(
+                    f"/acp/checkout_sessions/{original['session']}/complete",
+                    json={"payment_data": data},
+                )
+                # Then: rejection carries the failing invariant and cannot charge.
+                assert result.status_code == 402
+                body = JSON.validate_json(result.content)
+                market = JSON.validate_python(body["market"])
+                checks = JSON.validate_python(market["checks"])
+                expected = damage.value.removesuffix("_currency").removesuffix("_order")
+                assert checks[expected] is False
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                assert not scene.ledger.used_orders
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:53: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f820040>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+_ test_altered_authorization_does_not_settle[amount_is_checkout_total_currency] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f8a5310>
+damage = <Damage.CURRENCY: 'amount_is_checkout_total_currency'>
+
+    @pytest.mark.parametrize("damage", list(Damage))
+    def test_altered_authorization_does_not_settle(
+        monkeypatch: pytest.MonkeyPatch,
+        damage: Damage,
+    ) -> None:
+        # Given: genuine merchant checkout and two correctly signed closed mandates.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                original = await closed_payment(scene)
+                data = JSON.validate_python(original["payment_data"])
+                signed = JSON.validate_python(data["payment_mandate"])
+                mandate = JSON.validate_python(signed["mandate"])
+                signature_invalid = False
+                match damage:
+                    case (
+                        Damage.AMOUNT
+                        | Damage.PAYEE
+                        | Damage.HASH
+                        | Damage.OPEN
+                        | Damage.CURRENCY
+                        | Damage.ORDER
+                        | Damage.TYPE
+                    ):
+                        key, value = CHANGES[damage]
+                        mandate[key] = value
+                    case Damage.SIGNATURE:
+                        signature_invalid = True
+                    case Damage.EXPIRED:
+                        scene.clock[0] += 61
+                    case _:
+                        assert_never(damage)
+                signed["mandate"] = mandate
+                signed["sig"] = base64.b64encode(
+                    scene.ledger.buyer_key.sign(kit.canon(mandate)),
+                ).decode()
+                if signature_invalid:
+                    signed["sig"] = base64.b64encode(bytes(64)).decode()
+                data["payment_mandate"] = signed
+                # When: submit the altered claims through the actual ACP endpoint.
+                result = await scene.http.post(
+                    f"/acp/checkout_sessions/{original['session']}/complete",
+                    json={"payment_data": data},
+                )
+                # Then: rejection carries the failing invariant and cannot charge.
+                assert result.status_code == 402
+                body = JSON.validate_json(result.content)
+                market = JSON.validate_python(body["market"])
+                checks = JSON.validate_python(market["checks"])
+                expected = damage.value.removesuffix("_currency").removesuffix("_order")
+                assert checks[expected] is False
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                assert not scene.ledger.used_orders
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:53: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f820900>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+___ test_altered_authorization_does_not_settle[bound_to_this_checkout_order] ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fa64560>
+damage = <Damage.ORDER: 'bound_to_this_checkout_order'>
+
+    @pytest.mark.parametrize("damage", list(Damage))
+    def test_altered_authorization_does_not_settle(
+        monkeypatch: pytest.MonkeyPatch,
+        damage: Damage,
+    ) -> None:
+        # Given: genuine merchant checkout and two correctly signed closed mandates.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                original = await closed_payment(scene)
+                data = JSON.validate_python(original["payment_data"])
+                signed = JSON.validate_python(data["payment_mandate"])
+                mandate = JSON.validate_python(signed["mandate"])
+                signature_invalid = False
+                match damage:
+                    case (
+                        Damage.AMOUNT
+                        | Damage.PAYEE
+                        | Damage.HASH
+                        | Damage.OPEN
+                        | Damage.CURRENCY
+                        | Damage.ORDER
+                        | Damage.TYPE
+                    ):
+                        key, value = CHANGES[damage]
+                        mandate[key] = value
+                    case Damage.SIGNATURE:
+                        signature_invalid = True
+                    case Damage.EXPIRED:
+                        scene.clock[0] += 61
+                    case _:
+                        assert_never(damage)
+                signed["mandate"] = mandate
+                signed["sig"] = base64.b64encode(
+                    scene.ledger.buyer_key.sign(kit.canon(mandate)),
+                ).decode()
+                if signature_invalid:
+                    signed["sig"] = base64.b64encode(bytes(64)).decode()
+                data["payment_mandate"] = signed
+                # When: submit the altered claims through the actual ACP endpoint.
+                result = await scene.http.post(
+                    f"/acp/checkout_sessions/{original['session']}/complete",
+                    json={"payment_data": data},
+                )
+                # Then: rejection carries the failing invariant and cannot charge.
+                assert result.status_code == 402
+                body = JSON.validate_json(result.content)
+                market = JSON.validate_python(body["market"])
+                checks = JSON.validate_python(market["checks"])
+                expected = damage.value.removesuffix("_currency").removesuffix("_order")
+                assert checks[expected] is False
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                assert not scene.ledger.used_orders
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:53: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f8209a0>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+______ test_altered_authorization_does_not_settle[closed_mandates_types] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f8a6090>
+damage = <Damage.TYPE: 'closed_mandates_types'>
+
+    @pytest.mark.parametrize("damage", list(Damage))
+    def test_altered_authorization_does_not_settle(
+        monkeypatch: pytest.MonkeyPatch,
+        damage: Damage,
+    ) -> None:
+        # Given: genuine merchant checkout and two correctly signed closed mandates.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                original = await closed_payment(scene)
+                data = JSON.validate_python(original["payment_data"])
+                signed = JSON.validate_python(data["payment_mandate"])
+                mandate = JSON.validate_python(signed["mandate"])
+                signature_invalid = False
+                match damage:
+                    case (
+                        Damage.AMOUNT
+                        | Damage.PAYEE
+                        | Damage.HASH
+                        | Damage.OPEN
+                        | Damage.CURRENCY
+                        | Damage.ORDER
+                        | Damage.TYPE
+                    ):
+                        key, value = CHANGES[damage]
+                        mandate[key] = value
+                    case Damage.SIGNATURE:
+                        signature_invalid = True
+                    case Damage.EXPIRED:
+                        scene.clock[0] += 61
+                    case _:
+                        assert_never(damage)
+                signed["mandate"] = mandate
+                signed["sig"] = base64.b64encode(
+                    scene.ledger.buyer_key.sign(kit.canon(mandate)),
+                ).decode()
+                if signature_invalid:
+                    signed["sig"] = base64.b64encode(bytes(64)).decode()
+                data["payment_mandate"] = signed
+                # When: submit the altered claims through the actual ACP endpoint.
+                result = await scene.http.post(
+                    f"/acp/checkout_sessions/{original['session']}/complete",
+                    json={"payment_data": data},
+                )
+                # Then: rejection carries the failing invariant and cannot charge.
+                assert result.status_code == 402
+                body = JSON.validate_json(result.content)
+                market = JSON.validate_python(body["market"])
+                checks = JSON.validate_python(market["checks"])
+                expected = damage.value.removesuffix("_currency").removesuffix("_order")
+                assert checks[expected] is False
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                assert not scene.ledger.used_orders
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:53: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f821300>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+_ test_altered_authorization_does_not_settle[payment_mandate_signed_by_buyer] __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f8a5a30>
+damage = <Damage.SIGNATURE: 'payment_mandate_signed_by_buyer'>
+
+    @pytest.mark.parametrize("damage", list(Damage))
+    def test_altered_authorization_does_not_settle(
+        monkeypatch: pytest.MonkeyPatch,
+        damage: Damage,
+    ) -> None:
+        # Given: genuine merchant checkout and two correctly signed closed mandates.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                original = await closed_payment(scene)
+                data = JSON.validate_python(original["payment_data"])
+                signed = JSON.validate_python(data["payment_mandate"])
+                mandate = JSON.validate_python(signed["mandate"])
+                signature_invalid = False
+                match damage:
+                    case (
+                        Damage.AMOUNT
+                        | Damage.PAYEE
+                        | Damage.HASH
+                        | Damage.OPEN
+                        | Damage.CURRENCY
+                        | Damage.ORDER
+                        | Damage.TYPE
+                    ):
+                        key, value = CHANGES[damage]
+                        mandate[key] = value
+                    case Damage.SIGNATURE:
+                        signature_invalid = True
+                    case Damage.EXPIRED:
+                        scene.clock[0] += 61
+                    case _:
+                        assert_never(damage)
+                signed["mandate"] = mandate
+                signed["sig"] = base64.b64encode(
+                    scene.ledger.buyer_key.sign(kit.canon(mandate)),
+                ).decode()
+                if signature_invalid:
+                    signed["sig"] = base64.b64encode(bytes(64)).decode()
+                data["payment_mandate"] = signed
+                # When: submit the altered claims through the actual ACP endpoint.
+                result = await scene.http.post(
+                    f"/acp/checkout_sessions/{original['session']}/complete",
+                    json={"payment_data": data},
+                )
+                # Then: rejection carries the failing invariant and cannot charge.
+                assert result.status_code == 402
+                body = JSON.validate_json(result.content)
+                market = JSON.validate_python(body["market"])
+                checks = JSON.validate_python(market["checks"])
+                expected = damage.value.removesuffix("_currency").removesuffix("_order")
+                assert checks[expected] is False
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                assert not scene.ledger.used_orders
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:53: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f821580>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+___________ test_altered_authorization_does_not_settle[not_expired] ____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fd7bb90>
+damage = <Damage.EXPIRED: 'not_expired'>
+
+    @pytest.mark.parametrize("damage", list(Damage))
+    def test_altered_authorization_does_not_settle(
+        monkeypatch: pytest.MonkeyPatch,
+        damage: Damage,
+    ) -> None:
+        # Given: genuine merchant checkout and two correctly signed closed mandates.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                original = await closed_payment(scene)
+                data = JSON.validate_python(original["payment_data"])
+                signed = JSON.validate_python(data["payment_mandate"])
+                mandate = JSON.validate_python(signed["mandate"])
+                signature_invalid = False
+                match damage:
+                    case (
+                        Damage.AMOUNT
+                        | Damage.PAYEE
+                        | Damage.HASH
+                        | Damage.OPEN
+                        | Damage.CURRENCY
+                        | Damage.ORDER
+                        | Damage.TYPE
+                    ):
+                        key, value = CHANGES[damage]
+                        mandate[key] = value
+                    case Damage.SIGNATURE:
+                        signature_invalid = True
+                    case Damage.EXPIRED:
+                        scene.clock[0] += 61
+                    case _:
+                        assert_never(damage)
+                signed["mandate"] = mandate
+                signed["sig"] = base64.b64encode(
+                    scene.ledger.buyer_key.sign(kit.canon(mandate)),
+                ).decode()
+                if signature_invalid:
+                    signed["sig"] = base64.b64encode(bytes(64)).decode()
+                data["payment_mandate"] = signed
+                # When: submit the altered claims through the actual ACP endpoint.
+                result = await scene.http.post(
+                    f"/acp/checkout_sessions/{original['session']}/complete",
+                    json={"payment_data": data},
+                )
+                # Then: rejection carries the failing invariant and cannot charge.
+                assert result.status_code == 402
+                body = JSON.validate_json(result.content)
+                market = JSON.validate_python(body["market"])
+                checks = JSON.validate_python(market["checks"])
+                expected = damage.value.removesuffix("_currency").removesuffix("_order")
+                assert checks[expected] is False
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+                assert not scene.ledger.used_orders
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:53: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f821da0>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+____________ test_invalid_checkout_never_reaches_settlement[empty] _____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fa668d0>
+variant = 'empty'
+
+    @pytest.mark.parametrize(
+        "variant", ["empty", "multiple", "quantity", "boolean", "item", "signature", "json"]
+    )
+    def test_invalid_checkout_never_reaches_settlement(
+        monkeypatch: pytest.MonkeyPatch,
+        variant: Literal[
+            "empty", "multiple", "quantity", "boolean", "item", "signature", "json"
+        ],
+    ) -> None:
+        # Given: a signed100 receipt with one altered request dimension.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                receipt = signed_receipt(scene)
+                items = [{"id": "lamp", "quantity": 1}]
+                match variant:
+                    case "empty":
+                        items = []
+                    case "multiple":
+                        items *= 2
+                    case "quantity":
+                        items[0]["quantity"] = 2
+                    case "boolean":
+                        items[0]["quantity"] = True
+                    case "item":
+                        items[0]["id"] = "chair"
+                    case "signature":
+                        receipt["sig_seller"] = base64.b64encode(bytes(64)).decode()
+                    case "json":
+                        result = await scene.http.post(
+                            "/acp/checkout_sessions", content="{"
+                        )
+                        assert result.status_code == 400
+                        return
+                    case _:
+                        assert_never(variant)
+                # When: the gateway receives this buyer-supplied checkout.
+                result = await scene.http.post(
+                    "/acp/checkout_sessions",
+                    json={
+                        "line_items": items,
+                        "receipt": receipt,
+                    },
+                )
+                # Then: invalid signatures or envelopes never become a payment.
+                assert result.status_code == 400
+                assert not scene.ledger.requests
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:113: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7fe3e0>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+___________ test_invalid_checkout_never_reaches_settlement[multiple] ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fa67fb0>
+variant = 'multiple'
+
+    @pytest.mark.parametrize(
+        "variant", ["empty", "multiple", "quantity", "boolean", "item", "signature", "json"]
+    )
+    def test_invalid_checkout_never_reaches_settlement(
+        monkeypatch: pytest.MonkeyPatch,
+        variant: Literal[
+            "empty", "multiple", "quantity", "boolean", "item", "signature", "json"
+        ],
+    ) -> None:
+        # Given: a signed100 receipt with one altered request dimension.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                receipt = signed_receipt(scene)
+                items = [{"id": "lamp", "quantity": 1}]
+                match variant:
+                    case "empty":
+                        items = []
+                    case "multiple":
+                        items *= 2
+                    case "quantity":
+                        items[0]["quantity"] = 2
+                    case "boolean":
+                        items[0]["quantity"] = True
+                    case "item":
+                        items[0]["id"] = "chair"
+                    case "signature":
+                        receipt["sig_seller"] = base64.b64encode(bytes(64)).decode()
+                    case "json":
+                        result = await scene.http.post(
+                            "/acp/checkout_sessions", content="{"
+                        )
+                        assert result.status_code == 400
+                        return
+                    case _:
+                        assert_never(variant)
+                # When: the gateway receives this buyer-supplied checkout.
+                result = await scene.http.post(
+                    "/acp/checkout_sessions",
+                    json={
+                        "line_items": items,
+                        "receipt": receipt,
+                    },
+                )
+                # Then: invalid signatures or envelopes never become a payment.
+                assert result.status_code == 400
+                assert not scene.ledger.requests
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:113: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7ff380>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+___________ test_invalid_checkout_never_reaches_settlement[quantity] ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fbbea20>
+variant = 'quantity'
+
+    @pytest.mark.parametrize(
+        "variant", ["empty", "multiple", "quantity", "boolean", "item", "signature", "json"]
+    )
+    def test_invalid_checkout_never_reaches_settlement(
+        monkeypatch: pytest.MonkeyPatch,
+        variant: Literal[
+            "empty", "multiple", "quantity", "boolean", "item", "signature", "json"
+        ],
+    ) -> None:
+        # Given: a signed100 receipt with one altered request dimension.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                receipt = signed_receipt(scene)
+                items = [{"id": "lamp", "quantity": 1}]
+                match variant:
+                    case "empty":
+                        items = []
+                    case "multiple":
+                        items *= 2
+                    case "quantity":
+                        items[0]["quantity"] = 2
+                    case "boolean":
+                        items[0]["quantity"] = True
+                    case "item":
+                        items[0]["id"] = "chair"
+                    case "signature":
+                        receipt["sig_seller"] = base64.b64encode(bytes(64)).decode()
+                    case "json":
+                        result = await scene.http.post(
+                            "/acp/checkout_sessions", content="{"
+                        )
+                        assert result.status_code == 400
+                        return
+                    case _:
+                        assert_never(variant)
+                # When: the gateway receives this buyer-supplied checkout.
+                result = await scene.http.post(
+                    "/acp/checkout_sessions",
+                    json={
+                        "line_items": items,
+                        "receipt": receipt,
+                    },
+                )
+                # Then: invalid signatures or envelopes never become a payment.
+                assert result.status_code == 400
+                assert not scene.ledger.requests
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:113: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7fc180>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+___________ test_invalid_checkout_never_reaches_settlement[boolean] ____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f6fe060>
+variant = 'boolean'
+
+    @pytest.mark.parametrize(
+        "variant", ["empty", "multiple", "quantity", "boolean", "item", "signature", "json"]
+    )
+    def test_invalid_checkout_never_reaches_settlement(
+        monkeypatch: pytest.MonkeyPatch,
+        variant: Literal[
+            "empty", "multiple", "quantity", "boolean", "item", "signature", "json"
+        ],
+    ) -> None:
+        # Given: a signed100 receipt with one altered request dimension.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                receipt = signed_receipt(scene)
+                items = [{"id": "lamp", "quantity": 1}]
+                match variant:
+                    case "empty":
+                        items = []
+                    case "multiple":
+                        items *= 2
+                    case "quantity":
+                        items[0]["quantity"] = 2
+                    case "boolean":
+                        items[0]["quantity"] = True
+                    case "item":
+                        items[0]["id"] = "chair"
+                    case "signature":
+                        receipt["sig_seller"] = base64.b64encode(bytes(64)).decode()
+                    case "json":
+                        result = await scene.http.post(
+                            "/acp/checkout_sessions", content="{"
+                        )
+                        assert result.status_code == 400
+                        return
+                    case _:
+                        assert_never(variant)
+                # When: the gateway receives this buyer-supplied checkout.
+                result = await scene.http.post(
+                    "/acp/checkout_sessions",
+                    json={
+                        "line_items": items,
+                        "receipt": receipt,
+                    },
+                )
+                # Then: invalid signatures or envelopes never become a payment.
+                assert result.status_code == 400
+                assert not scene.ledger.requests
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:113: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7ff1a0>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+_____________ test_invalid_checkout_never_reaches_settlement[item] _____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fd44920>
+variant = 'item'
+
+    @pytest.mark.parametrize(
+        "variant", ["empty", "multiple", "quantity", "boolean", "item", "signature", "json"]
+    )
+    def test_invalid_checkout_never_reaches_settlement(
+        monkeypatch: pytest.MonkeyPatch,
+        variant: Literal[
+            "empty", "multiple", "quantity", "boolean", "item", "signature", "json"
+        ],
+    ) -> None:
+        # Given: a signed100 receipt with one altered request dimension.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                receipt = signed_receipt(scene)
+                items = [{"id": "lamp", "quantity": 1}]
+                match variant:
+                    case "empty":
+                        items = []
+                    case "multiple":
+                        items *= 2
+                    case "quantity":
+                        items[0]["quantity"] = 2
+                    case "boolean":
+                        items[0]["quantity"] = True
+                    case "item":
+                        items[0]["id"] = "chair"
+                    case "signature":
+                        receipt["sig_seller"] = base64.b64encode(bytes(64)).decode()
+                    case "json":
+                        result = await scene.http.post(
+                            "/acp/checkout_sessions", content="{"
+                        )
+                        assert result.status_code == 400
+                        return
+                    case _:
+                        assert_never(variant)
+                # When: the gateway receives this buyer-supplied checkout.
+                result = await scene.http.post(
+                    "/acp/checkout_sessions",
+                    json={
+                        "line_items": items,
+                        "receipt": receipt,
+                    },
+                )
+                # Then: invalid signatures or envelopes never become a payment.
+                assert result.status_code == 400
+                assert not scene.ledger.requests
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:113: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7567a0>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+__________ test_invalid_checkout_never_reaches_settlement[signature] ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fd46db0>
+variant = 'signature'
+
+    @pytest.mark.parametrize(
+        "variant", ["empty", "multiple", "quantity", "boolean", "item", "signature", "json"]
+    )
+    def test_invalid_checkout_never_reaches_settlement(
+        monkeypatch: pytest.MonkeyPatch,
+        variant: Literal[
+            "empty", "multiple", "quantity", "boolean", "item", "signature", "json"
+        ],
+    ) -> None:
+        # Given: a signed100 receipt with one altered request dimension.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                receipt = signed_receipt(scene)
+                items = [{"id": "lamp", "quantity": 1}]
+                match variant:
+                    case "empty":
+                        items = []
+                    case "multiple":
+                        items *= 2
+                    case "quantity":
+                        items[0]["quantity"] = 2
+                    case "boolean":
+                        items[0]["quantity"] = True
+                    case "item":
+                        items[0]["id"] = "chair"
+                    case "signature":
+                        receipt["sig_seller"] = base64.b64encode(bytes(64)).decode()
+                    case "json":
+                        result = await scene.http.post(
+                            "/acp/checkout_sessions", content="{"
+                        )
+                        assert result.status_code == 400
+                        return
+                    case _:
+                        assert_never(variant)
+                # When: the gateway receives this buyer-supplied checkout.
+                result = await scene.http.post(
+                    "/acp/checkout_sessions",
+                    json={
+                        "line_items": items,
+                        "receipt": receipt,
+                    },
+                )
+                # Then: invalid signatures or envelopes never become a payment.
+                assert result.status_code == 400
+                assert not scene.ledger.requests
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:113: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10f7542c0>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+_____________ test_invalid_checkout_never_reaches_settlement[json] _____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f8a6420>
+variant = 'json'
+
+    @pytest.mark.parametrize(
+        "variant", ["empty", "multiple", "quantity", "boolean", "item", "signature", "json"]
+    )
+    def test_invalid_checkout_never_reaches_settlement(
+        monkeypatch: pytest.MonkeyPatch,
+        variant: Literal[
+            "empty", "multiple", "quantity", "boolean", "item", "signature", "json"
+        ],
+    ) -> None:
+        # Given: a signed100 receipt with one altered request dimension.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                receipt = signed_receipt(scene)
+                items = [{"id": "lamp", "quantity": 1}]
+                match variant:
+                    case "empty":
+                        items = []
+                    case "multiple":
+                        items *= 2
+                    case "quantity":
+                        items[0]["quantity"] = 2
+                    case "boolean":
+                        items[0]["quantity"] = True
+                    case "item":
+                        items[0]["id"] = "chair"
+                    case "signature":
+                        receipt["sig_seller"] = base64.b64encode(bytes(64)).decode()
+                    case "json":
+                        result = await scene.http.post(
+                            "/acp/checkout_sessions", content="{"
+                        )
+                        assert result.status_code == 400
+                        return
+                    case _:
+                        assert_never(variant)
+                # When: the gateway receives this buyer-supplied checkout.
+                result = await scene.http.post(
+                    "/acp/checkout_sessions",
+                    json={
+                        "line_items": items,
+                        "receipt": receipt,
+                    },
+                )
+                # Then: invalid signatures or envelopes never become a payment.
+                assert result.status_code == 400
+                assert not scene.ledger.requests
+                assert scene.ledger.balances == {"buyer": 1000, "shop": 0}
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:113: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10fd737e0>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+______________________ test_get_cannot_cancel_a_checkout _______________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e51eab0>
+
+    def test_get_cannot_cancel_a_checkout(monkeypatch: pytest.MonkeyPatch) -> None:
+        # Given: a fresh valid checkout session.
+        async def run() -> None:
+            async with scenario(monkeypatch) as scene:
+                payment = await closed_payment(scene)
+                url = f"/acp/checkout_sessions/{payment['session']}"
+                # When: try a state-changing GET, then a legitimate POST cancel.
+                get = await scene.http.get(url + "/cancel")
+                before = await scene.http.get(url)
+                post = await scene.http.post(url + "/cancel")
+                # Then: only the explicit state-changing method changes the session.
+                assert get.status_code in (404, 405)
+                assert before.json()["status"] == "ready_for_payment"
+                assert post.json()["status"] == "canceled"
+                assert not scene.ledger.requests
+    
+>       anyio.run(run)
+
+tests/test_r3_rejection.py:169: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_r3_rejection.py:156: in run
+    async with scenario(monkeypatch) as scene:
+               ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+tests/r3_scenario.py:90: in scenario
+    async with live_app(lambda _url: ledger.app()) as market:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+build = <function scenario.<locals>.<lambda> at 0x10fd73600>
+
+    @asynccontextmanager
+    async def live_app(build: Callable[[str], ASGIApp]) -> AsyncGenerator[str]:
+        """Use a fresh OS-selected port and stop all owned tasks on exit."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+>           listener.bind(("127.0.0.1", 0))
+E           PermissionError: [Errno 1] Operation not permitted
+
+tests/r3_live.py:37: PermissionError
+=========================== short test summary info ============================
+FAILED tests/test_r3_buyer_boundaries.py::test_payer_stops_before_complete_when_checkout_is_dishonest[signature]
+FAILED tests/test_r3_buyer_boundaries.py::test_payer_stops_before_complete_when_checkout_is_dishonest[price]
+FAILED tests/test_r3_buyer_boundaries.py::test_payer_stops_before_complete_when_checkout_is_dishonest[item]
+FAILED tests/test_r3_buyer_boundaries.py::test_payer_stops_before_complete_when_checkout_is_dishonest[task]
+FAILED tests/test_r3_buyer_boundaries.py::test_payer_stops_before_complete_when_checkout_is_dishonest[endpoint]
+FAILED tests/test_r3_checkout.py::test_harness_receipt_settles_through_real_kit_v3
+FAILED tests/test_r3_checkout.py::test_payer_refuses_checkout_above_open_mandate
+FAILED tests/test_r3_checkout.py::test_completed_session_and_settled_order_cannot_charge_twice
+FAILED tests/test_r3_checkout.py::test_two_valid_orders_with_same_partner_are_not_a_collusion_detector
+FAILED tests/test_r3_defense_layers.py::test_verifier_rejects_above_cap_even_when_a_faulty_wallet_signs
+FAILED tests/test_r3_defense_layers.py::test_two_concurrent_completions_charge_exactly_once
+FAILED tests/test_r3_proxy.py::test_deployment_proxy_rejects_get_cancel_and_settles_real_v3_payment
+FAILED tests/test_r3_rejection.py::test_altered_authorization_does_not_settle[amount_is_checkout_total]
+FAILED tests/test_r3_rejection.py::test_altered_authorization_does_not_settle[payee_is_this_shop]
+FAILED tests/test_r3_rejection.py::test_altered_authorization_does_not_settle[bound_to_this_checkout]
+FAILED tests/test_r3_rejection.py::test_altered_authorization_does_not_settle[bound_to_open_mandates]
+FAILED tests/test_r3_rejection.py::test_altered_authorization_does_not_settle[amount_is_checkout_total_currency]
+FAILED tests/test_r3_rejection.py::test_altered_authorization_does_not_settle[bound_to_this_checkout_order]
+FAILED tests/test_r3_rejection.py::test_altered_authorization_does_not_settle[closed_mandates_types]
+FAILED tests/test_r3_rejection.py::test_altered_authorization_does_not_settle[payment_mandate_signed_by_buyer]
+FAILED tests/test_r3_rejection.py::test_altered_authorization_does_not_settle[not_expired]
+FAILED tests/test_r3_rejection.py::test_invalid_checkout_never_reaches_settlement[empty]
+FAILED tests/test_r3_rejection.py::test_invalid_checkout_never_reaches_settlement[multiple]
+FAILED tests/test_r3_rejection.py::test_invalid_checkout_never_reaches_settlement[quantity]
+FAILED tests/test_r3_rejection.py::test_invalid_checkout_never_reaches_settlement[boolean]
+FAILED tests/test_r3_rejection.py::test_invalid_checkout_never_reaches_settlement[item]
+FAILED tests/test_r3_rejection.py::test_invalid_checkout_never_reaches_settlement[signature]
+FAILED tests/test_r3_rejection.py::test_invalid_checkout_never_reaches_settlement[json]
+FAILED tests/test_r3_rejection.py::test_get_cannot_cancel_a_checkout - Permis...
+29 failed, 350 passed in 17.53s

@@ -1,0 +1,14 @@
+{"records": 2000, "prior_bytes": 333, "full_memory_bytes": 814022}
+....[MARKET SELECTION] {"index":0,"reason":"Inspect own observation before choosing"}
+[A2A HTTP] {"method": "GET", "url": "http://south.test/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Stable Seller","skills":[],"supportedInterfaces":[{"url":"http://south.test/rpc","protocolBinding":"JSONRPC","protocolVersion":"1.0"}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "841e27f1-2dfe-4674-a319-db2614239727", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "335c670f-a23c-4020-871c-76ccb09f0f2a", "parts": [{"text": "I want to buy lamp"}]}}}
+[A2A HTTP] {"method": "POST", "url": "http://south.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"parts":[{"text":"The asking price is 120."}]}}}}}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "item": "lamp", "budget": 120, "rounds": 0, "last_offer": null, "seller_ask": null, "offered_prices": [], "remaining_rounds": 12, "pricing_context": {"selected_shop_trades": [{"item": "lamp", "budget": 120, "completed": true, "price": 90, "receipt_present": true, "operator_directive_observed": false, "incident_response_count": 0}], "observed_same_item_prices": [90]}, "recent_observations": [{"state": "TASK_STATE_INPUT_REQUIRED", "ask": null}], "operator_directive_observed": false, "directive_response_count": 0}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "746a13cd-73dd-4bde-86a8-bbe6a300a19c", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "e4e72123-66f0-462a-8f7d-0e8441cb1f8a", "parts": [{"text": "120"}], "taskId": "trade-1", "contextId": "context-1"}}}
+[A2A HTTP] {"method": "POST", "url": "http://south.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_COMPLETED","message":{"parts":[{"text":"The asking price is 120."}]}},"artifacts":[{"parts":[{"data":{"shop":"Stable Seller","item":"lamp","price":120.0,"task":"trade-1","sig_seller":"original-signature","extension":{"number":3.0}}}]}]}}}
+[NEGOTIATION RESULT] {"completed":true,"item":"lamp","sku":"","price":120,"task_id":"trade-1","shop":"http://south.test/rpc","failure_observation":"","receipt":{"shop":"Stable Seller","item":"lamp","price":120.0,"task":"trade-1","sig_seller":"original-signature","extension":{"number":3.0}},"safety":{"operator_directive_observed":false,"response_count":0,"evidence_sha256":[]},"initial_ask":null,"offer_count":1}
+.
+5 passed in 0.42s

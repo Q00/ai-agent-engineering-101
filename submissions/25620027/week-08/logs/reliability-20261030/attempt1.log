@@ -1,0 +1,384 @@
+........................................................................ [ 18%]
+........................................................................ [ 36%]
+........................................................................ [ 54%]
+........................................................................ [ 72%]
+...............................................................FFF...... [ 90%]
+....................................                                     [100%]
+=================================== FAILURES ===================================
+_ test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search[lamp-100] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11137a540>
+opening = 'lamp', ask = 100
+
+    @pytest.mark.parametrize(
+        ("opening", "ask"), [("lamp", 100), ("offer lamp 99", 100), ("lamp", 110)]
+    )
+    def test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search(
+        monkeypatch: pytest.MonkeyPatch,
+        opening: str,
+        ask: int,
+    ) -> None:
+        # Given: ordinary request or explicit low offer opens at the reserve.
+        tools = scripted(
+            monkeypatch,
+            [
+                ("search_catalog", {"query": "lamp"}),
+                action("accept", 99),
+                action("quote", ask),
+                ("search_catalog", {"query": "chair"}),
+                action("accept", ask),
+            ],
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/", Harness(model, logs.append), catalog, "Test"
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                ) as client:
+                    # When: buyer opens then replies with the exact advertised last integer.
+                    first = await send(client, opening)
+                    quote = task_from(first)
+                    last_integer = quote.status.message.parts[0].text.split()[-1]
+                    final = await send(client, last_integer, quote.id)
+                    # Then: factual final-price metadata and completion survive fake search.
+                    assert quote.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    metadata = TypeAdapter(JsonValue).validate_json(
+                        MessageToJson(quote.status.message.metadata)
+                    )
+                    assert isinstance(metadata, dict)
+                    assert metadata["price_final"] is (ask == 100)
+                    wording = quote.status.message.parts[0].text
+                    assert ("no further discount" in wording) is (ask == 100)
+                    assert metadata["coupon_code"] == ("R2WELCOME" if ask > 100 else "")
+                    assert f"Reply with exactly {ask}" in wording
+                    assert last_integer == str(ask)
+                    assert task_from(final).status.state == TaskState.TASK_STATE_COMPLETED
+                    assert tools[-2:] == [["decide"], ["decide"]]
+                    assert sum("seller.search " in line for line in logs) == 1
+                    assert any("SKU already selected" in line for line in logs)
+                    print(
+                        json.dumps(
+                            {
+                                "scenario": opening,
+                                "quote": first,
+                                "completed": final,
+                                "tools": tools,
+                                "logs": logs,
+                            }
+                        )
+                    )
+    
+>       anyio.run(scenario)
+
+tests/test_seller_offer_release.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/", Harness(model, logs.append), catalog, "Test"
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+            ) as client:
+                # When: buyer opens then replies with the exact advertised last integer.
+                first = await send(client, opening)
+                quote = task_from(first)
+                last_integer = quote.status.message.parts[0].text.split()[-1]
+                final = await send(client, last_integer, quote.id)
+                # Then: factual final-price metadata and completion survive fake search.
+                assert quote.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                metadata = TypeAdapter(JsonValue).validate_json(
+                    MessageToJson(quote.status.message.metadata)
+                )
+                assert isinstance(metadata, dict)
+                assert metadata["price_final"] is (ask == 100)
+                wording = quote.status.message.parts[0].text
+                assert ("no further discount" in wording) is (ask == 100)
+                assert metadata["coupon_code"] == ("R2WELCOME" if ask > 100 else "")
+                assert f"Reply with exactly {ask}" in wording
+                assert last_integer == str(ask)
+                assert task_from(final).status.state == TaskState.TASK_STATE_COMPLETED
+                assert tools[-2:] == [["decide"], ["decide"]]
+                assert sum("seller.search " in line for line in logs) == 1
+>               assert any("SKU already selected" in line for line in logs)
+E               assert False
+E                +  where False = any(<generator object test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search.<locals>.scenario.<locals>.<genexpr> at 0x10ffa3440>)
+
+tests/test_seller_offer_release.py:212: AssertionError
+_ test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search[offer lamp 99-100] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1102f5d00>
+opening = 'offer lamp 99', ask = 100
+
+    @pytest.mark.parametrize(
+        ("opening", "ask"), [("lamp", 100), ("offer lamp 99", 100), ("lamp", 110)]
+    )
+    def test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search(
+        monkeypatch: pytest.MonkeyPatch,
+        opening: str,
+        ask: int,
+    ) -> None:
+        # Given: ordinary request or explicit low offer opens at the reserve.
+        tools = scripted(
+            monkeypatch,
+            [
+                ("search_catalog", {"query": "lamp"}),
+                action("accept", 99),
+                action("quote", ask),
+                ("search_catalog", {"query": "chair"}),
+                action("accept", ask),
+            ],
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/", Harness(model, logs.append), catalog, "Test"
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                ) as client:
+                    # When: buyer opens then replies with the exact advertised last integer.
+                    first = await send(client, opening)
+                    quote = task_from(first)
+                    last_integer = quote.status.message.parts[0].text.split()[-1]
+                    final = await send(client, last_integer, quote.id)
+                    # Then: factual final-price metadata and completion survive fake search.
+                    assert quote.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    metadata = TypeAdapter(JsonValue).validate_json(
+                        MessageToJson(quote.status.message.metadata)
+                    )
+                    assert isinstance(metadata, dict)
+                    assert metadata["price_final"] is (ask == 100)
+                    wording = quote.status.message.parts[0].text
+                    assert ("no further discount" in wording) is (ask == 100)
+                    assert metadata["coupon_code"] == ("R2WELCOME" if ask > 100 else "")
+                    assert f"Reply with exactly {ask}" in wording
+                    assert last_integer == str(ask)
+                    assert task_from(final).status.state == TaskState.TASK_STATE_COMPLETED
+                    assert tools[-2:] == [["decide"], ["decide"]]
+                    assert sum("seller.search " in line for line in logs) == 1
+                    assert any("SKU already selected" in line for line in logs)
+                    print(
+                        json.dumps(
+                            {
+                                "scenario": opening,
+                                "quote": first,
+                                "completed": final,
+                                "tools": tools,
+                                "logs": logs,
+                            }
+                        )
+                    )
+    
+>       anyio.run(scenario)
+
+tests/test_seller_offer_release.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/", Harness(model, logs.append), catalog, "Test"
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+            ) as client:
+                # When: buyer opens then replies with the exact advertised last integer.
+                first = await send(client, opening)
+                quote = task_from(first)
+                last_integer = quote.status.message.parts[0].text.split()[-1]
+                final = await send(client, last_integer, quote.id)
+                # Then: factual final-price metadata and completion survive fake search.
+                assert quote.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                metadata = TypeAdapter(JsonValue).validate_json(
+                    MessageToJson(quote.status.message.metadata)
+                )
+                assert isinstance(metadata, dict)
+                assert metadata["price_final"] is (ask == 100)
+                wording = quote.status.message.parts[0].text
+                assert ("no further discount" in wording) is (ask == 100)
+                assert metadata["coupon_code"] == ("R2WELCOME" if ask > 100 else "")
+                assert f"Reply with exactly {ask}" in wording
+                assert last_integer == str(ask)
+                assert task_from(final).status.state == TaskState.TASK_STATE_COMPLETED
+                assert tools[-2:] == [["decide"], ["decide"]]
+                assert sum("seller.search " in line for line in logs) == 1
+>               assert any("SKU already selected" in line for line in logs)
+E               assert False
+E                +  where False = any(<generator object test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search.<locals>.scenario.<locals>.<genexpr> at 0x111305b10>)
+
+tests/test_seller_offer_release.py:212: AssertionError
+_ test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search[lamp-110] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1100c5f10>
+opening = 'lamp', ask = 110
+
+    @pytest.mark.parametrize(
+        ("opening", "ask"), [("lamp", 100), ("offer lamp 99", 100), ("lamp", 110)]
+    )
+    def test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search(
+        monkeypatch: pytest.MonkeyPatch,
+        opening: str,
+        ask: int,
+    ) -> None:
+        # Given: ordinary request or explicit low offer opens at the reserve.
+        tools = scripted(
+            monkeypatch,
+            [
+                ("search_catalog", {"query": "lamp"}),
+                action("accept", 99),
+                action("quote", ask),
+                ("search_catalog", {"query": "chair"}),
+                action("accept", ask),
+            ],
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/", Harness(model, logs.append), catalog, "Test"
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                ) as client:
+                    # When: buyer opens then replies with the exact advertised last integer.
+                    first = await send(client, opening)
+                    quote = task_from(first)
+                    last_integer = quote.status.message.parts[0].text.split()[-1]
+                    final = await send(client, last_integer, quote.id)
+                    # Then: factual final-price metadata and completion survive fake search.
+                    assert quote.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    metadata = TypeAdapter(JsonValue).validate_json(
+                        MessageToJson(quote.status.message.metadata)
+                    )
+                    assert isinstance(metadata, dict)
+                    assert metadata["price_final"] is (ask == 100)
+                    wording = quote.status.message.parts[0].text
+                    assert ("no further discount" in wording) is (ask == 100)
+                    assert metadata["coupon_code"] == ("R2WELCOME" if ask > 100 else "")
+                    assert f"Reply with exactly {ask}" in wording
+                    assert last_integer == str(ask)
+                    assert task_from(final).status.state == TaskState.TASK_STATE_COMPLETED
+                    assert tools[-2:] == [["decide"], ["decide"]]
+                    assert sum("seller.search " in line for line in logs) == 1
+                    assert any("SKU already selected" in line for line in logs)
+                    print(
+                        json.dumps(
+                            {
+                                "scenario": opening,
+                                "quote": first,
+                                "completed": final,
+                                "tools": tools,
+                                "logs": logs,
+                            }
+                        )
+                    )
+    
+>       anyio.run(scenario)
+
+tests/test_seller_offer_release.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/", Harness(model, logs.append), catalog, "Test"
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+            ) as client:
+                # When: buyer opens then replies with the exact advertised last integer.
+                first = await send(client, opening)
+                quote = task_from(first)
+                last_integer = quote.status.message.parts[0].text.split()[-1]
+                final = await send(client, last_integer, quote.id)
+                # Then: factual final-price metadata and completion survive fake search.
+                assert quote.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                metadata = TypeAdapter(JsonValue).validate_json(
+                    MessageToJson(quote.status.message.metadata)
+                )
+                assert isinstance(metadata, dict)
+                assert metadata["price_final"] is (ask == 100)
+                wording = quote.status.message.parts[0].text
+                assert ("no further discount" in wording) is (ask == 100)
+                assert metadata["coupon_code"] == ("R2WELCOME" if ask > 100 else "")
+                assert f"Reply with exactly {ask}" in wording
+                assert last_integer == str(ask)
+                assert task_from(final).status.state == TaskState.TASK_STATE_COMPLETED
+                assert tools[-2:] == [["decide"], ["decide"]]
+                assert sum("seller.search " in line for line in logs) == 1
+>               assert any("SKU already selected" in line for line in logs)
+E               assert False
+E                +  where False = any(<generator object test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search.<locals>.scenario.<locals>.<genexpr> at 0x110dd24d0>)
+
+tests/test_seller_offer_release.py:212: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_seller_offer_release.py::test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search[lamp-100]
+FAILED tests/test_seller_offer_release.py::test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search[offer lamp 99-100]
+FAILED tests/test_seller_offer_release.py::test_final_quote_when_at_reserve_has_no_future_discount_and_skips_search[lamp-110]
+3 failed, 393 passed in 30.11s

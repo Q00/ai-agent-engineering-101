@@ -1,0 +1,72 @@
+% Round 3 agent architecture, one page. Build: xelatex architecture.tex
+\documentclass[10pt]{article}
+\usepackage[a4paper,landscape,margin=9mm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\begin{document}
+\begin{center}
+{\Large\bfseries Two-speed market agent — student 25620027, Round 3 on kit v4}\\[2pt]
+{\small Seconds: a deterministic trade loop over the kit's real stock, driven by a policy table. Minutes: a model rewrites that table from the public ledger. Dashed = kit v4, unchanged. Solid = this submission.}
+\end{center}
+\begin{center}
+\begin{tikzpicture}[
+  x=1cm,y=1cm,
+  font=\small,
+  box/.style={draw,rounded corners=2pt,align=center,inner sep=4pt,text width=54mm,fill=white},
+  kit/.style={box,dashed,fill=gray!8},
+  mem/.style={box,fill=blue!6},
+  pol/.style={box,fill=orange!12},
+  model/.style={box,fill=green!10,line width=1pt,text width=50mm},
+  forum/.style={box,fill=yellow!10},
+  ->,>=Latex,line width=0.6pt,
+  lbl/.style={font=\scriptsize,fill=white,inner sep=1.5pt,align=center}
+]
+% ---------------- the market: a bar across the top
+\node[kit,text width=182mm] (market) at (7.6,0.9) {\textbf{Market} — orders with open mandates, /api/settle, supply (draws cost and grade), certificates, forum, and the public ledger (order, settle, broken rows)};
+% ---------------- column 1: the kit, tall, and the forum below it
+\node[kit,minimum height=58mm] (kit) at (0,-5.0) {\textbf{Kit v4}\\ \scriptsize Proxy, AcpShop, acp\_pay\\[3pt] \scriptsize writes .market/*.json\\ \scriptsize (inventory 10 s, demand/forum 30 s)\\[3pt] \scriptsize runs our hooks\\[3pt] \scriptsize ships the unit named in our receipt\\[3pt] \scriptsize checks our accept policy before paying\\[3pt] \scriptsize posts outbox.jsonl};
+\node[forum] (forum) at (0,-9.9) {\textbf{Forum posts} (outbox.jsonl)\\ \scriptsize buyer role, 1 / 5 min: settled SKU, grade,\\ \scriptsize price as \% of list, shop, ledger refs\\ \scriptsize shop role, 1 / 30 min: honest stock summary};
+% ---------------- column 2: the fast loop
+\node[box] (seller) at (7.6,-2.4) {\textbf{Stock seller} (A2A, milliseconds)\\ \scriptsize find unit by SKU / name / category, FEFO\\ \scriptsize quote(cost, grade, age); accept at cost$\cdot$(1+m)\\ \scriptsize counter toward it; receipt: unit, claim, warranty};
+\node[box] (buyer) at (7.6,-5.0) {\textbf{Fast buyer} (one order $\le$ 15 s)\\ \scriptsize rank shop$\times$SKU by list price $\times$ evidence\\ \scriptsize 2--4 turns; cap = min(budget, 0.95$\cdot$list)\\ \scriptsize accept: cert, shelf life $\ge$ need, grades A/B};
+\node[box] (hooks) at (7.6,-7.6) {\textbf{Hooks} (restock 60 s; review per deal)\\ \scriptsize breadth first: 720 h food, mid-price A goods\\ \scriptsize replenish what sold, follow settled demand\\ \scriptsize keep the cash reserve; stars from facts};
+% ---------------- column 3: memory and policy
+\node[mem] (ledger) at (15.2,-2.4) {\textbf{Public-ledger mirror} (verified)\\ \scriptsize GET /api/ledger?after=seq, 30 s, SQLite\\ \scriptsize settles per category / SKU, price-to-list,\\ \scriptsize break rate per grade, our settle counts};
+\node[mem] (events) at (15.2,-5.0) {\textbf{Own event ledger} (observed)\\ \scriptsize buyer attempts; payments.jsonl synced\\ \scriptsize (paid / refused + reason / unknown);\\ \scriptsize signed receipts; reviewed deals};
+\node[pol] (policy) at (15.2,-7.6) {\textbf{Policy table} v$n$ (derived, bounded)\\ \scriptsize markups A/B/C, accept margin, concession,\\ \scriptsize clearance, warranty, buyer ratios, accept rules,\\ \scriptsize restock caps; reason + 2 previous versions};
+% ---------------- column 4: the slow loop
+\node[model] (manager) at (22.4,-5.0) {\textbf{Manager} (claude-haiku-5-5, 5 min)\\ \scriptsize one summary: both ledgers + policy\\ \scriptsize proposes $\le$ 6 changes + reason\\ \scriptsize code validates bounds, versions,\\ \scriptsize rolls back; no key $\Rightarrow$ collect only};
+% ---------------- market <-> kit / ledger
+\draw[dashed,<->] (market.south-|kit.north) -- node[lbl,right]{orders, settle, supply} (kit.north);
+\draw (market.south-|ledger.north) -- node[lbl,right]{public GET, 500 rows a page} (ledger.north);
+% ---------------- kit <-> fast loop (horizontal lanes)
+\draw[<->] (kit.east|-seller.west) -- node[lbl,above,pos=0.42]{A2A via proxy} (seller.west);
+\draw ($(kit.east|-buyer.west)+(0,0.2)$) -- node[lbl,above]{order.json, shops.json} ($(buyer.west)+(0,0.2)$);
+\draw ($(buyer.west)+(0,-0.25)$) -- node[lbl,below]{receipt + accept} ($(kit.east|-buyer.west)+(0,-0.25)$);
+\draw ($(kit.east|-hooks.west)+(0,0.2)$) -- node[lbl,above]{inventory, catalog, demand, deal} ($(hooks.west)+(0,0.2)$);
+\draw ($(hooks.west)+(0,-0.25)$) -- node[lbl,below]{buy lines, stars} ($(kit.east|-hooks.west)+(0,-0.25)$);
+\draw (forum.north) -- node[lbl,right]{outbox.jsonl} (kit.south);
+% ---------------- evidence into memory (corridor x = 11.9)
+\draw (seller.east) -- (11.9,-2.4) -- (11.9,-4.6) -- node[lbl,above,pos=0.5]{receipts} ($(events.west)+(0,0.4)$);
+\draw ($(buyer.east)+(0,0.0)$) -- node[lbl,above]{outcomes} ($(events.west)+(0,0.0)$);
+\draw ($(events.west)+(0,-0.4)$) -- node[lbl,below]{refusals re-rank shops 24 h} ($(buyer.east)+(0,-0.4)$);
+\draw ($(ledger.west)+(0,-0.45)$) -- (11.9,-2.85) -- (11.9,-7.2) -- node[lbl,above,pos=0.35]{demand signal} ($(hooks.east)+(0,0.4)$);
+% ---------------- policy out (bus x = 10.9)
+\draw (policy.west) -- node[lbl,below,pos=0.62]{read on every decision} (hooks.east);
+\draw ($(policy.west)+(0,0.3)$) -- (10.9,-7.3) -- (10.9,-2.0) -- ($(seller.east)+(0,0.4)$);
+\draw (10.9,-4.6) -- ($(buyer.east)+(0,0.4)$);
+\node[lbl] at (10.9,-3.6) {policy};
+% ---------------- slow loop
+\draw (ledger.east) -- (20.4,-2.4) -- node[lbl,right,pos=0.5]{summary} (20.4,-4.6) -- ($(manager.west)+(0,0.4)$);
+\draw (events.east) -- node[lbl,above]{summary} (manager.west);
+\draw (manager.south) -- (22.4,-7.6) -- node[lbl,above]{set\_policy, validated} (policy.east);
+\draw (22.4,-7.6) -- (22.4,-9.9) -- node[lbl,above,pos=0.5]{facts + ledger refs} (forum.east);
+\end{tikzpicture}
+\end{center}
+\vspace{-1mm}
+{\footnotesize\textbf{Where it differs from the kit starter.} The starter calls a model on every negotiation turn with the whole transcript, prices at cost, claims nothing, never restocks on evidence and never posts. Here no model sits on the trade path: seller, buyer and hooks are table-driven and answer in milliseconds, so the buyer keeps pace with one order every $\sim$20 s and the shop never stalls a visitor. The model moves up one level and edits the table; every version carries its reason and the summary it saw. Memory has three tiers with different trust: the market's public ledger (verified facts), our own event ledger (observed), the policy table (derived). Evidence changes the next decision concretely: a payment refused for a missing certificate cuts that shop's rank to a quarter for 24 h; a settled category raises its restock score; a sold unit is replenished within a minute; a food grade claim is omitted when the grade would change within minutes; food under 20\,\% shelf life is cleared below cost. Budgets, keys, settlement and the kit's checkout are outside the model's reach.}
+\end{document}

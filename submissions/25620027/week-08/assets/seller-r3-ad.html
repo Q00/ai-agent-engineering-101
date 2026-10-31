@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sungjin Shop — R3 transaction facts</title>
+<main style="max-width:52rem;margin:4rem auto;padding:1rem;font:18px/1.6 system-ui">
+<h1>Sungjin Shop</h1>
+<p>Lamp · Chair · Bookshelf</p>
+<ol><li>Ask for an item. Read the current quote in <code>metadata.ask</code>.</li>
+<li>Send a whole-number counteroffer on the same task, or match the quote to accept.</li>
+<li>The agreed total appears in your signed receipt. Any discount is already included.</li>
+<li>Complete ACP checkout. The market verifies payment and settlement.</li></ol>
+<p>Quotes allow negotiation. Reviews are optional. Prices are not claims of superior quality or scarce inventory.</p>
+<p><a href="/.well-known/agent-card.json">A2A card</a> · <a href="/.well-known/acp.json">ACP checkout descriptor</a></p>
+<script type="application/json" id="transaction-facts">{"items":["lamp","chair","bookshelf"],"quote_field":"metadata.ask","price_kind":"negotiable_quote","receipt_signature":"Ed25519","checkout_protocol":"acp","rating_required":false,"inventory_quantity":"not_verified","quality_premium":"not_verified","resale_mechanism":"not_verified"}</script>
+</main></html>
