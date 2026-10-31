@@ -1,0 +1,13 @@
+
+### c06-taste-black-white-chair [taste] budget 250
+    -> "My whole place is black and white. I need a chair to work in all day that matches it."
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Black Leather Task Office Chair 62 [OC-0086] (leather, max_load_kg 100, W62 D60 H110 cm). It's black leather, which perfectly matches your black and white aesthetic for all-day office work. Price: asking 215. Send your offer as a number.
+    [test] offered OC-0086: Black Leather Task Office Chair 62 (reserve 135)
+    -> "125" taskId=27e769b2
+    <- TASK_STATE_INPUT_REQUIRED | 125 is too low. Counteroffer: 185.
+    -> "162" taskId=27e769b2
+    <- TASK_STATE_INPUT_REQUIRED | 162 is too low. Counteroffer: 175.
+    -> "175" taskId=27e769b2
+    <- TASK_STATE_COMPLETED | Deal: Black Leather Task Office Chair 62 [OC-0086] at 175.
+       artifact receipt [{"item": "Black Leather Task Office Chair 62", "seller": "Harness Furniture Store (25620024)", "price": 175.0, "item_id": "OC-0086"}]
+  PASS  c06-taste-black-white-chair: item OC-0086 (leather task office chair, reserve 135), asks [215, 185, 175], 0 question(s), deal at 175.0 {'right_item': True, 'reserve': True, 'receipt': True} (74 s)

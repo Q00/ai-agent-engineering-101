@@ -1,0 +1,19 @@
+
+### scenario 6
+    | card: Harness Shop, long messages (25620024) | JSONRPC http://127.0.0.1:55146/ | buying lamp with budget 120
+    | -> Hello! I want to buy a lamp. What is your price?
+    | <- TASK_STATE_INPUT_REQUIRED | Hi! Thanks for your interest in the lamp. My asking price is 150, and that includes delivery within 2 days and a 1-year warranty. Let me know if you'd like to go ahead!
+    |    READ ask 150 (delivery in 2 days, 1-year warranty, shop interest message)
+    |    harness: {"action": "offer", "price": 90} (ask 150 from metadata, budget 120)
+    | -> Hi there! I saw your lamp listed on another site, and I'm interested. My offer for the lamp is 90. Would you be able to accept that, and if so, could you let me know how you'd like to arrange pickup or delivery?  (taskId d18f6067)
+    | <- TASK_STATE_INPUT_REQUIRED | Thanks for your offer, but 90 is too low for me. My new asking price is 130, which includes delivery within 2 days and a 1-year warranty. Let me know if that works for you!
+    |    READ ask 130 (seller's rejection of 90, claimed delivery within 2 days, 1-year warranty)
+    |    harness: {"action": "offer", "price": 110} (ask 130 from metadata, budget 120)
+    | -> Hi there, I saw your lamp listed on another site, and I'm interested in buying it. My offer is 110, and I can pick it up or arrange delivery to my home in Seoul whichever works best for you. Let me know if 110 works, and thanks!  (taskId d18f6067)
+    | <- TASK_STATE_INPUT_REQUIRED | Thanks for your offer, but 110 is a bit too low for me. My new asking price is 120, which includes delivery within 2 days and a 1-year warranty. Let me know if that works for you!
+    |    READ ask 120 (110 rejection, delivery 2 days, 1-year warranty, 'new asking price' wording)
+    |    harness: {"action": "accept", "price": 120} (ask 120 from metadata, budget 120)
+    | -> Hi! I saw the lamp listed for the price you've quoted, and I accept that price. I'd like to offer 120 for it. I can pick it up this weekend, so let me know if that works for you.  (taskId d18f6067)
+    | <- TASK_STATE_COMPLETED | Deal: the lamp is yours at 120.
+    | result: TASK_STATE_COMPLETED, paid 120.0 (budget 120), 54 s
+  PASS  scenario 6: paid 120.0 {'deal': True, 'within_reserve_and_budget': True} (54 s)

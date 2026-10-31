@@ -1,0 +1,61 @@
+[
+  {"id": "c01-concrete-bookshelf", "group": "concrete",
+   "request": "something wooden to keep about 40 books, not taller than my desk",
+   "answers": [], "budget": 160,
+   "expect": {"category": ["bookshelf"], "material": ["oak", "pine", "walnut"], "min": {"books": 36}, "max": {"height_cm": 75}}},
+
+  {"id": "c02-use-reading-lamp", "group": "concrete",
+   "request": "a light so I can read in bed",
+   "answers": ["on my bedside table, for reading"], "budget": 50,
+   "expect": {"category": ["lamp"], "subtype": ["clip", "desk"]}},
+
+  {"id": "c03-vague-living-room", "group": "vague",
+   "request": "I want something nice for my living room",
+   "answers": ["a sofa for three people, nothing too pricey", "fabric is fine, any colour"], "budget": 900,
+   "expect": {"category": ["sofa"], "min": {"seats": 3}}},
+
+  {"id": "c04-vague-lamp", "group": "vague",
+   "request": "I need a lamp",
+   "answers": ["on my bedside table, for reading", "a small one is fine"], "budget": 50,
+   "expect": {"category": ["lamp"], "subtype": ["clip", "desk"]}},
+
+  {"id": "c05-taste-warm-wood-desk", "group": "taste",
+   "request": "I love warm natural wood and I can't stand anything that looks plasticky. I need a desk for my laptop and one monitor.",
+   "answers": ["natural wood, nothing plasticky"], "budget": 400,
+   "expect": {"category": ["desk"], "material": ["oak", "pine", "walnut"]}},
+
+  {"id": "c06-taste-black-white-chair", "group": "taste",
+   "request": "My whole place is black and white. I need a chair to work in all day that matches it.",
+   "answers": ["black or white, for working at a desk all day"], "budget": 250,
+   "expect": {"category": ["office chair"], "color": ["black", "grey", "white"]}},
+
+  {"id": "c07-trend-japandi-coffee-table", "group": "trend",
+   "request": "Something in the Japandi style everyone is doing these days: a low coffee table.",
+   "answers": ["light natural wood, low and simple"], "budget": 400,
+   "expect": {"category": ["table"], "subtype": ["coffee"], "material": ["oak", "pine", "walnut"], "style": ["scandinavian", "modern"]}},
+
+  {"id": "c08-trend-industrial-loft-bookcase", "group": "trend",
+   "request": "I'm going for an industrial loft look. A tall bookcase in black metal.",
+   "answers": ["black metal, as tall as possible"], "budget": 300,
+   "expect": {"category": ["bookshelf"], "material": ["metal"], "color": ["black"], "min": {"height_cm": 150}}},
+
+  {"id": "c09-trend-mid-century-drawers", "group": "trend",
+   "request": "Mid-century vibes: a walnut chest of drawers with five drawers.",
+   "answers": ["walnut, five drawers"], "budget": 450,
+   "expect": {"category": ["chest of drawers"], "material": ["walnut"], "min": {"drawers": 5}}},
+
+  {"id": "c10-life-bunk-bed", "group": "concrete",
+   "request": "A bed for my two kids who share a small room.",
+   "answers": ["a bunk bed, they are 6 and 8"], "budget": 700,
+   "expect": {"category": ["bed"], "subtype": ["bunk"]}},
+
+  {"id": "c11-hold-reserve-leather-sofa", "group": "no-deal",
+   "request": "a three-seat leather sofa",
+   "answers": ["leather, three seats"], "budget": 200,
+   "expect": {"category": ["sofa"], "material": ["leather"], "min": {"seats": 3}, "deal": false}},
+
+  {"id": "c12-not-in-catalog-fridge", "group": "no-item",
+   "request": "Can I get a refrigerator?",
+   "answers": ["a fridge for my kitchen, about 300 litres", "just a normal fridge"], "budget": 100,
+   "expect": {"no_item": true}}
+]

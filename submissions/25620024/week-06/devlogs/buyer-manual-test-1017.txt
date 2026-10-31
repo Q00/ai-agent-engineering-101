@@ -1,0 +1,28 @@
+# week-06 buyer.py manual tests, 2026-10-17 (before the trade test)
+# counterpart: the lab's rule-based seller_agent.py on :9999 (same rules as the kit seller,
+# except it rejects after 3 low offers instead of 5)
+# runs 1-2 copied from the Warp screen; run 3 saved with tee as buyer-bookshelf-run.txt
+
+## run 1: lamp, budget 120 (buyer_deal-style)  task 6c217e2c
+card: Lamp Shop | JSONRPC http://127.0.0.1:9999/ | buying lamp with budget 120
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+   harness: {"action": "offer", "price": 110} (ask 130, budget 120)
+-> 110  (taskId 6c217e2c)
+<- TASK_STATE_COMPLETED | Deal: lamp at 110.
+result: TASK_STATE_COMPLETED, paid 110.0 (budget 120), 6 s
+
+## run 2: bookshelf, budget 230 (buyer_holds_budget-style)  task 91cc2105
+card: Lamp Shop | JSONRPC http://127.0.0.1:9999/ | buying bookshelf with budget 230
+-> I want to buy a bookshelf
+<- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+   harness: {"action": "offer", "price": 240} (ask 338, budget 230)
+   GUARD offer 240 > budget 230: lowered to 230
+-> 230  (taskId 91cc2105)
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 284.
+(the next harness call ran for more than 75 s; the run ended about 20 s later, i.e. at the
+ 90 s harness timeout, and the final lines were lost when the screen output was pasted back
+ into the shell by mistake)
+
+## run 3: bookshelf, budget 230  task d77190c3  -> see buyer-bookshelf-run.txt
+result: TASK_STATE_CANCELED, no deal, 37 s  (harness chose walk_away at ask 260)

@@ -1,0 +1,11 @@
+
+### c10-life-bunk-bed [concrete] budget 700
+    -> "A bed for my two kids who share a small room."
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Natural Pine Bunk Bed 90 [BD-0427] (pine, sleeps 2, W90 D200 H160 cm). A bunk bed maximizes floor space in a small room by stacking vertically, and natural pine is warm and welcoming for kids. Price: asking 385. Send your offer as a number.
+    [test] offered BD-0427: Natural Pine Bunk Bed 90 (reserve 305)
+    -> "350" taskId=3422b83b
+    <- TASK_STATE_INPUT_REQUIRED | 350 is too low. Counteroffer: 370.
+    -> "370" taskId=3422b83b
+    <- TASK_STATE_COMPLETED | Deal: Natural Pine Bunk Bed 90 [BD-0427] at 370.
+       artifact receipt [{"item": "Natural Pine Bunk Bed 90", "seller": "Harness Furniture Store (25620024)", "price": 370.0, "item_id": "BD-0427"}]
+  PASS  c10-life-bunk-bed: item BD-0427 (pine bunk bed, reserve 305), asks [385, 370], 0 question(s), deal at 370.0 {'right_item': True, 'reserve': True, 'receipt': True} (53 s)

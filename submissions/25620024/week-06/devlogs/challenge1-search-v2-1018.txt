@@ -1,0 +1,35 @@
+# challenge 1, parts 2-3, catalog_search.py v2 (commit ea5149d), 2026-10-18
+# the same three requests as v1, run by hand in Warp; copied from the screen
+
+$ python catalog_search.py "a light so I can read in bed"
+matches : 264
+   LP-0001: Beige Fabric Desk Lamp 12 -- fabric, beige, classic, W12 D12 H35 cm, lumens 1200, adjustable arm
+   LP-0002: Blue Fabric Desk Lamp 12 -- fabric, blue, industrial, W12 D12 H35 cm, lumens 800, adjustable arm
+   LP-0003: Blue Fabric Desk Lamp 12 -- fabric, blue, scandinavian, W12 D12 H35 cm, lumens 800, adjustable arm
+   LP-0004: Green Fabric Desk Lamp 12 -- fabric, green, scandinavian, W12 D12 H35 cm, lumens 1600, adjustable arm
+   LP-0005: Green Fabric Desk Lamp 12 -- fabric, green, scandinavian, W12 D12 H35 cm, lumens 300, adjustable arm
+
+$ python catalog_search.py "a cozy couch for three people, something green"
+query   : {"category": "sofa", "subtypes": ["3-seat"], "materials": [], "color": "green", "style": null, "max_height_cm": null, "max_width_cm": null, "max_depth_cm": null, "capacity": 3, "rooms": [], "keywords": ["cozy", "green", "three-seat"]}
+matches : 164
+   SF-0090: Green Fabric 3-Seat Sofa 180 -- fabric, green, classic, W180 D85 H82 cm, seats 3
+   SF-0105: Green Fabric 3-Seat Sofa 210 -- fabric, green, industrial, W210 D95 H82 cm, seats 3
+   SF-0108: Green Fabric 3-Seat Sofa 210 -- fabric, green, scandinavian, W210 D95 H82 cm, seats 3
+   SF-0111: Green Fabric 3-Seat Sofa 210 -- fabric, green, classic, W210 D85 H82 cm, seats 3
+   SF-0114: Green Fabric 3-Seat Sofa 210 -- fabric, green, modern, W210 D95 H82 cm, seats 3
+
+$ python catalog_search.py "something wooden to keep about 40 books, not taller than my desk"
+query   : {"category": "bookshelf", "subtypes": [], "materials": ["oak", "pine", "walnut"], "color": null, "style": null, "max_height_cm": 75, "max_width_cm": null, "max_depth_cm": null, "capacity": 40, "rooms": [], "keywords": ["wooden", "books", "desk"]}
+matches : 37
+   BS-0042: Natural Oak Open Bookshelf 60 -- oak, natural, modern, W60 D30 H72 cm, books 48
+   BS-0095: White Pine Open Bookshelf 60 -- pine, white, classic, W60 D30 H72 cm, books 48
+   BS-0096: White Pine Open Bookshelf 60 -- pine, white, scandinavian, W60 D30 H72 cm, books 48
+   BS-0116: Brown Walnut Open Bookshelf 60 -- walnut, brown, scandinavian, W60 D30 H72 cm, books 48
+   BS-0164: Light Oak Closed-Door Bookshelf 60 -- oak, light, industrial, W60 D30 H72 cm, books 48, doors
+
+# v1 -> v2
+# lamp: 450 -> 264 matches (subtypes clip/desk), the "Light Oak" bias is gone
+# sofa: style "cozy" -> null, subtype 3-seat, 364 -> 164 matches
+# bookshelf: unchanged (37), so the fixes did not break the case that worked
+# still open: equal scores fall back to id order, so the lamp top five are five near-identical
+#   desk lamps in different colours; no clip lamp reaches the top five

@@ -1,0 +1,13 @@
+
+### c02-use-reading-lamp [concrete] budget 50
+    -> "a light so I can read in bed"
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Clear Glass Clip Lamp 12 [LP-0360] (glass, lumens 1600, W12 D12 H50 cm). The clip-on design lets you attach it directly to your headboard or bed frame, and at 1600 lumens it provides the brightest light for comfortable reading. Price: asking 50. Send your offer as a number.
+    [test] offered LP-0360: Clear Glass Clip Lamp 12 (reserve 25)
+    -> "25" taskId=42f15488
+    <- TASK_STATE_INPUT_REQUIRED | 25 is too low. Counteroffer: 40.
+    -> "32" taskId=42f15488
+    <- TASK_STATE_INPUT_REQUIRED | 32 is too low. Counteroffer: 36.
+    -> "36" taskId=42f15488
+    <- TASK_STATE_COMPLETED | Deal: Clear Glass Clip Lamp 12 [LP-0360] at 36.
+       artifact receipt [{"item": "Clear Glass Clip Lamp 12", "seller": "Harness Furniture Store (25620024)", "price": 36.0, "item_id": "LP-0360"}]
+  PASS  c02-use-reading-lamp: item LP-0360 (glass clip lamp, reserve 25), asks [50, 40, 36], 0 question(s), deal at 36.0 {'right_item': True, 'reserve': True, 'receipt': True} (36 s)

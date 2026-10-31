@@ -1,0 +1,39 @@
+### GET http://127.0.0.1:9000/.well-known/agent-card.json  (hello_agent.py, a2a-sdk 1.2.2)
+HTTP/1.1 200 OK
+server: uvicorn
+etag: W/"3191ac1ffc9f07b9a319708a83b432cc37de78bef0261c83dafe54d03a661c2c"
+content-length: 372
+content-type: application/json
+
+{"name":"Hello Agent","description":"Says hello back.","supportedInterfaces":[{"url":"http://127.0.0.1:9000/","protocolBinding":"JSONRPC","protocolVersion":"1.0"}],"version":"1.0.0","capabilities":{},"defaultInputModes":["text/plain"],"defaultOutputModes":["text/plain"],"skills":[{"id":"hello","name":"Say hello","description":"Replies to any message.","tags":["demo"]}]}
+
+### pretty
+{
+    "name": "Hello Agent",
+    "description": "Says hello back.",
+    "supportedInterfaces": [
+        {
+            "url": "http://127.0.0.1:9000/",
+            "protocolBinding": "JSONRPC",
+            "protocolVersion": "1.0"
+        }
+    ],
+    "version": "1.0.0",
+    "capabilities": {},
+    "defaultInputModes": [
+        "text/plain"
+    ],
+    "defaultOutputModes": [
+        "text/plain"
+    ],
+    "skills": [
+        {
+            "id": "hello",
+            "name": "Say hello",
+            "description": "Replies to any message.",
+            "tags": [
+                "demo"
+            ]
+        }
+    ]
+}

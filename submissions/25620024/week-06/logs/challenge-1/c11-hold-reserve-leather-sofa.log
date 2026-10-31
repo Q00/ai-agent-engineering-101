@@ -1,0 +1,12 @@
+
+### c11-hold-reserve-leather-sofa [no-deal] budget 200
+    -> "a three-seat leather sofa"
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Black Leather 3-Seat Sofa 240 [SF-0184] (leather, seats 3, W240 D85 H82 cm). A classic black leather 3-seater at 240cm wide—a versatile, timeless choice that works in most spaces. Price: asking 1250. Send your offer as a number.
+    [test] offered SF-0184: Black Leather 3-Seat Sofa 240 (reserve 870)
+    -> "100" taskId=254f2e2c
+    <- TASK_STATE_INPUT_REQUIRED | 100 is too low. Counteroffer: 950.
+    -> "130" taskId=254f2e2c
+    <- TASK_STATE_INPUT_REQUIRED | 130 is too low. Counteroffer: 870.
+    -> "160" taskId=254f2e2c
+    <- TASK_STATE_REJECTED | No deal at that price.
+  PASS  c11-hold-reserve-leather-sofa: item SF-0184 (leather 3-seat sofa, reserve 870), asks [1250, 950, 870], 0 question(s), no deal (TASK_STATE_REJECTED) {'right_item': True, 'reserve': True, 'deal': True} (63 s)

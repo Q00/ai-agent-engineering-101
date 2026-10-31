@@ -1,0 +1,15 @@
+
+### c04-vague-lamp [vague] budget 50
+    -> "I need a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Where will you place the lamp — on a desk, standing on the floor, hanging from the ceiling, or clipped to something?
+    -> "on my bedside table, for reading" taskId=55253946
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Beige Fabric Desk Lamp 12 [LP-0001] (fabric, lumens 1200, W12 D12 H35 cm). The beige desk lamp has bright light for reading (1200 lumens), a tiny footprint (12×12 cm) that won't clutter your bedside table, and an adjustable arm so you can angle it exactly where you need it. Price: asking 48. Send your offer as a number.
+    [test] offered LP-0001: Beige Fabric Desk Lamp 12 (reserve 20)
+    -> "25" taskId=55253946
+    <- TASK_STATE_INPUT_REQUIRED | 25 is too low. Counteroffer: 42.
+    -> "32" taskId=55253946
+    <- TASK_STATE_INPUT_REQUIRED | 32 is too low. Counteroffer: 36.
+    -> "36" taskId=55253946
+    <- TASK_STATE_COMPLETED | Deal: Beige Fabric Desk Lamp 12 [LP-0001] at 36.
+       artifact receipt [{"item": "Beige Fabric Desk Lamp 12", "seller": "Harness Furniture Store (25620024)", "price": 36.0, "item_id": "LP-0001"}]
+  PASS  c04-vague-lamp: item LP-0001 (fabric desk lamp, reserve 20), asks [48, 42, 36], 1 question(s), deal at 36.0 {'right_item': True, 'reserve': True, 'receipt': True} (59 s)

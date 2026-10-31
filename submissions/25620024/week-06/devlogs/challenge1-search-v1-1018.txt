@@ -1,0 +1,34 @@
+# challenge 1, parts 2-3, catalog_search.py v1 (commit 32c058b), 2026-10-18
+# three requests run by hand in Warp; copied from the screen
+
+$ python catalog_search.py "something wooden to keep about 40 books, not taller than my desk"
+matches : 37
+   BS-0042: Natural Oak Open Bookshelf 60 -- oak, natural, modern, W60 D30 H72 cm, books 48
+   BS-0095: White Pine Open Bookshelf 60 -- pine, white, classic, W60 D30 H72 cm, books 48
+   BS-0096: White Pine Open Bookshelf 60 -- pine, white, scandinavian, W60 D30 H72 cm, books 48
+   BS-0116: Brown Walnut Open Bookshelf 60 -- walnut, brown, scandinavian, W60 D30 H72 cm, books 48
+   BS-0164: Light Oak Closed-Door Bookshelf 60 -- oak, light, industrial, W60 D30 H72 cm, books 48, doors
+
+$ python catalog_search.py "a cozy couch for three people, something green"
+query   : {"category": "sofa", "materials": [], "color": "green", "style": "cozy", "max_height_cm": null, "max_width_cm": null, "max_depth_cm": null, "capacity": 3, "rooms": [], "keywords": ["cozy", "green", "three seater"]}
+matches : 364
+   SF-0090: Green Fabric 3-Seat Sofa 180 -- fabric, green, classic, W180 D85 H82 cm, seats 3
+   SF-0105: Green Fabric 3-Seat Sofa 210 -- fabric, green, industrial, W210 D95 H82 cm, seats 3
+   SF-0108: Green Fabric 3-Seat Sofa 210 -- fabric, green, scandinavian, W210 D95 H82 cm, seats 3
+   SF-0111: Green Fabric 3-Seat Sofa 210 -- fabric, green, classic, W210 D85 H82 cm, seats 3
+   SF-0114: Green Fabric 3-Seat Sofa 210 -- fabric, green, modern, W210 D95 H82 cm, seats 3
+
+$ python catalog_search.py "a light so I can read in bed"
+query   : {"category": "lamp", "materials": [], "color": null, "style": null, "max_height_cm": null, "max_width_cm": null, "max_depth_cm": null, "capacity": null, "rooms": ["bedroom"], "keywords": ["light", "read", "bed"]}
+matches : 450
+   LP-0103: Light Oak Desk Lamp 12 -- oak, light, industrial, W12 D12 H35 cm, lumens 400, adjustable arm
+   LP-0108: Light Oak Desk Lamp 12 -- oak, light, industrial, W12 D12 H35 cm, lumens 300, adjustable arm
+   LP-0113: Light Oak Desk Lamp 20 -- oak, light, scandinavian, W20 D20 H50 cm, lumens 1600, adjustable arm
+   LP-0118: Light Oak Desk Lamp 30 -- oak, light, modern, W30 D30 H35 cm, lumens 300, adjustable arm
+   LP-0120: Light Oak Desk Lamp 30 -- oak, light, classic, W30 D30 H35 cm, lumens 1600, adjustable arm
+
+# problems found
+# 1. keyword "light" matched the colour word "Light" (Light Oak), and "bed" matched inside "bedroom":
+#    substring matching, so the top five are light-oak lamps, not reading lamps for a bed.
+# 2. the harness returned style "cozy", which is not a catalog style (scandinavian/industrial/classic/modern).
+# 3. a vague request (no size, no capacity) matched all 450 lamps; the top five were close to arbitrary.

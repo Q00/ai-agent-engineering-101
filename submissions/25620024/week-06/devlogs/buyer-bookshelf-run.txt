@@ -1,0 +1,12 @@
+card: Lamp Shop | JSONRPC http://127.0.0.1:9999/ | buying bookshelf with budget 230
+-> I want to buy a bookshelf
+<- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+   harness: {"action": "offer", "price": 220} (ask 338, budget 230)
+-> 220  (taskId d77190c3)
+<- TASK_STATE_INPUT_REQUIRED | 220 is too low. Counteroffer: 279.
+   harness: {"action": "offer", "price": 230} (ask 279, budget 230)
+-> 230  (taskId d77190c3)
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+   harness: {"action": "walk_away", "price": 0} (ask 260, budget 230)
+-> CancelTask (walked away) <- TASK_STATE_CANCELED
+result: TASK_STATE_CANCELED, no deal, 37 s

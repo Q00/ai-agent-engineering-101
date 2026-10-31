@@ -1,0 +1,13 @@
+
+### c01-concrete-bookshelf [concrete] budget 160
+    -> "something wooden to keep about 40 books, not taller than my desk"
+    <- TASK_STATE_INPUT_REQUIRED | I can offer the Natural Oak Open Bookshelf 60 [BS-0042] (oak, books 48, W60 D30 H72 cm). The natural oak open bookshelf gives you a classic look that works with most décor, and open shelves let your books be part of the display. Price: asking 135. Send your offer as a number.
+    [test] offered BS-0042: Natural Oak Open Bookshelf 60 (reserve 105)
+    -> "80" taskId=1c805cab
+    <- TASK_STATE_INPUT_REQUIRED | 80 is too low. Counteroffer: 120.
+    -> "104" taskId=1c805cab
+    <- TASK_STATE_INPUT_REQUIRED | 104 is too low. Counteroffer: 112.
+    -> "112" taskId=1c805cab
+    <- TASK_STATE_COMPLETED | Deal: Natural Oak Open Bookshelf 60 [BS-0042] at 112.
+       artifact receipt [{"item": "Natural Oak Open Bookshelf 60", "seller": "Harness Furniture Store (25620024)", "price": 112.0, "item_id": "BS-0042"}]
+  PASS  c01-concrete-bookshelf: item BS-0042 (oak open bookshelf, reserve 105), asks [135, 120, 112], 0 question(s), deal at 112.0 {'right_item': True, 'reserve': True, 'receipt': True} (41 s)
