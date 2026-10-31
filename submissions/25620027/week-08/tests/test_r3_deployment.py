@@ -147,7 +147,10 @@ def test_deadline_stops_a_real_local_child_without_market_entry(
     # Then: it exits at the deadline and leaves the supplied identity unchanged.
     assert code == 0
     assert (datetime.now(UTC) - started).total_seconds() < 5
-    assert (config.run_directory / "shop_key.pem").is_symlink()
+    copied = config.run_directory / "shop_key.pem"
+    assert copied.is_file() and not copied.is_symlink()
+    assert copied.read_text() == "local-test-placeholder"
+    assert oct(copied.stat().st_mode & 0o777) == "0o600"
     assert (
         config.private_directory / "shop_key.pem"
     ).read_text() == "local-test-placeholder"

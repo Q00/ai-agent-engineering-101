@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import shlex
+import shutil
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -26,7 +27,7 @@ KEYS: Final = ("shop_key.pem", "buyer_key.pem")
 
 
 def prepare(settings: LaunchSettings, app: Path) -> None:
-    """Reuse existing key paths; never generate a replacement market identity."""
+    """Copy the existing identity into the run directory; never generate a new one."""
     verify_kit(app)
     for name in KEYS:
         if not (settings.private_directory / name).is_file():
@@ -38,12 +39,20 @@ def prepare(settings: LaunchSettings, app: Path) -> None:
     for name in KEYS:
         target = settings.run_directory / name
         source = settings.private_directory / name
-        if target.is_symlink() and target.resolve() == source.resolve():
+        if target.is_symlink():
+            # Earlier releases linked into the read-only private mount; the kit
+            # chmods the key file on load, so the run directory needs a real copy.
+            if target.resolve() != source.resolve():
+                message = "Refusing to replace a foreign identity link"
+                raise HarnessError(message)
+            target.unlink()
+        if target.exists():
+            if target.read_bytes() != source.read_bytes():
+                message = "Refusing to replace a different existing identity file"
+                raise HarnessError(message)
             continue
-        if target.exists() or target.is_symlink():
-            message = "Refusing to replace an existing identity path"
-            raise HarnessError(message)
-        target.symlink_to(source)
+        _ = shutil.copyfile(source, target)
+        target.chmod(0o600)
     commands = {
         "seller": {
             "cmd": shlex.join(
