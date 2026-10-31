@@ -1,0 +1,25 @@
+{
+ "name": "catalog_search",
+ "purpose": "Catalog SKUs by name or category substring, with list price, kind and shelf hours.",
+ "args": {
+  "type": "object",
+  "properties": {
+   "query": {
+    "type": "string"
+   },
+   "kind": {
+    "type": "string"
+   },
+   "max_price": {
+    "type": "integer"
+   },
+   "min_shelf_hours": {
+    "type": "integer"
+   },
+   "limit": {
+    "type": "integer"
+   }
+  }
+ },
+ "evidence": "seed tool: agent.md says what sells and who wants what show only in the ledger, own records and the forum"
+}

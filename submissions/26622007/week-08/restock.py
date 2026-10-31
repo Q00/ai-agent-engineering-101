@@ -10,7 +10,11 @@ Once market_model.py has seen enough deals: SKUs ranked by the profit they shoul
 deals per hour x my share x margin), stocked for cover_hours of expected sales, less for food that would not last.
 A few lines still go to categories that sell where I have nothing, so a change in demand can be noticed.
 If the ledger cannot be read, the shop keeps using what it has, or the first-stock rule.
-pricing.json "restock" holds the numbers. No harness: this is arithmetic.
+pricing.json "restock" holds the numbers.
+
+That formula is a proposal. With a harness set, a Luna agent decides every agent_every_minutes: it gets the proposal,
+looks at what it wants through the tools (agent_loop.py), and answers with what to buy and the calls it relied on. Its
+lines wait in .market/restock_queue.json and go out max_lines per run. Without a decision the formula stands.
 """
 import argparse
 import collections
@@ -21,7 +25,9 @@ import random
 import sys
 import time
 
+import agent_loop
 import market_model
+from harness import HarnessError
 
 WORST_COST = 0.75      # a unit's cost is at most this share of its list price (A 55-75%)
 EXPECTED_COST = {"food": 0.50, "goods": 0.59}      # a unit's expected cost share, from the published grade odds
@@ -29,7 +35,7 @@ FOOD_SELL_WITHIN = 0.45                            # share of shelf life to sell
 MAX_LOT = 20                                       # the most one supply line can buy
 DEFAULTS = {"keep_cash": 1500000, "target_per_category": 2, "min_shelf_hours": 720, "goods_max_price": 50000,
             "max_lines": 10, "cover_hours": 12, "max_units_per_sku": 20, "max_sku_share": 0.1, "explore_lines": 2,
-            "min_expected": 1.0, "round_ends_at": 1794927540, "no_explore_hours": 48, "end_cover": 0.5}
+            "min_expected": 1.0, "agent_every_minutes": 10, "agent_max_lines": 30, "round_ends_at": 1794927540, "no_explore_hours": 48, "end_cover": 0.5}
 
 
 def load(path, default):
@@ -105,7 +111,7 @@ def plan(inv, catalog, demand, cfg, model=None):
 def read_model(state, catalog, cfg):
     """The demand model, or None when it cannot be built: a restock must never fail because of the ledger."""
     me = os.environ.get("SHOP_MARKET_NAME", "nocha12")
-    shops = {os.environ[k].rstrip("/") for k in ("RENDER_EXTERNAL_URL", "SHOP_PUBLIC_URL") if os.environ.get(k)}
+    shops = market_model.my_shops()
     try:
         added = market_model.sync(state, max_pages=cfg.get("max_pages", market_model.DEFAULTS["max_pages"]))
         model = market_model.estimate(market_model.load_rows(state), catalog, {me}, shops, cfg=cfg)
@@ -121,6 +127,53 @@ def read_model(state, catalog, cfg):
     return model
 
 
+GOAL = """You decide what stock a shop buys now. Profit (balance at the end of the round, so unsold stock is a loss),
+revenue and stars are what count. Round ends at unix time {ends}, now is {now}. A unit costs 25-75% of list price by grade;
+food past its date is thrown away at cost; goods in stock cost 1% of cost per day. A shop with no stock cannot sell at all,
+and other shops' deals show in the ledger whether you stock or not. Up to {lines} lines, qty 1-20 each.
+c0 is the formula's proposal for this state; follow it, change it or ignore it, as the evidence says."""
+
+FINAL = {"type": "object", "additionalProperties": False, "required": ["buy", "why"],
+         "properties": {"why": {"type": "string"},
+                        "buy": {"type": "array", "items": {
+                            "type": "object", "additionalProperties": False, "required": ["sku", "qty"],
+                            "properties": {"sku": {"type": "string"}, "qty": {"type": "integer"}}}}}}
+
+
+def clean_lines(buy, catalog, limit):
+    """Local check of the agent's answer: known SKUs, a lot size the market takes, each SKU once."""
+    out, seen = [], set()
+    for b in buy:
+        if b["sku"] in catalog and b["sku"] not in seen and 1 <= b["qty"] <= MAX_LOT:
+            out.append({"sku": b["sku"], "qty": b["qty"]})
+            seen.add(b["sku"])
+    return out[:limit]
+
+
+def agent_turn(state, inv, catalog, demand, cfg, model, decide=agent_loop.decide):
+    """The lines to send now: from the agent's queue, after a new decision when one is due. None: use the formula."""
+    path = os.path.join(state, "restock_queue.json")
+    q = load(path, {"at": 0, "lines": []})
+    if time.time() - q["at"] >= cfg["agent_every_minutes"] * 60:
+        proposal = plan(inv, catalog, demand, {**cfg, "max_lines": cfg["agent_max_lines"]}, model)
+        try:
+            final = decide(GOAL.format(ends=cfg.get("round_ends_at"), now=int(time.time()), lines=cfg["agent_max_lines"]), FINAL,
+                           state, "restock", {"c0": json.dumps(proposal, ensure_ascii=False)})
+        except HarnessError as e:
+            print(f"[restock] agent failed: {e}", file=sys.stderr, flush=True)
+            return None
+        if final is None:
+            print("[restock] agent gave no evidenced decision", file=sys.stderr, flush=True)
+            return None
+        q = {"at": time.time(), "lines": clean_lines(final["buy"], catalog, cfg["agent_max_lines"])}
+    now, q["lines"] = q["lines"][:cfg["max_lines"]], q["lines"][cfg["max_lines"]:]
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(q, f, ensure_ascii=False)
+    os.replace(tmp, path)
+    return now
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--state", required=True)
@@ -128,7 +181,12 @@ def main():
     inv = load(os.path.join(args.state, "inventory.json"), {})
     cfg = {**DEFAULTS, **load("pricing.json", {}).get("restock", {})}
     catalog = load(os.path.join(args.state, "catalog.json"), {})
-    out = plan(inv, catalog, load(os.path.join(args.state, "demand.json"), []), cfg, read_model(args.state, catalog, cfg))
+    demand, model = load(os.path.join(args.state, "demand.json"), []), read_model(args.state, catalog, cfg)
+    out = plan(inv, catalog, demand, cfg, model)
+    if os.environ.get("HARNESS") and not out.get("bankrupt"):
+        lines = agent_turn(args.state, inv, catalog, demand, cfg, model)
+        if lines is not None:
+            out = {"buy": lines}
     print(json.dumps(out, ensure_ascii=False), flush=True)
     return 0
 

@@ -64,7 +64,7 @@ def compact(e):
     if e["kind"] == "broken":
         return {**base, "sku": d.get("item")}
     if e["kind"] == "result" and d.get("shop"):       # names the shop by order, in case a settle entry does not
-        return {**base, "shop": d["shop"]}
+        return {**base, "shop": d["shop"], "seller": (d.get("receipt") or {}).get("shop")}
     return None
 
 
@@ -121,6 +121,12 @@ def load_rows(md):
     return rows
 
 
+def my_shops():
+    """How the ledger can name my shop: the name in my receipts stays when a quick tunnel's URL changes."""
+    return {os.environ.get("SHOP_CARD_NAME", "Nocha Furniture"), *(os.environ[k].rstrip("/") for k in ("SHOP_PUBLIC_URL",)
+                                                                  if os.environ.get(k))}
+
+
 def captive_buyers(settles, me_shops, cfg):
     """Buyers who buy nearly everything from one other shop: their orders are not there for me to win."""
     by_buyer = collections.defaultdict(collections.Counter)
@@ -143,7 +149,8 @@ def estimate(rows, catalog, me_buyers=(), me_shops=(), now=None, cfg=None):
     now = now or time.time()
     me_buyers, me_shops = set(me_buyers), set(me_shops)
     shop_of = {r["order"]: r["shop"] for r in rows if r["k"] == "result" and r.get("order")}
-    settles = [dict(r, shop=r.get("shop") or shop_of.get(r.get("order"))) for r in rows
+    mine = {r["order"]: r["seller"] for r in rows if r["k"] == "result" and r.get("seller") in me_shops}
+    settles = [dict(r, shop=mine.get(r.get("order")) or r.get("shop") or shop_of.get(r.get("order"))) for r in rows
                if r["k"] == "settle" and r.get("sku") in catalog and r.get("ts")]
     captive = captive_buyers(settles, me_shops, cfg)
     hl = cfg["half_life_hours"] * 3600

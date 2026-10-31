@@ -1,0 +1,97 @@
+"""The numbers every meta-harness cycle starts from, written where a change can cite them line by line.
+
+    python scorecard.py        prints one
+
+Counts come from the logs and files as they are; nothing here judges. Astra owns this file and the grading.
+"""
+import collections
+import json
+import os
+import time
+
+import httpx
+
+MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai")
+ME = os.environ.get("SHOP_MARKET_NAME", "nocha12")
+COUNTERS = {"settled_as_shop": "[acp] settled", "paid_as_buyer": "[acp] paid", "buyer_refused_to_pay": "[acp] not paying",
+            "checkout_refused": "checkout refused", "settle_refused": "settle refused", "supply": "[supply]",
+            "supply_refused": "refused:", "tracebacks": "Traceback", "harness_failed": "harness failed",
+            "no_stock": "REJECTED (not in stock)", "bankrupt": "[bankrupt]", "broken": "[broken]", "forum": "[forum]"}
+SOURCES = ("logs", "memory", ".market", "meta")
+
+
+def jsonl(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return [json.loads(x) for x in f if x.strip().startswith("{")]
+    except (OSError, ValueError):
+        return []
+
+
+def board():
+    """My rows on the board, and where they stand. The board's fields beyond week 7's show up as they are."""
+    try:
+        b = httpx.get(f"{MARKET}/api/board", timeout=20).json()
+    except (httpx.HTTPError, ValueError) as e:
+        return {"error": f"{type(e).__name__}: {e}"}
+    out = {"round": b.get("round"), "totals": b.get("totals")}
+    for k in ("shops", "buyers", "players"):
+        rows = b.get(k) or []
+        mine = next((r for r in rows if r.get("name") == ME or (r.get("login") or "").lower() == "nocha12"), None)
+        out[k] = {"count": len(rows), "mine": {x: v for x, v in (mine or {}).items() if x not in ("card", "owner")}}
+    return out
+
+
+def file_index(root):
+    """Every log and record the cycle may read, with its size: the meta-harness reads the raw files it wants."""
+    out = {}
+    for top in SOURCES:
+        for base, _, names in os.walk(os.path.join(root, top)):
+            if os.path.join("meta", "evidence") in base:
+                continue
+            for n in names:
+                p = os.path.join(base, n)
+                out[os.path.relpath(p, root)] = os.path.getsize(p)
+    return out
+
+
+def log_counts(root):
+    counts = collections.Counter()
+    try:
+        with open(os.path.join(root, "logs", "market-kit.log"), encoding="utf-8", errors="replace") as f:
+            for line in f:
+                for k, needle in COUNTERS.items():
+                    if needle in line:
+                        counts[k] += 1
+                counts["lines"] += 1
+    except OSError:
+        pass
+    return {k: counts[k] for k in ["lines", *COUNTERS]}
+
+
+def build(root):
+    md = os.path.join(root, ".market")
+    try:
+        with open(os.path.join(md, "inventory.json"), encoding="utf-8") as f:
+            inv = json.load(f)
+    except (OSError, ValueError):
+        inv = {}
+    units = inv.get("units") or []
+    calls, decisions, pays = (jsonl(os.path.join(md, f)) for f in ("tool_calls.jsonl", "decisions.jsonl", "payments.jsonl"))
+    tools = collections.defaultdict(lambda: {"calls": 0, "failed": 0})
+    for c in calls:
+        tools[c.get("tool")]["calls"] += 1
+        tools[c.get("tool")]["failed"] += 0 if c.get("ok") else 1
+    return {"time": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "board": board(),
+            "shop": {"balance": inv.get("balance"), "profit_if_stock_is_worthless":
+                     None if inv.get("balance") is None else inv["balance"] - (inv.get("start") or 0) - (inv.get("injected") or 0),
+                     "units": len(units), "stock_cost": round(sum(u.get("cost") or 0 for u in units))},
+            "log_counts": log_counts(root),
+            "tools": dict(tools), "decisions": len(decisions), "last_decisions": decisions[-5:],
+            "payments": {"paid": sum(1 for p in pays if p.get("paid")), "refused": sum(1 for p in pays if not p.get("paid")),
+                         "refusal_reasons": collections.Counter(str(p.get("reason"))[:80] for p in pays if not p.get("paid")).most_common(10)},
+            "files": file_index(root)}
+
+
+if __name__ == "__main__":
+    print(json.dumps(build(os.path.dirname(os.path.abspath(__file__))), ensure_ascii=False, indent=1))
