@@ -90,6 +90,6 @@ private/data 디렉터리와 키는 실행 UID10001이 접근할 수 있어야 �
 
 ### 라운드3 자동 전환 예약 (2026-10-31 등록)
 
-- VPS root crontab(UTC): `5 15 2 11 * switch-r3.sh a6a64bb10282` → **2026-11-03 00:05 KST**에 [switch-r3.sh](switch-r3.sh)가 `model-market.env`의 `AX_R3_MANAGER_MODEL=1`, `runtime.json`의 `stop_at=2026-11-17T23:59:59+09:00`(창 15.0일)로 바꾸고 `launch-r3.sh`로 재기동한 뒤 자기 cron 줄을 지운다. 로그 `switch-r3.log`.
-- `*/10 * * * * health-r3.sh a6a64bb10282` → [health-r3.sh](health-r3.sh)가 전환 뒤(`r3-active` 표식) 거래 컨테이너가 내려가 있으면 같은 release로 재기동한다. 키가 같으므로 같은 가게·buyer로 다시 등록된다. 11/17 23:59 KST가 지나면 표식을 지우고 멈춘다. 로그 `health-r3.log`.
+- VPS `/etc/cron.d/ax-week08-r3`(UTC): `5 15 2 11 * root switch-r3.sh a6a64bb10282` → **2026-11-03 00:05 KST**에 [switch-r3.sh](switch-r3.sh)가 `model-market.env`의 `AX_R3_MANAGER_MODEL=1`, `runtime.json`의 `stop_at=2026-11-17T23:59:59+09:00`(창 15.0일)로 바꾸고 `launch-r3.sh`로 재기동한 뒤 cron.d에서 자기 줄을 지운다. 로그 `switch-r3.log`.
+- `*/10 * * * * root health-r3.sh a6a64bb10282` → [health-r3.sh](health-r3.sh)가 전환 뒤(`r3-active` 표식) 거래 컨테이너가 내려가 있으면 같은 release로 재기동한다. 키가 같으므로 같은 가게·buyer로 다시 등록된다. 11/17 23:59 KST가 지나면 표식을 지우고 멈춘다. 로그 `health-r3.log`.
 - 전환 전(11/3 00:05 이전)에는 현재 라운드2 시험 설정(모델 OFF, 11/3 23:59 종료)이 그대로 돈다. 라운드가 3으로 바뀌면 재시작 없이도 재고 판매·restock으로 넘어간다.

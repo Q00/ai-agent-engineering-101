@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One-shot: switch the running release to the Round 3 settings and relaunch.
-# Scheduled by cron for 2026-11-03 00:05 KST (= 2026-11-02 15:05 UTC); removes its
-# own cron line afterwards. Changes only two private settings: the manager's model
+# Scheduled in /etc/cron.d/ax-week08-r3 for 2026-11-03 00:05 KST (= 2026-11-02
+# 15:05 UTC); removes its own cron.d line afterwards. Changes only two private settings: the manager's model
 # switch and the stop time. Keys, market identity and the kit are untouched.
 set -euo pipefail
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -28,8 +28,8 @@ chown 10001:10001 "$BASE/private/runtime.json"
 chmod 600 "$BASE/private/runtime.json"
 "$BASE/launch-r3.sh" "$RELEASE"
 touch "$BASE/r3-active"
-# the health check now watches the Round 3 run; this one-shot line is no longer needed
-crontab -l 2>/dev/null | grep -v 'switch-r3.sh' | crontab -
+# the health check now watches the Round 3 run; drop this one-shot line from cron.d
+sed -i '/switch-r3.sh/d' /etc/cron.d/ax-week08-r3 || true
 sleep 90
 echo "-- kit log tail after relaunch"
 tail -n 8 "$BASE/data/r3/logs/market-kit.log" || true
