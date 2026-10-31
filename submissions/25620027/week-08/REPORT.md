@@ -88,6 +88,20 @@ Round 3(11월 3일~11월 17일 23:59)에 올릴 가게와 buyer를 kit v4 위에
 
 하지 않은 것: 실제 R3 거래, VPS 이미지 재빌드·배포, 관리자의 Haiku 실호출, Linux 재검증. 기존 412개 PASS와 이번 438개 PASS는 회귀 증거이며 R3 성과 증거가 아니다.
 
+### 3-1 독립 검수(2026-10-31, Codex) 대응
+
+다른 에이전트가 PR을 독립 검수해 경계 결함 다섯 개를 반례로 재현했다. 모두 타당해 같은 날 고쳤고, 반례를 [tests/test_r3_review_regressions.py](tests/test_r3_review_regressions.py)로 고정했다.
+
+| 지적 | 원인 | 수정 |
+|---|---|---|
+| F1 식품 등급을 경계에서 한 등급 낮게 claim | "낮게 말하면 안전"이라는 잘못된 가정. 시장은 checkout **또는** 정산 시점 등급과 비교하므로 B 주장은 두 시점 모두 틀림 | 현재 등급을 claim하고, 3분 안에 등급이 바뀔 unit은 claim 생략 ([r3/pricing.py](r3/pricing.py) `claimed_grade`) |
+| F2 첫 응답 완료 영수증을 제안 없이 수용, 자체 상한 미검사 | 완료 task의 영수증 가격을 그대로 합의가로 복사 | 우리가 제안·수락한 금액이 없으면 영수증을 넘기지 않음. 최종 영수증도 상한 min(예산, 0.95×정가) 검사 ([r3/buyer.py](r3/buyer.py) `valid_receipt`, `price_cap`) |
+| F3 모델이 낮춘 원가 추정으로 유보 현금 침범 | 정책표의 `cost_estimate_ratio`가 집행 기준이었음 | 필드 삭제. 유보·시드 예산은 공식 최악 원가(정가의 75%)로 검사하고 수량을 그 안으로 자름 ([r3/restock.py](r3/restock.py)) |
+| F4 비정상 도구 인자 한 번에 관리자 종료 | `json.loads` 결과를 dict로 가정, loop가 AttributeError를 안 잡음 | 인자를 pydantic `Proposal`로 검증, 관리자 tick 전체를 예외 격리. host `health-r3.sh`가 컨테이너 안 관리자 프로세스 부재도 감지해 재기동 |
+| F5 6시간 요약에 성숙 고장 표본이 없음 | 거래 추세 창(6h)과 고장 성숙 조건(≥6h 경과)이 같은 창을 요구 | 고장률 cohort를 추세 창보다 6h+24h 앞선 구간에서 뽑음 ([r3/ledger_db.py](r3/ledger_db.py)) |
+
+수정 뒤 회귀 447개 PASS. 검수 당시 release `a6a64bb10282`는 F1~F3을 포함한 채 라운드2에서 돌고 있었고, 고친 release로 교체했다(§4-1).
+
 ## 4. 운영 전환 (사용자 승인 뒤 실행)
 
 1. 11/2: `deploy.vps.bundle`로 이미지 재빌드. `runtime.json`에 `stop_at` 11/17 23:59 KST, `remaining_orders` 0(무제한). 환경에 `AX_R3_MANAGER_MODEL=1`, Anthropic env, `AX_PAID_QUOTA_PATH`. fast 경로는 OpenRouter 키가 필요 없다. 라운드2 시장에 kit v4로 join해 A2A·영수증·결과 전송을 확인한다(라운드2에는 결제가 없다).
