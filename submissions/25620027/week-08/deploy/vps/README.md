@@ -78,3 +78,11 @@ private/data 디렉터리와 키는 실행 UID10001이 접근할 수 있어야 �
 - 환경: fast 경로는 모델 키가 필요 없다. 관리자의 모델 호출은 `AX_R3_MANAGER_MODEL=1`(기본)과 `ANTHROPIC_API_KEY`·`ANTHROPIC_MODEL=claude-haiku-5-5`가 있을 때만 하고, `AX_PAID_QUOTA_PATH`가 있으면 기존 공유 장부에서 차감한다. `OPENROUTER_API_KEY`·`AX_MODEL_PROVIDER=openrouter-free`는 `AX_BUYER_MODE=model` 또는 `AX_SELLER_MODE=legacy`일 때만 요구한다.
 - 런처가 넣는 경로: `AX_R3_POLICY=/data/r3/r3-policy.json`, `AX_R3_EVENTS=/data/r3/r3-events.sqlite`, `AX_R3_LEDGER=/data/r3/r3-ledger.sqlite`. 훅·관리자가 `.market/` 옆에 `r3-deals.jsonl`, `r3-forum-state.json`, `r3-restock-state.json`을 쓴다. 모두 기억 캐시 정리 대상이 아니며 로그와 함께 보존한다.
 - 전환 전 확인: 11/2에 새 이미지로 라운드2 시장에 join해 `[kit] market_kit 4` 첫 줄, A2A 카드·영수증·결과 전송을 확인한다(라운드2에는 결제가 없다). 11/3 개장 공지와 `agent.md` 해시를 다시 확인한 뒤 `AX_R3_ACTIVATE=1`로 활성화한다. 초기 매입 한도(정책 `restock.seed_budget` 기본 250만)·유보(`reserve_cash` 150만)는 사용자 결정 값이다.
+
+### 2026-10-31 실제 설치·라운드2 join (release 7befff885f7a)
+
+- 설치: `releases/7befff885f7a/incoming/stage_server.py`가 tarball 해시·MANIFEST·키트 v4 해시를 검증하고 `ax-week08-25620027:7befff8-prepared` 이미지를 빌드했다. 네트워크 없는 QA 컨테이너에서 전체 회귀 **421개 PASS**(Node.js 전용 레거시 `test_price_promotion.py`·`test_price_page.py`는 이미지에 Node가 없어 제외), 런타임 프리플라이트 통과. 결과는 `releases/7befff885f7a/evidence/result.json`.
+- 비공개 파일: 7주차 `shop_key.pem`·`buyer_key.pem`·`cloudflared.json`을 week-08 `private/`로 복사(0600, uid 10001). `model-market.env`에는 `MARKET_OWNER`와 `AX_R3_MANAGER_MODEL=0`(라운드2 시험 중 모델 호출 없음)·`AX_BUYER_MODE=fast`·`AX_SELLER_MODE=r3`만 둔다. `runtime.json`: `public_url=https://ax-week07.treasuresky.xyz`(7주차 named tunnel 재사용), `port 18088`, `remaining_orders 0`, `stop_at 2026-11-03T23:59+09:00`.
+- 터널: [launch-r3.sh](launch-r3.sh)가 `cloudflare/cloudflared` 컨테이너를 host network·uid 10001로 띄우고 `ax-week07.treasuresky.xyz → http://127.0.0.1:18088`로 보낸다(0600 설정 파일을 읽으려면 파일 소유자 uid로 실행해야 한다). [stop-r3.sh](stop-r3.sh)로 거래 컨테이너·터널을 내린다.
+- 발견한 결함 두 가지: (1) 키트 `load_key`가 키 파일을 chmod하므로 읽기 전용 `/private`로의 symlink는 실패한다 → 런처가 run 디렉터리에 복사하도록 수정(`7befff8`). (2) cloudflared 기본 사용자는 0600 설정을 못 읽는다 → `--user 10001:10001`.
+- 라운드3 전환 때 바꿀 것: `model-market.env`의 `AX_R3_MANAGER_MODEL=1`, `runtime.json`의 `stop_at=2026-11-17T23:59:59+09:00`(16일 이내), 그리고 `launch-r3.sh 7befff885f7a` 재실행. 키트는 라운드가 3으로 바뀌면 재시작 없이도 재고 판매·restock으로 넘어간다.
