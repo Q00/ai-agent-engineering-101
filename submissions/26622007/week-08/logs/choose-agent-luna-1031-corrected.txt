@@ -1,0 +1,6 @@
+Sat Oct 31 13:50:40 KST 2026
+--- correction of choose-agent-luna-1031.txt: that test's breaks linked to shop b's sales (0 of 30 for a, 10 of 30 for b), so choosing a was right, and the commit's 'before' reading was wrong. Fixed data: a's sales break. 3 runs:
+b | explore agent: Same evidenced discounted price as a, but no recorded breakages compared with a's 10 of 30.
+b | explore agent: Same recorded price as a, with no recorded breakages in 30 sales; a had 10 breakages in 30.
+b | explore agent: Same recorded price as shop a, but 0/30 goods broke versus a's 10/30.
+data {'https://b.example': {'sold': 30, 'broke': 0}, 'https://a.example': {'sold': 30, 'broke': 10}}
