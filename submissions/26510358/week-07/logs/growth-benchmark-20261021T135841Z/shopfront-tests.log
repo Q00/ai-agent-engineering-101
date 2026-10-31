@@ -1,0 +1,16 @@
+test_actual_sdk_discovery_updates_prices_without_model_or_network (test_shopfront.ShopfrontTests) ... FAIL
+test_coupon_advertising_matches_actual_phase_and_full_ten_percent (test_shopfront.ShopfrontTests) ... ok
+test_public_quotes_share_seller_caps_and_do_not_expose_reserves (test_shopfront.ShopfrontTests) ... ok
+
+======================================================================
+FAIL: test_actual_sdk_discovery_updates_prices_without_model_or_network (test_shopfront.ShopfrontTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shopfront.py", line 49, in test_actual_sdk_discovery_updates_prices_without_model_or_network
+    self.assertIn('lamp 130',first['description'])
+AssertionError: 'lamp 130' not found in 'Ssadassa Shop by myeonggi. Latest base quotes: lamp 1100 credits. Request a current quote, then send that number on the same task for an Ed25519-signed receipt at the exact agreed price. lamp: . Quotes can change between orders; no purchase or rating promise is needed to ask.'
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.270s
+
+FAILED (failures=1)

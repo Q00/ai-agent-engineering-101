@@ -1,0 +1,20 @@
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 5.432, "queue_seconds": 0.0, "inference_seconds": 5.432}
+{"event": "harness_decision", "decision": {"action": "open", "price": 100, "item_id": "lamp", "offer": null, "reason": "No bid was stated; opening at the configured cap."}}
+{"live_probe_case": "acquisition_open", "pass": true}
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 4.192, "queue_seconds": 0.001, "inference_seconds": 4.192}
+{"event": "harness_decision", "decision": {"action": "open", "price": 101, "item_id": "lamp", "offer": null, "reason": "No bid was made; opening at the configured maximum ask."}}
+{"live_probe_case": "recovery_open", "pass": true}
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 3.799, "queue_seconds": 0.001, "inference_seconds": 3.798}
+{"event": "harness_decision", "decision": {"action": "counter", "price": 101, "item_id": "lamp", "offer": 100, "reason": "The bid is below the last ask; maintain the current quote."}}
+{"live_probe_case": "recovery_counter", "pass": true}
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 4.469, "queue_seconds": 0.0, "inference_seconds": 4.469}
+{"event": "harness_decision", "decision": {"action": "accept", "price": 100, "item_id": "lamp", "offer": 100, "reason": "Accept the buyer's bid at the current ask."}}
+{"live_probe_case": "old_acquisition_quote", "pass": true}
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 22.861, "queue_seconds": 18.235, "inference_seconds": 4.626}
+{"event": "harness_decision", "decision": {"action": "accept", "price": 101, "item_id": "lamp", "offer": 101, "reason": "The bid meets the last valid ask."}}
+{"live_probe_case": "recovery_accept", "pass": true}

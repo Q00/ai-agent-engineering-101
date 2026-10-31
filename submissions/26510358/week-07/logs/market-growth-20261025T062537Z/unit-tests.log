@@ -1,0 +1,334 @@
+test_actual_http_rejects_buyer_owner_before_quote_and_keeps_anonymous_sales_working (test_buyer_access.BuyerAccessTests) ... ok
+test_actual_http_rejects_declared_buyer_but_anonymous_can_request_quote (test_buyer_access.BuyerAccessTests) ... ok
+test_buyer_owner_identity_blocks_only_the_configured_owner (test_buyer_access.BuyerAccessTests) ... ok
+test_configuration_reloads_without_restarting_and_anonymous_stays_allowed (test_buyer_access.BuyerAccessTests) ... ok
+test_declared_identity_is_exact_and_not_marked_authenticated (test_buyer_access.BuyerAccessTests) ... ok
+test_new_restriction_during_inference_prevents_publication (test_buyer_access.BuyerAccessTests) ... ok
+test_no_name_does_not_prove_identity_and_unrelated_fields_do_not_block (test_buyer_access.BuyerAccessTests) ... ok
+test_rejection_has_no_model_price_lookup_or_receipt_even_on_replay (test_buyer_access.BuyerAccessTests) ... ok
+test_verified_principal_overrides_spoofed_metadata (test_buyer_access.BuyerAccessTests) ... ok
+test_coordinator_budget_cannot_authorize_an_overbudget_offer (test_buyer_coordination.BuyerCoordinationTests) ... ok
+test_harness_mutation_does_not_change_original_nested_coordination (test_buyer_coordination.BuyerCoordinationTests) ... ok
+test_non_object_context_is_rejected_before_client_or_model_creation (test_buyer_coordination.BuyerCoordinationTests) ... ok
+test_none_keeps_basic_buyer_context_without_coordination_field (test_buyer_coordination.BuyerCoordinationTests) ... ok
+test_eighth_ambiguous_working_response_is_disputed_not_released (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_counter_has_no_ninth_decision_and_releases_unused_reservation (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_explicit_failure_releases_without_committing (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_lost_response_holds_funds_and_never_retries (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_mismatched_receipt_keeps_disputed_funds (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_eighth_offer_completion_commits_once_and_stops (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_received_final_completion_is_checked_even_if_deadline_just_expired (test_buyer_round_boundary.BuyerRoundBoundaryTests) ... ok
+test_bad_catalog_rejected_before_negotiation (test_catalog.CatalogTests) ... ok
+test_base_ids_are_first_and_item_constraints_still_apply (test_catalog.CatalogTests) ... ok
+test_committed_catalog_has_thousands_and_prescribed_reserves (test_catalog.CatalogTests) ... ok
+test_described_english_bookshelf_meets_all_requirements (test_catalog.CatalogTests) ... ok
+test_empty_unknown_and_zero_limit_do_not_pick_arbitrary_items (test_catalog.CatalogTests) ... ok
+test_impossible_requirements_have_no_candidates (test_catalog.CatalogTests) ... ok
+test_korean_description_matches_and_respects_strict_height (test_catalog.CatalogTests) ... ok
+test_reference_desk_does_not_select_desks (test_catalog.CatalogTests) ... ok
+test_search_preserves_schema_and_deep_copies (test_catalog.CatalogTests) ... ok
+test_subset_catalogs_do_not_leak_other_shop_products (test_catalog.CatalogTests) ... ok
+test_harness_priority_is_explicit_and_does_not_read_remote_metadata (test_completion_priority.CompletionPriorityHarnessTests) ... ok
+test_invalid_priority_fails_before_model_or_pool_creation (test_completion_priority.CompletionPriorityHarnessTests) ... ok
+test_invocation_forwards_completion_but_preserves_default_adapter_shapes (test_completion_priority.CompletionPriorityHarnessTests) ... ok
+test_aged_normal_precedes_new_completion_at_next_lane (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_aged_quote_backlog_cannot_starve_completion_across_two_lanes (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_completion_never_bypasses_shared_provider_cooldown (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_completion_overtakes_queued_quotes_and_burst_bounds_normal_wait (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_expired_completion_is_withdrawn_and_does_not_block_quote (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_killed_completion_waiter_is_pruned (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_killed_or_cancelled_owner_releases_kernel_lane (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_recovery_remains_serial_across_completion_and_buyer (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_two_sellers_preserve_third_lane_for_buyer (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_meeting_quote_never_requires_an_extra_confirmation (test_completion_strategy.BidGuards) ... ok
+test_only_current_actual_whole_bids_are_counted (test_completion_strategy.BidGuards) ... ok
+test_second_actual_bid_closes_at_bid_without_below_floor_or_price_repair (test_completion_strategy.BidGuards) ... ok
+test_clarifications_and_duplicate_messages_do_not_count_as_bids_or_reset_quote (test_completion_strategy.SellerBidState) ... ok
+test_legacy_completions_and_historical_price_do_not_outweigh_verified_repeats (test_completion_strategy.VerifiedMemory) ... ok
+test_receipt_presence_is_not_verified_completion_and_market_failure_does_not_promote (test_completion_strategy.VerifiedMemory) ... ok
+test_benchmark_seller_guards (test_evidence.EvidenceTests) ... ok
+test_buyer_budget_and_quote_are_fixed (test_evidence.EvidenceTests) ... ok
+test_duplicate_ids_and_receipt_replays_do_not_buy_twice (test_evidence.EvidenceTests) ... ok
+test_every_supplied_item_alias_must_match (test_evidence.EvidenceTests) ... ok
+test_ledger_rejects_stale_quote_without_releasing_funds (test_evidence.EvidenceTests) ... ok
+test_mismatch_and_dispute_conservatively_hold_funds (test_evidence.EvidenceTests) ... ok
+test_opening_requires_harness_selected_catalog_candidate (test_evidence.EvidenceTests) ... ok
+test_optional_quote_and_identifier_alias_evidence (test_evidence.EvidenceTests) ... ok
+test_parallel_reservations_cannot_exceed_total_budget (test_evidence.EvidenceTests) ... ok
+test_parallel_same_item_has_exactly_one_reservation (test_evidence.EvidenceTests) ... ok
+test_persisted_budget_and_transactions_survive_restore (test_evidence.EvidenceTests) ... ok
+test_poison_text_is_a_signal_and_cannot_change_budget (test_evidence.EvidenceTests) ... ok
+test_price_rejects_invalid_numbers_and_coercion (test_evidence.EvidenceTests) ... ok
+test_receipt_evidence_compares_agreement_not_only_budget (test_evidence.EvidenceTests) ... ok
+test_recovery_must_honor_an_existing_quote (test_evidence.EvidenceTests) ... ok
+test_release_frees_item_but_purchase_id_stays_used (test_evidence.EvidenceTests) ... ok
+test_remote_purchase_id_replay_is_scoped_to_origin_and_persisted (test_evidence.EvidenceTests) ... ok
+test_seller_guards_never_repair_a_price (test_evidence.EvidenceTests) ... ok
+test_explicit_custom_harness_command_keeps_its_arguments (test_harness_executable.HarnessExecutableTests) ... ok
+test_missing_installation_does_not_return_a_stale_cached_path (test_harness_executable.HarnessExecutableTests) ... ok
+test_missing_process_fails_once_with_a_configuration_error (test_harness_executable.HarnessExecutableTests) ... ok
+test_removed_cached_binary_is_replaced_by_current_launcher (test_harness_executable.HarnessExecutableTests) ... ok
+test_resolved_binary_survives_removal_of_launcher_and_empty_working_directory (test_harness_executable.HarnessExecutableTests) ... ok
+test_absent_environment_uses_default_five_seconds (test_inference_gap.InferenceGapTests) ... ok
+test_environment_controls_shared_gap_including_zero (test_inference_gap.InferenceGapTests) ... ok
+test_explicit_interval_overrides_environment_without_changing_existing_test_policy (test_inference_gap.InferenceGapTests) ... ok
+test_harness_uses_central_gap_policy_without_hardcoding_an_interval (test_inference_gap.InferenceGapTests) ... ok
+test_invalid_environment_rejected_before_queue_creation (test_inference_gap.InferenceGapTests) ... ok
+test_invalid_explicit_intervals_still_fail (test_inference_gap.InferenceGapTests) ... ok
+test_invalid_gap_stops_actual_harness_before_subprocess_creation (test_inference_gap.InferenceGapTests) ... ok
+test_low_level_default_and_queue_trace_record_five_second_policy (test_inference_gap.InferenceGapTests) ... ok
+test_completion_to_next_start_interval_is_enforced (test_inference_queue.InferenceQueueTests) ... ok
+test_dead_owner_is_recovered_and_recovery_respects_pacing (test_inference_queue.InferenceQueueTests) ... ok
+test_expired_waiter_unregisters_without_blocking_successor (test_inference_queue.InferenceQueueTests) ... ok
+test_head_waiter_progresses_despite_busy_control_readers (test_inference_queue.InferenceQueueTests) ... ok
+test_killed_waiter_is_removed_before_live_successor (test_inference_queue.InferenceQueueTests) ... ok
+test_live_owner_is_not_preempted_when_its_deadline_expires (test_inference_queue.InferenceQueueTests) ... ok
+test_owner_exception_releases_slot_and_queued_timeout_does_not_leave_ticket (test_inference_queue.InferenceQueueTests) ... ok
+test_processes_receive_slots_in_fifo_ticket_order (test_inference_queue.InferenceQueueTests) ... ok
+test_queue_trace_proves_admission_release_and_labels_wait_deadline (test_inference_queue.InferenceQueueTests) ... ok
+test_thread_arrival_order_cannot_be_overtaken_by_later_callers (test_inference_queue.InferenceQueueTests) ... ok
+test_counteroffer_releases_old_reservation_and_uses_new_id (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_duplicate_artifact_and_changed_task_are_unresolved_not_rolled_back (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_every_named_catalog_id_rejects_initial_product_substitution (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_explicit_external_sku_prevents_substitution_for_descriptive_request (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_fractional_price_travels_without_six_digit_rounding (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_honest_receipt_commits_once_over_real_http (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_lost_completion_response_preserves_uncertain_payment (test_integrations.BuyerHTTPIntegrationTests) ... ----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 53464)
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.10/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.10/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/usr/lib/python3.10/http/server.py", line 433, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.10/http/server.py", line 421, in handle_one_request
+    method()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_integrations.py", line 114, in do_POST
+    response = peer.responses.pop(0)
+IndexError: pop from empty list
+----------------------------------------
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 53474)
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.10/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.10/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/usr/lib/python3.10/http/server.py", line 433, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.10/http/server.py", line 421, in handle_one_request
+    method()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_integrations.py", line 114, in do_POST
+    response = peer.responses.pop(0)
+IndexError: pop from empty list
+----------------------------------------
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 53488)
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.10/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.10/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/usr/lib/python3.10/http/server.py", line 433, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.10/http/server.py", line 421, in handle_one_request
+    method()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_integrations.py", line 114, in do_POST
+    response = peer.responses.pop(0)
+IndexError: pop from empty list
+----------------------------------------
+ok
+test_named_and_descriptive_requests_keep_correct_canonical_item (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_poison_quote_cannot_override_configured_budget (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_receipt_corruption_is_disputed_and_keeps_remote_spend_reserved (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_receipt_old_quote_id_is_disputed_with_funds_held (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_walk_away_after_counterquote_releases_only_uncommitted_offer (test_integrations.BuyerHTTPIntegrationTests) ... ok
+test_invalid_model_acceptance_fails_without_receipt (test_integrations.SellerHTTPIntegrationTests) ... ok
+test_real_sdk_routes_quote_complete_and_reject_terminal_replay (test_integrations.SellerHTTPIntegrationTests) ... ok
+test_seller_hostile_text_does_not_change_reserve (test_integrations.SellerHTTPIntegrationTests) ... Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_ambiguous_claim_file_is_rejected (test_market_runtime.MarketOwnerLoadingTests) ... ok
+test_claim_is_used_without_inheriting_it_in_buyer_environment (test_market_runtime.MarketOwnerLoadingTests) ... ok
+test_empty_file_waits_until_operator_supplies_claim (test_market_runtime.MarketOwnerLoadingTests) ... ok
+test_connection_and_read_timeout_recover_with_same_request (test_market_runtime.MarketPollingRecoveryTests) ... ok
+test_http_errors_remain_for_official_kit_to_handle (test_market_runtime.MarketPollingRecoveryTests) ... ok
+test_permanent_protocol_configuration_error_is_not_retried (test_market_runtime.MarketPollingRecoveryTests) ... ok
+test_results_and_other_requests_are_never_resent (test_market_runtime.MarketPollingRecoveryTests) ... ok
+test_retry_delay_is_bounded_and_shutdown_interrupts_backoff (test_market_runtime.MarketPollingRecoveryTests) ... ok
+test_acquisition_quotes_use_unchanged_floors_for_basic_items (test_market_week07.MarketGuards) ... {"event": "policy_loaded", "policy_sha256": "136af5bc142ef669e156d07c371a038489777d6e328cfdc4be19e3cb8652f0a7", "policy_version": "week07-prompt-completion-v2"}
+{"event": "seller_started", "name": "TEST ONLY policy shop", "catalog_size": 3003, "policy_version": "week07-prompt-completion-v2", "price_policy": "prompt-completion-v3"}
+ok
+test_all_harness_roles_have_explicit_instructions (test_market_week07.MarketGuards) ... ok
+test_exact_wire_price_skips_extra_inference_but_suffix_attack_does_not (test_market_week07.MarketGuards) ... ok
+test_kit_signature_failure_overrides_good_reviews_once_and_persists (test_market_week07.MarketGuards) ... ok
+test_memory_survives_url_change_and_avoids_personal_receipt_fraud (test_market_week07.MarketGuards) ... ok
+test_normal_unaffordable_shop_is_not_called_dishonest (test_market_week07.MarketGuards) ... ok
+test_own_rating_instruction_is_a_signal (test_market_week07.MarketGuards) ... ok
+test_parallel_memory_records_are_not_lost (test_market_week07.MarketGuards) ... ok
+test_quoted_remote_log_markers_cannot_forge_a_signature_verdict (test_market_week07.MarketGuards) ... ok
+test_review_instructions_do_not_change_numeric_ranking (test_market_week07.MarketGuards) ... ok
+test_seller_lane_limit_and_buyer_reservation (test_market_week07.MarketGuards) ... ok
+test_shared_provider_cooldown_respects_admission_deadline (test_market_week07.MarketGuards) ... ok
+test_signature_survives_protobuf_whole_double_but_rejects_tampering (test_market_week07.MarketGuards) ... ok
+test_signing_rejects_fractional_and_boolean_prices (test_market_week07.MarketGuards) ... ok
+test_week07_task_alias_detects_receipt_substitution (test_market_week07.MarketGuards) ... ok
+test_invalid_model_stance_never_reaches_a_priced_rpc (test_negotiation_stance.BuyerStanceTests) ... ok
+test_nonshopping_ignores_even_a_valid_model_stance_without_wire_change (test_negotiation_stance.BuyerStanceTests) ... ok
+test_price_at_budget_never_invents_firm_stance (test_negotiation_stance.BuyerStanceTests) ... ok
+test_shopping_offer_sends_selected_public_stance_without_private_reason_or_budget (test_negotiation_stance.BuyerStanceTests) ... ok
+test_firm_cannot_authorize_acceptance_below_private_reserve (test_negotiation_stance.SellerStanceTests) ... ok
+test_firm_is_a_public_statement_and_does_not_automatically_accept (test_negotiation_stance.SellerStanceTests) ... ok
+test_metadata_instructions_and_invalid_stance_values_are_ignored (test_negotiation_stance.SellerStanceTests) ... ok
+test_invalid_types_and_instruction_like_stances_are_rejected (test_negotiation_stance.StanceGuardAndProtocolTests) ... ok
+test_protocol_preserves_numeric_text_and_whitelists_only_the_stance (test_negotiation_stance.StanceGuardAndProtocolTests) ... ok
+test_valid_optional_stance_keeps_legacy_decisions_and_exact_price (test_negotiation_stance.StanceGuardAndProtocolTests) ... ok
+test_buyer_encoder_does_not_use_private_reserve (test_policy.PolicyTests) ... ok
+test_corrupted_numeric_values_are_rejected (test_policy.PolicyTests) ... ok
+test_default_is_untrained_and_guidance_does_not_return_prices (test_policy.PolicyTests) ... ok
+test_environment_source_is_explicit_and_frozen (test_policy.PolicyTests) ... ok
+test_runtime_policy_is_frozen_for_current_run (test_policy.PolicyTests) ... ok
+test_buyer_commits_received_completion_after_deadline_without_new_decision (test_protocol.ProtocolTests) ... ok
+test_buyer_does_not_authorize_price_from_quote_received_after_deadline (test_protocol.ProtocolTests) ... ok
+test_card_get_and_rpc_honor_remaining_deadline (test_protocol.ProtocolTests) ... ok
+test_card_received_after_deadline_remains_rejected (test_protocol.ProtocolTests) ... ok
+test_changed_response_id_version_and_shape_are_rejected (test_protocol.ProtocolTests) ... ok
+test_configured_timeout_also_bounds_rpc (test_protocol.ProtocolTests) ... ok
+test_deadline_crossing_response_still_requires_valid_rpc_evidence (test_protocol.ProtocolTests) ... ok
+test_expired_initial_deadline_closes_client_before_network (test_protocol.ProtocolTests) ... ok
+test_invalid_card_or_origin_closes_initialized_client (test_protocol.ProtocolTests) ... ok
+test_received_completion_crossing_deadline_is_parsed_but_next_rpc_is_blocked (test_protocol.ProtocolTests) ... ok
+test_compatible_or_omitted_units_allow_existing_peer_receipts (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_datapart_exact_external_sku_reaches_receipt_guard_without_observer (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_incompatible_quote_units_stop_before_authorizing_a_bid (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_incompatible_receipt_units_dispute_and_preserve_reserved_funds (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_normalized_quote_is_preserved_in_next_round_history (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_receipt_mismatch_after_text_normalization_remains_disputed (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_text_observation_reaches_current_policy_and_decision_with_fixed_budget (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_unknown_ask_cannot_be_accepted_and_overbudget_offer_is_never_repaired (test_quote_normalization.BuyerNormalizedObservationTests) ... ok
+test_complete_decimal_and_grouped_price_allow_sentence_punctuation (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_conflicting_structured_prices_products_or_quotes_fail_without_model_promotion (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_datapart_product_sku_and_nested_amount_are_observations (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_decimal_and_integer_substrings_cannot_ground_a_partial_price (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_explicit_currency_and_quantity_conflicts_or_malformed_values_fail_closed (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_invalid_or_missing_numeric_fields_use_actual_observer_or_remain_unknown (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_many_numbers_are_interpreted_by_observer_not_last_number (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_metadata_quote_needs_no_observer_and_never_mutates_remote_data (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_missing_units_keep_implicit_course_contract_and_no_conversion_occurs (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_observation_accounts_for_entire_call_time_under_the_existing_deadline (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_observer_cannot_invent_a_number_or_identifier_or_replace_structured_sku (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_punctuated_multi_number_quote_still_uses_the_observers_price (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_receipt_artifacts_and_private_limits_are_not_quote_fields (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_sentence_period_after_observed_price_does_not_discard_the_number (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_task_metadata_and_datapart_aliases_share_one_normalized_contract (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_ungrounded_observation_reenters_existing_harness_feedback_loop (test_quote_normalization.QuoteNormalizationTests) ... ok
+test_higher_and_lower_successful_shops_keep_transaction_rating_without_ads (test_review_advertising.TransactionReviewTests) ... ok
+test_long_requested_item_stays_one_line_within_market_limit (test_review_advertising.TransactionReviewTests) ... ok
+test_no_deal_unsigned_disputed_and_error_reviews_preserve_actual_outcome (test_review_advertising.TransactionReviewTests) ... ok
+test_pretrade_excluded_unavailable_and_blocked_results_have_no_ads (test_review_advertising.TransactionReviewTests) ... ok
+test_market_success_requires_both_kit_signature_and_ledger_verdict (test_runtime_stages.AuthoritativeFeedbackStages) ... ok
+test_wrong_receipt_task_cannot_relabel_runtime_negotiation (test_runtime_stages.AuthoritativeFeedbackStages) ... ok
+test_disputed_receipt_keeps_actual_task_linkage_and_never_claims_match (test_runtime_stages.BuyerStages) ... ok
+test_lost_response_recovery_emits_one_dispatch_and_contract_match (test_runtime_stages.BuyerStages) ... ok
+test_market_boundary_keeps_disputed_receipt_as_evidence_without_submitting_it (test_runtime_stages.BuyerStages) ... ok
+test_cancellation_records_explicit_outcome (test_runtime_stages.SellerStages) ... ok
+test_low_bid_cannot_claim_completion_priority_through_metadata (test_runtime_stages.SellerStages) ... Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_opening_bid_does_not_guess_product_before_model_selection (test_runtime_stages.SellerStages) ... Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_same_task_completion_records_validated_stages_and_local_priority (test_runtime_stages.SellerStages) ... ok
+test_signature_failure_preserves_acceptance_but_does_not_claim_receipt_issue (test_runtime_stages.SellerStages) ... ok
+test_context_retains_older_receipt_issues_and_item_experience_without_mutating_memory (test_selector_identity.SelectorIdentityTests) ... ok
+test_validated_selection_uses_registry_name_and_rejects_url_and_price (test_selector_identity.SelectorIdentityTests) ... ok
+test_cancel_ack_before_accept_model_finishes_drops_late_receipt_and_sale (test_seller_cancel.SellerCancelTests) ... ok
+test_cancel_ack_before_counter_model_finishes_drops_late_quote (test_seller_cancel.SellerCancelTests) ... ok
+test_cancel_ack_before_opening_model_finishes_drops_late_quote (test_seller_cancel.SellerCancelTests) ... ok
+test_canceled_task_does_not_restart_a_turn_already_waiting_for_lock (test_seller_cancel.SellerCancelTests) ... ok
+test_late_model_error_does_not_overwrite_cancel_with_failed_status (test_seller_cancel.SellerCancelTests) ... ok
+test_published_sale_cannot_later_acknowledge_cancellation (test_seller_cancel.SellerCancelTests) ... ok
+test_http_cancel_ack_during_blocked_inference_has_no_late_quote_or_sale (test_seller_cancel_http.SellerCancelHTTPTests) ... ok
+test_http_cancel_waits_for_receipt_publication_then_returns_error_after_completed_sale (test_seller_cancel_http.SellerCancelHTTPTests) ... {"mode": "TEST_ONLY_stub_model_actual_local_JSONRPC", "case": "cancel_before_model_return", "wire": [{"request": {"jsonrpc": "2.0", "id": "86e8578abcae4c2ab151585f3de4931b", "method": "SendMessage", "params": {"message": {"messageId": "1fe0f06a594f49ab86f0d7d8347bb5ef", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}, "configuration": {"returnImmediately": true}}}, "response": {"result": {"task": {"id": "b3e66514-1563-4600-8516-6aad60ce0c20", "contextId": "cee14ae4-ffec-4f28-97dc-ac686e1f8ff3", "status": {"state": "TASK_STATE_SUBMITTED"}, "history": [{"messageId": "1fe0f06a594f49ab86f0d7d8347bb5ef", "contextId": "cee14ae4-ffec-4f28-97dc-ac686e1f8ff3", "taskId": "b3e66514-1563-4600-8516-6aad60ce0c20", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}]}}, "id": "86e8578abcae4c2ab151585f3de4931b", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "b7159b16b97945b0b7a0d8c667b4e55f", "method": "CancelTask", "params": {"id": "b3e66514-1563-4600-8516-6aad60ce0c20"}}, "response": {"result": {"id": "b3e66514-1563-4600-8516-6aad60ce0c20", "contextId": "cee14ae4-ffec-4f28-97dc-ac686e1f8ff3", "status": {"state": "TASK_STATE_CANCELED", "timestamp": "2026-10-25T06:28:45.778764Z"}, "history": [{"messageId": "1fe0f06a594f49ab86f0d7d8347bb5ef", "contextId": "cee14ae4-ffec-4f28-97dc-ac686e1f8ff3", "taskId": "b3e66514-1563-4600-8516-6aad60ce0c20", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}]}, "id": "b7159b16b97945b0b7a0d8c667b4e55f", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "3bac24d100544bd4ada580c5e0c78396", "method": "GetTask", "params": {"id": "b3e66514-1563-4600-8516-6aad60ce0c20"}}, "response": {"result": {"id": "b3e66514-1563-4600-8516-6aad60ce0c20", "contextId": "cee14ae4-ffec-4f28-97dc-ac686e1f8ff3", "status": {"state": "TASK_STATE_CANCELED", "timestamp": "2026-10-25T06:28:45.778764Z"}, "history": [{"messageId": "1fe0f06a594f49ab86f0d7d8347bb5ef", "contextId": "cee14ae4-ffec-4f28-97dc-ac686e1f8ff3", "taskId": "b3e66514-1563-4600-8516-6aad60ce0c20", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}]}, "id": "3bac24d100544bd4ada580c5e0c78396", "jsonrpc": "2.0"}}], "seller_events": [{"event": "policy_loaded", "policy_sha256": "test-only-policy", "policy_version": "test-only"}, {"event": "seller_started", "name": "TEST ONLY cancellation HTTP shop", "catalog_size": 1, "policy_version": "test-only", "price_policy": "TEST_ONLY-uncapped"}, {"event": "trade_stage", "stage": "negotiation_started", "side": "seller", "task_id": "b3e66514-1563-4600-8516-6aad60ce0c20", "shop": "TEST ONLY cancellation HTTP shop"}, {"event": "remote_message", "task_id": "b3e66514-1563-4600-8516-6aad60ce0c20", "message": "I want to buy a lamp", "flags": [], "candidates": ["lamp"], "remote_stance": null}, {"event": "seller_admission_priority", "task_id": "b3e66514-1563-4600-8516-6aad60ce0c20", "priority": "normal"}, {"event": "sale_canceled", "task_id": "b3e66514-1563-4600-8516-6aad60ce0c20"}, {"event": "trade_stage", "stage": "ended", "side": "seller", "task_id": "b3e66514-1563-4600-8516-6aad60ce0c20", "shop": "TEST ONLY cancellation HTTP shop", "outcome": "canceled", "reason_code": "caller_canceled"}]}
+{"mode": "TEST_ONLY_stub_model_actual_local_JSONRPC", "case": "cancel_during_receipt_publication", "wire": [{"request": {"jsonrpc": "2.0", "id": "587b3a329e05414ba1b7abe1089038a5", "method": "SendMessage", "params": {"message": {"messageId": "81506862c5984f069db6e13ee7d7f437", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}}}, "response": {"result": {"task": {"id": "365814df-594d-4636-9e91-91d873ed46e3", "contextId": "90eb34d4-00a0-4f66-8064-913c1789b4c3", "status": {"state": "TASK_STATE_INPUT_REQUIRED", "message": {"messageId": "48642655-f021-4aea-a1fc-86a9f55ace82", "contextId": "90eb34d4-00a0-4f66-8064-913c1789b4c3", "taskId": "365814df-594d-4636-9e91-91d873ed46e3", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1, total 130 credits. Offer that total on this task. Asking price: 130"}], "metadata": {"description": "TEST ONLY desk lamp", "currency": "credits", "quantity": 1.0, "attributes": {"material": "metal"}, "quoteId": "0ddc73c536c64475bf150d61c5073309", "itemId": "lamp", "seller": "TEST ONLY cancellation HTTP shop", "ask": 130.0}}, "timestamp": "2026-10-25T06:28:46.028297Z"}, "history": [{"messageId": "81506862c5984f069db6e13ee7d7f437", "contextId": "90eb34d4-00a0-4f66-8064-913c1789b4c3", "taskId": "365814df-594d-4636-9e91-91d873ed46e3", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}]}}, "id": "587b3a329e05414ba1b7abe1089038a5", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "0bdb4a4f346745de9592b254e7f5c7d2", "method": "CancelTask", "params": {"id": "365814df-594d-4636-9e91-91d873ed46e3"}}, "response": {"error": {"code": -32002, "message": "Task finished before cancellation", "data": [{"@type": "type.googleapis.com/google.rpc.ErrorInfo", "reason": "TASK_NOT_CANCELABLE", "domain": "a2a-protocol.org", "metadata": {}}]}, "id": "0bdb4a4f346745de9592b254e7f5c7d2", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "741d71873b264644b90baa02db414970", "method": "SendMessage", "params": {"message": {"messageId": "6362f74a39df45d0b132095ecbf96032", "role": "ROLE_USER", "parts": [{"text": "100"}], "taskId": "365814df-594d-4636-9e91-91d873ed46e3"}}}, "response": {"result": {"task": {"id": "365814df-594d-4636-9e91-91d873ed46e3", "contextId": "90eb34d4-00a0-4f66-8064-913c1789b4c3", "status": {"state": "TASK_STATE_COMPLETED", "message": {"messageId": "d0cbc73b-f9a7-48cd-82f9-0acb8152da00", "contextId": "90eb34d4-00a0-4f66-8064-913c1789b4c3", "taskId": "365814df-594d-4636-9e91-91d873ed46e3", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1 accepted, total 100 credits. Signed receipt issued; market validation pending."}]}, "timestamp": "2026-10-25T06:28:46.138365Z"}, "artifacts": [{"artifactId": "72ec15f9-3e30-4d25-bc3c-39c4083820c3", "name": "receipt", "parts": [{"data": {"itemId": "lamp", "price": 100.0, "shop": "TEST ONLY cancellation HTTP shop", "purchaseId": "a6e8d3d3cf2a480a90d984fc889a2c7b", "item": "lamp", "taskId": "365814df-594d-4636-9e91-91d873ed46e3", "quantity": 1.0, "currency": "credits", "quoteId": "0ddc73c536c64475bf150d61c5073309", "seller": "TEST ONLY cancellation HTTP shop", "task": "365814df-594d-4636-9e91-91d873ed46e3", "sig_seller": "nPPnpn5VcNm6kTj71ohtwsUCAW8Zhksm1sCYyqDueKZaylgsPma9jT+de5ltN+q8BNRtzIZHhPkT4VQpC1KQBw=="}}]}], "history": [{"messageId": "81506862c5984f069db6e13ee7d7f437", "contextId": "90eb34d4-00a0-4f66-8064-913c1789b4c3", "taskId": "365814df-594d-4636-9e91-91d873ed46e3", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}, {"messageId": "48642655-f021-4aea-a1fc-86a9f55ace82", "contextId": "90eb34d4-00a0-4f66-8064-913c1789b4c3", "taskId": "365814df-594d-4636-9e91-91d873ed46e3", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1, total 130 credits. Offer that total on this task. Asking price: 130"}], "metadata": {"description": "TEST ONLY desk lamp", "currency": "credits", "quantity": 1.0, "attributes": {"material": "metal"}, "ask": 130.0, "itemId": "lamp", "seller": "TEST ONLY cancellation HTTP shop", "quoteId": "0ddc73c536c64475bf150d61c5073309"}}, {"messageId": "6362f74a39df45d0b132095ecbf96032", "contextId": "da07530d-eebd-4785-b742-81a1e6b26aed", "taskId": "365814df-594d-4636-9e91-91d873ed46e3", "role": "ROLE_USER", "parts": [{"text": "100"}]}]}}, "id": "741d71873b264644b90baa02db414970", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "652bbc7e6939425bac5417c2a30a2a01", "method": "GetTask", "params": {"id": "365814df-594d-4636-9e91-91d873ed46e3"}}, "response": {"result": {"id": "365814df-594d-4636-9e91-91d873ed46e3", "contextId": "90eb34d4-00a0-4f66-8064-913c1789b4c3", "status": {"state": "TASK_STATE_COMPLETED", "message": {"messageId": "d0cbc73b-f9a7-48cd-82f9-0acb8152da00", "contextId": "90eb34d4-00a0-4f66-8064-913c1789b4c3", "taskId": "365814df-594d-4636-9e91-91d873ed46e3", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1 accepted, total 100 credits. Signed receipt issued; market validation pending."}]}, "timestamp": "2026-10-25T06:28:46.138365Z"}, "artifacts": [{"artifactId": "72ec15f9-3e30-4d25-bc3c-39c4083820c3", "name": "receipt", "parts": [{"data": {"quoteId": "0ddc73c536c64475bf150d61c5073309", "price": 100.0, "item": "lamp", "purchaseId": "a6e8d3d3cf2a480a90d984fc889a2c7b", "shop": "TEST ONLY cancellation HTTP shop", "quantity": 1.0, "currency": "credits", "taskId": "365814df-594d-4636-9e91-91d873ed46e3", "sig_seller": "nPPnpn5VcNm6kTj71ohtwsUCAW8Zhksm1sCYyqDueKZaylgsPma9jT+de5ltN+q8BNRtzIZHhPkT4VQpC1KQBw==", "itemId": "lamp", "task": "365814df-594d-4636-9e91-91d873ed46e3", "seller": "TEST ONLY cancellation HTTP shop"}}]}], "history": [{"messageId": "81506862c5984f069db6e13ee7d7f437", "contextId": "90eb34d4-00a0-4f66-8064-913c1789b4c3", "taskId": "365814df-594d-4636-9e91-91d873ed46e3", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}, {"messageId": "48642655-f021-4aea-a1fc-86a9f55ace82", "contextId": "90eb34d4-00a0-4f66-8064-913c1789b4c3", "taskId": "365814df-594d-4636-9e91-91d873ed46e3", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1, total 130 credits. Offer that total on this task. Asking price: 130"}], "metadata": {"description": "TEST ONLY desk lamp", "currency": "credits", "quantity": 1.0, "attributes": {"material": "metal"}, "quoteId": "0ddc73c536c64475bf150d61c5073309", "seller": "TEST ONLY cancellation HTTP shop", "itemId": "lamp", "ask": 130.0}}, {"messageId": "6362f74a39df45d0b132095ecbf96032", "contextId": "da07530d-eebd-4785-b742-81a1e6b26aed", "taskId": "365814df-594d-4636-9e91-91d873ed46e3", "role": "ROLE_USER", "parts": [{"text": "100"}]}]}, "id": "652bbc7e6939425bac5417c2a30a2a01", "jsonrpc": "2.0"}}], "seller_events": [{"event": "policy_loaded", "policy_sha256": "test-only-policy", "policy_version": "test-only"}, {"event": "seller_started", "name": "TEST ONLY cancellation HTTP shop", "catalog_size": 1, "policy_version": "test-only", "price_policy": "TEST_ONLY-uncapped"}, {"event": "trade_stage", "stage": "negotiation_started", "side": "seller", "task_id": "365814df-594d-4636-9e91-91d873ed46e3", "shop": "TEST ONLY cancellation HTTP shop"}, {"event": "remote_message", "task_id": "365814df-594d-4636-9e91-91d873ed46e3", "message": "I want to buy a lamp", "flags": [], "candidates": ["lamp"], "remote_stance": null}, {"event": "seller_admission_priority", "task_id": "365814df-594d-4636-9e91-91d873ed46e3", "priority": "normal"}, {"event": "quote", "task_id": "365814df-594d-4636-9e91-91d873ed46e3", "metadata": {"ask": 130, "itemId": "lamp", "quoteId": "0ddc73c536c64475bf150d61c5073309", "seller": "TEST ONLY cancellation HTTP shop", "quantity": 1, "currency": "credits", "description": "TEST ONLY desk lamp", "attributes": {"material": "metal"}}}, {"event": "trade_stage", "stage": "quote_issued", "side": "seller", "task_id": "365814df-594d-4636-9e91-91d873ed46e3", "item": "lamp", "shop": "TEST ONLY cancellation HTTP shop", "quote_id": "0ddc73c536c64475bf150d61c5073309", "price": 130, "quantity": 1}, {"event": "remote_message", "task_id": "365814df-594d-4636-9e91-91d873ed46e3", "message": "100", "flags": [], "candidates": ["lamp"], "remote_stance": null}, {"event": "trade_stage", "stage": "offer_received", "side": "seller", "task_id": "365814df-594d-4636-9e91-91d873ed46e3", "item": "lamp", "shop": "TEST ONLY cancellation HTTP shop", "quote_id": "0ddc73c536c64475bf150d61c5073309", "price": 100, "quantity": 1, "offer_number": 1}, {"event": "seller_admission_priority", "task_id": "365814df-594d-4636-9e91-91d873ed46e3", "priority": "normal"}, {"event": "trade_stage", "stage": "offer_accepted", "side": "seller", "task_id": "365814df-594d-4636-9e91-91d873ed46e3", "item": "lamp", "shop": "TEST ONLY cancellation HTTP shop", "quote_id": "0ddc73c536c64475bf150d61c5073309", "price": 100, "quantity": 1, "evidence": "validated_decision"}, {"event": "trade_stage", "stage": "receipt_issued", "side": "seller", "task_id": "365814df-594d-4636-9e91-91d873ed46e3", "item": "lamp", "shop": "TEST ONLY cancellation HTTP shop", "quote_id": "0ddc73c536c64475bf150d61c5073309", "price": 100, "quantity": 1, "evidence": "local_signature"}, {"event": "sale_completed", "task_id": "365814df-594d-4636-9e91-91d873ed46e3", "receipt": {"seller": "TEST ONLY cancellation HTTP shop", "item": "lamp", "itemId": "lamp", "price": 100, "taskId": "365814df-594d-4636-9e91-91d873ed46e3", "quantity": 1, "currency": "credits", "purchaseId": "a6e8d3d3cf2a480a90d984fc889a2c7b", "quoteId": "0ddc73c536c64475bf150d61c5073309", "shop": "TEST ONLY cancellation HTTP shop", "task": "365814df-594d-4636-9e91-91d873ed46e3", "sig_seller": "nPPnpn5VcNm6kTj71ohtwsUCAW8Zhksm1sCYyqDueKZaylgsPma9jT+de5ltN+q8BNRtzIZHhPkT4VQpC1KQBw=="}, "receipt_signature_checked": true, "market_verified": false, "offer_count": 1}, {"event": "trade_stage", "stage": "ended", "side": "seller", "task_id": "365814df-594d-4636-9e91-91d873ed46e3", "item": "lamp", "shop": "TEST ONLY cancellation HTTP shop", "outcome": "completed", "reason_code": "local_receipt_issued"}, {"event": "cancel_already_terminal", "task_id": "365814df-594d-4636-9e91-91d873ed46e3", "state": "completed"}]}ok
+test_bad_new_generation_never_replaces_current_seller (test_shop_service.ShopServiceTests) ... 
+{"time": "2026-10-25T06:28:46.360084+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.001}
+ok
+test_card_keeps_public_origin_across_reload_and_disables_stale_cache (test_shop_service.ShopServiceTests) ... {"time": "2026-10-25T06:28:46.371769+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 0}
+{"time": "2026-10-25T06:28:46.374588+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 0}
+ok
+test_control_is_not_public_and_ambiguous_post_is_never_retried (test_shop_service.ShopServiceTests) ... {"time": "2026-10-25T06:28:46.382431+00:00", "event": "upstream_error", "generation": 1, "kind": "ReadTimeout"}
+{"time": "2026-10-25T06:28:46.382554+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.001}
+ok
+test_dead_original_generation_cannot_route_purchase_to_new_seller (test_shop_service.ShopServiceTests) ... {"time": "2026-10-25T06:28:46.388970+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.001}
+{"time": "2026-10-25T06:28:46.390585+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 1}
+{"time": "2026-10-25T06:28:46.392890+00:00", "event": "request_finished", "generation": 2, "continued": false, "seconds": 0.001}
+ok
+test_opening_in_flight_during_reload_retains_original_owner (test_shop_service.ShopServiceTests) ... {"time": "2026-10-25T06:28:46.402773+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 0}
+{"time": "2026-10-25T06:28:46.403428+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.004}
+{"time": "2026-10-25T06:28:46.405025+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.001}
+ok
+test_reload_preserves_old_task_continuations_get_cancel_and_terminal_replays (test_shop_service.ShopServiceTests) ... {"time": "2026-10-25T06:28:46.409568+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.001}
+{"time": "2026-10-25T06:28:46.411160+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 1}
+{"time": "2026-10-25T06:28:46.412208+00:00", "event": "request_finished", "generation": 2, "continued": false, "seconds": 0.001}
+{"time": "2026-10-25T06:28:46.413445+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+{"time": "2026-10-25T06:28:46.414594+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+{"time": "2026-10-25T06:28:46.415680+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+{"time": "2026-10-25T06:28:46.416752+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+ok
+test_actual_sdk_discovery_updates_prices_without_model_or_network (test_shopfront.ShopfrontTests) ... ok
+test_exact_owner_profile_has_no_inactive_promotion (test_shopfront.ShopfrontTests) ... ok
+test_public_quotes_share_seller_caps_and_do_not_expose_reserves (test_shopfront.ShopfrontTests) ... ok
+test_changed_task_and_rpc_ids_stop_reads_and_hold_reservation (test_task_recovery.RecoveryTests) ... ok
+test_dynamic_mock_get_task_cannot_fabricate_successful_recovery (test_task_recovery.RecoveryTests) ... ok
+test_empty_named_pending_receipt_still_blocks_terminal_no_deal (test_task_recovery.RecoveryTests) ... ok
+test_expired_deadline_cannot_start_recovery_read (test_task_recovery.RecoveryTests) ... ok
+test_final_receipt_cannot_replace_changed_pending_receipt_data (test_task_recovery.RecoveryTests) ... ok
+test_injected_pending_response_never_triggers_more_reads (test_task_recovery.RecoveryTests) ... ok
+test_lost_completed_response_recovers_same_task_without_replaying_offer (test_task_recovery.RecoveryTests) ... ok
+test_matching_pending_receipt_requires_a_valid_final_receipt (test_task_recovery.RecoveryTests) ... ok
+test_pending_opening_can_obtain_its_first_quote_without_restarting_task (test_task_recovery.RecoveryTests) ... ok
+test_pending_receipt_cannot_be_erased_by_later_no_deal_state (test_task_recovery.RecoveryTests) ... ok
+test_protocol_mismatch_in_send_response_is_never_treated_as_transient (test_task_recovery.RecoveryTests) ... ok
+test_recovered_completed_without_receipt_stays_unresolved (test_task_recovery.RecoveryTests) ... ok
+test_recovered_explicit_no_deal_releases_only_without_receipt_conflict (test_task_recovery.RecoveryTests) ... ok
+test_recovered_invalid_receipt_is_disputed_with_original_reservation (test_task_recovery.RecoveryTests) ... ok
+test_recovery_completion_received_after_deadline_is_still_validated (test_task_recovery.RecoveryTests) ... ok
+test_slow_get_task_reads_obey_recovery_time_budget (test_task_recovery.RecoveryTests) ... ok
+test_stale_input_required_snapshot_cannot_release_or_reoffer (test_task_recovery.RecoveryTests) ... ok
+test_still_pending_uses_bounded_reads_then_reports_unresolved (test_task_recovery.RecoveryTests) ... ok
+test_submitted_and_working_are_polled_until_receipt_arrives (test_task_recovery.RecoveryTests) ... ok
+test_transient_recovery_disconnect_and_http_503_only_retry_reads (test_task_recovery.RecoveryTests) ... ok
+test_trickling_headers_or_body_cannot_extend_total_recovery_budget (test_task_recovery.RecoveryTests) ... ok
+test_unsupported_not_found_and_nontransient_http_hold_uncertain_funds (test_task_recovery.RecoveryTests) ... ok
+test_invalid_price_or_partial_named_receipt_is_still_purchase_evidence (test_terminal_receipt_conflict.TerminalReceiptConflictTests) ... ok
+test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer (test_terminal_receipt_conflict.TerminalReceiptConflictTests) ... ok
+test_receipt_in_any_no_deal_terminal_preserves_ambiguous_funds (test_terminal_receipt_conflict.TerminalReceiptConflictTests) ... ok
+test_unsolicited_conflicting_receipt_does_not_authorize_a_purchase (test_terminal_receipt_conflict.TerminalReceiptConflictTests) ... ok
+test_recovery_serializes_roles_and_releases_after_completion (test_throttle_retry.ProviderRecoveryTests) ... ok
+test_explicit_provider_delay_and_short_exponential_default (test_throttle_retry.ThrottleRetryTests) ... ok
+test_long_provider_delay_is_shared_and_not_truncated_to_sixty_seconds (test_throttle_retry.ThrottleRetryTests) ... ok
+test_rate_limit_then_success_waits_through_admission_only (test_throttle_retry.ThrottleRetryTests) ... ok
+test_reboot_stale_legacy_value_is_ignored (test_throttle_retry.ThrottleRetryTests) ... ok
+test_retry_after_deadline_does_not_issue_another_request (test_throttle_retry.ThrottleRetryTests) ... ok
+test_accepted_but_invalid_receipt_is_explicit_failure (test_trade_funnel.TradeFunnelTests) ... ok
+test_authoritative_feedback_links_across_runs_without_settlement_latency_claim (test_trade_funnel.TradeFunnelTests) ... ok
+test_duplicate_task_stages_across_runs_count_once_and_sides_are_separate (test_trade_funnel.TradeFunnelTests) ... ok
+test_guarded_stage_requires_specific_evidence (test_trade_funnel.TradeFunnelTests) ... ok
+test_helper_writes_only_bounded_named_observations (test_trade_funnel.TradeFunnelTests) ... ok
+test_invalid_optional_identifiers_and_unavailable_trace_never_abort_trade (test_trade_funnel.TradeFunnelTests) ... ok
+test_invalid_stage_is_skipped_without_promotion_and_clock_reversal_is_not_timed (test_trade_funnel.TradeFunnelTests) ... ok
+test_local_signature_contract_and_completed_do_not_establish_market_verification (test_trade_funnel.TradeFunnelTests) ... ok
+test_out_of_order_input_uses_observed_times_without_inferred_stages (test_trade_funnel.TradeFunnelTests) ... ok
+test_quote_pending_is_censored_while_unresolved_and_cancel_are_explicit (test_trade_funnel.TradeFunnelTests) ... ok
+test_stream_limits_are_bounded_and_oversized_line_is_drained (test_trade_funnel.TradeFunnelTests) ... ok
+test_unknown_coverage_and_legacy_events_are_explicit (test_trade_funnel.TradeFunnelTests) ... ok
+
+----------------------------------------------------------------------
+Ran 253 tests in 16.693s
+
+OK

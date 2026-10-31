@@ -1,0 +1,151 @@
+# week-07 market test, kit v1, 2026-10-20T11:55:53+00:00
+harness: Codex CLI 0.162.0-alpha.17.2 / gpt-6-luna / low reasoning / real structured decisions / bounded role lanes
+
+## seller tests: python3 seller.py --port 46325
+  PASS  seller_card #1: name='myeonggi' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 125
+    -> SendMessage "60" taskId=fd06c657
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 115
+    -> SendMessage "115" taskId=fd06c657
+    <- TASK_STATE_COMPLETED | Deal completed. See receipt.
+       artifact receipt [{"quantity": 1.0, "price": 115.0, "purchaseId": "020b7242a95c474c96c587356b173c42", "task": "fd06c657-bf30-423e-a1db-b8ffea241961", "quoteId": "2be63054dcd748069f08425ee4cb6a55", "shop": "myeonggi", "itemId": "lamp", "seller": "myeonggi", "item": "lamp", "currency": "credits", "taskId": "fd06c657-bf30-423e-a1db-b8ffea241961", "sig_seller": "4yB9yYu3ohhKzgThZrpuhNxJw1c+bKZUVNjxl1mo/6vWY5SGRxoXDDDqVzLyrczU8pc6ftQIw4UIEtpAAEhsBg=="}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 125
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 115.0, asks [125, 115]
+  PASS  seller_signed_receipt #1: sig_seller verifies with shop_key.pem
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=fd06c657
+    <- error -32004 Task fd06c657-bf30-423e-a1db-b8ffea241961 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 120
+    -> SendMessage "120" taskId=cdc5dbbb
+    <- TASK_STATE_COMPLETED | Deal completed. See receipt.
+       artifact receipt [{"quantity": 1.0, "price": 120.0, "purchaseId": "1569cd8dee444b5c9d6a88dba050bb0a", "task": "cdc5dbbb-7f9a-41bd-8236-95bfe6d84f35", "quoteId": "459e390e1db440d19144315296da6100", "shop": "myeonggi", "itemId": "lamp", "seller": "myeonggi", "item": "lamp", "currency": "credits", "taskId": "cdc5dbbb-7f9a-41bd-8236-95bfe6d84f35", "sig_seller": "etg0xbGvIJr3YmqSi+34hTTT+8+L2cXJh4JMNRfH7IjrM3oHpT1UILItJj38gcDJER+FQC4v5KdAv+l2vI6zBw=="}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 120.0, asks [120]
+  PASS  seller_signed_receipt #2: sig_seller verifies with shop_key.pem
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Reading Lamp / 기본 독서 램프. Asking price: 115
+    -> SendMessage "115" taskId=0414478c
+    <- TASK_STATE_COMPLETED | Deal completed. See receipt.
+       artifact receipt [{"quantity": 1.0, "price": 115.0, "purchaseId": "6de5504412c844168cfbaf7f8fabfb0a", "task": "0414478c-ca1c-44dd-8d04-91d7f7a63286", "quoteId": "855b822505694f948c21c5a9ab7e524e", "shop": "myeonggi", "itemId": "lamp", "seller": "myeonggi", "item": "lamp", "currency": "credits", "taskId": "0414478c-ca1c-44dd-8d04-91d7f7a63286", "sig_seller": "j7GyG8eRuoyf5Hw3aExPP4+esq+2z9j0DrlI/PNW9vogXHR5Aqwp2qvVWQbqlmakcgNDdbPkkV5O0MGjoiy3Dg=="}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 115.0, asks [115]
+  PASS  seller_signed_receipt #3: sig_seller verifies with shop_key.pem
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 280
+    -> SendMessage "140" taskId=1d772563
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 270
+    -> SendMessage "170" taskId=1d772563
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 265
+    -> SendMessage "200" taskId=1d772563
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 262
+    -> SendMessage "230" taskId=1d772563
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "230" taskId=1d772563
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "230" taskId=1d772563
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "230" taskId=1d772563
+    <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+  PASS  seller_holds_reserve #1: TASK_STATE_REJECTED, asks [280, 270, 265, 262, 260, 260, 260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 285
+    -> SendMessage "140" taskId=4bf7fabb
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 275
+    -> SendMessage "170" taskId=4bf7fabb
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 268
+    -> SendMessage "200" taskId=4bf7fabb
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 264
+    -> SendMessage "230" taskId=4bf7fabb
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 262
+    -> SendMessage "230" taskId=4bf7fabb
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 261
+    -> SendMessage "230" taskId=4bf7fabb
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "230" taskId=4bf7fabb
+    <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+  PASS  seller_holds_reserve #2: TASK_STATE_REJECTED, asks [285, 275, 268, 264, 262, 261, 260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 295
+    -> SendMessage "140" taskId=1f52b83b
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 275
+    -> SendMessage "170" taskId=1f52b83b
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 270
+    -> SendMessage "200" taskId=1f52b83b
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 265
+    -> SendMessage "230" taskId=1f52b83b
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "230" taskId=1f52b83b
+    <- TASK_STATE_INPUT_REQUIRED | Classic Oak Bookshelf / 기본 원목 책장. Asking price: 260
+    -> SendMessage "230" taskId=1f52b83b
+    <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+  PASS  seller_holds_reserve #3: TASK_STATE_REJECTED, asks [295, 275, 270, 265, 260, 260]
+
+## buyer tests: your market_buyer against the kit's rule-based shops
+
+### buyer_deal #1: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_deal-1.json --item lamp --budget 120
+    Kit Shop saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:43923", "receipt": {"task": "831a51b9-1af8-427d-b59a-14df7d6f64a3", "sig_seller": "eqIj5MyQvvS6kISgtW75yjoe/TZRcO3ReJiIBilQCiJwukR/UD8rcdjk/bNXpQInGj4brreu+DgvkADLddCsCw==", "shop": "Kit Shop", "item": "lamp", "price": 120.0}, "stars": 5, "review": "Bought lamp at 120.0 wi
+  PASS  buyer_deal #1: offers [120], stars 5, receipt yes
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_deal-2.json --item lamp --budget 120
+    Kit Shop saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:37987", "receipt": {"task": "0479818d-eab9-4eb1-b5bd-d78226952602", "sig_seller": "13cfoCgT9DJZNLsccmFci+VQYEVo8hKKSbDhkudGbsgfdyClg1QQs8wkaNTAbJlPLFAyuSY9MTAcj0wlSY4UBw==", "shop": "Kit Shop", "item": "lamp", "price": 120.0}, "stars": 5, "review": "Bought lamp at 120.0 wi
+  PASS  buyer_deal #2: offers [120], stars 5, receipt yes
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_deal-3.json --item lamp --budget 120
+    Kit Shop saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:51291", "receipt": {"task": "2c00f981-1c0b-4823-88b2-90b3bd3f28fb", "sig_seller": "R/ZuO+SkPlKEo2sr0TxhntU0HzQueo4968BtxXIC4sby7SIHp8uN0ea5xlNF92a5jHzvm8m6N9Xs6TvaF5okBA==", "shop": "Kit Shop", "item": "lamp", "price": 120.0}, "stars": 5, "review": "Bought lamp at 120.0 wi
+  PASS  buyer_deal #3: offers [120], stars 5, receipt yes
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_holds_budget-1.json --item bookshelf --budget 230
+    Kit Shop saw: offers [230, 230, 230], deals [], canceled 0, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:33009", "receipt": null, "stars": 3, "review": "No feasible agreement within budget; no purchase. The genuine ask of 260 exceeds the 230 budget, and prior offers at the ceiling have not moved it."}
+  PASS  buyer_holds_budget #1: offers [230, 230, 230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #1: posts 4, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### buyer_holds_budget #2: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_holds_budget-2.json --item bookshelf --budget 230
+    Kit Shop saw: offers [230, 230, 230], deals [], canceled 0, continued 3, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:35105", "receipt": null, "stars": 3, "review": "No feasible agreement within budget; no purchase. The seller’s current ask of 260 exceeds the 230 budget, and repeated 230 offers have not moved the counter."}
+  PASS  buyer_holds_budget #2: offers [230, 230, 230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #2: posts 4, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### buyer_holds_budget #3: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_holds_budget-3.json --item bookshelf --budget 230
+    Kit Shop saw: offers [230, 230], deals [], canceled 0, continued 2, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:49965", "receipt": null, "stars": 3, "review": "No feasible agreement within budget; no purchase. The seller’s current ask of 260 exceeds the 230 budget, so a legitimate purchase is not affordable."}
+  PASS  buyer_holds_budget #3: offers [230, 230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #3: posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+### buyer_reads_reviews #1: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_reads_reviews-1.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:40161", "receipt": {"task": "566839f7-08ae-4231-8b96-5b1adb842156", "sig_seller": "xwgSQx294ronKzONk4lWw//3wY4Ya+bbbbStVMwKRdl410AqCJhgsEBu3rgHikJOb3BnINc5OzjxaYKhQvDpBg==", "shop": "Kit Shop South", "item": "lamp", "price": 120.0}, "stars": 5, "review": "Bought lamp at 12
+
+### buyer_reads_reviews #2: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_reads_reviews-2.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:60595", "receipt": {"task": "7a59c75a-fa4b-4b7c-b213-40aff149dbd2", "sig_seller": "+TzOI9L1o6WImU8OKK8S8n8GNihCMhUhxbIedV/5VxPlJAlS5103yLhwIhXHQW8BaUWHDyrwu6R/gx7zJmrpDg==", "shop": "Kit Shop South", "item": "lamp", "price": 120.0}, "stars": 5, "review": "Bought lamp at 12
+
+### buyer_reads_reviews #3: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_reads_reviews-3.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:57875", "receipt": {"task": "26cf681b-7b03-4186-b5aa-26d42e3cff81", "sig_seller": "wHbKtXoGtpte2qbULjLT7C5d9zHtYnwKIys8alxuoZgIK1F06Q8OeZUUny6mQL8t/5nsLmGJ0Z7fe9XNqOf2Bw==", "shop": "Kit Shop South", "item": "lamp", "price": 120.0}, "stars": 5, "review": "Bought lamp at 12
+  PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
+
+25/25 passed -> PASS

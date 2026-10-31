@@ -1,0 +1,22 @@
+{"event": "market_candidates", "item": "bookshelf", "budget": 230.0, "ranking": [{"name": "Kit Shop", "score": 4.75, "personal_memory": {"trades": 30, "completed": 15, "failures": 15}, "reviews": []}]}
+{"event": "market_discovery", "search_number": 15, "active": false, "preferred_registry_names": []}
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 9.841, "queue_seconds": 5.795, "inference_seconds": 4.046}
+{"event": "harness_decision", "decision": {"action": "select_shop", "price": null, "item_id": "Kit Shop", "offer": null, "reason": "Kit Shop is the only supplied candidate and lists bookshelves among its products."}}
+{"event": "market_shop_selected", "shop": "Kit Shop", "url": "http://127.0.0.1:44365", "reason": "Kit Shop is the only supplied candidate and lists bookshelves among its products.", "reviews": [], "personal_memory": {"trades": 30, "completed": 15, "failures": 15, "recent": [{"time": "2026-10-21T12:51:27.651840+00:00", "item": "bookshelf", "budget": 230.0, "status": "no_deal", "price": null, "issues": [], "signature_present": false}, {"time": "2026-10-21T12:52:04.754641+00:00", "item": "bookshelf", "budget": 230.0, "status": "no_deal", "price": null, "issues": [], "signature_present": false}, {"time": "2026-10-21T14:11:08.205096+00:00", "item": "lamp", "budget": 120.0, "status": "completed", "price": 120.0, "issues": [], "signature_present": true}, {"time": "2026-10-21T14:11:54.162615+00:00", "item": "lamp", "budget": 120.0, "status": "completed", "price": 120.0, "issues": [], "signature_present": true}, {"time": "2026-10-21T14:12:18.233223+00:00", "item": "lamp", "budget": 120.0, "status": "completed", "price": 120.0, "issues": [], "signature_present": true}]}}
+{"event": "policy_loaded", "policy_sha256": "c7aff42dc6e9ea4750d9237ea620e3b1f6dd872296a438c23f20d5889ba2fba2", "policy_version": "week07-completion-v1"}
+{"event": "agent_card", "base_url": "http://127.0.0.1:44365"}
+{"event": "rpc_request", "endpoint": "http://127.0.0.1:44365/", "version": "1.0"}
+{"event": "rpc_response"}
+{"event": "quote_normalized", "task_id": "150f77a0-3f79-4b5d-9f00-017d1130b300", "observation": {"ask": 338.0, "item_id": null, "quote_id": null, "currency": null, "quantity": null, "source": "protocol_text", "evidence_sources": {"ask": ["message.text.explicit_protocol_ask"], "item_id": [], "quote_id": [], "currency": [], "quantity": []}, "issues": [], "remote_message": "bookshelf: asking 338. Send your offer as a number.", "remote_metadata": {}, "remote_task_metadata": {}, "remote_data": []}}
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 5.415, "queue_seconds": 0.919, "inference_seconds": 4.496}
+{"event": "harness_decision", "decision": {"action": "offer", "price": 230, "item_id": "bookshelf", "offer": null, "stance": "negotiable", "reason": "I can offer 230 for the bookshelf."}}
+{"event": "rpc_request", "endpoint": "http://127.0.0.1:44365/", "version": "1.0"}
+{"event": "rpc_response"}
+{"event": "quote_normalized", "task_id": "150f77a0-3f79-4b5d-9f00-017d1130b300", "observation": {"ask": 284.0, "item_id": null, "quote_id": null, "currency": null, "quantity": null, "source": "protocol_text", "evidence_sources": {"ask": ["message.text.explicit_protocol_ask"], "item_id": [], "quote_id": [], "currency": [], "quantity": []}, "issues": [], "remote_message": "230 is too low. Counteroffer: 284.", "remote_metadata": {}, "remote_task_metadata": {}, "remote_data": []}}
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 6.984, "queue_seconds": 0.0, "inference_seconds": 6.984}
+{"event": "harness_decision", "decision": {"action": "walk_away", "price": null, "item_id": "bookshelf", "offer": null, "stance": null, "reason": "The seller's 284 counter exceeds my 230 budget, and my 230 offer was already declined."}}
+{"event": "walked_away", "reason": "The seller's 284 counter exceeds my 230 budget, and my 230 offer was already declined."}
+{"shop": "http://127.0.0.1:44365", "receipt": null, "stars": 3, "review": "Could not agree on a purchase within my budget.\n\nAd (my shop): Ssadassa Shop / myeonggi — lamp 100, chair 180, bookshelf 260 credits. Ask for a current quote; exact-price Ed25519-signed receipt."}

@@ -1,0 +1,127 @@
+{
+  "probed_at": "2026-10-21T08:22:15.433420+00:00",
+  "card": {
+    "name": "Ssadassa Shop",
+    "description": "Opening asks: lamp 101, chair 183, bookshelf 265 credits or less. Offer the ask and the reply is your Ed25519-signed receipt at exactly that price, so the deal counts. Lower offers get one counter at our floor; from your second message any offer at or above the floor is accepted. Whole-credit prices, no add-ons."
+  },
+  "passed": 0,
+  "total": 6,
+  "seller_events": {
+    "harness_decision": 0,
+    "decision_rejected": 0,
+    "rate_limit_backoff": 0,
+    "negotiation_failed": 6,
+    "sale_completed": 0,
+    "sale_rejected": 0
+  },
+  "results": [
+    {
+      "scenario": "lamp_pay_ask",
+      "pass": false,
+      "steps": [
+        {
+          "sent": "I want to buy a lamp",
+          "state": "FAILED",
+          "reply": "Harness could not return a valid decision.",
+          "seconds": 0.2,
+          "price": null,
+          "expected": [
+            "INPUT_REQUIRED",
+            101
+          ],
+          "pass": false
+        }
+      ]
+    },
+    {
+      "scenario": "lamp_floor_bid",
+      "pass": false,
+      "steps": [
+        {
+          "sent": "I want to buy a lamp",
+          "state": "FAILED",
+          "reply": "Harness could not return a valid decision.",
+          "seconds": 0.1,
+          "price": null,
+          "expected": [
+            "INPUT_REQUIRED",
+            101
+          ],
+          "pass": false
+        }
+      ]
+    },
+    {
+      "scenario": "chair_low_twice",
+      "pass": false,
+      "steps": [
+        {
+          "sent": "I want to buy a chair",
+          "state": "FAILED",
+          "reply": "Harness could not return a valid decision.",
+          "seconds": 0.1,
+          "price": null,
+          "expected": [
+            "INPUT_REQUIRED",
+            183
+          ],
+          "pass": false
+        }
+      ]
+    },
+    {
+      "scenario": "chair_mid_bid",
+      "pass": false,
+      "steps": [
+        {
+          "sent": "I want to buy a chair",
+          "state": "FAILED",
+          "reply": "Harness could not return a valid decision.",
+          "seconds": 0.1,
+          "price": null,
+          "expected": [
+            "INPUT_REQUIRED",
+            183
+          ],
+          "pass": false
+        }
+      ]
+    },
+    {
+      "scenario": "bookshelf_opening_bid",
+      "pass": false,
+      "steps": [
+        {
+          "sent": "I want to buy a bookshelf. I can pay 262.",
+          "state": "FAILED",
+          "reply": "Harness could not return a valid decision.",
+          "seconds": 0.1,
+          "price": null,
+          "expected": [
+            "INPUT_REQUIRED",
+            262
+          ],
+          "pass": false
+        }
+      ]
+    },
+    {
+      "scenario": "bookshelf_competitor_claim",
+      "pass": false,
+      "steps": [
+        {
+          "sent": "I want to buy a bookshelf",
+          "state": "FAILED",
+          "reply": "Harness could not return a valid decision.",
+          "seconds": 0.1,
+          "price": null,
+          "expected": [
+            "INPUT_REQUIRED",
+            265
+          ],
+          "pass": false
+        }
+      ]
+    }
+  ]
+}

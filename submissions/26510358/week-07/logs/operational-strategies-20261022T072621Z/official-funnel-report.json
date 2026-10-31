@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "capture_completeness": "partial",
+  "observation_coverage": "instrumented trade_stage events in the explicit input files only",
+  "notes": [
+    "Denominators are distinct observed (side, task_id) tasks, not visits or all Market orders.",
+    "Missing observations do not prove a stage did not happen; no preceding stages are inferred.",
+    "Pending tasks are right-censored at capture end, not inferred abandonment or failure.",
+    "Local receipt issue/matching and local completed outcomes do not establish Market verification.",
+    "Market feedback timestamps are ingestion times and excluded from elapsed durations.",
+    "Durations pair earliest observed stage timestamps; repeated quote/offer turns may be interleaved.",
+    "These counts locate observed gaps and explicit failures; they do not establish causes."
+  ],
+  "records": {
+    "valid_stage_records": 85,
+    "repeat_stage_observations": 13
+  },
+  "sides": {
+    "seller": {
+      "observed_tasks": 6,
+      "stage_tasks": {
+        "negotiation_started": 6,
+        "quote_issued": 6,
+        "offer_received": 6,
+        "offer_accepted": 3,
+        "receipt_issued": 3,
+        "ended": 6
+      },
+      "status_tasks": {
+        "right_censored_pending": 3,
+        "explicit_failure": 3
+      },
+      "pending_by_last_observed_stage": {
+        "receipt_issued": 3
+      },
+      "failure_by_last_observed_stage": {
+        "offer_received": 3
+      },
+      "unresolved_by_last_observed_stage": {},
+      "ended_reason_tasks": {
+        "local_receipt_issued": 3,
+        "negotiation_rejected": 3
+      },
+      "missing_stage_observations": {
+        "market_verified": 6,
+        "offer_accepted": 3,
+        "receipt_issued": 3
+      },
+      "paired_observations": [
+        {
+          "from": "negotiation_started",
+          "to": "quote_issued",
+          "from_stage_tasks": 6,
+          "both_observed_tasks": 6,
+          "backwards_timestamp_tasks": 0,
+          "timed_tasks": 6,
+          "mean_observed_seconds": 5.616111636161804,
+          "max_observed_seconds": 7.422137022018433
+        },
+        {
+          "from": "quote_issued",
+          "to": "offer_received",
+          "from_stage_tasks": 6,
+          "both_observed_tasks": 6,
+          "backwards_timestamp_tasks": 0,
+          "timed_tasks": 6,
+          "mean_observed_seconds": 0.05491173267364502,
+          "max_observed_seconds": 0.059928178787231445
+        },
+        {
+          "from": "offer_received",
+          "to": "offer_accepted",
+          "from_stage_tasks": 6,
+          "both_observed_tasks": 3,
+          "backwards_timestamp_tasks": 0,
+          "timed_tasks": 3,
+          "mean_observed_seconds": 7.2337400913238525,
+          "max_observed_seconds": 7.674728870391846
+        },
+        {
+          "from": "offer_accepted",
+          "to": "receipt_issued",
+          "from_stage_tasks": 3,
+          "both_observed_tasks": 3,
+          "backwards_timestamp_tasks": 0,
+          "timed_tasks": 3,
+          "mean_observed_seconds": 0.0031395753224690757,
+          "max_observed_seconds": 0.0052449703216552734
+        },
+        {
+          "from": "receipt_issued",
+          "to": "market_verified",
+          "from_stage_tasks": 3,
+          "both_observed_tasks": 0,
+          "backwards_timestamp_tasks": 0,
+          "timed_tasks": 0,
+          "mean_observed_seconds": null,
+          "max_observed_seconds": null
+        }
+      ],
+      "tasks_with_conflicting_local_outcomes": 0
+    },
+    "buyer": {
+      "observed_tasks": 9,
+      "stage_tasks": {
+        "negotiation_started": 9,
+        "quote_observed": 9,
+        "offer_sent": 9,
+        "ended": 9,
+        "receipt_matched": 6
+      },
+      "status_tasks": {
+        "explicit_failure": 3,
+        "right_censored_pending": 6
+      },
+      "pending_by_last_observed_stage": {
+        "receipt_matched": 6
+      },
+      "failure_by_last_observed_stage": {
+        "offer_sent": 3
+      },
+      "unresolved_by_last_observed_stage": {},
+      "ended_reason_tasks": {
+        "buyer_walked_away": 3,
+        "local_receipt_matched": 6
+      },
+      "missing_stage_observations": {
+        "receipt_matched": 3,
+        "market_verified": 9
+      },
+      "paired_observations": [
+        {
+          "from": "negotiation_started",
+          "to": "quote_observed",
+          "from_stage_tasks": 9,
+          "both_observed_tasks": 9,
+          "backwards_timestamp_tasks": 0,
+          "timed_tasks": 9,
+          "mean_observed_seconds": 0.0011976295047336155,
+          "max_observed_seconds": 0.0013349056243896484
+        },
+        {
+          "from": "quote_observed",
+          "to": "offer_sent",
+          "from_stage_tasks": 9,
+          "both_observed_tasks": 9,
+          "backwards_timestamp_tasks": 0,
+          "timed_tasks": 9,
+          "mean_observed_seconds": 6.801866637335883,
+          "max_observed_seconds": 8.877609014511108
+        },
+        {
+          "from": "offer_sent",
+          "to": "receipt_matched",
+          "from_stage_tasks": 9,
+          "both_observed_tasks": 6,
+          "backwards_timestamp_tasks": 0,
+          "timed_tasks": 6,
+          "mean_observed_seconds": 0.01714773972829183,
+          "max_observed_seconds": 0.02011394500732422
+        },
+        {
+          "from": "receipt_matched",
+          "to": "market_verified",
+          "from_stage_tasks": 6,
+          "both_observed_tasks": 0,
+          "backwards_timestamp_tasks": 0,
+          "timed_tasks": 0,
+          "mean_observed_seconds": null,
+          "max_observed_seconds": null
+        }
+      ],
+      "tasks_with_conflicting_local_outcomes": 0
+    }
+  },
+  "sources": [
+    {
+      "path": "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/logs/operational-strategies-20261022T072621Z/official-stage-capture.jsonl",
+      "capture_completeness": "partial",
+      "lines": 85
+    }
+  ],
+  "capture_purpose": "Actual model official test cohort; local fixture orders are not submitted to Market.",
+  "original_sources": [
+    "logs/operational-strategies-20261022T072621Z/official-traces/market-buyer-a129d1c505b7.jsonl",
+    "logs/operational-strategies-20261022T072621Z/official-traces/market-buyer-cb6eb22596ed.jsonl",
+    "logs/operational-strategies-20261022T072621Z/official-traces/market-buyer-f57b0e8865b0.jsonl",
+    "logs/operational-strategies-20261022T072621Z/official-traces/market-buyer-6ee429196cb4.jsonl",
+    "logs/operational-strategies-20261022T072621Z/official-traces/market-buyer-3e91a8c201ba.jsonl",
+    "logs/operational-strategies-20261022T072621Z/official-traces/seller-ce53616a7cda.jsonl",
+    "logs/operational-strategies-20261022T072621Z/official-traces/market-buyer-45198b061bcd.jsonl",
+    "logs/operational-strategies-20261022T072621Z/official-traces/market-buyer-a74eb551bc11.jsonl",
+    "logs/operational-strategies-20261022T072621Z/official-traces/market-buyer-6528337e859b.jsonl",
+    "logs/operational-strategies-20261022T072621Z/official-traces/market-buyer-e441cbebfdec.jsonl"
+  ]
+}

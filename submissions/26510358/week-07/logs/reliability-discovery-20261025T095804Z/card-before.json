@@ -1,0 +1,80 @@
+{
+  "url": "https://wisconsin-dylan-nhs-myspace.trycloudflare.com/.well-known/agent-card.json",
+  "observed_at": "2026-10-25T09:59:06.846520+00:00",
+  "data": {
+    "name": "Ssadassa Shop",
+    "description": "Ssadassa Shop: lamp 100, chair 180, bookshelf 260 credits each. Clear quotes, prompt acceptance and Ed25519-signed receipts matching the agreed item and price. Request a current quote, then offer that total on the same task. (Catalog search and price negotiation)",
+    "supportedInterfaces": [
+      {
+        "url": "https://wisconsin-dylan-nhs-myspace.trycloudflare.com/a2a/0",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Catalog search and price negotiation",
+        "description": "Request a current single-unit quote and offer that total on the same task.",
+        "tags": [
+          "shopping",
+          "catalog",
+          "negotiation"
+        ]
+      },
+      {
+        "id": "buy-lamp",
+        "name": "Classic Reading Lamp",
+        "description": "Latest base quote: 100 credits. warm LED, adjustable shade, 45 cm high. Request a current quote, then offer that number on the same task for a signed receipt.",
+        "tags": [
+          "shopping",
+          "furniture",
+          "lamp"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "100"
+        ]
+      },
+      {
+        "id": "buy-chair",
+        "name": "Classic Dining Chair",
+        "description": "Latest base quote: 180 credits. oak wood, 85 cm high. Request a current quote, then offer that number on the same task for a signed receipt.",
+        "tags": [
+          "shopping",
+          "furniture",
+          "chair"
+        ],
+        "examples": [
+          "I want to buy a chair",
+          "180"
+        ]
+      },
+      {
+        "id": "buy-bookshelf",
+        "name": "Classic Oak Bookshelf",
+        "description": "Latest base quote: 260 credits. oak wood, 3 shelves, about 40 books, 90 cm high. Request a current quote, then offer that number on the same task for a signed receipt.",
+        "tags": [
+          "shopping",
+          "furniture",
+          "bookshelf"
+        ],
+        "examples": [
+          "I want to buy a bookshelf",
+          "260"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+test_harness_priority_is_explicit_and_does_not_read_remote_metadata (test_completion_priority.CompletionPriorityHarnessTests) ... ok
+test_invalid_priority_fails_before_model_or_pool_creation (test_completion_priority.CompletionPriorityHarnessTests) ... ok
+test_invocation_forwards_completion_but_preserves_default_adapter_shapes (test_completion_priority.CompletionPriorityHarnessTests) ... ok
+test_aged_normal_precedes_new_completion_at_next_lane (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_aged_quote_backlog_cannot_starve_completion_across_two_lanes (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_completion_never_bypasses_shared_provider_cooldown (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_completion_overtakes_queued_quotes_and_burst_bounds_normal_wait (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_expired_completion_is_withdrawn_and_does_not_block_quote (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_killed_completion_waiter_is_pruned (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_killed_or_cancelled_owner_releases_kernel_lane (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_recovery_remains_serial_across_completion_and_buyer (test_completion_priority.CompletionPriorityProcessTests) ... ok
+test_two_sellers_preserve_third_lane_for_buyer (test_completion_priority.CompletionPriorityProcessTests) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 1.179s
+
+OK
