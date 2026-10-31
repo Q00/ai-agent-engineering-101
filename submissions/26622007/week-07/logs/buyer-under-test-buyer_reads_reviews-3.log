@@ -1,0 +1,16 @@
+[20:39:35] buyer order: lamp, budget 120; 2 shops; 145 trades in memory
+[20:39:35] buyer [choose] skip 'Kit Shop North': 3 reviews averaging 1.3 stars
+[20:39:35] buyer [choose] mode trusted: 1 of 1 shops (0 new with <= 3 reviews, 0 found cheap before)
+[20:39:35] buyer [choose] http://127.0.0.1:60025: Kit Shop South - trusted: the only shop in the pool
+[20:39:35] buyer memory note for the harness: it sold lamp to you at 110, 110, 110; its lowest ask for lamp so far was 110
+[20:39:35] buyer card 'Kit Shop South' -> http://127.0.0.1:60025/; item lamp, budget 120
+[20:39:35] buyer -> SendMessage 'I want to buy a lamp'
+[20:39:35] buyer <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[20:39:35] buyer-harness wire model=openai/gpt-6-luna response_format=json_schema/strict=True provider={'only': ['openai'], 'allow_fallbacks': False, 'require_parameters': True} reasoning={'effort': 'low'} temperature_sent=False
+[20:39:38] buyer-harness openrouter openai/gpt-6-luna response_format=json_schema(strict) 3.3s -> {"shop_price": 130, "action": "offer", "price": 110}
+[20:39:38] buyer shop price 130 (read by the harness)
+[20:39:38] buyer -> SendMessage '110' taskId=5a4fcfaa
+[20:39:38] buyer <- TASK_STATE_COMPLETED | Deal: lamp at 110.
+[20:39:38] buyer DEAL {"shop": "Kit Shop South", "sig_seller": "pw6zY6nPFpeAn4iU5k9LwCoVLdbrUNUKvel3febd9xwLSai59kYbjJjl7HDbXQnOKMsxxnJbqd9+NgUv+r0JBQ==", "task": "5a4fcfaa-adf9-43ee-92b7-ff477fb17371", "price": 110.0, "item": "lamp"}
+[20:39:38] buyer memory: 146 trades saved to memory/test_memory.json
+{"shop": "http://127.0.0.1:60025", "receipt": {"shop": "Kit Shop South", "sig_seller": "pw6zY6nPFpeAn4iU5k9LwCoVLdbrUNUKvel3febd9xwLSai59kYbjJjl7HDbXQnOKMsxxnJbqd9+NgUv+r0JBQ==", "task": "5a4fcfaa-adf9-43ee-92b7-ff477fb17371", "price": 110.0, "item": "lamp"}, "stars": 4, "review": "lamp opened at 130, sold at 110 within my budget 120; receipt matched the deal."}
