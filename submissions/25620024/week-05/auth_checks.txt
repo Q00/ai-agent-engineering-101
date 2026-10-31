@@ -1,0 +1,4 @@
+(1) no token: tools/list -> HTTP 401; WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required", resource_metadata="http://127.0.0.1:8100/.well-known/oauth-protected-resource/mcp"
+(2) buyer token of neg-ec9e9788 on neg-e179ec53: get_negotiation -> isError=True; Error executing tool get_negotiation: refused: your token is bound to a different negotiation. Use the negotiation_id you were given.
+(3) seller propose(500) before the buyer's opening move in neg-ec9e9788: isError=True; Error executing tool propose: refused: it is not your turn; it is the buyer's turn
+(4) server_inject neg-a5a8dd6d, buyer token limit 380: propose(430) -> isError=True; Error executing tool propose: refused: 430 is above your budget limit of 380, which this market enforces from your token
