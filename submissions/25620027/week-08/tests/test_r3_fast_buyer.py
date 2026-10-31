@@ -291,7 +291,15 @@ def test_late_in_the_order_budget_any_ask_within_the_cap_is_accepted(
         lambda: httpx2.AsyncClient(transport=httpx2.MockTransport(peer.handle)),
     )
     ticks = iter([0.0, 0.0])  # buy() and negotiate() start; later reads are late
-    monkeypatch.setattr(fast.time, "monotonic", lambda: next(ticks, 100.0))
+
+    class LateClock:
+        """Only the buyer module sees this clock; the event loop keeps the real one."""
+
+        @staticmethod
+        def monotonic() -> float:
+            return next(ticks, 100.0)
+
+    monkeypatch.setattr(fast, "time", LateClock)
     outcome = anyio.run(
         partial(
             fast.buy,
