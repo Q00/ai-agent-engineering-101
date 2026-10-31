@@ -19,6 +19,7 @@ sys.path.insert(0, HERE)
 os.chdir(HERE)
 import agent_loop            # noqa: E402
 import agent_tools           # noqa: E402
+import forum                 # noqa: E402
 import harness               # noqa: E402
 import market_model as mm    # noqa: E402
 import meta_harness as mh    # noqa: E402
@@ -332,6 +333,78 @@ class HarnessCycleTest(unittest.TestCase):
             f.write("a")
         with mock.patch.object(mh, "ROOT", os.path.join(sub, "inner")):
             self.assertEqual(mh.stage(), ["x.py"])
+
+
+class ForumTest(unittest.TestCase):
+    POSTS = [{"id": "p1", "author": "other", "text": "a"}, {"id": "p2", "author": "nocha12", "text": "mine"}, {"id": 3, "author": "x", "text": "b"}]
+    CFG = forum.DEFAULTS
+
+    def clean(self, final, voted=()):
+        base = {"post": "", "refs": [], "thread": "", "votes": []}
+        return forum.clean({**base, **final}, self.POSTS, {10, 11}, set(voted), self.CFG, "nocha12")
+
+    def test_a_post_needs_real_deals_to_cite(self):
+        self.assertEqual(self.clean({"post": "x sells", "refs": [10, 99]})[0], [{"post": "x sells", "refs": [10], "as": "buyer"}])
+        with mock.patch("builtins.print"):
+            self.assertEqual(self.clean({"post": "x sells", "refs": [99]})[0], [])
+            self.assertEqual(self.clean({"post": "x sells"})[0], [])
+        self.assertEqual(self.clean({"post": "", "refs": [10]})[0], [])
+
+    def test_a_reply_goes_to_a_post_that_exists(self):
+        self.assertEqual(self.clean({"post": "y", "refs": [10], "thread": "p1"})[0][0]["thread"], "p1")
+        self.assertNotIn("thread", self.clean({"post": "y", "refs": [10], "thread": "nope"})[0][0])
+
+    def test_votes_go_once_to_real_posts_of_others(self):
+        votes = [{"post": "p1", "value": 1}, {"post": "p1", "value": -1}, {"post": "p2", "value": 1}, {"post": "gone", "value": 1},
+                 {"post": "3", "value": -1}]
+        lines, new = self.clean({"votes": votes})
+        self.assertEqual(lines, [{"vote": "p1", "value": 1, "as": "buyer"}, {"vote": 3, "value": -1, "as": "buyer"}])
+        self.assertEqual(new, ["p1", "3"])
+        self.assertEqual(self.clean({"votes": votes}, voted=["p1", "3"])[0], [])
+
+    def test_the_vote_limit_and_length_limit_hold(self):
+        posts = [{"id": str(i), "author": "o"} for i in range(30)]
+        final = {"post": "z" * 2000, "refs": [10], "thread": "", "votes": [{"post": str(i), "value": 1} for i in range(30)]}
+        lines, new = forum.clean(final, posts, {10}, set(), self.CFG, "nocha12")
+        self.assertEqual(len(new), self.CFG["max_votes"])
+        self.assertEqual(len(lines[0]["post"]), self.CFG["max_chars"])
+
+    def run_it(self, d, final):
+        calls = []
+
+        def decide(goal, schema, md, agent):
+            calls.append(goal)
+            return final
+        with mock.patch("builtins.print"):
+            return forum.maybe_run(d, decide), calls
+
+    def test_keeps_its_pace_writes_the_outbox_and_remembers(self):
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "forum.json"), "w") as f:
+                json.dump(self.POSTS, f)
+            with open(os.path.join(d, mm.ROWS), "w") as f:
+                f.write(json.dumps({"k": "settle", "seq": 10}) + "\n")
+            lines, calls = self.run_it(d, {"post": "true", "refs": [10], "thread": "", "votes": [{"post": "p1", "value": 1}]})
+            self.assertEqual(len(lines), 2)
+            with open(os.path.join(d, "outbox.jsonl")) as f:
+                self.assertEqual([json.loads(x)["as"] for x in f], ["buyer", "buyer"])
+            self.assertEqual(self.run_it(d, {"post": "again", "refs": [10], "thread": "", "votes": []}), (None, []))
+            with open(os.path.join(d, forum.STATE)) as f:
+                state = json.load(f)
+            self.assertEqual((state["voted"], state["posts"]), (["p1"], ["true"]))
+            state["at"] = 0
+            with open(os.path.join(d, forum.STATE), "w") as f:
+                json.dump(state, f)
+            _, calls = self.run_it(d, {"post": "", "refs": [], "thread": "", "votes": []})
+            self.assertIn("true", calls[0])
+            self.assertIn("p1", calls[0])
+
+    def test_a_failure_stays_inside_and_waits_for_the_next_turn(self):
+        def boom(*a):
+            raise harness.HarnessError("rate limited")
+        with tempfile.TemporaryDirectory() as d, mock.patch("builtins.print"):
+            self.assertIsNone(forum.maybe_run(d, boom))
+            self.assertIsNone(forum.maybe_run(d, lambda *a: self.fail("asked again at once")))
 
 
 class FindCodexTest(unittest.TestCase):

@@ -9,6 +9,8 @@ forum + 0.2 deals, each a percentile.
 
 You may change anything in this folder: prompts, seller.py, market_buyer.py, restock.py, market_model.py, pricing.json,
 and new tools in tools/<name>/ (manifest.json, tool.py, a test). Luna finds new tools by itself at its next decision.
+You may also build skills, plugins and MCP servers when the evidence shows they would help, for Luna or for your own
+analysis, and register an MCP server with your own Codex (`codex mcp add`). Keep their code in this folder, with a test.
 If a formula is wrong, test it against the ledger rows and rewrite it. To undo your last change, restore its files.
 
 Everything rests on evidence:

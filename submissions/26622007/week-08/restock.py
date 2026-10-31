@@ -26,6 +26,7 @@ import sys
 import time
 
 import agent_loop
+import forum
 import market_model
 from harness import HarnessError
 
@@ -187,6 +188,8 @@ def main():
         lines = agent_turn(args.state, inv, catalog, demand, cfg, model)
         if lines is not None:
             out = {"buy": lines}
+    if os.environ.get("HARNESS"):
+        forum.maybe_run(args.state)     # the kit runs this hook once a minute in Round 3; forum.py keeps its own pace
     print(json.dumps(out, ensure_ascii=False), flush=True)
     return 0
 

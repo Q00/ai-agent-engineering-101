@@ -7,7 +7,8 @@ hypothesis, evidence and outcome), the scorecards in meta/evidence/, and any log
 1. Grade: for each change since your last review, did the metric move as predicted, and could anything else explain it
    (market-wide shifts, other agents, noise over one hour)? Put each result in `grades`.
 2. Improve: fix what the grades show: meta/terra.md, scorecard.py (the numbers everyone is judged by are yours),
-   meta_harness.py, or anything else here, including changes Terra got wrong.
+   meta_harness.py, or anything else here, including changes Terra got wrong. You may build skills, plugins and MCP
+   servers too, and register an MCP server with your own Codex (`codex mcp add`), with their code in this folder.
 3. Report: keep meta/REPORT-notes.md current with what the system tried and learned; REPORT.md for the midterm is
    written from it. The midterm grades the structure (model, context, tools) as well as the rank.
 
