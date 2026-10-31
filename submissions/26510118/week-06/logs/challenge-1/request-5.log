@@ -1,0 +1,19 @@
+request: a rattan stool for the kitchen
+budget: 90
+
+[buyer] shopping for a rattan stool for the kitchen, budget 90, at http://127.0.0.1:51773
+[buyer] card: 'Kiro Furniture' via JSONRPC http://127.0.0.1:51773/
+[buyer] skills: ['negotiate']
+[buyer] -> 'I want to buy a a rattan stool for the kitchen'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | The Modern Rattan Stool is 82
+[buyer] ask 82 budget 90 round 1: harness '68' -> 68
+[buyer] -> '68' taskId=4e2df15b
+[buyer] <- TASK_STATE_INPUT_REQUIRED | I can do better than 68. The Modern Rattan Stool is 75
+[buyer] ask 75 budget 90 round 2: harness '72' -> 72
+[buyer] -> '72' taskId=4e2df15b
+[buyer] <- TASK_STATE_INPUT_REQUIRED | I can do better than 72. The Modern Rattan Stool is 73
+[buyer] ask 73 budget 90 round 3: harness '73' -> 73
+[buyer] -> '73' taskId=4e2df15b
+[buyer] <- TASK_STATE_COMPLETED | Deal: Modern Rattan Stool at 73.
+[buyer] bought a rattan stool for the kitchen at 73.0
+[harness] 3 call(s), 0 failed, 13s total

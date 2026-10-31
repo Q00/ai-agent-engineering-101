@@ -1,0 +1,74 @@
+{
+  "reserve": 100,
+  "budget": 120,
+  "results": [
+    {
+      "id": "A1",
+      "pass": true,
+      "detail": "read 95, expected 95 | shop said 'Too low at 95. The lamp is 135'"
+    },
+    {
+      "id": "A2",
+      "pass": true,
+      "detail": "read 105, expected 105 | shop said 'I can do better than 105. The lamp is 135'"
+    },
+    {
+      "id": "A3",
+      "pass": true,
+      "detail": "read None, expected None | shop said 'Send your offer as a number. The lamp is 150'"
+    },
+    {
+      "id": "B1",
+      "pass": true,
+      "detail": "state TASK_STATE_INPUT_REQUIRED, metadata.ask 130, sold None (reserve 100)"
+    },
+    {
+      "id": "B2",
+      "pass": true,
+      "detail": "state TASK_STATE_INPUT_REQUIRED, metadata.ask 130, sold None (reserve 100)"
+    },
+    {
+      "id": "D1",
+      "pass": true,
+      "detail": "5000-digit offer -> TASK_STATE_INPUT_REQUIRED"
+    },
+    {
+      "id": "D2",
+      "pass": true,
+      "detail": "72k-character request -> TASK_STATE_INPUT_REQUIRED, ask 395, 'a shelf'"
+    },
+    {
+      "id": "D3",
+      "pass": true,
+      "detail": "metadata.ask 150 vs last number in text 150"
+    },
+    {
+      "id": "D4",
+      "pass": true,
+      "detail": "price 500 -> receipt price 500 is above the 100 that was offered"
+    },
+    {
+      "id": "D5",
+      "pass": true,
+      "detail": "price -50 -> receipt price -50 is not positive"
+    },
+    {
+      "id": "D6",
+      "pass": true,
+      "detail": "price 90 -> receipt is for 'Plastic Stool', not 'lamp'"
+    },
+    {
+      "id": "C1",
+      "pass": true,
+      "detail": "offers the shop received [60], over budget [] (budget 120)"
+    },
+    {
+      "id": "C2",
+      "pass": true,
+      "detail": "offers the shop received [50], over budget [] (budget 120)"
+    }
+  ],
+  "passed": true,
+  "harness_calls_shop": 7,
+  "harness_calls_script": 0
+}

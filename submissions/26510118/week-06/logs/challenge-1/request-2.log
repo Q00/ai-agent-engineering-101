@@ -1,0 +1,22 @@
+request: a comfy seat for two people in the living room
+budget: 700
+
+[buyer] shopping for a comfy seat for two people in the living room, budget 700, at http://127.0.0.1:51773
+[buyer] card: 'Kiro Furniture' via JSONRPC http://127.0.0.1:51773/
+[buyer] skills: ['negotiate']
+[buyer] -> 'I want to buy a a comfy seat for two people in the living room'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | The Farmhouse Oak Sofa is 815
+[buyer] ask 815 budget 700 round 1: harness '550' -> 550
+[buyer] -> '550' taskId=fb1d87b4
+[buyer] <- TASK_STATE_INPUT_REQUIRED | Too low at 550. The Farmhouse Oak Sofa is 750
+[buyer] ask 750 budget 700 round 2: harness '620' -> 620
+[buyer] -> '620' taskId=fb1d87b4
+[buyer] <- TASK_STATE_INPUT_REQUIRED | I can do better than 620. The Farmhouse Oak Sofa is 685
+[buyer] ask 685 budget 700 round 3: harness '650' -> 650
+[buyer] -> '650' taskId=fb1d87b4
+[buyer] <- TASK_STATE_INPUT_REQUIRED | I can do better than 650. The Farmhouse Oak Sofa is 660
+[buyer] last round and 660 fits 700; taking it
+[buyer] -> '660' taskId=fb1d87b4
+[buyer] <- TASK_STATE_COMPLETED | Deal: Farmhouse Oak Sofa at 660.
+[buyer] bought a comfy seat for two people in the living room at 660.0
+[harness] 3 call(s), 0 failed, 12s total

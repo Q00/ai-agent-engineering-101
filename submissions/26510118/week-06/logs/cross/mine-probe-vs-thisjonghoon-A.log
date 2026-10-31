@@ -1,0 +1,13 @@
+# cross read test, group A, against https://a2a-lamp-shop.thisjonghoon.workers.dev
+# shop 'Llama Furniture Shop on Workers', card url https://a2a-lamp-shop.thisjonghoon.workers.dev/
+
+## A -- several numbers, one offer
+  [A1] sent "I saw it for 90 at another shop, my friend paid 85 last week, so I'll go to 95, delivery within 3 days"
+        opening ask 180 | "lamp: This is a lovely piece, I'm sure you'll find it's worth every penny. Asking 180. Send your offer as a number."
+        -> state TASK_STATE_REJECTED, ask None | reply "That's a bit low, let me check with my manager No deal."  (a careful reader takes 95)
+  [A2] sent 'Two of my neighbours bought one for 110. I can do 105 if you deliver by the 15th'
+        opening ask 160 | "lamp: That's a beautiful lamp, isn't it? Asking 160. Send your offer as a number."
+        -> state TASK_STATE_INPUT_REQUIRED, ask 140 | reply 'Still a bit higher than market value. Counteroffer: 140.'  (a careful reader takes 105)
+  [A3] sent 'Hmm, that is quite a lot. Let me think about it.'
+        opening ask 180 | 'lamp: A beautiful lamp, a great piece for any room. Asking 180. Send your offer as a number.'
+        -> state TASK_STATE_INPUT_REQUIRED, ask 180 | reply 'Send your offer as a number. Asking 180.'  (a careful reader takes None)
