@@ -137,11 +137,20 @@ def test_manager_summary_and_schema_work_without_network_or_model(
     assert summary["shop"]["categories"] == 2
     assert summary["market_6h"]["settles"] == 0
     assert summary["policy"]["version"] == 1
-    # And: the tool schema exposes only numeric/boolean policy fields by section.
+    # And: the tool schema exposes only numeric/boolean policy fields by section,
+    # each numeric field carrying the bounds the policy table enforces.
     schema = policy_schema()
     fields = schema["properties"]["changes"]["properties"]
-    assert fields["seller.markup_a"] == {"type": "number"}
-    assert fields["restock.units_per_sku"] == {"type": "integer"}
+    assert fields["seller.markup_a"] == {
+        "type": "number",
+        "minimum": 0.3,
+        "maximum": 1.0,
+    }
+    assert fields["restock.units_per_sku"] == {
+        "type": "integer",
+        "minimum": 1.0,
+        "maximum": 20.0,
+    }
     assert fields["buyer.require_cert"] == {"type": "boolean"}
     assert "buyer.goods_grades" not in fields
     # And: a model-less tick leaves the policy untouched and posts the stock summary.

@@ -20,7 +20,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from scripts import market_kit as kit
 
 from market_a2a.receipts import ReceiptSigner
-from r3 import buyer, manager, restock
+from r3 import buyer, manager, model_client, restock
 from r3.ledger_db import LedgerDB
 from r3.market_files import DemandRow, Inventory, Unit, read_catalog
 from r3.policy import Policy, apply_changes, load_policy
@@ -206,7 +206,9 @@ def test_manager_survives_a_non_object_tool_payload(
                     tool_calls=[
                         SimpleNamespace(
                             type="function",
-                            function=SimpleNamespace(name="set_policy", arguments="[]"),
+                            function=SimpleNamespace(
+                                name="set_strategy", arguments="[]"
+                            ),
                         )
                     ]
                 )
@@ -230,7 +232,7 @@ def test_manager_survives_a_non_object_tool_payload(
     monkeypatch.setenv("ANTHROPIC_API_KEY", "offline-placeholder")
     monkeypatch.setenv("AX_R3_MANAGER_MODEL", "1")
     monkeypatch.delenv("AX_PAID_QUOTA_PATH", raising=False)
-    monkeypatch.setattr(manager, "AsyncOpenAI", FakeClient)
+    monkeypatch.setattr(model_client, "AsyncOpenAI", FakeClient)
     instance = manager.Manager(
         tmp_path,
         "http://127.0.0.1:9",
