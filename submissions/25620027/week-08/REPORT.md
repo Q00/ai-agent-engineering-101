@@ -39,7 +39,7 @@ Round 3(11월 3일~11월 17일 23:59)에 올릴 가게와 buyer를 kit v4 위에
 
 1. 지급 거절 "no certificate" → 그 가게는 24시간 동안 점수 1/4 → 같은 SKU를 가진 다른 가게로 간다 ([r3/buyer.py](r3/buyer.py) `shop_factor`).
 2. 우리 가게에서 unit이 사라짐(판매) → 60초 뒤 restock이 같은 SKU를 보충한다 (`stale_hours` 안에서만).
-3. 식품 잔여수명이 등급 경계 2% 안 → 한 등급 낮게 claim한다 (checkout·정산 둘 중 하나와 맞으면 참인 규칙에 맞춤).
+3. 식품 등급이 3분 안에 바뀔 경계에 있으면 claim을 생략한다. 시장은 checkout 또는 정산 시점의 등급과 claim을 비교하므로 낮게 말하는 것은 정직이 아니라 두 시점 모두 틀린 주장이다(10/31 Codex 검수 F1로 수정).
 4. 식품 잔여수명 20% 미만 → 원가의 60%까지 청산 호가를 낮춘다(폐기 손실보다 회수).
 
 ### 1-3 툴
@@ -48,11 +48,11 @@ Round 3(11월 3일~11월 17일 23:59)에 올릴 가게와 buyer를 kit v4 위에
 |---|---|---|---|---|
 | `pick_unit` ([r3/seller.py](r3/seller.py)) | 코드 | 요청 문장, `inventory.json` | SKU·이름·카테고리로 맞는 unit (식품은 먼저 만료, 비식품은 오래된 것) | 다른 협상에 묶인 unit·방금 판 unit·만료 임박 제외 |
 | `quote`/`counter`/`decide` ([r3/pricing.py](r3/pricing.py)) | 정책표 | 원가·등급·나이·잔여수명 | 호가, 수락선, 바닥 | 호가 ≤ 정가, 청산 외엔 원가·(1+마진) 이상, 양보는 수락선까지만 |
-| 서명 영수증 | 코드 | 합의가·unit·claim·보증 | `{shop,item,price,task,unit,claim,warranty_hours,sig_seller}` | 정확한 합의가만 서명; cert는 항상 포함 |
+| 서명 영수증 | 코드 | 합의가·unit·claim·보증 | `{shop,item,price,task,unit,claim,warranty_hours,sig_seller}` | 정확한 합의가만 서명; cert는 항상 포함; 등급이 곧 바뀔 식품은 claim 생략 |
 | `choose` ([r3/buyer.py](r3/buyer.py)) | 코드 | `order.json` acceptable, `shops.json` offers, `catalog.json`, 자기 장부 | 가게×SKU | 점수 = 정가 × 증거 가중치 × 공개 별점 보정 |
-| `negotiate` | 정책표 | 상대 호가 | 2~4턴, 즉시 수락 또는 역제안 | 상한 = min(예산, 0.95×정가); 역제안은 상한 안에서만 증가 |
+| `negotiate` | 정책표 | 상대 호가 | 2~4턴, 즉시 수락 또는 역제안 | 상한 = min(예산, 0.95×정가); 역제안은 상한 안에서만 증가; 우리가 제안·수락한 금액이 없는 완료 영수증과 상한 초과 영수증은 키트에 넘기지 않음 |
 | `accept_policy` | 정책표 | 주문 종류 | 식품 `cert`+`min_hours_left`(사용시간+1h), 비식품 `cert`+`grades`(A,B) | kit가 결제 전에 검사하고 미충족이면 지급 안 함 |
-| `restock.plan` ([r3/restock.py](r3/restock.py)) | 정책표+원장 신호 | 재고·카탈로그·demand·수요 신호 | 최대 10줄 `{sku, qty}` | 유보 현금 아래로 안 내려감, 재고 원가 합 ≤ 시드 예산, 720h 식품·중저가 비식품만 |
+| `restock.plan` ([r3/restock.py](r3/restock.py)) | 정책표+원장 신호 | 재고·카탈로그·demand·수요 신호 | 최대 10줄 `{sku, qty}` | 유보 현금·시드 예산을 공식 최악 원가(정가의 75%)로 검사하고 수량을 그 안으로 자름. 모델이 이 비율을 낮출 수 없음. 720h 식품·중저가 비식품만 |
 | `review.stars_for` ([r3/review.py](r3/review.py)) | 코드 | `deal.json` (시장 영수증) | 1~5점·사실 문장 | 허위 claim 1점, 사용시간 미달 ≤2점, 예산 문구 없음 |
 | `forum` ([r3/forum.py](r3/forum.py)) | 코드 | 자기 정산 기록·시장 요약 | buyer 글 5분 1건(원장 refs), shop 글 30분 1건 | 검증 가능한 사실만, 비방·광고 삽입·투표 요청 없음 |
 | `set_policy` (모델 도구) | 모델 | 요약 | 변경 집합+이유 | 범위·개수·필드 검증 뒤 버전 저장 |

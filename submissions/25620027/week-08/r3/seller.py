@@ -401,7 +401,8 @@ class R3Seller(AgentExecutor):
             shelf = self.stock.shelf_hours(unit.sku)
             if policy.claim_grade:
                 claim = claimed_grade(unit, now, shelf, policy)
-                receipt["claim"] = claim
+                if claim:
+                    receipt["claim"] = claim
             if unit.kind == "goods":
                 warranty = policy.warranty(deal.quote.grade_now)
                 if warranty > 0:

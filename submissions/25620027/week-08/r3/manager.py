@@ -14,7 +14,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import sqlite3
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Final
@@ -25,10 +24,10 @@ import typer
 from openai import APIError, AsyncOpenAI
 from openai.types.chat import ChatCompletionFunctionToolParam
 from openai.types.shared_params import FunctionDefinition
-from pydantic import ValidationError
+from pydantic import Field, JsonValue, ValidationError
 
 from market_a2a.anthropic_fallback import ANTHROPIC_URL, HAIKU_MODEL
-from market_a2a.models import HarnessError
+from market_a2a.models import FrozenModel, HarnessError
 from market_a2a.paid_fallback import DailyQuota
 from r3.events import EventLedger, events_path
 from r3.forum import STATE_FILE as FORUM_STATE
@@ -91,6 +90,13 @@ def policy_schema() -> dict[str, object]:
         "required": ["changes", "reason"],
         "additionalProperties": False,
     }
+
+
+class Proposal(FrozenModel):
+    """The only shape the policy tool accepts: a flat change map and a reason."""
+
+    changes: dict[str, JsonValue] = Field(default_factory=dict, max_length=MAX_CHANGES)
+    reason: str = Field(default="", max_length=300)
 
 
 class Manager:
@@ -218,7 +224,7 @@ class Manager:
                         tool_choice="required",
                         max_completion_tokens=700,
                     )
-            except (APIError, TimeoutError) as exc:
+            except (APIError, TimeoutError, ValueError, OSError) as exc:
                 LOGGER.warning("manager_model_failed %s", type(exc).__name__)
                 return None
         calls = completion.choices[0].message.tool_calls or []
@@ -226,14 +232,11 @@ class Manager:
             if call.type != "function" or call.function.name != "set_policy":
                 continue
             try:
-                proposal = json.loads(call.function.arguments)
-                changes = proposal.get("changes") or {}
-                if not isinstance(changes, dict) or len(changes) > MAX_CHANGES:
-                    LOGGER.warning("manager_rejected_proposal count=%s", len(changes))
-                    return None
-                reason = str(proposal.get("reason", ""))[:300]
+                proposal = Proposal.model_validate_json(call.function.arguments)
+                changes = proposal.changes
+                reason = proposal.reason
                 candidate = apply_changes(load_policy(self.policy_file), changes)
-            except (ValueError, ValidationError, TypeError) as exc:
+            except (ValueError, ValidationError, TypeError, AttributeError) as exc:
                 LOGGER.warning("manager_invalid_proposal %s", type(exc).__name__)
                 return None
             if not changes:
@@ -298,7 +301,7 @@ class Manager:
                         "summary=%s", json.dumps(summary, ensure_ascii=False)[:2000]
                     )
                     _ = await self.ask_model(summary)
-            except (httpx.HTTPError, sqlite3.Error, OSError, ValueError) as exc:
+            except Exception as exc:  # noqa: BLE001 - one bad tick must never end the loop
                 LOGGER.warning("manager_tick_failed %s: %s", type(exc).__name__, exc)
             await anyio.sleep(PULL_EVERY)
 

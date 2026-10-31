@@ -213,11 +213,7 @@ async def negotiate(  # noqa: PLR0913 - one negotiation, explicit inputs
     reply, so once ``late_accept_share`` of the budget is gone any ask within the
     cap is taken rather than countered: the next order arrives in ~20 s anyway.
     """
-    cap = (
-        budget
-        if choice.list_price <= 0
-        else min(budget, int(choice.list_price * policy.max_price_ratio))
-    )
+    cap = price_cap(choice, budget, policy)
     if cap < 1:
         message = "No affordable price under this order's cap"
         raise HarnessError(message)
@@ -258,13 +254,27 @@ async def negotiate(  # noqa: PLR0913 - one negotiation, explicit inputs
     return task, my_offer if task.status.state == "TASK_STATE_COMPLETED" else None
 
 
+def price_cap(choice: Choice, budget: int, policy: BuyerPolicy) -> int:
+    """Return the most we pay: the budget, or the policy share of the list price."""
+    if choice.list_price <= 0:
+        return budget
+    return min(budget, int(choice.list_price * policy.max_price_ratio))
+
+
 def valid_receipt(  # noqa: PLR0911 - each check names its reason
     receipt: dict[str, object],
     order: Order,
     choice: Choice,
     price: int | None,
+    cap: int | None = None,
 ) -> str | None:
-    """Return why a receipt cannot be used, or None when it matches the deal."""
+    """Return why a receipt cannot be used, or None when it matches the deal.
+
+    ``price`` is the amount the buyer actually offered or accepted; a receipt
+    completed without one is refused, whatever it says.
+    """
+    if price is None:
+        return "completed without an offer the buyer made or accepted"
     item = receipt.get("item")
     raw_price = receipt.get("price")
     if not isinstance(raw_price, (int, float)) or float(raw_price) != int(raw_price):
@@ -278,6 +288,8 @@ def valid_receipt(  # noqa: PLR0911 - each check names its reason
         return f"receipt price {paid} differs from the agreed {price}"
     if paid > order.budget:
         return "receipt price exceeds the budget"
+    if cap is not None and paid > cap:
+        return f"receipt price {paid} exceeds the buyer's cap {cap}"
     if not receipt.get("sig_seller"):
         return "receipt is not signed"
     return None
@@ -362,16 +374,15 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
                     if receipt is None:
                         reason = "completed without a receipt"
                     else:
-                        agreed = (
-                            price
-                            if price is not None
-                            else int(float(str(receipt.get("price", 0))))
+                        problem = valid_receipt(
+                            receipt,
+                            order,
+                            choice,
+                            price,
+                            price_cap(choice, order.budget, policy.buyer),
                         )
-                        problem = valid_receipt(receipt, order, choice, agreed)
                         if problem is not None:
-                            reason, receipt = problem, None
-                        else:
-                            price = agreed
+                            reason, receipt, price = problem, None, None
                 else:
                     reason = f"{task_state}: {task.observation()[:120]}"
     except TimeoutError:

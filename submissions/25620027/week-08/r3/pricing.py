@@ -10,8 +10,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from r3.market_files import FOOD_GRADE_CUTS
-
 if TYPE_CHECKING:
     from r3.market_files import Unit
     from r3.policy import SellerPolicy
@@ -37,15 +35,18 @@ def grade_now(unit: Unit, now: float, shelf_hours: float | None) -> str:
 def claimed_grade(
     unit: Unit, now: float, shelf_hours: float | None, policy: SellerPolicy
 ) -> str:
-    """Claim the certified grade, one lower when food sits near a boundary."""
+    """Claim the certified grade only while it holds through checkout and settlement.
+
+    The market judges a claim against the grade at checkout or at settlement. A
+    lower claim is not a safe claim: it is wrong at both moments unless the grade
+    actually drops. So the claim is the current grade, or nothing when the grade
+    would change within the policy's horizon.
+    """
     grade = grade_now(unit, now, shelf_hours)
-    ratio = unit.shelf_left_ratio(now, shelf_hours)
-    if ratio is None:
+    if unit.shelf_left_ratio(now, shelf_hours) is None:
         return grade
-    for cut, lower in ((FOOD_GRADE_CUTS[0], "B"), (FOOD_GRADE_CUTS[1], "C")):
-        if cut <= ratio < cut + policy.claim_boundary_margin:
-            return lower
-    return grade
+    later = grade_now(unit, now + policy.claim_horizon_seconds, shelf_hours)
+    return grade if later == grade else ""
 
 
 def quote(

@@ -30,6 +30,9 @@ LEDGER_ENV: Final = "AX_R3_LEDGER"
 LEDGER_FILE: Final = "r3-ledger.sqlite"
 PAGE: Final = 500
 BREAK_WINDOW: Final = 6 * 3600
+# Goods can break up to 6 h after a sale, so the quality cohort is settlements old
+# enough to have matured; the manager's 6 h trend window alone would hold none.
+MATURE_COHORT_HOURS: Final = 24
 
 
 def ledger_path(market_dir: Path | None = None) -> Path:
@@ -194,7 +197,9 @@ class LedgerDB:
             "top_skus": [{"sku": s, "settles": n} for s, n in top_skus],
             "break_rates": {
                 g: {"broken": b, "observed": t}
-                for g, (b, t) in self.break_rates(since).items()
+                for g, (b, t) in self.break_rates(
+                    since - BREAK_WINDOW - MATURE_COHORT_HOURS * 3600
+                ).items()
             },
             "dishonest_claims": dishonest,
             "our_shop_settles": our_shop_n,

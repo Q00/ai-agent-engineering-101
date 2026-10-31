@@ -65,9 +65,7 @@ def test_quote_prices_from_cost_and_grade_and_never_below_accept_line() -> None:
     assert counter(qa.accept_at, qa.accept_at, policy) == qa.accept_at
 
 
-def test_food_near_expiry_clears_below_cost_and_claims_lower_grade_near_boundary() -> (
-    None
-):
+def test_food_near_expiry_clears_below_cost_and_boundary_claims_are_omitted() -> None:
     now = time.time()
     policy = Policy().seller
     nearly_gone = Unit.model_validate(
@@ -77,15 +75,15 @@ def test_food_near_expiry_clears_below_cost_and_claims_lower_grade_near_boundary
     assert cleared.clearance is True
     assert cleared.accept_at == cleared.floor < nearly_gone.cost
     assert cleared.grade_now == "C"
-    # And: a food unit just above the A boundary is claimed as B.
-    near_boundary = Unit.model_validate(
+    # And: a food unit well inside A is claimed A; one about to drop carries no claim.
+    inside = Unit.model_validate(
         unit(KIMCHI, 2, grade="A", now=now, shelf_left_ratio=0.805)
     )
-    assert claimed_grade(near_boundary, now, 720, policy) == "B"
-    safe = Unit.model_validate(
-        unit(KIMCHI, 3, grade="A", now=now, shelf_left_ratio=0.9)
+    assert claimed_grade(inside, now, 720, policy) == "A"
+    about_to_drop = Unit.model_validate(
+        unit(KIMCHI, 3, grade="A", now=now, shelf_left_ratio=0.80003)
     )
-    assert claimed_grade(safe, now, 720, policy) == "A"
+    assert claimed_grade(about_to_drop, now, 720, policy) == ""
 
 
 def test_decide_accepts_counters_then_rejects_after_max_rounds() -> None:

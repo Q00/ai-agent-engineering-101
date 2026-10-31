@@ -37,6 +37,9 @@ if TYPE_CHECKING:
 
 STATE_FILE: Final = "r3-restock-state.json"
 MAX_LINES: Final = 10
+# The market draws a unit's cost at 55-75% of list for grade A; cash checks use the
+# top of that range. The policy table cannot lower it.
+WORST_CASE_COST_SHARE: Final = 0.75
 
 
 class RestockState(FrozenModel):
@@ -165,16 +168,18 @@ def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
     for unit in inventory.units:
         stocked_categories[unit.category] = stocked_categories.get(unit.category, 0) + 1
 
-    def affordable(item: CatalogItem, qty: int) -> bool:
+    def affordable(item: CatalogItem, qty: int) -> int:
+        """Return the quantity the reserve and stock caps allow (0 when none)."""
         nonlocal spent
-        estimate = int(item.list_price * policy.cost_estimate_ratio) * qty
-        if estimate <= 0 or spent + estimate > cash:
-            return False
-        # seed_budget caps the capital tied up in stock (at worst-case cost).
-        if stock_cost + spent + estimate > policy.seed_budget:
-            return False
-        spent += estimate
-        return True
+        unit_cost = int(item.list_price * WORST_CASE_COST_SHARE)
+        if unit_cost <= 0:
+            return 0
+        room = min(cash - spent, policy.seed_budget - stock_cost - spent)
+        allowed = min(qty, room // unit_cost)
+        if allowed <= 0:
+            return 0
+        spent += unit_cost * allowed
+        return allowed
 
     units_total = len(inventory.units)
     # 1. Replenish what just sold, while demand for it is fresh.
@@ -186,9 +191,10 @@ def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
         item = catalog.get(sku)
         if item is None or not sku_fits(item, policy):
             continue
-        if affordable(item, policy.replenish_qty):
-            lines.append({"sku": sku, "qty": policy.replenish_qty})
-            units_total += policy.replenish_qty
+        qty = affordable(item, policy.replenish_qty)
+        if qty:
+            lines.append({"sku": sku, "qty": qty})
+            units_total += qty
     # 2. Breadth: new categories, long-life food and mid-priced goods first.
     rng = random.Random(int(now // 3600))  # noqa: S311 - variety, not security
     chosen_skus = set(stocked) | {str(line["sku"]) for line in lines}
@@ -210,12 +216,15 @@ def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
         item = pick_sku(
             row.category, catalog, signal, policy, rng=rng, already=chosen_skus
         )
-        if item is None or not affordable(item, policy.units_per_sku):
+        if item is None:
             continue
-        lines.append({"sku": item.sku, "qty": policy.units_per_sku})
+        qty = affordable(item, policy.units_per_sku)
+        if not qty:
+            continue
+        lines.append({"sku": item.sku, "qty": qty})
         chosen_skus.add(item.sku)
         stocked_categories[row.category] = stocked_categories.get(row.category, 0) + 1
-        units_total += policy.units_per_sku
+        units_total += qty
         if item.kind == "food":
             food_lines += 1
     updated = state.model_copy(

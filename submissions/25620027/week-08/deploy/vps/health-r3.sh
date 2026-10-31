@@ -15,6 +15,15 @@ if [ "$(date -u +%FT%TZ)" \> "$END_UTC" ]; then
   exit 0
 fi
 if docker ps --format '{{.Names}}' | grep -qx 'ax-week08-25620027-r3-r3-1'; then
+  # the policy manager runs beside the kit; if it died, restart the whole release
+  if docker top ax-week08-25620027-r3-r3-1 2>/dev/null | grep -q 'r3.manager'; then
+    exit 0
+  fi
+  started=$(docker inspect --format '{{.State.StartedAt}}' ax-week08-25620027-r3-r3-1 2>/dev/null)
+  age=$(( $(date -u +%s) - $(date -u -d "$started" +%s 2>/dev/null || echo 0) ))
+  [ "$age" -lt 180 ] && exit 0   # just started; the manager may not be up yet
+  echo "== $(date -u +%FT%TZ) manager process missing (container age ${age}s); relaunching $RELEASE" >>"$LOG"
+  "$BASE/launch-r3.sh" "$RELEASE" >>"$LOG" 2>&1
   exit 0
 fi
 echo "== $(date -u +%FT%TZ) trading container not running; relaunching $RELEASE" >>"$LOG"

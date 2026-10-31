@@ -54,8 +54,9 @@ class SellerPolicy(FrozenModel):
     warranty_b: int = Field(default=0, ge=0, le=24)
     warranty_c: int = Field(default=0, ge=0, le=24)
     claim_grade: bool = True
-    # A food unit this close to a grade boundary is claimed one grade lower.
-    claim_boundary_margin: float = Field(default=0.02, ge=0.0, le=0.10)
+    # A food grade claim must match the grade at checkout or at settlement. When the
+    # grade would change within this horizon, the claim is omitted instead of guessed.
+    claim_horizon_seconds: int = Field(default=180, ge=0, le=900)
 
     def markup(self, grade: str) -> float:
         """Return the opening markup for a grade; unknown grades price as C."""
@@ -114,8 +115,6 @@ class RestockPolicy(FrozenModel):
     food_max_list_price: int = Field(default=60_000, ge=0)
     goods_min_list_price: int = Field(default=8_000, ge=0)
     goods_max_list_price: int = Field(default=150_000, ge=0)
-    # Worst-case unit cost as a share of list price (grade A costs 55-75%).
-    cost_estimate_ratio: float = Field(default=0.75, ge=0.25, le=1.0)
     replenish_qty: int = Field(default=1, ge=1, le=20)
     stale_hours: float = Field(default=48.0, ge=1.0, le=336.0)
     categories_per_run: int = Field(default=10, ge=1, le=10)
