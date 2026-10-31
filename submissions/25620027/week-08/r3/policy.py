@@ -1,32 +1,52 @@
 """Versioned, bounded trading policy shared by the seller, buyer, restock and manager.
 
 The fast trade loop never calls a model: every price, acceptance threshold, stock
-rule and buyer acceptance condition is looked up here. The slow policy loop (the
-manager) rewrites this file inside the bounds declared below, keeps the previous
-two versions and records why it changed. Budgets, keys, settlement and the market
-contract are not policy and cannot be changed through this file.
+rule and buyer acceptance condition is looked up here. Two slow loops rewrite this
+file inside the bounds declared below. The **strategy** layer (Sonnet, hourly) owns
+the structural fields and sets a band for each tactical field; the **tactical**
+layer (Haiku, every ten minutes) may move only tactical fields, only inside their
+band, and only for a limited time, after which the strategy values apply again. One
+owner per field: a change to a field by the other layer is refused. Budgets, keys,
+settlement and the market contract are not policy and cannot be changed here.
 """
 
 from __future__ import annotations
 
 import os
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Final, Literal
 
-from pydantic import Field, ValidationError
+from pydantic import Field, JsonValue, ValidationError
 
 from market_a2a.models import FrozenModel
 
 if TYPE_CHECKING:
-    from pydantic import JsonValue
+    from collections.abc import Mapping
 
 Grade = Literal["A", "B", "C"]
 GRADES: Final[tuple[Grade, ...]] = ("A", "B", "C")
 POLICY_ENV: Final = "AX_R3_POLICY"
 POLICY_FILE: Final = "r3-policy.json"
 MAX_HISTORY: Final = 2
+MAX_TACTICAL_CHANGES: Final = 3
+TACTICAL_TTL_SECONDS: Final = 3600.0
+# Fields the tactical layer may move inside a band; everything else is strategy.
+TACTICAL_FIELDS: Final = frozenset(
+    {
+        "seller.accept_margin",
+        "seller.concession",
+        "seller.clearance_shelf_ratio",
+        "seller.clearance_floor_of_cost",
+        "seller.stale_markup_cut",
+        "buyer.first_offer_ratio",
+        "buyer.quick_accept_ratio",
+        "buyer.late_accept_share",
+        "restock.replenish_qty",
+    }
+)
 
 
 class SellerPolicy(FrozenModel):
@@ -132,11 +152,97 @@ class Policy(FrozenModel):
     restock: RestockPolicy = Field(default_factory=RestockPolicy)
 
 
+class Band(FrozenModel):
+    """The strategy layer's allowed range for one tactical field."""
+
+    low: float
+    high: float
+
+
+class TacticalOverlay(FrozenModel):
+    """Bounded, time-limited changes on top of the strategy values."""
+
+    changes: dict[str, JsonValue] = Field(
+        default_factory=dict, max_length=MAX_TACTICAL_CHANGES
+    )
+    reason: str = Field(default="", max_length=300)
+    applied_at: float = 0.0
+    expires_at: float = 0.0
+    version: int = Field(default=1, ge=1)
+
+
 class PolicyHistory(FrozenModel):
-    """The active policy and at most two earlier versions for rollback."""
+    """The effective policy, the strategy base beneath it, bands and two old versions.
+
+    ``current`` is what the trade loop reads: the strategy values with the tactical
+    overlay applied. ``strategy`` is None in files written before the two layers
+    existed; ``current`` is then the base.
+    """
 
     current: Policy
     previous: tuple[Policy, ...] = Field(default=(), max_length=MAX_HISTORY)
+    strategy: Policy | None = None
+    tactical: TacticalOverlay | None = None
+    bands: dict[str, Band] = Field(default_factory=dict)
+
+    def base(self) -> Policy:
+        """Return the strategy layer's policy without any tactical overlay."""
+        return self.strategy if self.strategy is not None else self.current
+
+
+SECTIONS: Final = {
+    "seller": SellerPolicy,
+    "buyer": BuyerPolicy,
+    "restock": RestockPolicy,
+}
+
+
+def field_bounds(key: str) -> tuple[float | None, float | None]:
+    """Return the declared (ge, le) bounds of a numeric policy field."""
+    section, _, field = key.partition(".")
+    model = SECTIONS.get(section)
+    if model is None or field not in model.model_fields:
+        message = f"Unknown policy field: {key}"
+        raise ValueError(message)
+    low: float | None = None
+    high: float | None = None
+    for item in model.model_fields[field].metadata:
+        value = getattr(item, "ge", None)
+        if value is not None:
+            low = float(value)
+        value = getattr(item, "le", None)
+        if value is not None:
+            high = float(value)
+    return low, high
+
+
+def field_value(policy: Policy, key: str) -> JsonValue:
+    """Read ``section.field`` from a policy."""
+    section, _, field = key.partition(".")
+    if section not in SECTIONS or field not in SECTIONS[section].model_fields:
+        message = f"Unknown policy field: {key}"
+        raise ValueError(message)
+    value = getattr(getattr(policy, section), field)
+    if isinstance(value, tuple):
+        return list(value)
+    return value
+
+
+def default_band(key: str, base: Policy, share: float = 0.10) -> Band:
+    """Return a +-10% band around the strategy value, clipped to the field bounds."""
+    value = field_value(base, key)
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        message = f"Field has no numeric band: {key}"
+        raise TypeError(message)
+    low, high = field_bounds(key)
+    step = max(abs(float(value)) * share, 1.0 if isinstance(value, int) else 0.01)
+    band_low = float(value) - step
+    band_high = float(value) + step
+    if low is not None:
+        band_low = max(band_low, low)
+    if high is not None:
+        band_high = min(band_high, high)
+    return Band(low=round(band_low, 6), high=round(band_high, 6))
 
 
 def policy_path(market_dir: Path | None = None) -> Path:
@@ -152,14 +258,6 @@ def policy_path(market_dir: Path | None = None) -> Path:
     return base.resolve().parent / POLICY_FILE
 
 
-def load_policy(path: Path) -> Policy:
-    """Return the active policy; a missing or invalid file yields the defaults."""
-    try:
-        return PolicyHistory.model_validate_json(path.read_bytes()).current
-    except (OSError, ValidationError, ValueError):
-        return Policy()
-
-
 def load_history(path: Path) -> PolicyHistory:
     """Return the full history or a default history when none exists."""
     try:
@@ -168,32 +266,170 @@ def load_history(path: Path) -> PolicyHistory:
         return PolicyHistory(current=Policy())
 
 
-def save_policy(path: Path, candidate: Policy, reason: str) -> Policy:
-    """Validate, version and atomically publish a policy; keep two previous versions."""
+def load_policy(path: Path, now: float | None = None) -> Policy:
+    """Return the effective policy; an expired tactical overlay yields the base.
+
+    A missing or invalid file yields the defaults, so a trade never waits on the
+    manager.
+    """
     history = load_history(path)
-    current = history.current
-    stamped = candidate.model_copy(
-        update={
-            "version": current.version + 1,
-            "updated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-            "reason": reason[:400],
-        }
-    )
-    published = PolicyHistory(
-        current=stamped, previous=(current, *history.previous)[:MAX_HISTORY]
-    )
+    stamp = now if now is not None else time.time()
+    overlay = history.tactical
+    if overlay is not None and stamp >= overlay.expires_at:
+        return history.base()
+    return history.current
+
+
+def _write(path: Path, history: PolicyHistory) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with NamedTemporaryFile(
         mode="w", encoding="utf-8", dir=path.parent, delete=False
     ) as stream:
         temporary = Path(stream.name)
         try:
-            _ = stream.write(published.model_dump_json(indent=1))
+            _ = stream.write(history.model_dump_json(indent=1))
             stream.flush()
             _ = temporary.replace(path)
         finally:
             temporary.unlink(missing_ok=True)
+
+
+def _stamp(candidate: Policy, version: int, reason: str) -> Policy:
+    return candidate.model_copy(
+        update={
+            "version": version,
+            "updated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "reason": reason[:400],
+        }
+    )
+
+
+def validate_bands(bands: Mapping[str, Band], base: Policy) -> dict[str, Band]:
+    """Keep only bands on tactical fields that lie inside the field's own bounds."""
+    accepted: dict[str, Band] = {}
+    for key, band in bands.items():
+        if key not in TACTICAL_FIELDS:
+            message = f"Band on a non-tactical field: {key}"
+            raise ValueError(message)
+        low, high = field_bounds(key)
+        if band.low > band.high:
+            message = f"Band low above high: {key}"
+            raise ValueError(message)
+        if (low is not None and band.low < low) or (
+            high is not None and band.high > high
+        ):
+            message = f"Band outside the field bounds: {key}"
+            raise ValueError(message)
+        _ = field_value(base, key)
+        accepted[key] = band
+    return accepted
+
+
+def save_policy(
+    path: Path,
+    candidate: Policy,
+    reason: str,
+    *,
+    bands: Mapping[str, Band] | None = None,
+) -> Policy:
+    """Publish a strategy version: it becomes the base and clears any tactical overlay.
+
+    Keeps two previous effective versions for rollback. ``bands`` replaces the
+    tactical bands when given; otherwise the stored bands stay.
+    """
+    history = load_history(path)
+    current = history.current
+    stamped = _stamp(candidate, current.version + 1, reason)
+    kept = validate_bands(bands, stamped) if bands is not None else history.bands
+    _write(
+        path,
+        PolicyHistory(
+            current=stamped,
+            previous=(current, *history.previous)[:MAX_HISTORY],
+            strategy=stamped,
+            tactical=None,
+            bands=kept,
+        ),
+    )
     return stamped
+
+
+def strategy_changes(changes: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
+    """Refuse strategy changes that touch tactical fields (one owner per field)."""
+    for key in changes:
+        if key in TACTICAL_FIELDS:
+            message = f"Tactical field is not owned by the strategy layer: {key}"
+            raise ValueError(message)
+    return dict(changes)
+
+
+def save_tactical(
+    path: Path,
+    changes: Mapping[str, JsonValue],
+    reason: str,
+    *,
+    now: float | None = None,
+    ttl: float = TACTICAL_TTL_SECONDS,
+) -> Policy:
+    """Apply at most three tactical changes inside their bands for ``ttl`` seconds."""
+    if len(changes) > MAX_TACTICAL_CHANGES:
+        message = f"At most {MAX_TACTICAL_CHANGES} tactical changes per step"
+        raise ValueError(message)
+    history = load_history(path)
+    base = history.base()
+    stamp = now if now is not None else time.time()
+    for key, value in changes.items():
+        if key not in TACTICAL_FIELDS:
+            message = f"Not a tactical field: {key}"
+            raise ValueError(message)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            message = f"Tactical value must be a number: {key}"
+            raise TypeError(message)
+        band = history.bands.get(key) or default_band(key, base)
+        if not band.low <= float(value) <= band.high:
+            message = f"Tactical value outside its band: {key}"
+            raise ValueError(message)
+    effective = apply_changes(base, dict(changes))
+    stamped = _stamp(effective, history.current.version + 1, f"tactical: {reason}")
+    overlay = TacticalOverlay(
+        changes=dict(changes),
+        reason=reason[:300],
+        applied_at=stamp,
+        expires_at=stamp + ttl,
+        version=stamped.version,
+    )
+    _write(
+        path,
+        PolicyHistory(
+            current=stamped,
+            previous=(history.current, *history.previous)[:MAX_HISTORY],
+            strategy=base,
+            tactical=overlay,
+            bands=history.bands,
+        ),
+    )
+    return stamped
+
+
+def expire_tactical(path: Path, now: float | None = None) -> Policy | None:
+    """Drop an expired overlay from the file; return the base when one was dropped."""
+    history = load_history(path)
+    overlay = history.tactical
+    stamp = now if now is not None else time.time()
+    if overlay is None or stamp < overlay.expires_at:
+        return None
+    base = _stamp(history.base(), history.current.version + 1, "tactical expired")
+    _write(
+        path,
+        PolicyHistory(
+            current=base,
+            previous=(history.current, *history.previous)[:MAX_HISTORY],
+            strategy=base,
+            tactical=None,
+            bands=history.bands,
+        ),
+    )
+    return base
 
 
 def rollback_policy(path: Path, reason: str) -> Policy | None:
