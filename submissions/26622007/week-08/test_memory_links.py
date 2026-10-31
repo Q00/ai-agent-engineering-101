@@ -128,11 +128,19 @@ class BuyerMemoryTest(unittest.TestCase):
         self.assertEqual(out["a"]["deals"], 1)
 
 
+class BreakLineTest(unittest.TestCase):
+    def test_says_the_record_or_nothing(self):
+        self.assertIn("3 of 10", mb.break_line({"sold": 10, "broke": 3}))
+        self.assertEqual(mb.break_line(None), "")
+        self.assertEqual(mb.break_line({"sold": 0, "broke": 1}), "")
+
+
 class ChooseAgentTest(unittest.TestCase):
     SHOPS = [{"name": "a", "url": "https://a", "reviews": []}, {"name": "b", "url": "https://b", "reviews": []}]
 
     def run_choose(self, decide, md="x"):
         with mock.patch.object(mb, "AGENT_DIR", md), mock.patch.object(mb.agent_loop, "decide", decide), \
+                mock.patch.object(mb.market_model, "load_rows", lambda d: []), \
                 mock.patch.object(mb, "log"), mock.patch.object(mb, "ask", lambda *a, **k: {"shop": "a", "reason": "fallback"}):
             return mb.choose(self.SHOPS, {"trades": []}, "김치", 9000)
 
@@ -146,6 +154,7 @@ class ChooseAgentTest(unittest.TestCase):
         self.assertEqual(shop["name"], "b")
         self.assertIn("agent", why)
         self.assertIn("shop 'a'", seen["given"]["c0"])
+        self.assertIn("ledger name: https://a", seen["given"]["c0"])      # first real run searched the ledger by name and found nothing
         self.assertEqual((seen["steps"], sorted(seen["enum"])), (mb.CHOOSE_STEPS, ["a", "b"]))
 
     def test_no_evidenced_decision_or_a_harness_failure_falls_back(self):

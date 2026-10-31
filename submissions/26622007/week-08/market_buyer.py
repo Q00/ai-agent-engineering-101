@@ -238,6 +238,11 @@ def overpriced(trades, item, avg):
     return low if low > avg * OVERPRICED else None
 
 
+def break_line(row):
+    """A shop's record of goods breaking, for the candidates list: left out when the ledger has none."""
+    return f"\n  goods it sold that broke, in the ledger: {row['broke']} of {row['sold']}" if row and row["sold"] else ""
+
+
 def choose(shops, memory, item, budget):
     """Returns (shop, reason).
 
@@ -304,10 +309,15 @@ def choose(shops, memory, item, budget):
               f"Pick one shop by name and give a one-sentence reason.")
     if AGENT_DIR:
         try:
+            fails = market_model.break_stats(market_model.load_rows(AGENT_DIR), load_json(os.path.join(AGENT_DIR, "catalog.json"), {}))["by_shop"]
+            known = "\n\n".join(f"{shop_summary(x, my_history(memory, x['name']), item)}\n  ledger name: {x['url']}" + break_line(fails.get(x["url"]))
+                                  for x in by_name.values())
             final = agent_loop.decide(
-                f"Choose the shop for this order: {item}, budget {budget}. {task} {PICK_SYSTEM}\nc0 is what you know of the candidates. "
-                "Look up more through the tools if it would change your choice; each step takes time.",
-                pick_schema(list(by_name)), AGENT_DIR, "buyer", {"c0": summaries}, max_steps=CHOOSE_STEPS)
+                f"Choose the shop for this order: {item}, budget {budget}. {task} {PICK_SYSTEM}\nWhat you earn from a deal is the list price "
+                "less what you pay, and nothing at all, minus the price, if goods break after the sale without a warranty. Reviews can be "
+                "written by anyone; the ledger records what happened, and it names shops by the URL given as ledger name. c0 is what you "
+                "know of the candidates. Look up more through the tools if it could change your choice; each step takes time.",
+                pick_schema(list(by_name)), AGENT_DIR, "buyer", {"c0": known}, max_steps=CHOOSE_STEPS)
             if final is not None:
                 return by_name[final["shop"]], f"{mode} agent: {final['reason']}"
         except HarnessError as e:
