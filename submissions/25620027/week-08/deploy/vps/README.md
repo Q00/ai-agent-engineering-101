@@ -87,3 +87,9 @@ private/data 디렉터리와 키는 실행 UID10001이 접근할 수 있어야 �
 - 발견한 결함 두 가지: (1) 키트 `load_key`가 키 파일을 chmod하므로 읽기 전용 `/private`로의 symlink는 실패한다 → 런처가 run 디렉터리에 복사하도록 수정(`7befff8`). (2) cloudflared 기본 사용자는 0600 설정을 못 읽는다 → `--user 10001:10001`.
 - 재배포: 바이어 주문 예산 18초·후반 즉시 수락을 넣은 `a6a64bb10282`를 같은 절차로 설치(컨테이너 회귀 422개 PASS)하고 `launch-r3.sh a6a64bb10282`로 교체했다. 첫 11건 중 9건 체결.
 - 라운드3 전환 때 바꿀 것: `model-market.env`의 `AX_R3_MANAGER_MODEL=1`, `runtime.json`의 `stop_at=2026-11-17T23:59:59+09:00`(16일 이내), 그리고 `launch-r3.sh a6a64bb10282` 재실행. 키트는 라운드가 3으로 바뀌면 재시작 없이도 재고 판매·restock으로 넘어간다.
+
+### 라운드3 자동 전환 예약 (2026-10-31 등록)
+
+- VPS root crontab(UTC): `5 15 2 11 * switch-r3.sh a6a64bb10282` → **2026-11-03 00:05 KST**에 [switch-r3.sh](switch-r3.sh)가 `model-market.env`의 `AX_R3_MANAGER_MODEL=1`, `runtime.json`의 `stop_at=2026-11-17T23:59:59+09:00`(창 15.0일)로 바꾸고 `launch-r3.sh`로 재기동한 뒤 자기 cron 줄을 지운다. 로그 `switch-r3.log`.
+- `*/10 * * * * health-r3.sh a6a64bb10282` → [health-r3.sh](health-r3.sh)가 전환 뒤(`r3-active` 표식) 거래 컨테이너가 내려가 있으면 같은 release로 재기동한다. 키가 같으므로 같은 가게·buyer로 다시 등록된다. 11/17 23:59 KST가 지나면 표식을 지우고 멈춘다. 로그 `health-r3.log`.
+- 전환 전(11/3 00:05 이전)에는 현재 라운드2 시험 설정(모델 OFF, 11/3 23:59 종료)이 그대로 돈다. 라운드가 3으로 바뀌면 재시작 없이도 재고 판매·restock으로 넘어간다.
