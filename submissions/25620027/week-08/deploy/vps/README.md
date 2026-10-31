@@ -102,3 +102,13 @@ private/data 디렉터리와 키는 실행 UID10001이 접근할 수 있어야 �
 - 모델 호출 기록: `/data/r3/r3-events.sqlite`의 `model_decisions`(역할·모델·지연·토큰·USD·채택·입력 해시)·`model_spend`(KST 일별 USD)·`policy_changes`(누가·어느 층·필드·전후·사유·만료·채택). 상황판은 `/data/r3/r3-picture.json`. 모두 보존 대상.
 - 런처가 넣는 경로에 `AX_R3_PICTURE=/data/r3/r3-picture.json`이 추가됐다. 크론은 `/etc/cron.d/ax-week08-r3`의 두 줄을 `573394c8fc50`으로 갱신했다(switch·health).
 - 교체: `launch-r3.sh 573394c8fc50`으로 라운드2 시험 컨테이너를 새 이미지로 재기동했다. 같은 키라 같은 가게·buyer로 재등록된다.
+
+### 라운드2 실전 1시간 시험 (`trial-r3.sh`, 2026-11-01 09:00~10:00 KST 예약)
+
+호스트의 [trial-r3.sh](trial-r3.sh)와 [trial_report.py](trial_report.py)(표준 라이브러리만, `$BASE/`에 복사)로 느린 루프를 실제 라운드2 시장에서 1시간 켠다. 예약은 별도 파일 `/etc/cron.d/ax-week08-r3-trial`(UTC `0 0 1 11 *` start, `0 1 1 11 *` stop)이며 11/3 전환 파일 `/etc/cron.d/ax-week08-r3`는 건드리지 않는다. `stop`이 시험 파일을 스스로 지운다. 로그 `trial-r3.log`.
+
+1. `start` — 정책표·상황판을 `trial-<UTC>/`에 백업하고, 세 주기의 마지막 실행 시각을 0으로 돌려 첫 tick에 정찰·전술·전략이 모두 돌게 한 뒤 `AX_R3_MANAGER_MODEL=1`로 재기동한다.
+2. `report` — 시작 이후 모델 호출(역할·모델·건수·지연·비용), 오늘 지출, 정책 변경(채택/거부·사유), 정책 버전·전술 오버레이·띠, 상황판(신뢰 낮은 가게·핫 카테고리·경고), 키트 로그 집계(주문·verified·읽기·스크린)를 JSON으로 찍는다.
+3. `stop` — 보고서를 백업 폴더 `report.json`에 저장하고 `AX_R3_MANAGER_MODEL=0`으로 되돌린 뒤 **정책표·상황판을 시험 전 상태로 복원**하고 재기동한다(라운드2 수치로 조정된 정책이 라운드3에 새지 않게). `model_decisions`·`policy_changes` 행은 증거로 남는다.
+
+라운드2에는 재고·결제가 없어 전략·전술 변경의 내용은 참고용이고, 확인 대상은 세 역할의 호출 성공·지연·비용·거부 사유와 통역의 실제 적중이다.
