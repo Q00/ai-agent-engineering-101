@@ -19,7 +19,8 @@ from negotiation.market import choose_shop, observation_count, read_memory, read
 from negotiation.receipts import verify_receipt
 from negotiation.runlog import RunLog
 from negotiation.experience import Experience, POLICY
-from negotiation.ranking import select_buyer, unit_draw
+from negotiation.ranking import select_buyer, unit_draw, budget_band
+from negotiation.world_model import buyer_forecast
 from urllib.parse import urlsplit
 
 
@@ -107,6 +108,7 @@ async def run(args):
     round_number = int(os.environ.get('MARKET_ROUND', '0'))
     require_verified = round_number >= 2
     experience, history = None, {}
+    critic={}
     live=os.environ.get('MARKET_LIVE')=='1'
     order_id=os.environ.get('MARKET_ORDER_ID')
     experiment_id=order_id or folder.name
@@ -115,6 +117,8 @@ async def run(args):
         if live:
             experience = Experience()
             history = experience.buyer_evidence(args.item,args.budget,{s['name']:s['pubkey'] for s in shops},round_number=round_number)
+            critic=experience.buyer_critic_summary(args.item,budget_band(args.item,args.budget),round_number)
+            selection_arm='saved-rate-selection' if unit_draw(experiment_id,'buyer-control')>=critic['control_share'] else 'v1-selection-control'
     except (OSError, sqlite3.Error, ValueError, TypeError) as failure:
         log.record('long_term_memory_unavailable', code=type(failure).__name__)
     candidates=[s for s in shops if not (live and require_verified) or s.get('pubkey')]
@@ -127,7 +131,7 @@ async def run(args):
         try:
             if selection_arm=='saved-rate-selection':
                 shop,reason,evidence=select_buyer(candidates,history,args.item,args.budget,experiment_id,
-                                                audit_name=os.environ.get('MARKET_AUDIT_SHOP'))
+                                                audit_name=os.environ.get('MARKET_AUDIT_SHOP'),critic=critic)
             else:
                 control_memory=[r for r in memory if not live or r.get('pubkey')==next((s.get('pubkey') for s in candidates if s['name']==r['name']),None) and r.get('pubkey')]
                 shop,reason,evidence=choose_shop(candidates,control_memory,args.item,args.budget,
@@ -135,6 +139,8 @@ async def run(args):
                                                 audit_name=os.environ.get('MARKET_AUDIT_SHOP'))
                 evidence['policy_context']={'version':POLICY,'arm':selection_arm,'objective':'common negotiation; selector-only control'}
                 evidence['personal_long_term_statistics']=history.get(shop['name'],{})
+                evidence['world_model']=buyer_forecast(history.get(shop['name'],{}),args.item,args.budget)
+                evidence['critic']=critic
         except ValueError:
             log.record('no_ready_shop',reason='temporary integrity or transport evidence')
             print(json.dumps({'shop':'','receipt':None,'stars':3,'review':'No currently reachable, verifiable shop available; no purchase attempted.'}))
@@ -153,6 +159,11 @@ async def run(args):
     print(safe(f"[choose] {shop['name']} {shop['url']}: {reason}"), flush=True)
     log.record("shop_selected", name=shop["name"], url=shop["url"], item=args.item,
                budget=args.budget, reason=reason, evidence=evidence)
+    if experience is not None:
+        try:experience.buyer_prediction(order_id,shop,args.item,budget_band(args.item,args.budget),round_number,
+                                        selection_arm,evidence['world_model'])
+        except (OSError,sqlite3.Error,ValueError,TypeError) as failure:
+            log.record('critic_unavailable',code=type(failure).__name__)
     client = BudgetClient(log, args.budget)
     started, result, error, signature_verified = time.monotonic(), {}, None, None
     local_failure = False

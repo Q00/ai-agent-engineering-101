@@ -34,6 +34,7 @@ from negotiation.catalog_contracts import NeedContext, SelectionContext
 from negotiation.price_reading import PriceContext
 from negotiation.experience import Experience, POLICY
 from negotiation.ranking import seller_assignment
+from negotiation.world_model import seller_forecast
 import sqlite3
 
 
@@ -202,6 +203,10 @@ class Seller(AgentExecutor):
             self.experience_call('seller_decision', task=task.id, item=memory.item_id, reserve=memory.reserve,
                                  turn=memory.rounds, action=decision.action, price=decision.price, buyer_offer=offer,
                                  policy_arm=memory.policy_assignment.get('arm'),elapsed_seconds=time.monotonic()-memory.opened_at)
+            if opening and memory.policy_assignment and decision.price is not None:
+                forecast=seller_forecast(statistics,memory.policy_assignment['arm'],memory.reserve,decision.price)
+                self.experience_call('shop_prediction',task.id,memory.item_id,memory.policy_assignment['arm'],forecast)
+                self.log.record('world_prediction',task_id=task.id,forecast=forecast)
             self.log.record("decision_applied", task_id=task.id, action=decision.action,
                             terminal=memory.terminal, recent_turns=len(memory.recent))
 

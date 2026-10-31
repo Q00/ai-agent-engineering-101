@@ -46,6 +46,12 @@ class RankingTests(unittest.TestCase):
         self.assertIsNone(one['winner_supported'])
         self.assertEqual(one['version'],'ranking-v2')
 
+    def test_exploitation_uses_cycle_reward_after_matured_samples(self):
+        stats={'arm_results':[{'arm':a,'matured_opportunities':20,'reward_sum':100 if a=='premium' else 80,
+                                'cycle_seconds_sum':1000 if a=='premium' else 100 if a=='balanced' else 300}
+                              for a in ['memory-v1-control','conservative','balanced','premium']]}
+        self.assertEqual(seller_assignment('t',stats)['winner_supported'],'balanced')
+
 
 class EvidenceTests(unittest.TestCase):
     def setUp(self):
@@ -96,6 +102,19 @@ class EvidenceTests(unittest.TestCase):
         row=next(r for r in stats['arm_results'] if r['arm']=='balanced')
         self.assertEqual((row['matured_opportunities'],row['reward_sum'],row['unresolved']),(1,0,1))
         self.assertEqual(stats['opening_price_results'][0]['rejected'],0)
+
+    def test_unconfirmed_new_contract_does_not_relabel_old_quality_evidence(self):
+        self.add(record('old'))
+        self.memory.capability('a','key-a',True,at=100)
+        self.memory.seller_decision(task='old-sale',item='lamp',reserve=100,turn=1,
+                                    action='ask',price=115,buyer_offer=None,round_number=3,at=100,policy_arm='balanced')
+        self.memory.set_contract_scope('fixture-only:quality-contract')
+        current=self.memory.buyer_evidence('lamp',130,{'a':'key-a'},round_number=3,now=101)['a']
+        self.assertEqual(current['successes'],0)
+        self.assertNotIn('acp_available',current)
+        self.memory.set_round(3)
+        self.assertEqual(self.memory.seller_policy_summary('lamp',100,now=200)['current_round_opportunities'],0)
+        self.assertEqual(self.memory.status()['buyer_observation'],1)
 
 
 if __name__=='__main__':unittest.main()

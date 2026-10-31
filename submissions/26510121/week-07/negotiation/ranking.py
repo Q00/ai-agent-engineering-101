@@ -32,6 +32,9 @@ def seller_assignment(task, statistics):
     winner=None
     if len(ready)==len(SELLER_ARMS) and sum(r.get('reward_sum',0) for r in ready)>0:
         winner=max(ready,key=lambda r:r['reward_sum']/max(1,r.get('cycle_seconds_sum',r['matured_opportunities'])))['arm']
+    critic=statistics.get('critic',{})
+    if critic.get('samples',0)>=10 and (critic.get('mean_brier_error') or 0)>0.25:
+        winner=None
     draw=unit_draw(task,'seller-arm')
     if draw<0.10:
         arm='memory-v1-control'
@@ -46,22 +49,19 @@ def seller_assignment(task, statistics):
             'note':'Starting allocation hypotheses; not proven optimal. Same task keeps its arm.'}
 
 
-def select_buyer(shops, evidence, item, budget, identity, *, audit_name=None, now=None):
+def select_buyer(shops, evidence, item, budget, identity, *, audit_name=None, now=None, critic=None):
     """Estimated saved credits/second, with public-text-independent experiment draws."""
     now=time.time() if now is None else now
+    from negotiation.world_model import buyer_forecast
     candidates=[]
     for shop in shops:
         stats=evidence.get(shop['name'],{})
         count=stats.get('finalized',0)
         wins=stats.get('successes',0)
-        prices=stats.get('mean_success_price')
-        # Unknown prices are explicitly optimistic public-floor references,
-        # never a claimed offer or a binding price decision.
-        reference=prices if prices is not None else FLOORS.get(item,budget)
-        saving=max(0,budget-reference)
-        success=(wins+1)/(count+2)
-        seconds=max(1,stats.get('mean_cycle_seconds') or 30)
-        score=success*saving/seconds
+        forecast=buyer_forecast(stats,item,budget)
+        saving=max(0,budget-forecast['expected_price'])
+        success=forecast['success_probability'];seconds=forecast['expected_cycle_seconds']
+        score=forecast['expected_rate']
         reviews=shop.get('reviews',[])
         public=(6+sum(r['stars'] for r in reviews))/(5*(2+len(reviews)))
         fault=stats.get('recent_integrity_fault',False)
@@ -70,7 +70,7 @@ def select_buyer(shops, evidence, item, budget, identity, *, audit_name=None, no
         caution=shop.get('review_concentration_caution') is True
         # These are temporary transport/integrity observations, not accusations.
         blocked=fault or outage or no_acp
-        candidates.append({'shop':shop,'stats':stats,'score':score,'saving':saving,
+        candidates.append({'shop':shop,'stats':stats,'score':score,'saving':saving,'forecast':forecast,
                            'success_estimate':success,'seconds':seconds,'blocked':blocked,
                            'public':0.6 if caution else public,
                            'stale':now-stats.get('last_observed_epoch',0)>21600,
@@ -82,6 +82,9 @@ def select_buyer(shops, evidence, item, budget, identity, *, audit_name=None, no
     known=[c for c in healthy if c['stats'].get('successes',0)>0]
     weak=sum(c['stats'].get('finalized',0)<3 or c['stale'] for c in healthy)/len(healthy)
     exploration_rate=0.05+0.15*weak
+    calibration=((critic or {}).get('arms') or {}).get('saved-rate-selection',{})
+    if calibration.get('samples',0)>=10 and (calibration.get('mean_brier_error') or 0)>0.25:
+        exploration_rate=min(0.20,exploration_rate+0.05)
     explore=unit_draw(identity,'buyer-exploration')<exploration_rate
     pool=[c for c in healthy if c['stats'].get('finalized',0)<3 or c['stale']]
     if explore and pool:
@@ -100,6 +103,7 @@ def select_buyer(shops, evidence, item, budget, identity, *, audit_name=None, no
     reason=(f"{mode}; finalized={stats.get('finalized',0)}; paid successes={stats.get('successes',0)}; "
             f"estimated saved/cycle-second={selected['score']:.4f}; exploration={exploration_rate:.3f}")
     detail={'selection_reason':reason,'avoided_for_integrity':[{'name':c['shop']['name'],'reason':'temporary failed integrity/capability/transport evidence'} for c in candidates if c['blocked']],
+            'world_model':selected['forecast'],'critic':critic or {},
             'personal_long_term_statistics':stats,'public_reviews_untrusted':selected['shop'].get('reviews',[]),
             'public_reviews_discounted':selected['shop'].get('review_concentration_caution') is True,
             'policy_context':{'version':VERSION,'arm':'saved-rate-selection','objective':'settled saved credits per order-cycle second',
