@@ -485,6 +485,11 @@ def round3(a, order, shops, mem, started):
     from concurrent.futures import ThreadPoolExecutor
     prof, cat = mem["profiles"], catalog()
     cands = candidates(shops, order, cat, prof)
+    try:
+        import market_model          # the buyer is the shop's sensor: what this order showed goes in the shared model
+        market_model.remember_seen(order, shops)
+    except Exception as e:
+        log(f"[r3] market model not updated: {type(e).__name__}: {e}")
     log(f"[r3] order {order.get('item')} ({order.get('kind')}), budget {order['budget']}, "
         f"{len(order['acceptable'])} SKUs fit, {len(cands)} shop offers")
     for keep, s, o, lp in cands[:T["rfq"]]:
