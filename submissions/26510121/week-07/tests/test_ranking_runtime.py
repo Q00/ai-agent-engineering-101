@@ -50,6 +50,12 @@ class PreflightTests(unittest.IsolatedAsyncioTestCase):
 
 
 class AdapterTimingTests(unittest.TestCase):
+    def test_new_round_is_paused_before_legacy_actor_can_trade(self):
+        with patch.object(runtime,'original_handle_order') as execute,patch.object(runtime,'remember'), \
+             patch.object(runtime.kit,'log'),patch.object(runtime.time,'sleep'):
+            self.assertIsNone(runtime.handle_order({'round':3}))
+            execute.assert_not_called()
+
     def test_poll_wait_and_failed_no_receipt_order_are_preserved(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);memory=Experience(root/'db');market=SimpleNamespace()

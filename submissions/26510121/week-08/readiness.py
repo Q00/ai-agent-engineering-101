@@ -56,8 +56,10 @@ def main():
     result['journal_events']=Experience().status()
     result['journal_round']=Experience().current_round()
     checks['persistent_journal_available']=bool(result['journal_events'])
-    result['ready']=all(checks.values()) and bool(result.get('shop_url'))
-    result['r3_live_settlement']='not yet verified' if result['market_round']<3 else 'inspect LAB payment evidence'
+    result['ready_for_current_round']=all(checks.values()) and bool(result.get('shop_url')) and result['market_round']<3
+    result['round3_contract_ready']=False
+    result['ready']=False
+    result['r3_live_settlement']='Official contract changed to v4: SKU, inventory, quality, warranties and Surplus/ALL. Migration required.'
     output=HERE/'logs'/('readiness-'+stamp+'.json')
     with output.open('x',encoding='utf-8') as f:f.write(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
     print(json.dumps(result,ensure_ascii=True,indent=2))

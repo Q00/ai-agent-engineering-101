@@ -116,6 +116,14 @@ def market_call(self, method, path, role="buyer", **kwargs):
 
 
 def handle_order(order, *args, **kwargs):
+    if order['round']>=3:
+        # The official market now requires kit v4 plus SKU/inventory contracts.
+        # This actor is the preserved item-only actor; do not silently trade a
+        # new quality/inventory contract with its legacy reward and receipt.
+        remember('set_round',order['round'])
+        kit.log('[contract] Round 3 now requires the v4 SKU/inventory actor; no binding trade attempted; waiting 60 s')
+        time.sleep(60)
+        return None
     names = ("MARKET_ROUND", "MARKET_REGISTRY_KEYS", "MARKET_AUDIT_SHOP",'MARKET_ORDER_ID')
     old = {name: os.environ.get(name) for name in names}
     os.environ["MARKET_ROUND"] = str(order["round"])
