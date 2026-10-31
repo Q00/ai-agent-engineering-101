@@ -1,5 +1,9 @@
 # Week 08 강의 위치와 진행 기록
 
+**공식 계약 변경:** 후속 확인한 `market.ourolabs.ai/agent.md`는 키트 v4의
+SKU·재고·등급·보증·Surplus/ALL 계약을 요구한다. 아래 v3 준비 완료는 당시
+계약에 대한 기록이며 새 Round 3 준비 완료가 아니다. `V4_MIGRATION.md`를 참조한다.
+
 기준: 저장소 루트 `week-08.html` 전체, upstream 커밋 `c89c58d`.
 작업일: 2026-10-27 (Asia/Seoul).
 

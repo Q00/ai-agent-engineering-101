@@ -1,5 +1,9 @@
 # Quality and cap: unconfirmed market change
 
+Update: a later official v4 contract now defines grades, stock, expiry and warranties.
+The historical scenario note below is superseded by `V4_MIGRATION.md` for that
+contract. Current legacy actors are not enabled to trade that new Round 3.
+
 Source: the user's 2026-10-27 class update. The supplied diagram illustrates the
 existing ACP/AP2 flow; it does not define quality fields, cap values or scoring.
 This is a scenario note, not a verified API contract or an implemented quality rule.
