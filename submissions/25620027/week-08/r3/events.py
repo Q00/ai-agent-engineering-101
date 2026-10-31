@@ -8,6 +8,7 @@ the report are derived with the market's own ledger numbers as the identity.
 
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 import time
@@ -22,7 +23,9 @@ if TYPE_CHECKING:
 
 EVENTS_ENV: Final = "AX_R3_EVENTS"
 EVENTS_FILE: Final = "r3-events.sqlite"
-Outcome = Literal["agreed", "no_deal", "paid", "refused", "unknown", "error"]
+Outcome = Literal[
+    "agreed", "no_deal", "paid", "refused", "unknown", "error", "suspicious"
+]
 
 
 def events_path(market_dir: Path | None = None) -> Path:
@@ -68,6 +71,30 @@ class EventLedger:
             )
             _ = db.execute(
                 "CREATE INDEX IF NOT EXISTS attempts_shop ON buyer_attempts(shop, ts)"
+            )
+            _ = db.execute(
+                """CREATE TABLE IF NOT EXISTS policy_changes (
+                    id INTEGER PRIMARY KEY, ts REAL NOT NULL, actor TEXT NOT NULL,
+                    layer TEXT NOT NULL, field TEXT NOT NULL, before TEXT, after TEXT,
+                    reason TEXT, expires_at REAL, version INTEGER,
+                    accepted INTEGER NOT NULL, note TEXT)"""
+            )
+            _ = db.execute(
+                """CREATE TABLE IF NOT EXISTS model_decisions (
+                    id INTEGER PRIMARY KEY, ts REAL NOT NULL, role TEXT NOT NULL,
+                    model TEXT NOT NULL, latency_ms INTEGER, input_tokens INTEGER,
+                    output_tokens INTEGER, cost_usd REAL, accepted INTEGER NOT NULL,
+                    summary TEXT, input_sha256 TEXT)"""
+            )
+            _ = db.execute(
+                """CREATE TABLE IF NOT EXISTS model_spend (
+                    day TEXT PRIMARY KEY, usd REAL NOT NULL, calls INTEGER NOT NULL)"""
+            )
+            _ = db.execute(
+                "CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)"
+            )
+            _ = db.execute(
+                "CREATE INDEX IF NOT EXISTS changes_field ON policy_changes(field, ts)"
             )
         if os.name != "nt":
             path.chmod(0o600)
@@ -196,6 +223,165 @@ class EventLedger:
             ):
                 reasons[str(shop)] = str(reason or "")
         return reasons
+
+    def record_policy_change(  # noqa: PLR0913 - one row, explicit columns
+        self,
+        *,
+        actor: str,
+        layer: str,
+        field: str,
+        before: object,
+        after: object,
+        reason: str,
+        expires_at: float | None,
+        version: int | None,
+        accepted: bool,
+        note: str = "",
+    ) -> None:
+        """Append one proposed policy change and whether code accepted it."""
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db, db:
+            _ = db.execute(
+                """INSERT INTO policy_changes
+                (ts, actor, layer, field, before, after, reason, expires_at, version,
+                 accepted, note) VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    time.time(),
+                    actor[:40],
+                    layer[:16],
+                    field[:64],
+                    json.dumps(before)[:200],
+                    json.dumps(after)[:200],
+                    reason[:300],
+                    expires_at,
+                    version,
+                    int(accepted),
+                    note[:200],
+                ),
+            )
+
+    def last_direction(self, field: str, within_seconds: float) -> int | None:
+        """Return +1/-1 for the latest accepted move of a field inside the window."""
+        since = time.time() - within_seconds
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            row = db.execute(
+                """SELECT before, after FROM policy_changes
+                WHERE field = ? AND accepted = 1 AND ts >= ?
+                ORDER BY ts DESC LIMIT 1""",
+                (field, since),
+            ).fetchone()
+        if row is None:
+            return None
+        try:
+            before, after = float(json.loads(row[0])), float(json.loads(row[1]))
+        except (TypeError, ValueError):
+            return None
+        if after == before:
+            return None
+        return 1 if after > before else -1
+
+    def recent_policy_changes(self, hours: float) -> list[dict[str, object]]:
+        """Return accepted and refused changes of the window, oldest first."""
+        since = time.time() - hours * 3600
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = db.execute(
+                """SELECT ts, actor, layer, field, before, after, reason, accepted, note
+                FROM policy_changes WHERE ts >= ? ORDER BY ts LIMIT 200""",
+                (since,),
+            ).fetchall()
+        return [
+            {
+                "ts": round(float(ts)),
+                "actor": str(actor),
+                "layer": str(layer),
+                "field": str(field),
+                "before": before,
+                "after": after,
+                "reason": str(reason or "")[:120],
+                "accepted": bool(accepted),
+                "note": str(note or "")[:80],
+            }
+            for ts, actor, layer, field, before, after, reason, accepted, note in rows
+        ]
+
+    def record_model_decision(  # noqa: PLR0913 - one row, explicit columns
+        self,
+        *,
+        role: str,
+        model: str,
+        latency_ms: int,
+        input_tokens: int,
+        output_tokens: int,
+        cost_usd: float,
+        accepted: bool,
+        summary: str,
+        input_sha256: str,
+        day: str,
+    ) -> None:
+        """Append one model call and add its cost to the day's spend."""
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db, db:
+            _ = db.execute(
+                """INSERT INTO model_decisions
+                (ts, role, model, latency_ms, input_tokens, output_tokens, cost_usd,
+                 accepted, summary, input_sha256) VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    time.time(),
+                    role[:24],
+                    model[:48],
+                    latency_ms,
+                    input_tokens,
+                    output_tokens,
+                    cost_usd,
+                    int(accepted),
+                    summary[:300],
+                    input_sha256[:64],
+                ),
+            )
+            _ = db.execute(
+                """INSERT INTO model_spend(day, usd, calls) VALUES (?, ?, 1)
+                ON CONFLICT(day) DO UPDATE SET usd = usd + excluded.usd,
+                calls = calls + 1""",
+                (day, cost_usd),
+            )
+
+    def spend(self, day: str) -> tuple[float, int]:
+        """Return (usd, calls) recorded for a KST day."""
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            row = db.execute(
+                "SELECT usd, calls FROM model_spend WHERE day = ?", (day,)
+            ).fetchone()
+        return (float(row[0]), int(row[1])) if row else (0.0, 0)
+
+    def model_summary(self, hours: float) -> dict[str, dict[str, float]]:
+        """Count calls, acceptances, mean latency and cost per model role."""
+        since = time.time() - hours * 3600
+        out: dict[str, dict[str, float]] = {}
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            for role, n, accepted, latency, cost in db.execute(
+                """SELECT role, count(*), sum(accepted), avg(latency_ms), sum(cost_usd)
+                FROM model_decisions WHERE ts >= ? GROUP BY role""",
+                (since,),
+            ):
+                out[str(role)] = {
+                    "calls": int(n),
+                    "accepted": int(accepted or 0),
+                    "avg_latency_ms": round(float(latency or 0)),
+                    "cost_usd": round(float(cost or 0), 4),
+                }
+        return out
+
+    def get_value(self, key: str) -> str | None:
+        """Read one small shared setting (cooldowns, alert counters)."""
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            row = db.execute("SELECT value FROM kv WHERE key = ?", (key,)).fetchone()
+        return str(row[0]) if row else None
+
+    def set_value(self, key: str, value: str) -> None:
+        """Write one small shared setting."""
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db, db:
+            _ = db.execute(
+                "INSERT OR REPLACE INTO kv(key, value) VALUES (?, ?)",
+                (key, value[:200]),
+            )
 
     def summary(self, hours: float) -> dict[str, int]:
         """Count attempts, agreed, paid, refused and receipts for the manager."""
