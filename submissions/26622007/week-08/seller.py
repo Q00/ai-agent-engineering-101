@@ -448,7 +448,8 @@ def build(url, catalog, name):
 KITLOGS = {"market-kit.log": "logs/market-kit.log", "market-kit.log.1": "logs/market-kit.log.1",
            "seller_memory.json": "memory/seller_memory.json", "market_memory.json": "memory/market_memory.json",
            "settled.jsonl": "memory/settled.jsonl", "payments.jsonl": ".market/payments.jsonl",
-           "broken.jsonl": ".market/broken.jsonl", "outbox.sent.jsonl": ".market/outbox.sent.jsonl"}
+           "broken.jsonl": ".market/broken.jsonl", "outbox.sent.jsonl": ".market/outbox.sent.jsonl",
+           "demand_model.json": ".market/demand_model.json", "ledger_cursor.json": ".market/ledger_cursor.json"}
 
 
 async def kitlog(req: Request):
