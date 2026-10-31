@@ -1,0 +1,73 @@
+# challenge 1, 2026-10-19 22:57:56, seller 'Nocha Furniture', catalog 2993 items
+
+## 1. something wooden to keep about 40 books, not taller than my desk
+    -> 'something wooden to keep about 40 books, not taller than my desk'
+    <- TASK_STATE_INPUT_REQUIRED | This birch plywood bookshelf holds about forty books and is a lovely wooden option. Heritage birch plywood bookshelf 2 [bookshelf-0011]: Heritage bookshelf in birch plywood (wood wooden plywood light). 2 shelves, 70 cm tall, 60 cm wide, holds about 40 books. My price: 350.
+    -> '175'
+    <- TASK_STATE_INPUT_REQUIRED | I can come down a little, but that offer is too low. My price: 330.
+    -> '228'
+    <- TASK_STATE_INPUT_REQUIRED | I can make a little more room on the price, but that offer is still too low. My price: 310.
+    -> '280'
+    <- TASK_STATE_COMPLETED | Deal: Heritage birch plywood bookshelf 2 at 280.
+       artifact [{"seller": "Nocha Furniture", "item": "Heritage birch plywood bookshelf 2", "item_id": "bookshelf-0011", "price": 280.0}]
+  PASS  item bookshelf-0011 (Heritage birch plywood bookshelf 2, reserve 270) fits=True; asks [350, 330, 310]; final TASK_STATE_COMPLETED, price 280.0; 15s
+
+## 2. a soft seat for two people to watch TV, velvet if you have it
+    -> 'a soft seat for two people to watch TV, velvet if you have it'
+    <- TASK_STATE_INPUT_REQUIRED | This soft velvet two-seater is a lovely choice for watching TV. Studio velvet sofa [sofa-2474]: Studio sofa in velvet (fabric soft upholstered). Sofa for 2, 85 cm tall at the back. My price: 1900.
+    -> '950'
+    <- TASK_STATE_INPUT_REQUIRED | I can come down a little, but this sofa is worth more. My price: 1750.
+    -> '1235'
+    <- TASK_STATE_INPUT_REQUIRED | I can come down a little, but this sofa is worth more. My price: 1650.
+    -> '1520'
+    <- TASK_STATE_COMPLETED | Deal: Studio velvet sofa at 1520.
+       artifact [{"seller": "Nocha Furniture", "item": "Studio velvet sofa", "item_id": "sofa-2474", "price": 1520.0}]
+  PASS  item sofa-2474 (Studio velvet sofa, reserve 1515) fits=True; asks [1900, 1750, 1650]; final TASK_STATE_COMPLETED, price 1520.0; 16s
+
+## 3. a light for reading next to my armchair, standing on the floor
+    -> 'a light for reading next to my armchair, standing on the floor'
+    <- TASK_STATE_INPUT_REQUIRED | This dimmable arc floor lamp is a great fit for reading beside your armchair. Industrial brushed aluminium floor lamp [floor-lamp-0463]: Industrial floor lamp in brushed aluminium (metal aluminium silver light). Floor lamp, 150 cm tall, arc shape, dimmable. My price: 300.
+    -> '150'
+    <- TASK_STATE_INPUT_REQUIRED | I can come down a little, but this quality industrial lamp is worth more. My price: 280.
+    -> '195'
+    <- TASK_STATE_INPUT_REQUIRED | I can come down a little further, but I can’t meet that offer. My price: 260.
+    -> '240'
+    <- TASK_STATE_COMPLETED | Deal: Industrial brushed aluminium floor lamp at 240.
+       artifact [{"seller": "Nocha Furniture", "item": "Industrial brushed aluminium floor lamp", "item_id": "floor-lamp-0463", "price": 240.0}]
+  PASS  item floor-lamp-0463 (Industrial brushed aluminium floor lamp, reserve 215) fits=True; asks [300, 280, 260]; final TASK_STATE_COMPLETED, price 240.0; 14s
+
+## 4. somewhere to put about 12 pairs of shoes by the door, metal please
+    -> 'somewhere to put about 12 pairs of shoes by the door, metal please'
+    <- TASK_STATE_INPUT_REQUIRED | This compact metal rack holds your shoes neatly by the door. Nordic black steel shoe rack 3 [shoe-rack-2154]: Nordic shoe rack in black steel (metal steel industrial black). Shoe rack for 12 pairs, 50 cm tall. My price: 80.
+    -> '40'
+    <- TASK_STATE_INPUT_REQUIRED | I can come down a little, but this sturdy rack is worth more. My price: 75.
+    -> '52'
+    <- TASK_STATE_INPUT_REQUIRED | I can come down a little more, but this is a quality shoe rack. My price: 68.
+    -> '64'
+    <- TASK_STATE_COMPLETED | Deal: Nordic black steel shoe rack 3 at 64.
+       artifact [{"seller": "Nocha Furniture", "item": "Nordic black steel shoe rack 3", "item_id": "shoe-rack-2154", "price": 64.0}]
+  PASS  item shoe-rack-2154 (Nordic black steel shoe rack 3, reserve 60) fits=True; asks [80, 75, 68]; final TASK_STATE_COMPLETED, price 64.0; 16s
+
+## 5. a table where a family of six can eat dinner, solid wood
+    -> 'a table where a family of six can eat dinner, solid wood'
+    <- TASK_STATE_INPUT_REQUIRED | This solid oak table comfortably seats six and would be an excellent fit for family dinners. Loft solid oak dining table 2 [dining-table-1368]: Loft dining table in solid oak (wood wooden hardwood). Dining table for 6, 74 cm tall. My price: 1450.
+    -> '725'
+    <- TASK_STATE_INPUT_REQUIRED | I can come down a little, but this solid oak table is worth considerably more. My price: 1350.
+    -> '942'
+    <- TASK_STATE_INPUT_REQUIRED | I can make a modest adjustment for this solid oak table. My price: 1250.
+    -> '1160'
+    <- TASK_STATE_COMPLETED | Deal: Loft solid oak dining table 2 at 1160.
+       artifact [{"seller": "Nocha Furniture", "item": "Loft solid oak dining table 2", "item_id": "dining-table-1368", "price": 1160.0}]
+  PASS  item dining-table-1368 (Loft solid oak dining table 2, reserve 1030) fits=True; asks [1450, 1350, 1250]; final TASK_STATE_COMPLETED, price 1160.0; 18s
+
+## 6. I want to buy a lamp
+    -> 'I want to buy a lamp'
+    <- TASK_STATE_INPUT_REQUIRED | This sturdy desk lamp is a great choice, and I can offer it at lamp My price: 160.
+    -> '80'
+    <- TASK_STATE_INPUT_REQUIRED | I can come down a little, but not that far. My price: 150.
+    -> '104'
+    <- TASK_STATE_COMPLETED | Deal: lamp at 104.
+       artifact [{"seller": "Nocha Furniture", "item": "lamp", "item_id": "lamp", "price": 104.0}]
+  PASS  item lamp (lamp, reserve 100) fits=True; asks [160, 150]; final TASK_STATE_COMPLETED, price 104.0; 10s
+
+6/6 passed
