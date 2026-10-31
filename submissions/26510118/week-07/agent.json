@@ -1,0 +1,13 @@
+{
+  "harness": "Claude Code CLI 2.1.268 (claude -p), model claude-sonnet-5",
+  "seller": {
+    "cmd": "python seller.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "python buyer.py {url} {item} {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"
+  },
+  "deployed": "https://kiro-shop.kiro729.workers.dev"
+}

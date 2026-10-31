@@ -1,0 +1,88 @@
+[seller] listening on 127.0.0.1:50256, card advertises http://127.0.0.1:50256/
+[seller] 'I want to buy a lamp' names lamp outright
+[seller] asks.json loaded: {'lamp': 104, 'chair': 191, 'bookshelf': 276}
+[seller] read offer 104 from '104'
+[seller] journal: lamp deal at 104 after 1 offer(s)
+[seller] 'I want to buy a lamp' names lamp outright
+[seller] read offer 104 from '104'
+[seller] journal: lamp deal at 104 after 1 offer(s)
+[seller] 'I want to buy a lamp' names lamp outright
+[seller] read offer 104 from '104'
+[seller] journal: lamp deal at 104 after 1 offer(s)
+[seller] 'I want to buy a bookshelf' names bookshelf outright
+[seller] read offer 140 from '140'
+Failed to detach context
+Traceback (most recent call last):
+  File "C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000002770A3ECFE0> at 0x000002770C345700> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-37' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future cancelled>>
+Failed to detach context
+Traceback (most recent call last):
+  File "C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000002770A3ECFE0> at 0x000002770C345480> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-38' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\bubuj\Documents\a2a-lab\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future cancelled>>
+[seller] bookshelf ask 276 offer 140 round 1: harness '270' -> 270 | Of the 6 earlier buyers of this item whose first offer was closest to this one's: 0 bought, 6 left (the last ask they saw: 260, 260, 260, 260, 262, 260).
+[seller] read offer 170 from '170'
+[seller] bookshelf ask 270 offer 170 round 2: harness '263' -> 263 | Of the 6 earlier buyers of this item whose first offer was closest to this one's: 0 bought, 6 left (the last ask they saw: 260, 260, 260, 260, 262, 260).
+[seller] read offer 200 from '200'
+[seller] bookshelf ask 263 offer 200 round 3: harness '261' -> 261 | Of the 6 earlier buyers of this item whose first offer was closest to this one's: 0 bought, 6 left (the last ask they saw: 260, 260, 260, 260, 262, 260).
+[seller] read offer 230 from '230'
+[seller] journal: bookshelf rejected after 4 offer(s)
+[seller] 'I want to buy a bookshelf' names bookshelf outright
+[seller] read offer 140 from '140'
+[seller] bookshelf ask 276 offer 140 round 1: harness '268' -> 268 | Of the 6 earlier buyers of this item whose first offer was closest to this one's: 0 bought, 6 left (the last ask they saw: 260, 260, 260, 261, 260, 262).
+[seller] read offer 170 from '170'
+[seller] bookshelf ask 268 offer 170 round 2: harness '264' -> 264 | Of the 6 earlier buyers of this item whose first offer was closest to this one's: 0 bought, 6 left (the last ask they saw: 260, 260, 260, 261, 260, 262).
+[seller] read offer 200 from '200'
+[seller] bookshelf ask 264 offer 200 round 3: harness '261' -> 261 | Of the 6 earlier buyers of this item whose first offer was closest to this one's: 0 bought, 6 left (the last ask they saw: 260, 260, 260, 261, 260, 262).
+[seller] read offer 230 from '230'
+[seller] journal: bookshelf rejected after 4 offer(s)
+[seller] 'I want to buy a bookshelf' names bookshelf outright
+[seller] read offer 140 from '140'
+[seller] bookshelf ask 276 offer 140 round 1: harness '268' -> 268 | Of the 6 earlier buyers of this item whose first offer was closest to this one's: 0 bought, 6 left (the last ask they saw: 260, 260, 260, 261, 261, 260).
+[seller] read offer 170 from '170'
+[seller] bookshelf ask 268 offer 170 round 2: harness '262' -> 262 | Of the 6 earlier buyers of this item whose first offer was closest to this one's: 0 bought, 6 left (the last ask they saw: 260, 260, 260, 261, 261, 260).
+[seller] read offer 200 from '200'
+[seller] bookshelf ask 262 offer 200 round 3: harness '260' -> 260 | Of the 6 earlier buyers of this item whose first offer was closest to this one's: 0 bought, 6 left (the last ask they saw: 260, 260, 260, 261, 261, 260).
+[seller] read offer 230 from '230'
+[seller] journal: bookshelf rejected after 4 offer(s)

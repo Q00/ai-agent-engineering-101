@@ -1,0 +1,11 @@
+# Runtime dependencies for the week-07 seller, buyer and market_buyer.
+# These are what the code imports directly; pip pulls the rest. cryptography is
+# new this week: the seller signs receipts with Ed25519 (LAB 2). The harness is
+# the Claude Code CLI named in agent.json and is not a pip package.
+#
+#   python -m pip install -r requirements.txt
+a2a-sdk==1.2.2
+httpx==0.28.1
+uvicorn==0.54.0
+starlette==1.8.0
+cryptography==50.0.2
