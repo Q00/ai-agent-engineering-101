@@ -1,0 +1,77 @@
+"""Week 08 — review_r3.py: the kit's review hook for a paid (settled) Round 3 deal.
+
+    python review_r3.py --deal .market/deal.json
+
+The kit runs it after the payment with what the market recorded (grade at settle, whether the shop's grade
+claim was true, shelf life, warranty, value). Stars come from those facts only, and the review states them in
+checkable terms (SKU, grade, list price, ledger number). A false grade claim also goes into my memory as an
+offense of that shop (buyer_memory.sanction).
+"""
+import argparse
+import json
+import time
+from pathlib import Path
+
+from market_buyer import remember
+
+
+def shop_name(url):
+    try:
+        for s in json.loads(Path(".market/shops.json").read_text(encoding="utf-8")):
+            if s["url"].rstrip("/") == url.rstrip("/"):
+                return s["name"]
+    except (OSError, ValueError, KeyError):
+        pass
+    return url
+
+
+def judge(deal):
+    o, rec, st = deal.get("order") or {}, deal.get("receipt") or {}, deal.get("settled") or {}
+    price, sku = rec.get("price"), st.get("sku") or rec.get("item")
+    lp = st.get("value") or 0
+    try:
+        lp = json.loads(Path(".market/catalog.json").read_text(encoding="utf-8"))
+        lp = next((r["list_price"] for r in lp if r["sku"] == sku), None) if isinstance(lp, list) else lp[sku]["list_price"]
+    except (OSError, ValueError, KeyError, TypeError, StopIteration):
+        lp = st.get("value") or None
+    facts, problem = [f"[sku {sku}] {str(st.get('name') or '')[:28]}"], None
+    if price and lp:
+        facts.append(f"paid {price} vs list {lp} ({(lp - price) / lp:+.0%} kept)")
+    grade, claim = st.get("grade"), st.get("claim")
+    facts.append(f"grade={grade}" + (f" claim={claim}" if claim else ""))
+    stars = 3
+    if price and lp:
+        keep = (lp - price) / lp
+        stars = 5 if keep >= 0.25 else 4 if keep >= 0.10 else 3 if keep >= 0 else 2
+    if claim and st.get("claim_honest") is False:
+        stars, problem = 1, f"misbehaved (hallucination): claimed grade {claim}, the market says {grade}"
+        facts.append("claim_honest=false")
+    elif claim:
+        facts.append("claim_honest=true")
+    if o.get("kind") == "food" and st.get("expires_at") and o.get("use_within_hours"):
+        left = (st["expires_at"] - time.time()) / 3600
+        if left < o["use_within_hours"]:
+            stars, problem = 1, problem or f"misbehaved (hallucination): food lasts {left:.1f} h, needed {o['use_within_hours']} h"
+            facts.append(f"shelf_left={left:.0f}h < needed {o['use_within_hours']}h")
+        else:
+            facts.append(f"shelf_left={left:.0f}h")
+    if st.get("warranty_hours"):
+        facts.append(f"warranty={st['warranty_hours']}h")
+    if st.get("ledger"):
+        facts.append(f"ledger #{st['ledger']}")
+    return stars, " | ".join(facts)[:240], problem, st.get("shop") or ""
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--deal", required=True)
+    deal = json.loads(Path(ap.parse_args().deal).read_text(encoding="utf-8"))
+    stars, review, problem, url = judge(deal)
+    if problem:
+        remember({"ts": round(time.time(), 1), "shop": shop_name(url), "outcome": "review", "problem": problem,
+                  "ledger": (deal.get("settled") or {}).get("ledger")})
+    print(json.dumps({"stars": stars, "review": review}, ensure_ascii=False), flush=True)
+
+
+if __name__ == "__main__":
+    main()

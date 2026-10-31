@@ -82,7 +82,7 @@ def asking_price(task):
     meta = (msg.get("metadata") or {}).get("ask")
     if isinstance(meta, (int, float)):
         return int(meta)
-    text = status_text(task)
+    text = re.sub(r"(?<=\d),(?=\d{3})", "", status_text(task))     # Round 3 prices in won: "8,550"
     named = ASK_WORDS.findall(text)
     if named:
         return int(named[-1])
@@ -213,17 +213,22 @@ def choose(shops, item, budget, prof):
 
 # --- trading
 
-def negotiate(card_url, item, budget, started, ratio=None, low=None):
+def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None):
     """Week-06 buyer loop with two more guards. Returns (task, asks, offers): every ask the shop made and
     every price we sent, oldest first. low is the lowest price I agreed for this item lately at any shop
     (the market floor): an ask at or below it is taken at once, and my first offer is that price, not a
-    share of the ask. A shop whose ask stays above my budget and does not move is left after two asks."""
-    card = httpx.get(card_url.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=10).json()
-    url = next(i for i in card["supportedInterfaces"] if i.get("protocolBinding") == "JSONRPC")["url"]
-    log(f"card: {card['name']} | JSONRPC {url} | buying {item} with budget {budget}")
-    task = send(url, f"I want to buy a {item}")
+    share of the ask. A shop whose ask stays above my budget and does not move is left after two asks.
+    opened = (url, task, opening) continues a task the Round 3 quote round already opened."""
+    if opened:
+        url, task, opening = opened
+    else:
+        card = httpx.get(card_url.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=10).json()
+        url = next(i for i in card["supportedInterfaces"] if i.get("protocolBinding") == "JSONRPC")["url"]
+        log(f"card: {card['name']} | JSONRPC {url} | buying {item} with budget {budget}")
+        opening = f"I want to buy a {item}"
+        task = send(url, opening)
     task_id = task["id"]
-    history = [f"buyer: I want to buy a {item}", f"seller: {status_text(task)}"]
+    history = [f"buyer: {opening}", f"seller: {status_text(task)}"]
     first_max = T["first_offer_max"]
     if ratio is not None:
         # my memory of this shop: where its deals with me usually ended, as a share of its first ask
@@ -330,6 +335,7 @@ def misbehaviour(item, asks, offers, texts, outcome):
             worst = "hallucination"
             break
     for t in texts:
+        t = re.sub(r"(?<=\d),(?=\d{3})", "", t)
         m = re.search(r"deal\W+(?:\w+\W+){0,3}?(\w+) at (\d+)", t, re.I)
         if m and outcome == "deal":
             said_item, said_price = m.group(1).lower(), int(m.group(2))
@@ -417,13 +423,148 @@ def review_for(outcome, item, asks, offers, rec, problem, issues=(), worst=None)
 
 # --- main
 
+# --- Round 3: a category order, SKUs with list prices, shops with stock
+
+def catalog():
+    try:
+        rows = json.loads((Path(".market") / "catalog.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {r["sku"]: r for r in rows} if isinstance(rows, list) else rows
+
+
+def candidates(shops, order, cat, prof):
+    """Every (shop, SKU) that fits the order, best first, by code: what I expect to keep (list price minus the
+    price I expect to pay at that shop) times the chance the shop is honest. One SKU per shop."""
+    budget, acceptable = order["budget"], set(order["acceptable"])
+    best = {}
+    for s in shops:
+        why = blocked(prof, s["name"])
+        if why:
+            log(f"[filter] skip {s['name']}: {why}")
+            continue
+        p = prof.get(s["name"])
+        ratio = buyer_memory.list_ratio(p) or T["prior_price_ratio"]
+        for o in s.get("offers") or []:
+            lp = (cat.get(o["sku"]) or {}).get("list_price")
+            if o["sku"] not in acceptable or not o.get("qty") or not lp or lp * T["r3_first_offer"] > budget:
+                continue
+            expect = min(lp * ratio, budget)
+            keep = (lp - expect) * (1 - buyer_memory.defect_rate(p))
+            if s["name"] not in best or keep > best[s["name"]][0]:
+                best[s["name"]] = (keep, s, o, lp)
+    return sorted(best.values(), key=lambda c: -c[0])
+
+
+def quote(c):
+    """Open a task with one shop for one SKU and read its first ask (the quote round runs these in parallel,
+    like delegate_task: each one alone, only the result comes back)."""
+    keep, s, o, lp = c
+    try:
+        card = httpx.get(s["url"].rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=10).json()
+        url = next(i for i in card["supportedInterfaces"] if i.get("protocolBinding") == "JSONRPC")["url"]
+        opening = f"I want to buy {o['name']} ({o['sku']})"
+        task = send(url, opening)
+        ask = asking_price(task) if state(task) == "TASK_STATE_INPUT_REQUIRED" else None
+        return {"c": c, "url": url, "task": task, "opening": opening, "ask": ask}
+    except Exception as e:
+        return {"c": c, "error": f"{type(e).__name__}: {e}"}
+
+
+def accept_policy(order):
+    """What the checkout must show before the kit pays. Food that will not last use_within_hours is worth 0."""
+    pol = {"cert": True}
+    if order.get("kind") == "food":
+        pol["min_hours_left"] = round((order.get("use_within_hours") or 0) + T["food_margin_h"], 1)
+    else:
+        pol["grades"] = list(T["goods_grades"])
+    return pol
+
+
+def round3(a, order, shops, mem, started):
+    from concurrent.futures import ThreadPoolExecutor
+    prof, cat = mem["profiles"], catalog()
+    cands = candidates(shops, order, cat, prof)
+    log(f"[r3] order {order.get('item')} ({order.get('kind')}), budget {order['budget']}, "
+        f"{len(order['acceptable'])} SKUs fit, {len(cands)} shop offers")
+    for keep, s, o, lp in cands[:T["rfq"]]:
+        log(f"[r3]   {s['name']}: {o['name']} ({o['sku']}) list {lp}, expect to keep {keep:.0f}")
+    if not cands:
+        print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
+        return
+    with ThreadPoolExecutor(T["rfq"]) as ex:
+        quotes = list(ex.map(quote, cands[:T["rfq"]]))
+    for q in quotes:
+        log(f"[quote] {q['c'][1]['name']}: " + (q.get("error") or f"ask {q['ask']}"))
+    good = [q for q in quotes if q.get("ask")]
+    if not good:
+        q = quotes[0]
+        shop = q["c"][1]
+        stars, review = 1, f"No quote for {q['c'][2]['sku']}: {q.get('error') or 'no price in the reply'}."
+        remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": q["c"][2]["sku"], "budget": order["budget"],
+                  "outcome": "no answer", "problem": "no answer (no quote)"})
+        print(json.dumps({"shop": shop["url"], "receipt": None, "stars": stars, "review": review}, ensure_ascii=False),
+              flush=True)
+        return
+    pick = max(good, key=lambda q: q["c"][3] - q["ask"])
+    for q in good:
+        if q is not pick:
+            try:
+                rpc(q["url"], "CancelTask", {"id": q["task"]["id"]})
+            except Exception:
+                pass
+    keep, shop, offer, lp = pick["c"]
+    sku = offer["sku"]
+    cap = min(order["budget"], int(lp * T["max_pay_ratio"]))     # paying near the list price keeps nothing
+    log(f"[choose] {shop['name']} {offer['name']} ({sku}): ask {pick['ask']}, list {lp}, I pay at most {cap}")
+
+    task, asks, offers, texts, notes, rec, problem = None, [], [], [], [], None, None
+    try:
+        task, asks, offers, texts, notes = negotiate(shop["url"], offer["name"], cap, started,
+                                                     low=int(lp * T["r3_first_offer"]),
+                                                     opened=(pick["url"], pick["task"], pick["opening"]))
+        outcome = "deal" if state(task) == "TASK_STATE_COMPLETED" else "no deal"
+    except Exception as e:
+        log(f"buyer error: {type(e).__name__}: {e}")
+        outcome, problem = "no answer", f"no answer ({type(e).__name__})"
+    if outcome == "deal":
+        rec = receipt_of(task)
+        if rec is None:
+            outcome, problem = "no deal", "completed without a receipt"
+        else:
+            agreed = offers[-1] if offers else None
+            # the kit takes the order's category or the SKU on a receipt; another SKU is another product
+            problem = check_receipt(rec, task, rec.get("item") if rec.get("item") in (sku, order.get("item")) else sku,
+                                    agreed)
+            log(f"[receipt] {rec}  agreed {agreed}: {problem or 'matches the deal'}")
+    issues, worst = misbehaviour(sku, asks, offers, texts, outcome)
+    issues += notes
+    if notes:
+        worst = worst or "hallucination"
+    stars, review = review_for(outcome, offer["name"], asks, offers, rec, problem, issues, worst)
+    agreed = offers[-1] if outcome == "deal" and offers else None
+    remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": sku, "category": order.get("item"),
+              "kind": order.get("kind"), "list_price": lp, "budget": order["budget"],
+              "first_ask": asks[0] if asks else None, "last_ask": asks[-1] if asks else None,
+              "last_offer": offers[-1] if offers else None, "agreed": agreed,
+              "receipt_price": rec.get("price") if rec else None, "outcome": outcome,
+              "signed": bool(rec and rec.get("sig_seller")), "stars": stars,
+              "problem": problem or (f"misbehaved ({worst}): " + "; ".join(issues) if issues else None)})
+    log(f"result: {outcome}" + (f", keep {lp - agreed} of list {lp}" if agreed else "") + f", {time.time() - started:.0f} s")
+    report = None if problem and problem.startswith(("receipt above", "receipt for", "receipt names")) else rec
+    print(json.dumps({"shop": shop["url"], "receipt": report, "stars": stars, "review": review,
+                      "accept": accept_policy(order)}, ensure_ascii=False), flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shops", required=True)
     ap.add_argument("--item", required=True)
     ap.add_argument("--budget", type=int, required=True)
+    ap.add_argument("--order", help="Round 3: the kit's order.json")
     a = ap.parse_args()
     started = time.time()
+    order = json.loads(Path(a.order).read_text(encoding="utf-8")) if a.order and Path(a.order).exists() else {}
 
     shops = json.loads(Path(a.shops).read_text(encoding="utf-8"))
     head = buyer_memory.profile()    # the theta profile goes first in every prompt (braces escaped for .format)
@@ -433,6 +574,8 @@ def main():
         CHOOSE_PROMPT = head.replace("{", "{{").replace("}", "}}") + CHOOSE_PROMPT
     mem = buyer_memory.load(full=True)     # compact per-shop profiles, updated with only the new memory lines
     prof = mem["profiles"]
+    if order.get("acceptable"):
+        return round3(a, order, shops, mem, started)
     shop, reason = choose(shops, a.item, a.budget, prof)
     log(f"[choose] {shop['name']} {shop['url']}: {reason}")
 

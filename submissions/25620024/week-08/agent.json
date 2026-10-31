@@ -1,5 +1,5 @@
 {
-  "harness": "OpenRouter free models via the chat-completions API, temperature 0, JSON answer: minimax/minimax-m3.1-flash:free first, then google/gemma-4-26b-a4b-it:free, google/gemma-4-31b-it:free (a busy or missing model is skipped at once); HARNESS=claude switches back to claude -p --model haiku (week 06)",
+  "harness": "OpenRouter free models via the chat-completions API, temperature 0, JSON answer (harness.py: a listed model that is busy or missing is skipped, then OpenRouter's current free list); most Round 3 decisions are made by code",
   "seller": {
     "cmd": "python seller.py --port {port}"
   },
@@ -7,7 +7,10 @@
     "cmd": "python buyer.py --url {url} --item {item} --budget {budget}"
   },
   "market_buyer": {
-    "cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"
+    "cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"
   },
-  "deployed": "https://harness-shop-25620024.imajason.workers.dev"
+  "deployed": "https://harness-shop-25620024.imajason.workers.dev",
+  "review": {
+    "cmd": "python review_r3.py --deal {deal}"
+  }
 }

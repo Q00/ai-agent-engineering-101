@@ -32,14 +32,18 @@ MEMORY = Path(os.environ.get("MARKET_BUYER_MEMORY", Path(__file__).parent / "mem
 PROFILES = MEMORY.with_name(MEMORY.stem.replace("memory", "shop_profiles") + ".json") \
     if "memory" in MEMORY.stem else MEMORY.with_name("shop_profiles.json")
 THETA = Path(os.environ.get("MARKET_THETA", Path(__file__).parent / "theta.json"))
-SCHEMA = 2                 # bump when the profile layout changes: the next load() rebuilds
+SCHEMA = 3                 # bump when the profile layout changes: the next load() rebuilds
 RATIOS = 20                # recent settle ratios kept per shop
 LOWS = 200                 # recent agreed prices kept per item, across all shops
 DEFAULTS = {"window": 50, "cooldown_h": 24, "repeat_days": 7, "minor_to_medium": 3, "prior_defect": 0.05,
             "prior_weight": 10,
             # haggling: the first offer is at most first_offer_max x the ask; each later offer closes at most
             # concede of the gap to the ask; after take_after low offers on an affordable ask, take the ask
-            "first_offer_max": 0.70, "concede": 0.5, "take_after": 3}
+            "first_offer_max": 0.70, "concede": 0.5, "take_after": 3,
+            # Round 3: quotes asked in parallel, first offer and most I pay as a share of the list price, the price
+            # share I expect before I know a shop, food shelf life beyond use_within_hours, goods grades I accept
+            "rfq": 3, "r3_first_offer": 0.6, "max_pay_ratio": 0.95, "prior_price_ratio": 0.85, "food_margin_h": 1,
+            "goods_grades": ["A", "B"]}
 
 
 def theta():
@@ -78,10 +82,15 @@ def severity(problem):
 
 def _empty():
     return {"trades": 0, "deals": 0, "signed": 0, "no_answer": 0, "offenses": [], "problems": [],
-            "recent": [], "paid": [0.0, 0], "ratios": [], "last_price": {}, "last_ts": 0}
+            "recent": [], "paid": [0.0, 0], "ratios": [], "lratios": [], "last_price": {}, "last_ts": 0}
 
 
 def _add(p, m, window):
+    if m.get("outcome") == "review":         # Round 3 review hook: what the settled deal showed, not a new trade
+        if severity(m.get("problem")):
+            p["offenses"] = (p.get("offenses", []) + [[m.get("ts") or 0, severity(m["problem"]), m["problem"]]])[-10:]
+        return
+    p.setdefault("lratios", [])
     p["trades"] += 1
     ts = m.get("ts") or 0
     p["last_ts"] = max(p["last_ts"], ts)
@@ -104,6 +113,8 @@ def _add(p, m, window):
             p["ratios"] = (p["ratios"] + [round(agreed / first, 3)])[-RATIOS:]
         if agreed and m.get("item"):
             p["last_price"][m["item"]] = agreed
+        if agreed and m.get("list_price"):
+            p["lratios"] = (p["lratios"] + [round(agreed / m["list_price"], 3)])[-RATIOS:]
 
 
 def _item_low(state, m):
@@ -196,6 +207,11 @@ def market_low(state, item):
     shop, not the minimum, so one shop selling far below the floor does not move it."""
     lows = sorted((state.get("items") or {}).get(item) or [])
     return lows[len(lows) // 10] if len(lows) >= 5 else None
+
+
+def list_ratio(p):
+    """Round 3: median of price paid / list price over my recent deals with this shop, or None with fewer than 2."""
+    return statistics.median(p["lratios"]) if p and len(p.get("lratios") or []) >= 2 else None
 
 
 def settle_ratio(p):
