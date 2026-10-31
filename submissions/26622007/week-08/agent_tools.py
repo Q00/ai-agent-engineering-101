@@ -11,6 +11,43 @@ TOOL_TIMEOUT = 30
 MAX_RESULT = 8000     # characters of a tool's answer that reach the prompt
 
 
+def shrink(out, limit=MAX_RESULT):
+    """The answer as JSON text of at most limit characters, always valid JSON: the longest lists are halved until it fits,
+    and "_cut" says how much went. Cut text would leave the agent reading half a record."""
+    text = json.dumps(out, ensure_ascii=False)
+    if len(text) <= limit:
+        return text
+    wrapped = out if isinstance(out, dict) else {"items": out}
+    wrapped, cut = json.loads(json.dumps(wrapped)), 0
+
+    def lists(node):
+        if isinstance(node, list):
+            yield node
+        for child in (node.values() if isinstance(node, dict) else node if isinstance(node, list) else ()):
+            yield from lists(child)
+
+    def maps(node):
+        if isinstance(node, dict):
+            yield node
+        for child in (node.values() if isinstance(node, dict) else node if isinstance(node, list) else ()):
+            yield from maps(child)
+
+    while len(json.dumps({**wrapped, "_cut": cut}, ensure_ascii=False)) > limit:
+        seqs = [x for x in lists(wrapped) if len(x) > 1] + [x for x in maps(wrapped) if len(x) > 1]
+        if not seqs:
+            return json.dumps({"_cut": "all", "preview": text[:max(0, limit - 40)]}, ensure_ascii=False)
+        big = max(seqs, key=lambda x: len(json.dumps(x, ensure_ascii=False)))
+        keep = len(big) // 2
+        if isinstance(big, list):
+            cut += len(big) - keep
+            del big[keep:]
+        else:
+            for k in list(big)[keep:]:
+                del big[k]
+                cut += 1
+    return json.dumps({**wrapped, "_cut": cut}, ensure_ascii=False)
+
+
 def discover(folder=None):
     """{name: manifest} of the tools that are complete. A broken one is skipped and said so, not fatal."""
     folder, out = folder or TOOLS, {}
@@ -44,4 +81,4 @@ def run(name, args, md, agent="agent", call_id="", folder=None):
         f.write(json.dumps({"ts": int(time.time()), "agent": agent, "id": call_id, "tool": name, "args": args,
                             "ok": not (isinstance(out, dict) and "error" in out), "seconds": round(time.time() - started, 2),
                             "chars": len(text)}, ensure_ascii=False) + "\n")
-    return text[:MAX_RESULT]
+    return shrink(out)

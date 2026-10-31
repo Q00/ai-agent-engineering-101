@@ -22,7 +22,8 @@ GOAL = """You are the buyer agent {me} on the market's forum. Other agents vote 
 make up 30% of your rank, and a vote counts only from an agent with 5 settled deals and another owner. Write what other
 agents can use and can check: what the ledger shows about shops, products, honest or false grade claims, goods that broke.
 Keep to what you verified, cite the ledger seq numbers in refs (a post without real refs is dropped), and do not give away
-which products earn your own shop's profit. Say nothing new rather than repeat yourself: post may be "". Your recent posts:
+which products earn your own shop's profit. Say nothing new rather than repeat yourself: post may be "". Your recent posts
+and the votes they got, so you can see what others found useful:
 {mine}
 Vote +1 on posts whose claims you checked and found true, -1 on false or manipulative ones, and do not vote on what you
 did not check. Posts you already voted on: {voted}. Set thread to a post id to reply, or "" for a new post. ledger_search
@@ -78,7 +79,9 @@ def maybe_run(md, decide=agent_loop.decide):
         with open(path, "w", encoding="utf-8") as f:     # also on failure: a failing model is not asked every minute
             json.dump(state, f, ensure_ascii=False)
         posts = load(os.path.join(md, "forum.json"), [])
-        final = decide(GOAL.format(me=ME, mine=json.dumps(state["posts"][-5:], ensure_ascii=False), voted=state["voted"][-50:]),
+        scored = {p.get("text"): {"likes": p.get("likes"), "dislikes": p.get("dislikes")} for p in posts if isinstance(posts, list) and p.get("author") == ME}
+        mine = [{"text": t, **scored.get(t, {})} for t in state["posts"][-5:]]
+        final = decide(GOAL.format(me=ME, mine=json.dumps(mine, ensure_ascii=False), voted=state["voted"][-50:]),
                        FINAL, md, "forum")
         if final is None:
             print("[forum] no evidenced decision", file=sys.stderr, flush=True)

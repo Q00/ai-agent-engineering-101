@@ -77,6 +77,21 @@ def ask(prompt, schema, system, tag="harness"):
     return _ask_claude(prompt, schema, system, tag)
 
 
+def record_call(tag, prompt, system, seconds, ok, usage=None):
+    """One line per request in .market/llm_calls.jsonl, so what each kind of call costs can be measured."""
+    md = os.environ.get("MARKET_DIR")
+    if not md:
+        return
+    usage = usage or {}
+    try:
+        with open(os.path.join(md, "llm_calls.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": int(time.time()), "tag": tag, "chars": len(prompt) + len(system), "seconds": round(seconds, 2), "ok": ok,
+                                "prompt_tokens": usage.get("prompt_tokens"), "completion_tokens": usage.get("completion_tokens"),
+                                "cost": usage.get("cost")}) + "\n")
+    except OSError:
+        pass
+
+
 def _log_wire(tag):
     def hook(request):
         """The body as it leaves the client. The Authorization header is never read."""
@@ -117,10 +132,12 @@ def _ask_openrouter(prompt, schema, system, tag):
             except httpx.HTTPError as e:
                 last = f"{type(e).__name__}: {e}"
                 log(tag, f"attempt {attempt}: {last}")
+                record_call(tag, prompt, system, time.time() - started, False)
                 continue
             if r.status_code != 200:
                 last = f"HTTP {r.status_code}: {r.text[:300]}"
                 log(tag, f"attempt {attempt}: {last}")
+                record_call(tag, prompt, system, time.time() - started, False)
                 if r.status_code < 500 and r.status_code != 429:
                     break          # a 4xx (unsupported parameter, bad key) will not fix itself
                 time.sleep(3 * attempt)
@@ -131,7 +148,9 @@ def _ask_openrouter(prompt, schema, system, tag):
             except (KeyError, IndexError, TypeError, ValueError, HarnessError) as e:
                 last = f"invalid answer: {e}"
                 log(tag, f"attempt {attempt}: {last}")
+                record_call(tag, prompt, system, time.time() - started, False)
                 continue
+            record_call(tag, prompt, system, time.time() - started, True, r.json().get("usage"))
             log(tag, f"openrouter {OR_MODEL} response_format=json_schema(strict) {time.time() - started:.1f}s "
                      f"-> {json.dumps(answer, ensure_ascii=False)}")
             return answer

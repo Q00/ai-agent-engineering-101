@@ -26,6 +26,7 @@ import sys
 import time
 
 import agent_loop
+import decision_memory
 import forum
 import market_model
 from harness import HarnessError
@@ -136,7 +137,8 @@ GOAL = """You decide what stock a shop buys now. Profit (balance at the end of t
 revenue and stars are what count. Round ends at unix time {ends}, now is {now}. A unit costs 25-75% of list price by grade;
 food past its date is thrown away at cost; goods in stock cost 1% of cost per day. A shop with no stock cannot sell at all,
 and other shops' deals show in the ledger whether you stock or not. Up to {lines} lines, qty 1-20 each.
-c0 is the formula's proposal for this state; follow it, change it or ignore it, as the evidence says."""
+c0 is the formula's proposal for this state; follow it, change it or ignore it, as the evidence says. c1 is how your own earlier
+stock decisions turned out: what sold, what is left, what is gone unsold. Learn from it: a judgment that failed should not repeat."""
 
 FINAL = {"type": "object", "additionalProperties": False, "required": ["buy", "why"],
          "properties": {"why": {"type": "string"},
@@ -163,7 +165,8 @@ def agent_turn(state, inv, catalog, demand, cfg, model, decide=agent_loop.decide
         proposal = plan(inv, catalog, demand, {**cfg, "max_lines": cfg["agent_max_lines"]}, model)
         try:
             final = decide(GOAL.format(ends=cfg.get("round_ends_at"), now=int(time.time()), lines=cfg["agent_max_lines"]), FINAL,
-                           state, "restock", {"c0": json.dumps(proposal, ensure_ascii=False)})
+                           state, "restock", {"c0": json.dumps(proposal, ensure_ascii=False),
+                                       "c1": json.dumps(decision_memory.outcomes(state, inv), ensure_ascii=False)})
         except HarnessError as e:
             print(f"[restock] agent failed: {e}", file=sys.stderr, flush=True)
             return None

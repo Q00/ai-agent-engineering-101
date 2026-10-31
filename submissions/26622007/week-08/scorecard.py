@@ -69,6 +69,31 @@ def log_counts(root):
     return {k: counts[k] for k in ["lines", *COUNTERS]}
 
 
+def llm_table(md, last=2000):
+    """What each kind of model call costs lately: how often, how large, how slow, how many failed."""
+    table = collections.defaultdict(lambda: {"calls": 0, "failed": 0, "chars": 0, "seconds": 0.0, "prompt_tokens": 0, "completion_tokens": 0, "cost": 0.0})
+    for c in jsonl(os.path.join(md, "llm_calls.jsonl"))[-last:]:
+        t = table[c.get("tag")]
+        t["calls"] += 1
+        t["failed"] += 0 if c.get("ok") else 1
+        t["chars"] += c.get("chars") or 0
+        t["seconds"] += c.get("seconds") or 0
+        for k in ("prompt_tokens", "completion_tokens", "cost"):
+            t[k] += c.get(k) or 0
+    return {k: {**v, "mean_chars": round(v["chars"] / v["calls"]), "mean_seconds": round(v["seconds"] / v["calls"], 2)} for k, v in table.items()}
+
+
+def memory_timing(md, last=500):
+    """Latest size and mean milliseconds of each memory operation: does the memory slow the agent as it grows?"""
+    rows, out = jsonl(os.path.join(md, "timing.jsonl"))[-last:], {}
+    for r in rows:
+        x = out.setdefault(r.get("what"), {"n": 0, "ms": 0, "bytes": 0})
+        x["n"] += 1
+        x["ms"] += r.get("ms") or 0
+        x["bytes"] = r.get("bytes") or 0
+    return {k: {"mean_ms": round(v["ms"] / v["n"]), "bytes": v["bytes"], "n": v["n"]} for k, v in out.items()}
+
+
 def build(root):
     md = os.path.join(root, ".market")
     try:
@@ -87,6 +112,7 @@ def build(root):
                      None if inv.get("balance") is None else inv["balance"] - (inv.get("start") or 0) - (inv.get("injected") or 0),
                      "units": len(units), "stock_cost": round(sum(u.get("cost") or 0 for u in units))},
             "log_counts": log_counts(root),
+            "llm": llm_table(md), "memory_timing": memory_timing(md),
             "tools": dict(tools), "decisions": len(decisions), "last_decisions": decisions[-5:],
             "payments": {"paid": sum(1 for p in pays if p.get("paid")), "refused": sum(1 for p in pays if not p.get("paid")),
                          "refusal_reasons": collections.Counter(str(p.get("reason"))[:80] for p in pays if not p.get("paid")).most_common(10)},

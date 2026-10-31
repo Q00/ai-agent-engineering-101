@@ -5,7 +5,7 @@ import sys
 
 args = json.load(sys.stdin)
 try:
-    trades = json.load(open(os.environ.get("BUYER_MEMORY") or "memory/market_memory.json", encoding="utf-8"))["trades"]
+    trades = json.load(open(os.environ.get("BUYER_MEMORY") or "memory/market_memory_r3.json", encoding="utf-8"))["trades"]
 except (OSError, ValueError, KeyError):
     trades = []
 shops = collections.defaultdict(lambda: {"visits": 0, "deals": 0, "unpaid": 0, "broke": 0, "paid_of_list": [], "last_problem": None})

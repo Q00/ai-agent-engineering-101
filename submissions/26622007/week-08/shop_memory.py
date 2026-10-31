@@ -5,6 +5,7 @@ Memory file: {"negotiations": [{"time", "task", "item", "reserve", "open", "asks
 - In the market (SHOP_MARKET_NAME set, e.g. nocha12) it is memory/seller_memory.json, and the
   shop's reviews are read from the market's /api/shops every REVIEWS_TTL seconds.
 - In the market test (no SHOP_MARKET_NAME) it is memory/seller_test_memory.json, without reviews.
+- From Round 3 the market's shop keeps memory/seller_memory_r3.json: lamp talks say nothing about stock from a catalog.
 
 Opening price: the harness proposes an opening ask; the code caps it at reserve * (1 + markup).
 The markup comes from pricing.json tiers by review count and average stars, and steps down while
@@ -17,9 +18,12 @@ import time
 
 import httpx
 
+from shop_stock import load_inventory
+
 MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai")
 NAME = os.environ.get("SHOP_MARKET_NAME")
 MEMORY = os.environ.get("SHOP_MEMORY") or ("memory/seller_memory.json" if NAME else "memory/seller_test_memory.json")
+MEMORY_R3 = "memory/seller_memory_r3.json"
 PRICING = os.environ.get("SHOP_PRICING", "pricing.json")
 REVIEWS_TTL = 120
 RECENT = 10
@@ -46,9 +50,16 @@ def load_pricing():
         return dict(DEFAULT_PRICING)
 
 
+def path():
+    """The file for the round the market is in. inventory.json is what the kit keeps; without it, the earlier file."""
+    if NAME and not os.environ.get("SHOP_MEMORY") and load_inventory().get("round", 0) >= 3:
+        return MEMORY_R3
+    return MEMORY
+
+
 def load():
     try:
-        with open(MEMORY, encoding="utf-8") as f:
+        with open(path(), encoding="utf-8") as f:
             m = json.load(f)
         return m if isinstance(m.get("negotiations"), list) else {"negotiations": []}
     except (OSError, ValueError):
@@ -59,11 +70,12 @@ def record(entry):
     with _lock:
         m = load()
         m["negotiations"].append({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), **entry})
-        os.makedirs(os.path.dirname(MEMORY) or ".", exist_ok=True)
-        tmp = MEMORY + ".tmp"
+        target = path()
+        os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+        tmp = target + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(m, f, ensure_ascii=False, indent=1)
-        os.replace(tmp, MEMORY)
+        os.replace(tmp, target)
 
 
 def reviews():

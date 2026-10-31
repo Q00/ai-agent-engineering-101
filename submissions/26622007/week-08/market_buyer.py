@@ -28,6 +28,8 @@ What the code does and what the harness does:
   The shop is chosen by a Luna agent that may look things up through the tools (agent_loop.py) and cites what it used;
   the old single question remains as the fallback. Goods are worth less by how often that SKU breaks in the ledger.
   What broke after I bought it is linked back to the shop (broken.jsonl + settled.jsonl) and shows in my history of it.
+  Round 3 has its own memory file: lamps and chairs say nothing about it, and shops I only met then count as untried.
+  Only one thing carries over from the earlier file: shops caught cheating on a receipt.
 """
 import argparse
 import json
@@ -57,6 +59,8 @@ BREAK_WINDOW = 7 * 3600   # goods break up to 6 h after the sale
 CHOOSE_STEPS = 3       # Round 3: the shop-choosing agent's steps, tool calls included
 AGENT_DIR = None       # Round 3: the .market folder, when the shop is chosen by the tool-using agent
 SETTLED = os.environ.get("BUYER_SETTLED", "memory/settled.jsonl")
+MEMORY_R2 = "memory/market_memory.json"
+MEMORY_R3 = "memory/market_memory_r3.json"
 
 
 def market_round():
@@ -97,20 +101,56 @@ def pick_schema(names):
 #      so the order was hopeless there) or "shop" (the shop ended it with the ask within reach).
 
 def load_memory():
+    started = time.time()
     try:
         with open(MEMORY, encoding="utf-8") as f:
             m = json.load(f)
-        return m if isinstance(m.get("trades"), list) else {"trades": []}
+        m = m if isinstance(m.get("trades"), list) else {"trades": []}
     except (OSError, ValueError):
-        return {"trades": []}
+        m = {"trades": []}
+    measure("buyer_memory_load", started, MEMORY)
+    return m
+
+
+def measure(what, started, path):
+    """How long the memory takes as it grows, for the scorecard. Never in the way."""
+    md = os.environ.get("MARKET_DIR")
+    if not md:
+        return
+    try:
+        size = os.path.getsize(path) if os.path.exists(path) else 0
+        with open(os.path.join(md, "timing.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": int(time.time()), "what": what, "ms": round((time.time() - started) * 1000), "bytes": size}) + "\n")
+    except OSError:
+        pass
+
+
+def carried_bans(path=MEMORY_R2):
+    """{shop: its last receipt problem} from the earlier rounds' memory, the one thing Round 3 keeps of it."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            trades = json.load(f)["trades"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return {}
+    return {t["shop"]: t["problems"][-1] for t in trades if t.get("problems") and t.get("shop")}
+
+
+def start_round3_memory():
+    """Switches to the Round 3 file, starting it with the carried bans the first time."""
+    global MEMORY
+    MEMORY = MEMORY_R3
+    if not os.path.exists(MEMORY):
+        save_memory({"trades": [], "carried_bans": carried_bans()})
 
 
 def save_memory(m):
+    started = time.time()
     os.makedirs(os.path.dirname(MEMORY) or ".", exist_ok=True)
     tmp = MEMORY + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(m, f, ensure_ascii=False, indent=1)
     os.replace(tmp, MEMORY)
+    measure("buyer_memory_save", started, MEMORY)
 
 
 def my_history(memory, name):
@@ -255,7 +295,7 @@ def choose(shops, memory, item, budget):
     for s in shops:
         mine = my_history(memory, s["name"])
         dear = overpriced(mine, item, avg)
-        bad = caught_cheating(mine)
+        bad = caught_cheating(mine) or [{"problems": [p]} for p in [memory.get("carried_bans", {}).get(s["name"])] if p]
         a, n = avg_stars(s), len(s.get("reviews") or [])
         if bad:
             log(f"[choose] skip {s['name']!r}: my memory caught it {len(bad)} time(s): {bad[-1]['problems']}")
@@ -510,6 +550,8 @@ def main():
         shops = [s for s in shops if s["usable"]]
         global AGENT_DIR
         AGENT_DIR = md
+        if MEMORY == MEMORY_R2:
+            start_round3_memory()
     if not shops:
         log("[choose] no shops with this order in stock" if r3 else "[choose] no shops in the list")
         print(json.dumps({"shop": "", "receipt": None, **({} if r3 else {"stars": 1, "review": "No shops to trade with."})}))
