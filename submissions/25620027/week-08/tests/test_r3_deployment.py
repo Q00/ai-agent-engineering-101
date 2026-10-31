@@ -80,9 +80,9 @@ def test_haiku_launch_refuses_missing_ledger_before_activation(
     assert not config.run_directory.exists()
 
 
-@pytest.mark.parametrize("offset", [-1, 8 * 86400])
+@pytest.mark.parametrize("offset", [-1, 17 * 86400])
 def test_expired_and_overlong_windows_are_rejected(tmp_path: Path, offset: int) -> None:
-    # Given: a stale deadline or a window longer than seven days.
+    # Given: a stale deadline or a window longer than the 16-day Round 3 bound.
     now = datetime.now(UTC)
     config = settings(tmp_path).model_copy(
         update={"stop_at": now + timedelta(seconds=offset)}

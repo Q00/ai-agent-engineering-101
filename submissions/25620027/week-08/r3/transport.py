@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from pydantic import JsonValue
 
 SETTLE: Final = "/api/settle"
+INVENTORY: Final = "/api/inventory"
 
 
 def create_settlement_client(base: str) -> httpx2.Client:
@@ -52,9 +53,13 @@ class SettlementTransport:
         path: str,
         role: str = "shop",
         *,
-        json: dict[str, JsonValue],
+        json: dict[str, JsonValue] | None = None,
     ) -> httpx2.Response:
-        """Forward one settlement; reject registration, orders and other roles."""
+        """Forward one settlement or the kit v4 stock read; reject everything else."""
+        if method == "GET" and path == INVENTORY and role == "shop" and json is None:
+            return self.client.get(
+                INVENTORY, headers={"Authorization": f"Bearer {self.token}"}
+            )
         if method != "POST" or path != SETTLE or role != "shop":
             message = "Preparation transport permits only shop POST /api/settle"
             raise HarnessError(message)

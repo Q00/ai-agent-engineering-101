@@ -1,4 +1,4 @@
-"""Run the pinned v3 kit with a narrow incoming ACP validation boundary."""
+"""Run the pinned v4 kit with a narrow incoming ACP validation boundary."""
 
 from __future__ import annotations
 

@@ -30,7 +30,7 @@ def build_context(source: Path, destination: Path) -> dict[str, str]:
         raise HarnessError(message)
     instructor = source.parents[2] / "scripts" / "market_kit.py"
     if hashlib.sha256(instructor.read_bytes()).hexdigest() != KIT_SHA256:
-        message = "Instructor kit hash differs from the audited v3 source"
+        message = "Instructor kit hash differs from the audited v4 source"
         raise HarnessError(message)
     selected = [source / name for name in FILES]
     selected.extend(

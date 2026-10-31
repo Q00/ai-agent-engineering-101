@@ -14,7 +14,7 @@ from starlette.routing import Mount, Route
 
 from market_a2a.models import HarnessError
 from r3.boundary import validate_checkout
-from r3.kit_pin import KIT_SHA256
+from r3.kit_pin import KIT_SHA256, KIT_VERSION
 
 if TYPE_CHECKING:
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -46,7 +46,7 @@ def create_gateway(seller: ASGIApp, binding: CheckoutBinding) -> Starlette:
     """Reuse the exact v3 checkout implementation; keep A2A at its original root."""
     require_local(binding.public_url)
     if (
-        kit.KIT_VERSION != "3"
+        kit.KIT_VERSION != KIT_VERSION
         or hashlib.sha256(Path(kit.__file__).read_bytes()).hexdigest() != KIT_SHA256
     ):
         message = "Instructor kit changed; re-audit before enabling checkout"

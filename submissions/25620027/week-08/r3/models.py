@@ -1,6 +1,6 @@
 """Parse checkout envelopes before passing them to the course implementation."""
 
-from typing import ClassVar
+from typing import Annotated, ClassVar
 
 from pydantic import ConfigDict, Field, JsonValue
 
@@ -23,10 +23,17 @@ class CheckoutReceipt(SignedReceipt):
 
 
 class CreateCheckout(FrozenModel):
-    """Exactly one line must describe the signed negotiated receipt."""
+    """Exactly one line must describe the signed negotiated receipt.
+
+    Kit v4 buyers also send the order's acceptable SKUs so the shop may ship any
+    unit of the ordered category; the list is bounded and must name strings.
+    """
 
     line_items: tuple[LineItem, ...] = Field(min_length=1, max_length=1)
     receipt: CheckoutReceipt
+    acceptable: (
+        tuple[Annotated[str, Field(min_length=1, max_length=64)], ...] | None
+    ) = Field(default=None, max_length=512)
 
 
 class SignedMandate(FrozenModel):

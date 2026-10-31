@@ -46,6 +46,9 @@ class LocalLedger:
     requests: list[Settlement] = field(default_factory=list)
     events: list[dict[str, JsonValue]] = field(default_factory=list)
     balances: dict[str, int] = field(default_factory=lambda: {"buyer": 1000, "shop": 0})
+    inventory: dict[str, JsonValue] = field(
+        default_factory=lambda: {"round": 2, "units": []}
+    )
 
     def issue(self, shop: str, budget: int = 120) -> dict[str, JsonValue]:
         """Create private open mandates; expose only a commitment in public events."""
@@ -195,9 +198,15 @@ class LocalLedger:
         async def ledger(_request: Request) -> JSONResponse:
             return JSONResponse(self.events)
 
+        async def inventory(request: Request) -> JSONResponse:
+            if request.headers.get("authorization") != "Bearer local-shop":
+                return JSONResponse({"error": "local token required"}, status_code=403)
+            return JSONResponse(self.inventory)
+
         return Starlette(
             routes=[
                 Route("/api/settle", settle, methods=["POST"]),
                 Route("/api/ledger", ledger, methods=["GET"]),
+                Route("/api/inventory", inventory, methods=["GET"]),
             ]
         )

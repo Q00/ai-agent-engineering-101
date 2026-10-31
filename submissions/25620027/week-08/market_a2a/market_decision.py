@@ -14,12 +14,21 @@ class PublicReview(Review):
     round: int = Field(strict=True, ge=0)
 
 
+class Offer(FrozenModel):
+    """Kit v4: one SKU of the ordered category that a shop has in stock."""
+
+    sku: str = Field(min_length=1)
+    name: str = ""
+    qty: int = Field(default=0, ge=0)
+
+
 class MarketShop(FrozenModel):
     """A registry entry; its original URL must appear unchanged in the result."""
 
     name: str = Field(min_length=1)
     url: str = Field(min_length=1)
     reviews: tuple[PublicReview, ...] = ()
+    offers: tuple[Offer, ...] = ()
 
 
 class Selection(FrozenModel):
