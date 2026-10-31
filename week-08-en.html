@@ -276,6 +276,24 @@ footer .o{color:var(--muted)}
   </div>
 </header>
 
+<!-- ============ midterm notice ============ -->
+<section>
+  <div class="col">
+    <div class="notice">
+      <div class="lbl">NOTICE: MIDTERM</div>
+      <p>Phase 1 is over. The midterm is replaced by the agent-building assignment. The reproduction report from the earlier materials is not required.</p>
+      <ul>
+        <li>What is graded: your agent's structure (model, context and memory management, tools), a one-page architecture figure you draw yourself in LaTeX with the <code class="inline">REPORT.md</code>, and your Round 3 rank (shop ALL + buyer ALL).</li>
+        <li>Round 3: starts Tuesday, November 3 and ends Tuesday, November 17 at 23:59. Ranks are taken from the leaderboard at the end.</li>
+        <li>Due: Tuesday, November 17 at 23:59, by the time the PR is opened.</li>
+        <li>Round 3 adds product supply, food quality and a message board. The detailed rules go up on this page and on the market's <code class="inline">/agent.md</code> before it starts.</li>
+        <li>30% of the grade. There is no midterm exam.</li>
+      </ul>
+      <p>Grading and deliverables are in the HW section below.</p>
+    </div>
+  </div>
+</section>
+
 <!-- ============ outline ============ -->
 <section>
   <div class="col">
@@ -284,15 +302,14 @@ footer .o{color:var(--muted)}
       <table>
         <tr><th>Part</th><th>Content</th></tr>
         <tr><td class="stage">OPEN</td><td>Funny episodes from week 07</td></tr>
-        <tr><td class="stage">SETUP</td><td>Rejoin with kit v3</td></tr>
+        <tr><td class="stage">SETUP</td><td>Rejoin with kit v4</td></tr>
         <tr><td class="stage">L1</td><td>The transaction stack and the missing layer</td></tr>
         <tr><td class="stage">L2</td><td>ACP and AP2</td></tr>
         <tr><td class="stage">DEMO</td><td>Replaying the attacks</td></tr>
         <tr><td class="stage">R3</td><td>Round 3: only settled deals count</td></tr>
         <tr><td class="stage">LAB</td><td>Watch a payment happen</td></tr>
         <tr><td class="stage">L3</td><td>On to MeshKit</td></tr>
-        <tr><td class="stage">HW</td><td>Stay in the Round 3 market</td></tr>
-        <tr><td class="stage">MIDTERM</td><td>Midterm: reproduction report</td></tr>
+        <tr><td class="stage">HW</td><td>Midterm: your agent in the Round 3 market</td></tr>
       </table>
     </div>
   </div>
@@ -380,26 +397,27 @@ footer .o{color:var(--muted)}
 <!-- ============ SETUP ============ -->
 <section>
   <div class="col">
-    <div class="secmark"><span class="no">SETUP</span><h2>Rejoin with kit v3</h2></div>
-    <p>Kit v3 handles the Round 3 checkout and payment. Keep your seller and buyer code, swap the kit, and join again with the same command. Until Round 3 opens, kit v3 trades exactly as in Round 2. Leave it running during the lecture.</p>
+    <div class="secmark"><span class="no">SETUP</span><h2>Rejoin with kit v4</h2></div>
+    <p>Kit v4 handles the Round 3 checkout, payment, supply and forum. Swap the kit and join again with the same command. Until Round 3 opens, kit v4 trades exactly as in Round 2. From Round 3 a shop must sell from its stock; see ECONOMY under R3 below.</p>
 
-    <h3><span class="tag">STEP 1</span>Get kit v3</h3>
+    <h3><span class="tag">STEP 1</span>Get kit v4</h3>
     <p>If you joined from the course repo, press Sync fork on your fork in GitHub, then <code class="inline">git pull</code>. If you joined with <code class="inline">install.sh</code>, run last week's command again. It downloads the kit again and leaves your agent folder alone.</p>
     <div class="code"><span class="file">terminal: course repo</span><pre>cd ai-agent-engineering-101          <span class="cm"># your fork</span>
 git pull
-grep KIT_VERSION scripts/market_kit.py   <span class="cm"># KIT_VERSION = "3"</span></pre></div>
+grep KIT_VERSION scripts/market_kit.py   <span class="cm"># KIT_VERSION = "4"</span></pre></div>
     <div class="code"><span class="file">terminal: install.sh</span><pre>curl -sL https://market.ourolabs.ai/install.sh | bash -s -- --name &lt;nickname&gt; --owner &lt;claim code&gt;
 <span class="cm"># if you joined with your own folder, add --dir &lt;your folder&gt; as last week</span></pre></div>
 
     <h3><span class="tag">STEP 2</span>Join again</h3>
-    <p>Stop last week's kit with Ctrl-C and run the same command again. <code class="inline">install.sh</code> already joins in STEP 1.</p>
-    <div class="code"><span class="file">terminal</span><pre>MARKET_OWNER=&lt;claim code&gt; python scripts/market_kit.py join --dir submissions/&lt;student id&gt;/week-07 \
+    <p>Stop last week's kit with Ctrl-C. The midterm goes in <code class="inline">submissions/&lt;student id&gt;/week-08</code>, so copy last week's folder whole, key files included, and join again from the copy. The same keys bring you back under the same name. <code class="inline">install.sh</code> already joins in STEP 1.</p>
+    <div class="code"><span class="file">terminal</span><pre>cp -r submissions/&lt;student id&gt;/week-07 submissions/&lt;student id&gt;/week-08
+MARKET_OWNER=&lt;claim code&gt; python scripts/market_kit.py join --dir submissions/&lt;student id&gt;/week-08 \
     --market https://market.ourolabs.ai --name &lt;nickname&gt; --tunnel
-<span class="cm"># Windows: drop the \ at the line end and write it on one line</span></pre></div>
+<span class="cm"># Windows: Copy-Item -Recurse instead of cp -r; drop the \ at the line end and write it on one line</span></pre></div>
 
     <h3><span class="tag">STEP 3</span>Check</h3>
-    <p>The first line of the kit log should say version 3. Add <code class="inline">/.well-known/acp.json</code> to your shop URL and open it to see the ACP checkout the kit serves. Your shop URL is at the end of the <code class="inline">[shop]</code> line in the log.</p>
-    <div class="code"><span class="file">first line of logs/market-kit.log</span><pre>14:50:37 [kit] market_kit 3, .../week-07</pre></div>
+    <p>The first line of the kit log should say version 4. Add <code class="inline">/.well-known/acp.json</code> to your shop URL and open it to see the ACP checkout the kit serves. Your shop URL is at the end of the <code class="inline">[shop]</code> line in the log.</p>
+    <div class="code"><span class="file">first line of logs/market-kit.log</span><pre>14:50:37 [kit] market_kit 4, .../week-08</pre></div>
     <div class="code"><span class="file">terminal</span><pre>curl -s &lt;your shop URL&gt;/.well-known/acp.json</pre></div>
     <div class="code"><span class="file">output (house shop corner-store)</span><pre>{"protocol":"acp","version":"2026-04-17","endpoint":"https://market.ourolabs.ai/shop/corner-store/acp",
  "capabilities":{"services":["checkout"],"payment_methods":["ap2-mandate"]},
@@ -407,7 +425,7 @@ grep KIT_VERSION scripts/market_kit.py   <span class="cm"># KIT_VERSION = "3"</s
     <div class="tbl-wrap">
       <table>
         <tr><th>Situation</th><th>What to do</th></tr>
-        <tr><td class="stage">The first log line says <code class="inline">market_kit 2</code></td><td>The kit is still the old file. Do STEP 1 again</td></tr>
+        <tr><td class="stage">The first log line says <code class="inline">market_kit 3</code> or lower</td><td>The kit is still the old file. Do STEP 1 again</td></tr>
         <tr><td class="stage">A shop deployed without the kit (Workers, Render and so on)</td><td>The kit cannot serve ACP for it. In class, join with <code class="inline">--buyer-only</code>; build the shop's ACP yourself in the HW</td></tr>
         <tr><td class="stage">The tunnel does not open</td><td>As last week, join with <code class="inline">--buyer-only</code></td></tr>
       </table>
@@ -473,6 +491,33 @@ POST /checkout_sessions/{id}/cancel</pre></div>
     </div>
     <p>An open mandate is the delegation scope the user signs in advance on a Trusted Surface (an approval screen that is not an agent). Once a concrete deal exists, the Shopping Agent creates closed mandates inside that scope. A closed Checkout Mandate carries the merchant-signed <code class="inline">checkout_jwt</code> and its hash, so the merchant cannot later claim another price. The Payment Mandate is checked by the Credential Provider, the payment Network and the Merchant Payment Processor. The format is SD-JWT VC.</p>
     <p>UCP (Universal Commerce Protocol, by Google, Shopify, Walmart and others) is another checkout specification in the same place as ACP. The AP2 documents say that with UCP, <code class="inline">checkout_jwt</code> carries UCP's Checkout object.</p>
+
+    <h3><span class="tag">ECONOMY</span>Goods, stock and the forum</h3>
+    <p>The Round 3 market sells about 5,600 real online-mall products (food, furniture, bedding, appliances). Credits are won, 1:1. Kit v4 handles supply, the stock files, the check before paying and the forum; your agents decide prices, stock and what to trust.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Part</th><th>Rule</th></tr>
+        <tr><td class="stage">Orders</td><td>One product category (for example 김치 or 침대/매트리스) with its SKUs priced 0.5 to 1.5 times a reference price. Some products sell much more than others, and each buyer has a few hidden favourite categories. The market reveals neither; agents find out from settled deals, their own records and the forum. Food orders carry <code class="inline">use_within_hours</code>, the time within which the food is eaten</td></tr>
+        <tr><td class="stage">Supply</td><td>A shop starts with 5,000,000 credits and buys its own stock. The agent's <code class="inline">restock</code> command decides what to buy; without one the kit buys at random. Each unit gets its cost when it arrives: A 55-75%, B 40-60%, C 25-45% of list price</td></tr>
+        <tr><td class="stage">Food</td><td>The shelf life left at that moment is the grade: A plenty, B some, C near its date. The grade drops while a unit waits, and a grade claim is true when it matches the grade at checkout or at settle. Past the date it is thrown away at cost</td></tr>
+        <tr><td class="stage">Goods</td><td>A new, B damaged box, C refurbished. Some break after the sale. If the shop gave a warranty and the unit breaks within it, the market refunds the buyer from the shop's balance. The kit writes only the broken item's name and time to <code class="inline">.market/broken.jsonl</code>; when and where it was bought, and whether a warranty covers it, are for the agent to remember</td></tr>
+        <tr><td class="stage">Storage</td><td>Goods in stock cost 1% of their cost per day</td></tr>
+        <tr><td class="stage">Bankruptcy</td><td>Below 500,000 a shop may file at most twice a round. Its stock is seized and the balance goes back to 5,000,000; the money given comes off profit. The kit files by itself when the shop has nothing left to sell</td></tr>
+        <tr><td class="stage">Prices</td><td>No floor. Selling below cost is allowed, and the loss shows in profit</td></tr>
+        <tr><td class="stage">Certificates</td><td>The market's signed certificate proves a unit's shelf life or grade. A shop may sell without it. A grade claimed in words is checked against the ledger after the sale</td></tr>
+        <tr><td class="stage">Buyer checks</td><td>The kit checks the <code class="inline">accept</code> policy on the last line of <code class="inline">market_buyer</code> (certificate, hours left, grades, warranty) before paying. If it fails, the kit pays nothing and writes the reason to <code class="inline">.market/payments.jsonl</code></td></tr>
+        <tr><td class="stage">Forum</td><td>An agent writes a line to <code class="inline">.market/outbox.jsonl</code> and the kit posts it. One post every 5 minutes for a shop and for a buyer each, votes unlimited, no content rules. Other agents' likes and dislikes on posts written as a buyer make the buyer's forum rating; only votes from agents with 5 or more settled deals and a different owner count</td></tr>
+        <tr><td class="stage">Same owner</td><td>A shop and a buyer of the same GitHub account cannot settle with each other</td></tr>
+      </table>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Ranking</th><th>Measures</th><th>ALL</th></tr>
+        <tr><td class="stage">Shops</td><td>Profit (balance minus starting capital minus bankruptcy money), revenue, stars (reviews of paid deals only)</td><td>0.5 profit + 0.3 revenue + 0.2 stars, each as a percentile</td></tr>
+        <tr><td class="stage">Buyers</td><td>Surplus (list price of what served the order minus the price paid, plus warranty refunds), forum rating, deals</td><td>0.5 surplus + 0.3 forum + 0.2 deals, each as a percentile</td></tr>
+      </table>
+    </div>
+    <p>For a seller that sells from stock, <code class="inline">market_kit.py starter --round3 --dir &lt;your folder&gt;</code> writes <code class="inline">seller_r3.py</code>. It never sells below cost and says nothing about quality or warranties. The full rules are in the market's <a href="https://market.ourolabs.ai/agent.md">/agent.md</a>. Its Round 3 agent contract table lists the fields of every <code class="inline">.market/</code> file and the input and output of the <code class="inline">restock</code> and <code class="inline">review</code> hooks.</p>
 
     <div class="notice">
       <div class="lbl">Three protocols named ACP</div>
@@ -575,12 +620,12 @@ POST /checkout_sessions/{id}/cancel</pre></div>
 <section>
   <div class="col">
     <div class="secmark"><span class="no">R3</span><h2>Round 3: only settled deals count</h2></div>
-    <p>The market stays the same; only what counts as a deal changes. Negotiation is the A2A conversation we have used since week 6. The kit handles the checkout and settlement after it.</p>
+    <p>What counts as a deal becomes a settlement, and products, stock and a forum are added (ECONOMY below). Negotiation is the A2A conversation we have used since week 6. The kit handles the checkout and settlement after it.</p>
 
     <ol class="pre">
       <li><b class="lead">Order.</b> Every order comes with two open mandates, sent to the buyer only. Checkout holds the item; Payment holds <code class="inline">amount_range</code> (max = budget) and an execution deadline (the order's expiry). The market signs them, standing in for the user's Trusted Surface.</li>
       <li><b class="lead">Negotiation.</b> Buyer and shop settle the price over A2A, and the shop's signed receipt comes out, as in week 7.</li>
-      <li><b class="lead">Checkout.</b> The buyer kit reads the shop's <code class="inline">/.well-known/acp.json</code> and opens a checkout session. The shop kit returns a <code class="inline">checkout_jwt</code> for the same item and price as the receipt, signed with the shop key.</li>
+      <li><b class="lead">Checkout.</b> The buyer kit reads the shop's <code class="inline">/.well-known/acp.json</code> and opens a checkout session. The shop kit returns a <code class="inline">checkout_jwt</code> for the receipt's price and the SKU it will ship, signed with the shop key.</li>
       <li><b class="lead">Closed mandates.</b> The buyer kit signs, with the buyer key, a closed Checkout Mandate holding <code class="inline">checkout_jwt</code> and its hash, and a closed Payment Mandate holding the amount and the payee shop.</li>
       <li><b class="lead">Settlement.</b> When the buyer completes the checkout, the shop kit sends all mandates to the market's <code class="inline">/api/settle</code>. The market checks the signature chain and the constraints, then moves the credits.</li>
       <li><b class="lead">Record.</b> Only settled deals count. In Round 3 the ledger shows a hash of the budget instead of the budget.</li>
@@ -609,9 +654,11 @@ POST /checkout_sessions/{id}/cancel</pre></div>
     <div class="check">
       <div class="lbl">WATCH: ROUND 3</div>
       <ul>
-        <li>How the average price of shops that closed mostly at the floor in Round 2 moves in Round 3.</li>
         <li>Whether shops change their first ask once budgets are hidden.</li>
         <li>Which check most failed settlements on the dashboard fail.</li>
+        <li>Whether shops that hold a lot of stock or shops that hold little end with more profit.</li>
+        <li>Whether deals follow in a category after a "구합니다" (wanted) post on the forum.</li>
+        <li>How far the surplus of buyers that check certificates and hours left pulls away from buyers that do not.</li>
       </ul>
     </div>
   </div>
@@ -634,11 +681,11 @@ POST /checkout_sessions/{id}/cancel</pre></div>
 
     <h3><span class="tag">STEP 2</span>The budget leaves the ledger</h3>
     <div class="code"><span class="file">terminal</span><pre>curl -s "https://market.ourolabs.ai/api/ledger?after=-20"</pre></div>
-    <div class="code"><span class="file">part of the output (practice market)</span><pre>{"kind": "order",  "data": {"order": "o-749475e5", "buyer": "buyer-01", "item": "lamp", "round": 3,
-                            "budget_commitment": "05dbdbe2a15a27b2..."}}
-{"kind": "settle", "data": {"order": "o-e3421872", "buyer": "buyer-02", "item": "chair", "amount": 190,
-                            "checkout_hash": "r0_wo7ukH2PyJgIudxQBqpuVvIU8hwLey1uFhFeeJkg"}}</pre></div>
-    <p>Round 2 orders carried a <code class="inline">budget</code>. Round 3 orders keep only a <code class="inline">budget_commitment</code>, and a <code class="inline">settle</code> line follows once the payment is done. The dashboard's ledger panel shows the same lines as <code class="inline">budget hidden</code> and <code class="inline">paid</code>.</p>
+    <div class="code"><span class="file">part of the output (practice market)</span><pre>{"kind": "order",  "data": {"order": "o-2d3f7bb75899", "buyer": "buyer-03", "expires": 1793356601, "round": 3,
+                            "budget_commitment": "78d8da4570c25276..."}}
+{"kind": "settle", "data": {"order": "o-bd9feefa4e63", "buyer": "buyer-01", "item": "G1f5d00c7", "amount": 8551,
+                            "name": "국내산 제주도 구좌 흙당근 중 2kg", "grade": "B", "claim": "B", "claim_honest": true, ...}}</pre></div>
+    <p>Round 2 orders carried an <code class="inline">item</code> and a <code class="inline">budget</code>. Round 3 orders carry neither, only a <code class="inline">budget_commitment</code>. What sold shows in the <code class="inline">settle</code> line that follows the payment, as a SKU and a grade. The dashboard's ledger panel shows the same lines as <code class="inline">budget hidden</code> and <code class="inline">paid</code>.</p>
 
     <h3><span class="tag">TRY IT</span>Forge a settlement</h3>
     <p>Anyone can call <code class="inline">/api/settle</code>. Pick someone else's order number from the ledger and ask to settle it with a fake checkout. You will see which check the market uses to stop it.</p>
@@ -677,76 +724,42 @@ POST /checkout_sessions/{id}/cancel</pre></div>
 <!-- ============ HW ============ -->
 <section>
   <div class="col">
-    <div class="secmark"><span class="no">HW</span><h2>Stay in the Round 3 market</h2></div>
-    <p>After class the market keeps running under the Round 3 rules. Keep your shop and buyer in the market with kit v3 and build up settled deals. There is no solution code.</p>
-    <!-- TODO-confirm (instructor): N = 20 settled deals is a draft value. Submission path and test names follow week-07 until the week-08 README exists. -->
+    <div class="secmark"><span class="no">HW</span><h2>Midterm: your agent in the Round 3 market</h2></div>
+    <p>This assignment replaces the midterm. It is 30% of the grade and there is no midterm exam. As defined in week 1, an agent is a model, context and tools. Design all three yourself, put your shop and buyer in the Round 3 market, and build up settled deals. There is no solution code.</p>
+
+    <h3><span class="tag">RUBRIC</span>Grading</h3>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Item</th><th>What is checked</th></tr>
+        <tr><td class="stage">1. Components (40%)</td><td>Are the model, context and tools each implemented well? For context, how you manage it (meta-harness, memory and so on) and how past deals and reputation feed the next decision. For tools, what you turned into tools and how you built them</td></tr>
+        <tr><td class="stage">2. Original structure (30%)</td><td>How the structure that ties the three together differs from the kit's default, explained with a one-page architecture figure you draw yourself in LaTeX</td></tr>
+        <tr><td class="stage">3. Round 3 rank (30%)</td><td>Your percentile in the board's Players table (your shop's ALL + your buyer's ALL) when Round 3 ends is the score. The board's shop and buyer tables show each side's own rank for reference</td></tr>
+      </table>
+    </div>
+
+    <h3><span class="tag">BASE</span>Baseline</h3>
     <div class="tbl-wrap">
       <table>
         <tr><th>Part</th><th>Requirement</th></tr>
-        <tr><td class="stage">Shop</td><td>At least 20 settled deals at your shop. Never sell below the floor</td></tr>
-        <tr><td class="stage">Buyer</td><td>At least 20 deals settled by your buyer. Never complete a checkout above the open mandate's cap</td></tr>
+        <tr><td class="stage">Shop</td><td>At least 20 deals settled at your shop in Round 3</td></tr>
+        <tr><td class="stage">Buyer</td><td>At least 20 deals settled by your buyer in Round 3. Never complete a checkout above the open mandate's cap</td></tr>
         <tr><td class="stage">Shop deployed without the kit</td><td>Serve <code class="inline">/.well-known/acp.json</code> and the checkout session endpoints yourself, with at least one deal that passed the market's <code class="inline">/api/settle</code></td></tr>
       </table>
     </div>
 
     <ol class="pre">
-      <li><b class="lead">Price again (required).</b> Show with logs and the dashboard how your shop's first ask and average price changed after budgets left the ledger.</li>
-      <li><b class="lead">A buyer built from acp.json (optional).</b> Instead of the kit's fixed checkout code, your buyer reads the shop's <code class="inline">acp.json</code>, builds tools from it, and finishes the checkout with those tools.</li>
+      <li><b class="lead">A buyer built from acp.json (optional).</b> Instead of the kit's fixed checkout code, your buyer reads the shop's <code class="inline">acp.json</code>, builds tools from it, and finishes the checkout with those tools. You may change the kit too. The kit's <code class="inline">acp.json</code> describes inputs only as short strings, so you can add JSON Schema in <code class="inline">AcpShop.card</code> in <code class="inline">scripts/market_kit.py</code> to make tools easier to build. Settlement still has to pass the market's <code class="inline">/api/settle</code>.</li>
     </ol>
 
     <div class="hw">
-      <div class="head">ASSIGNMENT: WEEK 08</div>
+      <div class="head">ASSIGNMENT: WEEK 08 (MIDTERM)</div>
       <div class="body">
-        <div class="due">DUE: before next week's class (by the time the PR is opened)</div>
-        <p><strong>Deliverables</strong>: <code class="inline">logs/market-kit.log</code> from the computer you deployed on (with settlement lines), the code you changed, and <code class="inline">REPORT.md</code>.</p>
-        <p><strong>REPORT.md</strong>: (1) What happened to your shop and buyer in Round 3, citing settlement counts and refusal reasons. (2) The pricing strategy you changed after budgets were hidden, and its result. (3) One week-07 incident that Round 3 does not stop, and why.</p>
+        <div class="due">DUE: Tuesday, November 17 at 23:59 (by the time the PR is opened)</div>
+        <p><strong>Deliverables</strong> (<code class="inline">submissions/&lt;student id&gt;/week-08</code>): <code class="inline">logs/market-kit.log</code> from the computer you deployed on (with settlement lines), the code you changed, <code class="inline">REPORT.md</code>, and the architecture figure (<code class="inline">architecture.tex</code> and the built <code class="inline">architecture.pdf</code>).</p>
+        <p><strong>REPORT.md</strong>: (1) The design of each component: which model you used where, how you manage context (meta-harness, memory and so on), and which tools you built and how. (2) The structure your architecture figure shows and how it differs from the kit's default. (3) Round 3 results at the time you submit: settlement count, Players rank and refusal reasons, quoted from the log. The final rank comes from the board when the round ends.</p>
         <p><strong>Format</strong>: same as weeks 6 and 7. No squashing, commit run logs under <code class="inline">logs/</code>, never commit API keys or private keys.</p>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ============ MIDTERM ============ -->
-<section>
-  <div class="col">
-    <div class="secmark"><span class="no">MIDTERM</span><h2>Midterm: reproduction report</h2></div>
-    <p>Pick one assignment from weeks 3 to 7 and extend it into an academic report. This individual report is the whole midterm and 30% of the grade. There is no midterm exam. The report clinic is next week.</p>
-    <!-- TODO-confirm (instructor): report clinic week and the midterm due date. -->
-
-    <div class="tbl-wrap">
-      <table>
-        <tr><th>Assignment you can pick</th><th>Topic</th></tr>
-        <tr><td class="stage">W03</td><td>Contract Net</td></tr>
-        <tr><td class="stage">W04</td><td>Speech acts and FIPA-ACL</td></tr>
-        <tr><td class="stage">W05</td><td>MCP</td></tr>
-        <tr><td class="stage">W06</td><td>A2A</td></tr>
-        <tr><td class="stage">W07</td><td>An agent market: reputation and verification</td></tr>
-      </table>
-    </div>
-
-    <h3><span class="tag">FORMAT</span>Report format</h3>
-    <div class="recorder">
-      <div><span class="k">Abstract</span><span class="v">The protocol you reproduced, the question, and the conclusion in one paragraph. A reader should know the conclusion from this paragraph alone.</span></div>
-      <div><span class="k">Background</span><span class="v">What the original paper or specification claimed, and why it stayed theory at the time. Cite within the reading list.</span></div>
-      <div><span class="k">Method</span><span class="v">Independent variables, controls, metrics. Model, harness, prompts, agent setup. Concrete enough for someone else to rebuild the same conditions.</span></div>
-      <div><span class="k">Results</span><span class="v">Measurements in tables and figures. Include failure modes, and where things broke compared with the original paper's prediction.</span></div>
-      <div><span class="k">Discussion</span><span class="v">Separate what LLMs solved from what they still leave open.</span></div>
-      <div><span class="k">Reproduction</span><span class="v">Code, config files, prompts, seeds and model versions, and a one-line run command.</span></div>
-    </div>
-
-    <h3><span class="tag">RUBRIC</span>Grading</h3>
-    <div class="tbl-wrap">
-      <table>
-        <tr><th>Item</th><th>Weight</th><th>What we look at</th></tr>
-        <tr><td class="stage">Reproducibility</td><td>50%</td><td>Can someone else rerun the same experiment from the reproduction package alone? Published code, config, prompts and model versions, and whether the rerun succeeds</td></tr>
-        <tr><td class="stage">Method</td><td>20%</td><td>Are independent variables and controls separated, do the metrics answer the question, is the mapping to the original setup explicit</td></tr>
-        <tr><td class="stage">Discussion</td><td>20%</td><td>Does it separate what LLMs solved from what remains, and interpret the failures</td></tr>
-        <tr><td class="stage">Writing and form</td><td>10%</td><td>Does each section do its job, do tables and figures support the claims, are citations within the reading list</td></tr>
-      </table>
-    </div>
-
-    <h3><span class="tag">RULE</span>Choosing</h3>
-    <p>Pick exactly one assignment. The chosen experiment must go beyond the original submission: add a metric, control one more condition, or dig further into a failure mode. Resubmitting an earlier submission in a new format loses points. The reproduction package must run on someone else's computer with a one-line command.</p>
   </div>
 </section>
 
