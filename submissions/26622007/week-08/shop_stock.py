@@ -5,6 +5,7 @@ the seller (which unit to promise) and acp_shop (which unit to ship) share one S
 The file can be 10 s old, so the book also remembers what it has promised and sold since.
 """
 import json
+import math
 import os
 import time
 from pathlib import Path
@@ -31,6 +32,34 @@ def last_segment(category):
 
 def expired(u, now=None):
     return u.get("grade") == "expired" or bool(u.get("expires_at") and u["expires_at"] <= (now or time.time()))
+
+
+MARKDOWN = {"clear_hours": 24, "min_floor_share": 0.1, "stale_days": 3, "stale_per_day": 0.1, "end_hours": 48}
+
+
+def markdown(u, cfg=None, ends_at=None, now=None):
+    """(lowest price for this unit, share of cost it keeps, why). Selling below cost beats what waiting brings: food past
+    its date is lost at cost, and stock left when the round ends counts as a loss. The numbers are starting values in
+    pricing.json "markdown"; Round 3's own data has to judge them."""
+    cfg, now = {**MARKDOWN, **(cfg or {})}, now or time.time()
+    cost, factors = math.ceil(u["cost"]), [(1.0, "")]
+    supplied = u.get("supplied_at") or now
+    if u.get("expires_at"):
+        left, life = (u["expires_at"] - now) / 3600, (u["expires_at"] - supplied) / 3600
+        clear = min(cfg["clear_hours"], max(life, 1) * 0.5)
+        if left < clear:
+            factors.append((max(0.0, left / clear), f"{left:.1f} h of shelf life left"))
+    else:
+        over = (now - supplied) / 86400 - cfg["stale_days"]
+        if over > 0:
+            factors.append((max(0.0, 1 - over * cfg["stale_per_day"]), f"{over + cfg['stale_days']:.1f} days in stock"))
+    if ends_at:
+        left = (ends_at - now) / 3600
+        if left < cfg["end_hours"]:
+            factors.append((max(0.0, left / cfg["end_hours"]), f"{left:.1f} h to the end of the round"))
+    keep, why = min(factors, key=lambda f: f[0])
+    least = min(cost, math.ceil((u.get("list_price") or 0) * cfg["min_floor_share"]))
+    return max(least, round(cost * keep)), keep, why
 
 
 class StockBook:

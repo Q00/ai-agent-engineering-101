@@ -36,7 +36,7 @@ import review                      # noqa: E402
 import seller                      # noqa: E402
 import shop_memory                 # noqa: E402
 from catalog import Catalog        # noqa: E402
-from shop_stock import StockBook   # noqa: E402
+from shop_stock import StockBook, markdown   # noqa: E402
 
 MARKET_KEY = Ed25519PrivateKey.generate()
 MARKET_PUB = base64.b64encode(MARKET_KEY.public_key().public_bytes(
@@ -47,7 +47,7 @@ def unit(uid="u1", sku="G1", cost=6000, list_price=10000, grade="A", kind="food"
     expires = time.time() + hours * 3600 if kind == "food" else None
     body = {"unit": uid, "sku": sku, "grade": grade, "expires_at": expires}
     return {"unit": uid, "sku": sku, "name": f"포기김치 10kg {sku}", "category": category, "list_price": list_price,
-            "kind": kind, "cost": cost, "grade": grade, "supplied_at": 1, "expires_at": expires,
+            "kind": kind, "cost": cost, "grade": grade, "supplied_at": time.time() - 3600, "expires_at": expires,
             "cert": {"cert": body, "sig": base64.b64encode(MARKET_KEY.sign(kit.canon(body))).decode()}}
 
 
@@ -95,6 +95,48 @@ class StockBookTest(unittest.TestCase):
         self.assertIsNotNone(b.ship({"item": "G1", "unit": "a"}, ["G2"])[1])     # promised unit does not fit the order
         self.assertEqual(b.ship({"item": "김치"}, ["G2"])[0]["unit"], "b")
         self.assertIsNotNone(b.ship({"item": "G9"}, ["G9"])[1])
+
+
+class MarkdownTest(unittest.TestCase):
+    NOW = 1800000000.0
+
+    def food(self, left, supplied_ago=500):
+        return {"cost": 1000, "list_price": 2000, "supplied_at": self.NOW - supplied_ago * 3600, "expires_at": self.NOW + left * 3600}
+
+    def goods(self, days):
+        return {"cost": 1000, "list_price": 2000, "supplied_at": self.NOW - days * 86400, "expires_at": None}
+
+    def floor(self, u, ends=None):
+        return markdown(u, None, ends, self.NOW)
+
+    def test_fresh_stock_keeps_its_cost(self):
+        self.assertEqual(self.floor(self.food(100))[:2], (1000, 1.0))
+        self.assertEqual(self.floor(self.goods(1))[:2], (1000, 1.0))
+
+    def test_food_falls_toward_its_date(self):
+        self.assertEqual(self.floor(self.food(12))[0], 500)
+        self.assertEqual(self.floor(self.food(0.1))[0], 200)      # never under the share of list: min_floor_share
+        self.assertIn("shelf life", self.floor(self.food(12))[2])
+
+    def test_a_short_lived_food_is_not_cleared_on_arrival(self):
+        self.assertEqual(self.floor(self.food(20, supplied_ago=4))[1], 1.0)      # 24 h life: clears in its last 12 h
+        self.assertEqual(self.floor(self.food(6, supplied_ago=18))[1], 0.5)
+
+    def test_goods_fall_after_they_sit(self):
+        self.assertEqual(self.floor(self.goods(3))[1], 1.0)
+        self.assertAlmostEqual(self.floor(self.goods(8))[1], 0.5)
+        self.assertEqual(self.floor(self.goods(100))[0], 200)
+
+    def test_the_end_of_the_round_clears_everything_and_the_lowest_wins(self):
+        ends = self.NOW + 24 * 3600
+        self.assertEqual(self.floor(self.goods(1), ends)[0], 500)
+        self.assertEqual(self.floor(self.food(6), ends)[0], 250)
+        self.assertEqual(self.floor(self.goods(1), self.NOW - 1)[0], 200)
+        self.assertEqual(self.floor(self.goods(1), self.NOW + 49 * 3600)[1], 1.0)
+
+    def test_the_floor_is_never_above_a_low_cost(self):
+        cheap = dict(self.goods(100), cost=100, list_price=2000)
+        self.assertEqual(self.floor(cheap)[0], 100)
 
 
 class OpeningTest(unittest.TestCase):
@@ -224,6 +266,15 @@ class EndToEnd(unittest.TestCase):
             self.assertEqual(rec["warranty_hours"], 6)
             self.assertNotIn("warranty_hours", self.deal("G1")["receipt"])
 
+    def test_a_unit_near_its_date_sells_below_cost_and_stays_out_of_the_bandit(self):
+        self.units[0] = dict(unit("u-food", "G1", hours=6), supplied_at=time.time() - 500 * 3600)
+        out = buyer.negotiate(self.url, "포기김치", 4000, "", "I want to buy (G1)")
+        self.assertEqual(out["state"], "TASK_STATE_COMPLETED")
+        self.assertLess(out["receipt"]["price"], 6000)
+        got = shop_memory.load()["negotiations"][-1]
+        self.assertEqual((got["cost"], got["arm"]), (6000, None))
+        self.assertLess(got["reserve"], 6000)
+
     def test_unit_is_not_promised_twice_and_out_of_stock_is_refused(self):
         self.deal("G1")
         self.assertEqual(self.deal("G1")["state"], "TASK_STATE_REJECTED")
@@ -259,6 +310,7 @@ class RoundTwoStillWorks(EndToEnd):
     test_kit_refuses_food_that_will_not_last_and_the_unit_comes_back = None
     test_warranty_only_on_goods_and_only_when_configured = None
     test_unit_is_not_promised_twice_and_out_of_stock_is_refused = None
+    test_a_unit_near_its_date_sells_below_cost_and_stays_out_of_the_bandit = None
 
 
 class BuyerTest(unittest.TestCase):

@@ -16,7 +16,8 @@ filters), catalog.py narrows the catalog to a short list, and the harness picks
 one item from that list and opens with a price.
 
 From Round 3 the shop sells units from its stock (shop_stock.py, .market/inventory.json): the code finds the unit,
-the reserve is that unit's cost, and the opening price is a share of the list price. Each unit is promised to one
+the reserve is that unit's cost, marked down as it nears its date or the end of the round (shop_stock.markdown), and
+the opening price is a share of the list price, marked down with it. Each unit is promised to one
 talk at a time. The receipt names the SKU and carries the unit, the honest grade and any warranty (pricing.json).
 """
 import argparse
@@ -50,7 +51,7 @@ from acp_shop import AcpCheckout
 from catalog import NUMERIC, Catalog
 from harness import HarnessError, ask
 import shop_memory
-from shop_stock import StockBook, last_segment
+from shop_stock import StockBook, last_segment, markdown
 
 MAX_ROUNDS = 10   # hard stop in code; the harness normally ends the talk earlier
 CANDIDATES = 15
@@ -206,11 +207,16 @@ class Seller(AgentExecutor):
             log(f"task {task.id[:8]} -> REJECTED (not in stock)")
             return
         self.stock.hold(u["unit"])
-        reserve, key = math.ceil(u["cost"]), last_segment(u.get("category")) or u["sku"]
-        ask_price, arm, why = await asyncio.to_thread(shop_memory.choose_opening, key, reserve, u["list_price"])
-        log(f"PRICE {u['sku']} unit {u['unit']} cost {reserve} list {u['list_price']}: opening ask {ask_price} ({why})")
+        cost, key = math.ceil(u["cost"]), last_segment(u.get("category")) or u["sku"]
+        ask_price, arm, why = await asyncio.to_thread(shop_memory.choose_opening, key, cost, u["list_price"])
+        pricing = shop_memory.load_pricing()
+        reserve, keep, cause = markdown(u, pricing.get("markdown"), (pricing.get("restock") or {}).get("round_ends_at"))
+        if keep < 1:          # a clearance price says nothing about which opening sells: it stays out of the bandit
+            ask_price, arm = max(reserve, round(ask_price * keep)), None
+            log(f"MARKDOWN {u['sku']} unit {u['unit']}: {cause}, floor {reserve} instead of cost {cost}")
+        log(f"PRICE {u['sku']} unit {u['unit']} cost {cost} list {u['list_price']}: opening ask {ask_price} ({why})")
         self.open[task.id] = {"id": u["sku"], "name": u["name"], "key": key, "unit": u["unit"], "kind": u.get("kind"),
-                              "reserve": reserve, "ask": ask_price, "open": ask_price, "arm": arm, "rounds": 0,
+                              "cost": cost, "reserve": reserve, "ask": ask_price, "open": ask_price, "arm": arm, "rounds": 0,
                               "history": [("you asked", ask_price)]}
         await up.requires_input(say(f"{stock_line(u)}. Every deal comes with a signed receipt and the market's "
                                     f"certificate of the unit. My price: {ask_price}.", ask_price))
@@ -397,7 +403,7 @@ class Seller(AgentExecutor):
     def remember(self, task_id, deal, result, price=None):
         try:
             shop_memory.record({"task": task_id, "item": deal.get("key") or deal["name"], "sku": deal["id"],
-                                "unit": deal.get("unit"), "reserve": deal["reserve"],
+                                "unit": deal.get("unit"), "cost": deal.get("cost"), "reserve": deal["reserve"],
                                 "open": deal.get("open"), "arm": deal.get("arm"),
                                 "asks": [p for who, p in deal["history"] if who == "you asked"],
                                 "offers": [p for who, p in deal["history"] if who == "buyer offered"],
@@ -449,7 +455,8 @@ KITLOGS = {"market-kit.log": "logs/market-kit.log", "market-kit.log.1": "logs/ma
            "seller_memory.json": "memory/seller_memory.json", "market_memory.json": "memory/market_memory.json",
            "settled.jsonl": "memory/settled.jsonl", "payments.jsonl": ".market/payments.jsonl",
            "broken.jsonl": ".market/broken.jsonl", "outbox.sent.jsonl": ".market/outbox.sent.jsonl",
-           "demand_model.json": ".market/demand_model.json", "ledger_cursor.json": ".market/ledger_cursor.json"}
+           "demand_model.json": ".market/demand_model.json", "ledger_cursor.json": ".market/ledger_cursor.json",
+           "decisions.jsonl": ".market/decisions.jsonl", "tool_calls.jsonl": ".market/tool_calls.jsonl"}
 
 
 async def kitlog(req: Request):
